@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>天命 · 启幕卷轴（主界面·剧本·著卷 预览 v1）</title>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   天命 · 启幕卷轴 — 主菜单/剧本选择/剧本预览/著卷入口
+   美术：宣纸·墨韵·朱砂·玉轴·青灯
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  /* 墨色阶梯（深底用） */
+  --ink-900:#0a0908; --ink-800:#12100e; --ink-700:#1c1914; --ink-600:#2a2520;
+  --ink-500:#3a3530; --ink-400:#6b5d4f; --ink-300:#9d917d; --ink-200:#d4c9b0;
+  --ink-100:#ede5d0; --ink-50:#f8f3e8;
+  --gold-300:#d4be7a; --gold-400:#b89a53; --gold-500:#8a6d2b; --gold-600:#6b5010;
+  --vermillion-300:#d4706a; --vermillion-400:#c04030; --vermillion-500:#8b2e25;
+  --celadon-300:#a3d4c7; --celadon-400:#7eb8a7; --celadon-500:#5a8f7f;
+  --indigo-400:#4a6fa5; --indigo-500:#3a5580;
+  --purple-400:#8e6aa8; --amber-400:#c9a84c;
+  --bg-paper:#241e18; --bg-ink:#1a1510; --bg-deep:#12100e;
+  --font-serif:"Noto Serif SC","Source Han Serif CN","STKaiti","KaiTi","楷体",serif;
+  --font-kai:"STKaiti","KaiTi","楷体",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:var(--bg-deep);color:var(--ink-100);font-family:var(--font-serif);min-height:100vh;overflow-x:hidden;}
+
+/* ─── 顶部切换 ─── */
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(180deg,rgba(10,9,8,0.95),rgba(26,21,16,0.85));backdrop-filter:blur(10px);border-bottom:1px solid rgba(184,154,83,0.2);padding:10px 24px;display:flex;align-items:center;gap:12px;font-size:13px;letter-spacing:0.1em;}
+#nav .n-title{color:var(--gold-400);font-weight:600;margin-right:16px;}
+#nav button{background:transparent;border:1px solid rgba(184,154,83,0.3);color:var(--ink-200);font-family:inherit;padding:5px 12px;border-radius:3px;cursor:pointer;transition:all 0.2s;font-size:12px;letter-spacing:0.08em;}
+#nav button:hover{background:rgba(184,154,83,0.1);border-color:var(--gold-400);color:var(--gold-300);}
+#nav button.on{background:linear-gradient(135deg,rgba(184,154,83,0.2),rgba(138,109,43,0.18));border-color:var(--gold-400);color:var(--gold-300);}
+#nav .n-sp{flex:1;}
+#nav .n-hint{color:var(--ink-400);font-size:11px;font-style:italic;}
+
+/* ─── 页面容器 ─── */
+.page{display:none;min-height:100vh;padding-top:54px;position:relative;}
+.page.on{display:block;}
+
+/* ═══════════════════════════════════════════════════════
+   页 1 · 启幕主菜单
+   ═══════════════════════════════════════════════════════ */
+#page-home{min-height:100vh;overflow:hidden;}
+.home-stage{position:relative;min-height:calc(100vh - 54px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(ellipse 80% 60% at 50% 35%,rgba(26,21,16,0.3) 0%,rgba(10,9,8,1) 100%);}
+
+/* 纸纹底 */
+.home-stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,transparent,transparent 4em,rgba(184,154,83,0.015) 4em,rgba(184,154,83,0.015) calc(4em + 1px)),
+    repeating-linear-gradient(0deg,transparent,transparent 6em,rgba(107,93,79,0.012) 6em,rgba(107,93,79,0.012) calc(6em + 1px));
+}
+/* 远山水墨剪影 */
+.home-stage::after{
+  content:"";position:absolute;bottom:0;left:0;right:0;height:35%;pointer-events:none;
+  background:
+    radial-gradient(ellipse 40% 60% at 20% 100%,rgba(74,111,165,0.08) 0%,transparent 60%),
+    radial-gradient(ellipse 45% 70% at 50% 100%,rgba(58,85,128,0.1) 0%,transparent 55%),
+    radial-gradient(ellipse 35% 55% at 78% 100%,rgba(74,111,165,0.07) 0%,transparent 60%);
+  opacity:0.9;
+}
+
+/* 左右楹联（古诗竖排） */
+.home-ylian{position:absolute;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-family:var(--font-kai);font-size:13px;color:var(--ink-400);letter-spacing:0.8em;line-height:2.2;opacity:0.45;pointer-events:none;user-select:none;}
+.home-ylian.l{left:38px;}
+.home-ylian.r{right:38px;}
+.home-ylian .s{color:var(--gold-500);font-size:11px;letter-spacing:0.3em;margin-top:12px;display:block;}
+
+/* 中轴标题块 */
+.home-axis{position:relative;z-index:2;text-align:center;}
+
+/* 顶部印花 */
+.home-deco-top{color:var(--gold-500);font-size:11px;letter-spacing:1em;margin-bottom:10px;opacity:0.7;}
+.home-deco-top::before{content:"◆　　◇　　◆";}
+
+/* 天命大字 */
+.home-title{font-family:var(--font-kai);font-weight:900;font-size:84px;letter-spacing:0.28em;line-height:1;
+  background:linear-gradient(160deg,#6b5010 0%,#8a6d2b 25%,#b89a53 48%,#d4be7a 55%,#e8d398 58%,#d4be7a 65%,#b89a53 85%,#8a6d2b 100%);
+  background-size:200% 200%;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:0 0 60px rgba(184,154,83,0.15);
+  animation:gold-shift 8s ease-in-out infinite alternate;
+  position:relative;padding:0 20px;
+}
+@keyframes gold-shift{from{background-position:0% 50%;}to{background-position:100% 50%;}}
+/* 大字左右小装饰 */
+.home-title::before,.home-title::after{content:"";position:absolute;top:50%;width:40px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-500));opacity:0.6;}
+.home-title::before{right:100%;}
+.home-title::after{left:100%;background:linear-gradient(270deg,transparent,var(--gold-500));}
+
+/* 朱砂印 */
+.home-seal-wrap{margin:18px auto 0;display:flex;align-items:center;justify-content:center;gap:14px;}
+.home-seal{width:44px;height:44px;border-radius:5px;background:radial-gradient(circle at 35% 35%,rgba(212,112,106,0.95),rgba(140,40,30,0.92));display:flex;align-items:center;justify-content:center;color:#fef4e8;font-family:var(--font-kai);font-size:18px;font-weight:bold;letter-spacing:-0.05em;transform:rotate(-6deg);box-shadow:0 2px 8px rgba(140,40,30,0.4),inset 0 0 0 1.5px rgba(255,220,200,0.3);}
+.home-seal-lbl{font-family:var(--font-kai);color:var(--ink-200);font-size:16px;letter-spacing:0.35em;font-weight:500;}
+
+/* 副标题 */
+.home-sub{font-family:var(--font-kai);font-size:15px;color:var(--gold-300);letter-spacing:0.8em;margin-top:22px;font-weight:400;opacity:0.9;}
+
+/* 分隔线 */
+.home-div{width:320px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-500) 20%,var(--gold-400) 50%,var(--gold-500) 80%,transparent);margin:28px auto 0;position:relative;}
+.home-div::before,.home-div::after{content:"";position:absolute;top:50%;width:6px;height:6px;border:1px solid var(--gold-400);transform:translateY(-50%) rotate(45deg);background:var(--bg-deep);}
+.home-div::before{left:-3px;}
+.home-div::after{right:-3px;}
+
+/* 4 菜单项：2×2 网格 */
+.home-menu{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:16px;max-width:580px;width:100%;margin:38px auto 0;position:relative;z-index:2;}
+.home-card{position:relative;background:
+  linear-gradient(160deg,rgba(36,30,24,0.95),rgba(26,21,16,0.9));
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(184,154,83,0.025) 2.5em,rgba(184,154,83,0.025) calc(2.5em + 1px));
+  border:1px solid rgba(184,154,83,0.22);border-left:2px solid rgba(184,154,83,0.6);border-radius:3px;padding:18px 20px;cursor:pointer;transition:all 0.28s cubic-bezier(0.22,1,0.36,1);text-align:left;font-family:inherit;color:inherit;overflow:hidden;}
+.home-card::before{content:"";position:absolute;top:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-400),transparent);opacity:0;transition:opacity 0.3s;}
+.home-card::after{content:"";position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-500),transparent);opacity:0;transition:opacity 0.3s;}
+.home-card:hover{transform:translateY(-3px);border-color:var(--gold-400);border-left-color:var(--gold-300);box-shadow:0 10px 30px rgba(10,9,8,0.5),0 0 22px rgba(184,154,83,0.1);}
+.home-card:hover::before,.home-card:hover::after{opacity:1;}
+.home-card-hd{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.home-card-icon{width:38px;height:38px;border-radius:50%;border:1px solid var(--ic-c,var(--gold-400));background:linear-gradient(135deg,rgba(184,154,83,0.12),rgba(26,21,16,0.3));display:flex;align-items:center;justify-content:center;font-family:var(--font-kai);font-size:18px;color:var(--ic-c,var(--gold-300));flex-shrink:0;transition:all 0.25s;}
+.home-card:hover .home-card-icon{background:linear-gradient(135deg,rgba(184,154,83,0.22),rgba(140,109,43,0.12));box-shadow:0 0 12px var(--ic-c,var(--gold-400));}
+.home-card.c-new{--ic-c:var(--gold-300);}
+.home-card.c-load{--ic-c:var(--celadon-400);}
+.home-card.c-edit{--ic-c:var(--indigo-400);}
+.home-card.c-set{--ic-c:var(--amber-400);}
+.home-card-cn{font-family:var(--font-kai);font-size:19px;color:var(--ic-c,var(--gold-300));letter-spacing:0.35em;line-height:1.1;margin-bottom:3px;text-indent:0.35em;font-weight:600;}
+.home-card-ti{font-family:var(--font-kai);font-size:12px;color:var(--ink-300);letter-spacing:0.22em;font-weight:400;line-height:1.3;}
+.home-card-desc{font-family:var(--font-kai);font-size:11.5px;color:var(--ink-300);letter-spacing:0.08em;line-height:1.55;margin-top:4px;font-style:italic;opacity:0.85;}
+.home-card-meta{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(184,154,83,0.15);font-family:var(--font-kai);font-size:11px;color:var(--gold-400);letter-spacing:0.06em;display:flex;justify-content:space-between;align-items:center;}
+.home-card-meta .mt-dot{width:5px;height:5px;border-radius:50%;background:var(--celadon-400);box-shadow:0 0 4px var(--celadon-400);margin-right:4px;vertical-align:middle;}
+
+/* 近期一行书简 */
+.home-recent{margin:30px auto 0;max-width:580px;padding:10px 18px;background:linear-gradient(180deg,rgba(36,30,24,0.6),rgba(26,21,16,0.4));border:1px dashed rgba(184,154,83,0.2);border-radius:3px;font-family:var(--font-kai);font-size:12px;color:var(--ink-300);letter-spacing:0.08em;line-height:1.8;position:relative;z-index:2;}
+.home-recent .rh{color:var(--gold-400);letter-spacing:0.3em;margin-right:8px;font-size:11px;}
+.home-recent .r-item{color:var(--ink-200);}
+.home-recent .r-item+.r-item::before{content:"·";color:var(--gold-500);margin:0 8px;}
+.home-recent .r-seal{display:inline-block;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.85),rgba(140,40,30,0.9));color:#fef4e8;text-align:center;line-height:16px;font-size:9px;vertical-align:middle;margin-right:4px;transform:rotate(-4deg);}
+
+/* 底部栏 */
+.home-foot{position:fixed;bottom:0;left:0;right:0;padding:10px 24px;background:linear-gradient(0deg,rgba(10,9,8,0.95),rgba(26,21,16,0.3));border-top:1px solid rgba(184,154,83,0.12);display:flex;align-items:center;justify-content:space-between;font-family:var(--font-kai);font-size:11px;color:var(--ink-400);letter-spacing:0.1em;z-index:5;backdrop-filter:blur(4px);}
+.home-foot .f-ver{color:var(--gold-500);letter-spacing:0.2em;}
+.home-foot .f-mid{color:var(--ink-300);}
+.home-foot .f-mid .dot{color:var(--vermillion-400);margin:0 6px;}
+.home-foot .f-right{display:flex;gap:18px;align-items:center;}
+.home-foot kbd{background:rgba(184,154,83,0.08);border:1px solid rgba(184,154,83,0.3);padding:0 6px;border-radius:2px;font-size:10px;color:var(--gold-300);font-family:monospace;}
+
+/* 顶部装饰角花 */
+.corner-flower{position:absolute;width:78px;height:78px;pointer-events:none;opacity:0.35;z-index:1;}
+.corner-flower.tl{top:70px;left:20px;}
+.corner-flower.tr{top:70px;right:20px;transform:scaleX(-1);}
+.corner-flower svg{width:100%;height:100%;}
+
+/* ═══════════════════════════════════════════════════════
+   页 2 · 剧本选择
+   ═══════════════════════════════════════════════════════ */
+#page-scn{padding-top:54px;min-height:100vh;background:linear-gradient(180deg,var(--bg-deep),var(--bg-ink));position:relative;}
+#page-scn::before{content:"";position:fixed;inset:54px 0 0 0;background:repeating-linear-gradient(90deg,transparent,transparent 4em,rgba(184,154,83,0.015) 4em,rgba(184,154,83,0.015) calc(4em + 1px));pointer-events:none;}
+.scn-stage{max-width:1080px;margin:0 auto;padding:30px 24px 60px;position:relative;z-index:2;}
+.scn-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.scn-back{font-family:var(--font-kai);font-size:13px;color:var(--ink-300);background:transparent;border:1px solid rgba(184,154,83,0.3);padding:8px 16px;border-radius:3px;cursor:pointer;letter-spacing:0.15em;}
+.scn-back:hover{border-color:var(--gold-400);color:var(--gold-300);}
+.scn-title{font-family:var(--font-kai);font-size:28px;color:var(--gold-300);letter-spacing:0.4em;text-align:center;font-weight:500;flex:1;}
+.scn-title::before{content:"〔 ";color:var(--gold-500);font-size:22px;}
+.scn-title::after{content:" 〕";color:var(--gold-500);font-size:22px;}
+.scn-sub{font-family:var(--font-kai);font-size:12px;color:var(--ink-400);letter-spacing:0.3em;text-align:center;margin-top:-12px;margin-bottom:22px;font-style:italic;}
+
+/* 卷轴网格 */
+.scn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.scn-card{position:relative;background:
+  linear-gradient(160deg,rgba(36,30,24,0.92),rgba(26,21,16,0.88));
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(184,154,83,0.025) 2.5em,rgba(184,154,83,0.025) calc(2.5em + 1px));
+  border:1px solid rgba(184,154,83,0.2);border-radius:3px;padding:14px 16px;cursor:pointer;overflow:hidden;transition:all 0.25s;min-height:140px;}
+.scn-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold-500),var(--gold-400) 30%,var(--gold-400) 70%,var(--gold-500));opacity:0.8;}
+/* 卷首小印 */
+.scn-card::after{content:"";position:absolute;right:12px;top:12px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.78),rgba(140,40,30,0.82));opacity:0.7;transform:rotate(-6deg);box-shadow:0 0 0 1px rgba(255,220,200,0.15);}
+.scn-card:hover{border-color:var(--gold-400);transform:translateY(-3px);box-shadow:0 10px 22px rgba(10,9,8,0.45),0 0 16px rgba(184,154,83,0.08);}
+.scn-card .scn-era{font-family:var(--font-kai);font-size:11px;color:var(--gold-400);letter-spacing:0.2em;margin-bottom:4px;}
+.scn-card .scn-name{font-family:var(--font-kai);font-size:17px;color:var(--ink-100);letter-spacing:0.1em;font-weight:600;margin-bottom:3px;line-height:1.25;}
+.scn-card .scn-role{font-family:var(--font-kai);font-size:12px;color:var(--celadon-400);letter-spacing:0.08em;margin-bottom:8px;}
+.scn-card .scn-bg{font-family:var(--font-kai);font-size:11px;color:var(--ink-300);letter-spacing:0.04em;line-height:1.65;font-style:italic;opacity:0.88;}
+.scn-card .scn-meta{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(184,154,83,0.15);display:flex;gap:10px;font-family:var(--font-kai);font-size:10.5px;color:var(--ink-400);letter-spacing:0.05em;}
+.scn-card .scn-meta span{color:var(--gold-300);}
+.scn-card .scn-tag{position:absolute;bottom:10px;right:12px;padding:2px 7px;background:rgba(126,184,167,0.12);border:0.5px solid rgba(126,184,167,0.35);color:var(--celadon-400);font-family:var(--font-kai);font-size:10px;letter-spacing:0.1em;border-radius:2px;}
+.scn-card.official .scn-tag{background:rgba(184,154,83,0.1);border-color:rgba(184,154,83,0.4);color:var(--gold-400);}
+.scn-card.custom .scn-tag{background:rgba(142,106,168,0.1);border-color:rgba(142,106,168,0.4);color:var(--purple-400);}
+
+/* 新建 "空卷" 特殊卡 */
+.scn-card.empty{display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;border:1.5px dashed rgba(184,154,83,0.35);background:transparent;padding:26px 14px;min-height:140px;}
+.scn-card.empty::before,.scn-card.empty::after{display:none;}
+.scn-card.empty:hover{border-color:var(--gold-400);background:rgba(184,154,83,0.03);}
+.scn-card.empty .ne-ic{font-family:var(--font-kai);font-size:26px;color:var(--gold-400);margin-bottom:4px;}
+.scn-card.empty .ne-tx{font-family:var(--font-kai);font-size:14px;color:var(--gold-300);letter-spacing:0.3em;margin-bottom:3px;}
+.scn-card.empty .ne-sb{font-family:var(--font-kai);font-size:11px;color:var(--ink-400);letter-spacing:0.1em;font-style:italic;}
+
+/* ═══════════════════════════════════════════════════════
+   页 3 · 剧本预览弹窗
+   ═══════════════════════════════════════════════════════ */
+#page-prev{padding-top:54px;min-height:100vh;position:relative;background:linear-gradient(180deg,rgba(10,9,8,0.7),rgba(10,9,8,0.95)),url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%230a0908"/></svg>');}
+.prev-backdrop{position:absolute;inset:54px 0 0 0;background:rgba(10,9,8,0.88);backdrop-filter:blur(6px);pointer-events:none;}
+.prev-stage{position:relative;z-index:3;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;min-height:calc(100vh - 54px);}
+.prev-modal{width:100%;max-width:680px;background:linear-gradient(160deg,#2a231c,#1e1812);
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 3em,rgba(184,154,83,0.02) 3em,rgba(184,154,83,0.02) calc(3em + 1px));
+  border:1px solid var(--gold-500);border-radius:4px;padding:28px 32px;position:relative;box-shadow:0 25px 50px rgba(0,0,0,0.6),0 0 80px rgba(184,154,83,0.08);}
+.prev-modal::before,.prev-modal::after{content:"";position:absolute;height:2px;left:10%;right:10%;background:linear-gradient(90deg,transparent,var(--gold-500),var(--gold-400),var(--gold-500),transparent);}
+.prev-modal::before{top:0;}
+.prev-modal::after{bottom:0;}
+/* 四角装饰 */
+.prev-corner{position:absolute;width:22px;height:22px;border:1.5px solid var(--gold-400);opacity:0.7;}
+.prev-corner.tl{top:8px;left:8px;border-right:none;border-bottom:none;}
+.prev-corner.tr{top:8px;right:8px;border-left:none;border-bottom:none;}
+.prev-corner.bl{bottom:8px;left:8px;border-right:none;border-top:none;}
+.prev-corner.br{bottom:8px;right:8px;border-left:none;border-top:none;}
+
+.prev-close{position:absolute;top:14px;right:18px;width:28px;height:28px;background:transparent;border:1px solid rgba(184,154,83,0.3);color:var(--gold-300);font-size:16px;cursor:pointer;border-radius:50%;line-height:0;}
+.prev-close:hover{border-color:var(--vermillion-400);color:var(--vermillion-400);}
+
+.prev-era{text-align:center;font-family:var(--font-kai);font-size:13px;color:var(--gold-400);letter-spacing:0.4em;margin-bottom:6px;}
+.prev-name{text-align:center;font-family:var(--font-kai);font-size:32px;color:var(--gold-300);letter-spacing:0.3em;margin-bottom:6px;font-weight:600;}
+.prev-name::before{content:"〔 ";color:var(--gold-500);}
+.prev-name::after{content:" 〕";color:var(--gold-500);}
+.prev-role{text-align:center;font-family:var(--font-kai);font-size:14px;color:var(--celadon-400);letter-spacing:0.2em;margin-bottom:18px;}
+
+.prev-overview{background:rgba(10,9,8,0.5);border-left:3px solid var(--gold-400);padding:12px 16px;font-family:var(--font-kai);font-size:13px;color:var(--ink-200);letter-spacing:0.06em;line-height:1.9;margin-bottom:18px;border-radius:0 3px 3px 0;position:relative;}
+.prev-overview::before{content:"\201C";position:absolute;top:-8px;left:8px;font-size:28px;color:var(--gold-500);opacity:0.5;font-family:serif;}
+.prev-overview::after{content:"\201D";position:absolute;bottom:-18px;right:10px;font-size:28px;color:var(--gold-500);opacity:0.5;font-family:serif;}
+
+/* 统计 */
+.prev-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.prev-stat{background:rgba(36,30,24,0.6);border:1px solid rgba(184,154,83,0.18);border-radius:3px;padding:10px 6px;text-align:center;position:relative;}
+.prev-stat::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--s-c,var(--gold-400)),transparent);opacity:0.7;}
+.prev-stat.s-char{--s-c:var(--celadon-400);}
+.prev-stat.s-fac{--s-c:var(--indigo-400);}
+.prev-stat.s-party{--s-c:var(--purple-400);}
+.prev-stat.s-event{--s-c:var(--amber-400);}
+.prev-stat .pv-n{font-family:var(--font-kai);font-size:22px;color:var(--s-c,var(--gold-300));font-weight:600;line-height:1;}
+.prev-stat .pv-l{font-family:var(--font-kai);font-size:11px;color:var(--ink-300);letter-spacing:0.2em;margin-top:4px;}
+
+/* 玩家身份 */
+.prev-identity{background:linear-gradient(160deg,rgba(74,111,165,0.12),rgba(58,85,128,0.08));border:1px solid rgba(74,111,165,0.3);border-radius:3px;padding:12px 16px;margin-bottom:14px;position:relative;}
+.prev-identity::before{content:"\4EBA";position:absolute;top:10px;right:14px;width:22px;height:22px;background:radial-gradient(circle at 35% 35%,rgba(74,111,165,0.8),rgba(58,85,128,0.85));color:#e8eaf0;text-align:center;line-height:22px;font-family:var(--font-kai);font-size:13px;border-radius:50%;transform:rotate(-5deg);}
+.prev-id-hd{font-family:var(--font-kai);font-size:11px;color:var(--indigo-400);letter-spacing:0.3em;margin-bottom:6px;}
+.prev-id-role{font-family:var(--font-kai);font-size:15px;color:var(--ink-100);letter-spacing:0.1em;margin-bottom:3px;}
+.prev-id-fac{font-family:var(--font-kai);font-size:12px;color:var(--ink-300);letter-spacing:0.05em;}
+
+/* 显著矛盾 */
+.prev-contrad{background:linear-gradient(160deg,rgba(192,64,48,0.08),rgba(140,40,30,0.05));border:1px solid rgba(192,64,48,0.22);border-radius:3px;padding:12px 16px;margin-bottom:18px;}
+.prev-ct-hd{font-family:var(--font-kai);font-size:11px;color:var(--vermillion-400);letter-spacing:0.3em;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.prev-ct-hd::before{content:"";width:6px;height:6px;background:var(--vermillion-400);border-radius:50%;}
+.prev-ct-row{display:flex;gap:8px;padding:4px 0 4px 10px;border-left:3px solid var(--ct-c,var(--vermillion-400));margin-bottom:4px;font-family:var(--font-kai);font-size:12px;color:var(--ink-200);letter-spacing:0.05em;}
+.prev-ct-row.dim-pol{--ct-c:var(--indigo-400);}
+.prev-ct-row.dim-eco{--ct-c:var(--gold-400);}
+.prev-ct-row.dim-mil{--ct-c:var(--vermillion-400);}
+.prev-ct-row.dim-soc{--ct-c:var(--celadon-400);}
+.prev-ct-row .ct-dim{font-size:10px;letter-spacing:0.2em;color:var(--ct-c);min-width:28px;}
+
+/* 难度 */
+.prev-diff{margin-bottom:18px;}
+.prev-diff-hd{font-family:var(--font-kai);font-size:11px;color:var(--ink-400);letter-spacing:0.3em;text-align:center;margin-bottom:8px;}
+.prev-diff-row{display:flex;gap:8px;}
+.prev-diff-btn{flex:1;padding:10px 8px;background:rgba(36,30,24,0.6);border:1px solid rgba(184,154,83,0.2);border-radius:3px;cursor:pointer;font-family:var(--font-kai);color:var(--ink-300);text-align:center;transition:all 0.2s;}
+.prev-diff-btn:hover{border-color:var(--gold-400);color:var(--gold-300);}
+.prev-diff-btn.on{background:linear-gradient(135deg,rgba(184,154,83,0.18),rgba(140,109,43,0.1));border-color:var(--gold-400);color:var(--gold-300);box-shadow:inset 0 0 12px rgba(184,154,83,0.1);}
+.prev-diff-btn .dn{font-size:14px;letter-spacing:0.2em;font-weight:500;margin-bottom:3px;}
+.prev-diff-btn .dd{font-size:10.5px;color:var(--ink-400);letter-spacing:0.04em;font-style:italic;}
+.prev-diff-btn.on .dd{color:var(--ink-300);}
+.prev-diff-desc{margin-top:8px;padding:6px 12px;background:rgba(10,9,8,0.5);border-radius:3px;font-family:var(--font-kai);font-size:11px;color:var(--ink-300);letter-spacing:0.05em;text-align:center;font-style:italic;}
+
+/* 开始 / 搁置 按钮 */
+.prev-actions{display:flex;gap:10px;margin-top:18px;}
+.prev-btn{padding:12px 20px;border-radius:3px;font-family:var(--font-kai);cursor:pointer;letter-spacing:0.25em;font-size:14px;transition:all 0.25s;}
+.prev-btn.primary{flex:2;background:linear-gradient(135deg,var(--gold-500),var(--gold-400));border:1px solid var(--gold-300);color:#1a1410;font-weight:700;box-shadow:0 4px 12px rgba(184,154,83,0.25);}
+.prev-btn.primary:hover{box-shadow:0 6px 18px rgba(184,154,83,0.4);transform:translateY(-1px);}
+.prev-btn.primary .sub{display:block;font-size:10px;letter-spacing:0.15em;font-weight:400;margin-top:3px;opacity:0.7;}
+.prev-btn.ghost{flex:1;background:transparent;border:1px solid rgba(184,154,83,0.3);color:var(--ink-300);}
+.prev-btn.ghost:hover{border-color:var(--gold-400);color:var(--gold-300);}
+
+/* ═══════════════════════════════════════════════════════
+   页 4 · 著卷（编辑器入口）
+   ═══════════════════════════════════════════════════════ */
+#page-edit{padding-top:54px;min-height:100vh;background:linear-gradient(180deg,var(--bg-deep),#18130e);position:relative;}
+#page-edit::before{content:"";position:fixed;inset:54px 0 0 0;background:repeating-linear-gradient(90deg,transparent,transparent 4em,rgba(142,106,168,0.015) 4em,rgba(142,106,168,0.015) calc(4em + 1px));pointer-events:none;}
+.edit-stage{max-width:1080px;margin:0 auto;padding:30px 24px 60px;position:relative;z-index:2;}
+.edit-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.edit-title{font-family:var(--font-kai);font-size:28px;color:var(--purple-400);letter-spacing:0.4em;text-align:center;flex:1;font-weight:500;}
+.edit-title::before{content:"〔 ";color:rgba(142,106,168,0.5);}
+.edit-title::after{content:" 〕";color:rgba(142,106,168,0.5);}
+.edit-sub{font-family:var(--font-kai);font-size:12px;color:var(--ink-400);letter-spacing:0.3em;text-align:center;margin-bottom:20px;font-style:italic;}
+
+/* 顶部操作条 */
+.edit-ops{display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:24px;flex-wrap:wrap;}
+.edit-op{padding:8px 16px;background:linear-gradient(135deg,rgba(142,106,168,0.15),rgba(142,106,168,0.05));border:1px solid rgba(142,106,168,0.3);border-radius:3px;font-family:var(--font-kai);font-size:12.5px;color:var(--purple-400);letter-spacing:0.15em;cursor:pointer;transition:all 0.2s;}
+.edit-op:hover{border-color:var(--purple-400);color:#b08bc8;background:linear-gradient(135deg,rgba(142,106,168,0.25),rgba(142,106,168,0.1));}
+.edit-op.ai{background:linear-gradient(135deg,rgba(126,184,167,0.15),rgba(126,184,167,0.05));border-color:rgba(126,184,167,0.3);color:var(--celadon-400);}
+.edit-op.ai:hover{border-color:var(--celadon-400);color:var(--celadon-300);}
+
+.edit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.edit-card{position:relative;background:linear-gradient(160deg,rgba(36,30,24,0.92),rgba(26,21,16,0.88));background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(142,106,168,0.02) 2.5em,rgba(142,106,168,0.02) calc(2.5em + 1px));border:1px solid rgba(142,106,168,0.25);border-radius:3px;padding:14px 16px;cursor:pointer;overflow:hidden;transition:all 0.25s;min-height:140px;}
+.edit-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,rgba(142,106,168,0.6),rgba(176,139,200,0.5),rgba(142,106,168,0.6));opacity:0.9;}
+.edit-card::after{content:"编";position:absolute;right:10px;top:10px;width:22px;height:22px;border-radius:3px;background:linear-gradient(135deg,rgba(142,106,168,0.8),rgba(176,139,200,0.6));color:#f4eadd;text-align:center;line-height:22px;font-family:var(--font-kai);font-size:11px;letter-spacing:0;font-weight:600;box-shadow:0 2px 4px rgba(142,106,168,0.3);transform:rotate(-5deg);}
+.edit-card:hover{border-color:var(--purple-400);transform:translateY(-3px);box-shadow:0 10px 22px rgba(10,9,8,0.5),0 0 16px rgba(142,106,168,0.15);}
+.edit-card .ec-era{font-family:var(--font-kai);font-size:11px;color:var(--purple-400);letter-spacing:0.2em;margin-bottom:4px;}
+.edit-card .ec-name{font-family:var(--font-kai);font-size:17px;color:var(--ink-100);letter-spacing:0.1em;font-weight:600;margin-bottom:3px;line-height:1.25;}
+.edit-card .ec-role{font-family:var(--font-kai);font-size:12px;color:var(--ink-200);letter-spacing:0.05em;margin-bottom:8px;}
+.edit-card .ec-bg{font-family:var(--font-kai);font-size:11px;color:var(--ink-300);letter-spacing:0.04em;line-height:1.65;font-style:italic;opacity:0.88;}
+.edit-card .ec-meta{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(142,106,168,0.2);display:flex;gap:10px;font-family:var(--font-kai);font-size:10.5px;color:var(--ink-400);letter-spacing:0.05em;}
+.edit-card .ec-meta span{color:var(--purple-400);}
+.edit-card .ec-status{position:absolute;bottom:10px;right:12px;padding:1.5px 6px;background:rgba(126,184,167,0.12);border:0.5px solid rgba(126,184,167,0.35);color:var(--celadon-400);font-family:var(--font-kai);font-size:9.5px;letter-spacing:0.1em;border-radius:2px;}
+.edit-card.draft .ec-status{background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.4);color:var(--amber-400);}
+
+/* 新建卡 */
+.edit-card.empty{display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;border:1.5px dashed rgba(142,106,168,0.4);background:linear-gradient(160deg,rgba(142,106,168,0.05),transparent);padding:26px 14px;}
+.edit-card.empty::before,.edit-card.empty::after{display:none;}
+.edit-card.empty:hover{border-color:var(--purple-400);background:linear-gradient(160deg,rgba(142,106,168,0.1),transparent);}
+.edit-card.empty .ne-ic{font-family:var(--font-kai);font-size:26px;color:var(--purple-400);margin-bottom:4px;}
+.edit-card.empty .ne-tx{font-family:var(--font-kai);font-size:14px;color:#b08bc8;letter-spacing:0.3em;margin-bottom:3px;}
+.edit-card.empty .ne-sb{font-family:var(--font-kai);font-size:11px;color:var(--ink-400);letter-spacing:0.1em;font-style:italic;}
+
+/* 工具条底注 */
+.edit-footer{margin-top:36px;padding:16px;background:linear-gradient(160deg,rgba(36,30,24,0.8),rgba(26,21,16,0.6));border:1px solid rgba(142,106,168,0.2);border-radius:3px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-family:var(--font-kai);font-size:12px;color:var(--ink-300);letter-spacing:0.08em;}
+.edit-footer .ef-ic{width:28px;height:28px;border-radius:50%;border:1px solid var(--purple-400);display:flex;align-items:center;justify-content:center;color:var(--purple-400);font-size:14px;}
+.edit-footer .ef-tx{flex:1;}
+.edit-footer .ef-tx b{color:var(--gold-300);letter-spacing:0.15em;}
+.edit-footer .ef-btn{padding:6px 14px;background:transparent;border:1px solid rgba(142,106,168,0.4);color:var(--purple-400);border-radius:3px;cursor:pointer;font-family:inherit;font-size:11.5px;letter-spacing:0.1em;}
+.edit-footer .ef-btn:hover{border-color:#b08bc8;color:#b08bc8;}
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div id="nav">
+  <span class="n-title">天命·启幕卷轴 预览 v1</span>
+  <button data-p="home" class="on">启 幕</button>
+  <button data-p="scn">剧 本 择</button>
+  <button data-p="prev">剧 本 览</button>
+  <button data-p="edit">著 卷</button>
+  <span class="n-sp"></span>
+  <span class="n-hint">预览仅示美术风格 · 功能待接入</span>
+</div>
+
+<!-- ═══════════════ 页 1 · 启幕主菜单 ═══════════════ -->
+<div class="page on" id="page-home">
+  <div class="home-stage">
+
+    <!-- 左右楹联（陪衬古诗句） -->
+    <div class="home-ylian l">
+      天行健 · 君子以自强不息<span class="s">—— 周易</span>
+    </div>
+    <div class="home-ylian r">
+      地势坤 · 君子以厚德载物<span class="s">—— 周易</span>
+    </div>
+
+    <!-- 四角装饰 -->
+    <div class="corner-flower tl"><svg viewBox="0 0 100 100"><path d="M 5 5 L 50 5 M 5 5 L 5 50 M 5 5 L 35 35 M 15 5 L 15 25 M 5 15 L 25 15 M 30 5 Q 35 15, 30 30" stroke="rgba(184,154,83,0.7)" stroke-width="1" fill="none"/><circle cx="10" cy="10" r="2" fill="rgba(192,64,48,0.7)"/></svg></div>
+    <div class="corner-flower tr"><svg viewBox="0 0 100 100"><path d="M 5 5 L 50 5 M 5 5 L 5 50 M 5 5 L 35 35 M 15 5 L 15 25 M 5 15 L 25 15 M 30 5 Q 35 15, 30 30" stroke="rgba(184,154,83,0.7)" stroke-width="1" fill="none"/><circle cx="10" cy="10" r="2" fill="rgba(192,64,48,0.7)"/></svg></div>
+
+    <!-- 主轴 -->
+    <div class="home-axis">
+      <div class="home-deco-top"></div>
+      <div class="home-title">天　命</div>
+      <div class="home-seal-wrap">
+        <span class="home-seal-lbl">奉 天 承 运 皇 帝 　诏 曰 ：</span>
+        <div class="home-seal">玺<br></div>
+      </div>
+      <div class="home-sub">AI  历  史  模  拟  推  演</div>
+      <div class="home-div"></div>
+    </div>
+
+    <!-- 4 菜单 -->
+    <div class="home-menu">
+      <button class="home-card c-new" onclick="go('scn')">
+        <div class="home-card-hd">
+          <div class="home-card-icon">卷</div>
+          <div>
+            <div class="home-card-cn">开　卷</div>
+            <div class="home-card-ti">开 始 新 游 戏</div>
+          </div>
+        </div>
+        <div class="home-card-desc">选择剧本 · 载入世界 · 敕定天命</div>
+        <div class="home-card-meta">
+          <span>5 官方剧本 · 3 自定义</span>
+          <span>↵ Enter</span>
+        </div>
+      </button>
+
+      <button class="home-card c-load">
+        <div class="home-card-hd">
+          <div class="home-card-icon">续</div>
+          <div>
+            <div class="home-card-cn">续　卷</div>
+            <div class="home-card-ti">读 取 存 档</div>
+          </div>
+        </div>
+        <div class="home-card-desc">启封卷宗 · 抄录副本 · 承续推演</div>
+        <div class="home-card-meta">
+          <span><span class="mt-dot"></span>最新·第42回合·咸通八年秋</span>
+          <span>Ctrl+L</span>
+        </div>
+      </button>
+
+      <button class="home-card c-edit" onclick="go('edit')">
+        <div class="home-card-hd">
+          <div class="home-card-icon">著</div>
+          <div>
+            <div class="home-card-cn">著　卷</div>
+            <div class="home-card-ti">创 作 新 剧 本</div>
+          </div>
+        </div>
+        <div class="home-card-desc">开炉鼓铸 · 立言成卷 · 遗之后人</div>
+        <div class="home-card-meta">
+          <span>史笔未动</span>
+          <span>Ctrl+E</span>
+        </div>
+      </button>
+
+      <button class="home-card c-set">
+        <div class="home-card-hd">
+          <div class="home-card-icon">典</div>
+          <div>
+            <div class="home-card-cn">典　章</div>
+            <div class="home-card-ti">游 戏 设 置</div>
+          </div>
+        </div>
+        <div class="home-card-desc">API · 字数 · 文风 · 音声</div>
+        <div class="home-card-meta">
+          <span>Anthropic · 3000字 · 沉郁</span>
+          <span>Ctrl+,</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- 近期一行书简 -->
+    <div class="home-recent">
+      <span class="rh">〘 近 事 〙</span>
+      <span class="r-item"><span class="r-seal">封</span>咸通八年秋纪要 · 盛世</span>
+      <span class="r-item">崇祯元年·辽事告急</span>
+      <span class="r-item">开元盛世初临</span>
+    </div>
+
+  </div>
+
+  <!-- 底部栏 -->
+  <div class="home-foot">
+    <div class="f-ver">天 命　v0.9-β</div>
+    <div class="f-mid">四月廿十 · 春分<span class="dot">◆</span>太平<span class="dot">◆</span>河清海晏</div>
+    <div class="f-right">
+      <span><kbd>↵</kbd> 开 卷</span>
+      <span><kbd>?</kbd> 帮 助</span>
+      <span><kbd>Esc</kbd> 退 出</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ 页 2 · 剧本选择 ═══════════════ -->
+<div class="page" id="page-scn">
+  <div class="scn-stage">
+    <div class="scn-hdr">
+      <button class="scn-back" onclick="go('home')">◁ 返回启幕</button>
+      <div class="scn-title">选 择 剧 本</div>
+      <span style="width:100px;"></span>
+    </div>
+    <div class="scn-sub">—— 择一段时日，入其世界 ——</div>
+
+    <div class="scn-grid">
+      <div class="scn-card official" onclick="go('prev')">
+        <div class="scn-era">大唐·安史之乱</div>
+        <div class="scn-name">天宝十四载</div>
+        <div class="scn-role">唐玄宗 · 李隆基</div>
+        <div class="scn-bg">盛唐烟云之末，范阳渔阳鼙鼓动地而来。骊山温泉宴未歇，长安已见烽烟……</div>
+        <div class="scn-meta"><span>12 人物</span><span>5 势力</span><span>4 党派</span></div>
+        <div class="scn-tag">官方</div>
+      </div>
+
+      <div class="scn-card official" onclick="go('prev')">
+        <div class="scn-era">明末·风雨飘摇</div>
+        <div class="scn-name">崇祯元年</div>
+        <div class="scn-role">明思宗 · 朱由检</div>
+        <div class="scn-bg">辽东建虏虎视，中原流寇蜂起，府库空竭，党争炽烈。朕当何以自处？</div>
+        <div class="scn-meta"><span>28 人物</span><span>9 势力</span><span>6 党派</span></div>
+        <div class="scn-tag">官方</div>
+      </div>
+
+      <div class="scn-card official" onclick="go('prev')">
+        <div class="scn-era">汉武·开疆之始</div>
+        <div class="scn-name">元狩二年</div>
+        <div class="scn-role">汉武帝 · 刘彻</div>
+        <div class="scn-bg">匈奴未灭何以家为。大漠孤烟，卫青霍去病已出发。盐铁之策当行否？</div>
+        <div class="scn-meta"><span>18 人物</span><span>4 势力</span><span>5 党派</span></div>
+        <div class="scn-tag">官方</div>
+      </div>
+
+      <div class="scn-card official" onclick="go('prev')">
+        <div class="scn-era">宋仁宗·庆历</div>
+        <div class="scn-name">庆历三年</div>
+        <div class="scn-role">宋仁宗 · 赵祯</div>
+        <div class="scn-bg">庆历新政之议方兴。范仲淹先忧后乐，欧阳修直言犯上，新法之阻，如何推行？</div>
+        <div class="scn-meta"><span>15 人物</span><span>3 势力</span><span>5 党派</span></div>
+        <div class="scn-tag">官方</div>
+      </div>
+
+      <div class="scn-card official" onclick="go('prev')">
+        <div class="scn-era">清雍正·摊丁入亩</div>
+        <div class="scn-name">雍正元年</div>
+        <div class="scn-role">清世宗 · 胤禛</div>
+        <div class="scn-bg">康熙宾天，九子夺嫡。府库虚耗，吏治败坏。当立新政，一扫前朝积弊。</div>
+        <div class="scn-meta"><span>22 人物</span><span>6 势力</span><span>4 党派</span></div>
+        <div class="scn-tag">官方</div>
+      </div>
+
+      <div class="scn-card custom" onclick="go('prev')">
+        <div class="scn-era">自定 · 架空历史</div>
+        <div class="scn-name">神历元年</div>
+        <div class="scn-role">开国雄主 · 李元吉</div>
+        <div class="scn-bg">由你构筑的架空王朝。九州初定，百业待兴，群雄未服——</div>
+        <div class="scn-meta"><span>6 人物</span><span>2 势力</span><span>1 党派</span></div>
+        <div class="scn-tag">自制</div>
+      </div>
+
+      <div class="scn-card empty" onclick="go('edit')">
+        <div class="ne-ic">✦</div>
+        <div class="ne-tx">著 新 卷</div>
+        <div class="ne-sb">开炉·立言·造世</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ 页 3 · 剧本预览弹窗 ═══════════════ -->
+<div class="page" id="page-prev">
+  <div class="prev-backdrop"></div>
+  <div class="prev-stage">
+    <div class="prev-modal">
+      <div class="prev-corner tl"></div><div class="prev-corner tr"></div>
+      <div class="prev-corner bl"></div><div class="prev-corner br"></div>
+      <button class="prev-close" onclick="go('scn')">×</button>
+
+      <div class="prev-era">大 唐 · 安 史 之 乱</div>
+      <div class="prev-name">天 宝 十 四 载</div>
+      <div class="prev-role">唐玄宗 · 李隆基</div>
+
+      <div class="prev-overview">
+        天宝十四载仲冬，范阳节度使安禄山以"清君侧"之名起兵，率十五万精兵，号二十万，破关南下。朝廷闻讯始惊，调兵遣将，然承平日久，武备废弛；宰相杨国忠专权，诸将离心。是役也，长安危矣，开元之治将毁于一旦——朕当何以力挽狂澜？
+      </div>
+
+      <div class="prev-stats">
+        <div class="prev-stat s-char"><div class="pv-n">12</div><div class="pv-l">人 物</div></div>
+        <div class="prev-stat s-fac"><div class="pv-n">5</div><div class="pv-l">势 力</div></div>
+        <div class="prev-stat s-party"><div class="pv-n">4</div><div class="pv-l">党 派</div></div>
+        <div class="prev-stat s-event"><div class="pv-n">37</div><div class="pv-l">事 件</div></div>
+      </div>
+
+      <div class="prev-identity">
+        <div class="prev-id-hd">〘  玩 家 身 份  〙</div>
+        <div class="prev-id-role">李隆基「唐玄宗 · 开元天子」</div>
+        <div class="prev-id-fac">势力：大唐 · 长安朝廷</div>
+      </div>
+
+      <div class="prev-contrad">
+        <div class="prev-ct-hd">显 著 矛 盾</div>
+        <div class="prev-ct-row dim-mil"><span class="ct-dim">军</span>范阳十五万叛军压境，潼关守将哥舒翰病卧</div>
+        <div class="prev-ct-row dim-pol"><span class="ct-dim">政</span>杨国忠专权跋扈，太子李亨离心</div>
+        <div class="prev-ct-row dim-eco"><span class="ct-dim">财</span>府库空虚，军费难继，岁入不足以供关中</div>
+        <div class="prev-ct-row dim-soc"><span class="ct-dim">民</span>长安米价腾贵，流民涌入</div>
+      </div>
+
+      <div class="prev-diff">
+        <div class="prev-diff-hd">难  度  之  选</div>
+        <div class="prev-diff-row">
+          <div class="prev-diff-btn"><div class="dn">叙 事</div><div class="dd">温和·AI留情</div></div>
+          <div class="prev-diff-btn on"><div class="dn">标 准</div><div class="dd">平衡·史迹所宜</div></div>
+          <div class="prev-diff-btn"><div class="dn">硬 核</div><div class="dd">AI激进·多灾变</div></div>
+        </div>
+        <div class="prev-diff-desc">平衡的 AI 推演体验 · 大致贴合史实走向</div>
+      </div>
+
+      <div class="prev-actions">
+        <button class="prev-btn primary">诏 起 天 命<span class="sub">朕 意 已 决　启 此 新 局</span></button>
+        <button class="prev-btn ghost" onclick="go('scn')">搁 置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ 页 4 · 著卷（编辑器入口）═══════════════ -->
+<div class="page" id="page-edit">
+  <div class="edit-stage">
+    <div class="edit-hdr">
+      <button class="scn-back" onclick="go('home')">◁ 返回启幕</button>
+      <div class="edit-title">著 卷 · 编 辑 器</div>
+      <span style="width:100px;"></span>
+    </div>
+    <div class="edit-sub">—— 开炉立言，造化一世 ——</div>
+
+    <div class="edit-ops">
+      <button class="edit-op">＋ 新 建 空 卷</button>
+      <button class="edit-op">✎ 基 于 官 方 剧 本</button>
+      <button class="edit-op">⇪ 导 入 卷 宗</button>
+      <button class="edit-op ai">✨ AI 一 键 造 卷</button>
+    </div>
+
+    <div class="edit-grid">
+      <div class="edit-card empty">
+        <div class="ne-ic">＋</div>
+        <div class="ne-tx">新 建 空 卷</div>
+        <div class="ne-sb">从零创世 · 手书一纸山河</div>
+      </div>
+
+      <div class="edit-card draft">
+        <div class="ec-era">架空 · 草稿</div>
+        <div class="ec-name">九州列国志</div>
+        <div class="ec-role">待设定</div>
+        <div class="ec-bg">春秋战国式架空世界，十二列国争雄。初稿 68% · 最后修订 三日前……</div>
+        <div class="ec-meta"><span>8 人物</span><span>3 势力</span><span>0 事件</span></div>
+        <div class="ec-status">草 稿</div>
+      </div>
+
+      <div class="edit-card">
+        <div class="ec-era">自制 · 完稿</div>
+        <div class="ec-name">开元拾遗</div>
+        <div class="ec-role">张九龄·盛唐名相</div>
+        <div class="ec-bg">补官方开元剧本之遗。以宰相视角体验：吏治、科举、藩镇……</div>
+        <div class="ec-meta"><span>24 人物</span><span>7 势力</span><span>42 事件</span></div>
+        <div class="ec-status">可 玩</div>
+      </div>
+
+      <div class="edit-card">
+        <div class="ec-era">AI · 待校</div>
+        <div class="ec-name">贞观长歌</div>
+        <div class="ec-role">魏徵 · 谏议直臣</div>
+        <div class="ec-bg">AI 基于《贞观政要》自动生成。事件表与人物关系已就，待人工复核……</div>
+        <div class="ec-meta"><span>19 人物</span><span>4 势力</span><span>26 事件</span></div>
+        <div class="ec-status">待 校</div>
+      </div>
+    </div>
+
+    <div class="edit-footer">
+      <div class="ef-ic">?</div>
+      <div class="ef-tx">
+        编辑器支持 <b>基础信息 / 人物 / 势力 / 党派 / 官制 / 行政区划 / 财政 / 军事 / 事件</b> 等 十余大类字段编辑，亦可 <b>一键 AI 生成</b> 空缺字段，再由你逐项润色。
+      </div>
+      <button class="ef-btn">查看文档</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function go(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('on'));
+  document.getElementById('page-'+p).classList.add('on');
+  document.querySelectorAll('#nav button').forEach(b=>{
+    b.classList.toggle('on', b.dataset.p===p);
+  });
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('#nav button').forEach(b=>{
+  b.addEventListener('click',()=>go(b.dataset.p));
+});
+</script>
+</body>
+</html>

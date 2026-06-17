@@ -1,0 +1,2316 @@
+// @ts-check
+/// <reference path="types.d.ts" />
+// ============================================================
+// EndTurn 渲染模块（从 tm-endturn.js 拆分）
+// 包含：_endTurn_render, Delta面板, 角色高亮, 信息源渲染
+// Requires: tm-endturn.js (must load before this file)
+//
+// R157 章节导航 (1803 行)：
+//   §1 [L9]    主渲染 _endTurn_render 入口·参数 17 个
+//   §2 [L20]   死亡角色叙事过滤·年号系统
+//   §3 [L56]   财务报表 HTML 生成 (收入/支出/净变化)
+//   §4 [L103]  宰辅进言渲染 (区分忠臣/佞臣建议)
+//   §5 [L140]  主角状态区·朝野反应
+//   §6 [L500]  Delta 面板生成 (按 turnChanges)
+//   §7 [L900]  起居注/编年史/时政记面板
+//
+// Domain: 回合结果展示 (战况 / 兵备 / 财政 / 起居)
+// Refactor notes:
+//   Phase 3·**Codex own·Claude review at merge** (我刚 #5 加 affectedArmies/militarySystems)
+//   Phase 5·namespace TM.Endturn.Render
+// 见 web/docs/architecture-map.md §1 行 7
+//   §8 [L1300] 自动存档触发 + meta 写入
+//   §9 [L1600] 角色高亮工具 + 史官弹窗
+// ============================================================
+
+// 世界态变更摘要——把本回合 turnChanges（已满）+ 当下势力虚实压成一小段纯文本，
+// 存 GM._lastTurnDigest，供下回合 tm-endturn-prompt.js 层1 注入给 AI。
+// 朝代中立：只读 name/owner/strength/morale/soldiers 等通用运行时字段，不写死任何朝代专名。
+function buildWorldChangeDigest() {
+  if (typeof GM === 'undefined' || !GM) return '';
+  var tc = GM.turnChanges;
+  var CAP = 5;
+  var sections = [];
+
+  // 1. 疆土易主（map 桶：扁平 {regionName, field, oldValue, newValue, reason}）
+  if (tc && Array.isArray(tc.map) && tc.map.length) {
+    var terr = [];
+    tc.map.forEach(function(m) {
+      if (m && m.field === 'owner') {
+        terr.push('· ' + (m.regionName || m.regionId || '某地') + '：' + (m.oldValue || '无主') + '→' + (m.newValue || '无主') + (m.reason ? '（' + m.reason + '）' : ''));
+      }
+    });
+    if (terr.length) sections.push('疆土易主：\n' + terr.slice(0, CAP).join('\n'));
+  }
+
+  // 2. 兵势骤变（military 桶：{name, changes:[{field:'soldiers', oldValue, newValue}]}）
+  if (tc && Array.isArray(tc.military) && tc.military.length) {
+    var troops = [];
+    tc.military.forEach(function(mc) {
+      if (!mc || !Array.isArray(mc.changes)) return;
+      mc.changes.forEach(function(ch) {
+        if (ch && ch.field === 'soldiers') {
+          var d = (ch.newValue || 0) - (ch.oldValue || 0);
+          if (d !== 0) troops.push({ name: mc.name, d: d });
+        }
+      });
+    });
+    troops.sort(function(a, b) { return Math.abs(b.d) - Math.abs(a.d); });
+    if (troops.length) {
+      sections.push('兵势骤变：\n' + troops.slice(0, CAP).map(function(t) {
+        return '· ' + t.name + ' 兵力' + (t.d > 0 ? '+' : '') + t.d;
+      }).join('\n'));
+    }
+  }
+
+  // 3. 势力消长（factions 桶：{name, changes:[{field:'strength', oldValue, newValue}]}）
+  if (tc && Array.isArray(tc.factions) && tc.factions.length) {
+    var facd = [];
+    tc.factions.forEach(function(fc) {
+      if (!fc || !Array.isArray(fc.changes)) return;
+      fc.changes.forEach(function(ch) {
+        if (ch && ch.field === 'strength') {
+          var d = (ch.newValue || 0) - (ch.oldValue || 0);
+          if (d !== 0) facd.push({ name: fc.name, d: d });
+        }
+      });
+    });
+    facd.sort(function(a, b) { return Math.abs(b.d) - Math.abs(a.d); });
+    if (facd.length) {
+      sections.push('势力消长：\n' + facd.slice(0, CAP).map(function(f) {
+        return '· ' + f.name + ' 实力' + (f.d > 0 ? '+' : '') + f.d;
+      }).join('\n'));
+    }
+  }
+
+  // 4. 当下虚实（运行时 GM.facs：濒崩者点名——供 AI 识别可乘之机；字段对齐 prompt 运行时态块）
+  if (Array.isArray(GM.facs) && GM.facs.length) {
+    var weak = [];
+    GM.facs.forEach(function(f) {
+      if (!f || !f.name) return;
+      if (f._collapsing) weak.push('· ' + f.name + '【濒临崩溃】实力' + (f.strength || 0) + '·民心' + (f.morale || 0));
+    });
+    if (weak.length) sections.push('当下虚实：\n' + weak.slice(0, CAP).join('\n'));
+  }
+
+  if (!sections.length) return '';
+  return '【上一回合天下变动】（据此判断时局与战机）\n' + sections.join('\n');
+}
+
+function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts, xinglu, oldVars, changeReportHtml, queueResult, suggestions, tyrantResult, turnSummary, shiluText, szjTitle, szjSummary, personnelChanges, hourenXishuo, recordLineage) {
+  // 本地获取结束回合按钮（旧代码曾引用闭包外 btn，导致 ReferenceError）
+  var btn = (typeof _$ === 'function' ? (_$("btn-end") || _$("btn-end-turn")) : null);
+  if (!btn) btn = { textContent:'', style:{} };  // stub，防止 btn.textContent 抛错
+  // 默认参数兼容（旧版调用者未传新参数时不崩）
+  shiluText = shiluText || '';
+  szjTitle = szjTitle || '';
+  szjSummary = szjSummary || '';
+  personnelChanges = personnelChanges || [];
+  hourenXishuo = hourenXishuo || zhengwen || '';
+  // 1.4 措施4: 死亡角色二次过滤——标记叙事中已死角色的主动行为
+  if (GM.chars && zhengwen) {
+    var _deadNames = GM.chars.filter(function(c) { return c.alive === false && c.dead; }).map(function(c) { return c.name; });
+    _deadNames.forEach(function(dn) {
+      if (dn.length < 2) return;
+      // 匹配"死者+主动动词"模式并加注
+      var _activePattern = new RegExp('(' + dn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(说|曰|奏|上书|进言|率军|带领|发兵|下令|命令|宣布)', 'g');
+      zhengwen = zhengwen.replace(_activePattern, '[$1(已故)]$2');
+    });
+    // 对后人戏说同样过滤
+    if (hourenXishuo) {
+      _deadNames.forEach(function(dn) {
+        if (dn.length < 2) return;
+        var _ap = new RegExp('(' + dn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(说|曰|奏|上书|进言|率军|带领|发兵|下令|命令|宣布)', 'g');
+        hourenXishuo = hourenXishuo.replace(_ap, '[$1(已故)]$2');
+      });
+    }
+  }
+  // 动态更新年号
+  (function(){
+    // 年号系统始终启用
+    var t=P.time;
+    var _diEra=(typeof calcDateFromTurn==='function')?calcDateFromTurn(GM.turn||1):null;
+    var _dpvEra=(typeof _getDaysPerTurn==='function')?_getDaysPerTurn():30;
+    var y=_diEra?_diEra.adYear:((t.year||0)+Math.floor(((GM.turn||1)-1)*_dpvEra/365));
+    var mo=_diEra?_diEra.lunarMonth:(t.startMonth||1);
+    var eraList=GM.eraNames||[];
+    var best=null;
+    eraList.forEach(function(e){
+      if(!e||!e.name)return;
+      var ey=e.startYear||0;var em=e.startMonth||1;
+      if(y>ey||(y===ey&&mo>=em)){
+        if(!best||ey>best.startYear||(ey===best.startYear&&em>best.startMonth))best=e;
+      }
+    });
+    if(best)GM.eraName=best.name;
+  })();
+
+  // 7. 史记 + 财务报表
+  // 生成财务报表 HTML
+  var ledger = AccountingSystem.getLedger();
+  var financeReportHtml = '';
+
+  if (ledger.items.length > 0) {
+    financeReportHtml = '<div class="turn-section"><h3>财务报表</h3><div class="turn-section-content">';
+
+    // 收入部分
+    var incomeItems = ledger.items.filter(function(item) { return item.type === 'income'; });
+    if (incomeItems.length > 0) {
+      financeReportHtml += '<div style="margin-bottom: 1rem;"><div style="color: var(--green); font-weight: 700; margin-bottom: 0.5rem;">收入</div>';
+      incomeItems.forEach(function(item) {
+        financeReportHtml += '<div style="display: flex; justify-content: space-between; padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">';
+        financeReportHtml += '<span style="color: var(--txt-s);">' + item.name + '</span>';
+        financeReportHtml += '<span style="color: var(--green);">+' + item.amount.toFixed(1) + '</span>';
+        financeReportHtml += '</div>';
+      });
+      financeReportHtml += '<div style="display: flex; justify-content: space-between; padding: 0.3rem 0; font-weight: 700; border-top: 2px solid var(--green);">';
+      financeReportHtml += '<span>总收入</span><span style="color: var(--green);">+' + ledger.totalIncome.toFixed(1) + '</span>';
+      financeReportHtml += '</div></div>';
+    }
+
+    // 支出部分
+    var expenseItems = ledger.items.filter(function(item) { return item.type === 'expense'; });
+    if (expenseItems.length > 0) {
+      financeReportHtml += '<div style="margin-bottom: 1rem;"><div style="color: var(--red); font-weight: 700; margin-bottom: 0.5rem;">支出</div>';
+      expenseItems.forEach(function(item) {
+        financeReportHtml += '<div style="display: flex; justify-content: space-between; padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">';
+        financeReportHtml += '<span style="color: var(--txt-s);">' + item.name + '</span>';
+        financeReportHtml += '<span style="color: var(--red);">-' + item.amount.toFixed(1) + '</span>';
+        financeReportHtml += '</div>';
+      });
+      financeReportHtml += '<div style="display: flex; justify-content: space-between; padding: 0.3rem 0; font-weight: 700; border-top: 2px solid var(--red);">';
+      financeReportHtml += '<span>总支出</span><span style="color: var(--red);">-' + ledger.totalExpense.toFixed(1) + '</span>';
+      financeReportHtml += '</div></div>';
+    }
+
+    // 净变化
+    var netColor = ledger.netChange >= 0 ? 'var(--green)' : 'var(--red)';
+    financeReportHtml += '<div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-2); border-radius: 6px; font-weight: 700; font-size: 1.1rem;">';
+    financeReportHtml += '<span>净变化</span>';
+    financeReportHtml += '<span style="color: ' + netColor + ';">' + (ledger.netChange >= 0 ? '+' : '') + ledger.netChange.toFixed(1) + '</span>';
+    financeReportHtml += '</div>';
+
+    financeReportHtml += '</div></div>';
+  }
+
+  // 宰辅进言（AI建议）——区分忠臣建议（冗长说教）和佞臣建议（诱人简洁）
+  var suggestHtml='';
+  if(suggestions&&suggestions.length>0){
+    suggestHtml='<div class="turn-section"><h3>\uD83D\uDCA1 \u5BB0\u8F85\u8FDB\u8A00</h3><div style="display:flex;flex-direction:column;gap:0.4rem;">';
+    // 检测建议是否是"佞臣式"（含关键诱惑词汇）
+    var _temptKeywords = /宴饮|行乐|灵丹|行宫|选秀|淑女|亲征|扬威|享|休憩|犒赏|珍宝/;
+    suggestions.forEach(function(s,i){
+      var _text = typeof s==='string'?s:(s.text||s);
+      var _isSycophant = _temptKeywords.test(_text);
+      var _borderColor = _isSycophant ? 'var(--purple,#9b59b6)' : 'var(--gold-d)';
+      var _labelColor = _isSycophant ? 'var(--purple,#9b59b6)' : 'var(--gold)';
+      var _label = _isSycophant ? '\u8FD1\u81E3' : '\u7B56';
+      suggestHtml+='<div style="padding:0.5rem 0.7rem;background:var(--bg-2);border-radius:6px;border-left:3px solid '+_borderColor+';font-size:0.85rem;color:var(--txt-s);line-height:1.6;cursor:pointer;" onclick="var ta=document.getElementById(\'edict-pol\');if(ta){ta.value+=\''+escHtml(_text).replace(/'/g,"\\'")+'\';toast(\'已采纳\');}" title="点击采纳到诏令">';
+      suggestHtml+='<span style="color:'+_labelColor+';font-size:0.78rem;">'+_label+(i+1)+'</span> ';
+      suggestHtml+=escHtml(_text);
+      suggestHtml+='</div>';
+    });
+    suggestHtml+='<div style="font-size:0.71rem;color:var(--txt-d);text-align:center;margin-top:0.2rem;">\u70B9\u51FB\u5EFA\u8BAE\u53EF\u91C7\u7EB3\u5230\u4E0B\u56DE\u5408\u8BCF\u4EE4</div>';
+    suggestHtml+='</div></div>';
+  }
+
+  // 密报/矛盾情报（玩家可见的信息交叉验证渠道）
+  var intelHtml = '';
+  if (typeof buildInformationCocoon === 'function') {
+    var cocoon = buildInformationCocoon();
+    if (cocoon.length > 0) {
+      intelHtml = '<div class="turn-section"><h3>🕵️ 密报与传闻</h3><div style="font-size:0.78rem;color:var(--txt-d);margin-bottom:0.5rem;">以下信息来源各异，真伪自辨。</div>';
+      cocoon.forEach(function(c) {
+        intelHtml += '<div style="margin-bottom:0.6rem;padding:0.5rem;background:var(--bg-2);border-radius:6px;">';
+        intelHtml += '<div style="font-size:0.82rem;color:var(--txt-s);line-height:1.6;"><span style="color:var(--gold-d);">[官]</span> ' + escHtml(c.official) + '</div>';
+        intelHtml += '<div style="font-size:0.82rem;color:var(--red);line-height:1.6;margin-top:0.2rem;border-top:1px dashed var(--bg-4);padding-top:0.2rem;"><span style="color:var(--red);">[密]</span> ' + escHtml(c.intel) + '</div>';
+        intelHtml += '</div>';
+      });
+      intelHtml += '</div>';
+    }
+  }
+
+  // 构建主角状态区——分离政治处境与内心独白
+  var statusHtml = '';
+  if (playerStatus || playerInner) {
+    statusHtml = '<div class="turn-section"><h3>\uD83D\uDC64 \u89D2\u8272\u72B6\u6001</h3>';
+    if (playerStatus) statusHtml += '<div class="narr-status" style="border-left:3px solid var(--gold-d);padding-left:0.6rem;margin-bottom:0.5rem;"><span style="font-size:0.72rem;color:var(--gold-d);letter-spacing:0.1em;">\u653F\u5C40</span><div>' + escHtml(playerStatus) + '</div></div>';
+    if (playerInner) statusHtml += '<div class="narr-status" style="border-left:3px solid var(--purple,#9b59b6);padding-left:0.6rem;font-style:italic;color:var(--txt-s);"><span style="font-size:0.72rem;color:var(--purple,#9b59b6);letter-spacing:0.1em;">\u5185\u7701</span><div>' + escHtml(playerInner) + '</div></div>';
+    statusHtml += '</div>';
+  }
+  // 昏君活动风味文本
+  var tyrantHtml = '';
+  if (tyrantResult && tyrantResult.flavorTexts && tyrantResult.flavorTexts.length > 0) {
+    tyrantHtml = '<div class="turn-section"><h3>\uD83C\uDF77 \u5E1D\u738B\u79C1\u884C</h3>';
+    tyrantResult.flavorTexts.forEach(function(ft) {
+      tyrantHtml += '<div class="tyrant-flavor"><div class="tyrant-flavor-title">' + ft.icon + ' ' + escHtml(ft.name) + '</div>' + escHtml(ft.text) + '</div>';
+    });
+    // 效果摘要
+    var efxParts = [];
+    if (tyrantResult.totalStress !== 0) efxParts.push('<span style="color:var(--green);">\u538B\u529B' + tyrantResult.totalStress + '</span>');
+    if (tyrantResult.costLog.length > 0) efxParts.push('<span style="color:var(--red);">' + tyrantResult.costLog.join(' ') + '</span>');
+    if (tyrantResult.gainLog.length > 0) efxParts.push('<span style="color:var(--green);">' + tyrantResult.gainLog.join(' ') + '</span>');
+    if (efxParts.length > 0) {
+      tyrantHtml += '<div style="font-size:0.72rem;text-align:center;color:var(--txt-d);margin-top:0.3rem;">' + efxParts.join(' | ') + '</div>';
+    }
+
+    // 朝野反应——根据当前NPC状态生成动态反应文本
+    var dec = GM._tyrantDecadence || 0;
+    if (dec > 15 && GM.chars) {
+      var _reactions = [];
+      GM.chars.forEach(function(c) {
+        if (c.alive === false || c.isPlayer) return;
+        var loy = c.loyalty || 50;
+        var amb = c.ambition || 50;
+        if (loy > 80 && amb < 50 && dec > 30) {
+          _reactions.push({name: c.name, type: 'loyal', text: '\u53F9\u606F\u4E0D\u5DF2\uFF0C\u6B32\u8FDB\u8C0F\u53C8\u6050\u89E6\u6012\u5929\u5A01'});
+        } else if (amb > 75 && loy < 40) {
+          _reactions.push({name: c.name, type: 'schemer', text: '\u6697\u4E2D\u7A83\u559C\uFF0C\u89C9\u5F97\u673A\u4F1A\u6765\u4E86'});
+        } else if (loy > 70 && amb > 60 && dec > 40) {
+          _reactions.push({name: c.name, type: 'sycophant', text: '\u5949\u4E0A\u73CD\u5B9D\uFF0C\u5949\u627F\u5723\u610F\uFF0C\u8BF7\u8D4F'});
+        }
+      });
+      if (_reactions.length > 0) {
+        tyrantHtml += '<div style="margin-top:0.4rem;padding:0.3rem 0.5rem;background:var(--bg-2);border-radius:6px;font-size:0.75rem;">';
+        tyrantHtml += '<div style="color:var(--txt-d);margin-bottom:0.2rem;">\u671D\u91CE\u53CD\u5E94</div>';
+        _reactions.forEach(function(r) {
+          var col = r.type === 'loyal' ? 'var(--blue)' : r.type === 'schemer' ? 'var(--red)' : 'var(--gold-d)';
+          var icon = r.type === 'loyal' ? '\uD83D\uDE1F' : r.type === 'schemer' ? '\uD83D\uDE08' : '\uD83E\uDD11';
+          tyrantHtml += '<div style="color:' + col + ';">' + icon + ' <b>' + escHtml(r.name) + '</b>：' + r.text + '</div>';
+        });
+        tyrantHtml += '</div>';
+      }
+    }
+
+    // 叙事性里程碑——基于历史次数而非数值，让玩家通过故事感受
+    var _histLen = GM._tyrantHistory ? GM._tyrantHistory.length : 0;
+    var _milestones = [
+      {count: 2, text: '\u4F60\u89C9\u5F97\u8FD9\u6837\u7684\u65E5\u5B50\u4E5F\u4E0D\u9519\u3002\u6BD5\u7ADF\uFF0C\u5E1D\u738B\u4E5F\u662F\u4EBA\u5440\u3002'},
+      {count: 5, text: '\u5185\u5F85\u60C4\u60C4\u5730\u8BF4\uFF0C\u6709\u51E0\u4F4D\u8001\u81E3\u5728\u6BBF\u5916\u7B49\u4E86\u5F88\u4E45\u3002\u4F60\u6325\u6325\u624B\uFF1A\u660E\u5929\u518D\u8BF4\u3002'},
+      {count: 10, text: '\u6628\u591C\u68A6\u89C1\u7236\u7687\u5728\u9F99\u6900\u4E0A\u770B\u7740\u4F60\uFF0C\u9762\u65E0\u8868\u60C5\u3002\u9192\u6765\u540E\uFF0C\u4F60\u559D\u4E86\u4E00\u676F\u9152\uFF0C\u5F88\u5FEB\u5C31\u5FD8\u4E86\u3002'},
+      {count: 15, text: '\u4ECA\u5929\u4E0A\u671D\u65F6\uFF0C\u5927\u6BBF\u4E0A\u975E\u5E38\u5B89\u9759\u3002\u6CA1\u6709\u4EBA\u8FDB\u8C0F\u4E86\u3002\u4F60\u89C9\u5F97\u8FD9\u79CD\u5B89\u9759\u5F88\u8212\u670D\u3002'}
+    ];
+    _milestones.forEach(function(ms) {
+      if (_histLen === ms.count) {
+        tyrantHtml += '<div style="margin-top:0.4rem;padding:0.5rem;background:linear-gradient(135deg,rgba(142,68,173,0.08),rgba(44,62,80,0.1));border-radius:8px;font-size:0.82rem;color:var(--txt-s);text-align:center;line-height:1.6;font-style:italic;">' + ms.text + '</div>';
+      }
+    });
+
+    tyrantHtml += '</div>';
+  }
+
+  // E8: 群臣动向——分组可视化
+  var npcActHtml = '';
+  if (GM.evtLog) {
+    var _npcEvts = GM.evtLog.filter(function(e) { return e.type === 'NPC\u81EA\u4E3B' && e.turn === GM.turn - 1; });
+    if (_npcEvts.length > 0) {
+      // 按类别分组
+      var _actCategories = [
+        { key: 'political', label: '\u671D\u653F', icon: '\uD83C\uDFDB\uFE0F', color: 'var(--gold)', pattern: /奏|谏|弹劾|上书|请|议|朝|官/ },
+        { key: 'military', label: '\u519B\u4E8B', icon: '\u2694\uFE0F', color: 'var(--red)', pattern: /军|兵|战|攻|守|练|征|讨/ },
+        { key: 'social', label: '\u4EA4\u9645', icon: '\uD83E\uDD1D', color: 'var(--celadon-400,#66bb6a)', pattern: /结|交|拜|宴|盟|联|访/ },
+        { key: 'scheme', label: '\u8C0B\u7565', icon: '\uD83D\uDD75', color: 'var(--indigo-400,#7986cb)', pattern: /密|暗|谋|阴|贿|收买|拉拢/ },
+        { key: 'other', label: '\u5176\u4ED6', icon: '\uD83D\uDCCC', color: 'var(--txt-d)', pattern: /.*/ }
+      ];
+      var _grouped = {};
+      _npcEvts.forEach(function(e) {
+        var cat = 'other';
+        for (var ci = 0; ci < _actCategories.length - 1; ci++) {
+          if (_actCategories[ci].pattern.test(e.text)) { cat = _actCategories[ci].key; break; }
+        }
+        if (!_grouped[cat]) _grouped[cat] = [];
+        _grouped[cat].push(e);
+      });
+      npcActHtml = '<div class="turn-section"><h3>\uD83C\uDFAD \u7FA4\u81E3\u52A8\u5411</h3>';
+      _actCategories.forEach(function(cat) {
+        var items = _grouped[cat.key];
+        if (!items || items.length === 0) return;
+        npcActHtml += '<div style="margin-bottom:0.5rem;"><div style="font-size:0.72rem;color:' + cat.color + ';font-weight:700;margin-bottom:0.2rem;">' + cat.icon + ' ' + cat.label + ' (' + items.length + ')</div>';
+        items.forEach(function(e) {
+          npcActHtml += '<div style="padding:0.3rem 0.5rem;margin-bottom:0.2rem;background:var(--bg-2);border-radius:6px;font-size:0.8rem;color:var(--txt-s);line-height:1.5;border-left:2px solid ' + cat.color + ';">' + escHtml(e.text) + '</div>';
+        });
+        if (items.length > 4) npcActHtml += '<div style="font-size:0.7rem;color:var(--txt-d);padding-left:0.5rem;">...及另外' + (items.length - 4) + '项</div>';
+        npcActHtml += '</div>';
+      });
+      npcActHtml += '</div>';
+    }
+  }
+
+  // 人物变动摘要——忠诚/野心/压力/官职/所在地/疾病变化
+  var charChangeHtml = '';
+  if (GM.turnChanges && GM.turnChanges.characters && GM.turnChanges.characters.length > 0) {
+    charChangeHtml = '<div class="turn-section"><h3>\uD83D\uDC64 \u4EBA\u7269\u53D8\u52A8</h3>';
+    GM.turnChanges.characters.forEach(function(cc) {
+      if (!cc.changes || cc.changes.length === 0) return;
+      cc.changes.forEach(function(ch) {
+        var _fNameMap = {
+          'loyalty':'\u5FE0\u8BDA','ambition':'\u91CE\u5FC3','stress':'\u538B\u529B',
+          'strength':'\u5B9E\u529B','influence':'\u5F71\u54CD',
+          'officialTitle':'\u5B98\u804C','title':'\u8EAB\u4EFD','faction':'\u6240\u5C5E',
+          'location':'\u6240\u5728','alive':'\u5B58\u4EA1','rank':'\u54C1\u7EA7',
+          'health':'\u4F53\u6CC1','illness':'\u75BE\u75C5','ill':'\u75BE\u75C5','disease':'\u75BE\u75C5',
+          'mourning':'\u5B88\u4E27','retired':'\u81F4\u4ED5','exile':'\u6D41\u653E',
+          'integrity':'\u5EC9\u8282','morale':'\u58EB\u6C14','intelligence':'\u667A',
+          'administration':'\u653F','military':'\u519B','scholarship':'\u5B66',
+          'fame':'\u540D\u671B','clanPrestige':'\u65CF\u671B'
+        };
+        var _fName = _fNameMap[ch.field] || ch.field;
+        // 数值字段·用 ↑↓·字符串字段·用 →
+        var _isNum = typeof ch.oldValue === 'number' && typeof ch.newValue === 'number';
+        var _arrow = _isNum ? (ch.newValue > ch.oldValue ? '\u2191' : '\u2193') : '\u2192';
+        var _col = 'var(--txt-s)';
+        if (_isNum) {
+          if (ch.field === 'loyalty') _col = ch.newValue > ch.oldValue ? 'var(--green)' : 'var(--red)';
+          else if (ch.field === 'stress') _col = ch.newValue > ch.oldValue ? 'var(--red)' : 'var(--green)';
+        } else if (ch.field === 'alive') _col = ch.newValue === false ? 'var(--red)' : 'var(--green)';
+        else if (ch.field === 'illness' || ch.field === 'ill' || ch.field === 'disease') _col = 'var(--amber-400,#f59e0b)';
+        // 布尔/特殊·可读化
+        var _ov = ch.oldValue, _nv = ch.newValue;
+        if (ch.field === 'alive') { _ov = _ov === false ? '\u6545' : '\u5728'; _nv = _nv === false ? '\u6545' : '\u5728'; }
+        if (typeof _ov === 'boolean') _ov = _ov ? '\u662F' : '\u5426';
+        if (typeof _nv === 'boolean') _nv = _nv ? '\u662F' : '\u5426';
+        if (_ov === undefined || _ov === null || _ov === '') _ov = '\uFF08\u65E0\uFF09';
+        if (_nv === undefined || _nv === null || _nv === '') _nv = '\uFF08\u65E0\uFF09';
+        charChangeHtml += '<div style="font-size:0.78rem;display:flex;justify-content:space-between;padding:0.15rem 0;border-bottom:1px solid var(--bg-4);">';
+        charChangeHtml += '<span>' + escHtml(cc.name) + ' ' + _fName + '</span>';
+        charChangeHtml += '<span style="color:' + _col + ';">' + escHtml(String(_ov)) + _arrow + escHtml(String(_nv)) + (ch.reason ? ' (' + escHtml(ch.reason) + ')' : '') + '</span></div>';
+      });
+    });
+    charChangeHtml += '</div>';
+  }
+
+  // ── 势力动态（faction_events）展示 ──
+  var factionEvtHtml = '';
+  if (GM.factionEvents && GM.factionEvents.length > 0) {
+    var _recentFE = GM.factionEvents.filter(function(e) { return e.turn === GM.turn; });
+    if (_recentFE.length > 0) {
+      factionEvtHtml = '<div class="turn-section"><h3>\u2694\uFE0F \u5929\u4E0B\u52BF\u529B\u52A8\u6001</h3><div style="font-size:0.75rem;color:var(--txt-d);margin-bottom:0.3rem;">\u672C\u56DE\u5408\u5404\u65B9\u52BF\u529B\u7684\u81EA\u4E3B\u884C\u52A8</div>';
+      _recentFE.forEach(function(fe) {
+        factionEvtHtml += '<div style="padding:0.35rem 0.6rem;margin-bottom:0.3rem;background:rgba(138,109,27,0.06);border-radius:6px;font-size:0.8rem;border-left:3px solid var(--gold-d);">';
+        factionEvtHtml += '<span style="color:var(--gold);font-weight:700;">' + escHtml(fe.actor) + '</span>';
+        if (fe.target) factionEvtHtml += ' \u2192 <span style="color:var(--txt-s);">' + escHtml(fe.target) + '</span>';
+        factionEvtHtml += '\uFF1A' + escHtml(fe.action);
+        if (fe.result) factionEvtHtml += ' <span style="color:var(--txt-d);">(' + escHtml(fe.result) + ')</span>';
+        factionEvtHtml += '</div>';
+      });
+      factionEvtHtml += '</div>';
+    }
+  }
+
+  // ── 势力/党派/阶层/军事变动汇总 ──
+  var systemChangeHtml = '';
+  var _scParts = [];
+  // 势力变动
+  if (GM.turnChanges && GM.turnChanges.factions && GM.turnChanges.factions.length > 0) {
+    GM.turnChanges.factions.forEach(function(fc) {
+      fc.changes.forEach(function(ch) {
+        var _a = ch.newValue > ch.oldValue ? '\u2191' : '\u2193';
+        _scParts.push('<span style="color:var(--gold);">\u2694' + fc.name + '</span> ' + ch.field + ' ' + ch.oldValue + _a + ch.newValue);
+      });
+    });
+  }
+  // 党派变动
+  if (GM.turnChanges && GM.turnChanges.parties && GM.turnChanges.parties.length > 0) {
+    GM.turnChanges.parties.forEach(function(pc) {
+      pc.changes.forEach(function(ch) {
+        var _a = ch.newValue > ch.oldValue ? '\u2191' : '\u2193';
+        _scParts.push('<span style="color:var(--purple,#8a5cf5);">\uD83C\uDFDB' + pc.name + '</span> ' + ch.field + ' ' + ch.oldValue + _a + ch.newValue);
+      });
+    });
+  }
+  // 阶层变动
+  if (GM.turnChanges && GM.turnChanges.classes && GM.turnChanges.classes.length > 0) {
+    GM.turnChanges.classes.forEach(function(cc) {
+      cc.changes.forEach(function(ch) {
+        var _fN = ch.field === 'satisfaction' ? '\u6EE1\u610F' : ch.field === 'influence' ? '\u5F71\u54CD' : ch.field;
+        var _a = ch.newValue > ch.oldValue ? '\u2191' : '\u2193';
+        _scParts.push('<span style="color:var(--blue);">\uD83D\uDC51' + cc.name + '</span> ' + _fN + ' ' + ch.oldValue + _a + ch.newValue);
+      });
+    });
+  }
+  // 军事变动
+  if (GM.turnChanges && GM.turnChanges.military && GM.turnChanges.military.length > 0) {
+    GM.turnChanges.military.forEach(function(mc) {
+      mc.changes.forEach(function(ch) {
+        var _fN = ch.field === 'soldiers' ? '\u5175\u529B' : ch.field === 'morale' ? '\u58EB\u6C14' : ch.field;
+        var _a = ch.newValue > ch.oldValue ? '\u2191' : '\u2193';
+        var _col = ch.field === 'soldiers' && ch.newValue < ch.oldValue ? 'var(--red)' : 'var(--txt-s)';
+        _scParts.push('<span style="color:' + _col + ';">\u2694\uFE0F' + mc.name + '</span> ' + _fN + ' ' + ch.oldValue + _a + ch.newValue);
+      });
+    });
+  }
+  if (_scParts.length > 0) {
+    systemChangeHtml = '<div class="turn-section"><h3>\uD83D\uDCCA \u5929\u4E0B\u53D8\u52A8</h3>';
+    systemChangeHtml += '<div style="display:flex;flex-direction:column;gap:0.2rem;">';
+    _scParts.forEach(function(p) {
+      systemChangeHtml += '<div style="font-size:0.75rem;padding:0.15rem 0.4rem;border-bottom:1px solid var(--bg-4);">' + p + '</div>';
+    });
+    systemChangeHtml += '</div></div>';
+  }
+
+  // 世界态变更摘要：此刻 turnChanges 已满（reset→AI→apply 之后），压成纯文本存住，供下回合喂 AI
+  try { GM._lastTurnDigest = buildWorldChangeDigest(); }
+  catch (_wcdE) { GM._lastTurnDigest = ''; if (window.TM && TM.errors) TM.errors.capture(_wcdE, 'endturn.worldChangeDigest'); }
+
+  // 综合局势速览——关键指标变化条
+  // 4.1: 回合要点摘要
+  var highlightHtml = '';
+  var _highlights = [];
+  // 忠诚变动最大的角色
+  if (GM.turnChanges && GM.turnChanges.characters) {
+    var _maxLoyD = 0, _maxLoyInfo = null;
+    GM.turnChanges.characters.forEach(function(cc) {
+      cc.changes.forEach(function(ch) {
+        if (ch.field === 'loyalty' && Math.abs(ch.newValue - ch.oldValue) > _maxLoyD) {
+          _maxLoyD = Math.abs(ch.newValue - ch.oldValue); _maxLoyInfo = { name: cc.name, d: ch.newValue - ch.oldValue, nv: ch.newValue };
+        }
+      });
+    });
+    if (_maxLoyInfo && _maxLoyD >= 5) _highlights.push({ icon: '\uD83D\uDC64', text: _maxLoyInfo.name + ' \u5FE0\u8BDA' + (_maxLoyInfo.d > 0 ? '+' : '') + _maxLoyInfo.d + '(\u2192' + _maxLoyInfo.nv + ')', color: _maxLoyInfo.d > 0 ? 'var(--green)' : 'var(--red)' });
+  }
+  // 实力变化最大的势力
+  if (GM.turnChanges && GM.turnChanges.factions) {
+    var _maxStrD = 0, _maxStrInfo = null;
+    GM.turnChanges.factions.forEach(function(fc) {
+      fc.changes.forEach(function(ch) {
+        if (ch.field === 'strength' && Math.abs(ch.newValue - ch.oldValue) > _maxStrD) {
+          _maxStrD = Math.abs(ch.newValue - ch.oldValue); _maxStrInfo = { name: fc.name, d: ch.newValue - ch.oldValue };
+        }
+      });
+    });
+    if (_maxStrInfo && _maxStrD >= 3) _highlights.push({ icon: '\u2694', text: _maxStrInfo.name + ' \u5B9E\u529B' + (_maxStrInfo.d > 0 ? '+' : '') + _maxStrInfo.d, color: _maxStrInfo.d > 0 ? 'var(--green)' : 'var(--red)' });
+  }
+  // 新伤疤事件
+  if (GM.chars) {
+    GM.chars.forEach(function(c) {
+      if (c._scars && c._scars.length > 0) {
+        var newest = c._scars[c._scars.length - 1];
+        if (newest.turn === GM.turn - 1) _highlights.push({ icon: '\u2764', text: c.name + '\uFF1A' + newest.event, color: 'var(--vermillion-400)' });
+      }
+    });
+  }
+  // 新阴谋
+  if (GM.activeSchemes) {
+    GM.activeSchemes.forEach(function(s) { if (s.startTurn === GM.turn - 1) _highlights.push({ icon: '\uD83D\uDD75', text: s.schemer + '\u5BC6\u8C0B' + (s.target ? '\u9488\u5BF9' + s.target : ''), color: 'var(--indigo-400)' }); });
+  }
+  // 最重要NPC行动（从evtLog中读取，p1不在此作用域内）
+  if (GM.evtLog) {
+    var _topNpcEvt = GM.evtLog.filter(function(e){return e.type==='\u004E\u0050\u0043\u81EA\u4E3B'&&e.turn===GM.turn-1;})[0];
+    if (_topNpcEvt) _highlights.push({ icon: '\uD83D\uDCCC', text: escHtml(_topNpcEvt.text||''), color: 'var(--gold-400)' });
+  }
+  if (_highlights.length > 0) {
+    highlightHtml = '<div style="margin-bottom:0.8rem;"><div style="font-size:0.78rem;color:var(--gold);font-weight:700;margin-bottom:0.3rem;">\u672C\u56DE\u5408\u8981\u70B9</div>';
+    _highlights.forEach(function(h) {
+      highlightHtml += '<div style="display:flex;align-items:center;gap:0.4rem;padding:0.25rem 0.5rem;background:var(--bg-2);border-left:3px solid ' + h.color + ';border-radius:4px;margin-bottom:0.2rem;font-size:0.78rem;">';
+      highlightHtml += '<span>' + h.icon + '</span><span style="color:' + h.color + ';">' + escHtml(h.text) + '</span></div>';
+    });
+    highlightHtml += '</div>';
+  }
+
+  var overviewHtml = '';
+  var _ovItems = [];
+  // 从oldVars和当前vars计算变化
+  Object.entries(GM.vars).forEach(function(e) {
+    var d = e[1].value - (oldVars[e[0]] || 0);
+    if (Math.abs(d) >= 1) {
+      _ovItems.push({name: e[0], val: e[1].value, delta: d});
+    }
+  });
+  if (_ovItems.length > 0) {
+    overviewHtml = '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.6rem;padding:0.4rem;background:var(--bg-2);border-radius:8px;">';
+    _ovItems.forEach(function(it) {
+      var col = it.delta > 0 ? 'var(--green)' : 'var(--red)';
+      overviewHtml += '<span style="font-size:0.72rem;padding:0.15rem 0.4rem;background:var(--bg-3);border-radius:10px;">' + it.name + ' <span style="color:' + col + ';">' + (it.delta > 0 ? '+' : '') + Math.round(it.delta) + '</span></span>';
+    });
+    overviewHtml += '</div>';
+  }
+
+  // 4.2: 信息源可视化渲染
+  // E7: 时政记段落结构化——先分段再逐段渲染
+  var _szjParagraphs = shizhengji.split(/\n{2,}/).filter(function(p){ return p.trim().length > 0; });
+  if (_szjParagraphs.length <= 1) _szjParagraphs = shizhengji.split(/\n/).filter(function(p){ return p.trim().length > 0; });
+  // 段落主题检测
+  var _szjTopicMap = [
+    { pattern: /军|战|兵|攻|守|伐|阵|围城|败|胜|征/, icon: '\u2694\uFE0F', label: '军事' },
+    { pattern: /税|钱|粮|财|岁入|赋|商|市|盐铁/, icon: '\uD83D\uDCB0', label: '财政' },
+    { pattern: /民|百姓|流民|饥|荒|疫|灾|旱|涝/, icon: '\uD83C\uDFE0', label: '民生' },
+    { pattern: /臣|官|吏|朝|奏|谏|党|弹劾|铨选/, icon: '\uD83C\uDFDB\uFE0F', label: '朝政' },
+    { pattern: /外|番|使|夷|和亲|朝贡|边|藩/, icon: '\uD83C\uDF0D', label: '外交' },
+    { pattern: /后|妃|太子|皇子|内宫|宗室/, icon: '\uD83D\uDC51', label: '宫廷' }
+  ];
+  var _renderedSzj = _szjParagraphs.map(function(para) {
+    var trimmed = para.trim();
+    var topic = null;
+    for (var ti = 0; ti < _szjTopicMap.length; ti++) {
+      if (_szjTopicMap[ti].pattern.test(trimmed)) { topic = _szjTopicMap[ti]; break; }
+    }
+    var escaped = escHtml(trimmed);
+    // 信息源高亮
+    escaped = escaped.replace(/(\u636E[\u4e00-\u9fff]{1,8}\u594F\u62A5|\u6709\u53F8\u5448\u62A5|[\u4e00-\u9fff]{1,6}\u594F\u79F0)/g, '<span style="color:var(--gold-400);font-weight:bold;">\uD83D\uDCCB$1</span>');
+    escaped = escaped.replace(/(\u5BC6\u63A2[\u4e00-\u9fff]{0,4}\u62A5|\u7EBF\u62A5\u79F0|\u6697\u7EBF[\u4e00-\u9fff]{0,4}|\u5BC6\u67E5)/g, '<span style="color:var(--indigo-400);font-weight:bold;">\uD83D\uDD75$1</span>');
+    escaped = escaped.replace(/(\u574A\u95F4\u4F20[\u4e00-\u9fff]{0,4}|\u6C11\u95F4[\u4e00-\u9fff]{0,4}\u4F20|\u6D41\u8A00\u79F0|\u6709\u4EBA\u4E91)/g, '<span style="color:var(--ink-300);font-style:italic;">\uD83D\uDCAC$1</span>');
+    escaped = escaped.replace(/(\u7ECF\u67E5[\u4e00-\u9fff]{0,4}|\u6838\u5B9E|\u67E5\u660E)/g, '<span style="color:var(--celadon-400);font-weight:bold;">\u2713$1</span>');
+    // E9: 地理标注——高亮行政区划中的地名
+    if (P.adminHierarchy) {
+      var _placeNames = [];
+      Object.keys(P.adminHierarchy).forEach(function(fk) {
+        var fh = P.adminHierarchy[fk];
+        if (fh && fh.divisions) (function _walk(divs) {
+          divs.forEach(function(d) { if (d.name && d.name.length >= 2) _placeNames.push(d.name); if (d.divisions) _walk(d.divisions); });
+        })(fh.divisions);
+      });
+      if (_placeNames.length > 0) {
+        var _placeRe = new RegExp('(' + _placeNames.sort(function(a,b){return b.length-a.length;}).map(function(n){return n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|') + ')', 'g');
+        escaped = escaped.replace(_placeRe, '<span style="color:var(--celadon-400);text-decoration:underline dotted;cursor:help;" title="\u5730\u540D">\uD83D\uDCCD$1</span>');
+      }
+    }
+    // 1.2: 角色名称彩色高亮（按势力f.color着色）
+    var _facColorMap = {};
+    (GM.facs || []).forEach(function(f) { if (f.name && f.color) _facColorMap[f.name] = f.color; });
+    var _playerFac = (P.playerInfo && P.playerInfo.factionName) || '';
+    var _charNames12 = (GM.chars || []).filter(function(c) { return c.alive !== false && c.name && c.name.length >= 2; })
+      .sort(function(a, b) { return b.name.length - a.name.length; });
+    _charNames12.forEach(function(c) {
+      var col = (c.faction === _playerFac) ? 'var(--gold-400)' : (_facColorMap[c.faction] || '#888');
+      var safeN = c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var _safeName = c.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      var _replacement = '<span class="char-link" style="color:' + col + ';" onclick="event.stopPropagation();showCharPopup(\'' + _safeName + '\',event)">' + c.name + '</span>';
+      // 2 字短名做边界检查·前后均为汉字时极可能是子串误抓("周连"在"连日"中)·跳过
+      if (c.name.length === 2) {
+        var _segs = escaped.split(/(<[^>]*>)/);
+        for (var _si = 0; _si < _segs.length; _si++) {
+          if (_segs[_si].charAt(0) === '<') continue;
+          _segs[_si] = _segs[_si].replace(new RegExp(safeN, 'g'), function(_m, _off, _whole) {
+            var prev = _off > 0 ? _whole.charAt(_off - 1) : '';
+            var next = (_off + _m.length < _whole.length) ? _whole.charAt(_off + _m.length) : '';
+            // 前后均为汉字 → 子串误抓·跳过
+            if (/[一-龥]/.test(prev) && /[一-龥]/.test(next)) return _m;
+            return _replacement;
+          });
+        }
+        escaped = _segs.join('');
+      } else {
+        escaped = escaped.replace(new RegExp(safeN, 'g'), _replacement);
+      }
+    });
+    if (topic) {
+      return '<div style="margin-bottom:0.6rem;padding-left:0.5rem;border-left:2px solid var(--gold-d);"><span style="font-size:0.7rem;color:var(--txt-d);margin-right:0.3rem;">' + topic.icon + topic.label + '</span><br>' + escaped + '</div>';
+    }
+    return '<div style="margin-bottom:0.5rem;">' + escaped + '</div>';
+  }).join('');
+
+  // 1.1: 结算效果差值面板
+  var deltaHtml = '';
+  (function() {
+    var cards = [];
+    // 核心指标——从 CORE_METRIC_LABELS 动态读取（由 buildCoreMetricLabels 从编辑器配置构建）
+    var _coreKeys = (typeof CORE_METRIC_LABELS === 'object') ? Object.keys(CORE_METRIC_LABELS) : [];
+    _coreKeys.forEach(function(k) {
+      if (typeof GM[k] !== 'number') return;
+      var nv = Math.round(GM[k]);
+      var prevKey = '_prev_' + k; // 通用快照 key
+      var ov = Math.round((GM[prevKey] !== undefined) ? GM[prevKey] : nv);
+      var d = nv - ov;
+      if (d !== 0) {
+        var label = CORE_METRIC_LABELS[k] || k;
+        // 查编辑器变量定义判断升降好坏（inversed=true表示数值越高越差，如民变/党争）
+        // 剧本隔离根治：优先查当前局 GM.vars(每局权威)·不查 set-once/跨剧本不可靠的 P.variables。
+        var vDef = null;
+        var _varArr = (typeof _tmActiveVars === 'function') ? _tmActiveVars()
+          : (P.variables ? (Array.isArray(P.variables) ? P.variables : (P.variables.base || []).concat(P.variables.other || [])) : []);
+        vDef = _varArr.find(function(v){return v.name===k;});
+        // fallback: 名称中含"变""乱""争""压""腐"等负面词的视为inversed
+        var inversed = (vDef && vDef.inversed) || (!vDef && /变|乱|争|压|腐|threat|strife|unrest|corruption/.test(k));
+        var col = inversed ? (d > 0 ? 'var(--vermillion-400)' : 'var(--celadon-400)') : (d > 0 ? 'var(--celadon-400)' : 'var(--vermillion-400)');
+        cards.push('<span style="color:' + col + ';">' + label + (d > 0 ? '+' : '') + d + '</span>');
+      }
+    });
+    // base变量（绝对值）
+    if (GM.turnChanges && GM.turnChanges.variables) {
+      GM.turnChanges.variables.forEach(function(vc) {
+        if (_coreKeys.indexOf(vc.name) >= 0) return;
+        var d = Math.round((vc.newValue || 0) - (vc.oldValue || 0));
+        if (Math.abs(d) < 1) return;
+        var v = GM.vars[vc.name];
+        var unit = (v && v.unit) || '';
+        var isBase = v && (v.max === undefined || v.max > 1000);
+        var col = d > 0 ? 'var(--celadon-400)' : 'var(--vermillion-400)';
+        cards.push('<span style="color:' + col + ';">' + escHtml(vc.name) + (d > 0 ? '+' : '') + (isBase ? d.toLocaleString() : d) + unit + '</span>');
+      });
+    }
+    // 忠诚变化Top3
+    if (GM.turnChanges && GM.turnChanges.characters) {
+      var loyChanges = [];
+      GM.turnChanges.characters.forEach(function(cc) {
+        cc.changes.forEach(function(ch) {
+          if (ch.field === 'loyalty') loyChanges.push({ name: cc.name, d: Math.round(ch.newValue - ch.oldValue) });
+        });
+      });
+      loyChanges.sort(function(a, b) { return Math.abs(b.d) - Math.abs(a.d); });
+      loyChanges.forEach(function(lc) {
+        if (Math.abs(lc.d) < 2) return;
+        var col = lc.d > 0 ? 'var(--celadon-400)' : 'var(--vermillion-400)';
+        var _dDisp = (typeof _fmtNum1==='function') ? _fmtNum1(lc.d) : lc.d;
+        cards.push('<span style="color:' + col + ';">' + escHtml(lc.name) + '忠' + (lc.d > 0 ? '+' : '') + _dDisp + '</span>');
+      });
+    }
+    if (cards.length > 0) {
+      deltaHtml = '<div style="margin-bottom:0.8rem;padding:0.6rem 0.8rem;background:var(--color-elevated);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);display:flex;flex-wrap:wrap;gap:0.5rem 1rem;font-size:var(--text-sm);font-weight:var(--weight-bold);">'
+        + '<span style="color:var(--color-foreground-muted);font-weight:normal;margin-right:0.3rem;">\u672C\u56DE\u5408</span>' + cards.join(' ') + '</div>';
+    }
+  })();
+
+  // 2.3: 战况可视化——渲染本回合战斗结果
+  var battleVisHtml = '';
+  (function() {
+    var battles = GM._turnBattleResults || [];
+    // 也检查battleHistory中本回合的记录
+    if (battles.length === 0 && GM.battleHistory) {
+      battles = GM.battleHistory.filter(function(b) { return b.turn === GM.turn - 1; });
+    }
+    var hasArmies = Array.isArray(GM.armies) && GM.armies.length > 0;
+    if (battles.length === 0 && !hasArmies) return;
+    function _battleText(v) {
+      return String(v == null ? '' : v).trim();
+    }
+    function _battleSame(a, b) {
+      a = _battleText(a).replace(/\s+/g, '').toLowerCase();
+      b = _battleText(b).replace(/\s+/g, '').toLowerCase();
+      return !!(a && b && a === b);
+    }
+    function _battleArmyCommander(a) {
+      return _battleText(a && (a.commander || a.commanderName || a.general || a.generalName || a.leader || a.leaderName || a.chiefCommander || a.mainGeneral));
+    }
+    function _battleArmyName(a) {
+      return _battleText(a && (a.name || a.army || a.armyName || a.label || a.id || a.armyId));
+    }
+    function _battleFindArmy(row) {
+      if (!Array.isArray(GM.armies)) return null;
+      row = row || {};
+      var refs = [row.armyId, row.id, row.army, row.name, row.armyName, row.ref, row.target].map(_battleText).filter(Boolean);
+      for (var i = 0; i < GM.armies.length; i += 1) {
+        var a = GM.armies[i] || {};
+        var keys = [a.id, a.armyId, a.name, a.army, a.armyName, a.label].map(_battleText).filter(Boolean);
+        if (refs.some(function(r){ return keys.some(function(k){ return _battleSame(r, k); }); })) return a;
+      }
+      var commander = _battleText(row.commander || (row.commanderFate && row.commanderFate.name));
+      if (commander) {
+        for (var j = 0; j < GM.armies.length; j += 1) {
+          if (_battleSame(_battleArmyCommander(GM.armies[j]), commander)) return GM.armies[j];
+        }
+      }
+      return null;
+    }
+    function _battleOutcomeLabel(outcome) {
+      outcome = _battleText(outcome).toLowerCase();
+      if (!outcome) return '';
+      if (outcome === 'killed' || outcome === 'dead') return '主将阵亡';
+      if (outcome === 'captured') return '主将被俘';
+      if (outcome === 'injured') return '主将负伤';
+      if (outcome === 'fled') return '主将遁走';
+      if (outcome === 'surrendered') return '主将降附';
+      if (outcome === 'survived') return '主将无恙';
+      return outcome;
+    }
+    function _battleStateLabel(state) {
+      state = _battleText(state).toLowerCase();
+      if (!state) return '';
+      if (state === 'routed') return '溃退';
+      if (state === 'disbanded') return '溃散';
+      if (state === 'garrison') return '收兵驻守';
+      if (state === 'marching') return '行军转进';
+      if (state === 'sieging') return '围城未解';
+      return state;
+    }
+    function _battleSideLabel(side) {
+      side = _battleText(side).toLowerCase();
+      if (side === 'attacker') return '攻方';
+      if (side === 'defender') return '守方';
+      return '';
+    }
+    function _battleInferFate(row, liveArmy) {
+      row = row || {};
+      var explicit = _battleText(row.fate || row.destiny || row.result || row.outcome);
+      if (explicit) return explicit;
+      var cf = row.commanderFate || (liveArmy && liveArmy.commanderFate ? { outcome: liveArmy.commanderFate } : null);
+      var cfLabel = cf && _battleOutcomeLabel(cf.outcome || cf.result || cf.fate);
+      var stateLabel = _battleStateLabel(row.state || row.stateAfter || (liveArmy && liveArmy.state));
+      var loss = Number(row.casualties != null ? row.casualties : (row.loss != null ? row.loss : row.soldiersLost));
+      if (!isFinite(loss)) loss = 0;
+      if (stateLabel && cfLabel) return stateLabel + ' · ' + cfLabel;
+      if (stateLabel) return stateLabel;
+      if (cfLabel) return cfLabel;
+      if (row.routed || (liveArmy && liveArmy.routed)) return '溃退';
+      if (row.disbanded || (liveArmy && liveArmy.disbanded)) return '溃散';
+      if (loss > 0) return '受创';
+      var side = _battleText(row.side).toLowerCase();
+      var faction = _battleText(row.faction || row.owner || (liveArmy && (liveArmy.faction || liveArmy.owner)));
+      if (faction && _battleSame(faction, b.winner || b.winnerFactionId || b.winnerFaction)) return '胜后保全';
+      if (faction && _battleSame(faction, b.loser || b.loserFactionId || b.loserFaction)) return '败后整顿';
+      if (side === 'attacker' || side === 'defender') return _battleSideLabel(side) + '保全';
+      return '在阵';
+    }
+    function _battleAttribution(row, liveArmy) {
+      row = row || {};
+      var v = _battleText(row.attribution || row.cause || row.reason || row.source);
+      if (v) return v;
+      if (row.commanderFate || (liveArmy && liveArmy.commanderFate)) return 'commander';
+      if (liveArmy && (liveArmy.owner || liveArmy.faction)) return 'state';
+      return row.side ? row.side : 'state';
+    }
+
+    var _sectTitle = battles.length > 0 ? '\u2694\uFE0F \u6218\u51B5' : '\u2694\uFE0F \u5175\u5907';
+    battleVisHtml = '<div class="turn-section"><h3>' + _sectTitle + '</h3>';
+    battles.forEach(function(b) {
+      var atkTotal = b.attackerSoldiers || 1;
+      var defTotal = b.defenderSoldiers || 1;
+      var maxSoldiers = Math.max(atkTotal, defTotal);
+      var atkPct = Math.round(atkTotal / maxSoldiers * 100);
+      var defPct = Math.round(defTotal / maxSoldiers * 100);
+      var atkLossPct = Math.round((b.attackerLoss || 0) / Math.max(atkTotal, 1) * 100);
+      var defLossPct = Math.round((b.defenderLoss || 0) / Math.max(defTotal, 1) * 100);
+
+      // 判定颜色
+      var verdictColor = 'var(--gold-400)';
+      var verdictIcon = '\u2694';
+      if (b.verdict === '\u5927\u80DC') { verdictColor = 'var(--celadon-400)'; verdictIcon = '\u2605'; }
+      else if (b.verdict === '\u5C0F\u80DC') { verdictColor = 'var(--celadon-400)'; verdictIcon = '\u2713'; }
+      else if (b.verdict === '\u8D25\u5317') { verdictColor = 'var(--vermillion-400)'; verdictIcon = '\u2717'; }
+      else if (b.verdict === '\u50F5\u6301') { verdictColor = 'var(--amber-400,#f59e0b)'; verdictIcon = '\u2550'; }
+
+      battleVisHtml += '<div class="battle-card">';
+      // 标题行
+      battleVisHtml += '<div class="battle-header"><span class="battle-side atk">' + escHtml(b.attacker || '') + '</span>';
+      battleVisHtml += '<span class="battle-verdict" style="color:' + verdictColor + ';">' + verdictIcon + ' ' + escHtml(b.verdict || '') + '</span>';
+      battleVisHtml += '<span class="battle-side def">' + escHtml(b.defender || '') + '</span></div>';
+
+      // 兵力对比条
+      battleVisHtml += '<div class="battle-bars">';
+      // 攻方
+      battleVisHtml += '<div class="battle-bar-row"><span class="bar-label">\u653B</span>';
+      battleVisHtml += '<div class="bar-track"><div class="bar-fill atk" style="width:' + atkPct + '%;"><div class="bar-loss" style="width:' + atkLossPct + '%;"></div></div></div>';
+      battleVisHtml += '<span class="bar-num">' + (atkTotal >= 10000 ? Math.round(atkTotal / 10000) + '\u4E07' : atkTotal) + '</span></div>';
+      // 守方
+      battleVisHtml += '<div class="battle-bar-row"><span class="bar-label">\u5B88</span>';
+      battleVisHtml += '<div class="bar-track"><div class="bar-fill def" style="width:' + defPct + '%;"><div class="bar-loss" style="width:' + defLossPct + '%;"></div></div></div>';
+      battleVisHtml += '<span class="bar-num">' + (defTotal >= 10000 ? Math.round(defTotal / 10000) + '\u4E07' : defTotal) + '</span></div>';
+      battleVisHtml += '</div>';
+
+      // 伤亡数字
+      battleVisHtml += '<div class="battle-casualties">';
+      battleVisHtml += '<span>\u653B\u65B9\u635F\u5931 <b style="color:var(--vermillion-400);">' + (b.attackerLoss || 0).toLocaleString() + '</b></span>';
+      battleVisHtml += '<span>\u5B88\u65B9\u635F\u5931 <b style="color:var(--vermillion-400);">' + (b.defenderLoss || 0).toLocaleString() + '</b></span>';
+      battleVisHtml += '</div>';
+
+      // 附加信息（地形、季节）
+      var _extras = [];
+      if (b.terrain) _extras.push(escHtml(b.terrain));
+      if (b.season) _extras.push(escHtml(b.season));
+      if (b.fortLevel > 0) _extras.push('\u57CE\u9632Lv' + b.fortLevel);
+      if (_extras.length > 0) {
+        battleVisHtml += '<div class="battle-meta">' + _extras.join(' \u00B7 ') + '</div>';
+      }
+
+      // #5\u00B7affectedArmies expanded details panel (phase 5 slice 2)
+      if (Array.isArray(b.affectedArmies) && b.affectedArmies.length > 0) {
+        battleVisHtml += '<details style="margin-top:8px;padding:6px;background:rgba(0,0,0,0.2);border-radius:4px;">';
+        battleVisHtml += '<summary style="cursor:pointer;font-size:13px;color:var(--gold-300,#c9a96e);">\u8BE6\u60C5\u00B7' + b.affectedArmies.length + ' \u519B\u5377\u5165\u00B7\u6309\u547D\u8FD0/\u5F52\u56E0\u5C55\u5F00</summary>';
+        battleVisHtml += '<table style="width:100%;font-size:12px;margin-top:6px;border-collapse:collapse;">';
+        battleVisHtml += '<tr>';
+        ['\u519B','\u547D\u8FD0','\u635F\u5931','\u5F52\u56E0','\u4E3B\u5C06'].forEach(function(h) {
+          battleVisHtml += '<th style="text-align:left;padding:4px;color:var(--text-dim,#999);font-weight:normal;">' + h + '</th>';
+        });
+        battleVisHtml += '</tr>';
+        b.affectedArmies.forEach(function(army) {
+          army = army || {};
+          var liveArmy = _battleFindArmy(army);
+          var armyName = _battleText(army.name || army.army || army.armyName || army.label) ||
+                         _battleText(liveArmy && (liveArmy.name || liveArmy.army || liveArmy.armyName || liveArmy.label)) ||
+                         _battleArmyName(army) || _battleArmyName(liveArmy) || '未识别军队';
+          var commanderName = _battleText(army.commander || (army.commanderFate && army.commanderFate.name)) || _battleArmyCommander(liveArmy);
+          var fate = _battleInferFate(army, liveArmy);
+          var fateColor = fate.indexOf('\u6E83\u706D') >= 0 ? 'var(--vermillion-500,#dc2626)' :
+                          fate.indexOf('\u6E83') >= 0 ? 'var(--vermillion-400,#ef4444)' :
+                          fate.indexOf('\u4F24') >= 0 ? 'var(--amber-400,#f59e0b)' :
+                          fate.indexOf('\u4FDD') >= 0 || fate.indexOf('\u80DC') >= 0 ? 'var(--celadon-400,#84cc16)' :
+                          'var(--text,#fff)';
+          var attrMap = { commander:'\u4E3B\u5C06', leader:'\u7EDF\u5E05', local:'\u5730\u65B9', throne:'\u5FA1\u8425', banner:'\u65D7\u4E0B', state:'\u56FD\u5BB6' };
+          var attribution = _battleAttribution(army, liveArmy);
+          var attrLabel = attrMap[attribution] || _battleSideLabel(attribution) || attribution || '战况';
+          var attrBg = attribution === 'commander' ? 'rgba(220,80,80,0.2)' :
+                       attribution === 'leader'    ? 'rgba(220,180,80,0.2)' :
+                       attribution === 'local'     ? 'rgba(120,180,120,0.2)' :
+                       attribution === 'throne'    ? 'rgba(220,180,80,0.3)' :
+                       attribution === 'banner'    ? 'rgba(180,120,180,0.2)' :
+                       attribution === 'state'     ? 'rgba(120,120,180,0.2)' : 'rgba(150,150,150,0.2)';
+          var casualty = army.casualties != null ? army.casualties : (army.loss != null ? army.loss : (army.soldiersLost || 0));
+          battleVisHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+          battleVisHtml += '<td style="padding:4px;">' + escHtml(armyName) + '</td>';
+          battleVisHtml += '<td style="padding:4px;color:' + fateColor + ';">' + escHtml(fate || '在阵') + '</td>';
+          battleVisHtml += '<td style="padding:4px;">' + ((Number(casualty) || 0).toLocaleString()) + '</td>';
+          battleVisHtml += '<td style="padding:4px;"><span style="padding:2px 6px;border-radius:3px;font-size:12px;background:' + attrBg + ';">' + escHtml(attrLabel) + '</span></td>';
+          battleVisHtml += '<td style="padding:4px;color:var(--text-dim,#999);">' + escHtml(commanderName || '') + '</td>';
+          battleVisHtml += '</tr>';
+        });
+        battleVisHtml += '</table></details>';
+      }
+
+      battleVisHtml += '</div>';
+    });
+
+    // 多回合战争时间轴
+    if (GM.activeWars && GM.activeWars.length > 0) {
+      var _recentBattles = (GM.battleHistory || []).slice(-20);
+      GM.activeWars.forEach(function(war) {
+        var warBattles = _recentBattles.filter(function(b) {
+          return (b.attackerFaction === war.attacker && b.defenderFaction === war.defender) ||
+                 (b.attackerFaction === war.defender && b.defenderFaction === war.attacker);
+        });
+        if (warBattles.length > 1) {
+          battleVisHtml += '<div class="battle-timeline"><div class="battle-timeline-title">' + escHtml(war.attacker || '') + ' vs ' + escHtml(war.defender || '') + ' \u6218\u5F79\u65F6\u95F4\u7EBF</div>';
+          battleVisHtml += '<div class="battle-timeline-track">';
+          warBattles.forEach(function(wb) {
+            var dot = wb.verdict === '\u5927\u80DC' || wb.verdict === '\u5C0F\u80DC' ? 'win' : wb.verdict === '\u8D25\u5317' ? 'lose' : 'draw';
+            battleVisHtml += '<div class="timeline-dot ' + dot + '" title="T' + wb.turn + ' ' + escHtml(wb.verdict || '') + '"></div>';
+          });
+          battleVisHtml += '</div></div>';
+        }
+      });
+    }
+
+    // #5 b·militarySystems 状态总览·always render if armies exist
+    if (hasArmies) {
+      battleVisHtml += '<details style="margin-top:12px;padding:8px;background:rgba(0,0,0,0.15);border-radius:4px;">';
+      battleVisHtml += '<summary style="cursor:pointer;font-size:13px;color:var(--gold-300,#c9a96e);">militarySystems 总览·' + GM.armies.length + ' 军·风险监控</summary>';
+      battleVisHtml += '<table style="width:100%;font-size:12px;margin-top:6px;border-collapse:collapse;">';
+      battleVisHtml += '<tr>';
+      ['军','势力','统帅','驻地','士气','补给','欠饷','兵变险','状态'].forEach(function(h) {
+        battleVisHtml += '<th style="text-align:left;padding:4px;color:var(--text-dim,#999);font-weight:normal;">' + h + '</th>';
+      });
+      battleVisHtml += '</tr>';
+      // 排序·风险高的优先 (兵变 + 欠饷 + 低补给/士气)
+      var _sortedArmies = GM.armies.slice().sort(function(a, b) {
+        var rA = (a.mutinyRisk || 0) + (a.payArrearsMonths || 0) * 10 + Math.max(0, 50 - (a.morale || 100)) + Math.max(0, 50 - (a.supply || 100));
+        var rB = (b.mutinyRisk || 0) + (b.payArrearsMonths || 0) * 10 + Math.max(0, 50 - (b.morale || 100)) + Math.max(0, 50 - (b.supply || 100));
+        return rB - rA;
+      });
+      _sortedArmies.forEach(function(a) {
+        var moraleColor = (a.morale||100) < 30 ? 'var(--vermillion-400,#ef4444)' : (a.morale||100) < 60 ? 'var(--amber-400,#f59e0b)' : 'var(--celadon-400,#84cc16)';
+        var supplyColor = (a.supply||100) < 30 ? 'var(--vermillion-400,#ef4444)' : (a.supply||100) < 60 ? 'var(--amber-400,#f59e0b)' : 'var(--celadon-400,#84cc16)';
+        var arrearColor = (a.payArrearsMonths||0) >= 3 ? 'var(--vermillion-400,#ef4444)' : (a.payArrearsMonths||0) >= 1 ? 'var(--amber-400,#f59e0b)' : 'var(--text,#fff)';
+        var mutinyColor = (a.mutinyRisk||0) >= 60 ? 'var(--vermillion-500,#dc2626)' : (a.mutinyRisk||0) >= 30 ? 'var(--amber-400,#f59e0b)' : 'var(--text,#fff)';
+        var stateText = a.state === 'marching' ? '行军中' : a.state === 'sieging' ? '围城中' : a.state === 'garrison' ? '驻守' : (a.state || '驻守');
+        battleVisHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+        battleVisHtml += '<td style="padding:4px;">' + escHtml(a.name||'?') + '</td>';
+        battleVisHtml += '<td style="padding:4px;color:var(--text-dim,#999);">' + escHtml(a.faction||a.owner||'未挂旗') + '</td>';
+        battleVisHtml += '<td style="padding:4px;">' + escHtml(a.commander||'') + '</td>';
+        battleVisHtml += '<td style="padding:4px;color:var(--text-dim,#999);">' + escHtml(a.location||'') + (a.state==='marching' && a.destination?'→'+escHtml(a.destination):'') + '</td>';
+        battleVisHtml += '<td style="padding:4px;color:'+moraleColor+';">' + (a.morale||0) + '</td>';
+        battleVisHtml += '<td style="padding:4px;color:'+supplyColor+';">' + (a.supply||0) + '</td>';
+        battleVisHtml += '<td style="padding:4px;color:'+arrearColor+';">' + (a.payArrearsMonths||0) + '月</td>';
+        battleVisHtml += '<td style="padding:4px;color:'+mutinyColor+';font-weight:'+((a.mutinyRisk||0)>=60?'bold':'normal')+';">' + (a.mutinyRisk||0) + '</td>';
+        battleVisHtml += '<td style="padding:4px;color:var(--text-dim,#999);">' + escHtml(stateText) + '</td>';
+        battleVisHtml += '</tr>';
+      });
+      battleVisHtml += '</table>';
+      // 风险警示
+      var _highRisk = _sortedArmies.filter(function(a) { return (a.mutinyRisk||0) >= 60 || (a.payArrearsMonths||0) >= 3; });
+      if (_highRisk.length > 0) {
+        battleVisHtml += '<div style="margin-top:6px;padding:6px;background:rgba(220,80,80,0.15);border-left:3px solid var(--vermillion-500,#dc2626);font-size:12px;color:var(--vermillion-300,#fca5a5);">';
+        battleVisHtml += '⚠ 高危·' + _highRisk.length + ' 军·兵变险≥6成或欠饷≥3月·需及时处置';
+        battleVisHtml += '</div>';
+      }
+      battleVisHtml += '</details>';
+    }
+
+    battleVisHtml += '</div>';
+  })();
+
+  // 2.1: 分层展示——第一层(总结+Delta+要点) 默认展开，第二层(详情) 默认折叠
+  var _summaryText = turnSummary || '';
+  // 若AI未返回turn_summary，从时政记首句自动截取
+  if (!_summaryText && shizhengji) {
+    var _firstSentence = shizhengji.split(/[。！\n]/)[0];
+    _summaryText = _firstSentence || '';
+  }
+  var summaryHtml = '';
+  // 一句话总曰已由弹窗头部 .tr-summary-bar 显示（从 sj.turnSummary 读取），此处不再重复渲染
+
+  // 关键事件标签（战争/死亡/叛乱等醒目标记）
+  var _criticalTags = [];
+  if (GM.activeWars && GM.activeWars.length > 0) _criticalTags.push({label:'战事',color:'var(--vermillion-400)'});
+  if (GM.turnChanges && GM.turnChanges.characters) {
+    var _deathCount = GM.turnChanges.characters.filter(function(cc){ return cc.changes.some(function(ch){ return ch.field==='alive'&&ch.newValue===false; }); }).length;
+    if (_deathCount > 0) _criticalTags.push({label:_deathCount+'人殁',color:'var(--vermillion-400)'});
+  }
+  if (GM.activeSchemes && GM.activeSchemes.length > 0) _criticalTags.push({label:'密谋',color:'var(--indigo-400,#7986cb)'});
+  if (GM.turnChanges && GM.turnChanges.factions) {
+    var _warFE = (GM.factionEvents||[]).filter(function(e){return e.turn===GM.turn&&/战|攻|征/.test(e.action);});
+    if (_warFE.length > 0) _criticalTags.push({label:'势力冲突',color:'var(--red)'});
+  }
+  var criticalHtml = '';
+  // 要闻标签已由弹窗头部 .tr-critical-bar 显示（_trDetectCritical 从 sj 自动侦测），此处不再重复渲染
+
+  // ============================================================
+  // 新五板块结构：①实录 ②时政记 ③数值变化说明 ④人事变动 ⑤后人戏说
+  // ============================================================
+
+  // ① 实录（文言史官体） · 新版 tr-section.shilu + tr-shilu
+  var shiluHtml = '';
+  if (shiluText) {
+    shiluHtml = '<div class="tr-section shilu">'
+      + '<div class="tr-section-hdr"><span class="lab">\u5B9E \u5F55</span><span class="meta">\u8D77\u5C45\u6CE8\u5B98\u5B9E\u5F55 \u00B7 \u6B63\u53F2\u4F53</span></div>'
+      + '<div class="tr-shilu"><div class="tr-shilu-seal">\u53F2\u5B98</div>' + escHtml(shiluText) + '</div>'
+      + '</div>';
+  }
+
+  // ② 时政记 · 新版 tr-section.szj
+  var szjSectionHtml = '';
+  if (shizhengji) {
+    szjSectionHtml = '<div class="tr-section szj">'
+      + '<div class="tr-section-hdr"><span class="lab">\u65F6 \u653F \u8BB0</span><span class="meta">\u671D\u653F\u7EAA\u8981\u4F53</span></div>';
+    if (szjTitle) {
+      szjSectionHtml += '<div class="tr-szj-title">' + escHtml(szjTitle) + '</div>';
+    }
+    szjSectionHtml += '<div class="tr-szj-content">' + _renderedSzj + '</div>';
+    if (szjSummary) {
+      szjSectionHtml += '<div class="tr-szj-summary">' + escHtml(szjSummary) + '</div>';
+    }
+    szjSectionHtml += '</div>';
+  }
+
+  // ③ 数值变化说明（统一渲染）
+  var unifiedChangesHtml = _renderUnifiedChanges(oldVars);
+
+  // ④ 人事变动
+  var personnelHtml = _renderPersonnelChanges(personnelChanges);
+
+  // ⑤ 后人戏说（场景叙事）· 新版 tr-section.houren + tr-houren-box
+  var hourenHtml = '';
+  if (hourenXishuo) {
+    hourenHtml = '<div class="tr-section houren">'
+      + '<div class="tr-section-hdr"><span class="lab">\u540E \u4EBA \u620F \u8BF4</span><span class="meta">\u7A17\u5B98\u91CE\u53F2 \u00B7 \u53C2\u8003\u4E0D\u53EF\u5C3D\u4FE1</span></div>'
+      + '<div class="tr-houren-box">' + escHtml(hourenXishuo) + '</div>'
+      + '</div>';
+  }
+
+  // 第一层（默认展开）：实录 + 一句话总曰 + 关键标签 + 战况
+  // ※ 本回合要点/数值变化（delta/overview/highlight）全部合并到 layer2 的【数值变化说明】，layer1 只保留叙事和标签
+  var layer1Html = shiluHtml + summaryHtml + criticalHtml + battleVisHtml;
+
+  // 御批回听·对玩家本回合诏令的执行问责(aiEdictEfficacyAudit 生成)
+  var efficacyHtml = '';
+  try {
+    var ef = GM._edictEfficacyReport;
+    if (ef && !ef.skipped && Array.isArray(ef.reports) && ef.reports.length > 0) {
+      var efVal = ef.overallEfficacy || 0;
+      var efColor = efVal >= 75 ? 'var(--green,#4a9a4a)' : efVal >= 50 ? 'var(--gold,#c9a84c)' : 'var(--red-s,#b04030)';
+      efficacyHtml = '<div class="tr-efficacy-box" style="margin-top:1.2rem;padding:0.9rem 1rem;background:rgba(201,168,76,0.06);border-left:3px solid var(--gold,#c9a84c);border-radius:4px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">'
+        + '<div style="font-weight:700;color:var(--gold,#c9a84c);font-size:0.95rem;">〔御 批 回 听〕</div>'
+        + '<div style="font-size:0.78rem;color:'+efColor+';">代理强度 ' + efVal + '%'
+        + (ef.efficacyTrend ? ' <span style="color:var(--txt-d);">('+escHtml(ef.efficacyTrend)+')</span>' : '')
+        + '·共 ' + ef.total + ' 条</div>'
+        + '</div>';
+
+      // 六维评分·雷达条显示
+      if (ef.efficacyByDimension) {
+        var dimLabels = { military: '军事', fiscal: '财政', personnel: '人事', diplomatic: '外交', popular: '民心', authority: '皇权' };
+        var dimBars = '';
+        Object.keys(dimLabels).forEach(function(k) {
+          var v = ef.efficacyByDimension[k];
+          if (typeof v !== 'number') return;
+          var bc = v >= 70 ? 'var(--green,#4a9a4a)' : v >= 40 ? 'var(--gold,#c9a84c)' : 'var(--red-s,#b04030)';
+          dimBars += '<div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;">'
+            + '<span style="width:2.6em;color:var(--txt-d);">' + dimLabels[k] + '</span>'
+            + '<div style="flex:1;height:4px;background:rgba(0,0,0,0.2);border-radius:2px;overflow:hidden;"><div style="height:100%;width:'+Math.min(100,Math.max(0,v))+'%;background:'+bc+';"></div></div>'
+            + '<span style="width:2em;text-align:right;color:'+bc+';">' + v + '</span>'
+            + '</div>';
+        });
+        if (dimBars) efficacyHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3rem 0.8rem;margin-bottom:0.6rem;padding:0.4rem 0.6rem;background:rgba(0,0,0,0.12);border-radius:3px;">' + dimBars + '</div>';
+      }
+
+      // 每条诏令
+      ef.reports.forEach(function(r) {
+        var stCfg = {
+          executed: { lbl: '✓ 执行', clr: 'var(--green,#4a9a4a)' },
+          partial: { lbl: '◐ 部分', clr: 'var(--gold,#c9a84c)' },
+          delayed: { lbl: '⏳ 延宕', clr: 'var(--amber,#e0a040)' },
+          ignored: { lbl: '✗ 忽略', clr: 'var(--red-s,#b04030)' }
+        };
+        var s = stCfg[r.status] || { lbl: r.status || '?', clr: 'var(--txt-d)' };
+        efficacyHtml += '<div style="margin-bottom:0.6rem;padding:0.5rem 0.7rem;background:rgba(0,0,0,0.12);border-radius:3px;border-left:2px solid '+s.clr+';font-size:0.8rem;">'
+          + '<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">'
+          + '<span style="color:'+s.clr+';font-weight:600;">' + s.lbl + '</span>'
+          + '<span style="color:var(--txt-d);font-size:0.72rem;">执行度 ' + (r.executionLevel || 0) + '%</span>'
+          + '</div>'
+          + '<div style="color:var(--txt-s);margin-bottom:0.3rem;">' + escHtml(r.content || '') + '</div>';
+        if (r.evidence) efficacyHtml += '<div style="font-size:0.74rem;color:var(--txt-d);line-height:1.5;">依据：' + escHtml(r.evidence) + '</div>';
+        if (r.outcomeShortTerm) efficacyHtml += '<div style="font-size:0.74rem;color:var(--txt-s);margin-top:0.2rem;">近效：' + escHtml(r.outcomeShortTerm) + '</div>';
+        if (r.outcomeLongTerm) efficacyHtml += '<div style="font-size:0.74rem;color:var(--purple-300,#b89ec8);margin-top:0.2rem;">远效：' + escHtml(r.outcomeLongTerm) + '</div>';
+        if (Array.isArray(r.affectedEntities) && r.affectedEntities.length) {
+          efficacyHtml += '<div style="font-size:0.72rem;color:var(--txt-d);margin-top:0.2rem;">波及：' + r.affectedEntities.slice(0,6).map(escHtml).join('·') + '</div>';
+        }
+        if (r.costPaid) efficacyHtml += '<div style="font-size:0.72rem;color:var(--amber,#e0a040);margin-top:0.2rem;">代价：' + escHtml(r.costPaid) + '</div>';
+        if (r.oppositionFaced) efficacyHtml += '<div style="font-size:0.72rem;color:var(--red-s,#b04030);margin-top:0.2rem;">阻力：' + escHtml(r.oppositionFaced) + '</div>';
+        if (Array.isArray(r.linkedEdicts) && r.linkedEdicts.length) {
+          efficacyHtml += '<div style="font-size:0.72rem;color:var(--txt-d);margin-top:0.2rem;">联动：' + r.linkedEdicts.slice(0,3).map(escHtml).join(' + ') + '</div>';
+        }
+        if (r.missed) efficacyHtml += '<div style="font-size:0.74rem;color:'+s.clr+';margin-top:0.2rem;">未落实：' + escHtml(r.missed) + '</div>';
+        if (r.reason && r.status !== 'executed') efficacyHtml += '<div style="font-size:0.74rem;color:var(--txt-d);margin-top:0.2rem;">缘由：' + escHtml(r.reason) + '</div>';
+        if (r.nextAdvice) efficacyHtml += '<div style="font-size:0.74rem;color:var(--gold,#c9a84c);margin-top:0.3rem;">⇒ 下回合建议：' + escHtml(r.nextAdvice) + '</div>';
+        efficacyHtml += '</div>';
+      });
+
+      // AI 自发事件·扩展展示
+      if (Array.isArray(ef.unexpectedEvents) && ef.unexpectedEvents.length > 0) {
+        efficacyHtml += '<div style="margin-top:0.6rem;border-top:1px dashed rgba(255,255,255,0.12);padding-top:0.5rem;">'
+          + '<div style="font-size:0.78rem;color:var(--gold-d,#8c7030);margin-bottom:0.4rem;">【AI 自发事件】</div>';
+        ef.unexpectedEvents.forEach(function(u) {
+          if (typeof u === 'string') {
+            efficacyHtml += '<div style="font-size:0.74rem;color:var(--txt-s);margin-top:0.25rem;padding-left:0.5rem;">· ' + escHtml(u) + '</div>';
+          } else if (u && typeof u === 'object') {
+            var sevColor = u.severity === '危' ? 'var(--red,#c03030)' : u.severity === '重' ? 'var(--red-s,#b04030)' : u.severity === '中' ? 'var(--amber,#e0a040)' : 'var(--txt-s)';
+            efficacyHtml += '<div style="margin-top:0.3rem;padding:0.35rem 0.5rem;background:rgba(0,0,0,0.1);border-radius:3px;font-size:0.74rem;">'
+              + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:0.15rem;">'
+              + (u.severity ? '<span style="color:'+sevColor+';font-weight:600;">['+escHtml(u.severity)+']</span>' : '')
+              + (u.category ? '<span style="color:var(--txt-d);font-size:0.7rem;">'+escHtml(u.category)+'</span>' : '')
+              + '<span style="color:var(--txt-s);font-weight:500;">' + escHtml(u.title || '') + '</span>'
+              + '</div>';
+            if (u.detail) efficacyHtml += '<div style="color:var(--txt-s);font-size:0.72rem;">' + escHtml(u.detail) + '</div>';
+            if (u.triggeredBy) efficacyHtml += '<div style="color:var(--txt-d);font-size:0.7rem;margin-top:0.15rem;">诱因：' + escHtml(u.triggeredBy) + '</div>';
+            if (u.playerCouldHavePrevented) efficacyHtml += '<div style="color:var(--gold,#c9a84c);font-size:0.7rem;margin-top:0.15rem;">可避免：' + escHtml(u.playerCouldHavePrevented) + '</div>';
+            efficacyHtml += '</div>';
+          }
+        });
+        efficacyHtml += '</div>';
+      }
+
+      // 朝野反响
+      if (ef.courtReaction || ef.popularReaction) {
+        efficacyHtml += '<div style="margin-top:0.6rem;padding:0.4rem 0.6rem;background:rgba(142,106,168,0.08);border-radius:3px;font-size:0.74rem;">';
+        efficacyHtml += '<div style="font-size:0.76rem;color:var(--purple-300,#b89ec8);margin-bottom:0.3rem;font-weight:600;">【朝野反响】</div>';
+        if (ef.courtReaction) {
+          var cr = ef.courtReaction;
+          if (cr.clearFaction) efficacyHtml += '<div style="margin-top:0.2rem;">· <span style="color:var(--green,#4a9a4a);">清流</span>：' + escHtml(cr.clearFaction) + '</div>';
+          if (cr.eunuchFaction) efficacyHtml += '<div style="margin-top:0.2rem;">· <span style="color:var(--red-s,#b04030);">当权/阉党</span>：' + escHtml(cr.eunuchFaction) + '</div>';
+          if (cr.neutralFaction) efficacyHtml += '<div style="margin-top:0.2rem;">· <span style="color:var(--txt-s);">中立</span>：' + escHtml(cr.neutralFaction) + '</div>';
+        }
+        if (ef.popularReaction) efficacyHtml += '<div style="margin-top:0.3rem;color:var(--amber,#e0a040);">· 民间/市井：' + escHtml(ef.popularReaction) + '</div>';
+        efficacyHtml += '</div>';
+      }
+
+      // 持续阻力汇总
+      if (Array.isArray(ef.oppositionSummary) && ef.oppositionSummary.length > 0) {
+        efficacyHtml += '<div style="margin-top:0.4rem;padding:0.3rem 0.6rem;background:rgba(176,64,48,0.08);border-left:2px solid var(--red-s,#b04030);border-radius:2px;font-size:0.74rem;color:var(--red-s,#b04030);">'
+          + '本回合主要阻力：' + ef.oppositionSummary.slice(0,5).map(escHtml).join('·')
+          + '</div>';
+      }
+
+      // 战略洞见
+      if (ef.strategicInsight) {
+        efficacyHtml += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(74,154,74,0.08);border-left:2px solid var(--green,#4a9a4a);border-radius:2px;font-size:0.76rem;color:var(--green,#4a9a4a);">'
+          + '📜 御前战略：' + escHtml(ef.strategicInsight) + '</div>';
+      }
+
+      // 下回合首要
+      if (ef.topPriority) {
+        efficacyHtml += '<div style="margin-top:0.4rem;padding:0.4rem 0.6rem;background:rgba(201,168,76,0.15);border-radius:3px;font-size:0.78rem;color:var(--gold,#c9a84c);">'
+          + '⚡ 下回合首要：' + escHtml(ef.topPriority) + '</div>';
+      }
+      efficacyHtml += '</div>';
+    }
+  } catch(_efHE) { console.warn('[shiji] 御批回听渲染失败', _efHE); efficacyHtml = ''; }
+
+  // 廷议追责回响·前议(3 回合前)到期议决之复盘·与御批回听同性质·紧随其后
+  var tinyiReviewHtml = '';
+  try {
+    var _ty3Reviews = (GM._turnReport || []).filter(function(r){
+      return r && r.type === 'tinyi_review' && r.turn === (GM.turn - 1);
+    });
+    if (_ty3Reviews.length > 0) {
+      tinyiReviewHtml = '<div class="tr-tinyi-review-box" style="margin-top:1.2rem;padding:0.9rem 1rem;background:rgba(176,90,40,0.06);border-left:3px solid var(--gold-d,#8c7030);border-radius:4px;">'
+        + '<div style="font-weight:700;color:var(--gold,#c9a84c);font-size:0.95rem;margin-bottom:0.6rem;">〔前 议 追 责·三 回 前 诏 命 回 响〕<span style="font-size:0.72rem;color:var(--txt-d);font-weight:400;margin-left:0.5em;">廷议/常朝/御前·' + _ty3Reviews.length + ' 案</span></div>';
+      var _glyphMap = { fulfilled: '★', partial: '○', unfulfilled: '⚠', backfire: '✗' };
+      var _colorMap = {
+        fulfilled: 'var(--green,#4a9a4a)',
+        partial: 'var(--txt-d)',
+        unfulfilled: 'var(--amber,#e0a040)',
+        backfire: 'var(--red-s,#b04030)'
+      };
+      var _venueColor = {
+        '廷议': 'var(--gold,#c9a84c)',
+        '常朝': 'var(--txt-s)',
+        '亲诏': 'var(--red-s,#b04030)',
+        '御前': 'var(--purple-300,#b89ec8)'
+      };
+      _ty3Reviews.forEach(function(rv) {
+        var g = _glyphMap[rv.outcome] || '○';
+        var c = _colorMap[rv.outcome] || 'var(--txt-d)';
+        var venueClr = _venueColor[rv.venueType] || 'var(--txt-d)';
+        tinyiReviewHtml += '<div style="margin-bottom:0.5rem;padding:0.5rem 0.7rem;background:rgba(0,0,0,0.12);border-radius:3px;border-left:2px solid '+c+';font-size:0.8rem;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">'
+          + '<span><span style="color:'+c+';font-weight:600;">' + g + ' ' + escHtml(rv.histLabel || rv.label || '') + '</span>'
+          + (rv.venueType ? '<span style="margin-left:0.4em;padding:1px 6px;background:rgba(0,0,0,0.18);border-radius:2px;font-size:0.7rem;color:'+venueClr+';">'+escHtml(rv.venueType)+'</span>' : '')
+          + '</span>'
+          + (rv.delayTurns ? '<span style="color:var(--txt-d);font-size:0.72rem;">' + rv.delayTurns + ' 回合前议</span>' : '')
+          + '</div>'
+          + '<div style="color:var(--txt-s);margin-bottom:0.3rem;">「' + escHtml(rv.edictContent || '') + '」</div>';
+        var actors = [];
+        if (rv.proposerParty) actors.push('主奏方·<span style="color:var(--gold,#c9a84c);">' + escHtml(rv.proposerParty) + '</span>');
+        if (rv.leaderName) actors.push('党首·' + escHtml(rv.leaderName));
+        if (rv.assigneeName) actors.push('承办·' + escHtml(rv.assigneeName));
+        if (actors.length) {
+          tinyiReviewHtml += '<div style="font-size:0.74rem;color:var(--txt-d);">' + actors.join(' · ') + '</div>';
+        }
+        tinyiReviewHtml += '</div>';
+      });
+      tinyiReviewHtml += '</div>';
+    }
+  } catch(_tyRvE) { (window.TM && TM.errors && TM.errors.captureSilent) ? TM.errors.captureSilent(_tyRvE, 'shiji·tinyi_review') : null; }
+
+  // ─────────────────────────────────────
+  // 一致性补录·邸报附录（Wave 2/3 加固）
+  // 读 GM._reconcileLog 取本回合 validator 计数·读 GM._reconcilePatchLog 取本回合 AI 二审 patch
+  // 仅当本回合存在补录或警告时显示·空则隐藏
+  // ─────────────────────────────────────
+  var consistencyHtml = '';
+  try {
+    var _curT = (GM.turn - 1);  // shiji 是上一回合的纪要
+    var _recLog = (GM._reconcileLog || []).filter(function(x){return x && (x.turn === _curT || x.turn === GM.turn);});
+    var _patchLog = (GM._reconcilePatchLog || []).filter(function(x){return x && (x.turn === _curT || x.turn === GM.turn);});
+    var _hasWarn = _recLog.some(function(x){return (x.total||0) > 0;});
+    var _hasPatch = _patchLog.length > 0;
+    if (_hasWarn || _hasPatch) {
+      var _r = _recLog[_recLog.length - 1] || {};
+      var _p = _patchLog[_patchLog.length - 1] || {};
+      var _domLabels = { fiscalW:'财政', personW:'人事', militaryW:'军事', sentW:'民意', popW:'人口', officeW:'官职', warW:'战事', revoltW:'民变', disasterW:'天灾', diplomacyW:'外交', kejuW:'科举', partyW:'党派', edictEffectW:'法令', courtCeremonyW:'朝仪', constructionW:'工程', omenW:'异象', marriageBirthW:'家事', conspiracyW:'谋反', currencyW:'币政', religionW:'宗教' };
+      var _warnPills = [];
+      Object.keys(_domLabels).forEach(function(k) {
+        var n = _r[k] || 0;
+        if (n > 0) _warnPills.push('<span style="display:inline-block;padding:2px 8px;margin:2px;background:rgba(192,64,48,0.12);border:1px solid rgba(192,64,48,0.3);border-radius:10px;font-size:0.72rem;color:var(--vermillion-400,#c04030);">' + _domLabels[k] + ' <b>' + n + '</b></span>');
+      });
+      var _totalW = _r.total || 0;
+      var _patchedCount = 0;
+      var _patchRows = '';
+      if (_p && _p.patch) {
+        var _pp = _p.patch;
+        var _domains = [
+          { key: 'personnel_changes', label: '人事变动', icon: '👤' },
+          { key: 'office_assignments', label: '官职任免', icon: '🎖️' },
+          { key: 'fiscal_adjustments', label: '财政变化', icon: '💰' },
+          { key: 'military_changes', label: '军事变化', icon: '⚔️' },
+          { key: 'sentiment_changes', label: '民意补录', icon: '📊' },
+          { key: 'population_changes', label: '户口补录', icon: '👥' },
+          { key: 'war_events', label: '战事补录', icon: '🏹' },
+          { key: 'revolt_events', label: '民变补录', icon: '🔥' },
+          { key: 'disaster_events', label: '天灾补录', icon: '🌪️' },
+          { key: 'diplomacy_events', label: '外交补录', icon: '🕊️' },
+          { key: 'keju_events', label: '科举补录', icon: '📜' },
+          { key: 'party_events', label: '党派补录', icon: '⚖️' },
+          { key: 'edict_events', label: '法令补录', icon: '📋' },
+          { key: 'court_ceremony_events', label: '朝仪补录', icon: '👑' },
+          { key: 'construction_events', label: '工程补录', icon: '🏛️' },
+          { key: 'omen_events', label: '异象补录', icon: '✨' },
+          { key: 'marriage_birth_events', label: '家事补录', icon: '💑' },
+          { key: 'conspiracy_events', label: '谋反补录', icon: '🗡️' },
+          { key: 'currency_events', label: '币政补录', icon: '🪙' },
+          { key: 'religion_events', label: '宗教补录', icon: '⛩️' }
+        ];
+        _domains.forEach(function(d) {
+          var arr = _pp[d.key];
+          if (!Array.isArray(arr) || arr.length === 0) return;
+          _patchedCount += arr.length;
+          _patchRows += '<div style="margin:6px 0;padding:6px 10px;background:rgba(184,154,83,0.05);border-left:2px solid var(--gold-400,#c9a84c);font-size:0.78rem;">';
+          _patchRows += '<div style="color:var(--gold-400,#c9a84c);font-weight:bold;margin-bottom:3px;">' + d.icon + ' ' + d.label + ' · ' + arr.length + ' 条</div>';
+          arr.slice(0, 5).forEach(function(item) {
+            var line = '';
+            if (d.key === 'personnel_changes') line = (item.name||'?') + '·' + (item.change||'?') + (item.reason ? '（' + item.reason + '）' : '');
+            else if (d.key === 'office_assignments') line = (item.name||'?') + '·' + (item.action||'?') + ' ' + (item.post||'') + (item.reason ? '（' + item.reason + '）' : '');
+            else if (d.key === 'fiscal_adjustments') line = (item.target||'?') + '·' + (item.kind||'?') + ' ' + (item.amount||0) + ' ' + (item.resource||'') + '·' + (item.name||'') + (item.reason ? '（' + item.reason + '）' : '');
+            else if (d.key === 'military_changes') line = (item.armyName||'?') + '·' + (item.delta>0?'+':'') + (item.delta||0) + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'sentiment_changes') line = (item.target||'?') + '·' + (item.delta>0?'+':'') + (item.delta||0) + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'population_changes') line = (item.region||'?') + '·' + (item.kind||'?') + ' ' + (item.amount||0) + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'war_events') line = (item.action||'?') + '·' + (item.enemy||'') + (item.region ? '@' + item.region : '') + (item.outcome ? '·' + item.outcome : '');
+            else if (d.key === 'revolt_events') line = (item.action||'?') + '·' + (item.region||'') + (item.leader ? '·' + item.leader : '') + (item.scale ? '·' + item.scale + '人' : '');
+            else if (d.key === 'disaster_events') line = (item.region||'?') + '·' + (item.category||'?') + '·' + (item.severity||'') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'diplomacy_events') line = (item.action||'?') + '·' + (item.faction||'') + (item.attitude ? '→' + item.attitude : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'keju_events') line = (item.stage||'?') + (item.year ? '·' + item.year : '') + ((item.topThree||[]).length ? '·三甲: ' + item.topThree.join('/') : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'party_events') line = (item.action||'?') + '·' + (item.partyName||'') + (item.leader ? '·' + item.leader : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'edict_events') line = (item.action||'?') + '·' + (item.edictName||'') + (item.category ? '·' + item.category : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'court_ceremony_events') line = (item.action||'?') + '·' + (item.target||'') + (item.newTitle ? '→' + item.newTitle : '') + (item.newCapital ? '→' + item.newCapital : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'construction_events') line = (item.action||'?') + '·' + (item.kind||'') + '·' + (item.name||'') + (item.region ? '@' + item.region : '') + (item.cost ? '·' + item.cost + '两' : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'omen_events') line = (item.category||'?') + '·' + (item.tone||'') + (item.description ? '·' + item.description : '') + (item.region ? '@' + item.region : '');
+            else if (d.key === 'marriage_birth_events') line = (item.action||'?') + '·' + (item.target||'') + (item.partner ? '·' + item.partner : '') + (item.heirName ? '·' + item.heirName : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'conspiracy_events') line = (item.action||'?') + '·' + (item.instigator||'') + (item.target ? '→' + item.target : '') + '·' + (item.outcome||'') + ((item.conspirators||[]).length ? '·同谋:' + item.conspirators.slice(0,3).join('/') : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'currency_events') line = (item.action||'?') + '·' + (item.severity||'') + (item.priceIndexDelta ? '·物价' + (item.priceIndexDelta>0?'+':'') + item.priceIndexDelta : '') + (item.region ? '@' + item.region : '') + (item.reason ? '·' + item.reason : '');
+            else if (d.key === 'religion_events') line = (item.action||'?') + '·' + (item.religion||'') + (item.followers ? '·' + item.followers + '众' : '') + (item.region ? '@' + item.region : '') + (item.reason ? '·' + item.reason : '');
+            _patchRows += '<div style="color:var(--txt-2,#bcb097);padding:2px 0;">▸ ' + escHtml(line) + '</div>';
+          });
+          if (arr.length > 5) _patchRows += '<div style="color:var(--txt-d,#7a7062);font-size:0.72rem;padding:2px 0;">…另 ' + (arr.length - 5) + ' 条·见 GM._reconcilePatchLog</div>';
+          _patchRows += '</div>';
+        });
+      }
+      var _modeBadge = _p.mode === 'tool_use'
+        ? '<span style="background:rgba(80,160,80,0.15);color:#7ab07a;padding:2px 8px;border-radius:10px;font-size:0.72rem;">tool_use 严格</span>'
+        : (_p.mode === 'fallback' ? '<span style="background:rgba(184,154,83,0.15);color:var(--gold-400,#c9a84c);padding:2px 8px;border-radius:10px;font-size:0.72rem;">fallback 兜底</span>' : '');
+
+      consistencyHtml = '<div style="margin-top:1.2rem;border:1px solid rgba(192,64,48,0.25);border-radius:6px;background:linear-gradient(to bottom, rgba(192,64,48,0.04), rgba(20,15,10,0.02));overflow:hidden;">' +
+        '<div onclick="var c=this.nextElementSibling;var open=c.style.display!==\'none\';c.style.display=open?\'none\':\'block\';this.querySelector(\'.cnst-arrow\').textContent=open?\'▶\':\'▼\';" ' +
+        '  style="cursor:pointer;padding:8px 14px;display:flex;align-items:center;gap:10px;background:rgba(192,64,48,0.08);user-select:none;">' +
+        '  <span class="cnst-arrow" style="font-size:0.7rem;color:var(--vermillion-400,#c04030);">▶</span>' +
+        '  <span style="color:var(--vermillion-400,#c04030);font-weight:bold;font-size:0.85rem;">⚙ 一致性校验·邸报附录</span>' +
+        '  <span style="color:var(--txt-2,#bcb097);font-size:0.75rem;">' +
+            (_totalW > 0 ? '检测 ' + _totalW + ' 处不一致' : '') +
+            (_patchedCount > 0 ? '·补录 ' + _patchedCount + ' 条' : '') +
+            (_modeBadge ? '·' + _modeBadge : '') +
+        '  </span>' +
+        '</div>' +
+        '<div style="display:none;padding:12px 16px;font-size:0.78rem;color:var(--txt-1,#dcd2bc);">';
+
+      if (_warnPills.length > 0) {
+        consistencyHtml += '<div style="margin-bottom:10px;">' +
+          '<div style="color:var(--txt-2,#bcb097);margin-bottom:4px;font-size:0.75rem;">本回合 9 域 validator 警告分布：</div>' +
+          _warnPills.join('') +
+          '</div>';
+      }
+      if (_patchRows) {
+        consistencyHtml += '<div style="margin-top:8px;">' +
+          '<div style="color:var(--txt-2,#bcb097);margin-bottom:4px;font-size:0.75rem;">AI 二审补录明细：</div>' +
+          _patchRows +
+          '</div>';
+      } else if (_totalW > 0) {
+        consistencyHtml += '<div style="color:var(--txt-d,#7a7062);font-style:italic;">（本回合警告未达阈值 3·或 AI 自审认定无需补录）</div>';
+      }
+      consistencyHtml += '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed rgba(184,154,83,0.2);color:var(--txt-d,#7a7062);font-size:0.72rem;line-height:1.6;">' +
+        '本附录由 9 域校验器（财政/人事/军事/民意/人口/官职/战事/民变/天灾）扫描叙事·与结构化数据比对·' +
+        '差异 ≥3 处时由 AI 走 tool_use 二审补录·全程留痕于 console·完整审计链见 <code style="color:var(--gold-400,#c9a84c);">GM._reconcilePatchLog</code>。' +
+        '</div>';
+      consistencyHtml += '</div></div>';
+    }
+  } catch(_cnstE) { (window.TM && TM.errors && TM.errors.captureSilent) ? TM.errors.captureSilent(_cnstE, 'shiji·consistency') : null; }
+
+  // 第二层（默认折叠）：时政记 + 数值变化（含要点/财政/军事/势力/党派/阶层/人物）+ 人事变动 + 后人戏说 + 兼容附件
+  // ※ changeReportHtml 已并入 _renderUnifiedChanges，此处不再重复
+  // ※ 2026-04 用户调整：群臣动向(npcActHtml) 移入风闻录事·密报与奏闻(intelHtml) 删除
+  // ※ 2026-04+ 廷议追责段(tinyiReviewHtml) 紧随御批回听·概念一致(诏令执行反馈)
+  // ※ 2026-04+ 一致性补录(consistencyHtml) 末尾·让玩家看到系统帮 AI 修补了什么
+  var layer2Html = szjSectionHtml + unifiedChangesHtml + efficacyHtml + tinyiReviewHtml + personnelHtml + hourenHtml
+    + statusHtml + tyrantHtml + factionEvtHtml + financeReportHtml + consistencyHtml;
+
+  // 群臣动向→风闻录事（每条 NPC 事件写入 GM._fengwenRecord）
+  // ※ 奏疏类(奏/谏/弹劾/上书/疏/表)走正常奏疏系统·不入风闻
+  // ※ 只收录 4 类：密札(密谋)/耳报(私交)/军情(军事动向)/风议(舆论)
+  try {
+    if (GM.evtLog) {
+      var _npcEvtsFw = GM.evtLog.filter(function(e) { return e.type === 'NPC自主' && e.turn === GM.turn - 1; });
+      if (_npcEvtsFw.length > 0) {
+        if (!GM._fengwenRecord) GM._fengwenRecord = [];
+        _npcEvtsFw.forEach(function(e) {
+          var _t = e.text || '';
+          // 奏疏类完全跳过（已由奏疏系统处理）
+          if (/奏|谏|弹劾|上书|疏|表奏|上表|题奏|参劾/.test(_t)) return;
+          var _type = null;
+          if (/密|暗|谋|阴|贿|收买|拉拢|勾结|串/.test(_t)) _type = '密札';
+          else if (/结交|拜|宴|盟|联姻|访|攀交|门生|座师/.test(_t)) _type = '耳报';
+          else if (/军|兵|战|攻|守|练|征|讨|调兵|点卯|调遣/.test(_t)) _type = '军情';
+          else if (/私议|流言|传|说|闲谈|窃语/.test(_t)) _type = '风议';
+          if (!_type) return; // 不分类·不收录
+          GM._fengwenRecord.push({
+            type: _type, text: _t,
+            credibility: 0.75, turn: GM.turn - 1, source: 'npc_action'
+          });
+        });
+      }
+    }
+  } catch(_fwE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_fwE, 'shiji→fengwen] NPC evts 转录失败') : console.warn('[shiji→fengwen] NPC evts 转录失败', _fwE); }
+
+  var shijiHtml = layer1Html +
+    '<div class="tr-detail-toggle" onclick="var p=this.parentElement;var d=p.querySelector(\'.tr-detail-content\');if(!d)return;var open=d.classList.toggle(\'show\');this.classList.toggle(\'open\',open);this.querySelector(\'.toggle-text\').textContent=open?\'\u6536 \u8D77 \u8BE6 \u60C5\':\'\u5C55 \u5F00 \u8BE6 \u60C5\';">' +
+    '<span class="arrow">\u25BC</span> <span class="toggle-text">\u5C55 \u5F00 \u8BE6 \u60C5</span> <span class="arrow">\u25BC</span></div>' +
+    '<div class="tr-detail-content">' + layer2Html + '</div>';
+
+  // shijiHistory存完整HTML + 所有结构化字段（供史记回顾和后续兼容）
+  var _fullHtml = layer1Html + layer2Html;
+  // 收集本回合玩家下的诏令（edicts 参数存的是按分类的原文）
+  var _thisTurnEdicts = edicts || {};
+  var _lineageBasisRefs = [];
+  try {
+    if (recordLineage && Array.isArray(recordLineage.basis_refs)) _lineageBasisRefs = recordLineage.basis_refs;
+    else if (recordLineage && Array.isArray(recordLineage.basisRefs)) _lineageBasisRefs = recordLineage.basisRefs;
+  } catch(_) { _lineageBasisRefs = []; }
+  var _recordMeta = null;
+  var _evidenceRefs = [];
+  try {
+    if (window.TM && TM.MemorySourceBound && typeof TM.MemorySourceBound.buildRecordMetadata === 'function') {
+      _recordMeta = TM.MemorySourceBound.buildRecordMetadata(GM, {
+        type: 'shijiHistory',
+        turn: GM.turn - 1,
+        text: [shizhengji, zhengwen, shiluText, szjTitle, szjSummary, turnSummary].filter(Boolean).join('\n'),
+        authority: 'official_record',
+        visibility: 'public',
+        role: 'record',
+        lane: 'L6_retrieved_evidence',
+        aiBasisRefs: _lineageBasisRefs,
+        maxBasisRefs: 24
+      });
+      _evidenceRefs = _recordMeta.basisRefs;
+    } else if (window.TM && TM.MemoryEvidenceRegistry && typeof TM.MemoryEvidenceRegistry.buildBasisRefs === 'function') {
+      _evidenceRefs = TM.MemoryEvidenceRegistry.buildBasisRefs(GM, { maxRefs: 16 });
+    }
+  } catch(_) { _evidenceRefs = []; }
+  GM.shijiHistory.push({
+    id: _recordMeta && _recordMeta.id,
+    turn: GM.turn-1, time: getTSText(GM.turn-1),
+    shizhengji: shizhengji, zhengwen: zhengwen,
+    playerStatus: playerStatus, playerInner: playerInner,
+    turnSummary: _summaryText,
+    // 新增字段
+    shilu: shiluText, szjTitle: szjTitle, szjSummary: szjSummary,
+    personnel: personnelChanges, houren: hourenXishuo,
+    sourceType: 'official_record',
+    authorityLevel: 'official_record',
+    confidence: 0.72,
+    sourceRefs: _recordMeta ? _recordMeta.sourceRefs : [],
+    basisRefs: _recordMeta ? _recordMeta.basisRefs : _evidenceRefs,
+    evidenceRefs: _evidenceRefs,
+    contentHash: _recordMeta && _recordMeta.contentHash,
+    basisMaxAuthorityRank: _recordMeta && _recordMeta.basisMaxAuthorityRank,
+    generatedBy: 'endturn.sc1d',
+    factStatus: 'recorded_turn',
+    edicts: _thisTurnEdicts,  // 保留玩家诏令全文以便史记回顾+下回合 AI 上下文
+    html: _fullHtml
+  });
+  // 6.5: 每回合一句话摘要存入年度素材
+  if (!GM._yearlyDigest) GM._yearlyDigest = [];
+  GM._yearlyDigest.push({turn: GM.turn-1, summary: _summaryText || (shizhengji||'').split(/[\u3002\n]/)[0] || ''});
+  // 按年度清理（只保留当年）
+  var _yTurns = (typeof turnsForDuration === 'function') ? turnsForDuration('year') : 12;
+  if (GM._yearlyDigest.length > _yTurns * 2) GM._yearlyDigest = GM._yearlyDigest.slice(-_yTurns);
+  // 纪传体：记录月度摘要
+  // 编年史草稿：优先使用实录(正式体)+时政记；后人戏说作为辅助材料
+  // 实录本就是正史体，最适合喂给编年体系统；否则回落到shizhengji+zhengwen
+  var _chrSummary = shiluText || shizhengji || '';
+  var _chrDetail = shizhengji || '';
+  if (_chrDetail && _chrDetail === _chrSummary) _chrDetail = zhengwen || ''; // 避免重复
+  ChronicleSystem.addMonthDraft(GM.turn-1, _chrSummary, _chrDetail);
+
+  // 8. 写入起居注
+  if(!GM.qijuHistory)GM.qijuHistory=[];
+  var _qijuMeta = null;
+  try {
+    if (window.TM && TM.MemorySourceBound && typeof TM.MemorySourceBound.buildRecordMetadata === 'function') {
+      _qijuMeta = TM.MemorySourceBound.buildRecordMetadata(GM, {
+        type: 'qijuHistory',
+        turn: GM.turn - 1,
+        text: zhengwen || '',
+        authority: 'official_record',
+        visibility: 'public',
+        role: 'record',
+        lane: 'L6_retrieved_evidence',
+        aiBasisRefs: _lineageBasisRefs,
+        fallbackBasisRefs: _recordMeta && _recordMeta.sourceRefs || [],
+        maxBasisRefs: 16
+      });
+    }
+  } catch(_) { _qijuMeta = null; }
+  GM.qijuHistory.push({
+    id: _qijuMeta && _qijuMeta.id,
+    turn:GM.turn-1,time:getTSText(GM.turn-1),zhengwen:zhengwen,
+    sourceType: 'official_record',
+    authorityLevel: 'official_record',
+    confidence: 0.72,
+    sourceRefs: _qijuMeta ? _qijuMeta.sourceRefs : [],
+    basisRefs: _qijuMeta ? _qijuMeta.basisRefs : [],
+    evidenceRefs: _qijuMeta ? _qijuMeta.basisRefs : [],
+    contentHash: _qijuMeta && _qijuMeta.contentHash,
+    factStatus: 'recorded_narrative',
+    generatedBy: 'endturn.render'
+  });
+  renderQiju();
+
+  // 9. 清空输入
+  ["edict-pol","edict-mil","edict-dip","edict-eco","edict-oth","xinglu","xinglu-pub","xinglu-prv"].forEach(function(id){var el=_$(id);if(el)el.value="";});
+  try { if (window.TMPhase8FormalBridge && typeof window.TMPhase8FormalBridge.clearEdictDrafts === 'function') window.TMPhase8FormalBridge.clearEdictDrafts(); } catch(_) {}
+
+  // 10. 问对：保留聊天记录（跨回合持久），刷新角色列表，关闭弹窗
+  renderWenduiChars();
+  var _wdm=_$('wendui-modal');if(_wdm)_wdm.remove();
+
+  // 11. 新回合奏疏
+  generateMemorials();
+
+  // 11.5/11.6 自然死亡和空缺检查已在 Step 6.90-6.91 中执行，此处不再重复
+
+  // 11b. 快照当前值用于下回合delta显示
+  GM._prevVars = {};
+  Object.entries(GM.vars||{}).forEach(function(e) { GM._prevVars[e[0]] = e[1].value; });
+  // 动态快照所有核心指标（供 Delta 面板比较）
+  var _cmlKeys = (typeof CORE_METRIC_LABELS === 'object') ? Object.keys(CORE_METRIC_LABELS) : [];
+
+  // 9.4: 记录核心指标历史快照（供结局统计画曲线）
+  if (!GM._metricHistory) GM._metricHistory = [];
+  var _snap = {turn: GM.turn - 1};
+  _cmlKeys.forEach(function(k) { if (typeof GM[k] === 'number') _snap[k] = Math.round(GM[k]); });
+  // 同时记录vars中的核心变量
+  Object.entries(GM.vars||{}).forEach(function(e) {
+    if (e[1].isCore || (typeof CORE_METRIC_LABELS === 'object' && CORE_METRIC_LABELS[e[0]])) {
+      _snap[e[0]] = Math.round(e[1].value);
+    }
+  });
+  GM._metricHistory.push(_snap);
+  if (GM._metricHistory.length > 500) GM._metricHistory = GM._metricHistory.slice(-500);
+  _cmlKeys.forEach(function(k) { if (typeof GM[k] === 'number') GM['_prev_' + k] = GM[k]; });
+
+  // 11b. 势力历史快照（每回合记录各势力状态，供AI分析趋势）
+  if (GM.facs && GM.facs.length > 0) {
+    if (!GM._factionHistory) GM._factionHistory = [];
+    var _fSnapshot = { turn: GM.turn, factions: {} };
+    GM.facs.forEach(function(f) {
+      _fSnapshot.factions[f.name] = {
+        strength: f.strength || 50,
+        military: f.militaryStrength || 0,
+        attitude: f.attitude || '',
+        leader: f.leader || ''
+      };
+    });
+    GM._factionHistory.push(_fSnapshot);
+    // 只保留最近10回合快照
+    if (GM._factionHistory.length > 10) GM._factionHistory.shift();
+  }
+
+  // 性能·_turnReport 无界增长裁剪（渲染只读当回合/上回合·见 954/1572）·防越玩越卡时 deepClone/序列化/遍历越来越重
+  if (GM._turnReport && GM._turnReport.length > 600) GM._turnReport = GM._turnReport.slice(-600);
+  // 性能·jishiRecords（push 尾插·读取端只取近 50）无写入端 cap·尾部环形裁剪（qijuHistory 已在 npc-driver/news-bridge slice(0,200) 受控·不重复裁）
+  if (GM.jishiRecords && GM.jishiRecords.length > 400) GM.jishiRecords = GM.jishiRecords.slice(-400);
+  // 史料权威补全(纪事)·议政记录皆实录→信史·confidence 按 mode/泄密分级·供史册库权威钤印/置信
+  if (Array.isArray(GM.jishiRecords)) GM.jishiRecords.forEach(function(_r){ if (_r && !_r.authorityLevel){ _r.authorityLevel = 'official_record'; _r.confidence = (_r.leaked || _r.secret) ? 0.55 : (_r.mode === 'private' ? 0.68 : 0.78); } });
+  // 12. 更新界面·renderBiannian/renderOfficeTree/renderShijiList 已由 renderGameState 内部重渲·去冗余整树重建（性能）
+  renderGameState();
+
+  // 13. 显示史记弹窗
+  hideLoading();
+  showTurnResult(shijiHtml+"<div style=\"text-align:center;color:var(--gold-d);margin-top:1rem;\">"+getTSText(GM.turn)+"</div>", GM.shijiHistory.length - 1);
+
+  // 7.2: 预加载——玩家阅读回合结果时预构建固定层prompt缓存
+  setTimeout(function() {
+    if (typeof PromptLayerCache !== 'undefined' && PromptLayerCache.preload) {
+      PromptLayerCache.preload();
+    }
+  }, 500);
+
+  // 释放延迟toast（成就等在settlement期间积攒的提示）
+  if (GM._pendingToasts && GM._pendingToasts.length > 0) {
+    GM._pendingToasts.forEach(function(msg, i) { setTimeout(function(){ toast(msg); }, 500 + i * 800); });
+    GM._pendingToasts = [];
+  }
+
+  // 13a. 每回合自动存档到IndexedDB（静默，不弹toast）
+  if (typeof TM_SaveDB !== 'undefined' && typeof _prepareGMForSave === 'function') {
+    (async function() {
+      try {
+        if (typeof _awaitPostTurnJobsForSave === 'function') await _awaitPostTurnJobsForSave(typeof _postTurnSaveRequiredIds === 'function' ? _postTurnSaveRequiredIds() : ['sc25', 'sc25c']);
+        _prepareGMForSave();
+    // A-1·端回合自动封存·走 selective snapshot·deepClone(GM) 2-5s 同步 → 400-600ms
+    var _autoT0 = Date.now();
+    var _gmSnap = (typeof _autoSaveSnapshotGM === 'function') ? _autoSaveSnapshotGM() : deepClone(GM);
+    var _autoState = { GM: _gmSnap, P: _tmStripAiKeyInPlace(deepClone(P)) };
+    var _autoSnapMs = Date.now() - _autoT0;
+    if (_autoSnapMs > 800) console.warn('[AutoSave] 端回合 snapshot 耗 '+_autoSnapMs+'ms·考虑 A-2');
+    var _sc3 = typeof findScenarioById === 'function' ? findScenarioById(GM.sid) : null;
+    var _autoMeta = {
+      name: '自动封存·' + (typeof getTSText==='function'?getTSText(GM.turn):'T'+GM.turn),
+      type: 'auto',
+      turn: GM.turn,
+      scenarioName: _sc3 ? _sc3.name : '',
+      eraName: GM.eraName || ''
+    };
+    // 写入 autosave（页面刷新恢复用）+ slot_0（案卷目录显示用）
+    TM_SaveDB.save('autosave', _autoState, _autoMeta).catch(function(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'AutoSave] autosave写入失败:') : console.warn('[AutoSave] autosave写入失败:', e); });
+    TM_SaveDB.save('slot_0', _autoState, _autoMeta).then(function() {
+      if (typeof _updateSaveIndex === 'function') _updateSaveIndex(0, _autoMeta);
+      // 同时写轻量标记到localStorage（用于页面刷新检测）
+      try {
+        localStorage.setItem('tm_autosave_mark', JSON.stringify({
+          turn: GM.turn, timestamp: Date.now(),
+          scenarioName: _sc3 ? _sc3.name : '',
+          eraName: GM.eraName || ''
+        }));
+      } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-endturn-render');}catch(_){}}
+    }).catch(function(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'AutoSave] slot_0写入失败:') : console.warn('[AutoSave] slot_0写入失败:', e); });
+    // ★ 推演成功完成·清除 pre_endturn 标记(标记存在=崩溃信号·见 tm-endturn-core.js)
+    // IDB 中的 pre_endturn 不删·下次回合开始时自动覆盖·留作"上回合操作快照"应急
+      } catch(e) { console.warn('[AutoSave] post-turn save failed:', e); }
+    })();
+    try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_rmE){}
+  }
+
+  // 13b. 写入每回合完整数据（多文件结构）
+  if(window.tianming&&window.tianming.isDesktop&&GM.saveName){
+    try{
+      // 主上下文
+      var turnCtx={turn:GM.turn-1,time:getTSText(GM.turn-1),shizhengji:shizhengji,zhengwen:zhengwen,playerStatus:playerStatus,playerInner:playerInner,vars:deepClone(GM.vars),rels:deepClone(GM.rels),chars:deepClone(GM.chars),officeTree:deepClone(GM.officeTree||[]),families:GM.families?deepClone(GM.families):null,harem:GM.harem?deepClone(GM.harem):null};
+      // 玩家操作
+      var playerInput={edicts:edicts,xinglu:xinglu,memorialResponses:(GM.memorials||[]).map(function(m){return{from:m.from,type:m.type,status:m.status,reply:m.reply};}),tyrantActivities:GM._turnTyrantActivities||[]};
+      // AI推演全部结果（从GM临时存储中提取）
+      try {
+        if (window.TM && TM.MemoryTrace && typeof TM.MemoryTrace.finalizeTurnTrace === 'function') {
+          var _mtTrace = TM.MemoryTrace.finalizeTurnTrace(GM);
+          if (_mtTrace && _mtTrace.summary && typeof recordMemoryDiagnostic === 'function') {
+            recordMemoryDiagnostic('trace', { status: 'finalized', summary: _mtTrace.summary });
+          }
+        }
+      } catch(_mtE) {}
+      var aiResults=GM._turnAiResults||{};
+      // 变量变化
+      var varChanges={_timeScale: P.time ? P.time.perTurn : '1m', _customDays: P.time ? P.time.customDays : null};
+      Object.entries(GM.vars).forEach(function(e){
+        var d=e[1].value-(oldVars[e[0]]||0);
+        if(Math.abs(d)>=0.1) {
+          var entry = {old:oldVars[e[0]]||0, now:e[1].value, delta:d};
+          // 保留编辑者定义的单位信息
+          var unit = e[1].unit || e[1].unitName || e[1].suffix || '';
+          if (unit) entry.unit = unit;
+          varChanges[e[0]] = entry;
+        }
+      });
+      // 剧本快照（首回合）
+      var scenarioData=null;
+      var refTextData=null;
+      if(GM.turn<=2){
+        var _sc4=findScenarioById&&findScenarioById(GM.sid);
+        if(_sc4) scenarioData=deepClone(_sc4);
+        if(_sc4&&_sc4.refText) refTextData=_sc4.refText;
+      }
+      var turnData={context:turnCtx,playerInput:playerInput,aiResults:aiResults,varChanges:varChanges};
+      if(scenarioData) turnData.scenario=scenarioData;
+      if(refTextData) turnData.refText=refTextData;
+      window.tianming.writeTurnData(GM.saveName,GM.turn-1,turnData).catch(function(e){ (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'catch] async:') : console.warn('[catch] async:', e); });
+    }catch(e){ console.warn("[catch] \u9759\u9ED8\u5F02\u5E38:", e.message || e); }
+    // 自动存档
+    var _asTurns=(P.conf&&P.conf.autoSaveTurns)||5;
+    if(_asTurns>0&&GM.turn%_asTurns===0){
+      (async function(){
+        try{
+          if (typeof _awaitPostTurnJobsForSave === 'function') await _awaitPostTurnJobsForSave(typeof _postTurnSaveRequiredIds === 'function' ? _postTurnSaveRequiredIds() : ['sc25', 'sc25c']);
+          if (typeof _prepareGMForSave === 'function') _prepareGMForSave();
+          // A-1·N 回合 autoSave 走 selective snapshot
+          var _asd=deepClone(P);
+          _tmStripAiKeyInPlace(_asd);
+          _asd.gameState=(typeof _autoSaveSnapshotGM === 'function') ? _autoSaveSnapshotGM() : deepClone(GM);
+          _asd._saveMeta={turn:GM.turn,gameMode:(P.conf&&P.conf.gameMode)||'',saveName:GM.saveName};
+          window.tianming.autoSave(_asd).catch(function(e){ (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'catch] async:') : console.warn('[catch] async:', e); });
+        }catch(e){ console.warn("[catch] \u9759\u9ED8\u5F02\u5E38:", e.message || e); }
+      })();
+    }
+  }
+
+  btn.textContent="\u23F3 \u9759\u5F85\u65F6\u53D8";btn.style.opacity="1";
+
+  // 更新新UI的时间显示和变量显示
+  if (typeof updateTimeDisplay === 'function') {
+    updateTimeDisplay();
+  }
+  if (typeof updateTopVariables === 'function') {
+    updateTopVariables();
+  }
+
+  // 自动存档
+  SaveManager.autoSave();
+
+  // 输出回合结算日志
+  _dbg('========== 回合结算完成 (T' + GM.turn + ') ==========');
+  _dbg('[endTurn] 财务报表:', ledger);
+  _dbg('[endTurn] 变动队列已清空，准备进入下一回合');
+  try {
+    var _aiDiag = GM._lastAIDiagnostics;
+    if (_aiDiag && !_aiDiag._announced) {
+      var _fw = Array.isArray(_aiDiag.failedWrites) ? _aiDiag.failedWrites.length : 0;
+      var _warn = Array.isArray(_aiDiag.warnings) ? _aiDiag.warnings.length : 0;
+      var _rep = Array.isArray(_aiDiag.repairedJson) ? _aiDiag.repairedJson.length : 0;
+      if (_fw || _warn || _rep) {
+        _dbg('[AIDiagnostics] hidden summary: write_gate=' + _fw + ', warnings=' + _warn + ', json_repair=' + _rep);
+        _aiDiag._announced = true;
+      }
+    }
+  } catch(_aiDiagE) { console.warn('[AIDiagnostics] render summary failed:', _aiDiagE); }
+
+  // 更新地图颜色（根据占领者实时更新）
+  if (P.map && P.map.enabled) {
+    updateMapColors();
+  }
+}
+
+// ============================================================
+// 数值变化说明（统一渲染） — 参考崇祯朝政纪要体
+// 格式：【分组】\n  指标（旧值 → 新值）：原因；
+// 来源：AccountingSystem.getLedger() + GM.turnChanges.* + CORE_METRIC_LABELS + GM.vars
+// ============================================================
+/** v2 helper：格式化大数值（显示万/亿） */
+function _rucFmtBig(v) {
+  v = Math.round(v||0);
+  if (Math.abs(v) >= 1e8) return (v/1e8).toFixed(2) + '\u4EBF';
+  if (Math.abs(v) >= 1e4) return (v/1e4).toFixed(v%1e4===0?0:1) + '\u4E07';
+  return v.toLocaleString();
+}
+/** v2 helper：生成 old→new+delta HTML */
+function _rucValHtml(oldV, newV, formatter, unit) {
+  var fmt = formatter || _rucFmtBig;
+  var d = (newV||0) - (oldV||0);
+  var delta;
+  if (d === 0) delta = '<span class="delta flat">\u2014</span>';
+  else if (d > 0) delta = '<span class="delta up">+' + fmt(d) + '</span>';
+  else delta = '<span class="delta dn">\u2212' + fmt(-d) + '</span>';
+  return '<span class="old">' + fmt(oldV||0) + (unit?'<span class="unit">'+unit+'</span>':'') + '</span><span class="arr">\u2192</span><span class="new">' + fmt(newV||0) + (unit?'<span class="unit">'+unit+'</span>':'') + '</span>' + delta;
+}
+/** v2 helper：把 reasons 数组转成 chip HTML */
+function _rucReasonChips(reasons, fallback) {
+  if (!Array.isArray(reasons) || reasons.length === 0) {
+    return fallback ? '<span class="tr-reason-txt">' + escHtml(fallback) + '</span>' : '';
+  }
+  var html = '';
+  reasons.slice(0,6).forEach(function(r){
+    var desc = r.desc || r.type || r.reason || '';
+    if (!desc) return;
+    var v = r.delta || r.amount || '';
+    var cls = 'neu';
+    if (typeof r.delta === 'number') cls = r.delta > 0 ? 'pos' : (r.delta < 0 ? 'neg' : 'neu');
+    else if (/\u635F|\u964D|\u8870|\u8D25|\u6076|\u6B7B|\u98DF|\u6D88|\u7075|\u8D25\u5317|\u51CF\u5C11|\u800D|\u6D41|\u8D25\u51D1|\u8D2C|\u88C1|\u70E7|\u77AC|\u633A/.test(desc)) cls = 'neg';
+    else if (/\u589E|\u5347|\u8865|\u6DFB|\u65B0|\u5B8C|\u6536|\u6210|\u9752|\u8BB8|\u793A|\u6B23|\u7834|\u6B63|\u6109|\u83B7/.test(desc)) cls = 'pos';
+    html += '<span class="tr-reason-chip ' + cls + '">' + escHtml(desc) + (v?'<span class="v">'+escHtml(String(v))+'</span>':'') + '</span>';
+  });
+  return html;
+}
+function _renderUnifiedChanges(oldVars) {
+  oldVars = oldVars || {};
+  // v2：新布局 · 10 分类卡块·每项带原因 chip
+  var html = '';
+
+  function _rucAttr(v) {
+    return escHtml(v).replace(/"/g, '&quot;');
+  }
+
+  function _rucReasonTags(text) {
+    var raw = String(text || '');
+    var lower = raw.toLowerCase();
+    var tags = [];
+    var seen = {};
+    var dict = {
+      tax: '\u7A0E\u538B',
+      taxes: '\u7A0E\u538B',
+      levy: '\u5F81\u53D1',
+      corvee: '\u5FAD\u5F79',
+      military: '\u519B\u52A1',
+      army: '\u519B\u52A1',
+      keju: '\u79D1\u4E3E',
+      commerce: '\u5546\u8D38',
+      trade: '\u5546\u8D38',
+      land: '\u571F\u5730',
+      office: '\u5B98\u5236',
+      offices: '\u5B98\u5236',
+      hukou: '\u6237\u53E3',
+      census: '\u6E05\u518C\u6838\u7C4D',
+      peasant: '\u6C11\u8D1F',
+      burden: '\u6C11\u8D1F',
+      fiscal: '\u8D22\u653F',
+      finance: '\u8D22\u653F',
+      corruption: '\u8150\u8D25',
+      corrupt: '\u8150\u8D25',
+      local: '\u5730\u65B9',
+      morale: '\u519B\u5FC3',
+      arrears: '\u6B20\u9977',
+      approved: '\u8BAE\u51C6',
+      rejected: '\u9A73\u56DE',
+      deferred: '\u7F13\u8BAE',
+      changed: '\u6539\u52A8',
+      blocked: '\u963B\u6EDE',
+      relief: '\u8D48\u6D4E',
+      famine: '\u707E\u8352',
+      disaster: '\u707E\u5BB3',
+      minxin: '\u6C11\u5FC3',
+      public: '\u6C11\u5FC3',
+      party: '\u515A\u4E89',
+      class: '\u9636\u5C42'
+    };
+    function add(label) {
+      if (!label || seen[label]) return;
+      seen[label] = true;
+      tags.push(label);
+    }
+    if (/military\s+arrears/.test(lower)) add('\u519B\u9977\u62D6\u6B20');
+    raw.split(/[\/,\s;|:_-]+/).forEach(function(token) {
+      var key = String(token || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (dict[key]) add(dict[key]);
+    });
+    return tags;
+  }
+
+  function _rucReasonFromTags(prefix, tail) {
+    var tags = _rucReasonTags(tail);
+    return prefix + (tags.length ? '\uFF1A' + tags.join('\u3001') : '');
+  }
+
+  function _rucLocalizeReason(reason) {
+    var raw = String(reason || '').trim();
+    if (!raw) return '';
+    var lower = raw.toLowerCase();
+    if (/ecology\s+matched/.test(lower)) {
+      return _rucReasonFromTags('\u5236\u5EA6\u751F\u6001\u5339\u914D', raw.replace(/.*ecology\s+matched\s*/i, ''));
+    }
+    if (/ai\s+turn\s+result/.test(lower)) {
+      return _rucReasonFromTags('AI\u63A8\u6F14\u7ED3\u679C', raw.replace(/.*ai\s+turn\s+result\s*/i, ''));
+    }
+    if (/huji[-_\s]*governance[-_\s]*backlash|governance[-_\s]*backlash/.test(lower)) {
+      return '\u6237\u53E3\u6CBB\u7406\u53CD\u566C';
+    }
+    if (/court\s+feedback/.test(lower)) {
+      return _rucReasonFromTags('\u5EF7\u8BAE\u88C1\u5B9A', raw.replace(/.*court\s+feedback\s*/i, ''));
+    }
+    if (/social[-_\s]*political[-_\s]*signal/.test(lower)) {
+      return _rucReasonFromTags('\u793E\u4F1A\u653F\u6CBB\u4FE1\u53F7', raw.replace(/.*social[-_\s]*political[-_\s]*signal\s*/i, ''));
+    }
+    if (/player[-_\s]*action/.test(lower)) {
+      return _rucReasonFromTags('\u73A9\u5BB6\u64CD\u4F5C\u5F71\u54CD', raw.replace(/.*player[-_\s]*action\s*/i, ''));
+    }
+    var tags = /[a-z]/i.test(raw) ? _rucReasonTags(raw) : [];
+    if (tags.length) return tags.join('\u3001');
+    return raw;
+  }
+
+  function _rucGroupChangeItems(items) {
+    var groups = [];
+    var byName = {};
+    (items || []).forEach(function(it) {
+      var name = it.name || '\u672A\u547D\u540D';
+      var g = byName[name];
+      if (!g) {
+        g = byName[name] = { name: name, items: [], reasons: [], reasonSeen: {} };
+        groups.push(g);
+      }
+      g.items.push(it);
+      if (it.reason && !g.reasonSeen[it.reason]) {
+        g.reasonSeen[it.reason] = true;
+        g.reasons.push(it.reason);
+      }
+    });
+    return groups;
+  }
+
+  function _rucRenderActorChangeGroup(opts) {
+    var groups = _rucGroupChangeItems(opts.items);
+    var total = opts.items.length;
+    var out = '';
+    if (!groups.length) return out;
+    out += '<div class="tr-cg-block ' + opts.cls + '">';
+    out += '<div class="tr-cg-hdr"><div class="ic">' + opts.ic + '</div><div class="lab">' + opts.label + '</div>';
+    if (opts.sub) out += '<div class="sub">' + opts.sub + '</div>';
+    out += '<div class="count">' + groups.length + ' \u7EC4 / ' + total + ' \u9879</div></div>';
+    out += '<div class="tr-cg-group-tools">';
+    out += '<button type="button" class="tr-cg-group-btn" data-action="turn-change-expand-all" onclick="this.closest(\'.tr-cg-block\').querySelectorAll(\'.tr-cg-fold-group\').forEach(function(el){el.open=true;});">\u5C55\u5F00\u5168\u90E8</button>';
+    out += '<button type="button" class="tr-cg-group-btn" data-action="turn-change-collapse-all" onclick="this.closest(\'.tr-cg-block\').querySelectorAll(\'.tr-cg-fold-group\').forEach(function(el){el.open=false;});">\u6536\u8D77\u5168\u90E8</button>';
+    out += '</div>';
+    out += '<div class="tr-cg-items tr-cg-fold-items">';
+    groups.forEach(function(g) {
+      var key = opts.kind + ':' + g.name;
+      var reasonSummary = g.reasons.slice(0, 2).join('\uFF1B');
+      if (g.reasons.length > 2) reasonSummary += '\uFF1B\u7B49 ' + g.reasons.length + ' \u6761\u8FD1\u56E0';
+      var openAttr = g.items.length <= 2 ? ' open' : '';
+      out += '<details class="tr-cg-fold-group" data-change-group="' + _rucAttr(key) + '" data-change-group-name="' + _rucAttr(g.name) + '"' + openAttr + '>';
+      out += '<summary class="tr-cg-fold-summary"><span class="tr-cg-fold-name">' + escHtml(g.name) + '</span><span class="tr-cg-fold-count">' + g.items.length + ' \u9879\u53D8\u5316</span>';
+      if (reasonSummary) out += '<span class="tr-cg-fold-reason">' + escHtml(reasonSummary) + '</span>';
+      out += '</summary>';
+      out += '<div class="tr-cg-fold-body">';
+      g.items.forEach(function(it) {
+        var d = (it.nv || 0) - (it.ov || 0);
+        var cls = d < -5 ? ' warn' : '';
+        out += '<div class="tr-cg-item' + cls + '">';
+        out += '<div class="tr-cg-name"><span class="mini-ic">' + opts.itemIc + '</span>' + escHtml(it.field) + '</div>';
+        out += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, function(v){return Math.round(v||0).toString();}, '') + '</div>';
+        out += '<div class="tr-cg-reasons">' + (it.reason?'<span class="tr-reason-txt">'+escHtml(it.reason)+'</span>':'') + '</div>';
+        out += '</div>';
+      });
+      out += '</div></details>';
+    });
+    out += '</div></div>';
+    return out;
+  }
+
+  // ═══ ① 本回合要点 ═══
+  var highlights = [];
+  // 忠诚变动最大
+  if (GM.turnChanges && GM.turnChanges.characters) {
+    var _loyCand = [];
+    GM.turnChanges.characters.forEach(function(cc) {
+      (cc.changes||[]).forEach(function(ch) {
+        if (ch.field === 'loyalty' && Math.abs(ch.newValue - ch.oldValue) >= 5) {
+          _loyCand.push({ name: cc.name, d: ch.newValue - ch.oldValue, nv: ch.newValue, reason: ch.reason || '' });
+        }
+      });
+    });
+    _loyCand.sort(function(a,b){return Math.abs(b.d)-Math.abs(a.d);});
+    _loyCand.slice(0,2).forEach(function(c){
+      highlights.push({
+        name: escHtml(c.name), sub: '\u5FE0\u8BDA ' + (c.d>0?'+':'') + c.d + ' \u2192 ' + c.nv,
+        reason: c.reason || '', cls: c.d>=0?'':'warn'
+      });
+    });
+  }
+  // 势力实力变化最大
+  if (GM.turnChanges && GM.turnChanges.factions) {
+    var _strCand = [];
+    GM.turnChanges.factions.forEach(function(fc) {
+      (fc.changes||[]).forEach(function(ch) {
+        if (ch.field === 'strength' && Math.abs(ch.newValue - ch.oldValue) >= 3) {
+          _strCand.push({ name: fc.name, d: ch.newValue - ch.oldValue, reason: ch.reason || '' });
+        }
+      });
+    });
+    _strCand.sort(function(a,b){return Math.abs(b.d)-Math.abs(a.d);});
+    _strCand.slice(0,2).forEach(function(f){
+      highlights.push({
+        name: escHtml(f.name), sub: '\u5B9E\u529B ' + (f.d>0?'+':'') + f.d,
+        reason: f.reason || '', cls: f.d>=0?'':'danger'
+      });
+    });
+  }
+  // 新阴谋
+  if (Array.isArray(GM.activeSchemes)) {
+    GM.activeSchemes.filter(function(s){return s.startTurn === GM.turn - 1;}).slice(0,1).forEach(function(s){
+      highlights.push({name: escHtml(s.schemer||'?'), sub:'\u5BC6\u8C0B'+(s.target?'\u9488\u5BF9'+escHtml(s.target):''), reason: s.description||s.goal||'', cls:'danger'});
+    });
+  }
+  if (highlights.length > 0) {
+    html += '<div class="tr-cg-block tr-cg-highlight">';
+    html += '<div class="tr-cg-hdr"><div class="ic">\u8981</div><div class="lab">\u672C \u56DE \u5408 \u8981 \u70B9</div>';
+    html += '<div class="sub">\u6700\u7A81\u51FA\u7684 ' + highlights.length + ' \u9879\u53D8\u52A8</div>';
+    html += '<div class="count">' + highlights.length + ' \u9879</div></div>';
+    html += '<div class="tr-cg-items">';
+    highlights.forEach(function(h){
+      html += '<div class="tr-cg-item' + (h.cls?' '+h.cls:'') + '">';
+      html += '<div class="tr-cg-name">' + h.name + ' <span class="sub-lbl">' + escHtml(h.sub) + '</span></div>';
+      if (h.reason) html += '<div class="tr-cg-vals"><span class="tr-reason-txt">' + escHtml(h.reason) + '</span></div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  // 辅助：从 _turnReport 过滤并生成 fiscal_adj reason chips
+  function _collectFiscalAdjChips(target, resource) {
+    var out = [];
+    var rep = GM._turnReport || [];
+    rep.forEach(function(r) {
+      if (!r || r.type !== 'fiscal_adj') return;
+      if (r.target !== target) return;
+      if ((r.resource || 'money') !== resource) return;
+      var signCls = r.kind === 'income' ? 'pos' : 'neg';
+      var signChar = r.kind === 'income' ? '+' : '\u2212';
+      var label = escHtml(r.name || r.reason || (r.kind === 'income' ? '入库' : '支用')).slice(0, 16);
+      var tip = escHtml((r.reason || '') + (r.name?'\u00B7'+r.name:'')).slice(0, 80);
+      var short = r.shortfall || 0;
+      var status = r.executionStatus || '';
+      var annual = Number(r.annualAmount || 0);
+      if ((status === 'scheduled' || status === 'updated' || r.recurring) && annual > 0) {
+        var annualTip = escHtml((r.reason || '') + (r.name?'\u00B7'+r.name:'') + '\u00B7\u5E74\u4F8B ' + annual).slice(0, 100);
+        var annualWord = status === 'updated' ? '\u6539\u5E74\u4F8B' : '\u5E74\u4F8B';
+        out.push('<span class="tr-reason-chip ' + signCls + '" title="' + annualTip + '">' + annualWord + '\u00B7' + label + '<span class="v">' + signChar + _rucFmtBig(annual) + '/\u5E74</span></span>');
+      } else if (status === 'stopped' || status === 'removed') {
+        var stopTip = escHtml((r.reason || '') + (r.name?'\u00B7'+r.name:'') + (annual ? '\u00B7\u539F\u5E74\u4F8B ' + annual : '')).slice(0, 100);
+        out.push('<span class="tr-reason-chip" title="' + stopTip + '" style="border-color:rgba(160,150,130,0.45);color:var(--txt-s);">\u505C\u5E74\u4F8B\u00B7' + label + (annual ? '<span class="v">' + _rucFmtBig(annual) + '/\u5E74</span>' : '') + '</span>');
+      } else if (status === 'blocked') {
+        // 完全拒付：红底+❌
+        var tipBlk = '\u5E93\u7A7A\u4E3A\u96F6\u00B7\u8BCF\u4E0D\u5F97\u884C\u00B7\u8BF7 ' + (r.requested||0) + ' \u4E00\u6587\u672A\u62E8' + (r.reason?'\u3010'+r.reason+'\u3011':'');
+        out.push('<span class="tr-reason-chip" title="' + escHtml(tipBlk) + '" style="background:rgba(192,64,48,0.18);border:1px solid var(--vermillion-400);color:#fef4e8;">\u274C ' + label + '<span style="margin-left:6px;color:#fbd8d0;">\u8BF7' + _rucFmtBig(r.requested||0) + '\u00B7\u672A\u62E8</span></span>');
+      } else if (short > 0) {
+        // 部分执行：橙框+亏欠标记
+        var reqTxt = r.requested ? ('/\u8BF7' + _rucFmtBig(r.requested)) : '';
+        var tipShort = '\u8BF7 ' + (r.requested||0) + '\u00B7\u4EC5\u62E8 ' + (r.amount||0) + '\u00B7\u4E8F\u7A7A ' + short + (r.reason?'\u3010'+r.reason+'\u3011':'');
+        out.push('<span class="tr-reason-chip danger" title="' + escHtml(tipShort) + '" style="border-color:var(--vermillion-400);color:#d4706a;">\u2757' + label + reqTxt + '<span class="v">' + signChar + _rucFmtBig(r.amount||0) + '</span><span style="color:var(--vermillion-400);margin-left:4px;font-size:0.85em;">\u4E8F' + _rucFmtBig(short) + '</span></span>');
+      } else {
+        out.push('<span class="tr-reason-chip ' + signCls + '" title="' + tip + '">' + label + '<span class="v">' + signChar + _rucFmtBig(r.amount||0) + '</span></span>');
+      }
+    });
+    return out;
+  }
+
+  // ═══ ② 财政·帑廪 ═══
+  if (GM.guoku) {
+    var og = GM._prevGuoku || {};
+    var ng = GM.guoku;
+    var gItems = [];
+    var _fExp = GM._lastFixedExpense || {};
+    var _sal = _fExp.salary && _fExp.salary.money || 0;
+    var _arm = _fExp.army && _fExp.army.money || 0;
+    var _imp = _fExp.imperial && _fExp.imperial.money || 0;
+    var turnIn = ng.turnIncome || 0;
+    var turnOut = ng.turnExpense || 0;
+    // 钱
+    if (typeof ng.money === 'number') {
+      var moneyReasons = [];
+      if (turnIn > 0) moneyReasons.push('<span class="tr-reason-chip pos">\u5C81\u5165<span class="v">+' + _rucFmtBig(turnIn) + '</span></span>');
+      if (_sal > 0) moneyReasons.push('<span class="tr-reason-chip neg">\u4FF8\u7984<span class="v">\u2212' + _rucFmtBig(_sal) + '</span></span>');
+      if (_arm > 0) moneyReasons.push('<span class="tr-reason-chip neg">\u519B\u9972<span class="v">\u2212' + _rucFmtBig(_arm) + '</span></span>');
+      if (_imp > 0) moneyReasons.push('<span class="tr-reason-chip neg">\u5BAB\u5EF7<span class="v">\u2212' + _rucFmtBig(_imp) + '</span></span>');
+      // ★ 追加 AI/玩家触发的一次性调整
+      Array.prototype.push.apply(moneyReasons, _collectFiscalAdjChips('guoku', 'money'));
+      gItems.push({ic:'\u94B1', name:'\u94F6\u4E24', unit:'\u4E24', ov:og.money, nv:ng.money, reasonsHtml: moneyReasons.join('')});
+    }
+    if (typeof ng.grain === 'number') {
+      var grainR = [];
+      var turnGIn = ng.turnGrainIncome || 0;
+      var turnGOut = ng.turnGrainExpense || 0;
+      if (turnGIn > 0) grainR.push('<span class="tr-reason-chip pos">\u6F15\u7CAE<span class="v">+' + _rucFmtBig(turnGIn) + '</span></span>');
+      if (turnGOut > 0) grainR.push('<span class="tr-reason-chip neg">\u652F\u7528<span class="v">\u2212' + _rucFmtBig(turnGOut) + '</span></span>');
+      Array.prototype.push.apply(grainR, _collectFiscalAdjChips('guoku', 'grain'));
+      gItems.push({ic:'\u7CAE', name:'\u7CAE\u7C73', unit:'\u77F3', ov:og.grain, nv:ng.grain, reasonsHtml: grainR.join('')});
+    }
+    if (typeof ng.cloth === 'number') {
+      var clothR = _collectFiscalAdjChips('guoku', 'cloth');
+      if (clothR.length === 0) clothR.push('<span class="tr-reason-txt">\u7EC7\u67D3\u4E0A\u89E3\u00B7\u8D4F\u8D50\u6263\u51CF</span>');
+      gItems.push({ic:'\u5E03', name:'\u5E03\u5339', unit:'\u5339', ov:og.cloth, nv:ng.cloth, reasonsHtml: clothR.join('')});
+    }
+    if (typeof ng.monthlyIncome === 'number') {
+      gItems.push({ic:'\u6708', name:'\u6708\u5165', sub:'\u4E24/\u6708', ov:og.monthlyIncome, nv:ng.monthlyIncome, reasonsHtml: '<span class="tr-reason-txt">\u7A0E\u6536\u7EA7\u8054\u4E0A\u89E3\u4E2D\u592E</span>'});
+    }
+    if (gItems.length > 0) {
+      html += '<div class="tr-cg-block tr-cg-guoku">';
+      var netTxt = '';
+      if (turnIn > 0 || turnOut > 0) {
+        var net = turnIn - turnOut;
+        netTxt = '\u5C81\u5165 ' + _rucFmtBig(turnIn) + '\u4E24 / \u5C81\u51FA ' + _rucFmtBig(turnOut) + '\u4E24' + (net>=0?' \u00B7 \u7ED3\u4F59 ':' \u00B7 \u4E8F\u7A7A ') + _rucFmtBig(Math.abs(net)) + '\u4E24';
+      }
+      // 赤字警告条
+      var _gDefLines = [];
+      ['money','grain','cloth'].forEach(function(r){
+        var v = Number(ng[r]);
+        if (typeof v === 'number' && v < 0) {
+          var rl = r==='money'?'银':r==='grain'?'粮':'布';
+          _gDefLines.push(rl + ' ' + _rucFmtBig(v));
+        }
+      });
+      if (_gDefLines.length > 0) {
+        var _streak = GM._fiscalDeficitStreak || 1;
+        html += '<div class="tr-cg-hdr" style="background:linear-gradient(to right,rgba(192,64,48,0.15),transparent);border-left:3px solid var(--vermillion-400);"><div class="ic" style="background:var(--vermillion-400);color:#fef4e8;">\u2757</div><div class="lab" style="color:#d4706a;">\u8D4C\u7A7A\u5728\u5E93\uFF01\u6301\u7EED ' + _streak + ' \u56DE\u5408</div><div class="sub" style="color:#c04030;">' + _gDefLines.join(' \u00B7 ') + '</div></div>';
+      }
+      html += '<div class="tr-cg-hdr"><div class="ic">\u5E11</div><div class="lab">\u5E11 \u5EAA \u00B7 \u4E2D \u592E \u56FD \u5E93</div>';
+      if (netTxt) html += '<div class="sub">' + escHtml(netTxt) + '</div>';
+      html += '<div class="count">' + gItems.length + ' \u9879</div></div>';
+      html += '<div class="tr-cg-items">';
+      gItems.forEach(function(it){
+        html += '<div class="tr-cg-item">';
+        html += '<div class="tr-cg-name"><span class="mini-ic">' + it.ic + '</span>' + escHtml(it.name) + ' <span class="sub-lbl">' + escHtml(it.sub || it.unit || '') + '</span></div>';
+        html += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, _rucFmtBig, '') + '</div>';
+        html += '<div class="tr-cg-reasons">' + (it.reasonsHtml||'') + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+  }
+
+  // ═══ ③ 财政·内帑 ═══
+  if (GM.neitang) {
+    var on = GM._prevNeitang || {};
+    var nn = GM.neitang;
+    var nItems = [];
+    if (typeof nn.money === 'number') {
+      var nMoneyR = _collectFiscalAdjChips('neitang', 'money');
+      if (nMoneyR.length === 0) nMoneyR.push('<span class="tr-reason-txt">\u5185\u5EF7\u6536\u652F\u00B7\u5F92\u5FA1\u8D4F\u8D50</span>');
+      nItems.push({ic:'\u94B1', name:'\u94F6\u4E24', unit:'\u4E24', ov:on.money, nv:nn.money, reasonsHtml: nMoneyR.join('')});
+    }
+    if (typeof nn.grain === 'number') {
+      var nGrainR = _collectFiscalAdjChips('neitang', 'grain');
+      if (nGrainR.length === 0) nGrainR.push('<span class="tr-reason-txt">\u5F9D\u8180\u00B7\u5BAB\u7528\u6D88\u8017</span>');
+      nItems.push({ic:'\u7CAE', name:'\u7CAE\u7C73', unit:'\u77F3', ov:on.grain, nv:nn.grain, reasonsHtml: nGrainR.join('')});
+    }
+    if (typeof nn.cloth === 'number') {
+      var nClothR = _collectFiscalAdjChips('neitang', 'cloth');
+      if (nClothR.length === 0) nClothR.push('<span class="tr-reason-txt">\u5BAB\u4E2D\u8D50\u8D21</span>');
+      nItems.push({ic:'\u5E03', name:'\u5E03\u5339', unit:'\u5339', ov:on.cloth, nv:nn.cloth, reasonsHtml: nClothR.join('')});
+    }
+    if (typeof nn.huangzhuangAcres === 'number') nItems.push({ic:'\u5E84', name:'\u7687\u5E84', unit:'\u4EA9', ov:on.huangzhuangAcres, nv:nn.huangzhuangAcres, reasonsHtml: '<span class="tr-reason-txt">\u4ECA\u5C81\u65B0\u8F9F/\u5931\u7BA1</span>'});
+    if (nItems.length > 0) {
+      html += '<div class="tr-cg-block tr-cg-neitang">';
+      // 赤字警告条
+      var _nDefLines = [];
+      ['money','grain','cloth'].forEach(function(r){
+        var v = Number(nn[r]);
+        if (typeof v === 'number' && v < 0) {
+          var rl = r==='money'?'银':r==='grain'?'粮':'布';
+          _nDefLines.push(rl + ' ' + _rucFmtBig(v));
+        }
+      });
+      if (_nDefLines.length > 0) {
+        html += '<div class="tr-cg-hdr" style="background:linear-gradient(to right,rgba(192,64,48,0.15),transparent);border-left:3px solid var(--vermillion-400);"><div class="ic" style="background:var(--vermillion-400);color:#fef4e8;">\u2757</div><div class="lab" style="color:#d4706a;">\u5185\u5E11\u8D4C\u7A7A</div><div class="sub" style="color:#c04030;">' + _nDefLines.join(' \u00B7 ') + '</div></div>';
+      }
+      html += '<div class="tr-cg-hdr"><div class="ic">\u5185</div><div class="lab">\u5185 \u5E11 \u00B7 \u7687 \u5BB6 \u79C1 \u5E93</div>';
+      html += '<div class="sub">\u9669\u5E1D\u79C1\u5E91\u00B7\u4E0E\u5916\u5E1C\u5206\u79FB</div>';
+      html += '<div class="count">' + nItems.length + ' \u9879</div></div>';
+      html += '<div class="tr-cg-items">';
+      nItems.forEach(function(it){
+        html += '<div class="tr-cg-item">';
+        html += '<div class="tr-cg-name"><span class="mini-ic">' + it.ic + '</span>' + escHtml(it.name) + ' <span class="sub-lbl">' + escHtml(it.unit||'') + '</span></div>';
+        html += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, _rucFmtBig, '') + '</div>';
+        html += '<div class="tr-cg-reasons">' + (it.reasonsHtml||'') + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+  }
+
+  // ═══ ④ 户口 ═══
+  if (GM.population && GM.population.national) {
+    var op = (GM._prevPopulation && GM._prevPopulation.national) || {};
+    var opAll = GM._prevPopulation || {};
+    var np = GM.population.national;
+    var npAll = GM.population;
+    var pItems = [];
+    if (typeof np.households === 'number') pItems.push({ic:'\u6237', name:'\u6237 \u6570', sub:'\u5728\u7C4D', ov:op.households, nv:np.households, reasonsHtml:'<span class="tr-reason-txt">\u65B0\u518C\u00B7\u9003\u6237\u00B7\u65B0\u5206\u6237</span>'});
+    if (typeof np.mouths === 'number') pItems.push({ic:'\u53E3', name:'\u53E3 \u6570', sub:'\u5728\u7C4D', ov:op.mouths, nv:np.mouths, reasonsHtml:'<span class="tr-reason-txt">\u65B0\u751F\u00B7\u6B7B\u4EA1\u00B7\u9003\u6563</span>'});
+    if (typeof np.ding === 'number') pItems.push({ic:'\u4E01', name:'\u4E01 \u53E3', sub:'\u53EF\u5F81\u5F79', ov:op.ding, nv:np.ding, reasonsHtml:'<span class="tr-reason-txt">\u62BD\u4E01\u00B7\u8015\u8FC1\u00B7\u4F24\u4EA1\u8017\u635F</span>'});
+    if (typeof npAll.fugitives === 'number') {
+      var fCls = (npAll.fugitives > (opAll.fugitives||0)) ? 'danger' : '';
+      pItems.push({ic:'\u9003', name:'\u9003 \u6237', sub:'\u5931\u7C4D', ov:opAll.fugitives, nv:npAll.fugitives, cls: fCls, reasonsHtml:'<span class="tr-reason-txt">\u65F1\u707E\u00B7\u6D2A\u707E\u00B7\u8D4B\u5F79\u52A0\u91CD\u00B7\u6C11\u9003\u6C5F\u6DEE</span>'});
+    }
+    if (typeof npAll.hiddenCount === 'number') pItems.push({ic:'\u9690', name:'\u9690 \u6237', sub:'\u8C6A\u7EC5\u836B\u5E87', ov:opAll.hiddenCount, nv:npAll.hiddenCount, cls: 'warn', reasonsHtml:'<span class="tr-reason-txt">\u5730\u65B9\u8C6A\u7EC5\u9690\u533F\u4F43\u6237\u8EB2\u4E01\u5DEE</span>'});
+    if (pItems.length > 0) {
+      html += '<div class="tr-cg-block tr-cg-hukou">';
+      html += '<div class="tr-cg-hdr"><div class="ic">\u6237</div><div class="lab">\u6237 \u53E3 \u00B7 \u4E01 \u7C4D</div>';
+      html += '<div class="sub">\u6237\u90E8\u9EC4\u518C\u00B7\u5730\u65B9\u9047\u62A5</div>';
+      html += '<div class="count">' + pItems.length + ' \u9879</div></div>';
+      html += '<div class="tr-cg-items">';
+      pItems.forEach(function(it){
+        html += '<div class="tr-cg-item' + (it.cls?' '+it.cls:'') + '">';
+        html += '<div class="tr-cg-name"><span class="mini-ic">' + it.ic + '</span>' + escHtml(it.name) + ' <span class="sub-lbl">' + escHtml(it.sub||'') + '</span></div>';
+        html += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, _rucFmtBig, '') + '</div>';
+        html += '<div class="tr-cg-reasons">' + (it.reasonsHtml||'') + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+  }
+
+  // ═══ ⑤ 政治核心（七大变量/vars）═══
+  var politicItems = [];
+  if (GM.turnChanges && GM.turnChanges.variables) {
+    GM.turnChanges.variables.forEach(function(vc){
+      var ov = Math.round(vc.oldValue||0), nv = Math.round(vc.newValue||0);
+      if (ov === nv) return;
+      var name = vc.name || '';
+      // 只纳入政治类（非财政类：国库/内帑等已单独）
+      if (/\u56FD\u5E93|\u5185\u5E91|\u8D22\u4EA7/.test(name)) return;
+      var iconMap = {'\u7687\u6743':'\u6743','\u7687\u5A01':'\u5A01','\u6C11\u5FC3':'\u5FC3','\u541B\u81E3':'\u541B','\u515A\u4E89':'\u515A','\u5173\u5916\u4EA4':'\u5916','\u5927\u519B':'\u5175','\u540F\u6CBB':'\u540F','\u8150\u8D25':'\u8150','\u7A0E\u6536\u7387':'\u7A0E','\u540D\u671B':'\u540D','\u8D24\u80FD':'\u8D24'};
+      var ic = iconMap[name] || (name.charAt(0));
+      politicItems.push({ic:ic, name:name, ov:ov, nv:nv, reasons:vc.reasons||[]});
+    });
+  }
+  // 核心指标（CORE_METRIC_LABELS）
+  if (typeof CORE_METRIC_LABELS === 'object') {
+    Object.keys(CORE_METRIC_LABELS).forEach(function(k) {
+      if (typeof GM[k] !== 'number') return;
+      var nv = Math.round(GM[k]);
+      var prevKey = '_prev_' + k;
+      var ov = Math.round(GM[prevKey] !== undefined ? GM[prevKey] : nv);
+      if (nv === ov) return;
+      var label = CORE_METRIC_LABELS[k] || k;
+      if (/\u56FD\u5E93|\u5185\u5E91/.test(label)) return;
+      politicItems.push({ic:label.charAt(0), name:label, ov:ov, nv:nv, reasons:[]});
+    });
+  }
+  if (politicItems.length > 0) {
+    html += '<div class="tr-cg-block tr-cg-politic">';
+    html += '<div class="tr-cg-hdr"><div class="ic">\u653F</div><div class="lab">\u653F \u6CBB \u6838 \u5FC3</div>';
+    html += '<div class="sub">\u6838\u5FC3\u53D8\u91CF\u00B7\u541B\u5FC3\u6240\u7CFB</div>';
+    html += '<div class="count">' + politicItems.length + ' \u9879</div></div>';
+    html += '<div class="tr-cg-items">';
+    politicItems.forEach(function(it){
+      var deltaD = it.nv - it.ov;
+      var itCls = deltaD < -3 ? ' warn' : '';
+      html += '<div class="tr-cg-item' + itCls + '">';
+      html += '<div class="tr-cg-name"><span class="mini-ic">' + it.ic + '</span>' + escHtml(it.name) + '</div>';
+      html += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, function(v){return Math.round(v||0).toString();}, '') + '</div>';
+      html += '<div class="tr-cg-reasons">' + _rucReasonChips(it.reasons) + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  // ═══ ⑥ 军事 ═══
+  if (GM.turnChanges && GM.turnChanges.military && GM.turnChanges.military.length > 0) {
+    var mItems = [];
+    GM.turnChanges.military.forEach(function(mc){
+      (mc.changes||[]).forEach(function(ch){
+        var fMap = {'soldiers':'\u5175\u529B','morale':'\u58EB\u6C14','training':'\u8BAD\u7EC3','supply':'\u8865\u7ED9'};
+        var fN = fMap[ch.field] || ch.field;
+        var icMap = {'soldiers':'\u5175','morale':'\u58EB','training':'\u8BAD','supply':'\u8865'};
+        mItems.push({name:mc.name, field:fN, ic:icMap[ch.field]||'\u519B', ov:ch.oldValue||0, nv:ch.newValue||0, reason:ch.reason||''});
+      });
+    });
+    if (mItems.length > 0) {
+      html += '<div class="tr-cg-block tr-cg-military">';
+      html += '<div class="tr-cg-hdr"><div class="ic">\u519B</div><div class="lab">\u519B \u4E8B \u00B7 \u519B \u961F \u52A8 \u6001</div>';
+      html += '<div class="sub">\u5404\u519B\u56E2 \u5175/\u58EB/\u8BAD/\u8865</div>';
+      html += '<div class="count">' + mItems.length + ' \u9879</div></div>';
+      html += '<div class="tr-cg-items">';
+      mItems.forEach(function(it){
+        var d = (it.nv||0) - (it.ov||0);
+        var cls = d < -5 ? ' warn' : (d < -10 ? ' danger' : '');
+        html += '<div class="tr-cg-item' + cls + '">';
+        html += '<div class="tr-cg-name"><span class="mini-ic">' + it.ic + '</span>' + escHtml(it.name) + ' <span class="sub-lbl">' + escHtml(it.field) + '</span></div>';
+        html += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, function(v){return _rucFmtBig(v);}, '') + '</div>';
+        html += '<div class="tr-cg-reasons">' + (it.reason?'<span class="tr-reason-txt">'+escHtml(it.reason)+'</span>':'') + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+  }
+
+  // ═══ ⑦ 势力 ═══
+  if (GM.turnChanges && GM.turnChanges.factions && GM.turnChanges.factions.length > 0) {
+    var fItems = [];
+    GM.turnChanges.factions.forEach(function(fc){
+      (fc.changes||[]).forEach(function(ch){
+        var fMap = {'strength':'\u5B9E\u529B','economy':'\u7ECF\u6D4E','playerRelation':'\u5BF9\u5DF1\u5173\u7CFB','attitude':'\u6001\u5EA6'};
+        var fN = fMap[ch.field] || ch.field;
+        fItems.push({name:fc.name, field:fN, ov:ch.oldValue||0, nv:ch.newValue||0, reason:ch.reason||''});
+      });
+    });
+    if (fItems.length > 0) {
+      html += '<div class="tr-cg-block tr-cg-faction">';
+      html += '<div class="tr-cg-hdr"><div class="ic">\u52BF</div><div class="lab">\u5929 \u4E0B \u52BF \u529B \u52A8 \u6001</div>';
+      html += '<div class="count">' + fItems.length + ' \u9879</div></div>';
+      html += '<div class="tr-cg-items">';
+      fItems.forEach(function(it){
+        var d = (it.nv||0) - (it.ov||0);
+        var cls = (it.name && /\u540E\u91D1|\u53CD\u519B|\u8D3C\u5BC7|\u53DB\u519B/.test(it.name) && d > 0) ? ' danger' : '';
+        html += '<div class="tr-cg-item' + cls + '">';
+        html += '<div class="tr-cg-name">' + escHtml(it.name) + ' <span class="sub-lbl">' + escHtml(it.field) + '</span></div>';
+        html += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, function(v){return Math.round(v||0).toString();}, '') + '</div>';
+        html += '<div class="tr-cg-reasons">' + (it.reason?'<span class="tr-reason-txt">'+escHtml(it.reason)+'</span>':'') + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+  }
+
+  // ═══ ⑧ 党派 ═══
+  if (GM.turnChanges && GM.turnChanges.parties && GM.turnChanges.parties.length > 0) {
+    var ptyItems = [];
+    GM.turnChanges.parties.forEach(function(pc){
+      (pc.changes||[]).forEach(function(ch){
+        var fMap = {'influence':'\u5F71\u54CD\u529B','satisfaction':'\u6EE1\u610F\u5EA6','cohesion':'\u51DD\u805A\u529B'};
+        // 跳过非数字字段（如 status/new_agenda）·避免 Math.round('活跃') 产生 NaN
+        if (!fMap[ch.field] || typeof ch.oldValue !== 'number' || typeof ch.newValue !== 'number') return;
+        ptyItems.push({name:pc.name, field:fMap[ch.field], ov:ch.oldValue||0, nv:ch.newValue||0, reason:_rucLocalizeReason(ch.reason||'')});
+      });
+    });
+    if (ptyItems.length > 0) {
+      html += _rucRenderActorChangeGroup({
+        cls: 'tr-cg-party',
+        kind: 'party',
+        ic: '\u515A',
+        itemIc: '\u515A',
+        label: '\u671D \u4E2D \u515A \u6D3E',
+        sub: '\u540C\u515A\u6D3E\u53D8\u5316\u5DF2\u5408\u5E76\u4E3A\u6298\u53E0\u7EC4',
+        items: ptyItems
+      });
+    }
+  }
+
+  // ═══ ⑨ 阶层 ═══
+  if (GM.turnChanges && GM.turnChanges.classes && GM.turnChanges.classes.length > 0) {
+    var clsItems = [];
+    GM.turnChanges.classes.forEach(function(cc){
+      (cc.changes||[]).forEach(function(ch){
+        var fMap = {'satisfaction':'\u6EE1\u610F\u5EA6','influence':'\u5F71\u54CD\u529B','population':'\u4EBA\u53E3'};
+        if (!fMap[ch.field] || typeof ch.oldValue !== 'number' || typeof ch.newValue !== 'number') return;
+        clsItems.push({name:cc.name, field:fMap[ch.field], ov:ch.oldValue||0, nv:ch.newValue||0, reason:_rucLocalizeReason(ch.reason||'')});
+      });
+    });
+    if (clsItems.length > 0) {
+      html += _rucRenderActorChangeGroup({
+        cls: 'tr-cg-class',
+        kind: 'class',
+        ic: '\u9636',
+        itemIc: '\u9636',
+        label: '\u9636 \u5C42 \u52A8 \u6001',
+        sub: '\u540C\u9636\u5C42\u53D8\u5316\u5DF2\u5408\u5E76\u4E3A\u6298\u53E0\u7EC4',
+        items: clsItems
+      });
+    }
+  }
+
+  // ═══ ⑩ 人物 ═══
+  if (GM.turnChanges && GM.turnChanges.characters && GM.turnChanges.characters.length > 0) {
+    var chItems = [];
+    GM.turnChanges.characters.forEach(function(cc){
+      (cc.changes||[]).forEach(function(ch){
+        var fMap = {'loyalty':'\u5FE0\u8BDA','ambition':'\u91CE\u5FC3','stress':'\u538B\u529B','influence':'\u5F71\u54CD\u529B','strength':'\u5B9E\u529B'};
+        if (!fMap[ch.field]) return;
+        chItems.push({name:cc.name, field:fMap[ch.field], ov:ch.oldValue||0, nv:ch.newValue||0, reason:ch.reason||''});
+      });
+    });
+    if (chItems.length > 0) {
+      html += '<div class="tr-cg-block tr-cg-char">';
+      html += '<div class="tr-cg-hdr"><div class="ic">\u4EBA</div><div class="lab">\u4EBA \u7269 \u52A8 \u6001</div>';
+      html += '<div class="sub">\u6838\u5FC3\u4EBA\u81E3 \u00B7 \u5FE0/\u91CE/\u538B/\u5F71</div>';
+      html += '<div class="count">' + chItems.length + ' \u9879</div></div>';
+      html += '<div class="tr-cg-items">';
+      chItems.slice(0, 12).forEach(function(it){
+        var d = (it.nv||0) - (it.ov||0);
+        var isDanger = (it.field === '\u5FE0\u8BDA' && d < -5) || (it.field === '\u538B\u529B' && d > 10);
+        var isWarn = (it.field === '\u5FE0\u8BDA' && d < 0) || (it.field === '\u538B\u529B' && d > 5);
+        var cls = isDanger ? ' danger' : (isWarn ? ' warn' : '');
+        html += '<div class="tr-cg-item' + cls + '">';
+        html += '<div class="tr-cg-name">' + escHtml(it.name) + ' <span class="sub-lbl">' + escHtml(it.field) + '</span></div>';
+        html += '<div class="tr-cg-vals">' + _rucValHtml(it.ov, it.nv, function(v){return Math.round(v||0).toString();}, '') + '</div>';
+        html += '<div class="tr-cg-reasons">' + (it.reason?'<span class="tr-reason-txt">'+escHtml(it.reason)+'</span>':'') + '</div>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+  }
+
+  if (!html) return '';
+  return '<div class="turn-section unified-changes"><h3>\u6570 \u503C \u53D8 \u5316 \u00B7 \u5206 \u7C7B \u8BE6 \u6CE8</h3><div class="tr-changes-wrap">' + html + '</div></div>';
+}
+
+// ============================================================
+// 人事变动（从AI返回的personnel_changes数组渲染）
+// 格式：姓名（原职）：变动描述
+// ============================================================
+function _renderPersonnelChanges(personnelChanges) {
+  if (!personnelChanges || !personnelChanges.length) return '';
+  // 推断 type → CSS class
+  function _pcType(change, reason) {
+    var s = (change||'') + ' ' + (reason||'');
+    if (/\u6B81|\u5D29|\u75C5\u6B7B|\u8584\u5929|\u55E1|\u81EA\u5208/.test(s)) return {cls:'death', lbl:'\u6B81 \u6545'};
+    if (/\u4EFB\u547D|\u62DC|\u6388|\u8865\u8BA1|\u85A6\u64A2|\u5C31\u4EFB|\u5152\u8D1F|\u4E0A\u4EFB/.test(s)) return {cls:'appoint', lbl:'\u4EFB \u547D'};
+    if (/\u8FC1|\u64A2|\u5347|\u8FDB|\u5165\u9601|\u62DC\u5C06/.test(s)) return {cls:'promote', lbl:'\u8FC1 \u64A2'};
+    if (/\u8D2C|\u964D|\u88AB\u8D2C|\u964D\u7EA7|\u9000\u804C/.test(s)) return {cls:'demote', lbl:'\u964D \u8C2A'};
+    if (/\u5F52\u7530|\u81F4\u4EDD|\u9000\u4F11|\u4EF1\u5B85/.test(s)) return {cls:'retire', lbl:'\u81F4 \u4EDD'};
+    if (/\u4E01\u5FE7|\u5B88\u5236/.test(s)) return {cls:'mourn', lbl:'\u4E01 \u5FE7'};
+    if (/\u7F62|\u9769|\u51FA\u4EFB|\u88C1\u6492/.test(s)) return {cls:'fire', lbl:'\u7F62 \u5242'};
+    if (/\u6DFB\u4E01|\u6DFB\u5B50|\u4EA7|\u751F|\u65B0\u751F/.test(s)) return {cls:'birth', lbl:'\u6DFB \u4E01'};
+    return {cls:'appoint', lbl:'\u4EBA \u4E8B'};
+  }
+  var html = '<div class="tr-section personnel">';
+  html += '<div class="tr-section-hdr"><span class="lab">\u4EBA \u4E8B \u53D8 \u52A8</span><span class="meta">\u8FC1 \u00B7 \u8C2A \u00B7 \u6B81 \u00B7 \u751F \u00B7 \u4EFB \u672C\u56DE\u5408 ' + personnelChanges.length + ' \u8D77</span></div>';
+  html += '<div class="tr-personnel-list">';
+  personnelChanges.forEach(function(pc) {
+    if (!pc || !pc.name) return;
+    var former = pc.former || pc.origin || '';
+    var change = pc.change || pc.desc || '';
+    var reason = pc.reason || '';
+    var t = _pcType(change, reason);
+    html += '<div class="tr-person-row ' + t.cls + '">';
+    html += '<span class="type">' + t.lbl + '</span>';
+    html += '<span class="who">' + escHtml(pc.name) + '</span>';
+    html += '<span class="from-to">';
+    if (former) html += escHtml(former) + ' <span class="arrow">\u2192</span> ';
+    html += escHtml(change);
+    if (reason) html += ' \uFF08' + escHtml(reason) + '\uFF09';
+    html += '</span>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}

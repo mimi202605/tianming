@@ -1,0 +1,3477 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>顶栏全面升级 v2·7 真实变量·rich tooltip·banner 联动</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&family=Long+Cang&family=Liu+Jian+Mao+Cao&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-void: #0a0a0f;
+  --bg-deep: #14141c;
+  --bg-mid: #1c1c26;
+  --bg-warm: #1a1612;
+  --ink-white: #f4ede0;
+  --ink-faded: #a8a098;
+  --ink-muted: #6a635a;
+  --gold-bright: #e6c87a;
+  --gold-mid: #b8924e;
+  --gold-dim: #7a5c3a;
+  --vermillion: #c8342e;
+  --vermillion-deep: #8a2018;
+  --vermillion-glow: #e54a3c;
+  --jade: #7a9b6e;
+  --jade-deep: #4a6b40;
+  --celadon: #b8ccae;
+  --azurite: #2c5fb0;
+  --indigo: #1a2148;
+  --paper-cream: #f0e6cf;
+  --paper-warm: #e3d5b2;
+  --ink-classical: #1c1610;
+}
+
+html, body {
+  background: var(--bg-void);
+  color: var(--ink-white);
+  font-family: 'Noto Serif SC', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 1400px 900px at 20% 15%, rgba(184, 146, 78, 0.04), transparent 60%),
+    radial-gradient(ellipse 1200px 700px at 80% 85%, rgba(200, 52, 46, 0.03), transparent 60%),
+    repeating-linear-gradient(90deg, transparent 0, transparent 96px, rgba(184, 146, 78, 0.012) 96px, rgba(184, 146, 78, 0.012) 97px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='3'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+  mix-blend-mode: overlay;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 64px 40px 140px;
+}
+
+/* ========================================================== */
+/* HEADER                                                       */
+/* ========================================================== */
+
+.hdr {
+  margin-bottom: 72px;
+}
+
+.hdr-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 11px;
+  letter-spacing: 0.46em;
+  color: var(--gold-mid);
+  text-transform: uppercase;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(184, 146, 78, 0.18);
+}
+
+.hdr-meta span:first-child {
+  color: var(--vermillion-glow);
+}
+
+.hdr h1 {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 84px;
+  line-height: 1.05;
+  letter-spacing: 0.18em;
+  font-weight: 400;
+  background: linear-gradient(135deg, #f4ede0 0%, #e6c87a 38%, #b8924e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 22px;
+}
+
+.hdr-desc {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 15.5px;
+  line-height: 1.92;
+  color: var(--ink-faded);
+  max-width: 980px;
+  margin-bottom: 28px;
+  font-weight: 300;
+}
+
+.hdr-desc strong { color: var(--gold-bright); font-weight: 500; }
+.hdr-desc .fix { color: var(--vermillion-glow); font-weight: 500; }
+
+.hdr-specs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  border: 1px solid rgba(184, 146, 78, 0.22);
+  background: rgba(20, 16, 12, 0.5);
+}
+
+.hdr-spec {
+  padding: 16px 18px;
+  border-right: 1px solid rgba(184, 146, 78, 0.14);
+}
+
+.hdr-spec:last-child { border-right: 0; }
+
+.hdr-spec-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  color: var(--gold-mid);
+  margin-bottom: 7px;
+  text-transform: uppercase;
+}
+
+.hdr-spec-value {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 14.5px;
+  color: var(--ink-white);
+  letter-spacing: 0.04em;
+}
+
+.fix-callout {
+  margin-top: 28px;
+  padding: 16px 20px;
+  background: rgba(200, 52, 46, 0.08);
+  border-left: 3px solid var(--vermillion-glow);
+}
+
+.fix-callout-title {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  color: var(--vermillion-glow);
+  margin-bottom: 10px;
+}
+
+.fix-callout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--ink-faded);
+}
+
+.fix-callout-grid b { color: var(--vermillion-glow); font-weight: 500; }
+
+/* ========================================================== */
+/* BASELINE                                                     */
+/* ========================================================== */
+
+.baseline {
+  margin-bottom: 88px;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed rgba(184, 146, 78, 0.18);
+}
+
+.section-head-num {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 44px;
+  color: var(--ink-muted);
+}
+
+.section-head-title {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 26px;
+  letter-spacing: 0.18em;
+  color: var(--ink-faded);
+}
+
+.section-head-tag {
+  margin-left: auto;
+  font-family: 'Cinzel', serif;
+  font-size: 10.5px;
+  letter-spacing: 0.32em;
+  color: var(--ink-muted);
+}
+
+/* ── baseline runtime mock ── */
+
+.baseline-stack {
+  position: relative;
+}
+
+.baseline-topbar {
+  position: relative;
+  width: 100%;
+  height: 88px;
+  background: linear-gradient(180deg, rgba(15, 12, 10, 0.92), rgba(5, 4, 4, 0.95));
+  border: 1px solid rgba(184, 146, 78, 0.16);
+  border-radius: 2px;
+  padding: 8px 12px 0;
+  display: flex;
+  gap: 9px;
+  overflow: hidden;
+}
+
+.b-left {
+  width: 205px;
+  height: 60px;
+  border: 1px solid rgba(218, 181, 93, 0.38);
+  border-left: 2px solid rgba(151, 48, 34, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px 7px 7px;
+  flex-shrink: 0;
+}
+
+.b-wentian {
+  width: 36px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(227, 187, 92, 0.6);
+  background: radial-gradient(circle at 35% 27%, rgba(251, 221, 143, 0.30), rgba(92, 54, 24, 0.88) 58%, rgba(12, 9, 7, 0.94) 78%);
+  color: #f0d58f;
+  font: 600 10px/1 'Noto Serif SC', serif;
+  display: grid;
+  place-items: center;
+  letter-spacing: 0.06em;
+}
+
+.b-weather { display: flex; align-items: center; gap: 6px; flex: 1; }
+
+.b-seal {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(233, 196, 105, 0.52);
+  background: radial-gradient(circle at 35% 25%, rgba(255, 225, 147, 0.24), rgba(86, 52, 24, 0.74) 58%, rgba(13, 10, 8, 0.92));
+  color: #efd990;
+  font: 600 11px/1 'Noto Serif SC', serif;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.b-info { line-height: 1.1; min-width: 0; }
+.b-name { font-size: 10.8px; color: #efd990; letter-spacing: 0.09em; }
+.b-desc { font-size: 8.2px; color: rgba(209, 193, 153, 0.66); }
+
+.b-rail {
+  flex: 1;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background:
+    linear-gradient(180deg, rgba(41, 32, 23, 0.86), rgba(13, 10, 8, 0.82)),
+    linear-gradient(90deg, rgba(94, 54, 27, 0.18), rgba(0,0,0,.04) 12%, rgba(0,0,0,.04) 88%, rgba(94,54,27,.16));
+  border: 1px solid rgba(203, 166, 88, 0.22);
+}
+
+.b-cell {
+  height: 46px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 5px 8px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.b-cell + .b-cell::before {
+  content: '';
+  position: absolute;
+  left: -2px; top: 8px; bottom: 8px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(220, 184, 102, 0.22), transparent);
+}
+
+.b-cell.wide { width: 212px; }
+.b-cell.hukou { width: 104px; }
+.b-cell.lizhi { width: 110px; }
+.b-cell.small { width: 82px; }
+
+.b-pn { font-size: 7.6px; color: rgba(184, 168, 132, 0.7); letter-spacing: 0.18em; }
+.b-pv { font-size: 12px; color: #e0c77e; }
+
+.b-psubs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; align-items: center; }
+.b-psubs > div { display: flex; align-items: center; gap: 4px; padding: 2px 3px; border-radius: 2px; background: rgba(0,0,0,.12); min-width: 0; }
+.b-psubs .ic {
+  width: 16px; height: 16px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-size: 8px;
+  border: 1px solid rgba(214, 176, 90, 0.36);
+  flex-shrink: 0;
+}
+.b-psubs .ic.yin { background: radial-gradient(circle at 32% 28%, rgba(237, 202, 122, 0.56), rgba(40, 26, 13, 0.6) 100%); color: #f3d58f; }
+.b-psubs .ic.liang { background: radial-gradient(circle at 32% 28%, rgba(216, 224, 162, 0.42), rgba(26, 33, 18, 0.62) 100%); color: #d8e0a2; }
+.b-psubs .ic.bu { background: radial-gradient(circle at 32% 28%, rgba(201, 215, 232, 0.42), rgba(24, 29, 36, 0.62) 100%); color: #c9d7e8; }
+.b-psubs .sv b { font: 600 11px/1.1 'Noto Sans SC', sans-serif; color: #e0c77e; display: block; }
+.b-psubs .sv .sd { font: 500 7px/1 'Noto Sans SC', sans-serif; display: block; }
+.b-psubs .sd.up { color: #8dbdab; }
+.b-psubs .sd.dn { color: #e88a78; }
+.b-psubs .sd.flat { color: rgba(184, 168, 132, 0.6); }
+
+.b-right-stub {
+  width: 340px;
+  height: 60px;
+  background: repeating-linear-gradient(135deg, rgba(120, 100, 70, 0.12) 0 5px, rgba(120, 100, 70, 0.05) 5px 10px);
+  border: 1px dashed rgba(184, 146, 78, 0.22);
+  display: grid;
+  place-items: center;
+  font: 10px/1.4 'Cinzel', serif;
+  color: var(--ink-muted);
+  letter-spacing: 0.16em;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.baseline-banner {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: -12px;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-width: 260px;
+  height: 26px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 218, 0.92), rgba(228, 189, 124, 0.88)),
+    radial-gradient(ellipse at 50% 40%, rgba(255, 248, 214, 0.7), transparent 70%);
+  color: #6f4520;
+  text-shadow: 0 1px 0 rgba(255, 247, 218, 0.72);
+  font: 700 11px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.18em;
+  border-radius: 6px;
+  border: 1px solid rgba(184, 130, 60, 0.42);
+  border-top: 0;
+}
+
+.baseline-issue {
+  margin-top: 38px;
+  padding: 14px 18px;
+  background: rgba(140, 30, 26, 0.08);
+  border-left: 2px solid var(--vermillion-deep);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-faded);
+}
+
+.baseline-issue strong { color: var(--vermillion-glow); font-weight: 500; letter-spacing: 0.06em; }
+
+/* ========================================================== */
+/* PARADIGM SHELL                                               */
+/* ========================================================== */
+
+.paradigm {
+  margin-bottom: 120px;
+  position: relative;
+}
+
+.paradigm::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: -16px;
+  width: 4px;
+  bottom: -16px;
+  background: linear-gradient(180deg, transparent, var(--gold-mid) 18%, var(--gold-mid) 82%, transparent);
+  opacity: 0.3;
+}
+
+.pd-head {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 32px;
+  margin-bottom: 30px;
+}
+
+.pd-num-block {
+  border: 1px solid rgba(184, 146, 78, 0.32);
+  background: rgba(15, 12, 10, 0.62);
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.pd-num {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 64px;
+  line-height: 1;
+  color: var(--gold-bright);
+  margin-bottom: 8px;
+}
+
+.pd-num-tag {
+  font: 9.5px/1.4 'Cinzel', serif;
+  letter-spacing: 0.32em;
+  color: var(--gold-mid);
+}
+
+.pd-title {
+  font-family: 'Ma Shan Zheng', cursive;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: 0.32em;
+  color: var(--ink-white);
+  margin-bottom: 8px;
+}
+
+.pd-sub {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 14px;
+  letter-spacing: 0.36em;
+  color: var(--gold-mid);
+  margin-bottom: 20px;
+}
+
+.pd-desc {
+  font-size: 14.5px;
+  line-height: 1.88;
+  color: var(--ink-faded);
+  font-weight: 300;
+  max-width: 920px;
+}
+
+.pd-desc strong { color: var(--gold-bright); font-weight: 500; }
+
+.pd-features {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pd-feat {
+  padding: 11px 13px;
+  background: rgba(15, 12, 10, 0.45);
+  border: 1px solid rgba(184, 146, 78, 0.16);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-faded);
+}
+
+.pd-feat strong {
+  display: block;
+  font-family: 'ZCOOL XiaoWei', serif;
+  color: var(--gold-bright);
+  letter-spacing: 0.22em;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.pd-stage { margin-top: 28px; }
+
+.pd-stage-label {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-family: 'Cinzel', serif;
+  font-size: 10.5px;
+  letter-spacing: 0.42em;
+  color: var(--gold-mid);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(184, 146, 78, 0.18);
+}
+
+.pd-stage-label .cn {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 15px;
+  color: var(--ink-white);
+  letter-spacing: 0.28em;
+}
+
+.pd-stage-label .note {
+  margin-left: auto;
+  font: 10.5px/1 'Noto Serif SC', serif;
+  letter-spacing: 0.14em;
+  color: var(--ink-muted);
+}
+
+.pd-stack {
+  position: relative;
+}
+
+.pd-frame {
+  position: relative;
+  width: 100%;
+  display: flex;
+}
+
+.pd-frame-right-stub {
+  width: 340px;
+  flex-shrink: 0;
+  background: repeating-linear-gradient(135deg, rgba(120, 100, 70, 0.10) 0 4px, rgba(120, 100, 70, 0.04) 4px 8px);
+  border: 1px dashed rgba(184, 146, 78, 0.16);
+  display: grid;
+  place-items: center;
+  font: 9px/1.4 'Cinzel', serif;
+  color: var(--ink-muted);
+  letter-spacing: 0.14em;
+  text-align: center;
+  margin-left: 9px;
+}
+
+/* tooltip overlay */
+.pd-tooltip-stage {
+  position: relative;
+  margin-top: 28px;
+  padding: 24px;
+  background: rgba(8, 6, 4, 0.62);
+  border: 1px dashed rgba(184, 146, 78, 0.22);
+  min-height: 320px;
+}
+
+.pd-tooltip-anchor {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: 18px;
+}
+
+.pd-tooltip-conn {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px; height: 22px;
+  background: linear-gradient(180deg, var(--vermillion-glow), transparent);
+}
+
+.pd-tooltip-label {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(184, 146, 78, 0.16);
+}
+
+.pd-tooltip-label .cn {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 15px;
+  color: var(--ink-white);
+  letter-spacing: 0.22em;
+}
+
+.pd-tooltip-label .en {
+  font: 10px/1 'Cinzel', serif;
+  letter-spacing: 0.32em;
+  color: var(--gold-mid);
+}
+
+.pd-tooltip-label .from {
+  margin-left: auto;
+  font: 10px/1.4 'Noto Serif SC', serif;
+  color: var(--ink-muted);
+  letter-spacing: 0.1em;
+}
+
+.pd-states {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.pd-state-card {
+  background: rgba(15, 12, 10, 0.45);
+  border: 1px solid rgba(184, 146, 78, 0.18);
+  padding: 14px 16px 16px;
+}
+
+.pd-state-label {
+  font: 10px/1 'Cinzel', serif;
+  letter-spacing: 0.34em;
+  color: var(--gold-mid);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.pd-state-label .cn {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 13px;
+  color: var(--ink-white);
+  letter-spacing: 0.22em;
+}
+
+.pd-state-cap {
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--ink-muted);
+}
+
+/* ========================================================== */
+/* PARADIGM 1·钦天监·星图账                                     */
+/* ========================================================== */
+
+.p1-frame-row {
+  flex: 1;
+  height: 88px;
+  background:
+    radial-gradient(ellipse 600px 200px at 20% 50%, rgba(40, 70, 140, 0.32), transparent 60%),
+    radial-gradient(ellipse 700px 240px at 80% 50%, rgba(40, 50, 100, 0.28), transparent 65%),
+    linear-gradient(180deg, #050812 0%, #0b1024 60%, #050812 100%);
+  border: 1px solid rgba(184, 146, 78, 0.34);
+  border-top-color: rgba(214, 176, 90, 0.6);
+  display: flex;
+  padding: 0;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 230, 180, 0.08), inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.p1-frame-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.2px 1.2px at 5% 22%, rgba(230, 200, 122, 0.6), transparent 100%),
+    radial-gradient(1px 1px at 12% 68%, rgba(230, 200, 122, 0.5), transparent 100%),
+    radial-gradient(1px 1px at 28% 14%, rgba(255, 230, 180, 0.7), transparent 100%),
+    radial-gradient(0.8px 0.8px at 38% 80%, rgba(200, 180, 100, 0.4), transparent 100%),
+    radial-gradient(1.4px 1.4px at 56% 32%, rgba(255, 230, 180, 0.8), transparent 100%),
+    radial-gradient(0.9px 0.9px at 74% 76%, rgba(214, 176, 90, 0.5), transparent 100%),
+    radial-gradient(1.1px 1.1px at 88% 22%, rgba(230, 200, 122, 0.55), transparent 100%);
+  pointer-events: none;
+}
+
+.p1-left {
+  width: 218px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px 0 12px;
+  border-right: 1px solid rgba(184, 146, 78, 0.22);
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.p1-armillary {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(214, 176, 90, 0.55);
+  background: radial-gradient(circle at 35% 30%, rgba(80, 130, 200, 0.22), rgba(12, 18, 38, 0.92) 70%);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 12px rgba(80, 130, 200, 0.22), 0 0 12px rgba(214, 176, 90, 0.18);
+}
+
+.p1-armillary svg { position: absolute; inset: 2px; transition: transform 1.2s ease; }
+
+.p1-armillary-label {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  font: 8px/1 'Cinzel', serif;
+  letter-spacing: 0.24em;
+  color: var(--gold-mid);
+  white-space: nowrap;
+}
+
+.p1-jieqi {
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.p1-jieqi-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(214, 176, 90, 0.42);
+  background: radial-gradient(circle at 50% 50%, rgba(20, 18, 28, 0.85), rgba(8, 10, 18, 0.95));
+}
+
+.p1-jieqi-teeth { position: absolute; inset: 0; }
+
+.p1-jieqi-needle {
+  position: absolute;
+  left: 50%; top: 4px;
+  width: 1.5px;
+  height: 10px;
+  background: linear-gradient(180deg, var(--vermillion-glow), var(--vermillion-deep));
+  transform: translateX(-50%);
+  box-shadow: 0 0 4px rgba(200, 52, 46, 0.7);
+  border-radius: 1px;
+}
+
+.p1-jieqi-center {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, rgba(214, 176, 90, 0.48), rgba(80, 50, 20, 0.78));
+  border: 1px solid rgba(214, 176, 90, 0.62);
+  display: grid;
+  place-items: center;
+  color: #1a1208;
+  font: 600 12px 'Ma Shan Zheng', cursive;
+  text-shadow: 0 1px 0 rgba(255, 230, 180, 0.4);
+}
+
+.p1-info { flex: 1; min-width: 0; }
+
+.p1-name {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: #f4d98a;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.p1-hou {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--gold-mid);
+  margin-bottom: 3px;
+}
+
+.p1-desc {
+  font: 10.5px/1.3 'Noto Serif SC', serif;
+  color: rgba(200, 180, 140, 0.78);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* p1 rail */
+.p1-rail {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  padding: 10px 14px;
+  gap: 0;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(40, 50, 80, 0.20), transparent 4%, transparent 96%, rgba(40, 50, 80, 0.20));
+}
+
+.p1-rail::before {
+  content: '';
+  position: absolute;
+  left: 16px; right: 16px;
+  top: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(214, 176, 90, 0.5) 18%, rgba(214, 176, 90, 0.5) 82%, transparent);
+}
+
+.p1-rail::after {
+  content: '';
+  position: absolute;
+  left: 16px; right: 16px;
+  bottom: 14px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(214, 176, 90, 0.32) 18%, rgba(214, 176, 90, 0.32) 82%, transparent);
+}
+
+.p1-star {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0 7px;
+  border-right: 1px dashed rgba(184, 146, 78, 0.16);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.18s;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.p1-star:last-child { border-right: 0; }
+.p1-star:hover { background: radial-gradient(ellipse 60% 90% at 50% 50%, rgba(80, 130, 200, 0.18), transparent 70%); }
+
+.p1-star::before {
+  content: '';
+  position: absolute;
+  left: 50%; top: 3px;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--gold-mid);
+  box-shadow: 0 0 4px var(--gold-bright);
+}
+
+.p1-star.wide { width: 200px; }
+.p1-star.hukou { width: 96px; }
+.p1-star.lizhi { width: 100px; }
+.p1-star.small { width: 78px; }
+
+.p1-star-name {
+  font: 9px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.28em;
+  color: rgba(214, 176, 90, 0.86);
+  margin-top: 10px;
+  margin-bottom: 5px;
+  text-align: center;
+}
+
+.p1-star-val {
+  font: 500 16px/1 'Ma Shan Zheng', cursive;
+  color: #f4d98a;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.p1-star-trend {
+  font-size: 8.5px;
+  margin-top: 3px;
+  letter-spacing: 0.2em;
+  color: var(--celadon);
+}
+
+.p1-star-trend.dn { color: var(--vermillion-glow); }
+.p1-star-trend.flat { color: rgba(184, 146, 78, 0.46); }
+
+.p1-star.wide .p1-star-subs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 0;
+  width: 100%;
+  align-items: center;
+}
+
+.p1-star.wide .p1-star-subs > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.p1-star.wide .p1-sub-ic {
+  width: 16px; height: 16px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font: 8px/1 'Ma Shan Zheng', cursive;
+  flex-shrink: 0;
+}
+
+.p1-star.wide .p1-sub-ic.yin { background: radial-gradient(circle at 32% 28%, rgba(237, 202, 122, 0.66), rgba(40, 26, 13, 0.62)); border: 1px solid rgba(214, 176, 90, 0.48); color: #f3d58f; }
+.p1-star.wide .p1-sub-ic.liang { background: radial-gradient(circle at 32% 28%, rgba(216, 224, 162, 0.52), rgba(26, 33, 18, 0.62)); border: 1px solid rgba(127, 141, 73, 0.5); color: #d8e0a2; }
+.p1-star.wide .p1-sub-ic.bu { background: radial-gradient(circle at 32% 28%, rgba(201, 215, 232, 0.52), rgba(24, 29, 36, 0.62)); border: 1px solid rgba(110, 131, 155, 0.5); color: #c9d7e8; }
+
+.p1-star.wide .p1-sub-val { display: flex; flex-direction: column; line-height: 1.04; min-width: 0; }
+.p1-star.wide .p1-sub-val b { font: 600 11px/1.1 'Noto Sans SC', sans-serif; color: #ecd58e; }
+.p1-star.wide .p1-sub-val .sd { font: 500 7px/1 'Noto Sans SC', sans-serif; letter-spacing: 0.04em; }
+
+.p1-star.wide .sd.up { color: #8dbdab; }
+.p1-star.wide .sd.dn { color: #e88a78; }
+.p1-star.wide .sd.flat { color: rgba(184, 168, 132, 0.6); }
+
+.p1-state-pill {
+  position: absolute;
+  right: 6px; top: 4px;
+  font: 7px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.18em;
+  padding: 2px 5px;
+  border-radius: 1px;
+  background: rgba(80, 130, 200, 0.14);
+  color: rgba(180, 210, 240, 0.78);
+  border: 1px solid rgba(80, 130, 200, 0.32);
+}
+
+.p1-state-pill.warn { background: rgba(200, 80, 40, 0.16); color: #e88a78; border-color: rgba(200, 80, 40, 0.32); }
+.p1-state-pill.bad { background: rgba(220, 40, 30, 0.22); color: #f4a98c; border-color: rgba(220, 40, 30, 0.5); }
+.p1-state-pill.ok { background: rgba(90, 160, 130, 0.16); color: #b8e0a8; border-color: rgba(90, 160, 130, 0.34); }
+
+/* ── p1 banner ── */
+.p1-banner {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: -1px;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-width: 260px;
+  height: 24px;
+  padding: 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(20, 28, 60, 0.92), rgba(10, 16, 40, 0.96));
+  border: 1px solid rgba(214, 176, 90, 0.42);
+  border-top: 0;
+  color: #f4d98a;
+  font: 600 10.5px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.32em;
+  text-shadow: 0 0 5px rgba(214, 176, 90, 0.4);
+}
+
+.p1-banner::before, .p1-banner::after {
+  content: '';
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+  box-shadow: 0 0 4px var(--gold-bright);
+  margin: 0 10px;
+}
+
+/* ── p1 tooltip ── */
+.p1-tooltip {
+  display: inline-block;
+  min-width: 280px;
+  max-width: 340px;
+  padding: 14px 16px 14px;
+  background: linear-gradient(180deg, rgba(20, 28, 60, 0.98), rgba(10, 16, 40, 0.99));
+  border: 1px solid rgba(214, 176, 90, 0.55);
+  border-top: 2px solid rgba(214, 176, 90, 0.85);
+  border-radius: 2px;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.7), 0 0 18px rgba(80, 130, 200, 0.18), inset 0 1px 0 rgba(255, 230, 180, 0.1);
+  position: relative;
+  color: #d8cba8;
+  font-family: 'Noto Serif SC', serif;
+}
+
+.p1-tooltip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(230, 200, 122, 0.45), transparent),
+    radial-gradient(0.8px 0.8px at 78% 76%, rgba(200, 180, 100, 0.34), transparent),
+    radial-gradient(1px 1px at 56% 14%, rgba(255, 230, 180, 0.5), transparent);
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+.p1-tt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.p1-tt-glyph {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 35% 28%, rgba(214, 176, 90, 0.5), rgba(80, 50, 20, 0.78));
+  border: 1px solid rgba(214, 176, 90, 0.6);
+  color: #1a1208;
+  font: 600 16px/1 'Ma Shan Zheng', cursive;
+  text-shadow: 0 1px 0 rgba(255, 230, 180, 0.4);
+  flex-shrink: 0;
+}
+
+.p1-tt-htxt { flex: 1; min-width: 0; }
+
+.p1-tt-title {
+  font: 500 16px/1.1 'Ma Shan Zheng', cursive;
+  color: #f4d98a;
+  letter-spacing: 0.18em;
+  margin-bottom: 2px;
+}
+
+.p1-tt-sub {
+  font: 10px/1 'ZCOOL XiaoWei', serif;
+  color: var(--gold-mid);
+  letter-spacing: 0.22em;
+}
+
+.p1-tt-pill {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.18em;
+  padding: 4px 8px;
+  border-radius: 1px;
+  background: rgba(90, 160, 130, 0.18);
+  color: #b8e0a8;
+  border: 1px solid rgba(90, 160, 130, 0.42);
+  flex-shrink: 0;
+}
+
+.p1-tt-pill.warn { background: rgba(200, 80, 40, 0.18); color: #e88a78; border-color: rgba(200, 80, 40, 0.42); }
+.p1-tt-pill.bad { background: rgba(220, 40, 30, 0.24); color: #f4a98c; border-color: rgba(220, 40, 30, 0.55); }
+
+.p1-tt-stocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.p1-tt-stock {
+  padding: 7px 6px;
+  background: rgba(40, 50, 80, 0.32);
+  border: 1px solid rgba(214, 176, 90, 0.22);
+  border-radius: 2px;
+  text-align: center;
+}
+
+.p1-tt-stock .nm {
+  font: 9px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.22em;
+  color: var(--gold-mid);
+  margin-bottom: 4px;
+}
+
+.p1-tt-stock .vl {
+  font: 600 15px/1 'Ma Shan Zheng', cursive;
+  color: #f4d98a;
+  margin-bottom: 2px;
+}
+
+.p1-tt-stock .un {
+  font: 8px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.18em;
+  color: var(--gold-mid);
+}
+
+.p1-tt-stock.celadon .vl { color: #b8e0a8; }
+.p1-tt-stock.amber .vl { color: #f0b878; }
+
+.p1-tt-flows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(214, 176, 90, 0.18);
+  border-bottom: 1px solid rgba(214, 176, 90, 0.18);
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.p1-tt-flow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.p1-tt-flow .lb { color: #8dbdab; letter-spacing: 0.12em; }
+.p1-tt-flow .vl { color: #f4d98a; letter-spacing: 0.04em; }
+.p1-tt-flow .vl.neg { color: #e88a78; }
+.p1-tt-flow .u { font-size: 8.5px; color: var(--gold-mid); margin-left: 4px; letter-spacing: 0.18em; }
+.p1-tt-flow .arr.up { color: #b8e0a8; margin-left: 4px; }
+.p1-tt-flow .arr.dn { color: var(--vermillion-glow); margin-left: 4px; }
+
+.p1-tt-alerts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.p1-tt-alert {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.1em;
+  padding: 3px 6px;
+  border-radius: 1px;
+  background: rgba(200, 80, 40, 0.18);
+  color: #e88a78;
+  border: 1px solid rgba(200, 80, 40, 0.34);
+}
+
+.p1-tt-note {
+  font: 10.5px/1.5 'Noto Serif SC', serif;
+  color: var(--ink-muted);
+  letter-spacing: 0.08em;
+  position: relative;
+  z-index: 2;
+}
+
+/* p1 legacy tooltip */
+.p1-tt-legacy {
+  display: inline-block;
+  min-width: 240px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(20, 28, 60, 0.98), rgba(10, 16, 40, 0.99));
+  border: 1px solid rgba(214, 176, 90, 0.55);
+  border-top: 2px solid rgba(214, 176, 90, 0.85);
+  color: #d8cba8;
+}
+
+.p1-tt-legacy .ttl {
+  font: 500 15px/1 'Ma Shan Zheng', cursive;
+  color: #f4d98a;
+  letter-spacing: 0.18em;
+  margin-bottom: 4px;
+}
+
+.p1-tt-legacy .phs {
+  font: 10.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.18em;
+  color: var(--gold-mid);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(214, 176, 90, 0.18);
+}
+
+.p1-tt-legacy .row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 2px 0;
+}
+
+.p1-tt-legacy .row .lbl { color: #8dbdab; letter-spacing: 0.06em; }
+.p1-tt-legacy .row .val { color: #eadfbd; }
+
+.p1-tt-legacy .note {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(214, 176, 90, 0.18);
+  font: 10px/1.45 'Noto Serif SC', serif;
+  color: var(--ink-muted);
+}
+
+/* ========================================================== */
+/* PARADIGM 2·朱漆御印                                           */
+/* ========================================================== */
+
+.p2-frame-row {
+  flex: 1;
+  height: 88px;
+  background:
+    radial-gradient(ellipse 800px 200px at 50% 50%, rgba(200, 52, 46, 0.22), transparent 70%),
+    linear-gradient(180deg, #3a0e0a 0%, #1f0805 38%, #0f0402 100%);
+  border: 1px solid rgba(214, 176, 90, 0.48);
+  border-top: 2px solid var(--gold-mid);
+  display: flex;
+  padding: 0;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 220, 130, 0.18), inset 0 -1px 0 rgba(0, 0, 0, 0.65), 0 12px 24px rgba(80, 0, 0, 0.4);
+}
+
+.p2-frame-row::before {
+  content: '';
+  position: absolute;
+  left: 8px; right: 8px;
+  top: 4px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 218, 130, 0.78) 30%, rgba(245, 218, 130, 0.78) 70%, transparent);
+  box-shadow: 0 0 4px rgba(245, 218, 130, 0.4);
+}
+
+.p2-frame-row::after {
+  content: '';
+  position: absolute;
+  left: 8px; right: 8px;
+  bottom: 4px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 218, 130, 0.46) 30%, rgba(245, 218, 130, 0.46) 70%, transparent);
+}
+
+.p2-left {
+  width: 218px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px 0 12px;
+  border-right: 1px solid rgba(214, 176, 90, 0.32);
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.p2-gui {
+  width: 38px; height: 52px;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.p2-gui-shape {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #c8ddc4 0%, #94b594 30%, #4a6b40 100%);
+  clip-path: polygon(50% 0%, 100% 14%, 100% 100%, 0% 100%, 0% 14%);
+  border-radius: 1px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(220, 240, 200, 0.42);
+}
+
+.p2-gui-char {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 600 11px/1 'Ma Shan Zheng', cursive;
+  color: #1c2818;
+  letter-spacing: 0.06em;
+  padding-top: 6px;
+  z-index: 2;
+  text-shadow: 0 1px 0 rgba(220, 240, 200, 0.5);
+}
+
+.p2-gui-dot {
+  position: absolute;
+  left: 50%; top: 16px;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--vermillion-glow);
+  box-shadow: 0 0 4px var(--vermillion);
+  z-index: 3;
+}
+
+.p2-stamp {
+  width: 46px; height: 46px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.p2-stamp-square {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--vermillion-glow) 0%, var(--vermillion) 50%, var(--vermillion-deep) 100%);
+  border: 1.5px solid rgba(60, 8, 4, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(245, 218, 130, 0.3), 0 1px 4px rgba(60, 0, 0, 0.6);
+}
+
+.p2-stamp-square::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(60, 8, 4, 0.4), transparent),
+    radial-gradient(1px 1px at 80% 60%, rgba(60, 8, 4, 0.34), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(60, 8, 4, 0.28), transparent);
+}
+
+.p2-stamp-char {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 700 18px/1 'Ma Shan Zheng', cursive;
+  color: #fbe8c8;
+  text-shadow: 0 1px 0 rgba(60, 8, 4, 0.6);
+}
+
+.p2-stamp-hou {
+  position: absolute;
+  left: 50%; bottom: -14px;
+  transform: translateX(-50%);
+  font: 8px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.22em;
+  color: var(--vermillion-glow);
+  white-space: nowrap;
+}
+
+.p2-info { flex: 1; min-width: 0; padding-left: 2px; }
+
+.p2-name {
+  font: 500 14.5px/1.1 'Ma Shan Zheng', cursive;
+  color: #fbe5a8;
+  letter-spacing: 0.14em;
+  margin-bottom: 3px;
+}
+
+.p2-name .ink-dot { color: var(--vermillion-glow); }
+
+.p2-desc {
+  font: 10.5px/1.4 'ZCOOL XiaoWei', serif;
+  color: rgba(245, 218, 160, 0.78);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p2-rail {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  padding: 9px 14px 9px 14px;
+  gap: 6px;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(60, 12, 8, 0.18), rgba(20, 4, 4, 0.32));
+}
+
+.p2-folio {
+  min-width: 0;
+  position: relative;
+  background: linear-gradient(180deg, rgba(80, 12, 8, 0.46), rgba(40, 8, 6, 0.66));
+  border: 1px solid rgba(214, 176, 90, 0.28);
+  border-radius: 1px;
+  padding: 6px 9px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.p2-folio::before {
+  content: '';
+  position: absolute;
+  left: 4px; right: 4px;
+  top: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 218, 130, 0.55), transparent);
+}
+
+.p2-folio::after {
+  content: '';
+  position: absolute;
+  left: 4px; right: 4px;
+  bottom: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 218, 130, 0.32), transparent);
+}
+
+.p2-folio:hover {
+  border-color: rgba(245, 218, 130, 0.7);
+  box-shadow: 0 0 14px rgba(200, 52, 46, 0.22), inset 0 0 0 1px rgba(245, 218, 130, 0.16);
+  transform: translateY(-1px);
+}
+
+.p2-folio.wide { width: 200px; padding: 5px 11px; }
+.p2-folio.hukou { width: 94px; }
+.p2-folio.lizhi { width: 100px; }
+.p2-folio.small { width: 78px; }
+
+.p2-folio-name {
+  font: 10px/1 'ZCOOL XiaoWei', serif;
+  color: rgba(245, 218, 130, 0.78);
+  letter-spacing: 0.22em;
+  margin-bottom: 5px;
+  position: relative;
+  padding-left: 9px;
+  text-align: left;
+}
+
+.p2-folio-name::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 5px; height: 5px;
+  background: var(--vermillion-glow);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(200, 52, 46, 0.6);
+}
+
+.p2-folio-val {
+  font: 500 16px/1 'Ma Shan Zheng', cursive;
+  color: #fbe5a8;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.p2-folio-trend {
+  font: 8.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.18em;
+  margin-top: 3px;
+}
+.p2-folio-trend.up { color: #b8e0a8; }
+.p2-folio-trend.dn { color: var(--vermillion-glow); }
+.p2-folio-trend.flat { color: rgba(245, 218, 130, 0.46); }
+
+.p2-folio.wide .p2-folio-subs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.p2-folio.wide .p2-folio-subs > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.p2-folio.wide .p2-sub-ic {
+  width: 17px; height: 17px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font: 9px/1 'Ma Shan Zheng', cursive;
+  flex-shrink: 0;
+}
+
+.p2-folio.wide .p2-sub-ic.yin { background: radial-gradient(circle at 32% 28%, rgba(245, 218, 130, 0.7), rgba(60, 12, 8, 0.6)); border: 1px solid rgba(245, 218, 130, 0.48); color: #fbe5a8; }
+.p2-folio.wide .p2-sub-ic.liang { background: radial-gradient(circle at 32% 28%, rgba(180, 196, 130, 0.56), rgba(40, 50, 28, 0.62)); border: 1px solid rgba(180, 196, 130, 0.48); color: #d8e0a2; }
+.p2-folio.wide .p2-sub-ic.bu { background: radial-gradient(circle at 32% 28%, rgba(220, 196, 156, 0.56), rgba(60, 36, 24, 0.62)); border: 1px solid rgba(220, 196, 156, 0.42); color: #f0c896; }
+
+.p2-folio.wide .p2-sub-val { display: flex; flex-direction: column; line-height: 1.04; min-width: 0; }
+.p2-folio.wide .p2-sub-val b { font: 600 11.2px/1.1 'Noto Sans SC', sans-serif; color: #fbe5a8; }
+.p2-folio.wide .p2-sub-val .sd { font: 500 7.2px/1 'Noto Sans SC', sans-serif; letter-spacing: 0.04em; }
+
+.p2-folio.wide .sd.up { color: #b8e0a8; }
+.p2-folio.wide .sd.dn { color: var(--vermillion-glow); }
+.p2-folio.wide .sd.flat { color: rgba(245, 218, 130, 0.5); }
+
+.p2-state-pill {
+  position: absolute;
+  right: 6px; top: 4px;
+  font: 7px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.14em;
+  padding: 2px 5px;
+  border-radius: 1px;
+  background: rgba(90, 160, 130, 0.18);
+  color: #b8e0a8;
+  border: 1px solid rgba(90, 160, 130, 0.42);
+}
+
+.p2-state-pill.warn { background: rgba(245, 156, 84, 0.22); color: #f4b884; border-color: rgba(245, 156, 84, 0.5); }
+.p2-state-pill.bad { background: rgba(220, 40, 30, 0.28); color: #f4a98c; border-color: rgba(220, 40, 30, 0.6); }
+
+/* p2 banner */
+.p2-banner {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: -1px;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-width: 280px;
+  height: 28px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 232, 174, 0.32), transparent 64%),
+    linear-gradient(180deg, rgba(202, 80, 58, 0.94), rgba(133, 34, 26, 0.98));
+  color: #fff5e0;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  font: 700 12px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.28em;
+  border: 1px solid rgba(244, 234, 221, 0.5);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4px 12px rgba(140, 40, 30, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* p2 tooltip */
+.p2-tooltip {
+  display: inline-block;
+  min-width: 300px;
+  max-width: 360px;
+  padding: 14px 18px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(245, 218, 130, 0.1), transparent 60%),
+    linear-gradient(180deg, rgba(40, 12, 8, 0.98), rgba(20, 6, 4, 0.99));
+  border: 1.5px solid rgba(214, 176, 90, 0.6);
+  border-top: 3px solid var(--vermillion);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(245, 218, 130, 0.18), 0 0 24px rgba(200, 52, 46, 0.2);
+  color: #fbe5a8;
+  font-family: 'Noto Serif SC', serif;
+}
+
+.p2-tt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(245, 218, 130, 0.28);
+}
+
+.p2-tt-glyph {
+  width: 38px; height: 38px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--vermillion-glow), var(--vermillion-deep));
+  border: 1.5px solid rgba(60, 8, 4, 0.7);
+  color: #fbe8c8;
+  font: 700 18px/1 'Ma Shan Zheng', cursive;
+  text-shadow: 0 1px 0 rgba(60, 8, 4, 0.6);
+  flex-shrink: 0;
+}
+
+.p2-tt-htxt { flex: 1; }
+.p2-tt-title { font: 500 17px/1.1 'Ma Shan Zheng', cursive; color: #fbe5a8; letter-spacing: 0.18em; margin-bottom: 2px; }
+.p2-tt-sub { font: 10px/1 'ZCOOL XiaoWei', serif; color: rgba(245, 218, 130, 0.72); letter-spacing: 0.22em; }
+
+.p2-tt-pill {
+  font: 10px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.16em;
+  padding: 5px 10px;
+  background: rgba(90, 160, 130, 0.2);
+  color: #b8e0a8;
+  border: 1px solid rgba(90, 160, 130, 0.46);
+  flex-shrink: 0;
+}
+
+.p2-tt-pill.warn { background: rgba(245, 156, 84, 0.24); color: #f4b884; border-color: rgba(245, 156, 84, 0.55); }
+.p2-tt-pill.bad { background: rgba(220, 40, 30, 0.28); color: #f4a98c; border-color: rgba(220, 40, 30, 0.62); }
+
+.p2-tt-stocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.p2-tt-stock {
+  padding: 8px 6px;
+  background: linear-gradient(180deg, rgba(80, 12, 8, 0.62), rgba(40, 8, 6, 0.82));
+  border: 1px solid rgba(214, 176, 90, 0.34);
+  border-top: 1px solid rgba(245, 218, 130, 0.58);
+  text-align: center;
+  position: relative;
+}
+
+.p2-tt-stock .nm {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.22em;
+  color: rgba(245, 218, 130, 0.72);
+  margin-bottom: 5px;
+}
+
+.p2-tt-stock .vl {
+  font: 600 16px/1 'Ma Shan Zheng', cursive;
+  color: #fbe5a8;
+  margin-bottom: 2px;
+}
+
+.p2-tt-stock .un {
+  font: 8.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.16em;
+  color: rgba(245, 218, 130, 0.6);
+}
+
+.p2-tt-stock.celadon .vl { color: #b8e0a8; }
+.p2-tt-stock.amber .vl { color: #f0b878; }
+
+.p2-tt-flows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(245, 218, 130, 0.22);
+  border-bottom: 1px solid rgba(245, 218, 130, 0.18);
+  margin-bottom: 8px;
+}
+
+.p2-tt-flow { display: flex; justify-content: space-between; font-size: 11.5px; }
+.p2-tt-flow .lb { color: rgba(245, 218, 130, 0.74); letter-spacing: 0.12em; }
+.p2-tt-flow .vl { color: #fbe5a8; letter-spacing: 0.04em; }
+.p2-tt-flow .vl.neg { color: var(--vermillion-glow); }
+.p2-tt-flow .u { font-size: 9px; color: rgba(245, 218, 130, 0.58); margin-left: 4px; letter-spacing: 0.18em; }
+.p2-tt-flow .arr.up { color: #b8e0a8; margin-left: 4px; }
+.p2-tt-flow .arr.dn { color: var(--vermillion-glow); margin-left: 4px; }
+
+.p2-tt-alerts { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.p2-tt-alert {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  background: rgba(245, 156, 84, 0.18);
+  color: #f4b884;
+  border: 1px solid rgba(245, 156, 84, 0.42);
+}
+
+.p2-tt-note {
+  font: 10.5px/1.55 'Noto Serif SC', serif;
+  color: rgba(245, 218, 130, 0.62);
+  letter-spacing: 0.08em;
+}
+
+/* p2 legacy */
+.p2-tt-legacy {
+  display: inline-block;
+  min-width: 240px;
+  padding: 13px 16px;
+  background: linear-gradient(180deg, rgba(40, 12, 8, 0.98), rgba(20, 6, 4, 0.99));
+  border: 1.5px solid rgba(214, 176, 90, 0.6);
+  border-top: 3px solid var(--vermillion);
+  color: #fbe5a8;
+}
+
+.p2-tt-legacy .ttl {
+  font: 500 16px/1 'Ma Shan Zheng', cursive;
+  color: #fbe5a8;
+  letter-spacing: 0.18em;
+  margin-bottom: 3px;
+}
+
+.p2-tt-legacy .phs {
+  font: 10px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.18em;
+  color: rgba(245, 218, 130, 0.74);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(245, 218, 130, 0.22);
+}
+
+.p2-tt-legacy .row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; }
+.p2-tt-legacy .row .lbl { color: rgba(245, 218, 130, 0.7); letter-spacing: 0.06em; }
+.p2-tt-legacy .row .val { color: #fbe5a8; }
+.p2-tt-legacy .note {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(245, 218, 130, 0.18);
+  font: 10px/1.45 'Noto Serif SC', serif;
+  color: rgba(245, 218, 130, 0.6);
+}
+
+/* ========================================================== */
+/* PARADIGM 3·翰墨册页                                            */
+/* ========================================================== */
+
+.p3-frame-row {
+  flex: 1;
+  height: 88px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0, transparent 130px, rgba(120, 80, 40, 0.20) 130px, rgba(120, 80, 40, 0.20) 131px),
+    linear-gradient(180deg, #f0e2c2 0%, #e8d5a6 50%, #d8c190 100%);
+  border: 1px solid rgba(120, 80, 40, 0.38);
+  border-bottom: 2px solid rgba(80, 50, 22, 0.5);
+  display: flex;
+  padding: 0;
+  position: relative;
+  box-shadow: 0 4px 18px rgba(80, 50, 22, 0.32);
+  color: var(--ink-classical);
+}
+
+.p3-frame-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='3' seed='2'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.32  0 0 0 0 0.18  0 0 0 0.10 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+.p3-frame-row::after {
+  content: '';
+  position: absolute;
+  left: 218px; right: 0;
+  top: 0; bottom: 0;
+  background-image: repeating-linear-gradient(180deg, transparent 0, transparent 14px, rgba(120, 80, 40, 0.06) 14px, rgba(120, 80, 40, 0.06) 15px);
+  pointer-events: none;
+}
+
+.p3-left {
+  width: 218px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 14px 0 12px;
+  border-right: 1px solid rgba(120, 80, 40, 0.42);
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.p3-wentian-tag {
+  width: 32px;
+  height: 62px;
+  background: linear-gradient(180deg, #fbf3dd 0%, #f0e2c2 100%);
+  border: 1px solid rgba(80, 50, 22, 0.4);
+  border-radius: 1px;
+  position: relative;
+  cursor: pointer;
+  padding: 6px 0 10px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(80, 50, 22, 0.22), inset 0 0 0 1px rgba(255, 240, 200, 0.5);
+}
+
+.p3-wentian-tag::before {
+  content: '';
+  position: absolute;
+  left: 3px; right: 3px;
+  top: 3px;
+  height: 1px;
+  background: var(--ink-classical);
+}
+
+.p3-wentian-tag::after {
+  content: '';
+  position: absolute;
+  left: 3px; right: 3px;
+  bottom: 14px;
+  height: 1px;
+  background: var(--ink-classical);
+}
+
+.p3-wentian-char {
+  display: block;
+  text-align: center;
+  font: 500 11px/1.42 'Ma Shan Zheng', cursive;
+  color: var(--ink-classical);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  margin: 0 auto;
+  height: 30px;
+}
+
+.p3-wentian-seal {
+  position: absolute;
+  left: 50%; bottom: 3px;
+  transform: translateX(-50%);
+  width: 9px; height: 9px;
+  background: var(--vermillion);
+  border-radius: 1px;
+  box-shadow: 0 0 2px rgba(200, 52, 46, 0.5);
+}
+
+.p3-stamp {
+  width: 44px; height: 44px;
+  background:
+    radial-gradient(ellipse at 30% 25%, rgba(245, 100, 70, 0.4), transparent 60%),
+    linear-gradient(135deg, var(--vermillion-glow), var(--vermillion-deep));
+  border: 1.5px solid rgba(60, 8, 4, 0.6);
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(60, 0, 0, 0.4);
+}
+
+.p3-stamp::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background-image:
+    radial-gradient(1.5px 1.5px at 15% 22%, rgba(60, 8, 4, 0.36), transparent),
+    radial-gradient(1px 1px at 78% 65%, rgba(60, 8, 4, 0.32), transparent),
+    radial-gradient(1.2px 1.2px at 45% 82%, rgba(60, 8, 4, 0.26), transparent);
+}
+
+.p3-stamp-char {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 600 17px/1 'Ma Shan Zheng', cursive;
+  color: #fbe8c8;
+  text-shadow: 0 1px 0 rgba(60, 8, 4, 0.5);
+}
+
+.p3-stamp-hou {
+  position: absolute;
+  left: 50%; bottom: -14px;
+  transform: translateX(-50%);
+  font: 8.5px/1 'ZCOOL XiaoWei', serif;
+  color: var(--vermillion-deep);
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.p3-info { flex: 1; min-width: 0; padding-left: 2px; }
+
+.p3-name {
+  font: 500 13.5px/1.1 'Ma Shan Zheng', cursive;
+  color: var(--ink-classical);
+  letter-spacing: 0.08em;
+  margin-bottom: 3px;
+  position: relative;
+  padding-left: 9px;
+}
+
+.p3-name::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px;
+  width: 3px; height: 3px;
+  background: var(--vermillion);
+  border-radius: 50%;
+}
+
+.p3-desc {
+  font: 10.5px/1.3 'ZCOOL XiaoWei', serif;
+  color: rgba(50, 32, 14, 0.78);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p3-rail {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  padding: 9px 14px;
+  gap: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.p3-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.16s;
+  flex-shrink: 0;
+}
+
+.p3-col + .p3-col::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 8px; bottom: 8px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(80, 50, 22, 0.48), transparent);
+}
+
+.p3-col:hover { background: rgba(60, 30, 12, 0.06); }
+
+.p3-col.wide { width: 200px; }
+.p3-col.hukou { width: 96px; }
+.p3-col.lizhi { width: 100px; }
+.p3-col.small { width: 78px; }
+
+.p3-col-name {
+  font: 10.5px/1 'ZCOOL XiaoWei', serif;
+  color: rgba(50, 32, 14, 0.74);
+  letter-spacing: 0.22em;
+  margin-bottom: 6px;
+  position: relative;
+  padding-left: 8px;
+}
+
+.p3-col-name::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 4px; height: 4px;
+  background: var(--vermillion);
+  border-radius: 50%;
+}
+
+.p3-col-val {
+  font: 600 17px/1 'Noto Serif SC', serif;
+  color: var(--ink-classical);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.p3-col-trend {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  margin-top: 4px;
+  letter-spacing: 0.12em;
+}
+
+.p3-col-trend.up { color: var(--jade-deep); }
+.p3-col-trend.dn { color: var(--vermillion-deep); }
+.p3-col-trend.flat { color: rgba(80, 50, 22, 0.6); }
+
+.p3-col.wide .p3-col-subs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.p3-col.wide .p3-col-subs > div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  min-width: 0;
+}
+
+.p3-col.wide .p3-sub-k {
+  font: 8.5px/1 'ZCOOL XiaoWei', serif;
+  color: rgba(80, 50, 22, 0.66);
+  letter-spacing: 0.18em;
+  margin-bottom: 3px;
+}
+
+.p3-col.wide .p3-sub-v {
+  font: 600 12.5px/1 'Noto Serif SC', serif;
+  color: var(--ink-classical);
+  letter-spacing: 0.02em;
+}
+
+.p3-col.wide .p3-sub-d {
+  font: 500 7px/1 'Noto Sans SC', sans-serif;
+  margin-top: 2px;
+}
+
+.p3-col.wide .sd.up { color: var(--jade-deep); }
+.p3-col.wide .sd.dn { color: var(--vermillion-deep); }
+.p3-col.wide .sd.flat { color: rgba(80, 50, 22, 0.5); }
+
+.p3-state-pill {
+  position: absolute;
+  right: 4px; top: 4px;
+  font: 7px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.14em;
+  padding: 2px 5px;
+  background: rgba(180, 30, 30, 0.16);
+  color: var(--vermillion-deep);
+  border: 1px solid rgba(180, 30, 30, 0.32);
+}
+
+.p3-state-pill.ok { background: rgba(74, 107, 64, 0.16); color: var(--jade-deep); border-color: rgba(74, 107, 64, 0.34); }
+.p3-state-pill.warn { background: rgba(184, 132, 70, 0.2); color: #8a5a22; border-color: rgba(184, 132, 70, 0.42); }
+
+/* p3 banner */
+.p3-banner {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: -1px;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-width: 280px;
+  height: 26px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fbf3dd 0%, #f0e2c2 60%, #d8c190 100%);
+  color: var(--ink-classical);
+  font: 600 11.5px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.22em;
+  border: 1px solid rgba(80, 50, 22, 0.38);
+  border-top: 0;
+  box-shadow: 0 4px 12px rgba(80, 50, 22, 0.34);
+}
+
+.p3-banner::before, .p3-banner::after {
+  content: '';
+  width: 8px; height: 8px;
+  background: var(--vermillion);
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+/* p3 tooltip */
+.p3-tooltip {
+  display: inline-block;
+  min-width: 300px;
+  max-width: 360px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #f5ebd1 0%, #e8d5a6 100%);
+  border: 1px solid rgba(80, 50, 22, 0.42);
+  border-top: 2px solid var(--vermillion);
+  border-bottom: 2px solid rgba(80, 50, 22, 0.5);
+  box-shadow: 0 14px 38px rgba(80, 50, 22, 0.42), inset 0 0 0 1px rgba(255, 240, 200, 0.4);
+  color: var(--ink-classical);
+  font-family: 'Noto Serif SC', serif;
+}
+
+.p3-tt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(80, 50, 22, 0.32);
+}
+
+.p3-tt-stamp {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--vermillion-glow), var(--vermillion-deep));
+  border: 1.5px solid rgba(60, 8, 4, 0.6);
+  display: grid;
+  place-items: center;
+  color: #fbe8c8;
+  font: 700 18px/1 'Ma Shan Zheng', cursive;
+  text-shadow: 0 1px 0 rgba(60, 8, 4, 0.5);
+  flex-shrink: 0;
+}
+
+.p3-tt-htxt { flex: 1; }
+.p3-tt-title { font: 500 17px/1.1 'Ma Shan Zheng', cursive; color: var(--ink-classical); letter-spacing: 0.18em; margin-bottom: 2px; }
+.p3-tt-sub { font: 10px/1 'ZCOOL XiaoWei', serif; color: rgba(80, 50, 22, 0.72); letter-spacing: 0.22em; }
+
+.p3-tt-pill {
+  font: 10px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.16em;
+  padding: 5px 10px;
+  background: rgba(74, 107, 64, 0.18);
+  color: var(--jade-deep);
+  border: 1px solid rgba(74, 107, 64, 0.5);
+  flex-shrink: 0;
+}
+
+.p3-tt-pill.warn { background: rgba(184, 132, 70, 0.24); color: #6a4516; border-color: rgba(184, 132, 70, 0.5); }
+.p3-tt-pill.bad { background: rgba(180, 30, 30, 0.22); color: var(--vermillion-deep); border-color: rgba(180, 30, 30, 0.5); }
+
+.p3-tt-stocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.p3-tt-stock {
+  padding: 8px 6px;
+  background: rgba(255, 245, 220, 0.5);
+  border: 1px solid rgba(80, 50, 22, 0.28);
+  text-align: center;
+  position: relative;
+}
+
+.p3-tt-stock .nm { font: 9.5px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; color: rgba(80, 50, 22, 0.72); margin-bottom: 5px; }
+.p3-tt-stock .vl { font: 600 17px/1 'Noto Serif SC', serif; color: var(--ink-classical); margin-bottom: 2px; }
+.p3-tt-stock .un { font: 8.5px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.16em; color: rgba(80, 50, 22, 0.6); }
+
+.p3-tt-flows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border-top: 1px dashed rgba(80, 50, 22, 0.32);
+  border-bottom: 1px dashed rgba(80, 50, 22, 0.32);
+  margin-bottom: 8px;
+}
+
+.p3-tt-flow { display: flex; justify-content: space-between; font-size: 11.5px; }
+.p3-tt-flow .lb { color: rgba(80, 50, 22, 0.74); letter-spacing: 0.06em; }
+.p3-tt-flow .vl { color: var(--ink-classical); letter-spacing: 0.04em; }
+.p3-tt-flow .vl.neg { color: var(--vermillion-deep); }
+.p3-tt-flow .u { font-size: 9px; color: rgba(80, 50, 22, 0.58); margin-left: 4px; letter-spacing: 0.18em; }
+.p3-tt-flow .arr.up { color: var(--jade-deep); margin-left: 4px; }
+.p3-tt-flow .arr.dn { color: var(--vermillion-deep); margin-left: 4px; }
+
+.p3-tt-alerts { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.p3-tt-alert {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  background: rgba(184, 132, 70, 0.18);
+  color: #6a4516;
+  border: 1px solid rgba(184, 132, 70, 0.45);
+}
+
+.p3-tt-note {
+  font: 10.5px/1.55 'Noto Serif SC', serif;
+  color: rgba(80, 50, 22, 0.66);
+  letter-spacing: 0.04em;
+}
+
+/* ========================================================== */
+/* PARADIGM 4·重檐金阙                                            */
+/* ========================================================== */
+
+.p4-frame-row {
+  flex: 1;
+  height: 88px;
+  background: linear-gradient(180deg, #1a0a06 0%, #0e0604 22%, #1a0e08 100%);
+  border-top: 1px solid rgba(245, 218, 130, 0.55);
+  border-bottom: 1px solid rgba(80, 12, 6, 0.6);
+  display: flex;
+  padding: 0;
+  position: relative;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.6);
+}
+
+.p4-frame-row::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 16px;
+  background:
+    linear-gradient(180deg, rgba(245, 218, 130, 0.22) 0%, transparent 100%),
+    linear-gradient(90deg, rgba(245, 218, 130, 0.5) 0%, transparent 8%, transparent 92%, rgba(245, 218, 130, 0.5) 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 96% 50%, 4% 50%, 0 100%);
+  pointer-events: none;
+}
+
+.p4-frame-row::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 12px;
+  height: 5px;
+  background: linear-gradient(180deg, rgba(200, 52, 46, 0.6), rgba(120, 28, 22, 0.86));
+  box-shadow: 0 1px 0 rgba(245, 218, 130, 0.34);
+  pointer-events: none;
+}
+
+.p4-left {
+  width: 232px;
+  display: flex;
+  align-items: flex-end;
+  padding: 22px 0 6px 0;
+  border-right: 1px solid rgba(245, 218, 130, 0.32);
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(80, 14, 8, 0.32) 0%, rgba(20, 6, 4, 0.46) 100%);
+}
+
+.p4-pillar {
+  width: 11px;
+  height: 60px;
+  background: linear-gradient(90deg, #b8521a 0%, #d8682a 22%, #c8521a 50%, #7a2810 100%);
+  border-left: 1px solid rgba(245, 218, 130, 0.34);
+  border-right: 1px solid rgba(60, 12, 8, 0.7);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.p4-pillar::before {
+  content: '';
+  position: absolute;
+  left: -3px; right: -3px;
+  top: -2px;
+  height: 5px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold-mid));
+}
+
+.p4-portal {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  height: 60px;
+}
+
+.p4-throne {
+  width: 46px; height: 46px;
+  border-radius: 6px 6px 2px 2px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(245, 218, 130, 0.62), transparent 60%),
+    linear-gradient(180deg, #3a0e0a 0%, #1a0604 100%);
+  border: 1px solid rgba(245, 218, 130, 0.5);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(245, 218, 130, 0.34), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.p4-throne::before {
+  content: '';
+  position: absolute;
+  left: 4px; right: 4px;
+  top: 3px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+}
+
+.p4-throne-char {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 600 13px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.p4-bell {
+  width: 38px; height: 54px;
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.p4-bell-body {
+  position: absolute;
+  inset: 4px 2px 2px;
+  background: radial-gradient(ellipse at 30% 26%, rgba(245, 218, 130, 0.6), rgba(140, 92, 30, 0.84) 50%, rgba(50, 32, 14, 0.92));
+  border: 1px solid rgba(245, 218, 130, 0.6);
+  border-radius: 4px 4px 8px 8px;
+  box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.p4-bell-knob {
+  position: absolute;
+  left: 50%; top: 0;
+  transform: translateX(-50%);
+  width: 6px; height: 6px;
+  background: radial-gradient(circle at 30% 30%, var(--gold-bright), var(--gold-dim));
+  border-radius: 50%;
+  border: 1px solid rgba(80, 50, 22, 0.7);
+}
+
+.p4-bell-char {
+  position: absolute;
+  inset: 8px 0 12px;
+  display: grid;
+  place-items: center;
+  font: 700 14px/1 'Ma Shan Zheng', cursive;
+  color: #1c1208;
+  text-shadow: 0 1px 0 rgba(255, 230, 180, 0.4);
+}
+
+.p4-bell-hou {
+  position: absolute;
+  left: 50%; bottom: -14px;
+  transform: translateX(-50%);
+  font: 8px/1 'ZCOOL XiaoWei', serif;
+  color: var(--gold-mid);
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.p4-info { flex: 1; min-width: 0; padding-bottom: 4px; }
+
+.p4-name {
+  font: 500 13.5px/1.1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  letter-spacing: 0.12em;
+  margin-bottom: 3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.p4-desc {
+  font: 10.5px/1.3 'ZCOOL XiaoWei', serif;
+  color: rgba(245, 218, 130, 0.66);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.p4-rail {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  padding: 22px 8px 0 8px;
+  gap: 4px;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(60, 14, 8, 0.42) 0%, rgba(20, 6, 4, 0.66) 100%);
+}
+
+.p4-pavilion {
+  height: 62px;
+  position: relative;
+  padding: 5px 6px 6px;
+  background: linear-gradient(180deg, rgba(80, 14, 8, 0.62) 0%, rgba(40, 8, 6, 0.86) 100%);
+  border: 1px solid rgba(245, 218, 130, 0.28);
+  border-top: 1.5px solid rgba(245, 218, 130, 0.62);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.p4-pavilion::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: -6px;
+  height: 6px;
+  background: linear-gradient(180deg, transparent, rgba(200, 52, 46, 0.46));
+  clip-path: polygon(8% 100%, 92% 100%, 100% 0%, 0% 0%);
+}
+
+.p4-pavilion:hover {
+  background: linear-gradient(180deg, rgba(120, 22, 14, 0.7) 0%, rgba(60, 12, 8, 0.92) 100%);
+  border-color: rgba(245, 218, 130, 0.62);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(200, 52, 46, 0.22), 0 0 12px rgba(245, 218, 130, 0.18);
+}
+
+.p4-pavilion.wide { width: 200px; }
+.p4-pavilion.hukou { width: 92px; }
+.p4-pavilion.lizhi { width: 96px; }
+.p4-pavilion.small { width: 76px; }
+
+.p4-pavilion-name {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  color: rgba(245, 218, 130, 0.82);
+  letter-spacing: 0.24em;
+  text-align: center;
+  margin-bottom: 5px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.7);
+}
+
+.p4-pavilion-val {
+  font: 700 16px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px;
+}
+
+.p4-pavilion-val .unit { font: 9px/1 'ZCOOL XiaoWei', serif; color: var(--gold-mid); letter-spacing: 0.18em; }
+
+.p4-pavilion-trend {
+  text-align: center;
+  font: 8.5px/1 'ZCOOL XiaoWei', serif;
+  margin-top: 3px;
+  letter-spacing: 0.18em;
+}
+
+.p4-pavilion-trend.up { color: var(--celadon); }
+.p4-pavilion-trend.dn { color: var(--vermillion-glow); }
+.p4-pavilion-trend.flat { color: rgba(245, 218, 130, 0.5); }
+
+.p4-pavilion.wide .p4-pavilion-subs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.p4-pavilion.wide .p4-pavilion-subs > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.06;
+}
+
+.p4-pavilion.wide .p4-sk { font: 8px/1 'ZCOOL XiaoWei', serif; color: rgba(245, 218, 130, 0.6); letter-spacing: 0.14em; margin-bottom: 2px; }
+.p4-pavilion.wide .p4-sv { font: 600 12.5px/1 'Ma Shan Zheng', cursive; color: #fbe5a8; letter-spacing: 0.02em; }
+.p4-pavilion.wide .p4-sd { font: 500 7px/1 'Noto Sans SC', sans-serif; letter-spacing: 0.04em; margin-top: 2px; }
+.p4-pavilion.wide .sd.up { color: #b8e0a8; }
+.p4-pavilion.wide .sd.dn { color: var(--vermillion-glow); }
+.p4-pavilion.wide .sd.flat { color: rgba(245, 218, 130, 0.5); }
+
+.p4-state-pill {
+  position: absolute;
+  right: 3px; top: 2px;
+  font: 6.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.12em;
+  padding: 2px 4px;
+  background: rgba(90, 160, 130, 0.22);
+  color: #b8e0a8;
+  border: 1px solid rgba(90, 160, 130, 0.44);
+}
+
+.p4-state-pill.warn { background: rgba(245, 156, 84, 0.24); color: #f4b884; border-color: rgba(245, 156, 84, 0.55); }
+.p4-state-pill.bad { background: rgba(220, 40, 30, 0.32); color: #f4a98c; border-color: rgba(220, 40, 30, 0.62); }
+
+/* p4 banner */
+.p4-banner {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: -1px;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-width: 300px;
+  height: 30px;
+  padding: 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 232, 174, 0.32), transparent 64%),
+    linear-gradient(180deg, rgba(60, 14, 8, 0.96), rgba(20, 6, 4, 0.98));
+  color: #f4d98a;
+  font: 700 12.5px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.32em;
+  border-left: 1px solid rgba(245, 218, 130, 0.5);
+  border-right: 1px solid rgba(245, 218, 130, 0.5);
+  border-bottom: 1px solid rgba(245, 218, 130, 0.5);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(245, 218, 130, 0.3);
+  text-shadow: 0 0 6px rgba(245, 218, 130, 0.32);
+}
+
+.p4-banner::before, .p4-banner::after {
+  content: '';
+  width: 16px; height: 4px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+  margin: 0 14px;
+  flex-shrink: 0;
+}
+
+/* p4 tooltip */
+.p4-tooltip {
+  display: inline-block;
+  min-width: 300px;
+  max-width: 360px;
+  padding: 16px 18px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(245, 218, 130, 0.14), transparent 50%),
+    linear-gradient(180deg, rgba(40, 12, 8, 0.98), rgba(20, 6, 4, 0.99));
+  border: 1.5px solid var(--gold-bright);
+  border-radius: 6px 6px 2px 2px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(245, 218, 130, 0.34), 0 0 24px rgba(200, 52, 46, 0.22);
+  color: #fbe5a8;
+  font-family: 'Noto Serif SC', serif;
+  position: relative;
+}
+
+.p4-tooltip::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: -6px;
+  height: 6px;
+  background: linear-gradient(180deg, transparent, rgba(200, 52, 46, 0.6));
+  clip-path: polygon(6% 100%, 94% 100%, 100% 0%, 0% 0%);
+}
+
+.p4-tt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(245, 218, 130, 0.32);
+}
+
+.p4-tt-glyph {
+  width: 42px; height: 42px;
+  border-radius: 4px 4px 2px 2px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(245, 218, 130, 0.62), transparent 64%),
+    linear-gradient(180deg, #3a0e0a 0%, #1a0604 100%);
+  border: 1px solid rgba(245, 218, 130, 0.7);
+  color: var(--gold-bright);
+  font: 700 18px/1 'Ma Shan Zheng', cursive;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  flex-shrink: 0;
+}
+
+.p4-tt-htxt { flex: 1; }
+.p4-tt-title { font: 500 17px/1.1 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.2em; margin-bottom: 2px; text-shadow: 0 0 8px rgba(245, 218, 130, 0.24); }
+.p4-tt-sub { font: 10px/1 'ZCOOL XiaoWei', serif; color: rgba(245, 218, 130, 0.72); letter-spacing: 0.22em; }
+
+.p4-tt-pill {
+  font: 10px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.16em;
+  padding: 6px 11px;
+  border-radius: 2px;
+  background: rgba(90, 160, 130, 0.2);
+  color: #b8e0a8;
+  border: 1px solid rgba(90, 160, 130, 0.5);
+  flex-shrink: 0;
+}
+
+.p4-tt-pill.warn { background: rgba(245, 156, 84, 0.24); color: #f4b884; border-color: rgba(245, 156, 84, 0.55); }
+.p4-tt-pill.bad { background: rgba(220, 40, 30, 0.32); color: #f4a98c; border-color: rgba(220, 40, 30, 0.62); }
+
+.p4-tt-stocks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+
+.p4-tt-stock {
+  height: 64px;
+  padding: 6px;
+  background: linear-gradient(180deg, rgba(80, 14, 8, 0.62), rgba(40, 8, 6, 0.86));
+  border: 1px solid rgba(245, 218, 130, 0.32);
+  border-top: 1.5px solid rgba(245, 218, 130, 0.66);
+  position: relative;
+  text-align: center;
+}
+
+.p4-tt-stock::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: -5px;
+  height: 5px;
+  background: linear-gradient(180deg, transparent, rgba(200, 52, 46, 0.46));
+  clip-path: polygon(8% 100%, 92% 100%, 100% 0%, 0% 0%);
+}
+
+.p4-tt-stock .nm { font: 9.5px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; color: rgba(245, 218, 130, 0.74); margin-bottom: 7px; }
+.p4-tt-stock .vl { font: 700 16px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); margin-bottom: 3px; }
+.p4-tt-stock .un { font: 8.5px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.16em; color: rgba(245, 218, 130, 0.58); }
+.p4-tt-stock.celadon .vl { color: #b8e0a8; }
+.p4-tt-stock.amber .vl { color: #f0b878; }
+
+.p4-tt-flows { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid rgba(245, 218, 130, 0.22); border-bottom: 1px solid rgba(245, 218, 130, 0.18); margin-bottom: 8px; }
+.p4-tt-flow { display: flex; justify-content: space-between; font-size: 11.5px; }
+.p4-tt-flow .lb { color: rgba(245, 218, 130, 0.74); letter-spacing: 0.12em; }
+.p4-tt-flow .vl { color: var(--gold-bright); letter-spacing: 0.04em; }
+.p4-tt-flow .vl.neg { color: var(--vermillion-glow); }
+.p4-tt-flow .u { font-size: 9px; color: rgba(245, 218, 130, 0.58); margin-left: 4px; letter-spacing: 0.18em; }
+.p4-tt-flow .arr.up { color: #b8e0a8; margin-left: 4px; }
+.p4-tt-flow .arr.dn { color: var(--vermillion-glow); margin-left: 4px; }
+
+.p4-tt-alerts { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.p4-tt-alert {
+  font: 9.5px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.1em;
+  padding: 4px 8px;
+  background: rgba(245, 156, 84, 0.18);
+  color: #f4b884;
+  border: 1px solid rgba(245, 156, 84, 0.45);
+}
+
+.p4-tt-note {
+  font: 10.5px/1.55 'Noto Serif SC', serif;
+  color: rgba(245, 218, 130, 0.62);
+  letter-spacing: 0.08em;
+}
+
+/* ========================================================== */
+/* DECISION MATRIX                                              */
+/* ========================================================== */
+
+.matrix {
+  margin-top: 36px;
+  padding: 32px 28px;
+  background: linear-gradient(135deg, rgba(40, 16, 8, 0.62) 0%, rgba(8, 6, 4, 0.78) 100%);
+  border: 1px solid rgba(184, 146, 78, 0.32);
+  border-left: 3px solid var(--vermillion);
+}
+
+.matrix h2 {
+  font: 500 30px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.3em;
+  color: var(--gold-bright);
+  margin-bottom: 22px;
+}
+
+.matrix-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.matrix-table th, .matrix-table td { padding: 11px 13px; text-align: left; border-bottom: 1px solid rgba(184, 146, 78, 0.14); vertical-align: top; }
+.matrix-table th { font: 500 11px/1.2 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; color: var(--gold-mid); background: rgba(40, 24, 12, 0.36); border-bottom: 1px solid rgba(184, 146, 78, 0.4); }
+.matrix-table th:first-child { width: 16%; }
+.matrix-table td:first-child { font: 500 13px/1.2 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.18em; }
+.matrix-table tr:hover td { background: rgba(40, 24, 12, 0.22); }
+
+.tag {
+  display: inline-block;
+  font: 9px/1 'Cinzel', serif;
+  letter-spacing: 0.22em;
+  padding: 3px 7px;
+  border: 1px solid rgba(184, 146, 78, 0.4);
+  margin-right: 4px;
+  background: rgba(40, 24, 12, 0.5);
+  color: var(--gold-mid);
+}
+
+.tag.warm { color: var(--vermillion-glow); border-color: rgba(200, 52, 46, 0.4); }
+.tag.cool { color: #a0c0e8; border-color: rgba(60, 100, 180, 0.4); }
+.tag.paper { color: #d8a868; border-color: rgba(160, 110, 60, 0.4); }
+.tag.bold { color: var(--gold-bright); border-color: rgba(245, 218, 130, 0.5); }
+
+/* next */
+.next {
+  margin-top: 72px;
+  padding: 36px 32px;
+  border: 1px solid rgba(184, 146, 78, 0.24);
+  background: rgba(15, 12, 10, 0.5);
+}
+
+.next h2 { font: 500 26px/1 'Ma Shan Zheng', cursive; letter-spacing: 0.3em; color: var(--ink-white); margin-bottom: 22px; }
+
+.next-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.next-card { padding: 16px 18px; background: rgba(40, 24, 12, 0.32); border: 1px solid rgba(184, 146, 78, 0.18); border-left: 2px solid var(--gold-mid); }
+.next-card-step { font: 9px/1 'Cinzel', serif; letter-spacing: 0.34em; color: var(--gold-mid); margin-bottom: 10px; }
+.next-card h3 { font: 500 16px/1.3 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em; color: var(--gold-bright); margin-bottom: 8px; }
+.next-card p { font-size: 12px; line-height: 1.7; color: var(--ink-faded); }
+
+@media (max-width: 1280px) {
+  .hdr h1 { font-size: 64px; }
+  .pd-title { font-size: 46px; }
+  .pd-num { font-size: 52px; }
+}
+
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ====================================================== -->
+  <!-- HEADER                                                  -->
+  <!-- ====================================================== -->
+  <section class="hdr">
+    <div class="hdr-meta">
+      <span>顶 栏 全 面 升 级 v2 · CORRECTED</span>
+      <span>除 右 侧 时 间 / 全 部 变 量 外</span>
+    </div>
+    <h1>问 天 · 节 候 · 七 变 量</h1>
+    <p class="hdr-desc">
+      <span class="fix">v2 修正</span>·按真实游戏数据重写。<strong>7 个变量</strong> (帑廪 内帑 户口 吏治 民心 皇权 皇威)
+      不是 8·<strong>2 个 wide cell</strong> (帑廪 + 内帑·各含金/粮/布三账) 不是 1·变量名用真实 UI 字符串 (吏治不是民威·没有黄册/卫所/兵食)。
+      新增 <strong>rich tooltip</strong> + <strong>legacy rows tooltip</strong> 两种 hover 浮层设计·新增 <strong>#banner 牌匾</strong> 联动 (topbar 下方 26px 朝代/scenario/回合)。
+    </p>
+    <div class="hdr-specs">
+      <div class="hdr-spec"><div class="hdr-spec-label">Vars</div><div class="hdr-spec-value">7 · 真实</div></div>
+      <div class="hdr-spec"><div class="hdr-spec-label">Wide</div><div class="hdr-spec-value">2 · 帑廪+内帑</div></div>
+      <div class="hdr-spec"><div class="hdr-spec-label">Rail</div><div class="hdr-spec-value">932 px (wide)</div></div>
+      <div class="hdr-spec"><div class="hdr-spec-label">Left</div><div class="hdr-spec-value">205 px</div></div>
+      <div class="hdr-spec"><div class="hdr-spec-label">Banner</div><div class="hdr-spec-value">+26 px</div></div>
+      <div class="hdr-spec"><div class="hdr-spec-label">Paradigm</div><div class="hdr-spec-value">4 · 壹贰叁肆</div></div>
+    </div>
+
+    <div class="fix-callout">
+      <div class="fix-callout-title">v1 → v2 修 正 清 单</div>
+      <div class="fix-callout-grid">
+        <div><b>1.</b> 资源数 8 → <b>7</b></div>
+        <div><b>2.</b> wide 1 → <b>2 (帑廪+内帑)</b></div>
+        <div><b>3.</b> 名称改回真实 (帑廪/内帑/吏治)</div>
+        <div><b>4.</b> 删黄册/卫所/兵食 (不存在)</div>
+        <div><b>5.</b> 加 rich tooltip 设计 (帑廪 hover)</div>
+        <div><b>6.</b> 加 legacy tooltip 设计 (民心 hover)</div>
+        <div><b>7.</b> 加 #banner 牌匾 (朝代+回合)</div>
+        <div><b>8.</b> 趋势 ▲▼─ + 金/粮/布 icon</div>
+        <div><b>9.</b> state pill (危急色) overlay</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================== -->
+  <!-- BASELINE                                                -->
+  <!-- ====================================================== -->
+  <section class="baseline">
+    <div class="section-head">
+      <span class="section-head-num">零</span>
+      <span class="section-head-title">当 前 实 现 · 真 实 7 变 量</span>
+      <span class="section-head-tag">BASELINE · 1.2.7.9</span>
+    </div>
+    <div class="baseline-stack">
+      <div class="baseline-topbar">
+        <div class="b-left">
+          <div class="b-wentian">问天</div>
+          <div class="b-weather">
+            <div class="b-seal">惊</div>
+            <div class="b-info">
+              <div class="b-name">惊 蛰 · 桃 始 华</div>
+              <div class="b-desc">仲春第一候</div>
+            </div>
+          </div>
+        </div>
+        <div class="b-rail">
+          <div class="b-cell wide">
+            <div class="b-pn">帑 廪</div>
+            <div class="b-psubs">
+              <div><span class="ic yin">银</span><span class="sv"><b>4.6 万</b><span class="sd up">+820</span></span></div>
+              <div><span class="ic liang">粮</span><span class="sv"><b>1.2 万</b><span class="sd flat">±0</span></span></div>
+              <div><span class="ic bu">布</span><span class="sv"><b>320</b><span class="sd dn">-12</span></span></div>
+            </div>
+          </div>
+          <div class="b-cell wide">
+            <div class="b-pn">内 帑</div>
+            <div class="b-psubs">
+              <div><span class="ic yin">银</span><span class="sv"><b>8.4 万</b><span class="sd up">+120</span></span></div>
+              <div><span class="ic liang">粮</span><span class="sv"><b>2.6 千</b><span class="sd flat">±0</span></span></div>
+              <div><span class="ic bu">布</span><span class="sv"><b>1.8 千</b><span class="sd up">+22</span></span></div>
+            </div>
+          </div>
+          <div class="b-cell hukou"><div class="b-pn">户 口</div><div class="b-pv">1180 万</div></div>
+          <div class="b-cell lizhi"><div class="b-pn">吏 治</div><div class="b-pv">○●●● 渐弊</div></div>
+          <div class="b-cell small"><div class="b-pn">民 心</div><div class="b-pv">61 · 安居</div></div>
+          <div class="b-cell small"><div class="b-pn">皇 权</div><div class="b-pv">52 · 衡</div></div>
+          <div class="b-cell small"><div class="b-pn">皇 威</div><div class="b-pv">68 · 望</div></div>
+        </div>
+        <div class="b-right-stub">右 侧 时 间 + 全 部 变 量 (340 × 60·out of scope)</div>
+      </div>
+      <div class="baseline-banner">天 命 · 大 明 · 第 54 回</div>
+    </div>
+    <div class="baseline-issue">
+      <strong>问题</strong>·7 变量在等宽小 pill 罗列中无主次·两个 wide (帑廪/内帑) 含 9 子项但用图标圆环挤压·阅读疲劳·
+      节候 24px 朱印单字辨识度低·物候被压成短语·banner 牌匾与 topbar 朴素 plaque 图分离·缺整体仪式感。
+    </div>
+  </section>
+
+  <!-- ====================================================== -->
+  <!-- PARADIGM 1·钦天监                                         -->
+  <!-- ====================================================== -->
+  <article class="paradigm">
+    <div class="pd-head">
+      <div class="pd-num-block">
+        <div class="pd-num">壹</div>
+        <div class="pd-num-tag">PARADIGM · ONE</div>
+      </div>
+      <div>
+        <h2 class="pd-title">钦 天 监</h2>
+        <div class="pd-sub">观 象 · 星 图 账 · ASTRONOMICAL BUREAU</div>
+        <p class="pd-desc">
+          深蓝夜空底·散落星点·铜金细线。左 = <strong>浑天仪 + 24 节气环 + 候相记</strong>·中央 = <strong>星图账</strong>——
+          帑廪/内帑作 2 颗主"复合星"·每星挂金/粮/布 3 子格 + 趋势·后 5 颗主星 (户口·吏治·民心·皇权·皇威) 数字+段位。
+          tooltip 是<strong>星图浮卡</strong>·夜空底 + 散星 + glyph + 三仓 + 流入流出·legacy 是<strong>简版星册</strong>。
+          banner 为<strong>星图天命牌</strong>·深蓝底·两端星点·朝代+回合居中。
+        </p>
+        <div class="pd-features">
+          <div class="pd-feat"><strong>底材</strong>夜空 indigo + 铜金散星·宇宙幽冷</div>
+          <div class="pd-feat"><strong>2 wide</strong>主星 + 3 子格 + 趋势上下</div>
+          <div class="pd-feat"><strong>5 narrow</strong>主星 + 单值 + 段位 tag</div>
+          <div class="pd-feat"><strong>rich tip</strong>夜空浮卡·glyph + 三仓 + 流</div>
+          <div class="pd-feat"><strong>legacy tip</strong>星册行·label/val·细分行</div>
+          <div class="pd-feat"><strong>banner</strong>星图天命牌·两侧星点</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pd-stage">
+      <div class="pd-stage-label">
+        <span class="cn">默 认</span><span>DEFAULT · TOPBAR + BANNER</span>
+        <span class="note">88 px topbar · +26 px banner</span>
+      </div>
+      <div class="pd-stack">
+        <div class="pd-frame">
+          <div class="p1-frame-row">
+            <div class="p1-left">
+              <div class="p1-armillary">
+                <svg viewBox="0 0 40 40" fill="none">
+                  <circle cx="20" cy="20" r="17" stroke="#e6c87a" stroke-width="0.5" opacity="0.85"/>
+                  <ellipse cx="20" cy="20" rx="17" ry="7" stroke="#e6c87a" stroke-width="0.4" opacity="0.72"/>
+                  <ellipse cx="20" cy="20" rx="7" ry="17" stroke="#e6c87a" stroke-width="0.4" opacity="0.72"/>
+                  <line x1="3" y1="20" x2="37" y2="20" stroke="#e6c87a" stroke-width="0.3" opacity="0.55"/>
+                  <line x1="20" y1="3" x2="20" y2="37" stroke="#e6c87a" stroke-width="0.3" opacity="0.55"/>
+                  <circle cx="20" cy="20" r="2.8" fill="#e6c87a"/>
+                  <circle cx="20" cy="20" r="1.8" fill="#0b1024"/>
+                </svg>
+                <span class="p1-armillary-label">问 天</span>
+              </div>
+              <div class="p1-jieqi">
+                <div class="p1-jieqi-ring"></div>
+                <svg class="p1-jieqi-teeth" viewBox="0 0 50 50">
+                  <g stroke="#e6c87a" stroke-width="0.5" opacity="0.6">
+                    <line x1="25" y1="0" x2="25" y2="4"/>
+                    <line x1="25" y1="46" x2="25" y2="50"/>
+                    <line x1="0" y1="25" x2="4" y2="25"/>
+                    <line x1="46" y1="25" x2="50" y2="25"/>
+                    <line x1="7" y1="7" x2="10" y2="10"/>
+                    <line x1="40" y1="40" x2="43" y2="43"/>
+                    <line x1="43" y1="7" x2="40" y2="10"/>
+                    <line x1="7" y1="43" x2="10" y2="40"/>
+                  </g>
+                </svg>
+                <div class="p1-jieqi-needle"></div>
+                <div class="p1-jieqi-center">惊</div>
+              </div>
+              <div class="p1-info">
+                <div class="p1-name">惊 蛰</div>
+                <div class="p1-hou">第 一 候</div>
+                <div class="p1-desc">桃 始 华 · 仲 春 初 临</div>
+              </div>
+            </div>
+            <div class="p1-rail">
+              <div class="p1-star wide">
+                <div class="p1-star-name">帑 廪</div>
+                <div class="p1-star-subs">
+                  <div><span class="p1-sub-ic yin">银</span><span class="p1-sub-val"><b>4.6万</b><span class="sd up">+820</span></span></div>
+                  <div><span class="p1-sub-ic liang">粮</span><span class="p1-sub-val"><b>1.2万</b><span class="sd flat">±0</span></span></div>
+                  <div><span class="p1-sub-ic bu">布</span><span class="p1-sub-val"><b>320</b><span class="sd dn">-12</span></span></div>
+                </div>
+              </div>
+              <div class="p1-star wide">
+                <div class="p1-state-pill ok">充裕</div>
+                <div class="p1-star-name">内 帑</div>
+                <div class="p1-star-subs">
+                  <div><span class="p1-sub-ic yin">银</span><span class="p1-sub-val"><b>8.4万</b><span class="sd up">+120</span></span></div>
+                  <div><span class="p1-sub-ic liang">粮</span><span class="p1-sub-val"><b>2.6千</b><span class="sd flat">±0</span></span></div>
+                  <div><span class="p1-sub-ic bu">布</span><span class="p1-sub-val"><b>1.8千</b><span class="sd up">+22</span></span></div>
+                </div>
+              </div>
+              <div class="p1-star hukou">
+                <div class="p1-star-name">户 口</div>
+                <div class="p1-star-val">1180<span class="unit" style="font-size:8.5px;color:var(--gold-mid);letter-spacing:.16em;">万</span></div>
+                <div class="p1-star-trend">▲ +12</div>
+              </div>
+              <div class="p1-star lizhi">
+                <div class="p1-state-pill warn">渐弊</div>
+                <div class="p1-star-name">吏 治</div>
+                <div class="p1-star-val" style="font-size:13px;letter-spacing:.16em;">○●●●</div>
+                <div class="p1-star-trend dn">▼ 浊 68</div>
+              </div>
+              <div class="p1-star small">
+                <div class="p1-star-name">民 心</div>
+                <div class="p1-star-val">61</div>
+                <div class="p1-star-trend">─ 安居</div>
+              </div>
+              <div class="p1-star small">
+                <div class="p1-star-name">皇 权</div>
+                <div class="p1-star-val">52</div>
+                <div class="p1-star-trend">─ 制衡</div>
+              </div>
+              <div class="p1-star small">
+                <div class="p1-star-name">皇 威</div>
+                <div class="p1-star-val">68</div>
+                <div class="p1-star-trend">▲ 威严</div>
+              </div>
+            </div>
+          </div>
+          <div class="pd-frame-right-stub">右 侧<br>time + vars<br>(out of scope)</div>
+        </div>
+        <div class="p1-banner">天 命 · 大 明 · 第 54 回</div>
+      </div>
+
+      <div class="pd-states">
+        <div class="pd-state-card">
+          <div class="pd-state-label">交 互 <span class="cn">微 动</span></div>
+          <p class="pd-state-cap">浑天仪 hover 1.2s 旋转·24 节气环朱针沿外缘移动·7 主星 hover 时光点放大 + 星辉外溢·点击钉 tooltip·dblclick 进 dossier。</p>
+        </div>
+        <div class="pd-state-card">
+          <div class="pd-state-label">数 据 <span class="cn">语 义</span></div>
+          <p class="pd-state-cap">帑廪/内帑 wide·金/粮/布 横陈·趋势带 +N/-N·后 5 narrow 显主值 + 段位 (○●●● 墨点 / 安居 / 制衡)·state pill (warn/bad) 浮于右上角。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip rich (帑廪 hover) -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·帑 廪</span><span class="en">RICH · GUOKU HOVER</span>
+        <span class="from">由 _renderGuoku 返回 · stocks + flows + alerts</span>
+      </div>
+      <div class="p1-tooltip">
+        <div class="p1-tt-head">
+          <div class="p1-tt-glyph">帑</div>
+          <div class="p1-tt-htxt">
+            <div class="p1-tt-title">帑 廪</div>
+            <div class="p1-tt-sub">国 库 · 三 账</div>
+          </div>
+          <div class="p1-tt-pill warn">紧 · 不 足 两 成</div>
+        </div>
+        <div class="p1-tt-stocks">
+          <div class="p1-tt-stock"><div class="nm">银</div><div class="vl">4.6 万</div><div class="un">两</div></div>
+          <div class="p1-tt-stock celadon"><div class="nm">粮</div><div class="vl">1.2 万</div><div class="un">石</div></div>
+          <div class="p1-tt-stock amber"><div class="nm">布</div><div class="vl">320</div><div class="un">匹</div></div>
+        </div>
+        <div class="p1-tt-flows">
+          <div class="p1-tt-flow"><span class="lb">月 入</span><span class="vl">+ 2,400 <span class="u">两</span><span class="arr up">▲</span></span></div>
+          <div class="p1-tt-flow"><span class="lb">月 支</span><span class="vl neg">- 3,200 <span class="u">两</span></span></div>
+          <div class="p1-tt-flow"><span class="lb">年 入</span><span class="vl">+ 38.6 万 <span class="u">两</span></span></div>
+        </div>
+        <div class="p1-tt-alerts">
+          <span class="p1-tt-alert">借 贷 余 8 月</span>
+          <span class="p1-tt-alert">通 胀 0.34</span>
+        </div>
+        <div class="p1-tt-note">点击查看帑廪详情 →</div>
+      </div>
+    </div>
+
+    <!-- Tooltip legacy (民心 hover) -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·民 心</span><span class="en">LEGACY · MINXIN HOVER</span>
+        <span class="from">由 _renderMinxin 返回 · rows + note</span>
+      </div>
+      <div class="p1-tt-legacy">
+        <div class="ttl">民 心</div>
+        <div class="phs">安 居 段 · 朝 廷 视 野 64</div>
+        <div class="row"><span class="lbl">真实民心</span><span class="val">61 / 100</span></div>
+        <div class="row"><span class="lbl">朝廷视野</span><span class="val">64 (地方上报)</span></div>
+        <div class="row"><span class="lbl">段 位</span><span class="val">安居</span></div>
+        <div class="note">"天视自我民视"——但朝廷看到的民心未必真实。点击查看分区/分阶层详情</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ====================================================== -->
+  <!-- PARADIGM 2·朱漆御印                                       -->
+  <!-- ====================================================== -->
+  <article class="paradigm">
+    <div class="pd-head">
+      <div class="pd-num-block">
+        <div class="pd-num">贰</div>
+        <div class="pd-num-tag">PARADIGM · TWO</div>
+      </div>
+      <div>
+        <h2 class="pd-title">朱 漆 御 印</h2>
+        <div class="pd-sub">朝 廷 · 御 账 折 · VERMILLION FOLIO</div>
+        <p class="pd-desc">
+          朱漆案台底 + 鎏金双线。左 = <strong>玉圭 + 朱砂方印 + 物候</strong>·中央 = <strong>七面折子</strong>——
+          帑廪/内帑 wide 折·朱底鎏金边·金/粮/布 3 圆 icon·后 5 narrow 折·朱漆点引导名 + 楷书数 + 趋势。
+          tooltip 是<strong>朱漆奏折</strong>·朱印 glyph + 鎏金边 stocks + flow line + 朱点 alerts·legacy 是<strong>简版奏</strong>。
+          banner 为<strong>朱漆诰命牌</strong>·圆角朱底白字+鎏金边·气派最盛。
+        </p>
+        <div class="pd-features">
+          <div class="pd-feat"><strong>底材</strong>朱漆 + 鎏金双线天地</div>
+          <div class="pd-feat"><strong>2 wide</strong>朱底鎏金折·金粮布圆 icon</div>
+          <div class="pd-feat"><strong>5 narrow</strong>朱漆折·朱点+楷书数</div>
+          <div class="pd-feat"><strong>rich tip</strong>朱漆奏·朱印 glyph + 鎏金</div>
+          <div class="pd-feat"><strong>legacy tip</strong>简版奏·朱底白字</div>
+          <div class="pd-feat"><strong>banner</strong>朱漆诰命牌·圆角</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pd-stage">
+      <div class="pd-stage-label">
+        <span class="cn">默 认</span><span>DEFAULT · TOPBAR + BANNER</span>
+        <span class="note">朱 漆 · 朝 廷 感</span>
+      </div>
+      <div class="pd-stack">
+        <div class="pd-frame">
+          <div class="p2-frame-row">
+            <div class="p2-left">
+              <div class="p2-gui">
+                <div class="p2-gui-shape"></div>
+                <div class="p2-gui-dot"></div>
+                <div class="p2-gui-char">问<br>天</div>
+              </div>
+              <div class="p2-stamp">
+                <div class="p2-stamp-square"></div>
+                <div class="p2-stamp-char">惊</div>
+                <div class="p2-stamp-hou">第 一 候</div>
+              </div>
+              <div class="p2-info">
+                <div class="p2-name"><span class="ink-dot">·</span> 桃 始 华</div>
+                <div class="p2-desc">仲 春 初 临 · 雷 始 发 声</div>
+              </div>
+            </div>
+            <div class="p2-rail">
+              <div class="p2-folio wide">
+                <div class="p2-folio-name">帑 廪</div>
+                <div class="p2-folio-subs">
+                  <div><span class="p2-sub-ic yin">银</span><span class="p2-sub-val"><b>4.6万</b><span class="sd up">+820</span></span></div>
+                  <div><span class="p2-sub-ic liang">粮</span><span class="p2-sub-val"><b>1.2万</b><span class="sd flat">±0</span></span></div>
+                  <div><span class="p2-sub-ic bu">布</span><span class="p2-sub-val"><b>320</b><span class="sd dn">-12</span></span></div>
+                </div>
+              </div>
+              <div class="p2-folio wide">
+                <div class="p2-state-pill">充裕</div>
+                <div class="p2-folio-name">内 帑</div>
+                <div class="p2-folio-subs">
+                  <div><span class="p2-sub-ic yin">银</span><span class="p2-sub-val"><b>8.4万</b><span class="sd up">+120</span></span></div>
+                  <div><span class="p2-sub-ic liang">粮</span><span class="p2-sub-val"><b>2.6千</b><span class="sd flat">±0</span></span></div>
+                  <div><span class="p2-sub-ic bu">布</span><span class="p2-sub-val"><b>1.8千</b><span class="sd up">+22</span></span></div>
+                </div>
+              </div>
+              <div class="p2-folio hukou">
+                <div class="p2-folio-name">户 口</div>
+                <div class="p2-folio-val">1180<span style="font-size:9px;color:rgba(245,218,130,.62);letter-spacing:.18em;">万</span></div>
+                <div class="p2-folio-trend up">▲ +12</div>
+              </div>
+              <div class="p2-folio lizhi">
+                <div class="p2-state-pill warn">渐弊</div>
+                <div class="p2-folio-name">吏 治</div>
+                <div class="p2-folio-val" style="font-size:13px;letter-spacing:.16em;">○●●●</div>
+                <div class="p2-folio-trend dn">▼ 浊 68</div>
+              </div>
+              <div class="p2-folio small">
+                <div class="p2-folio-name">民 心</div>
+                <div class="p2-folio-val">61</div>
+                <div class="p2-folio-trend flat">─ 安居</div>
+              </div>
+              <div class="p2-folio small">
+                <div class="p2-folio-name">皇 权</div>
+                <div class="p2-folio-val">52</div>
+                <div class="p2-folio-trend flat">─ 制衡</div>
+              </div>
+              <div class="p2-folio small">
+                <div class="p2-folio-name">皇 威</div>
+                <div class="p2-folio-val">68</div>
+                <div class="p2-folio-trend up">▲ 威严</div>
+              </div>
+            </div>
+          </div>
+          <div class="pd-frame-right-stub">右 侧<br>time + vars<br>(out of scope)</div>
+        </div>
+        <div class="p2-banner">天 命 · 大 明 · 第 54 回</div>
+      </div>
+
+      <div class="pd-states">
+        <div class="pd-state-card">
+          <div class="pd-state-label">交 互 <span class="cn">朱 漆 升 1 px</span></div>
+          <p class="pd-state-cap">玉圭 hover 抬 2px 显朱晕·7 折子 hover 鎏金边发亮 + 上抬 1px·朱砂方印 hover 微旋 2deg 显候相浮签·state pill (充裕/渐弊) 浮于右上。</p>
+        </div>
+        <div class="pd-state-card">
+          <div class="pd-state-label">权 威 <span class="cn">朝 廷 感</span></div>
+          <p class="pd-state-cap">7 折等高·朱底统一·两 wide 折显金粮布三圆 icon·后 5 narrow 显主值+段位·上下天地鎏金线锁定整条·读起像翻户部六科奏本。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip rich -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·帑 廪</span><span class="en">RICH · GUOKU HOVER</span>
+        <span class="from">朱 漆 奏 折 · 朱 印 glyph + 鎏 金 stocks</span>
+      </div>
+      <div class="p2-tooltip">
+        <div class="p2-tt-head">
+          <div class="p2-tt-glyph">帑</div>
+          <div class="p2-tt-htxt">
+            <div class="p2-tt-title">帑 廪</div>
+            <div class="p2-tt-sub">国 库 · 三 账</div>
+          </div>
+          <div class="p2-tt-pill warn">紧 · 不 足 两 成</div>
+        </div>
+        <div class="p2-tt-stocks">
+          <div class="p2-tt-stock"><div class="nm">银</div><div class="vl">4.6 万</div><div class="un">两</div></div>
+          <div class="p2-tt-stock celadon"><div class="nm">粮</div><div class="vl">1.2 万</div><div class="un">石</div></div>
+          <div class="p2-tt-stock amber"><div class="nm">布</div><div class="vl">320</div><div class="un">匹</div></div>
+        </div>
+        <div class="p2-tt-flows">
+          <div class="p2-tt-flow"><span class="lb">月 入</span><span class="vl">+ 2,400 <span class="u">两</span><span class="arr up">▲</span></span></div>
+          <div class="p2-tt-flow"><span class="lb">月 支</span><span class="vl neg">- 3,200 <span class="u">两</span></span></div>
+          <div class="p2-tt-flow"><span class="lb">年 入</span><span class="vl">+ 38.6 万 <span class="u">两</span></span></div>
+        </div>
+        <div class="p2-tt-alerts">
+          <span class="p2-tt-alert">借 贷 余 8 月</span>
+          <span class="p2-tt-alert">通 胀 0.34</span>
+        </div>
+        <div class="p2-tt-note">点击查看帑廪详情 →</div>
+      </div>
+    </div>
+
+    <!-- Tooltip legacy -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·民 心</span><span class="en">LEGACY · MINXIN HOVER</span>
+        <span class="from">简 版 奏 · 朱 底 rows</span>
+      </div>
+      <div class="p2-tt-legacy">
+        <div class="ttl">民 心</div>
+        <div class="phs">安 居 段 · 朝 廷 视 野 64</div>
+        <div class="row"><span class="lbl">真实民心</span><span class="val">61 / 100</span></div>
+        <div class="row"><span class="lbl">朝廷视野</span><span class="val">64 (地方上报)</span></div>
+        <div class="row"><span class="lbl">段 位</span><span class="val">安居</span></div>
+        <div class="note">"天视自我民视"——但朝廷看到的民心未必真实。点击查看分区/分阶层详情</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ====================================================== -->
+  <!-- PARADIGM 3·翰墨册页                                        -->
+  <!-- ====================================================== -->
+  <article class="paradigm">
+    <div class="pd-head">
+      <div class="pd-num-block">
+        <div class="pd-num">叁</div>
+        <div class="pd-num-tag">PARADIGM · THREE</div>
+      </div>
+      <div>
+        <h2 class="pd-title">翰 墨 册 页</h2>
+        <div class="pd-sub">文 人 · 御 覽 案 · LITERATI LEDGER</div>
+        <p class="pd-desc">
+          米黄宣纸底·朱栏直格。左 = <strong>竖排笔记签 + 朱砂方印 + 候相</strong>·中央 = <strong>御覽案册</strong>——
+          7 列墨账·帑廪/内帑列含金/粮/布 3 子格 (墨字+趋势)·后 5 列主值 + 段位·朱点 (唯一暖色) 锚定名。
+          tooltip 是<strong>米黄册页</strong>·朱印 stamp + 墨字 + 朱栏 rows·legacy 是<strong>账簿小笺</strong>。
+          banner 为<strong>米黄牌坊匾</strong>·边 ink rule + 中央朱方印 + 两侧。
+        </p>
+        <div class="pd-features">
+          <div class="pd-feat"><strong>底材</strong>米黄宣纸 + 朱栏直格</div>
+          <div class="pd-feat"><strong>2 wide</strong>三子格·墨字 + 朱趋势</div>
+          <div class="pd-feat"><strong>5 narrow</strong>列·朱点 + 楷书</div>
+          <div class="pd-feat"><strong>rich tip</strong>米黄册页·朱印 + 墨字</div>
+          <div class="pd-feat"><strong>legacy tip</strong>账簿小笺·朱点 rows</div>
+          <div class="pd-feat"><strong>banner</strong>米黄牌坊匾·两侧朱方印</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pd-stage">
+      <div class="pd-stage-label">
+        <span class="cn">默 认</span><span>DEFAULT · TOPBAR + BANNER</span>
+        <span class="note">文 人 · 静</span>
+      </div>
+      <div class="pd-stack">
+        <div class="pd-frame">
+          <div class="p3-frame-row">
+            <div class="p3-left">
+              <div class="p3-wentian-tag">
+                <span class="p3-wentian-char">问天</span>
+                <div class="p3-wentian-seal"></div>
+              </div>
+              <div class="p3-stamp">
+                <div class="p3-stamp-char">惊</div>
+                <div class="p3-stamp-hou">第 一 候</div>
+              </div>
+              <div class="p3-info">
+                <div class="p3-name">桃 始 华</div>
+                <div class="p3-desc">仲 春 初 临 · 雷 始 发 声</div>
+              </div>
+            </div>
+            <div class="p3-rail">
+              <div class="p3-col wide">
+                <div class="p3-col-name">帑 廪</div>
+                <div class="p3-col-subs">
+                  <div><div class="p3-sub-k">银</div><div class="p3-sub-v">4.6万</div><div class="p3-sub-d sd up">+820</div></div>
+                  <div><div class="p3-sub-k">粮</div><div class="p3-sub-v">1.2万</div><div class="p3-sub-d sd flat">±0</div></div>
+                  <div><div class="p3-sub-k">布</div><div class="p3-sub-v">320</div><div class="p3-sub-d sd dn">-12</div></div>
+                </div>
+              </div>
+              <div class="p3-col wide">
+                <div class="p3-state-pill ok">充裕</div>
+                <div class="p3-col-name">内 帑</div>
+                <div class="p3-col-subs">
+                  <div><div class="p3-sub-k">银</div><div class="p3-sub-v">8.4万</div><div class="p3-sub-d sd up">+120</div></div>
+                  <div><div class="p3-sub-k">粮</div><div class="p3-sub-v">2.6千</div><div class="p3-sub-d sd flat">±0</div></div>
+                  <div><div class="p3-sub-k">布</div><div class="p3-sub-v">1.8千</div><div class="p3-sub-d sd up">+22</div></div>
+                </div>
+              </div>
+              <div class="p3-col hukou">
+                <div class="p3-col-name">户 口</div>
+                <div class="p3-col-val">1180<span style="font-size:10px;color:rgba(80,50,22,.6);letter-spacing:.16em;">万</span></div>
+                <div class="p3-col-trend up">▲ +12</div>
+              </div>
+              <div class="p3-col lizhi">
+                <div class="p3-state-pill warn">渐弊</div>
+                <div class="p3-col-name">吏 治</div>
+                <div class="p3-col-val" style="font-size:13.5px;letter-spacing:.16em;">○●●●</div>
+                <div class="p3-col-trend dn">▼ 浊 68</div>
+              </div>
+              <div class="p3-col small">
+                <div class="p3-col-name">民 心</div>
+                <div class="p3-col-val">61</div>
+                <div class="p3-col-trend flat">─ 安居</div>
+              </div>
+              <div class="p3-col small">
+                <div class="p3-col-name">皇 权</div>
+                <div class="p3-col-val">52</div>
+                <div class="p3-col-trend flat">─ 制衡</div>
+              </div>
+              <div class="p3-col small">
+                <div class="p3-col-name">皇 威</div>
+                <div class="p3-col-val">68</div>
+                <div class="p3-col-trend up">▲ 威严</div>
+              </div>
+            </div>
+          </div>
+          <div class="pd-frame-right-stub">右 侧<br>time + vars<br>(out of scope)</div>
+        </div>
+        <div class="p3-banner">天 命 · 大 明 · 第 54 回</div>
+      </div>
+
+      <div class="pd-states">
+        <div class="pd-state-card">
+          <div class="pd-state-label">交 互 <span class="cn">墨 痕 微 染</span></div>
+          <p class="pd-state-cap">7 列 hover 时背景泛淡墨 (rgba 6% brown)·朱点 hover 涟漪 1 圈·朱戳 hover 抬 1px 显候相·点击钉 tip·dblclick 进 dossier。</p>
+        </div>
+        <div class="pd-state-card">
+          <div class="pd-state-label">阅 读 <span class="cn">节 奏</span></div>
+          <p class="pd-state-cap">直格分列像账册·名色淡·数字墨黑稳·朱点是唯一暖色锚定·趋势用墨点 (▲▼─) 不抢眼·适合每回合扫读 30s 不疲劳。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip rich -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·帑 廪</span><span class="en">RICH · GUOKU HOVER</span>
+        <span class="from">米 黄 册 页 · 朱 印 + 墨 字</span>
+      </div>
+      <div class="p3-tooltip">
+        <div class="p3-tt-head">
+          <div class="p3-tt-stamp">帑</div>
+          <div class="p3-tt-htxt">
+            <div class="p3-tt-title">帑 廪</div>
+            <div class="p3-tt-sub">国 库 · 三 账</div>
+          </div>
+          <div class="p3-tt-pill warn">紧 · 不 足 两 成</div>
+        </div>
+        <div class="p3-tt-stocks">
+          <div class="p3-tt-stock"><div class="nm">银</div><div class="vl">4.6 万</div><div class="un">两</div></div>
+          <div class="p3-tt-stock"><div class="nm">粮</div><div class="vl" style="color:var(--jade-deep);">1.2 万</div><div class="un">石</div></div>
+          <div class="p3-tt-stock"><div class="nm">布</div><div class="vl" style="color:#6a4516;">320</div><div class="un">匹</div></div>
+        </div>
+        <div class="p3-tt-flows">
+          <div class="p3-tt-flow"><span class="lb">月 入</span><span class="vl">+ 2,400 <span class="u">两</span><span class="arr up">▲</span></span></div>
+          <div class="p3-tt-flow"><span class="lb">月 支</span><span class="vl neg">- 3,200 <span class="u">两</span></span></div>
+          <div class="p3-tt-flow"><span class="lb">年 入</span><span class="vl">+ 38.6 万 <span class="u">两</span></span></div>
+        </div>
+        <div class="p3-tt-alerts">
+          <span class="p3-tt-alert">借 贷 余 8 月</span>
+          <span class="p3-tt-alert">通 胀 0.34</span>
+        </div>
+        <div class="p3-tt-note">点击查看帑廪详情 →</div>
+      </div>
+    </div>
+
+    <!-- Tooltip legacy -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·民 心</span><span class="en">LEGACY · MINXIN HOVER</span>
+        <span class="from">账 簿 小 笺 · 朱 点 rows</span>
+      </div>
+      <div class="p3-tooltip" style="min-width:240px;max-width:300px;">
+        <div class="p3-tt-head" style="margin-bottom:8px;padding-bottom:8px;">
+          <div class="p3-tt-htxt">
+            <div class="p3-tt-title">民 心</div>
+            <div class="p3-tt-sub">安 居 段 · 朝 廷 视 野 64</div>
+          </div>
+        </div>
+        <div class="p3-tt-flows" style="border:0;padding:0;margin:0;">
+          <div class="p3-tt-flow"><span class="lb">真实民心</span><span class="vl">61 / 100</span></div>
+          <div class="p3-tt-flow"><span class="lb">朝廷视野</span><span class="vl">64</span></div>
+          <div class="p3-tt-flow"><span class="lb">段 位</span><span class="vl">安居</span></div>
+        </div>
+        <div class="p3-tt-note" style="margin-top:8px;padding-top:6px;border-top:1px dashed rgba(80,50,22,.32);">"天视自我民视"——但朝廷看到的民心未必真实。点击查看详情</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ====================================================== -->
+  <!-- PARADIGM 4·重檐金阙                                        -->
+  <!-- ====================================================== -->
+  <article class="paradigm">
+    <div class="pd-head">
+      <div class="pd-num-block">
+        <div class="pd-num">肆</div>
+        <div class="pd-num-tag">PARADIGM · FOUR · NEW</div>
+      </div>
+      <div>
+        <h2 class="pd-title">重 檐 金 阙</h2>
+        <div class="pd-sub">紫 禁 城 · 宫 殿 横 陈 · IMPERIAL PALACE FACADE</div>
+        <p class="pd-desc">
+          顶部一道<strong>歇山金檐</strong>·朱漆斗拱·两端两根朱漆鎏金柱。左 = <strong>御书阁 + 鎏金钟 + 物候</strong>·
+          中央 = <strong>七座小殿横陈</strong>——帑廪/内帑两座大殿含 3 子柱 (金/粮/布)·后 5 殿单值。
+          tooltip 是<strong>朱檐金宫小殿</strong>·朱檐挑 + 鎏金顶 + 三柱 stocks·legacy 是<strong>金顶小阁</strong>。
+          banner 为<strong>朱漆宫匾</strong>·两侧鎏金竖纹 + 朱底金字。气势最盛。
+        </p>
+        <div class="pd-features">
+          <div class="pd-feat"><strong>底材</strong>歇山金檐 + 朱漆深红 + 两柱</div>
+          <div class="pd-feat"><strong>2 wide</strong>大殿·檐顶 + 3 子柱</div>
+          <div class="pd-feat"><strong>5 narrow</strong>小殿·朱檐 + 鎏金</div>
+          <div class="pd-feat"><strong>rich tip</strong>小殿浮卡·朱檐 + 三柱</div>
+          <div class="pd-feat"><strong>legacy tip</strong>金顶小阁·rows</div>
+          <div class="pd-feat"><strong>banner</strong>朱漆宫匾·鎏金竖纹</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pd-stage">
+      <div class="pd-stage-label">
+        <span class="cn">默 认</span><span>DEFAULT · NEW</span>
+        <span class="note">紫 禁 城 · 气 势</span>
+      </div>
+      <div class="pd-stack">
+        <div class="pd-frame">
+          <div class="p4-frame-row">
+            <div class="p4-left">
+              <div class="p4-pillar"></div>
+              <div class="p4-portal">
+                <div class="p4-throne">
+                  <div class="p4-throne-char">问天</div>
+                </div>
+                <div class="p4-bell">
+                  <div class="p4-bell-knob"></div>
+                  <div class="p4-bell-body"></div>
+                  <div class="p4-bell-char">惊</div>
+                  <div class="p4-bell-hou">第 一 候</div>
+                </div>
+                <div class="p4-info">
+                  <div class="p4-name">桃 始 华</div>
+                  <div class="p4-desc">雷 始 发 声 · 仲 春</div>
+                </div>
+              </div>
+            </div>
+            <div class="p4-rail">
+              <div class="p4-pavilion wide">
+                <div class="p4-pavilion-name">帑 廪</div>
+                <div class="p4-pavilion-subs">
+                  <div><div class="p4-sk">银</div><div class="p4-sv">4.6万</div><div class="p4-sd sd up">+820</div></div>
+                  <div><div class="p4-sk">粮</div><div class="p4-sv">1.2万</div><div class="p4-sd sd flat">±0</div></div>
+                  <div><div class="p4-sk">布</div><div class="p4-sv">320</div><div class="p4-sd sd dn">-12</div></div>
+                </div>
+              </div>
+              <div class="p4-pavilion wide">
+                <div class="p4-state-pill">充裕</div>
+                <div class="p4-pavilion-name">内 帑</div>
+                <div class="p4-pavilion-subs">
+                  <div><div class="p4-sk">银</div><div class="p4-sv">8.4万</div><div class="p4-sd sd up">+120</div></div>
+                  <div><div class="p4-sk">粮</div><div class="p4-sv">2.6千</div><div class="p4-sd sd flat">±0</div></div>
+                  <div><div class="p4-sk">布</div><div class="p4-sv">1.8千</div><div class="p4-sd sd up">+22</div></div>
+                </div>
+              </div>
+              <div class="p4-pavilion hukou">
+                <div class="p4-pavilion-name">户 口</div>
+                <div class="p4-pavilion-val">1180<span class="unit">万</span></div>
+                <div class="p4-pavilion-trend up">▲ +12</div>
+              </div>
+              <div class="p4-pavilion lizhi">
+                <div class="p4-state-pill warn">渐弊</div>
+                <div class="p4-pavilion-name">吏 治</div>
+                <div class="p4-pavilion-val" style="font-size:13px;letter-spacing:.14em;">○●●●</div>
+                <div class="p4-pavilion-trend dn">▼</div>
+              </div>
+              <div class="p4-pavilion small">
+                <div class="p4-pavilion-name">民 心</div>
+                <div class="p4-pavilion-val">61</div>
+                <div class="p4-pavilion-trend flat">─ 安</div>
+              </div>
+              <div class="p4-pavilion small">
+                <div class="p4-pavilion-name">皇 权</div>
+                <div class="p4-pavilion-val">52</div>
+                <div class="p4-pavilion-trend flat">─ 衡</div>
+              </div>
+              <div class="p4-pavilion small">
+                <div class="p4-pavilion-name">皇 威</div>
+                <div class="p4-pavilion-val">68</div>
+                <div class="p4-pavilion-trend up">▲ 威</div>
+              </div>
+            </div>
+          </div>
+          <div class="pd-frame-right-stub">右 侧<br>time + vars<br>(out of scope)</div>
+        </div>
+        <div class="p4-banner">天 命 · 大 明 · 第 54 回</div>
+      </div>
+
+      <div class="pd-states">
+        <div class="pd-state-card">
+          <div class="pd-state-label">交 互 <span class="cn">鎏 金 边 亮</span></div>
+          <p class="pd-state-cap">殿宇 hover 抬 2px·朱檐顶亮一档·边框换 brightGold·shadow 红辉外溢。御书阁 hover 全朱晕扩散·鎏金钟微旋 3deg。</p>
+        </div>
+        <div class="pd-state-card">
+          <div class="pd-state-label">气 势 <span class="cn">最 盛</span></div>
+          <p class="pd-state-cap">朱檐 + 鎏金 + 柱·7 殿宫殿横陈·开局即视觉震撼·适合"建国登基"剧本·略奢华·后期可作 V.I.P 解锁皮肤。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip rich -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·帑 廪</span><span class="en">RICH · GUOKU HOVER</span>
+        <span class="from">朱 檐 小 殿 · 鎏 金 三 柱 stocks</span>
+      </div>
+      <div class="p4-tooltip">
+        <div class="p4-tt-head">
+          <div class="p4-tt-glyph">帑</div>
+          <div class="p4-tt-htxt">
+            <div class="p4-tt-title">帑 廪</div>
+            <div class="p4-tt-sub">国 库 · 三 账</div>
+          </div>
+          <div class="p4-tt-pill warn">紧 · 不 足 两 成</div>
+        </div>
+        <div class="p4-tt-stocks">
+          <div class="p4-tt-stock"><div class="nm">银</div><div class="vl">4.6 万</div><div class="un">两</div></div>
+          <div class="p4-tt-stock celadon"><div class="nm">粮</div><div class="vl">1.2 万</div><div class="un">石</div></div>
+          <div class="p4-tt-stock amber"><div class="nm">布</div><div class="vl">320</div><div class="un">匹</div></div>
+        </div>
+        <div class="p4-tt-flows">
+          <div class="p4-tt-flow"><span class="lb">月 入</span><span class="vl">+ 2,400 <span class="u">两</span><span class="arr up">▲</span></span></div>
+          <div class="p4-tt-flow"><span class="lb">月 支</span><span class="vl neg">- 3,200 <span class="u">两</span></span></div>
+          <div class="p4-tt-flow"><span class="lb">年 入</span><span class="vl">+ 38.6 万 <span class="u">两</span></span></div>
+        </div>
+        <div class="p4-tt-alerts">
+          <span class="p4-tt-alert">借 贷 余 8 月</span>
+          <span class="p4-tt-alert">通 胀 0.34</span>
+        </div>
+        <div class="p4-tt-note">点击查看帑廪详情 →</div>
+      </div>
+    </div>
+
+    <!-- Tooltip legacy -->
+    <div class="pd-tooltip-stage">
+      <div class="pd-tooltip-label">
+        <span class="cn">悬 停·民 心</span><span class="en">LEGACY · MINXIN HOVER</span>
+        <span class="from">金 顶 小 阁 · rows</span>
+      </div>
+      <div class="p4-tooltip" style="min-width:240px;max-width:300px;">
+        <div class="p4-tt-head" style="margin-bottom:8px;padding-bottom:8px;">
+          <div class="p4-tt-htxt">
+            <div class="p4-tt-title">民 心</div>
+            <div class="p4-tt-sub">安 居 段 · 朝 廷 视 野 64</div>
+          </div>
+        </div>
+        <div class="p4-tt-flows" style="border:0;padding:0;margin:0;">
+          <div class="p4-tt-flow"><span class="lb">真实民心</span><span class="vl">61 / 100</span></div>
+          <div class="p4-tt-flow"><span class="lb">朝廷视野</span><span class="vl">64</span></div>
+          <div class="p4-tt-flow"><span class="lb">段 位</span><span class="vl">安居</span></div>
+        </div>
+        <div class="p4-tt-note" style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(245,218,130,.22);">"天视自我民视"——但朝廷看到的民心未必真实。点击查看详情</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ====================================================== -->
+  <!-- DECISION MATRIX                                          -->
+  <!-- ====================================================== -->
+  <section class="matrix">
+    <h2>决 策 矩 阵</h2>
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>方 向</th>
+          <th>底 材</th>
+          <th>主 色</th>
+          <th>气 质</th>
+          <th>适 用 玩 家</th>
+          <th>tip 风</th>
+          <th>工 期</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>壹·钦 天 监</td>
+          <td>夜空 + 散星</td>
+          <td><span class="tag cool">indigo</span><span class="tag bold">brass</span></td>
+          <td>冷·精密·学究</td>
+          <td>研究流·爱细节</td>
+          <td>星图浮卡</td>
+          <td>~ 2 d</td>
+        </tr>
+        <tr>
+          <td>贰·朱 漆 御 印</td>
+          <td>朱漆 + 鎏金</td>
+          <td><span class="tag warm">vermillion</span><span class="tag bold">gold</span></td>
+          <td>权威·朝廷</td>
+          <td>主流·沉浸</td>
+          <td>朱漆奏折</td>
+          <td>~ 1.5 d</td>
+        </tr>
+        <tr>
+          <td>叁·翰 墨 册 页</td>
+          <td>米黄 + 朱栏</td>
+          <td><span class="tag paper">cream</span><span class="tag">ink</span></td>
+          <td>静·文人·账册</td>
+          <td>长玩家·疲惫期</td>
+          <td>米黄册页</td>
+          <td>~ 1.5 d</td>
+        </tr>
+        <tr>
+          <td>肆·重 檐 金 阙</td>
+          <td>金檐 + 朱柱</td>
+          <td><span class="tag warm">deepRed</span><span class="tag bold">brightGold</span></td>
+          <td>盛大·王朝·气势</td>
+          <td>新玩家·开局震撼</td>
+          <td>朱檐小殿</td>
+          <td>~ 3 d</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ====================================================== -->
+  <!-- NEXT                                                     -->
+  <!-- ====================================================== -->
+  <section class="next">
+    <h2>下 一 步</h2>
+    <div class="next-grid">
+      <div class="next-card">
+        <div class="next-card-step">STEP · 01</div>
+        <h3>选 定 主 方 向</h3>
+        <p>从 4 方向选 1·或三选一作主轴 + <strong>重檐金阙作"立国剧本"专属皮肤</strong>。可对 4 个 banner / tooltip 横向比较再定。</p>
+      </div>
+      <div class="next-card">
+        <div class="next-card-step">STEP · 02</div>
+        <h3>切 实 现</h3>
+        <p>选定后改 <strong>phase8-formal-bridge.js</strong>·CSS 段位 + ensurePreviewTopbar HTML·tooltip 改 <strong>tm-topbar-vars.js</strong> 的 _showBarVarTip CSS。data 路径 0 改动。</p>
+      </div>
+      <div class="next-card">
+        <div class="next-card-step">STEP · 03</div>
+        <h3>banner 联动</h3>
+        <p>topbarBannerText 已有 (大明·第 54 回)·改 #banner CSS = 选中方向的 banner 视觉·与 topbar 一体呈现。</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

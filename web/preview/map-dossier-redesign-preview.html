@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舆图检签 · 地块方志与势力谱牒 重构预览 v2</title>
+<style>
+/* ============================================================
+   舆图检签 v2 — 地块面板 + 势力面板 + 四数据视图 全面重构
+   v2 增补：
+   · 关闭(×)=真隐藏 · 合册(—)=收成书脊 两钮分立
+   · 左键地块=方志 · 右键地块=所属势力谱牒
+   · 舆图四数据视图(民情/军务/官守/财赋)+势力归属默认视图
+     — 着色五档 + 地块哨牌数值(色不孤行) + 左下图例
+   · 悬浮签注 tooltip：随视图变内容 + 判语(数字翻译成人话)
+   · 活字段因果「账签」：读数 hover 显示牵动链
+   · 营造志建筑卡带「效用」徽签(结构化效果演示)
+   材质承御案家族: 宣纸/绢 · 墨 · 朱砂 · 描金 · 楷体 · 圆朱印
+   ============================================================ */
+:root{
+  --paper-hi:#fbf6e8;--paper:#f4ecd6;--paper-lo:#e9dcbc;--paper-edge:#d8c595;
+  --ink:#262015;--ink-soft:#564732;--ink-faint:#9a8a6a;
+  --gold-hi:#d8b96a;--gold:#a8833a;--gold-d:#7c5d21;
+  --cinnabar:#a83228;--cinnabar-hi:#c64a3e;--cinnabar-d:#7a2018;
+  --jade:#557f6f;--jade-hi:#6fa291;
+  --map-sea:#1b150c;
+  --font:"STKaiti","KaiTi","楷体","Noto Serif SC","Source Han Serif CN",serif;
+  --font-doc:"FangSong","STFangsong","仿宋","Noto Serif SC",serif;
+  --font-song:"STSong","SimSun","宋体",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);color:var(--ink);overflow:hidden;background:var(--map-sea);-webkit-font-smoothing:antialiased;}
+
+/* ════════ 模拟游戏壳：顶栏 + 舆图 ════════ */
+.chrome-top{position:fixed;top:0;left:0;right:0;height:46px;z-index:20;display:flex;align-items:center;gap:18px;padding:0 18px;
+  background:linear-gradient(180deg,#2a1d0f,#1d130a 80%,#150d06);border-bottom:1px solid rgba(216,185,106,.34);
+  box-shadow:0 4px 18px rgba(0,0,0,.55);color:#d8c27c;font-size:13px;letter-spacing:.1em;}
+.chrome-top .ct-seal{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:#fff;font-size:14px;font-weight:bold;
+  background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));border:1px solid rgba(122,32,24,.7);box-shadow:0 2px 6px rgba(0,0,0,.5);}
+.chrome-top b{font-size:15px;letter-spacing:.3em;color:#ecd79b;}
+.chrome-top .ct-stat{display:flex;gap:14px;margin-left:auto;color:rgba(216,194,124,.8);font-size:12px;}
+.chrome-top .ct-stat i{font-style:normal;color:#e6cf8e;}
+.chrome-note{position:fixed;top:54px;right:14px;z-index:20;font-size:11px;letter-spacing:.14em;color:rgba(216,194,124,.6);
+  border:1px dashed rgba(216,185,106,.35);padding:4px 10px;background:rgba(20,13,6,.55);}
+
+/* 舆图区 */
+.map-stage{position:fixed;inset:46px 0 0 0;z-index:1;
+  background:
+    radial-gradient(90% 70% at 60% 30%,rgba(120,96,58,.20),transparent 70%),
+    radial-gradient(120% 100% at 50% 110%,rgba(0,0,0,.6),transparent 60%),
+    linear-gradient(180deg,#241a0e,#1b130a 60%,#150e07);}
+.map-stage::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,rgba(216,185,106,.022) 0 1px,transparent 1px 56px),
+             repeating-linear-gradient(90deg,rgba(216,185,106,.022) 0 1px,transparent 1px 56px);}
+.map-svg{position:absolute;inset:0;width:100%;height:100%;}
+.map-svg .prov{stroke:#2c2110;stroke-width:1.6;cursor:pointer;transition:filter .18s;}
+.map-svg .prov:hover{filter:brightness(1.16);}
+.map-svg .prov.sel{stroke:var(--cinnabar-hi);stroke-width:2.6;stroke-dasharray:7 4;animation:dashflow 1.6s linear infinite;filter:brightness(1.2) drop-shadow(0 0 10px rgba(198,74,62,.5));}
+@keyframes dashflow{to{stroke-dashoffset:-22;}}
+.map-svg .pname{font-family:var(--font);fill:#2a2010;font-size:15px;letter-spacing:.2em;pointer-events:none;font-weight:bold;}
+.map-svg .pname.lite{fill:rgba(240,232,210,.82);}
+.map-svg text.realm{font-family:var(--font);fill:rgba(38,28,12,.78);font-size:22px;letter-spacing:.5em;pointer-events:none;font-weight:bold;}
+.map-svg text.jin-t{fill:rgba(235,228,255,.72);}
+/* 哨牌（数据视图下的地块数值徽·色不孤行） */
+.sentinel{pointer-events:none;opacity:0;transition:opacity .22s;}
+.map-svg.mode-data .sentinel{opacity:1;}
+.sentinel circle{fill:rgba(20,14,7,.78);stroke:rgba(216,185,106,.55);stroke-width:1;}
+.sentinel text{font-family:var(--font-song);font-size:12px;font-weight:bold;fill:#ecd79b;text-anchor:middle;dominant-baseline:central;letter-spacing:0;}
+.sentinel.warn circle{stroke:var(--cinnabar-hi);}
+.sentinel.warn text{fill:#f0b9af;}
+.map-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:rgba(216,194,124,.55);font-size:12px;letter-spacing:.2em;white-space:nowrap;}
+
+/* ── 视图签条（左上） ── */
+.view-tabs{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:6px;}
+.vt{position:relative;font-family:var(--font);font-size:12.5px;letter-spacing:.2em;padding:7px 15px 7px 17px;cursor:pointer;
+  color:#cdb98c;border:1px solid rgba(216,185,106,.38);border-radius:3px;
+  background:linear-gradient(180deg,rgba(42,29,15,.92),rgba(26,18,9,.88));box-shadow:0 3px 9px rgba(0,0,0,.4);transition:all .16s;}
+.vt:hover{color:#f0dfa6;border-color:rgba(216,185,106,.6);}
+.vt.active{color:#fff;background:linear-gradient(160deg,var(--cinnabar-hi),var(--cinnabar-d));border-color:rgba(122,32,24,.85);
+  box-shadow:0 3px 11px rgba(122,32,24,.5);}
+.vt .vt-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:1px;background:var(--vc,#a8833a);}
+.vt.active .vt-dot{background:#fff;}
+
+/* ── 图例（左下） ── */
+.legend{position:absolute;right:14px;bottom:64px;z-index:8;min-width:230px;max-width:300px;padding:10px 13px 11px;
+  border:1px solid rgba(216,185,106,.32);background:linear-gradient(180deg,rgba(34,24,12,.92),rgba(22,15,8,.9));
+  box-shadow:0 6px 18px rgba(0,0,0,.5);color:#d8c27c;}
+.legend .lg-t{font-size:12.5px;letter-spacing:.22em;color:#ecd79b;margin-bottom:3px;}
+.legend .lg-note{font-size:10.5px;line-height:1.65;color:rgba(216,194,124,.62);letter-spacing:.04em;margin-bottom:7px;}
+.legend .lg-bar{display:flex;height:10px;border-radius:2px;overflow:hidden;border:1px solid rgba(0,0,0,.4);}
+.legend .lg-bar i{flex:1;}
+.legend .lg-ticks{display:flex;justify-content:space-between;font-size:10px;color:rgba(216,194,124,.72);margin-top:3px;letter-spacing:.06em;}
+.legend .lg-rows{display:flex;flex-direction:column;gap:3px;}
+.legend .lg-row{display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(230,210,150,.85);}
+.legend .lg-row i{width:13px;height:13px;border-radius:2px;border:1px solid rgba(0,0,0,.4);}
+
+/* ── 悬浮签注 tooltip ── */
+.qianzhu{position:fixed;z-index:70;width:248px;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .14s,transform .14s;
+  border:1px solid rgba(96,68,28,.7);border-radius:3px;
+  background:linear-gradient(180deg,var(--paper-hi),var(--paper) 60%,var(--paper-lo));
+  box-shadow:inset 0 0 0 1px rgba(255,252,238,.5),0 10px 28px rgba(0,0,0,.6);}
+.qianzhu.show{opacity:1;transform:none;}
+.qianzhu::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--qc,var(--gold));}
+.qz-hd{display:flex;align-items:center;gap:7px;padding:8px 11px 6px;border-bottom:1px solid rgba(124,93,33,.3);}
+.qz-hd b{font-size:14.5px;letter-spacing:.1em;color:var(--ink);}
+.qz-hd .qz-owner{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-soft);}
+.qz-hd .qz-owner i{width:8px;height:8px;border-radius:50%;background:var(--oc,#8a7450);}
+.qz-body{padding:6px 11px 4px;}
+.qz-row{display:flex;justify-content:space-between;gap:10px;padding:2.5px 0;font-size:11.5px;}
+.qz-row .k{color:var(--ink-soft);letter-spacing:.08em;}
+.qz-row .v{font-family:var(--font-song);color:var(--ink);font-weight:bold;}
+.qz-row .v.zhu{color:var(--cinnabar);}
+.qz-row .v.jin{color:#3c6353;}
+.qz-verdict{margin:5px 11px 7px;padding:6px 9px;font:11.5px/1.7 var(--font-doc);border-left:3px solid var(--qc,var(--gold));
+  background:rgba(255,250,235,.7);color:var(--ink-soft);}
+.qz-verdict.wei{border-left-color:var(--cinnabar);color:var(--cinnabar-d);background:rgba(198,74,62,.08);}
+.qz-verdict.an{border-left-color:var(--jade);color:#33564a;background:rgba(111,162,145,.12);}
+.qz-ft{padding:5px 11px 7px;border-top:1px dashed rgba(124,93,33,.3);font-size:10px;color:var(--ink-faint);letter-spacing:.1em;display:flex;justify-content:space-between;}
+
+/* ════════ 册页面板 ════════ */
+.book{position:fixed;left:16px;top:62px;bottom:14px;width:392px;z-index:30;display:flex;
+  transition:width .42s cubic-bezier(.6,.05,.25,1),opacity .25s,transform .3s;}
+.book.closed{width:46px;}
+.book.hidden{opacity:0;transform:translateX(-30px);pointer-events:none;}
+.book-board{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;
+  border:1px solid rgba(96,68,28,.65);border-radius:3px 8px 8px 3px;overflow:visible;
+  background:linear-gradient(180deg,var(--paper-hi),var(--paper) 46%,var(--paper-lo));
+  box-shadow:inset 0 0 0 1px rgba(255,252,238,.55),inset 0 0 44px rgba(120,84,34,.16),
+             8px 12px 34px rgba(0,0,0,.55),2px 3px 10px rgba(0,0,0,.4);}
+.book-board::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;opacity:.7;
+  background:
+    radial-gradient(34% 16% at 78% 8%,rgba(190,150,80,.08),transparent 70%),
+    radial-gradient(26% 14% at 16% 64%,rgba(170,130,66,.07),transparent 70%),
+    repeating-linear-gradient(93deg,rgba(140,108,58,.045) 0 1px,transparent 1px 7px),
+    repeating-linear-gradient(2deg,rgba(140,108,58,.035) 0 1px,transparent 1px 11px);}
+.book-board::after{content:"";position:absolute;left:9px;top:10px;bottom:10px;width:1px;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(124,93,33,.5) 6%,rgba(124,93,33,.5) 94%,transparent);}
+.stitch{position:absolute;left:5px;width:9px;height:26px;z-index:2;pointer-events:none;border-radius:4px;
+  background:linear-gradient(90deg,rgba(124,93,33,.0),rgba(124,93,33,.55),rgba(124,93,33,0));}
+.stitch::before{content:"";position:absolute;inset:11px 0;background:rgba(124,93,33,.75);border-radius:2px;}
+.stitch.s1{top:7%;}.stitch.s2{top:33%;}.stitch.s3{top:61%;}.stitch.s4{top:87%;}
+.straddle-seal{position:absolute;right:-1px;top:46%;width:23px;height:46px;z-index:6;pointer-events:none;opacity:.85;
+  border-radius:23px 0 0 23px;border:2px solid rgba(168,50,40,.78);border-right:0;
+  background:radial-gradient(circle at 100% 50%,rgba(198,74,62,.30),rgba(168,50,40,.16) 60%,transparent);
+  box-shadow:inset 2px 0 8px rgba(168,50,40,.25);}
+.straddle-seal i{position:absolute;left:6px;top:50%;transform:translateY(-50%);font-style:normal;writing-mode:vertical-rl;
+  font-size:10px;letter-spacing:2px;color:rgba(122,32,24,.85);font-weight:bold;}
+
+.book-inner{position:relative;z-index:3;flex:1;min-height:0;display:flex;flex-direction:column;opacity:1;transition:opacity .2s ease .15s;}
+.book.closed .book-inner{opacity:0;pointer-events:none;transition:opacity .12s;}
+
+.book-spine{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;align-items:center;cursor:pointer;
+  border-radius:3px 8px 8px 3px;border:1px solid rgba(96,68,28,.65);
+  background:linear-gradient(90deg,#7a5a2e,#5d3f20 40%,#4a3118);box-shadow:inset 0 0 0 1px rgba(255,240,200,.14),6px 10px 26px rgba(0,0,0,.5);}
+.book.closed .book-spine{display:flex;}
+.book-spine .sp-label{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  writing-mode:vertical-rl;color:#ecd79b;font-size:15px;letter-spacing:.42em;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.book-spine .sp-label small{font-size:11px;color:rgba(236,215,155,.6);letter-spacing:.3em;}
+.book-spine .sp-seal{margin:12px 0 14px;width:26px;height:26px;border-radius:50%;border:1.5px solid rgba(198,74,62,.9);
+  display:grid;place-items:center;color:#e8b1a8;font-size:11px;background:radial-gradient(circle,rgba(168,50,40,.5),rgba(122,32,24,.3));}
+
+/* ── 册首 ── */
+.b-head{flex:0 0 auto;position:relative;padding:14px 18px 10px 26px;border-bottom:1px solid rgba(124,93,33,.34);}
+.b-head::after{content:"";position:absolute;left:26px;right:18px;bottom:3px;height:1px;background:linear-gradient(90deg,rgba(168,131,58,.4),transparent 80%);}
+.b-kind{position:absolute;right:14px;top:12px;display:flex;align-items:center;gap:6px;z-index:4;}
+.b-kind .bk-tag{font-size:10.5px;letter-spacing:.3em;color:var(--gold-d);border:1px solid rgba(168,131,58,.45);padding:3px 7px 3px 9px;
+  background:rgba(255,250,235,.6);}
+.b-close{width:26px;height:26px;border-radius:50%;border:1px solid rgba(124,93,33,.5);background:rgba(255,252,240,.65);color:var(--gold-d);
+  font-size:14px;cursor:pointer;display:grid;place-items:center;transition:all .16s;font-family:var(--font);line-height:1;}
+.b-close:hover{background:var(--cinnabar);border-color:var(--cinnabar-d);color:#fff;}
+.b-close.x:hover{transform:rotate(90deg);}
+.b-title-row{display:flex;align-items:flex-end;gap:12px;padding-right:96px;min-width:0;}
+.b-name{font-size:29px;font-weight:bold;letter-spacing:.12em;line-height:1.05;color:var(--ink);white-space:nowrap;flex:0 0 auto;
+  text-shadow:0 1px 0 rgba(255,255,255,.65),0 2px 5px rgba(140,100,40,.25);}
+.b-name-sub{padding-bottom:5px;font-size:12px;color:var(--ink-faint);letter-spacing:.2em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.b-govline{margin-top:7px;display:flex;flex-wrap:wrap;align-items:center;gap:7px;}
+.b-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;letter-spacing:.08em;color:var(--ink-soft);
+  border:1px solid rgba(168,131,58,.4);background:rgba(255,250,235,.55);padding:3px 9px;border-radius:2px;}
+.b-pill b{color:var(--ink);font-weight:600;}
+.b-pill.owner{cursor:pointer;border-color:rgba(168,50,40,.5);background:rgba(198,74,62,.1);transition:all .15s;}
+.b-pill.owner:hover{background:var(--cinnabar);color:#fff;}
+.b-pill.owner:hover b,.b-pill.owner:hover .dot{color:#fff;}
+.b-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--fc,#8a7450);box-shadow:0 0 0 1.5px rgba(0,0,0,.15) inset;}
+.b-pill.hostile{border-color:rgba(168,50,40,.55);color:var(--cinnabar-d);background:rgba(198,74,62,.08);}
+.b-bigseal{position:absolute;right:50px;top:13px;width:52px;height:52px;transform:rotate(9deg);pointer-events:none;opacity:.5;z-index:1;
+  border:2.5px solid rgba(168,50,40,.75);border-radius:7px;display:grid;place-items:center;
+  background:radial-gradient(circle at 40% 30%,rgba(198,74,62,.22),rgba(168,50,40,.1));}
+.b-bigseal i{font-style:normal;font-size:17px;line-height:1.12;letter-spacing:1px;color:rgba(122,32,24,.88);font-weight:bold;
+  writing-mode:vertical-rl;text-orientation:upright;}
+.b-desc{margin:9px 0 0;font:12.5px/1.8 var(--font-doc);color:var(--ink-soft);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;position:relative;}
+.b-desc.open{display:block;-webkit-line-clamp:unset;}
+.b-desc::after{content:"展读 ▾";position:absolute;right:0;bottom:0;padding-left:26px;font-size:11px;color:var(--gold-d);letter-spacing:.1em;
+  background:linear-gradient(90deg,transparent,var(--paper) 40%);}
+.b-desc.open::after{content:"收起 ▴";position:static;background:none;display:inline-block;margin-left:8px;padding-left:0;}
+
+/* ── 读数带 ── */
+.b-stats{flex:0 0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px 14px 9px 24px;
+  border-bottom:1px solid rgba(124,93,33,.3);}
+.b-stat{position:relative;padding:7px 4px 6px;text-align:center;border:1px solid rgba(150,114,52,.34);border-radius:3px;cursor:default;
+  background:linear-gradient(180deg,rgba(255,253,244,.85),rgba(244,235,210,.6));
+  box-shadow:0 1px 4px rgba(120,84,34,.14),inset 0 1px 0 rgba(255,255,255,.7);
+  transition:transform .16s,box-shadow .16s;animation:statIn .5s cubic-bezier(.2,.8,.3,1) backwards;}
+.b-stat:nth-child(1){animation-delay:.05s;}.b-stat:nth-child(2){animation-delay:.1s;}.b-stat:nth-child(3){animation-delay:.15s;}
+.b-stat:nth-child(4){animation-delay:.2s;}.b-stat:nth-child(5){animation-delay:.25s;}
+@keyframes statIn{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
+.b-stat:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(120,84,34,.24);}
+.b-stat .k{display:block;font-size:10.5px;letter-spacing:.22em;color:var(--gold-d);margin-bottom:2px;}
+.b-stat .v{display:block;font-family:var(--font-song);font-size:15.5px;font-weight:bold;color:var(--ink);letter-spacing:.02em;line-height:1.15;}
+.b-stat .v small{font-size:10px;font-weight:normal;color:var(--ink-faint);margin-left:1px;}
+.b-stat .n{display:block;font-size:9.5px;color:var(--ink-faint);letter-spacing:.06em;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.b-stat.warn .v{color:var(--cinnabar);}
+.b-stat.warn{border-color:rgba(168,50,40,.45);background:linear-gradient(180deg,rgba(255,248,240,.9),rgba(244,226,206,.55));}
+.b-stat.good .v{color:#3c6353;}
+/* 活账角标 */
+.b-stat[data-cause]::after,.lr[data-cause] .k::after{content:"›";display:inline-block;margin-left:3px;color:var(--gold);font-size:10px;
+  transform:rotate(90deg);opacity:.65;}
+.b-stat[data-cause]{cursor:pointer;}
+.lr[data-cause]{cursor:pointer;}
+.lr[data-cause]:hover{background:rgba(216,185,106,.1);}
+
+/* ── 活账浮层（因果账签） ── */
+.cause-pop{position:fixed;z-index:75;width:262px;opacity:0;pointer-events:none;transform:translateY(5px);transition:opacity .15s,transform .15s;
+  border:1px solid rgba(96,68,28,.72);border-radius:3px;
+  background:linear-gradient(180deg,var(--paper-hi),var(--paper) 64%,var(--paper-lo));
+  box-shadow:inset 0 0 0 1px rgba(255,252,238,.5),0 12px 30px rgba(0,0,0,.55);}
+.cause-pop.show{opacity:1;transform:none;}
+.cause-pop::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cinnabar);}
+.cp-hd{display:flex;align-items:center;gap:8px;padding:8px 12px 6px;border-bottom:1px solid rgba(124,93,33,.3);}
+.cp-hd .cp-seal{width:20px;height:20px;border-radius:3px;display:grid;place-items:center;font-size:11px;color:#fff;
+  background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));}
+.cp-hd b{font-size:13px;letter-spacing:.14em;color:var(--ink);}
+.cp-body{padding:6px 12px 5px;}
+.cp-item{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid rgba(86,71,50,.12);font-size:11.5px;line-height:1.6;}
+.cp-item:last-child{border-bottom:0;}
+.cp-item .ck{flex:0 0 auto;color:var(--cinnabar-d);letter-spacing:.04em;font-weight:bold;}
+.cp-item .cv{color:var(--ink-soft);font-family:var(--font-doc);}
+.cp-ft{padding:5px 12px 8px;border-top:1px dashed rgba(124,93,33,.3);font-size:10px;line-height:1.6;color:var(--ink-faint);letter-spacing:.06em;}
+
+/* ── 卷区 ── */
+.b-scroll{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 14px 24px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:rgba(124,93,33,.4) transparent;}
+.b-scroll::-webkit-scrollbar{width:5px;}
+.b-scroll::-webkit-scrollbar-thumb{background:rgba(124,93,33,.35);border-radius:3px;}
+.juan{padding:13px 0 4px;}
+.juan + .juan{border-top:1px dashed rgba(124,93,33,.3);}
+.juan-t{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.juan-t .jt-seal{width:21px;height:21px;flex:0 0 auto;display:grid;place-items:center;border-radius:3px;font-size:11.5px;color:#fff;
+  background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));border:1px solid rgba(122,32,24,.55);
+  box-shadow:0 1px 4px rgba(122,32,24,.35);}
+.juan-t b{font-size:15px;letter-spacing:.24em;color:var(--ink);}
+.juan-t small{font-size:10.5px;color:var(--ink-faint);letter-spacing:.12em;margin-left:auto;}
+.lan{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;}
+.lan.one{grid-template-columns:1fr;}
+.lr{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4.5px 1px;border-bottom:1px solid rgba(86,71,50,.13);min-width:0;}
+.lr .k{flex:0 0 auto;font-size:12px;color:var(--ink-soft);letter-spacing:.1em;}
+.lr .v{font-family:var(--font-song);font-size:12.5px;color:var(--ink);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lr .v.zhu{color:var(--cinnabar);font-weight:bold;}
+.lr .v.jin{color:#3c6353;}
+.lr .v.wrap{white-space:normal;line-height:1.6;text-align:right;}
+.bar-strip{margin:7px 0 3px;}
+.bar-strip .bs-t{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);letter-spacing:.08em;margin-bottom:4px;}
+.bar{display:flex;height:11px;border-radius:2px;overflow:hidden;border:1px solid rgba(86,71,50,.3);box-shadow:inset 0 1px 2px rgba(0,0,0,.12);}
+.bar i{height:100%;}
+.bar-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;font-size:10.5px;color:var(--ink-soft);}
+.bar-legend em{font-style:normal;display:inline-flex;align-items:center;gap:4px;}
+.bar-legend em::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c);}
+.wu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.wu{padding:6px 7px 5px;border:1px solid rgba(150,114,52,.3);border-radius:3px;background:rgba(255,252,240,.5);text-align:center;}
+.wu .k{display:block;font-size:10.5px;color:var(--gold-d);letter-spacing:.16em;margin-bottom:1px;}
+.wu .v{display:block;font-family:var(--font-song);font-size:12.5px;font-weight:bold;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.qian-links{display:flex;flex-wrap:wrap;gap:6px;}
+.qian{font-family:var(--font);font-size:11.5px;letter-spacing:.1em;color:var(--ink-soft);border:1px solid rgba(168,131,58,.42);
+  background:linear-gradient(180deg,rgba(255,253,244,.9),rgba(244,235,210,.55));padding:4px 10px;border-radius:2px;cursor:pointer;
+  transition:all .15s;box-shadow:0 1px 3px rgba(120,84,34,.12);}
+.qian:hover{border-color:var(--cinnabar);color:var(--cinnabar-d);transform:translateY(-1px);box-shadow:0 3px 7px rgba(122,32,24,.18);}
+.ren-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.ren{display:flex;gap:9px;padding:8px 9px;border:1px solid rgba(150,114,52,.32);border-radius:3px;background:rgba(255,252,240,.55);}
+.ren.main{grid-column:1/-1;border-color:rgba(168,50,40,.4);background:linear-gradient(180deg,rgba(255,250,240,.85),rgba(247,235,214,.6));}
+.ren .r-seal{width:34px;height:34px;flex:0 0 auto;border-radius:4px;display:grid;place-items:center;font-size:15px;color:#fff;font-weight:bold;
+  background:linear-gradient(155deg,#8a6d3b,#5d4520);border:1px solid rgba(86,60,24,.6);}
+.ren.main .r-seal{background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));border-color:rgba(122,32,24,.6);}
+.ren .r-body{min-width:0;}
+.ren b{display:block;font-size:13px;letter-spacing:.08em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ren span{display:block;font-size:10.5px;color:var(--ink-faint);letter-spacing:.06em;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bang{display:flex;align-items:center;gap:9px;padding:6.5px 2px;border-bottom:1px solid rgba(86,71,50,.13);}
+.bang .b-ni{width:13px;height:13px;flex:0 0 auto;border-radius:50%;border:1.5px solid rgba(0,0,0,.18);box-shadow:inset 0 1px 2px rgba(255,255,255,.35);}
+.bang b{font-size:12.5px;letter-spacing:.1em;color:var(--ink);}
+.bang .b-rel{font-size:10.5px;letter-spacing:.18em;padding:2px 7px;border-radius:2px;}
+.bang .b-rel.di{color:#fff;background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));}
+.bang .b-rel.meng{color:#274a3d;background:rgba(111,162,145,.3);border:1px solid rgba(85,127,111,.4);}
+.bang .b-rel.zhong{color:var(--ink-soft);background:rgba(150,114,52,.16);border:1px solid rgba(150,114,52,.3);}
+.bang span{margin-left:auto;font-size:11px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%;}
+/* 营造志 */
+.ye{border:1px solid rgba(150,114,52,.32);border-radius:3px;background:rgba(255,252,240,.5);padding:7px 9px;margin-bottom:7px;}
+.ye-hd{display:flex;align-items:baseline;gap:8px;}
+.ye-hd b{font-size:13px;letter-spacing:.08em;color:var(--ink);}
+.ye-hd .lv{font-size:10px;color:var(--gold-d);border:1px solid rgba(168,131,58,.45);padding:1px 5px;border-radius:2px;letter-spacing:.1em;}
+.ye-hd .st{margin-left:auto;font-size:10.5px;letter-spacing:.14em;white-space:nowrap;}
+.ye-hd .st.done{color:#3c6353;}
+.ye-hd .st.doing{color:var(--cinnabar);}
+.ye-hd .st.ni{color:var(--gold-d);}
+.ye p{margin-top:3px;font:11px/1.65 var(--font-doc);color:var(--ink-soft);}
+.ye .fx{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.ye .fx em{font-style:normal;font-size:10px;letter-spacing:.06em;padding:2px 7px;border-radius:2px;
+  border:1px solid rgba(85,127,111,.4);background:rgba(111,162,145,.16);color:#33564a;}
+.ye .fx em.cost{border-color:rgba(168,131,58,.45);background:rgba(216,185,106,.16);color:var(--gold-d);}
+.ye .fx em.zhu{border-color:rgba(168,50,40,.4);background:rgba(198,74,62,.1);color:var(--cinnabar-d);}
+.ye .gq{margin-top:6px;display:flex;align-items:center;gap:8px;}
+.ye .gq .gq-bar{flex:1;height:7px;border-radius:4px;overflow:hidden;background:rgba(86,71,50,.16);border:1px solid rgba(86,71,50,.2);}
+.ye .gq .gq-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-hi));box-shadow:0 0 6px rgba(216,185,106,.5);}
+.ye .gq em{font-style:normal;font-size:10.5px;color:var(--gold-d);letter-spacing:.08em;white-space:nowrap;}
+.ye.nijian{border-style:dashed;border-color:rgba(168,131,58,.55);background:rgba(255,250,228,.6);}
+.fold{position:relative;border-left:3px solid rgba(124,93,33,.45);background:rgba(255,250,235,.55);padding:8px 10px;margin-top:4px;}
+.fold pre{font:12px/1.8 var(--font-doc);color:var(--ink-soft);white-space:pre-wrap;word-break:break-word;
+  max-height:96px;overflow:hidden;transition:max-height .3s ease;}
+.fold.open pre{max-height:1200px;}
+.fold .fold-btn{margin-top:5px;border:0;background:none;color:var(--gold-d);font-family:var(--font);font-size:11px;letter-spacing:.14em;cursor:pointer;}
+.fold .fold-btn:hover{color:var(--cinnabar);}
+.youlie{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.youlie .yl{border:1px solid rgba(150,114,52,.3);border-radius:3px;padding:7px 9px;background:rgba(255,252,240,.5);}
+.youlie .yl b{display:block;font-size:11.5px;letter-spacing:.22em;margin-bottom:5px;}
+.youlie .yl.you b{color:#3c6353;}
+.youlie .yl.lie b{color:var(--cinnabar-d);}
+.youlie .yl span{display:block;font:11px/1.7 var(--font-doc);color:var(--ink-soft);padding-left:10px;position:relative;}
+.youlie .yl span::before{content:"·";position:absolute;left:1px;color:var(--gold);}
+
+/* ── 册尾 ── */
+.b-foot{flex:0 0 auto;display:flex;gap:8px;padding:10px 16px 12px 24px;border-top:1px solid rgba(124,93,33,.34);
+  background:linear-gradient(180deg,rgba(244,235,210,.0),rgba(233,220,188,.7));}
+.b-act{flex:1;height:36px;border-radius:3px;cursor:pointer;font-family:var(--font);font-size:13px;letter-spacing:.22em;
+  border:1px solid rgba(168,131,58,.5);background:linear-gradient(180deg,rgba(255,253,244,.9),rgba(244,235,210,.7));color:var(--ink-soft);
+  box-shadow:0 2px 6px rgba(120,84,34,.16),inset 0 1px 0 rgba(255,255,255,.7);transition:all .16s;}
+.b-act:hover{border-color:var(--gold);color:var(--ink);transform:translateY(-1px);}
+.b-act.zhu{color:#fff;border-color:var(--cinnabar-d);background:linear-gradient(160deg,var(--cinnabar-hi),var(--cinnabar-d));
+  box-shadow:0 3px 9px rgba(122,32,24,.4),inset 0 1px 0 rgba(255,255,255,.25);}
+.b-act.zhu:hover{filter:brightness(1.1);}
+
+/* ── 检签 ── */
+.jianqian{position:absolute;right:-31px;top:54px;z-index:5;display:flex;flex-direction:column;gap:5px;transition:opacity .18s;}
+.book.closed .jianqian{opacity:0;pointer-events:none;}
+.jq{position:relative;width:31px;padding:9px 0 10px;border:1px solid rgba(96,68,28,.6);border-left:0;border-radius:0 5px 5px 0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;
+  background:linear-gradient(90deg,#cdb98c,#bfa978 70%,#ab9263);color:#4c3a1c;
+  font-family:var(--font);font-size:11.5px;letter-spacing:0;line-height:1.2;
+  box-shadow:3px 3px 9px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,250,230,.5);
+  transition:all .18s;writing-mode:vertical-rl;text-orientation:upright;}
+.jq:hover{transform:translateX(3px);background:linear-gradient(90deg,#d8c79c,#cbb588 70%,#b69d6e);}
+.jq.active{color:#fff;background:linear-gradient(90deg,var(--cinnabar-hi),var(--cinnabar) 60%,var(--cinnabar-d));
+  border-color:rgba(122,32,24,.7);transform:translateX(4px);box-shadow:4px 4px 11px rgba(122,32,24,.4);}
+.jq .jq-no{font-size:8.5px;opacity:.65;margin-bottom:3px;letter-spacing:0;}
+
+/* ════════ 兴造弹窗 ════════ */
+.modal-veil{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+  background:radial-gradient(80% 80% at 50% 42%,rgba(20,13,5,.35),rgba(12,8,3,.66));backdrop-filter:blur(2px) sepia(.2);}
+.modal-veil.show{display:flex;}
+.jianzao{width:min(580px,92vw);max-height:84vh;display:flex;flex-direction:column;position:relative;
+  border:1px solid rgba(96,68,28,.7);border-radius:4px;
+  background:linear-gradient(180deg,var(--paper-hi),var(--paper) 50%,var(--paper-lo));
+  box-shadow:inset 0 0 0 1px rgba(255,252,238,.55),inset 0 0 38px rgba(120,84,34,.14),0 26px 70px rgba(0,0,0,.65);
+  animation:jzIn .34s cubic-bezier(.2,.85,.3,1.05) backwards;}
+@keyframes jzIn{from{opacity:0;transform:translateY(22px) scale(.97);}to{opacity:1;transform:none;}}
+.jz-hd{display:flex;align-items:center;gap:11px;padding:14px 18px 11px;border-bottom:1px solid rgba(124,93,33,.35);}
+.jz-hd .jz-seal{width:36px;height:36px;border-radius:5px;display:grid;place-items:center;font-size:18px;color:#fff;font-weight:bold;
+  background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));border:1px solid rgba(122,32,24,.6);box-shadow:0 2px 7px rgba(122,32,24,.4);}
+.jz-hd b{font-size:17px;letter-spacing:.26em;color:var(--ink);display:block;}
+.jz-hd span{font-size:11px;color:var(--ink-faint);letter-spacing:.1em;display:block;margin-top:2px;}
+.jz-hd .b-close{margin-left:auto;}
+.jz-tabs{display:flex;gap:7px;padding:10px 18px 0;}
+.jz-tab{font-family:var(--font);font-size:12.5px;letter-spacing:.18em;padding:6px 16px;cursor:pointer;border-radius:3px 3px 0 0;
+  border:1px solid rgba(150,114,52,.35);border-bottom:0;background:rgba(244,235,210,.5);color:var(--ink-soft);transition:all .15s;}
+.jz-tab.active{color:#fff;background:linear-gradient(160deg,var(--cinnabar-hi),var(--cinnabar-d));border-color:rgba(122,32,24,.6);}
+.jz-body{flex:1;min-height:0;overflow-y:auto;padding:13px 18px;border-top:1px solid rgba(124,93,33,.3);scrollbar-width:thin;}
+.jz-item{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:9px 10px;margin-bottom:7px;cursor:pointer;
+  border:1px solid rgba(150,114,52,.32);border-radius:3px;background:rgba(255,252,240,.6);transition:all .15s;}
+.jz-item:hover{border-color:var(--cinnabar);background:rgba(255,250,240,.9);transform:translateX(3px);}
+.jz-item .ji-seal{width:42px;height:42px;border-radius:4px;display:grid;place-items:center;font-size:17px;color:#fff;
+  border:1px solid rgba(0,0,0,.18);}
+.jz-item .ji-seal.military{background:linear-gradient(155deg,#9d5b4b,#6e3325);}
+.jz-item .ji-seal.economic{background:linear-gradient(155deg,#a8833a,#7c5d21);}
+.jz-item .ji-seal.cultural{background:linear-gradient(155deg,#557f6f,#34564a);}
+.jz-item .ji-seal.administrative{background:linear-gradient(155deg,#4a5e8a,#2e3c5c);}
+.jz-item .ji-body b{display:block;font-size:13.5px;color:var(--ink);letter-spacing:.06em;}
+.jz-item .ji-body p{margin-top:2px;font:11px/1.6 var(--font-doc);color:var(--ink-soft);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.jz-item .ji-fx{margin-top:3px;display:flex;flex-wrap:wrap;gap:4px;}
+.jz-item .ji-fx em{font-style:normal;font-size:9.5px;letter-spacing:.04em;padding:1px 6px;border-radius:2px;
+  border:1px solid rgba(85,127,111,.4);background:rgba(111,162,145,.14);color:#33564a;}
+.jz-item .ji-meta{text-align:right;font-size:10.5px;color:var(--ink-faint);line-height:1.8;white-space:nowrap;}
+.jz-item .ji-meta i{font-style:normal;color:var(--gold-d);font-family:var(--font-song);font-weight:bold;}
+.jz-custom{display:none;flex-direction:column;gap:10px;}
+.jz-custom.show{display:flex;}
+.jz-field label{display:block;font-size:12px;color:var(--gold-d);letter-spacing:.18em;margin-bottom:5px;}
+.jz-field input,.jz-field select,.jz-field textarea{width:100%;font-family:var(--font-doc);font-size:13px;color:var(--ink);
+  border:1px solid rgba(150,114,52,.45);border-radius:3px;background:rgba(255,253,246,.85);padding:8px 10px;outline:none;}
+.jz-field input:focus,.jz-field select:focus,.jz-field textarea:focus{border-color:var(--cinnabar);box-shadow:0 0 0 2px rgba(198,74,62,.15);}
+.jz-rule{padding:8px 10px;border:1px dashed rgba(168,131,58,.5);background:rgba(255,250,228,.55);font:11px/1.7 var(--font-doc);color:var(--ink-soft);}
+.jz-rule b{color:var(--cinnabar-d);}
+.jz-foot{display:flex;gap:9px;justify-content:flex-end;padding:11px 18px 14px;border-top:1px solid rgba(124,93,33,.3);}
+.jz-note{margin-right:auto;font-size:10.5px;color:var(--ink-faint);letter-spacing:.06em;align-self:center;max-width:55%;line-height:1.6;}
+
+.toast{position:fixed;left:50%;bottom:36px;transform:translate(-50%,18px);z-index:99;opacity:0;pointer-events:none;
+  padding:11px 22px;border-radius:3px;border:1px solid rgba(122,32,24,.7);color:#fff;font-family:var(--font);font-size:13.5px;letter-spacing:.14em;
+  background:linear-gradient(160deg,rgba(166,52,40,.96),rgba(110,28,18,.96));box-shadow:0 10px 30px rgba(0,0,0,.5);
+  transition:all .3s cubic-bezier(.2,.8,.3,1);}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+.demo-dock{position:fixed;right:14px;bottom:14px;z-index:50;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+.demo-dock .dd-label{font-size:10px;letter-spacing:.3em;color:rgba(216,194,124,.55);}
+.demo-row{display:flex;gap:6px;}
+.demo-bt{font-family:var(--font);font-size:12px;letter-spacing:.1em;padding:7px 13px;cursor:pointer;border-radius:3px;
+  border:1px solid rgba(216,185,106,.4);background:rgba(28,19,9,.86);color:#d8c27c;transition:all .15s;box-shadow:0 3px 9px rgba(0,0,0,.4);}
+.demo-bt:hover{border-color:#d8b96a;color:#f0dfa6;}
+.demo-bt.on{color:#fff;background:linear-gradient(160deg,var(--cinnabar-hi),var(--cinnabar-d));border-color:rgba(122,32,24,.8);}
+
+@media (max-width:900px){ .book{width:344px;} }
+</style>
+</head>
+<body>
+
+<!-- ── 模拟游戏顶栏 ── -->
+<div class="chrome-top">
+  <div class="ct-seal">命</div><b>天命</b>
+  <span style="opacity:.6;font-size:12px;">天聪元年 · 九月 · 回合 3</span>
+  <div class="ct-stat"><span>国库 <i>1,374,000 两</i></span><span>太仓粮 <i>4,100,000 石</i></span><span>皇威 <i>47</i></span><span>民心 <i>33</i></span></div>
+</div>
+<div class="chrome-note">预 览 · 非 运 行 时 — 舆图检签 v2</div>
+
+<!-- ── 简化舆图 ── -->
+<div class="map-stage">
+  <svg class="map-svg" id="mapSvg" viewBox="0 0 1366 722" preserveAspectRatio="xMidYMid slice">
+    <polygon class="prov" id="pv-menggu" points="120,60 540,28 760,70 700,178 470,200 260,170 110,150" data-key="menggu"/>
+    <text x="380" y="110" class="realm" opacity=".5">蒙古诸部</text>
+    <polygon class="prov" id="pv-houjin" points="760,70 1080,40 1240,90 1230,240 1050,300 920,260 850,180 700,178" data-key="houjin"/>
+    <text x="990" y="150" class="realm jin-t">後 金</text>
+    <text x="952" y="186" class="pname lite" style="font-size:12px;opacity:.6;">盛京 · 沈阳</text>
+    <polygon class="prov" id="pv-liaodong" points="850,180 920,260 1050,300 1010,372 880,380 810,300 790,228" data-key="liaodong"/>
+    <text x="880" y="310" class="pname">辽东</text>
+    <polygon class="prov" id="pv-beizhili" points="640,210 790,228 810,300 760,400 660,420 600,330 590,250" data-key="beizhili"/>
+    <text x="668" y="320" class="pname">北直隶</text>
+    <polygon class="prov" id="pv-shanxi" points="470,200 590,250 600,330 560,430 470,440 430,330 440,240" data-key="shanxi"/>
+    <text x="495" y="330" class="pname" opacity=".8">山西</text>
+    <polygon class="prov" id="pv-shaanxi" points="260,170 440,240 430,330 470,440 380,520 250,470 210,330 220,240" data-key="shaanxi"/>
+    <text x="310" y="350" class="pname" opacity=".8">陕西</text>
+    <polygon class="prov" id="pv-shandong" points="660,420 760,400 880,430 900,500 790,540 680,520" data-key="shandong"/>
+    <text x="765" y="478" class="pname" opacity=".8">山东</text>
+    <polygon class="prov" id="pv-henan" points="560,430 660,420 680,520 640,600 520,610 470,520 470,440" data-key="henan"/>
+    <text x="560" y="520" class="pname" opacity=".8">河南</text>
+    <polygon class="prov" id="pv-nanzhili" points="680,520 790,540 900,500 1010,560 980,660 800,690 690,640 640,600" data-key="nanzhili"/>
+    <text x="810" y="600" class="pname" opacity=".8">南直隶</text>
+    <text x="470" y="585" class="realm" opacity=".55">大 明</text>
+    <g id="sentinels"></g>
+  </svg>
+
+  <!-- 视图签条 -->
+  <div class="view-tabs" id="viewTabs">
+    <div class="vt active" data-mode="owner"><span class="vt-dot" style="--vc:#8a7450"></span>势 力</div>
+    <div class="vt" data-mode="minxin"><span class="vt-dot" style="--vc:#a85a3a"></span>民 情</div>
+    <div class="vt" data-mode="army"><span class="vt-dot" style="--vc:#8c2f26"></span>军 务</div>
+    <div class="vt" data-mode="office"><span class="vt-dot" style="--vc:#9d5b4b"></span>官 守</div>
+    <div class="vt" data-mode="tax"><span class="vt-dot" style="--vc:#b8923f"></span>财 赋</div>
+  </div>
+
+  <!-- 图例 -->
+  <div class="legend" id="legend"></div>
+
+  <div class="map-hint">左 键 翻 方 志 · 右 键 展 其 势 力 谱 牒</div>
+</div>
+
+<!-- ── 悬浮签注 ── -->
+<div class="qianzhu" id="qianzhu"></div>
+<!-- ── 活账浮层 ── -->
+<div class="cause-pop" id="causePop"></div>
+
+<!-- ── 册页面板 ── -->
+<div class="book" id="book">
+  <div class="book-board">
+    <span class="stitch s1"></span><span class="stitch s2"></span><span class="stitch s3"></span><span class="stitch s4"></span>
+    <div class="straddle-seal"><i>验讫</i></div>
+    <div class="book-spine" id="bookSpine" title="展开册页">
+      <div class="sp-seal">印</div>
+      <div class="sp-label" id="spineLabel">北直隶 · 方志<small>点 脊 展 册</small></div>
+    </div>
+    <div class="book-inner" id="bookInner"></div>
+    <div class="jianqian" id="jianqian"></div>
+  </div>
+</div>
+
+<!-- ── 兴造弹窗 ── -->
+<div class="modal-veil" id="jzVeil">
+  <div class="jianzao">
+    <div class="jz-hd">
+      <div class="jz-seal">营</div>
+      <div><b>兴 造</b><span id="jzSub">于 北直隶 营造工役 · 录入诏令建议库，纳入后颁行</span></div>
+      <button class="b-close x" onclick="closeJz()">×</button>
+    </div>
+    <div class="jz-tabs">
+      <div class="jz-tab active" id="jzTabPre" onclick="jzSwitch('pre')">剧 本 工 籍</div>
+      <div class="jz-tab" id="jzTabCus" onclick="jzSwitch('cus')">自 拟 营 造</div>
+    </div>
+    <div class="jz-body">
+      <div id="jzPre"></div>
+      <div class="jz-custom" id="jzCus">
+        <div class="jz-field"><label>工 役 名 目</label><input id="jzName" placeholder="如：兴文馆 / 水车坊 / 义仓"></div>
+        <div class="jz-field"><label>类 属</label>
+          <select id="jzCat">
+            <option value="economic">经济</option><option value="military">军事</option><option value="cultural">文化</option>
+            <option value="administrative">行政</option><option value="religious">宗教</option><option value="infrastructure">基础设施</option>
+          </select>
+        </div>
+        <div class="jz-field"><label>规 制 与 所 求（告示有司：欲修何物、预期何效）</label>
+          <textarea id="jzDesc" rows="4" placeholder="例：修文馆以藏书刀版，供士子入内议事，以兴文风、安士心。"></textarea>
+        </div>
+        <div class="jz-rule"><b>有司核定之制：</b>自拟工役颁行后，由有司（AI）核其<b>合理性三档</b>（合理／勉强／不合理），定实际费用与工期；其效用只许落在<b>白名单账目</b>（田亩、商贸、城防、驿路、民心、贪腐等），且以费用为度——小费小效，大费大效，断无十两银修出雄关之理。</div>
+      </div>
+    </div>
+    <div class="jz-foot">
+      <div class="jz-note">营造不直改账面——经诏令颁行后，由有司核其合理、费用、工期与实效。</div>
+      <button class="b-act" style="flex:0 0 96px;" onclick="closeJz()">撤 案</button>
+      <button class="b-act zhu" style="flex:0 0 136px;display:none;" id="jzSubmit" onclick="jzSubmitCustom()">录 入 诏 令</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── 演示控制 ── -->
+<div class="demo-dock">
+  <div class="dd-label">演 示 切 换</div>
+  <div class="demo-row">
+    <button class="demo-bt on" id="db-beizhili" onclick="demoOpen('region','beizhili')">北直隶</button>
+    <button class="demo-bt" id="db-liaodong" onclick="demoOpen('region','liaodong')">辽东(在建)</button>
+    <button class="demo-bt" id="db-ming" onclick="demoOpen('faction','ming')">明朝廷</button>
+    <button class="demo-bt" id="db-houjin" onclick="demoOpen('faction','houjin')">后金</button>
+    <button class="demo-bt" id="db-fold" onclick="toggleBook()">合册</button>
+    <button class="demo-bt" id="db-hide" onclick="hideBook()">关闭</button>
+  </div>
+</div>
+
+<script>
+/* ════════════════ 舆图地块数据（四视图 + 签注） ════════════════ */
+const MAP_DATA = {
+  beizhili:{name:'北直隶', owner:'明朝廷', oc:'#8a7450', kind:'ours', book:'region:beizhili',
+    gov:'顺天巡抚 刘诏', garrison:'14.2 万', brief:'京畿首善 · 漕运咽喉',
+    minxin:46, fugitives:'18 万', disaster:'——',
+    army:72, armyNote:'高 · 蓟宣边墙', fort:'坚', border:'后金绕道之虞',
+    corr:74, vacancy:2, exec:'52%',
+    taxDue:'150 万两', taxReal:'96 万两', compliance:64, skim:'21%'},
+  liaodong:{name:'辽东', owner:'明朝廷', oc:'#8a7450', kind:'ours', book:'region:liaodong',
+    gov:'辽东巡抚 袁崇焕', garrison:'11.8 万', brief:'宁锦防线 · 天下安危所系',
+    minxin:41, fugitives:'9 万', disaster:'岁寒早霜',
+    army:95, armyNote:'极 · 当面后金', fort:'宁锦新固', border:'皇太极必再举',
+    corr:58, vacancy:3, exec:'71%',
+    taxDue:'军镇免科', taxReal:'耗饷 400 万两', compliance:null, skim:'漂没逾三成'},
+  shanxi:{name:'山西', owner:'明朝廷', oc:'#8a7450', kind:'ours', book:'none',
+    gov:'山西巡抚 牟志夔', garrison:'6.4 万', brief:'表里山河 · 大同边镇',
+    minxin:44, fugitives:'11 万', disaster:'旱',
+    army:66, armyNote:'高 · 大同当蒙古', fort:'雁门诸隘', border:'插汉部窥边',
+    corr:68, vacancy:1, exec:'55%',
+    taxDue:'88 万两', taxReal:'52 万两', compliance:59, skim:'24%'},
+  shaanxi:{name:'陕西', owner:'明朝廷', oc:'#8a7450', kind:'ours', book:'none',
+    gov:'陕西巡抚 (员缺)', garrison:'7.1 万', brief:'大饥之地 · 流民四起',
+    minxin:28, fugitives:'34 万', disaster:'大旱 · 饥',
+    army:58, armyNote:'中 · 内乱萌动', fort:'潼关', border:'流贼啸聚山林',
+    corr:71, vacancy:4, exec:'38%',
+    taxDue:'72 万两', taxReal:'31 万两', compliance:43, skim:'26%'},
+  shandong:{name:'山东', owner:'明朝廷', oc:'#8a7450', kind:'ours', book:'none',
+    gov:'山东巡抚 李精白', garrison:'4.8 万', brief:'漕河所经 · 登莱海防',
+    minxin:52, fugitives:'7 万', disaster:'——',
+    army:44, armyNote:'中 · 登莱备倭', fort:'登州水城', border:'海上无大警',
+    corr:62, vacancy:1, exec:'61%',
+    taxDue:'110 万两', taxReal:'76 万两', compliance:69, skim:'18%'},
+  henan:{name:'河南', owner:'明朝廷', oc:'#8a7450', kind:'ours', book:'none',
+    gov:'河南巡抚 郭增光', garrison:'3.9 万', brief:'中州腹地 · 宗藩林立',
+    minxin:49, fugitives:'13 万', disaster:'蝗',
+    army:35, armyNote:'低 · 腹地', fort:'开封城坚', border:'——',
+    corr:66, vacancy:2, exec:'50%',
+    taxDue:'95 万两', taxReal:'61 万两', compliance:64, skim:'22%'},
+  nanzhili:{name:'南直隶', owner:'明朝廷', oc:'#8a7450', kind:'ours', book:'none',
+    gov:'应天巡抚 毛一鹭', garrison:'5.6 万', brief:'财赋半天下 · 苏松重赋',
+    minxin:55, fugitives:'15 万', disaster:'——',
+    army:30, armyNote:'低 · 留都江防', fort:'江防水师', border:'——',
+    corr:66, vacancy:0, exec:'63%',
+    taxDue:'420 万两', taxReal:'320 万两', compliance:76, skim:'15%'},
+  houjin:{name:'后金', owner:'后金', oc:'#6a4c93', kind:'foreign', book:'faction:houjin',
+    brief:'天聪汗国 · 虎视辽西', armyKnown:'八旗 28 万 · 骑射无敌', rel:'敌对',
+    intel:'化外之邦 · 谍报有限：内政民情不可得'},
+  menggu:{name:'蒙古诸部', owner:'蒙古诸部', oc:'#6e6147', kind:'foreign', book:'none',
+    brief:'察哈尔与诸部互争', armyKnown:'控弦十余万 · 散而不一', rel:'羁縻 · 观望',
+    intel:'化外之邦 · 谍报有限：内政民情不可得'}
+};
+/* 哨牌锚点（各省中心） */
+const SENTINEL_POS = {beizhili:[700,290], liaodong:[905,330], shanxi:[510,345], shaanxi:[330,370],
+  shandong:[785,470], henan:[572,535], nanzhili:[820,615], houjin:[985,205], menggu:[400,128]};
+/* 默认势力色 */
+const OWNER_FILL = {beizhili:'#8a7450', liaodong:'#82704e', shanxi:'#8a7450', shaanxi:'#82704e',
+  shandong:'#8a7450', henan:'#82704e', nanzhili:'#8a7450', houjin:'#5d5570', menggu:'#6e6147'};
+
+/* ── 四视图档位（着色五档 + 判语） ── */
+const GRADES = {
+  minxin:{
+    title:'民情视图', note:'按各地民心着色。民心由叶账聚合：税负、灾异、徭役、兵祸皆摊入。',
+    bands:[[0,35,'#8c2f26','危'],[35,50,'#a85a3a','忧'],[50,65,'#a8833a','平'],[65,80,'#7d9183','安'],[80,101,'#557f6f','乐']],
+    pick:d=>d.minxin, badge:d=>String(d.minxin)
+  },
+  army:{
+    title:'军务视图', note:'按军压与边警着色。当面之敌、边墙之险、驻军之实皆计。',
+    bands:[[0,40,'#66796d','靖'],[40,60,'#a8833a','备'],[60,80,'#a85a3a','警'],[80,101,'#8c2f26','急']],
+    pick:d=>d.army, badge:d=>['靖','备','警','急'][bandIndex(GRADES.army,d.army)]
+  },
+  office:{
+    title:'官守视图', note:'按吏治浊度着色。贪腐截留税赋、败坏政令——官守之蠹，民变之根。',
+    bands:[[0,40,'#557f6f','清'],[40,60,'#a8833a','中'],[60,80,'#9d5b4b','浊'],[80,101,'#7a2018','蠹']],
+    pick:d=>d.corr, badge:d=>String(d.corr)
+  },
+  tax:{
+    title:'财赋视图', note:'按实征合规率着色。应征几何、实征几何、截留几何——足额者金，欠征者暗。',
+    bands:[[0,50,'#6e4a2a','欠'],[50,70,'#93702f','薄'],[70,85,'#b8923f','中'],[85,101,'#d8b96a','足']],
+    pick:d=>d.compliance, badge:d=>d.compliance==null?'免':(d.compliance+'%')
+  }
+};
+const FOREIGN_FILL = '#474131';
+function bandIndex(g, v){ for(let i=0;i<g.bands.length;i++){ if(v>=g.bands[i][0]&&v<g.bands[i][1]) return i; } return g.bands.length-1; }
+
+/* ── 判语（数字翻成人话） ── */
+function verdict(mode, d){
+  if (d.kind==='foreign') return [d.intel, ''];
+  if (mode==='minxin'){
+    if (d.minxin<35) return ['民心 '+d.minxin+'——已成干柴，逃户 '+d.fugitives+'，一火即燃。','wei'];
+    if (d.minxin<50) return ['民心 '+d.minxin+'——民力已竭，逃户 '+d.fugitives+'，有生变之虞。','wei'];
+    if (d.minxin<65) return ['民心 '+d.minxin+'——尚可支吾，然不可再加赋扰役。',''];
+    return ['民心 '+d.minxin+'——黎庶安业，可为根本之地。','an'];
+  }
+  if (mode==='army'){
+    if (d.army>=80) return ['边警之地——'+d.armyNote+'，宜厚饷固防。','wei'];
+    if (d.army>=60) return ['有警之地——'+d.armyNote+'，不可抽兵他调。','wei'];
+    if (d.army>=40) return ['守备之地——'+d.armyNote+'。',''];
+    return ['腹里安靖——'+d.armyNote+'，可酌减冗兵以纾饷。','an'];
+  }
+  if (mode==='office'){
+    if (d.corr>=80) return ['吏治已蠹——贪腐 '+d.corr+'，官缺 '+d.vacancy+' 员，非大狱不能清。','wei'];
+    if (d.corr>=60) return ['吏治浑浊——贪腐 '+d.corr+'，政令执行 '+d.exec+'，赋税多漏。','wei'];
+    if (d.corr>=40) return ['吏治平平——贪腐 '+d.corr+'，犹可整饬。',''];
+    return ['吏治清明——贪腐 '+d.corr+'，可为他省式范。','an'];
+  }
+  if (mode==='tax'){
+    if (d.compliance==null) return [d.taxDue+'——'+d.taxReal+'，'+(d.skim||''),'wei'];
+    if (d.compliance<50) return ['应征 '+d.taxDue+' 实征 '+d.taxReal+'——欠征过半，截留 '+d.skim+'。','wei'];
+    if (d.compliance<70) return ['应征 '+d.taxDue+' 实征 '+d.taxReal+'——合规 '+d.compliance+'%，截留 '+d.skim+'。',''];
+    return ['应征 '+d.taxDue+' 实征 '+d.taxReal+'——合规 '+d.compliance+'%，足额上仓。','an'];
+  }
+  return [d.brief,''];
+}
+
+/* ── 签注内容（各视图行） ── */
+function qzRows(mode, d){
+  if (d.kind==='foreign'){
+    return [['邦交', d.rel, d.rel==='敌对'?'zhu':''], ['兵威', d.armyKnown, ''], ['概况', d.brief, '']];
+  }
+  if (mode==='minxin') return [['民心', d.minxin, d.minxin<50?'zhu':(d.minxin>=65?'jin':'')], ['逃户', d.fugitives, ''], ['灾异', d.disaster, d.disaster!=='——'?'zhu':''], ['驻军', d.garrison, '']];
+  if (mode==='army') return [['驻军', d.garrison, ''], ['军压', d.armyNote, d.army>=60?'zhu':''], ['城防', d.fort, 'jin'], ['边警', d.border, d.army>=80?'zhu':'']];
+  if (mode==='office') return [['主官', d.gov, d.gov.indexOf('缺')>=0?'zhu':''], ['贪腐', d.corr, d.corr>=60?'zhu':''], ['官缺', d.vacancy+' 员', d.vacancy>=3?'zhu':''], ['执行', d.exec, '']];
+  if (mode==='tax') return [['应征', d.taxDue, ''], ['实征', d.taxReal, ''], ['合规', d.compliance==null?'—':(d.compliance+'%'), d.compliance!=null&&d.compliance<60?'zhu':''], ['截留', d.skim, 'zhu']];
+  return [['归属', d.owner, ''], ['主官', d.gov, ''], ['驻军', d.garrison, ''], ['概况', d.brief, '']];
+}
+
+/* ════════════════ 册页演示数据（同 v1·营造志带结构化效用） ════════════════ */
+const REGIONS = {
+  beizhili: {
+    title:'北直隶', sub:'两京 · 京畿首善', owner:'明朝廷', ownerKey:'ming', ownerColor:'#8a7450',
+    gov:'刘诏', govTitle:'顺天巡抚', terrain:'平原', taxLevel:'重',
+    desc:'京师所在，天下首善。下辖顺天、保定、河间、真定、大名、永平、顺德、广平八府，延庆、保安两州，外加宣府镇。宣府为九边第一，京畿粮赋仰漕运，长芦盐课甲于北方。',
+    stats:[
+      {k:'户口', v:'820', u:'万', n:'逃户 18 万', cause:'pop'},
+      {k:'实征', v:'96', u:'万两', n:'合规 64%', cause:'tax'},
+      {k:'驻军', v:'14.2', u:'万', n:'宣府·蓟镇', cause:'army'},
+      {k:'民心', v:'46', u:'', n:'低迷', warn:true, cause:'minxin'},
+      {k:'贪腐', v:'74', u:'', n:'积弊深重', warn:true, cause:'corr'}
+    ],
+    hukou:{
+      rows:[['在册口数','8,200,000'],['在册户','1,420,000'],['丁口','2,150,000',null,'ding'],['逃户','180,000','zhu','fugitive'],['隐户','约 200,000','zhu','hidden'],['承载','未逼上限']],
+      faith:{t:'信仰构成',items:[['儒',40,'#a8833a'],['佛',18,'#557f6f'],['道',14,'#4a5e8a'],['民间',25,'#9d5b4b'],['回',3,'#8e6aa8']]}
+    },
+    caifu:{rows:[['应征','1,500,000 两'],['实征','960,000 两'],['起运中枢','580,000 两'],['留用地方','380,000 两'],['合规率','64%',null,'compliance'],['截留率','21%','zhu','skim'],['税级','重','zhu'],['库藏银','400,000 两'],['库藏粮','800,000 石'],['库藏布','60,000 匹'],['本回合银产','82,000 两','jin'],['本回合粮产','310,000 石','jin']]},
+    junbei:{rows:[['驻军','142,000'],['可募兵源','86,000',null,'recruits'],['军压','高 · 蓟宣边墙','zhu'],['城防','坚（宣府九边之首）','jin','fort'],['主将','满桂（宣府总兵）'],['边警','后金绕道蒙古之虞','zhu'],['补给','畅（漕运抵通州）','jin'],['战略价值','京畿命脉 · 失之则社稷动摇']]},
+    zhiguan:{rows:[['主官','刘诏'],['官职','顺天巡抚'],['官缺','2 员',null,'vacancy'],['贪腐','74 · 积弊','zhu','corr'],['政令执行','52%',null,'exec'],['地方派系','阉党残余'],['士绅','顺天宦门 · 勋戚'],['书院','首善书院（天启朝被毁）'],['科举解额','95 名 · 冠绝北方']]},
+    fengwu:{
+      chanye:[['耕地','5,800万亩'],['商贸','1,230万'],['盐课','8亿斤·长芦'],['矿课','380万·煤铁'],['渔课','35万·渤海'],['皇庄','290万亩'],['织造','1 局'],['矿场','2 处'],['驿站','95 处'],['道路','60 · 驰道'],['海贸','80万·天津'],['商系数','1.4']],
+      rows:[['物产','漕运 · 煤 · 铁 · 长芦海盐'],['标签','港口 · 盐课 · 矿课 · 渔课 · 皇庄'],['驿路','95 处 · 驰道',null,'post'],['近期灾异','——'],['威胁','边警 · 京营武备废弛','zhu']]
+    },
+    yingzao:{
+      built:[
+        {name:'长芦盐课提举司', lv:3, cat:'economic', note:'年课八亿斤，国用所资。', fx:['盐课 +0.5亿斤/级','岁入 +2.1万两'], upkeep:'180 两/月'},
+        {name:'京通十三仓', lv:4, cat:'economic', note:'储京师半年之粮，岁受漕米四百万石。', fx:['粮储上限 +40万石/级','灾年放赈 民心护底'], upkeep:'260 两/月'},
+        {name:'宣府总兵府', lv:3, cat:'military', note:'九边第一镇，节制本镇军务。', fx:['募兵上限 +8千/级','边警预警 +1 回合'], upkeep:'420 两/月'},
+        {name:'长城 · 居庸关', lv:5, cat:'military', note:'天下九塞之一，拱卫京师北门。', fx:['守城战力 ×2.5（5 级）','敌越墙必经攻坚'], upkeep:'600 两/月'}
+      ],
+      building:[
+        {name:'箭楼 · 敌台（蓟镇）', lv:1, cat:'military', left:2, total:3, note:'戚帅旧法空心敌台，以利守御。', fx:['工成：城防 +1 档','戍卒伤亡 -1 成']}
+      ]
+    }
+  },
+  liaodong: {
+    title:'辽东', sub:'九边 · 辽东都司', owner:'明朝廷', ownerKey:'ming', ownerColor:'#8a7450',
+    gov:'袁崇焕', govTitle:'辽东巡抚', terrain:'丘陵·边塞', taxLevel:'免（军镇）',
+    desc:'山海关外宁锦防线。广宁失后，关外仅存宁远、锦州孤城相犄角。宁锦新捷，城守方固，然军饷岁需四百万两，是为辽饷黑洞。',
+    stats:[
+      {k:'户口', v:'68', u:'万', n:'多军户', cause:'pop'},
+      {k:'岁耗', v:'400', u:'万两', n:'辽饷黑洞', warn:true, cause:'liaoxiang'},
+      {k:'驻军', v:'11.8', u:'万', n:'宁锦防线', cause:'army'},
+      {k:'民心', v:'41', u:'', n:'戍卒思归', warn:true, cause:'minxin'},
+      {k:'边警', v:'极', u:'', n:'后金虎视', warn:true, cause:'border'}
+    ],
+    hukou:{
+      rows:[['在册口数','680,000'],['军户','310,000'],['辽民内迁','持续'],['逃户','90,000','zhu','fugitive'],['丁口','240,000',null,'ding'],['保甲','军管']],
+      faith:{t:'构成',items:[['军户',46,'#9d5b4b'],['辽民',38,'#a8833a'],['蒙附',9,'#4a5e8a'],['他',7,'#557f6f']]}
+    },
+    caifu:{rows:[['应征','—— 军镇免科'],['辽饷岁拨','4,000,000 两','zhu'],['实到','约 2,600,000 两','zhu'],['漂没','逾三成 · 积弊','zhu','skim'],['库藏银','120,000 两'],['库藏粮','340,000 石'],['马价银','60,000 两'],['本回合粮产','45,000 石']]},
+    junbei:{rows:[['驻军','118,000'],['可募兵源','22,000',null,'recruits'],['军压','极 · 当面后金','zhu'],['城防','宁远锦州新固 · 红夷炮','jin','fort'],['主将','袁崇焕 · 赵率教 · 满桂'],['边警','皇太极新挫宁锦 · 必再举','zhu'],['补给','海运觉华 · 陆输山海','zhu'],['战略价值','天下安危所系']]},
+    zhiguan:{rows:[['主官','袁崇焕'],['官职','辽东巡抚'],['官缺','3 员',null,'vacancy'],['贪腐','58 · 饷司漂没','zhu','corr'],['政令执行','71%','jin','exec'],['地方派系','辽西将门 · 祖氏'],['士绅','宁远军绅一体'],['监军','纪用（内臣）']]},
+    fengwu:{
+      chanye:[['耕地','420万亩'],['军屯','190万亩'],['马政','3,800匹'],['盐课','辽海煮盐'],['驿站','22 处'],['道路','40 · 驿路'],['海运','觉华岛'],['商贸','9万 · 边市']],
+      rows:[['物产','战马 · 人参 · 貂皮 · 海盐'],['标签','军镇 · 马政 · 边市'],['驿路','22 处 · 驿路',null,'post'],['近期灾异','岁寒早霜 · 屯田歉收','zhu'],['威胁','后金 · 蒙古插汉部','zhu']]
+    },
+    yingzao:{
+      built:[
+        {name:'宁远城', lv:4, cat:'military', note:'孤城拒虏，红夷大炮十一位列城头。', fx:['守城战力 ×2.0（4 级）','红夷炮台 · 攻坚必折'], upkeep:'520 两/月'},
+        {name:'锦州城', lv:3, cat:'military', note:'宁锦之战新经修缮，与宁远为犄角。', fx:['守城战力 ×1.6（3 级）','与宁远互为犄角'], upkeep:'430 两/月'},
+        {name:'觉华岛粮屯', lv:2, cat:'economic', note:'海运囤粮之所，冬月冰封为险。', fx:['粮储上限 +8万石/级','海运补给线 +1'], upkeep:'150 两/月'}
+      ],
+      building:[
+        {name:'大凌河堡', lv:1, cat:'military', left:4, total:6, note:'筑堡进逼，步步为营——工成则锦州有屏。', fx:['工成：前出屏障 · 锦州减压','敌至必先攻此堡']},
+        {name:'松山烽燧', lv:1, cat:'military', left:1, total:2, note:'五里一燧，有警举火。', fx:['工成：边警预警 +1 回合']}
+      ]
+    }
+  }
+};
+
+const FACTIONS = {
+  ming: {
+    title:'明朝廷', sub:'天朝正统 · 玩家本尊', kind:'中央朝廷', color:'#8a7450', attitude:'本朝',
+    seal:'明', leaderTitle:'皇帝', leader:'朱由检',
+    desc:'太祖开国二百五十九年。嘉靖议礼、张居正改革、万历三大征而后怠政、天启阉祸——新帝十七岁即位，內忧外患交至：阉党盘踞、辽东糜饷、陕西大饥、江南抗税。',
+    stats:[
+      {k:'领地', v:'21', u:'省', n:'两京十三司+边镇'},
+      {k:'总兵', v:'84', u:'万', n:'册面 · 实额堪忧', warn:true},
+      {k:'户口', v:'1.5', u:'亿', n:'在册+隐匿'},
+      {k:'岁入', v:'1,374', u:'千两', n:'太仓告急', warn:true},
+      {k:'民心', v:'33', u:'', n:'天下汹汹', warn:true}
+    ],
+    junchen:{
+      main:{name:'朱由检', note:'皇帝 · 年十七 · 新即大位'},
+      others:[
+        {name:'黄立极', note:'内阁首辅 · 阉党旧人 · 乞退'},
+        {name:'韩 爌', note:'东林旧辅 · 即将起复'},
+        {name:'袁崇焕', note:'辽东巡抚 · 宁锦新捷'},
+        {name:'魏忠贤', note:'司礼秉笔 · 势焰将倾'}
+      ]
+    },
+    bantu:{regions:['北直隶','南直隶','辽东','山东','山西','河南','陕西','浙江','江西','湖广','四川','福建','广东','广西','云南','贵州'], note:'两京一十三布政使司，外加九边军镇。'},
+    junlue:{
+      breakdown:[['京营',120000,'#9d5b4b'],['九边',420000,'#a8833a'],['卫所(虚)',250000,'#7d6a48'],['水师',50000,'#4a5e8a']],
+      rows:[['战争状态','与后金相持 · 国内民变萌动','zhu'],['动员','卫所制崩坏 · 募兵为主'],['战略优先','守辽 · 安内 · 清饷'],['禁忌','轻启大战 · 加派激变','zhu']]
+    },
+    caiji:{rows:[['太仓岁入','约 4,000,000 两'],['辽饷岁支','4,000,000 两','zhu'],['宗禄拖欠','积年','zhu'],['江南欠赋','抗税成风','zhu'],['盐课','2,500,000 两 · 大宗'],['钞关商税','340,000 两'],['内帑','约 7,000,000 两 · 帝私库'],['经济大势','小冰河 · 北饥南滞','zhu']]},
+    bangjiao:[
+      {name:'后金', rel:'di', note:'核心敌手 · 宁锦新挫之'},
+      {name:'蒙古察哈尔 · 林丹汗', rel:'zhong', note:'名为顺义 · 实怀观望'},
+      {name:'朝鲜', rel:'meng', note:'藩属 · 新被后金胁盟'},
+      {name:'荷兰红夷', rel:'zhong', note:'据澎湖窥台湾 · 求市'},
+      {name:'西洋教士', rel:'zhong', note:'历法火器之用 · 朝议猜忌'}
+    ],
+    shilue:{
+      you:['正统合法性','庞大人口','成熟官僚','江南财赋','长城防线'],
+      lie:['阉党专权','辽饷黑洞','江南抗税','宗藩负担','党争内耗'],
+      strategy:'新帝即位首务：稳京师、除权阉、用贤能、救陕饥、守辽东。',
+      history:'洪武开国(1368) → 永乐迁都北京 → 嘉靖议礼 → 张居正改革 → 万历三大征+怠政 → 天启阉祸 → 今上新立(1627)。'
+    }
+  },
+  houjin: {
+    title:'后金', sub:'天聪汗国 · 盛京', kind:'敌国', color:'#6a4c93', attitude:'敌对',
+    seal:'金', leaderTitle:'天聪汗', leader:'皇太极',
+    desc:'努尔哈赤天命元年建金，萨尔浒一战夺辽东主动权，迁都沈阳。天聪元年皇太极新立：正月东征朝鲜定兄弟盟，五月宁锦攻而不克，八月明帝崩、朝局剧变——军政两盛，虎视辽西。',
+    stats:[
+      {k:'领地', v:'9', u:'部', n:'辽沈+蒙东羁縻'},
+      {k:'总兵', v:'28', u:'万', n:'精锐 3.5 万'},
+      {k:'户口', v:'110', u:'万', n:'满蒙汉鲜杂处'},
+      {k:'库藏', v:'60', u:'万两', n:'粮 180 万石'},
+      {k:'战马', v:'8', u:'万匹', n:'年产 3 万+'}
+    ],
+    junchen:{
+      main:{name:'皇太极', note:'天聪汗 · 雄才大略 · 政军两高'},
+      others:[
+        {name:'代 善', note:'大贝勒 · 两红旗 · 并坐议政'},
+        {name:'范文程', note:'汉臣谋主 · 献以汉治汉之策'},
+        {name:'阿 敏', note:'二贝勒 · 镶蓝旗 · 征朝鲜主将'},
+        {name:'多尔衮', note:'正白旗 · 年十四 · 来日方长'}
+      ]
+    },
+    bantu:{regions:['沈阳（盛京）','辽阳','赫图阿拉','广宁以东','铁岭','开原','抚顺','朝鲜西北羁縻','蒙东归附部'], note:'1625 自辽阳迁都沈阳，号盛京。'},
+    junlue:{
+      breakdown:[['精锐·两黄',35000,'#8e6aa8'],['八旗常备',85000,'#6a4c93'],['包衣民兵',160000,'#7d6a48'],['水师',500,'#4a5e8a']],
+      rows:[['战争状态','与明为核心敌手 · 朝鲜新盟','zhu'],['军制','八旗 · 全民皆兵 · 围城打援'],['短板','攻坚乏重炮（宁远宁锦之训）','jin'],['大略','绕蒙古破边墙 / 招降明将蚕食','zhu']]
+    },
+    caiji:{rows:[['库藏银','600,000 两'],['库藏粮','1,800,000 石'],['库藏布','120,000 匹'],['战马','80,000 匹','jin'],['主产','战马 · 皮毛 · 人参 · 抚顺煤铁'],['工业','辽沈汉匠 · 铁木皮毛自给'],['贡赋','蒙古贡马 · 朝鲜岁币'],['短板','人口仅百万 · 远离中原补给','zhu']]},
+    bangjiao:[
+      {name:'明朝廷', rel:'di', note:'核心敌手 · 七大恨伐之'},
+      {name:'朝鲜', rel:'meng', note:'丁卯新盟 · 兄弟之国（胁成）'},
+      {name:'科尔沁蒙古', rel:'meng', note:'铁杆姻盟'},
+      {name:'察哈尔 · 林丹汗', rel:'di', note:'争蒙古大汗名分'}
+    ],
+    shilue:{
+      you:['八旗军纪森严','骑射机动冠绝','汗权集中 · 雄主在位','以汉治汉 · 谋主辅弼','全民皆兵 · 动员极高'],
+      lie:['人口仅百万','攻城乏重炮','朝鲜首鼠两端','四大贝勒内部张力','冬季远征补给劣势'],
+      strategy:'先击朝鲜固后方（已成）→ 整肃蒙古结科尔沁压察哈尔 → 练红衣炮补攻坚 → 绕蒙古破长城或辽西硬啃，皇太极意在前者 → 长期招降明将蚕食之。',
+      history:'天命元年(1616)建金 → 七大恨伐明(1618) → 萨尔浒大捷(1619) → 取沈辽(1621) → 迁都沈阳(1625) → 宁远之挫·太祖伤殁(1626) → 皇太极即位 → 丁卯征朝鲜(1627) → 宁锦再挫(1627)。'
+    }
+  }
+};
+
+/* ── 活字段因果账签（演示「字段牵动什么」） ── */
+const CAUSES = {
+  corr:{t:'贪腐 74 · 牵动', items:[
+    ['截留','贪腐每高一分，税赋截留率随涨——今截留 21%，实征岁减约 31 万两'],
+    ['政令','政令执行打折至 52%——颁诏之效，七折而行'],
+    ['民心','胥吏盘剥摊入民心叶账，岁损 1～2 分'],
+    ['整饬','肃贪诏令 / 换主官 / 派钦差可降之（走诏令）']]},
+  minxin:{t:'民心 46 · 牵动', items:[
+    ['民变','低于 50 入「忧」档——民变判级按各省民心，非全国均值'],
+    ['逃户','民心愈低逃户愈众——今岁逃 18 万，税基随减'],
+    ['募兵','民心低则募兵应者寡，兵源折半计'],
+    ['回原','民心由叶账聚合：税负、灾异、徭役、兵祸、贪腐皆摊入']]},
+  tax:{t:'实征 96 万两 · 牵动', items:[
+    ['央地','实征按央地分成：起运 58 万入太仓，留用 38 万存地方库'],
+    ['合规','合规率 64%——应征 150 万两，欠征 54 万两'],
+    ['去向','截留 21% 入贪腐之囊；清吏治则此款归公'],
+    ['加派','强征可增实征，然民心叶账立扣——加派激变之鉴不远']]},
+  army:{t:'驻军 14.2 万 · 牵动', items:[
+    ['军压','驻军与边警共定军压——高军压日耗粮饷，摊入民心'],
+    ['守御','守城战力 = 驻军 × 城防加成（居庸 5 级 ×2.5）'],
+    ['抽调','抽兵他调则本地军压降档，边警之地慎抽']]},
+  pop:{t:'户口 820 万 · 牵动', items:[
+    ['税基','应征 = 田亩 × 税则 + 丁口 × 丁银——户口即税基'],
+    ['兵源','可募兵源按丁口折算——今 8.6 万'],
+    ['逃隐','逃户隐户不纳粮——清丈括户可收编（走诏令）']]},
+  fugitive:{t:'逃户 18 万 · 牵动', items:[
+    ['税基','逃户不纳粮——岁损税银约 9 万两'],
+    ['民变','流民为民变之薪——逃户愈众，揭竿愈易'],
+    ['安辑','减赋、放赈、垦荒可招抚归籍（走诏令）']]},
+  hidden:{t:'隐户 20 万 · 牵动', items:[
+    ['税基','豪强荫庇之口，不在黄册——税基之漏'],
+    ['清丈','清丈括户可收编入册，然必触士绅之怒——阻力入廷议']]},
+  ding:{t:'丁口 215 万 · 牵动', items:[
+    ['丁银','丁口 × 丁银入应征'],
+    ['徭役','征发徭役按丁——大工役耗丁则民心叶账立扣'],
+    ['兵源','募兵上限按丁口折算']]},
+  compliance:{t:'合规率 64% · 牵动', items:[
+    ['实征','实征 = 应征 × 合规率——此乃央地财政真账之闸'],
+    ['因由','合规由贪腐、士绅抗税、灾异共同压低'],
+    ['提振','清吏治 +、安民心 +、缓灾年 +（皆走叶账）']]},
+  skim:{t:'截留 21% · 牵动', items:[
+    ['去向','截留入地方贪腐之囊，不入太仓不入地方库'],
+    ['根由','与贪腐同涨同消——肃贪则截留自降']]},
+  fort:{t:'城防 · 牵动', items:[
+    ['守御','守城战力按城防档位乘成——1 至 6 级 ×1.0 ～ ×3.0'],
+    ['围城','城坚则敌必顿兵坚城之下——攻方乏重炮则不能克'],
+    ['营造','营造志修城墙 / 敌台可升档（走诏令工役）']]},
+  vacancy:{t:'官缺 2 员 · 牵动', items:[
+    ['执行','官缺愈多政令执行愈低——无官则政不行'],
+    ['铨选','吏部铨选 / 科举取士可补（走人事）']]},
+  exec:{t:'政令执行 52% · 牵动', items:[
+    ['诏效','凡颁于此地之诏，效用按执行率打折'],
+    ['因由','官缺、贪腐、地方派系共同拖累']]},
+  recruits:{t:'可募兵源 · 牵动', items:[
+    ['上限','募兵不得过此数——强拉则民心叶账立扣'],
+    ['折算','按丁口 × 民心系数折算——民心低则应者寡']]},
+  post:{t:'驿路 · 牵动', items:[
+    ['政令','驿密则政令时滞短——边报朝发夕至'],
+    ['军报','军情传递速度系于此——驿废则边警迟闻'],
+    ['裁驿','裁驿省银而驿卒失业——流民之源，前车可鉴']]},
+  liaoxiang:{t:'辽饷 400 万两 · 牵动', items:[
+    ['太仓','岁支辽饷四百万——太仓岁入尽数填之'],
+    ['漂没','实到约六成五——饷司漂没逾三成'],
+    ['加派','辽饷加派摊入各省税负——民心叶账之大扣']]},
+  border:{t:'边警 极 · 牵动', items:[
+    ['军压','边警定军压档——此地极档，日耗粮饷甚巨'],
+    ['预警','烽燧 / 总兵府可增预警回合——营造志可修']]}
+};
+
+/* 剧本工籍（含结构化效用演示） */
+const BUILD_TYPES = [
+  {name:'卫所', cat:'military', desc:'军户世袭驻地，卫-千户所-百户所三级，自耕屯田济饷。', lv:5, cost:5000, time:6, fx:['募兵上限 +5千/级','军屯 +2万亩/级']},
+  {name:'烽火台', cat:'military', desc:'瞭望塔，五里一烟燧。有警则举火举烟击鼓为号。', lv:3, cost:800, time:2, fx:['边警预警 +1 回合/级']},
+  {name:'城墙', cat:'military', desc:'府县城防，周十至二十里，内外包砖。', lv:5, cost:30000, time:18, fx:['城防 +1 档/级','守城战力随档乘成']},
+  {name:'箭楼·敌台', cat:'military', desc:'空心敌台之法，以利守御。', lv:3, cost:3000, time:3, fx:['守城伤亡 -1 成/级']},
+  {name:'盐场·盐课提举司', cat:'economic', desc:'盐引为大宗财源，年课可达二百五十万两。', lv:5, cost:10000, time:6, fx:['盐课 +0.5亿斤/级','岁入随增']},
+  {name:'钞关', cat:'economic', desc:'漕运河道税关，商税来源。', lv:4, cost:8000, time:4, fx:['商税 +1.2万两/级','商贸系数微降']},
+  {name:'驿站', cat:'economic', desc:'六十里一驿，十里一铺，塘马传递公文。裁之则流民骤增。', lv:3, cost:2000, time:3, fx:['驿路 +5/级','政令时滞 -']},
+  {name:'漕仓', cat:'economic', desc:'储粮重地，岁受漕米数百万石。', lv:5, cost:25000, time:10, fx:['粮储上限 +10万石/级','灾年放赈护民心']},
+  {name:'书院', cat:'cultural', desc:'讲学论政之所，兴文风、聚士心。', lv:4, cost:6000, time:6, fx:['科举解额 +2/级','士心 + · 然清议亦起']},
+  {name:'文庙·学宫', cat:'cultural', desc:'府县学宫，祀先圣，诸生肄业。', lv:4, cost:10000, time:6, fx:['民心 +1/级','教化 +']},
+  {name:'贡院', cat:'cultural', desc:'乡试会试考场，号房万余间。', lv:4, cost:40000, time:14, fx:['本省取士 + · 士绅向心']},
+  {name:'府衙·县衙', cat:'administrative', desc:'主官治所，六房办事，审判税赋皆出于此。', lv:4, cost:9000, time:5, fx:['政令执行 +5%/级','贪腐微降']}
+];
+const CAT_LABEL = {military:'军', economic:'课', cultural:'文', administrative:'政', religious:'祠', infrastructure:'工'};
+
+/* ════════════════ 渲染 ════════════════ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let CUR = {kind:'region', key:'beizhili'};
+let MODE = 'owner';
+let PROPOSED = {};
+
+function lanRows(rows, one){
+  return '<div class="lan'+(one?' one':'')+'">' + rows.map(r =>
+    '<div class="lr"'+(r[3]?' data-cause="'+r[3]+'"':'')+'><span class="k">'+esc(r[0])+'</span><span class="v '+(r[2]||'')+(String(r[1]).length>14?' wrap':'')+'">'+esc(r[1])+'</span></div>'
+  ).join('') + '</div>';
+}
+function barStrip(cfg, totalLabel){
+  const sum = cfg.items.reduce((a,x)=>a+x[1],0);
+  return '<div class="bar-strip"><div class="bs-t"><span>'+esc(cfg.t)+'</span><span>'+(totalLabel||'')+'</span></div>'+
+    '<div class="bar">'+cfg.items.map(x=>'<i style="width:'+(x[1]/sum*100)+'%;background:'+x[2]+'"></i>').join('')+'</div>'+
+    '<div class="bar-legend">'+cfg.items.map(x=>'<em style="--c:'+x[2]+'">'+esc(x[0])+' '+x[1]+(cfg.pct===false?'':'%')+'</em>').join('')+'</div></div>';
+}
+function juan(id, no, title, hint, inner){
+  return '<section class="juan" id="'+id+'"><div class="juan-t"><span class="jt-seal">'+esc(no)+'</span><b>'+esc(title)+'</b><small>'+esc(hint||'')+'</small></div>'+inner+'</section>';
+}
+function statCards(stats){
+  return '<div class="b-stats">'+stats.map(s =>
+    '<div class="b-stat'+(s.warn?' warn':'')+(s.good?' good':'')+'"'+(s.cause?' data-cause="'+s.cause+'"':'')+'><span class="k">'+esc(s.k)+'</span><span class="v">'+esc(s.v)+'<small>'+esc(s.u)+'</small></span><span class="n">'+esc(s.n)+'</span></div>'
+  ).join('')+'</div>';
+}
+function yeCard(b, doing){
+  const cat = CAT_LABEL[b.cat]||'工';
+  const prog = doing ? Math.round((b.total-b.left)/b.total*100) : 100;
+  const fx = (b.fx&&b.fx.length?'<div class="fx">'+b.fx.map(x=>'<em>'+esc(x)+'</em>').join('')+(b.upkeep?'<em class="cost">维护 '+esc(b.upkeep)+'</em>':'')+'</div>':'');
+  return '<div class="ye'+(b.ni?' nijian':'')+'">'+
+    '<div class="ye-hd"><b>'+esc(b.name)+'</b><span class="lv">'+(b.ni?'拟建':cat+' · '+b.lv+' 级')+'</span>'+
+    '<span class="st '+(b.ni?'ni':(doing?'doing':'done'))+'">'+(b.ni?'候 诏':(doing?'工 役 中':'完 好'))+'</span></div>'+
+    (b.note?'<p>'+esc(b.note)+'</p>':'')+ fx +
+    (doing?'<div class="gq"><div class="gq-bar"><i style="width:'+prog+'%"></i></div><em>余 '+b.left+' 回合</em></div>':'')+
+    '</div>';
+}
+
+function renderRegion(key){
+  const r = REGIONS[key]; if(!r) return;
+  CUR = {kind:'region', key};
+  const proposed = (PROPOSED[key]||[]).map(n => yeCard({name:n, ni:true, note:'已录入诏令建议库，候颁行后由有司核定效用与工期。', fx:['效用待有司核定（白名单内）']}, false)).join('');
+  $('#bookInner').innerHTML =
+    '<div class="b-head">'+
+      '<div class="b-bigseal"><i>御览</i></div>'+
+      '<div class="b-kind"><span class="bk-tag">方 志</span>'+
+        '<button class="b-close" onclick="toggleBook()" title="合册成脊">—</button>'+
+        '<button class="b-close x" onclick="hideBook()" title="关闭">×</button></div>'+
+      '<div class="b-title-row"><div class="b-name">'+esc(r.title)+'</div><div class="b-name-sub">'+esc(r.sub)+'</div></div>'+
+      '<div class="b-govline">'+
+        '<span class="b-pill owner" onclick="demoOpen(\'faction\',\''+r.ownerKey+'\')" title="展其谱牒"><span class="dot" style="--fc:'+r.ownerColor+'"></span>隶 <b>'+esc(r.owner)+'</b></span>'+
+        '<span class="b-pill">'+esc(r.govTitle)+' <b>'+esc(r.gov)+'</b></span>'+
+        '<span class="b-pill">'+esc(r.terrain)+'</span>'+
+        '<span class="b-pill">税 <b>'+esc(r.taxLevel)+'</b></span>'+
+      '</div>'+
+      '<p class="b-desc" onclick="this.classList.toggle(\'open\')">'+esc(r.desc)+'</p>'+
+    '</div>'+
+    statCards(r.stats)+
+    '<div class="b-scroll" id="bScroll">'+
+      juan('j-hukou','一','户口志','黄册口算', lanRows(r.hukou.rows) + barStrip(r.hukou.faith))+
+      juan('j-caifu','二','财赋志','岁入库藏', lanRows(r.caifu.rows))+
+      juan('j-junbei','三','军备志','戎政边防', lanRows(r.junbei.rows, true))+
+      juan('j-zhiguan','四','职官志','官守治理', lanRows(r.zhiguan.rows))+
+      juan('j-fengwu','五','风物志','物产设施',
+        '<div class="wu-grid">'+r.fengwu.chanye.map(c=>'<div class="wu"><span class="k">'+esc(c[0])+'</span><span class="v">'+esc(c[1])+'</span></div>').join('')+'</div>'+
+        '<div style="height:7px"></div>'+lanRows(r.fengwu.rows, true))+
+      juan('j-yingzao','六','营造志','已建之业 · 工役',
+        r.yingzao.built.map(b=>yeCard(b,false)).join('')+
+        r.yingzao.building.map(b=>yeCard(b,true)).join('')+
+        proposed+
+        '<button class="b-act zhu" style="width:100%;margin-top:4px;" onclick="openJz()">⊕ 兴 造 · 录 入 诏 令</button>')+
+    '</div>'+
+    '<div class="b-foot">'+
+      '<button class="b-act" onclick="demoOpen(\'faction\',\''+r.ownerKey+'\')">展 势 力 谱</button>'+
+      '<button class="b-act zhu" onclick="toastShow(\'已携此地入诏令草拟（演示）\')">就 此 地 拟 诏</button>'+
+    '</div>';
+  $('#spineLabel').innerHTML = esc(r.title)+' · 方志<small>点 脊 展 册</small>';
+  renderJianqian([['j-hukou','户'],['j-caifu','赋'],['j-junbei','军'],['j-zhiguan','官'],['j-fengwu','物'],['j-yingzao','营']]);
+  bindScrollSpy(); bindCauseHover();
+  markMap('region:'+key);
+  syncDemoDock('db-'+key);
+}
+
+function renderFaction(key){
+  const f = FACTIONS[key]; if(!f) return;
+  CUR = {kind:'faction', key};
+  const jc = f.junchen;
+  $('#bookInner').innerHTML =
+    '<div class="b-head">'+
+      '<div class="b-bigseal" style="border-radius:50%;"><i>'+esc(f.seal)+'印</i></div>'+
+      '<div class="b-kind"><span class="bk-tag">谱 牒</span>'+
+        '<button class="b-close" onclick="toggleBook()" title="合册成脊">—</button>'+
+        '<button class="b-close x" onclick="hideBook()" title="关闭">×</button></div>'+
+      '<div class="b-title-row"><div class="b-name">'+esc(f.title)+'</div><div class="b-name-sub">'+esc(f.sub)+'</div></div>'+
+      '<div class="b-govline">'+
+        '<span class="b-pill"><span class="dot" style="--fc:'+f.color+'"></span>'+esc(f.kind)+'</span>'+
+        '<span class="b-pill">'+esc(f.leaderTitle)+' <b>'+esc(f.leader)+'</b></span>'+
+        '<span class="b-pill'+(f.attitude==='敌对'?' hostile':'')+'">'+esc(f.attitude)+'</span>'+
+      '</div>'+
+      '<p class="b-desc" onclick="this.classList.toggle(\'open\')">'+esc(f.desc)+'</p>'+
+    '</div>'+
+    statCards(f.stats)+
+    '<div class="b-scroll" id="bScroll">'+
+      juan('j-junchen','一','君臣','首脑重臣',
+        '<div class="ren-row">'+
+          '<div class="ren main"><div class="r-seal">'+esc(jc.main.name.slice(0,1))+'</div><div class="r-body"><b>'+esc(jc.main.name)+'</b><span>'+esc(jc.main.note)+'</span></div></div>'+
+          jc.others.map(p=>'<div class="ren"><div class="r-seal">'+esc(p.name.replace(/\s/g,'').slice(0,1))+'</div><div class="r-body"><b>'+esc(p.name)+'</b><span>'+esc(p.note)+'</span></div></div>').join('')+
+        '</div>')+
+      juan('j-bantu','二','版图','所辖之地',
+        '<div class="qian-links">'+f.bantu.regions.map(n=>'<button class="qian" onclick="qianJump(\''+esc(n)+'\')">'+esc(n)+'</button>').join('')+'</div>'+
+        '<p style="margin-top:7px;font:11px/1.7 var(--font-doc);color:var(--ink-faint);">'+esc(f.bantu.note)+'</p>')+
+      juan('j-junlue','三','军略','兵制方略',
+        barStrip({t:'兵力构成', items:f.junlue.breakdown, pct:false}, '总 '+f.junlue.breakdown.reduce((a,x)=>a+x[1],0).toLocaleString())+
+        '<div style="height:5px"></div>'+lanRows(f.junlue.rows, true))+
+      juan('j-caiji','四','财计','库藏经济', lanRows(f.caiji.rows))+
+      juan('j-bangjiao','五','邦交','与国之谊',
+        f.bangjiao.map(b=>'<div class="bang"><span class="b-ni" style="background:'+(b.rel==='di'?'#a83228':(b.rel==='meng'?'#557f6f':'#a8833a'))+'"></span><b>'+esc(b.name)+'</b><span class="b-rel '+b.rel+'">'+(b.rel==='di'?'敌 对':(b.rel==='meng'?'盟 好':'中 立'))+'</span><span>'+esc(b.note)+'</span></div>').join(''))+
+      juan('j-shilue','六','史略','优劣大略',
+        '<div class="youlie">'+
+          '<div class="yl you"><b>所 长</b>'+f.shilue.you.map(s=>'<span>'+esc(s)+'</span>').join('')+'</div>'+
+          '<div class="yl lie"><b>所 短</b>'+f.shilue.lie.map(s=>'<span>'+esc(s)+'</span>').join('')+'</div>'+
+        '</div>'+
+        '<div class="fold"><pre>【大略】'+esc(f.shilue.strategy)+'\n\n【国史】'+esc(f.shilue.history)+'</pre><button class="fold-btn" onclick="foldToggle(this)">展 读 全 文 ▾</button></div>')+
+    '</div>'+
+    '<div class="b-foot">'+
+      '<button class="b-act" onclick="toastShow(\'已开邦交往来（演示）\')">通 使 往 来</button>'+
+      '<button class="b-act zhu" onclick="toastShow(\'已携此势力入诏令草拟（演示）\')">就 此 势 拟 诏</button>'+
+    '</div>';
+  $('#spineLabel').innerHTML = esc(f.title)+' · 谱牒<small>点 脊 展 册</small>';
+  renderJianqian([['j-junchen','君'],['j-bantu','图'],['j-junlue','军'],['j-caiji','财'],['j-bangjiao','交'],['j-shilue','史']]);
+  bindScrollSpy(); bindCauseHover();
+  markMap('faction:'+key);
+  syncDemoDock('db-'+key);
+}
+
+/* ── 检签 ── */
+function renderJianqian(items){
+  $('#jianqian').innerHTML = items.map((it,i) =>
+    '<div class="jq" data-target="'+it[0]+'"><span class="jq-no">'+'一二三四五六'.charAt(i)+'</span>'+esc(it[1])+'</div>'
+  ).join('');
+  document.querySelectorAll('.jq').forEach(el => {
+    el.onclick = () => { const t = document.getElementById(el.dataset.target); if(t) t.scrollIntoView({behavior:'smooth', block:'start'}); };
+  });
+}
+let spyObserver = null;
+function bindScrollSpy(){
+  if (spyObserver) spyObserver.disconnect();
+  const scroll = $('#bScroll'); if(!scroll) return;
+  spyObserver = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        document.querySelectorAll('.jq').forEach(x=>x.classList.toggle('active', x.dataset.target===en.target.id));
+      }
+    });
+  }, {root:scroll, rootMargin:'-8% 0px -78% 0px', threshold:0});
+  scroll.querySelectorAll('.juan').forEach(s => spyObserver.observe(s));
+  const first = document.querySelector('.jq'); if(first) first.classList.add('active');
+}
+
+/* ── 活账浮层 ── */
+function bindCauseHover(){
+  document.querySelectorAll('[data-cause]').forEach(el => {
+    el.addEventListener('mouseenter', e => showCause(el));
+    el.addEventListener('mouseleave', hideCause);
+  });
+}
+function showCause(el){
+  const c = CAUSES[el.dataset.cause]; if(!c) return;
+  const pop = $('#causePop');
+  pop.innerHTML = '<div class="cp-hd"><span class="cp-seal">牵</span><b>'+esc(c.t)+'</b></div>'+
+    '<div class="cp-body">'+c.items.map(it=>'<div class="cp-item"><span class="ck">'+esc(it[0])+'</span><span class="cv">'+esc(it[1])+'</span></div>').join('')+'</div>'+
+    '<div class="cp-ft">活账之义：此数非死字——每回合由叶账聚合而来，亦反向牵动他账。</div>';
+  const r = el.getBoundingClientRect();
+  let x = r.right + 12, y = r.top - 6;
+  if (x + 270 > innerWidth) x = r.left - 274;
+  if (y + 240 > innerHeight) y = innerHeight - 250;
+  pop.style.left = x+'px'; pop.style.top = Math.max(52,y)+'px';
+  pop.classList.add('show');
+}
+function hideCause(){ $('#causePop').classList.remove('show'); }
+
+/* ── 地图：视图切换 + 着色 + 哨牌 + 图例 ── */
+function buildSentinels(){
+  const g = document.getElementById('sentinels');
+  g.innerHTML = Object.keys(SENTINEL_POS).map(k => {
+    const [x,y] = SENTINEL_POS[k];
+    return '<g class="sentinel" data-skey="'+k+'" transform="translate('+x+','+y+')"><circle r="14"/><text id="st-'+k+'"></text></g>';
+  }).join('');
+}
+function setMode(mode){
+  MODE = mode;
+  document.querySelectorAll('.vt').forEach(v=>v.classList.toggle('active', v.dataset.mode===mode));
+  const svg = $('#mapSvg');
+  svg.classList.toggle('mode-data', mode!=='owner');
+  document.querySelectorAll('.prov').forEach(p => {
+    const k = p.dataset.key, d = MAP_DATA[k];
+    if (mode==='owner'){ p.style.fill = OWNER_FILL[k]; return; }
+    const g = GRADES[mode];
+    if (d.kind==='foreign'){
+      p.style.fill = (mode==='army') ? '#5b4a52' : FOREIGN_FILL;
+      return;
+    }
+    const v = g.pick(d);
+    if (v==null){ p.style.fill = '#5a6258'; return; }
+    p.style.fill = g.bands[bandIndex(g,v)][2];
+  });
+  document.querySelectorAll('.sentinel').forEach(s => {
+    const k = s.dataset.skey, d = MAP_DATA[k];
+    const t = s.querySelector('text');
+    if (mode==='owner'){ t.textContent=''; return; }
+    const g = GRADES[mode];
+    if (d.kind==='foreign'){ t.textContent = (mode==='army') ? '威' : '—'; s.classList.remove('warn'); return; }
+    const v = g.pick(d);
+    t.textContent = g.badge(d);
+    const idx = v==null ? -1 : bandIndex(g,v);
+    const warn = (mode==='minxin'&&v<50)||(mode==='army'&&v>=60)||(mode==='office'&&v>=60)||(mode==='tax'&&v!=null&&v<60);
+    s.classList.toggle('warn', !!warn);
+  });
+  renderLegend(mode);
+}
+function renderLegend(mode){
+  const lg = $('#legend');
+  if (mode==='owner'){
+    lg.innerHTML = '<div class="lg-t">势 力 归 属</div><div class="lg-note">各地按当前控制势力着色。左键翻方志，右键展其势力谱牒。</div>'+
+      '<div class="lg-rows">'+
+      [['明朝廷','#8a7450'],['后金','#5d5570'],['蒙古诸部','#6e6147']].map(x=>'<div class="lg-row"><i style="background:'+x[1]+'"></i>'+x[0]+'</div>').join('')+'</div>';
+    return;
+  }
+  const g = GRADES[mode];
+  lg.innerHTML = '<div class="lg-t">'+g.title+'</div><div class="lg-note">'+g.note+'</div>'+
+    '<div class="lg-bar">'+g.bands.map(b=>'<i style="background:'+b[2]+'"></i>').join('')+'</div>'+
+    '<div class="lg-ticks">'+g.bands.map(b=>'<span>'+b[3]+'</span>').join('')+'</div>'+
+    '<div class="lg-rows" style="margin-top:6px;"><div class="lg-row"><i style="background:'+FOREIGN_FILL+'"></i>化外 · 谍报有限</div></div>';
+}
+
+/* ── 悬浮签注 ── */
+const qz = $('#qianzhu');
+function qzShow(d, x, y){
+  const [vd, tone] = verdict(MODE, d);
+  const rows = qzRows(MODE, d);
+  const qcolor = tone==='wei' ? 'var(--cinnabar)' : (tone==='an' ? 'var(--jade)' : 'var(--gold)');
+  qz.style.setProperty('--qc', qcolor);
+  qz.innerHTML =
+    '<div class="qz-hd" style="--oc:'+d.oc+'"><b>'+esc(d.name)+'</b><span class="qz-owner"><i style="--oc:'+d.oc+';background:'+d.oc+'"></i>'+esc(d.owner)+'</span></div>'+
+    '<div class="qz-body">'+rows.map(r=>'<div class="qz-row"><span class="k">'+esc(r[0])+'</span><span class="v '+(r[2]||'')+'">'+esc(r[1])+'</span></div>').join('')+'</div>'+
+    '<div class="qz-verdict '+tone+'">'+esc(vd)+'</div>'+
+    '<div class="qz-ft"><span>左键 翻方志</span><span>右键 展势力</span></div>';
+  qzMove(x,y);
+  qz.classList.add('show');
+}
+function qzMove(x,y){
+  let px = x+18, py = y+16;
+  if (px+260 > innerWidth) px = x-266;
+  if (py+230 > innerHeight) py = y-200;
+  qz.style.left = px+'px'; qz.style.top = py+'px';
+}
+function qzHide(){ qz.classList.remove('show'); }
+
+/* ── 地图联动 / 开合 / 隐显 ── */
+function markMap(openKey){
+  document.querySelectorAll('.prov').forEach(p => {
+    const d = MAP_DATA[p.dataset.key];
+    p.classList.toggle('sel', d && d.book === openKey);
+  });
+}
+function toggleBook(){ const b=$('#book'); b.classList.remove('hidden'); b.classList.toggle('closed'); }
+function hideBook(){ $('#book').classList.add('hidden'); markMap('none'); toastShow('已收起册页——点击地块可再展'); syncDemoDock(''); }
+function demoOpen(kind, key){
+  const b = $('#book');
+  b.classList.remove('closed'); b.classList.remove('hidden');
+  if (kind==='region') renderRegion(key); else renderFaction(key);
+}
+function syncDemoDock(id){
+  document.querySelectorAll('.demo-bt').forEach(b => b.classList.toggle('on', b.id===id));
+}
+function qianJump(name){
+  if (name.indexOf('北直隶')>=0) return demoOpen('region','beizhili');
+  if (name.indexOf('辽东')>=0 || name.indexOf('沈阳')>=0) return demoOpen('region','liaodong');
+  toastShow('「'+name+'」之方志（演示中未录）');
+}
+function foldToggle(btn){
+  const f = btn.closest('.fold'); f.classList.toggle('open');
+  btn.textContent = f.classList.contains('open') ? '收 起 ▴' : '展 读 全 文 ▾';
+}
+
+/* ── 兴造弹窗 ── */
+function openJz(){
+  const r = REGIONS[CUR.key];
+  $('#jzSub').textContent = '于 '+r.title+' 营造工役 · 录入诏令建议库，纳入后颁行';
+  $('#jzPre').innerHTML = BUILD_TYPES.map((b,i) =>
+    '<div class="jz-item" onclick="jzPick('+i+')">'+
+      '<div class="ji-seal '+b.cat+'">'+esc(CAT_LABEL[b.cat]||'工')+'</div>'+
+      '<div class="ji-body"><b>'+esc(b.name)+'</b><p>'+esc(b.desc)+'</p>'+
+        (b.fx?'<div class="ji-fx">'+b.fx.map(x=>'<em>'+esc(x)+'</em>').join('')+'</div>':'')+'</div>'+
+      '<div class="ji-meta">基费 <i>'+b.cost.toLocaleString()+'</i> 两<br>工期 <i>'+b.time+'</i> 回合 · 至 '+b.lv+' 级</div>'+
+    '</div>').join('');
+  jzSwitch('pre');
+  $('#jzVeil').classList.add('show');
+}
+function closeJz(){ $('#jzVeil').classList.remove('show'); }
+function jzSwitch(which){
+  $('#jzTabPre').classList.toggle('active', which==='pre');
+  $('#jzTabCus').classList.toggle('active', which==='cus');
+  $('#jzPre').style.display = which==='pre' ? '' : 'none';
+  $('#jzCus').classList.toggle('show', which==='cus');
+  $('#jzSubmit').style.display = which==='cus' ? '' : 'none';
+}
+function jzPick(i){ jzCommit(BUILD_TYPES[i].name); }
+function jzSubmitCustom(){
+  const name = $('#jzName').value.trim();
+  const desc = $('#jzDesc').value.trim();
+  if (!name || !desc) { toastShow('请填写工役名目与规制'); return; }
+  jzCommit('自拟 · '+name);
+}
+function jzCommit(name){
+  (PROPOSED[CUR.key] = PROPOSED[CUR.key] || []).push(name);
+  closeJz();
+  toastShow('「'+name+'」已录入诏令建议库 —— 请于诏令区纳入后颁行');
+  if (CUR.kind==='region') { renderRegion(CUR.key); setTimeout(()=>{ const y = document.getElementById('j-yingzao'); if(y) y.scrollIntoView({behavior:'smooth'}); }, 60); }
+}
+
+let toastTimer = null;
+function toastShow(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ── 地图事件：左键方志 / 右键势力 / 悬浮签注 ── */
+document.querySelectorAll('.prov').forEach(p => {
+  const key = p.dataset.key;
+  p.addEventListener('click', () => {
+    const d = MAP_DATA[key];
+    if (d.book && d.book.startsWith('region:')) demoOpen('region', d.book.slice(7));
+    else if (d.book && d.book.startsWith('faction:')) demoOpen('faction', d.book.slice(8));
+    else toastShow('「'+d.name+'」之方志（演示中未录）');
+  });
+  p.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const d = MAP_DATA[key];
+    if (d.owner==='明朝廷') demoOpen('faction','ming');
+    else if (d.owner==='后金') demoOpen('faction','houjin');
+    else toastShow('「'+d.owner+'」之谱牒（演示中未录）');
+  });
+  p.addEventListener('mouseenter', e => qzShow(MAP_DATA[key], e.clientX, e.clientY));
+  p.addEventListener('mousemove', e => qzMove(e.clientX, e.clientY));
+  p.addEventListener('mouseleave', qzHide);
+});
+document.querySelectorAll('.vt').forEach(v => v.addEventListener('click', ()=>setMode(v.dataset.mode)));
+$('#bookSpine').addEventListener('click', toggleBook);
+
+/* 初始 */
+buildSentinels();
+setMode('owner');
+renderRegion('beizhili');
+</script>
+</body>
+</html>

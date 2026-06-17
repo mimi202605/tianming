@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>奏疏标签页·美化预览</title>
+<style>
+:root {
+  --bg-1: #0f0d0a;
+  --bg-2: #1a1510;
+  --bg-paper: #241e18;
+  --ink-900: #f4eadd;
+  --ink-700: #d9c9a9;
+  --ink-500: #a69470;
+  --ink-300: #6b5d47;
+  --ink-100: #3d342a;
+  --gold-300: #c9a85f;
+  --gold-400: #b89a53;
+  --gold-500: #9d8244;
+  --gold-d: #6b5a30;
+  --vermillion-300: #d15c47;
+  --vermillion-400: #b84738;
+  --vermillion-600: #8f3428;
+  --celadon-400: #6a9a7f;
+  --celadon-600: #4a7a5f;
+  --indigo-400: #5a6fa8;
+  --amber-400: #c9a045;
+  --purple-400: #8e6aa8;
+  --blue-400: #5a8fb8;
+  --border-subtle: rgba(184,154,83,0.15);
+  --border-strong: rgba(184,154,83,0.35);
+  --font-serif: "STKaiti","KaiTi","楷体","Georgia",serif;
+  --font-song: "STSong","SimSun","宋体",serif;
+  --font-zhuanshu: "STFangsong","仿宋","Georgia",serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse at top, #1a1510 0%, #0f0d0a 70%),
+    var(--bg-1);
+  color: var(--ink-700);
+  font-family: var(--font-song);
+  font-size: 14px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+.preview-frame {
+  max-width: 1280px;
+  margin: 32px auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+.preview-header {
+  background: linear-gradient(to bottom, rgba(184,154,83,0.04), transparent);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--ink-500); letter-spacing: 0.1em;
+}
+.preview-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+.preview-header .dot.r{background:#d15c47;}
+.preview-header .dot.y{background:#c9a85f;}
+.preview-header .dot.g{background:#6a9a7f;}
+.preview-header .title{margin-left:auto;font-family:var(--font-serif);letter-spacing:0.3em;color:var(--ink-300);}
+
+/* 标签栏 */
+.tab-bar{display:flex;background:var(--bg-1);border-bottom:1px solid var(--border-subtle);overflow-x:auto;}
+.tab-btn{padding:10px 16px;background:transparent;border:none;color:var(--ink-300);font-family:var(--font-serif);font-size:14px;letter-spacing:0.1em;cursor:pointer;border-bottom:2px solid transparent;position:relative;}
+.tab-btn:hover{color:var(--ink-700);}
+.tab-btn.active{color:var(--gold-400);border-bottom-color:var(--gold-400);}
+.tab-btn.active::before{content:"";position:absolute;top:6px;right:6px;width:5px;height:5px;background:var(--vermillion-400);border-radius:1px;transform:rotate(12deg);}
+
+/* ═══ 奏疏主区 ═══ */
+.mem-panel {
+  padding: 24px 28px;
+  min-height: 900px;
+  background-color: var(--bg-paper);
+  background-image:
+    repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px)),
+    repeating-linear-gradient(0deg,transparent 0,transparent 3em,rgba(107,93,71,0.02) 3em,rgba(107,93,71,0.02) calc(3em + 1px)),
+    linear-gradient(to bottom,rgba(184,154,83,0.05) 0%,transparent 80px);
+  position: relative;
+}
+.mem-panel::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 15% 25%,rgba(139,90,50,0.025) 0.5px,transparent 1px),
+    radial-gradient(circle at 80% 60%,rgba(139,90,50,0.03) 0.5px,transparent 1px);
+  background-size: 80px 80px, 120px 120px;
+}
+.mem-inner{position:relative;z-index:1;}
+
+/* 奏疏待览标题 */
+.mem-title{text-align:center;margin-bottom:24px;position:relative;padding:14px 0 18px;}
+.mem-title::before,.mem-title::after{content:"";position:absolute;left:50%;width:180px;height:1px;transform:translateX(-50%);background:linear-gradient(to right,transparent,var(--gold-d),transparent);}
+.mem-title::before{top:0;} .mem-title::after{bottom:0;}
+.mem-title .main{font-family:var(--font-serif);font-size:24px;letter-spacing:0.5em;color:var(--ink-900);margin-bottom:6px;}
+.mem-title .sub{font-size:12px;color:var(--ink-300);letter-spacing:0.3em;font-family:var(--font-serif);}
+.mem-title .seal{position:absolute;right:28px;top:10px;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.85),rgba(140,40,30,0.75));display:flex;align-items:center;justify-content:center;color:#f4eadd;font-size:11px;font-family:var(--font-serif);letter-spacing:0.05em;font-weight:bold;transform:rotate(-6deg);box-shadow:0 2px 6px rgba(140,40,30,0.4);opacity:0.88;line-height:1.2;text-align:center;}
+
+/* 在途奏疏提示条 */
+.mem-transit{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(201,160,69,0.06);border:1px dashed var(--amber-400);border-left:3px solid var(--amber-400);border-radius:3px;margin-bottom:20px;font-size:12px;color:var(--ink-700);}
+.mem-transit-icon{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--amber-400),var(--gold-500));display:flex;align-items:center;justify-content:center;color:#1a1410;font-family:var(--font-serif);font-size:14px;font-weight:bold;flex-shrink:0;}
+.mem-transit .lbl{color:var(--amber-400);letter-spacing:0.1em;font-family:var(--font-serif);}
+
+/* 分组题签 */
+.mem-group{margin-bottom:28px;}
+.mem-group-title{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.mem-group-title .tag{font-family:var(--font-serif);font-size:14px;letter-spacing:0.25em;padding:4px 14px 6px;background:linear-gradient(to bottom,rgba(157,130,68,0.12),rgba(157,130,68,0.03));border-top:1px solid var(--gc,var(--gold-d));border-bottom:1px solid var(--gc,var(--gold-d));color:var(--ink-900);flex-shrink:0;}
+.mem-group-title .tag::before,.mem-group-title .tag::after{content:"❖";color:var(--gc,var(--gold-400));font-size:10px;margin:0 6px;opacity:0.65;}
+.mem-group-title .desc{font-size:11.5px;color:var(--ink-500);letter-spacing:0.05em;}
+.mem-group-title .count{margin-left:auto;font-size:11px;color:var(--gc,var(--gold-400));font-family:var(--font-serif);padding:2px 8px;border:1px solid var(--gc,var(--gold-d));border-radius:2px;letter-spacing:0.1em;}
+.mem-g-urgent{--gc:var(--vermillion-400);}
+.mem-g-pending{--gc:var(--gold-400);}
+.mem-g-held{--gc:var(--blue-400);}
+.mem-g-done{--gc:var(--ink-300);}
+
+/* ═══ 奏疏卡片（卷轴/奏本样式）═══ */
+.mem-card{
+  position:relative;
+  margin-bottom:14px;
+  padding:16px 18px 14px;
+  background:var(--bg-paper);
+  background-image:
+    repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px));
+  border:1px solid var(--border-subtle);
+  border-left:3px solid var(--mc-color,var(--gold-d));
+  border-radius:3px;
+  transition:all 0.25s;
+}
+.mem-card:hover{border-color:var(--gold-400);box-shadow:0 3px 10px rgba(0,0,0,0.3),0 0 8px rgba(184,154,83,0.15);}
+.mem-card::after{
+  content:"";position:absolute;top:0;right:0;
+  width:50px;height:50px;
+  background:radial-gradient(circle at top right,rgba(184,154,83,0.06),transparent 70%);
+  pointer-events:none;
+}
+.mem-card.type-loyal{--mc-color:var(--celadon-400);}
+.mem-card.type-normal{--mc-color:var(--gold-400);}
+.mem-card.type-suspect{--mc-color:var(--amber-400);}
+.mem-card.type-danger{--mc-color:var(--vermillion-400);}
+
+/* 奏疏抬头 */
+.mem-card-hdr{
+  display:flex;align-items:center;gap:12px;
+  padding-bottom:10px;margin-bottom:10px;
+  border-bottom:1px dashed var(--border-subtle);
+}
+.mem-portrait{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,var(--mc-color,var(--gold-400)),var(--ink-100));
+  border:2px solid var(--mc-color,var(--gold-d));
+  display:flex;align-items:center;justify-content:center;
+  color:#f4eadd;font-family:var(--font-serif);font-size:14px;font-weight:500;
+  flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.3);
+}
+.mem-from-wrap{flex:1;min-width:0;}
+.mem-from{font-family:var(--font-serif);font-size:15px;color:var(--ink-900);letter-spacing:0.08em;line-height:1.3;}
+.mem-from-title{font-size:11px;color:var(--ink-500);margin-top:2px;letter-spacing:0.05em;}
+.mem-type-pill{
+  font-size:11px;font-family:var(--font-serif);
+  padding:3px 10px 4px;
+  background:linear-gradient(to bottom,rgba(184,154,83,0.12),rgba(184,154,83,0.03));
+  border:1px solid var(--mc-color,var(--gold-d));
+  color:var(--mc-color,var(--gold-400));
+  border-radius:2px;letter-spacing:0.15em;flex-shrink:0;
+}
+
+/* 状态徽记 */
+.mem-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.mem-badge{font-size:10.5px;padding:1px 7px 2px;border-radius:2px;font-family:var(--font-serif);letter-spacing:0.08em;border:1px solid currentColor;}
+.mem-badge.urgent{color:var(--vermillion-400);background:rgba(192,64,48,0.1);}
+.mem-badge.held{color:var(--blue-400);background:rgba(90,143,184,0.1);}
+.mem-badge.approved{color:var(--celadon-400);background:rgba(106,154,127,0.1);}
+.mem-badge.rejected{color:var(--vermillion-400);background:rgba(192,64,48,0.1);}
+.mem-badge.annotated{color:var(--gold-400);background:rgba(184,154,83,0.08);}
+.mem-badge.referred{color:var(--celadon-400);background:rgba(106,154,127,0.08);}
+.mem-badge.court{color:var(--purple-400);background:rgba(142,106,168,0.1);}
+.mem-badge.remote{color:var(--amber-400);background:rgba(201,160,69,0.08);}
+.mem-badge.reliab-low{color:var(--vermillion-400);background:rgba(192,64,48,0.1);}
+
+/* 正文 */
+.mem-body-label{font-size:10.5px;color:var(--ink-300);letter-spacing:0.2em;font-family:var(--font-serif);margin-bottom:6px;}
+.mem-body{
+  padding:10px 14px;
+  background:rgba(244,234,221,0.03);
+  border-left:2px solid var(--border-strong);
+  border-radius:2px;
+  font-family:var(--font-serif);
+  font-size:14px;
+  line-height:1.9;
+  color:var(--ink-700);
+  text-indent:2em;
+  position:relative;
+}
+.mem-body.collapsed{max-height:120px;overflow:hidden;}
+.mem-body.collapsed::after{
+  content:"";position:absolute;bottom:0;left:0;right:0;height:40px;
+  background:linear-gradient(transparent,var(--bg-paper));
+  pointer-events:none;
+}
+.mem-toggle{
+  display:inline-block;margin-top:4px;
+  font-size:11px;color:var(--gold-400);
+  background:none;border:none;cursor:pointer;
+  font-family:var(--font-serif);letter-spacing:0.1em;padding:2px 6px;
+}
+.mem-toggle:hover{color:var(--gold-300);text-decoration:underline;}
+
+/* 朱笔批注 */
+.mem-reply-wrap{
+  margin-top:12px;
+  padding:10px 12px;
+  background:rgba(192,64,48,0.03);
+  border:1px dashed rgba(192,64,48,0.25);
+  border-left:2px solid var(--vermillion-400);
+  border-radius:2px;
+  position:relative;
+}
+.mem-reply-label{
+  font-size:10.5px;color:var(--vermillion-400);
+  letter-spacing:0.25em;font-family:var(--font-serif);
+  margin-bottom:4px;display:flex;align-items:center;gap:6px;
+}
+.mem-reply-label::before{content:"";width:14px;height:14px;background:radial-gradient(circle,var(--vermillion-400),var(--vermillion-600));border-radius:50%;display:inline-block;box-shadow:0 1px 2px rgba(140,40,30,0.3);}
+.mem-reply-input{
+  width:100%;padding:6px 10px;
+  background:transparent;border:none;outline:none;
+  color:var(--vermillion-300);
+  font-family:var(--font-serif);
+  font-size:14px;line-height:1.8;
+  font-style:italic;
+  min-height:28px;
+  resize:vertical;
+}
+.mem-reply-input::placeholder{color:rgba(192,64,48,0.35);font-style:italic;}
+
+/* 操作按钮 */
+.mem-actions{
+  display:flex;flex-wrap:wrap;gap:6px;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px dashed var(--border-subtle);
+}
+.mem-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:5px 12px;
+  background:linear-gradient(to bottom,rgba(244,234,221,0.06),rgba(244,234,221,0.02));
+  border:1px solid var(--ab,var(--border-subtle));
+  color:var(--ab,var(--ink-500));
+  border-radius:2px;
+  font-family:var(--font-serif);font-size:12px;letter-spacing:0.12em;
+  cursor:pointer;transition:all 0.2s;
+}
+.mem-btn:hover{background:linear-gradient(to bottom,rgba(244,234,221,0.08),rgba(244,234,221,0.04));transform:translateY(-1px);box-shadow:0 1px 2px rgba(0,0,0,0.2);}
+.mem-btn .ic{font-size:11px;opacity:0.8;}
+.mem-btn.approve{--ab:var(--celadon-400);}
+.mem-btn.reject{--ab:var(--vermillion-400);}
+.mem-btn.annotate{--ab:var(--gold-400);}
+.mem-btn.refer{--ab:var(--celadon-400);}
+.mem-btn.court{--ab:var(--purple-400);}
+.mem-btn.hold{--ab:var(--blue-400);}
+.mem-btn.excerpt{--ab:var(--gold-400);}
+.mem-btn.summon{--ab:var(--purple-400);margin-left:auto;}
+
+/* ═══ 空状态 ═══ */
+.mem-empty{
+  text-align:center;padding:48px 24px;
+  font-family:var(--font-serif);font-size:15px;
+  color:var(--ink-500);letter-spacing:0.15em;line-height:2;
+}
+.mem-empty::before{
+  content:"❖";display:block;color:var(--gold-400);
+  font-size:32px;margin-bottom:12px;opacity:0.5;
+}
+
+/* Legend */
+.legend{padding:14px 20px;background:var(--bg-2);border-top:1px solid var(--border-subtle);font-size:11px;color:var(--ink-500);text-align:center;letter-spacing:0.08em;line-height:1.8;}
+.legend .k{color:var(--gold-400);}
+.legend .mark{color:var(--vermillion-400);}
+</style>
+</head>
+<body>
+
+<div class="preview-frame">
+  <div class="preview-header">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span>tianming · 奏疏标签页美化预览</span>
+    <span class="title">〔 奏 疏 待 览 〕</span>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">朝政</button>
+    <button class="tab-btn">诏令</button>
+    <button class="tab-btn active">奏疏</button>
+    <button class="tab-btn">问对</button>
+    <button class="tab-btn">鸿雁</button>
+    <button class="tab-btn">编年</button>
+    <button class="tab-btn">官制</button>
+    <button class="tab-btn">文苑</button>
+    <button class="tab-btn">起居注</button>
+    <button class="tab-btn">纪事</button>
+    <button class="tab-btn">史记</button>
+  </div>
+
+  <div class="mem-panel">
+    <div class="mem-inner">
+
+      <!-- 奏疏待览标题 -->
+      <div class="mem-title">
+        <div class="seal">奉<br>朱</div>
+        <div class="main">奏 疏 待 览</div>
+        <div class="sub">案 牍 之 司　　百 官 启 奏</div>
+      </div>
+
+      <!-- 在途奏疏提示 -->
+      <div class="mem-transit">
+        <div class="mem-transit-icon">驿</div>
+        <div><span class="lbl">驿 站 来 报 ：</span>尚有 <strong style="color:var(--amber-400);">3</strong> 份奏疏在途（一出自辽东·二自山西驿路受阻）。</div>
+      </div>
+
+      <!-- 紧急奏疏 -->
+      <div class="mem-group mem-g-urgent">
+        <div class="mem-group-title">
+          <span class="tag">急 奏 待 批</span>
+          <span class="desc">加急·告变·边事急报，宜速裁决</span>
+          <span class="count">1 折</span>
+        </div>
+
+        <div class="mem-card type-danger">
+          <div class="mem-card-hdr">
+            <div class="mem-portrait">袁</div>
+            <div class="mem-from-wrap">
+              <div class="mem-from">袁崇焕</div>
+              <div class="mem-from-title">兵部尚书衔督师·辽东</div>
+            </div>
+            <div class="mem-badges">
+              <span class="mem-badge urgent">急</span>
+              <span class="mem-badge remote">驿递自辽东</span>
+            </div>
+            <span class="mem-type-pill">塘 报</span>
+          </div>
+
+          <div class="mem-body-label">本 　 奏</div>
+          <div class="mem-body">臣袁崇焕谨奏陛下：自十月已降，金军屡犯宁远、锦州一线，前后凡十三战，我军虽据城守御，然军械疲朽，饥卒日多。辽饷六月未至，三军怨嗟，日夜盼朝廷周济。恳乞陛下速发内帑三十万，以补军需，否则恐动摇军心，贻祸社稷……</div>
+
+          <div class="mem-reply-wrap">
+            <div class="mem-reply-label">朱 笔 批 注</div>
+            <textarea class="mem-reply-input" rows="2" placeholder="御笔朱批，可直接下诏或附语……">着户部速拨内帑三十万两，驿递辽东。卿当勉力奉国，朕倚卿如柱石。</textarea>
+          </div>
+
+          <div class="mem-actions">
+            <button class="mem-btn approve"><span class="ic">✓</span> 准　奏</button>
+            <button class="mem-btn reject"><span class="ic">✗</span> 驳　回</button>
+            <button class="mem-btn annotate"><span class="ic">✎</span> 批示意见</button>
+            <button class="mem-btn refer"><span class="ic">→</span> 转交有司</button>
+            <button class="mem-btn court"><span class="ic">⚖</span> 发廷议</button>
+            <button class="mem-btn hold"><span class="ic">⏸</span> 留　中</button>
+            <button class="mem-btn excerpt"><span class="ic">⎘</span> 摘　入</button>
+            <button class="mem-btn summon"><span class="ic">☄</span> 传召问讯</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 一般奏疏 -->
+      <div class="mem-group mem-g-pending">
+        <div class="mem-group-title">
+          <span class="tag">百 官 启 奏</span>
+          <span class="desc">待批·待批示·待转交</span>
+          <span class="count">4 折</span>
+        </div>
+
+        <div class="mem-card type-loyal">
+          <div class="mem-card-hdr">
+            <div class="mem-portrait">徐</div>
+            <div class="mem-from-wrap">
+              <div class="mem-from">徐光启</div>
+              <div class="mem-from-title">礼部右侍郎·督理西洋火器</div>
+            </div>
+            <div class="mem-badges"></div>
+            <span class="mem-type-pill">条 陈</span>
+          </div>
+          <div class="mem-body-label">本 　 奏</div>
+          <div class="mem-body">臣徐光启谨奏：西洋火器精妙，造法已得图样，请设西局于京师督造，岁出铜万斤、铁三万斤，可成红夷炮五十尊、鸟铳千余支，以备辽东。另请遣通译、工匠各十人赴澳门习艺。</div>
+          <div class="mem-reply-wrap">
+            <div class="mem-reply-label">朱 笔 批 注</div>
+            <textarea class="mem-reply-input" rows="2" placeholder="御笔朱批，可直接下诏或附语……"></textarea>
+          </div>
+          <div class="mem-actions">
+            <button class="mem-btn approve"><span class="ic">✓</span> 准　奏</button>
+            <button class="mem-btn reject"><span class="ic">✗</span> 驳　回</button>
+            <button class="mem-btn annotate"><span class="ic">✎</span> 批示意见</button>
+            <button class="mem-btn refer"><span class="ic">→</span> 转交有司</button>
+            <button class="mem-btn court"><span class="ic">⚖</span> 发廷议</button>
+            <button class="mem-btn hold"><span class="ic">⏸</span> 留　中</button>
+            <button class="mem-btn excerpt"><span class="ic">⎘</span> 摘　入</button>
+            <button class="mem-btn summon"><span class="ic">☄</span> 传召问讯</button>
+          </div>
+        </div>
+
+        <div class="mem-card type-suspect">
+          <div class="mem-card-hdr">
+            <div class="mem-portrait">温</div>
+            <div class="mem-from-wrap">
+              <div class="mem-from">温体仁</div>
+              <div class="mem-from-title">礼部尚书·内阁大学士</div>
+            </div>
+            <div class="mem-badges">
+              <span class="mem-badge reliab-low" title="此奏疏可信度可疑">⚠ 存疑</span>
+            </div>
+            <span class="mem-type-pill">弹 章</span>
+          </div>
+          <div class="mem-body-label">本 　 奏</div>
+          <div class="mem-body">臣温体仁谨奏：东林党人操切言事，结为朋党，漠视朝纲。钱谦益窃位礼部，所行皆为党谋，非为国谋。请陛下裁抑，以全朝廷纲纪。若不速裁，恐宦官余党复起，两党相轧，祸乱难测……</div>
+          <div class="mem-reply-wrap">
+            <div class="mem-reply-label">朱 笔 批 注</div>
+            <textarea class="mem-reply-input" rows="2" placeholder="御笔朱批，可直接下诏或附语……">所奏涉及党争，卿当慎言。其详转都察院察议。</textarea>
+          </div>
+          <div class="mem-actions">
+            <button class="mem-btn approve"><span class="ic">✓</span> 准　奏</button>
+            <button class="mem-btn reject"><span class="ic">✗</span> 驳　回</button>
+            <button class="mem-btn annotate"><span class="ic">✎</span> 批示意见</button>
+            <button class="mem-btn refer"><span class="ic">→</span> 转交有司</button>
+            <button class="mem-btn court"><span class="ic">⚖</span> 发廷议</button>
+            <button class="mem-btn hold"><span class="ic">⏸</span> 留　中</button>
+            <button class="mem-btn excerpt"><span class="ic">⎘</span> 摘　入</button>
+            <button class="mem-btn summon"><span class="ic">☄</span> 传召问讯</button>
+          </div>
+        </div>
+
+        <div class="mem-card type-normal">
+          <div class="mem-card-hdr">
+            <div class="mem-portrait">户</div>
+            <div class="mem-from-wrap">
+              <div class="mem-from">有司</div>
+              <div class="mem-from-title">户部</div>
+            </div>
+            <div class="mem-badges"></div>
+            <span class="mem-type-pill">会 奏</span>
+          </div>
+          <div class="mem-body-label">本 　 奏</div>
+          <div class="mem-body">户部会同工部谨奏：河南、山东两省连岁饥馑，流民载道，今岁田赋征收已告艰难。请陛下敕减今岁田赋三成，另开太仓米十万石赈济。若迟疑数月，恐民变随之而起。</div>
+          <div class="mem-reply-wrap">
+            <div class="mem-reply-label">朱 笔 批 注</div>
+            <textarea class="mem-reply-input" rows="2" placeholder="御笔朱批，可直接下诏或附语……"></textarea>
+          </div>
+          <div class="mem-actions">
+            <button class="mem-btn approve"><span class="ic">✓</span> 准　奏</button>
+            <button class="mem-btn reject"><span class="ic">✗</span> 驳　回</button>
+            <button class="mem-btn annotate"><span class="ic">✎</span> 批示意见</button>
+            <button class="mem-btn refer"><span class="ic">→</span> 转交有司</button>
+            <button class="mem-btn court"><span class="ic">⚖</span> 发廷议</button>
+            <button class="mem-btn hold"><span class="ic">⏸</span> 留　中</button>
+            <button class="mem-btn excerpt"><span class="ic">⎘</span> 摘　入</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 留中奏疏 -->
+      <div class="mem-group mem-g-held">
+        <div class="mem-group-title">
+          <span class="tag">留 中 之 折</span>
+          <span class="desc">暂搁置·候时机·或观望事势</span>
+          <span class="count">2 折</span>
+        </div>
+
+        <div class="mem-card type-normal" style="opacity:0.72;">
+          <div class="mem-card-hdr">
+            <div class="mem-portrait">叶</div>
+            <div class="mem-from-wrap">
+              <div class="mem-from">叶向高</div>
+              <div class="mem-from-title">内阁首辅</div>
+            </div>
+            <div class="mem-badges">
+              <span class="mem-badge held">留中 3 回合</span>
+            </div>
+            <span class="mem-type-pill">陈 情</span>
+          </div>
+          <div class="mem-body-label">本 　 奏</div>
+          <div class="mem-body">臣叶向高谨奏：臣年老力衰，累感风疾，不堪任事。乞骸骨归田，以终天年。</div>
+          <div class="mem-reply-wrap">
+            <div class="mem-reply-label">朱 笔 批 注</div>
+            <textarea class="mem-reply-input" rows="2" placeholder="御笔朱批……"></textarea>
+          </div>
+          <div class="mem-actions">
+            <button class="mem-btn approve"><span class="ic">✓</span> 准　奏</button>
+            <button class="mem-btn reject"><span class="ic">✗</span> 驳　回</button>
+            <button class="mem-btn annotate"><span class="ic">✎</span> 批示意见</button>
+            <button class="mem-btn refer"><span class="ic">→</span> 转交有司</button>
+            <button class="mem-btn court"><span class="ic">⚖</span> 发廷议</button>
+            <button class="mem-btn excerpt"><span class="ic">⎘</span> 摘　入</button>
+            <button class="mem-btn summon"><span class="ic">☄</span> 传召问讯</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已批档案（折叠示意） -->
+      <div class="mem-group mem-g-done">
+        <div class="mem-group-title">
+          <span class="tag">已 批 档 案</span>
+          <span class="desc">本回合已处理·可再次修订</span>
+          <span class="count">6 折</span>
+        </div>
+        <div class="mem-card type-normal" style="opacity:0.85;">
+          <div class="mem-card-hdr">
+            <div class="mem-portrait">孙</div>
+            <div class="mem-from-wrap">
+              <div class="mem-from">孙承宗</div>
+              <div class="mem-from-title">兵部尚书</div>
+            </div>
+            <div class="mem-badges">
+              <span class="mem-badge approved">✓ 已准奏</span>
+            </div>
+            <span class="mem-type-pill">荐 表</span>
+          </div>
+          <div class="mem-body-label">本 　 奏</div>
+          <div class="mem-body" style="max-height:60px;overflow:hidden;position:relative;">臣孙承宗谨奏：臣观近日部中，都督佥事满桂屡立战功，忠勇可信，宜加总兵衔以镇辽东。另宣大总督卢象升，文武兼资，亦可擢用。<div style="position:absolute;bottom:0;left:0;right:0;height:20px;background:linear-gradient(transparent,var(--bg-paper));pointer-events:none;"></div></div>
+          <button class="mem-toggle">▼ 展开全文</button>
+          <div class="mem-reply-wrap" style="margin-top:8px;">
+            <div class="mem-reply-label">朱 笔 批 注</div>
+            <div style="padding:6px 10px;color:var(--vermillion-300);font-family:var(--font-serif);font-size:13px;font-style:italic;">准奏。满桂加授都督同知、衔挂镇辽将军印。卢象升调兵部右侍郎。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legend">
+    ★ 设计要点：<span class="k">宣纸底纹</span> · 朱砂「奏朱」半圆印 · 副标「案牍之司　百官启奏」<br>
+    4 类分组题签：<span class="mark">急奏待批</span>/百官启奏/<span class="k">留中之折</span>/已批档案 · 按紧急度+忠诚度分类<br>
+    奏疏卡片 = 头像圈+上奏人+官衔+状态徽记(急/存疑/驿递/留中/已准)+类型丸(塘报/条陈/弹章/荐表)+<br>
+    朱笔批注区（朱砂小印+斜体朱色输入）· 8 按钮分色（准青绿/驳朱砂/批金/转青/议紫/留蓝/摘金/召紫）<br>
+    <span style="color:var(--ink-300);margin-top:6px;display:inline-block;">纯预览。确认后将样式应用到 tm-index-world.js 的 renderMemorials。</span>
+  </div>
+
+</div>
+</body>
+</html>

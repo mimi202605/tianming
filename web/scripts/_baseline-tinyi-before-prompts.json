@@ -1,0 +1,154 @@
+{
+  "_meta": {
+    "purpose": "v2.6 Slice 0 baseline·10 case·5 剧本 × 1 议题·sprint 前后 prompt + mode + stance 分布对比",
+    "version": "v2.9 spec·v2.6 实施 stub",
+    "created": "2026-05-23",
+    "note": "LLM 静态实施无法跑 game UI·此为 skeleton·user 在 game 中实跑 10 case + 填 prompt/mode/stance fields·或 sprint 完成后跑 smoke-tinyi-v3-full.js 自动 collect",
+    "fields": {
+      "promptTokens": "approx token count·从 callAIMessagesStream messages[0].content.length / 2.5",
+      "modeDistribution": "本议 NPC 抢答 mode 分布 {lead:N, second:N, ...}",
+      "stanceDistribution": "本议 NPC 立场分布 {极支:N, 支:N, 中:N, 反:N, 极反:N}",
+      "extremeRatio": "极支+极反 / total·DoD #4 ≥ 20%",
+      "confrontTriggered": "本议 confront chain 是否启 (DoD Slice 5 #3 ≥ 8%)",
+      "clientelismTriggered": "本议 clientelism mode 触发数 (DoD Slice 5 #4 ≥ 12%)",
+      "martyrUsed": "本议 martyr 使用·应 ≤ 1",
+      "v3PostProcess": "v3 phase14 是否调 _ty3_syncChaoyiChronicleTrack·ChronicleTracker.upsert tingyi_pending 是否入 GM._chronicleTracks"
+    }
+  },
+  "cases": [
+    {
+      "id": "tianqi-1",
+      "scenario": "sc-tianqi7-1627",
+      "scenarioName": "天启七年·九月（官方）",
+      "topic": "整顿东厂",
+      "topicType": "judgment",
+      "expectedTags": ["regicide-pursuit", "execution", "personnel"],
+      "expectedModes": ["lead", "rebut", "confront", "augment"],
+      "expectedExtremeRatio": 0.40,
+      "expectedConfrontTriggered": true,
+      "expectedMartyrUsed": true,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "tianqi-2",
+      "scenario": "sc-tianqi7-1627",
+      "scenarioName": "天启七年·九月（官方）",
+      "topic": "诛戮魏珰余孽",
+      "topicType": "judgment",
+      "expectedTags": ["regicide-pursuit", "execution"],
+      "expectedModes": ["confront", "martyr", "clientelism", "rebut"],
+      "expectedExtremeRatio": 0.60,
+      "expectedConfrontTriggered": true,
+      "expectedMartyrUsed": true,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "chongzhen-1",
+      "scenario": "scn_1774945158308",
+      "scenarioName": "崇祯",
+      "topic": "查抄魏珰家产",
+      "topicType": "finance",
+      "expectedTags": ["finance", "regicide-pursuit"],
+      "expectedModes": ["augment", "rebut", "pivot"],
+      "expectedExtremeRatio": 0.30,
+      "expectedConfrontTriggered": false,
+      "expectedMartyrUsed": false,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "chongzhen-2",
+      "scenario": "scn_1774945158308",
+      "scenarioName": "崇祯",
+      "topic": "袁崇焕召用",
+      "topicType": "appointment",
+      "expectedTags": ["personnel", "official-selection", "military-command"],
+      "expectedModes": ["confront", "soften", "cite_classic"],
+      "expectedExtremeRatio": 0.40,
+      "expectedConfrontTriggered": true,
+      "expectedMartyrUsed": false,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "wantianqing-1",
+      "scenario": "scn_1774945158308",
+      "scenarioName": "挽天倾：崇祯死局",
+      "topic": "南迁议",
+      "topicType": "war",
+      "expectedTags": ["military-command", "border-affairs"],
+      "expectedModes": ["martyr", "pivot", "cite_classic", "rebut"],
+      "expectedExtremeRatio": 0.50,
+      "expectedConfrontTriggered": true,
+      "expectedMartyrUsed": true,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "wantianqing-2",
+      "scenario": "scn_1774945158308",
+      "scenarioName": "挽天倾：崇祯死局",
+      "topic": "兵部尚书廷推",
+      "topicType": "appointment",
+      "expectedTags": ["personnel", "official-selection", "military-command"],
+      "expectedModes": ["lead", "second", "confront"],
+      "expectedExtremeRatio": 0.30,
+      "expectedConfrontTriggered": true,
+      "expectedMartyrUsed": false,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "shaosong-1",
+      "scenario": "sc-jianyan1-1127-shaosong",
+      "scenarioName": "绍宋·建炎元年八月（官方）",
+      "topic": "主战主和",
+      "topicType": "war",
+      "expectedTags": ["military-command", "foreign-policy"],
+      "expectedModes": ["martyr", "rebut", "cite_classic", "confront"],
+      "expectedExtremeRatio": 0.60,
+      "expectedConfrontTriggered": true,
+      "expectedMartyrUsed": true,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "shaosong-2",
+      "scenario": "sc-jianyan1-1127-shaosong",
+      "scenarioName": "绍宋·建炎元年八月（官方）",
+      "topic": "黄潜善去留",
+      "topicType": "appointment",
+      "expectedTags": ["personnel", "official-selection"],
+      "expectedModes": ["confront", "soften", "clientelism", "rebut"],
+      "expectedExtremeRatio": 0.40,
+      "expectedConfrontTriggered": true,
+      "expectedMartyrUsed": false,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "scn-111-1",
+      "scenario": "scn_1775152731923",
+      "scenarioName": "111",
+      "topic": "钞法改革",
+      "topicType": "finance",
+      "expectedTags": ["finance", "currency"],
+      "expectedModes": ["augment", "rebut", "cite_classic"],
+      "expectedExtremeRatio": 0.30,
+      "expectedConfrontTriggered": false,
+      "expectedMartyrUsed": false,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    },
+    {
+      "id": "scn-111-2",
+      "scenario": "scn_1775152731923",
+      "scenarioName": "111",
+      "topic": "勋戚加封",
+      "topicType": "reward",
+      "expectedTags": ["reward", "personnel"],
+      "expectedModes": ["pivot", "soften", "second"],
+      "expectedExtremeRatio": 0.20,
+      "expectedConfrontTriggered": false,
+      "expectedMartyrUsed": false,
+      "actual": { "promptTokens": null, "modeDistribution": null, "stanceDistribution": null, "extremeRatio": null, "confrontTriggered": null, "clientelismTriggered": null, "martyrUsed": null, "v3PostProcess": null }
+    }
+  ],
+  "_postSprint": {
+    "summary": "user 在 game 里跑 10 case·填 actual·跟 expected 比·DoD 4 项收口·1) 25 case 100% 跑通·2) 10 mode 全触发·3) 8D dims 非空率 ≥95%·4) extreme ratio ≥20%·5) confront ≥8%·6) clientelism ≥12%·7) martyr ≤1 per topic·8) smoke 全过",
+    "runHint": "game 里·切剧本 → 进廷议 → 跑议题 → 浏览器 console·console.log({mode: ..., stances: CY._ty2.stances, ...}) → 填到 actual 字段·或自动·v3 加 _ty3_baselineRecord() helper·后 ship"
+  }
+}

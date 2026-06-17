@@ -1,0 +1,11 @@
+{
+  "type": "tianming-hot-update-feed",
+  "version": "1.3.3.9",
+  "packageUrl": "tianming-hot-1.3.3.9.zip",
+  "manifestUrl": "manifests/1.3.3.9.json",
+  "filesBaseUrl": "files/",
+  "sha256": "04347ce8fe8eb272ac38bcdf2e63a9d8ae3630b8f151cf2d2e8771ba6d4c657f",
+  "size": 218982715,
+  "notes": "NPC引擎全面深化+阶层满意度修复+手机双指缩放+过回合动画两修+问天改阶层+绍宋剧本数据修复+军事战损修复+科举扩科(恩科/武举/特科/童子科)+数值去虚+多项修复",
+  "generatedAt": "2026-06-14T16:38:23.275Z"
+}

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方向二 · 应用外壳</title>
+<link rel="stylesheet" href="preview-redux.css">
+<style>
+body{display:grid;place-items:center;min-height:100%;padding:20px 12px;}
+.hub{width:min(1120px,97vw);height:min(800px,90vh);display:grid;grid-template-columns:158px 1fr;}
+/* 左栏 */
+.rail{display:flex;flex-direction:column;border-right:1px solid var(--line-strong);
+  background:linear-gradient(180deg,rgba(46,26,17,.6),rgba(8,5,3,.6));padding:16px 0;}
+.rail .brand{display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 16px;border-bottom:1px solid var(--line);margin:0 14px 10px;}
+.rail .brand .seal{width:44px;height:44px;border-radius:8px;font-size:22px;}
+.rail .brand b{font-family:var(--serif);font-size:15px;letter-spacing:3px;color:var(--gold-bright);}
+.nav{display:flex;flex-direction:column;gap:3px;padding:0 10px;}
+.nav a{display:flex;align-items:center;gap:11px;padding:11px 12px;color:var(--ink-dim);cursor:pointer;font-size:14px;
+  border:1px solid transparent;transition:background .2s var(--ease),color .2s var(--ease);}
+.nav a .ic{width:20px;text-align:center;font-size:16px;opacity:.85;}
+.nav a:hover{background:rgba(214,177,93,.08);color:var(--gold-bright);}
+.nav a.on{color:#ffe7ab;background:linear-gradient(90deg,rgba(150,42,30,.55),rgba(70,22,16,.2));border-color:var(--line);
+  box-shadow:inset 3px 0 0 var(--gold);}
+.rail .spacer{flex:1;}
+.me{margin:0 12px;padding:11px;border:1px solid var(--line);background:rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;cursor:pointer;}
+.me .av{width:34px;height:34px;border-radius:50%;font-size:16px;}
+.me b{font-size:13px;color:var(--ink);font-family:var(--serif);}
+.me small{display:block;font-size:10.5px;color:var(--ink-faint);}
+
+/* 主区 */
+.main{display:grid;grid-template-rows:auto 1fr;min-width:0;}
+.head{display:flex;align-items:center;gap:14px;padding:15px 20px;border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(120,32,22,.22),rgba(0,0,0,.05));}
+.head h1{font-family:var(--serif);font-size:19px;margin:0;color:var(--gold-bright);letter-spacing:1px;}
+.head .search{flex:1;max-width:340px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(0,0,0,.3);padding:0 12px;height:38px;}
+.head .search input{flex:1;background:transparent;border:none;outline:none;color:#f6edda;font:inherit;}
+.head .sp{margin-left:auto;}
+.head .x{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(0,0,0,.25);cursor:pointer;}
+
+/* 主-从 */
+.canvas{display:grid;grid-template-columns:296px 1fr;min-height:0;}
+.list{border-right:1px solid var(--line);min-height:0;}
+.list .toolbar{display:flex;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line);align-items:center;}
+.list .toolbar .chip{min-height:28px;padding:0 10px;font-size:11.5px;}
+.list .scroll{height:calc(100% - 51px);}
+.item{display:grid;grid-template-columns:46px 1fr;gap:11px;padding:12px 14px;border-bottom:1px solid rgba(214,177,93,.12);cursor:pointer;
+  transition:background .15s var(--ease);}
+.item:hover{background:rgba(214,177,93,.06);}
+.item.on{background:linear-gradient(90deg,rgba(150,42,30,.4),rgba(70,22,16,.12));box-shadow:inset 3px 0 0 var(--gold);}
+.item .cover{width:46px;height:46px;font-size:22px;}
+.item b{font-family:var(--serif);font-size:14px;color:#f1d490;display:block;line-height:1.3;}
+.item small{font-size:11px;color:var(--ink-faint);}
+.item .stars{font-size:11px;margin-top:3px;}
+
+/* 详情 */
+.detail{min-width:0;}
+.detail .scroll{height:100%;padding:20px 22px 24px;}
+.dhero{display:grid;grid-template-columns:160px 1fr;gap:18px;}
+.dhero .cover{width:160px;height:212px;font-size:60px;}
+.dhero .kick{font-size:11.5px;color:var(--gold);letter-spacing:3px;}
+.dhero h2{font-family:var(--serif);font-size:24px;margin:6px 0 10px;color:#f6dca0;line-height:1.3;}
+.dmeta{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12.5px;color:var(--ink-dim);align-items:center;margin-bottom:14px;}
+.dacts{display:flex;gap:10px;margin-top:6px;}
+.dacts .btn{min-height:46px;padding:0 24px;font-size:15px;}
+.dacts .btn.sm{min-height:46px;padding:0 16px;font-size:14px;}
+.sec{margin-top:22px;}
+.sec h4{font-family:var(--serif);font-size:15px;color:var(--gold-bright);margin:0 0 9px;display:flex;align-items:center;gap:8px;}
+.sec h4::before{content:"";width:4px;height:15px;background:linear-gradient(180deg,var(--gold-bright),var(--gold-deep));}
+.sec p{font-size:13.5px;line-height:1.8;color:var(--ink-dim);margin:0;}
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px;}
+.shots .sh{height:96px;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--serif);color:var(--ink-faint);
+  background:repeating-linear-gradient(135deg,rgba(255,240,200,.03) 0 6px,transparent 6px 12px),rgba(0,0,0,.25);font-size:12px;}
+.vlog{border:1px solid var(--line);background:rgba(0,0,0,.18);}
+.vrow{display:flex;align-items:center;gap:12px;padding:9px 13px;border-bottom:1px solid rgba(214,177,93,.1);font-size:12.5px;}
+.vrow:last-child{border-bottom:none;}
+.vrow b{color:#f2d487;font-family:var(--serif);}
+.vrow small{color:var(--ink-faint);margin-left:auto;}
+.kv{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+.kv>div{border:1px solid var(--line);background:rgba(0,0,0,.2);padding:9px 11px;}
+.kv small{display:block;font-size:11px;color:var(--ink-faint);margin-bottom:3px;}
+.kv b{font-size:13px;color:#f2d487;}
+@media(max-width:980px){.canvas{grid-template-columns:1fr}.list{display:none}.dhero{grid-template-columns:1fr}.dhero .cover{width:100%}}
+</style></head>
+<body>
+<div class="hub frame">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+  <aside class="rail">
+    <div class="brand"><div class="seal">命</div><b>联网</b></div>
+    <nav class="nav">
+      <a><span class="ic">◷</span>联网总览</a>
+      <a class="on"><span class="ic">册</span>创意工坊</a>
+      <a><span class="ic">印</span>账号</a>
+      <a><span class="ic">⇪</span>游戏更新</a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="me"><div class="seal av">同</div><div><b>同志</b><small>已登录 · 作者</small></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="head">
+      <h1>创意工坊</h1>
+      <div class="search"><span style="color:var(--gold)">⌕</span><input placeholder="搜剧本 / 作者 / 标签"></div>
+      <span class="sp"></span><button class="btn sm">刷新</button><div class="x">✕</div>
+    </div>
+
+    <div class="canvas">
+      <div class="list">
+        <div class="toolbar"><span class="chip on">全部</span><span class="chip">官方</span><span class="chip">已装</span>
+          <select class="input" style="min-height:28px;margin-left:auto;width:auto;padding:0 8px;font-size:12px;"><option>最热</option><option>最新</option><option>评分</option></select></div>
+        <div class="scroll">
+          <div class="item on"><div class="cover zhu">启</div><div><b>天启七年·九月</b><small>天命官方 · v1.2.0</small><div class="stars">★★★★★<i>4.7</i></div></div></div>
+          <div class="item"><div class="cover dai">宋</div><div><b>绍宋·建炎元年八月</b><small>天命官方 · v1.1.0</small><div class="stars">★★★★★<i>4.6</i></div></div></div>
+          <div class="item"><div class="cover jin">贞</div><div><b>贞观元年·武德宫变后</b><small>史海钩沉 · v2.0.1</small><div class="stars">★★★★★<i>4.8</i></div></div></div>
+          <div class="item"><div class="cover zhe">万</div><div><b>万历二十年·宁夏之役</b><small>边镇老卒 · v0.9.2</small><div class="stars">★★★★☆<i>4.1</i></div></div></div>
+          <div class="item"><div class="cover mo">靖</div><div><b>靖康元年·汴京围城</b><small>汴梁旧梦 · v1.0.0</small><div class="stars">★★★★☆<i>4.4</i></div></div></div>
+          <div class="item"><div class="cover jiang">安</div><div><b>安史之乱·天宝十四载</b><small>史海钩沉 · v1.3.0</small><div class="stars">★★★★★<i>4.5</i></div></div></div>
+          <div class="item"><div class="cover zhu">永</div><div><b>永乐元年·靖难之后</b><small>天命官方 · v1.0.0</small><div class="stars">★★★★☆<i>4.2</i></div></div></div>
+        </div>
+      </div>
+
+      <div class="detail"><div class="scroll">
+        <div class="dhero">
+          <div class="cover zhu">启</div>
+          <div>
+            <div class="kick">官方剧本 · 明末</div>
+            <h2>天启七年·九月——君王初立，权阉当国</h2>
+            <div class="dmeta"><span class="stars">★★★★★<i>4.7 · 53 评</i></span><span>下载 1,287</span><span>作者 天命官方</span><span>v1.2.0</span><span>大小 8.7 MB</span></div>
+            <div class="dmeta"><span class="tag">明末</span><span class="tag">权谋</span><span class="tag">官方</span><span class="tag">52 角色</span></div>
+            <div class="dacts"><button class="btn primary">在线安装</button><button class="btn sm">评分 ★</button><button class="btn sm">作者主页</button></div>
+          </div>
+        </div>
+
+        <div class="sec"><h4>剧本提要</h4><p>天启七年九月，明熹宗朱由校驾崩无嗣，十七岁的信王朱由检入继大统。彼时魏忠贤提督东厂、总揽内外，「九千岁」生祠遍天下；东林与阉党积怨已深，辽东后金虎视，西南奢安之乱未平。新君深居九重，耳目尽为人所制——你将扮演这位少年天子，于权阉环伺中徐图收权、平衡党争、重整边防，一步踏错便是社稷倾覆。</p></div>
+
+        <div class="sec"><h4>剧照</h4><div class="shots"><div class="sh">朝堂·廷议</div><div class="sh">边镇·辽东</div><div class="sh">人物·魏忠贤</div></div></div>
+
+        <div class="sec"><h4>开局态势</h4><div class="kv">
+          <div><small>朝局</small><b>阉党当权 · 东林离散</b></div>
+          <div><small>边事</small><b>辽东危·奢安乱</b></div>
+          <div><small>难度</small><b>结构性死局</b></div>
+          <div><small>起始皇威</small><b>低 · 受制于内</b></div>
+        </div></div>
+
+        <div class="sec"><h4>版本沿革</h4><div class="vlog">
+          <div class="vrow"><b>v1.2.0</b><span>平衡宗禄/军饷，修番薯不入税基</span><small>2026-06-02</small></div>
+          <div class="vrow"><b>v1.1.0</b><span>新增特科与廷议改版</span><small>2026-05-20</small></div>
+          <div class="vrow"><b>v1.0.0</b><span>首发</span><small>2026-05-01</small></div>
+        </div></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>天命·创意工坊 社区生态 预览</title>
+<link rel="stylesheet" href="preview-redux.css">
+<link rel="stylesheet" href="preview-community.css">
+<script src="preview-scene-covers.js" defer></script>
+</head>
+<body>
+
+<div class="demo-bar">
+  <b>社区预览</b>
+  <button data-go="discover" class="on">发现</button>
+  <button data-go="browse">浏览</button>
+  <button data-go="ranks">排行</button>
+  <button data-go="topics">专题</button>
+  <button data-go="studio">创作中心</button>
+  <button data-go="friends">好友</button>
+  <button data-go="updates">更新</button>
+  <button data-go="me">我的</button>
+  <button data-go="notify">通知</button>
+  <button data-go="account">账号</button>
+  <span style="margin-left:8px;">浮层：</span>
+  <button id="openDetail">剧本详情</button>
+  <button id="openAuthor">作者主页</button>
+  <button data-open="dm">私信</button>
+  <button data-open="publish">发布/上传</button>
+  <button data-open="report">举报</button>
+  <button data-open="verify">认证</button>
+  <button data-open="onboard">新手引导</button>
+  <button data-go="event">活动赛</button>
+  <button data-go="reports">战报广场</button>
+  <button data-go="chronicle">写史阁</button>
+  <button data-go="admin">举报后台</button>
+  <button data-open="aicreate">AI共创</button>
+  <button data-open="fork">改编Fork</button>
+  <button data-open="demo">试玩开局</button>
+  <button data-open="aar">发布战报</button>
+  <button data-open="inbox">消息中心</button>
+  <button data-open="analytics">数据下钻</button>
+  <button data-open="thread">盖楼</button>
+  <button data-open="finish">通关结算</button>
+  <button data-open="timeline">时间轴</button>
+  <button data-open="vdiff">版本对比</button>
+  <button data-open="editor">编辑器</button>
+  <button data-open="academy">学院</button>
+  <button data-open="ops">运营看板</button>
+  <span style="margin-left:8px;">态：</span>
+  <button id="tLogin">未登录</button>
+  <button id="tLoad">发现·已载入</button>
+  <button id="tEmpty">我的·有内容</button>
+</div>
+
+<div class="app frame">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div class="brand"><div class="seal">坊</div><b>天命·创意工坊<small>SCENARIO WORKSHOP</small></b></div>
+    <nav class="nav">
+      <a data-go="discover" class="on">发现</a>
+      <a data-go="browse">浏览</a>
+      <a data-go="ranks">排行</a>
+      <a data-go="topics">专题</a>
+      <a data-go="studio">创作中心</a>
+      <a data-go="reports">战报</a>
+      <a data-go="friends">好友</a>
+      <a data-go="me">我的</a>
+    </nav>
+    <div class="gsearch"><span style="color:var(--gold)">⌕</span><input placeholder="搜剧本、作者、朝代、标签…"></div>
+    <div class="tbright">
+      <div class="bell" id="langBtn" title="语言 / Language">简</div>
+      <div class="bell" data-go="updates" title="更新中心">⇪<span class="badge">1</span></div>
+      <div class="bell" id="dmBtn" title="私信">✉<span class="badge">2</span></div>
+      <div class="bell" data-open="inbox" title="消息中心">♪<span class="badge">3</span></div>
+      <div class="idchip" data-go="account"><div class="seal av" id="navAv">客</div><small id="navName">登录</small></div>
+      <div class="x">✕</div>
+    </div>
+  </div>
+
+  <div class="main"><div class="scroll" id="scroll">
+
+  <!-- ============ 发现 ============ -->
+  <section class="pane on" data-pane="discover">
+    <div class="searchhero">
+      <h2>访古问今 · 列朝在此</h2>
+      <p>浏览、安装其他玩家与官方创作的历史剧本；也可把你的剧本发布给天下人。</p>
+      <div class="box"><input placeholder="输入朝代、事件、人物或作者…"><button class="btn primary">搜索</button></div>
+      <div class="pops">热搜：<a>明末</a><a>登基</a><a>权谋</a><a>守城</a><a>盛唐</a><a>新手入门</a></div>
+    </div>
+
+    <div class="typebar">
+      <span class="chip on">全部</span><span class="chip">剧本</span><span class="chip">立绘包</span><span class="chip">音乐包</span><span class="chip">地图包</span><span class="chip">规则 MOD</span>
+    </div>
+    <div class="sec-h"><h3>本周精选</h3><span class="more">查看全部 ›</span></div>
+    <div class="feature">
+      <div class="feat-main" data-detail><div class="bg zhu" data-scene-bg="chao"></div><div class="ov">
+        <div class="kick">官方剧本 · 明末 · 编辑推荐</div>
+        <h2>天启七年·九月——君王初立，权阉当国</h2>
+        <p>十七岁的信王入继大统，魏忠贤权倾朝野。内有阉党东林之争，外有辽东边衅——在虎狼之间收回权柄，重整将倾的社稷。</p>
+        <div class="row"><button class="btn primary">在线安装</button><span class="stars">★★★★★<i>4.7 · 53 评</i></span><span style="color:var(--ink-dim);font-size:12.5px;">↓1,287 · 天命官方</span></div>
+      </div></div>
+      <div class="feat-side">
+        <div class="fs" data-detail><div class="cover jin">贞</div><div><b>贞观元年·武德宫变后</b><small>史海钩沉 · ★4.8</small></div></div>
+        <div class="fs" data-detail><div class="cover dai">宋</div><div><b>绍宋·建炎元年八月</b><small>天命官方 · ★4.6</small></div></div>
+        <div class="fs" data-detail><div class="cover jiang">安</div><div><b>安史之乱·天宝十四载</b><small>史海钩沉 · ★4.5</small></div></div>
+      </div>
+    </div>
+
+    <div class="sec-h"><h3>继续游玩</h3></div>
+    <div class="resume" data-act="playnow"><div class="cover zhu" style="width:56px;height:56px;font-size:24px;">启</div><div style="flex:1;"><b>天启七年·九月</b><div style="font-size:12px;color:var(--ink-dim);margin-top:3px;">进行到第 22 / 约 40 回合 · 标准难度 · 3 天前</div><div class="resume-bar"><i style="width:55%"></i></div></div><button class="btn primary">继续</button></div>
+
+    <div class="sec-h"><h3>为你推荐 <span style="font-size:12px;color:var(--ink-faint);font-family:var(--sans);font-weight:400;">· 因为你玩过明末题材</span></h3><span class="more">更多 ›</span></div>
+    <div class="hrow">
+      <div class="mini" data-detail><div class="cover mo">崇</div><div class="pad"><h4>崇祯·内忧外患</h4><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆ 4.3</span><span>↓640</span></div></div></div>
+      <div class="mini" data-detail><div class="cover jiang">甲</div><div class="pad"><h4>甲申之变·1644</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓712</span></div></div></div>
+      <div class="mini" data-detail><div class="cover zhe">万</div><div class="pad"><h4>万历二十年·宁夏之役</h4><div class="au">边镇老卒</div><div class="rt"><span class="stars">★★★★☆ 4.1</span><span>↓213</span></div></div></div>
+      <div class="mini" data-detail data-ptype="lihui"><div class="cover jin"><span class="ptype">立绘</span>绘</div><div class="pad"><h4>明末人物·立绘包</h4><div class="au">丹青手</div><div class="rt"><span class="stars">★★★★★ 4.6</span><span>↓930</span></div></div></div>
+    </div>
+
+    <div class="sec-h"><h3>逛分类</h3><span class="more" data-open="timeline">朝代时间轴 ›</span></div>
+    <div class="cats">
+      <div class="cat"><div class="g">明</div><b>大明</b><small>34 部</small></div>
+      <div class="cat"><div class="g">宋</div><b>两宋</b><small>21 部</small></div>
+      <div class="cat"><div class="g">唐</div><b>李唐</b><small>18 部</small></div>
+      <div class="cat"><div class="g">汉</div><b>炎汉</b><small>12 部</small></div>
+      <div class="cat"><div class="g">战</div><b>军事</b><small>27 部</small></div>
+      <div class="cat"><div class="g">谋</div><b>权谋</b><small>40 部</small></div>
+    </div>
+
+    <div class="sec-h"><h3>编辑推荐</h3><span class="more">更多 ›</span></div>
+    <div class="hrow">
+      <div class="mini" data-detail><div class="cover mo">靖</div><div class="pad"><h4>靖康元年·汴京围城</h4><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓567</span></div></div></div>
+      <div class="mini" data-detail><div class="cover jin">贞</div><div class="pad"><h4>贞观元年·武德宫变后</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★★ 4.8</span><span>↓1893</span></div></div></div>
+      <div class="mini" data-detail><div class="cover zhe">绍</div><div class="pad"><h4>绍兴和议·建炎四年</h4><div class="au">中兴四将</div><div class="rt"><span class="stars">★★★★☆ 4.3</span><span>↓388</span></div></div></div>
+      <div class="mini" data-detail><div class="cover zhu">永</div><div class="pad"><h4>永乐元年·靖难之后</h4><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★☆ 4.2</span><span>↓405</span></div></div></div>
+      <div class="mini" data-detail><div class="cover qing">嘉</div><div class="pad"><h4>嘉靖·大礼议</h4><div class="au">青词宰相</div><div class="rt"><span class="stars">★★★★☆ 3.9</span><span>↓156</span></div></div></div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <div class="sec-h"><h3>本周热门</h3><span class="more">全部排行 ›</span></div>
+        <div class="grid" id="hotGrid">
+          <div class="card" data-detail><div class="cover zhu"><span class="official">官方</span>启</div><div class="pad"><h4>天启七年·九月</h4><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★★ 4.7</span><span>↓1287</span></div><div class="tg"><span class="tag">明末</span><span class="tag">权谋</span></div></div></div>
+          <div class="card" data-detail><div class="cover jin">贞</div><div class="pad"><h4>贞观元年·武德宫变后</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★★ 4.8</span><span>↓1893</span></div><div class="tg"><span class="tag">唐</span><span class="tag">治世</span></div></div></div>
+          <div class="card" data-detail><div class="cover dai"><span class="official">官方</span>宋</div><div class="pad"><h4>绍宋·建炎元年八月</h4><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★★ 4.6</span><span>↓842</span></div><div class="tg"><span class="tag">南宋</span><span class="tag">中兴</span></div></div></div>
+          <div class="card" data-detail><div class="cover jiang">安</div><div class="pad"><h4>安史之乱·天宝十四载</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★★ 4.5</span><span>↓721</span></div><div class="tg"><span class="tag">唐</span><span class="tag">战乱</span></div></div></div>
+          <div class="card" data-detail><div class="cover mo">靖</div><div class="pad"><h4>靖康元年·汴京围城</h4><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓567</span></div><div class="tg"><span class="tag">北宋</span><span class="tag">守城</span></div></div></div>
+          <div class="card" data-detail><div class="cover zhe">万</div><div class="pad"><h4>万历二十年·宁夏之役</h4><div class="au">边镇老卒</div><div class="rt"><span class="stars">★★★★☆ 4.1</span><span>↓213</span></div><div class="tg"><span class="tag">明</span><span class="tag">军事</span></div></div></div>
+          <div class="card" data-detail><div class="cover zhu">永</div><div class="pad"><h4>永乐元年·靖难之后</h4><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★☆ 4.2</span><span>↓405</span></div><div class="tg"><span class="tag">明</span><span class="tag">开拓</span></div></div></div>
+          <div class="card" data-detail><div class="cover zhe">绍</div><div class="pad"><h4>绍兴和议·建炎四年</h4><div class="au">中兴四将</div><div class="rt"><span class="stars">★★★★☆ 4.3</span><span>↓388</span></div><div class="tg"><span class="tag">南宋</span><span class="tag">和战</span></div></div></div>
+          <div class="card" data-detail data-ptype="lihui"><div class="cover jin"><span class="ptype">立绘</span>绘</div><div class="pad"><h4>盛唐人物·立绘包</h4><div class="au">丹青手 · 44 张</div><div class="rt"><span class="stars">★★★★★ 4.6</span><span>↓930</span></div><div class="tg"><span class="tag">立绘</span><span class="tag">通用</span></div></div></div>
+          <div class="card" data-detail data-ptype="yinyue"><div class="cover dai"><span class="ptype">音乐</span>乐</div><div class="pad"><h4>宫商角徵羽·古风 BGM 包</h4><div class="au">听松 · 18 首</div><div class="rt"><span class="stars">★★★★★ 4.8</span><span>↓1542</span></div><div class="tg"><span class="tag">配乐</span><span class="tag">古风</span></div></div></div>
+          <div class="card" data-detail data-ptype="map"><div class="cover qing"><span class="ptype">地图</span>图</div><div class="pad"><h4>万里江山·高清舆图包</h4><div class="au">制图局 · 9 朝</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓405</span></div><div class="tg"><span class="tag">地图</span><span class="tag">写实</span></div></div></div>
+        </div>
+        <div class="grid" id="hotSkeleton" style="display:none;">
+          <div class="sk-card"><div class="sk top"></div><div class="sk sk-line" style="width:70%"></div><div class="sk sk-line" style="width:45%"></div></div>
+          <div class="sk-card"><div class="sk top"></div><div class="sk sk-line" style="width:60%"></div><div class="sk sk-line" style="width:50%"></div></div>
+          <div class="sk-card"><div class="sk top"></div><div class="sk sk-line" style="width:75%"></div><div class="sk sk-line" style="width:40%"></div></div>
+          <div class="sk-card"><div class="sk top"></div><div class="sk sk-line" style="width:65%"></div><div class="sk sk-line" style="width:55%"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="rail">
+          <h4>热门榜 · 本周</h4>
+          <div class="rk"><span class="n top">1</span><div class="t"><b>贞观元年·武德宫变后</b><small>↓1893 · ★4.8</small></div></div>
+          <div class="rk"><span class="n top">2</span><div class="t"><b>天启七年·九月</b><small>↓1287 · ★4.7</small></div></div>
+          <div class="rk"><span class="n top">3</span><div class="t"><b>绍宋·建炎元年八月</b><small>↓842 · ★4.6</small></div></div>
+          <div class="rk"><span class="n">4</span><div class="t"><b>安史之乱·天宝十四载</b><small>↓721 · ★4.5</small></div></div>
+          <div class="rk"><span class="n">5</span><div class="t"><b>靖康元年·汴京围城</b><small>↓567 · ★4.4</small></div></div>
+        </div>
+        <div class="becre">
+          <b>成为创作者</b>
+          <p>用剧本编辑器创作你的历史，发布到工坊，让天下人演绎。</p>
+          <button class="btn primary" style="width:100%;" data-go="studio">发布我的剧本</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-h"><h3>专题与活动</h3><span class="more" data-go="topics">全部专题 ›</span></div>
+    <div class="promos">
+      <div class="promo" data-go="topics"><div class="t"><b>明末风云·三部曲</b><small>天启 / 崇祯 / 甲申 · 官方策划</small></div></div>
+      <div class="promo b" data-go="topics"><div class="t"><b>两宋兴亡录</b><small>靖康到崖山 · 9 部精选</small></div></div>
+      <div class="promo c" data-go="topics"><div class="t"><b>开国大典·征文大赛</b><small>投稿赢精选位 · 进行中</small></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 浏览 / 筛选 / 搜索结果 ============ -->
+  <section class="pane" data-pane="browse">
+    <div class="browse">
+      <aside class="filters">
+        <h4>筛选</h4>
+        <div class="fgrp"><div class="flbl">朝代</div>
+          <label class="fopt"><input type="checkbox" checked>大明 <span>34</span></label>
+          <label class="fopt"><input type="checkbox">两宋 <span>21</span></label>
+          <label class="fopt"><input type="checkbox">李唐 <span>18</span></label>
+          <label class="fopt"><input type="checkbox">炎汉 <span>12</span></label>
+          <label class="fopt"><input type="checkbox">秦 / 其他 <span>9</span></label>
+        </div>
+        <div class="fgrp"><div class="flbl">玩法</div>
+          <label class="fopt"><input type="checkbox">权谋 <span>40</span></label>
+          <label class="fopt"><input type="checkbox" checked>军事 <span>27</span></label>
+          <label class="fopt"><input type="checkbox">守城 <span>11</span></label>
+          <label class="fopt"><input type="checkbox">中兴 <span>8</span></label>
+        </div>
+        <div class="fgrp"><div class="flbl">难度</div>
+          <label class="fopt"><input type="checkbox">入门</label>
+          <label class="fopt"><input type="checkbox">标准</label>
+          <label class="fopt"><input type="checkbox" checked>硬核 / 死局</label>
+        </div>
+        <div class="fgrp"><div class="flbl">来源</div>
+          <label class="fopt"><input type="checkbox">官方</label>
+          <label class="fopt"><input type="checkbox">玩家创作</label>
+          <label class="fopt"><input type="checkbox">已装可更新</label>
+        </div>
+        <div class="fgrp"><div class="flbl">角色数 ≥ <b>20</b></div><input type="range" min="0" max="80" value="20" class="frange"></div>
+        <div style="display:flex;gap:8px;margin-top:6px;"><button class="btn primary" style="flex:1;min-height:36px;">应用</button><button class="btn" style="min-height:36px;">重置</button></div>
+      </aside>
+      <div>
+        <div class="browse-head">
+          <div><b id="bhTitle">全部剧本</b><small id="bhCount"> · 124 部 · 筛选：大明 / 军事 / 硬核</small></div>
+          <select class="sel" style="height:34px;background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--ink);padding:0 10px;"><option>综合排序</option><option>最热</option><option>最新</option><option>评分最高</option></select>
+        </div>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="card" data-detail><div class="cover zhu"><span class="official">官方</span>启</div><div class="pad"><h4>天启七年·九月</h4><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★★ 4.7</span><span>↓1287</span></div><div class="tg"><span class="tag">明末</span><span class="tag">硬核</span></div></div></div>
+          <div class="card" data-detail><div class="cover zhe">万</div><div class="pad"><h4>万历二十年·宁夏之役</h4><div class="au">边镇老卒</div><div class="rt"><span class="stars">★★★★☆ 4.1</span><span>↓213</span></div><div class="tg"><span class="tag">明</span><span class="tag">军事</span></div></div></div>
+          <div class="card" data-detail><div class="cover mo">崇</div><div class="pad"><h4>崇祯·内忧外患</h4><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆ 4.3</span><span>↓640</span></div><div class="tg"><span class="tag">明末</span><span class="tag">死局</span></div></div></div>
+          <div class="card" data-detail><div class="cover zhu">永</div><div class="pad"><h4>永乐元年·靖难之后</h4><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★☆ 4.2</span><span>↓405</span></div><div class="tg"><span class="tag">明</span><span class="tag">开拓</span></div></div></div>
+          <div class="card" data-detail><div class="cover jiang">甲</div><div class="pad"><h4>甲申之变·1644</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓712</span></div><div class="tg"><span class="tag">明末</span><span class="tag">天倾</span></div></div></div>
+          <div class="card" data-detail><div class="cover zhe">嘉</div><div class="pad"><h4>嘉靖·大礼议</h4><div class="au">青词宰相</div><div class="rt"><span class="stars">★★★★☆ 3.9</span><span>↓156</span></div><div class="tg"><span class="tag">明</span><span class="tag">朝争</span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 排行 ============ -->
+  <section class="pane" data-pane="ranks">
+    <div class="subnav"><a class="on">热门榜</a><a>评分榜</a><a>新星榜</a><a>作者榜</a></div>
+    <div class="cols">
+      <div>
+        <div class="rail" style="padding:6px 14px;">
+          <div class="rk" data-detail><span class="n top">1</span><div class="cover jin" style="width:42px;height:42px;font-size:18px;">贞</div><div class="t" style="margin-left:10px;"><b>贞观元年·武德宫变后</b><small>史海钩沉 · 唐 · 治世</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓1893<br><span class="stars" style="font-size:10px;">★4.8</span></div></div>
+          <div class="rk" data-detail><span class="n top">2</span><div class="cover zhu" style="width:42px;height:42px;font-size:18px;">启</div><div class="t" style="margin-left:10px;"><b>天启七年·九月</b><small>天命官方 · 明末 · 权谋</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓1287<br><span class="stars" style="font-size:10px;">★4.7</span></div></div>
+          <div class="rk" data-detail><span class="n top">3</span><div class="cover dai" style="width:42px;height:42px;font-size:18px;">宋</div><div class="t" style="margin-left:10px;"><b>绍宋·建炎元年八月</b><small>天命官方 · 南宋 · 中兴</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓842<br><span class="stars" style="font-size:10px;">★4.6</span></div></div>
+          <div class="rk" data-detail><span class="n">4</span><div class="cover jiang" style="width:42px;height:42px;font-size:18px;">安</div><div class="t" style="margin-left:10px;"><b>安史之乱·天宝十四载</b><small>史海钩沉 · 唐 · 战乱</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓721<br><span class="stars" style="font-size:10px;">★4.5</span></div></div>
+          <div class="rk" data-detail><span class="n">5</span><div class="cover mo" style="width:42px;height:42px;font-size:18px;">靖</div><div class="t" style="margin-left:10px;"><b>靖康元年·汴京围城</b><small>汴梁旧梦 · 北宋 · 守城</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓567<br><span class="stars" style="font-size:10px;">★4.4</span></div></div>
+          <div class="rk" data-detail><span class="n">6</span><div class="cover zhu" style="width:42px;height:42px;font-size:18px;">永</div><div class="t" style="margin-left:10px;"><b>永乐元年·靖难之后</b><small>天命官方 · 明 · 开拓</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓405<br><span class="stars" style="font-size:10px;">★4.2</span></div></div>
+          <div class="rk" data-detail><span class="n">7</span><div class="cover zhe" style="width:42px;height:42px;font-size:18px;">绍</div><div class="t" style="margin-left:10px;"><b>绍兴和议·建炎四年</b><small>中兴四将 · 南宋 · 和战</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓388<br><span class="stars" style="font-size:10px;">★4.3</span></div></div>
+          <div class="rk" data-detail><span class="n">8</span><div class="cover zhe" style="width:42px;height:42px;font-size:18px;">万</div><div class="t" style="margin-left:10px;"><b>万历二十年·宁夏之役</b><small>边镇老卒 · 明 · 军事</small></div><div style="text-align:right;font-size:12px;color:var(--ink-dim);">↓213<br><span class="stars" style="font-size:10px;">★4.1</span></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="rail"><h4>创作者榜 · 本月</h4>
+          <div class="rk" data-author><span class="n top">1</span><div class="seal" style="width:34px;height:34px;border-radius:50%;font-size:15px;">史</div><div class="t" style="margin-left:9px;"><b>史海钩沉</b><small>12 部 · ↓6.4k · 1.2k 粉</small></div></div>
+          <div class="rk" data-author><span class="n top">2</span><div class="seal" style="width:34px;height:34px;border-radius:50%;font-size:15px;">命</div><div class="t" style="margin-left:9px;"><b>天命官方</b><small>4 部 · ↓3.0k · 认证</small></div></div>
+          <div class="rk" data-author><span class="n top">3</span><div class="seal" style="width:34px;height:34px;border-radius:50%;font-size:15px;">汴</div><div class="t" style="margin-left:9px;"><b>汴梁旧梦</b><small>7 部 · ↓1.8k · 640 粉</small></div></div>
+          <div class="rk" data-author><span class="n">4</span><div class="seal" style="width:34px;height:34px;border-radius:50%;font-size:15px;">边</div><div class="t" style="margin-left:9px;"><b>边镇老卒</b><small>5 部 · ↓0.9k · 210 粉</small></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 专题 ============ -->
+  <section class="pane" data-pane="topics">
+    <div class="sec-h"><h3>专题策划</h3></div>
+    <div class="promos" style="grid-template-columns:repeat(2,1fr);">
+      <div class="promo" style="min-height:150px;"><div class="t"><b>明末风云·三部曲</b><small>天启→崇祯→甲申，三段相接的末世棋局 · 官方策划 · 3 部</small></div></div>
+      <div class="promo b" style="min-height:150px;"><div class="t"><b>两宋兴亡录</b><small>从靖康之耻到崖山之亡，南北宋的存续之争 · 9 部精选</small></div></div>
+      <div class="promo c" style="min-height:150px;"><div class="t"><b>盛唐气象</b><small>贞观、开元、天宝，由治入乱的大唐 · 6 部</small></div></div>
+      <div class="promo" style="min-height:150px;background:linear-gradient(120deg,rgba(40,60,55,.5),rgba(20,30,25,.4));"><div class="t"><b>新手入门必玩</b><small>规则平缓、引导充分，适合第一次开局 · 5 部</small></div></div>
+    </div>
+    <div class="sec-h"><h3>进行中的活动</h3></div>
+    <div class="becre" style="text-align:left;display:grid;grid-template-columns:1fr auto;align-items:center;gap:18px;margin-top:0;">
+      <div><b style="font-size:17px;">开国大典 · 剧本征文大赛</b><p style="margin:6px 0 0;">以「开国/立朝」为题创作剧本，投稿即有机会登上官方精选位与首页轮播。截止 2026-07-01，已收 38 份投稿。</p></div>
+      <button class="btn primary">我要投稿</button>
+    </div>
+    <div class="sec-h"><h3>专题：明末风云·三部曲</h3><span class="more">收起 ›</span></div>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="card" data-detail><div class="cover zhu"><span class="official">官方</span>启</div><div class="pad"><h4>天启七年·九月</h4><div class="au">第一部 · 权阉当国</div><div class="rt"><span class="stars">★★★★★ 4.7</span><span>↓1287</span></div></div></div>
+      <div class="card" data-detail><div class="cover mo">崇</div><div class="pad"><h4>崇祯·内忧外患</h4><div class="au">第二部 · 风雨飘摇</div><div class="rt"><span class="stars">★★★★☆ 4.3</span><span>↓640</span></div></div></div>
+      <div class="card" data-detail><div class="cover jiang">甲</div><div class="pad"><h4>甲申之变·1644</h4><div class="au">第三部 · 天倾</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓712</span></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 创作中心 ============ -->
+  <section class="pane" data-pane="studio">
+    <div class="sec-h"><h3>创作中心</h3><span class="more" style="display:flex;gap:8px;"><button class="btn sm" data-open="editor">打开编辑器</button><button class="btn sm" data-open="academy">创作者学院</button><button class="btn primary sm" data-open="publish">＋ 发布新剧本</button></span></div>
+    <div class="bento">
+      <div class="stat"><div class="lbl">总下载</div><div class="num">6,431</div><div class="delta">↑ 312 本周</div></div>
+      <div class="stat"><div class="lbl">平均评分</div><div class="num">4.6</div><div class="delta">↑ 0.1 本月</div></div>
+      <div class="stat"><div class="lbl">评论数</div><div class="num">187</div><div class="delta">↑ 9 本周</div></div>
+      <div class="stat"><div class="lbl">粉丝</div><div class="num">1,204</div><div class="delta down">↓ 3 本周</div></div>
+    </div>
+    <div class="sec-h"><h3>近 30 日下载趋势</h3></div>
+    <div class="chart">
+      <div class="bar" style="height:38%"></div><div class="bar" style="height:52%"></div><div class="bar" style="height:46%"></div><div class="bar" style="height:64%"></div><div class="bar" style="height:58%"></div><div class="bar" style="height:72%"></div><div class="bar" style="height:80%"></div><div class="bar" style="height:69%"></div><div class="bar" style="height:88%"></div><div class="bar" style="height:96%"></div><div class="bar" style="height:74%"></div><div class="bar" style="height:82%"></div><div class="bar" style="height:91%"></div><div class="bar" style="height:100%"></div>
+    </div>
+    <div class="sec-h"><h3>创作激励</h3><span class="more">激励规则 ›</span></div>
+    <div class="bento" style="grid-template-columns:repeat(3,1fr);">
+      <div class="stat"><div class="lbl">累计获赞 ✦</div><div class="num">3,210</div><div class="delta">↑ 124 本月</div></div>
+      <div class="stat"><div class="lbl">精选次数</div><div class="num">5</div><div class="delta">首页轮播 2 次</div></div>
+      <div class="stat"><div class="lbl">激励积分</div><div class="num">820</div><div class="delta">可兑换曝光 / 限定徽章</div></div>
+    </div>
+    <div class="sec-h"><h3>我的作品</h3></div>
+    <div class="mywork"><div class="cover zhu">启</div><div><b>天启七年·九月</b><br><small>v1.2.0 · 更新于 2026-06-02</small></div><div class="stat-mini"><b>1287</b><small>下载</small></div><div class="stat-mini"><b>4.7</b><small>评分</small></div><span class="st-pill live">已上架</span></div>
+    <div class="mywork"><div class="cover dai">宋</div><div><b>绍宋·建炎元年八月</b><br><small>v1.1.0 · 更新于 2026-05-20</small></div><div class="stat-mini"><b>842</b><small>下载</small></div><div class="stat-mini"><b>4.6</b><small>评分</small></div><span class="st-pill live">已上架</span></div>
+    <div class="mywork"><div class="cover jin">贞</div><div><b>贞观·开元盛世（草稿）</b><br><small>未发布 · 编辑于 今天</small></div><div class="stat-mini"><b>—</b><small>下载</small></div><div class="stat-mini"><b>—</b><small>评分</small></div><span class="st-pill draft">草稿</span></div>
+    <div class="mywork"><div class="cover zhe">万</div><div><b>万历·援朝抗倭</b><br><small>已提交 · 等待审核</small></div><div class="stat-mini"><b>—</b><small>下载</small></div><div class="stat-mini"><b>—</b><small>评分</small></div><span class="st-pill review">审核中</span></div>
+  </section>
+
+  <!-- ============ 我的 ============ -->
+  <section class="pane" data-pane="me">
+    <div class="subnav"><a class="on" data-msub="sub">我的订阅</a><a data-msub="fav">收藏夹</a><a data-msub="achv">成就</a><a data-msub="rev">我的评价</a><a data-msub="feed">关注动态</a></div>
+
+    <div data-msub-pane="sub">
+      <div id="meContent">
+        <div class="sec-h"><h3>已安装 · 可更新</h3><span class="more">检查更新 ›</span></div>
+        <div class="mywork"><div class="cover zhu">启</div><div><b>天启七年·九月</b> <span class="tag" style="border-color:#7ec98b;color:#7ec98b;">有新版 1.2.0</span><br><small>当前 v1.1.0 · 天命官方</small></div><div></div><button class="btn primary" style="min-height:36px;">更新</button><button class="btn" style="min-height:36px;">卸载</button></div>
+        <div class="mywork"><div class="cover dai">宋</div><div><b>绍宋·建炎元年八月</b><br><small>v1.1.0 · 已是最新 · 天命官方</small></div><div></div><span class="st-pill live">最新</span><button class="btn" style="min-height:36px;">卸载</button></div>
+        <div class="mywork"><div class="cover jin">贞</div><div><b>贞观元年·武德宫变后</b><br><small>v2.0.1 · 已是最新 · 史海钩沉</small></div><div></div><span class="st-pill live">最新</span><button class="btn" style="min-height:36px;">卸载</button></div>
+      </div>
+      <div id="meEmpty" style="display:none;">
+        <div class="empty"><div class="glyph">卷</div><div class="t">还没有订阅任何剧本</div><div>去「发现」挑一部，点「在线安装」即可加入这里。</div><button class="btn primary" data-go="discover">去发现</button></div>
+      </div>
+    </div>
+
+    <div data-msub-pane="fav" hidden>
+      <div class="sec-h"><h3>我的合集</h3><span class="more">＋ 新建合集</span></div>
+      <div class="promos">
+        <div class="promo" style="min-height:120px;"><div class="t"><b>我的明末</b><small>收藏 6 部 · 私密</small></div></div>
+        <div class="promo b" style="min-height:120px;"><div class="t"><b>守城专精</b><small>收藏 4 部 · 公开</small></div></div>
+        <div class="promo c" style="min-height:120px;"><div class="t"><b>想玩·待安装</b><small>收藏 9 部 · 私密</small></div></div>
+      </div>
+      <div class="sec-h"><h3>单独收藏 · 12</h3></div>
+      <div class="grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="card" data-detail><div class="cover jin">贞</div><div class="pad"><h4>贞观元年·武德宫变后</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★★ 4.8</span><span>↓1893</span></div></div></div>
+        <div class="card" data-detail><div class="cover jiang">安</div><div class="pad"><h4>安史之乱·天宝十四载</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★★ 4.5</span><span>↓721</span></div></div></div>
+        <div class="card" data-detail><div class="cover mo">靖</div><div class="pad"><h4>靖康元年·汴京围城</h4><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓567</span></div></div></div>
+        <div class="card" data-detail><div class="cover zhe">绍</div><div class="pad"><h4>绍兴和议·建炎四年</h4><div class="au">中兴四将</div><div class="rt"><span class="stars">★★★★☆ 4.3</span><span>↓388</span></div></div></div>
+      </div>
+    </div>
+
+    <div data-msub-pane="rev" hidden>
+      <div class="sec-h"><h3>我写过的评价 · 7</h3></div>
+      <div class="reviews">
+        <div class="rev"><div class="cover zhu" style="width:40px;height:40px;border-radius:6px;font-size:18px;">启</div><div><div class="hd"><b>天启七年·九月</b><span class="stars">★★★★★</span><small>3 天前</small></div><p>开局张力极强，权阉与边事两头烧，收权节奏拿捏得好。番薯入税基修了之后财政终于不离谱。</p><div class="vote"><a>有用 · 42</a><a>编辑</a><a>删除</a></div></div></div>
+        <div class="rev"><div class="cover jin" style="width:40px;height:40px;border-radius:6px;font-size:18px;">贞</div><div><div class="hd"><b>贞观元年·武德宫变后</b><span class="stars">★★★★★</span><small>1 周前</small></div><p>考据扎实，每一回合都站得住史料，史海钩沉的水准一如既往。</p><div class="vote"><a>有用 · 15</a><a>编辑</a><a>删除</a></div></div></div>
+      </div>
+    </div>
+
+    <div data-msub-pane="feed" hidden>
+      <div class="sec-h"><h3>关注动态</h3></div>
+      <div class="feed"><div class="seal av" style="width:40px;height:40px;border-radius:50%;font-size:18px;">史</div><div><div><b>史海钩沉</b> 发布了新剧本 <a style="color:var(--gold);cursor:pointer;" data-detail>《开元盛世·二十四年》</a></div><p style="font-size:12.5px;color:var(--ink-dim);margin:5px 0 0;">由治入乱前夜的盛唐，44 角色。 · 2 小时前</p></div></div>
+      <div class="feed"><div class="seal av" style="width:40px;height:40px;border-radius:50%;font-size:18px;">命</div><div><div><b>天命官方</b> 更新了 <a style="color:var(--gold);cursor:pointer;" data-detail>《天启七年·九月》</a> 至 v1.2.0</div><p style="font-size:12.5px;color:var(--ink-dim);margin:5px 0 0;">平衡宗禄/军饷。 · 昨天</p></div></div>
+      <div class="feed"><div class="seal av" style="width:40px;height:40px;border-radius:50%;font-size:18px;">汴</div><div><div><b>汴梁旧梦</b> 入选「两宋兴亡录」专题</div><p style="font-size:12.5px;color:var(--ink-dim);margin:5px 0 0;">恭喜上榜。 · 2 天前</p></div></div>
+    </div>
+
+    <div data-msub-pane="achv" hidden>
+      <div class="sec-h"><h3>成就 · 18 / 40</h3><span class="more">通关榜 ›</span></div>
+      <div class="badges-wall">
+        <div class="bdg"><div class="bi">兴</div><b>中兴之主</b><small>达成中兴结局</small></div>
+        <div class="bdg"><div class="bi">诛</div><b>诛阉</b><small>扳倒魏忠贤</small></div>
+        <div class="bdg"><div class="bi">辽</div><b>辽东不失</b><small>守住关宁防线</small></div>
+        <div class="bdg"><div class="bi">速</div><b>速通</b><small>30 回合内通关</small></div>
+        <div class="bdg"><div class="bi">史</div><b>循史而行</b><small>硬核贴史通关</small></div>
+        <div class="bdg dim"><div class="bi">？</div><b>未解锁</b><small>不诛一臣达成中兴</small></div>
+      </div>
+      <div class="sec-h"><h3>通关记录</h3></div>
+      <div class="mywork"><div class="cover zhu">启</div><div><b>天启七年·九月</b><br><small>标准 · 38 回合 · 中兴</small></div><div class="stat-mini"><b>38%</b><small>社区胜率</small></div><span class="aar-end win">中兴</span><button class="btn sm" data-open="aar">发战报</button></div>
+      <div class="mywork"><div class="cover jin">贞</div><div><b>贞观元年·武德宫变后</b><br><small>硬核 · 44 回合 · 盛世</small></div><div class="stat-mini"><b>27%</b><small>社区胜率</small></div><span class="aar-end win">盛世</span><button class="btn sm" data-open="aar">发战报</button></div>
+    </div>
+  </section>
+
+  <!-- ============ 通知 ============ -->
+  <section class="pane" data-pane="notify">
+    <div class="sec-h"><h3>通知</h3><span class="more">全部已读 ›</span></div>
+    <div class="notif unread"><div class="ic">版</div><div><b>你订阅的《天启七年·九月》发布了 v1.2.0</b><p>平衡宗禄/军饷，修复番薯不入税基。点此更新。</p></div><small>10 分钟前</small></div>
+    <div class="notif unread"><div class="ic">评</div><div><b>史海钩沉 回复了你的评价</b><p>「多谢指正，开局态势已在 v2.0.1 调整。」</p></div><small>1 小时前</small></div>
+    <div class="notif unread"><div class="ic">粉</div><div><b>边镇老卒 关注了你</b><p>你的粉丝 +1，共 1,204 人。</p></div><small>3 小时前</small></div>
+    <div class="notif"><div class="ic">审</div><div><b>《绍宋·建炎元年八月》已通过审核</b><p>已上架在线工坊，其他玩家可浏览安装。</p></div><small>昨天</small></div>
+    <div class="notif"><div class="ic">荐</div><div><b>恭喜！你的剧本入选「明末风云·三部曲」专题</b><p>已登上首页专题位。</p></div><small>2 天前</small></div>
+  </section>
+
+  <!-- ============ 好友 ============ -->
+  <section class="pane" data-pane="friends">
+    <div class="cols">
+      <div>
+        <div class="sec-h"><h3>好友请求</h3><span class="more">2 条待处理</span></div>
+        <div class="friend req"><div class="seal av">汴</div><div><b>汴梁旧梦</b><small>你们都收藏了《靖康元年·汴京围城》</small></div><div style="display:flex;gap:8px;"><button class="btn primary sm" data-act="accept-req">接受</button><button class="btn sm" data-act="ignore-req">忽略</button></div></div>
+        <div class="friend req"><div class="seal av">青</div><div><b>青词宰相</b><small>关注了你 · 互关成好友</small></div><div style="display:flex;gap:8px;"><button class="btn primary sm" data-act="accept-req">接受</button><button class="btn sm" data-act="ignore-req">忽略</button></div></div>
+        <div class="sec-h"><h3>我的好友 · <span id="friendCount">5</span></h3><span class="more">＋ 加好友</span></div>
+        <div id="friendList">
+          <div class="friend"><div class="seal av on">史<span class="online"></span></div><div><b>史海钩沉</b> <span class="vbadge">精选作者</span><small>在线 · 正在玩《贞观元年》</small></div><div style="display:flex;gap:8px;"><button class="btn sm" data-act="dm">私信</button><button class="btn sm" data-detail>同玩</button></div></div>
+          <div class="friend"><div class="seal av on">边<span class="online"></span></div><div><b>边镇老卒</b><small>在线 · 创作中</small></div><div style="display:flex;gap:8px;"><button class="btn sm" data-act="dm">私信</button></div></div>
+          <div class="friend"><div class="seal av">命</div><div><b>天命官方</b> <span class="vbadge">官方</span><small>离线 · 3 小时前</small></div><div style="display:flex;gap:8px;"><button class="btn sm" data-act="dm">私信</button></div></div>
+          <div class="friend"><div class="seal av">汴</div><div><b>汴梁旧梦</b><small>离线 · 昨天</small></div><div style="display:flex;gap:8px;"><button class="btn sm" data-act="dm">私信</button></div></div>
+          <div class="friend"><div class="seal av">中</div><div><b>中兴四将</b><small>离线 · 2 天前</small></div><div style="display:flex;gap:8px;"><button class="btn sm" data-act="dm">私信</button></div></div>
+        </div>
+      </div>
+      <aside class="rail">
+        <h4>可能认识</h4>
+        <div class="rk"><div class="seal" style="width:34px;height:34px;border-radius:50%;font-size:15px;">青</div><div class="t" style="margin-left:9px;"><b>青词宰相</b><small>3 个共同好友</small></div><button class="btn sm" data-act="addfriend">加</button></div>
+        <div class="rk"><div class="seal" style="width:34px;height:34px;border-radius:50%;font-size:15px;">关</div><div class="t" style="margin-left:9px;"><b>关西大侠</b><small>都玩明末题材</small></div><button class="btn sm" data-act="addfriend">加</button></div>
+        <div class="becre" style="margin-top:14px;"><b>一起开局</b><p>好友可在同一剧本下交流攻略、互看进度（规划中）。</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 更新中心（热更新） ============ -->
+  <section class="pane" data-pane="updates">
+    <div class="sec-h"><h3>更新中心</h3><span class="more"><button class="btn primary sm" data-act="updateall">全部更新</button></span></div>
+    <div class="cols">
+      <div>
+        <div class="sec-h"><h3>游戏客户端</h3></div>
+        <div class="mywork"><div class="ic-up">⇪</div><div><b>前端热更</b><br><small>当前 1.3.0.0 · 发现热更 1.3.1.0（171 MB 精简包）</small></div><div></div><span class="st-pill review">可更新</span><button class="btn primary sm" data-act="hotupdate">下载并应用</button></div>
+        <div class="mywork"><div class="ic-up">◰</div><div><b>安装包</b><br><small>v1.3.1.0 · 已是最新</small></div><div></div><span class="st-pill live">最新</span><button class="btn sm" disabled>检查</button></div>
+        <div class="sec-h"><h3>已装剧本 · 1 个可更新</h3></div>
+        <div class="mywork"><div class="cover zhu">启</div><div><b>天启七年·九月</b> <span class="tag" style="border-color:#7ec98b;color:#7ec98b;">1.1.0 → 1.2.0</span><br><small>平衡宗禄/军饷，修番薯不入税基</small></div><div></div><button class="btn primary sm" data-act="updatepack">更新</button></div>
+        <div class="mywork"><div class="cover dai">宋</div><div><b>绍宋·建炎元年八月</b><br><small>v1.1.0 · 已是最新</small></div><div></div><span class="st-pill live">最新</span><button class="btn sm" disabled>—</button></div>
+        <div class="mywork"><div class="cover jin">贞</div><div><b>贞观元年·武德宫变后</b><br><small>v2.0.1 · 已是最新</small></div><div></div><span class="st-pill live">最新</span><button class="btn sm" disabled>—</button></div>
+      </div>
+      <aside class="rail">
+        <h4>更新设置</h4>
+        <label class="fopt" style="padding:8px 0;"><input type="checkbox" checked>剧本有新版时自动提醒</label>
+        <label class="fopt" style="padding:8px 0;"><input type="checkbox" checked>客户端热更自动下载</label>
+        <label class="fopt" style="padding:8px 0;"><input type="checkbox">仅 Wi-Fi 下更新</label>
+        <div class="status" style="margin-top:12px;">网页版始终是最新在线版，无需手动更新；桌面/安卓客户端走热更通道。本地离线游玩不受影响。</div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 账号 ============ -->
+  <section class="pane" data-pane="account">
+    <div class="acctwrap">
+      <div id="accOut">
+        <div class="sec-h"><h3>登录 / 注册</h3></div>
+        <div class="loginbox">
+          <h4><span class="dot" style="width:9px;height:9px;border-radius:50%;background:#6fcf97;display:inline-block;"></span>邮箱验证码登录 <span class="tag" style="margin-left:auto;">推荐 · 免密</span></h4>
+          <div class="field"><label><span class="step">1</span> 邮箱（新邮箱自动注册）</label><input class="input" type="email" placeholder="输入邮箱，点发送验证码"></div>
+          <div class="field"><label><span class="step">2</span> 验证码</label><input class="input" inputmode="numeric" maxlength="6" placeholder="邮件里的 6 位验证码"></div>
+          <div style="display:flex;gap:10px;margin-top:14px;"><button class="btn primary">发送验证码</button><button class="btn">登录</button></div>
+        </div>
+        <div style="margin-top:12px;color:var(--ink-faint);font-size:12px;">已有账号也可用 <a style="color:var(--gold);cursor:pointer;">账号密码登录</a>。</div>
+        <div class="orline">或使用第三方</div>
+        <div style="display:flex;gap:10px;"><button class="btn" style="flex:1;" data-act="thirdlogin">QQ 登录</button><button class="btn" style="flex:1;" data-act="thirdlogin">微信登录</button></div>
+      </div>
+      <div id="accIn" style="display:none;">
+        <div class="sec-h"><h3>账号</h3></div>
+        <div class="acct-card"><div class="seal">同</div><div><b>同志</b><small>@roman · roman@qq.com</small><span class="vbadge" style="margin-top:6px;">● 已登录 · 创作者</span></div></div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;"><button class="btn primary" data-go="studio">创作中心</button><button class="btn" data-go="me">我的工坊</button><button class="btn" style="border-color:rgba(231,105,82,.5);color:#ffd9ce;">退出登录</button></div>
+        <div class="sec-h"><h3>设置与安全</h3></div>
+        <div class="kv">
+          <div><small>青少年模式</small><b id="teenMode">关 · 可开启</b></div>
+          <div><small>内容分级</small><b>全年龄 · 历史向</b></div>
+          <div><small>动态隐私</small><b>仅好友可见</b></div>
+          <div><small>第三方绑定</small><b>QQ 已绑 · 微信未绑</b></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;"><button class="btn sm" data-act="teen">开启青少年模式</button><button class="btn sm">隐私设置</button><button class="btn sm">绑定 / 解绑</button><button class="btn sm" data-open="ops">平台运营（owner）</button><button class="btn sm danger-act">注销账号</button></div>
+      </div>
+      <aside class="rail">
+        <h4>账号权限</h4>
+        <div class="rk" style="cursor:default;"><div class="t"><b>工坊作者</b><small id="permA">未登录</small></div></div>
+        <div class="rk" style="cursor:default;"><div class="t"><b>找回邮箱</b><small id="permB">未登录</small></div></div>
+        <div class="rk" style="cursor:default;"><div class="t"><b>云存档 / 跨设备</b><small>基于此账号（规划中）</small></div></div>
+        <div class="status" style="margin-top:12px;">账号是增强功能，不是启动门槛。离线开局、读档与本地工坊始终不受影响。</div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 活动赛页 ============ -->
+  <section class="pane" data-pane="event">
+    <div class="event-hero">
+      <div class="bg" data-scene-bg="gong"></div>
+      <div class="ov">
+        <div class="kick">官方活动 · 进行中</div>
+        <h1>开国大典 · 剧本征文大赛</h1>
+        <p>以「开国 / 立朝」为题创作剧本，登上官方精选位与首页轮播，赢限定徽章与曝光激励。</p>
+        <div class="ev-stat"><div><b>38</b><small>已投稿</small></div><div><b>26</b><small>剩余天数</small></div><div><b>5</b><small>精选名额</small></div><div><b>1.2w</b><small>累计票数</small></div></div>
+        <div style="display:flex;gap:10px;margin-top:14px;"><button class="btn primary" data-open="publish">我要投稿</button><button class="btn">活动规则</button></div>
+      </div>
+    </div>
+    <div class="sec-h"><h3>赛程</h3></div>
+    <div class="timeline">
+      <div class="tl done"><span class="dot"></span><b>报名 / 投稿</b><small>6/01 – 7/01 · 进行中</small></div>
+      <div class="tl"><span class="dot"></span><b>玩家投票</b><small>7/02 – 7/10</small></div>
+      <div class="tl"><span class="dot"></span><b>评审 / 公示</b><small>7/11 – 7/15</small></div>
+      <div class="tl"><span class="dot"></span><b>颁奖 · 上精选</b><small>7/16</small></div>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="sec-h"><h3>参赛作品 · 38</h3><span class="more">人气 ▾</span></div>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="card" data-detail><div class="cover zhu">洪</div><div class="pad"><h4>洪武开国·应天称帝</h4><div class="au">布衣天子</div><div class="rt"><span class="stars">★★★★★ 4.7</span><span>投票 980</span></div></div></div>
+          <div class="card" data-detail><div class="cover jin">唐</div><div class="pad"><h4>晋阳起兵·李渊立唐</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★☆ 4.5</span><span>投票 845</span></div></div></div>
+          <div class="card" data-detail><div class="cover dai">陈</div><div class="pad"><h4>陈桥兵变·黄袍加身</h4><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>投票 712</span></div></div></div>
+        </div>
+      </div>
+      <aside class="rail">
+        <h4>票选榜</h4>
+        <div class="rk"><span class="n top">1</span><div class="t"><b>洪武开国·应天称帝</b><small>布衣天子 · 980 票</small></div></div>
+        <div class="rk"><span class="n top">2</span><div class="t"><b>晋阳起兵·李渊立唐</b><small>史海钩沉 · 845 票</small></div></div>
+        <div class="rk"><span class="n top">3</span><div class="t"><b>陈桥兵变·黄袍加身</b><small>汴梁旧梦 · 712 票</small></div></div>
+        <div class="becre" style="margin-top:14px;"><b>奖励</b><p>冠军登首页轮播 30 天 + 限定「开国功臣」徽章 + 激励积分 2000。</p></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 举报后台（owner） ============ -->
+  <section class="pane" data-pane="admin">
+    <div class="sec-h"><h3>审核后台 · owner</h3><span class="more">待处理 4 · 今日已处理 12</span></div>
+    <div class="typebar"><span class="chip on">待处理 4</span><span class="chip">更新审核 2</span><span class="chip">申诉 1</span><span class="chip">已处理</span><span class="chip">举报理由 ▾</span><span class="chip">优先级 ▾</span></div>
+    <div class="batch-bar"><label class="fopt" style="padding:0;"><input type="checkbox"> 全选</label><button class="btn sm" data-act="adm-pass">批量通过</button><button class="btn sm danger-act" data-act="adm-down">批量下架</button><span style="margin-left:auto;color:var(--ink-faint);font-size:12px;">自动预筛今日拦截 9 次违规上传 · 仅认证作者可传资产包 · 更新也需过审</span></div>
+    <div class="admin-row head"><div>内容 / 被举报方</div><div>类型</div><div>理由</div><div>举报人</div><div>处理</div></div>
+    <div class="admin-row"><div><div class="cover mo" style="width:34px;height:34px;font-size:15px;display:inline-grid;vertical-align:middle;">靖</div> 靖康外传·架空版</div><div><span class="tag">剧本</span></div><div>与史实严重不符且误导</div><div>边镇老卒</div><div class="admin-act"><button class="btn sm" data-act="adm-view">查看</button><button class="btn sm" data-act="adm-pass">通过</button><button class="btn sm" data-act="adm-down">下架</button></div></div>
+    <div class="admin-row"><div>评论：「这作者抄袭…」</div><div><span class="tag">评论</span></div><div>不实信息 / 人身攻击</div><div>史海钩沉</div><div class="admin-act"><button class="btn sm" data-act="adm-view">查看</button><button class="btn sm" data-act="adm-pass">保留</button><button class="btn sm" data-act="adm-down">删除</button></div></div>
+    <div class="admin-row"><div><div class="cover qing" style="width:34px;height:34px;font-size:15px;display:inline-grid;vertical-align:middle;">绘</div> 某立绘包</div><div><span class="tag">立绘</span></div><div>疑似版权 / 真人素材</div><div>匿名</div><div class="admin-act"><button class="btn sm" data-act="adm-view">查看</button><button class="btn sm" data-act="adm-pass">通过</button><button class="btn sm" data-act="adm-down">下架</button></div></div>
+    <div class="admin-row"><div>用户：刷量小号</div><div><span class="tag">账号</span></div><div>垃圾 / 刷下载量</div><div>系统风控</div><div class="admin-act"><button class="btn sm" data-act="adm-view">查看</button><button class="btn sm" data-act="adm-pass">忽略</button><button class="btn sm danger-act" data-act="adm-ban">封禁</button></div></div>
+  </section>
+
+  <!-- ============ 战报广场 ============ -->
+  <section class="pane" data-pane="reports">
+    <div class="sec-h"><h3>战报广场</h3><span class="more" style="display:flex;gap:10px;align-items:center;"><span data-go="chronicle" style="cursor:pointer;">史册接龙 ›</span><button class="btn primary sm" data-open="aar">＋ 发布战报</button></span></div>
+    <div class="copy" style="margin-bottom:14px;">把一局通关生成的「史册」分享出来——结局、关键抉择、转折点。既是攻略，也是这段历史的另一种写法。</div>
+    <div class="typebar"><span class="chip on">最热</span><span class="chip">最新</span><span class="chip">中兴结局</span><span class="chip">倾覆结局</span><span class="chip">同剧本</span></div>
+    <div class="grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="aar-card">
+        <div class="aar-top"><div class="cover zhu" style="width:42px;height:42px;font-size:18px;">启</div><div><b>同志</b> 通关 <span style="color:var(--gold);cursor:pointer;" data-detail>天启七年·九月</span><small>标准 · 38 回合 · 2 天前</small></div><span class="aar-end win">中兴</span></div>
+        <p>从夺东厂开局一步步收权，第 20 回合借红丸案扳倒魏阉，辽东守住、财政转正。最难是前五回合的隐忍。</p>
+        <div class="shots"><div class="sh">登基</div><div class="sh">诛阉</div><div class="sh">凯旋</div></div>
+        <div class="vote" style="margin-top:9px;"><a data-act="like">赞 · 124</a><a>评论 · 18</a><a data-detail>原剧本 ›</a></div>
+      </div>
+      <div class="aar-card">
+        <div class="aar-top"><div class="cover mo" style="width:42px;height:42px;font-size:18px;">崇</div><div><b>边镇老卒</b> 通关 <span style="color:var(--gold);cursor:pointer;" data-detail>甲申之变·1644</span><small>硬核 · 51 回合 · 4 天前</small></div><span class="aar-end lose">倾覆</span></div>
+        <p>尽力了。守了三年，终究没挡住流寇破城。把最后一支勤王军压在居庸关是败笔——记录下来给后来者。</p>
+        <div class="shots"><div class="sh">登极</div><div class="sh">勤王</div><div class="sh">城破</div></div>
+        <div class="vote" style="margin-top:9px;"><a data-act="like">赞 · 88</a><a>评论 · 31</a><a data-detail>原剧本 ›</a></div>
+      </div>
+      <div class="aar-card">
+        <div class="aar-top"><div class="cover dai" style="width:42px;height:42px;font-size:18px;">宋</div><div><b>汴梁旧梦</b> 通关 <span style="color:var(--gold);cursor:pointer;" data-detail>绍宋·建炎元年八月</span><small>标准 · 60 回合 · 1 周前</small></div><span class="aar-end mid">偏安</span></div>
+        <p>守住了半壁江山，没能北伐成功。和议是无奈，但活下来才有以后。附我的财政流转表。</p>
+        <div class="shots"><div class="sh">渡江</div><div class="sh">和议</div><div class="sh">中兴</div></div>
+        <div class="vote" style="margin-top:9px;"><a data-act="like">赞 · 67</a><a>评论 · 12</a><a data-detail>原剧本 ›</a></div>
+      </div>
+      <div class="aar-card">
+        <div class="aar-top"><div class="cover jin" style="width:42px;height:42px;font-size:18px;">贞</div><div><b>史海钩沉</b> 通关 <span style="color:var(--gold);cursor:pointer;" data-detail>贞观元年·武德宫变后</span><small>硬核 · 44 回合 · 1 周前</small></div><span class="aar-end win">盛世</span></div>
+        <p>玄武门之后如何安天下——这局我尽量贴史走，房杜并用、纳谏不杀，硬核难度也能开出贞观气象。</p>
+        <div class="shots"><div class="sh">即位</div><div class="sh">纳谏</div><div class="sh">治世</div></div>
+        <div class="vote" style="margin-top:9px;"><a data-act="like">赞 · 156</a><a>评论 · 24</a><a data-detail>原剧本 ›</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 写史阁 · 协作写史 ============ -->
+  <section class="pane" data-pane="chronicle">
+    <div class="sec-h"><h3>写史阁 · 世界线树</h3><span class="more">《天启七年·九月》的分支宇宙</span></div>
+    <div class="copy" style="margin-bottom:10px;">官方正史是主干，每一次改编 / 接龙都是一条岔路。你可以从任一节点继续分叉，写你的历史 what-if。</div>
+    <div class="legend"><span><i class="ld canon"></i>正史主干</span><span><i class="ld fork"></i>玩家分叉</span><span><i class="ld mine"></i>你的世界线</span></div>
+    <div class="wtree"><div class="wcanvas">
+      <svg class="wlines" viewBox="0 0 920 460" preserveAspectRatio="none">
+        <path d="M170,227 C260,227 260,85 340,85"/>
+        <path d="M170,227 C260,227 260,227 340,227"/>
+        <path class="mine" d="M170,227 C260,227 260,369 340,369"/>
+        <path d="M490,85 C580,85 580,55 670,55"/>
+        <path d="M490,85 C580,85 580,145 670,145"/>
+        <path d="M490,227 C580,227 580,255 670,255"/>
+        <path class="mine" d="M490,369 C580,369 580,369 670,369"/>
+      </svg>
+      <div class="wnode canon" style="left:20px;top:200px;" data-detail><div class="nt"><div class="cover zhu">启</div><div><b>天启七年·九月</b><small>天命官方 · 原作 · ↓1287</small></div></div></div>
+      <div class="wnode fork" style="left:340px;top:58px;" data-detail><div class="nt"><div class="cover jin">东</div><div><b>东林翻盘线</b><small>史海钩沉 · ↓340</small></div></div></div>
+      <div class="wnode fork" style="left:340px;top:200px;" data-detail><div class="nt"><div class="cover mo">阉</div><div><b>阉党不倒线</b><small>青词宰相 · ↓180</small></div></div></div>
+      <div class="wnode mine" style="left:340px;top:342px;" data-detail><div class="nt"><div class="cover zhu">袁</div><div><b>假如袁崇焕不死</b><small>同志 · 你 · 草稿</small></div></div></div>
+      <div class="wnode fork" style="left:670px;top:28px;" data-detail><div class="nt"><div class="cover jin">正</div><div><b>众正盈朝·崇祯中兴</b><small>史海钩沉 · ↓210</small></div></div></div>
+      <div class="wnode fork" style="left:670px;top:118px;" data-detail><div class="nt"><div class="cover zhe">争</div><div><b>党争再起</b><small>佚名 · ↓95</small></div></div></div>
+      <div class="wnode fork" style="left:670px;top:228px;" data-detail><div class="nt"><div class="cover jiang">倾</div><div><b>甲申仍倾</b><small>边镇老卒 · ↓130</small></div></div></div>
+      <div class="wnode mine" style="left:670px;top:342px;" data-act="forkit"><div class="nt"><div class="cover dai">和</div><div><b>议和关外·南北朝</b><small>同志 · 你 · ↓40</small></div></div></div>
+    </div></div>
+    <div style="display:flex;gap:10px;margin-top:12px;"><button class="btn primary sm" data-act="forkit">＋ 从此节点继续分叉</button><button class="btn sm" data-detail>看原作</button></div>
+
+    <div class="sec-h"><h3>史册接龙</h3><span class="more"><button class="btn primary sm" data-act="startrelay">＋ 发起接龙</button></span></div>
+    <div class="copy" style="margin-bottom:12px;">一局通关生成的「史册」，可成为下一个剧本的开局。前人的结局，是后人的起点——众人接力，写一段绵延的历史。</div>
+    <div class="relay-chain">
+      <div class="rhead"><b>天启中兴·接龙</b><small>3 棒 · 进行中 · 接力人 12</small></div>
+      <div class="relay">
+        <div class="rnode" data-detail><div class="cover zhu">启</div><b>同志</b><small>中兴结局</small></div>
+        <div class="rarrow">接龙 ›</div>
+        <div class="rnode" data-detail><div class="cover zhe">守</div><b>边镇老卒</b><small>守成 · 30 回合</small></div>
+        <div class="rarrow">›</div>
+        <div class="rnode" data-detail><div class="cover jin">盛</div><b>青词宰相</b><small>盛世 · 续写中</small></div>
+        <div class="rarrow">›</div>
+        <button class="rnode add" data-act="joinrelay">＋<small>接续</small></button>
+      </div>
+    </div>
+    <div class="relay-chain">
+      <div class="rhead"><b>靖康之后·南渡接龙</b><small>2 棒 · 接力人 7</small></div>
+      <div class="relay">
+        <div class="rnode" data-detail><div class="cover mo">靖</div><b>汴梁旧梦</b><small>城破·南渡</small></div>
+        <div class="rarrow">接龙 ›</div>
+        <div class="rnode" data-detail><div class="cover dai">绍</div><b>中兴四将</b><small>偏安·和议</small></div>
+        <div class="rarrow">›</div>
+        <button class="rnode add" data-act="joinrelay">＋<small>接续</small></button>
+      </div>
+    </div>
+  </section>
+
+  </div></div>
+
+  <!-- ====== 剧本详情 浮层 ====== -->
+  <div class="overlay" id="detail">
+    <div class="sheet">
+      <div class="sh-head"><b id="dHeadT">剧本详情</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="dhero">
+          <div class="cover zhu" id="dCover">启</div>
+          <div>
+            <div id="dKick" style="font-size:11.5px;letter-spacing:3px;color:var(--gold);">官方剧本 · 明末</div>
+            <h2 id="dTitle">天启七年·九月——君王初立，权阉当国</h2>
+            <div class="dmeta" id="dMeta"><span class="stars">★★★★★<i>4.7 · 53 评</i></span><span>↓1,287</span><span>v1.2.0</span><span>8.7 MB · 52 角色</span></div>
+            <div class="dmeta" id="dTags"><span class="tag">明末</span><span class="tag">权谋</span><span class="tag">官方</span><span class="tag">高难度</span></div>
+            <div class="dacts">
+              <button class="btn primary" data-act="install" id="dInstall">在线安装</button>
+              <button class="btn sm" data-act="playnow" id="dPlay">立即游玩</button>
+              <button class="btn sm" data-act="trydemo" id="dTry">试玩开局</button>
+              <button class="btn sm" data-act="forkit" id="dFork">改编</button>
+              <button class="btn sm" data-act="subseries" id="dSeries">订阅系列</button>
+              <button class="btn sm" data-act="fav">收藏 ♡</button>
+              <button class="btn sm" data-act="like">赞赏 ✦ <b id="likeN">0</b></button>
+              <select class="sel verpick"><option>v1.2.0（最新）</option><option>v1.1.0</option><option>v1.0.0</option></select>
+              <button class="btn sm" data-act="report">⋯</button>
+            </div>
+            <div class="install-bar" hidden><i></i><span>正在安装…</span></div>
+          </div>
+        </div>
+
+        <div id="dt-juben">
+          <div class="sec-h"><h3>剧本提要</h3></div>
+          <p style="font-size:13.5px;line-height:1.85;color:var(--ink-dim);margin:0;">天启七年九月，明熹宗驾崩无嗣，十七岁的信王入继大统。魏忠贤提督东厂、总揽内外，生祠遍于天下；东林阉党积怨已深，辽东后金虎视，西南奢安未平。少年天子深居九重，耳目尽制于人——徐图收权、平衡党争、重整边防，一步踏错，便是社稷倾覆。</p>
+          <div class="sec-h"><h3>剧照</h3></div>
+          <div class="shots"><div class="sh">朝堂·廷议</div><div class="sh">边镇·辽东</div><div class="sh">人物·魏忠贤</div></div>
+          <div class="sec-h"><h3>开局态势</h3></div>
+          <div class="kv">
+            <div><small>朝局</small><b>阉党当权 · 东林离散</b></div>
+            <div><small>边事</small><b>辽东危 · 奢安乱</b></div>
+            <div><small>难度</small><b>结构性死局</b></div>
+            <div><small>起始皇威</small><b>低 · 受制于内</b></div>
+            <div><small>社区胜率</small><b>38% · 1.2k 局</b></div>
+            <div><small>难度校准</small><b>偏硬核（社区实测）</b></div>
+          </div>
+          <div class="sec-h"><h3>依赖资源 · 安装时自动装齐</h3></div>
+          <div class="deplist">
+            <div class="dep"><div class="cover jin" style="width:38px;height:38px;font-size:16px;">绘</div><div><b>明末人物·立绘包</b><small>必需依赖 · 88 MB · 丹青手</small></div><span class="st-pill live">已装</span></div>
+            <div class="dep"><div class="cover dai" style="width:38px;height:38px;font-size:16px;">乐</div><div><b>古风 BGM 包</b><small>可选依赖 · 64 MB · 听松</small></div><button class="btn sm" data-act="install">一并安装</button></div>
+          </div>
+        </div>
+
+        <div id="dt-lihui" hidden>
+          <div class="sec-h"><h3>立绘预览 · 44 张</h3><span class="more">查看全部 ›</span></div>
+          <div class="gallery">
+            <div class="port jiang"><span>魏</span><small>魏忠贤</small></div>
+            <div class="port jin"><span>崇</span><small>崇祯帝</small></div>
+            <div class="port dai"><span>袁</span><small>袁崇焕</small></div>
+            <div class="port zhe"><span>孙</span><small>孙承宗</small></div>
+            <div class="port mo"><span>客</span><small>客氏</small></div>
+            <div class="port qing"><span>钱</span><small>钱谦益</small></div>
+            <div class="port zhu"><span>毛</span><small>毛文龙</small></div>
+            <div class="port jiang"><span>魏</span><small>魏藻德</small></div>
+          </div>
+          <div class="sec-h"><h3>规格</h3></div>
+          <div class="kv">
+            <div><small>风格</small><b>工笔写意 · 半身像</b></div>
+            <div><small>规格</small><b>1024×1536 · PNG 透明底</b></div>
+            <div><small>适配</small><b>通用 · 明末优先</b></div>
+            <div><small>授权</small><b>署名 CC-BY · 注明作者</b></div>
+          </div>
+        </div>
+
+        <div id="dt-yinyue" hidden>
+          <div class="sec-h"><h3>曲目 · 18 首 · 52:10</h3><span class="more">全部试听 ›</span></div>
+          <div class="tracklist">
+            <div class="track" data-act="playtrack"><span class="pl">▶</span><b>朝会·万邦来仪</b><small>朝堂 · 大气</small><em>3:12</em></div>
+            <div class="track" data-act="playtrack"><span class="pl">▶</span><b>边关·铁衣远戍</b><small>战事 · 苍凉</small><em>2:48</em></div>
+            <div class="track" data-act="playtrack"><span class="pl">▶</span><b>深宫·更漏迢迢</b><small>夜 · 幽微</small><em>3:36</em></div>
+            <div class="track" data-act="playtrack"><span class="pl">▶</span><b>市井·清明上河</b><small>民生 · 轻快</small><em>2:55</em></div>
+            <div class="track" data-act="playtrack"><span class="pl">▶</span><b>危局·山雨欲来</b><small>紧张 · 压迫</small><em>3:01</em></div>
+          </div>
+          <div class="sec-h"><h3>规格</h3></div>
+          <div class="kv">
+            <div><small>用途</small><b>场景 BGM · 可循环</b></div>
+            <div><small>格式</small><b>OGG 128k · 含循环点</b></div>
+            <div><small>风格</small><b>古风 · 民乐编制</b></div>
+            <div><small>授权</small><b>署名免费用</b></div>
+          </div>
+        </div>
+        <div class="sec-h"><h3>作者</h3></div>
+        <div class="authcard"><div class="seal av" style="width:52px;height:52px;border-radius:50%;font-size:24px;">命</div><div><b>天命官方</b><div class="meta">4 部作品 · ↓3.0k · <span class="vbadge">官方认证</span></div></div><button class="btn sm" data-author>访问主页</button></div>
+        <div class="dtabs"><a class="on" data-dtab="rev">玩家评价 · 53</a><a data-dtab="disc">讨论区 · 18</a><span class="more" style="margin-left:auto;">写评价 ›</span></div>
+        <div data-dpane="rev">
+          <div class="rev-compose">
+            <div class="rate-pick">我来评：<span class="rp" data-act="ratepick">☆☆☆☆☆</span><em id="rpv"></em></div>
+            <textarea class="input" rows="2" id="revText" placeholder="说说你的开局体验、攻略或建议…"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px;"><button class="btn primary sm" data-act="submitrev">发表评价</button></div>
+          </div>
+          <div class="reviews" id="revList">
+            <div class="rev"><div class="seal av" style="width:36px;height:36px;border-radius:50%;font-size:16px;">史</div><div><div class="hd"><b>史海钩沉</b><span class="stars">★★★★★</span><small>3 天前</small></div><p>开局张力极强，权阉与边事两头烧，收权节奏拿捏得好。番薯入税基修了之后财政终于不离谱。</p><div class="vote"><a data-act="helpful">有用 · 42</a><a>回复</a></div></div></div>
+            <div class="rev"><div class="seal av" style="width:36px;height:36px;border-radius:50%;font-size:16px;">边</div><div><div class="hd"><b>边镇老卒</b><span class="stars">★★★★☆</span><small>1 周前</small></div><p>辽东那条线很还原，就是新手前几回合容易被阉党压死，建议配个引导。</p><div class="vote"><a data-act="helpful">有用 · 18</a><a>回复</a></div></div></div>
+            <div class="rev"><div class="seal av" style="width:36px;height:36px;border-radius:50%;font-size:16px;">汴</div><div><div class="hd"><b>汴梁旧梦</b><span class="stars">★★★★★</span><small>2 周前</small></div><p>角色塑造到位，魏忠贤不是脸谱化的反派，博弈感很足。官方水准。</p><div class="vote"><a data-act="helpful">有用 · 27</a><a>回复</a></div></div></div>
+          </div>
+        </div>
+        <div data-dpane="disc" hidden>
+          <div class="disc-new"><input class="input" placeholder="发起讨论：提问、攻略、反馈 bug…"><button class="btn primary" style="min-height:40px;">发帖</button></div>
+          <div class="thread" data-act="openthread"><div class="th-h"><span class="th-tag q">提问</span><b>前五回合怎么不被阉党清算？</b><small>边镇老卒 · 12 回复</small></div><p>每次刚开局想动魏忠贤就被反杀，有没有稳的开局顺序？</p><div class="vote"><a>顶 · 23</a><a>展开 12 条回复 ›</a></div></div>
+          <div class="thread" data-act="openthread"><div class="th-h"><span class="th-tag g">攻略</span><b>【收权三步】先夺东厂、再分票拟、后清生祠</b><small>史海钩沉 · 31 回复 · 置顶</small></div><p>分享一套稳定收权流程，核心是别急着杀，先削权再断财源……</p><div class="vote"><a>顶 · 88</a><a>展开 31 条回复 ›</a></div></div>
+          <div class="thread" data-act="openthread"><div class="th-h"><span class="th-tag b">反馈</span><b>v1.1 宗禄数值疑似偏高？</b><small>青词宰相 · 6 回复 · 作者已回复</small></div><p>第 30 回合宗禄把国库吃空，是设计还是 bug？</p><div class="vote"><a>顶 · 14</a><a>展开 6 条回复 ›</a></div></div>
+        </div>
+        <div class="sec-h"><h3>同朝代 · 你可能也喜欢</h3></div>
+        <div class="hrow">
+          <div class="mini" data-detail><div class="cover mo">崇</div><div class="pad"><h4>崇祯·内忧外患</h4><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆ 4.3</span><span>↓640</span></div></div></div>
+          <div class="mini" data-detail><div class="cover jiang">甲</div><div class="pad"><h4>甲申之变·1644</h4><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★☆ 4.4</span><span>↓712</span></div></div></div>
+          <div class="mini" data-detail><div class="cover zhe">万</div><div class="pad"><h4>万历二十年·宁夏之役</h4><div class="au">边镇老卒</div><div class="rt"><span class="stars">★★★★☆ 4.1</span><span>↓213</span></div></div></div>
+          <div class="mini" data-detail><div class="cover qing">嘉</div><div class="pad"><h4>嘉靖·大礼议</h4><div class="au">青词宰相</div><div class="rt"><span class="stars">★★★★☆ 3.9</span><span>↓156</span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 作者主页 浮层 ====== -->
+  <div class="overlay" id="author">
+    <div class="sheet">
+      <div class="sh-head"><b>作者主页</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="profile-hd">
+          <div class="seal av" style="width:84px;height:84px;border-radius:50%;font-size:38px;">史</div>
+          <div>
+            <h2>史海钩沉 <span class="vbadge" style="vertical-align:middle;">精选作者</span></h2>
+            <div class="bio">十年文史爱好者，专做唐宋题材的考据向剧本。「让每一回合都站得住史料。」</div>
+            <div class="pstats"><div><b>12</b><small>作品</small></div><div><b>6.4k</b><small>总下载</small></div><div><b>1,204</b><small>粉丝</small></div><div><b>3.2k</b><small>获赞</small></div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin:14px 0;">
+          <button class="btn primary" data-act="follow">＋ 关注</button>
+          <button class="btn sm" data-act="dm">私信</button>
+          <button class="btn sm" data-act="like">赞赏 ✦</button>
+          <button class="btn sm" data-act="report" style="margin-left:auto;">⋯ 举报</button>
+        </div>
+        <div class="dtabs"><a class="on" data-atab="works">作品 · 12</a><a data-atab="posts">动态</a><a data-atab="badges">徽章 · 6</a><a data-atab="fans">粉丝 · 1.2k</a></div>
+        <div data-apane="works">
+          <div class="grid" style="grid-template-columns:repeat(3,1fr);margin-top:12px;">
+            <div class="card" data-detail><div class="cover jin">贞</div><div class="pad"><h4>贞观元年·武德宫变后</h4><div class="au">↓1893</div><div class="rt"><span class="stars">★★★★★ 4.8</span></div></div></div>
+            <div class="card" data-detail><div class="cover jiang">安</div><div class="pad"><h4>安史之乱·天宝十四载</h4><div class="au">↓721</div><div class="rt"><span class="stars">★★★★★ 4.5</span></div></div></div>
+            <div class="card" data-detail><div class="cover dai">开</div><div class="pad"><h4>开元盛世·二十四年</h4><div class="au">↓540</div><div class="rt"><span class="stars">★★★★☆ 4.4</span></div></div></div>
+          </div>
+        </div>
+        <div data-apane="posts" hidden>
+          <div class="feed" style="margin-top:8px;"><div class="seal av" style="width:40px;height:40px;border-radius:50%;font-size:18px;">史</div><div><div><b>史海钩沉</b> · 3 天前</div><p style="font-size:13px;color:var(--ink-dim);margin:6px 0;">新作《开元盛世》已上架，这次把募兵制和节度使权重做进了开局态势，欢迎来盘。</p><div class="vote"><a data-act="like">赞 · 64</a><a>评论 · 12</a></div></div></div>
+          <div class="feed"><div class="seal av" style="width:40px;height:40px;border-radius:50%;font-size:18px;">史</div><div><div><b>史海钩沉</b> · 1 周前</div><p style="font-size:13px;color:var(--ink-dim);margin:6px 0;">关于《贞观》v2.0.1 的收权节奏，已根据大家反馈调整，详见更新日志。</p><div class="vote"><a data-act="like">赞 · 38</a><a>评论 · 7</a></div></div></div>
+        </div>
+        <div data-apane="badges" hidden>
+          <div class="badges-wall">
+            <div class="bdg"><div class="bi">选</div><b>精选作者</b><small>作品 3 次入选首页</small></div>
+            <div class="bdg"><div class="bi">千</div><b>千载流芳</b><small>单作下载破千</small></div>
+            <div class="bdg"><div class="bi">考</div><b>考据典范</b><small>史料严谨获官方认可</small></div>
+            <div class="bdg"><div class="bi">勤</div><b>笔耕不辍</b><small>连续 6 月有更新</small></div>
+            <div class="bdg"><div class="bi">众</div><b>万众瞩目</b><small>粉丝破千</small></div>
+            <div class="bdg dim"><div class="bi">？</div><b>未解锁</b><small>作品平均 ★4.9</small></div>
+          </div>
+        </div>
+        <div data-apane="fans" hidden>
+          <div class="friend" style="margin-top:8px;"><div class="seal av">边</div><div><b>边镇老卒</b><small>关注于 3 天前</small></div><button class="btn sm" data-act="addfriend">加好友</button></div>
+          <div class="friend"><div class="seal av">汴</div><div><b>汴梁旧梦</b><small>关注于 1 周前</small></div><button class="btn sm" data-act="addfriend">加好友</button></div>
+          <div class="friend"><div class="seal av">青</div><div><b>青词宰相</b><small>关注于 2 周前</small></div><button class="btn sm" data-act="addfriend">加好友</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 私信 ====== -->
+  <div class="overlay" id="dm">
+    <div class="sheet" style="width:min(780px,95%);height:min(560px,82%);">
+      <div class="sh-head"><b>私信</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="dm-wrap">
+        <div class="dm-list">
+          <div class="dm-c on"><div class="seal av">史</div><div><b>史海钩沉</b><small>那套收权流程多谢…</small></div></div>
+          <div class="dm-c"><div class="seal av">边</div><div><b>边镇老卒</b><small>一起开个万历？</small></div></div>
+          <div class="dm-c"><div class="seal av">命</div><div><b>天命官方</b><small>感谢反馈，已修复</small></div></div>
+        </div>
+        <div class="dm-thread">
+          <div class="dm-head"><div class="seal av" style="width:32px;height:32px;border-radius:50%;font-size:14px;">史</div><b>史海钩沉</b><span class="vbadge">精选作者</span></div>
+          <div class="dm-msgs" id="dmMsgs">
+            <div class="bub them">你那条评价提到的收权顺序很对，我准备写进攻略置顶。</div>
+            <div class="bub me">客气，主要是番薯入税基那版之后财政才跟得上。</div>
+            <div class="bub them">对，那版是关键。要不要一起做个《开元》联动？</div>
+          </div>
+          <div class="dm-input"><input class="input" id="dmText" placeholder="说点什么…"><button class="btn primary" data-act="dmsend">发送</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 举报 ====== -->
+  <div class="overlay" id="report">
+    <div class="sheet" style="width:min(520px,94%);">
+      <div class="sh-head"><b>举报</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="copy" style="margin-bottom:12px;">请选择举报理由，提交后由 owner 人工复核。</div>
+        <label class="fopt"><input type="radio" name="rpt" checked>违规 / 不良内容</label>
+        <label class="fopt"><input type="radio" name="rpt">抄袭 / 侵权</label>
+        <label class="fopt"><input type="radio" name="rpt">与史实严重不符且误导</label>
+        <label class="fopt"><input type="radio" name="rpt">垃圾 / 广告 / 刷量</label>
+        <label class="fopt"><input type="radio" name="rpt">其他</label>
+        <textarea class="input" rows="3" placeholder="补充说明（选填）" style="margin-top:12px;"></textarea>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;"><button class="btn" data-close>取消</button><button class="btn primary" data-act="submitreport">提交举报</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 创作者认证 ====== -->
+  <div class="overlay" id="verify">
+    <div class="sheet" style="width:min(620px,94%);">
+      <div class="sh-head"><b>创作者认证</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="steps"><span class="stp on">① 资料</span><span class="stp">② 作品</span><span class="stp">③ 待审</span></div>
+        <div class="copy" style="margin:12px 0;">认证后获得 <span class="vbadge">认证作者</span> 标识、专属徽章与更高曝光权重。owner 人工审核。</div>
+        <div class="field"><label>创作领域 / 简介</label><textarea class="input" rows="2" placeholder="例如：专做唐宋题材的考据向剧本"></textarea></div>
+        <div class="field"><label>代表作（至少 1 部已上架）</label><input class="input" placeholder="贞观元年·武德宫变后"></div>
+        <div class="field"><label>外部主页 / 社交（选填，便于核实）</label><input class="input" placeholder="https://"></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;"><button class="btn" data-close>稍后</button><button class="btn primary" data-act="submitverify">提交认证申请</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 新手引导 ====== -->
+  <div class="overlay" id="onboard">
+    <div class="sheet" style="width:min(560px,94%);">
+      <div class="sh-head"><b>欢迎来到天命 · 创意工坊</b><button class="btn sm" style="margin-left:auto;" data-close>跳过</button></div>
+      <div class="sh-body" style="text-align:center;">
+        <div class="seal" style="width:64px;height:64px;border-radius:12px;font-size:30px;margin:4px auto 16px;">坊</div>
+        <div class="onb-steps">
+          <div class="onb"><div class="oi">①</div><b>逛</b><small>发现 / 浏览 / 排行挑剧本</small></div>
+          <div class="onb"><div class="oi">②</div><b>装</b><small>一键在线安装入库</small></div>
+          <div class="onb"><div class="oi">③</div><b>玩</b><small>开局演绎你的历史</small></div>
+          <div class="onb"><div class="oi">④</div><b>创</b><small>发布剧本给天下人</small></div>
+        </div>
+        <div class="copy" style="margin:16px 0;">离线开局、读档、本地工坊始终可用；账号只是增强，不是门槛。</div>
+        <button class="btn primary" data-close>开始逛逛</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 发布（含封面上传） ====== -->
+  <div class="overlay" id="publish">
+    <div class="sheet" style="width:min(760px,95%);max-height:90%;">
+      <div class="sh-head"><b>发布剧本到工坊</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="ai-promo" data-open="aicreate"><div><b>✦ 不知从何下笔？用 AI 共创起草</b><small>描述想法 → 生成背景 / 角色 / 事件 + 平衡校验</small></div><span style="color:var(--gold);">→</span></div>
+        <div class="pub-grid">
+          <div>
+            <label class="flbl">剧本形象图（封面）</label>
+            <div class="uploader" id="uploader"><div class="up-empty"><div class="up-ic">＋</div><b>上传封面图</b><small>点击或拖拽 · 建议竖版 3:4<br>不传则自动用剪纸场景图</small></div></div>
+            <input type="file" id="coverFile" accept="image/*" hidden>
+            <input type="file" id="assetFile" multiple hidden>
+            <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn sm" data-act="pickcover" style="flex:1;">选择图片</button><button class="btn sm" data-act="clearcover">清除</button></div>
+            <label class="flbl" style="margin-top:12px;">资源文件 <span id="assetHint" style="color:var(--ink-faint);font-weight:400;">（剧本 JSON）</span></label>
+            <div class="uploader" id="assetUp" style="height:88px;"><div class="up-empty" style="padding:8px;"><div class="up-ic" style="width:34px;height:34px;font-size:18px;margin-bottom:5px;">⛬</div><small id="assetTxt">批量上传 · 立绘 PNG / 音乐 OGG / 地图 / 脚本</small></div></div>
+            <div class="copy" style="margin-top:8px;font-size:11.5px;">自定义封面与资源经审核后展示；含真人 / 版权素材将被驳回。</div>
+          </div>
+          <div>
+            <div class="field"><label>内容类型</label><select class="input" id="pubType"><option>剧本（JSON）</option><option>立绘包（多图 PNG）</option><option>音乐包（音频 OGG/MP3）</option><option>地图包</option><option>规则 / MOD 脚本</option></select></div>
+            <div class="field"><label>标题</label><input class="input" value="盛唐人物·立绘包"></div>
+            <div class="field"><label>简介</label><textarea class="input" rows="3" placeholder="给玩家看的简短说明"></textarea></div>
+            <div class="field"><label>标签</label><input class="input" placeholder="唐 盛世 募兵"></div>
+            <div class="field"><label>朝代 / 难度</label><div style="display:flex;gap:8px;"><select class="input"><option>唐</option><option>明</option><option>宋</option></select><select class="input"><option>标准</option><option>硬核</option><option>入门</option></select></div></div>
+            <div class="field"><label>依赖资源（其他工坊包，玩家装本剧本时自动装齐）</label><div class="deps-edit"><span class="tag">明末人物·立绘包 ✕</span><span class="tag">古风 BGM 包 ✕</span><button class="btn sm" data-act="adddep">＋ 添加依赖</button></div></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;"><button class="btn" data-close>存草稿</button><button class="btn primary" data-act="submitpublish">提交发布（待审核）</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 讨论盖楼详情 ====== -->
+  <div class="overlay" id="thread">
+    <div class="sheet" style="width:min(700px,94%);max-height:88%;">
+      <div class="sh-head"><b>讨论详情</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="op">
+          <div class="th-h" style="margin-bottom:8px;"><span class="th-tag g">攻略</span><b>【收权三步】先夺东厂、再分票拟、后清生祠</b></div>
+          <div class="rev" style="border:none;padding:0;"><div class="seal av" style="width:36px;height:36px;border-radius:50%;font-size:16px;">史</div><div><div class="hd"><b>史海钩沉</b><span class="vbadge">精选作者</span><small>3 天前 · 置顶</small></div><p>分享一套稳定收权流程，核心是别急着杀，先削权再断财源。第一回合先稳住司礼监，第二回合分票拟之权……（正文略）</p><div class="vote"><a data-act="like">赞 · 88</a><a>引用</a></div></div></div>
+        </div>
+        <div class="sec-h"><h3>全部回复 · 31</h3><span class="more">按楼层 ▾</span></div>
+        <div id="floors">
+          <div class="floor"><div class="fl-n">1F</div><div class="seal av" style="width:32px;height:32px;border-radius:50%;font-size:14px;">边</div><div><div class="hd"><b>边镇老卒</b><small>3 天前</small></div><p><span class="mention">@史海钩沉</span> 实测有效，东厂一夺，阉党立刻软了一截。</p><div class="vote"><a data-act="like">赞 · 24</a><a>回复</a></div></div></div>
+          <div class="floor"><div class="fl-n">2F</div><div class="seal av" style="width:32px;height:32px;border-radius:50%;font-size:14px;">汴</div><div><div class="hd"><b>汴梁旧梦</b><small>2 天前</small></div><p>补充：清生祠那步别太早，民心没铺垫会反噬。</p><div class="vote"><a data-act="like">赞 · 17</a><a>回复</a></div></div></div>
+          <div class="floor sub"><div class="fl-n">↳</div><div class="seal av" style="width:30px;height:30px;border-radius:50%;font-size:13px;">史</div><div><div class="hd"><b>史海钩沉</b> <span style="color:var(--ink-faint);">回复</span> <span class="mention">@汴梁旧梦</span><small>2 天前</small></div><p>对，所以第二步先把民心垫到 50 以上再动。</p><div class="vote"><a data-act="like">赞 · 9</a></div></div></div>
+        </div>
+        <div class="reply-box"><div style="position:relative;flex:1;"><input class="input" id="flText" placeholder="回复楼主… 输 @ 可提及好友"><div class="mention-pop" id="menpop" hidden></div></div><button class="btn primary" data-act="flsend">回复</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 消息中心 ====== -->
+  <div class="overlay" id="inbox">
+    <div class="sheet" style="width:min(720px,94%);height:min(560px,82%);">
+      <div class="sh-head"><b>消息中心</b><button class="btn sm" style="margin-left:auto;" data-act="readall">全部已读</button><button class="btn sm" style="margin-left:8px;" data-close>关闭</button></div>
+      <div class="inbox-wrap">
+        <div class="inbox-nav"><a class="on">全部 <span>6</span></a><a>私信 <span>2</span></a><a>评论回复 <span>2</span></a><a>@我的 <span>1</span></a><a>系统</a></div>
+        <div class="inbox-list scroll">
+          <div class="notif unread"><div class="ic">信</div><div><b>史海钩沉</b> 给你发了私信<p>要不要一起做个《开元》联动？</p></div><small>10 分前</small></div>
+          <div class="notif unread"><div class="ic">@</div><div><b>边镇老卒</b> 在讨论中 @了你<p><span class="mention">@同志</span> 实测有效，东厂一夺…</p></div><small>1 时前</small></div>
+          <div class="notif unread"><div class="ic">评</div><div><b>史海钩沉</b> 回复了你的评价<p>多谢指正，已在 v2.0.1 调整。</p></div><small>1 时前</small></div>
+          <div class="notif"><div class="ic">粉</div><div><b>边镇老卒</b> 关注了你<p>你的粉丝 +1，共 1,204 人。</p></div><small>3 时前</small></div>
+          <div class="notif"><div class="ic">版</div><div>《天启七年·九月》发布 v1.2.0<p>平衡宗禄/军饷。点此更新。</p></div><small>昨天</small></div>
+          <div class="notif"><div class="ic">审</div><div>《绍宋·建炎元年八月》已通过审核<p>已上架在线工坊。</p></div><small>昨天</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 创作者数据下钻 ====== -->
+  <div class="overlay" id="analytics">
+    <div class="sheet" style="width:min(780px,95%);max-height:90%;">
+      <div class="sh-head"><b>作品数据 · 天启七年·九月</b><select class="sel" style="margin-left:auto;height:30px;background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--ink);padding:0 8px;"><option>近 30 天</option><option>近 7 天</option><option>全部</option></select><button class="btn sm" style="margin-left:8px;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="bento" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat"><div class="lbl">下载</div><div class="num">1,287</div><div class="delta">↑ 312 本周</div></div>
+          <div class="stat"><div class="lbl">完玩率</div><div class="num">63%</div><div class="delta">↑ 4%</div></div>
+          <div class="stat"><div class="lbl">收藏</div><div class="num">428</div><div class="delta">↑ 51</div></div>
+          <div class="stat"><div class="lbl">差评率</div><div class="num">6%</div><div class="delta down">↑ 1%</div></div>
+        </div>
+        <div class="sec-h"><h3>下载趋势</h3></div>
+        <div class="chart"><div class="bar" style="height:40%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:66%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:74%"></div><div class="bar" style="height:82%"></div><div class="bar" style="height:71%"></div><div class="bar" style="height:90%"></div><div class="bar" style="height:97%"></div><div class="bar" style="height:78%"></div><div class="bar" style="height:86%"></div><div class="bar" style="height:93%"></div><div class="bar" style="height:100%"></div></div>
+        <div class="cols">
+          <div><div class="sec-h"><h3>评分分布</h3></div>
+            <div class="distrib">
+              <div class="db"><span>5★</span><i style="width:72%"></i><em>72%</em></div>
+              <div class="db"><span>4★</span><i style="width:18%"></i><em>18%</em></div>
+              <div class="db"><span>3★</span><i style="width:6%"></i><em>6%</em></div>
+              <div class="db"><span>2★</span><i style="width:2%"></i><em>2%</em></div>
+              <div class="db"><span>1★</span><i style="width:2%"></i><em>2%</em></div>
+            </div>
+          </div>
+          <div><div class="sec-h"><h3>来源渠道</h3></div>
+            <div class="distrib">
+              <div class="db"><span>发现页</span><i style="width:46%"></i><em>46%</em></div>
+              <div class="db"><span>排行榜</span><i style="width:24%"></i><em>24%</em></div>
+              <div class="db"><span>专题</span><i style="width:16%"></i><em>16%</em></div>
+              <div class="db"><span>作者页</span><i style="width:9%"></i><em>9%</em></div>
+              <div class="db"><span>搜索</span><i style="width:5%"></i><em>5%</em></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== AI 共创 ====== -->
+  <div class="overlay" id="aicreate">
+    <div class="sheet" style="width:min(760px,95%);height:min(600px,86%);">
+      <div class="sh-head"><b>AI 共创 · 剧本助手</b><span class="vbadge" style="margin-left:10px;">演绎脑驱动</span><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="ai-wrap">
+        <div class="ai-msgs" id="aiMsgs">
+          <div class="ai-bub ai">说说你想要的剧本——朝代、人物、想玩出什么张力。我来起草背景、角色、开局事件，并跑一遍平衡校验。</div>
+          <div class="ai-bub me">唐玄宗晚年、安史之乱前夜，玩李隆基，要那种盛极而衰、温水煮青蛙的无力感。</div>
+          <div class="ai-bub ai"><b>已生成草稿《天宝十四载·渔阳鼙鼓》</b><br>· 背景：开元余晖，李林甫已死、杨国忠当国，安禄山兼三镇节度<br>· 角色：玄宗 / 杨贵妃 / 杨国忠 / 安禄山 / 高力士 / 哥舒翰…（已拟 28 人）<br>· 开局事件：华清宫赐浴 · 范阳异动谍报 · 边将入朝三选一<br><span class="ai-tag ok">✓ 财政健康</span><span class="ai-tag warn">⚠ 兵权过度集中于安禄山（设计意图？）</span></div>
+        </div>
+        <div class="ai-actions"><button class="btn sm">重新生成</button><button class="btn sm">只要角色表</button><button class="btn sm">再做平衡校验</button><button class="btn primary" data-act="ai-fill">填入发布表单 →</button></div>
+        <div class="ai-input"><input class="input" id="aiText" placeholder="继续描述，或让我调整某处…"><button class="btn primary" data-act="ai-send">发送</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Fork 改编 ====== -->
+  <div class="overlay" id="fork">
+    <div class="sheet" style="width:min(620px,94%);">
+      <div class="sh-head"><b>改编此剧本（Fork）</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="copy" style="margin-bottom:12px;">基于《天启七年·九月》创建你的改编副本，做你的历史 what-if。原作者署名将永久保留在血缘里。</div>
+        <div class="sec-h"><h3>血缘</h3></div>
+        <div class="lineage">
+          <div class="ln root">天启七年·九月 <small>天命官方 · 原作 · ↓1287</small></div>
+          <div class="ln sub">└ 天启·东林翻盘线 <small>史海钩沉 · ↓340</small></div>
+          <div class="ln sub">└ 天启·阉党不倒线 <small>青词宰相 · ↓180</small></div>
+          <div class="ln sub me">└ 你的改编副本 <small>同志 · 草稿</small></div>
+        </div>
+        <div style="margin:8px 0 2px;"><span style="color:var(--gold);cursor:pointer;font-size:12.5px;" data-act="toworldtree">查看完整世界线树 ›</span></div>
+        <div class="field"><label>改编名</label><input class="input" value="天启·假如袁崇焕不死"></div>
+        <div class="field"><label>改编说明（与原作的差异）</label><textarea class="input" rows="2" placeholder="例如：保留袁崇焕，加入与后金议和的分支线…"></textarea></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;"><button class="btn" data-close>取消</button><button class="btn primary" data-act="dofork">创建改编副本</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 试玩开局 ====== -->
+  <div class="overlay" id="demo">
+    <div class="sheet" style="width:min(680px,94%);max-height:88%;">
+      <div class="sh-head"><b>试玩开局 · 天启七年·九月</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="demo-stage"><div class="bg" data-scene-bg="chao"></div><div class="demo-ov"><div class="kick">天启七年 九月 · 乾清宫</div><p id="demoText">熹宗龙驭上宾，你以信王入继大统。殿外魏忠贤率百官跪迎，山呼万岁——声震屋瓦，却无一人是你的人。</p></div></div>
+        <div class="sec-h"><h3>第一个抉择</h3></div>
+        <div id="demoChoices">
+          <button class="demo-choice" data-act="demo-pick" data-r="先稳住魏忠贤，虚与委蛇——他暂时安心，但收权之路更长。">① 先稳住魏忠贤，虚与委蛇，徐图后计</button>
+          <button class="demo-choice" data-act="demo-pick" data-r="召见英国公张惟贤——勋贵态度暧昧，但你摸到了一丝可借之力。">② 召见英国公，试探勋贵态度</button>
+          <button class="demo-choice" data-act="demo-pick" data-r="留中不发，暗查司礼监与东厂——情报渐明，但夜长梦多。">③ 留中不发，先摸清司礼监与东厂底细</button>
+        </div>
+        <div class="status" style="margin-top:14px;">这是开局前 1 回合试玩。完整剧本含 52 角色、多线推演与 AI 演绎。</div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;"><button class="btn" data-close>退出试玩</button><button class="btn primary" data-act="install">安装完整版</button></div>
+        <div class="install-bar" hidden><i></i><span>正在安装…</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 发布战报 ====== -->
+  <div class="overlay" id="aar">
+    <div class="sheet" style="width:min(680px,94%);max-height:88%;">
+      <div class="sh-head"><b>发布战报 · 分享你的史册</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="field"><label>选择存档 / 史册</label><select class="input"><option>天启七年·九月 · 标准 · 38 回合 · 中兴结局</option><option>绍宋·建炎元年八月 · 硬核 · 60 回合 · 偏安结局</option></select></div>
+        <div class="field"><label>结局</label><div style="display:flex;gap:8px;"><span class="chip on">中兴</span><span class="chip">偏安</span><span class="chip">倾覆</span><span class="chip">自定义</span></div></div>
+        <div class="field"><label>标题</label><input class="input" value="夺东厂、扳魏阉、守辽东——我的天启中兴之路"></div>
+        <div class="field"><label>战报正文（自动带入关键抉择，可编辑）</label><textarea class="input" rows="3">第 1 回合先稳住魏忠贤；第 8 回合分票拟之权；第 20 回合借红丸案扳倒阉党，辽东以孙承宗守之……</textarea></div>
+        <div class="field"><label>史册截图（自动从存档抓取）</label><div class="shots"><div class="sh">登基</div><div class="sh">诛阉</div><div class="sh">凯旋</div></div></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;"><button class="btn" data-close>存草稿</button><button class="btn primary" data-act="submitaar">发布到战报广场</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== B·通关结算 ====== -->
+  <div class="overlay" id="finish">
+    <div class="sheet" style="width:min(680px,94%);max-height:90%;">
+      <div class="sh-head"><b>通关结算 · 天启七年·九月</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body" style="text-align:center;">
+        <div class="aar-end win" style="font-size:16px;padding:7px 22px;display:inline-block;margin:4px 0;">中兴结局</div>
+        <div class="bento" style="grid-template-columns:repeat(4,1fr);text-align:left;margin-top:14px;">
+          <div class="stat"><div class="lbl">用时</div><div class="num" style="font-size:24px;">38</div><div class="delta">回合</div></div>
+          <div class="stat"><div class="lbl">皇威</div><div class="num" style="font-size:24px;">82</div><div class="delta">↑ 高</div></div>
+          <div class="stat"><div class="lbl">民心</div><div class="num" style="font-size:24px;">71</div><div class="delta">↑ 稳</div></div>
+          <div class="stat"><div class="lbl">社区胜率</div><div class="num" style="font-size:24px;">38%</div><div class="delta">你属前 20%</div></div>
+        </div>
+        <div class="sec-h"><h3>解锁成就</h3></div>
+        <div class="badges-wall" style="grid-template-columns:repeat(3,1fr);">
+          <div class="bdg"><div class="bi">诛</div><b>诛阉</b><small>扳倒魏忠贤</small></div>
+          <div class="bdg"><div class="bi">辽</div><b>辽东不失</b><small>守住关宁防线</small></div>
+          <div class="bdg"><div class="bi">兴</div><b>中兴之主</b><small>达成中兴结局</small></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;"><button class="btn primary" data-open="aar">写战报分享</button><button class="btn" data-act="relaytoscenario">接龙成剧本</button><button class="btn" data-act="like">给本局点赞</button><button class="btn" data-detail>看相关剧本</button><button class="btn" data-close>再来一局</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== C·朝代时间轴 ====== -->
+  <div class="overlay" id="timeline">
+    <div class="sheet" style="width:min(860px,96%);max-height:88%;">
+      <div class="sh-head"><b>朝代时间轴 · 按史浏览</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="era"><div class="era-h"><b>隋唐</b><small>581 – 907</small></div><div class="hrow">
+          <div class="mini" data-detail><div class="cover jin">贞</div><div class="pad"><h4>贞观元年·武德宫变后</h4><div class="au">↓1893</div></div></div>
+          <div class="mini" data-detail><div class="cover dai">开</div><div class="pad"><h4>开元盛世·二十四年</h4><div class="au">↓540</div></div></div>
+          <div class="mini" data-detail><div class="cover jiang">安</div><div class="pad"><h4>安史之乱·天宝十四载</h4><div class="au">↓721</div></div></div>
+        </div></div>
+        <div class="era"><div class="era-h"><b>两宋</b><small>960 – 1279</small></div><div class="hrow">
+          <div class="mini" data-detail><div class="cover mo">靖</div><div class="pad"><h4>靖康元年·汴京围城</h4><div class="au">↓567</div></div></div>
+          <div class="mini" data-detail><div class="cover dai">宋</div><div class="pad"><h4>绍宋·建炎元年八月</h4><div class="au">↓842</div></div></div>
+          <div class="mini" data-detail><div class="cover zhe">绍</div><div class="pad"><h4>绍兴和议·建炎四年</h4><div class="au">↓388</div></div></div>
+        </div></div>
+        <div class="era"><div class="era-h"><b>大明</b><small>1368 – 1644</small></div><div class="hrow">
+          <div class="mini" data-detail><div class="cover zhu">永</div><div class="pad"><h4>永乐元年·靖难之后</h4><div class="au">↓405</div></div></div>
+          <div class="mini" data-detail><div class="cover zhe">万</div><div class="pad"><h4>万历二十年·宁夏之役</h4><div class="au">↓213</div></div></div>
+          <div class="mini" data-detail><div class="cover zhu">启</div><div class="pad"><h4>天启七年·九月</h4><div class="au">↓1287</div></div></div>
+          <div class="mini" data-detail><div class="cover jiang">甲</div><div class="pad"><h4>甲申之变·1644</h4><div class="au">↓712</div></div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== C·版本对比 ====== -->
+  <div class="overlay" id="vdiff">
+    <div class="sheet" style="width:min(640px,94%);">
+      <div class="sh-head"><b>版本对比 · 天启七年·九月</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;color:var(--ink-dim);"><select class="input" style="width:auto;"><option>v1.1.0</option></select> → <select class="input" style="width:auto;"><option>v1.2.0（最新）</option></select></div>
+        <div class="difflist">
+          <div class="diffrow add">＋ 番薯产出接入税基，财政不再凭空蒸发</div>
+          <div class="diffrow add">＋ 新增「罪己诏」事件，皇威可控回升</div>
+          <div class="diffrow chg">～ 宗禄 / 军饷按难度缩放（演义档减压）</div>
+          <div class="diffrow chg">～ 平衡：民心不可抗力扣分加封顶</div>
+          <div class="diffrow del">－ 移除 9 个废弃试验事件</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== D·剧本编辑器 ====== -->
+  <div class="overlay" id="editor">
+    <div class="sheet" style="width:min(960px,97%);height:min(640px,90%);">
+      <div class="sh-head"><b>剧本编辑器</b><span class="vbadge" style="margin-left:10px;">草稿已云同步 ✓</span><span style="margin-left:auto;font-size:12px;color:var(--ink-dim);">协作 <span class="seal" style="width:22px;height:22px;border-radius:50%;font-size:11px;display:inline-grid;vertical-align:middle;">边</span> +1</span><button class="btn sm" style="margin-left:12px;" data-close>关闭</button></div>
+      <div class="editor-wrap">
+        <div class="ed-tree">
+          <div class="ed-node on">概览</div><div class="ed-node">背景设定</div><div class="ed-node">角色 · 28</div><div class="ed-node">势力 · 6</div><div class="ed-node">行政区划</div><div class="ed-node">事件链 · 44</div><div class="ed-node">开局态势</div><div class="ed-node">地图</div>
+        </div>
+        <div class="ed-main scroll">
+          <div class="field"><label>剧本名</label><input class="input" value="天宝十四载·渔阳鼙鼓"></div>
+          <div class="field"><label>背景设定</label><textarea class="input" rows="4">开元盛世余晖，李林甫已死、杨国忠当国，安禄山兼三镇节度，势倾朝野……</textarea></div>
+          <div class="ai-promo" data-open="aicreate" style="margin:6px 0;"><div><b>✦ 让 AI 补全 / 润色这一段</b><small>生成、查漏、平衡校验</small></div><span style="color:var(--gold)">→</span></div>
+          <div class="field"><label>开局年月</label><input class="input" value="天宝十四载 十一月"></div>
+        </div>
+        <div class="ed-side">
+          <h4 style="font-family:var(--serif);color:var(--gold-bright);margin:0 0 10px;font-size:14px;">发布前自检</h4>
+          <div class="chk ok">✓ schema 结构完整</div>
+          <div class="chk ok">✓ 角色 / 势力引用无悬空</div>
+          <div class="chk warn">⚠ 敏感词 1 处待复核</div>
+          <div class="chk warn">⚠ 平衡：安禄山兵权偏高</div>
+          <div class="chk ok">✓ 未含版权素材</div>
+          <button class="btn primary" style="width:100%;margin-top:14px;" data-open="publish">通过自检 · 去发布</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== D·创作者学院 ====== -->
+  <div class="overlay" id="academy">
+    <div class="sheet" style="width:min(820px,95%);max-height:88%;">
+      <div class="sh-head"><b>创作者学院</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="sec-h"><h3>新手教程</h3></div>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="card"><div class="cover jin" style="height:88px;">一</div><div class="pad"><h4>5 分钟做出第一个剧本</h4><div class="au">图文 · 入门</div></div></div>
+          <div class="card"><div class="cover dai" style="height:88px;">二</div><div class="pad"><h4>角色与势力关系设计</h4><div class="au">图文 · 进阶</div></div></div>
+          <div class="card"><div class="cover zhe" style="height:88px;">三</div><div class="pad"><h4>事件链与分支怎么写</h4><div class="au">视频 · 12 分</div></div></div>
+        </div>
+        <div class="sec-h"><h3>模板库 · 一键起稿</h3></div>
+        <div class="grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="card" data-open="editor"><div class="cover zhu" style="height:78px;">登基</div><div class="pad"><h4>新君继位模板</h4></div></div>
+          <div class="card" data-open="editor"><div class="cover mo" style="height:78px;">守城</div><div class="pad"><h4>围城危局模板</h4></div></div>
+          <div class="card" data-open="editor"><div class="cover jin" style="height:78px;">治世</div><div class="pad"><h4>盛世治理模板</h4></div></div>
+          <div class="card" data-open="editor"><div class="cover jiang" style="height:78px;">乱世</div><div class="pad"><h4>群雄逐鹿模板</h4></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== E·平台运营 ====== -->
+  <div class="overlay" id="ops">
+    <div class="sheet" style="width:min(880px,96%);max-height:90%;">
+      <div class="sh-head"><b>平台运营 · owner</b><button class="btn sm" style="margin-left:auto;" data-close>关闭</button></div>
+      <div class="sh-body">
+        <div class="bento" style="grid-template-columns:repeat(4,1fr);">
+          <div class="stat"><div class="lbl">日活</div><div class="num">3,420</div><div class="delta">↑ 8%</div></div>
+          <div class="stat"><div class="lbl">今日上传</div><div class="num">27</div><div class="delta">剧18/绘6/乐3</div></div>
+          <div class="stat"><div class="lbl">审核积压</div><div class="num">4</div><div class="delta down">↑ 2</div></div>
+          <div class="stat"><div class="lbl">存储用量</div><div class="num">62%</div><div class="delta">38.2 / 61 GB</div></div>
+        </div>
+        <div class="cols">
+          <div>
+            <div class="sec-h"><h3>公告 / 活动管理</h3><span class="more">＋ 发公告</span></div>
+            <div class="mywork"><div class="ic-up">告</div><div><b>1.3.1.0 已发布</b><br><small>置顶 · 邸报已推送</small></div><div></div><span class="st-pill live">展示中</span><button class="btn sm">下线</button></div>
+            <div class="mywork"><div class="ic-up">赛</div><div><b>开国大典征文大赛</b><br><small>活动 · 进行中</small></div><div></div><span class="st-pill live">展示中</span><button class="btn sm">编辑</button></div>
+            <div class="mywork"><div class="ic-up">荐</div><div><b>本周精选位</b><br><small>首页轮播 3 席</small></div><div></div><button class="btn sm">编排</button></div>
+          </div>
+          <aside class="rail">
+            <h4>风控告警</h4>
+            <div class="rk"><div class="t"><b>异常下载激增</b><small>某新包 1h ↑2k · 疑刷量</small></div><button class="btn sm danger-act">冻结</button></div>
+            <div class="rk"><div class="t"><b>批量注册</b><small>同 IP 12 账号</small></div><button class="btn sm">核查</button></div>
+            <div class="status" style="margin-top:10px;">自动预筛今日拦截 9 次违规上传（敏感词 / 查重 / prompt 注入）。</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  // toast
+  const tw = document.createElement('div'); tw.className='toast-wrap'; (document.querySelector('.app')||document.body).appendChild(tw);
+  function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; tw.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 2400); }
+
+  function go(name){
+    $$('.pane').forEach(p=>p.classList.toggle('on',p.dataset.pane===name));
+    $$('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.go===name));
+    $$('.demo-bar [data-go]').forEach(b=>b.classList.toggle('on',b.dataset.go===name));
+    const sc=$('#scroll'); if(sc) sc.scrollTop=0;
+  }
+  $$('[data-go]').forEach(el=>el.addEventListener('click',()=>{ if(el.dataset.go) go(el.dataset.go); }));
+  function open(id){ $('#'+id).classList.add('on'); }
+  function closeAll(){ $$('.overlay').forEach(o=>o.classList.remove('on')); }
+  const DETAIL={
+    juben:{head:'剧本详情',cover:'zhu',g:'启',kick:'官方剧本 · 明末',title:'天启七年·九月——君王初立，权阉当国',meta:'<span class="stars">★★★★★<i>4.7 · 53 评</i></span><span>↓1,287</span><span>v1.2.0</span><span>8.7 MB · 52 角色</span>',tags:'明末/权谋/官方/高难度',install:'在线安装'},
+    lihui:{head:'立绘包详情',cover:'jin',g:'绘',kick:'立绘包 · 通用',title:'盛唐人物·立绘包（44 张）',meta:'<span class="stars">★★★★★<i>4.6 · 31 评</i></span><span>↓930</span><span>v1.3</span><span>88 MB · 44 张立绘</span>',tags:'立绘/通用/写意/PNG透明',install:'安装立绘包'},
+    yinyue:{head:'音乐包详情',cover:'dai',g:'乐',kick:'音乐包 · 古风',title:'宫商角徵羽·古风 BGM 包（18 首）',meta:'<span class="stars">★★★★★<i>4.8 · 64 评</i></span><span>↓1,542</span><span>v2.0</span><span>64 MB · 52:10</span>',tags:'配乐/古风/通用',install:'安装音乐包'},
+    map:{head:'地图包详情',cover:'qing',g:'图',kick:'地图包 · 写实',title:'万里江山·高清舆图包（9 朝）',meta:'<span class="stars">★★★★☆<i>4.4 · 12 评</i></span><span>↓405</span><span>v1.1</span><span>126 MB · 9 朝</span>',tags:'地图/写实/通用',install:'安装地图包'}
+  };
+  function openDetail(type){
+    const d=DETAIL[type]||DETAIL.juben;
+    $('#dHeadT').textContent=d.head;
+    const cv=$('#dCover'); cv.className='cover '+d.cover; cv.__sceneDone=false; cv.textContent=d.g; if(window.__enhanceCovers) __enhanceCovers(document.getElementById('detail'));
+    $('#dKick').textContent=d.kick; $('#dTitle').textContent=d.title; $('#dMeta').innerHTML=d.meta;
+    $('#dTags').innerHTML=d.tags.split('/').map(t=>'<span class="tag">'+t+'</span>').join('');
+    $('#dInstall').textContent=d.install; $('#dInstall').disabled=false;
+    const ib=document.querySelector('#detail .install-bar'); if(ib) ib.hidden=true;
+    $('#dt-juben').hidden=type!=='juben'; $('#dt-lihui').hidden=type!=='lihui'; $('#dt-yinyue').hidden=type!=='yinyue';
+    $('.verpick').style.display=type==='juben'?'':'none';
+    const isJ=type==='juben'; ['dTry','dFork','dPlay','dSeries'].forEach(id=>{ const b=$('#'+id); if(b) b.style.display=isJ?'':'none'; });
+    open('detail');
+  }
+  $$('[data-detail]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('[data-act]'))return; const host=el.closest('[data-ptype]'); openDetail(host?host.dataset.ptype:'juben'); }));
+  // 内容类型 → 资源上传提示
+  const pt=$('#pubType');
+  if(pt) pt.addEventListener('change',()=>{ const v=pt.value;
+    const map={'剧本':'剧本 JSON','立绘':'立绘 PNG（多张·透明底）','音乐':'音频 OGG/MP3（多首）','地图':'地图数据 + 图块','规则':'规则 / MOD 脚本','MOD':'规则 / MOD 脚本'};
+    for(const k in map){ if(v.indexOf(k)>=0){ $('#assetHint').textContent='（'+map[k]+'）'; $('#assetTxt').textContent='批量上传 · '+map[k]; break; } } });
+  const au=$('#assetUp'), af=$('#assetFile');
+  if(au){ au.addEventListener('click',()=>af.click()); af.addEventListener('change',e=>{ const n=e.target.files.length; if(n){ $('#assetTxt').textContent='已选择 '+n+' 个文件 ✓'; toast('已选择 '+n+' 个资源文件'); } }); }
+  $$('[data-author]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();open('author');}));
+  $$('[data-open]').forEach(el=>el.addEventListener('click',()=>open(el.dataset.open)));
+  $('#dmBtn').addEventListener('click',()=>open('dm'));
+  $('#openDetail').addEventListener('click',()=>open('detail'));
+  $('#openAuthor').addEventListener('click',()=>open('author'));
+  document.addEventListener('click',e=>{ if(e.target.closest('[data-close]')) closeAll(); });
+  $$('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on');}));
+  // 发布按钮 → 发布浮层
+  $$('button').forEach(b=>{ if(/发布(我的|新剧本|新作)/.test(b.textContent)) b.addEventListener('click',()=>open('publish')); });
+
+  // tab 切换通用
+  function tabs(tabSel,paneAttr,tabAttr){ $$(tabSel).forEach(t=>t.addEventListener('click',()=>{
+    $$(tabSel).forEach(x=>x.classList.toggle('on',x===t));
+    $$('['+paneAttr+']').forEach(p=>p.hidden = p.getAttribute(paneAttr)!==t.getAttribute(tabAttr));
+  })); }
+  tabs('[data-dtab]','data-dpane','data-dtab');
+  tabs('[data-atab]','data-apane','data-atab');
+  $$('[data-msub]').forEach(t=>t.addEventListener('click',()=>{
+    $$('[data-msub]').forEach(x=>x.classList.toggle('on',x===t));
+    $$('[data-msub-pane]').forEach(p=>p.hidden = p.dataset.msubPane!==t.dataset.msub);
+  }));
+  // 发现入口 → 浏览
+  $$('.cat').forEach(c=>c.addEventListener('click',()=>go('browse')));
+  $$('.searchhero .btn').forEach(b=>b.addEventListener('click',()=>go('browse')));
+  $$('.sec-h .more').forEach(m=>{ if(!m.dataset.go && !m.querySelector('button') && /全部|更多/.test(m.textContent)) m.addEventListener('click',()=>go('browse')); });
+
+  // 点星评分 widget
+  let pickRating=0;
+  $$('.rp').forEach(rp=>{
+    rp.innerHTML=''; for(let i=1;i<=5;i++){ const s=document.createElement('i'); s.dataset.v=i; s.textContent='☆'; s.style.cursor='pointer'; rp.appendChild(s); }
+    rp.addEventListener('click',e=>{ const s=e.target.closest('i'); if(!s)return; pickRating=+s.dataset.v;
+      Array.from(rp.children).forEach((c,i)=>c.textContent=i<pickRating?'★':'☆'); const v=$('#rpv'); if(v)v.textContent=pickRating+' 星'; });
+  });
+
+  // 登录态
+  let logged=false;
+  $('#tLogin').addEventListener('click',e=>{
+    logged=!logged; e.target.textContent=logged?'已登录':'未登录'; e.target.classList.toggle('on',logged);
+    $('#accOut').style.display=logged?'none':''; $('#accIn').style.display=logged?'':'none';
+    $('#navAv').textContent=logged?'同':'客'; $('#navName').textContent=logged?'同志 ▾':'登录';
+    $('#permA').textContent=logged?'同志（创作者）':'未登录'; $('#permB').textContent=logged?'roman@qq.com':'未登录';
+  });
+  $('#tLoad').addEventListener('click',e=>{
+    const load=$('#hotSkeleton').style.display==='none';
+    $('#hotSkeleton').style.display=load?'grid':'none'; $('#hotGrid').style.display=load?'none':'grid';
+    e.target.textContent=load?'发现·加载中':'发现·已载入'; e.target.classList.toggle('on',load); go('discover');
+  });
+  $('#tEmpty').addEventListener('click',e=>{
+    const empty=$('#meEmpty').style.display==='none';
+    $('#meEmpty').style.display=empty?'':'none'; $('#meContent').style.display=empty?'none':'';
+    e.target.textContent=empty?'我的·空':'我的·有内容'; e.target.classList.toggle('on',empty); go('me');
+  });
+
+  // 封面上传
+  const upl=$('#uploader'), cf=$('#coverFile');
+  const uplEmpty='<div class="up-empty"><div class="up-ic">＋</div><b>上传封面图</b><small>点击或拖拽 · 建议竖版 3:4<br>不传则自动用剪纸场景图</small></div>';
+  function showCover(file){ if(!file)return; const r=new FileReader(); r.onload=()=>{ upl.innerHTML='<img src="'+r.result+'">'; toast('封面已选择，提交后经审核展示'); }; r.readAsDataURL(file); }
+  if(upl){ upl.addEventListener('click',()=>cf.click());
+    upl.addEventListener('dragover',e=>{e.preventDefault();upl.classList.add('drag');});
+    upl.addEventListener('dragleave',()=>upl.classList.remove('drag'));
+    upl.addEventListener('drop',e=>{e.preventDefault();upl.classList.remove('drag'); showCover(e.dataTransfer.files[0]);});
+    cf.addEventListener('change',e=>showCover(e.target.files[0])); }
+
+  // 私信会话切换
+  $$('.dm-c').forEach(c=>c.addEventListener('click',()=>{ $$('.dm-c').forEach(x=>x.classList.toggle('on',x===c)); }));
+  // 消息中心分类
+  $$('.inbox-nav a').forEach(a=>a.addEventListener('click',()=>$$('.inbox-nav a').forEach(x=>x.classList.toggle('on',x===a))));
+  // 作品 → 数据下钻
+  $$('.pane[data-pane="studio"] .mywork').forEach(r=>{ if(r.querySelector('.stat-mini')){ r.style.cursor='pointer'; r.addEventListener('click',e=>{ if(!e.target.closest('button')) open('analytics'); }); } });
+  // @ 提及
+  const MEN=[['史','史海钩沉'],['边','边镇老卒'],['汴','汴梁旧梦'],['命','天命官方'],['青','青词宰相']];
+  const ft=$('#flText'), mp=$('#menpop');
+  if(ft){ ft.addEventListener('input',()=>{ if(/@[^\s@]*$/.test(ft.value)){ mp.innerHTML=MEN.map(m=>'<a data-men="'+m[1]+'"><span class="seal">'+m[0]+'</span>'+m[1]+'</a>').join(''); mp.hidden=false; } else mp.hidden=true; });
+    mp.addEventListener('click',e=>{ const a=e.target.closest('[data-men]'); if(!a)return; ft.value=ft.value.replace(/@[^\s@]*$/,'@'+a.dataset.men+' '); mp.hidden=true; ft.focus(); }); }
+
+  // ====== 可操作 data-act ======
+  document.addEventListener('click',e=>{
+    const el=e.target.closest('[data-act]'); if(!el) return;
+    const act=el.dataset.act;
+    if(act==='install'){ const scope=el.closest('.sheet')||el.closest('.dhero')||document; const bar=scope.querySelector('.install-bar'); if(!bar){ toast('已安装并加入剧本库'); return; } bar.hidden=false; const i=bar.querySelector('i'); el.disabled=true; let w=0;
+      const t=setInterval(()=>{ w+=8+Math.round(w/6); i.style.width=Math.min(100,w)+'%'; if(w>=100){clearInterval(t); bar.querySelector('span').textContent='已安装 ✓'; el.textContent='已安装 ✓'; el.disabled=false; toast('已安装并加入剧本库'); } }, 90); }
+    else if(act==='fav'){ const on=!el.classList.toggle('faved'); el.textContent=on?'收藏 ♡':'已收藏 ♥'; toast(on?'已取消收藏':'已加入收藏夹'); }
+    else if(act==='like'){ const n=el.querySelector('b'); if(n) n.textContent=(+n.textContent+1); toast('已赞赏 ✦ 多谢支持作者'); }
+    else if(act==='helpful'){ const m=el.textContent.match(/\d+/); el.textContent='有用 · '+((+(m?m[0]:0))+1); }
+    else if(act==='submitrev'){ const txt=($('#revText').value||'').trim(); if(!pickRating){toast('请先点星评分');return;}
+      const stars='★★★★★☆☆☆☆☆'.slice(5-pickRating,10-pickRating);
+      const html='<div class="rev"><div class="seal av" style="width:36px;height:36px;border-radius:50%;font-size:16px;">同</div><div><div class="hd"><b>同志</b><span class="stars">'+stars+'</span><small>刚刚</small></div><p>'+(txt||'（未填写文字）')+'</p><div class="vote"><a data-act="helpful">有用 · 0</a><a>回复</a></div></div></div>';
+      $('#revList').insertAdjacentHTML('afterbegin',html); $('#revText').value=''; toast('评价已发表，多谢分享'); }
+    else if(act==='dm'){ open('dm'); }
+    else if(act==='dmsend'){ const inp=$('#dmText'); const v=(inp.value||'').trim(); if(!v)return; const m=$('#dmMsgs');
+      m.insertAdjacentHTML('beforeend','<div class="bub me">'+v+'</div>'); inp.value=''; m.scrollTop=m.scrollHeight;
+      setTimeout(()=>{ m.insertAdjacentHTML('beforeend','<div class="bub them">好，那就这么定，我整理下大纲发你。</div>'); m.scrollTop=m.scrollHeight; }, 800); }
+    else if(act==='submitreport'){ closeAll(); toast('举报已提交，owner 会人工复核'); }
+    else if(act==='submitverify'){ $$('#verify .stp').forEach((s,i)=>s.classList.toggle('on',i===2)); toast('认证申请已提交，等待 owner 审核'); setTimeout(closeAll,900); }
+    else if(act==='submitpublish'){ closeAll(); toast('已提交发布，待 owner 审核通过即上架'); }
+    else if(act==='follow'){ const f=el.classList.toggle('on'); el.textContent=f?'✓ 已关注':'＋ 关注'; el.classList.toggle('primary',!f); toast(f?'已关注 史海钩沉':'已取消关注'); }
+    else if(act==='accept-req'){ const row=el.closest('.friend'); row.style.transition='opacity .3s'; row.style.opacity='0'; setTimeout(()=>row.remove(),300); const c=$('#friendCount'); if(c)c.textContent=+c.textContent+1; toast('已添加为好友'); }
+    else if(act==='ignore-req'){ const row=el.closest('.friend'); row.style.opacity='0'; setTimeout(()=>row.remove(),300); toast('已忽略该请求'); }
+    else if(act==='addfriend'){ el.textContent='已申请'; el.disabled=true; toast('好友申请已发送'); }
+    else if(act==='hotupdate'){ el.textContent='更新中…'; el.disabled=true; setTimeout(()=>{ el.textContent='已应用'; toast('热更已下载并应用，重载前端后生效'); },1400); }
+    else if(act==='updatepack'){ const row=el.closest('.mywork'); el.textContent='更新中…'; el.disabled=true; setTimeout(()=>{ el.outerHTML='<span class="st-pill live">最新</span>'; const b=row.querySelector('.tag'); if(b)b.remove(); toast('剧本已更新到最新'); },1200); }
+    else if(act==='updateall'){ toast('正在更新全部（1 个客户端 + 1 个剧本）…'); }
+    else if(act==='pickcover'){ $('#coverFile').click(); }
+    else if(act==='clearcover'){ $('#uploader').innerHTML=uplEmpty; toast('已清除，将回退剪纸场景图'); }
+    else if(act==='flsend'){ const inp=$('#flText'); const v=(inp.value||'').trim(); if(!v)return; const html=v.replace(/@([^\s@]+)/g,'<span class="mention">@$1</span>');
+      const n=$$('#floors .floor:not(.sub)').length+1;
+      $('#floors').insertAdjacentHTML('beforeend','<div class="floor"><div class="fl-n">'+n+'F</div><div class="seal av" style="width:32px;height:32px;border-radius:50%;font-size:14px;">同</div><div><div class="hd"><b>同志</b><small>刚刚</small></div><p>'+html+'</p><div class="vote"><a data-act="like">赞 · 0</a><a>回复</a></div></div></div>');
+      inp.value=''; toast('已回复楼主'); }
+    else if(act==='adm-view'){ toast('打开被举报内容供 owner 复核'); }
+    else if(act==='adm-pass'||act==='adm-down'||act==='adm-ban'){ const row=el.closest('.admin-row'); const map={'adm-pass':'已通过 / 保留','adm-down':'已下架 / 删除','adm-ban':'已封禁'}; row.style.opacity='.55'; row.querySelector('.admin-act').innerHTML='<span class="st-pill '+(act==='adm-pass'?'live':'review')+'">'+map[act]+'</span>'; toast(map[act]); }
+    else if(act==='readall'){ $$('#inbox .notif.unread').forEach(n=>n.classList.remove('unread')); $$('.tbright .badge').forEach(b=>b.remove()); toast('全部已读'); }
+    else if(act==='analytics'){ open('analytics'); }
+    else if(act==='playtrack'){ const row=el.closest('.track'); const playing=row.classList.contains('playing');
+      $$('.track').forEach(t=>{t.classList.remove('playing'); const pl=t.querySelector('.pl'); if(pl)pl.textContent='▶';});
+      if(!playing){ row.classList.add('playing'); row.querySelector('.pl').textContent='❚❚'; toast('试听：'+row.querySelector('b').textContent); } }
+    else if(act==='openthread'){ open('thread'); }
+    else if(act==='trydemo'){ open('demo'); }
+    else if(act==='forkit'){ open('fork'); }
+    else if(act==='ai-send'){ const inp=$('#aiText'); const v=(inp.value||'').trim(); if(!v)return; const m=$('#aiMsgs');
+      m.insertAdjacentHTML('beforeend','<div class="ai-bub me">'+v+'</div>'); inp.value=''; m.scrollTop=m.scrollHeight;
+      setTimeout(()=>{ m.insertAdjacentHTML('beforeend','<div class="ai-bub ai">好，已据此调整草稿，并重跑平衡校验。<span class="ai-tag ok">✓ 通过</span></div>'); m.scrollTop=m.scrollHeight; },800); }
+    else if(act==='ai-fill'){ closeAll(); open('publish'); toast('AI 草稿已填入发布表单，可继续微调'); }
+    else if(act==='dofork'){ closeAll(); open('publish'); toast('已创建改编副本（草稿），血缘保留原作署名'); }
+    else if(act==='demo-pick'){ $('#demoText').textContent=el.dataset.r||''; $$('#demoChoices .demo-choice').forEach(c=>{c.disabled=true; c.style.opacity='.5';}); el.style.opacity='1'; el.style.borderColor='var(--gold)'; toast('试玩到此——安装完整版继续推演'); }
+    else if(act==='submitaar'){ closeAll(); toast('战报已发布到战报广场'); }
+    else if(act==='adddep'){ const t=document.createElement('span'); t.className='tag'; t.textContent='新依赖包 ✕'; el.parentNode.insertBefore(t,el); toast('已添加依赖资源'); }
+    else if(act==='startrelay'){ toast('已发起接龙——你的史册将作为开局，等人接续'); }
+    else if(act==='joinrelay'){ toast('已接续——基于上一棒的结局开始你的推演'); }
+    else if(act==='toworldtree'){ closeAll(); go('chronicle'); }
+    else if(act==='relaytoscenario'){ closeAll(); go('chronicle'); toast('已把本局史册接龙为新剧本开局'); }
+    else if(act==='playnow'){ closeAll(); toast('正在进入游戏…（演示：直接看通关结算）'); setTimeout(()=>open('finish'),700); }
+    else if(act==='subseries'){ el.textContent='✓ 已订阅系列'; toast('已订阅该系列，出续作自动入库并提醒'); }
+    else if(act==='thirdlogin'){ toast('第三方授权中…登录成功'); }
+    else if(act==='teen'){ const t=$('#teenMode'); const on=el.textContent.indexOf('开启')>=0; if(t)t.textContent=on?'开 · 已限制内容':'关 · 可开启'; el.textContent=on?'关闭青少年模式':'开启青少年模式'; toast(on?'已开启青少年模式':'已关闭青少年模式'); }
+    else if(act==='ratepick'){ /* handled by .rp widget */ }
+  });
+  // 语言切换
+  const langs=['简','繁','EN'],langName={'简':'简体中文','繁':'繁體中文','EN':'English'}; let li=0;
+  const lb=$('#langBtn'); if(lb) lb.addEventListener('click',()=>{ li=(li+1)%3; lb.textContent=langs[li]; toast('已切换语言：'+langName[langs[li]]); });
+</script>
+</body></html>

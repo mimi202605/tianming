@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方向一 · 内容商城</title>
+<link rel="stylesheet" href="preview-redux.css">
+<style>
+body{display:grid;place-items:center;min-height:100%;padding:20px 12px;}
+.hub{width:min(1120px,97vw);height:min(800px,90vh);display:grid;grid-template-rows:auto 1fr auto;}
+/* 顶条 */
+.top{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;padding:13px 20px;
+  border-bottom:1px solid var(--line-strong);background:linear-gradient(90deg,rgba(120,32,22,.34),rgba(0,0,0,.05));}
+.brand{display:flex;align-items:center;gap:11px;}
+.brand .seal{width:38px;height:38px;border-radius:6px;font-size:18px;}
+.brand b{font-family:var(--serif);font-size:18px;letter-spacing:2px;color:var(--gold-bright);}
+.search{display:flex;align-items:center;gap:8px;max-width:440px;border:1px solid var(--line);background:rgba(0,0,0,.3);padding:0 12px;height:40px;}
+.search input{flex:1;background:transparent;border:none;outline:none;color:#f6edda;font:inherit;}
+.search .ic{color:var(--gold);}
+.idchip{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;border:1px solid var(--line);background:rgba(0,0,0,.25);cursor:pointer;}
+.idchip .av{width:30px;height:30px;border-radius:50%;font-size:15px;}
+.idchip small{font-size:12.5px;color:var(--ink);}
+.x{margin-left:6px;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(0,0,0,.25);cursor:pointer;color:var(--ink);}
+
+.body{min-height:0;padding:18px 20px 22px;}
+.body .scroll{height:100%;padding-right:6px;}
+
+/* 精选 hero */
+.hero{display:grid;grid-template-columns:300px 1fr;gap:18px;border:1px solid var(--line-strong);
+  background:linear-gradient(110deg,rgba(60,28,18,.7),rgba(12,8,6,.6));padding:18px;margin-bottom:18px;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.35);}
+.hero .cover{width:300px;height:200px;font-size:64px;}
+.hero .meta .kick{font-size:12px;color:var(--gold);letter-spacing:3px;}
+.hero .meta h2{font-family:var(--serif);font-size:26px;margin:6px 0 8px;color:#f6dca0;letter-spacing:1px;}
+.hero .meta p{font-size:13.5px;line-height:1.75;color:var(--ink-dim);max-width:60ch;}
+.hero .row{display:flex;align-items:center;gap:14px;margin:12px 0 16px;font-size:13px;color:var(--ink-dim);}
+.hero .acts{display:flex;gap:10px;}
+.hero .acts .btn{min-height:46px;padding:0 22px;font-size:15px;}
+
+/* 分类条 */
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.bar .sp{margin-left:auto;}
+.sel{height:32px;background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--ink);padding:0 10px;font:inherit;}
+
+.layout{display:grid;grid-template-columns:1fr 280px;gap:18px;}
+/* 网格 */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-content:start;}
+.card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(48,24,15,.6),rgba(10,7,5,.7));
+  transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease);}
+.card:hover{transform:translateY(-3px);border-color:var(--line-strong);box-shadow:0 10px 26px rgba(0,0,0,.45);}
+.card .cover{width:100%;height:128px;font-size:46px;border-left:none;border-right:none;border-top:none;}
+.card .pad{padding:11px 12px 13px;}
+.card h3{font-family:var(--serif);font-size:15px;margin:0;color:#f4d89a;line-height:1.35;}
+.card .au{font-size:11.5px;color:var(--ink-dim);margin-top:4px;}
+.card .rt{display:flex;align-items:center;justify-content:space-between;margin-top:7px;}
+.card .dl{font-size:11px;color:var(--ink-faint);}
+.card .tg{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap;}
+.card .btn{width:100%;margin-top:11px;min-height:38px;}
+
+/* 右栏排行 */
+.rail{border:1px solid var(--line);background:rgba(0,0,0,.18);padding:14px;align-self:start;}
+.rail h4{margin:0 0 4px;font-family:var(--serif);font-size:15px;color:var(--gold-bright);display:flex;align-items:center;gap:8px;}
+.rail h4::before{content:"";width:4px;height:15px;background:linear-gradient(180deg,var(--gold-bright),var(--gold-deep));}
+.rk{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(214,177,93,.12);}
+.rk:last-child{border-bottom:none;}
+.rk .n{width:22px;height:22px;display:grid;place-items:center;font-family:var(--serif);font-size:13px;color:#caa45e;border:1px solid var(--line);}
+.rk .n.top{color:#1a120a;background:linear-gradient(180deg,var(--gold-bright),var(--gold-deep));border:none;}
+.rk .t{flex:1;min-width:0;}
+.rk .t b{display:block;font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rk .t small{font-size:11px;color:var(--ink-faint);}
+.rail .seg{display:flex;gap:6px;margin:12px 0;}
+.rail .seg .chip{min-height:26px;padding:0 10px;font-size:11.5px;}
+
+.footbar{display:flex;align-items:center;gap:14px;padding:10px 20px;border-top:1px solid var(--line);
+  background:rgba(0,0,0,.22);font-size:12px;color:var(--ink-dim);}
+.footbar .dot{width:8px;height:8px;border-radius:50%;background:#6fcf97;box-shadow:0 0 7px rgba(111,207,151,.7);}
+.footbar .sp{margin-left:auto;}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}.hero .cover{width:100%}}
+</style></head>
+<body>
+<div class="hub frame">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+  <div class="top">
+    <div class="brand"><div class="seal">命</div><b>天命 · 在线</b></div>
+    <div class="search"><span class="ic">⌕</span><input placeholder="搜剧本、作者、朝代、标签…"></div>
+    <div style="display:flex;align-items:center;">
+      <div class="idchip"><div class="seal av">同</div><small>同志 ▾</small></div>
+      <div class="x">✕</div>
+    </div>
+  </div>
+
+  <div class="body"><div class="scroll">
+    <!-- 精选 -->
+    <div class="hero">
+      <div class="cover zhu">启</div>
+      <div class="meta">
+        <div class="kick">本周精选 · 官方剧本</div>
+        <h2>天启七年·九月——君王初立，权阉当国</h2>
+        <p>天启七年九月，十七岁的信王入继大统，魏忠贤权倾朝野、东厂耳目遍布。新君初立，内有阉党环伺、东林党争，外有辽东边衅、后金虎视——如何在虎狼之间收回权柄、重整朝纲？</p>
+        <div class="row">
+          <span class="stars">★★★★★<i>4.7 · 53 评</i></span>
+          <span>下载 1,287</span><span>作者 天命官方</span>
+          <span class="tag">明末</span><span class="tag">权谋</span><span class="tag">官方</span>
+        </div>
+        <div class="acts"><button class="btn primary">在线安装</button><button class="btn">查看详情</button></div>
+      </div>
+    </div>
+
+    <!-- 分类 -->
+    <div class="bar">
+      <span class="chip on">全部</span><span class="chip">官方</span><span class="chip">明</span>
+      <span class="chip">宋</span><span class="chip">唐</span><span class="chip">军事</span><span class="chip">权谋</span>
+      <span class="sp"></span>
+      <select class="sel"><option>最热（下载）</option><option>最新</option><option>评分最高</option></select>
+    </div>
+
+    <div class="layout">
+      <div class="grid">
+        <div class="card"><div class="cover zhu">启</div><div class="pad"><h3>天启七年·九月</h3><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★★<i>4.7</i></span><span class="dl">↓1287</span></div><div class="tg"><span class="tag">明末</span><span class="tag">权谋</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover dai">宋</div><div class="pad"><h3>绍宋·建炎元年八月</h3><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★★<i>4.6</i></span><span class="dl">↓842</span></div><div class="tg"><span class="tag">南宋</span><span class="tag">中兴</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover jin">贞</div><div class="pad"><h3>贞观元年·武德宫变后</h3><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★★<i>4.8</i></span><span class="dl">↓1893</span></div><div class="tg"><span class="tag">唐</span><span class="tag">治世</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover zhe">万</div><div class="pad"><h3>万历二十年·宁夏之役</h3><div class="au">边镇老卒</div><div class="rt"><span class="stars">★★★★☆<i>4.1</i></span><span class="dl">↓213</span></div><div class="tg"><span class="tag">明</span><span class="tag">军事</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover mo">靖</div><div class="pad"><h3>靖康元年·汴京围城</h3><div class="au">汴梁旧梦</div><div class="rt"><span class="stars">★★★★☆<i>4.4</i></span><span class="dl">↓567</span></div><div class="tg"><span class="tag">北宋</span><span class="tag">守城</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover zhu">永</div><div class="pad"><h3>永乐元年·靖难之后</h3><div class="au">天命官方</div><div class="rt"><span class="stars">★★★★☆<i>4.2</i></span><span class="dl">↓405</span></div><div class="tg"><span class="tag">明</span><span class="tag">开拓</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover jiang">安</div><div class="pad"><h3>安史之乱·天宝十四载</h3><div class="au">史海钩沉</div><div class="rt"><span class="stars">★★★★★<i>4.5</i></span><span class="dl">↓721</span></div><div class="tg"><span class="tag">唐</span><span class="tag">战乱</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover qing">嘉</div><div class="pad"><h3>嘉靖·大礼议</h3><div class="au">青词宰相</div><div class="rt"><span class="stars">★★★★☆<i>3.9</i></span><span class="dl">↓156</span></div><div class="tg"><span class="tag">明</span><span class="tag">朝争</span></div><button class="btn primary">在线安装</button></div></div>
+        <div class="card"><div class="cover zhe">绍</div><div class="pad"><h3>绍兴和议·建炎四年</h3><div class="au">中兴四将</div><div class="rt"><span class="stars">★★★★☆<i>4.3</i></span><span class="dl">↓388</span></div><div class="tg"><span class="tag">南宋</span><span class="tag">和战</span></div><button class="btn primary">在线安装</button></div></div>
+      </div>
+
+      <aside class="rail">
+        <h4>热门榜</h4>
+        <div class="seg"><span class="chip on">本周</span><span class="chip">总榜</span></div>
+        <div class="rk"><span class="n top">1</span><div class="t"><b>贞观元年·武德宫变后</b><small>↓1893 · ★4.8</small></div></div>
+        <div class="rk"><span class="n top">2</span><div class="t"><b>天启七年·九月</b><small>↓1287 · ★4.7</small></div></div>
+        <div class="rk"><span class="n top">3</span><div class="t"><b>绍宋·建炎元年八月</b><small>↓842 · ★4.6</small></div></div>
+        <div class="rk"><span class="n">4</span><div class="t"><b>安史之乱·天宝十四载</b><small>↓721 · ★4.5</small></div></div>
+        <div class="rk"><span class="n">5</span><div class="t"><b>靖康元年·汴京围城</b><small>↓567 · ★4.4</small></div></div>
+        <h4 style="margin-top:16px;">我的</h4>
+        <div class="rk"><span class="n">装</span><div class="t"><b>已装 2 部</b><small>1 部有新版可更新</small></div></div>
+        <div class="rk"><span class="n">作</span><div class="t"><b>我的发布</b><small>登录后可投稿</small></div></div>
+        <button class="btn sm" style="width:100%;margin-top:12px;">发布我的剧本</button>
+      </aside>
+    </div>
+  </div></div>
+
+  <div class="footbar"><span class="dot"></span>在线服务正常 · 接口 0.5.0<span>共 8 部剧本</span><span class="sp"></span><span>网页与桌面共用同一工坊与账号</span></div>
+</div>
+</body></html>

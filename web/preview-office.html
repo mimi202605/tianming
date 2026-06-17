@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>官制标签页·美化预览 v2</title>
+<style>
+:root {
+  --bg-1: #0f0d0a;
+  --bg-2: #1a1510;
+  --bg-paper: #241e18;
+  --bg-sunken: #120f0a;
+  --ink-900: #f4eadd;
+  --ink-700: #d9c9a9;
+  --ink-500: #a69470;
+  --ink-300: #6b5d47;
+  --ink-100: #3d342a;
+  --gold-300: #c9a85f;
+  --gold-400: #b89a53;
+  --gold-500: #9d8244;
+  --gold-d: #6b5a30;
+  --vermillion-300: #d15c47;
+  --vermillion-400: #b84738;
+  --vermillion-600: #8f3428;
+  --indigo-400: #5a6fa8;
+  --indigo-600: #3e4e80;
+  --celadon-400: #6a9a7f;
+  --celadon-600: #4a7a5f;
+  --amber-400: #c9a045;
+  --purple-400: #8e6aa8;
+  --blue-400: #5a8fb8;
+  --border-subtle: rgba(184,154,83,0.15);
+  --border-strong: rgba(184,154,83,0.35);
+  --shadow-scroll: 0 6px 18px rgba(0,0,0,0.45),0 0 0 1px rgba(184,154,83,0.08);
+  --font-serif: "STKaiti","KaiTi","楷体","Georgia",serif;
+  --font-song: "STSong","SimSun","宋体",serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;padding:0;background:radial-gradient(ellipse at top,#1a1510 0%,#0f0d0a 70%),var(--bg-1);color:var(--ink-700);font-family:var(--font-song);font-size:14px;line-height:1.7;min-height:100vh;}
+.preview-frame{max-width:1480px;margin:32px auto;background:var(--bg-2);border:1px solid var(--border-subtle);border-radius:6px;overflow:hidden;box-shadow:var(--shadow-scroll);}
+.preview-header{background:linear-gradient(to bottom,rgba(184,154,83,0.04),transparent);padding:12px 20px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:12px;font-size:11px;color:var(--ink-500);letter-spacing:0.1em;}
+.preview-header .dot{width:10px;height:10px;border-radius:50%;}
+.preview-header .dot.r{background:#d15c47;} .preview-header .dot.y{background:#c9a85f;} .preview-header .dot.g{background:#6a9a7f;}
+.preview-header .title{margin-left:auto;font-family:var(--font-serif);letter-spacing:0.3em;color:var(--ink-300);}
+
+/* 标签栏 */
+.tab-bar{display:flex;gap:0;background:var(--bg-1);border-bottom:1px solid var(--border-subtle);overflow-x:auto;}
+.tab-btn{padding:10px 16px;background:transparent;border:none;color:var(--ink-300);font-family:var(--font-serif);font-size:14px;letter-spacing:0.1em;cursor:pointer;border-bottom:2px solid transparent;position:relative;}
+.tab-btn:hover{color:var(--ink-700);}
+.tab-btn.active{color:var(--gold-400);border-bottom-color:var(--gold-400);}
+.tab-btn.active::before{content:"";position:absolute;top:6px;right:6px;width:5px;height:5px;background:var(--vermillion-400);border-radius:1px;transform:rotate(12deg);}
+
+/* ═══ 官制主区 ═══ */
+.og-panel{
+  padding:24px 28px;min-height:1200px;background-color:var(--bg-paper);
+  background-image:
+    repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px)),
+    repeating-linear-gradient(0deg,transparent 0,transparent 3em,rgba(107,93,71,0.02) 3em,rgba(107,93,71,0.02) calc(3em + 1px)),
+    linear-gradient(to bottom,rgba(184,154,83,0.05) 0%,transparent 80px);
+  position:relative;
+}
+.og-panel::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,rgba(139,90,50,0.025) 0.5px,transparent 1px),radial-gradient(circle at 80% 60%,rgba(139,90,50,0.03) 0.5px,transparent 1px);background-size:80px 80px,120px 120px;}
+.og-inner{position:relative;z-index:1;}
+
+/* 主标题 */
+.og-title{text-align:center;margin-bottom:20px;position:relative;padding:14px 0 18px;}
+.og-title::before,.og-title::after{content:"";position:absolute;left:50%;width:180px;height:1px;transform:translateX(-50%);background:linear-gradient(to right,transparent,var(--gold-d),transparent);}
+.og-title::before{top:0;} .og-title::after{bottom:0;}
+.og-title .main{font-family:var(--font-serif);font-size:24px;letter-spacing:0.5em;color:var(--ink-900);margin-bottom:6px;}
+.og-title .sub{font-size:12px;color:var(--ink-300);letter-spacing:0.3em;font-family:var(--font-serif);}
+.og-title .seal{position:absolute;right:28px;top:10px;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.85),rgba(140,40,30,0.75));display:flex;align-items:center;justify-content:center;color:#f4eadd;font-size:11px;font-family:var(--font-serif);letter-spacing:0.05em;font-weight:bold;transform:rotate(-6deg);box-shadow:0 2px 6px rgba(140,40,30,0.4);opacity:0.88;line-height:1.2;text-align:center;}
+
+/* 区块标题 */
+.og-section-hdr{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-top:6px;flex-wrap:wrap;}
+.og-section-hdr .tag{font-family:var(--font-serif);font-size:15px;letter-spacing:0.25em;padding:5px 18px 6px;background:linear-gradient(to bottom,rgba(157,130,68,0.12),rgba(157,130,68,0.03));border-top:1px solid var(--gold-400);border-bottom:1px solid var(--gold-400);color:var(--ink-900);flex-shrink:0;}
+.og-section-hdr .tag::before,.og-section-hdr .tag::after{content:"❖";color:var(--gold-400);font-size:11px;margin:0 7px;opacity:0.65;}
+.og-section-hdr .desc{font-size:12px;color:var(--ink-500);letter-spacing:0.08em;font-style:italic;}
+.og-section-hdr .act{margin-left:auto;display:flex;gap:8px;}
+.og-hdr-btn{padding:5px 14px;background:linear-gradient(to bottom,rgba(184,154,83,0.15),rgba(184,154,83,0.05));border:1px solid var(--gold-d);color:var(--gold-400);font-family:var(--font-serif);font-size:12px;letter-spacing:0.15em;border-radius:2px;cursor:pointer;transition:all 0.2s;}
+.og-hdr-btn:hover{background:rgba(184,154,83,0.2);border-color:var(--gold-400);}
+.og-hdr-btn::before{content:"❖";margin-right:4px;opacity:0.7;font-size:10px;}
+.og-hdr-btn.primary{background:linear-gradient(to bottom,var(--vermillion-400),var(--vermillion-600));color:#f4eadd;border-color:var(--vermillion-600);}
+.og-hdr-btn.primary:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(140,40,30,0.4);}
+
+/* 摘要卡区（三列） */
+.og-summary-grid{display:grid;grid-template-columns:1.1fr 1.5fr 1fr;gap:12px;margin-bottom:16px;}
+.og-summary-card{padding:12px 14px;background:var(--bg-paper);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.025) 2.5em,rgba(107,93,71,0.025) calc(2.5em + 1px));border:1px solid var(--border-subtle);border-left:3px solid var(--card-c,var(--gold-d));border-radius:3px;position:relative;}
+.og-summary-card.c-count{--card-c:var(--gold-400);}
+.og-summary-card.c-power{--card-c:var(--vermillion-400);}
+.og-summary-card.c-cost{--card-c:var(--amber-400);}
+.og-sc-label{font-family:var(--font-serif);font-size:11px;color:var(--ink-500);letter-spacing:0.2em;margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+.og-sc-label::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--card-c);}
+.og-cnt-row{display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap;}
+.og-cnt-row:last-child{margin-bottom:0;}
+.og-cnt-box{text-align:center;}
+.og-cnt-num{font-family:var(--font-serif);font-size:24px;font-weight:700;color:var(--num-c,var(--ink-900));letter-spacing:0.05em;line-height:1;}
+.og-cnt-num.warn{color:var(--vermillion-400);}
+.og-cnt-num.good{color:var(--celadon-400);}
+.og-cnt-num.mid{color:var(--gold-400);}
+.og-cnt-lbl{font-size:10.5px;color:var(--ink-300);letter-spacing:0.15em;margin-top:3px;font-family:var(--font-serif);}
+.og-fac-bar{height:14px;border-radius:3px;overflow:hidden;display:flex;margin-bottom:6px;border:1px solid var(--border-subtle);box-shadow:inset 0 1px 2px rgba(0,0,0,0.3);}
+.og-fac-bar > div{min-width:3px;}
+.og-fac-bar > div:not(:last-child){border-right:1px solid rgba(0,0,0,0.2);}
+.og-fac-legend{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:10.5px;}
+.og-fac-chip{display:flex;align-items:center;gap:4px;}
+.og-fac-chip .sw{display:inline-block;width:10px;height:10px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.3);}
+.og-cost-main{font-family:var(--font-serif);font-size:20px;color:var(--amber-400);letter-spacing:0.08em;margin-bottom:4px;}
+.og-cost-main .unit{font-size:12px;color:var(--ink-300);margin-left:2px;letter-spacing:0.15em;}
+.og-cost-theory{font-size:11px;color:var(--ink-300);}
+.og-cost-theory .v{color:var(--gold-d);}
+
+/* 预警条 */
+.og-alerts{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.og-alert{flex:1;min-width:240px;padding:10px 14px;background:rgba(192,64,48,0.06);border:1px dashed var(--alert-c,var(--vermillion-400));border-left:3px solid var(--alert-c,var(--vermillion-400));border-radius:3px;display:flex;align-items:center;gap:10px;font-size:12px;}
+.og-alert.warn{--alert-c:var(--amber-400);background:rgba(201,160,69,0.06);}
+.og-alert.info{--alert-c:var(--celadon-400);background:rgba(106,154,127,0.06);}
+.og-alert .ic{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--alert-c),var(--ink-100));color:#f4eadd;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:14px;font-weight:bold;flex-shrink:0;box-shadow:0 1px 2px rgba(0,0,0,0.4);}
+.og-alert .lbl{color:var(--alert-c);letter-spacing:0.1em;font-family:var(--font-serif);font-weight:500;margin-right:4px;}
+.og-alert .txt{flex:1;color:var(--ink-700);line-height:1.5;}
+
+/* ═══ 衙门树容器 ═══ */
+.og-tree-topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 14px;background:rgba(184,154,83,0.04);border:1px solid var(--border-subtle);border-radius:2px;margin-bottom:10px;}
+.og-tree-topbar .title-bar{font-family:var(--font-serif);font-size:13px;color:var(--gold-400);letter-spacing:0.22em;padding-right:12px;border-right:1px solid var(--border-subtle);}
+.og-filter-group{display:flex;gap:4px;}
+.og-filter-btn{padding:3px 10px;font-size:11px;background:transparent;border:1px solid var(--border-subtle);color:var(--ink-500);font-family:var(--font-serif);letter-spacing:0.1em;cursor:pointer;border-radius:2px;}
+.og-filter-btn.active{background:linear-gradient(to bottom,rgba(184,154,83,0.15),rgba(184,154,83,0.05));border-color:var(--gold-400);color:var(--gold-400);}
+.og-filter-btn:hover{color:var(--gold-400);}
+.og-tree-tools-right{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:10.5px;color:var(--ink-300);}
+.og-zoom-group{display:flex;gap:2px;}
+.og-zoom-btn{width:22px;height:22px;padding:0;font-size:13px;background:transparent;border:1px solid var(--border-subtle);color:var(--ink-500);border-radius:2px;cursor:pointer;line-height:20px;}
+.og-zoom-btn:hover{color:var(--gold-400);border-color:var(--gold-400);}
+
+.og-tree-frame{
+  position:relative;
+  border:1px solid var(--gold-d);border-radius:3px;
+  background:
+    linear-gradient(to bottom,rgba(74,40,24,0.15),transparent 80px),
+    var(--bg-sunken);
+  background-image:
+    /* 青瓦纹 */
+    repeating-linear-gradient(90deg,transparent 0,transparent 40px,rgba(107,93,71,0.04) 40px,rgba(107,93,71,0.04) 41px,transparent 41px,transparent 80px),
+    /* 瓦当圆点 */
+    radial-gradient(circle at 50% 50%,transparent 0,transparent 6px,rgba(184,154,83,0.015) 6px,rgba(184,154,83,0.015) 7px,transparent 8px),
+    /* 中心晕 */
+    radial-gradient(ellipse at center,rgba(184,154,83,0.02) 0%,rgba(0,0,0,0.25) 100%);
+  background-size:80px 40px,80px 80px,auto;
+  height:820px;overflow:hidden;cursor:grab;
+  box-shadow:inset 0 2px 12px rgba(0,0,0,0.4);
+}
+.og-tree-frame::before,.og-tree-frame::after{content:"";position:absolute;width:16px;height:16px;border:1.5px solid var(--gold-400);z-index:5;opacity:0.5;}
+.og-tree-frame::before{top:4px;left:4px;border-right:none;border-bottom:none;}
+.og-tree-frame::after{bottom:4px;right:4px;border-left:none;border-top:none;}
+
+.og-tree-minimap{
+  position:absolute;top:12px;right:12px;z-index:4;
+  width:180px;height:120px;
+  background:rgba(26,21,16,0.85);
+  border:1px solid var(--gold-d);border-radius:3px;
+  padding:4px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.5);
+}
+.og-tree-minimap .lbl{font-size:9px;color:var(--gold-400);font-family:var(--font-serif);letter-spacing:0.2em;margin-bottom:3px;text-align:center;}
+.og-tree-minimap .map{position:relative;height:90px;background:rgba(0,0,0,0.3);border-radius:2px;}
+.og-tree-minimap .box{position:absolute;background:rgba(184,154,83,0.35);border:1px solid var(--gold-400);}
+.og-tree-minimap .view{position:absolute;border:1.5px solid var(--vermillion-400);background:rgba(192,64,48,0.15);}
+
+.og-tree-hint{position:absolute;bottom:8px;left:12px;font-size:10px;color:var(--ink-300);font-style:italic;z-index:3;background:rgba(26,21,16,0.75);padding:3px 8px;border-radius:2px;letter-spacing:0.08em;}
+.og-tree-hint .sep{color:var(--gold-d);margin:0 6px;}
+
+.og-tree-canvas{position:absolute;transform-origin:0 0;}
+
+/* ═══ 部门卡（深化） ═══ */
+.og-dept-card{position:absolute;box-sizing:border-box;background:var(--bg-paper);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.03) 2.5em,rgba(107,93,71,0.03) calc(2.5em + 1px));border:1px solid var(--border-subtle);border-radius:5px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.35);}
+.og-dept-card.depth-0{border:2px solid var(--gold-400);box-shadow:0 0 0 1px var(--gold-d),0 3px 12px rgba(184,154,83,0.2);background:linear-gradient(to bottom,rgba(184,154,83,0.08),rgba(184,154,83,0.02)),var(--bg-paper);}
+.og-dept-card.depth-1{border:1.5px solid var(--gold-400);box-shadow:0 2px 8px rgba(184,154,83,0.1);}
+.og-dept-card.depth-0::before,.og-dept-card.depth-1::before{content:"";position:absolute;top:0;right:0;width:40px;height:40px;background:radial-gradient(circle at top right,rgba(184,154,83,0.14),transparent 70%);pointer-events:none;}
+
+.og-dept-hdr{display:flex;align-items:center;gap:5px;padding:6px 8px;border-bottom:1px solid var(--border-subtle);}
+.og-dept-card.depth-0 .og-dept-hdr{background:linear-gradient(to bottom,rgba(184,154,83,0.18),rgba(184,154,83,0.05));}
+.og-dept-card.depth-1 .og-dept-hdr{background:linear-gradient(to bottom,rgba(184,154,83,0.08),rgba(184,154,83,0.02));}
+.og-dept-hdr .nm{flex:1;min-width:0;font-family:var(--font-serif);font-size:13px;font-weight:700;color:var(--ink-900);letter-spacing:0.12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.og-dept-card.depth-0 .og-dept-hdr .nm{color:var(--gold-300);letter-spacing:0.3em;font-size:15px;text-shadow:0 0 8px rgba(201,168,95,0.3);}
+.og-dept-card.depth-1 .og-dept-hdr .nm{color:var(--gold-400);letter-spacing:0.18em;font-size:14px;}
+.og-dept-collapse{border:none;background:transparent;color:var(--ink-300);cursor:pointer;font-size:10px;padding:0 4px;line-height:16px;}
+.og-dept-collapse:hover{color:var(--gold-400);}
+
+/* 部门·实权指数（圆环） */
+.og-power-ring{width:28px;height:28px;position:relative;flex-shrink:0;}
+.og-power-ring svg{width:100%;height:100%;transform:rotate(-90deg);}
+.og-power-ring .bg{stroke:rgba(107,93,71,0.25);}
+.og-power-ring .fg{stroke:var(--ring-c,var(--gold-400));stroke-linecap:round;transition:stroke-dashoffset 0.4s;}
+.og-power-ring .txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:10px;color:var(--ring-c,var(--gold-400));font-weight:500;}
+.og-power-ring.hi{--ring-c:var(--gold-300);}
+.og-power-ring.mid{--ring-c:var(--celadon-400);}
+.og-power-ring.lo{--ring-c:var(--ink-500);}
+
+/* 部门内容 */
+.og-dept-body{padding:5px 8px 6px;}
+.og-dept-func-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px;}
+.og-dept-func{font-size:9.5px;color:var(--celadon-400);padding:1px 5px;background:rgba(106,154,127,0.08);border:1px solid rgba(106,154,127,0.3);border-radius:2px;font-family:var(--font-serif);letter-spacing:0.08em;}
+.og-dept-fill{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink-300);margin-top:3px;}
+.og-dept-fill-bar{flex:1;height:4px;background:rgba(107,93,71,0.25);border-radius:2px;overflow:hidden;position:relative;}
+.og-dept-fill-bar .fg{height:100%;background:linear-gradient(to right,var(--celadon-400),var(--gold-400));border-radius:2px;}
+.og-dept-fill-bar .vac{height:100%;background:rgba(192,64,48,0.5);position:absolute;right:0;top:0;}
+.og-dept-fill .num{color:var(--ink-500);font-family:var(--font-serif);letter-spacing:0.05em;}
+
+.og-dept-actions{display:flex;gap:3px;margin-top:5px;padding-top:5px;border-top:1px dashed var(--border-subtle);}
+.og-dept-btn{font-size:9.5px;font-family:var(--font-serif);padding:2px 6px;background:rgba(184,154,83,0.04);border:1px solid var(--border-subtle);color:var(--ink-500);border-radius:2px;cursor:pointer;letter-spacing:0.08em;line-height:14px;}
+.og-dept-btn:hover{color:var(--gold-400);border-color:var(--gold-400);background:rgba(184,154,83,0.1);}
+.og-dept-btn.danger{color:var(--vermillion-400);}
+.og-dept-btn.danger:hover{color:var(--vermillion-300);border-color:var(--vermillion-400);background:rgba(192,64,48,0.08);}
+.og-dept-vac-chip{font-size:9px;padding:0 4px;border-radius:2px;background:rgba(192,64,48,0.15);color:var(--vermillion-400);border:1px solid var(--vermillion-400);margin-left:auto;line-height:14px;font-family:var(--font-serif);}
+
+/* ═══ 职位卡（大号·深化） ═══ */
+.og-pos-card{
+  position:absolute;box-sizing:border-box;
+  background:var(--bg-paper);
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.022) 2.5em,rgba(107,93,71,0.022) calc(2.5em + 1px));
+  border:1px solid var(--border-subtle);border-radius:5px;overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,0.35),0 0 0 1px rgba(0,0,0,0.1);
+  cursor:pointer;transition:all 0.2s;
+}
+.og-pos-card:hover{border-color:var(--gold-400);box-shadow:0 3px 10px rgba(184,154,83,0.2),0 0 0 1px rgba(184,154,83,0.2);transform:translateY(-1px);}
+.og-pos-card.selected{border:1.5px solid var(--gold-300);box-shadow:0 0 0 2px rgba(201,168,95,0.3),0 4px 14px rgba(184,154,83,0.3);}
+
+/* 品级色条 */
+.og-rank-bar{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--rank-c,var(--gold-400));}
+.og-rank-bar::after{content:"";position:absolute;left:0;top:0;right:0;height:40%;background:linear-gradient(to bottom,rgba(255,255,255,0.35),transparent);}
+.og-rank-top  {--rank-c:#e4c579;}
+.og-rank-high {--rank-c:var(--gold-400);}
+.og-rank-mid  {--rank-c:var(--celadon-400);}
+.og-rank-low  {--rank-c:var(--ink-500);}
+.og-rank-base {--rank-c:var(--ink-300);}
+
+/* 顶栏：官职名·品级·动作 */
+.og-pos-top{display:flex;align-items:center;gap:6px;padding:7px 8px 3px 12px;}
+.og-pos-nm-wrap{flex:1;min-width:0;}
+.og-pos-nm{font-family:var(--font-serif);font-size:13px;font-weight:700;color:var(--ink-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0.1em;display:flex;align-items:center;gap:5px;}
+.og-pos-rank-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--font-serif);font-size:10px;font-weight:500;
+  min-width:22px;height:18px;padding:0 5px;
+  background:linear-gradient(to bottom,var(--rank-c),rgba(0,0,0,0.15));
+  color:#1a1410;border-radius:2px;letter-spacing:0.05em;
+  box-shadow:0 1px 0 rgba(255,255,255,0.15) inset,0 1px 2px rgba(0,0,0,0.3);
+}
+.og-pos-rank-num{font-size:9px;color:var(--rank-c);letter-spacing:0.05em;}
+
+.og-pos-action-btn{
+  font-size:10px;font-family:var(--font-serif);letter-spacing:0.12em;
+  padding:3px 9px;border-radius:2px;cursor:pointer;white-space:nowrap;flex-shrink:0;
+  border:1px solid var(--gold-d);color:var(--gold-400);background:rgba(184,154,83,0.06);
+  transition:all 0.15s;
+}
+.og-pos-action-btn:hover{background:rgba(184,154,83,0.15);border-color:var(--gold-400);}
+.og-pos-action-btn.appoint{background:linear-gradient(to bottom,var(--vermillion-400),var(--vermillion-600));color:#f4eadd;border-color:var(--vermillion-600);box-shadow:0 1px 2px rgba(140,40,30,0.3);}
+.og-pos-action-btn.change{border-color:var(--amber-400);color:var(--amber-400);background:rgba(217,151,71,0.08);}
+.og-pos-action-btn.concretize{border-color:var(--celadon-400);color:var(--celadon-400);background:rgba(121,175,135,0.1);}
+
+/* 在任者行：头像+名+党派 */
+.og-pos-holder-row{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 12px;background:rgba(184,154,83,0.02);border-top:1px solid rgba(184,154,83,0.08);border-bottom:1px solid rgba(184,154,83,0.08);}
+.og-pos-portrait{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--rank-c,var(--gold-400)) 40%,var(--ink-100) 100%);
+  border:1.5px solid var(--rank-c,var(--gold-400));
+  display:flex;align-items:center;justify-content:center;
+  color:#f4eadd;font-family:var(--font-serif);font-size:14px;font-weight:500;
+  flex-shrink:0;position:relative;
+  box-shadow:0 1px 3px rgba(0,0,0,0.4);
+  overflow:hidden;
+}
+.og-pos-portrait.vacant{background:repeating-linear-gradient(45deg,rgba(107,93,71,0.25),rgba(107,93,71,0.25) 2px,rgba(107,93,71,0.1) 2px,rgba(107,93,71,0.1) 4px);border-color:var(--ink-300);border-style:dashed;color:var(--ink-300);}
+.og-pos-portrait .absent-flag{position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--amber-400);border:1.5px solid var(--bg-paper);color:#1a1410;font-size:8px;line-height:11px;font-weight:bold;font-family:var(--font-serif);}
+
+.og-pos-holder-info{flex:1;min-width:0;}
+.og-pos-name-line{display:flex;align-items:center;gap:5px;font-family:var(--font-serif);font-size:13px;color:var(--holder-c,var(--ink-900));letter-spacing:0.1em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.og-pos-name-line .nm{cursor:pointer;text-decoration:underline dotted var(--ink-300);}
+.og-pos-name-line .nm:hover{text-decoration-color:var(--gold-400);color:var(--gold-400);}
+.og-pos-holder-row.loyal{--holder-c:var(--celadon-400);}
+.og-pos-holder-row.mid{--holder-c:var(--ink-900);}
+.og-pos-holder-row.danger{--holder-c:var(--vermillion-400);}
+.og-pos-holder-row.vacant{--holder-c:var(--vermillion-400);}
+.og-pos-holder-row.vacant .og-pos-name-line{font-style:italic;}
+
+.og-party-tag{font-size:9px;padding:1px 5px;background:var(--pt-bg,rgba(184,154,83,0.08));color:var(--pt-c,var(--gold-400));border:1px solid currentColor;border-radius:2px;font-family:var(--font-serif);letter-spacing:0.08em;flex-shrink:0;}
+.og-party-tag.dongin{--pt-c:var(--celadon-400);--pt-bg:rgba(106,154,127,0.1);}
+.og-party-tag.zhe{--pt-c:var(--indigo-400);--pt-bg:rgba(90,111,168,0.1);}
+.og-party-tag.yan{--pt-c:var(--purple-400);--pt-bg:rgba(142,106,168,0.1);}
+.og-party-tag.kun{--pt-c:var(--amber-400);--pt-bg:rgba(201,160,69,0.08);}
+.og-party-tag.qing{--pt-c:var(--gold-400);--pt-bg:rgba(184,154,83,0.08);}
+
+/* 官员状态小字 */
+.og-pos-sub-line{font-size:10px;color:var(--ink-300);margin-top:1px;letter-spacing:0.05em;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.og-pos-sub-line .sep{color:var(--ink-300);opacity:0.5;}
+
+/* 能力四维·小徽章 */
+.og-stats-row{display:flex;align-items:center;gap:2px;padding:4px 10px 5px 12px;flex-wrap:wrap;}
+.og-stat-box{display:inline-flex;align-items:center;gap:2px;font-size:9.5px;color:var(--ink-500);font-family:var(--font-serif);padding:1px 4px;background:rgba(184,154,83,0.04);border-radius:2px;letter-spacing:0.05em;}
+.og-stat-box .lbl{color:var(--ink-300);}
+.og-stat-box .v{color:var(--stat-c,var(--ink-900));font-weight:500;}
+.og-stat-box.loy.hi{--stat-c:var(--celadon-400);}
+.og-stat-box.loy.mid{--stat-c:var(--gold-400);}
+.og-stat-box.loy.lo{--stat-c:var(--vermillion-400);}
+.og-stat-bar-mini{display:inline-block;width:16px;height:3px;background:rgba(107,93,71,0.25);border-radius:1px;position:relative;margin-left:2px;}
+.og-stat-bar-mini::before{content:"";position:absolute;left:0;top:0;bottom:0;background:var(--stat-c,var(--gold-400));border-radius:1px;width:var(--w,50%);}
+
+/* 权限图标组 */
+.og-powers{display:flex;gap:3px;padding:3px 10px 3px 12px;align-items:center;}
+.og-powers-lbl{font-size:9px;color:var(--ink-300);letter-spacing:0.1em;font-family:var(--font-serif);margin-right:2px;}
+.og-power-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:3px;
+  font-family:var(--font-serif);font-size:10px;font-weight:500;
+  border:1px solid var(--pi-c);color:var(--pi-c);
+  background:rgba(var(--pi-rgb),0.08);
+  transition:all 0.15s;
+  cursor:help;
+}
+.og-power-icon.off{color:var(--ink-100);border-color:var(--ink-100);background:transparent;opacity:0.55;}
+.og-power-icon.appoint{--pi-c:var(--gold-400);--pi-rgb:184,154,83;}
+.og-power-icon.impeach{--pi-c:var(--vermillion-400);--pi-rgb:184,71,56;}
+.og-power-icon.tax{--pi-c:var(--amber-400);--pi-rgb:201,160,69;}
+.og-power-icon.military{--pi-c:var(--vermillion-400);--pi-rgb:184,71,56;}
+.og-power-icon.supervise{--pi-c:var(--purple-400);--pi-rgb:142,106,168;}
+
+/* 公库·陋规·任期·考评 行 */
+.og-meta-row{display:flex;align-items:center;gap:8px;padding:3px 10px 3px 12px;font-size:10px;color:var(--ink-500);flex-wrap:wrap;}
+.og-meta-row > *{display:inline-flex;align-items:center;gap:3px;}
+.og-meta-row .sep{color:var(--ink-300);opacity:0.4;}
+.og-meta-treasury{color:var(--gold-400);}
+.og-meta-treasury::before{content:"⏦";color:var(--gold-400);margin-right:1px;}
+.og-meta-grain{color:var(--celadon-400);}
+.og-meta-grain::before{content:"禾";color:var(--celadon-400);margin-right:1px;font-family:var(--font-serif);font-size:8px;}
+.og-meta-illicit{font-family:var(--font-serif);padding:0 4px;border-radius:2px;}
+.og-meta-illicit.hot{color:var(--vermillion-300);background:rgba(192,64,48,0.1);}
+.og-meta-illicit.cold{color:var(--celadon-400);background:rgba(106,154,127,0.08);}
+.og-meta-tenure{font-family:var(--font-serif);}
+.og-meta-tenure.warn{color:var(--amber-400);}
+
+/* 考评历史 (3 dots) */
+.og-eval-history{display:inline-flex;gap:2px;align-items:center;}
+.og-eval-history .lbl{font-size:9px;color:var(--ink-300);letter-spacing:0.08em;font-family:var(--font-serif);margin-right:2px;}
+.og-eval-dot{display:inline-block;width:11px;height:11px;border-radius:50%;font-size:8px;line-height:11px;text-align:center;font-family:var(--font-serif);color:#1a1410;font-weight:bold;}
+.og-eval-dot.up{background:var(--celadon-400);}
+.og-eval-dot.mid{background:var(--gold-400);}
+.og-eval-dot.dn{background:var(--vermillion-400);}
+.og-eval-dot.none{background:rgba(107,93,71,0.3);color:var(--ink-300);}
+
+/* 历任条 */
+.og-history-rail{display:flex;align-items:center;gap:3px;padding:3px 10px 5px 12px;border-top:1px dashed var(--border-subtle);margin-top:2px;font-size:9.5px;color:var(--ink-300);}
+.og-history-rail .lbl{font-family:var(--font-serif);letter-spacing:0.1em;margin-right:4px;color:var(--ink-500);}
+.og-history-rail .name{padding:0 4px;background:rgba(184,154,83,0.05);border-radius:2px;color:var(--ink-500);}
+.og-history-rail .name.current{color:var(--gold-400);border:1px solid var(--gold-d);background:rgba(184,154,83,0.12);}
+.og-history-rail .arr{color:var(--ink-300);opacity:0.6;}
+
+/* 编制统计徽章 */
+.og-hc-chip{font-size:9px;padding:1px 4px;border-radius:2px;font-family:var(--font-serif);letter-spacing:0.05em;background:rgba(107,93,71,0.2);color:var(--ink-500);border:1px solid var(--border-subtle);}
+.og-hc-chip.full{color:var(--celadon-400);border-color:var(--celadon-400);background:rgba(106,154,127,0.08);}
+.og-hc-chip.part{color:var(--amber-400);border-color:var(--amber-400);background:rgba(201,160,69,0.08);}
+.og-hc-chip.vac{color:var(--vermillion-400);border-color:var(--vermillion-400);background:rgba(192,64,48,0.1);}
+
+/* 空缺提示 */
+.og-empty-msg{font-size:10px;color:var(--vermillion-400);font-style:italic;padding:3px 10px 3px 12px;letter-spacing:0.08em;}
+.og-empty-msg::before{content:"⚠ ";}
+
+/* 图例 */
+.legend{padding:14px 20px;background:var(--bg-2);border-top:1px solid var(--border-subtle);font-size:11px;color:var(--ink-500);text-align:center;letter-spacing:0.08em;line-height:1.9;}
+.legend .k{color:var(--gold-400);} .legend .m{color:var(--vermillion-400);}
+</style>
+</head>
+<body>
+
+<div class="preview-frame">
+
+  <div class="preview-header">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span>tianming · 官制标签页美化预览 v2</span>
+    <span class="title">〔 六 部 卿 寺 〕</span>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">朝政</button>
+    <button class="tab-btn">诏令</button>
+    <button class="tab-btn">奏疏</button>
+    <button class="tab-btn">问对</button>
+    <button class="tab-btn">鸿雁</button>
+    <button class="tab-btn">编年</button>
+    <button class="tab-btn active">官制</button>
+    <button class="tab-btn">文苑</button>
+    <button class="tab-btn">起居注</button>
+    <button class="tab-btn">纪事</button>
+    <button class="tab-btn">史记</button>
+  </div>
+
+  <div class="og-panel">
+    <div class="og-inner">
+
+      <!-- 标题 -->
+      <div class="og-title">
+        <div class="seal">官<br>制</div>
+        <div class="main">六 部 卿 寺</div>
+        <div class="sub">衙　门　职　官　　　　班　位　各　司　其　职</div>
+      </div>
+
+      <!-- 衙门总览 -->
+      <div class="og-section-hdr">
+        <span class="tag">衙 门 总 览</span>
+        <span class="desc">—— 编制·权力格局·俸禄开支</span>
+        <span class="act">
+          <button class="og-hdr-btn">增 设 部 门</button>
+          <button class="og-hdr-btn">考 课 之 期</button>
+          <button class="og-hdr-btn primary">荐 贤 廷 推</button>
+        </span>
+      </div>
+
+      <!-- 预警条 -->
+      <div class="og-alerts">
+        <div class="og-alert">
+          <div class="ic">警</div>
+          <div><span class="lbl">权臣预警：</span><span class="txt">温体仁·内阁首辅·所辖 <strong>8</strong> 职位·实权指数 <strong>87</strong>·恐有专权之虞</span></div>
+        </div>
+        <div class="og-alert warn">
+          <div class="ic">缺</div>
+          <div><span class="lbl">职位空缺：</span><span class="txt">吏部左侍郎·兵部武选司郎中·礼部祠祭司主事·共 <strong>3</strong> 职待补</span></div>
+        </div>
+      </div>
+
+      <!-- 摘要三栏 -->
+      <div class="og-summary-grid">
+        <div class="og-summary-card c-count">
+          <div class="og-sc-label">编制·实有·具象</div>
+          <div class="og-cnt-row">
+            <div class="og-cnt-box"><div class="og-cnt-num good">68</div><div class="og-cnt-lbl">部门</div></div>
+            <div class="og-cnt-box"><div class="og-cnt-num mid">312</div><div class="og-cnt-lbl">编制</div></div>
+            <div class="og-cnt-box"><div class="og-cnt-num good">289</div><div class="og-cnt-lbl">实有</div></div>
+            <div class="og-cnt-box"><div class="og-cnt-num">147</div><div class="og-cnt-lbl">具象</div></div>
+            <div class="og-cnt-box"><div class="og-cnt-num warn">23</div><div class="og-cnt-lbl">缺员</div></div>
+          </div>
+        </div>
+        <div class="og-summary-card c-power">
+          <div class="og-sc-label">权 力 格 局</div>
+          <div class="og-fac-bar">
+            <div style="width:32%;background:#6a9a7f;" title="东林 92人"></div>
+            <div style="width:22%;background:#5a6fa8;" title="浙党 64人"></div>
+            <div style="width:14%;background:#c9a045;" title="昆党 40人"></div>
+            <div style="width:12%;background:#8e6aa8;" title="宦官 34人"></div>
+            <div style="width:11%;background:#b89a53;" title="清流 31人"></div>
+            <div style="width:9%;background:rgba(107,93,71,0.5);" title="空缺"></div>
+          </div>
+          <div class="og-fac-legend">
+            <span class="og-fac-chip"><span class="sw" style="background:#6a9a7f;"></span>东林 92</span>
+            <span class="og-fac-chip"><span class="sw" style="background:#5a6fa8;"></span>浙党 64</span>
+            <span class="og-fac-chip"><span class="sw" style="background:#c9a045;"></span>昆党 40</span>
+            <span class="og-fac-chip"><span class="sw" style="background:#8e6aa8;"></span>宦官 34</span>
+            <span class="og-fac-chip"><span class="sw" style="background:#b89a53;"></span>清流 31</span>
+            <span class="og-fac-chip"><span class="sw" style="background:rgba(107,93,71,0.5);"></span>空缺 23</span>
+          </div>
+        </div>
+        <div class="og-summary-card c-cost">
+          <div class="og-sc-label">岁 俸 开 支</div>
+          <div class="og-cost-main">21,860 <span class="unit">两/岁</span></div>
+          <div class="og-cost-theory">编制全员应支 <span class="v">23,540 两</span> · 差额 1,680 两（系缺员节余）</div>
+        </div>
+      </div>
+
+      <!-- ═══ 衙门层级 ═══ -->
+      <div class="og-section-hdr">
+        <span class="tag">衙 门 层 级</span>
+        <span class="desc">—— 鼠轮缩放·拖拽平移·点击职位卡展开详情</span>
+      </div>
+
+      <!-- 树顶工具栏 -->
+      <div class="og-tree-topbar">
+        <span class="title-bar">视 图</span>
+        <div class="og-filter-group">
+          <button class="og-filter-btn active">全部</button>
+          <button class="og-filter-btn">中央</button>
+          <button class="og-filter-btn">地方</button>
+          <button class="og-filter-btn">军事</button>
+          <button class="og-filter-btn">监察</button>
+        </div>
+        <span class="title-bar" style="margin-left:8px;">显 示</span>
+        <div class="og-filter-group">
+          <button class="og-filter-btn active">权限</button>
+          <button class="og-filter-btn active">公库</button>
+          <button class="og-filter-btn active">考评</button>
+          <button class="og-filter-btn">历任</button>
+        </div>
+        <span class="title-bar" style="margin-left:8px;">高 亮</span>
+        <div class="og-filter-group">
+          <button class="og-filter-btn">空缺</button>
+          <button class="og-filter-btn">不满</button>
+          <button class="og-filter-btn">久任</button>
+        </div>
+        <div class="og-tree-tools-right">
+          <span>缩放 96%</span>
+          <div class="og-zoom-group">
+            <button class="og-zoom-btn">−</button>
+            <button class="og-zoom-btn">＋</button>
+            <button class="og-zoom-btn" title="适应屏幕">◉</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 树 -->
+      <div class="og-tree-frame">
+
+        <!-- 小地图 -->
+        <div class="og-tree-minimap">
+          <div class="lbl">❖ 鸟 瞰 ❖</div>
+          <div class="map">
+            <div class="box" style="left:42%;top:3%;width:16%;height:10%;"></div>
+            <div class="box" style="left:6%;top:22%;width:13%;height:10%;"></div>
+            <div class="box" style="left:22%;top:22%;width:13%;height:10%;"></div>
+            <div class="box" style="left:38%;top:22%;width:13%;height:10%;"></div>
+            <div class="box" style="left:54%;top:22%;width:13%;height:10%;"></div>
+            <div class="box" style="left:70%;top:22%;width:13%;height:10%;"></div>
+            <div class="box" style="left:86%;top:22%;width:13%;height:10%;"></div>
+            <div class="box" style="left:6%;top:45%;width:10%;height:8%;"></div>
+            <div class="box" style="left:18%;top:45%;width:10%;height:8%;"></div>
+            <div class="box" style="left:30%;top:45%;width:10%;height:8%;"></div>
+            <div class="box" style="left:6%;top:65%;width:10%;height:8%;"></div>
+            <div class="box" style="left:18%;top:65%;width:10%;height:8%;"></div>
+            <div class="box" style="left:30%;top:65%;width:10%;height:8%;"></div>
+            <div class="box" style="left:6%;top:82%;width:10%;height:8%;"></div>
+            <div class="view" style="left:3%;top:3%;width:48%;height:48%;"></div>
+          </div>
+        </div>
+
+        <div class="og-tree-hint">◉ 鼠 轮 缩 放<span class="sep">·</span>长 按 拖 动<span class="sep">·</span>点 击 展 开 详 情<span class="sep">·</span>Shift+拖拽 框 选 批 量</div>
+
+        <div class="og-tree-canvas" style="transform:translate(20px,20px) scale(0.96);width:1460px;height:1320px;">
+
+          <!-- SVG 连接线 -->
+          <svg width="1460" height="1320" style="position:absolute;top:0;left:0;pointer-events:none;">
+            <!-- 皇帝 → 6 层级1 部门 -->
+            <path d="M700,108 L700,130 L140,130 L140,170" stroke="#b89a53" stroke-width="2" fill="none" opacity="0.8"/>
+            <path d="M700,108 L700,130 L370,130 L370,170" stroke="#b89a53" stroke-width="2" fill="none" opacity="0.8"/>
+            <path d="M700,108 L700,130 L590,130 L590,170" stroke="#b89a53" stroke-width="2" fill="none" opacity="0.8"/>
+            <path d="M700,108 L700,130 L810,130 L810,170" stroke="#b89a53" stroke-width="2" fill="none" opacity="0.8"/>
+            <path d="M700,108 L700,130 L1030,130 L1030,170" stroke="#b89a53" stroke-width="2" fill="none" opacity="0.8"/>
+            <path d="M700,108 L700,130 L1250,130 L1250,170" stroke="#b89a53" stroke-width="2" fill="none" opacity="0.8"/>
+
+            <!-- 部门→职位（虚线） -->
+            <path d="M140,288 L140,310 L50,310 L50,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M140,288 L140,310 L230,310 L230,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M370,288 L370,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M590,288 L590,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M810,288 L810,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M1030,288 L1030,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M1250,288 L1250,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+
+            <!-- 吏部 → 三司 -->
+            <path d="M370,546 L370,600 L130,600 L130,660" stroke="#b89a53" stroke-width="1.5" fill="none" opacity="0.75"/>
+            <path d="M370,546 L370,600 L370,660" stroke="#b89a53" stroke-width="1.5" fill="none" opacity="0.75"/>
+            <path d="M370,546 L370,600 L610,600 L610,660" stroke="#b89a53" stroke-width="1.5" fill="none" opacity="0.75"/>
+
+            <!-- 三司 → 三郎中 -->
+            <path d="M130,778 L130,810 L130,870" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M370,778 L370,870" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+            <path d="M610,778 L610,870" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+
+            <!-- 户部→下属部门 -->
+            <path d="M590,546 L590,600 L470,600 L470,660" stroke="#b89a53" stroke-width="1.5" fill="none" opacity="0.75"/>
+            <path d="M590,546 L590,600 L710,600 L710,660" stroke="#b89a53" stroke-width="1.5" fill="none" opacity="0.75"/>
+
+            <!-- 内阁→首辅/次辅/阁臣 -->
+            <path d="M140,288 L140,320 L50,320 L50,350" stroke="#6a9a7f" stroke-width="1.5" fill="none" opacity="0.7" stroke-dasharray="4,3"/>
+
+          </svg>
+
+          <!-- 皇帝根 -->
+          <div class="og-dept-card depth-0" style="left:580px;top:20px;width:240px;">
+            <div class="og-dept-hdr">
+              <span class="nm">皇 帝</span>
+              <div class="og-power-ring hi" title="圣心独运·实权指数"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="26.4"/></svg><div class="txt">72</div></div>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">崇祯 · 朱由检</span>
+                <span class="og-dept-func">年 十 九</span>
+                <span class="og-dept-func">勤 政 减 膳</span>
+                <span class="og-dept-func">东 林 倾 向</span>
+              </div>
+              <div class="og-dept-fill"><span class="num">皇权指数</span><div class="og-dept-fill-bar"><div class="fg" style="width:76%;"></div></div><span class="num">76</span></div>
+            </div>
+          </div>
+
+          <!-- 内阁（层级1） -->
+          <div class="og-dept-card depth-1" style="left:40px;top:170px;width:200px;">
+            <div class="og-dept-hdr">
+              <span class="nm">内 阁</span>
+              <div class="og-power-ring hi" title="实权指数"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="15"/></svg><div class="txt">84</div></div>
+              <button class="og-dept-collapse">▲</button>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">票 拟</span>
+                <span class="og-dept-func">辅 政</span>
+                <span class="og-dept-func">机 枢</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:100%;"></div></div>
+                <span class="num">6 / 6</span>
+                <span class="og-hc-chip full">满编</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+                <button class="og-dept-btn">改 名</button>
+                <span class="og-dept-vac-chip">权臣 ⚠</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 吏部 -->
+          <div class="og-dept-card depth-1" style="left:270px;top:170px;width:200px;">
+            <div class="og-dept-hdr">
+              <span class="nm">吏 部</span>
+              <div class="og-power-ring mid" title="实权指数"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="33.9"/></svg><div class="txt">64</div></div>
+              <button class="og-dept-collapse">▲</button>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">铨 选</span>
+                <span class="og-dept-func">考 课</span>
+                <span class="og-dept-func">封 爵</span>
+                <span class="og-dept-func">监 察 吏 员</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:86%;"></div><div class="vac" style="width:14%;"></div></div>
+                <span class="num">12 / 14</span>
+                <span class="og-hc-chip part">缺 2</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+                <button class="og-dept-btn">+ 局</button>
+                <button class="og-dept-btn">改</button>
+                <button class="og-dept-btn danger">裁</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 户部 -->
+          <div class="og-dept-card depth-1" style="left:490px;top:170px;width:200px;">
+            <div class="og-dept-hdr">
+              <span class="nm">户 部</span>
+              <div class="og-power-ring mid"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="39.6"/></svg><div class="txt">58</div></div>
+              <button class="og-dept-collapse">▲</button>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">钱 粮</span>
+                <span class="og-dept-func">户 籍</span>
+                <span class="og-dept-func">漕 运</span>
+                <span class="og-dept-func">盐 铁</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:100%;"></div></div>
+                <span class="num">16 / 16</span>
+                <span class="og-hc-chip full">满编</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+                <button class="og-dept-btn">+ 局</button>
+                <button class="og-dept-btn">改</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 兵部 -->
+          <div class="og-dept-card depth-1" style="left:710px;top:170px;width:200px;">
+            <div class="og-dept-hdr">
+              <span class="nm">兵 部</span>
+              <div class="og-power-ring hi"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="27.3"/></svg><div class="txt">71</div></div>
+              <button class="og-dept-collapse">▲</button>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">武 选</span>
+                <span class="og-dept-func">职 方</span>
+                <span class="og-dept-func">车 驾</span>
+                <span class="og-dept-func">武 库</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:80%;"></div><div class="vac" style="width:20%;"></div></div>
+                <span class="num">12 / 15</span>
+                <span class="og-hc-chip part">缺 3</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+                <button class="og-dept-btn">+ 局</button>
+                <button class="og-dept-btn">改</button>
+                <span class="og-dept-vac-chip">战 事 ⚔</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 都察院 -->
+          <div class="og-dept-card depth-1" style="left:930px;top:170px;width:200px;">
+            <div class="og-dept-hdr">
+              <span class="nm">都 察 院</span>
+              <div class="og-power-ring mid"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="45.2"/></svg><div class="txt">52</div></div>
+              <button class="og-dept-collapse">▲</button>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">监 察</span>
+                <span class="og-dept-func">弹 劾</span>
+                <span class="og-dept-func">巡 按</span>
+                <span class="og-dept-func">风 宪</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:94%;"></div><div class="vac" style="width:6%;"></div></div>
+                <span class="num">15 / 16</span>
+                <span class="og-hc-chip full">近满</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+                <button class="og-dept-btn">+ 局</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 司礼监 -->
+          <div class="og-dept-card depth-1" style="left:1150px;top:170px;width:200px;">
+            <div class="og-dept-hdr">
+              <span class="nm">司 礼 监</span>
+              <div class="og-power-ring mid"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="51.8"/></svg><div class="txt">45</div></div>
+              <button class="og-dept-collapse">▲</button>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">批 红</span>
+                <span class="og-dept-func">御 用</span>
+                <span class="og-dept-func">内 廷</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:100%;"></div></div>
+                <span class="num">8 / 8</span>
+                <span class="og-hc-chip full">满编</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+                <button class="og-dept-btn danger">裁</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ 职位卡（层级2·大号·260px宽·220px高） ═══ -->
+
+          <!-- 首辅 -->
+          <div class="og-pos-card og-rank-top selected" style="left:-50px;top:350px;width:270px;height:196px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">首辅 <span class="og-pos-rank-badge">正一品</span></div>
+                <div class="og-pos-sub-line"><span>内阁</span><span class="sep">·</span><span>领 票 拟 权</span></div>
+              </div>
+              <button class="og-pos-action-btn change">改换</button>
+            </div>
+            <div class="og-pos-holder-row mid">
+              <div class="og-pos-portrait">温</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">温体仁</span>
+                  <span class="og-party-tag zhe">浙党魁</span>
+                  <span class="og-hc-chip full">编1·实1</span>
+                </div>
+                <div class="og-pos-sub-line"><span>年六十二</span><span class="sep">·</span><span>任六回合</span><span class="sep">·</span><span style="color:var(--amber-400);">满意 42</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">85</span><span class="og-stat-bar-mini" style="--w:85%;--stat-c:var(--gold-400);"></span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">78</span><span class="og-stat-bar-mini" style="--w:78%;--stat-c:var(--gold-400);"></span></span>
+              <span class="og-stat-box"><span class="lbl">军</span><span class="v">40</span><span class="og-stat-bar-mini" style="--w:40%;--stat-c:var(--ink-500);"></span></span>
+              <span class="og-stat-box loy lo"><span class="lbl">忠</span><span class="v">42</span><span class="og-stat-bar-mini" style="--w:42%;--stat-c:var(--vermillion-400);"></span></span>
+            </div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint" title="辟举权">辟</span>
+              <span class="og-power-icon impeach" title="弹劾权">弹</span>
+              <span class="og-power-icon tax off" title="无税收权">税</span>
+              <span class="og-power-icon military off" title="无军权">兵</span>
+              <span class="og-power-icon supervise" title="监察权">监</span>
+            </div>
+            <div class="og-meta-row">
+              <span class="og-meta-treasury">银 12 万</span>
+              <span class="sep">·</span>
+              <span class="og-meta-illicit hot">肥缺</span>
+              <span class="sep">·</span>
+              <span class="og-meta-tenure warn">任 6 回 · 久留</span>
+              <span class="sep">·</span>
+              <span class="og-eval-history">
+                <span class="lbl">考</span>
+                <span class="og-eval-dot up" title="上上">上</span>
+                <span class="og-eval-dot mid" title="中上">中</span>
+                <span class="og-eval-dot up" title="上中">上</span>
+              </span>
+            </div>
+            <div class="og-history-rail">
+              <span class="lbl">历任</span>
+              <span class="name">黄立极</span>
+              <span class="arr">→</span>
+              <span class="name">施鳯来</span>
+              <span class="arr">→</span>
+              <span class="name current">温体仁</span>
+            </div>
+          </div>
+
+          <!-- 次辅 -->
+          <div class="og-pos-card og-rank-top" style="left:250px;top:350px;width:260px;height:196px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">次辅 <span class="og-pos-rank-badge">从一品</span></div>
+                <div class="og-pos-sub-line"><span>内阁</span><span class="sep">·</span><span>副 票 拟</span></div>
+              </div>
+              <button class="og-pos-action-btn change">改换</button>
+            </div>
+            <div class="og-pos-holder-row mid">
+              <div class="og-pos-portrait">钱</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">钱谦益</span>
+                  <span class="og-party-tag dongin">东林</span>
+                  <span class="og-hc-chip full">编1·实1</span>
+                </div>
+                <div class="og-pos-sub-line"><span>年四十八</span><span class="sep">·</span><span>任 2 回合</span><span class="sep">·</span><span style="color:var(--celadon-400);">满意 72</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">82</span><span class="og-stat-bar-mini" style="--w:82%;--stat-c:var(--gold-400);"></span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">70</span><span class="og-stat-bar-mini" style="--w:70%;--stat-c:var(--gold-400);"></span></span>
+              <span class="og-stat-box"><span class="lbl">军</span><span class="v">35</span><span class="og-stat-bar-mini" style="--w:35%;--stat-c:var(--ink-500);"></span></span>
+              <span class="og-stat-box loy mid"><span class="lbl">忠</span><span class="v">62</span><span class="og-stat-bar-mini" style="--w:62%;--stat-c:var(--gold-400);"></span></span>
+            </div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint">辟</span>
+              <span class="og-power-icon impeach">弹</span>
+              <span class="og-power-icon tax off">税</span>
+              <span class="og-power-icon military off">兵</span>
+              <span class="og-power-icon supervise">监</span>
+            </div>
+            <div class="og-meta-row">
+              <span class="og-meta-treasury">银 6 万</span>
+              <span class="sep">·</span>
+              <span class="og-meta-illicit hot">肥缺</span>
+              <span class="sep">·</span>
+              <span class="og-meta-tenure">任 2 回</span>
+              <span class="sep">·</span>
+              <span class="og-eval-history">
+                <span class="lbl">考</span>
+                <span class="og-eval-dot up">上</span>
+                <span class="og-eval-dot mid">中</span>
+                <span class="og-eval-dot none">未</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- 吏部尚书 -->
+          <div class="og-pos-card og-rank-high" style="left:250px;top:350px;width:260px;height:196px;display:none;"></div>
+          <div class="og-pos-card og-rank-high" style="left:260px;top:350px;width:260px;height:196px;"></div>
+          <div class="og-pos-card og-rank-high" style="left:260px;top:350px;width:260px;height:196px;display:none;"></div>
+
+          <div class="og-pos-card og-rank-high" style="left:540px;top:350px;width:260px;height:196px;display:none;"></div>
+
+          <!-- 吏部尚书（depth 2 - 放吏部下方） -->
+          <div class="og-pos-card og-rank-high" style="left:260px;top:350px;width:220px;height:196px;display:none;"></div>
+
+          <div class="og-pos-card og-rank-high" style="left:260px;top:350px;width:220px;height:196px;display:none;"></div>
+
+          <!-- 吏部尚书 (real) -->
+          <div class="og-pos-card og-rank-high" style="left:265px;top:350px;width:210px;height:196px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">吏部尚书 <span class="og-pos-rank-badge">正二品</span></div>
+                <div class="og-pos-sub-line"><span>吏 部</span><span class="sep">·</span><span>领 铨 选</span></div>
+              </div>
+              <button class="og-pos-action-btn change">改换</button>
+            </div>
+            <div class="og-pos-holder-row loyal">
+              <div class="og-pos-portrait">刘</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">刘鸿训</span>
+                  <span class="og-party-tag dongin">东林</span>
+                </div>
+                <div class="og-pos-sub-line"><span>年五十二</span><span class="sep">·</span><span>任 1 回</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">78</span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">84</span></span>
+              <span class="og-stat-box"><span class="lbl">军</span><span class="v">30</span></span>
+              <span class="og-stat-box loy hi"><span class="lbl">忠</span><span class="v">78</span></span>
+            </div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint">辟</span>
+              <span class="og-power-icon impeach off">弹</span>
+              <span class="og-power-icon tax off">税</span>
+              <span class="og-power-icon military off">兵</span>
+              <span class="og-power-icon supervise">监</span>
+            </div>
+            <div class="og-meta-row">
+              <span class="og-meta-treasury">银 8 万</span>
+              <span class="sep">·</span>
+              <span class="og-meta-illicit hot">肥缺</span>
+              <span class="sep">·</span>
+              <span class="og-eval-history"><span class="lbl">考</span><span class="og-eval-dot up">上</span></span>
+            </div>
+          </div>
+
+          <!-- 户部尚书 -->
+          <div class="og-pos-card og-rank-high" style="left:485px;top:350px;width:210px;height:196px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">户部尚书 <span class="og-pos-rank-badge">正二品</span></div>
+                <div class="og-pos-sub-line"><span>户 部</span><span class="sep">·</span><span>掌 天 下 财 赋</span></div>
+              </div>
+              <button class="og-pos-action-btn change">改换</button>
+            </div>
+            <div class="og-pos-holder-row loyal">
+              <div class="og-pos-portrait">毕</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">毕自严</span>
+                  <span class="og-party-tag qing">清流</span>
+                </div>
+                <div class="og-pos-sub-line"><span>年六十</span><span class="sep">·</span><span>任 3 回</span><span class="sep">·</span><span style="color:var(--celadon-400);">满意 78</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">88</span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">92</span></span>
+              <span class="og-stat-box"><span class="lbl">军</span><span class="v">25</span></span>
+              <span class="og-stat-box loy hi"><span class="lbl">忠</span><span class="v">85</span></span>
+            </div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint off">辟</span>
+              <span class="og-power-icon impeach off">弹</span>
+              <span class="og-power-icon tax">税</span>
+              <span class="og-power-icon military off">兵</span>
+              <span class="og-power-icon supervise off">监</span>
+            </div>
+            <div class="og-meta-row">
+              <span class="og-meta-treasury">银 42 万</span>
+              <span class="sep">·</span>
+              <span class="og-meta-grain">米 86 万</span>
+              <span class="sep">·</span>
+              <span class="og-meta-illicit cold">清要</span>
+            </div>
+          </div>
+
+          <!-- 兵部尚书·空缺 -->
+          <div class="og-pos-card og-rank-high" style="left:705px;top:350px;width:210px;height:196px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">兵部尚书 <span class="og-pos-rank-badge">正二品</span></div>
+                <div class="og-pos-sub-line"><span>兵 部</span><span class="sep">·</span><span>掌 武 选 军 政</span></div>
+              </div>
+              <button class="og-pos-action-btn appoint">任命</button>
+            </div>
+            <div class="og-pos-holder-row vacant">
+              <div class="og-pos-portrait vacant">?</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span style="font-style:italic;">空 缺</span>
+                  <span class="og-hc-chip vac">编1·实0</span>
+                </div>
+                <div class="og-pos-sub-line"><span style="color:var(--vermillion-400);">辽东战事·亟待任命</span></div>
+              </div>
+            </div>
+            <div class="og-empty-msg">此职无人·武选停滞·前线告急</div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint off">辟</span>
+              <span class="og-power-icon impeach off">弹</span>
+              <span class="og-power-icon tax off">税</span>
+              <span class="og-power-icon military off">兵</span>
+              <span class="og-power-icon supervise off">监</span>
+            </div>
+            <div class="og-history-rail">
+              <span class="lbl">历任</span>
+              <span class="name">王在晋</span>
+              <span class="arr">→</span>
+              <span class="name" style="color:var(--vermillion-400);">〔缺〕</span>
+            </div>
+          </div>
+
+          <!-- 左都御史 -->
+          <div class="og-pos-card og-rank-high" style="left:925px;top:350px;width:210px;height:196px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">左都御史 <span class="og-pos-rank-badge">正二品</span></div>
+                <div class="og-pos-sub-line"><span>都 察 院</span><span class="sep">·</span><span>风 宪 之 首</span></div>
+              </div>
+              <button class="og-pos-action-btn change">改换</button>
+            </div>
+            <div class="og-pos-holder-row loyal">
+              <div class="og-pos-portrait">曹</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">曹于汴</span>
+                  <span class="og-party-tag dongin">东林</span>
+                </div>
+                <div class="og-pos-sub-line"><span>年六十五</span><span class="sep">·</span><span>任 4 回</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">76</span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">81</span></span>
+              <span class="og-stat-box"><span class="lbl">军</span><span class="v">20</span></span>
+              <span class="og-stat-box loy hi"><span class="lbl">忠</span><span class="v">80</span></span>
+            </div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint off">辟</span>
+              <span class="og-power-icon impeach">弹</span>
+              <span class="og-power-icon tax off">税</span>
+              <span class="og-power-icon military off">兵</span>
+              <span class="og-power-icon supervise">监</span>
+            </div>
+            <div class="og-meta-row">
+              <span class="og-meta-illicit cold">清要</span>
+              <span class="sep">·</span>
+              <span class="og-eval-history"><span class="lbl">考</span><span class="og-eval-dot up">上</span><span class="og-eval-dot up">上</span></span>
+            </div>
+          </div>
+
+          <!-- 司礼监·掌印太监 -->
+          <div class="og-pos-card og-rank-top" style="left:1145px;top:350px;width:210px;height:196px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">掌印太监 <span class="og-pos-rank-badge">从一品</span></div>
+                <div class="og-pos-sub-line"><span>司 礼 监</span><span class="sep">·</span><span>御 笔 批 红</span></div>
+              </div>
+              <button class="og-pos-action-btn change">改换</button>
+            </div>
+            <div class="og-pos-holder-row danger">
+              <div class="og-pos-portrait">曹</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">曹化淳</span>
+                  <span class="og-party-tag yan">宦官</span>
+                </div>
+                <div class="og-pos-sub-line"><span>年四十七</span><span class="sep">·</span><span>任 3 回</span><span class="sep">·</span><span style="color:var(--vermillion-400);">满意 32</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">68</span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">58</span></span>
+              <span class="og-stat-box"><span class="lbl">军</span><span class="v">45</span></span>
+              <span class="og-stat-box loy lo"><span class="lbl">忠</span><span class="v">38</span></span>
+            </div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint off">辟</span>
+              <span class="og-power-icon impeach off">弹</span>
+              <span class="og-power-icon tax off">税</span>
+              <span class="og-power-icon military off">兵</span>
+              <span class="og-power-icon supervise">监</span>
+            </div>
+            <div class="og-meta-row">
+              <span class="og-meta-treasury">银 25 万</span>
+              <span class="sep">·</span>
+              <span class="og-meta-illicit hot">肥缺</span>
+              <span class="sep">·</span>
+              <span class="og-meta-tenure warn">任 3 回</span>
+              <span class="sep">·</span>
+              <span class="og-eval-history"><span class="lbl">考</span><span class="og-eval-dot mid">中</span><span class="og-eval-dot dn">下</span><span class="og-eval-dot dn">下</span></span>
+            </div>
+          </div>
+
+          <!-- 吏部·三清吏司（层级3） -->
+          <div class="og-dept-card" style="left:50px;top:660px;width:170px;">
+            <div class="og-dept-hdr">
+              <span class="nm">文选清吏司</span>
+              <div class="og-power-ring lo"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="53.7"/></svg><div class="txt">43</div></div>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">铨 叙 之 首</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:75%;"></div><div class="vac" style="width:25%;"></div></div>
+                <span class="num">3 / 4</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="og-dept-card" style="left:290px;top:660px;width:170px;">
+            <div class="og-dept-hdr">
+              <span class="nm">考功清吏司</span>
+              <div class="og-power-ring lo"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="55.6"/></svg><div class="txt">41</div></div>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">京 察 大 计</span>
+                <span class="og-dept-func">考 绩 升 黜</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:100%;"></div></div>
+                <span class="num">4 / 4</span>
+                <span class="og-hc-chip full">满</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="og-dept-card" style="left:530px;top:660px;width:170px;">
+            <div class="og-dept-hdr">
+              <span class="nm">验封清吏司</span>
+              <div class="og-power-ring lo"><svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="61.2"/></svg><div class="txt">35</div></div>
+            </div>
+            <div class="og-dept-body">
+              <div class="og-dept-func-row">
+                <span class="og-dept-func">封 爵 诰 敕</span>
+              </div>
+              <div class="og-dept-fill">
+                <span class="num">编制</span>
+                <div class="og-dept-fill-bar"><div class="fg" style="width:66%;"></div><div class="vac" style="width:34%;"></div></div>
+                <span class="num">2 / 3</span>
+              </div>
+              <div class="og-dept-actions">
+                <button class="og-dept-btn">+ 官</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 户部·下属 -->
+          <div class="og-dept-card" style="left:390px;top:660px;width:170px;display:none;"></div>
+
+          <!-- 三清吏司·郎中（层级4 leaf） -->
+          <div class="og-pos-card og-rank-mid" style="left:50px;top:870px;width:170px;height:160px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">郎中 <span class="og-pos-rank-badge">正五品</span></div>
+                <div class="og-pos-sub-line"><span>文选司</span></div>
+              </div>
+              <button class="og-pos-action-btn concretize">具象</button>
+            </div>
+            <div class="og-pos-holder-row loyal">
+              <div class="og-pos-portrait">张</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">张四知</span></div>
+                <div class="og-pos-sub-line"><span>任 1 回</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">72</span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">68</span></span>
+              <span class="og-stat-box loy hi"><span class="lbl">忠</span><span class="v">76</span></span>
+            </div>
+            <div class="og-powers">
+              <span class="og-powers-lbl">权</span>
+              <span class="og-power-icon appoint">辟</span>
+              <span class="og-power-icon impeach off">弹</span>
+              <span class="og-power-icon tax off">税</span>
+              <span class="og-power-icon military off">兵</span>
+              <span class="og-power-icon supervise off">监</span>
+            </div>
+          </div>
+
+          <div class="og-pos-card og-rank-mid" style="left:290px;top:870px;width:170px;height:160px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">郎中 <span class="og-pos-rank-badge">正五品</span></div>
+                <div class="og-pos-sub-line"><span>考功司</span></div>
+              </div>
+              <button class="og-pos-action-btn concretize">具象</button>
+            </div>
+            <div class="og-pos-holder-row mid">
+              <div class="og-pos-portrait">倪</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span class="nm">倪元璐</span>
+                  <span class="og-party-tag dongin">东林</span>
+                </div>
+                <div class="og-pos-sub-line"><span>丁 忧 在 籍</span><span class="sep">·</span><span style="color:var(--amber-400);">暂离</span></div>
+              </div>
+            </div>
+            <div class="og-stats-row">
+              <span class="og-stat-box"><span class="lbl">智</span><span class="v">88</span></span>
+              <span class="og-stat-box"><span class="lbl">政</span><span class="v">72</span></span>
+              <span class="og-stat-box loy hi"><span class="lbl">忠</span><span class="v">82</span></span>
+            </div>
+            <div class="og-meta-row">
+              <span style="color:var(--amber-400);">丁忧三年·不视事</span>
+            </div>
+          </div>
+
+          <div class="og-pos-card og-rank-mid" style="left:530px;top:870px;width:170px;height:160px;">
+            <div class="og-rank-bar"></div>
+            <div class="og-pos-top">
+              <div class="og-pos-nm-wrap">
+                <div class="og-pos-nm">郎中 <span class="og-pos-rank-badge">正五品</span></div>
+                <div class="og-pos-sub-line"><span>验封司</span></div>
+              </div>
+              <button class="og-pos-action-btn appoint">任命</button>
+            </div>
+            <div class="og-pos-holder-row vacant">
+              <div class="og-pos-portrait vacant">?</div>
+              <div class="og-pos-holder-info">
+                <div class="og-pos-name-line"><span style="font-style:italic;">空缺</span></div>
+                <div class="og-pos-sub-line"><span style="color:var(--vermillion-400);">前任致仕·未补</span></div>
+              </div>
+            </div>
+            <div class="og-empty-msg">此职无人·封爵事宜搁置</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legend">
+    ★ 设计要点：<span class="k">宣纸+青瓦纹底</span> 树容器 · 右上<span class="k">鸟瞰小地图</span> + 视图工具栏（按部门类型/显示内容/高亮筛选 15 按钮） · 职位卡 <span class="k">270×196 大号</span>·含 <span class="k">官职+品级徽·官员头像+党派徽·能力四维条·五权柄图标·公库银/米·肥缺冷/热·任期久任警·考评三历史点·历任名单链</span> · 部门卡含 <span class="k">实权圆环进度·职能绿chip·编制填充柱·权臣/战事预警</span> · 品级 4 色 · 空缺职位虚框斜纹头像 · 丁忧等特殊状态专属提示 · 选中金色双边光晕 <br>
+    <span style="color:var(--ink-300);margin-top:6px;display:inline-block;">信息密度相比 v1 翻倍·职位卡高度 68→196px。若满意将此样式应用到 tm-index-world.js 的 _renderOfficeTreeSVG() 中。</span>
+  </div>
+
+</div>
+
+</body>
+</html>

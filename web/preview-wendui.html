@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>问对标签页·美化预览</title>
+<style>
+:root {
+  --bg-1: #0f0d0a;
+  --bg-2: #1a1510;
+  --bg-paper: #241e18;
+  --ink-900: #f4eadd;
+  --ink-700: #d9c9a9;
+  --ink-500: #a69470;
+  --ink-300: #6b5d47;
+  --ink-100: #3d342a;
+  --gold-300: #c9a85f;
+  --gold-400: #b89a53;
+  --gold-500: #9d8244;
+  --gold-d: #6b5a30;
+  --vermillion-300: #d15c47;
+  --vermillion-400: #b84738;
+  --vermillion-600: #8f3428;
+  --indigo-400: #5a6fa8;
+  --indigo-600: #3e4e80;
+  --celadon-400: #6a9a7f;
+  --celadon-600: #4a7a5f;
+  --amber-400: #c9a045;
+  --purple-400: #8e6aa8;
+  --border-subtle: rgba(184,154,83,0.15);
+  --border-strong: rgba(184,154,83,0.35);
+  --shadow-scroll: 0 6px 18px rgba(0,0,0,0.45), 0 0 0 1px rgba(184,154,83,0.08);
+  --shadow-gold: 0 0 12px rgba(184,154,83,0.2);
+  --font-serif: "STKaiti", "KaiTi", "楷体", "Georgia", serif;
+  --font-song: "STSong", "SimSun", "宋体", serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background:
+    radial-gradient(ellipse at top, #1a1510 0%, #0f0d0a 70%),
+    var(--bg-1);
+  color: var(--ink-700);
+  font-family: var(--font-song);
+  font-size: 14px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+.preview-frame {
+  max-width: 1280px;
+  margin: 32px auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: var(--shadow-scroll);
+}
+
+.preview-header {
+  background: linear-gradient(to bottom, rgba(184,154,83,0.04), transparent);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--ink-500);
+  letter-spacing: 0.1em;
+}
+.preview-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+.preview-header .dot.r { background: #d15c47; }
+.preview-header .dot.y { background: #c9a85f; }
+.preview-header .dot.g { background: #6a9a7f; }
+.preview-header .title {
+  margin-left: auto;
+  font-family: var(--font-serif);
+  letter-spacing: 0.3em;
+  color: var(--ink-300);
+}
+
+/* 标签栏 */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+.tab-btn {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: var(--ink-300);
+  font-family: var(--font-serif);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  position: relative;
+}
+.tab-btn:hover { color: var(--ink-700); }
+.tab-btn.active {
+  color: var(--gold-400);
+  border-bottom-color: var(--gold-400);
+}
+.tab-btn.active::before {
+  content: ""; position: absolute; top: 6px; right: 6px;
+  width: 5px; height: 5px; background: var(--vermillion-400);
+  border-radius: 1px; transform: rotate(12deg);
+}
+
+/* ═══ 问对主区 ═══ */
+.wd-panel {
+  padding: 24px 28px;
+  min-height: 900px;
+  background-color: var(--bg-paper);
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 2.5em, rgba(107,93,71,0.04) 2.5em, rgba(107,93,71,0.04) calc(2.5em + 1px)),
+    repeating-linear-gradient(0deg, transparent 0, transparent 3em, rgba(107,93,71,0.02) 3em, rgba(107,93,71,0.02) calc(3em + 1px)),
+    linear-gradient(to bottom, rgba(184,154,83,0.05) 0%, transparent 80px);
+  position: relative;
+}
+.wd-panel::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(circle at 15% 25%, rgba(139,90,50,0.025) 0.5px, transparent 1px),
+    radial-gradient(circle at 80% 60%, rgba(139,90,50,0.03) 0.5px, transparent 1px);
+  background-size: 80px 80px, 120px 120px;
+}
+.wd-inner { position: relative; z-index: 1; }
+
+/* 御前问对标题 */
+.wd-title {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+  padding: 14px 0 18px;
+}
+.wd-title::before, .wd-title::after {
+  content: ""; position: absolute; left: 50%;
+  width: 180px; height: 1px; transform: translateX(-50%);
+  background: linear-gradient(to right, transparent, var(--gold-d), transparent);
+}
+.wd-title::before { top: 0; }
+.wd-title::after { bottom: 0; }
+.wd-title .main {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  letter-spacing: 0.5em;
+  color: var(--ink-900);
+  margin-bottom: 6px;
+}
+.wd-title .sub {
+  font-size: 12px;
+  color: var(--ink-300);
+  letter-spacing: 0.3em;
+  font-family: var(--font-serif);
+}
+.wd-title .seal {
+  position: absolute;
+  right: 32px; top: 12px;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    rgba(192,64,48,0.85),
+    rgba(140,40,30,0.75));
+  display: flex; align-items: center; justify-content: center;
+  color: #f4eadd;
+  font-size: 12px;
+  font-family: var(--font-serif);
+  letter-spacing: 0.08em;
+  font-weight: bold;
+  transform: rotate(-6deg);
+  box-shadow: 0 2px 6px rgba(140,40,30,0.4);
+  opacity: 0.88;
+}
+
+/* ═══ 分组题签 ═══ */
+.wd-group {
+  margin-bottom: 28px;
+}
+.wd-group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.wd-group-title .tag {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  letter-spacing: 0.25em;
+  padding: 4px 14px 6px;
+  background: linear-gradient(to bottom,
+    rgba(157,130,68,0.12),
+    rgba(157,130,68,0.03));
+  border-top: 1px solid var(--tag-color, var(--gold-d));
+  border-bottom: 1px solid var(--tag-color, var(--gold-d));
+  color: var(--ink-900);
+  position: relative;
+  flex-shrink: 0;
+}
+.wd-group-title .tag::before,
+.wd-group-title .tag::after {
+  content: "❖";
+  color: var(--tag-color, var(--gold-400));
+  font-size: 10px;
+  margin: 0 6px;
+  opacity: 0.65;
+}
+.wd-group-title .desc {
+  font-size: 11.5px;
+  color: var(--ink-500);
+  letter-spacing: 0.05em;
+  font-family: var(--font-song);
+}
+.wd-group-title .count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--tag-color, var(--gold-400));
+  font-family: var(--font-serif);
+  padding: 2px 8px;
+  border: 1px solid var(--tag-color, var(--gold-d));
+  border-radius: 2px;
+  letter-spacing: 0.1em;
+}
+
+/* 重点类分组颜色 */
+.wd-g-envoy { --tag-color: var(--amber-400); }
+.wd-g-seeking { --tag-color: var(--vermillion-400); }
+.wd-g-incap { --tag-color: var(--gold-400); }
+.wd-g-away { --tag-color: var(--ink-300); }
+
+/* ═══ 求见条 (带 reason) ═══ */
+.wd-request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(192,64,48,0.04);
+  border: 1px dashed var(--tag-color);
+  border-left: 3px solid var(--tag-color);
+  border-radius: 2px;
+}
+.wd-request-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--bg-paper);
+  border-left: 2px solid var(--tag-color);
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+.wd-request-item:hover {
+  background: rgba(192,64,48,0.06);
+  transform: translateX(2px);
+}
+.wd-req-portrait {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--tag-color), var(--ink-300));
+  display: flex; align-items: center; justify-content: center;
+  color: #f4eadd;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  flex-shrink: 0;
+  border: 2px solid var(--tag-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  position: relative;
+}
+.wd-req-portrait .envoy-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  background: var(--amber-400);
+  color: #1a1410;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+.wd-req-info { flex: 1; min-width: 0; }
+.wd-req-name {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--ink-900);
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+.wd-req-reason {
+  font-size: 11.5px;
+  color: var(--ink-500);
+  margin-top: 2px;
+  font-style: italic;
+}
+.wd-req-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.wd-req-btn {
+  background: linear-gradient(to bottom, var(--tag-color), var(--vermillion-600));
+  color: #f4eadd;
+  border: 1px solid var(--tag-color);
+  padding: 5px 14px;
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  letter-spacing: 0.15em;
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.wd-req-btn:hover { transform: translateY(-1px); }
+.wd-req-btn.dismiss {
+  background: var(--bg-paper);
+  color: var(--ink-500);
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+.wd-req-btn.dismiss:hover {
+  color: var(--ink-700);
+  border-color: var(--ink-500);
+}
+
+/* ═══ 百官卡片网格 ═══ */
+.wd-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.wd-char-card {
+  padding: 12px 12px 10px;
+  background: var(--bg-paper);
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 2.5em,
+      rgba(107,93,71,0.025) 2.5em, rgba(107,93,71,0.025) calc(2.5em + 1px));
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--card-color, var(--gold-d));
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.wd-char-card::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 50px; height: 50px;
+  background: radial-gradient(circle at top right,
+    rgba(184,154,83,0.06), transparent 70%);
+  pointer-events: none;
+}
+.wd-char-card:hover {
+  border-color: var(--gold-400);
+  border-left-width: 4px;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-gold), 0 3px 8px rgba(0,0,0,0.3);
+}
+.wd-char-card.has-history::before {
+  content: "✎";
+  position: absolute;
+  top: 6px; right: 8px;
+  font-size: 10px;
+  color: var(--gold-400);
+  opacity: 0.7;
+}
+.wd-char-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.wd-portrait {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ink-300), var(--ink-100));
+  border: 2px solid var(--card-color, var(--gold-d));
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-900);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.wd-name-wrap { flex: 1; min-width: 0; }
+.wd-name {
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  color: var(--ink-900);
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.wd-name .spouse {
+  color: var(--vermillion-400);
+  font-size: 12px;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+.wd-title {
+  font-size: 10.5px;
+  color: var(--ink-500);
+  margin-top: 2px;
+  font-family: var(--font-song);
+  letter-spacing: 0.05em;
+}
+.wd-char-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--ink-500);
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-subtle);
+}
+.wd-loyalty {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-serif);
+}
+.wd-loyalty .num {
+  font-size: 12px;
+  color: var(--loyalty-color, var(--ink-700));
+  font-weight: 500;
+}
+.wd-tag {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* 卡片左边颜色：按 faction/stance */
+.wd-c-official { --card-color: var(--gold-400); }
+.wd-c-military { --card-color: var(--vermillion-400); }
+.wd-c-eunuch { --card-color: var(--purple-400); }
+.wd-c-consort { --card-color: var(--vermillion-300); }
+.wd-c-dongin { --card-color: var(--celadon-400); }
+.wd-c-zhenh { --card-color: var(--indigo-400); }
+
+/* 忠诚色彩 */
+.loy-high { --loyalty-color: var(--celadon-400); }
+.loy-mid { --loyalty-color: var(--gold-400); }
+.loy-low { --loyalty-color: var(--vermillion-400); }
+
+/* ═══ 远方臣子 ═══ */
+.wd-away-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wd-away-item {
+  padding: 6px 12px;
+  background: rgba(107,93,71,0.1);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 2px;
+  font-size: 12px;
+  color: var(--ink-500);
+  font-family: var(--font-serif);
+  letter-spacing: 0.05em;
+  opacity: 0.55;
+  cursor: not-allowed;
+  position: relative;
+}
+.wd-away-item .loc {
+  font-size: 10px;
+  color: var(--ink-300);
+  margin-left: 6px;
+  padding: 1px 4px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 2px;
+  font-family: var(--font-song);
+}
+.wd-away-item .travel {
+  font-size: 10px;
+  color: var(--amber-400);
+  margin-left: 4px;
+}
+
+/* ═══ 模式选择模态（预览内嵌）═══ */
+.wd-pick-preview {
+  margin-top: 40px;
+  padding: 24px;
+  background: rgba(0,0,0,0.2);
+  border: 1px dashed var(--border-strong);
+  border-radius: 4px;
+}
+.wd-pick-preview-title {
+  text-align: center;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  color: var(--ink-500);
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+}
+.wd-pick-modal {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px 28px;
+  background-color: #241e18;
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 2.5em,
+      rgba(107,93,71,0.03) 2.5em, rgba(107,93,71,0.03) calc(2.5em + 1px));
+  border: 1px solid var(--gold-d);
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(184,154,83,0.1);
+  text-align: center;
+}
+.wd-pick-portrait {
+  width: 72px; height: 72px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-400), var(--ink-100));
+  border: 3px solid var(--gold-400);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-900);
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 500;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.wd-pick-name {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: var(--gold-400);
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+.wd-pick-title {
+  font-size: 12px;
+  color: var(--ink-500);
+  margin-bottom: 14px;
+}
+.wd-pick-hist {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--ink-500);
+  padding: 4px 10px;
+  background: rgba(184,154,83,0.08);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+.wd-pick-modes {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.wd-mode-card {
+  flex: 1;
+  padding: 14px 12px;
+  background: rgba(244,234,221,0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.wd-mode-card.sel {
+  border-color: var(--gold-400);
+  background: rgba(184,154,83,0.1);
+  box-shadow: 0 0 0 1px var(--gold-400), 0 0 8px rgba(184,154,83,0.2);
+}
+.wd-mode-card:hover { border-color: var(--gold-d); }
+.wd-mode-card .icon {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--gold-400);
+  margin-bottom: 6px;
+}
+.wd-mode-card.sel .icon { color: var(--gold-300); }
+.wd-mode-card .name {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--ink-900);
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+.wd-mode-card .desc {
+  font-size: 10.5px;
+  color: var(--ink-500);
+  line-height: 1.5;
+}
+.wd-pick-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.wd-pick-btn {
+  padding: 8px 22px;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.wd-pick-btn.primary {
+  background: linear-gradient(to bottom, var(--vermillion-400), var(--vermillion-600));
+  color: #f4eadd;
+  border: 1px solid var(--vermillion-600);
+  box-shadow: 0 1px 3px rgba(140,40,30,0.4);
+}
+.wd-pick-btn.primary:hover { transform: translateY(-1px); }
+.wd-pick-btn.secondary {
+  background: var(--bg-paper);
+  color: var(--ink-500);
+  border: 1px solid var(--border-strong);
+}
+
+/* ═══ Legend ═══ */
+.legend {
+  padding: 14px 20px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--ink-500);
+  text-align: center;
+  letter-spacing: 0.08em;
+  line-height: 1.8;
+}
+.legend .k { color: var(--gold-400); }
+.legend .mark { color: var(--vermillion-400); }
+</style>
+</head>
+<body>
+
+<div class="preview-frame">
+
+  <div class="preview-header">
+    <span class="dot r"></span>
+    <span class="dot y"></span>
+    <span class="dot g"></span>
+    <span>tianming · 问对标签页美化预览</span>
+    <span class="title">〔 御 前 问 对 〕</span>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">朝政</button>
+    <button class="tab-btn">诏令</button>
+    <button class="tab-btn">奏疏</button>
+    <button class="tab-btn active">问对</button>
+    <button class="tab-btn">鸿雁</button>
+    <button class="tab-btn">编年</button>
+    <button class="tab-btn">官制</button>
+    <button class="tab-btn">文苑</button>
+    <button class="tab-btn">起居注</button>
+    <button class="tab-btn">纪事</button>
+    <button class="tab-btn">史记</button>
+  </div>
+
+  <div class="wd-panel">
+    <div class="wd-inner">
+
+      <!-- 御前问对标题 -->
+      <div class="wd-title">
+        <div class="seal">召见</div>
+        <div class="main">御 前 问 对</div>
+        <div class="sub">君臣之对　　面圣请对</div>
+      </div>
+
+      <!-- 使节·待接见队列 -->
+      <div class="wd-group wd-g-envoy">
+        <div class="wd-group-title">
+          <span class="tag">阶 下 待 见</span>
+          <span class="desc">使节、外藩、特请·需陛下决断是否接见</span>
+          <span class="count">2 人</span>
+        </div>
+        <div class="wd-request-list">
+          <div class="wd-request-item">
+            <div class="wd-req-portrait">
+              使
+              <span class="envoy-badge">使节</span>
+            </div>
+            <div class="wd-req-info">
+              <div class="wd-req-name">朝鲜使臣·李元翼</div>
+              <div class="wd-req-reason">持本国国书，为贺年贡，请奏天朝赐宴。</div>
+            </div>
+            <div class="wd-req-actions">
+              <button class="wd-req-btn">接见</button>
+              <button class="wd-req-btn dismiss">暂却</button>
+            </div>
+          </div>
+          <div class="wd-request-item">
+            <div class="wd-req-portrait">私</div>
+            <div class="wd-req-info">
+              <div class="wd-req-name">申时行</div>
+              <div class="wd-req-reason">欲私邀陛下赏雪·附月令诗书一册。</div>
+            </div>
+            <div class="wd-req-actions">
+              <button class="wd-req-btn">接见</button>
+              <button class="wd-req-btn dismiss">暂却</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 臣子求见（朱砂重点） -->
+      <div class="wd-group wd-g-seeking">
+        <div class="wd-group-title">
+          <span class="tag">有 臣 求 见</span>
+          <span class="desc">忠诚极高或心有忧事者·可速见以安其心</span>
+          <span class="count">3 人</span>
+        </div>
+        <div class="wd-request-list">
+          <div class="wd-request-item">
+            <div class="wd-req-portrait">袁</div>
+            <div class="wd-req-info">
+              <div class="wd-req-name">袁崇焕</div>
+              <div class="wd-req-reason">神色凝重，欲进忠言——辽东军情告急。</div>
+            </div>
+            <div class="wd-req-actions">
+              <button class="wd-req-btn">接见</button>
+              <button class="wd-req-btn dismiss">不见</button>
+            </div>
+          </div>
+          <div class="wd-request-item">
+            <div class="wd-req-portrait">温</div>
+            <div class="wd-req-info">
+              <div class="wd-req-name">温体仁</div>
+              <div class="wd-req-reason">前日来函未获回复，亲至求见。</div>
+            </div>
+            <div class="wd-req-actions">
+              <button class="wd-req-btn">接见</button>
+              <button class="wd-req-btn dismiss">不见</button>
+            </div>
+          </div>
+          <div class="wd-request-item">
+            <div class="wd-req-portrait">徐</div>
+            <div class="wd-req-info">
+              <div class="wd-req-name">徐光启</div>
+              <div class="wd-req-reason">精神抖擞，欲呈策论——请设西局于京师督造火器。</div>
+            </div>
+            <div class="wd-req-actions">
+              <button class="wd-req-btn">接见</button>
+              <button class="wd-req-btn dismiss">不见</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 在京百官 -->
+      <div class="wd-group wd-g-incap">
+        <div class="wd-group-title">
+          <span class="tag">百 官 候 旨</span>
+          <span class="desc">现在京中·可随时召对</span>
+          <span class="count">12 人</span>
+        </div>
+        <div class="wd-char-grid">
+
+          <div class="wd-char-card wd-c-official loy-mid has-history">
+            <div class="wd-char-top">
+              <div class="wd-portrait">钱</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">钱谦益</div>
+                <div class="wd-title">礼部尚书</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">62</span></span>
+              <span class="wd-tag" style="color:var(--celadon-400);">东林</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-military loy-high has-history">
+            <div class="wd-char-top">
+              <div class="wd-portrait">卢</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">卢象升</div>
+                <div class="wd-title">宣大总督</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">88</span></span>
+              <span class="wd-tag" style="color:var(--vermillion-400);">武将</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-dongin loy-mid">
+            <div class="wd-char-top">
+              <div class="wd-portrait">叶</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">叶向高</div>
+                <div class="wd-title">内阁首辅</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">75</span></span>
+              <span class="wd-tag" style="color:var(--celadon-400);">东林</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-eunuch loy-low">
+            <div class="wd-char-top">
+              <div class="wd-portrait">曹</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">曹化淳</div>
+                <div class="wd-title">司礼监掌印</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">45</span></span>
+              <span class="wd-tag" style="color:var(--purple-400);">宦官</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-consort loy-high has-history">
+            <div class="wd-char-top">
+              <div class="wd-portrait">周</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">周皇后<span class="spouse">❀</span></div>
+                <div class="wd-title">皇后</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">92</span></span>
+              <span class="wd-tag" style="color:var(--vermillion-300);">中宫</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-official loy-high">
+            <div class="wd-char-top">
+              <div class="wd-portrait">孙</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">孙承宗</div>
+                <div class="wd-title">兵部尚书</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">95</span></span>
+              <span class="wd-tag" style="color:var(--gold-400);">清流</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-zhenh loy-mid">
+            <div class="wd-char-top">
+              <div class="wd-portrait">王</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">王在晋</div>
+                <div class="wd-title">工部尚书</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">68</span></span>
+              <span class="wd-tag" style="color:var(--indigo-400);">浙党</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-official loy-mid">
+            <div class="wd-char-top">
+              <div class="wd-portrait">刘</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">刘鸿训</div>
+                <div class="wd-title">吏部尚书</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">72</span></span>
+              <span class="wd-tag" style="color:var(--celadon-400);">东林</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-military loy-high has-history">
+            <div class="wd-char-top">
+              <div class="wd-portrait">满</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">满桂</div>
+                <div class="wd-title">辽东总兵</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">85</span></span>
+              <span class="wd-tag" style="color:var(--vermillion-400);">武将</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-eunuch loy-low">
+            <div class="wd-char-top">
+              <div class="wd-portrait">王</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">王德化</div>
+                <div class="wd-title">御马监太监</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">38</span></span>
+              <span class="wd-tag" style="color:var(--purple-400);">宦官</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-consort loy-mid">
+            <div class="wd-char-top">
+              <div class="wd-portrait">田</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">田贵妃<span class="spouse">❀</span></div>
+                <div class="wd-title">贵妃</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">78</span></span>
+              <span class="wd-tag" style="color:var(--vermillion-300);">妃嫔</span>
+            </div>
+          </div>
+
+          <div class="wd-char-card wd-c-official loy-low">
+            <div class="wd-char-top">
+              <div class="wd-portrait">周</div>
+              <div class="wd-name-wrap">
+                <div class="wd-name">周延儒</div>
+                <div class="wd-title">礼部侍郎</div>
+              </div>
+            </div>
+            <div class="wd-char-bottom">
+              <span class="wd-loyalty">忠 <span class="num">52</span></span>
+              <span class="wd-tag" style="color:var(--indigo-400);">浙党</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 远方臣子 -->
+      <div class="wd-group wd-g-away">
+        <div class="wd-group-title">
+          <span class="tag">远 方 臣 子</span>
+          <span class="desc">不在京中·需召回或经鸿雁传书</span>
+          <span class="count">6 人</span>
+        </div>
+        <div class="wd-away-list">
+          <div class="wd-away-item">袁崇焕 <span class="loc">辽东</span></div>
+          <div class="wd-away-item">洪承畴 <span class="loc">陕西</span></div>
+          <div class="wd-away-item">杨鹤 <span class="loc">延绥</span></div>
+          <div class="wd-away-item">毛文龙 <span class="loc">皮岛</span></div>
+          <div class="wd-away-item">秦良玉 <span class="loc">四川</span><span class="travel">→京师</span></div>
+          <div class="wd-away-item">郑芝龙 <span class="loc">福建</span></div>
+        </div>
+      </div>
+
+      <!-- 模式选择模态预览 -->
+      <div class="wd-pick-preview">
+        <div class="wd-pick-preview-title">── 点击臣子·弹出召见模态（预览）──</div>
+        <div class="wd-pick-modal">
+          <div class="wd-pick-portrait">袁</div>
+          <div class="wd-pick-name">召 见 · 袁 崇 焕</div>
+          <div class="wd-pick-title">兵部尚书衔督师·辽东</div>
+          <div class="wd-pick-hist">此前有 3 条对话记录</div>
+          <div class="wd-pick-modes">
+            <div class="wd-mode-card sel">
+              <div class="icon">殿</div>
+              <div class="name">朝堂问对</div>
+              <div class="desc">起居注官在场·严肃正式·言辞有度</div>
+            </div>
+            <div class="wd-mode-card">
+              <div class="icon">密</div>
+              <div class="name">私下叙谈</div>
+              <div class="desc">屏退左右·更坦诚亦更絮叨</div>
+            </div>
+          </div>
+          <div class="wd-pick-actions">
+            <button class="wd-pick-btn primary">召　见</button>
+            <button class="wd-pick-btn secondary">取　消</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legend">
+    ★ 设计要点：<span class="k">宣纸底纹</span> · <span class="mark">朱砂「召见」圆印</span> · 分组题签（阶下待见/有臣求见/百官候旨/远方臣子）<br>
+    求见条 = <span class="mark">朱砂虚框</span>+头像徽+reason+「接见/不见」按钮 ·
+    百官卡片 = 头像圈·姓名·官衔·<span class="k">忠诚色彩</span>·派系徽标·对话历史✎标·hover 金晕<br>
+    远方臣子 = 灰度虚线·不可点·含所在地+行途标记 · 召见模态 = 头像大圈+模式卡片（朝堂/私下）+朱砂「召见」凸按钮<br>
+    <span style="color:var(--ink-300);margin-top:6px;display:inline-block;">纯视觉预览。确认后将样式应用到 tm-index-world.js 的 renderWenduiChars + openWenduiPick。</span>
+  </div>
+
+</div>
+
+</body>
+</html>

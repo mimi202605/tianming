@@ -1,0 +1,1029 @@
+/* tm-keju-paradigm-panel.css — Stage 2·Phase L·改革 paradigm 全 UI CSS */
+/* 风格跟现 keju modal 一致·--gold / --bg-1 / 圆角 8-12px */
+
+/* ════════════════════════════════════════════════════════════════════════
+   L-C·s4·目录 (Table of Contents)
+   ════════════════════════════════════════════════════════════════════════
+   §0·shared modal frame    — .kjp-modal-content / .kjp-modal-header / -body / -footer (多 modal 共用·勿单 modal 覆)
+   §1·L2·panel 主体         — #kjp-reform-modal·section·preview·button (line ~4)
+   §2·L3·magnitude/pilot/courtmood/audience  (line ~280)
+   §3·L4·cedui timeline + compare           (line ~352)
+   §4·L6·subjects suggestions + actions     (line ~405)
+   §5·L8·chronicle modal + L9 chip          (line ~452)
+   §6·L10·preset modal                      (line ~521)
+   §7·L11·rollback modal + inheritance modal (line ~579)
+   §8·L12·tabs + timeline + reformer bio    (line ~771)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════════════════════════════════════════════════
+   §1·L2·panel 主体
+   ════════════════════════════════════════════════════════════════════════ */
+#kjp-reform-modal {
+  /* modal-bg 已 fixed inset 0·从 styles.css 继承 */
+  z-index: 9999;
+}
+
+#kjp-reform-modal .kjp-modal-content {
+  background: var(--bg-1);
+  border: 1px solid var(--gold-d);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 820px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 4vh auto;
+}
+
+#kjp-reform-modal .kjp-modal-header {
+  padding: 0.8rem 1.2rem;
+  border-bottom: 1px solid var(--bdr);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-2);
+}
+
+/* L-C·s5·sub-header·feature buttons 一行·避 header 主标 squeeze */
+#kjp-reform-modal .kjp-lc-sub-header {
+  padding: 0.4rem 1.2rem;
+  border-bottom: 1px solid var(--bdr);
+  background: var(--bg-2);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+#kjp-reform-modal .kjp-lc-quick-rollback-btn {
+  background: #6b3838 !important;
+  color: #f0c8a0 !important;
+  border-color: #8b4848 !important;
+}
+#kjp-reform-modal .kjp-lc-quick-rollback-btn:hover {
+  background: #8b4848 !important;
+  color: #fff !important;
+}
+#kjp-reform-modal .kjp-modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+#kjp-reform-modal .kjp-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.2rem;
+}
+
+#kjp-reform-modal .kjp-modal-footer {
+  padding: 0.8rem 1.2rem;
+  border-top: 1px solid var(--bdr);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  background: var(--bg-2);
+}
+
+#kjp-reform-modal .kjp-section {
+  background: var(--bg-2);
+  border: 1px solid var(--bdr);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.8rem;
+}
+
+#kjp-reform-modal .kjp-section-title {
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+#kjp-reform-modal .kjp-subject-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed var(--bdr);
+}
+#kjp-reform-modal .kjp-subject-row:last-child {
+  border-bottom: none;
+}
+#kjp-reform-modal .kjp-subject-name {
+  min-width: 4em;
+  font-weight: 500;
+}
+#kjp-reform-modal .kjp-subject-weight {
+  flex: 1;
+}
+#kjp-reform-modal .kjp-subject-weight-val {
+  min-width: 3em;
+  text-align: right;
+  color: var(--gold);
+}
+#kjp-reform-modal .kjp-subject-del {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+}
+
+#kjp-reform-modal .kjp-add-subject-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--bdr);
+}
+#kjp-reform-modal .kjp-add-subject-row select {
+  flex: 1;
+  padding: 0.3rem;
+  background: var(--bg-3);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 4px;
+}
+
+#kjp-reform-modal .kjp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0;
+  flex-wrap: wrap;
+}
+
+#kjp-reform-modal label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+#kjp-reform-modal input[type="checkbox"],
+#kjp-reform-modal input[type="radio"] {
+  margin: 0;
+}
+
+#kjp-reform-modal input[type="number"],
+#kjp-reform-modal input[type="text"],
+#kjp-reform-modal select {
+  background: var(--bg-3);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+#kjp-reform-modal .kjp-classes-list {
+  color: var(--txt-d);
+  font-size: 0.85rem;
+}
+
+#kjp-reform-modal .kjp-preview-section {
+  background: var(--bg-3);
+  border-color: var(--gold-d);
+}
+
+#kjp-reform-modal .kjp-topic-text {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-family: var(--font-serif, serif);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+#kjp-reform-modal .kjp-stance-preview {
+  font-size: 0.85rem;
+  padding: 0.3rem 0;
+}
+#kjp-reform-modal .kjp-stance-row {
+  padding: 0.2rem 0;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+#kjp-reform-modal .kjp-party {
+  font-weight: 600;
+  color: var(--gold);
+  min-width: 4em;
+}
+#kjp-reform-modal .kjp-stance-label {
+  font-style: italic;
+  color: var(--txt-d);
+}
+#kjp-reform-modal .kjp-magnitude {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--bdr);
+  font-size: 0.9rem;
+}
+#kjp-reform-modal .kjp-muted {
+  color: var(--txt-d);
+  font-style: italic;
+}
+
+/* 按钮·跟现 .bt .bp .bs .bsm 一致·此处无需重定义 */
+
+/* L2 v1.2·post-audit·details/summary 折叠风格 */
+#kjp-reform-modal details.kjp-section > summary {
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  color: var(--gold);
+  padding: 0.2rem 0;
+}
+#kjp-reform-modal details.kjp-section > summary::-webkit-details-marker { display: none; }
+#kjp-reform-modal details.kjp-section > summary::before {
+  content: '▶ ';
+  display: inline-block;
+  transition: transform 0.1s;
+  margin-right: 0.3rem;
+}
+#kjp-reform-modal details.kjp-section[open] > summary::before {
+  transform: rotate(90deg);
+}
+#kjp-reform-modal details.kjp-section .kjp-section-body {
+  padding-top: 0.5rem;
+}
+
+/* 复古议·朝代 selector */
+#kjp-reform-modal .kjp-restoration-dyn {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--txt-d);
+}
+
+/* 授官·一甲/二甲/三甲 行 */
+#kjp-reform-modal .kjp-alloc-class {
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed var(--bdr);
+}
+#kjp-reform-modal .kjp-alloc-class:last-child {
+  border-bottom: none;
+}
+#kjp-reform-modal .kjp-alloc-label {
+  display: inline-block;
+  min-width: 9em;
+  font-weight: 500;
+  color: var(--gold);
+}
+
+/* quota ratio 行 */
+#kjp-reform-modal .kjp-quota-ratio {
+  padding: 0.2rem 0;
+}
+
+/* tiers display·readonly */
+#kjp-reform-modal .kjp-tiers-display {
+  color: var(--txt-d);
+  font-family: var(--font-serif, serif);
+}
+
+/* A4·weight warning + info */
+#kjp-reform-modal .kjp-warning {
+  background: rgba(204,80,80,0.15);
+  border-left: 3px solid var(--bad, #c55);
+  color: var(--bad, #c55);
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+#kjp-reform-modal .kjp-info {
+  background: var(--bg-3);
+  border-left: 3px solid var(--gold-d);
+  color: var(--txt-d);
+  padding: 0.3rem 0.6rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* C1·JSON 输入错·红框 */
+#kjp-reform-modal input.kjp-input-error,
+#kjp-reform-modal textarea.kjp-input-error {
+  border-color: var(--bad, #c55) !important;
+  background: rgba(204,80,80,0.08);
+}
+
+/* L3·改革幅度 + 试点 + 朝议预判 + 召对 */
+#kjp-reform-modal .kjp-mag-parsed {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-3);
+  border-left: 3px solid var(--gold);
+  font-size: 0.85rem;
+  border-radius: 4px;
+}
+#kjp-reform-modal .kjp-pilot-cand {
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px dashed var(--bdr);
+}
+#kjp-reform-modal .kjp-pilot-cand:last-child { border-bottom: none; }
+#kjp-reform-modal .kjp-courtmood-narrative {
+  margin: 0.5rem 0;
+  padding: 0.8rem 1rem;
+  background: var(--bg-3);
+  border-left: 3px solid var(--gold);
+  font-family: var(--font-serif, serif);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  border-radius: 4px;
+}
+#kjp-reform-modal .kjp-courtmood-meta {
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+  color: var(--txt-d);
+}
+#kjp-reform-modal .kjp-key-npc {
+  background: var(--bg-2);
+  border: 1px solid var(--gold-d);
+  color: var(--gold);
+}
+#kjp-reform-modal .kjp-audience-record {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.8rem;
+  background: var(--bg-3);
+  border-left: 3px solid var(--gold-d);
+  font-size: 0.85rem;
+  border-radius: 4px;
+}
+#kjp-reform-modal .kjp-audience-speech {
+  margin: 0.3rem 0;
+  font-family: var(--font-serif, serif);
+  color: var(--txt);
+  font-style: italic;
+}
+/* R6·D1·失败 audience 视觉区分·红 border + 淡红底·一眼可辨 */
+#kjp-reform-modal .kjp-audience-failed {
+  border-left: 3px solid var(--bad, #c84a4a);
+  background: rgba(200, 74, 74, 0.10);
+  opacity: 0.85;
+}
+#kjp-reform-modal .kjp-audience-failed .kjp-audience-speech {
+  color: var(--txt-d);
+  font-style: normal;
+}
+
+/* L3·R4·M4·朝议 stale 警告·paradigm 改后未重算 */
+#kjp-reform-modal .kjp-stale-warning {
+  background: rgba(220,140,40,0.18);
+  border-left: 3px solid var(--gold, #d8a040);
+  color: var(--gold, #d8a040);
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   §3·L4·cedui timeline + compare
+   ════════════════════════════════════════════════════════════════════════ */
+/* L4·v6 + RY·全套 cedui CSS·历次策对 timeline + 对比 view + stale 标 */
+#kjp-reform-modal .kjp-cedui-row {
+  padding: 0.35rem 0.6rem;
+  margin: 0.25rem 0;
+  background: var(--bg-3);
+  border-left: 3px solid var(--gold-d);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+#kjp-reform-modal .kjp-cedui-row.kjp-cedui-stale {
+  opacity: 0.55;
+  font-style: italic;
+  border-left-color: var(--txt-d, #777);
+  background: var(--bg-4, rgba(120,120,120,0.08));
+}
+#kjp-reform-modal .kjp-cedui-compare {
+  margin-top: 0.6rem;
+  padding: 0.5rem;
+  background: var(--bg-2);
+  border: 1px dashed var(--gold-d);
+  border-radius: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+#kjp-reform-modal .kjp-cedui-compare-col {
+  background: var(--bg-3);
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+  min-height: 4rem;
+}
+#kjp-reform-modal .kjp-cedui-compare-head {
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  color: var(--gold, #d8a040);
+}
+#kjp-reform-modal .kjp-cedui-compare-body {
+  font-family: var(--font-serif, serif);
+  font-size: 0.85rem;
+  color: var(--txt);
+  line-height: 1.5;
+}
+#kjp-reform-modal .kjp-cedui-compare-clear {
+  grid-column: 1 / -1;
+  margin-top: 0.3rem;
+  text-align: center;
+}
+#kjp-reform-modal .kjp-cedui-compare-btn {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   L6·LLM 推荐 + 自定义新 subject·suggestion cards + actions
+   ════════════════════════════════════════════════════════════════ */
+#kjp-reform-modal .kjp-l6-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+  flex-wrap: wrap;
+}
+#kjp-reform-modal .kjp-l6-suggestions {
+  margin-top: 0.8rem;
+}
+#kjp-reform-modal .kjp-l6-suggestion-card {
+  border: 1px solid var(--border, #6b5a40);
+  border-radius: 4px;
+  padding: 0.5rem 0.7rem;
+  margin: 0.4rem 0;
+  background: var(--bg-soft, rgba(40, 30, 20, 0.4));
+}
+#kjp-reform-modal .kjp-l6-format {
+  color: var(--txt-s, #a09080);
+  font-size: 0.78rem;
+  margin: 0.3rem 0;
+}
+#kjp-reform-modal .kjp-rationale {
+  font-style: italic;
+  color: var(--txt-s, #a09080);
+  font-size: 0.75rem;
+  margin: 0.3rem 0;
+  line-height: 1.5;
+}
+#kjp-reform-modal .kjp-l6-suggestion-card .kjp-l6-accept-btn {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+}
+/* RBB·BB-C1·accepted suggestion·muted 视觉·user 知已加入·非 silent dedup */
+#kjp-reform-modal .kjp-l6-suggestion-card.kjp-l6-accepted {
+  opacity: 0.55;
+  border-color: var(--ok, #5a8050);
+}
+#kjp-reform-modal .kjp-l6-suggestion-card.kjp-l6-accepted .kjp-l6-accept-btn[disabled] {
+  cursor: not-allowed;
+  background: var(--ok, #5a8050);
+  color: #f8f0e0;
+  opacity: 0.8;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   §5·L8·chronicle modal + L9 chip + L10 preset modal
+   ════════════════════════════════════════════════════════════════════════ */
+/* L8·改革志 modal·7 class */
+#kjp-l8-chronicle-modal {
+  position: fixed; top: 5%; left: 50%; transform: translateX(-50%);
+  width: min(720px, 90vw); max-height: 85vh; overflow-y: auto;
+  background: #1a1612; color: #f0e0c0;
+  border: 2px solid #5a4a30; border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 10000;
+}
+#kjp-l8-chronicle-modal .kjp-l8-inheritance-banner {
+  background: #3a2e20; color: #f8f0e0;
+  padding: 12px; margin: 0 0 12px 0;
+  border-bottom: 1px solid #5a4a30;
+  line-height: 1.6;
+}
+#kjp-l8-chronicle-modal .kjp-l8-rationale {
+  margin-top: 6px; font-size: 0.9em; opacity: 0.8; font-style: italic;
+}
+#kjp-l8-chronicle-modal .kjp-l8-reform-section {
+  margin: 12px; padding: 10px;
+  border: 1px solid #5a4a30; border-radius: 4px;
+  background: rgba(58,46,32,0.3);
+}
+#kjp-l8-chronicle-modal .kjp-l8-year-entry {
+  margin: 8px 0 8px 16px; padding: 6px 0 6px 10px;
+  border-left: 2px solid #8a7050;
+}
+#kjp-l8-chronicle-modal .kjp-l8-year-entry .year-label {
+  font-weight: bold; color: #e8d8b0;
+}
+#kjp-l8-chronicle-modal .kjp-l8-text {
+  color: #f0e0c0; margin-top: 4px; line-height: 1.5;
+}
+#kjp-l8-chronicle-modal .kjp-l8-snippets {
+  color: #a09080; font-size: 0.85em; margin-top: 4px;
+}
+#kjp-l8-chronicle-modal .kjp-l8-npc {
+  color: #90a080; font-size: 0.85em; font-style: italic; margin-top: 4px;
+}
+#kjp-l8-chronicle-modal .kjp-l8-disabled-hint {
+  padding: 20px; text-align: center; font-style: italic;
+}
+
+/* L9·命名 banner + 黑天鹅 chip·5 class·hex 跟 L8 paradigm 一致 */
+#kjp-l8-chronicle-modal .kjp-l9-canonical-name {
+  font-size: 1.1em; font-weight: bold;
+  color: #e8d8b0; background: #3a2e20;
+  padding: 6px 10px; border-radius: 4px;
+  margin: 4px 0 2px 0;
+}
+#kjp-l8-chronicle-modal .kjp-l9-hist-eval {
+  font-style: italic; font-size: 0.85em;
+  color: #a09080;
+  padding: 4px 10px 8px 10px;
+  border-left: 2px solid #5a4a30;
+}
+#kjp-l8-chronicle-modal .kjp-l9-swan-chip {
+  display: inline-block;
+  padding: 2px 6px; border-radius: 3px;
+  font-size: 0.8em; margin-left: 6px;
+}
+#kjp-l8-chronicle-modal .kjp-l9-sev-low  { background: #4a4030; color: #e8d8b0; }
+#kjp-l8-chronicle-modal .kjp-l9-sev-mid  { background: #6a4030; color: #f0e0c0; }
+#kjp-l8-chronicle-modal .kjp-l9-sev-high { background: #8a3030; color: #f8f0e0; }
+#kjp-l8-chronicle-modal .kjp-l9-swan-narr {
+  color: #c0a080; font-size: 0.85em; font-style: italic;
+  margin-top: 4px; padding-left: 8px;
+  border-left: 2px solid #8a4040;
+}
+
+/* L10·历史模板 modal + button + cards·6 class·hex 跟 L8 paradigm 一致 */
+#kjp-reform-modal .kjp-l10-actions {
+  margin-top: 8px; padding-top: 6px;
+  border-top: 1px dashed var(--bdr);
+}
+#kjp-reform-modal .kjp-l10-marked {
+  margin-left: 8px; font-size: 0.85em;
+  color: #e8d8b0; font-style: italic;
+}
+#kjp-l10-preset-modal {
+  position: fixed; top: 5%; left: 50%; transform: translateX(-50%);
+  width: min(720px, 90vw); max-height: 85vh; overflow-y: auto;
+  background: #1a1612; color: #f0e0c0;
+  border: 2px solid #5a4a30; border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 10001;
+}
+#kjp-l10-preset-modal .kjp-modal-content {
+  background: transparent; border: none;
+}
+#kjp-l10-preset-modal .kjp-l10-section-title {
+  font-weight: bold; color: #e8d8b0;
+  padding: 8px 12px;
+  border-bottom: 1px solid #5a4a30;
+  background: #3a2e20;
+}
+#kjp-l10-preset-modal .kjp-l10-preset-card {
+  margin: 8px 12px; padding: 10px;
+  border: 1px solid #5a4a30; border-radius: 4px;
+  background: rgba(58,46,32,0.3);
+}
+#kjp-l10-preset-modal .kjp-l10-card-head {
+  margin-bottom: 4px; color: #e8d8b0;
+}
+#kjp-l10-preset-modal .kjp-l10-era-badge {
+  display: inline-block; padding: 2px 6px; border-radius: 3px;
+  background: #4a4030; color: #f0e0c0; font-size: 0.8em;
+}
+#kjp-l10-preset-modal .kjp-l10-method {
+  font-style: italic; color: #a09080; font-size: 0.85em;
+}
+#kjp-l10-preset-modal .kjp-l10-hist-eval {
+  color: #c0a080; font-size: 0.85em; font-style: italic;
+  margin: 4px 0;
+}
+#kjp-l10-preset-modal .kjp-l10-mag {
+  color: #a09080; font-size: 0.85em;
+  margin: 4px 0;
+}
+#kjp-l10-preset-modal .kjp-l10-all-section {
+  margin: 12px 0;
+}
+#kjp-l10-preset-modal .kjp-l10-all-section > summary {
+  cursor: pointer; padding: 8px 12px;
+  font-weight: bold; color: #e8d8b0;
+  background: #3a2e20;
+  border-top: 1px solid #5a4a30;
+}
+
+/* ════════════════════════════════════════════════════
+   L11·rollback + 跨剧本承袭 UI
+   ════════════════════════════════════════════════════ */
+
+/* timeline [废止] button */
+.kjp-l11-rollback-btn {
+  background: #6b3838 !important;
+  color: #f0c8a0 !important;
+  border-color: #8b4848 !important;
+  font-size: 0.8em;
+  padding: 2px 8px;
+  margin-left: 6px;
+}
+.kjp-l11-rollback-btn:hover {
+  background: #8b4848 !important;
+  color: #fff !important;
+}
+
+/* rollback sub-modal */
+#kjp-l11-rollback-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+#kjp-l11-rollback-modal .kjp-l11-rollback-content {
+  background: #2a1f15; color: #e8d8b0;
+  border: 2px solid #8b4848;
+  max-width: 600px; max-height: 80vh;
+  overflow-y: auto;
+  padding: 0;
+  border-radius: 4px;
+}
+#kjp-l11-rollback-modal .kjp-modal-header {
+  background: #4a2828;
+  padding: 10px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid #6b3838;
+}
+#kjp-l11-rollback-modal .kjp-modal-title {
+  font-size: 1.1em; font-weight: bold; color: #f0c8a0;
+}
+#kjp-l11-rollback-modal .kjp-modal-body {
+  padding: 14px 18px;
+}
+#kjp-l11-rollback-modal .kjp-modal-footer {
+  padding: 10px 16px;
+  background: #3a2e20;
+  border-top: 1px solid #5a4a30;
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+
+#kjp-l11-rollback-modal .kjp-l11-target-info {
+  background: #3a2e20; padding: 8px 12px;
+  border-left: 3px solid #8b4848;
+  margin-bottom: 12px;
+}
+#kjp-l11-rollback-modal .kjp-l11-section-title {
+  font-weight: bold; color: #f0c8a0;
+  margin: 10px 0 6px 0;
+}
+#kjp-l11-rollback-modal .kjp-l11-mode-label {
+  display: block; padding: 4px 0;
+  cursor: pointer;
+}
+#kjp-l11-rollback-modal .kjp-l11-mode-label input[type="radio"] {
+  margin-right: 6px;
+}
+#kjp-l11-rollback-modal .kjp-l11-keep-section {
+  background: #2e2418; padding: 8px 12px;
+  border: 1px dashed #5a4a30;
+  margin: 8px 0;
+}
+#kjp-l11-rollback-modal .kjp-l11-keep-label {
+  display: inline-block; margin: 3px 8px;
+}
+#kjp-l11-rollback-modal .kjp-l11-impact-section {
+  margin-top: 12px;
+}
+#kjp-l11-rollback-modal .kjp-l11-npc-list {
+  padding: 6px 0;
+  font-size: 0.9em;
+}
+#kjp-l11-rollback-modal .kjp-l11-npc {
+  display: inline-block; padding: 2px 6px;
+  background: #3a2e20;
+  margin: 2px;
+  border-radius: 3px;
+}
+#kjp-l11-rollback-modal .kjp-l11-npc-dead {
+  color: #806050;
+  text-decoration: line-through;
+  background: #251a10;
+}
+#kjp-l11-rollback-modal .kjp-l11-npc-count {
+  color: #a09080; font-size: 0.85em;
+  font-style: italic;
+}
+#kjp-l11-rollback-modal .kjp-l11-hint {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #3a3020;
+  border-left: 3px solid #d4a017;
+  color: #d4a017;
+  font-size: 0.9em;
+}
+/* RAA·B4·degraded warn */
+#kjp-l11-rollback-modal .kjp-l11-degraded-warn {
+  padding: 10px 14px;
+  background: #4a2828;
+  border: 1px solid #8b4848;
+  color: #f0a0a0;
+  margin-bottom: 12px;
+  border-radius: 3px;
+  font-weight: bold;
+}
+/* RAA·A7·partial mode disabled */
+#kjp-l11-rollback-modal .kjp-l11-mode-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#kjp-l11-rollback-modal .kjp-l11-disabled-hint {
+  color: #a09080; font-size: 0.85em; font-style: italic;
+}
+
+/* inheritance announce modal */
+#kjp-l11-inh-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+#kjp-l11-inh-modal .kjp-l11-inh-content {
+  background: #1f2a35; color: #e0e8f0;
+  border: 2px solid #4a6a8a;
+  max-width: 560px; max-height: 80vh;
+  overflow-y: auto;
+  padding: 0;
+  border-radius: 4px;
+}
+#kjp-l11-inh-modal .kjp-modal-header {
+  background: #2a3a4a;
+  padding: 10px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid #4a6a8a;
+}
+#kjp-l11-inh-modal .kjp-modal-title {
+  font-size: 1.1em; font-weight: bold; color: #b0d0f0;
+}
+#kjp-l11-inh-modal .kjp-modal-body {
+  padding: 14px 18px;
+}
+#kjp-l11-inh-modal .kjp-modal-footer {
+  padding: 10px 16px;
+  background: #2a3a4a;
+  border-top: 1px solid #4a6a8a;
+  display: flex; justify-content: flex-end;
+}
+#kjp-l11-inh-modal .kjp-l11-inh-prev {
+  background: #2a3a4a; padding: 8px 12px;
+  border-left: 3px solid #6a8aaa;
+  margin-bottom: 10px;
+}
+#kjp-l11-inh-modal .kjp-l11-inh-eval {
+  font-size: 0.85em; color: #c0c8d0; font-style: italic;
+  margin-top: 4px;
+}
+#kjp-l11-inh-modal .kjp-l11-inh-mode {
+  margin: 10px 0; font-size: 1.05em;
+}
+#kjp-l11-inh-modal .kjp-l11-inh-mode-inherit { color: #80c080; font-weight: bold; }
+#kjp-l11-inh-modal .kjp-l11-inh-mode-reject { color: #d08080; font-weight: bold; }
+#kjp-l11-inh-modal .kjp-l11-inh-mode-compromise { color: #d4a017; font-weight: bold; }
+#kjp-l11-inh-modal .kjp-l11-inh-edict {
+  padding: 10px 14px;
+  background: #2e3a48;
+  border-radius: 3px;
+  font-style: italic;
+  color: #e0e8f0;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+#kjp-l11-inh-modal .kjp-l11-inh-rationale {
+  font-size: 0.9em;
+  color: #b0c0d0;
+  margin-top: 8px;
+}
+#kjp-l11-inh-modal .kjp-l11-inh-subjects {
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: #2e3a48;
+  border-radius: 3px;
+}
+
+/* ════════════════════════════════════════════════════
+   L12·改革后果 UI + timeline + reformer 传记
+   ════════════════════════════════════════════════════ */
+
+/* tabs */
+.kjp-l12-tabs {
+  display: flex;
+  background: #3a2e20;
+  border-bottom: 1px solid #5a4a30;
+  padding: 0 8px;
+}
+.kjp-l12-tab {
+  background: transparent;
+  color: #c0a080;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.95em;
+  border-bottom: 2px solid transparent;
+}
+.kjp-l12-tab:hover { color: #e8d8b0; }
+.kjp-l12-tab-active {
+  color: #f0c8a0 !important;
+  border-bottom-color: #d4a017 !important;
+  font-weight: bold;
+}
+
+/* impact summary 折叠 */
+.kjp-l12-sum-toggle {
+  background: #4a3a28 !important;
+  color: #e8d8b0 !important;
+  border-color: #6a5238 !important;
+  font-size: 0.8em;
+  padding: 2px 8px;
+  margin-left: 6px;
+}
+.kjp-l12-sum-wrap {
+  display: none;
+  margin-top: 8px;
+}
+.kjp-l12-sum-wrap.kjp-l12-sum-open {
+  display: block;
+}
+.kjp-l12-impact-summary {
+  background: #2e2418;
+  border: 1px solid #5a4a30;
+  padding: 10px 14px;
+  border-radius: 3px;
+  font-size: 0.88em;
+  color: #d8c8a8;
+}
+.kjp-l12-sum-title {
+  font-weight: bold;
+  color: #f0c8a0;
+  margin-bottom: 6px;
+  border-bottom: 1px dashed #5a4a30;
+  padding-bottom: 4px;
+}
+.kjp-l12-sum-dim {
+  padding: 4px 0;
+  font-family: monospace;
+  color: #b0c0a0;
+}
+.kjp-l12-dim-label {
+  color: #a09080;
+  font-weight: bold;
+}
+.kjp-l12-sum-row {
+  padding: 3px 0;
+  line-height: 1.4;
+}
+.kjp-l12-sum-row b { color: #d4a017; }
+.kjp-l12-sum-rb {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #5a4a30;
+  color: #d08080;
+}
+
+/* timeline */
+.kjp-l12-timeline-empty {
+  padding: 30px;
+  text-align: center;
+  font-style: italic;
+}
+.kjp-l12-timeline-scroll {
+  width: 100%;
+  overflow-x: auto;
+  background: #1f1810;
+  border: 1px solid #3a2e20;
+  padding: 8px 0;
+  position: relative;
+}
+.kjp-l12-timeline-inner {
+  position: relative;
+  min-height: 200px;
+}
+.kjp-l12-tl-axis {
+  position: relative;
+  height: 24px;
+  border-bottom: 1px solid #5a4a30;
+  margin-bottom: 12px;
+}
+.kjp-l12-tl-tick {
+  position: absolute;
+  font-size: 0.75em;
+  color: #a09080;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.kjp-l12-tl-bars {
+  position: relative;
+}
+.kjp-l12-tl-bar {
+  position: absolute;
+  height: 22px;
+  margin-top: 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  font-size: 0.78em;
+  color: #fff;
+  overflow: hidden;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.kjp-l12-tl-bar:hover {
+  filter: brightness(1.2);
+  z-index: 10;
+}
+/* RAA·A1·top 改 inline (dynamic row alloc·防同 status 重叠) */
+.kjp-l12-tl-bar.status-ramping { background: #d4a017; }
+.kjp-l12-tl-bar.status-active  { background: #4a90b8; }
+.kjp-l12-tl-bar.status-matured { background: #5a8a4a; }
+.kjp-l12-tl-bar.status-rolled_back {
+  background: repeating-linear-gradient(45deg,
+    #8b4848, #8b4848 4px, #6b3030 4px, #6b3030 8px);
+}
+.kjp-l12-tl-bar.status-rejected { background: #555; }
+.kjp-l12-tl-bar.status-unknown { background: #777; }
+.kjp-l12-tl-bar-label {
+  pointer-events: none;
+}
+
+/* reformer cards + bio */
+.kjp-l12-reformer-empty { padding: 30px; text-align: center; }
+.kjp-l12-reformer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kjp-l12-reformer-card {
+  background: #3a2e20;
+  padding: 8px 14px;
+  border-radius: 3px;
+  border-left: 3px solid #5a4a30;
+  color: #d8c8a8;
+}
+.kjp-l12-reformer-active {
+  border-left-color: #d4a017;
+  background: #4a3a28;
+}
+.kjp-l12-bio-btn {
+  background: #5a3a28 !important;
+  color: #f0c8a0 !important;
+  border-color: #7a5238 !important;
+  font-size: 0.85em;
+  padding: 2px 8px;
+  margin-left: 8px;
+}
+.kjp-l12-bio-btn:hover {
+  background: #7a5238 !important;
+  color: #fff !important;
+}
+.kjp-l12-bio-loading {
+  margin-top: 12px;
+  padding: 14px;
+  background: #2e2418;
+  border-left: 3px solid #d4a017;
+  color: #d4a017;
+  font-style: italic;
+}
+.kjp-l12-bio-panel {
+  margin-top: 12px;
+  padding: 16px 20px;
+  background: #2e2418;
+  border-left: 3px solid #d4a017;
+  border-radius: 3px;
+}
+.kjp-l12-bio-name {
+  font-size: 1.05em;
+  font-weight: bold;
+  color: #f0c8a0;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed #5a4a30;
+  padding-bottom: 6px;
+}
+.kjp-l12-bio-faction {
+  font-size: 0.85em;
+  color: #d4a017;
+  font-weight: normal;
+}
+.kjp-l12-bio-text {
+  color: #d8c8a8;
+  line-height: 1.7;
+  font-size: 0.93em;
+  text-indent: 2em;
+}
+.kjp-l12-bio-meta {
+  margin-top: 8px;
+  font-size: 0.82em;
+  color: #a09080;
+  font-style: italic;
+}

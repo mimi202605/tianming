@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>v3.1·完整图像系统·4 子项 + 7 主变量</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-void: #0a0a0f; --gold-bright: #e6c87a; --gold-mid: #b8924e; --gold-dim: #7a5c3a;
+  --vermillion: #c8342e; --vermillion-deep: #8a2018; --vermillion-glow: #e54a3c;
+  --jade: #7a9b6e; --jade-deep: #4a6b40; --celadon: #b8ccae;
+  --silver: #d8d0c0; --silver-deep: #8a8478;
+  --grain: #d8b870; --grain-deep: #8a6c28;
+  --cloth: #b8c8d8; --cloth-deep: #5a7090;
+  --treasure: #d4a8c8; --treasure-deep: #8a5a78;
+  --ink-faded: #a8a098; --ink-muted: #6a635a; --ink-white: #f4ede0;
+  --paper-cream: #f0e6cf;
+}
+html, body { background: var(--bg-void); color: var(--ink-white); font-family: 'Noto Serif SC', serif; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse 1400px 900px at 20% 15%, rgba(184,146,78,0.04), transparent 60%);
+}
+main { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 56px 36px 120px; }
+
+.hdr { margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid rgba(184,146,78,0.2); }
+.hdr-meta { display: flex; justify-content: space-between; font: 11px/1 'Cinzel', serif; letter-spacing: 0.42em; color: var(--gold-mid); margin-bottom: 22px; }
+.hdr-meta span:first-child { color: var(--vermillion-glow); }
+.hdr h1 {
+  font: 400 72px/1.05 'Ma Shan Zheng', cursive; letter-spacing: 0.16em;
+  background: linear-gradient(135deg, #f4ede0 0%, #e6c87a 40%, #b8924e 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 18px;
+}
+.hdr-desc { font-size: 14.5px; line-height: 1.9; color: var(--ink-faded); max-width: 960px; font-weight: 300; }
+.hdr-desc strong { color: var(--gold-bright); }
+.hdr-desc .fix { color: var(--vermillion-glow); font-weight: 500; }
+
+.mea-culpa {
+  margin-top: 22px;
+  padding: 16px 20px;
+  background: rgba(200, 52, 46, 0.1);
+  border-left: 3px solid var(--vermillion);
+}
+.mea-culpa-title { font: 500 13px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.28em; color: var(--vermillion-glow); margin-bottom: 10px; }
+.mea-culpa-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 11.5px; line-height: 1.65; color: var(--ink-faded); }
+.mea-culpa-grid b { color: var(--vermillion-glow); font-weight: 500; }
+
+.section-head {
+  display: flex; align-items: baseline; gap: 22px; margin: 64px 0 28px;
+  padding-bottom: 14px; border-bottom: 1px dashed rgba(184,146,78,0.2);
+}
+.sh-num { font: 40px/1 'Ma Shan Zheng', cursive; color: var(--ink-muted); }
+.sh-title { font: 22px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; color: var(--ink-faded); }
+.sh-tag { margin-left: auto; font: 10px/1 'Cinzel', serif; letter-spacing: 0.34em; color: var(--ink-muted); }
+
+.section-intro { font-size: 13.5px; line-height: 1.88; color: var(--ink-faded); max-width: 960px; margin-bottom: 24px; }
+.section-intro strong { color: var(--gold-bright); }
+
+/* ===== icon shell ===== */
+.vg { position: relative; }
+
+/* ===== 1·元宝 (silver ingot) ===== */
+.vg-yin {
+  width: 54px; height: 36px;
+  position: relative;
+}
+.vg-yin-body {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, #f4ede0 0%, #d8d0c0 35%, #8a8478 75%, #5a5448 100%);
+  clip-path: polygon(0% 78%, 4% 26%, 22% 14%, 40% 8%, 60% 8%, 78% 14%, 96% 26%, 100% 78%, 88% 100%, 12% 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.vg-yin-body::before {
+  content: '';
+  position: absolute; left: 22%; right: 22%; top: 8%;
+  height: 35%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55), transparent);
+  clip-path: ellipse(50% 100% at 50% 0%);
+}
+.vg-yin-rim {
+  position: absolute; left: 4%; right: 4%; top: 70%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.4), transparent);
+}
+.vg-yin-glyph {
+  position: absolute; left: 0; right: 0; top: 36%;
+  text-align: center;
+  font: 600 9px/1 'Ma Shan Zheng', cursive;
+  color: #4a4438;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  letter-spacing: 0.02em;
+}
+
+/* 银 alt: 串铜钱 (for 钱/贯 dynasty) */
+.vg-qian {
+  width: 50px; height: 50px;
+  position: relative;
+}
+.vg-qian-coin {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 28%, #f4d98a 0%, #c8a050 40%, #7a5828 100%);
+  border: 1px solid rgba(120, 80, 30, 0.6);
+}
+.vg-qian-coin::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 9px; height: 9px;
+  transform: translate(-50%, -50%);
+  background: #1c1208;
+  border: 0.5px solid rgba(120, 80, 30, 0.5);
+}
+.vg-qian-coin.c1 { top: 0; z-index: 3; }
+.vg-qian-coin.c2 { top: 8px; z-index: 2; opacity: 0.85; }
+.vg-qian-coin.c3 { top: 16px; z-index: 1; opacity: 0.7; }
+.vg-qian-string {
+  position: absolute; left: 50%; top: -4px;
+  width: 2px; height: 50px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--vermillion-deep), var(--vermillion));
+  z-index: 4;
+}
+
+/* ===== 2·升斗 (grain measure) ===== */
+.vg-liang {
+  width: 52px; height: 46px;
+  position: relative;
+}
+.vg-liang-bucket {
+  position: absolute; left: 6%; right: 6%; bottom: 0;
+  height: 70%;
+  background: linear-gradient(180deg, #c8995c 0%, #8a6428 50%, #4a3210 100%);
+  border: 1px solid rgba(60, 38, 12, 0.7);
+  border-top: 1.5px solid rgba(140, 100, 50, 0.8);
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.36), 0 1px 3px rgba(0,0,0,0.5);
+  clip-path: polygon(0% 0%, 100% 0%, 92% 100%, 8% 100%);
+}
+.vg-liang-bucket::before {
+  content: ''; position: absolute; inset: 2px 4px;
+  background-image: linear-gradient(90deg, transparent 0, transparent 30%, rgba(60, 38, 12, 0.4) 31%, rgba(60, 38, 12, 0.4) 32%, transparent 32%, transparent 64%, rgba(60, 38, 12, 0.4) 65%, rgba(60, 38, 12, 0.4) 66%, transparent 66%);
+}
+.vg-liang-grain {
+  position: absolute; left: 12%; right: 12%; top: 14%;
+  height: 22%;
+  background:
+    radial-gradient(ellipse at 30% 50%, var(--grain) 0%, var(--grain-deep) 70%),
+    radial-gradient(ellipse at 70% 60%, #f0c878, var(--grain) 50%);
+  border-radius: 50% 50% 8% 8% / 90% 90% 8% 8%;
+}
+.vg-liang-stalk {
+  position: absolute; left: 50%; top: -2px;
+  width: 16px;
+  transform: translateX(-50%);
+}
+.vg-liang-stalk svg { display: block; }
+
+/* ===== 3·绢匹 (silk cloth roll) ===== */
+.vg-bu {
+  width: 50px; height: 38px;
+  position: relative;
+}
+.vg-bu-roll {
+  position: absolute; inset: 8% 4% 8% 4%;
+  background: linear-gradient(180deg, #d8e0e8 0%, #a8c0d0 35%, #5a7090 100%);
+  border: 1px solid rgba(70, 90, 110, 0.7);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(245, 250, 255, 0.5);
+}
+.vg-bu-roll::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0, transparent 3px, rgba(70, 90, 110, 0.18) 3px, rgba(70, 90, 110, 0.18) 4px),
+    repeating-linear-gradient(-45deg, transparent 0, transparent 3px, rgba(70, 90, 110, 0.12) 3px, rgba(70, 90, 110, 0.12) 4px);
+}
+.vg-bu-edge-l {
+  position: absolute; left: 0; top: 12%; bottom: 12%;
+  width: 6%;
+  background: radial-gradient(ellipse at 50% 50%, #5a7090, #2a3850);
+  border-radius: 50% 0 0 50% / 50% 0 0 50%;
+  border: 1px solid rgba(70, 90, 110, 0.8);
+}
+.vg-bu-edge-r {
+  position: absolute; right: 0; top: 12%; bottom: 12%;
+  width: 6%;
+  background: radial-gradient(ellipse at 50% 50%, #5a7090, #2a3850);
+  border-radius: 0 50% 50% 0 / 0 50% 50% 0;
+  border: 1px solid rgba(70, 90, 110, 0.8);
+}
+.vg-bu-thread {
+  position: absolute; left: 14%; right: 14%; bottom: 6%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--vermillion-deep), var(--vermillion), var(--vermillion-deep));
+  border-radius: 1px;
+}
+
+/* ===== 4·珊瑚珍宝 (treasures · neitang only) ===== */
+.vg-zhen {
+  width: 46px; height: 46px;
+  position: relative;
+}
+.vg-zhen-base {
+  position: absolute; left: 14%; right: 14%; bottom: 0;
+  height: 30%;
+  background: linear-gradient(180deg, #6a3a18 0%, #3a1c08 100%);
+  border-radius: 50% 50% 6% 6% / 30% 30% 6% 6%;
+  border: 1px solid rgba(60, 30, 8, 0.7);
+}
+.vg-zhen-pearl {
+  position: absolute; left: 16%; bottom: 24%;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #ffffff 0%, #f4e8d8 40%, #b8a890 100%);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.vg-zhen-coral {
+  position: absolute; left: 38%; bottom: 22%;
+  width: 16px; height: 30px;
+  background: linear-gradient(180deg, #e54a3c, #c8342e 50%, #8a2018 100%);
+  clip-path: polygon(50% 0%, 64% 14%, 56% 26%, 70% 36%, 62% 48%, 78% 58%, 64% 72%, 70% 86%, 50% 100%, 30% 86%, 36% 72%, 22% 58%, 38% 48%, 30% 36%, 44% 26%, 36% 14%);
+  filter: drop-shadow(0 1px 2px rgba(60, 0, 0, 0.5));
+}
+.vg-zhen-jade {
+  position: absolute; right: 12%; bottom: 24%;
+  width: 12px; height: 12px;
+  background: radial-gradient(circle at 30% 28%, #b8e0a8 0%, #7a9b6e 50%, #4a6b40 100%);
+  border-radius: 50%;
+  border: 1px solid rgba(40, 60, 30, 0.5);
+}
+
+/* ===================================================== */
+/* 7 主变量 v3.1 ·真实历史 artifact 重做                  */
+/* ===================================================== */
+
+/* 1·帑廪 — 库房 + 元宝堆 */
+.vg-guoku {
+  width: 64px; height: 60px;
+  position: relative;
+}
+.vg-guoku-roof {
+  position: absolute; left: -4%; right: -4%; top: 0;
+  height: 36%;
+  background: linear-gradient(180deg, #4a2810 0%, #2a1408 100%);
+  clip-path: polygon(0% 100%, 8% 36%, 20% 6%, 50% 0%, 80% 6%, 92% 36%, 100% 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.vg-guoku-roof::before {
+  content: ''; position: absolute; left: 8%; right: 8%; top: 22%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+}
+.vg-guoku-body {
+  position: absolute; left: 6%; right: 6%; top: 30%; bottom: 0;
+  background: linear-gradient(180deg, #8a5828 0%, #4a2810 100%);
+  border: 1px solid rgba(40, 22, 8, 0.7);
+  border-top: 0;
+}
+.vg-guoku-pillars {
+  position: absolute; left: 10%; right: 10%; top: 34%; bottom: 8%;
+  background-image:
+    linear-gradient(90deg, transparent 0, transparent 18%, rgba(40, 22, 8, 0.7) 18%, rgba(40, 22, 8, 0.7) 22%, transparent 22%, transparent 52%, rgba(40, 22, 8, 0.7) 52%, rgba(40, 22, 8, 0.7) 56%, transparent 56%, transparent 78%, rgba(40, 22, 8, 0.7) 78%, rgba(40, 22, 8, 0.7) 82%);
+}
+.vg-guoku-char {
+  position: absolute; left: 0; right: 0; top: 38%;
+  text-align: center;
+  font: 700 13px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+}
+.vg-guoku-ingots {
+  position: absolute; left: 22%; right: 22%; bottom: -6px;
+  height: 8px;
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+}
+.vg-guoku-ingots span {
+  flex: 1;
+  height: 5px;
+  background: linear-gradient(180deg, #f4ede0 0%, #8a8478 70%, #5a5448);
+  border-radius: 50% 50% 12% 12% / 80% 80% 20% 20%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.vg-guoku-ingots span:nth-child(2) { height: 7px; }
+
+/* 2·内帑 — 朱漆龙纹箱·与 帑廪 区分 (材质 + 龙纹) */
+.vg-neitang2 {
+  width: 56px; height: 44px;
+  position: relative;
+}
+.vg-neitang2-body {
+  position: absolute; inset: 6px 0 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 232, 174, 0.18), transparent 60%),
+    linear-gradient(180deg, #b8341c 0%, #8a2018 60%, #4a0c08 100%);
+  border: 1px solid rgba(60, 8, 4, 0.7);
+  border-top: 2px solid rgba(245, 218, 130, 0.62);
+  box-shadow: inset 0 -3px 6px rgba(0,0,0,0.36), 0 2px 4px rgba(0,0,0,0.5);
+}
+.vg-neitang2-lid {
+  position: absolute; left: -3%; right: -3%; top: 0;
+  height: 12px;
+  background: linear-gradient(180deg, #d84028 0%, #b8341c 60%, #8a2018 100%);
+  border: 1px solid rgba(60, 8, 4, 0.7);
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 220, 170, 0.4);
+}
+.vg-neitang2-handle {
+  position: absolute; left: 50%; top: 0;
+  width: 14px; height: 8px;
+  transform: translateX(-50%);
+  border: 1.5px solid rgba(245, 218, 130, 0.85);
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0;
+  background: transparent;
+}
+.vg-neitang2-dragon {
+  position: absolute; left: 6%; right: 6%; top: 50%;
+  transform: translateY(-50%);
+  height: 14px;
+}
+.vg-neitang2-dragon svg { display: block; }
+.vg-neitang2-lock {
+  position: absolute; left: 50%; top: 50%;
+  width: 8px; height: 8px;
+  transform: translate(-50%, -50%);
+  background: var(--gold-bright);
+  border-radius: 50%;
+  box-shadow: 0 0 4px var(--gold-bright);
+  z-index: 3;
+}
+
+/* 3·户口 — 黄册 (Ming yellow registry book) */
+.vg-hukou2 {
+  width: 54px; height: 50px;
+  position: relative;
+}
+.vg-hukou2-stack {
+  position: absolute; left: 8%; right: 8%; bottom: 0;
+  height: 80%;
+}
+.vg-hukou2-page {
+  position: absolute; left: 0; right: 0;
+  height: 12px;
+  background: linear-gradient(180deg, #f4d98a 0%, #c8a050 80%, #8a6c28 100%);
+  border: 1px solid rgba(80, 50, 22, 0.7);
+}
+.vg-hukou2-page.p1 { top: 0; }
+.vg-hukou2-page.p2 { top: 11px; }
+.vg-hukou2-page.p3 { top: 22px; }
+.vg-hukou2-page::before {
+  content: '';
+  position: absolute; left: 4px; right: 4px; top: 3px;
+  height: 1px;
+  background: rgba(80, 50, 22, 0.4);
+}
+.vg-hukou2-page::after {
+  content: '';
+  position: absolute; left: 4px; right: 4px; top: 6px;
+  height: 1px;
+  background: rgba(80, 50, 22, 0.32);
+}
+.vg-hukou2-binding {
+  position: absolute; left: 18%; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--vermillion-deep), var(--vermillion), var(--vermillion-deep));
+  box-shadow: 0 0 2px rgba(200, 52, 46, 0.6);
+}
+.vg-hukou2-cover {
+  position: absolute; left: 8%; right: 8%; top: 0;
+  height: 12px;
+  background: linear-gradient(180deg, #6a3818 0%, #4a2410 100%);
+  border: 1px solid rgba(40, 22, 8, 0.8);
+}
+.vg-hukou2-title {
+  position: absolute; left: 0; right: 0; top: -2px;
+  text-align: center;
+  font: 600 8px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  letter-spacing: 0.16em;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+}
+
+/* 4·吏治 — 官秤 (bronze imperial balance) */
+.vg-lizhi2 {
+  width: 60px; height: 56px;
+  position: relative;
+}
+.vg-lizhi2-base {
+  position: absolute; left: 50%; bottom: 0;
+  width: 26px; height: 5px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold-mid));
+  border-radius: 1px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.vg-lizhi2-stand {
+  position: absolute; left: 50%; bottom: 4px;
+  width: 3px; height: 28px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright), var(--gold-dim));
+}
+.vg-lizhi2-arm {
+  position: absolute; left: 8%; right: 8%; top: 22%;
+  height: 2px;
+  background: var(--gold-bright);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  transform-origin: center;
+  transform: rotate(-10deg);
+}
+.vg-lizhi2-pan-l, .vg-lizhi2-pan-r {
+  position: absolute; top: 0;
+  width: 16px; height: 8px;
+  background: linear-gradient(180deg, rgba(245,218,130,0.6), rgba(140,92,30,0.7) 70%, rgba(60,38,10,0.7));
+  border: 1px solid rgba(80,50,22,0.6);
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  box-shadow: inset 0 -1px 2px rgba(0,0,0,0.35);
+}
+.vg-lizhi2-pan-l { left: -8px; }
+.vg-lizhi2-pan-r { right: -8px; }
+.vg-lizhi2-chain-l, .vg-lizhi2-chain-r {
+  position: absolute; top: -4px;
+  width: 1px; height: 4px;
+  background: var(--gold-mid);
+}
+.vg-lizhi2-chain-l { left: 4px; }
+.vg-lizhi2-chain-r { right: 4px; }
+.vg-lizhi2-needle {
+  position: absolute; left: 50%; top: 18%;
+  width: 1px; height: 8px;
+  background: var(--vermillion-glow);
+  transform: translateX(-50%);
+  box-shadow: 0 0 3px rgba(200,52,46,0.6);
+}
+.vg-lizhi2-dot {
+  position: absolute; left: 50%; top: 20%;
+  width: 4px; height: 4px;
+  background: radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold-dim));
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 5·民心 — 水田 + 三人形 + 麦穗 */
+.vg-minxin2 {
+  width: 58px; height: 50px;
+  position: relative;
+}
+.vg-minxin2-field {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 50%;
+  background:
+    repeating-linear-gradient(90deg, rgba(120, 180, 130, 0.4) 0, rgba(120, 180, 130, 0.4) 8px, rgba(70, 120, 80, 0.5) 8px, rgba(70, 120, 80, 0.5) 12px),
+    linear-gradient(180deg, rgba(140, 200, 150, 0.5), rgba(40, 80, 50, 0.7));
+  border-top: 1px solid rgba(245, 218, 130, 0.34);
+}
+.vg-minxin2-water {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 35%;
+  background: linear-gradient(180deg, rgba(180, 220, 200, 0.32), rgba(70, 120, 130, 0.5));
+  border-top: 1px solid rgba(180, 220, 200, 0.4);
+}
+.vg-minxin2-figures {
+  position: absolute; left: 8%; right: 8%; top: 12%;
+  height: 50%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.vg-minxin2-figures span {
+  display: block;
+  width: 6px; height: 16px;
+  background: rgba(60, 50, 30, 0.95);
+  border-radius: 50% 50% 20% 20% / 35% 35% 8% 8%;
+  position: relative;
+}
+.vg-minxin2-figures span::before {
+  content: '';
+  position: absolute; left: 50%; top: -5px;
+  width: 5px; height: 5px;
+  background: rgba(60, 50, 30, 0.95);
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+.vg-minxin2-figures span:nth-child(2) { height: 18px; }
+.vg-minxin2-figures span:nth-child(3) { height: 14px; }
+.vg-minxin2-grain {
+  position: absolute; left: 50%; top: 4%;
+  transform: translateX(-50%);
+  width: 22px; height: 16px;
+}
+.vg-minxin2-grain svg { display: block; }
+
+/* 6·皇权 — 玉玺·龙钮 (jade imperial seal) */
+.vg-huangquan2 {
+  width: 52px; height: 58px;
+  position: relative;
+}
+.vg-huangquan2-body {
+  position: absolute; left: 8%; right: 8%; bottom: 0;
+  height: 50%;
+  background:
+    linear-gradient(180deg, #f4ede0 0%, #d8c890 30%, #a08c5a 70%, #5a4a28 100%);
+  border: 1px solid rgba(60, 50, 22, 0.7);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255, 245, 220, 0.6);
+}
+.vg-huangquan2-body::before {
+  content: '';
+  position: absolute; inset: 3px;
+  border: 1px solid rgba(60, 50, 22, 0.4);
+}
+.vg-huangquan2-body::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 4px;
+  background: linear-gradient(180deg, transparent, #2a1a08);
+}
+.vg-huangquan2-char {
+  position: absolute; left: 0; right: 0; bottom: 8%;
+  text-align: center;
+  font: 800 14px/1 'Ma Shan Zheng', cursive;
+  color: #1c1610;
+  text-shadow: 0 1px 0 rgba(255, 245, 220, 0.5);
+  letter-spacing: 0.06em;
+}
+.vg-huangquan2-knob {
+  position: absolute; left: 18%; right: 18%; top: 4%;
+  height: 48%;
+  background:
+    radial-gradient(ellipse at 30% 30%, #f4ede0, #c8b890 40%, #8a6c40 80%, #4a3214);
+  border: 1px solid rgba(60, 50, 22, 0.7);
+  border-radius: 50% 50% 30% 30% / 60% 60% 25% 25%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255, 245, 220, 0.6);
+}
+.vg-huangquan2-knob::before {
+  content: '';
+  position: absolute; left: 32%; top: 28%;
+  width: 4px; height: 4px;
+  background: var(--vermillion-glow);
+  border-radius: 50%;
+  box-shadow: 0 0 3px rgba(200, 52, 46, 0.4);
+}
+.vg-huangquan2-knob::after {
+  content: '';
+  position: absolute; right: 32%; top: 28%;
+  width: 4px; height: 4px;
+  background: var(--vermillion-glow);
+  border-radius: 50%;
+  box-shadow: 0 0 3px rgba(200, 52, 46, 0.4);
+}
+.vg-huangquan2-cinnabar {
+  position: absolute; left: 50%; bottom: -4px;
+  width: 26px; height: 6px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 0%, var(--vermillion-glow), var(--vermillion-deep) 80%, transparent);
+  border-radius: 50%;
+  opacity: 0.78;
+  filter: blur(0.5px);
+}
+
+/* 7·皇威 — 龙旗节 + 虎符 */
+.vg-huangwei2 {
+  width: 54px; height: 60px;
+  position: relative;
+}
+.vg-huangwei2-pole {
+  position: absolute; left: 50%; top: 6%;
+  width: 2px; height: 92%;
+  background: linear-gradient(180deg, #c89060, #8a5828 50%, #4a2a0a);
+  transform: translateX(-50%);
+}
+.vg-huangwei2-finial {
+  position: absolute; left: 50%; top: 0;
+  width: 8px; height: 10px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 35% 28%, var(--gold-bright), var(--gold-mid) 60%, var(--gold-dim));
+  border: 1px solid rgba(80, 50, 22, 0.6);
+  border-radius: 50% 50% 50% 50% / 80% 80% 30% 30%;
+}
+.vg-huangwei2-flag {
+  position: absolute; left: 50%; top: 16%;
+  width: 36px; height: 22px;
+  background:
+    linear-gradient(180deg, var(--vermillion-glow) 0%, var(--vermillion) 50%, var(--vermillion-deep) 100%);
+  border: 1px solid rgba(60, 8, 4, 0.7);
+  border-left: 2px solid var(--gold-mid);
+  clip-path: polygon(0% 0%, 100% 0%, 92% 50%, 100% 100%, 0% 100%);
+  box-shadow: 0 2px 4px rgba(60, 0, 0, 0.5);
+}
+.vg-huangwei2-flag::before {
+  content: '';
+  position: absolute; left: 14%; right: 14%; top: 25%;
+  height: 50%;
+  background-image:
+    linear-gradient(90deg, transparent 0, transparent 30%, rgba(245, 218, 130, 0.85) 30%, rgba(245, 218, 130, 0.85) 70%, transparent 70%);
+  clip-path: polygon(0% 30%, 100% 0%, 100% 70%, 0% 100%);
+}
+.vg-huangwei2-char {
+  position: absolute; left: 50%; top: 24%;
+  font: 700 11px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 0 rgba(60, 8, 4, 0.6);
+  transform: translateX(-30%);
+}
+.vg-huangwei2-tally {
+  position: absolute; left: 12%; bottom: 0;
+  width: 18px; height: 12px;
+  background: linear-gradient(180deg, #c89060 0%, #6a3a18 100%);
+  clip-path: polygon(8% 0%, 30% 14%, 50% 8%, 70% 14%, 92% 0%, 100% 28%, 92% 100%, 8% 100%, 0% 28%);
+  border: 1px solid rgba(245, 218, 130, 0.6);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.vg-huangwei2-tally::before {
+  content: '';
+  position: absolute; left: 14%; right: 14%; top: 38%;
+  height: 30%;
+  background-image: linear-gradient(90deg, transparent 0, transparent 18%, rgba(245, 218, 130, 0.66) 18%, rgba(245, 218, 130, 0.66) 28%, transparent 28%, transparent 50%, rgba(245, 218, 130, 0.66) 50%, rgba(245, 218, 130, 0.66) 60%, transparent 60%, transparent 80%, rgba(245, 218, 130, 0.66) 80%, rgba(245, 218, 130, 0.66) 90%);
+}
+.vg-huangwei2-tally-eye {
+  position: absolute; left: 24%; top: 22%;
+  width: 2.5px; height: 2.5px;
+  background: var(--vermillion-glow);
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(200, 52, 46, 0.7);
+}
+
+/* ===================================================== */
+/* layout                                                  */
+/* ===================================================== */
+
+.subset-head {
+  font: 500 18px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(184, 146, 78, 0.22);
+}
+
+.subset-desc { font-size: 12.5px; color: var(--ink-faded); margin-bottom: 18px; max-width: 880px; line-height: 1.7; }
+.subset-desc strong { color: var(--gold-bright); }
+
+.subgrid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.subgrid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.subgrid.cols-7 { grid-template-columns: repeat(7, 1fr); }
+
+.pal-card {
+  padding: 22px 14px 18px;
+  background: linear-gradient(180deg, rgba(30, 22, 14, 0.74), rgba(12, 9, 7, 0.82));
+  border: 1px solid rgba(184, 146, 78, 0.28);
+  border-radius: 2px;
+  position: relative;
+}
+
+.pal-card::before {
+  content: '';
+  position: absolute;
+  left: 8px; right: 8px;
+  top: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 218, 130, 0.5), transparent);
+}
+
+.pal-num {
+  font: 9px/1 'Cinzel', serif;
+  letter-spacing: 0.4em;
+  color: var(--gold-mid);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.pal-glyph {
+  height: 80px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+}
+
+.pal-name {
+  font: 500 16px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: 0.22em;
+  margin-bottom: 3px;
+}
+
+.pal-key {
+  font: 9px/1 'Cinzel', serif;
+  letter-spacing: 0.32em;
+  color: var(--ink-muted);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.pal-meaning {
+  font: 10.5px/1.6 'Noto Serif SC', serif;
+  color: var(--ink-faded);
+  text-align: center;
+  letter-spacing: 0.02em;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(184, 146, 78, 0.22);
+}
+
+.pal-meaning b { color: var(--gold-bright); font-weight: 500; }
+
+/* state demo */
+.state-demo {
+  margin-top: 40px;
+}
+.state-row {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px dashed rgba(184, 146, 78, 0.16);
+}
+.state-label {
+  font: 500 14px/1.3 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.18em;
+  color: var(--gold-bright);
+  text-align: center;
+}
+.state-glyphs {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+.state-glyph {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.state-cap {
+  font: 10px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.18em;
+  color: rgba(214, 188, 116, 0.78);
+}
+.state-cap.warn { color: var(--vermillion-glow); }
+.state-cap.bad { color: var(--vermillion); }
+
+/* in-context preview */
+.context {
+  margin-top: 40px;
+  padding: 26px 28px;
+  background: linear-gradient(180deg, rgba(20, 16, 12, 0.74), rgba(8, 6, 4, 0.84));
+  border: 1px solid rgba(184, 146, 78, 0.24);
+}
+.context-title {
+  font: 500 16px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+  margin-bottom: 14px;
+}
+.context-row {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  background:
+    linear-gradient(180deg, rgba(41, 32, 23, 0.86), rgba(13, 10, 8, 0.82)),
+    linear-gradient(90deg, rgba(94, 54, 27, 0.18), rgba(0,0,0,.04) 12%, rgba(0,0,0,.04) 88%, rgba(94, 54, 27, 0.16));
+  border: 1px solid rgba(203, 166, 88, 0.32);
+  align-items: center;
+}
+.ctx-wide {
+  width: 220px;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  padding: 7px 11px;
+  background: rgba(0,0,0,0.15);
+  border: 1px solid rgba(184, 146, 78, 0.18);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ctx-wide-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ctx-wide-glyph { transform: scale(0.5); transform-origin: left center; margin-right: -22px; }
+.ctx-wide-name { font: 500 13px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.18em; }
+.ctx-wide-subs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; }
+.ctx-sub { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ctx-sub-ic { transform: scale(0.36); transform-origin: left center; margin-right: -18px; flex-shrink: 0; width: 22px; }
+.ctx-sub-val { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.ctx-sub-val b { font: 600 11px/1.1 'Noto Serif SC', serif; color: var(--gold-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctx-sub-val .sd { font: 500 7px/1 'Noto Serif SC', serif; }
+.ctx-sub-val .sd.up { color: var(--celadon); }
+.ctx-sub-val .sd.dn { color: var(--vermillion-glow); }
+.ctx-sub-val .sd.flat { color: rgba(214, 188, 116, 0.5); }
+
+.ctx-narrow {
+  width: 96px;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+  background: rgba(0,0,0,0.12);
+  border: 1px solid rgba(184, 146, 78, 0.18);
+  border-radius: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ctx-narrow-glyph { transform: scale(0.6); transform-origin: center; margin: -4px 0; }
+.ctx-narrow-body { text-align: center; }
+.ctx-narrow-name { font: 9px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em; color: rgba(221, 202, 155, 0.74); margin-bottom: 2px; }
+.ctx-narrow-val { font: 600 12px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.06em; }
+
+.next-block {
+  margin-top: 48px;
+  padding: 24px 28px;
+  background: rgba(40, 16, 8, 0.5);
+  border-left: 3px solid var(--vermillion);
+}
+.next-block-title {
+  font: 500 15px/1 'ZCOOL XiaoWei', serif;
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+  margin-bottom: 14px;
+}
+.next-block p { font-size: 13px; line-height: 1.85; color: var(--ink-faded); margin-bottom: 8px; }
+.next-block strong.fix-c { color: var(--vermillion-glow); }
+.next-block strong.gold-c { color: var(--gold-bright); }
+
+</style>
+</head>
+<body>
+<main>
+
+  <section class="hdr">
+    <div class="hdr-meta">
+      <span>v 3.1 · REDESIGN · COMPLETE</span>
+      <span>11 GLYPHS · 4 子 + 7 主</span>
+    </div>
+    <h1>完 整 图 像 系 统 · 11 件 套</h1>
+    <p class="hdr-desc">
+      <span class="fix">v3.1 修正</span>·上版漏了 wide cell 的<strong>银 / 粮 / 布 / 珍</strong> 4 个子项图像 (帑廪/内帑 各 3 子)·
+      且 7 主变量过于抽象·不够<strong>真历史 artifact</strong>。本版补齐 11 件套·全用真器物原型——
+      <strong>元宝 / 升斗 / 绢匹 / 珊瑚珠</strong> 4 子·<strong>库房 / 朱漆龙箱 / 黄册 / 官秤 / 水田三人 / 龙钮玉玺 / 龙旗虎符</strong> 7 主。
+    </p>
+
+    <div class="mea-culpa">
+      <div class="mea-culpa-title">v3 → v3.1 修 正 清 单</div>
+      <div class="mea-culpa-grid">
+        <div><b>1.</b> 补 <b>银</b> 元宝 + <b>钱</b> 串铜钱 (动态适配朝代)</div>
+        <div><b>2.</b> 补 <b>粮</b> 升斗 + 麦穗</div>
+        <div><b>3.</b> 补 <b>布</b> 绢匹卷</div>
+        <div><b>4.</b> 补 <b>珍</b> 珊瑚珠 (内帑特有)</div>
+        <div><b>5.</b> 帑廪改 <b>库房 + 元宝堆</b> (建筑+stock)</div>
+        <div><b>6.</b> 内帑改 <b>朱漆龙纹箱</b> (与帑廪材质区分)</div>
+        <div><b>7.</b> 户口改 <b>黄册</b> (明代真实人口簿册)</div>
+        <div><b>8.</b> 吏治改 <b>官秤</b> 真倾斜 + 砝码</div>
+        <div><b>9.</b> 民心改 <b>水田 + 三人 + 麦穗</b> (民生)</div>
+        <div><b>10.</b> 皇权改 <b>龙钮玉玺 + 朱泥印</b></div>
+        <div><b>11.</b> 皇威改 <b>龙旗节 + 虎符</b> 组合</div>
+        <div><b>12.</b> 加状态变体 (秤倾 / 玺偏 / 虎眼变赤)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============== SUB-ITEM ICONS (4) =============== -->
+  <div class="section-head">
+    <span class="sh-num">壹</span>
+    <span class="sh-title">子 项 图 像 · 4 件</span>
+    <span class="sh-tag">SUB-ITEMS · 银 粮 布 珍</span>
+  </div>
+
+  <p class="section-intro">
+    <strong>帑廪</strong> wide cell 含 <strong>银/粮/布</strong> 3 子·<strong>内帑</strong> wide cell 同 (有时含珍)。
+    朝代切货币本位时·"银"自动换 "钱" (铜钱) 或 "贯" (串铜钱)·<strong>图像系统需双形式</strong>。
+  </p>
+
+  <div class="subgrid cols-4">
+    <div class="pal-card">
+      <div class="pal-num">子 · 壹</div>
+      <div class="pal-glyph">
+        <div class="vg vg-yin">
+          <div class="vg-yin-body"></div>
+          <div class="vg-yin-rim"></div>
+          <div class="vg-yin-glyph">五十两</div>
+        </div>
+      </div>
+      <div class="pal-name">银 · 两</div>
+      <div class="pal-key">YIN · LIANG</div>
+      <div class="pal-meaning"><b>元宝</b>·明清白银本位·铭刻"五十两"·上鼓下凹凸</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">子 · 壹 alt</div>
+      <div class="pal-glyph">
+        <div class="vg vg-qian">
+          <div class="vg-qian-string"></div>
+          <div class="vg-qian-coin c3"></div>
+          <div class="vg-qian-coin c2"></div>
+          <div class="vg-qian-coin c1"></div>
+        </div>
+      </div>
+      <div class="pal-name">钱 · 贯</div>
+      <div class="pal-key">QIAN · GUAN</div>
+      <div class="pal-meaning"><b>串铜钱</b>·唐宋千钱一贯·朱绳穿方孔·叠三枚</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">子 · 贰</div>
+      <div class="pal-glyph">
+        <div class="vg vg-liang">
+          <div class="vg-liang-bucket"></div>
+          <div class="vg-liang-grain"></div>
+          <div class="vg-liang-stalk">
+            <svg viewBox="0 0 16 12" width="16" height="12">
+              <path d="M 8 12 L 8 1" stroke="#5a4218" stroke-width="0.8" fill="none"/>
+              <path d="M 8 3 Q 4 2 3 4 Q 5 5 8 4" fill="#d8b870"/>
+              <path d="M 8 3 Q 12 2 13 4 Q 11 5 8 4" fill="#d8b870"/>
+              <path d="M 8 6 Q 4 5 3 7 Q 5 8 8 7" fill="#c8a050"/>
+              <path d="M 8 6 Q 12 5 13 7 Q 11 8 8 7" fill="#c8a050"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="pal-name">粮 · 石</div>
+      <div class="pal-key">LIANG · SHI</div>
+      <div class="pal-meaning"><b>升斗 + 麦穗</b>·木斗装满谷·上插稻穗·量米器</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">子 · 叁</div>
+      <div class="pal-glyph">
+        <div class="vg vg-bu">
+          <div class="vg-bu-edge-l"></div>
+          <div class="vg-bu-roll"></div>
+          <div class="vg-bu-edge-r"></div>
+          <div class="vg-bu-thread"></div>
+        </div>
+      </div>
+      <div class="pal-name">布 · 匹</div>
+      <div class="pal-key">BU · PI</div>
+      <div class="pal-meaning"><b>绢匹卷</b>·朱绳缠 + 织纹·两端轴露·四丈为匹</div>
+    </div>
+  </div>
+
+  <div class="subgrid cols-4" style="grid-template-columns: 1fr 3fr; margin-bottom: 56px;">
+    <div class="pal-card">
+      <div class="pal-num">子 · 肆</div>
+      <div class="pal-glyph">
+        <div class="vg vg-zhen">
+          <div class="vg-zhen-base"></div>
+          <div class="vg-zhen-pearl"></div>
+          <div class="vg-zhen-coral"></div>
+          <div class="vg-zhen-jade"></div>
+        </div>
+      </div>
+      <div class="pal-name">珍 宝</div>
+      <div class="pal-key">ZHEN</div>
+      <div class="pal-meaning"><b>珊瑚 + 珠 + 玉</b>·朱漆托·内帑专属·非帑廪</div>
+    </div>
+
+    <div class="pal-card" style="padding: 18px 22px;">
+      <div class="subset-head" style="margin-bottom: 8px;">子 项 朝 代 适 配</div>
+      <table style="width: 100%; font-size: 11.5px; line-height: 1.85; color: var(--ink-faded);">
+        <tr style="border-bottom: 1px solid rgba(184,146,78,0.16);">
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font-family: 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">朝代</th>
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font-family: 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">货币名</th>
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font-family: 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">label</th>
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font-family: 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">图像</th>
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font-family: 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">备注</th>
+        </tr>
+        <tr><td style="padding: 6px 8px;">秦汉魏晋</td><td style="padding: 6px 8px;">钱</td><td style="padding: 6px 8px;">铜</td><td style="padding: 6px 8px;">串铜钱</td><td style="padding: 6px 8px; color: var(--ink-muted);">铜钱本位</td></tr>
+        <tr><td style="padding: 6px 8px;">隋唐宋元</td><td style="padding: 6px 8px;">贯</td><td style="padding: 6px 8px;">钱</td><td style="padding: 6px 8px;">串铜钱 + 绳更密</td><td style="padding: 6px 8px; color: var(--ink-muted);">1 贯 = 1000 文</td></tr>
+        <tr><td style="padding: 6px 8px;">明清</td><td style="padding: 6px 8px;">两</td><td style="padding: 6px 8px;">银</td><td style="padding: 6px 8px;">元宝</td><td style="padding: 6px 8px; color: var(--ink-muted);">白银本位</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- =============== MAIN 7 =============== -->
+  <div class="section-head">
+    <span class="sh-num">贰</span>
+    <span class="sh-title">主 变 量 图 像 · 7 件</span>
+    <span class="sh-tag">MAIN · 真 历 史 ARTIFACT</span>
+  </div>
+
+  <p class="section-intro">
+    7 主变量·每个用<strong>真历史器物</strong>而非抽象符号·读图 = 读历史。
+    <strong>状态可视化</strong>·秤臂真倾斜反吏治浊度·玺真偏移反皇权段位·虎眼真变赤反皇威暴君。
+  </p>
+
+  <div class="subgrid cols-7">
+    <div class="pal-card">
+      <div class="pal-num">主 · 壹</div>
+      <div class="pal-glyph">
+        <div class="vg vg-guoku">
+          <div class="vg-guoku-roof"></div>
+          <div class="vg-guoku-body"></div>
+          <div class="vg-guoku-pillars"></div>
+          <div class="vg-guoku-char">廪</div>
+          <div class="vg-guoku-ingots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="pal-name">帑 廪</div>
+      <div class="pal-key">GUOKU</div>
+      <div class="pal-meaning"><b>库房 + 元宝堆</b>·歇山顶 + 三柱·下露银堆</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">主 · 贰</div>
+      <div class="pal-glyph">
+        <div class="vg vg-neitang2">
+          <div class="vg-neitang2-body"></div>
+          <div class="vg-neitang2-lid"></div>
+          <div class="vg-neitang2-handle"></div>
+          <div class="vg-neitang2-dragon">
+            <svg viewBox="0 0 50 14" width="100%" height="100%">
+              <path d="M 5 7 Q 10 3 15 7 Q 20 11 25 7 Q 30 3 35 7 Q 40 11 45 7" stroke="rgba(245,218,130,0.8)" stroke-width="1" fill="none"/>
+            </svg>
+          </div>
+          <div class="vg-neitang2-lock"></div>
+        </div>
+      </div>
+      <div class="pal-name">内 帑</div>
+      <div class="pal-key">NEITANG</div>
+      <div class="pal-meaning"><b>朱漆龙纹箱</b>·金提梁 + 龙波纹 + 金锁</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">主 · 叁</div>
+      <div class="pal-glyph">
+        <div class="vg vg-hukou2">
+          <div class="vg-hukou2-stack">
+            <div class="vg-hukou2-binding"></div>
+            <div class="vg-hukou2-page p3"></div>
+            <div class="vg-hukou2-page p2"></div>
+            <div class="vg-hukou2-page p1"></div>
+          </div>
+          <div class="vg-hukou2-cover"><div class="vg-hukou2-title">黄册</div></div>
+        </div>
+      </div>
+      <div class="pal-name">户 口</div>
+      <div class="pal-key">HUKOU</div>
+      <div class="pal-meaning"><b>黄册</b>·明代真人口簿·黄页 + 朱线装订</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">主 · 肆</div>
+      <div class="pal-glyph">
+        <div class="vg vg-lizhi2">
+          <div class="vg-lizhi2-base"></div>
+          <div class="vg-lizhi2-stand"></div>
+          <div class="vg-lizhi2-dot"></div>
+          <div class="vg-lizhi2-arm">
+            <div class="vg-lizhi2-pan-l"></div>
+            <div class="vg-lizhi2-pan-r"></div>
+            <div class="vg-lizhi2-chain-l"></div>
+            <div class="vg-lizhi2-chain-r"></div>
+          </div>
+          <div class="vg-lizhi2-needle"></div>
+        </div>
+      </div>
+      <div class="pal-name">吏 治</div>
+      <div class="pal-key">LIZHI</div>
+      <div class="pal-meaning"><b>官秤</b>·铜臂 + 双盘 + 朱针·秤倾即浊</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">主 · 伍</div>
+      <div class="pal-glyph">
+        <div class="vg vg-minxin2">
+          <div class="vg-minxin2-field"></div>
+          <div class="vg-minxin2-water"></div>
+          <div class="vg-minxin2-grain">
+            <svg viewBox="0 0 22 16" width="22" height="16">
+              <path d="M 11 16 L 11 2" stroke="rgba(60,40,12,0.85)" stroke-width="0.8" fill="none"/>
+              <path d="M 11 4 Q 6 3 4 5 Q 7 6 11 5" fill="rgba(216,184,112,0.85)"/>
+              <path d="M 11 4 Q 16 3 18 5 Q 15 6 11 5" fill="rgba(216,184,112,0.85)"/>
+              <path d="M 11 7 Q 6 6 4 8 Q 7 9 11 8" fill="rgba(200,160,80,0.85)"/>
+              <path d="M 11 7 Q 16 6 18 8 Q 15 9 11 8" fill="rgba(200,160,80,0.85)"/>
+            </svg>
+          </div>
+          <div class="vg-minxin2-figures"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="pal-name">民 心</div>
+      <div class="pal-key">MINXIN</div>
+      <div class="pal-meaning"><b>水田 + 三人 + 麦穗</b>·上禾下水·士农并立</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">主 · 陆</div>
+      <div class="pal-glyph">
+        <div class="vg vg-huangquan2">
+          <div class="vg-huangquan2-knob"></div>
+          <div class="vg-huangquan2-body">
+            <div class="vg-huangquan2-char">玺</div>
+          </div>
+          <div class="vg-huangquan2-cinnabar"></div>
+        </div>
+      </div>
+      <div class="pal-name">皇 权</div>
+      <div class="pal-key">HUANGQUAN</div>
+      <div class="pal-meaning"><b>龙钮玉玺</b>·玉身 + 朱泥印·制衡正中·权臣偏左</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">主 · 柒</div>
+      <div class="pal-glyph">
+        <div class="vg vg-huangwei2">
+          <div class="vg-huangwei2-pole"></div>
+          <div class="vg-huangwei2-finial"></div>
+          <div class="vg-huangwei2-flag"><span class="vg-huangwei2-char">威</span></div>
+          <div class="vg-huangwei2-tally">
+            <div class="vg-huangwei2-tally-eye"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pal-name">皇 威</div>
+      <div class="pal-key">HUANGWEI</div>
+      <div class="pal-meaning"><b>龙旗 + 虎符</b>·朱旗金边 + 铜虎符·虎眼变赤 = 暴君</div>
+    </div>
+  </div>
+
+  <!-- =============== STATE VARIATIONS =============== -->
+  <div class="section-head">
+    <span class="sh-num">叁</span>
+    <span class="sh-title">状 态 可 视 化</span>
+    <span class="sh-tag">STATE · DYNAMIC GLYPH</span>
+  </div>
+
+  <p class="section-intro">
+    每个图像<strong>随数据变化</strong>·秤的角度 / 玺的位置 / 虎符的眼·都是数据的视觉编码。
+    玩家<strong>不看数字就能感知</strong>·进阶玩家看图。
+  </p>
+
+  <div class="state-demo">
+
+    <div class="state-row">
+      <div class="state-label">吏 治</div>
+      <div class="state-glyphs">
+        <div class="state-glyph">
+          <div class="vg vg-lizhi2" style="transform: scale(0.8);">
+            <div class="vg-lizhi2-base"></div>
+            <div class="vg-lizhi2-stand"></div>
+            <div class="vg-lizhi2-dot"></div>
+            <div class="vg-lizhi2-arm" style="transform: rotate(0deg);">
+              <div class="vg-lizhi2-pan-l"></div>
+              <div class="vg-lizhi2-pan-r"></div>
+              <div class="vg-lizhi2-chain-l"></div>
+              <div class="vg-lizhi2-chain-r"></div>
+            </div>
+            <div class="vg-lizhi2-needle"></div>
+          </div>
+          <span class="state-cap">清 明 · 0°</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-lizhi2" style="transform: scale(0.8);">
+            <div class="vg-lizhi2-base"></div>
+            <div class="vg-lizhi2-stand"></div>
+            <div class="vg-lizhi2-dot"></div>
+            <div class="vg-lizhi2-arm" style="transform: rotate(-6deg);">
+              <div class="vg-lizhi2-pan-l"></div>
+              <div class="vg-lizhi2-pan-r"></div>
+              <div class="vg-lizhi2-chain-l"></div>
+              <div class="vg-lizhi2-chain-r"></div>
+            </div>
+            <div class="vg-lizhi2-needle"></div>
+          </div>
+          <span class="state-cap">尚 可 · -6°</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-lizhi2" style="transform: scale(0.8);">
+            <div class="vg-lizhi2-base"></div>
+            <div class="vg-lizhi2-stand"></div>
+            <div class="vg-lizhi2-dot"></div>
+            <div class="vg-lizhi2-arm" style="transform: rotate(-14deg);">
+              <div class="vg-lizhi2-pan-l"></div>
+              <div class="vg-lizhi2-pan-r"></div>
+              <div class="vg-lizhi2-chain-l"></div>
+              <div class="vg-lizhi2-chain-r"></div>
+            </div>
+            <div class="vg-lizhi2-needle"></div>
+          </div>
+          <span class="state-cap warn">渐 弊 · -14°</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-lizhi2" style="transform: scale(0.8);">
+            <div class="vg-lizhi2-base"></div>
+            <div class="vg-lizhi2-stand"></div>
+            <div class="vg-lizhi2-dot"></div>
+            <div class="vg-lizhi2-arm" style="transform: rotate(-22deg);">
+              <div class="vg-lizhi2-pan-l"></div>
+              <div class="vg-lizhi2-pan-r"></div>
+              <div class="vg-lizhi2-chain-l"></div>
+              <div class="vg-lizhi2-chain-r"></div>
+            </div>
+            <div class="vg-lizhi2-needle"></div>
+          </div>
+          <span class="state-cap bad">颓 靡 · -22°</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-lizhi2" style="transform: scale(0.8);">
+            <div class="vg-lizhi2-base"></div>
+            <div class="vg-lizhi2-stand"></div>
+            <div class="vg-lizhi2-dot"></div>
+            <div class="vg-lizhi2-arm" style="transform: rotate(-30deg);">
+              <div class="vg-lizhi2-pan-l"></div>
+              <div class="vg-lizhi2-pan-r"></div>
+              <div class="vg-lizhi2-chain-l"></div>
+              <div class="vg-lizhi2-chain-r"></div>
+            </div>
+            <div class="vg-lizhi2-needle"></div>
+          </div>
+          <span class="state-cap bad">积 重 · -30°</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="state-row">
+      <div class="state-label">皇 权</div>
+      <div class="state-glyphs">
+        <div class="state-glyph">
+          <div class="vg vg-huangquan2" style="transform: scale(0.7);">
+            <div class="vg-huangquan2-knob" style="left: 26%; right: 26%;"></div>
+            <div class="vg-huangquan2-body"><div class="vg-huangquan2-char">玺</div></div>
+            <div class="vg-huangquan2-cinnabar" style="left: 20%; transform: none;"></div>
+          </div>
+          <span class="state-cap bad">权 臣 · 偏 左</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-huangquan2" style="transform: scale(0.7);">
+            <div class="vg-huangquan2-knob"></div>
+            <div class="vg-huangquan2-body"><div class="vg-huangquan2-char">玺</div></div>
+            <div class="vg-huangquan2-cinnabar"></div>
+          </div>
+          <span class="state-cap">制 衡 · 正 中</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-huangquan2" style="transform: scale(0.7);">
+            <div class="vg-huangquan2-knob" style="left: 10%; right: 10%;"></div>
+            <div class="vg-huangquan2-body"><div class="vg-huangquan2-char">玺</div></div>
+            <div class="vg-huangquan2-cinnabar" style="right: 20%; left: auto; transform: none;"></div>
+          </div>
+          <span class="state-cap warn">专 制 · 偏 右</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="state-row">
+      <div class="state-label">皇 威</div>
+      <div class="state-glyphs">
+        <div class="state-glyph">
+          <div class="vg vg-huangwei2" style="transform: scale(0.7);">
+            <div class="vg-huangwei2-pole"></div>
+            <div class="vg-huangwei2-finial"></div>
+            <div class="vg-huangwei2-flag"><span class="vg-huangwei2-char">威</span></div>
+            <div class="vg-huangwei2-tally" style="background: linear-gradient(180deg, #5a5450 0%, #2a2620 100%);">
+              <div class="vg-huangwei2-tally-eye" style="background: rgba(180, 180, 180, 0.6); box-shadow: none;"></div>
+            </div>
+          </div>
+          <span class="state-cap bad">失 威 · 眼 灰</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-huangwei2" style="transform: scale(0.7);">
+            <div class="vg-huangwei2-pole"></div>
+            <div class="vg-huangwei2-finial"></div>
+            <div class="vg-huangwei2-flag"><span class="vg-huangwei2-char">威</span></div>
+            <div class="vg-huangwei2-tally">
+              <div class="vg-huangwei2-tally-eye" style="background: var(--gold-bright); box-shadow: 0 0 3px var(--gold-bright);"></div>
+            </div>
+          </div>
+          <span class="state-cap">威 严 · 眼 金</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-huangwei2" style="transform: scale(0.7);">
+            <div class="vg-huangwei2-pole"></div>
+            <div class="vg-huangwei2-finial"></div>
+            <div class="vg-huangwei2-flag"><span class="vg-huangwei2-char">威</span></div>
+            <div class="vg-huangwei2-tally">
+              <div class="vg-huangwei2-tally-eye" style="width: 4px; height: 4px; background: var(--vermillion-glow); box-shadow: 0 0 6px var(--vermillion);"></div>
+            </div>
+          </div>
+          <span class="state-cap bad">暴 君 · 眼 赤</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="state-row">
+      <div class="state-label">民 心</div>
+      <div class="state-glyphs">
+        <div class="state-glyph">
+          <div class="vg vg-minxin2" style="transform: scale(0.7);">
+            <div class="vg-minxin2-field" style="background: linear-gradient(180deg, rgba(180, 220, 150, 0.6), rgba(80, 120, 70, 0.7));"></div>
+            <div class="vg-minxin2-water"></div>
+            <div class="vg-minxin2-grain">
+              <svg viewBox="0 0 22 16" width="22" height="16">
+                <path d="M 11 16 L 11 2" stroke="rgba(60,40,12,0.85)" stroke-width="0.8" fill="none"/>
+                <path d="M 11 4 Q 6 3 4 5 Q 7 6 11 5" fill="rgba(216,184,112,0.85)"/>
+                <path d="M 11 4 Q 16 3 18 5 Q 15 6 11 5" fill="rgba(216,184,112,0.85)"/>
+              </svg>
+            </div>
+            <div class="vg-minxin2-figures"><span></span><span></span><span></span></div>
+          </div>
+          <span class="state-cap">颂 圣 · 禾 丰</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-minxin2" style="transform: scale(0.7);">
+            <div class="vg-minxin2-field"></div>
+            <div class="vg-minxin2-water"></div>
+            <div class="vg-minxin2-grain">
+              <svg viewBox="0 0 22 16" width="22" height="16">
+                <path d="M 11 16 L 11 2" stroke="rgba(60,40,12,0.85)" stroke-width="0.8" fill="none"/>
+                <path d="M 11 4 Q 6 3 4 5 Q 7 6 11 5" fill="rgba(216,184,112,0.85)"/>
+                <path d="M 11 4 Q 16 3 18 5 Q 15 6 11 5" fill="rgba(216,184,112,0.85)"/>
+              </svg>
+            </div>
+            <div class="vg-minxin2-figures"><span></span><span></span><span></span></div>
+          </div>
+          <span class="state-cap">安 居</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-minxin2" style="transform: scale(0.7);">
+            <div class="vg-minxin2-field" style="background: linear-gradient(180deg, rgba(120, 100, 70, 0.5), rgba(60, 40, 30, 0.65));"></div>
+            <div class="vg-minxin2-water" style="opacity: 0.45;"></div>
+            <div class="vg-minxin2-figures">
+              <span style="background: rgba(60, 50, 30, 0.6);"></span>
+              <span style="background: rgba(60, 50, 30, 0.6);"></span>
+              <span style="background: rgba(60, 50, 30, 0.6);"></span>
+            </div>
+          </div>
+          <span class="state-cap warn">忍 耐 · 禾 枯</span>
+        </div>
+        <div class="state-glyph">
+          <div class="vg vg-minxin2" style="transform: scale(0.7);">
+            <div class="vg-minxin2-field" style="background: linear-gradient(180deg, rgba(160, 60, 40, 0.4), rgba(80, 20, 14, 0.6));"></div>
+            <div class="vg-minxin2-water" style="background: linear-gradient(180deg, rgba(200, 80, 60, 0.4), rgba(120, 30, 22, 0.55));"></div>
+            <div class="vg-minxin2-figures">
+              <span style="background: var(--vermillion-deep); transform: rotate(-15deg);"></span>
+              <span style="background: var(--vermillion-deep); transform: rotate(8deg);"></span>
+              <span style="background: var(--vermillion-deep); transform: rotate(-5deg);"></span>
+            </div>
+          </div>
+          <span class="state-cap bad">揭 竿 · 红 水</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =============== IN-CONTEXT PREVIEW =============== -->
+  <div class="section-head">
+    <span class="sh-num">肆</span>
+    <span class="sh-title">真 顶 栏 中 装 配 预 览</span>
+    <span class="sh-tag">IN-CONTEXT · TOPBAR ROW</span>
+  </div>
+
+  <div class="context">
+    <div class="context-title">顶 栏 中 央 资 源 轨 · 用 v3.1 图 像 装 配</div>
+    <div class="context-row">
+      <div class="ctx-wide">
+        <div class="ctx-wide-head">
+          <div class="ctx-wide-glyph">
+            <div class="vg vg-guoku" style="width: 40px; height: 40px;">
+              <div class="vg-guoku-roof"></div>
+              <div class="vg-guoku-body"></div>
+              <div class="vg-guoku-pillars"></div>
+              <div class="vg-guoku-char" style="font-size: 9px;">廪</div>
+            </div>
+          </div>
+          <div class="ctx-wide-name">帑 廪</div>
+        </div>
+        <div class="ctx-wide-subs">
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <div class="vg vg-yin">
+                <div class="vg-yin-body"></div>
+                <div class="vg-yin-rim"></div>
+              </div>
+            </div>
+            <div class="ctx-sub-val"><b>4.6万</b><span class="sd up">+820</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <div class="vg vg-liang">
+                <div class="vg-liang-bucket"></div>
+                <div class="vg-liang-grain"></div>
+              </div>
+            </div>
+            <div class="ctx-sub-val"><b>1.2万</b><span class="sd flat">±0</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <div class="vg vg-bu">
+                <div class="vg-bu-edge-l"></div>
+                <div class="vg-bu-roll"></div>
+                <div class="vg-bu-edge-r"></div>
+              </div>
+            </div>
+            <div class="ctx-sub-val"><b>320</b><span class="sd dn">-12</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-wide">
+        <div class="ctx-wide-head">
+          <div class="ctx-wide-glyph">
+            <div class="vg vg-neitang2" style="width: 38px; height: 30px;">
+              <div class="vg-neitang2-body"></div>
+              <div class="vg-neitang2-lid"></div>
+              <div class="vg-neitang2-handle"></div>
+              <div class="vg-neitang2-lock"></div>
+            </div>
+          </div>
+          <div class="ctx-wide-name">内 帑</div>
+        </div>
+        <div class="ctx-wide-subs">
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <div class="vg vg-yin">
+                <div class="vg-yin-body"></div>
+                <div class="vg-yin-rim"></div>
+              </div>
+            </div>
+            <div class="ctx-sub-val"><b>8.4万</b><span class="sd up">+120</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <div class="vg vg-liang">
+                <div class="vg-liang-bucket"></div>
+                <div class="vg-liang-grain"></div>
+              </div>
+            </div>
+            <div class="ctx-sub-val"><b>2.6千</b><span class="sd flat">±0</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <div class="vg vg-zhen" style="width: 26px; height: 26px;">
+                <div class="vg-zhen-base"></div>
+                <div class="vg-zhen-pearl" style="left: 12%; bottom: 26%; width: 8px; height: 8px;"></div>
+                <div class="vg-zhen-coral" style="left: 38%; bottom: 22%; width: 10px; height: 18px;"></div>
+                <div class="vg-zhen-jade" style="right: 8%; bottom: 28%; width: 7px; height: 7px;"></div>
+              </div>
+            </div>
+            <div class="ctx-sub-val"><b>328</b><span class="sd up">+5</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <div class="vg vg-hukou2">
+            <div class="vg-hukou2-stack">
+              <div class="vg-hukou2-binding"></div>
+              <div class="vg-hukou2-page p3"></div>
+              <div class="vg-hukou2-page p2"></div>
+              <div class="vg-hukou2-page p1"></div>
+            </div>
+            <div class="vg-hukou2-cover"><div class="vg-hukou2-title">黄册</div></div>
+          </div>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">户 口</div>
+          <div class="ctx-narrow-val">1180 万</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <div class="vg vg-lizhi2">
+            <div class="vg-lizhi2-base"></div>
+            <div class="vg-lizhi2-stand"></div>
+            <div class="vg-lizhi2-dot"></div>
+            <div class="vg-lizhi2-arm" style="transform: rotate(-14deg);">
+              <div class="vg-lizhi2-pan-l"></div>
+              <div class="vg-lizhi2-pan-r"></div>
+              <div class="vg-lizhi2-chain-l"></div>
+              <div class="vg-lizhi2-chain-r"></div>
+            </div>
+            <div class="vg-lizhi2-needle"></div>
+          </div>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">吏 治</div>
+          <div class="ctx-narrow-val" style="color: #e88a78;">渐 弊</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <div class="vg vg-minxin2">
+            <div class="vg-minxin2-field"></div>
+            <div class="vg-minxin2-water"></div>
+            <div class="vg-minxin2-grain">
+              <svg viewBox="0 0 22 16" width="22" height="16">
+                <path d="M 11 16 L 11 2" stroke="rgba(60,40,12,0.85)" stroke-width="0.8" fill="none"/>
+                <path d="M 11 4 Q 6 3 4 5 Q 7 6 11 5" fill="rgba(216,184,112,0.85)"/>
+                <path d="M 11 4 Q 16 3 18 5 Q 15 6 11 5" fill="rgba(216,184,112,0.85)"/>
+              </svg>
+            </div>
+            <div class="vg-minxin2-figures"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">民 心</div>
+          <div class="ctx-narrow-val">61 · 安</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <div class="vg vg-huangquan2">
+            <div class="vg-huangquan2-knob"></div>
+            <div class="vg-huangquan2-body"><div class="vg-huangquan2-char">玺</div></div>
+            <div class="vg-huangquan2-cinnabar"></div>
+          </div>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">皇 权</div>
+          <div class="ctx-narrow-val">52 · 衡</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <div class="vg vg-huangwei2">
+            <div class="vg-huangwei2-pole"></div>
+            <div class="vg-huangwei2-finial"></div>
+            <div class="vg-huangwei2-flag"><span class="vg-huangwei2-char">威</span></div>
+            <div class="vg-huangwei2-tally"><div class="vg-huangwei2-tally-eye"></div></div>
+          </div>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">皇 威</div>
+          <div class="ctx-narrow-val">68 · 威</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size: 12px; line-height: 1.7; color: var(--ink-muted); margin-top: 14px; padding-left: 4px;">
+      ▲ 装配方式·两 wide 横排 (帑廪 220 + 内帑 220) + 5 narrow (各 96·hukou/lizhi/minxin/huangquan/huangwei)·总宽约 1080·留 right stub。
+      所有 11 件 CSS-only·无 PNG·朝代切换货币时只换 .vg-yin → .vg-qian。
+    </p>
+  </div>
+
+  <!-- =============== NEXT =============== -->
+  <div class="next-block">
+    <div class="next-block-title">本 块 完 结 · v 3.1 · piece 1.5 / 3</div>
+    <p><strong class="fix-c">完成</strong>·11 件完整图像系统 (4 子项 + 7 主变量·全真历史 artifact)·状态可视化 4 套·顶栏装配实测预览。</p>
+    <p><strong class="gold-c">下一步 piece 2</strong>·钦天监 / 朱漆 / 翰墨 / 重檐 4 paradigm 用新 11 件图像重做完整 topbar + tooltip + banner·确保每个 paradigm 用<strong>同图像系统</strong>但<strong>不同质感语言</strong>呈现 (夜空 / 朱漆 / 宣纸 / 金檐)。</p>
+    <p><strong class="gold-c">下一步 piece 3</strong>·二十四气盘 (圆形顶栏) + 御案棋盘 (物象图) 两 radical 新方向 + 最终决策矩阵 + 推荐。</p>
+    <p style="margin-top: 12px; color: var(--ink-muted); font-size: 12px;">先确认 11 件图像方向再 piece 2·避免后面 paradigm 重做又错。哪几件需要重设计？</p>
+  </div>
+
+</main>
+</body>
+</html>

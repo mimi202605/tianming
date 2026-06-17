@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>编年标签页·美化预览</title>
+<style>
+:root {
+  --bg-1: #0f0d0a;
+  --bg-2: #1a1510;
+  --bg-paper: #241e18;
+  --bg-sunken: #120f0a;
+  --ink-900: #f4eadd;
+  --ink-700: #d9c9a9;
+  --ink-500: #a69470;
+  --ink-300: #6b5d47;
+  --ink-100: #3d342a;
+  --gold-300: #c9a85f;
+  --gold-400: #b89a53;
+  --gold-500: #9d8244;
+  --gold-d: #6b5a30;
+  --vermillion-300: #d15c47;
+  --vermillion-400: #b84738;
+  --vermillion-600: #8f3428;
+  --indigo-400: #5a6fa8;
+  --indigo-600: #3e4e80;
+  --celadon-400: #6a9a7f;
+  --celadon-600: #4a7a5f;
+  --amber-400: #c9a045;
+  --purple-400: #8e6aa8;
+  --blue-400: #5a8fb8;
+  --border-subtle: rgba(184,154,83,0.15);
+  --border-strong: rgba(184,154,83,0.35);
+  --shadow-scroll: 0 6px 18px rgba(0,0,0,0.45), 0 0 0 1px rgba(184,154,83,0.08);
+  --shadow-gold: 0 0 12px rgba(184,154,83,0.2);
+  --font-serif: "STKaiti","KaiTi","楷体","Georgia",serif;
+  --font-song: "STSong","SimSun","宋体",serif;
+}
+
+*{box-sizing:border-box;}
+body{margin:0;padding:0;background:radial-gradient(ellipse at top,#1a1510 0%,#0f0d0a 70%),var(--bg-1);color:var(--ink-700);font-family:var(--font-song);font-size:14px;line-height:1.7;min-height:100vh;}
+
+.preview-frame{max-width:1280px;margin:32px auto;background:var(--bg-2);border:1px solid var(--border-subtle);border-radius:6px;overflow:hidden;box-shadow:var(--shadow-scroll);}
+.preview-header{background:linear-gradient(to bottom,rgba(184,154,83,0.04),transparent);padding:12px 20px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:12px;font-size:11px;color:var(--ink-500);letter-spacing:0.1em;}
+.preview-header .dot{width:10px;height:10px;border-radius:50%;}
+.preview-header .dot.r{background:#d15c47;} .preview-header .dot.y{background:#c9a85f;} .preview-header .dot.g{background:#6a9a7f;}
+.preview-header .title{margin-left:auto;font-family:var(--font-serif);letter-spacing:0.3em;color:var(--ink-300);}
+
+/* 标签栏 */
+.tab-bar{display:flex;gap:0;background:var(--bg-1);border-bottom:1px solid var(--border-subtle);overflow-x:auto;}
+.tab-btn{padding:10px 16px;background:transparent;border:none;color:var(--ink-300);font-family:var(--font-serif);font-size:14px;letter-spacing:0.1em;cursor:pointer;border-bottom:2px solid transparent;position:relative;}
+.tab-btn:hover{color:var(--ink-700);}
+.tab-btn.active{color:var(--gold-400);border-bottom-color:var(--gold-400);}
+.tab-btn.active::before{content:"";position:absolute;top:6px;right:6px;width:5px;height:5px;background:var(--vermillion-400);border-radius:1px;transform:rotate(12deg);}
+
+/* ═══ 编年主区·宣纸纹 ═══ */
+.bn-panel{
+  padding:24px 28px;
+  min-height:900px;
+  background-color:var(--bg-paper);
+  background-image:
+    repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px)),
+    repeating-linear-gradient(0deg,transparent 0,transparent 3em,rgba(107,93,71,0.02) 3em,rgba(107,93,71,0.02) calc(3em + 1px)),
+    linear-gradient(to bottom,rgba(184,154,83,0.05) 0%,transparent 80px);
+  position:relative;
+}
+.bn-panel::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 15% 25%,rgba(139,90,50,0.025) 0.5px,transparent 1px),
+    radial-gradient(circle at 80% 60%,rgba(139,90,50,0.03) 0.5px,transparent 1px);
+  background-size:80px 80px,120px 120px;
+}
+.bn-inner{position:relative;z-index:1;}
+
+/* 主标题 */
+.bn-title{text-align:center;margin-bottom:24px;position:relative;padding:14px 0 18px;}
+.bn-title::before,.bn-title::after{content:"";position:absolute;left:50%;width:180px;height:1px;transform:translateX(-50%);background:linear-gradient(to right,transparent,var(--gold-d),transparent);}
+.bn-title::before{top:0;} .bn-title::after{bottom:0;}
+.bn-title .main{font-family:var(--font-serif);font-size:24px;letter-spacing:0.5em;color:var(--ink-900);margin-bottom:6px;}
+.bn-title .sub{font-size:12px;color:var(--ink-300);letter-spacing:0.3em;font-family:var(--font-serif);}
+.bn-title .seal{
+  position:absolute;right:28px;top:10px;
+  width:44px;height:44px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.85),rgba(140,40,30,0.75));
+  display:flex;align-items:center;justify-content:center;
+  color:#f4eadd;font-size:11px;font-family:var(--font-serif);
+  letter-spacing:0.05em;font-weight:bold;
+  transform:rotate(-6deg);
+  box-shadow:0 2px 6px rgba(140,40,30,0.4);
+  opacity:0.88;line-height:1.2;text-align:center;
+}
+
+/* ═══ Section 1：长期事势·进行中 ═══ */
+.bn-section-hdr{
+  display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-top:8px;
+}
+.bn-section-hdr .tag{
+  font-family:var(--font-serif);font-size:15px;letter-spacing:0.25em;
+  padding:5px 18px 6px;
+  background:linear-gradient(to bottom,rgba(157,130,68,0.12),rgba(157,130,68,0.03));
+  border-top:1px solid var(--gold-400);border-bottom:1px solid var(--gold-400);
+  color:var(--ink-900);flex-shrink:0;
+}
+.bn-section-hdr .tag::before,.bn-section-hdr .tag::after{content:"❖";color:var(--gold-400);font-size:11px;margin:0 7px;opacity:0.65;}
+.bn-section-hdr .desc{font-size:12px;color:var(--ink-500);letter-spacing:0.08em;font-style:italic;}
+.bn-section-hdr .stat{margin-left:auto;font-size:11px;color:var(--gold-400);font-family:var(--font-serif);padding:3px 10px;border:1px solid var(--gold-d);border-radius:2px;letter-spacing:0.1em;}
+
+/* 类型分组卡（盛在"卷册"容器内） */
+.bn-tracks-wrap{
+  padding:16px 18px 18px;
+  background:rgba(26,21,16,0.4);
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.03) 2.5em,rgba(107,93,71,0.03) calc(2.5em + 1px));
+  border:1px solid var(--border-subtle);
+  border-left:3px double var(--gold-d);
+  border-radius:3px;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);
+  margin-bottom:24px;
+}
+
+.bn-track-group{margin-bottom:14px;}
+.bn-track-group:last-child{margin-bottom:0;}
+.bn-track-group-hdr{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:8px;padding:5px 10px 6px;
+  background:linear-gradient(to right,rgba(var(--cat-rgb,184,154,83),0.12),transparent);
+  border-left:3px solid var(--cat-color,var(--gold-400));
+  border-radius:0 2px 2px 0;
+}
+.bn-track-group-hdr .icon{
+  width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--cat-color,var(--gold-400)),var(--ink-100));
+  color:#f4eadd;font-family:var(--font-serif);font-size:12px;font-weight:500;
+  box-shadow:0 1px 2px rgba(0,0,0,0.4);flex-shrink:0;
+}
+.bn-track-group-hdr .name{font-family:var(--font-serif);font-size:13.5px;color:var(--cat-color,var(--gold-400));letter-spacing:0.18em;}
+.bn-track-group-hdr .count{margin-left:auto;font-size:11px;color:var(--ink-500);font-family:var(--font-serif);letter-spacing:0.1em;}
+
+/* 类型色变量（8种） */
+.bn-cat-keju     {--cat-color:var(--gold-400);     --cat-rgb:184,154,83;}
+.bn-cat-edict    {--cat-color:var(--vermillion-400);--cat-rgb:184,71,56;}
+.bn-cat-project  {--cat-color:var(--celadon-400);  --cat-rgb:106,154,127;}
+.bn-cat-memorial {--cat-color:var(--amber-400);    --cat-rgb:201,160,69;}
+.bn-cat-faction  {--cat-color:var(--purple-400);   --cat-rgb:142,106,168;}
+.bn-cat-npc      {--cat-color:var(--indigo-400);   --cat-rgb:90,111,168;}
+.bn-cat-tingyi   {--cat-color:var(--amber-400);    --cat-rgb:201,160,69;}
+.bn-cat-dynasty  {--cat-color:var(--gold-d);       --cat-rgb:107,90,48;}
+
+/* 单条事势卡 */
+.bn-track{
+  position:relative;
+  padding:12px 14px 14px 18px;
+  margin-bottom:8px;margin-left:8px;
+  background:var(--bg-paper);
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.025) 2.5em,rgba(107,93,71,0.025) calc(2.5em + 1px));
+  border:1px solid var(--border-subtle);
+  border-left:3px solid var(--cat-color,var(--gold-d));
+  border-radius:3px;
+  transition:all 0.25s;
+}
+.bn-track:hover{border-color:var(--gold-400);box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 6px rgba(184,154,83,0.12);}
+.bn-track:last-child{margin-bottom:0;}
+.bn-track.priority-high{box-shadow:0 0 0 1px var(--vermillion-400),0 1px 3px rgba(0,0,0,0.3);border-left-color:var(--vermillion-400);}
+.bn-track.priority-high::after{
+  content:"";position:absolute;top:0;right:0;width:80px;height:80px;
+  background:radial-gradient(circle at top right,rgba(192,64,48,0.08),transparent 70%);
+  pointer-events:none;
+}
+
+.bn-track-hdr{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.bn-track-title{font-family:var(--font-serif);font-size:14px;color:var(--ink-900);letter-spacing:0.1em;font-weight:500;}
+.bn-track-prio{
+  font-size:10.5px;padding:1px 7px 2px;border-radius:2px;font-family:var(--font-serif);
+  color:var(--vermillion-400);background:rgba(192,64,48,0.1);
+  border:1px solid var(--vermillion-400);letter-spacing:0.1em;
+}
+.bn-track-hidden{
+  font-size:10.5px;padding:1px 7px 2px;border-radius:2px;font-family:var(--font-serif);
+  color:var(--ink-300);background:rgba(107,93,71,0.1);
+  border:1px dashed var(--ink-300);letter-spacing:0.1em;
+}
+
+.bn-track-meta{
+  font-size:11.5px;color:var(--gold-d);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
+.bn-track-meta .sep{color:var(--ink-300);opacity:0.5;}
+.bn-track-meta .stage{color:var(--cat-color,var(--gold-400));font-family:var(--font-serif);letter-spacing:0.1em;}
+.bn-track-meta .elapsed{color:var(--ink-500);}
+.bn-track-meta .remaining{color:var(--amber-400);font-style:italic;}
+
+.bn-track-narr{
+  font-size:12.5px;color:var(--ink-700);line-height:1.75;
+  margin:6px 0 4px;
+  padding-left:10px;border-left:1px dashed var(--border-subtle);
+  font-family:var(--font-serif);letter-spacing:0.02em;
+}
+
+.bn-track-stake{
+  font-size:11px;color:var(--ink-500);margin-top:4px;
+  display:flex;flex-wrap:wrap;gap:4px;align-items:center;
+}
+.bn-track-stake .lbl{color:var(--ink-300);font-family:var(--font-serif);letter-spacing:0.1em;margin-right:2px;}
+.bn-track-stake .chip{
+  font-size:10.5px;padding:1px 8px;
+  background:rgba(184,154,83,0.08);
+  border:1px solid var(--border-subtle);border-radius:2px;
+  color:var(--ink-700);font-family:var(--font-serif);letter-spacing:0.05em;
+}
+
+/* 进度条（毛笔线条风） */
+.bn-track-bar{
+  margin-top:8px;height:4px;
+  background:rgba(107,93,71,0.2);
+  border-radius:2px;position:relative;overflow:hidden;
+}
+.bn-track-bar-fill{
+  height:100%;background:linear-gradient(to right,var(--cat-color,var(--gold-400)),rgba(var(--cat-rgb,184,154,83),0.75));
+  border-radius:2px;transition:width 0.4s;
+  position:relative;
+}
+.bn-track-bar-fill::after{
+  content:"";position:absolute;right:0;top:-2px;
+  width:2px;height:8px;background:var(--cat-color);
+  border-radius:1px;
+  box-shadow:0 0 4px rgba(255,255,255,0.3);
+}
+.bn-track-pct{font-size:10px;color:var(--ink-500);margin-top:3px;text-align:right;letter-spacing:0.05em;}
+
+/* ═══ Section 2：检索·筛选 ═══ */
+.bn-tools{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;margin-bottom:14px;
+  background:rgba(184,154,83,0.04);
+  border:1px solid var(--border-subtle);
+  border-radius:2px;
+}
+.bn-tools-label{
+  font-family:var(--font-serif);font-size:12px;color:var(--ink-500);
+  letter-spacing:0.15em;flex-shrink:0;
+}
+.bn-search{
+  flex:1;max-width:380px;
+  padding:6px 12px 6px 30px;
+  background:var(--bg-1);
+  border:1px solid var(--border-subtle);
+  color:var(--ink-700);
+  font-family:var(--font-song);font-size:12.5px;
+  border-radius:2px;outline:none;
+  position:relative;
+}
+.bn-search-wrap{position:relative;flex:1;max-width:380px;}
+.bn-search-wrap::before{
+  content:"⌕";position:absolute;left:10px;top:50%;
+  transform:translateY(-50%);color:var(--ink-300);font-size:14px;
+  pointer-events:none;
+}
+.bn-search:focus{border-color:var(--gold-400);box-shadow:0 0 0 1px rgba(184,154,83,0.25);}
+.bn-filter{
+  padding:6px 14px;
+  background:var(--bg-1);
+  border:1px solid var(--border-subtle);
+  color:var(--ink-700);
+  font-family:var(--font-serif);font-size:12.5px;letter-spacing:0.1em;
+  border-radius:2px;cursor:pointer;
+}
+.bn-tools-stat{
+  margin-left:auto;font-size:11px;color:var(--ink-300);
+  letter-spacing:0.08em;font-family:var(--font-serif);
+}
+.bn-tools-stat .n{color:var(--gold-400);font-weight:500;}
+
+/* ═══ Section 3：永久编年·史册 ═══ */
+.bn-chronicle-wrap{
+  padding:20px 22px 22px;
+  background:rgba(244,234,221,0.015);
+  background-image:
+    repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.03) 2.5em,rgba(107,93,71,0.03) calc(2.5em + 1px));
+  border:1px solid var(--gold-d);
+  border-radius:3px;
+  position:relative;
+}
+.bn-chronicle-wrap::before{
+  /* 左侧"史册"装饰条 */
+  content:"";position:absolute;left:-1px;top:20px;bottom:20px;
+  width:3px;background:linear-gradient(to bottom,var(--gold-400),var(--gold-d),var(--gold-400));
+  border-radius:2px;
+}
+
+/* 年块 */
+.bn-year-block{margin-bottom:20px;}
+.bn-year-block:last-child{margin-bottom:0;}
+.bn-year-summary{
+  cursor:pointer;font-family:var(--font-serif);font-size:16px;
+  letter-spacing:0.3em;color:var(--gold-400);
+  padding:6px 0 8px;
+  list-style:none;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--gold-d);
+  margin-bottom:10px;
+}
+.bn-year-summary::before{
+  content:"▸";font-size:12px;color:var(--vermillion-400);
+  transition:transform 0.25s;
+}
+.bn-year-block[open] > .bn-year-summary::before{transform:rotate(90deg);}
+.bn-year-summary::-webkit-details-marker{display:none;}
+.bn-year-summary .count{
+  margin-left:auto;font-size:11px;color:var(--ink-500);
+  font-weight:normal;letter-spacing:0.1em;
+  padding:2px 8px;background:rgba(184,154,83,0.08);
+  border-radius:2px;
+}
+
+/* 季节分隔（春夏秋冬） */
+.bn-season{
+  display:inline-block;font-size:11px;
+  color:var(--celadon-400);letter-spacing:0.3em;
+  padding:1px 10px;margin:6px 0 4px 8px;
+  background:rgba(106,154,127,0.06);
+  border:1px solid var(--celadon-400);border-radius:2px;
+  font-family:var(--font-serif);
+}
+
+/* 单条史事（条目） */
+.bn-entry{
+  position:relative;
+  padding:9px 14px 10px 20px;
+  margin-bottom:8px;margin-left:10px;
+  background:var(--bg-paper);
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.02) 2.5em,rgba(107,93,71,0.02) calc(2.5em + 1px));
+  border-left:2px solid var(--entry-color,var(--ink-100));
+  border-radius:0 2px 2px 0;
+  transition:all 0.2s;
+}
+.bn-entry:hover{background:rgba(184,154,83,0.04);border-left-color:var(--gold-400);}
+.bn-entry::before{
+  /* 竖线时间轴上的锚点 */
+  content:"";position:absolute;left:-6px;top:14px;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--entry-color,var(--gold-d));
+  border:2px solid var(--bg-paper);
+  box-shadow:0 0 0 1px var(--entry-color,var(--gold-d));
+}
+
+/* 类别色 */
+.bn-entry.cat-mil   {--entry-color:var(--vermillion-400);}
+.bn-entry.cat-pol   {--entry-color:var(--indigo-400);}
+.bn-entry.cat-eco   {--entry-color:var(--gold-400);}
+.bn-entry.cat-dip   {--entry-color:var(--celadon-400);}
+.bn-entry.cat-cult  {--entry-color:var(--purple-400);}
+.bn-entry.cat-nat   {--entry-color:var(--amber-400);}
+.bn-entry.cat-misc  {--entry-color:var(--ink-300);}
+
+.bn-entry-hdr{display:flex;align-items:baseline;gap:8px;margin-bottom:3px;}
+.bn-entry-title{font-family:var(--font-serif);font-size:13.5px;color:var(--ink-900);letter-spacing:0.08em;font-weight:500;}
+.bn-entry-cat{
+  font-size:10.5px;padding:1px 7px;
+  color:var(--entry-color);background:rgba(var(--entry-color-rgb,184,154,83),0.06);
+  border:1px solid currentColor;border-radius:2px;
+  font-family:var(--font-serif);letter-spacing:0.1em;
+  margin-left:auto;
+}
+.bn-entry-date{font-size:11px;color:var(--gold-d);font-family:var(--font-serif);letter-spacing:0.05em;font-style:italic;}
+.bn-entry-body{font-size:12.5px;color:var(--ink-700);line-height:1.75;margin-top:4px;font-family:var(--font-serif);letter-spacing:0.02em;text-indent:2em;}
+
+/* 空态 */
+.bn-empty{
+  text-align:center;padding:48px 24px;
+  font-family:var(--font-serif);font-size:15px;
+  color:var(--ink-500);letter-spacing:0.2em;line-height:2;
+}
+.bn-empty::before{
+  content:"❖";display:block;color:var(--gold-400);
+  font-size:32px;margin-bottom:12px;opacity:0.5;
+}
+
+/* Legend */
+.legend{padding:14px 20px;background:var(--bg-2);border-top:1px solid var(--border-subtle);font-size:11px;color:var(--ink-500);text-align:center;letter-spacing:0.08em;line-height:1.9;}
+.legend .k{color:var(--gold-400);} .legend .m{color:var(--vermillion-400);}
+</style>
+</head>
+<body>
+
+<div class="preview-frame">
+
+  <div class="preview-header">
+    <span class="dot r"></span>
+    <span class="dot y"></span>
+    <span class="dot g"></span>
+    <span>tianming · 编年标签页美化预览</span>
+    <span class="title">〔 编 年 纪 要 〕</span>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">朝政</button>
+    <button class="tab-btn">诏令</button>
+    <button class="tab-btn">奏疏</button>
+    <button class="tab-btn">问对</button>
+    <button class="tab-btn">鸿雁</button>
+    <button class="tab-btn active">编年</button>
+    <button class="tab-btn">官制</button>
+    <button class="tab-btn">文苑</button>
+    <button class="tab-btn">起居注</button>
+    <button class="tab-btn">纪事</button>
+    <button class="tab-btn">史记</button>
+  </div>
+
+  <div class="bn-panel">
+    <div class="bn-inner">
+
+      <!-- 标题 -->
+      <div class="bn-title">
+        <div class="seal">编<br>年</div>
+        <div class="main">编 年 纪 要</div>
+        <div class="sub">天　子　纪　年　　　诸事经年累载</div>
+      </div>
+
+      <!-- ═══ Section 1：长期事势·进行中 ═══ -->
+      <div class="bn-section-hdr">
+        <span class="tag">长 期 事 势</span>
+        <span class="desc">—— 跨越多回合的朝野大事·AI 推演时视为持续中</span>
+        <span class="stat">进行中 13 件</span>
+      </div>
+
+      <div class="bn-tracks-wrap">
+
+        <!-- 科举 -->
+        <div class="bn-track-group bn-cat-keju">
+          <div class="bn-track-group-hdr">
+            <div class="icon">文</div>
+            <div class="name">科 举 行 朝</div>
+            <div class="count">2 件</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">本科科举</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong style="color:var(--gold-400);">温体仁</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">会　试</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 8 回合</span>
+              <span class="sep">·</span>
+              <span class="remaining">预余 3 回合</span>
+            </div>
+            <div class="bn-track-narr">开考：崇祯元年正月 · 备选 120 人。会试已放榜，中式 95 名。殿试待陛下钦定三甲。</div>
+            <div class="bn-track-stake">
+              <span class="lbl">相关：</span>
+              <span class="chip">钱谦益</span>
+              <span class="chip">冒襄</span>
+              <span class="chip">张岱</span>
+              <span class="chip">倪元璐</span>
+            </div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:75%;"></div></div>
+            <div class="bn-track-pct">75%</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">武举·秋试</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong style="color:var(--gold-400);">孙承宗</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">筹　备</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 1 回合</span>
+            </div>
+            <div class="bn-track-narr">兵部已请开武举，武艺与兵法并试，冀得真才。</div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:15%;"></div></div>
+            <div class="bn-track-pct">15%</div>
+          </div>
+        </div>
+
+        <!-- 诏令 -->
+        <div class="bn-track-group bn-cat-edict">
+          <div class="bn-track-group-hdr">
+            <div class="icon">诏</div>
+            <div class="name">长 期 诏 令</div>
+            <div class="count">3 件</div>
+          </div>
+
+          <div class="bn-track priority-high">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">辽东拨饷三十万两</span>
+              <span class="bn-track-prio">⚠ 高优先</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong style="color:var(--vermillion-400);">户部·毕自严</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">押 运 中</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 2 回合</span>
+              <span class="sep">·</span>
+              <span class="remaining">预余 1 回合</span>
+            </div>
+            <div class="bn-track-narr">银三十万两已从户部发出，正分三批由京营兵押赴辽东。第一批已抵山海关。</div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:65%;"></div></div>
+            <div class="bn-track-pct">65%</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">河南山东减赋三成</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong>有司</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">行 文 州 县</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 1 回合</span>
+              <span class="sep">·</span>
+              <span class="remaining">预余 10 回合</span>
+            </div>
+            <div class="bn-track-narr">诏书已颁，州县尚需三月方能完全落实。</div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:10%;"></div></div>
+            <div class="bn-track-pct">10%</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">罢阉党余孽二百一十二人</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong>吏部</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">清 查 田 产</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 4 回合</span>
+            </div>
+            <div class="bn-track-narr">削职 212 人皆已罢职，所涉田宅正由地方有司清点入官。</div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:40%;"></div></div>
+            <div class="bn-track-pct">40%</div>
+          </div>
+        </div>
+
+        <!-- 工程·商队 -->
+        <div class="bn-track-group bn-cat-project">
+          <div class="bn-track-group-hdr">
+            <div class="icon">工</div>
+            <div class="name">工 程 商 队</div>
+            <div class="count">2 件</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">京师西局·铸造红夷大炮</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong style="color:var(--celadon-400);">徐光启</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">第 一 批 成 型</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 5 回合</span>
+              <span class="sep">·</span>
+              <span class="remaining">预余 4 回合</span>
+            </div>
+            <div class="bn-track-narr">图样已得，首批十门红夷大炮铸造工序进入校准阶段。</div>
+            <div class="bn-track-stake">
+              <span class="lbl">相关：</span>
+              <span class="chip">汤若望</span>
+              <span class="chip">孙元化</span>
+            </div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:55%;"></div></div>
+            <div class="bn-track-pct">55%</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">漕运·江南漕米北运</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong>漕运总督</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">运 河 北 上</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 3 回合</span>
+            </div>
+            <div class="bn-track-narr">岁漕粮 400 万石已出淮安。</div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:60%;"></div></div>
+            <div class="bn-track-pct">60%</div>
+          </div>
+        </div>
+
+        <!-- 积压奏疏 -->
+        <div class="bn-track-group bn-cat-memorial">
+          <div class="bn-track-group-hdr">
+            <div class="icon">积</div>
+            <div class="name">积 压 奏 疏</div>
+            <div class="count">2 件</div>
+          </div>
+
+          <div class="bn-track priority-high">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">袁崇焕·请发辽饷再奏</span>
+              <span class="bn-track-prio">⚠ 逾期</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong style="color:var(--vermillion-400);">袁崇焕</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">留 中 4 回 合</span>
+            </div>
+            <div class="bn-track-narr">辽东军情告急，前奏尚未获批，又上一折催请。</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">卢象升·请补造火器</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong>卢象升</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">留 中 2 回 合</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 势力约期 -->
+        <div class="bn-track-group bn-cat-faction">
+          <div class="bn-track-group-hdr">
+            <div class="icon">盟</div>
+            <div class="name">势 力 约 期</div>
+            <div class="count">1 件</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">朝鲜岁贡·约期五年</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong style="color:var(--purple-400);">礼部</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">履 约 中</span>
+              <span class="sep">·</span>
+              <span class="elapsed">第 2 年</span>
+              <span class="sep">·</span>
+              <span class="remaining">尚余 3 年</span>
+            </div>
+            <div class="bn-track-narr">与朝鲜约岁贡五年不变，今岁使臣已至，贡品如旧。</div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:40%;"></div></div>
+            <div class="bn-track-pct">40%</div>
+          </div>
+        </div>
+
+        <!-- NPC 持续行动 -->
+        <div class="bn-track-group bn-cat-npc">
+          <div class="bn-track-group-hdr">
+            <div class="icon">动</div>
+            <div class="name">NPC 持 续 行 动</div>
+            <div class="count">2 件</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">温体仁·巩固票拟权柄</span>
+              <span class="bn-track-hidden">◇ 隐</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong style="color:var(--indigo-400);">温体仁</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">联 合 浙 党</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 6 回合</span>
+            </div>
+            <div class="bn-track-narr">暗联浙党成员共抗东林，意图取钱谦益而代之。</div>
+            <div class="bn-track-bar"><div class="bn-track-bar-fill" style="width:45%;"></div></div>
+            <div class="bn-track-pct">45%</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">周皇后·巡视六宫德化</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong>周皇后</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">后 妃 礼 数</span>
+              <span class="sep">·</span>
+              <span class="elapsed">已历 3 回合</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 廷议待落实 -->
+        <div class="bn-track-group bn-cat-tingyi">
+          <div class="bn-track-group-hdr">
+            <div class="icon">议</div>
+            <div class="name">廷 议 待 落 实</div>
+            <div class="count">1 件</div>
+          </div>
+
+          <div class="bn-track">
+            <div class="bn-track-hdr">
+              <span class="bn-track-title">增设登莱水师</span>
+            </div>
+            <div class="bn-track-meta">
+              主：<strong>兵部</strong>
+              <span class="sep">·</span>
+              阶段：<span class="stage">议 定 待 诏</span>
+              <span class="sep">·</span>
+              <span class="elapsed">议定 2 回合</span>
+            </div>
+            <div class="bn-track-narr">廷议已决，待陛下下诏方能施行。</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ Section 2：检索筛选 ═══ -->
+      <div class="bn-section-hdr" style="margin-top:16px;">
+        <span class="tag">编 年 检 索</span>
+        <span class="desc">—— 按年份·类别·关键字追溯往迹</span>
+      </div>
+
+      <div class="bn-tools">
+        <span class="bn-tools-label">查　阅：</span>
+        <div class="bn-search-wrap">
+          <input class="bn-search" placeholder="题目、人名、地点、关键字……" value="">
+        </div>
+        <select class="bn-filter">
+          <option>全部类别</option>
+          <option>军事</option>
+          <option>政事</option>
+          <option>经济</option>
+          <option>外交</option>
+          <option>文化</option>
+          <option>天象灾异</option>
+        </select>
+        <span class="bn-tools-stat">卷帙 <span class="n">87</span> 条 · 显 <span class="n">87</span> 条</span>
+      </div>
+
+      <!-- ═══ Section 3：永久编年·史册 ═══ -->
+      <div class="bn-section-hdr">
+        <span class="tag">编 年 史 册</span>
+        <span class="desc">—— 既往之事·永久存录</span>
+      </div>
+
+      <div class="bn-chronicle-wrap">
+
+        <!-- 年块：崇祯元年 -->
+        <details class="bn-year-block" open>
+          <summary class="bn-year-summary">
+            崇 祯 元 年 戊辰
+            <span class="count">19 条</span>
+          </summary>
+
+          <div class="bn-season">春</div>
+
+          <div class="bn-entry cat-pol">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">罢阉党余孽魏忠贤党羽二百一十二人</span>
+              <span class="bn-entry-cat">政事</span>
+            </div>
+            <div class="bn-entry-date">正月十有五日</div>
+            <div class="bn-entry-body">帝御奉天殿，着内阁拟旨，削职为民者二百一十二人，所涉田宅一律没入官府。另擢东林钱谦益为礼部尚书。</div>
+          </div>
+
+          <div class="bn-entry cat-mil">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">袁崇焕督师辽东</span>
+              <span class="bn-entry-cat">军事</span>
+            </div>
+            <div class="bn-entry-date">正月二十有三</div>
+            <div class="bn-entry-body">加袁崇焕兵部尚书衔，便宜行事，赐尚方剑一口，拨银三十万两补给军饷。</div>
+          </div>
+
+          <div class="bn-entry cat-eco">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">河南山东减赋三成</span>
+              <span class="bn-entry-cat">经济</span>
+            </div>
+            <div class="bn-entry-date">二月初八</div>
+            <div class="bn-entry-body">两省连岁饥馑，流民载道。诏减今岁田赋三成，开太仓米十万石赈济。</div>
+          </div>
+
+          <div class="bn-season">夏</div>
+
+          <div class="bn-entry cat-nat">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">京师大旱</span>
+              <span class="bn-entry-cat">天象灾异</span>
+            </div>
+            <div class="bn-entry-date">五月</div>
+            <div class="bn-entry-body">京师自春徂夏久不雨，禾苗半枯。陛下斋戒三日，亲诣天坛祈雨。</div>
+          </div>
+
+          <div class="bn-entry cat-dip">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">朝鲜遣使贡马</span>
+              <span class="bn-entry-cat">外交</span>
+            </div>
+            <div class="bn-entry-date">六月十二</div>
+            <div class="bn-entry-body">朝鲜使臣李元翼持国书贡马百匹，帝赐宴于建极殿，赏赐甚厚。</div>
+          </div>
+
+          <div class="bn-entry cat-cult">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">徐光启设西局督造火器</span>
+              <span class="bn-entry-cat">文化</span>
+            </div>
+            <div class="bn-entry-date">六月廿四</div>
+            <div class="bn-entry-body">诏设西局于京师，以徐光启督造西洋火器，得图样者皆自澳门购求。</div>
+          </div>
+
+          <div class="bn-season">秋</div>
+
+          <div class="bn-entry cat-mil">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">后金犯宁远·袁崇焕却之</span>
+              <span class="bn-entry-cat">军事</span>
+            </div>
+            <div class="bn-entry-date">八月初九</div>
+            <div class="bn-entry-body">皇太极率八旗骑兵凡万余众抵宁远，袁崇焕据城固守，发红夷大炮，后金遁去，斩首二千余。</div>
+          </div>
+
+          <div class="bn-entry cat-pol">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">钱谦益主持秋试</span>
+              <span class="bn-entry-cat">政事</span>
+            </div>
+            <div class="bn-entry-date">九月初</div>
+            <div class="bn-entry-body">诏钱谦益主持会试，中式 95 名。</div>
+          </div>
+
+        </details>
+
+        <!-- 年块：天启七年 -->
+        <details class="bn-year-block">
+          <summary class="bn-year-summary">
+            天 启 七 年 丁卯
+            <span class="count">31 条</span>
+          </summary>
+
+          <div class="bn-entry cat-pol">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">熹宗崩于乾清宫</span>
+              <span class="bn-entry-cat">政事</span>
+            </div>
+            <div class="bn-entry-date">八月廿二</div>
+            <div class="bn-entry-body">熹宗皇帝朱由校崩于乾清宫，年二十三。无子，遗诏传位信王朱由检。</div>
+          </div>
+
+          <div class="bn-entry cat-pol">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">信王即位</span>
+              <span class="bn-entry-cat">政事</span>
+            </div>
+            <div class="bn-entry-date">八月廿四</div>
+            <div class="bn-entry-body">信王朱由检即皇帝位，以明年为崇祯元年。</div>
+          </div>
+
+          <div class="bn-entry cat-mil">
+            <div class="bn-entry-hdr">
+              <span class="bn-entry-title">宁锦大捷</span>
+              <span class="bn-entry-cat">军事</span>
+            </div>
+            <div class="bn-entry-date">五月</div>
+            <div class="bn-entry-body">后金皇太极率兵围宁远，袁崇焕、满桂等据城力拒，后金死伤甚众，遁退。</div>
+          </div>
+
+        </details>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legend">
+    ★ 设计要点：<span class="k">宣纸横格纹</span> · <span class="k">朱砂"编年"半圆印</span> · 长期事势<span class="k">按类分组</span>（8色谱：金/朱/青/琥/紫/靛/琥/墨）· 进行中卡片<span class="m">高优先朱框</span>+进度毛笔线 · 史册<span class="k">年→季→条</span>三级展开 · 条目左侧时间轴<span class="m">锚点</span>·分类冷暖色带 · 检索栏<span class="k">宣纸金线</span>风 <br>
+    <span style="color:var(--ink-300);margin-top:6px;display:inline-block;">这是纯预览页面。若满意我将此样式应用到 tm-index-world.js 的 renderBiannian() 中。</span>
+  </div>
+
+</div>
+
+</body>
+</html>

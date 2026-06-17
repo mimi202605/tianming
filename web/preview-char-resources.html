@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>角色资源 UI 预览 · 天命</title>
+<style>
+/* === 基础（复用天命现有 design tokens） === */
+:root {
+  --ink-50:#f8f3e8; --ink-100:#ede5d0; --ink-200:#d4c9b0; --ink-300:#9d917d;
+  --ink-400:#6b5d4f; --ink-500:#3a3530; --ink-600:#2a2520; --ink-700:#1c1914;
+  --ink-800:#12100e; --ink-900:#0a0908;
+  --gold-300:#d4be7a; --gold-400:#b89a53; --gold-500:#8a6d2b; --gold-600:#6b5010;
+  --vermillion-300:#d4706a; --vermillion-400:#c04030; --vermillion-500:#8b2e25;
+  --celadon-300:#a3d4c7; --celadon-400:#7eb8a7; --celadon-500:#5a8f7f;
+  --green-400:#7eb87e;
+  --color-background: var(--ink-800);
+  --color-surface: var(--ink-700);
+  --color-elevated: var(--ink-600);
+  --color-foreground: var(--ink-50);
+  --color-foreground-secondary: var(--ink-300);
+  --color-foreground-muted: var(--ink-400);
+  --color-border-subtle: var(--ink-600);
+}
+
+body {
+  margin: 0;
+  padding: 40px;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: "Noto Serif SC", "Source Han Serif", "思源宋体", "KaiTi", "楷体", serif;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(184,154,83,0.03) 0%, transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(192,64,48,0.02) 0%, transparent 45%);
+}
+
+.page-label {
+  color: var(--gold-400);
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   变体一：完整卡片（角色详情面板用）
+   ============================================================ */
+.resource-card {
+  width: 620px;
+  background: linear-gradient(to bottom, #1a1612 0%, #15120e 100%);
+  border: 1px solid var(--gold-500);
+  border-radius: 6px;
+  padding: 18px 22px;
+  position: relative;
+  /* 宣纸纹理 */
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0px, transparent 2.5em,
+      rgba(184,154,83,0.015) 2.5em, rgba(184,154,83,0.015) calc(2.5em + 1px)),
+    linear-gradient(to bottom, rgba(184,154,83,0.03) 0%, transparent 30px),
+    linear-gradient(to bottom, #1a1612 0%, #15120e 100%);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(184,154,83,0.1);
+}
+.resource-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold-500) 20%, var(--gold-400) 50%, var(--gold-500) 80%, transparent 100%);
+}
+
+.rc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.rc-title {
+  font-size: 16px;
+  color: var(--gold-400);
+  letter-spacing: 0.2em;
+  font-weight: 600;
+}
+.rc-subtitle {
+  font-size: 11px;
+  color: var(--color-foreground-muted);
+  letter-spacing: 0.1em;
+}
+
+.rc-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.rc-group {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(184,154,83,0.15);
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+.rc-group-label {
+  font-size: 11px;
+  color: var(--gold-400);
+  letter-spacing: 0.3em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(184,154,83,0.2);
+  text-align: center;
+}
+
+.rc-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+.rc-row-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-foreground-secondary);
+}
+.rc-row-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-400);
+  opacity: 0.85;
+}
+.rc-row-value {
+  font-size: 15px;
+  color: var(--color-foreground);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.rc-row-value.neg {
+  color: var(--vermillion-300);
+}
+.rc-row-value.neg::before {
+  content: "⚠";
+  font-size: 11px;
+  margin-right: 4px;
+  opacity: 0.7;
+}
+.rc-row-unit {
+  font-size: 10px;
+  color: var(--color-foreground-muted);
+  margin-left: 2px;
+  opacity: 0.7;
+}
+
+/* 状态组内的条状可视化（名望/健康/压力） */
+.rc-stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.rc-stat-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--gold-400);
+  opacity: 0.9;
+}
+.rc-stat-label {
+  width: 32px;
+  font-size: 12px;
+  color: var(--color-foreground-secondary);
+  flex-shrink: 0;
+}
+.rc-stat-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.rc-stat-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.rc-stat-fill.health { background: linear-gradient(90deg, var(--vermillion-400), var(--green-400)); }
+.rc-stat-fill.stress-low { background: var(--celadon-400); }
+.rc-stat-fill.stress-mid { background: var(--gold-400); }
+.rc-stat-fill.stress-high { background: var(--vermillion-400); }
+.rc-stat-fill.fame-pos { background: var(--celadon-400); }
+.rc-stat-fill.fame-neg { background: var(--vermillion-400); }
+.rc-stat-track.bidirectional {
+  position: relative;
+}
+.rc-stat-track.bidirectional::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 0;
+  width: 1px; height: 100%;
+  background: rgba(255,255,255,0.2);
+}
+.rc-stat-value {
+  width: 42px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--color-foreground);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.rc-stat-value.neg { color: var(--vermillion-300); }
+
+/* 贤能（累积型，显示阶名 + 本阶进度） */
+.rc-xian-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rc-xian-tier {
+  font-size: 11px;
+  color: var(--gold-300);
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+.rc-xian-progress {
+  height: 3px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.rc-xian-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-500), var(--gold-300));
+  border-radius: 2px;
+}
+
+/* ============================================================
+   变体二：紧凑横条（侧栏悬浮 / 顶栏附近）
+   ============================================================ */
+.resource-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  background: linear-gradient(to bottom, rgba(26,22,18,0.95), rgba(21,18,14,0.95));
+  border: 1px solid rgba(184,154,83,0.3);
+  border-radius: 4px;
+  font-family: inherit;
+  color: var(--color-foreground);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.rs-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
+}
+.rs-group-label {
+  font-size: 9px;
+  color: var(--gold-500);
+  letter-spacing: 0.15em;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+.rs-items {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.rs-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.rs-item-icon { width: 13px; height: 13px; color: var(--gold-400); opacity: 0.8; flex-shrink: 0; }
+.rs-item-value { color: var(--color-foreground); font-weight: 500; }
+.rs-item-value.neg { color: var(--vermillion-300); }
+
+.rs-divider {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(to bottom, transparent, rgba(184,154,83,0.3), transparent);
+}
+
+.rs-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  background: rgba(184,154,83,0.05);
+  border: 1px solid rgba(184,154,83,0.15);
+  border-radius: 10px;
+  font-size: 11px;
+}
+.rs-stat-pill.warning { border-color: rgba(192,64,48,0.4); background: rgba(192,64,48,0.08); }
+.rs-stat-pill-label { color: var(--color-foreground-muted); font-size: 10px; }
+.rs-stat-pill-value { color: var(--color-foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rs-stat-pill-value.neg { color: var(--vermillion-300); }
+
+.demo-section {
+  margin-bottom: 36px;
+}
+
+/* 多卡并列展示 */
+.variant-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     变体一：完整卡片（角色详情面板专用）
+     ============================================================ -->
+<div class="demo-section">
+<div class="page-label">变体一 · 角色详情面板（完整卡片）</div>
+
+<div class="resource-card">
+  <div class="rc-header">
+    <div class="rc-title">〔 资 源 〕</div>
+    <div class="rc-subtitle">江南知府 · 王某 · 正四品</div>
+  </div>
+  <div class="rc-body">
+    <!-- 左：公库 + 私产 -->
+    <div>
+      <div class="rc-group" style="margin-bottom:12px;">
+        <div class="rc-group-label">公 库</div>
+        <div class="rc-rows">
+          <div class="rc-row">
+            <div class="rc-row-label">
+              <span class="rc-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg>
+              </span>
+              钱
+            </div>
+            <div>
+              <span class="rc-row-value">12.0万</span>
+              <span class="rc-row-unit">贯</span>
+            </div>
+          </div>
+          <div class="rc-row">
+            <div class="rc-row-label">
+              <span class="rc-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 10C8.5 10 6 8.5 5 6"/><path d="M12 10C15.5 10 18 8.5 19 6"/><path d="M12 14C8.5 14 6 12.5 5 10"/><path d="M12 14C15.5 14 18 12.5 19 10"/><path d="M12 18C8.5 18 6 16.5 5 14"/><path d="M12 18C15.5 18 18 16.5 19 14"/></svg>
+              </span>
+              粮
+            </div>
+            <div>
+              <span class="rc-row-value">17.8万</span>
+              <span class="rc-row-unit">石</span>
+            </div>
+          </div>
+          <div class="rc-row">
+            <div class="rc-row-label">
+              <span class="rc-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 7Q12 4 20 7L20 9Q12 6 4 9Z"/><path d="M4 11Q12 8 20 11L20 13Q12 10 4 13Z"/><path d="M4 15Q12 12 20 15L20 17Q12 14 4 17Z"/></svg>
+              </span>
+              布
+            </div>
+            <div>
+              <span class="rc-row-value">320</span>
+              <span class="rc-row-unit">匹</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rc-group">
+        <div class="rc-group-label">私 产</div>
+        <div class="rc-rows">
+          <div class="rc-row">
+            <div class="rc-row-label">
+              <span class="rc-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg>
+              </span>
+              钱
+            </div>
+            <div>
+              <span class="rc-row-value neg">1.2万</span>
+              <span class="rc-row-unit">贯</span>
+            </div>
+          </div>
+          <div class="rc-row">
+            <div class="rc-row-label">
+              <span class="rc-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 10C8.5 10 6 8.5 5 6"/><path d="M12 10C15.5 10 18 8.5 19 6"/><path d="M12 14C8.5 14 6 12.5 5 10"/><path d="M12 14C15.5 14 18 12.5 19 10"/><path d="M12 18C8.5 18 6 16.5 5 14"/><path d="M12 18C15.5 18 18 16.5 19 14"/></svg>
+              </span>
+              粮
+            </div>
+            <div>
+              <span class="rc-row-value">4,530</span>
+              <span class="rc-row-unit">石</span>
+            </div>
+          </div>
+          <div class="rc-row">
+            <div class="rc-row-label">
+              <span class="rc-row-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 7Q12 4 20 7L20 9Q12 6 4 9Z"/><path d="M4 11Q12 8 20 11L20 13Q12 10 4 13Z"/><path d="M4 15Q12 12 20 15L20 17Q12 14 4 17Z"/></svg>
+              </span>
+              布
+            </div>
+            <div>
+              <span class="rc-row-value">180</span>
+              <span class="rc-row-unit">匹</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：状态 -->
+    <div class="rc-group">
+      <div class="rc-group-label">品 行 状 态</div>
+
+      <!-- 名望（双向条） -->
+      <div class="rc-stat-bar">
+        <span class="rc-stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="4" width="14" height="16" rx="1"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+        </span>
+        <span class="rc-stat-label">名望</span>
+        <div class="rc-stat-track bidirectional">
+          <div class="rc-stat-fill fame-pos" style="width:18%; margin-left:50%;"></div>
+        </div>
+        <span class="rc-stat-value">+36</span>
+      </div>
+
+      <!-- 健康 -->
+      <div class="rc-stat-bar">
+        <span class="rc-stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20s-7-4.5-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.5-7 10-7 10z"/></svg>
+        </span>
+        <span class="rc-stat-label">健康</span>
+        <div class="rc-stat-track">
+          <div class="rc-stat-fill health" style="width:70%;"></div>
+        </div>
+        <span class="rc-stat-value">70</span>
+      </div>
+
+      <!-- 压力 -->
+      <div class="rc-stat-bar">
+        <span class="rc-stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12c1.5-3 5.5-5 7-5s5.5 2 7 5M12 7v10M8 17h8"/></svg>
+        </span>
+        <span class="rc-stat-label">压力</span>
+        <div class="rc-stat-track">
+          <div class="rc-stat-fill stress-high" style="width:85%;"></div>
+        </div>
+        <span class="rc-stat-value">85</span>
+      </div>
+
+      <!-- 贤能（累积型，数值+阶名） -->
+      <div class="rc-stat-bar rc-xian-bar">
+        <span class="rc-stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4l2.5 5 5.5.8-4 3.9.9 5.5L12 16.5 7.1 19.2 8 13.7 4 9.8l5.5-.8z"/></svg>
+        </span>
+        <span class="rc-stat-label">贤能</span>
+        <div class="rc-xian-display" title="地方重臣（已累积 158，距朝廷要员还需 192）">
+          <div class="rc-xian-tier">地方重臣</div>
+          <div class="rc-xian-progress"><div class="rc-xian-progress-fill" style="width:4%;"></div></div>
+        </div>
+        <span class="rc-stat-value">158</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================
+     变体二：紧凑横条（侧栏/悬浮/顶栏附近）
+     ============================================================ -->
+<div class="demo-section">
+<div class="page-label">变体二 · 侧栏悬浮 / 顶栏紧凑横条</div>
+
+<div class="resource-strip">
+  <div class="rs-group">
+    <div class="rs-group-label">公 库</div>
+    <div class="rs-items">
+      <span class="rs-item">
+        <svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg>
+        <span class="rs-item-value">12万</span>
+      </span>
+      <span class="rs-item">
+        <svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/><path d="M12 16C9 16 6.5 14.5 5.5 12.5"/><path d="M12 16C15 16 17.5 14.5 18.5 12.5"/></svg>
+        <span class="rs-item-value">17.8万</span>
+      </span>
+      <span class="rs-item">
+        <svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 8Q12 5 20 8L20 10Q12 7 4 10Z"/><path d="M4 13Q12 10 20 13L20 15Q12 12 4 15Z"/></svg>
+        <span class="rs-item-value">320</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="rs-divider"></div>
+
+  <div class="rs-group">
+    <div class="rs-group-label">私 产</div>
+    <div class="rs-items">
+      <span class="rs-item">
+        <svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg>
+        <span class="rs-item-value neg">-1.2万</span>
+      </span>
+      <span class="rs-item">
+        <svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/><path d="M12 16C9 16 6.5 14.5 5.5 12.5"/><path d="M12 16C15 16 17.5 14.5 18.5 12.5"/></svg>
+        <span class="rs-item-value">4,530</span>
+      </span>
+      <span class="rs-item">
+        <svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 8Q12 5 20 8L20 10Q12 7 4 10Z"/><path d="M4 13Q12 10 20 13L20 15Q12 12 4 15Z"/></svg>
+        <span class="rs-item-value">180</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="rs-divider"></div>
+
+  <span class="rs-stat-pill">
+    <span class="rs-stat-pill-label">名</span>
+    <span class="rs-stat-pill-value">+36</span>
+  </span>
+  <span class="rs-stat-pill">
+    <span class="rs-stat-pill-label">健</span>
+    <span class="rs-stat-pill-value">70</span>
+  </span>
+  <span class="rs-stat-pill warning">
+    <span class="rs-stat-pill-label">压</span>
+    <span class="rs-stat-pill-value">85</span>
+  </span>
+  <span class="rs-stat-pill" title="地方重臣">
+    <span class="rs-stat-pill-label">贤</span>
+    <span class="rs-stat-pill-value">158</span>
+  </span>
+</div>
+</div>
+
+<!-- 各种数据情况演示 -->
+<div class="demo-section">
+<div class="page-label">变体三 · 多状态示例（不同角色）</div>
+
+<div class="variant-grid">
+
+<!-- 穷县令（两者都近于零） -->
+<div class="resource-strip" style="flex-wrap:wrap;max-width:640px;">
+  <div class="rs-group">
+    <div class="rs-group-label">公 库</div>
+    <div class="rs-items">
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="rs-item-value">800</span></span>
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/><path d="M12 16C9 16 6.5 14.5 5.5 12.5"/><path d="M12 16C15 16 17.5 14.5 18.5 12.5"/></svg><span class="rs-item-value">1,200</span></span>
+    </div>
+  </div>
+  <div class="rs-divider"></div>
+  <div class="rs-group">
+    <div class="rs-group-label">私 产</div>
+    <div class="rs-items">
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="rs-item-value neg">-80</span></span>
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/></svg><span class="rs-item-value">15</span></span>
+    </div>
+  </div>
+  <div class="rs-divider"></div>
+  <span class="rs-stat-pill"><span class="rs-stat-pill-label">名</span><span class="rs-stat-pill-value">+12</span></span>
+  <span class="rs-stat-pill" title="初入仕途"><span class="rs-stat-pill-label">贤</span><span class="rs-stat-pill-value">22</span></span>
+  <span class="rs-stat-pill"><span class="rs-stat-pill-label">健</span><span class="rs-stat-pill-value">55</span></span>
+  <span class="rs-stat-pill warning"><span class="rs-stat-pill-label">压</span><span class="rs-stat-pill-value">92</span></span>
+</div>
+
+<!-- 权臣（各项都高） -->
+<div class="resource-strip" style="flex-wrap:wrap;max-width:640px;">
+  <div class="rs-group">
+    <div class="rs-group-label">公 库</div>
+    <div class="rs-items">
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="rs-item-value">580万</span></span>
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/><path d="M12 16C9 16 6.5 14.5 5.5 12.5"/><path d="M12 16C15 16 17.5 14.5 18.5 12.5"/></svg><span class="rs-item-value">420万</span></span>
+    </div>
+  </div>
+  <div class="rs-divider"></div>
+  <div class="rs-group">
+    <div class="rs-group-label">私 产</div>
+    <div class="rs-items">
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="rs-item-value">320万</span></span>
+      <span class="rs-item"><svg class="rs-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/><path d="M12 16C9 16 6.5 14.5 5.5 12.5"/><path d="M12 16C15 16 17.5 14.5 18.5 12.5"/></svg><span class="rs-item-value">85万</span></span>
+    </div>
+  </div>
+  <div class="rs-divider"></div>
+  <span class="rs-stat-pill warning"><span class="rs-stat-pill-label">名</span><span class="rs-stat-pill-value neg">-45</span></span>
+  <span class="rs-stat-pill" title="朝廷要员"><span class="rs-stat-pill-label">贤</span><span class="rs-stat-pill-value">488</span></span>
+  <span class="rs-stat-pill"><span class="rs-stat-pill-label">健</span><span class="rs-stat-pill-value">62</span></span>
+  <span class="rs-stat-pill"><span class="rs-stat-pill-label">压</span><span class="rs-stat-pill-value">50</span></span>
+</div>
+
+</div>
+</div>
+
+</body>
+</html>
+</content>
+</invoke>

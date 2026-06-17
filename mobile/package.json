@@ -1,0 +1,24 @@
+{
+  "name": "tianming-mobile",
+  "version": "1.3.0",
+  "private": true,
+  "description": "天命 Android/平板 Capacitor 壳 — webDir 指向 ../web，与桌面端共享同一套前端源（移植宪法①一套代码库）",
+  "scripts": {
+    "sync": "cap sync android",
+    "open": "cap open android",
+    "run": "cap run android",
+    "add:android": "cap add android",
+    "doctor": "cap doctor"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.1",
+    "@capacitor/preferences": "^6.0.2",
+    "@capgo/capacitor-updater": "^6.45.10"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.1.2"
+  }
+}

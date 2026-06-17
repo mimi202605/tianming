@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>v3.3·民心皇威重设计 + 9 改进</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-void: #0a0a0f; --gold-bright: #e6c87a; --gold-mid: #b8924e; --gold-dim: #7a5c3a;
+  --vermillion: #c8342e; --vermillion-deep: #8a2018; --vermillion-glow: #e54a3c;
+  --jade: #7a9b6e; --jade-deep: #4a6b40; --celadon: #b8ccae;
+  --ink-faded: #a8a098; --ink-muted: #6a635a; --ink-white: #f4ede0;
+}
+html, body { background: var(--bg-void); color: var(--ink-white); font-family: 'Noto Serif SC', serif; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse 1400px 900px at 20% 15%, rgba(184,146,78,0.04), transparent 60%);
+}
+main { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 56px 36px 120px; }
+
+.hdr { margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid rgba(184,146,78,0.2); }
+.hdr-meta { display: flex; justify-content: space-between; font: 11px/1 'Cinzel', serif; letter-spacing: 0.42em; color: var(--gold-mid); margin-bottom: 22px; }
+.hdr-meta span:first-child { color: var(--vermillion-glow); }
+.hdr h1 {
+  font: 400 64px/1.05 'Ma Shan Zheng', cursive; letter-spacing: 0.14em;
+  background: linear-gradient(135deg, #f4ede0 0%, #e6c87a 40%, #b8924e 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 18px;
+}
+.hdr-desc { font-size: 14.5px; line-height: 1.92; color: var(--ink-faded); max-width: 980px; font-weight: 300; }
+.hdr-desc strong { color: var(--gold-bright); }
+.hdr-desc .fix { color: var(--vermillion-glow); font-weight: 500; }
+
+.delta {
+  margin-top: 22px;
+  padding: 16px 20px;
+  background: rgba(200, 52, 46, 0.1);
+  border-left: 3px solid var(--vermillion);
+}
+.delta-title { font: 500 13px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.28em; color: var(--vermillion-glow); margin-bottom: 10px; }
+.delta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; font-size: 12px; line-height: 1.7; color: var(--ink-faded); }
+.delta-grid b { color: var(--vermillion-glow); font-weight: 500; }
+.delta-grid em { color: var(--gold-bright); font-style: normal; font-weight: 500; }
+
+.section-head {
+  display: flex; align-items: baseline; gap: 22px; margin: 56px 0 24px;
+  padding-bottom: 14px; border-bottom: 1px dashed rgba(184,146,78,0.2);
+}
+.sh-num { font: 36px/1 'Ma Shan Zheng', cursive; color: var(--ink-muted); }
+.sh-title { font: 22px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; color: var(--ink-faded); }
+.sh-tag { margin-left: auto; font: 10px/1 'Cinzel', serif; letter-spacing: 0.34em; color: var(--ink-muted); }
+
+.section-intro { font-size: 13.5px; line-height: 1.88; color: var(--ink-faded); max-width: 960px; margin-bottom: 22px; }
+.section-intro strong { color: var(--gold-bright); }
+
+/* highlight section for redesigned */
+.hero-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 56px;
+}
+
+.hero-card {
+  padding: 28px 28px 22px;
+  background: linear-gradient(180deg, rgba(40, 16, 8, 0.78), rgba(15, 8, 4, 0.86));
+  border: 2px solid var(--vermillion);
+  position: relative;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: -8px;
+  width: 20px; height: 20px;
+  border-top: 2px solid var(--gold-bright);
+  border-left: 2px solid var(--gold-bright);
+}
+.hero-card::after {
+  content: '';
+  position: absolute;
+  right: -8px; bottom: -8px;
+  width: 20px; height: 20px;
+  border-bottom: 2px solid var(--gold-bright);
+  border-right: 2px solid var(--gold-bright);
+}
+
+.hero-tag {
+  font: 9px/1 'Cinzel', serif;
+  letter-spacing: 0.42em;
+  color: var(--vermillion-glow);
+  margin-bottom: 12px;
+}
+
+.hero-glyph {
+  height: 160px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border: 1px dashed rgba(245, 218, 130, 0.32);
+}
+
+.hero-name {
+  font: 500 28px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: 0.24em;
+  margin-bottom: 6px;
+}
+
+.hero-old {
+  font: 11px/1 'ZCOOL XiaoWei', serif;
+  color: var(--vermillion-glow);
+  text-align: center;
+  letter-spacing: 0.18em;
+  margin-bottom: 14px;
+  text-decoration: line-through;
+}
+
+.hero-meaning {
+  font: 12.5px/1.78 'Noto Serif SC', serif;
+  color: var(--ink-faded);
+  letter-spacing: 0.02em;
+  padding: 14px 12px 0;
+  border-top: 1px dashed rgba(184, 146, 78, 0.28);
+}
+
+.hero-meaning b { color: var(--gold-bright); font-weight: 500; }
+
+/* improved grid */
+.subgrid { display: grid; gap: 14px; margin-bottom: 36px; }
+.subgrid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.subgrid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+.pal-card {
+  padding: 26px 14px 18px;
+  background: linear-gradient(180deg, rgba(30, 22, 14, 0.78), rgba(12, 9, 7, 0.86));
+  border: 1px solid rgba(184, 146, 78, 0.3);
+  position: relative;
+}
+.pal-card::before {
+  content: '';
+  position: absolute;
+  left: 8px; right: 8px; top: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 218, 130, 0.55), transparent);
+}
+.pal-num { font: 9px/1 'Cinzel', serif; letter-spacing: 0.4em; color: var(--gold-mid); text-align: center; margin-bottom: 10px; }
+.pal-glyph { height: 100px; display: grid; place-items: center; margin-bottom: 14px; }
+.pal-glyph svg { display: block; }
+.pal-name { font: 500 17px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); text-align: center; letter-spacing: 0.22em; margin-bottom: 4px; }
+.pal-key { font: 9px/1 'Cinzel', serif; letter-spacing: 0.32em; color: var(--ink-muted); text-align: center; margin-bottom: 11px; }
+.pal-improve {
+  font: 10.5px/1.62 'Noto Serif SC', serif;
+  color: var(--ink-faded);
+  letter-spacing: 0.02em;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(184, 146, 78, 0.22);
+}
+.pal-improve b { color: var(--celadon); font-weight: 500; }
+
+.context {
+  margin-top: 32px;
+  padding: 26px 28px;
+  background: linear-gradient(180deg, rgba(20, 16, 12, 0.78), rgba(8, 6, 4, 0.86));
+  border: 1px solid rgba(184, 146, 78, 0.28);
+}
+.context-title { font: 500 16px/1 'Ma Shan Zheng', cursive; letter-spacing: 0.22em; color: var(--gold-bright); margin-bottom: 16px; }
+.context-row {
+  display: flex; gap: 8px; padding: 12px 14px;
+  background:
+    linear-gradient(180deg, rgba(41, 32, 23, 0.86), rgba(13, 10, 8, 0.86)),
+    linear-gradient(90deg, rgba(94, 54, 27, 0.22), rgba(0,0,0,.04) 12%, rgba(0,0,0,.04) 88%, rgba(94, 54, 27, 0.22));
+  border: 1px solid rgba(203, 166, 88, 0.36);
+  align-items: stretch;
+}
+.ctx-wide {
+  width: 220px; height: 72px;
+  display: flex; flex-direction: column;
+  padding: 7px 11px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(184, 146, 78, 0.22);
+  flex-shrink: 0;
+}
+.ctx-wide-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ctx-wide-glyph { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
+.ctx-wide-glyph svg { display: block; }
+.ctx-wide-name { font: 500 13px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.18em; }
+.ctx-wide-subs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; }
+.ctx-sub { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ctx-sub-ic { width: 22px; height: 22px; display: grid; place-items: center; flex-shrink: 0; }
+.ctx-sub-ic svg { display: block; }
+.ctx-sub-val { display: flex; flex-direction: column; line-height: 1.06; min-width: 0; }
+.ctx-sub-val b { font: 600 11px/1.1 'Noto Serif SC', serif; color: var(--gold-bright); white-space: nowrap; }
+.ctx-sub-val .sd { font: 500 7px/1 'Noto Serif SC', serif; }
+.ctx-sub-val .sd.up { color: var(--celadon); }
+.ctx-sub-val .sd.dn { color: var(--vermillion-glow); }
+.ctx-sub-val .sd.flat { color: rgba(214, 188, 116, 0.5); }
+.ctx-narrow {
+  width: 100px; height: 72px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 5px;
+  background: rgba(0,0,0,0.14);
+  border: 1px solid rgba(184, 146, 78, 0.22);
+  flex-shrink: 0;
+}
+.ctx-narrow-glyph { width: 36px; height: 36px; display: grid; place-items: center; }
+.ctx-narrow-glyph svg { display: block; }
+.ctx-narrow-body { text-align: center; }
+.ctx-narrow-name { font: 9px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em; color: rgba(221, 202, 155, 0.76); margin-bottom: 2px; }
+.ctx-narrow-val { font: 600 12px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.06em; }
+
+.note-block {
+  margin-top: 32px;
+  padding: 22px 26px;
+  background: rgba(40, 16, 8, 0.5);
+  border-left: 3px solid var(--vermillion);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ink-faded);
+}
+.note-block strong { color: var(--gold-bright); }
+.note-block .fix { color: var(--vermillion-glow); }
+
+</style>
+</head>
+<body>
+<main>
+
+  <section class="hdr">
+    <div class="hdr-meta">
+      <span>v 3.3 · REDESIGN + IMPROVE</span>
+      <span>民 心 / 皇 威 重 做 + 9 改 进</span>
+    </div>
+    <h1>民 心 → 万 民 伞 · 皇 威 → 旒 冕</h1>
+    <p class="hdr-desc">
+      <span class="fix">v3.3</span>·民心 v3.2 用"水田农耕图"——太风景画·不像 metric·改成 <strong>万民伞</strong>
+      (citizens 签名献礼的真历史 artifact·中国唯一"民间送官长"的物质载体)。
+      皇威 v3.2 用"龙旗+虎符"——两不相关之物拼凑·改成 <strong>旒冕</strong> (天子十二旒珠冠·emperor only·最经典御物)。
+      其余 9 件保留 v3.2 骨架·加 <strong>历史细节</strong> (五爪龙 / 红灯笼 / 受命于天刻文 / 砝码"纲"字 / 朱铜钉 / 笔砚等)。
+    </p>
+
+    <div class="delta">
+      <div class="delta-title">v 3.2 → v 3.3 · 11 件 改 动</div>
+      <div class="delta-grid">
+        <div><b>民心</b>·水田农耕 → <em>万民伞 (citizens 签名朱伞)</em></div>
+        <div><b>皇威</b>·龙旗虎符 → <em>旒冕 (12 旒珠冠 + 玉珩)</em></div>
+        <div><b>银 元宝</b>·+ 更明显的<em>双耳鞍</em>·更宽印纹</div>
+        <div><b>钱 铜钱</b>·+ "永樂通寶"<em>4 字方位准确</em>·绳更密</div>
+        <div><b>粮 升斗</b>·+ <em>概 (刮平杖)</em>·散落数粒谷</div>
+        <div><b>布 绢匹</b>·+ <em>五色云纹</em>·朱缠减小不抢主体</div>
+        <div><b>珍 珠玉</b>·+ <em>金兽托</em>·珊瑚分枝更细</div>
+        <div><b>帑廪 库房</b>·+ <em>朱灯笼 + 朱铜钉门</em></div>
+        <div><b>内帑 朱箱</b>·+ <em>真五爪龙</em> (天子专)·+ 中国结</div>
+        <div><b>户口 黄册</b>·+ <em>散落竹简 + 笔砚</em>·官印朱泥更稠</div>
+        <div><b>吏治 官秤</b>·+ 砝码刻 <em>"纲常"二字</em>·朱针更显</div>
+        <div><b>皇权 玉玺</b>·+ 真刻 <em>"受命于天既寿永昌"</em></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== HERO PAIR: 民心 + 皇威 重设计 ====== -->
+  <div class="section-head">
+    <span class="sh-num">壹</span>
+    <span class="sh-title">重 设 计 · 民 心 + 皇 威</span>
+    <span class="sh-tag">REDESIGNED · 2 GLYPHS</span>
+  </div>
+
+  <p class="section-intro">
+    民心 = 万民伞 (10000-citizens umbrella·清代真实习俗·百姓为离任清官献的签名伞)·圆筒形 5 层·
+    皇威 = 旒冕 (天子十二旒珠冠·黑底金缀·两侧玉珩)·非帝王不戴。两图 = 真历史 artifact·非通用符号。
+  </p>
+
+  <div class="hero-pair">
+
+    <!-- 民心·万民伞 -->
+    <div class="hero-card">
+      <div class="hero-tag">REDESIGNED · v 3.3</div>
+      <div class="hero-glyph">
+        <svg width="120" height="150" viewBox="0 0 120 150">
+          <defs>
+            <linearGradient id="mx-silk" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f4604a"/>
+              <stop offset="55%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#6a1410"/>
+            </linearGradient>
+            <linearGradient id="mx-pole" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#5a3814"/>
+              <stop offset="50%" stop-color="#c8a050"/>
+              <stop offset="100%" stop-color="#5a3814"/>
+            </linearGradient>
+            <radialGradient id="mx-finial" cx="35%" cy="32%" r="65%">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="60%" stop-color="#c8a050"/>
+              <stop offset="100%" stop-color="#5a3814"/>
+            </radialGradient>
+          </defs>
+
+          <!-- finial (top gold ball) -->
+          <circle cx="60" cy="8" r="5" fill="url(#mx-finial)" stroke="#3a2210" stroke-width="0.5"/>
+          <ellipse cx="58" cy="6" rx="2" ry="1" fill="rgba(255,232,170,0.65)"/>
+          <line x1="60" y1="13" x2="60" y2="18" stroke="#3a2210" stroke-width="0.7"/>
+
+          <!-- top tier (smallest) -->
+          <path d="M 42 22 Q 60 14 78 22 L 76 28 L 44 28 Z" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.6"/>
+          <path d="M 42 22 Q 60 14 78 22" stroke="var(--gold-bright)" stroke-width="0.8" fill="none"/>
+          <path d="M 44 28 L 76 28" stroke="var(--gold-bright)" stroke-width="0.5" fill="none"/>
+
+          <!-- tier 2 -->
+          <path d="M 36 28 L 84 28 L 80 38 L 40 38 Z" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.6"/>
+          <path d="M 36 28 L 84 28" stroke="var(--gold-bright)" stroke-width="0.7" fill="none"/>
+          <path d="M 40 38 L 80 38" stroke="var(--gold-bright)" stroke-width="0.5" fill="none"/>
+          <!-- tier 2 names (small dashes representing signatures) -->
+          <g stroke="rgba(245,218,130,0.65)" stroke-width="0.5" fill="none">
+            <line x1="44" y1="32" x2="48" y2="32"/>
+            <line x1="52" y1="32" x2="56" y2="32"/>
+            <line x1="60" y1="32" x2="64" y2="32"/>
+            <line x1="68" y1="32" x2="72" y2="32"/>
+            <line x1="76" y1="32" x2="78" y2="32"/>
+            <line x1="44" y1="35" x2="46" y2="35"/>
+            <line x1="50" y1="35" x2="54" y2="35"/>
+            <line x1="58" y1="35" x2="62" y2="35"/>
+            <line x1="66" y1="35" x2="70" y2="35"/>
+            <line x1="74" y1="35" x2="78" y2="35"/>
+          </g>
+
+          <!-- tier 3 (main, with embroidery) -->
+          <path d="M 28 38 L 92 38 L 86 54 L 34 54 Z" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.7"/>
+          <path d="M 28 38 L 92 38" stroke="var(--gold-bright)" stroke-width="0.9" fill="none"/>
+          <path d="M 34 54 L 86 54" stroke="var(--gold-bright)" stroke-width="0.6" fill="none"/>
+          <!-- center 万民伞 character -->
+          <text x="60" y="48" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="var(--gold-bright)" font-weight="800">萬民</text>
+          <!-- side signatures -->
+          <g stroke="rgba(245,218,130,0.62)" stroke-width="0.45" fill="none">
+            <line x1="34" y1="46" x2="40" y2="46"/>
+            <line x1="34" y1="50" x2="40" y2="50"/>
+            <line x1="80" y1="46" x2="86" y2="46"/>
+            <line x1="80" y1="50" x2="86" y2="50"/>
+            <line x1="32" y1="42" x2="36" y2="42"/>
+            <line x1="84" y1="42" x2="88" y2="42"/>
+          </g>
+
+          <!-- tier 4 -->
+          <path d="M 22 54 L 98 54 L 92 68 L 28 68 Z" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.7"/>
+          <path d="M 22 54 L 98 54" stroke="var(--gold-bright)" stroke-width="0.8" fill="none"/>
+          <path d="M 28 68 L 92 68" stroke="var(--gold-bright)" stroke-width="0.6" fill="none"/>
+          <!-- many signatures (tier 4 is biggest) -->
+          <g stroke="rgba(245,218,130,0.62)" stroke-width="0.45" fill="none">
+            <line x1="26" y1="58" x2="32" y2="58"/>
+            <line x1="36" y1="58" x2="42" y2="58"/>
+            <line x1="46" y1="58" x2="52" y2="58"/>
+            <line x1="56" y1="58" x2="62" y2="58"/>
+            <line x1="66" y1="58" x2="72" y2="58"/>
+            <line x1="76" y1="58" x2="82" y2="58"/>
+            <line x1="86" y1="58" x2="92" y2="58"/>
+            <line x1="28" y1="62" x2="33" y2="62"/>
+            <line x1="38" y1="62" x2="44" y2="62"/>
+            <line x1="48" y1="62" x2="54" y2="62"/>
+            <line x1="58" y1="62" x2="64" y2="62"/>
+            <line x1="68" y1="62" x2="74" y2="62"/>
+            <line x1="78" y1="62" x2="84" y2="62"/>
+            <line x1="88" y1="62" x2="92" y2="62"/>
+            <line x1="26" y1="65" x2="30" y2="65"/>
+            <line x1="34" y1="65" x2="42" y2="65"/>
+            <line x1="46" y1="65" x2="52" y2="65"/>
+            <line x1="56" y1="65" x2="62" y2="65"/>
+            <line x1="66" y1="65" x2="72" y2="65"/>
+            <line x1="80" y1="65" x2="88" y2="65"/>
+          </g>
+
+          <!-- tier 5 (bottom largest tier with tassels) -->
+          <path d="M 14 68 L 106 68 L 98 84 L 22 84 Z" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.8"/>
+          <path d="M 14 68 L 106 68" stroke="var(--gold-bright)" stroke-width="0.8" fill="none"/>
+          <!-- swag/scallop bottom of tier 5 -->
+          <path d="M 22 84 Q 30 88 38 84 Q 46 88 54 84 Q 62 88 70 84 Q 78 88 86 84 Q 94 88 98 84" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.6"/>
+          <!-- center embroidered 伞 char or dragon motif on tier 5 -->
+          <g stroke="var(--gold-bright)" stroke-width="0.5" fill="none">
+            <path d="M 38 74 Q 42 72 46 74 Q 50 76 54 74 Q 58 72 62 74 Q 66 76 70 74 Q 74 72 78 74 Q 82 76 86 74"/>
+            <circle cx="60" cy="76" r="2" fill="rgba(245,218,130,0.32)"/>
+          </g>
+
+          <!-- tassels hanging from each tier -->
+          <g stroke="var(--gold-bright)" stroke-width="0.6" fill="none">
+            <!-- tier 2 tassels (2) -->
+            <line x1="40" y1="38" x2="38" y2="46"/>
+            <line x1="80" y1="38" x2="82" y2="46"/>
+            <!-- tier 3 tassels (4) -->
+            <line x1="34" y1="54" x2="32" y2="64"/>
+            <line x1="48" y1="54" x2="48" y2="64"/>
+            <line x1="72" y1="54" x2="72" y2="64"/>
+            <line x1="86" y1="54" x2="88" y2="64"/>
+            <!-- tier 4 tassels (6) -->
+            <line x1="28" y1="68" x2="26" y2="80"/>
+            <line x1="42" y1="68" x2="42" y2="80"/>
+            <line x1="56" y1="68" x2="56" y2="80"/>
+            <line x1="64" y1="68" x2="64" y2="80"/>
+            <line x1="78" y1="68" x2="78" y2="80"/>
+            <line x1="92" y1="68" x2="94" y2="80"/>
+          </g>
+          <!-- tassel tips (small balls) -->
+          <g fill="var(--gold-bright)">
+            <circle cx="38" cy="47" r="1.2"/>
+            <circle cx="82" cy="47" r="1.2"/>
+            <circle cx="32" cy="65" r="1.2"/>
+            <circle cx="48" cy="65" r="1.2"/>
+            <circle cx="72" cy="65" r="1.2"/>
+            <circle cx="88" cy="65" r="1.2"/>
+            <circle cx="26" cy="81" r="1.4"/>
+            <circle cx="42" cy="81" r="1.4"/>
+            <circle cx="56" cy="81" r="1.4"/>
+            <circle cx="64" cy="81" r="1.4"/>
+            <circle cx="78" cy="81" r="1.4"/>
+            <circle cx="94" cy="81" r="1.4"/>
+          </g>
+
+          <!-- pole below umbrella -->
+          <rect x="58" y="84" width="4" height="60" fill="url(#mx-pole)" stroke="#1a0c04" stroke-width="0.3"/>
+          <!-- pole ring -->
+          <rect x="56" y="100" width="8" height="3" fill="#3a2208" stroke="rgba(245,218,130,0.55)" stroke-width="0.3"/>
+          <rect x="56" y="120" width="8" height="3" fill="#3a2208" stroke="rgba(245,218,130,0.55)" stroke-width="0.3"/>
+          <!-- pole base spike -->
+          <path d="M 56 144 L 64 144 L 60 150 Z" fill="#3a2208" stroke="#1a0c04" stroke-width="0.4"/>
+
+          <!-- ground shadow -->
+          <ellipse cx="60" cy="148" rx="14" ry="2" fill="rgba(0,0,0,0.5)"/>
+        </svg>
+      </div>
+      <div class="hero-name">民 心</div>
+      <div class="hero-old">v3.2·水田农耕图</div>
+      <div class="hero-meaning">
+        <b>万民伞</b>·清代真习俗——百姓为<b>离任清官</b>献伞·伞面绣士绅签名 + 朱印·象征"民心所向"。
+        每层伞角缀<b>金穗</b>·伞顶<b>金葫芦</b>。色越鲜艳 = 民心越炽热·伞穗完整 = 民心未散·
+        揭竿段 (危) 伞被推倒 + 红水浸·变体可直接读图。
+      </div>
+    </div>
+
+    <!-- 皇威·旒冕 -->
+    <div class="hero-card">
+      <div class="hero-tag">REDESIGNED · v 3.3</div>
+      <div class="hero-glyph">
+        <svg width="120" height="150" viewBox="0 0 120 150">
+          <defs>
+            <linearGradient id="hw-mian" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2a1a0a"/>
+              <stop offset="60%" stop-color="#0a0604"/>
+              <stop offset="100%" stop-color="#000000"/>
+            </linearGradient>
+            <linearGradient id="hw-cap" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3a1a08"/>
+              <stop offset="50%" stop-color="#1a0604"/>
+              <stop offset="100%" stop-color="#0a0200"/>
+            </linearGradient>
+            <radialGradient id="hw-jade" cx="32%" cy="30%" r="60%">
+              <stop offset="0%" stop-color="#e8f4d8"/>
+              <stop offset="50%" stop-color="#7a9b6e"/>
+              <stop offset="100%" stop-color="#2a4828"/>
+            </radialGradient>
+          </defs>
+
+          <!-- mian-ban (top flat board) - rectangular black plaque -->
+          <!-- board shadow -->
+          <ellipse cx="60" cy="50" rx="48" ry="3" fill="rgba(0,0,0,0.55)"/>
+          <!-- board top -->
+          <path d="M 12 18 L 108 18 L 104 26 L 16 26 Z" fill="#0a0604" stroke="var(--gold-bright)" stroke-width="0.7"/>
+          <!-- board front face -->
+          <path d="M 16 26 L 104 26 L 104 50 L 16 50 Z" fill="url(#hw-mian)" stroke="#000000" stroke-width="0.8"/>
+          <!-- board side detail (curved up-turned ends) -->
+          <path d="M 12 18 Q 8 22 8 28 L 16 28 L 16 26 Z" fill="#0a0604" stroke="var(--gold-bright)" stroke-width="0.6"/>
+          <path d="M 108 18 Q 112 22 112 28 L 104 28 L 104 26 Z" fill="#0a0604" stroke="var(--gold-bright)" stroke-width="0.6"/>
+          <!-- gold trim on board edge -->
+          <path d="M 16 26 L 104 26" stroke="var(--gold-bright)" stroke-width="1" fill="none"/>
+          <path d="M 16 50 L 104 50" stroke="var(--gold-bright)" stroke-width="0.7" fill="none"/>
+          <!-- center board dragon (very faint) -->
+          <g stroke="rgba(245,218,130,0.5)" stroke-width="0.4" fill="none">
+            <path d="M 38 36 Q 42 32 48 34 Q 54 36 60 34 Q 66 32 72 34 Q 78 36 82 34"/>
+            <circle cx="60" cy="36" r="1.5" fill="rgba(245,218,130,0.32)"/>
+          </g>
+
+          <!-- crown body (cap) below the board -->
+          <path d="M 22 50 Q 22 84 32 90 L 88 90 Q 98 84 98 50 Z" fill="url(#hw-cap)" stroke="#000000" stroke-width="0.8"/>
+          <!-- cap front band (gold) -->
+          <path d="M 22 50 Q 22 72 30 78 L 90 78 Q 98 72 98 50" fill="none" stroke="var(--gold-bright)" stroke-width="1"/>
+          <!-- cap second band -->
+          <path d="M 24 64 Q 24 76 32 82 L 88 82 Q 96 76 96 64" fill="none" stroke="rgba(245,218,130,0.55)" stroke-width="0.5"/>
+          <!-- cap floral pattern -->
+          <g fill="rgba(245,218,130,0.6)" stroke="rgba(80,50,22,0.6)" stroke-width="0.3">
+            <circle cx="40" cy="68" r="2"/>
+            <circle cx="60" cy="70" r="2.4"/>
+            <circle cx="80" cy="68" r="2"/>
+          </g>
+          <!-- gold rim around cap bottom -->
+          <path d="M 30 90 L 90 90" stroke="var(--gold-bright)" stroke-width="0.8"/>
+
+          <!-- 12 strands of beads hanging front (旒) -->
+          <g>
+            <!-- bead strings - 12 strands evenly spaced -->
+            <!-- string positions: 18, 25, 32, 39, 46, 53, 60, 67, 74, 81, 88, 95 -->
+            <!-- each string: white-red-jade-white-red-jade-white-red-jade pattern -->
+            <g transform="translate(20 26)">
+              <line x1="0" y1="0" x2="-2" y2="40" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="-0.4" cy="6" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-0.7" cy="12" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-1" cy="18" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-1.3" cy="24" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-1.6" cy="30" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-1.9" cy="36" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(28 26)">
+              <line x1="0" y1="0" x2="-1" y2="44" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="-0.2" cy="6" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-0.4" cy="12" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-0.5" cy="18" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-0.6" cy="24" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-0.7" cy="30" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-0.8" cy="36" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="-0.9" cy="42" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(36 26)">
+              <line x1="0" y1="0" x2="0" y2="48" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0" cy="6" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="12" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="18" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="24" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="30" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="36" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="42" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="48" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(44 26)">
+              <line x1="0" y1="0" x2="0" y2="52" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0" cy="6" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="13" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="20" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="27" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="34" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="41" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="48" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(52 26)">
+              <line x1="0" y1="0" x2="0" y2="56" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0" cy="6" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="13" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="20" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="27" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="34" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="41" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="48" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="55" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(60 26)">
+              <line x1="0" y1="0" x2="0" y2="58" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0" cy="6" r="1.6" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="13" r="1.6" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="20" r="1.6" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="27" r="1.6" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="34" r="1.6" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="41" r="1.6" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="48" r="1.6" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="55" r="1.6" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(68 26)">
+              <line x1="0" y1="0" x2="0" y2="56" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0" cy="6" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="13" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="20" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="27" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="34" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="41" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="48" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="55" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(76 26)">
+              <line x1="0" y1="0" x2="0" y2="52" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0" cy="6" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="13" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="20" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="27" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="34" r="1.5" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="41" r="1.5" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="48" r="1.5" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(84 26)">
+              <line x1="0" y1="0" x2="0" y2="48" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0" cy="6" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="12" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="18" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="24" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="30" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="36" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="42" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0" cy="48" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(92 26)">
+              <line x1="0" y1="0" x2="1" y2="44" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0.2" cy="6" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0.4" cy="12" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0.5" cy="18" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0.6" cy="24" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0.7" cy="30" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0.8" cy="36" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0.9" cy="42" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+            <g transform="translate(100 26)">
+              <line x1="0" y1="0" x2="2" y2="40" stroke="rgba(60,40,20,0.85)" stroke-width="0.5"/>
+              <circle cx="0.4" cy="6" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="0.7" cy="12" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="1" cy="18" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="1.3" cy="24" r="1.4" fill="#f4e8d8" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="1.6" cy="30" r="1.4" fill="#c8342e" stroke="#1a0604" stroke-width="0.2"/>
+              <circle cx="1.9" cy="36" r="1.4" fill="url(#hw-jade)" stroke="#1a0604" stroke-width="0.2"/>
+            </g>
+          </g>
+
+          <!-- 玉珩 (jade pendant on cap side) -->
+          <g transform="translate(20 70)">
+            <ellipse cx="0" cy="0" rx="5" ry="3.5" fill="url(#hw-jade)" stroke="#2a4828" stroke-width="0.5"/>
+            <circle cx="0" cy="0" r="1" fill="#1a0e04"/>
+            <line x1="0" y1="3.5" x2="-2" y2="14" stroke="var(--vermillion-deep)" stroke-width="0.8"/>
+            <line x1="0" y1="3.5" x2="0" y2="16" stroke="var(--vermillion-deep)" stroke-width="0.8"/>
+            <line x1="0" y1="3.5" x2="2" y2="14" stroke="var(--vermillion-deep)" stroke-width="0.8"/>
+          </g>
+          <g transform="translate(100 70)">
+            <ellipse cx="0" cy="0" rx="5" ry="3.5" fill="url(#hw-jade)" stroke="#2a4828" stroke-width="0.5"/>
+            <circle cx="0" cy="0" r="1" fill="#1a0e04"/>
+            <line x1="0" y1="3.5" x2="-2" y2="14" stroke="var(--vermillion-deep)" stroke-width="0.8"/>
+            <line x1="0" y1="3.5" x2="0" y2="16" stroke="var(--vermillion-deep)" stroke-width="0.8"/>
+            <line x1="0" y1="3.5" x2="2" y2="14" stroke="var(--vermillion-deep)" stroke-width="0.8"/>
+          </g>
+
+          <!-- 充耳 (jade plug at temples - 2) -->
+          <circle cx="20" cy="60" r="1.5" fill="url(#hw-jade)" stroke="#2a4828" stroke-width="0.3"/>
+          <circle cx="100" cy="60" r="1.5" fill="url(#hw-jade)" stroke="#2a4828" stroke-width="0.3"/>
+
+          <!-- back beads (smaller, suggesting depth) -->
+          <g opacity="0.65">
+            <!-- 12 strands also at back (visible above board) -->
+            <g transform="translate(20 18)">
+              <line x1="0" y1="0" x2="-2" y2="-8" stroke="rgba(60,40,20,0.5)" stroke-width="0.4"/>
+              <circle cx="-1" cy="-4" r="0.8" fill="#c8a050" stroke="#1a0604" stroke-width="0.15"/>
+            </g>
+            <g transform="translate(36 18)"><line x1="0" y1="0" x2="0" y2="-6" stroke="rgba(60,40,20,0.5)" stroke-width="0.4"/><circle cx="0" cy="-3" r="0.8" fill="#c8a050" stroke="#1a0604" stroke-width="0.15"/></g>
+            <g transform="translate(52 18)"><line x1="0" y1="0" x2="0" y2="-6" stroke="rgba(60,40,20,0.5)" stroke-width="0.4"/><circle cx="0" cy="-3" r="0.8" fill="#c8a050" stroke="#1a0604" stroke-width="0.15"/></g>
+            <g transform="translate(68 18)"><line x1="0" y1="0" x2="0" y2="-6" stroke="rgba(60,40,20,0.5)" stroke-width="0.4"/><circle cx="0" cy="-3" r="0.8" fill="#c8a050" stroke="#1a0604" stroke-width="0.15"/></g>
+            <g transform="translate(84 18)"><line x1="0" y1="0" x2="0" y2="-6" stroke="rgba(60,40,20,0.5)" stroke-width="0.4"/><circle cx="0" cy="-3" r="0.8" fill="#c8a050" stroke="#1a0604" stroke-width="0.15"/></g>
+            <g transform="translate(100 18)"><line x1="0" y1="0" x2="2" y2="-8" stroke="rgba(60,40,20,0.5)" stroke-width="0.4"/><circle cx="1" cy="-4" r="0.8" fill="#c8a050" stroke="#1a0604" stroke-width="0.15"/></g>
+          </g>
+
+          <!-- bottom shadow -->
+          <ellipse cx="60" cy="95" rx="42" ry="2" fill="rgba(0,0,0,0.65)"/>
+        </svg>
+      </div>
+      <div class="hero-name">皇 威</div>
+      <div class="hero-old">v3.2·龙旗虎符</div>
+      <div class="hero-meaning">
+        <b>旒冕</b>·天子十二旒珠冠·黑底金缀。十二旒 (前后各 12 串) 各 5 珠 (白珍珠/朱玛瑙/玉绿)·
+        两侧玉珩 + 朱穗。<b>非帝王不戴</b>。状态·威严段珠全 + 板平·暴君段珠散 + 板暗·失威段板倾斜。
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ====== 9 IMPROVED ====== -->
+  <div class="section-head">
+    <span class="sh-num">贰</span>
+    <span class="sh-title">改 进 · 9 件</span>
+    <span class="sh-tag">IMPROVED · v 3.3</span>
+  </div>
+
+  <p class="section-intro">
+    保留 v3.2 骨架·补 <strong>真历史细节</strong>·让每件器物有真朝代符号。
+  </p>
+
+  <div class="subgrid cols-5">
+
+    <!-- 银 元宝 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">子·壹</div>
+      <div class="pal-glyph">
+        <svg width="80" height="56" viewBox="0 0 80 56">
+          <defs>
+            <linearGradient id="v33-yin-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f8f4ec"/>
+              <stop offset="30%" stop-color="#e0d8c8"/>
+              <stop offset="65%" stop-color="#9c9488"/>
+              <stop offset="100%" stop-color="#3a3428"/>
+            </linearGradient>
+            <radialGradient id="v33-yin-shine" cx="50%" cy="14%" r="60%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.78)"/>
+              <stop offset="60%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+          </defs>
+          <!-- left ear (raised end) -->
+          <path d="M 4 26 Q 2 14 8 8 Q 14 4 18 10 Q 16 16 14 22 Z" fill="url(#v33-yin-body)" stroke="#3a3428" stroke-width="0.7"/>
+          <ellipse cx="11" cy="10" rx="3" ry="1.5" fill="rgba(255,255,255,0.55)"/>
+          <!-- right ear -->
+          <path d="M 76 26 Q 78 14 72 8 Q 66 4 62 10 Q 64 16 66 22 Z" fill="url(#v33-yin-body)" stroke="#3a3428" stroke-width="0.7"/>
+          <ellipse cx="69" cy="10" rx="3" ry="1.5" fill="rgba(255,255,255,0.55)"/>
+          <!-- main saddle body -->
+          <path d="M 8 22 Q 14 18 22 18 L 58 18 Q 66 18 72 22 Q 76 30 74 44 L 70 50 L 10 50 L 6 44 Q 4 30 8 22 Z"
+                fill="url(#v33-yin-body)" stroke="#3a3428" stroke-width="0.8"/>
+          <!-- saddle depression -->
+          <path d="M 14 24 Q 24 20 40 19 Q 56 20 66 24 Q 56 28 40 29 Q 24 28 14 24 Z" fill="rgba(60,52,42,0.46)"/>
+          <!-- top highlight curve -->
+          <path d="M 12 24 Q 24 18 40 17 Q 56 18 68 24" fill="none" stroke="url(#v33-yin-shine)" stroke-width="3" opacity="0.7"/>
+          <!-- inscription panel -->
+          <rect x="22" y="32" width="36" height="11" rx="0.5" fill="rgba(40,32,22,0.22)" stroke="rgba(40,32,22,0.46)" stroke-width="0.4"/>
+          <text x="40" y="40.5" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="7" fill="#3a3428" font-weight="700">五十兩</text>
+          <!-- bottom rim shadow lines -->
+          <path d="M 10 46 L 70 46" stroke="rgba(40,32,22,0.55)" stroke-width="0.5"/>
+          <path d="M 12 49 L 68 49" stroke="rgba(20,16,10,0.4)" stroke-width="0.4"/>
+          <!-- side edge dark -->
+          <path d="M 6 30 Q 6 38 8 44" stroke="rgba(0,0,0,0.32)" stroke-width="0.8" fill="none"/>
+          <path d="M 74 30 Q 74 38 72 44" stroke="rgba(0,0,0,0.32)" stroke-width="0.8" fill="none"/>
+        </svg>
+      </div>
+      <div class="pal-name">银 · 两</div>
+      <div class="pal-key">YIN · LIANG</div>
+      <div class="pal-improve">+ <b>双耳鞍</b> 突出·繁体"五十兩"·更宽印纹</div>
+    </div>
+
+    <!-- 粮 升斗 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">子·贰</div>
+      <div class="pal-glyph">
+        <svg width="78" height="82" viewBox="0 0 78 82">
+          <defs>
+            <linearGradient id="v33-liang-wood" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c89c5a"/>
+              <stop offset="40%" stop-color="#8a6428"/>
+              <stop offset="100%" stop-color="#3a2410"/>
+            </linearGradient>
+            <radialGradient id="v33-liang-grain" cx="50%" cy="40%" r="65%">
+              <stop offset="0%" stop-color="#f0d488"/>
+              <stop offset="50%" stop-color="#d8b870"/>
+              <stop offset="100%" stop-color="#7a5824"/>
+            </radialGradient>
+          </defs>
+          <!-- 概 (leveling stick) -->
+          <line x1="58" y1="14" x2="76" y2="34" stroke="#5a3814" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="76" cy="34" r="1.6" fill="#3a2410"/>
+          <!-- rice stalks -->
+          <g transform="translate(38 28)">
+            <path d="M 0 28 L 0 -18" stroke="#5a4218" stroke-width="0.9" fill="none"/>
+            <ellipse cx="0" cy="-16" rx="2.2" ry="5" fill="#d8b870"/>
+            <ellipse cx="-1.5" cy="-13" rx="1.6" ry="3" fill="#c8a050"/>
+            <ellipse cx="1.5" cy="-13" rx="1.6" ry="3" fill="#c8a050"/>
+            <ellipse cx="-2.5" cy="-9" rx="1.5" ry="2.5" fill="#b89040"/>
+            <ellipse cx="2.5" cy="-9" rx="1.5" ry="2.5" fill="#b89040"/>
+            <path d="M -8 30 L -10 -12" stroke="#5a4218" stroke-width="0.7" fill="none" transform="rotate(-8)"/>
+            <ellipse cx="-11" cy="-11" rx="1.5" ry="3.8" fill="#c8a050"/>
+            <ellipse cx="-12" cy="-8" rx="1.3" ry="2.3" fill="#a88838"/>
+            <path d="M 8 30 L 10 -12" stroke="#5a4218" stroke-width="0.7" fill="none" transform="rotate(8)"/>
+            <ellipse cx="11" cy="-11" rx="1.5" ry="3.8" fill="#c8a050"/>
+            <ellipse cx="12" cy="-8" rx="1.3" ry="2.3" fill="#a88838"/>
+          </g>
+          <!-- grain mound -->
+          <path d="M 16 40 Q 28 28 38 28 Q 48 28 60 40 Q 56 44 38 46 Q 20 44 16 40 Z" fill="url(#v33-liang-grain)" stroke="#6a4818" stroke-width="0.4"/>
+          <g fill="rgba(106,72,24,0.55)">
+            <circle cx="22" cy="38" r="0.8"/><circle cx="28" cy="35" r="0.6"/>
+            <circle cx="34" cy="34" r="0.7"/><circle cx="40" cy="35" r="0.7"/>
+            <circle cx="46" cy="36" r="0.6"/><circle cx="52" cy="38" r="0.6"/>
+            <circle cx="24" cy="42" r="0.5"/><circle cx="30" cy="41" r="0.7"/>
+            <circle cx="38" cy="41" r="0.6"/><circle cx="46" cy="42" r="0.6"/>
+          </g>
+          <!-- spilled grains -->
+          <g fill="#d8b870" stroke="#6a4818" stroke-width="0.2">
+            <ellipse cx="14" cy="48" rx="1.2" ry="0.8"/>
+            <ellipse cx="11" cy="50" rx="1" ry="0.6"/>
+            <ellipse cx="64" cy="48" rx="1.2" ry="0.8"/>
+            <ellipse cx="67" cy="51" rx="1" ry="0.6"/>
+          </g>
+          <!-- bucket -->
+          <path d="M 12 44 L 16 78 L 60 78 L 64 44 Z" fill="url(#v33-liang-wood)" stroke="#2a1808" stroke-width="0.8"/>
+          <path d="M 14 50 L 62 50" stroke="rgba(40,22,8,0.7)" stroke-width="1.4"/>
+          <path d="M 14 64 L 62 64" stroke="rgba(40,22,8,0.7)" stroke-width="1.4"/>
+          <!-- wood grain -->
+          <path d="M 24 44 L 26 78" stroke="rgba(40,22,8,0.4)" stroke-width="0.5"/>
+          <path d="M 38 44 L 38 78" stroke="rgba(40,22,8,0.4)" stroke-width="0.5"/>
+          <path d="M 52 44 L 50 78" stroke="rgba(40,22,8,0.4)" stroke-width="0.5"/>
+          <!-- iron handle ring -->
+          <path d="M 64 56 Q 70 58 70 62 Q 70 66 64 66" fill="none" stroke="#3a2810" stroke-width="2.2"/>
+          <!-- top rim highlight -->
+          <path d="M 12 44 L 64 44" stroke="rgba(255,232,170,0.42)" stroke-width="1"/>
+          <!-- character on bucket -->
+          <text x="38" y="60" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="rgba(40,22,8,0.65)" font-weight="700">官</text>
+        </svg>
+      </div>
+      <div class="pal-name">粮 · 石</div>
+      <div class="pal-key">LIANG · SHI</div>
+      <div class="pal-improve">+ <b>概杖</b>刮平器·散落谷粒·"官"字</div>
+    </div>
+
+    <!-- 布 绢匹 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">子·叁</div>
+      <div class="pal-glyph">
+        <svg width="82" height="58" viewBox="0 0 82 58">
+          <defs>
+            <linearGradient id="v33-bu-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e8eef4"/>
+              <stop offset="40%" stop-color="#b8c8d8"/>
+              <stop offset="100%" stop-color="#5a7090"/>
+            </linearGradient>
+            <radialGradient id="v33-bu-end" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="#a8c0d8"/>
+              <stop offset="60%" stop-color="#5a7090"/>
+              <stop offset="100%" stop-color="#2a3850"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="70" cy="29" rx="8" ry="22" fill="url(#v33-bu-end)" stroke="#3a4860" stroke-width="0.5"/>
+          <rect x="10" y="7" width="60" height="44" rx="2" fill="url(#v33-bu-body)" stroke="#3a4860" stroke-width="0.6"/>
+          <!-- 五色云纹 -->
+          <g stroke="rgba(60,80,110,0.6)" stroke-width="0.4" fill="none">
+            <path d="M 16 18 Q 20 12 26 16 Q 30 14 32 18 Q 28 22 22 20 Q 18 22 16 18 Z" fill="rgba(60,80,110,0.32)"/>
+            <path d="M 40 18 Q 46 12 52 16 Q 56 14 58 18 Q 54 22 48 20 Q 42 22 40 18 Z" fill="rgba(120,140,180,0.32)"/>
+            <path d="M 20 36 Q 26 30 32 34 Q 36 32 38 36 Q 34 40 28 38 Q 22 40 20 36 Z" fill="rgba(60,80,110,0.28)"/>
+            <path d="M 44 38 Q 50 32 56 36 Q 60 34 62 38 Q 56 42 50 40 Q 44 42 44 38 Z" fill="rgba(60,80,110,0.28)"/>
+          </g>
+          <!-- weft lines -->
+          <g stroke="rgba(60,80,110,0.2)" stroke-width="0.4">
+            <line x1="10" y1="11" x2="70" y2="11"/>
+            <line x1="10" y1="22" x2="70" y2="22"/>
+            <line x1="10" y1="32" x2="70" y2="32"/>
+            <line x1="10" y1="44" x2="70" y2="44"/>
+          </g>
+          <!-- front end disc -->
+          <ellipse cx="10" cy="29" rx="6" ry="22" fill="url(#v33-bu-end)" stroke="#3a4860" stroke-width="0.7"/>
+          <ellipse cx="10" cy="29" rx="3" ry="16" fill="none" stroke="rgba(40,56,80,0.6)" stroke-width="0.5"/>
+          <!-- vermillion band (smaller now) -->
+          <rect x="36" y="6" width="8" height="46" fill="rgba(200,52,46,0.92)" stroke="rgba(245,218,130,0.55)" stroke-width="0.4"/>
+          <!-- knot smaller -->
+          <path d="M 38 28 Q 40 26 42 28 Q 44 30 42 32 Q 40 33 38 32 Q 36 30 38 28 Z" fill="#8a2018" stroke="rgba(245,218,130,0.5)" stroke-width="0.3"/>
+          <line x1="40" y1="33" x2="38" y2="44" stroke="#8a2018" stroke-width="0.8"/>
+          <line x1="40" y1="33" x2="42" y2="44" stroke="#8a2018" stroke-width="0.8"/>
+          <!-- inscription tag -->
+          <rect x="60" y="7" width="8" height="14" fill="rgba(255,245,220,0.85)" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <text x="64" y="13" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="4.5" fill="#5a3814" font-weight="700">織</text>
+          <text x="64" y="18" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="4.5" fill="#5a3814" font-weight="700">造</text>
+        </svg>
+      </div>
+      <div class="pal-name">布 · 匹</div>
+      <div class="pal-key">BU · PI</div>
+      <div class="pal-improve">+ <b>五色云纹</b>·朱缠减小·"織造"标签</div>
+    </div>
+
+    <!-- 钱 串 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">子·壹 alt</div>
+      <div class="pal-glyph">
+        <svg width="68" height="84" viewBox="0 0 68 84">
+          <defs>
+            <radialGradient id="v33-qian-coin" cx="35%" cy="32%" r="65%">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="38%" stop-color="#c8a050"/>
+              <stop offset="78%" stop-color="#7a5828"/>
+              <stop offset="100%" stop-color="#3a2810"/>
+            </radialGradient>
+            <linearGradient id="v33-qian-string" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e54a3c"/>
+              <stop offset="50%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#5a1410"/>
+            </linearGradient>
+          </defs>
+          <!-- string tail top with braided -->
+          <path d="M 34 0 L 34 20" stroke="url(#v33-qian-string)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <circle cx="34" cy="6" r="1.5" fill="#8a2018"/>
+          <!-- coin 4 (lowest, smallest viewing) -->
+          <ellipse cx="34" cy="68" rx="22" ry="6" fill="rgba(0,0,0,0.42)"/>
+          <ellipse cx="34" cy="66" rx="22" ry="20" fill="url(#v33-qian-coin)" stroke="#5a3814" stroke-width="0.5"/>
+          <rect x="30" y="62" width="8" height="8" fill="#1c1208" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <!-- coin 3 -->
+          <ellipse cx="34" cy="58" rx="22" ry="6" fill="rgba(0,0,0,0.42)"/>
+          <ellipse cx="34" cy="56" rx="22" ry="20" fill="url(#v33-qian-coin)" stroke="#5a3814" stroke-width="0.5"/>
+          <rect x="30" y="52" width="8" height="8" fill="#1c1208" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <!-- coin 2 -->
+          <ellipse cx="34" cy="48" rx="22" ry="6" fill="rgba(0,0,0,0.42)"/>
+          <ellipse cx="34" cy="46" rx="22" ry="20" fill="url(#v33-qian-coin)" stroke="#5a3814" stroke-width="0.5"/>
+          <rect x="30" y="42" width="8" height="8" fill="#1c1208" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <!-- coin 1 (top) - 4 chars at proper compass positions -->
+          <ellipse cx="34" cy="38" rx="22" ry="6" fill="rgba(0,0,0,0.42)"/>
+          <ellipse cx="34" cy="36" rx="22" ry="20" fill="url(#v33-qian-coin)" stroke="#5a3814" stroke-width="0.6"/>
+          <!-- 4 chars at 上右下左 reading order -->
+          <text x="34" y="24" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6.5" fill="#2a1808" font-weight="800">永</text>
+          <text x="50" y="40" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6.5" fill="#2a1808" font-weight="800">樂</text>
+          <text x="34" y="50" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6.5" fill="#2a1808" font-weight="800">通</text>
+          <text x="18" y="40" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6.5" fill="#2a1808" font-weight="800">寶</text>
+          <rect x="30" y="32" width="8" height="8" fill="#1c1208" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <!-- string through holes -->
+          <path d="M 34 20 L 34 40" stroke="url(#v33-qian-string)" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+          <!-- bottom knot -->
+          <path d="M 30 72 Q 34 76 38 72 Q 40 78 34 82 Q 28 78 30 72 Z" fill="url(#v33-qian-string)" stroke="rgba(60,8,4,0.6)" stroke-width="0.3"/>
+          <line x1="32" y1="82" x2="30" y2="84" stroke="#8a2018" stroke-width="0.8"/>
+          <line x1="36" y1="82" x2="38" y2="84" stroke="#8a2018" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="pal-name">钱 · 贯</div>
+      <div class="pal-key">QIAN · GUAN</div>
+      <div class="pal-improve">+ <b>4 字方位准确</b> (上右下左)·绳更密 + 朱结</div>
+    </div>
+
+    <!-- 珍 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">子·肆</div>
+      <div class="pal-glyph">
+        <svg width="80" height="70" viewBox="0 0 80 70">
+          <defs>
+            <radialGradient id="v33-zhen-pearl" cx="32%" cy="28%" r="60%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="38%" stop-color="#f4e8d8"/>
+              <stop offset="80%" stop-color="#b8a890"/>
+              <stop offset="100%" stop-color="#5a4838"/>
+            </radialGradient>
+            <linearGradient id="v33-zhen-coral" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e54a3c"/>
+              <stop offset="50%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#5a1410"/>
+            </linearGradient>
+            <radialGradient id="v33-zhen-jade" cx="32%" cy="32%" r="65%">
+              <stop offset="0%" stop-color="#d4e8c4"/>
+              <stop offset="50%" stop-color="#7a9b6e"/>
+              <stop offset="100%" stop-color="#2a4828"/>
+            </radialGradient>
+            <linearGradient id="v33-zhen-tray" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7a3a20"/>
+              <stop offset="50%" stop-color="#3a1c0a"/>
+              <stop offset="100%" stop-color="#1c0e04"/>
+            </linearGradient>
+          </defs>
+          <!-- lacquer tray with gold beast feet -->
+          <ellipse cx="40" cy="62" rx="36" ry="6" fill="url(#v33-zhen-tray)" stroke="#1a0c04" stroke-width="0.6"/>
+          <ellipse cx="40" cy="60" rx="36" ry="6" fill="url(#v33-zhen-tray)"/>
+          <ellipse cx="40" cy="60" rx="36" ry="6" fill="none" stroke="rgba(245,218,130,0.65)" stroke-width="0.6"/>
+          <ellipse cx="40" cy="60" rx="32" ry="4.5" fill="none" stroke="rgba(245,218,130,0.42)" stroke-width="0.4"/>
+          <!-- beast feet (3 visible) -->
+          <g fill="url(#v33-zhen-tray)" stroke="var(--gold-bright)" stroke-width="0.4">
+            <path d="M 10 62 Q 10 66 8 68 L 12 68 Q 14 66 14 62 Z"/>
+            <path d="M 40 64 Q 40 68 38 70 L 42 70 Q 44 68 44 64 Z"/>
+            <path d="M 70 62 Q 70 66 68 68 L 72 68 Q 74 66 74 62 Z"/>
+          </g>
+          <!-- coral (more branched) -->
+          <g transform="translate(40 34)">
+            <path d="M 0 24 Q -2 18 -1 12 Q -4 10 -3 6 Q -6 4 -4 -2 Q -2 -6 0 -10" stroke="url(#v33-zhen-coral)" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 0 12 Q 4 10 7 14 Q 9 16 11 14" stroke="url(#v33-zhen-coral)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            <path d="M -1 6 Q -4 3 -7 5 Q -9 7 -11 6" stroke="url(#v33-zhen-coral)" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M -4 -2 Q -7 -5 -10 -3 Q -12 -1 -14 -3" stroke="url(#v33-zhen-coral)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M -2 -6 Q 1 -10 4 -8 Q 6 -6 8 -8" stroke="url(#v33-zhen-coral)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M 0 -10 Q 2 -14 5 -12" stroke="url(#v33-zhen-coral)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <!-- tips -->
+            <circle cx="11" cy="14" r="1.2" fill="#f4604a"/>
+            <circle cx="-11" cy="6" r="1.2" fill="#f4604a"/>
+            <circle cx="-14" cy="-3" r="1.2" fill="#f4604a"/>
+            <circle cx="8" cy="-8" r="1.2" fill="#f4604a"/>
+            <circle cx="5" cy="-12" r="1.2" fill="#f4604a"/>
+          </g>
+          <!-- pearl (left) with stronger luster -->
+          <circle cx="14" cy="48" r="9" fill="url(#v33-zhen-pearl)" stroke="#3a2818" stroke-width="0.4"/>
+          <ellipse cx="11" cy="43" rx="3.5" ry="2.2" fill="rgba(255,255,255,0.92)"/>
+          <ellipse cx="12" cy="45" rx="1" ry="0.6" fill="#ffffff"/>
+          <!-- pearl base gold mount -->
+          <path d="M 6 53 Q 14 56 22 53 Q 22 56 20 58 L 8 58 Q 6 56 6 53 Z" fill="var(--gold-bright)" stroke="#5a3814" stroke-width="0.4"/>
+          <!-- jade ring (right) bigger -->
+          <g transform="translate(64 48)">
+            <circle r="9.5" fill="url(#v33-zhen-jade)" stroke="#2a4828" stroke-width="0.5"/>
+            <circle r="3.6" fill="#1c0e04" stroke="#2a4828" stroke-width="0.4"/>
+            <path d="M -7 -2 Q -2 -4 4 -3 Q 6 0 4 4" stroke="rgba(180,210,160,0.7)" stroke-width="0.6" fill="none"/>
+            <path d="M -3 2 Q 3 0 6 -2" stroke="rgba(180,210,160,0.46)" stroke-width="0.4" fill="none"/>
+            <ellipse cx="-3" cy="-4" rx="2.5" ry="1.5" fill="rgba(220,240,200,0.58)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="pal-name">珍 宝</div>
+      <div class="pal-key">ZHEN</div>
+      <div class="pal-improve">+ <b>金兽托足</b>·珊瑚分枝更细 (7 枝)·珠金底座</div>
+    </div>
+
+    <!-- 帑廪 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">主·壹</div>
+      <div class="pal-glyph">
+        <svg width="86" height="86" viewBox="0 0 86 86">
+          <defs>
+            <linearGradient id="v33-gk-roof" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3a2410"/>
+              <stop offset="60%" stop-color="#1a1208"/>
+              <stop offset="100%" stop-color="#0a0604"/>
+            </linearGradient>
+            <linearGradient id="v33-gk-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b85828"/>
+              <stop offset="50%" stop-color="#7a3818"/>
+              <stop offset="100%" stop-color="#3a1c08"/>
+            </linearGradient>
+            <linearGradient id="v33-gk-stone" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8a8478"/>
+              <stop offset="100%" stop-color="#3a3428"/>
+            </linearGradient>
+          </defs>
+          <!-- foundation stone -->
+          <rect x="6" y="70" width="74" height="10" fill="url(#v33-gk-stone)" stroke="#1a1410" stroke-width="0.5"/>
+          <path d="M 6 70 L 80 70" stroke="rgba(255,232,170,0.34)" stroke-width="0.5"/>
+          <!-- body wall -->
+          <rect x="10" y="40" width="66" height="30" fill="url(#v33-gk-body)" stroke="#1a0e04" stroke-width="0.6"/>
+          <!-- pillars -->
+          <rect x="14" y="40" width="3" height="28" fill="#2a1408"/>
+          <rect x="41.5" y="40" width="3" height="28" fill="#2a1408"/>
+          <rect x="69" y="40" width="3" height="28" fill="#2a1408"/>
+          <!-- door with copper studs -->
+          <rect x="34" y="48" width="18" height="22" fill="#1a0a04" stroke="rgba(245,218,130,0.55)" stroke-width="0.6"/>
+          <line x1="43" y1="48" x2="43" y2="70" stroke="rgba(245,218,130,0.4)" stroke-width="0.4"/>
+          <!-- door studs (5x4 grid) -->
+          <g fill="var(--gold-bright)" stroke="#5a3814" stroke-width="0.2">
+            <circle cx="38" cy="52" r="1.2"/>
+            <circle cx="47" cy="52" r="1.2"/>
+            <circle cx="38" cy="58" r="1.2"/>
+            <circle cx="47" cy="58" r="1.2"/>
+            <circle cx="38" cy="64" r="1.2"/>
+            <circle cx="47" cy="64" r="1.2"/>
+          </g>
+          <!-- door ring handles -->
+          <g fill="none" stroke="var(--gold-bright)" stroke-width="0.8">
+            <circle cx="40" cy="68" r="1.5"/>
+            <circle cx="46" cy="68" r="1.5"/>
+          </g>
+          <!-- dougong band -->
+          <rect x="6" y="36" width="74" height="5" fill="rgba(40,22,8,0.85)" stroke="#1a0e04" stroke-width="0.4"/>
+          <g fill="rgba(245,218,130,0.62)">
+            <rect x="10" y="37" width="2" height="3"/>
+            <rect x="18" y="37" width="2" height="3"/>
+            <rect x="26" y="37" width="2" height="3"/>
+            <rect x="34" y="37" width="2" height="3"/>
+            <rect x="42" y="37" width="2" height="3"/>
+            <rect x="50" y="37" width="2" height="3"/>
+            <rect x="58" y="37" width="2" height="3"/>
+            <rect x="66" y="37" width="2" height="3"/>
+            <rect x="74" y="37" width="2" height="3"/>
+          </g>
+          <!-- hipped roof -->
+          <path d="M 4 36 L 16 18 L 70 18 L 82 36 Z" fill="url(#v33-gk-roof)" stroke="#0a0604" stroke-width="0.6"/>
+          <path d="M 4 36 Q 0 32 -2 34" stroke="rgba(40,22,8,0.92)" stroke-width="2" fill="none"/>
+          <path d="M 82 36 Q 86 32 88 34" stroke="rgba(40,22,8,0.92)" stroke-width="2" fill="none"/>
+          <rect x="14" y="16" width="58" height="3" fill="#2a1408" stroke="rgba(245,218,130,0.4)" stroke-width="0.3"/>
+          <path d="M 14 18 Q 10 12 14 8 Q 18 12 14 18 Z" fill="#2a1408" stroke="rgba(245,218,130,0.5)" stroke-width="0.4"/>
+          <path d="M 72 18 Q 68 12 72 8 Q 76 12 72 18 Z" fill="#2a1408" stroke="rgba(245,218,130,0.5)" stroke-width="0.4"/>
+          <g stroke="rgba(245,218,130,0.22)" stroke-width="0.3" fill="none">
+            <path d="M 6 34 L 80 34"/>
+            <path d="M 8 30 L 78 30"/>
+            <path d="M 10 26 L 76 26"/>
+            <path d="M 12 22 L 74 22"/>
+          </g>
+          <!-- red lanterns hanging from eaves -->
+          <g>
+            <!-- left lantern -->
+            <line x1="8" y1="36" x2="8" y2="42" stroke="#3a2410" stroke-width="0.5"/>
+            <ellipse cx="8" cy="46" rx="4" ry="5" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.5"/>
+            <ellipse cx="8" cy="46" rx="4" ry="2" fill="none" stroke="rgba(245,218,130,0.55)" stroke-width="0.4"/>
+            <line x1="8" y1="51" x2="8" y2="55" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+            <circle cx="8" cy="56" r="0.8" fill="var(--gold-bright)"/>
+            <!-- right lantern -->
+            <line x1="78" y1="36" x2="78" y2="42" stroke="#3a2410" stroke-width="0.5"/>
+            <ellipse cx="78" cy="46" rx="4" ry="5" fill="url(#mx-silk)" stroke="#1a0604" stroke-width="0.5"/>
+            <ellipse cx="78" cy="46" rx="4" ry="2" fill="none" stroke="rgba(245,218,130,0.55)" stroke-width="0.4"/>
+            <line x1="78" y1="51" x2="78" y2="55" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+            <circle cx="78" cy="56" r="0.8" fill="var(--gold-bright)"/>
+          </g>
+          <!-- plaque -->
+          <rect x="36" y="42" width="14" height="5" fill="#1a0a04" stroke="var(--gold-bright)" stroke-width="0.5"/>
+          <text x="43" y="46" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="3.6" fill="var(--gold-bright)" font-weight="700">廪</text>
+          <!-- ingots out front -->
+          <ellipse cx="22" cy="80" rx="9" ry="2.4" fill="rgba(0,0,0,0.4)"/>
+          <path d="M 14 77 Q 14 74 18 73 Q 22 72 26 73 Q 30 74 30 77 L 29 80 L 15 80 Z" fill="url(#v33-yin-body)" stroke="#3a3428" stroke-width="0.4"/>
+          <ellipse cx="64" cy="80" rx="9" ry="2.4" fill="rgba(0,0,0,0.4)"/>
+          <path d="M 56 77 Q 56 74 60 73 Q 64 72 68 73 Q 72 74 72 77 L 71 80 L 57 80 Z" fill="url(#v33-yin-body)" stroke="#3a3428" stroke-width="0.4"/>
+        </svg>
+      </div>
+      <div class="pal-name">帑 廪</div>
+      <div class="pal-key">GUOKU</div>
+      <div class="pal-improve">+ <b>朱漆灯笼 2 盏</b>·门上 6 朱铜钉 + 2 门环</div>
+    </div>
+
+    <!-- 内帑 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">主·贰</div>
+      <div class="pal-glyph">
+        <svg width="86" height="76" viewBox="0 0 86 76">
+          <defs>
+            <linearGradient id="v33-nt-lacquer" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d84028"/>
+              <stop offset="35%" stop-color="#b8341c"/>
+              <stop offset="80%" stop-color="#6a1610"/>
+              <stop offset="100%" stop-color="#2a0804"/>
+            </linearGradient>
+            <linearGradient id="v33-nt-lid" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f44830"/>
+              <stop offset="50%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#7a1814"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="43" cy="70" rx="38" ry="3" fill="rgba(0,0,0,0.5)"/>
+          <!-- body -->
+          <rect x="6" y="30" width="74" height="38" rx="1" fill="url(#v33-nt-lacquer)" stroke="#1a0604" stroke-width="0.8"/>
+          <!-- lid arched -->
+          <path d="M 4 30 L 4 18 Q 4 14 8 14 L 78 14 Q 82 14 82 18 L 82 30 Z" fill="url(#v33-nt-lid)" stroke="#1a0604" stroke-width="0.8"/>
+          <path d="M 6 20 Q 16 16 43 16 Q 70 16 80 20" stroke="rgba(255,220,170,0.55)" stroke-width="0.8" fill="none"/>
+          <line x1="6" y1="30" x2="80" y2="30" stroke="rgba(40,8,4,0.8)" stroke-width="0.6"/>
+          <!-- cloud-shaped brass corners -->
+          <g fill="var(--gold-bright)" stroke="#5a3814" stroke-width="0.4">
+            <path d="M 4 14 Q 4 12 6 12 L 14 12 Q 16 12 16 14 L 16 16 Q 14 18 12 16 L 8 18 Q 4 18 4 14 Z"/>
+            <path d="M 82 14 Q 82 12 80 12 L 72 12 Q 70 12 70 14 L 70 16 Q 72 18 74 16 L 78 18 Q 82 18 82 14 Z"/>
+            <path d="M 4 68 Q 4 70 6 70 L 14 70 Q 16 70 16 68 L 16 66 Q 14 64 12 66 L 8 64 Q 4 64 4 68 Z"/>
+            <path d="M 82 68 Q 82 70 80 70 L 72 70 Q 70 70 70 68 L 70 66 Q 72 64 74 66 L 78 64 Q 82 64 82 68 Z"/>
+          </g>
+          <!-- corner studs along sides -->
+          <g fill="var(--gold-bright)">
+            <circle cx="8" cy="36" r="1.2"/>
+            <circle cx="78" cy="36" r="1.2"/>
+            <circle cx="8" cy="48" r="1.2"/>
+            <circle cx="78" cy="48" r="1.2"/>
+            <circle cx="8" cy="60" r="1.2"/>
+            <circle cx="78" cy="60" r="1.2"/>
+          </g>
+          <!-- five-clawed dragon (五爪 emperor only) emblem -->
+          <g transform="translate(43 50)" stroke="var(--gold-bright)" stroke-width="0.8" fill="none">
+            <!-- dragon body curved S -->
+            <path d="M -16 6 Q -14 0 -10 -2 Q -6 -4 -2 -2 Q 0 0 2 -2 Q 6 -4 10 -2 Q 14 0 16 -4 Q 18 -2 16 4 Q 12 8 8 6 Q 4 6 2 4 Q -2 2 -6 4 Q -10 6 -14 4 Q -16 6 -16 6 Z" fill="rgba(245,218,130,0.18)"/>
+            <!-- dragon head -->
+            <circle cx="-16" cy="4" r="2.4" fill="rgba(245,218,130,0.32)"/>
+            <circle cx="-16" cy="4" r="0.6" fill="var(--vermillion-glow)"/>
+            <!-- dragon mane -->
+            <path d="M -18 2 Q -20 -2 -18 -4 Q -20 -2 -22 -4"/>
+            <!-- pearl front -->
+            <circle cx="16" cy="-3" r="2" fill="rgba(245,218,130,0.65)"/>
+            <!-- 5 claws on each leg (visible 2 legs) -->
+            <g stroke-width="0.5">
+              <path d="M -8 4 L -8 8 M -6 4 L -7 8 M -10 4 L -10 8 M -8.5 5 L -9 9 M -7.5 5 L -7 9"/>
+              <path d="M 6 4 L 6 8 M 4 4 L 5 8 M 8 4 L 8 8 M 5.5 5 L 5 9 M 6.5 5 L 7 9"/>
+            </g>
+            <!-- scales -->
+            <g fill="var(--gold-bright)" opacity="0.6">
+              <circle cx="-10" cy="0" r="0.5"/>
+              <circle cx="-6" cy="-2" r="0.5"/>
+              <circle cx="-2" cy="0" r="0.5"/>
+              <circle cx="2" cy="-2" r="0.5"/>
+              <circle cx="6" cy="0" r="0.5"/>
+              <circle cx="10" cy="-2" r="0.5"/>
+            </g>
+          </g>
+          <!-- lock plate -->
+          <rect x="37" y="24" width="12" height="14" rx="0.5" fill="var(--gold-bright)" stroke="#5a3814" stroke-width="0.5"/>
+          <rect x="39" y="26" width="8" height="6" fill="#2a1808" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+          <circle cx="43" cy="29" r="1" fill="var(--gold-bright)"/>
+          <rect x="42.5" y="29" width="1" height="2" fill="var(--gold-bright)"/>
+          <!-- chinese knot 中国结 hanging -->
+          <g transform="translate(43 64)">
+            <!-- knot body (diamond shape) -->
+            <path d="M -4 0 L 0 -4 L 4 0 L 0 4 Z" fill="url(#v33-nt-lacquer)" stroke="var(--gold-bright)" stroke-width="0.5"/>
+            <!-- inner pattern -->
+            <path d="M -2 0 L 0 -2 L 2 0 L 0 2 Z" fill="var(--gold-bright)" opacity="0.5"/>
+            <!-- tassels -->
+            <line x1="-1" y1="4" x2="-2" y2="10" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+            <line x1="0" y1="4" x2="0" y2="12" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+            <line x1="1" y1="4" x2="2" y2="10" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+          </g>
+          <!-- top ring handle -->
+          <path d="M 37 14 Q 37 6 43 6 Q 49 6 49 14" fill="none" stroke="var(--gold-bright)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="pal-name">内 帑</div>
+      <div class="pal-key">NEITANG</div>
+      <div class="pal-improve">+ <b>真五爪龙</b> (天子专)·云形铜角·<b>中国结</b>朱穗</div>
+    </div>
+
+    <!-- 户口 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">主·叁</div>
+      <div class="pal-glyph">
+        <svg width="84" height="78" viewBox="0 0 84 78">
+          <defs>
+            <linearGradient id="v33-hk-page" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="50%" stop-color="#c8a050"/>
+              <stop offset="100%" stop-color="#8a6c28"/>
+            </linearGradient>
+            <linearGradient id="v33-hk-cover" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7a3818"/>
+              <stop offset="60%" stop-color="#4a2410"/>
+              <stop offset="100%" stop-color="#1a0c04"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="42" cy="72" rx="38" ry="3" fill="rgba(0,0,0,0.5)"/>
+          <!-- scattered bamboo slips behind -->
+          <g transform="translate(60 60) rotate(15)">
+            <rect x="-2" y="0" width="3" height="14" fill="#c89c5a" stroke="#5a3814" stroke-width="0.3"/>
+            <line x1="-1.5" y1="2" x2="0.5" y2="2" stroke="#3a1808" stroke-width="0.3"/>
+            <line x1="-1.5" y1="5" x2="0.5" y2="5" stroke="#3a1808" stroke-width="0.3"/>
+            <line x1="-1.5" y1="8" x2="0.5" y2="8" stroke="#3a1808" stroke-width="0.3"/>
+          </g>
+          <g transform="translate(64 64) rotate(-12)">
+            <rect x="-2" y="0" width="3" height="12" fill="#c89c5a" stroke="#5a3814" stroke-width="0.3"/>
+            <line x1="-1.5" y1="3" x2="0.5" y2="3" stroke="#3a1808" stroke-width="0.3"/>
+            <line x1="-1.5" y1="6" x2="0.5" y2="6" stroke="#3a1808" stroke-width="0.3"/>
+          </g>
+          <g transform="translate(70 68) rotate(20)">
+            <rect x="-2" y="0" width="3" height="10" fill="#c89c5a" stroke="#5a3814" stroke-width="0.3"/>
+          </g>
+          <!-- inkstone and brush (left bottom) -->
+          <ellipse cx="14" cy="72" rx="8" ry="2" fill="rgba(0,0,0,0.5)"/>
+          <path d="M 6 68 Q 6 71 8 72 L 20 72 Q 22 71 22 68 Z" fill="#2a2018" stroke="#0a0604" stroke-width="0.4"/>
+          <ellipse cx="14" cy="69" rx="6" ry="1" fill="#1a1208"/>
+          <!-- brush -->
+          <g transform="translate(8 56) rotate(-25)">
+            <rect x="0" y="0" width="1.6" height="16" fill="#c89c5a" stroke="#5a3814" stroke-width="0.2"/>
+            <path d="M 0 16 L 1.6 16 L 1.2 19 L 0.4 19 Z" fill="#3a1808"/>
+          </g>
+          <!-- main book - back pages -->
+          <path d="M 10 66 Q 10 24 12 16 L 66 16 Q 68 24 68 66 Z" fill="url(#v33-hk-page)" stroke="#5a3814" stroke-width="0.5"/>
+          <!-- page edges -->
+          <g stroke="rgba(80,50,22,0.5)" stroke-width="0.3" fill="none">
+            <path d="M 10 62 L 68 62"/>
+            <path d="M 10 58 L 68 58"/>
+            <path d="M 10 54 L 68 54"/>
+            <path d="M 10 50 L 68 50"/>
+            <path d="M 10 46 L 68 46"/>
+            <path d="M 10 42 L 68 42"/>
+          </g>
+          <!-- cover -->
+          <path d="M 12 62 L 10 16 L 62 14 L 64 62 Z" fill="url(#v33-hk-cover)" stroke="#1a0c04" stroke-width="0.7"/>
+          <path d="M 14 58 L 13 20 L 60 18 L 61 58 Z" fill="none" stroke="rgba(245,218,130,0.7)" stroke-width="0.6"/>
+          <!-- title panel -->
+          <rect x="24" y="24" width="26" height="32" fill="rgba(255,245,220,0.88)" stroke="rgba(80,50,22,0.7)" stroke-width="0.4"/>
+          <text x="37" y="34" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">黃</text>
+          <text x="37" y="46" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">冊</text>
+          <!-- official seal with denser ink -->
+          <rect x="34" y="50" width="6" height="6" fill="var(--vermillion)" stroke="rgba(80,12,8,0.5)" stroke-width="0.3"/>
+          <text x="37" y="54.5" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="4" fill="rgba(245,218,130,0.85)">印</text>
+          <!-- ink smudges around seal -->
+          <g fill="rgba(200,52,46,0.32)">
+            <circle cx="33" cy="49" r="0.5"/>
+            <circle cx="41" cy="51" r="0.4"/>
+            <circle cx="35" cy="57" r="0.5"/>
+          </g>
+          <!-- 5-hole stitched binding -->
+          <g stroke="var(--vermillion-deep)" stroke-width="1.4" fill="none">
+            <line x1="16" y1="24" x2="20" y2="24"/>
+            <line x1="16" y1="32" x2="20" y2="32"/>
+            <line x1="16" y1="40" x2="20" y2="40"/>
+            <line x1="16" y1="48" x2="20" y2="48"/>
+            <line x1="16" y1="56" x2="20" y2="56"/>
+          </g>
+          <g fill="var(--vermillion-deep)">
+            <circle cx="18" cy="24" r="0.8"/>
+            <circle cx="18" cy="32" r="0.8"/>
+            <circle cx="18" cy="40" r="0.8"/>
+            <circle cx="18" cy="48" r="0.8"/>
+            <circle cx="18" cy="56" r="0.8"/>
+          </g>
+          <line x1="22" y1="18" x2="22" y2="60" stroke="rgba(40,12,4,0.7)" stroke-width="0.5"/>
+        </svg>
+      </div>
+      <div class="pal-name">户 口</div>
+      <div class="pal-key">HUKOU</div>
+      <div class="pal-improve">+ <b>散落竹简</b> + <b>笔砚</b>·朱印朱迹更稠</div>
+    </div>
+
+    <!-- 吏治 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">主·肆</div>
+      <div class="pal-glyph">
+        <svg width="86" height="84" viewBox="0 0 86 84">
+          <defs>
+            <linearGradient id="v33-lz-bronze" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="40%" stop-color="#c8a050"/>
+              <stop offset="80%" stop-color="#7a5828"/>
+              <stop offset="100%" stop-color="#3a2810"/>
+            </linearGradient>
+            <radialGradient id="v33-lz-pan" cx="50%" cy="20%" r="80%">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="60%" stop-color="#8a5828"/>
+              <stop offset="100%" stop-color="#2a1808"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="43" cy="78" rx="24" ry="3" fill="rgba(0,0,0,0.6)"/>
+          <rect x="27" y="70" width="32" height="7" rx="1" fill="url(#v33-lz-bronze)" stroke="#1a0e04" stroke-width="0.6"/>
+          <line x1="29" y1="72" x2="57" y2="72" stroke="rgba(40,22,8,0.65)" stroke-width="0.3"/>
+          <line x1="29" y1="75" x2="57" y2="75" stroke="rgba(40,22,8,0.5)" stroke-width="0.3"/>
+          <rect x="41" y="22" width="4" height="48" fill="url(#v33-lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+          <rect x="39" y="42" width="8" height="2.5" fill="#3a2410" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+          <rect x="39" y="58" width="8" height="2.5" fill="#3a2410" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+          <path d="M 37 22 Q 43 14 49 22" fill="url(#v33-lz-bronze)" stroke="#1a0e04" stroke-width="0.5"/>
+          <circle cx="43" cy="14" r="2.4" fill="url(#v33-lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+          <circle cx="43" cy="14" r="0.8" fill="var(--vermillion-deep)"/>
+          <!-- beam tilted (with hook tips) -->
+          <g transform="rotate(-14 43 26)">
+            <rect x="9" y="24.5" width="68" height="2.5" fill="url(#v33-lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            <!-- hooks at both ends -->
+            <path d="M 7 23 L 4 24 L 4 27 L 7 28 Z" fill="#3a2410" stroke="var(--gold-bright)" stroke-width="0.3"/>
+            <path d="M 79 23 L 82 24 L 82 27 L 79 28 Z" fill="#3a2410" stroke="var(--gold-bright)" stroke-width="0.3"/>
+            <circle cx="43" cy="26" r="2" fill="#3a2410" stroke="var(--gold-bright)" stroke-width="0.6"/>
+            <circle cx="43" cy="26" r="0.8" fill="var(--vermillion-glow)"/>
+            <!-- chains -->
+            <line x1="11" y1="28" x2="11" y2="38" stroke="#3a2410" stroke-width="0.4"/>
+            <line x1="13" y1="28" x2="13" y2="38" stroke="#3a2410" stroke-width="0.4"/>
+            <line x1="73" y1="28" x2="73" y2="38" stroke="#3a2410" stroke-width="0.4"/>
+            <line x1="75" y1="28" x2="75" y2="38" stroke="#3a2410" stroke-width="0.4"/>
+            <!-- pans -->
+            <ellipse cx="12" cy="40" rx="9" ry="2" fill="rgba(0,0,0,0.5)"/>
+            <path d="M 3 38 Q 3 42 6 44 L 18 44 Q 21 42 21 38 Z" fill="url(#v33-lz-pan)" stroke="#1a0e04" stroke-width="0.4"/>
+            <ellipse cx="12" cy="38" rx="9" ry="2" fill="rgba(245,218,130,0.4)"/>
+            <ellipse cx="74" cy="40" rx="9" ry="2" fill="rgba(0,0,0,0.5)"/>
+            <path d="M 65 38 Q 65 42 68 44 L 80 44 Q 83 42 83 38 Z" fill="url(#v33-lz-pan)" stroke="#1a0e04" stroke-width="0.4"/>
+            <ellipse cx="74" cy="38" rx="9" ry="2" fill="rgba(245,218,130,0.4)"/>
+            <!-- weights with 纲常 inscription -->
+            <ellipse cx="74" cy="34" rx="4.5" ry="1.5" fill="rgba(0,0,0,0.4)"/>
+            <rect x="69.5" y="30" width="9" height="4" rx="0.5" fill="url(#v33-lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            <text x="74" y="33" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="3" fill="#1a0c04" font-weight="800">纲</text>
+            <ellipse cx="74" cy="28" rx="3.5" ry="1.3" fill="rgba(0,0,0,0.4)"/>
+            <rect x="70" y="24.5" width="8" height="3.5" rx="0.4" fill="url(#v33-lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            <text x="74" y="27" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="3" fill="#1a0c04" font-weight="800">常</text>
+          </g>
+          <!-- bright red needle indicator -->
+          <line x1="43" y1="38" x2="43" y2="50" stroke="var(--vermillion-glow)" stroke-width="1.2"/>
+          <circle cx="43" cy="38" r="0.8" fill="var(--vermillion-glow)"/>
+          <!-- censor figure (small) below -->
+          <g transform="translate(67 64)">
+            <!-- hat -->
+            <path d="M -3 -3 L 3 -3 L 3 -1 L -3 -1 Z" fill="#1a0a04" stroke="var(--gold-bright)" stroke-width="0.3"/>
+            <!-- 双翅 ears on hat (御史 distinct) -->
+            <path d="M -3 -2 L -5 -1" stroke="#1a0a04" stroke-width="0.5"/>
+            <path d="M 3 -2 L 5 -1" stroke="#1a0a04" stroke-width="0.5"/>
+            <!-- body -->
+            <path d="M -3 0 L -2 6 L 2 6 L 3 0 Z" fill="#4a2410" stroke="#1a0a04" stroke-width="0.3"/>
+          </g>
+        </svg>
+      </div>
+      <div class="pal-name">吏 治</div>
+      <div class="pal-key">LIZHI</div>
+      <div class="pal-improve">+ 砝码 <b>"纲常"</b> 刻字·朱针更显·御史小人形</div>
+    </div>
+
+    <!-- 皇权 (improved) -->
+    <div class="pal-card">
+      <div class="pal-num">主·陆</div>
+      <div class="pal-glyph">
+        <svg width="68" height="86" viewBox="0 0 68 86">
+          <defs>
+            <linearGradient id="v33-hq-jade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f8f4ec"/>
+              <stop offset="25%" stop-color="#dac890"/>
+              <stop offset="65%" stop-color="#a88c5a"/>
+              <stop offset="100%" stop-color="#3a2c14"/>
+            </linearGradient>
+            <radialGradient id="v33-hq-cinnabar" cx="50%" cy="50%" r="65%">
+              <stop offset="0%" stop-color="#f4604a"/>
+              <stop offset="60%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#5a1410"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="34" cy="82" rx="28" ry="3.5" fill="url(#v33-hq-cinnabar)" opacity="0.88"/>
+          <ellipse cx="34" cy="82" rx="22" ry="2.5" fill="rgba(245,218,130,0.34)"/>
+          <!-- base -->
+          <rect x="12" y="48" width="44" height="30" rx="0.5" fill="url(#v33-hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+          <rect x="15" y="51" width="38" height="24" fill="none" stroke="rgba(60,40,16,0.55)" stroke-width="0.5"/>
+          <!-- 8 chars 受命于天既寿永昌 in 2 columns (篆书 style approximated) -->
+          <g font-family="'Ma Shan Zheng', serif" font-weight="800" fill="#3a2c14">
+            <!-- right column top to bottom: 受命于天 -->
+            <text x="22" y="58" font-size="5">受</text>
+            <text x="22" y="64" font-size="5">命</text>
+            <text x="22" y="70" font-size="5">於</text>
+            <text x="22" y="76" font-size="5">天</text>
+            <!-- left column: 既壽永昌 -->
+            <text x="46" y="58" font-size="5">既</text>
+            <text x="46" y="64" font-size="5">壽</text>
+            <text x="46" y="70" font-size="5">永</text>
+            <text x="46" y="76" font-size="5">昌</text>
+            <!-- center 玺 -->
+            <text x="34" y="68" text-anchor="middle" font-size="6" fill="rgba(60,40,20,0.42)">玺</text>
+          </g>
+          <!-- jade veins -->
+          <g stroke="rgba(255,245,220,0.46)" stroke-width="0.4" fill="none">
+            <path d="M 14 54 Q 22 52 28 55"/>
+            <path d="M 38 72 Q 46 70 54 73"/>
+            <path d="M 30 60 Q 36 58 42 60"/>
+          </g>
+          <path d="M 12 50 L 56 50" stroke="rgba(255,245,220,0.62)" stroke-width="1"/>
+          <path d="M 12 76 L 56 76" stroke="rgba(40,28,12,0.65)" stroke-width="0.6"/>
+          <!-- dragon knob -->
+          <g>
+            <path d="M 18 48 Q 14 40 18 32 Q 22 24 30 24 Q 38 24 46 30 Q 50 36 50 42 Q 48 46 50 48 L 50 48 L 18 48 Z"
+                  fill="url(#v33-hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+            <ellipse cx="42" cy="30" rx="5" ry="4" fill="url(#v33-hq-jade)" stroke="#3a2c14" stroke-width="0.6"/>
+            <circle cx="44" cy="29" r="1.2" fill="#3a2c14"/>
+            <circle cx="44.5" cy="28.5" r="0.4" fill="#ffffff"/>
+            <circle cx="40" cy="31" r="0.8" fill="#3a2c14"/>
+            <path d="M 46 32 Q 50 34 52 30" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <path d="M 47 34 Q 51 38 50 40" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <path d="M 38 24 Q 38 20 36 18 Q 38 20 40 20 Q 40 16 42 14 Q 42 18 44 18" stroke="#3a2c14" stroke-width="0.6" fill="none"/>
+            <path d="M 22 38 Q 22 34 26 32 Q 30 30 32 32" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <path d="M 20 44 Q 24 42 28 44" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <g fill="#3a2c14" opacity="0.5">
+              <circle cx="22" cy="40" r="0.5"/>
+              <circle cx="26" cy="38" r="0.5"/>
+              <circle cx="30" cy="36" r="0.5"/>
+              <circle cx="28" cy="42" r="0.5"/>
+              <circle cx="32" cy="40" r="0.5"/>
+              <circle cx="36" cy="38" r="0.5"/>
+              <circle cx="34" cy="44" r="0.5"/>
+              <circle cx="38" cy="42" r="0.5"/>
+            </g>
+            <path d="M 18 42 Q 16 38 14 36 Q 14 40 16 44" stroke="#3a2c14" stroke-width="0.5" fill="rgba(160,140,90,0.4)"/>
+          </g>
+          <path d="M 22 30 Q 26 26 32 26" stroke="rgba(255,245,220,0.55)" stroke-width="0.8" fill="none"/>
+        </svg>
+      </div>
+      <div class="pal-name">皇 权</div>
+      <div class="pal-key">HUANGQUAN</div>
+      <div class="pal-improve">+ 真刻 <b>"受命於天既壽永昌"</b> 8 字</div>
+    </div>
+
+  </div>
+
+  <!-- ============ IN-CONTEXT ============ -->
+  <div class="section-head">
+    <span class="sh-num">叁</span>
+    <span class="sh-title">真 顶 栏 装 配 · v3.3</span>
+    <span class="sh-tag">IN-CONTEXT · 11 ICONS</span>
+  </div>
+
+  <div class="context">
+    <div class="context-title">顶 栏 资 源 轨 · 新 11 件 实 测</div>
+    <div class="context-row">
+      <div class="ctx-wide">
+        <div class="ctx-wide-head">
+          <div class="ctx-wide-glyph">
+            <svg width="28" height="28" viewBox="0 0 86 86">
+              <rect x="6" y="70" width="74" height="10" fill="url(#v33-gk-stone)" stroke="#1a1410" stroke-width="0.5"/>
+              <rect x="10" y="40" width="66" height="30" fill="url(#v33-gk-body)" stroke="#1a0e04" stroke-width="0.6"/>
+              <rect x="34" y="48" width="18" height="22" fill="#1a0a04" stroke="rgba(245,218,130,0.55)" stroke-width="0.6"/>
+              <rect x="6" y="36" width="74" height="5" fill="rgba(40,22,8,0.85)"/>
+              <path d="M 4 36 L 16 18 L 70 18 L 82 36 Z" fill="url(#v33-gk-roof)" stroke="#0a0604" stroke-width="0.6"/>
+              <ellipse cx="8" cy="46" rx="3" ry="4" fill="url(#mx-silk)"/>
+              <ellipse cx="78" cy="46" rx="3" ry="4" fill="url(#mx-silk)"/>
+            </svg>
+          </div>
+          <div class="ctx-wide-name">帑 廪</div>
+        </div>
+        <div class="ctx-wide-subs">
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="22" height="14" viewBox="0 0 80 56">
+                <path d="M 4 26 Q 2 14 8 8 Q 14 4 18 10 Q 16 16 14 22 Z" fill="url(#v33-yin-body)"/>
+                <path d="M 76 26 Q 78 14 72 8 Q 66 4 62 10 Q 64 16 66 22 Z" fill="url(#v33-yin-body)"/>
+                <path d="M 8 22 Q 14 18 22 18 L 58 18 Q 66 18 72 22 Q 76 30 74 44 L 70 50 L 10 50 L 6 44 Q 4 30 8 22 Z" fill="url(#v33-yin-body)" stroke="#3a3428" stroke-width="0.8"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>4.6万</b><span class="sd up">+820</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="20" height="22" viewBox="0 0 78 82">
+                <path d="M 12 44 L 16 78 L 60 78 L 64 44 Z" fill="url(#v33-liang-wood)" stroke="#2a1808" stroke-width="0.8"/>
+                <path d="M 16 40 Q 28 28 38 28 Q 48 28 60 40 Q 56 44 38 46 Q 20 44 16 40 Z" fill="url(#v33-liang-grain)" stroke="#6a4818" stroke-width="0.4"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>1.2万</b><span class="sd flat">±0</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="22" height="16" viewBox="0 0 82 58">
+                <ellipse cx="70" cy="29" rx="8" ry="22" fill="url(#v33-bu-end)"/>
+                <rect x="10" y="7" width="60" height="44" rx="2" fill="url(#v33-bu-body)" stroke="#3a4860" stroke-width="0.6"/>
+                <ellipse cx="10" cy="29" rx="6" ry="22" fill="url(#v33-bu-end)" stroke="#3a4860" stroke-width="0.7"/>
+                <rect x="36" y="6" width="8" height="46" fill="rgba(200,52,46,0.92)"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>320</b><span class="sd dn">-12</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-wide">
+        <div class="ctx-wide-head">
+          <div class="ctx-wide-glyph">
+            <svg width="28" height="24" viewBox="0 0 86 76">
+              <rect x="6" y="30" width="74" height="38" rx="1" fill="url(#v33-nt-lacquer)" stroke="#1a0604" stroke-width="0.8"/>
+              <path d="M 4 30 L 4 18 Q 4 14 8 14 L 78 14 Q 82 14 82 18 L 82 30 Z" fill="url(#v33-nt-lid)" stroke="#1a0604" stroke-width="0.8"/>
+              <rect x="37" y="24" width="12" height="14" rx="0.5" fill="var(--gold-bright)"/>
+            </svg>
+          </div>
+          <div class="ctx-wide-name">内 帑</div>
+        </div>
+        <div class="ctx-wide-subs">
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="22" height="14" viewBox="0 0 80 56">
+                <path d="M 8 22 Q 14 18 22 18 L 58 18 Q 66 18 72 22 Q 76 30 74 44 L 70 50 L 10 50 L 6 44 Q 4 30 8 22 Z" fill="url(#v33-yin-body)" stroke="#3a3428" stroke-width="0.8"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>8.4万</b><span class="sd up">+120</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="20" height="22" viewBox="0 0 78 82">
+                <path d="M 12 44 L 16 78 L 60 78 L 64 44 Z" fill="url(#v33-liang-wood)" stroke="#2a1808" stroke-width="0.8"/>
+                <path d="M 16 40 Q 28 28 38 28 Q 48 28 60 40 Q 56 44 38 46 Q 20 44 16 40 Z" fill="url(#v33-liang-grain)"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>2.6千</b><span class="sd flat">±0</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="22" height="20" viewBox="0 0 80 70">
+                <ellipse cx="40" cy="62" rx="36" ry="6" fill="url(#v33-zhen-tray)"/>
+                <g transform="translate(40 36)">
+                  <path d="M 0 20 Q -2 14 -1 8 Q -4 6 -3 0" stroke="url(#v33-zhen-coral)" stroke-width="2.4" fill="none"/>
+                  <path d="M 0 8 Q 4 6 7 10" stroke="url(#v33-zhen-coral)" stroke-width="1.8" fill="none"/>
+                </g>
+                <circle cx="14" cy="48" r="7" fill="url(#v33-zhen-pearl)"/>
+                <circle r="8" cx="64" cy="48" fill="url(#v33-zhen-jade)"/>
+                <circle r="2.6" cx="64" cy="48" fill="#1c0e04"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>328</b><span class="sd up">+5</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="36" height="36" viewBox="0 0 84 78">
+            <path d="M 10 66 Q 10 24 12 16 L 66 16 Q 68 24 68 66 Z" fill="url(#v33-hk-page)" stroke="#5a3814" stroke-width="0.5"/>
+            <path d="M 12 62 L 10 16 L 62 14 L 64 62 Z" fill="url(#v33-hk-cover)" stroke="#1a0c04" stroke-width="0.7"/>
+            <rect x="24" y="24" width="26" height="32" fill="rgba(255,245,220,0.88)" stroke="rgba(80,50,22,0.7)" stroke-width="0.4"/>
+            <text x="37" y="34" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">黃</text>
+            <text x="37" y="46" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">冊</text>
+            <g stroke="var(--vermillion-deep)" stroke-width="1.4" fill="none">
+              <line x1="16" y1="32" x2="20" y2="32"/>
+              <line x1="16" y1="40" x2="20" y2="40"/>
+              <line x1="16" y1="48" x2="20" y2="48"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">户 口</div>
+          <div class="ctx-narrow-val">1180 万</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="36" height="36" viewBox="0 0 86 84">
+            <rect x="27" y="70" width="32" height="7" rx="1" fill="url(#v33-lz-bronze)"/>
+            <rect x="41" y="22" width="4" height="48" fill="url(#v33-lz-bronze)"/>
+            <circle cx="43" cy="14" r="2.4" fill="url(#v33-lz-bronze)"/>
+            <g transform="rotate(-14 43 26)">
+              <rect x="9" y="24.5" width="68" height="2.5" fill="url(#v33-lz-bronze)"/>
+              <circle cx="43" cy="26" r="2" fill="#3a2410"/>
+              <path d="M 3 38 Q 3 42 6 44 L 18 44 Q 21 42 21 38 Z" fill="url(#v33-lz-pan)"/>
+              <path d="M 65 38 Q 65 42 68 44 L 80 44 Q 83 42 83 38 Z" fill="url(#v33-lz-pan)"/>
+              <rect x="69.5" y="30" width="9" height="4" fill="url(#v33-lz-bronze)"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">吏 治</div>
+          <div class="ctx-narrow-val" style="color: #e88a78;">渐 弊</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="32" height="36" viewBox="0 0 120 150">
+            <circle cx="60" cy="8" r="5" fill="url(#mx-finial)"/>
+            <line x1="60" y1="13" x2="60" y2="18" stroke="#3a2210" stroke-width="0.7"/>
+            <path d="M 42 22 Q 60 14 78 22 L 76 28 L 44 28 Z" fill="url(#mx-silk)"/>
+            <path d="M 36 28 L 84 28 L 80 38 L 40 38 Z" fill="url(#mx-silk)"/>
+            <path d="M 28 38 L 92 38 L 86 54 L 34 54 Z" fill="url(#mx-silk)"/>
+            <path d="M 22 54 L 98 54 L 92 68 L 28 68 Z" fill="url(#mx-silk)"/>
+            <path d="M 14 68 L 106 68 L 98 84 L 22 84 Z" fill="url(#mx-silk)"/>
+            <rect x="58" y="84" width="4" height="60" fill="url(#mx-pole)"/>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">民 心</div>
+          <div class="ctx-narrow-val">61 · 安</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="34" height="40" viewBox="0 0 68 86">
+            <ellipse cx="34" cy="82" rx="28" ry="3.5" fill="url(#v33-hq-cinnabar)" opacity="0.84"/>
+            <rect x="12" y="48" width="44" height="30" rx="0.5" fill="url(#v33-hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+            <text x="34" y="66" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="13" fill="#3a2c14" font-weight="800">玺</text>
+            <path d="M 18 48 Q 14 40 18 32 Q 22 24 30 24 Q 38 24 46 30 Q 50 36 50 42 Q 48 46 50 48 L 50 48 L 18 48 Z" fill="url(#v33-hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+            <ellipse cx="42" cy="30" rx="5" ry="4" fill="url(#v33-hq-jade)" stroke="#3a2c14" stroke-width="0.6"/>
+            <circle cx="44" cy="29" r="1.2" fill="#3a2c14"/>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">皇 权</div>
+          <div class="ctx-narrow-val">52 · 衡</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="40" height="36" viewBox="0 0 120 150">
+            <ellipse cx="60" cy="50" rx="48" ry="3" fill="rgba(0,0,0,0.55)"/>
+            <path d="M 12 18 L 108 18 L 104 26 L 16 26 Z" fill="#0a0604" stroke="var(--gold-bright)" stroke-width="0.7"/>
+            <path d="M 16 26 L 104 26 L 104 50 L 16 50 Z" fill="url(#hw-mian)" stroke="#000000" stroke-width="0.8"/>
+            <path d="M 22 50 Q 22 84 32 90 L 88 90 Q 98 84 98 50 Z" fill="url(#hw-cap)" stroke="#000000" stroke-width="0.8"/>
+            <path d="M 22 50 Q 22 72 30 78 L 90 78 Q 98 72 98 50" fill="none" stroke="var(--gold-bright)" stroke-width="1"/>
+            <circle cx="60" cy="70" r="2.4" fill="rgba(245,218,130,0.6)"/>
+            <g>
+              <line x1="36" y1="26" x2="36" y2="56" stroke="rgba(60,40,20,0.85)" stroke-width="0.4"/>
+              <circle cx="36" cy="34" r="1.2" fill="#f4e8d8"/>
+              <circle cx="36" cy="40" r="1.2" fill="#c8342e"/>
+              <circle cx="36" cy="46" r="1.2" fill="url(#hw-jade)"/>
+              <line x1="48" y1="26" x2="48" y2="62" stroke="rgba(60,40,20,0.85)" stroke-width="0.4"/>
+              <circle cx="48" cy="36" r="1.2" fill="#f4e8d8"/>
+              <circle cx="48" cy="44" r="1.2" fill="#c8342e"/>
+              <circle cx="48" cy="52" r="1.2" fill="url(#hw-jade)"/>
+              <line x1="60" y1="26" x2="60" y2="66" stroke="rgba(60,40,20,0.85)" stroke-width="0.4"/>
+              <circle cx="60" cy="38" r="1.4" fill="#f4e8d8"/>
+              <circle cx="60" cy="46" r="1.4" fill="#c8342e"/>
+              <circle cx="60" cy="54" r="1.4" fill="url(#hw-jade)"/>
+              <line x1="72" y1="26" x2="72" y2="62" stroke="rgba(60,40,20,0.85)" stroke-width="0.4"/>
+              <circle cx="72" cy="36" r="1.2" fill="#f4e8d8"/>
+              <circle cx="72" cy="44" r="1.2" fill="#c8342e"/>
+              <circle cx="72" cy="52" r="1.2" fill="url(#hw-jade)"/>
+              <line x1="84" y1="26" x2="84" y2="58" stroke="rgba(60,40,20,0.85)" stroke-width="0.4"/>
+              <circle cx="84" cy="34" r="1.2" fill="#f4e8d8"/>
+              <circle cx="84" cy="40" r="1.2" fill="#c8342e"/>
+              <circle cx="84" cy="46" r="1.2" fill="url(#hw-jade)"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">皇 威</div>
+          <div class="ctx-narrow-val">68 · 威</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size: 12px; line-height: 1.7; color: var(--ink-muted); margin-top: 16px;">
+      ▲ v3.3 11 件 SVG 装配·万民伞 (民心) + 旒冕 (皇威) 在 narrow cell 仍清晰可识·
+      帑廪库房带灯笼·吏治砝码刻"纲常"·皇权玉玺含"受命于天"。
+    </p>
+  </div>
+
+  <div class="note-block">
+    <strong style="font: 500 15px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; display: block; margin-bottom: 12px;">v3.3 完结</strong>
+    <p><span class="fix">本块完成</span>·民心 (万民伞·5 层 + 千名签 + 12 金穗)·皇威 (旒冕·12 旒 5 珠 + 玉珩 + 充耳)·其他 7 件加历史细节。</p>
+    <p>若 11 件定稿·开始 piece 2 · 4 paradigm 用 SVG 图像各自质感装配 (钦天监夜空底 / 朱漆案台底 / 米黄宣纸底 / 重檐金阙底)。</p>
+    <p style="color: var(--ink-muted); margin-top: 10px;">还需调整哪几件？</p>
+  </div>
+
+</main>
+</body>
+</html>

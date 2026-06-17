@@ -1,0 +1,2763 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>地图编辑器·tianming</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<!-- 移动端「固定分辨率 contain 缩放」适配（仅 capacitor/?fit=1 生效·桌面 no-op）：1280×800 虚拟舞台·配 tools.js _csf 抗缩放补丁 -->
+<script src="tm-mapeditor-fit.js?v=20260604-mapfit"></script>
+<style>
+/* ════════════════════════════════════════════════════════════════
+   tianming · 地图编辑器·design tokens
+   Phase 15.1·令色 / 字 / 距 / 影 / 角 / 层 全统一
+   命名·墨·纸·金·朱·青·黛 (古典 6 色族)
+   ════════════════════════════════════════════════════════════════ */
+:root{
+  /* 墨 ink·背景层 0=最深 → 5=升起 */
+  --ink-0:#0a0805;   /* canvas 底·夜空 */
+  --ink-1:#13100c;   /* default bg·夜墨 */
+  --ink-2:#1c1813;   /* panel bg·砚 */
+  --ink-3:#25201b;   /* raised·灯下纸 */
+  --ink-4:#2f2922;   /* hover·焦灯 */
+  --ink-5:#3a322a;   /* active border·火苗 */
+
+  /* 纸 paper·前景层·古纸色调 */
+  --paper-0:#f5e8c8;  /* highest contrast·白霜 */
+  --paper-1:#d8c8a0;  /* default text·茧黄 */
+  --paper-2:#a89878;  /* secondary·土黄 */
+  --paper-3:#7a6c52;  /* tertiary·烟 */
+  --paper-4:#4d4538;  /* disabled·朽 */
+
+  /* 金 gold·主 accent·primary action */
+  --gold-0:#fff3a8;   /* highlight */
+  --gold-1:#ffd700;   /* default·正 */
+  --gold-2:#c9a96e;   /* muted·副 */
+  --gold-3:#8b7355;   /* deep·深 */
+  --gold-4:#5a4a25;   /* tint bg */
+  --gold-5:#3a2f10;   /* dark fill */
+
+  /* 朱 vermilion·warning / danger·主帝色 */
+  --vmln-0:#ff8a78;   /* light */
+  --vmln-1:#dc4f3a;   /* default */
+  --vmln-2:#a73020;   /* deep */
+  --vmln-3:#5a2a20;   /* tint border */
+  --vmln-4:#3a1a14;   /* tint bg */
+
+  /* 青 cyan·info / nav·水道色 */
+  --cyan-0:#9ec5d6;
+  --cyan-1:#5a8aae;
+  --cyan-2:#365268;
+  --cyan-3:#1f3142;
+
+  /* 翠 jade·success·安色 */
+  --jade-0:#9bc4a8;
+  --jade-1:#6a9a7f;
+  --jade-2:#3f6a55;
+
+  /* 橙 amber·飞地 / 警告中 */
+  --amber-1:#e08020;
+  --amber-2:#a85a18;
+
+  /* 黛 dai·border 灰族 */
+  --bd-1:#3a322c;     /* default border */
+  --bd-2:#2a2520;     /* divider */
+  --bd-3:#1f1c18;     /* faint */
+
+  /* 字 font */
+  --font-serif:"Noto Serif SC","Source Han Serif SC","STKaiti","STSong","STZhongsong",serif;
+  --font-mono:"JetBrains Mono","SF Mono","Menlo","Consolas",monospace;
+  --font-seal:"STKaiti","STZhongsong","STFangsong",serif;  /* 篆/楷 icon */
+
+  /* 字号 fs */
+  --fs-xxs:10px;
+  --fs-xs:11px;
+  --fs-sm:12px;
+  --fs-md:13px;       /* body default */
+  --fs-lg:15px;
+  --fs-xl:17px;
+  --fs-2xl:21px;
+
+  /* 字重 fw */
+  --fw-r:400;
+  --fw-m:500;
+  --fw-sb:600;
+
+  /* 行距 */
+  --lh-tight:1.3;
+  --lh-normal:1.55;
+  --lh-loose:1.75;
+
+  /* 距 sp·4-base */
+  --sp-1:4px;  --sp-2:8px;  --sp-3:12px;  --sp-4:16px;
+  --sp-5:20px; --sp-6:24px; --sp-8:32px;  --sp-10:40px;
+
+  /* 角 rd·硬印章 + 软卷轴 */
+  --rd-0:0;
+  --rd-1:2px;
+  --rd-2:4px;          /* default */
+  --rd-3:6px;          /* panel */
+  --rd-4:10px;         /* drawer / modal·卷轴软角 */
+  --rd-pill:999px;     /* chip */
+
+  /* 影 sh */
+  --sh-0:none;
+  --sh-1:0 1px 2px rgba(0,0,0,0.45);
+  --sh-2:0 4px 10px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.3);
+  --sh-3:0 12px 32px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.4);
+  --sh-glow:0 0 0 1px var(--gold-1), 0 0 14px rgba(255,215,0,0.35);
+  --sh-inset:inset 0 1px 0 rgba(255,255,255,0.04);
+
+  /* z-index 层 */
+  --z-canvas:1;
+  --z-overlay:10;
+  --z-drawer:100;
+  --z-feature:110;
+  --z-popover:500;
+  --z-modal:1000;
+  --z-toast:2000;
+  --z-tooltip:3000;
+
+  /* 动 motion */
+  --t-fast:0.1s ease;
+  --t-default:0.18s ease;
+  --t-slow:0.28s ease;
+  --t-spring:0.32s cubic-bezier(0.34,1.56,0.64,1);
+
+  /* 兼容·保留旧 token 名·maps to new */
+  --bg:var(--ink-1); --bg-2:var(--ink-2); --bg-3:var(--ink-3);
+  --fg:var(--paper-1); --fg-2:var(--paper-2); --fg-3:var(--paper-3);
+  --gold:var(--gold-1);
+  --red:var(--vmln-1); --green:var(--jade-1); --blue:var(--cyan-1);
+  --border:var(--bd-1);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   reset + base
+   ════════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{
+  margin:0; height:100%;
+  background:var(--ink-1);
+  color:var(--paper-1);
+  font-family:var(--font-serif);
+  font-size:var(--fs-md);
+  line-height:var(--lh-normal);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+body{ overflow:hidden; }
+
+/* 滚动条·古典暗 */
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-track{ background:var(--ink-1); }
+::-webkit-scrollbar-thumb{ background:var(--bd-1); border-radius:var(--rd-pill); }
+::-webkit-scrollbar-thumb:hover{ background:var(--gold-3); }
+
+/* selection */
+::selection{ background:var(--gold-4); color:var(--gold-0); }
+
+/* focus·金辉 */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+  outline:none; box-shadow:var(--sh-glow);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   layout·主结构 (slice 15.2 将彻底重写·此处先精化现有 grid)
+   ════════════════════════════════════════════════════════════════ */
+.me-app{
+  display:grid;
+  grid-template-rows:48px auto 1fr 26px;
+  height:100vh;
+  background:var(--ink-0);
+}
+.me-toolbar{
+  display:flex; align-items:center; gap:var(--sp-2);
+  padding:0 var(--sp-3);
+  background:linear-gradient(180deg, var(--ink-3) 0%, var(--ink-2) 100%);
+  border-bottom:1px solid var(--bd-1);
+  box-shadow:var(--sh-1), var(--sh-inset);
+}
+.me-toolbar .sep{
+  width:1px; height:24px;
+  background:linear-gradient(180deg, transparent, var(--bd-1) 20%, var(--bd-1) 80%, transparent);
+  margin:0 var(--sp-2);
+}
+.me-toolbar .sp{ flex:1; }
+
+.me-mid{
+  display:grid;
+  grid-template-columns:212px 1fr 372px;
+  min-height:0;
+  position:relative;
+  background:var(--ink-1);
+}
+.me-status{
+  display:flex; align-items:center; gap:var(--sp-4);
+  padding:0 var(--sp-3);
+  background:var(--ink-0);
+  border-top:1px solid var(--bd-1);
+  color:var(--paper-2);
+  font-size:var(--fs-xs);
+  letter-spacing:0.02em;
+}
+.me-status b{ color:var(--gold-2); font-weight:var(--fw-sb); }
+
+/* ════════════════════════════════════════════════════════════════
+   left rail·tools + layers
+   ════════════════════════════════════════════════════════════════ */
+.me-left{
+  background:linear-gradient(180deg, var(--ink-2) 0%, var(--ink-1) 100%);
+  border-right:1px solid var(--bd-1);
+  padding:var(--sp-3) var(--sp-2);
+  overflow:auto;
+  user-select:none;
+}
+.me-left h3{
+  margin:var(--sp-2) var(--sp-1) var(--sp-1);
+  font-size:var(--fs-xxs);
+  letter-spacing:0.24em;
+  color:var(--gold-2);
+  font-weight:var(--fw-m);
+  text-transform:uppercase;
+}
+.me-tool-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-1); }
+.me-tool{
+  position:relative;
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border:1px solid var(--bd-1);
+  color:var(--paper-1);
+  height:38px;
+  border-radius:var(--rd-2);
+  cursor:pointer;
+  font-family:var(--font-seal);
+  font-size:var(--fs-lg);
+  font-weight:var(--fw-m);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:0;
+  transition:background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  box-shadow:var(--sh-inset);
+}
+.me-tool .me-tk{
+  position:absolute;
+  bottom:1px; right:3px;
+  font-size:9px;
+  font-family:var(--font-mono);
+  color:var(--paper-3);
+  font-weight:var(--fw-r);
+  letter-spacing:0;
+}
+.me-tool:hover{
+  background:linear-gradient(180deg, var(--ink-4), var(--ink-3));
+  border-color:var(--gold-3);
+  color:var(--gold-2);
+}
+.me-tool:active{ transform:translateY(1px); }
+.me-tool.active{
+  background:linear-gradient(180deg, var(--gold-5), var(--gold-4));
+  border-color:var(--gold-1);
+  color:var(--gold-0);
+  box-shadow:var(--sh-inset), 0 0 12px rgba(255,215,0,0.18);
+}
+.me-tool.active .me-tk{ color:var(--gold-1); }
+.me-tool.disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
+
+.me-layer{
+  display:flex; align-items:center; gap:var(--sp-2);
+  padding:5px var(--sp-2);
+  border-radius:var(--rd-2);
+  cursor:pointer; user-select:none;
+  font-size:var(--fs-sm);
+  color:var(--paper-1);
+  transition:background var(--t-fast), color var(--t-fast);
+}
+.me-layer:hover{ background:var(--ink-3); color:var(--gold-2); }
+.me-layer input{ accent-color:var(--gold-1); cursor:pointer; }
+
+/* ════════════════════════════════════════════════════════════════
+   canvas
+   ════════════════════════════════════════════════════════════════ */
+.me-canvas-wrap{
+  position:relative;
+  background:var(--ink-0);
+  min-height:0; overflow:hidden;
+}
+.me-canvas-wrap canvas{ display:block; width:100%; height:100%; cursor:default; }
+.me-canvas-wrap canvas.t-pen{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-edit{ cursor:cell; }
+.me-canvas-wrap canvas.t-hand{ cursor:grab; }
+.me-canvas-wrap canvas.t-zoom{ cursor:zoom-in; }
+.me-canvas-wrap canvas.t-split{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-addPoly{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-text{ cursor:text; }
+.me-canvas-wrap canvas.t-addHole{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-brush{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-voronoi{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-river{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-road{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-stronghold{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-pick{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-paint-height{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-paint-terrain{ cursor:crosshair; }
+.me-canvas-wrap canvas.t-ferry{ cursor:crosshair; }
+
+/* ════════════════════════════════════════════════════════════════
+   洞·飞地·canvas overlay
+   ════════════════════════════════════════════════════════════════ */
+.me-hole-list{
+  margin-top:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3);
+  background:var(--ink-0);
+  border-radius:var(--rd-2);
+  border-left:3px solid var(--vmln-1);
+  box-shadow:var(--sh-inset);
+}
+.me-hole-hdr{
+  font-size:var(--fs-xxs);
+  color:var(--vmln-0);
+  margin-bottom:var(--sp-1);
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+}
+.me-hole-row{ display:flex; gap:var(--sp-2); align-items:center; padding:3px 0; font-size:var(--fs-xs); }
+.me-hole-label{ color:var(--paper-1); flex:1; }
+.me-hole-del{
+  background:transparent;
+  border:1px solid var(--vmln-3);
+  color:var(--vmln-0);
+  padding:2px var(--sp-2);
+  border-radius:var(--rd-1);
+  cursor:pointer;
+  font-size:var(--fs-xs);
+  line-height:1;
+  transition:all var(--t-fast);
+}
+.me-hole-del:hover{ background:var(--vmln-4); border-color:var(--vmln-1); }
+
+.me-canvas-wrap .me-canvas-overlay{
+  position:absolute;
+  left:var(--sp-2); top:var(--sp-2);
+  padding:5px var(--sp-3);
+  background:rgba(13,11,8,0.82);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:1px solid var(--bd-1);
+  border-radius:var(--rd-2);
+  font-size:var(--fs-xs);
+  color:var(--paper-2);
+  pointer-events:none;
+  font-family:var(--font-mono);
+  letter-spacing:0.02em;
+  z-index:var(--z-overlay);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   right inspector·div / feature panel
+   ════════════════════════════════════════════════════════════════ */
+.me-right{
+  background:linear-gradient(180deg, var(--ink-2) 0%, var(--ink-1) 100%);
+  border-left:1px solid var(--bd-1);
+  padding:var(--sp-3);
+  overflow:auto;
+}
+.me-panel-empty{ padding:var(--sp-3) var(--sp-2); }
+.me-empty-title{
+  color:var(--gold-2);
+  font-size:var(--fs-lg);
+  margin-bottom:var(--sp-2);
+  font-weight:var(--fw-m);
+}
+.me-empty-meta{
+  color:var(--paper-2);
+  font-size:var(--fs-xs);
+  margin-bottom:var(--sp-3);
+  line-height:var(--lh-loose);
+}
+.me-empty-tip, .me-empty-hint{
+  font-size:var(--fs-xs);
+  color:var(--paper-3);
+  line-height:var(--lh-loose);
+  margin:var(--sp-2) 0;
+}
+.me-empty-tip kbd, kbd{
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  padding:1px 6px;
+  border-radius:var(--rd-2);
+  font-family:var(--font-mono);
+  font-size:var(--fs-xxs);
+  color:var(--gold-2);
+  margin:0 2px;
+  box-shadow:var(--sh-1);
+}
+
+.me-panel-hdr{
+  padding-bottom:var(--sp-3);
+  border-bottom:1px solid var(--bd-1);
+  margin-bottom:var(--sp-3);
+}
+.me-hdr-name{
+  width:100%;
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  color:var(--gold-1);
+  font-family:var(--font-serif);
+  font-size:var(--fs-xl);
+  padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--rd-2);
+  font-weight:var(--fw-sb);
+  letter-spacing:0.02em;
+  transition:border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.me-hdr-name:hover{ border-color:var(--gold-3); }
+.me-hdr-meta{
+  font-size:var(--fs-xxs);
+  color:var(--paper-3);
+  margin:var(--sp-1) 0;
+  font-family:var(--font-mono);
+  letter-spacing:0.02em;
+}
+.me-hdr-meta code{
+  background:var(--ink-0);
+  padding:1px 5px;
+  border-radius:var(--rd-1);
+  color:var(--paper-2);
+}
+
+.me-actions{ display:flex; gap:var(--sp-2); margin-top:var(--sp-2); flex-wrap:wrap; }
+
+/* ════════════════════════════════════════════════════════════════
+   button·default / warn / danger
+   ════════════════════════════════════════════════════════════════ */
+.me-btn{
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border:1px solid var(--bd-1);
+  color:var(--paper-1);
+  padding:5px var(--sp-3);
+  border-radius:var(--rd-2);
+  cursor:pointer;
+  font-family:var(--font-serif);
+  font-size:var(--fs-xs);
+  font-weight:var(--fw-m);
+  letter-spacing:0.04em;
+  transition:background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  box-shadow:var(--sh-inset);
+}
+.me-btn:hover{
+  background:linear-gradient(180deg, var(--ink-4), var(--ink-3));
+  border-color:var(--gold-3);
+  color:var(--gold-2);
+}
+.me-btn:active{ transform:translateY(1px); }
+.me-btn-warn{
+  border-color:var(--gold-4);
+  color:var(--gold-2);
+  background:linear-gradient(180deg, var(--gold-5), var(--ink-3));
+}
+.me-btn-warn:hover{
+  background:linear-gradient(180deg, var(--gold-4), var(--gold-5));
+  color:var(--gold-0);
+  border-color:var(--gold-1);
+}
+.me-btn-danger{
+  border-color:var(--vmln-3);
+  color:var(--vmln-0);
+}
+.me-btn-danger:hover{
+  background:linear-gradient(180deg, var(--vmln-4), var(--ink-2));
+  border-color:var(--vmln-1);
+  color:var(--vmln-0);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   tabs
+   ════════════════════════════════════════════════════════════════ */
+.me-tabs{
+  display:flex;
+  gap:0;
+  margin-bottom:var(--sp-3);
+  border-bottom:1px solid var(--bd-1);
+}
+.me-tab{
+  background:transparent;
+  border:none;
+  color:var(--paper-2);
+  padding:var(--sp-2) var(--sp-3);
+  cursor:pointer;
+  font-family:var(--font-serif);
+  font-size:var(--fs-sm);
+  font-weight:var(--fw-m);
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+  transition:color var(--t-fast), border-color var(--t-fast);
+  letter-spacing:0.04em;
+}
+.me-tab:hover{ color:var(--paper-1); }
+.me-tab.active{
+  color:var(--gold-1);
+  border-bottom-color:var(--gold-1);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   form·label + input + textarea + select + range
+   ════════════════════════════════════════════════════════════════ */
+.me-field{ margin-bottom:var(--sp-3); }
+.me-label{
+  display:block;
+  font-size:var(--fs-xxs);
+  color:var(--paper-3);
+  margin-bottom:var(--sp-1);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  font-weight:var(--fw-m);
+}
+.me-ctrl input[type=text],
+.me-ctrl input[type=number],
+.me-ctrl select,
+.me-ctrl textarea,
+input[type=text]:not(.me-tb-select):not(.me-hdr-name),
+input[type=number],
+textarea{
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  color:var(--paper-1);
+  padding:5px var(--sp-2);
+  border-radius:var(--rd-2);
+  font-family:var(--font-serif);
+  font-size:var(--fs-sm);
+  resize:vertical;
+  transition:border-color var(--t-fast), background var(--t-fast);
+  box-shadow:var(--sh-inset);
+}
+.me-ctrl input[type=text]:hover,
+.me-ctrl input[type=number]:hover,
+.me-ctrl select:hover,
+.me-ctrl textarea:hover{ border-color:var(--paper-3); }
+.me-ctrl input[type=text]:focus,
+.me-ctrl input[type=number]:focus,
+.me-ctrl select:focus,
+.me-ctrl textarea:focus{ border-color:var(--gold-2); background:var(--ink-2); }
+.me-ctrl input[type=text],
+.me-ctrl input[type=number],
+.me-ctrl select,
+.me-ctrl textarea{ width:100%; }
+.me-ctrl input[type=range]{ width:calc(100% - 40px); accent-color:var(--gold-1); }
+.me-rng{
+  display:inline-block; width:36px;
+  text-align:right;
+  color:var(--gold-2);
+  font-family:var(--font-mono);
+  font-size:var(--fs-xs);
+}
+
+.me-fld-hint{
+  font-size:10px;
+  color:var(--paper-3);
+  font-style:italic;
+  margin-left:4px;
+}
+
+.me-dis-add{
+  background:transparent; color:#d4a838; border:1px solid #d4a838;
+  border-radius:3px; cursor:pointer; padding:1px 8px; font-size:10px;
+  margin-left:auto;
+}
+.me-dis-add:hover{ background:rgba(212,168,56,0.12); }
+.me-dis-rows{ display:flex; flex-direction:column; gap:3px; padding:4px 0; }
+.me-dis-empty{ font-size:10px; color:var(--paper-3); font-style:italic; padding:2px 0; }
+.me-dis-row{
+  display:grid; grid-template-columns:64px 56px 70px 1fr 24px;
+  gap:3px; align-items:center;
+  padding:2px;
+  background:rgba(212,168,56,0.04);
+  border-left:2px solid #d4a838; border-radius:2px;
+}
+.me-dis-row select, .me-dis-row input{ width:100%; font-size:10px; padding:2px; }
+.me-dis-del{
+  background:transparent; color:var(--vermillion-3, #c04030);
+  border:1px solid currentColor; border-radius:2px; cursor:pointer;
+  padding:0 4px; font-size:11px;
+}
+.me-dis-del:hover{ background:rgba(192,64,48,0.12); }
+
+.me-aut-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-1); margin-bottom:var(--sp-1); }
+.me-aut-row select{ width:100%; }
+.me-aut-row input{ width:100%; }
+
+.me-divider{
+  margin:var(--sp-3) 0 var(--sp-2);
+  padding:var(--sp-1) var(--sp-2);
+  font-size:var(--fs-xxs);
+  color:var(--paper-2);
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  font-weight:var(--fw-m);
+  background:linear-gradient(90deg, var(--ink-0), transparent);
+  border-left:2px solid var(--gold-3);
+  border-radius:0 var(--rd-1) var(--rd-1) 0;
+}
+
+.me-flag{
+  display:flex; align-items:center; gap:var(--sp-2);
+  padding:5px var(--sp-2);
+  font-size:var(--fs-sm);
+  color:var(--paper-1);
+  cursor:pointer; user-select:none;
+  border-radius:var(--rd-2);
+  transition:background var(--t-fast);
+}
+.me-flag:hover{ background:var(--ink-3); color:var(--gold-2); }
+.me-flag input{ accent-color:var(--gold-1); cursor:pointer; }
+
+.me-panel-multi{ padding:var(--sp-2) 0; }
+.me-multi-title{
+  color:var(--gold-2);
+  font-size:var(--fs-md);
+  margin-bottom:var(--sp-2);
+  font-weight:var(--fw-m);
+}
+.me-multi-list{
+  list-style:none;
+  padding:0;
+  margin:0 0 var(--sp-2);
+  max-height:200px;
+  overflow:auto;
+  background:var(--ink-0);
+  border:1px solid var(--bd-2);
+  border-radius:var(--rd-2);
+}
+.me-multi-list li{
+  padding:5px var(--sp-2);
+  font-size:var(--fs-xs);
+  color:var(--paper-2);
+  border-bottom:1px solid var(--bd-2);
+}
+.me-multi-list li:last-child{ border-bottom:none; }
+.me-tip{
+  font-size:var(--fs-xxs);
+  color:var(--paper-3);
+  margin-top:var(--sp-2);
+  line-height:var(--lh-loose);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   toolbar select / dropdown
+   ════════════════════════════════════════════════════════════════ */
+.me-tb-select{
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border:1px solid var(--bd-1);
+  color:var(--paper-1);
+  padding:5px var(--sp-2);
+  border-radius:var(--rd-2);
+  font-family:var(--font-serif);
+  font-size:var(--fs-xs);
+  cursor:pointer;
+  transition:border-color var(--t-fast), color var(--t-fast);
+}
+.me-tb-select:hover{ border-color:var(--gold-3); color:var(--gold-2); }
+
+/* ════════════════════════════════════════════════════════════════
+   ratio map (phase 2)·permissions·batch·legend·validation chip
+   ════════════════════════════════════════════════════════════════ */
+.me-ratio-wrap{
+  background:var(--ink-0);
+  border:1px solid var(--bd-2);
+  border-radius:var(--rd-2);
+  padding:var(--sp-2);
+}
+.me-ratio-row{
+  display:grid;
+  grid-template-columns:1fr 78px 26px;
+  gap:var(--sp-1);
+  margin-bottom:3px;
+  align-items:center;
+}
+.me-ratio-k{
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  color:var(--gold-2);
+  padding:3px var(--sp-2);
+  font-size:var(--fs-xs);
+  border-radius:var(--rd-1);
+  font-family:var(--font-serif);
+}
+.me-ratio-v{
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  color:var(--paper-1);
+  padding:3px var(--sp-2);
+  font-size:var(--fs-xs);
+  border-radius:var(--rd-1);
+  font-family:var(--font-mono);
+}
+.me-ratio-del{
+  background:var(--vmln-4);
+  border:1px solid var(--vmln-3);
+  color:var(--vmln-0);
+  cursor:pointer;
+  border-radius:var(--rd-1);
+  font-size:var(--fs-md);
+  line-height:1;
+  transition:background var(--t-fast);
+}
+.me-ratio-del:hover{ background:var(--vmln-3); }
+.me-ratio-add{ margin-top:var(--sp-1); }
+.me-ratio-add-key{
+  width:100%;
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  color:var(--gold-2);
+  padding:4px var(--sp-2);
+  font-size:var(--fs-xs);
+  border-radius:var(--rd-1);
+  font-family:var(--font-serif);
+}
+.me-ratio-sum{
+  font-size:var(--fs-xxs);
+  margin-top:var(--sp-2);
+  font-family:var(--font-mono);
+  text-align:right;
+  color:var(--paper-3);
+}
+
+.me-perm-row{
+  background:var(--ink-0);
+  border:1px solid var(--bd-2);
+  border-radius:var(--rd-2);
+  padding:var(--sp-2);
+  margin-bottom:5px;
+}
+.me-perm-label{
+  font-size:var(--fs-xs);
+  color:var(--gold-2);
+  margin-bottom:3px;
+  font-weight:var(--fw-m);
+}
+.me-perm-allow{
+  font-size:var(--fs-xs);
+  color:var(--paper-2);
+  display:inline-block;
+  margin-bottom:var(--sp-1);
+}
+.me-perm-row input[type=text]{ font-size:var(--fs-xxs); padding:3px 5px; margin-top:3px; }
+
+.me-batch-section{
+  background:rgba(255,215,0,0.045);
+  border:1px solid var(--gold-4);
+  border-radius:var(--rd-3);
+  padding:var(--sp-3);
+  margin-top:var(--sp-3);
+  box-shadow:var(--sh-inset);
+}
+
+.me-legend-card{
+  position:absolute;
+  right:var(--sp-2); top:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3);
+  background:rgba(13,11,8,0.92);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:1px solid var(--bd-1);
+  border-radius:var(--rd-2);
+  font-size:var(--fs-xs);
+  color:var(--paper-1);
+  pointer-events:none;
+  min-width:148px;
+  z-index:var(--z-overlay);
+  box-shadow:var(--sh-2);
+}
+.me-legend-title{
+  color:var(--gold-2);
+  font-size:var(--fs-xs);
+  margin-bottom:var(--sp-1);
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+}
+.me-legend-row{ display:flex; align-items:center; gap:var(--sp-2); padding:2px 0; font-size:var(--fs-xxs); }
+.me-legend-sw{
+  width:14px; height:10px;
+  border-radius:var(--rd-1);
+  border:1px solid var(--bd-1);
+  display:inline-block;
+}
+.me-legend-empty{ color:var(--paper-3); font-size:var(--fs-xxs); }
+
+.me-vc-chip{
+  background:rgba(13,11,8,0.7);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  border:1px solid var(--jade-1);
+  color:var(--jade-1);
+  padding:4px var(--sp-3);
+  border-radius:var(--rd-pill);
+  cursor:pointer;
+  font-size:var(--fs-xs);
+  font-family:var(--font-serif);
+  font-weight:var(--fw-m);
+  transition:all var(--t-default);
+  user-select:none;
+}
+.me-vc-chip:hover{
+  background:var(--ink-1);
+  border-color:var(--jade-0);
+  color:var(--jade-0);
+}
+.me-vc-detail{
+  position:absolute;
+  bottom:34px; left:var(--sp-2); right:var(--sp-2);
+  max-height:260px; overflow:auto;
+  background:rgba(13,11,8,0.96);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--bd-1);
+  border-radius:var(--rd-3);
+  padding:var(--sp-3);
+  display:none;
+  z-index:var(--z-popover);
+  box-shadow:var(--sh-3);
+}
+.me-vc-hdr{
+  color:var(--gold-2);
+  font-size:var(--fs-xs);
+  margin-bottom:var(--sp-2);
+  padding-bottom:var(--sp-1);
+  border-bottom:1px solid var(--bd-1);
+  letter-spacing:0.1em;
+}
+.me-vc-row{
+  display:grid;
+  grid-template-columns:14px 1fr auto 76px;
+  gap:var(--sp-2);
+  align-items:center;
+  font-size:var(--fs-xxs);
+  padding:4px;
+  border-radius:var(--rd-1);
+}
+.me-vc-row:hover[data-vc-jump]{ background:var(--ink-3); cursor:pointer; }
+.me-vc-lv{ font-weight:var(--fw-sb); }
+.me-vc-name{ color:var(--gold-2); }
+.me-vc-msg{ color:var(--paper-1); }
+.me-vc-code{ color:var(--paper-3); font-family:var(--font-mono); font-size:9px; text-align:right; }
+.me-vc-empty{ color:var(--jade-1); text-align:center; padding:var(--sp-2); }
+
+/* ════════════════════════════════════════════════════════════════
+   exclave (phase 6)·飞地
+   ════════════════════════════════════════════════════════════════ */
+.me-exclave-list{
+  margin-top:var(--sp-2);
+  padding:var(--sp-2) var(--sp-3);
+  background:var(--ink-0);
+  border-radius:var(--rd-2);
+  border-left:3px solid var(--amber-1);
+  box-shadow:var(--sh-inset);
+}
+.me-exclave-hdr{
+  font-size:var(--fs-xxs);
+  color:var(--amber-1);
+  margin-bottom:var(--sp-1);
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+}
+.me-exclave-row{ display:flex; gap:var(--sp-2); align-items:center; padding:3px 0; font-size:var(--fs-xs); }
+.me-exclave-label{ color:var(--paper-1); flex:1; }
+.me-exclave-del{
+  background:transparent;
+  border:1px solid var(--vmln-3);
+  color:var(--vmln-0);
+  padding:2px var(--sp-2);
+  border-radius:var(--rd-1);
+  cursor:pointer;
+  font-size:var(--fs-xs);
+  line-height:1;
+  transition:all var(--t-fast);
+}
+.me-exclave-del:hover{ background:var(--vmln-4); border-color:var(--vmln-1); }
+
+.me-bm-method:hover{ background:var(--ink-3); }
+.me-bm-method input[type="radio"]:checked + div div:first-child{ color:var(--gold-1); }
+
+/* ════════════════════════════════════════════════════════════════
+   timeline / diff (phase 3)
+   ════════════════════════════════════════════════════════════════ */
+.me-time-bar{
+  display:flex; align-items:center; gap:var(--sp-2);
+  padding:0 var(--sp-2);
+}
+.me-time-bar input[type=range]{
+  width:170px;
+  accent-color:var(--gold-1);
+}
+.me-time-yr{
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  color:var(--gold-2);
+  padding:4px var(--sp-2);
+  border-radius:var(--rd-2);
+  font-family:var(--font-mono);
+  font-size:var(--fs-xs);
+  width:64px;
+  text-align:center;
+}
+.me-time-input{
+  background:var(--ink-3);
+  border:1px solid var(--bd-1);
+  color:var(--paper-1);
+  padding:4px var(--sp-2);
+  border-radius:var(--rd-2);
+  font-family:var(--font-mono);
+  font-size:var(--fs-xs);
+  width:64px;
+}
+.me-time-clear{
+  font-size:var(--fs-xxs);
+  color:var(--paper-3);
+  cursor:pointer; user-select:none;
+  padding:2px var(--sp-1);
+  transition:color var(--t-fast);
+}
+.me-time-clear:hover{ color:var(--gold-2); }
+
+.me-tl-row{
+  background:var(--ink-0);
+  border:1px solid var(--bd-2);
+  border-radius:var(--rd-2);
+  padding:var(--sp-2) var(--sp-3);
+  margin-bottom:var(--sp-1);
+  transition:border-color var(--t-fast);
+}
+.me-tl-row:hover{ border-color:var(--gold-3); }
+.me-tl-row-hdr{ display:grid; grid-template-columns:54px 1fr 26px 26px; gap:var(--sp-2); align-items:center; }
+.me-tl-year{
+  color:var(--gold-1);
+  font-family:var(--font-mono);
+  font-size:var(--fs-md);
+  font-weight:var(--fw-sb);
+  letter-spacing:0.04em;
+}
+.me-tl-keys{ color:var(--paper-3); font-size:var(--fs-xxs); }
+.me-tl-edit, .me-tl-del{
+  background:transparent;
+  border:1px solid var(--bd-1);
+  color:var(--paper-2);
+  cursor:pointer;
+  border-radius:var(--rd-1);
+  font-size:var(--fs-xs);
+  line-height:1;
+  padding:3px 6px;
+  transition:all var(--t-fast);
+}
+.me-tl-edit:hover{ background:var(--gold-5); color:var(--gold-1); border-color:var(--gold-1); }
+.me-tl-del:hover{ background:var(--vmln-4); color:var(--vmln-0); border-color:var(--vmln-3); }
+.me-tl-summary{
+  font-size:var(--fs-xxs);
+  color:var(--paper-2);
+  margin-top:var(--sp-1);
+  line-height:var(--lh-loose);
+}
+
+.me-src-row{
+  background:var(--ink-0);
+  border:1px solid var(--bd-2);
+  border-radius:var(--rd-2);
+  padding:var(--sp-2) var(--sp-3);
+  margin-bottom:5px;
+}
+.me-src-row-hdr{ display:flex; gap:var(--sp-2); align-items:center; justify-content:space-between; }
+.me-src-title{
+  color:var(--gold-2);
+  font-size:var(--fs-sm);
+  font-weight:var(--fw-m);
+}
+.me-src-del{
+  background:transparent;
+  border:1px solid var(--bd-1);
+  color:var(--paper-3);
+  cursor:pointer;
+  border-radius:var(--rd-1);
+  font-size:var(--fs-xs);
+  line-height:1;
+  padding:3px 6px;
+  transition:all var(--t-fast);
+}
+.me-src-del:hover{ background:var(--vmln-4); color:var(--vmln-0); border-color:var(--vmln-3); }
+.me-src-meta{ font-size:var(--fs-xxs); color:var(--paper-3); margin-top:2px; font-family:var(--font-mono); }
+.me-src-note{
+  font-size:var(--fs-xxs);
+  color:var(--paper-1);
+  margin-top:var(--sp-1);
+  padding:var(--sp-1) var(--sp-2);
+  background:var(--ink-1);
+  border-radius:var(--rd-1);
+  font-style:italic;
+  line-height:var(--lh-loose);
+}
+
+.me-diff-bar{
+  background:linear-gradient(90deg, rgba(220,90,60,0.18), rgba(220,90,60,0.08));
+  border-bottom:1px solid var(--vmln-3);
+  display:flex; align-items:center; gap:var(--sp-3);
+  padding:5px var(--sp-3);
+  font-size:var(--fs-xs);
+  color:var(--paper-1);
+}
+.me-diff-bar b{ color:var(--gold-1); }
+
+/* ════════════════════════════════════════════════════════════════
+   shared modal·slice 15.1·提供基础 class·后续 slice 用
+   各 module 现仍 inline cssText·15.2 起统一改用此 class
+   ════════════════════════════════════════════════════════════════ */
+.me-modal{
+  position:fixed; left:50%; top:50%;
+  transform:translate(-50%, -50%);
+  z-index:var(--z-modal);
+  background:linear-gradient(180deg, var(--ink-2), var(--ink-1));
+  border:1px solid var(--bd-1);
+  border-radius:var(--rd-4);
+  padding:var(--sp-4) var(--sp-5);
+  min-width:380px;
+  max-width:760px;
+  max-height:85vh;
+  overflow:auto;
+  font-family:var(--font-serif);
+  color:var(--paper-1);
+  box-shadow:var(--sh-3);
+  display:none;
+}
+.me-modal.open{ display:block; }
+.me-modal-title{
+  font-size:var(--fs-lg);
+  color:var(--gold-2);
+  margin-bottom:var(--sp-3);
+  padding-bottom:var(--sp-2);
+  border-bottom:1px solid var(--bd-1);
+  font-weight:var(--fw-sb);
+  letter-spacing:0.04em;
+}
+.me-modal-foot{
+  display:flex; gap:var(--sp-2); justify-content:flex-end;
+  margin-top:var(--sp-3);
+  padding-top:var(--sp-3);
+  border-top:1px solid var(--bd-2);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   feature 浮 panel·right-panel 之上
+   ════════════════════════════════════════════════════════════════ */
+#feature-panel{
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2)) !important;
+  border:1px solid var(--bd-1) !important;
+  border-radius:var(--rd-3) !important;
+  box-shadow:var(--sh-3) !important;
+  z-index:var(--z-feature) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Phase 15.2·主结构·drawer paradigm
+   skeleton·titlebar (40px) + stage (canvas + rail + drawer + minibar) + status (26px)
+   ════════════════════════════════════════════════════════════════ */
+
+/* override·me-app 4 行·titlebar + diff (auto·hidden=0) + stage + status
+   diff-bar display:none 时不占 row·但 stage / footer 走显式 grid-row·防错位 */
+.me-app{
+  display:grid;
+  grid-template-rows:40px auto 1fr 26px;
+  height:100vh;
+  overflow:hidden;
+  background:var(--ink-0);
+}
+.me-titlebar{ grid-row:1; }
+.me-diff-bar{ grid-row:2; }
+.me-stage{ grid-row:3; min-height:0; }
+.me-status{ grid-row:4; }
+
+/* ─── 顶 titlebar·thin·铺满·古典金边 ───────────────────── */
+.me-titlebar{
+  display:flex; align-items:center;
+  gap:var(--sp-3);
+  padding:0 var(--sp-3);
+  background:linear-gradient(180deg, var(--ink-3) 0%, var(--ink-2) 100%);
+  border-bottom:1px solid var(--bd-1);
+  box-shadow:var(--sh-1);
+  position:relative;
+  z-index:var(--z-overlay);
+  user-select:none;
+}
+.me-titlebar::after{
+  content:"";
+  position:absolute; left:0; right:0; bottom:-1px; height:1px;
+  background:linear-gradient(90deg, transparent, var(--gold-3) 30%, var(--gold-3) 70%, transparent);
+  opacity:0.35;
+}
+.me-title-brand{
+  display:flex; align-items:center; gap:var(--sp-2);
+  padding-right:var(--sp-3);
+  border-right:1px solid var(--bd-1);
+}
+.me-brand-seal{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:26px; height:26px;
+  background:linear-gradient(180deg, var(--vmln-1), var(--vmln-2));
+  color:var(--paper-0);
+  font-family:var(--font-seal);
+  font-size:var(--fs-md);
+  font-weight:var(--fw-sb);
+  border-radius:var(--rd-1);
+  box-shadow:var(--sh-1), inset 0 0 0 1px rgba(255,243,168,0.2);
+  letter-spacing:0;
+}
+.me-brand-text{
+  color:var(--gold-2);
+  font-size:var(--fs-md);
+  font-weight:var(--fw-m);
+  letter-spacing:0.06em;
+}
+.me-title-menu{ display:flex; align-items:center; gap:var(--sp-1); }
+.me-mbtn{
+  background:transparent;
+  border:1px solid transparent;
+  color:var(--paper-1);
+  padding:5px var(--sp-2);
+  border-radius:var(--rd-2);
+  cursor:pointer;
+  font-family:var(--font-serif);
+  font-size:var(--fs-sm);
+  font-weight:var(--fw-m);
+  transition:background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+.me-mbtn:hover{
+  background:var(--ink-3);
+  color:var(--gold-2);
+  border-color:var(--bd-1);
+}
+.me-mbtn.active{ background:var(--ink-3); color:var(--gold-1); }
+
+.me-title-spacer{ flex:1; }
+.me-title-meta{
+  display:flex; align-items:center; gap:var(--sp-3);
+  font-size:var(--fs-xs);
+  color:var(--paper-2);
+}
+.me-dirty-dot{
+  display:inline-block;
+  width:8px; height:8px;
+  border-radius:var(--rd-pill);
+  background:var(--paper-3);
+  transition:background var(--t-fast), box-shadow var(--t-fast);
+}
+.me-dirty-dot.dirty{
+  background:var(--vmln-1);
+  box-shadow:0 0 8px rgba(220,79,58,0.6);
+  animation:me-pulse 1.6s ease-in-out infinite;
+}
+@keyframes me-pulse{
+  0%,100%{ opacity:1; }
+  50%{ opacity:0.5; }
+}
+.me-meta-stat{ display:flex; align-items:center; gap:5px; }
+.me-meta-stat b{
+  color:var(--gold-2);
+  font-family:var(--font-mono);
+  font-weight:var(--fw-sb);
+}
+
+/* ─── 主舞台·stage·canvas full-bleed + 浮 UI ──────────── */
+.me-stage{
+  position:relative;
+  overflow:hidden;
+  background:var(--ink-0);
+  isolation:isolate;
+}
+.me-stage > .me-canvas-wrap{
+  position:absolute;
+  inset:0;
+}
+
+/* ─── 左 rail·tools·icon-only·52px ──────────────────── */
+.me-rail-l{
+  position:absolute;
+  left:var(--sp-2); top:var(--sp-2); bottom:var(--sp-2);
+  width:54px;
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border:1px solid var(--bd-1);
+  border-radius:var(--rd-3);
+  box-shadow:var(--sh-2);
+  padding:var(--sp-1);
+  display:flex; flex-direction:column;
+  gap:3px;
+  overflow-y:auto; overflow-x:hidden;
+  z-index:var(--z-drawer);
+}
+.me-rail-l::-webkit-scrollbar{ width:0; }
+.me-rail-l .me-tool{
+  width:46px; height:46px;
+  font-family:var(--font-seal);
+  font-size:var(--fs-xl);
+  position:relative;
+  flex-shrink:0;
+}
+.me-rail-l .me-tool .me-tk{
+  bottom:1px; right:2px;
+  font-size:8px;
+}
+.me-rail-l .me-rail-sep{
+  height:1px;
+  background:linear-gradient(90deg, transparent, var(--bd-1), transparent);
+  margin:3px var(--sp-1);
+}
+.me-rail-l .me-rail-label{
+  text-align:center;
+  font-size:9px;
+  color:var(--paper-3);
+  letter-spacing:0.2em;
+  padding:3px 0 1px;
+  font-family:var(--font-seal);
+  font-weight:var(--fw-m);
+  user-select:none;
+}
+.me-rail-l .me-rail-label:first-child{ padding-top:0; }
+
+/* ─── 右 drawer·collapsible·372px ─────────────────────── */
+.me-drawer-r{
+  position:absolute;
+  right:0; top:0; bottom:0;
+  width:380px;
+  background:linear-gradient(180deg, var(--ink-2) 0%, var(--ink-1) 100%);
+  border-left:1px solid var(--bd-1);
+  box-shadow:var(--sh-2);
+  display:flex; flex-direction:column;
+  z-index:var(--z-drawer);
+  transition:transform var(--t-spring);
+}
+.me-drawer-r.collapsed{ transform:translateX(380px); }
+
+.me-drawer-toggle{
+  position:absolute;
+  left:-22px; top:50%;
+  transform:translateY(-50%);
+  width:22px; height:60px;
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border:1px solid var(--bd-1);
+  border-right:none;
+  border-radius:var(--rd-3) 0 0 var(--rd-3);
+  cursor:pointer;
+  color:var(--paper-2);
+  font-size:var(--fs-md);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--sh-1);
+  transition:color var(--t-fast), background var(--t-fast);
+}
+.me-drawer-toggle:hover{
+  color:var(--gold-1);
+  background:linear-gradient(180deg, var(--ink-4), var(--ink-3));
+}
+
+/* drawer tabs */
+.me-drawer-tabs{
+  display:flex;
+  background:var(--ink-3);
+  border-bottom:1px solid var(--bd-1);
+  flex-shrink:0;
+}
+.me-dtab{
+  flex:1;
+  background:transparent;
+  border:none;
+  color:var(--paper-2);
+  padding:var(--sp-3) var(--sp-2);
+  cursor:pointer;
+  font-family:var(--font-serif);
+  font-size:var(--fs-sm);
+  font-weight:var(--fw-m);
+  letter-spacing:0.08em;
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+  transition:color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.me-dtab:hover{ color:var(--paper-0); background:var(--ink-2); }
+.me-dtab.active{
+  color:var(--gold-1);
+  border-bottom-color:var(--gold-1);
+  background:linear-gradient(180deg, transparent 60%, rgba(255,215,0,0.04));
+}
+
+.me-drawer-body{
+  flex:1;
+  overflow-y:auto;
+  padding:var(--sp-3);
+}
+.me-drawer-pane{ display:none; }
+.me-drawer-pane.active{ display:block; }
+
+/* drawer 内·section header (folder 折叠·15.4 用) */
+.me-section-hdr{
+  display:flex; align-items:center; gap:var(--sp-2);
+  padding:var(--sp-2) 0;
+  margin:var(--sp-3) 0 var(--sp-2);
+  border-bottom:1px solid var(--bd-2);
+  color:var(--gold-2);
+  font-size:var(--fs-xs);
+  font-weight:var(--fw-m);
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  cursor:pointer;
+  user-select:none;
+}
+.me-section-hdr:first-child{ margin-top:0; }
+.me-section-hdr:hover{ color:var(--gold-1); }
+.me-section-hdr .me-section-arrow{
+  font-size:var(--fs-xxs);
+  transition:transform var(--t-fast);
+}
+.me-section-hdr.collapsed .me-section-arrow{ transform:rotate(-90deg); }
+.me-section-body{ padding:var(--sp-1) 0 var(--sp-2); }
+.me-section-body.collapsed{ display:none; }
+
+/* drawer 内·tool group·15.3 用 */
+.me-toolgroup{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:var(--sp-1);
+  margin-bottom:var(--sp-2);
+}
+.me-toolgroup .me-btn{ width:100%; }
+
+/* ─── 底 mini-toolbar·floating·圆角卷轴 ───────────────── */
+.me-minibar{
+  position:absolute;
+  left:50%; bottom:var(--sp-3);
+  transform:translateX(-50%);
+  display:flex; align-items:center;
+  gap:var(--sp-1);
+  padding:var(--sp-1) var(--sp-2);
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border:1px solid var(--bd-1);
+  border-radius:var(--rd-pill);
+  box-shadow:var(--sh-2);
+  z-index:var(--z-drawer);
+  font-size:var(--fs-xs);
+  color:var(--paper-1);
+  user-select:none;
+  max-width:calc(100% - 80px);
+  overflow-x:auto;
+}
+.me-minibar::-webkit-scrollbar{ height:0; }
+.me-minibar .me-mbtn{
+  padding:5px var(--sp-2);
+  border-radius:var(--rd-pill);
+  font-size:var(--fs-xs);
+  white-space:nowrap;
+}
+.me-minibar .me-mbtn.icon{
+  width:30px; padding:5px 0;
+  text-align:center;
+  font-size:var(--fs-md);
+}
+.me-minibar .sep{
+  width:1px; height:20px;
+  background:var(--bd-1);
+  margin:0 var(--sp-1);
+  flex-shrink:0;
+}
+.me-minibar .me-time-bar{ padding:0 var(--sp-1); }
+
+/* 重 me-time-bar·脱离 toolbar 顶部·适配 mini */
+.me-minibar .me-time-bar input[type=range]{ width:140px; }
+
+/* ─── feature 浮 panel·重定 (slice 15.2 接管) ─────────── */
+.me-feature-panel{
+  position:absolute;
+  right:392px; top:var(--sp-2);
+  width:332px;
+  max-height:60vh;
+  overflow:auto;
+  background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+  border:1px solid var(--bd-1);
+  border-radius:var(--rd-3);
+  padding:var(--sp-3);
+  box-shadow:var(--sh-3);
+  z-index:var(--z-feature);
+  font-size:var(--fs-sm);
+  display:none;
+}
+.me-feature-panel.open{ display:block; }
+/* drawer 收时·feature panel 靠右 */
+.me-drawer-r.collapsed ~ .me-feature-panel{ right:var(--sp-2); }
+
+/* ─── canvas-overlay·调位·避免被 rail 遮 ─────────────── */
+.me-canvas-wrap .me-canvas-overlay{
+  left:74px;
+}
+.me-canvas-wrap .me-legend-card{ right:392px; top:var(--sp-2); }
+.me-drawer-r.collapsed ~ .me-canvas-wrap .me-legend-card,
+.me-stage:has(.me-drawer-r.collapsed) .me-legend-card{ right:var(--sp-2); }
+
+/* ─── status·更紧 ──────────────────────────────────── */
+.me-status{
+  height:26px;
+  border-top:1px solid var(--bd-1);
+}
+
+/* utility */
+.me-sr-only{
+  position:absolute; width:1px; height:1px;
+  padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0);
+  white-space:nowrap; border:0;
+}
+
+/* Phase 23.8·玩家显模式·隐编辑栏 */
+body.me-player-mode .me-title-menu,
+body.me-player-mode .me-rail-l,
+body.me-player-mode .me-drawer-r,
+body.me-player-mode .me-diff-bar,
+body.me-player-mode #canvas-overlay,
+body.me-player-mode .me-legend-card,
+body.me-player-mode .me-vc-detail {
+  display:none !important;
+}
+body.me-player-mode #map-canvas {
+  cursor:pointer;
+}
+
+</style>
+</head>
+<body>
+
+<div class="me-app">
+
+  <!-- ① 顶 titlebar·thin·40px·Phase 15.2 -->
+  <header class="me-titlebar">
+    <div class="me-title-brand">
+      <span class="me-brand-seal">圖</span>
+      <span class="me-brand-text">地图编辑·tianming</span>
+    </div>
+
+    <div class="me-title-menu" id="title-menu">
+      <button class="me-mbtn" id="btn-new">新建</button>
+      <button class="me-mbtn" id="btn-import-bitmap">载图</button>
+      <button class="me-mbtn" id="btn-clear-bitmap" title="清空底图·polygon / 字注 / 等保留·绘制完成后用">清底</button>
+      <button class="me-mbtn" id="btn-reset-bitmap-xform" title="重置底图变换·位置 / 缩放 / 旋转回 identity">底归位</button>
+      <button class="me-mbtn" id="btn-rotate-bitmap" title="设底图旋角·度数·正 = 顺时针 (X 工具下 Shift+滚轮也可旋·Ctrl+Shift 微调)">底旋</button>
+      <button class="me-mbtn" id="btn-import-json" title="JSON / GeoJSON·自动识别">载剧</button>
+      <button class="me-mbtn" id="btn-import-shp" title="Shapefile (.shp)·真实 GIS 数据·自动 lon/lat 投影 + 抽稀">载形</button>
+      <button class="me-mbtn" id="btn-export-json" title="导出当前剧本">导出</button>
+      <select class="me-tb-select" id="export-format" title="导出格式">
+        <option value="json">JSON (本编辑器)</option>
+        <option value="geojson">GeoJSON (标准)</option>
+        <option value="scenario">剧本 schema (游戏 runtime)</option>
+        <option value="pmap">P.map (game 直读·phase 14)</option>
+      </select>
+    </div>
+
+    <div class="me-title-spacer"></div>
+
+    <div class="me-title-meta">
+      <span style="display:flex; align-items:center; gap:5px;">
+        朝代 <select class="me-tb-select" id="dynasty-select"></select>
+      </span>
+      <span class="me-meta-stat">总省 <b id="div-count">0</b></span>
+      <span class="me-meta-stat" title="未保存改动">
+        <span class="me-dirty-dot" id="dirty-dot"></span>
+        <b id="status-dirty" class="me-sr-only">无</b>
+      </span>
+      <button class="me-mbtn" onclick="window.meShowPalette&&window.meShowPalette();" title="命令搜·⌘+K / Ctrl+K"><kbd>⌘K</kbd></button>
+      <button class="me-mbtn" onclick="window.meShowCheat&&window.meShowCheat();" title="热键总览·?">?</button>
+    </div>
+  </header>
+
+  <!-- diff mode banner (隐 by default) -->
+  <div class="me-diff-bar" id="diff-bar" style="display:none;">
+    <span>⚖ diff 模式·<b id="diff-yA">?</b> → <b id="diff-yB">?</b></span>
+    <span style="color:var(--fg-3);">|</span>
+    <span style="color:#6a9a7f;">绿·新立</span>
+    <span style="color:#dc4f3a;">红·废止</span>
+    <span style="color:#5a7a9e;">蓝·改名</span>
+    <span style="color:#c9a96e;">金·宗主变</span>
+    <span style="color:#e08020;">橙·失/复土</span>
+    <button class="me-btn" id="btn-diff-report" style="margin-left:auto;">报告</button>
+    <button class="me-btn me-btn-warn" id="btn-diff-exit">退出</button>
+  </div>
+
+  <!-- ② 主舞台·canvas full-bleed + 浮 UI -->
+  <main class="me-stage">
+
+    <!-- canvas (绝对铺满) -->
+    <div class="me-canvas-wrap">
+      <canvas id="map-canvas"></canvas>
+      <div class="me-canvas-overlay" id="canvas-overlay">具·选 · 缩 100% · [0,0]</div>
+      <div class="me-legend-card" id="legend-card" style="display:none;"></div>
+      <div class="me-vc-detail" id="vc-detail"></div>
+    </div>
+
+    <!-- 左 rail·tools (icon-only·54px) -->
+    <aside class="me-rail-l" id="tools-rail" aria-label="工具">
+      <div class="me-rail-label">操</div>
+      <button class="me-tool active" data-tool="select" title="选 V"><span class="me-tool-glyph">選</span><span class="me-tk">V</span></button>
+      <button class="me-tool" data-tool="pen" title="画省 P"><span class="me-tool-glyph">畫</span><span class="me-tk">P</span></button>
+      <button class="me-tool" data-tool="edit" title="编顶点 E"><span class="me-tool-glyph">編</span><span class="me-tk">E</span></button>
+      <button class="me-tool" data-tool="hand" title="拖图 H / 空格"><span class="me-tool-glyph">拖</span><span class="me-tk">H</span></button>
+      <button class="me-tool" data-tool="zoom" title="缩放 Z"><span class="me-tool-glyph">縮</span><span class="me-tk">Z</span></button>
+      <div class="me-rail-sep"></div>
+      <div class="me-rail-label">形</div>
+      <button class="me-tool" id="btn-merge-tool" title="多选合并 M"><span class="me-tool-glyph">合</span><span class="me-tk">M</span></button>
+      <button class="me-tool" data-tool="split" title="切线 S"><span class="me-tool-glyph">切</span><span class="me-tk">S</span></button>
+      <button class="me-tool" data-tool="addPoly" title="加飞地 +"><span class="me-tool-glyph">飛</span><span class="me-tk">+</span></button>
+      <button class="me-tool" data-tool="addHole" title="加圈 (洞)"><span class="me-tool-glyph">圈</span><span class="me-tk">○</span></button>
+      <button class="me-tool" id="btn-brush-tool" data-tool="brush" title="圆刷 B"><span class="me-tool-glyph">刷</span><span class="me-tk">B</span></button>
+      <button class="me-tool" data-tool="bitmapXform" title="底图变换 X·拖动 = 移·滚轮 = 缩·Shift+滚轮 = 旋·顶端旋转手柄拖动直接旋 (Shift snap 15°)·polygon 不动"><span class="me-tool-glyph">底</span><span class="me-tk">X</span></button>
+      <div class="me-rail-sep"></div>
+      <div class="me-rail-label">類</div>
+      <button class="me-tool" data-tool="text" title="字注 T"><span class="me-tool-glyph">字</span><span class="me-tk">T</span></button>
+      <button class="me-tool" data-tool="river" title="河网 R"><span class="me-tool-glyph">河</span><span class="me-tk">R</span></button>
+      <button class="me-tool" data-tool="road" title="道路 D"><span class="me-tool-glyph">道</span><span class="me-tk">D</span></button>
+      <button class="me-tool" data-tool="stronghold" title="要塞 G"><span class="me-tool-glyph">塞</span><span class="me-tk">G</span></button>
+      <button class="me-tool" data-tool="ferry" title="渡口 F"><span class="me-tool-glyph">渡</span><span class="me-tk">F</span></button>
+      <div class="me-rail-sep"></div>
+      <div class="me-rail-label">筆</div>
+      <button class="me-tool" data-tool="pick" title="吸管 I"><span class="me-tool-glyph">吸</span><span class="me-tk">I</span></button>
+      <button class="me-tool" data-tool="paint-height" title="高程画笔 U"><span class="me-tool-glyph">高</span><span class="me-tk">U</span></button>
+      <button class="me-tool" data-tool="paint-terrain" title="地形画笔 Y"><span class="me-tool-glyph">形</span><span class="me-tk">Y</span></button>
+      <div class="me-rail-sep"></div>
+      <div class="me-rail-label">智</div>
+      <button class="me-tool" id="btn-ai-tool" title="AI 推默认 A"><span class="me-tool-glyph">推</span><span class="me-tk">A</span></button>
+    </aside>
+
+    <!-- 右 drawer·collapsible·380px -->
+    <aside class="me-drawer-r" id="right-drawer">
+      <button class="me-drawer-toggle" id="drawer-toggle" title="收起 / 展开 (Tab)">
+        <span id="drawer-toggle-icon">›</span>
+      </button>
+
+      <div class="me-drawer-tabs">
+        <button class="me-dtab active" data-pane="inspect">省檢</button>
+        <button class="me-dtab" data-pane="layers">圖層</button>
+        <button class="me-dtab" data-pane="more">工具</button>
+        <button class="me-dtab" data-pane="history">史</button>
+      </div>
+
+      <div class="me-drawer-body">
+
+        <!-- pane 1·省检 (panel.js 渲染) -->
+        <div class="me-drawer-pane active" data-pane="inspect" id="right-panel"></div>
+
+        <!-- pane 2·图层 + 涂层 + brush 设置 -->
+        <div class="me-drawer-pane" data-pane="layers">
+          <div class="me-divider">涂层 (热力)</div>
+          <div class="me-field">
+            <select class="me-tb-select" id="heat-select" style="width:100%;">
+              <option value="none">无</option>
+              <option value="pop">人口</option>
+              <option value="tax">税</option>
+              <option value="culture">族群</option>
+              <option value="faith">信仰</option>
+              <option value="autonomy">自治</option>
+              <option value="terrain">地形</option>
+              <option value="realm">归属·realm</option>
+              <option value="climate">气候</option>
+            </select>
+          </div>
+
+          <div class="me-section-hdr" data-toggle="lyr-base"><span>地·底图与界</span><span class="me-section-arrow">▾</span></div>
+          <div class="me-section-body" data-body="lyr-base">
+            <label class="me-layer"><input type="checkbox" data-layer="bitmap" checked /> 底图</label>
+            <label class="me-layer"><input type="checkbox" data-layer="polygon" checked /> 省界</label>
+            <label class="me-layer"><input type="checkbox" data-layer="border" checked /> 自治线</label>
+            <label class="me-layer"><input type="checkbox" data-layer="label" checked /> 省名</label>
+            <label class="me-layer"><input type="checkbox" data-layer="centroid" /> 中心点</label>
+          </div>
+
+          <div class="me-section-hdr" data-toggle="lyr-flow"><span>水·河 渡 道</span><span class="me-section-arrow">▾</span></div>
+          <div class="me-section-body" data-body="lyr-flow">
+            <label class="me-layer"><input type="checkbox" data-layer="rivers" checked /> 河网</label>
+            <label class="me-layer"><input type="checkbox" data-layer="roads" checked /> 道路</label>
+            <label class="me-layer"><input type="checkbox" data-layer="ferries" checked /> 渡口</label>
+          </div>
+
+          <div class="me-section-hdr" data-toggle="lyr-settle"><span>城·要塞</span><span class="me-section-arrow">▾</span></div>
+          <div class="me-section-body" data-body="lyr-settle">
+            <label class="me-layer"><input type="checkbox" data-layer="strongholds" checked /> 要塞</label>
+          </div>
+
+          <div class="me-section-hdr" data-toggle="lyr-derived"><span>史·派生层</span><span class="me-section-arrow">▾</span></div>
+          <div class="me-section-body" data-body="lyr-derived">
+            <label class="me-layer"><input type="checkbox" data-layer="topology" title="拓扑模式启用时·共享顶点显大金点" /> 共享顶点</label>
+            <label class="me-layer"><input type="checkbox" data-layer="areaLinks" title="邻接图·centroid 间连线·按 linkType 分色" /> 邻接图</label>
+            <label class="me-layer"><input type="checkbox" data-layer="heightMap" title="高程图·heatmap 渐变" /> 高程</label>
+            <label class="me-layer"><input type="checkbox" data-layer="terrainMap" title="地形图·按 palette 着色" /> 地形</label>
+          </div>
+
+          <div class="me-divider">画笔 raster</div>
+          <div class="me-field">
+            <label class="me-label">尺寸</label>
+            <div class="me-ctrl"><input type="range" id="raster-brush-size" min="1" max="100" value="12" /></div>
+          </div>
+          <div class="me-field">
+            <label class="me-label">高程值 (0-255)</label>
+            <div class="me-ctrl"><input type="number" id="raster-height-val" min="0" max="255" value="128" /></div>
+          </div>
+          <div class="me-field">
+            <label class="me-label">地形 (0=空)</label>
+            <div class="me-ctrl">
+              <select id="raster-terrain-val">
+                <option value="0">空 (清)</option>
+                <option value="1" selected>平原</option>
+                <option value="2">林</option>
+                <option value="3">丘</option>
+                <option value="4">山</option>
+                <option value="5">荒</option>
+                <option value="6">湿</option>
+                <option value="7">水</option>
+                <option value="8">冻</option>
+                <option value="9">密</option>
+                <option value="10">草</option>
+              </select>
+            </div>
+          </div>
+          <div class="me-field">
+            <label class="me-label">模式</label>
+            <div class="me-ctrl">
+              <select id="raster-brush-mode">
+                <option value="draw" selected>画 (D)</option>
+                <option value="fill">桶 (F)</option>
+                <option value="erase">擦 (X)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="me-divider">道路·要塞 type</div>
+          <div class="me-field">
+            <label class="me-label">道路</label>
+            <div class="me-ctrl">
+              <select id="road-type-select">
+                <option value="imperial">御道</option>
+                <option value="post" selected>驿道</option>
+                <option value="caravan">商路</option>
+                <option value="sea">海路</option>
+                <option value="ancient">古道</option>
+              </select>
+            </div>
+          </div>
+          <div class="me-field">
+            <label class="me-label">要塞</label>
+            <div class="me-ctrl">
+              <select id="strong-type-select">
+                <option value="pass">关</option>
+                <option value="fortress" selected>堡</option>
+                <option value="walledCity">城</option>
+                <option value="beacon">烽火</option>
+                <option value="port">港</option>
+                <option value="temple">寺</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- pane 3·工具 (高级 / 批量 / generate) -->
+        <div class="me-drawer-pane" data-pane="more">
+          <div class="me-divider">填值 / 邻接</div>
+          <div class="me-actions">
+            <button class="me-btn" id="btn-neighbor" title="自动检测邻省">检邻</button>
+            <button class="me-btn" id="btn-ai-fill" title="AI 推默认值·选省后用">AI 填</button>
+            <button class="me-btn" id="btn-rule-fill" title="rule-based 填全·快速">规则填全</button>
+          </div>
+
+          <div class="me-divider">生成</div>
+          <div class="me-actions">
+            <button class="me-btn me-btn-warn" id="btn-load-sample" title="按当前朝代载入样本数据">载样本</button>
+            <button class="me-btn me-btn-warn" id="btn-voronoi" title="Voronoi 自动分省·种子点 + Lloyd 松弛">voronoi</button>
+            <button class="me-btn me-btn-warn" id="btn-bitmap-recognize" title="image → polygon 自动识省·按色块">自动识省</button>
+            <button class="me-btn" id="btn-postprocess" title="几何后处理·清飞地小洞·扰直边">后处理</button>
+            <button class="me-btn" id="btn-ferry-auto" title="自动检测渡口候选">自动渡</button>
+          </div>
+
+          <div class="me-divider">raster ↔ vector</div>
+          <div class="me-actions">
+            <button class="me-btn" id="btn-bake-pmap" title="按 colorKey 烤 ProvinceMap PNG">烤省图</button>
+            <button class="me-btn" id="btn-import-pmap" title="导入外部 ProvinceMap PNG·按 colorKey 反推 polygon">读省图</button>
+          </div>
+
+          <div class="me-divider">跨时·跨朝</div>
+          <div class="me-actions">
+            <button class="me-btn me-btn-warn" id="btn-atlas" title="跨朝代地图库·atlas">atlas</button>
+            <button class="me-btn me-btn-warn" id="btn-cross-time" title="跨朝代时序·-1600 ~ 1949 滑块">跨朝时序</button>
+            <button class="me-btn" id="btn-diff" title="两年 diff 比对">diff</button>
+          </div>
+
+          <div class="me-divider">拓扑·分析</div>
+          <div class="me-actions">
+            <button class="me-btn me-btn-warn" id="btn-topology" title="拓扑模式·共享顶点·拖一动多 (CK3 风)">拓扑</button>
+            <button class="me-btn" id="btn-dcel" title="DCEL 半边·从当前 map 建邻接索引">dcel</button>
+            <button class="me-btn" id="btn-perf" title="性能 profile 浮窗">perf</button>
+          </div>
+
+          <div class="me-divider">字注·批量</div>
+          <div class="me-actions">
+            <button class="me-btn" id="btn-text-mgr" title="字注管理">字注管理</button>
+            <button class="me-btn" id="btn-bulk" title="批量 I/O·CSV / Markdown">批量</button>
+          </div>
+
+          <div class="me-divider">提示</div>
+          <div class="me-empty-tip" style="font-size:var(--fs-xs); line-height:var(--lh-loose);">
+            <div><kbd>P</kbd> 画省·点顶点·近首点闭合</div>
+            <div><kbd>E</kbd> 拖顶点·alt+点边加点·shift+点点删点</div>
+            <div><kbd>空格</kbd> 拖图·<kbd>滚轮</kbd> 缩放</div>
+            <div><kbd>Del</kbd> 删省·<kbd>Esc</kbd> 取消</div>
+            <div><kbd>Ctrl+Z/Y</kbd> 撤销 / 重做</div>
+            <div><kbd>0</kbd> 居中·<kbd>Tab</kbd> 收 drawer</div>
+          </div>
+        </div>
+
+        <!-- pane 4·史·undo / redo stack viz·phase 16.5 -->
+        <div class="me-drawer-pane" data-pane="history">
+          <div class="me-divider">操作历史</div>
+          <div class="me-actions">
+            <button class="me-btn" id="btn-history-refresh" title="重渲列表">刷新</button>
+            <button class="me-btn me-btn-warn" id="btn-history-clear" title="清空 undo 栈·新 baseline">清史</button>
+          </div>
+          <div id="history-list" style="margin-top:var(--sp-3); font-size:var(--fs-xs);"></div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- 底·mini-toolbar·floating·圆角 -->
+    <div class="me-minibar" id="mini-toolbar">
+      <button class="me-mbtn icon" id="btn-undo" title="撤销 Ctrl+Z">↶</button>
+      <button class="me-mbtn icon" id="btn-redo" title="重做 Ctrl+Y">↷</button>
+      <span class="sep"></span>
+      <button class="me-mbtn icon" id="btn-fit" title="居中 0">◎</button>
+      <span class="sep"></span>
+      <div class="me-time-bar">
+        <span style="color:var(--paper-3); font-size:var(--fs-xxs);">观年</span>
+        <input type="range" id="time-slider" />
+        <input type="number" id="time-input" class="me-time-input" placeholder="-" />
+        <span class="me-time-clear" id="time-clear" title="清除时序模式">×</span>
+      </div>
+    </div>
+
+    <!-- feature mini-panel·浮 drawer 之上 -->
+    <div id="feature-panel" class="me-feature-panel"></div>
+
+  </main>
+
+  <!-- ③ 底 status·thin·26px -->
+  <footer class="me-status">
+    <span>当前 <b id="status-tool">V</b></span>
+    <span>缩放 <b id="status-zoom">100%</b></span>
+    <span>选 <b id="status-sel">0</b></span>
+    <span style="color:var(--paper-3); margin-left:var(--sp-2);">校验</span>
+    <button class="me-vc-chip" id="vc-chip">校验中...</button>
+    <span style="margin-left:auto; color:var(--paper-3);" id="status-tip">就绪·点 [新建] 或 [载图] 起步</span>
+  </footer>
+
+</div>
+
+<!-- ═════════ scripts (load order matters) ═════════ -->
+<script src="map-editor-dynasty.js"></script>
+<script src="map-editor-undo.js"></script>
+<script src="map-editor-core.js"></script>
+<script src="map-editor-tools.js"></script>
+<script src="map-editor-io.js"></script>
+<script src="map-editor-layers.js"></script>
+<script src="map-editor-validation.js"></script>
+<script src="map-editor-neighbor.js"></script>
+<script src="map-editor-ai.js"></script>
+<script src="map-editor-timeline.js"></script>
+<script src="map-editor-diff.js"></script>
+<script src="map-editor-sample-gen.js"></script>
+<script src="map-editor-atlas.js"></script>
+<script src="map-editor-merge-split.js"></script>
+<script src="map-editor-cross-time.js"></script>
+<script src="map-recognition.js"></script>
+<script src="map-editor-bitmap.js"></script>
+<script src="map-editor-quadtree.js"></script>
+<script src="map-editor-text.js"></script>
+<script src="map-editor-bulk.js"></script>
+<script src="map-editor-perf.js"></script>
+<script src="map-editor-topology.js"></script>
+<script src="map-editor-voronoi.js"></script>
+<script src="map-editor-brush.js"></script>
+<script src="map-editor-dcel.js"></script>
+<script src="map-editor-rivers.js"></script>
+<script src="map-editor-roads.js"></script>
+<script src="map-editor-strongholds.js"></script>
+<script src="map-editor-arealinks.js"></script>
+<script src="map-editor-boundary.js"></script>
+<script src="map-editor-pick.js"></script>
+<script src="map-editor-rastermaps.js"></script>
+<script src="map-editor-postprocess.js"></script>
+<script src="map-editor-ferry.js"></script>
+<script src="map-editor-to-game.js"></script>
+<script src="map-editor-marquee.js"></script>
+<script src="map-editor-minimap.js"></script>
+<script src="map-editor-state.js"></script>
+<script src="map-editor-workflow-chain.js"></script>
+<script src="map-editor-mode-banner.js"></script>
+<script src="map-editor-progress.js"></script>
+<script src="map-editor-find.js"></script>
+<script src="map-editor-bookmarks.js"></script>
+<script src="map-editor-layer-hotkey.js"></script>
+<script src="map-editor-tooltips.js"></script>
+<script src="map-editor-ghost.js"></script>
+<script src="map-editor-clipboard.js"></script>
+<script src="map-editor-breadcrumb.js"></script>
+<script src="map-editor-multi-diff.js"></script>
+<script src="map-editor-smart-names.js"></script>
+<script src="map-editor-polygon-fix.js"></script>
+<script src="map-editor-bitmap-seeds.js"></script>
+<script src="map-editor-coastline-snap.js"></script>
+<script src="map-editor-hierarchical-gen.js"></script>
+<script src="map-editor-poly-utils.js"></script>
+<script src="map-editor-borders.js"></script>
+<script src="map-editor-smart-labels.js"></script>
+<script src="map-editor-iconlets.js"></script>
+<script src="map-editor-bitmap-trace.js"></script>
+<script src="map-editor-climate.js"></script>
+<script src="map-editor-hover-glow.js"></script>
+<script src="map-editor-lod.js"></script>
+<script src="map-editor-season.js"></script>
+<script src="map-editor-culture-raster.js"></script>
+<script src="map-editor-fog.js"></script>
+<script src="map-editor-terrain.js"></script>
+<script src="map-editor-impassable.js"></script>
+<script src="map-editor-zoom-blend.js"></script>
+<script src="map-editor-ink-realm.js"></script>
+<script src="map-editor-factions.js"></script>
+<script src="map-editor-faction-presets.js"></script>
+<script src="map-editor-player-view.js"></script>
+<script src="map-editor-wizard.js"></script>
+<script src="map-editor-ui.js"></script>
+<script src="map-editor-panel.js"></script>
+<script src="map-editor-juben-handoff.js"></script>
+
+<script>
+(function(){
+  'use strict';
+
+  var ME = window.TM && TM.MapEditor;
+  if (!ME){ alert('地图编辑器加载失败·检查 console'); return; }
+
+  // ─── init ──────────────────────────────────────────────
+  function start(){
+    if (!ME.init('map-canvas')){ alert('canvas 初始化失败'); return; }
+    ME.tools.bindCanvas();
+    ME.panel.init('right-panel');
+    ME.io.startAutoSave(30000);
+    if (ME.minimap) ME.minimap.init();
+    if (ME.state) ME.state.init();
+    if (ME.modeBanner) ME.modeBanner.init();
+    if (ME.progress) ME.progress.init();
+    if (ME.find) ME.find.init();
+    if (ME.bookmarks) ME.bookmarks.init();
+    if (ME.layerHotkey) ME.layerHotkey.init();
+    if (ME.tooltips) ME.tooltips.init();
+    if (ME.ghost) ME.ghost.init();
+    if (ME.clipboard) ME.clipboard.init();
+    if (ME.breadcrumb) ME.breadcrumb.init();
+    if (ME.multiDiff) ME.multiDiff.init();
+    if (ME.polygonFix) ME.polygonFix.init();
+    if (ME.borders) ME.borders.init();
+    if (ME.smartLabels) ME.smartLabels.init();
+    if (ME.iconlets) ME.iconlets.init();
+    if (ME.climate) ME.climate.init();
+    if (ME.hoverGlow) ME.hoverGlow.init();
+    if (ME.season) ME.season.init();
+    if (ME.cultureRaster) ME.cultureRaster.init();
+    if (ME.fog) ME.fog.init();
+    if (ME.impassable) ME.impassable.init();
+    if (ME.zoomBlend) ME.zoomBlend.init();
+    if (ME.inkRealm) ME.inkRealm.init();
+    if (ME.factionPresets) ME.factionPresets.init();
+    if (ME.playerView) ME.playerView.init();
+    if (ME.text) ME.text.init();
+
+    // Phase 20.4·Ctrl+Shift+H 选省 → 4 子
+    document.addEventListener('keydown', function(e){
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+      if (e.ctrlKey && e.shiftKey && (e.key === 'h' || e.key === 'H')){
+        e.preventDefault();
+        if (TM.MapEditor.hierarchicalGen){
+          var n = prompt('每选省·分多少子? (默 4)', '4');
+          var num = parseInt(n, 10);
+          if (!num || num < 2) return;
+          TM.MapEditor.hierarchicalGen.subdivideSelected(num, { lloyd: 3 });
+        }
+      }
+    });
+
+    // dynasty dropdown
+    var sel = document.getElementById('dynasty-select');
+    ME.dynasty.list().forEach(function(d){
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.label;
+      if (d.id === ME.dynasty.DEFAULT_DYNASTY) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    // try restore draft (仅在 localStorage 有草稿时询问)
+    var hasDraft = false;
+    try { hasDraft = !!localStorage.getItem('tm.mapEditor.draft.v1'); } catch(e){}
+    if (hasDraft && confirm('检测到上次草稿·载入? (取消则新建空地图)')){
+      var ok = ME.io.loadDraft();
+      if (!ok) ME.newMap(ME.dynasty.DEFAULT_DYNASTY);
+    } else {
+      ME.newMap(ME.dynasty.DEFAULT_DYNASTY);
+    }
+
+    bindToolbar();
+    bindToolButtons();
+    bindLayerToggles();
+    bindHeatSelect();
+    bindPhase2Buttons();
+    bindPhase3Controls();
+    bindEvents();
+
+    // validation chip
+    if (ME.validation) ME.validation.bindChip('vc-chip', 'vc-detail');
+
+    updateStatus();
+    updateTimeSlider();
+  }
+
+  function bindPhase3Controls(){
+    var slider = document.getElementById('time-slider');
+    var yrInput = document.getElementById('time-input');
+    var clear = document.getElementById('time-clear');
+
+    slider.addEventListener('input', function(){
+      var y = Number(slider.value);
+      ME.timeline.setViewYear(y);
+      yrInput.value = y;
+    });
+    yrInput.addEventListener('change', function(){
+      var v = yrInput.value;
+      if (v === ''){ ME.timeline.setViewYear(null); slider.value = ''; return; }
+      var y = Number(v);
+      if (isNaN(y)) return;
+      ME.timeline.setViewYear(y);
+      slider.value = y;
+    });
+    clear.addEventListener('click', function(){
+      ME.timeline.setViewYear(null);
+      yrInput.value = '';
+      // slider stays at last position·visual cue
+    });
+
+    document.getElementById('btn-diff').addEventListener('click', function(){
+      if (ME.diff) ME.diff.openDiffSetup();
+    });
+    document.getElementById('btn-diff-report').addEventListener('click', function(){
+      if (ME.diff) ME.diff.openDiffReport();
+    });
+    document.getElementById('btn-diff-exit').addEventListener('click', function(){
+      if (ME.diff) ME.diff.exitDiffMode();
+    });
+
+    ME.on('view-year-change', function(p){
+      var slider = document.getElementById('time-slider');
+      var yrInput = document.getElementById('time-input');
+      if (p.year == null){
+        yrInput.value = '';
+      } else {
+        yrInput.value = p.year;
+        slider.value = p.year;
+      }
+      updateStatus();
+    });
+    ME.on('map-loaded', updateTimeSlider);
+    ME.on('diff-enter', function(p){
+      var bar = document.getElementById('diff-bar');
+      bar.style.display = 'flex';
+      document.getElementById('diff-yA').textContent = p.yearA;
+      document.getElementById('diff-yB').textContent = p.yearB;
+    });
+    ME.on('diff-exit', function(){
+      document.getElementById('diff-bar').style.display = 'none';
+    });
+  }
+
+  function updateTimeSlider(){
+    var slider = document.getElementById('time-slider');
+    if (!ME.timeline) return;
+    var range = ME.timeline.getDynastyYearRange();
+    slider.min = range[0];
+    slider.max = range[1];
+    slider.step = 1;
+    var view = ME.timeline.getViewYear();
+    if (view != null) slider.value = view;
+    else slider.value = Math.round((range[0] + range[1]) / 2);
+  }
+
+  function bindHeatSelect(){
+    var sel = document.getElementById('heat-select');
+    sel.addEventListener('change', function(){
+      ME.EDITOR.layers.heat = sel.value;
+      ME.requestRender();
+      updateLegend();
+    });
+  }
+
+  function updateLegend(){
+    var card = document.getElementById('legend-card');
+    var mode = ME.EDITOR.layers.heat || 'none';
+    if (mode === 'none' || !ME.layers){
+      card.style.display = 'none';
+      return;
+    }
+    card.innerHTML = ME.layers.renderLegend(mode);
+    card.style.display = 'block';
+  }
+
+  function bindPhase2Buttons(){
+    document.getElementById('btn-neighbor').addEventListener('click', function(){
+      if (!ME.neighbor) return;
+      var sel = ME.getSelected();
+      var r = sel.length > 0 ? ME.neighbor.applySelected() : ME.neighbor.applyAll();
+      var msg = '邻省检测·改 ' + r.changed + ' / ' + (r.total || 0) + ' 省';
+      if (r.found != null) msg += ' · 共 ' + r.found + ' 对邻接';
+      // phase 13.1·同步烤入持久化 areaLinks (preserve 已有 linkType)
+      if (ME.arealinks){
+        var lr = ME.arealinks.recomputeFromNeighbors({ strategy: 'preserve' });
+        if (lr) msg += ' · areaLinks ' + lr.neu + ' (+' + (lr.added||0) + ' / -' + (lr.removed||0) + ')';
+      }
+      document.getElementById('status-tip').textContent = msg;
+    });
+    document.getElementById('btn-ai-fill').addEventListener('click', function(){
+      if (!ME.ai) return;
+      var sel = ME.getSelected();
+      if (sel.length === 0){ alert('请先选省·V 工具点选'); return; }
+      ME.ai.fillSelected();
+    });
+    document.getElementById('btn-rule-fill').addEventListener('click', function(){
+      if (!ME.ai) return;
+      ME.ai.fillAllRuleBased();
+    });
+
+    // phase 4
+    document.getElementById('btn-load-sample').addEventListener('click', function(){
+      if (!ME.sampleGen) return;
+      var dynastyId = document.getElementById('dynasty-select').value;
+      var ok = ME.sampleGen.loadSample(dynastyId);
+      if (ok){
+        document.getElementById('status-tip').textContent = '样本已载·' + dynastyId + '·' + ME.EDITOR.map.divisions.length + ' 省 (placeholder polygon)';
+      }
+    });
+    document.getElementById('btn-atlas').addEventListener('click', function(){
+      if (!ME.atlas) return;
+      ME.atlas.openLibrary();
+    });
+
+    // M tool 按 sidebar btn (除快捷键)·一键合并
+    var btnMerge = document.getElementById('btn-merge-tool');
+    if (btnMerge) btnMerge.addEventListener('click', function(){
+      if (ME.mergeSplit) ME.mergeSplit.mergeSelected();
+    });
+    // A tool 按 sidebar btn
+    var btnAi = document.getElementById('btn-ai-tool');
+    if (btnAi) btnAi.addEventListener('click', function(){
+      if (!ME.ai) return;
+      var sel = ME.getSelected();
+      if (sel.length === 0){ alert('请先选省·V 工具'); return; }
+      ME.ai.fillSelected();
+    });
+
+    // 自动识省
+    document.getElementById('btn-bitmap-recognize').addEventListener('click', function(){
+      if (!ME.bitmap){ alert('bitmap 模块未加载'); return; }
+      ME.bitmap.autoRecognize();
+    });
+
+    // 字注管理
+    document.getElementById('btn-text-mgr').addEventListener('click', function(){
+      if (!ME.text) return;
+      ME.text.openManagerModal();
+    });
+
+    // 批量 I/O
+    document.getElementById('btn-bulk').addEventListener('click', function(){
+      if (!ME.bulk) return;
+      ME.bulk.openMenu();
+    });
+
+    // perf toggle
+    document.getElementById('btn-perf').addEventListener('click', function(){
+      if (!ME.perf) return;
+      ME.perf.toggle();
+    });
+
+    // 拓扑 toggle
+    document.getElementById('btn-topology').addEventListener('click', function(){
+      if (!ME.topology) return;
+      var TP = ME.topology;
+      if (TP.isEnabled()){
+        var stats = TP.getStats();
+        if (!confirm('退出拓扑模式·  当前 ' + stats.vertices + ' 顶点 ' + stats.sharedVerts + ' 共享·\n退后回独立 polygon 模式·共享关系丢·确认?')) return;
+        TP.disableTopology();
+        document.getElementById('status-tip').textContent = '已退拓扑模式';
+      } else {
+        var divs = ME.EDITOR.map.divisions;
+        if (divs.length === 0){ alert('无 division·先画或载样本'); return; }
+        if (!confirm('启用拓扑模式 (CK3 风)·\n将扫描全部 ' + divs.length + ' division 的 polygon·snap 半径 ' + TP.SNAP_DIST + ' 像素内顶点合为共享·\n收益·拖一顶点·邻 div 同步动·零裂缝·\n确认?')) return;
+        var r = TP.migrateToTopology();
+        document.getElementById('status-tip').textContent = '拓扑化·' + r.migrated + ' div · 顶点 ' + r.totalVerts + ' → ' + r.uniqueVerts + ' (省 ' + r.saved + '·dedup ' + Math.round(r.dedupRatio * 100) + '%)';
+        ME.requestRender();
+      }
+    });
+
+    // Voronoi·开 modal
+    var voronoiBtn = document.getElementById('btn-voronoi');
+    if (voronoiBtn) voronoiBtn.addEventListener('click', function(){
+      if (!ME.voronoi){ alert('voronoi 模块未加载'); return; }
+      ME.voronoi.openModal();
+    });
+
+    // DCEL probe
+    var dcelBtn = document.getElementById('btn-dcel');
+    if (dcelBtn) dcelBtn.addEventListener('click', function(){
+      if (!ME.dcel){ alert('dcel 模块未加载'); return; }
+      ME.dcel.probe();
+    });
+
+    // phase 13.2·烤 ProvinceMap PNG
+    var bakeBtn = document.getElementById('btn-bake-pmap');
+    if (bakeBtn) bakeBtn.addEventListener('click', function(){
+      if (!ME.boundary){ alert('boundary 模块未加载'); return; }
+      var bg = confirm('背景·确认 = 黑·取消 = 白') ? '#000000' : '#ffffff';
+      ME.boundary.exportProvinceMapPNG({ bgRGB: bg });
+    });
+
+    // phase 13.2·读 ProvinceMap PNG·反推 polygon
+    var imBtn = document.getElementById('btn-import-pmap');
+    if (imBtn) imBtn.addEventListener('click', function(){
+      if (!ME.boundary){ alert('boundary 模块未加载'); return; }
+      var createNew = confirm('未知 colorKey·确认 = 创建新 division·取消 = 忽略');
+      ME.boundary.importProvinceMapDialog({
+        strategy: 'merge',
+        createNew: createNew,
+        simplifyEps: 1.5,
+        minPixelArea: 16
+      });
+    });
+
+    // phase 13.4·几何后处理 modal
+    var ppBtn = document.getElementById('btn-postprocess');
+    if (ppBtn) ppBtn.addEventListener('click', function(){
+      if (!ME.postprocess){ alert('postprocess 未加载'); return; }
+      ME.postprocess.openModal();
+    });
+
+    // phase 13.5·渡口自动检测 modal
+    var fyBtn = document.getElementById('btn-ferry-auto');
+    if (fyBtn) fyBtn.addEventListener('click', function(){
+      if (!ME.ferry){ alert('ferry 未加载'); return; }
+      ME.ferry.openAutoModal();
+    });
+
+    // 跨朝时序 toggle
+    document.getElementById('btn-cross-time').addEventListener('click', function(){
+      if (!ME.crossTime) return;
+      if (ME.crossTime.isActive()){
+        ME.crossTime.exit();
+      } else {
+        var ok = ME.crossTime.enter();
+        if (ok){
+          // 调 slider 范围到全 -1600 ~ 1949
+          var range = ME.crossTime.getGlobalYearRange();
+          var slider = document.getElementById('time-slider');
+          slider.min = range.min;
+          slider.max = range.max;
+          slider.step = 1;
+        }
+      }
+    });
+  }
+
+  function bindToolbar(){
+    document.getElementById('btn-new').addEventListener('click', function(){
+      if (ME.wizard && ME.wizard.open){
+        ME.wizard.open();
+        return;
+      }
+      var dynastyId = document.getElementById('dynasty-select').value;
+      if (ME.EDITOR.dirty && !confirm('当前有未保存改动·确认新建?')) return;
+      ME.newMap(dynastyId);
+    });
+    document.getElementById('btn-import-bitmap').addEventListener('click', function(){
+      ME.io.importBitmap();
+    });
+    var clrBmpBtn = document.getElementById('btn-clear-bitmap');
+    if (clrBmpBtn) clrBmpBtn.addEventListener('click', function(){
+      if (!ME.EDITOR.bitmapImage){
+        if (typeof meToast === 'function') meToast('已无底图', 'info', 1200);
+        return;
+      }
+      if (!confirm('清空底图? polygon / 字注 / 河道等保留·只移除参考底图')) return;
+      ME.clearBitmap();
+    });
+    var rstBmpBtn = document.getElementById('btn-reset-bitmap-xform');
+    if (rstBmpBtn) rstBmpBtn.addEventListener('click', function(){
+      if (!ME.EDITOR.bitmapImage){
+        if (typeof meToast === 'function') meToast('无底图·变换无效', 'info', 1200);
+        return;
+      }
+      ME.resetBitmapTransform();
+      if (typeof meToast === 'function') meToast('底图变换已重置', 'info', 1200);
+    });
+    var rotBmpBtn = document.getElementById('btn-rotate-bitmap');
+    if (rotBmpBtn) rotBmpBtn.addEventListener('click', function(){
+      if (!ME.EDITOR.bitmapImage){
+        if (typeof meToast === 'function') meToast('无底图·先载图', 'info', 1200);
+        return;
+      }
+      var bt = ME.EDITOR.map.bitmapTransform || { rot: 0 };
+      var curDeg = Math.round(((bt.rot || 0) * 180 / Math.PI) * 10) / 10;
+      var inp = prompt('底图旋角·度数·正 = 顺时针·-180~180\n当前 ' + curDeg + '°', String(curDeg));
+      if (inp === null) return;
+      var deg = parseFloat(inp);
+      if (isNaN(deg)){
+        if (typeof meToast === 'function') meToast('角度无效', 'warn', 1500);
+        return;
+      }
+      ME.setBitmapRotation(deg * Math.PI / 180);
+      if (typeof meToast === 'function') meToast('底图旋至 ' + deg + '°', 'info', 1200);
+    });
+    document.getElementById('btn-import-json').addEventListener('click', function(){
+      if (ME.EDITOR.dirty && !confirm('当前有未保存改动·确认载入?')) return;
+      ME.io.importJSON();
+    });
+    var shpBtn = document.getElementById('btn-import-shp');
+    if (shpBtn){
+      shpBtn.addEventListener('click', function(){
+        if (ME.EDITOR.dirty && !confirm('当前有未保存改动·确认载入?')) return;
+        ME.io.importShapefile();
+      });
+    }
+    document.getElementById('btn-export-json').addEventListener('click', function(){
+      var fmt = document.getElementById('export-format').value;
+      if (fmt === 'geojson')      ME.io.exportGeoJSON();
+      else if (fmt === 'scenario') ME.io.exportScenarioSchema();
+      else if (fmt === 'pmap')     ME.io.exportGamePMap();
+      else                          ME.io.exportJSON();
+      ME.EDITOR.dirty = false;
+      updateStatus();
+    });
+    document.getElementById('btn-undo').addEventListener('click', function(){ ME.doUndo(); });
+    document.getElementById('btn-redo').addEventListener('click', function(){ ME.doRedo(); });
+    document.getElementById('btn-fit').addEventListener('click', function(){ ME.fitToContent(); });
+    document.getElementById('dynasty-select').addEventListener('change', function(e){
+      ME.EDITOR.map.dynasty = e.target.value;
+      ME.fire('mutation', { label: 'change dynasty' });
+      ME.panel.render();
+    });
+  }
+
+  function bindToolButtons(){
+    document.querySelectorAll('.me-tool[data-tool]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var t = b.getAttribute('data-tool');
+        ME.setTool(t);
+      });
+    });
+  }
+
+  function bindLayerToggles(){
+    document.querySelectorAll('[data-layer]').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        var k = cb.getAttribute('data-layer');
+        ME.EDITOR.layers[k] = cb.checked;
+        ME.requestRender();
+      });
+    });
+  }
+
+  function bindEvents(){
+    ME.on('tool-change', function(p){
+      document.querySelectorAll('.me-tool[data-tool]').forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-tool') === p.tool);
+      });
+      var canvas = document.getElementById('map-canvas');
+      canvas.className = canvas.className.replace(/\bt-\w+/g, '');
+      canvas.classList.add('t-' + p.tool);
+      // brush 进/退·tool-change 后处理
+      if (ME.brush){
+        if (p.tool === 'brush' && !ME.brush.isActive()){
+          var ok = ME.brush.enter({});
+          if (!ok){
+            // 失败·退回 select
+            setTimeout(function(){ ME.setTool('select'); }, 0);
+          }
+        } else if (p.tool !== 'brush' && ME.brush.isActive()){
+          ME.brush.exit(true);  // 切走时·提交未提的 mask
+        }
+      }
+      // voronoi·切到非 voronoi 时退出交互
+      if (ME.voronoi && p.tool !== 'voronoi' &&
+          ME.EDITOR.voronoiState && ME.EDITOR.voronoiState.active){
+        ME.voronoi.exitInteractive();
+      }
+      // phase 12·切到非 feature 工具时·清 pen 与 feature 选中
+      var featureTools = ['river', 'road', 'stronghold', 'ferry'];
+      if (featureTools.indexOf(p.tool) < 0){
+        if (ME.EDITOR.featurePenPoints && ME.EDITOR.featurePenPoints.length){
+          ME.EDITOR.featurePenPoints = [];
+        }
+        if (ME.EDITOR.selectedFeature){
+          ME.EDITOR.selectedFeature = null;
+          ME.fire('feature-select', null);
+        }
+      }
+      // 切走 ferry 时清 pen
+      if (p.tool !== 'ferry'){
+        ME.EDITOR._ferryPen = null;
+      }
+      updateStatus();
+    });
+
+    // feature panel renderer·hook 'feature-select'
+    ME.on('feature-select', renderFeaturePanel);
+    ME.on('mutation', function(){
+      // mutation 后·若 feature 仍选·重渲 (字段可能变)
+      if (ME.EDITOR.selectedFeature) renderFeaturePanel(ME.EDITOR.selectedFeature);
+    });
+
+    // 道路/要塞 type select
+    var roadSel = document.getElementById('road-type-select');
+    if (roadSel) roadSel.addEventListener('change', function(){
+      if (ME.roads) ME.roads.setDefaultType(roadSel.value);
+    });
+    var strongSel = document.getElementById('strong-type-select');
+    if (strongSel) strongSel.addEventListener('change', function(){
+      if (ME.strongholds) ME.strongholds.setDefaultType(strongSel.value);
+    });
+
+    // phase 13.3·raster brush controls
+    var rbs = document.getElementById('raster-brush-size');
+    if (rbs) rbs.addEventListener('input', function(){
+      if (ME.rastermaps) ME.rastermaps.setBrushSize(Number(rbs.value));
+    });
+    var rhv = document.getElementById('raster-height-val');
+    if (rhv) rhv.addEventListener('change', function(){
+      if (ME.rastermaps) ME.rastermaps.setValue('heightMap', Number(rhv.value));
+    });
+    var rtv = document.getElementById('raster-terrain-val');
+    if (rtv) rtv.addEventListener('change', function(){
+      if (ME.rastermaps) ME.rastermaps.setValue('terrainMap', Number(rtv.value));
+    });
+    var rbm = document.getElementById('raster-brush-mode');
+    if (rbm) rbm.addEventListener('change', function(){
+      if (ME.rastermaps) ME.rastermaps.setBrushMode(rbm.value);
+    });
+    ME.on('selection-change', updateStatus);
+    ME.on('mutation', updateStatus);
+    ME.on('mouse-move', function(m){
+      var ov = document.getElementById('canvas-overlay');
+      var TOOL_CN = {
+        select: '选', pen: '画', addPoly: '加飞', addHole: '挖洞',
+        edit: '编', merge: '合', split: '切', hand: '拖', zoom: '缩',
+        brush: '刷', marquee: '框选', ai: '推', terrainBrush: '地刷',
+        riverPen: '画河', roadPen: '画路', strongholdPen: '点城', ferryPen: '渡',
+        impassable: '楔', text: '字'
+      };
+      var t = TOOL_CN[ME.EDITOR.activeTool] || ME.EDITOR.activeTool;
+      ov.textContent = '具·' + t +
+        ' · 缩 ' + Math.round(ME.EDITOR.camera.zoom * 100) + '%' +
+        ' · [' + Math.round(m.worldX) + ',' + Math.round(m.worldY) + ']';
+    });
+    ME.on('map-loaded', function(){ updateStatus(); updateLegend(); });
+    ME.on('mutation', function(){ updateLegend(); });
+    ME.on('draft-saved', function(){
+      document.getElementById('status-tip').textContent = '草稿已自动保存 (' + new Date().toLocaleTimeString() + ')';
+    });
+    ME.on('bitmap-loaded', function(){
+      document.getElementById('status-tip').textContent = '底图已载入 ' + ME.EDITOR.map.bitmapWidth + '×' + ME.EDITOR.map.bitmapHeight;
+    });
+    ME.on('map-imported', function(p){
+      document.getElementById('status-tip').textContent = '剧本已载 (' + (p && p.name || 'json') + ')';
+    });
+  }
+
+  function renderFeaturePanel(sel){
+    var el = document.getElementById('feature-panel');
+    if (!el) return;
+    if (!sel){ el.style.display = 'none'; el.innerHTML = ''; return; }
+    var map = ME.EDITOR.map;
+    var html = '';
+    if (sel.kind === 'river' && ME.rivers){
+      var r = ME.rivers.findById(map, sel.id);
+      if (!r){ el.style.display = 'none'; return; }
+      html = '<div style="font-size:13px; color:#7ab8d8; margin-bottom:8px; border-bottom:1px solid #3a3530; padding-bottom:6px;">河 · ' + r.name + ' (' + r.points.length + ' 顶)</div>' +
+        formRow('名', '<input id="ft-name" value="' + esc(r.name) + '" />') +
+        formRow('源出', '<input id="ft-source" value="' + esc(r.source) + '" />') +
+        formRow('视宽', '<input id="ft-width" type="number" step="0.1" value="' + r.width + '" />') +
+        formRow('大河', '<input id="ft-major" type="checkbox" ' + (r.isMajor?'checked':'') + ' />') +
+        formRow('通航', '<input id="ft-nav" type="checkbox" ' + (r.navigable?'checked':'') + ' />') +
+        formRow('注', '<textarea id="ft-notes" rows="2">' + esc(r.notes) + '</textarea>') +
+        '<div style="display:flex; gap:6px; margin-top:8px;">' +
+          '<button class="me-btn" id="ft-save">保存</button>' +
+          '<button class="me-btn me-btn-warn" id="ft-del">删此河</button>' +
+        '</div>';
+      el.innerHTML = html;
+      document.getElementById('ft-save').onclick = function(){
+        ME.commitMutation('river·改属性', function(){
+          r.name = document.getElementById('ft-name').value || r.name;
+          r.source = document.getElementById('ft-source').value;
+          r.width = Number(document.getElementById('ft-width').value) || 2.5;
+          r.isMajor = document.getElementById('ft-major').checked;
+          r.navigable = document.getElementById('ft-nav').checked;
+          r.notes = document.getElementById('ft-notes').value;
+        });
+        ME.requestRender();
+      };
+      document.getElementById('ft-del').onclick = function(){
+        if (!confirm('删此河?')) return;
+        ME.commitMutation('river·删', function(){ ME.rivers.remove(map, sel.id); });
+        ME.EDITOR.selectedFeature = null;
+        ME.fire('feature-select', null);
+        ME.requestRender();
+      };
+    } else if (sel.kind === 'road' && ME.roads){
+      var rd = ME.roads.findById(map, sel.id);
+      if (!rd){ el.style.display = 'none'; return; }
+      var typeOpts = Object.keys(ME.roads.TYPES).map(function(k){
+        return '<option value="' + k + '"' + (rd.type === k ? ' selected' : '') + '>' + ME.roads.TYPES[k].label + '</option>';
+      }).join('');
+      html = '<div style="font-size:13px; color:#c9a96e; margin-bottom:8px; border-bottom:1px solid #3a3530; padding-bottom:6px;">道 · ' + rd.name + ' (' + rd.points.length + ' 顶)</div>' +
+        formRow('名', '<input id="ft-name" value="' + esc(rd.name) + '" />') +
+        formRow('类型', '<select id="ft-type">' + typeOpts + '</select>') +
+        formRow('容量', '<input id="ft-cap" type="number" value="' + rd.capacity + '" /> 队/日') +
+        formRow('时期', '<input id="ft-period" value="' + esc(rd.period) + '" />') +
+        formRow('官道', '<input id="ft-official" type="checkbox" ' + (rd.isOfficial?'checked':'') + ' />') +
+        formRow('注', '<textarea id="ft-notes" rows="2">' + esc(rd.notes) + '</textarea>') +
+        '<div style="display:flex; gap:6px; margin-top:8px;">' +
+          '<button class="me-btn" id="ft-save">保存</button>' +
+          '<button class="me-btn me-btn-warn" id="ft-del">删此道</button>' +
+        '</div>';
+      el.innerHTML = html;
+      document.getElementById('ft-save').onclick = function(){
+        ME.commitMutation('road·改属性', function(){
+          rd.name = document.getElementById('ft-name').value || rd.name;
+          rd.type = document.getElementById('ft-type').value;
+          rd.capacity = Number(document.getElementById('ft-cap').value) || 0;
+          rd.period = document.getElementById('ft-period').value;
+          rd.isOfficial = document.getElementById('ft-official').checked;
+          rd.notes = document.getElementById('ft-notes').value;
+        });
+        ME.requestRender();
+      };
+      document.getElementById('ft-del').onclick = function(){
+        if (!confirm('删此道?')) return;
+        ME.commitMutation('road·删', function(){ ME.roads.remove(map, sel.id); });
+        ME.EDITOR.selectedFeature = null;
+        ME.fire('feature-select', null);
+        ME.requestRender();
+      };
+    } else if (sel.kind === 'ferry' && ME.ferry){
+      var fy = ME.ferry.findById(map, sel.id);
+      if (!fy){ el.style.display = 'none'; return; }
+      var aDiv = map.divisions.find(function(D){ return D.id === fy.areaA; });
+      var bDiv = map.divisions.find(function(D){ return D.id === fy.areaB; });
+      html = '<div style="font-size:13px; color:#7ab8d8; margin-bottom:8px; border-bottom:1px solid #3a3530; padding-bottom:6px;">渡 · ' + fy.name + '</div>' +
+        formRow('名', '<input id="ft-name" value="' + esc(fy.name) + '" />') +
+        formRow('A 端', '<span style="color:#a8a098;">' + (aDiv ? aDiv.name : '?') + '</span>') +
+        formRow('B 端', '<span style="color:#a8a098;">' + (bDiv ? bDiv.name : '?') + '</span>') +
+        formRow('容量', '<input id="ft-cap" type="number" value="' + fy.capacity + '" /> 队/日') +
+        formRow('时期', '<input id="ft-period" value="' + esc(fy.period) + '" />') +
+        formRow('源出', '<input id="ft-source" value="' + esc(fy.source) + '" />') +
+        formRow('注', '<textarea id="ft-notes" rows="2">' + esc(fy.notes) + '</textarea>') +
+        '<div style="display:flex; gap:6px; margin-top:8px;">' +
+          '<button class="me-btn" id="ft-save">保存</button>' +
+          '<button class="me-btn me-btn-warn" id="ft-del">删此渡口</button>' +
+        '</div>';
+      el.innerHTML = html;
+      document.getElementById('ft-save').onclick = function(){
+        ME.commitMutation('渡口·改属性', function(){
+          fy.name = document.getElementById('ft-name').value || fy.name;
+          fy.capacity = Number(document.getElementById('ft-cap').value) || 0;
+          fy.period = document.getElementById('ft-period').value;
+          fy.source = document.getElementById('ft-source').value;
+          fy.notes = document.getElementById('ft-notes').value;
+        });
+        ME.requestRender();
+      };
+      document.getElementById('ft-del').onclick = function(){
+        if (!confirm('删此渡口?')) return;
+        ME.commitMutation('渡口·删', function(){ ME.ferry.remove(map, sel.id); });
+        ME.EDITOR.selectedFeature = null;
+        ME.fire('feature-select', null);
+        ME.requestRender();
+      };
+    } else if (sel.kind === 'stronghold' && ME.strongholds){
+      var s = ME.strongholds.findById(map, sel.id);
+      if (!s){ el.style.display = 'none'; return; }
+      var stOpts = Object.keys(ME.strongholds.TYPES).map(function(k){
+        return '<option value="' + k + '"' + (s.type === k ? ' selected' : '') + '>' + ME.strongholds.TYPES[k].label + '</option>';
+      }).join('');
+      html = '<div style="font-size:13px; color:#dc4f3a; margin-bottom:8px; border-bottom:1px solid #3a3530; padding-bottom:6px;">要塞 · ' + s.name + '</div>' +
+        formRow('名', '<input id="ft-name" value="' + esc(s.name) + '" />') +
+        formRow('类型', '<select id="ft-type">' + stOpts + '</select>') +
+        formRow('Tier', '<select id="ft-tier"><option value="1"' + (s.tier===1?' selected':'') + '>1·小</option><option value="2"' + (s.tier===2?' selected':'') + '>2·中</option><option value="3"' + (s.tier===3?' selected':'') + '>3·大</option></select>') +
+        formRow('防御值', '<input id="ft-def" type="number" value="' + s.defenseValue + '" />') +
+        formRow('守军', '<input id="ft-gar" type="number" value="' + s.garrisonInit + '" />') +
+        formRow('时期', '<input id="ft-period" value="' + esc(s.period) + '" />') +
+        formRow('坐标', '<span style="color:#a8a098;">[' + Math.round(s.x) + ', ' + Math.round(s.y) + ']</span>') +
+        formRow('注', '<textarea id="ft-notes" rows="2">' + esc(s.notes) + '</textarea>') +
+        '<div style="display:flex; gap:6px; margin-top:8px;">' +
+          '<button class="me-btn" id="ft-save">保存</button>' +
+          '<button class="me-btn me-btn-warn" id="ft-del">删此塞</button>' +
+        '</div>';
+      el.innerHTML = html;
+      document.getElementById('ft-save').onclick = function(){
+        ME.commitMutation('stronghold·改属性', function(){
+          s.name = document.getElementById('ft-name').value || s.name;
+          s.type = document.getElementById('ft-type').value;
+          s.tier = Number(document.getElementById('ft-tier').value) || 1;
+          s.defenseValue = Number(document.getElementById('ft-def').value) || 0;
+          s.garrisonInit = Number(document.getElementById('ft-gar').value) || 0;
+          s.period = document.getElementById('ft-period').value;
+          s.notes = document.getElementById('ft-notes').value;
+        });
+        ME.requestRender();
+      };
+      document.getElementById('ft-del').onclick = function(){
+        if (!confirm('删此要塞?')) return;
+        ME.commitMutation('stronghold·删', function(){ ME.strongholds.remove(map, sel.id); });
+        ME.EDITOR.selectedFeature = null;
+        ME.fire('feature-select', null);
+        ME.requestRender();
+      };
+    } else {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'block';
+  }
+
+  function formRow(label, ctrl){
+    return '<div style="display:grid; grid-template-columns:60px 1fr; gap:8px; margin-bottom:5px; align-items:center;">' +
+           '<span style="color:#a8a098;">' + label + '</span>' +
+           '<span>' + ctrl + '</span>' +
+           '</div>';
+  }
+  function esc(s){
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function updateStatus(){
+    var TOOL_CN_ST = {
+      select: '选', pen: '画', addPoly: '加飞', addHole: '挖洞',
+      edit: '编', merge: '合', split: '切', hand: '拖', zoom: '缩',
+      brush: '刷', marquee: '框选', ai: '推', terrainBrush: '地刷',
+      riverPen: '画河', roadPen: '画路', strongholdPen: '点城', ferryPen: '渡',
+      impassable: '楔', text: '字'
+    };
+    document.getElementById('status-tool').textContent = TOOL_CN_ST[ME.EDITOR.activeTool] || ME.EDITOR.activeTool;
+    document.getElementById('status-zoom').textContent = Math.round(ME.EDITOR.camera.zoom * 100) + '%';
+    document.getElementById('status-sel').textContent = ME.EDITOR.selectedIds.length;
+    document.getElementById('status-dirty').textContent = ME.EDITOR.dirty ? '有' : '无';
+    // phase 15.2·dirty-dot 视觉反馈
+    var dotEl = document.getElementById('dirty-dot');
+    if (dotEl) dotEl.classList.toggle('dirty', !!ME.EDITOR.dirty);
+    document.getElementById('div-count').textContent = ME.EDITOR.map.divisions.length;
+    var view = ME.timeline ? ME.timeline.getViewYear() : null;
+    var tip = document.getElementById('status-tip');
+    if (view != null && tip && !ME.EDITOR.diffMode){
+      var active = ME.timeline.getActiveDivisionsAt(view).length;
+      tip.textContent = '观年·' + view + ' · 在场 ' + active + ' / ' + ME.EDITOR.map.divisions.length + ' 省';
+    }
+  }
+
+  // ─── phase 16.5·history pane ─────────────────────────────
+  function initHistoryPane(){
+    var list = document.getElementById('history-list');
+    var refreshBtn = document.getElementById('btn-history-refresh');
+    var clearBtn = document.getElementById('btn-history-clear');
+    if (!list) return;
+
+    function render(){
+      var stack = ME.EDITOR.undo;
+      if (!stack){ list.innerHTML = '<div style="color:var(--paper-3); padding:var(--sp-2);">undo 栈未启用</div>'; return; }
+      var past = stack.undoStack || [];
+      var future = stack.redoStack || [];
+      var now = Date.now();
+
+      function fmtTime(t){
+        var s = Math.floor((now - t) / 1000);
+        if (s < 60) return s + 's 前';
+        if (s < 3600) return Math.floor(s / 60) + 'm 前';
+        return Math.floor(s / 3600) + 'h 前';
+      }
+
+      var html = '';
+      // future·redoStack 反向 (最近的 redo 在 stack 顶)
+      // 显示·"未来" 部分·上→下·从最远 future 到最近·点击 redo n 次
+      var futureRev = future.slice().reverse();
+      futureRev.forEach(function(entry, i){
+        var steps = futureRev.length - i; // 点此·从 future[len-1-i] 到 future[0]·redo (steps) 次
+        html += '<div class="me-hist-row" data-redo="' + steps + '" style="display:grid; grid-template-columns:auto 1fr auto; gap:var(--sp-2); padding:5px var(--sp-2); border-radius:var(--rd-1); cursor:pointer; color:var(--paper-3); border-left:2px solid var(--cyan-2);" title="redo 至此">' +
+          '<span style="color:var(--cyan-1); font-family:var(--font-mono);">+' + steps + '</span>' +
+          '<span>' + escHtml(entry.label) + '</span>' +
+          '<span style="font-family:var(--font-mono); font-size:9px;">' + fmtTime(entry.time) + '</span>' +
+        '</div>';
+      });
+
+      // 当前·NOW 标记
+      html += '<div class="me-hist-row me-hist-now" style="display:grid; grid-template-columns:auto 1fr; gap:var(--sp-2); padding:8px var(--sp-2); margin:var(--sp-1) 0; border-radius:var(--rd-2); background:linear-gradient(90deg, var(--gold-5), transparent); color:var(--gold-1); border-left:3px solid var(--gold-1); font-weight:var(--fw-sb);">' +
+        '<span>●</span><span>當前</span>' +
+      '</div>';
+
+      // past·undoStack 正向·last 是最近 commit
+      // 显示·近→远·点击 undo n 次
+      var pastRev = past.slice().reverse();
+      pastRev.forEach(function(entry, i){
+        var steps = i + 1;
+        html += '<div class="me-hist-row" data-undo="' + steps + '" style="display:grid; grid-template-columns:auto 1fr auto; gap:var(--sp-2); padding:5px var(--sp-2); border-radius:var(--rd-1); cursor:pointer; color:var(--paper-1); border-left:2px solid var(--bd-1);" title="undo 至此">' +
+          '<span style="color:var(--paper-3); font-family:var(--font-mono);">−' + steps + '</span>' +
+          '<span>' + escHtml(entry.label) + '</span>' +
+          '<span style="font-family:var(--font-mono); font-size:9px; color:var(--paper-3);">' + fmtTime(entry.time) + '</span>' +
+        '</div>';
+      });
+
+      if (past.length === 0 && future.length === 0){
+        html += '<div style="color:var(--paper-3); padding:var(--sp-3); text-align:center;">无历史·开始编辑后此处显</div>';
+      }
+
+      list.innerHTML = html;
+
+      // bind clicks
+      list.querySelectorAll('[data-undo]').forEach(function(el){
+        el.addEventListener('click', function(){
+          var n = Number(el.getAttribute('data-undo'));
+          for (var i = 0; i < n; i++) ME.doUndo();
+          render();
+        });
+        el.addEventListener('mouseenter', function(){ el.style.background = 'var(--ink-3)'; });
+        el.addEventListener('mouseleave', function(){ el.style.background = ''; });
+      });
+      list.querySelectorAll('[data-redo]').forEach(function(el){
+        el.addEventListener('click', function(){
+          var n = Number(el.getAttribute('data-redo'));
+          for (var i = 0; i < n; i++) ME.doRedo();
+          render();
+        });
+        el.addEventListener('mouseenter', function(){ el.style.background = 'var(--ink-3)'; });
+        el.addEventListener('mouseleave', function(){ el.style.background = ''; });
+      });
+    }
+
+    if (refreshBtn) refreshBtn.addEventListener('click', render);
+    if (clearBtn) clearBtn.addEventListener('click', function(){
+      if (!confirm('清空 undo 栈·之后无法 undo·确认?')) return;
+      if (ME.EDITOR.undo){
+        TM.MapEditor.undo.clear(ME.EDITOR.undo);
+        TM.MapEditor.undo.setBaseline(ME.EDITOR.undo, ME.EDITOR.map);
+      }
+      render();
+      if (window.meToast) meToast('undo 栈已清', 'info');
+    });
+
+    // 自动·切到 history pane 时·渲染
+    document.querySelectorAll('.me-dtab').forEach(function(t){
+      if (t.getAttribute('data-pane') === 'history'){
+        t.addEventListener('click', render);
+      }
+    });
+    // mutation 时自动 render·若 history pane 当前显
+    ME.on('mutation', function(){
+      var pane = document.querySelector('.me-drawer-pane[data-pane="history"]');
+      if (pane && pane.classList.contains('active')) render();
+    });
+
+    function escHtml(s){
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+  }
+
+  // ─── phase 15.2·drawer 控制 ──────────────────────────────
+  (function initDrawer(){
+    var drawer = document.getElementById('right-drawer');
+    var toggleBtn = document.getElementById('drawer-toggle');
+    var iconEl = document.getElementById('drawer-toggle-icon');
+    if (!drawer || !toggleBtn) return;
+
+    function setCollapsed(c){
+      drawer.classList.toggle('collapsed', c);
+      if (iconEl) iconEl.textContent = c ? '‹' : '›';
+      try { localStorage.setItem('me.drawerCollapsed', c ? '1' : '0'); } catch(e){}
+      // canvas resize·因 drawer 收时·canvas 可视宽变
+      setTimeout(function(){ if (ME.resizeCanvas) ME.resizeCanvas(); }, 320);
+    }
+    toggleBtn.addEventListener('click', function(){
+      setCollapsed(!drawer.classList.contains('collapsed'));
+    });
+    // 初始·从 localStorage 恢复
+    try {
+      if (localStorage.getItem('me.drawerCollapsed') === '1') setCollapsed(true);
+    } catch(e){}
+
+    // Tab key·切 drawer 状态 (但不在输入时拦截)
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey){
+        var t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+        e.preventDefault();
+        setCollapsed(!drawer.classList.contains('collapsed'));
+      }
+    });
+
+    // tab 切换 pane
+    var tabs = document.querySelectorAll('.me-dtab');
+    var panes = document.querySelectorAll('.me-drawer-pane');
+    tabs.forEach(function(t){
+      t.addEventListener('click', function(){
+        var name = t.getAttribute('data-pane');
+        tabs.forEach(function(x){ x.classList.toggle('active', x === t); });
+        panes.forEach(function(p){
+          p.classList.toggle('active', p.getAttribute('data-pane') === name);
+        });
+      });
+    });
+
+    // phase 16.5·history pane
+    initHistoryPane();
+    // phase 15.4·section-hdr collapsible
+    document.querySelectorAll('.me-section-hdr[data-toggle]').forEach(function(hdr){
+      hdr.addEventListener('click', function(){
+        var key = hdr.getAttribute('data-toggle');
+        var body = document.querySelector('.me-section-body[data-body="' + key + '"]');
+        var collapsed = hdr.classList.toggle('collapsed');
+        if (body) body.classList.toggle('collapsed', collapsed);
+        try { localStorage.setItem('me.sec.' + key, collapsed ? '1' : '0'); } catch(e){}
+      });
+      // 恢复
+      try {
+        var saved = localStorage.getItem('me.sec.' + hdr.getAttribute('data-toggle'));
+        if (saved === '1'){
+          hdr.classList.add('collapsed');
+          var body = document.querySelector('.me-section-body[data-body="' + hdr.getAttribute('data-toggle') + '"]');
+          if (body) body.classList.add('collapsed');
+        }
+      } catch(e){}
+    });
+  })();
+
+  // 防离开误丢
+  window.addEventListener('beforeunload', function(e){
+    if (ME.EDITOR.dirty){
+      e.preventDefault();
+      e.returnValue = '有未保存改动·确认离开?';
+      return e.returnValue;
+    }
+  });
+
+  // boot
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
+
+</body>
+</html>

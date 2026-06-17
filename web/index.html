@@ -1,0 +1,911 @@
+<!-- ============================================================
+     游戏运行时 — 不是编辑器！
+     这个文件包含：游戏循环、回局逻辑、玩法系统。
+     不要在这里加入编辑器功能！
+
+     剥本编辑功能请修改：
+       preview/scenario-editor-reset-preview.html  —  新版剧本工坊 UI
+       editor.html / editor.js                     —  旧版编辑器兼容入口
+
+     参见 ARCHITECTURE.md 了解整体戶架构。
+     ============================================================ -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 正在运行的包版本·与代码同包同发·footer 与在线版更新提示都读这里（发版工具自动盖戳） -->
+<meta name="tm-version" content="1.3.3.9">
+<title>天命 · AI历史模拟</title>
+<script>
+(function(){
+  var root = (typeof window !== 'undefined') ? window : null;
+  if (!root || root.TM_CSS_RETRY) return;
+  var delays = [1000, 4000, 8000, 30000, 180000];
+
+  function retryHref(href, count) {
+    var sep = href.indexOf('?') >= 0 ? '&' : '?';
+    return href + sep + 'cssRetry=' + Date.now() + '-' + count;
+  }
+
+  root.TM_CSS_LOADED = function(link) {
+    if (!link) return;
+    link.setAttribute('data-css-ok', '1');
+    if (link._tmCssRetryTimer) {
+      clearTimeout(link._tmCssRetryTimer);
+      link._tmCssRetryTimer = null;
+    }
+  };
+
+  root.TM_CSS_RETRY = function(link) {
+    if (!link || link.getAttribute('data-css-ok') === '1') return;
+    var count = parseInt(link.getAttribute('data-css-retry-count') || '0', 10);
+    if (!isFinite(count) || count < 0) count = 0;
+    var base = link.getAttribute('data-css-base') || link.getAttribute('href') || '';
+    var fallback = link.getAttribute('data-css-fallback') || '';
+    var useFallback = !!fallback && count >= 2 && count < 4;
+    var target = useFallback ? fallback : base;
+    if (!target) return;
+    var delay = delays[Math.min(count, delays.length - 1)];
+    link.setAttribute('data-css-retry-count', String(count + 1));
+    if (link._tmCssRetryTimer) clearTimeout(link._tmCssRetryTimer);
+    link._tmCssRetryTimer = setTimeout(function(){
+      if (link.getAttribute('data-css-ok') === '1') return;
+      link.href = retryHref(target, count + 1);
+    }, delay);
+    if (root.console && root.console.warn) {
+      root.console.warn('[tm-css] stylesheet failed; retry scheduled in ' + delay + 'ms', base);
+    }
+  };
+})();
+</script>
+<link id="tm-main-css" rel="stylesheet" href="styles.css?v=20260520-launch-official-theme-font-scopes" data-css-base="styles.css?v=20260520-launch-official-theme-font-scopes" data-css-fallback="https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/styles.css?v=20260520-launch-official-theme-font-scopes" onload="window.TM_CSS_LOADED&&window.TM_CSS_LOADED(this)" onerror="window.TM_CSS_RETRY&&window.TM_CSS_RETRY(this)">
+<link rel="stylesheet" href="tm-keju-paradigm-panel.css?v=20260524-L2">
+<script src="map-converter.js"></script>
+<script src="map-integration.js"></script>
+<script src="map-display.js?v=2026042816"></script>
+<script src="map-editor-to-game.js?v=2026050601"></script>
+<script>/* cache-buster: 如发现 js 未更新，改变 v 值强制重载 */ window._TM_CACHE_V = '20260519-remote-changelog';</script>
+<script>
+/* 界面字号·早期应用（2026-06-10·治玩家双端「字太小」）。档位存 localStorage（设备本地偏好·
+   不进存档），设置面板「界面显示」可调。--text-* token 全是 rem → 改 html 根字号即全局生效。
+   在 head 同步应用，避免首屏先渲染小字再跳大。
+   未设置时出厂默认 1.2「大」（owner 2026-06-10 二次拍板再调大）；玩家显式选回「标准」存 1。 */
+(function(){
+  try {
+    var s = parseFloat(localStorage.getItem('tm.uiFontScale'));
+    if (!s || s < 0.8 || s > 1.6) s = 1.2;
+    if (s !== 1) document.documentElement.style.fontSize = (16 * s) + 'px';
+  } catch (_) {}
+})();
+</script>
+</head>
+<body>
+
+<!-- 启动界面 -->
+<div id="launch">
+  <div class="home-stage">
+    <div class="home-ylian l">天行健 · 君子以自强不息<span class="s">—— 周易</span></div>
+    <div class="home-ylian r">地势坤 · 君子以厚德载物<span class="s">—— 周易</span></div>
+
+    <section class="home-main" aria-label="天命主菜单">
+      <header class="home-axis">
+        <div class="home-seal-wrap">
+          <span class="home-seal-lbl">奉 天 承 运 皇 帝　诏 曰</span>
+        </div>
+        <div class="home-title-row">
+          <h1 class="home-title lt-title" id="lt-title">天　命</h1>
+          <div class="home-seal" aria-hidden="true">玺</div>
+        </div>
+        <div class="home-sub">AI　历　史　模　拟　推　演</div>
+      </header>
+
+      <div class="home-menu" aria-label="主要入口">
+        <button class="home-card c-new" id="btn-new-game">
+          <span class="home-card-icon"><span id="_ico_new">卷</span></span>
+          <span class="home-card-copy">
+            <span class="home-card-cn">开　卷</span>
+            <span class="home-card-ti">开 始 新 游 戏</span>
+            <span class="home-card-desc">选择剧本，载入世界，敕定天命。保留正式页面的剧本选择入口。</span>
+          </span>
+          <span class="home-card-key" id="_home_meta_new">Enter</span>
+        </button>
+        <button class="home-card c-load" id="btn-load-save">
+          <span class="home-card-icon"><span id="_ico_load">续</span></span>
+          <span class="home-card-copy">
+            <span class="home-card-cn">续　卷</span>
+            <span class="home-card-ti">读 取 存 档</span>
+            <span class="home-card-desc">读取存档，启封卷宗，承续推演；对应正式游戏的存档管理。</span>
+          </span>
+          <span class="home-card-key" id="_home_meta_load">Ctrl+L</span>
+        </button>
+        <button class="home-card c-edit" id="btn-editor" title="打开新版剧本工坊：制作剧本结构、人物初始配置、势力关系、AI 修复与正式沙盒测试。旧版编辑器仍可从剧本管理卡片进入。">
+          <span class="home-card-icon"><span id="_ico_edit">著</span></span>
+          <span class="home-card-copy">
+            <span class="home-card-cn">著　卷</span>
+            <span class="home-card-ti">创 作 新 剧 本</span>
+            <span class="home-card-desc">进入新版剧本工坊，制作时代、人物、势力、规则并启动正式沙盒测试。</span>
+          </span>
+          <span class="home-card-key">Ctrl+E</span>
+        </button>
+        <button class="home-card c-set" id="btn-settings">
+          <span class="home-card-icon"><span id="_ico_set">典</span></span>
+          <span class="home-card-copy">
+            <span class="home-card-cn">典　章</span>
+            <span class="home-card-ti">游 戏 设 置</span>
+            <span class="home-card-desc">游戏设置、API、字数、文风、音声与偏好调度。</span>
+          </span>
+          <span class="home-card-key">Ctrl+,</span>
+        </button>
+      </div>
+
+      <aside class="home-side" aria-label="近事与案具">
+        <section class="home-panel">
+          <div class="home-panel-title"><strong>近　事</strong><span>最近三卷</span></div>
+          <div class="home-recent" id="home-recent">
+            <div class="r-empty" id="home-recent-empty">未 见 封 卷 · 启 新 纪 元</div>
+          </div>
+          <div class="home-state-grid">
+            <div class="home-state"><span>节令</span><b>春分</b></div>
+            <div class="home-state"><span>世态</span><b>太平</b></div>
+            <div class="home-state"><span>剧本源</span><b>官方 / 自定</b></div>
+            <div class="home-state"><span>地图</span><b>可载入</b></div>
+          </div>
+        </section>
+
+        <section class="home-panel home-tools-panel">
+          <div class="home-panel-title"><strong>案　具</strong><span>底栏职能上移</span></div>
+          <div class="home-tools">
+            <button type="button" onclick="if(window.TM_Changelog)TM_Changelog.show();" title="查看更新公告">邸报</button>
+            <button type="button" onclick="window.openContentManager&&window.openContentManager();" title="管理在线更新与创意工坊内容">工坊</button>
+            <button type="button" onclick="window._loadMapEditorJSON&&window._loadMapEditorJSON();" title="载入 map-editor 导出的 JSON·装入 P.map·开卷时复用">载图</button>
+            <button type="button" onclick="if(typeof openHelp==='function'){openHelp('overview');}else{alert('帮助系统加载中，请稍候再试。');}" title="查看游戏帮助·含「如何配置 AI 密钥」">帮助</button>
+            <button type="button" onclick="if(confirm('确定退出天命？未保存的进度将丢失。')){ if(window.tianming&&window.tianming.quitApp){ window.tianming.quitApp(); } else { window.close(); } }">退出</button>
+          </div>
+        </section>
+      </aside>
+    </section>
+    <script>
+    (function fillHomeRecent(){
+      try{
+        var idx = JSON.parse(localStorage.getItem('tm_save_index')||'{}');
+        var arr = Object.keys(idx).map(function(k){ var v=idx[k]; v._slot=k; return v; }).filter(function(v){return v&&v.timestamp;}).sort(function(a,b){return b.timestamp-a.timestamp;}).slice(0,3);
+        if (!arr.length) return;
+        var host = document.getElementById('home-recent'); if(!host) return;
+        var empty = document.getElementById('home-recent-empty'); if(empty) empty.remove();
+        arr.forEach(function(s){
+          var span = document.createElement('div');
+          span.className = 'r-item';
+          var isAuto = s._slot==='slot_0';
+          var seal = isAuto ? '自' : '封';
+          var label = (s.eraName||s.date||'') + (s.turn?(' 第'+s.turn+'回'):'');
+          if (!label.trim()) label = s.name || '案卷';
+          var meta = s.name || (isAuto ? '自动存档' : '手动存档');
+          span.innerHTML = '<span class="r-seal">'+seal+'</span><span><span class="r-name">'+label+'</span><span class="r-meta">'+meta+'</span></span>';
+          host.appendChild(span);
+        });
+      }catch(e){}
+    })();
+
+    // phase 14.1·载图入口·选 map-editor 导出 JSON·装 P.map·status 提示
+    window._loadMapEditorJSON = function(){
+      if (typeof loadMapEditorDialog !== 'function'){
+        alert('map-editor-to-game.js 未加载');
+        return;
+      }
+      loadMapEditorDialog({ splitExclaves: true }).then(function(r){
+        var gm = r.gm;
+        if (typeof window.P === 'undefined'){
+          // P 未初始化 (未开卷)·暂存 window.__pendingMap·开卷时择机装
+          window.__pendingMap = gm;
+          alert('地图已暂存·' + gm.regions.length + ' 区·开卷时自动装入');
+        } else {
+          window.P.map = gm;
+          alert('地图已装入·' + gm.regions.length + ' 区 (' + gm.name + ')');
+          if (typeof renderGameMap === 'function' && typeof showMapInGame === 'function'){
+            // 不立即弹·让用户手动·避免打扰
+          }
+        }
+      }).catch(function(err){
+        if (err && err.message !== '未选文件') alert('载图失败·' + err.message);
+      });
+    };
+
+    // 开卷启动后·若 __pendingMap 存·自动装
+    window._installPendingMapIfAny = function(){
+      if (window.__pendingMap && typeof window.P !== 'undefined'){
+        window.P.map = window.__pendingMap;
+        console.log('[map-editor-bridge] pending map 已装·' + window.P.map.regions.length + ' 区');
+        delete window.__pendingMap;
+        return true;
+      }
+      return false;
+    };
+    </script>
+  </div>
+  <!-- 底部栏 -->
+  <div class="home-foot">
+    <div class="f-ver">天 命　测试版 <span id="tm-foot-ver">1.3.3.9</span></div>
+    <div class="f-mid" id="home-foot-mid">春 分<span class="dot">◆</span>太 平<span class="dot">◆</span>河 清 海 晏</div>
+    <div class="f-right">
+      <span class="lt-dibao-btn" style="cursor:pointer;" onclick="if(window.TM_Changelog)TM_Changelog.show();" title="查看更新公告"><kbd>报</kbd> 邸 报<span class="tm-cl-dot" id="tm-cl-dot" style="display:none;"></span></span>
+      <span class="lt-dibao-btn" style="cursor:pointer;" onclick="window.openContentManager&&window.openContentManager();" title="管理在线更新与创意工坊内容"><kbd>坊</kbd> 工 坊</span>
+      <span class="lt-dibao-btn" style="cursor:pointer;" onclick="window._loadMapEditorJSON&&window._loadMapEditorJSON();" title="载入 map-editor 导出的 JSON·装入 P.map·开卷时复用"><kbd>图</kbd> 载图</span>
+      <span><kbd>↵</kbd> 开 卷</span>
+      <span><kbd>?</kbd> 帮 助</span>
+      <span><kbd>Esc</kbd> 退 出</span>
+    </div>
+  </div>
+  <div id="main-view" style="display:none;width:100%;max-height:80vh;overflow-y:auto;"></div>
+</div>
+
+<!-- 剧本选择页 -->
+<div class="scn-page" id="scn-page"></div>
+
+<!-- 顶部栏 -->
+<div id="bar">
+  <div class="bar-logo">
+    <div class="bar-seal" onclick="openWentian()" title="天命·问天">天<br>命</div>
+    <button onclick="openWentian()" class="bar-wentian" title="问天——与推演AI直接对话">问　天</button>
+  </div>
+  <div class="bar-era-stack" id="bar-era-stack">
+    <div class="dynasty" id="bar-dynasty"></div>
+    <div class="date" id="bar-date"></div>
+    <div class="turn-text" id="bar-turn-text"></div>
+  </div>
+  <span id="bar-era" style="display:none;"></span>
+  <div class="bar-weather" id="bar-weather" title="四时物候">
+    <div class="bar-weather-seal" id="bar-weather-seal">秋</div>
+    <div class="bar-weather-info">
+      <div class="bar-weather-name" id="bar-weather-name">秋分</div>
+      <div class="bar-weather-desc" id="bar-weather-desc">北风起·寒气降</div>
+    </div>
+  </div>
+  <div class="bar-vars" id="bar-vars"></div>
+  <button class="bar-more-vars" id="bar-more-vars" onclick="TM.UI.topbar.openAllVarsModal()" title="查看剧本自定义变量">全部变量</button>
+  <div class="bar-right-group">
+    <span class="bar-save-chip" id="bar-save-chip" title="已存档">已 存</span>
+    <button class="bar-icon-btn2 ai-live" id="bar-ai-live" title="AI 推演中">AI</button>
+    <button class="bar-icon-btn2 badge" id="bar-todo-badge" data-n="0" title="待办" onclick="if(typeof openTodoPanel==='function')openTodoPanel();" style="display:none;">办</button>
+  </div>
+  <!-- 右上时间区·B 方案 LOCKED §3.1·主 = 年号+季节+月+干支日·副 = 公元年 -->
+  <div class="bar-time" id="bar-time" title="点击·完整时间 / 节气 / 物候">
+    <div class="bar-time-main" id="bar-time-main">—</div>
+    <div class="bar-time-sub" id="bar-time-sub">—</div>
+  </div>
+  <div class="bar-time-pop" id="bar-time-pop" style="display:none;"></div>
+  <div class="mr" id="bar-btns"></div>
+</div>
+
+<!-- 编辑器 -->
+<div id="E" style="display:none;">
+  <div class="sb" id="sidebar"></div>
+  <div class="em" id="em"></div>
+</div>
+
+<!-- 游戏界面 -->
+<div id="G">
+  <!-- 左 rail（始终可见） -->
+  <aside class="gs-rail-left">
+    <div class="gs-rail">
+      <button class="gs-rail-btn c-fac" title="势力" onclick="TM.UI.shell.openSideDrawer('left','fac')">势</button>
+      <button class="gs-rail-btn c-party" title="党派" onclick="TM.UI.shell.openSideDrawer('left','party')">党</button>
+      <button class="gs-rail-btn c-class" title="阶层" onclick="TM.UI.shell.openSideDrawer('left','class')">阶</button>
+      <button class="gs-rail-btn c-army" title="军事" onclick="TM.UI.shell.openSideDrawer('left','army')">军</button>
+      <button class="gs-rail-btn c-admin" title="行政区划" onclick="TM.UI.shell.openSideDrawer('left','admin')">政</button>
+      <button class="gs-rail-btn c-keju" title="科举" onclick="TM.UI.shell.openSideDrawer('left','keju')">科</button>
+      <button class="gs-rail-btn c-item" title="文物" onclick="TM.UI.shell.openSideDrawer('left','item')">物</button>
+      <button class="gs-rail-btn c-harem" title="后宫" onclick="TM.UI.shell.openSideDrawer('left','harem')">宫</button>
+      <button class="gs-rail-btn c-map" title="天下图" onclick="TM.UI.shell.openSideDrawer('left','map')">图</button>
+      <button class="gs-rail-btn c-theme" title="主题" onclick="TM.UI.shell.openSideDrawer('left','theme')">题</button>
+      <button class="gs-rail-btn c-audio" title="音声" onclick="TM.UI.shell.openSideDrawer('left','audio')">声</button>
+      <button class="gs-rail-btn c-help" title="帮助" onclick="TM.UI.shell.openSideDrawer('left','help')">帮</button>
+    </div>
+  </aside>
+  <!-- 中栏 -->
+  <div class="gc" id="gc"></div>
+  <!-- 右 rail（始终可见） -->
+  <aside class="gs-rail-right">
+    <div class="gs-rail">
+      <button class="gs-rail-btn c-self" title="朕亲" onclick="TM.UI.shell.openSideDrawer('right','self')">朕</button>
+      <button class="gs-rail-btn c-time" title="时辰" onclick="TM.UI.shell.openSideDrawer('right','time')">辰</button>
+      <button class="gs-rail-btn c-class" title="紧要之臣" onclick="TM.UI.shell.openSideDrawer('right','char')">臣</button>
+      <button class="gs-rail-btn c-rel" title="关系网" onclick="TM.UI.shell.openSideDrawer('right','rel')">缘</button>
+      <button class="gs-rail-btn c-issue" title="议题" onclick="TM.UI.shell.openSideDrawer('right','issue')">议</button>
+      <button class="gs-rail-btn c-goal" title="大志" onclick="TM.UI.shell.openSideDrawer('right','goal')">志</button>
+      <button class="gs-rail-btn c-fin" title="岁入岁出" onclick="TM.UI.shell.openSideDrawer('right','fin')">帑</button>
+      <button class="gs-rail-btn c-news" title="近事" onclick="TM.UI.shell.openSideDrawer('right','news')">讯</button>
+      <button class="gs-rail-btn c-rumor" title="风闻" onclick="TM.UI.shell.openSideDrawer('right','rumor')">闻</button>
+    </div>
+  </aside>
+  <!-- 左 drawer（overlay） -->
+  <div class="gs-drawer left" id="drawerLeft">
+    <div class="gs-drawer-hdr">
+      <div class="gs-drawer-title">朝 野 内 情</div>
+      <button class="gs-drawer-close" onclick="TM.UI.shell.closeSideDrawer('left')">×</button>
+    </div>
+    <div class="gs-drawer-body">
+      <div class="gl" id="gl"></div>
+    </div>
+  </div>
+  <!-- 右 drawer（overlay） -->
+  <div class="gs-drawer right" id="drawerRight">
+    <div class="gs-drawer-hdr">
+      <div class="gs-drawer-title">朕 之 案 上</div>
+      <button class="gs-drawer-close" onclick="TM.UI.shell.closeSideDrawer('right')">×</button>
+    </div>
+    <div class="gs-drawer-body">
+      <div class="gr" id="gr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 加载画面 -->
+<div class="loading" id="loading" role="alert" aria-live="assertive" aria-label="加载中"><div class="loading-frame"><div class="loading-corner-tr"></div><div class="loading-corner-bl"></div><div class="loading-deco">❖ ✦ ❖</div><div class="loading-text">时移事去</div><div class="loading-divider"></div><div class="loading-sub" id="loading-sub">运筹帷幄之中</div><div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div></div></div>
+
+<!-- 史记弹窗 -->
+<div class="turn-modal" id="turn-modal" role="dialog" aria-modal="true" aria-labelledby="tr-date">
+  <div class="tr-modal-wrap">
+    <div class="tr-head">
+      <button class="tr-close-x" onclick="TM.UI.turnResult.closeTurnResult()" aria-label="关闭">✕</button>
+      <div class="tr-seal"><span class="t">纪年</span><span class="b">史宝</span></div>
+      <div class="tr-nav">
+      <button class="tr-nav-btn" id="tr-prev" onclick="TM.UI.turnResult.navTurn(-1)" title="前一回合">‹</button>
+        <div class="tr-title-wrap">
+          <div class="tr-turn-no" id="tr-turn-no">—</div>
+          <div class="tr-date" id="tr-date">—</div>
+        </div>
+      <button class="tr-nav-btn" id="tr-next" onclick="TM.UI.turnResult.navTurn(1)" title="后一回合">›</button>
+      </div>
+    </div>
+    <div class="tr-summary-bar" id="tr-summary" style="display:none;"></div>
+    <div class="tr-critical-bar" id="tr-critical" style="display:none;"></div>
+    <div class="tr-body-wrap" id="turn-body" role="article" aria-label="回合结果"></div>
+    <div class="tr-footer">
+      <span class="tr-footer-hint">※ 展开/收起详情折叠次要内容 · 前后箭头翻阅历次</span>
+      <div class="tr-footer-actions">
+        <button class="tr-btn" onclick="TM.UI.turnResult.exportCurrent()">导 出 本 回</button>
+        <button class="tr-btn primary" onclick="TM.UI.turnResult.closeTurnResult()" aria-label="关闭回合结果">朕 已 阅</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 暂停菜单 -->
+<div class="pause-bg" id="pause-bg"></div>
+
+<!-- 设置弹窗 -->
+<div class="settings-bg" id="settings-bg"></div>
+
+<!-- 浮动按钮 -->
+<button class="float-btn" id="shiji-btn" style="left:1.5rem;background:linear-gradient(135deg,var(--gold-500),var(--gold-400));" onclick="openShiji()"><span id="_ico_shiji"></span></button>
+<button class="float-btn" id="save-btn" style="left:4.5rem;background:linear-gradient(135deg,var(--indigo-500),var(--indigo-400));" onclick="TM.Save.openManager()"><span id="_ico_save"></span></button>
+<script>if(typeof tmIcon==='function'){var _s1=document.getElementById('_ico_shiji');if(_s1)_s1.innerHTML=tmIcon('history',20);var _s2=document.getElementById('_ico_save');if(_s2)_s2.innerHTML=tmIcon('save',20);}</script>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- ═══ 底部居中·御案时政任务（卷轴风格·独立悬浮）═══ -->
+<div id="gs-shizheng-btn" onclick="if(typeof openShizhengTasks==='function')openShizhengTasks()"
+  style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);z-index:55;cursor:pointer;
+    padding:10px 48px;min-width:160px;text-align:center;
+    background:linear-gradient(180deg,#f4e8cc 0%,#e8dbb4 55%,#d9c897 100%);
+    border:1px solid #a8895a;border-radius:2px;
+    box-shadow:0 2px 12px rgba(20,12,5,0.45),inset 0 1px 0 rgba(255,245,220,0.55),inset 0 -1px 2px rgba(120,80,40,0.15);
+    font-family:'STKaiti','KaiTi','楷体',serif;font-size:1.05rem;letter-spacing:0.55em;color:#3d2f1a;font-weight:700;
+    transition:transform 0.15s ease-out,box-shadow 0.15s ease-out;user-select:none;"
+  onmouseover="this.style.transform='translateX(-50%) translateY(-2px)';this.style.boxShadow='0 6px 18px rgba(20,12,5,0.55),inset 0 1px 0 rgba(255,245,220,0.55)';"
+  onmouseout="this.style.transform='translateX(-50%)';this.style.boxShadow='0 2px 12px rgba(20,12,5,0.45),inset 0 1px 0 rgba(255,245,220,0.55),inset 0 -1px 2px rgba(120,80,40,0.15)';">
+  <span style="display:inline-block;transform:translateX(0.275em);">御 案 时 政</span>
+</div>
+
+<!-- ═══ 右下角悬浮"诏付有司"（独立·不随侧栏开关）═══ -->
+<div class="gs-turn-float" id="gs-turn-float">
+  <div class="gs-turn-fab-bar">
+    <button class="gs-fab-btn" data-tip="拟诏" onclick="TM.UI.tabs.switchGameTab(null,'gt-edict')">✎</button>
+    <button class="gs-fab-btn" data-tip="发信" onclick="TM.UI.tabs.switchGameTab(null,'gt-letter')">✉</button>
+    <button class="gs-fab-btn" data-tip="召对" onclick="TM.UI.tabs.switchGameTab(null,'gt-wendui')">❋</button>
+    <button class="gs-fab-btn" data-tip="朝议" onclick="TM.UI.tabs.switchGameTab(null,'gt-chaoyi')">☰</button>
+    <button class="gs-fab-btn" data-tip="奏疏" onclick="TM.UI.tabs.switchGameTab(null,'gt-memorial')">◆</button>
+    <button class="gs-fab-btn" data-tip="纪事" onclick="TM.UI.tabs.switchGameTab(null,'gt-jishi')">❖</button>
+  </div>
+  <div class="gs-turn-summary" id="gs-turn-summary">本回合未处置</div>
+  <button class="gs-turn-big" id="gs-turn-big" onclick="TM.Endturn.run.confirmEndTurn()">诏　付　有　司<span class="sub">朕 意 已 决　付 之 百 司</span></button>
+</div>
+
+<!-- ═══ 底部状态栏 ═══ -->
+<div class="gs-status-bar" id="gs-status-bar">
+  <div class="gs-status-left">
+    <div class="gs-status-item" id="gs-status-ai"><span class="dot"></span><span class="k">AI</span><span class="v">待命</span></div>
+    <div class="gs-status-item"><span class="k">存档</span><span class="v" id="gs-status-save">—</span></div>
+    <div class="gs-status-item"><span class="k">回合</span><span class="v" id="gs-status-turn">—</span></div>
+  </div>
+  <div class="gs-status-tip" id="gs-status-tip">〘 提示 〙 按 F1 查看帮助</div>
+  <div class="gs-status-right">
+    <div class="gs-status-shortcut"><kbd>Ctrl</kbd>+<kbd>1..9</kbd> 切 tab</div>
+    <div class="gs-status-shortcut"><kbd>Ctrl</kbd>+<kbd>S</kbd> 存档</div>
+    <div class="gs-status-shortcut"><kbd>F1</kbd> 帮助</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  侧栏抽屉开关（点 rail → 滑出 overlay，× / Esc / [ ] 关闭）
+// ============================================================
+window.openSideDrawer = function(side, key){
+  var id = (side === 'right' ? 'drawerRight' : 'drawerLeft');
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
+  // 可选：依 key 滚到对应 panel（若存在该 data-key 元素）
+  if (key){
+    setTimeout(function(){
+      try {
+        var body = el.querySelector('.gs-drawer-body');
+        var target = body && body.querySelector('[data-panel-key="'+key+'"]');
+        if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+      } catch(e){}
+    }, 360);
+  }
+};
+window.closeSideDrawer = function(side){
+  var id = (side === 'right' ? 'drawerRight' : 'drawerLeft');
+  var el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+};
+document.addEventListener('keydown', function(e){
+  if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if (e.key === '[') { var l=document.getElementById('drawerLeft'); if(l){ l.classList.toggle('open'); e.preventDefault(); } }
+  else if (e.key === ']') { var r=document.getElementById('drawerRight'); if(r){ r.classList.toggle('open'); e.preventDefault(); } }
+  else if (e.key === 'Escape') { var l2=document.getElementById('drawerLeft'), r2=document.getElementById('drawerRight'); if(l2)l2.classList.remove('open'); if(r2)r2.classList.remove('open'); }
+});
+// 点击抽屉与 rail 之外的任意区域，自动关闭已打开的左右抽屉
+document.addEventListener('mousedown', function(e){
+  var l = document.getElementById('drawerLeft');
+  var r = document.getElementById('drawerRight');
+  var lOpen = l && l.classList.contains('open');
+  var rOpen = r && r.classList.contains('open');
+  if (!lOpen && !rOpen) return;
+  var t = e.target;
+  if (t && t.closest && (t.closest('.gs-drawer') || t.closest('.gs-rail-left') || t.closest('.gs-rail-right'))) return;
+  if (lOpen) l.classList.remove('open');
+  if (rOpen) r.classList.remove('open');
+}, true);
+</script>
+
+<script>
+// 全局错误捕获：TM.errors 主引（tm-diagnostics-foundation.js 先加载），ErrorMonitor 为兼容 shim（R114）
+// 查询错误：TM.errors.getLog()（主）或 ErrorMonitor.getLog()（老接口）
+console.log('天命游戏脚本开始加载...');
+</script>
+
+<script src="tm-env-detect.js?v=2026042714"></script>
+<script src="tm-platform.js?v=20260603"></script>
+<!-- 固定虚拟分辨率+整体等比缩放适配（移植 Phase 2 重做）·仅 capacitor/?fit=1·须在 platform 后尽早加载防闪 -->
+<script src="tm-fixed-fit.js?v=20260603-anchor"></script>
+<script src="tm-debug-logger.js?v=2026052801"></script>
+<script src="tm-diagnostics-foundation.js?v=2026050401"></script>
+<script src="tm-ui-foundation.js?v=2026050401"></script>
+<script src="tm-data-model.js"></script>
+<!-- R135 (2026-04-25) tm-utils 拆分 → utils + ai-infra -->
+<script src="tm-utils.js?v=2026050702"></script>
+<script src="tm-prompt-composer.js?v=2026052201"></script>
+<script src="tm-ai-infra.js?v=2026052201"></script>
+<script src="tm-memory-trace.js?v=20260531-traceonly"></script>
+<script src="tm-memory-evidence-registry.js?v=20260531-evidence"></script>
+<script src="tm-memory-source-bound.js?v=20260601-sourcebound"></script>
+<script src="tm-memory-issue-governance.js?v=20260601-issuegov"></script>
+<script src="tm-context-zones.js?v=20260601-zones"></script>
+<script src="tm-memory-envelope.js?v=20260531-envelope"></script>
+<script src="tm-memory-governance.js?v=20260531-governance"></script>
+<script src="tm-memory-writegate.js?v=20260531-writegate"></script>
+<script src="tm-memory-turn-inference.js?v=20260601-turn-inference"></script>
+<script src="tm-memory-turn-archive.js?v=20260601-turn-archive"></script>
+<script src="tm-memory-turn-rollup.js?v=20260601-turn-rollup"></script>
+<script src="tm-memory-turn-backfill.js?v=20260601-turn-backfill"></script>
+<script src="tm-memory-controls.js?v=20260601-controls"></script>
+<script src="tm-memory-retrieval.js?v=20260531-rerank"></script>
+<script src="tm-memory-context-compiler.js?v=20260601-context-compiler"></script>
+<script src="tm-memory-workshop.js?v=20260531-workshop"></script>
+<script src="tm-traits-data.js"></script>
+<script src="tm-chronicle-tracker.js?v=2026042714"></script>
+<script src="tm-chronicle-effects.js?v=2026042714"></script>
+<script src="tm-relations.js?v=2026042714"></script>
+<!-- 2026-05-01 6系统翻新 phase 0：引擎常量/Typed RelGraph/迁移框架 -->
+<script src="tm-engine-constants.js?v=2026050202"></script>
+<script src="tm-rel-graph.js?v=2026050101"></script>
+<script src="tm-migration.js?v=2026050101"></script>
+<script src="tm-influence-groups.js?v=2026050202"></script>
+<script src="tm-edict-lifecycle.js"></script>
+<!-- 2026-04-30 Phase 4.1 时间工具：回合→干支年月日/相对时间/时辰 -->
+<script src="tm-time-utils.js?v=2026050101"></script>
+<!-- 2026-04-30 推演 AI 记忆增强：世界状态快照 helpers（须在 endturn 之前加载） -->
+<script src="tm-world-snapshot.js?v=2026043002"></script>
+<!-- 2026-04-30 12 表结构化记忆（Phase 1）·须在 endturn 之前加载 -->
+<script src="tm-memory-tables.js?v=2026050101"></script>
+<!-- 2026-04-30 Phase 2.1 Swipe 快照与 timeTravel 回溯 -->
+<script src="tm-state-snapshot.js?v=2026050101"></script>
+<!-- 2026-04-30 Phase 2.2 本地语义检索（bge-small-zh-v1.5） -->
+<script src="tm-semantic-recall.js?v=2026050101"></script>
+<!-- 2026-04-30 P10.4A 召回节流门控（KokoroMemo retrieval_gate 范式） -->
+<script src="tm-recall-gate.js?v=2026050101"></script>
+<!-- 2026-04-30 Phase 3 12 表 UI（可视化 + 锁 + 软删除 + 皇命） -->
+<script src="tm-memory-ui.js?v=2026050101" defer></script>
+<!-- 2026-04-30 Phase 4.5 标准外部记忆适配器（XML/JSON/DSL 入口） -->
+<script src="tm-memory-adapter.js?v=2026050101"></script>
+<!-- R128 (2026-04-25) tm-mechanics.js 拆分 → mechanics + mechanics-world -->
+<script src="tm-mechanics.js?v=2026050701"></script>
+<script src="tm-mechanics-world.js?v=2026042714"></script>
+<script src="tm-change-queue.js"></script>
+<!-- R123+R124 (2026-04-25) 拆分 tm-index-world.js → indices + world + memorials + office-panel -->
+<script src="tm-indices.js?v=2026042714"></script>
+<script src="tm-world.js?v=2026042714"></script>
+<script src="tm-memorials.js?v=2026050105"></script>
+<script src="tm-wendui.js?v=20260521-prison"></script>
+<!-- 2026-05-21·狱中问对模式·6 动作 + AI 解析 + 频率限制 + 朝议反应 -->
+<script src="tm-wendui-prison.js?v=20260521-prison"></script>
+<!-- R161 R6 (2026-05-03) tm-office-system 从 tm-hongyan-office 拆出·官制 system (~700 行) -->
+<script src="tm-office-system.js?v=2026050701"></script>
+<script src="tm-office-runtime.js?v=2026050701"></script>
+<script src="tm-office-panel.js?v=2026050701"></script>
+<!-- R133 (2026-04-25) tm-npc-engine 拆分 → engine + decision -->
+<script src="tm-npc-engine.js?v=2026050701"></script>
+<script src="tm-npc-action-ledger.js?v=2026051701"></script>
+<script src="tm-npc-decision.js?v=2026050701"></script>
+<!-- R111+R127 拆分 tm-game-engine.js → launch + player-settings + player-core + hongyan-office + game-loop -->
+<script src="tm-promotion.js?v=20260604-gongming"></script>
+<script src="tm-gongming.js?v=20260613-gongming-sys"></script>
+<script src="tm-launch.js?v=20260514-mapdata-detect"></script>
+<script src="tm-player-settings.js?v=2026052201"></script>
+<script src="tm-player-core.js?v=20260528-chardelete"></script>
+<script src="tm-hongyan-office.js?v=2026050301"></script>
+<script src="tm-game-loop.js?v=2026050105"></script>
+<script src="tm-map-system.js"></script>
+<!-- R134 (2026-04-25) tm-dynamic-systems 拆分 → dynamic + save-manager + help-social -->
+<script src="tm-dynamic-systems.js?v=2026042714"></script>
+<script src="tm-save-manager.js?v=2026042820d"></script>
+<script src="tm-help-social.js?v=2026042714"></script>
+<!-- R122+R130 拆分 tm-economy-military.js → economy + military + feudal -->
+<script src="tm-economy.js?v=2026050701"></script>
+<script src="tm-military.js?v=2026042714"></script>
+<script src="tm-feudal.js?v=2026050701"></script>
+<script src="tm-event-system.js"></script>
+<script src="tm-storage.js?v=2026042714"></script>
+<script src="tm-endturn-helpers.js?v=2026050701"></script>
+<script src="tm-endturn-province.js?v=2026050701"></script>
+<!-- R161 R7 (2026-05-04) tm-endturn-qiaozhi 从 tm-endturn-province 拆出·侨置 (~250 行) -->
+<script src="tm-endturn-qiaozhi.js?v=2026050701"></script>
+<script src="tm-ai-apply-deaths.js?v=2026050701"></script>
+<script src="tm-sidebar-ui.js?v=2026042714"></script>
+<script src="tm-renwu-ui.js?v=2026042816"></script>
+<script src="tm-shiji-qiju-ui.js?v=2026042714"></script>
+<script src="tm-court-meter.js?v=2026050701"></script>
+<script src="tm-endturn-systems.js?v=2026042714"></script>
+<script src="tm-endturn-ai-helpers.js?v=2026042714"></script>
+<script src="tm-endturn-ai-context.js?v=2026050401"></script>
+<script src="tm-history-events.js?v=2026042714"></script>
+<script src="tm-post-turn-jobs.js?v=2026052201"></script>
+<script src="tm-arcs.js?v=2026042714"></script>
+<script src="tm-memory-anchors.js?v=2026042714"></script>
+<script src="tm-chronicle-system.js?v=2026042714"></script>
+<script src="tm-endturn-edict.js?v=2026052810"></script>
+<!-- R110 (2026-04-25) 拆分 tm-endturn.js → prep + ai-infer + core -->
+<!-- R138 (2026-04-25) endturn-prep 再拆·启动 AI 规划独立成 tm-ai-planning -->
+<script src="tm-ai-planning.js?v=2026042816"></script>
+<script src="tm-endturn-prep.js?v=2026052810"></script>
+<script src="tm-class-engine.js?v=2026050102"></script>
+<script src="tm-minxin-ledger.js?v=20260601-minxin-ledger"></script>
+<script src="tm-class-minxin-bridge.js?v=20260601-class-minxin-bridge"></script>
+<script src="tm-party-goals.js?v=20260531-party-goals-llm"></script>
+<script src="tm-party-class-tuning.js?v=20260601-party-class-tuning"></script>
+<script src="tm-party-class-ecology.js?v=20260601-party-class-ecology"></script>
+<script src="tm-social-political-signals.js?v=20260531-social-political-signals"></script>
+<script src="tm-player-action-signals.js?v=20260531-player-action-signals"></script>
+<script src="tm-class-character-relations.js?v=20260605-class-character-relations"></script>
+<script src="tm-minxin-pressure-actions.js?v=20260601-minxin-pressure-actions"></script>
+<script src="tm-minxin-commitment-tracker.js?v=20260601-minxin-commitment-tracker"></script>
+<script src="tm-minxin-responsibility-chain.js?v=20260601-minxin-responsibility-chain"></script>
+<script src="tm-minxin-hard-links.js?v=20260601-minxin-hard-links"></script>
+<script src="tm-minxin-hard-link-consumers.js?v=20260601-minxin-hard-link-consumers"></script>
+<script src="tm-party-class-actors.js?v=20260601-party-class-actors"></script>
+<script src="tm-party-class-action-scheduler.js?v=20260601-party-class-action-scheduler"></script>
+<script src="tm-party-class-llm-calibrator.js?v=20260531-party-class-llm"></script>
+<!-- R209 (2026-05-04) Phase 7 P7-γ·§1 prompt 从 ai-infer 拆出·prompt 必先 load -->
+<script src="tm-endturn-prompt.js?v=2026052810"></script>
+<script src="tm-endturn-ai.js?v=2026052310"></script>
+<script src="tm-endturn-apply.js?v=2026052201"></script>
+<script src="tm-endturn-followup.js?v=2026052310"></script>
+<script src="tm-endturn-record.js?v=2026052201"></script>
+<script src="tm-endturn-ai-infer.js?v=2026051801"></script>
+<script src="tm-endturn-core.js?v=20260531-party-class-llm"></script>
+<!-- slice 1·2026-05-07·endTurn 管道执行器骨架·feature flag P.flags.useNewPipeline 触发·见 web/docs/endturn-data-flow.md -->
+<script src="tm-endturn-pipeline-types.js?v=2026050701"></script>
+<script src="tm-endturn-timing-ledger.js?v=2026051801"></script>
+<script src="tm-endturn-pipeline-executor.js?v=2026050701"></script>
+<script src="tm-endturn-validity.js?v=2026051701"></script>
+<script src="tm-endturn-pipeline-steps.js?v=20260523-1251"></script>
+<script src="tm-endturn-render.js?v=2026052310"></script>
+<!-- 过回合进度拍表引擎 + 电影化加载层·2026-06-10·见 web/docs/endturn-progress-precision-backlog.md -->
+<script src="tm-endturn-progress.js?v=2026061001"></script>
+<script src="tm-endturn-loading.js?v=2026061001"></script>
+<script src="tm-theme-font.js?v=20260520-theme-font-scopes"></script>
+<script src="tm-patches.js?v=2026052310"></script>
+<!-- R17-R22: 从 tm-patches.js 抽离的子模块（加载在 patches 之后覆盖原版） -->
+<script src="tm-military-ui.js?v=2026042714"></script>
+<script src="tm-world-view.js?v=2026042714"></script>
+<script src="editor-details.js?v=2026050301" defer></script>
+<script src="tm-three-systems-ext.js?v=2026042714"></script>
+<!-- 2026-05-10·Phase D1·势力 paradigm utility·必须在所有 faction 模块之前 -->
+<script src="tm-faction-paradigm.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase F1·char personality hints·让 NPC 决策按人格调权 -->
+<script src="tm-faction-personality.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase F3·NPC AI 精细化开关 -->
+<script src="tm-faction-npc-settings.js?v=2026052201"></script>
+<!-- 2026-05-10·Phase H1·NPC 事件 → 近事快报桥·必须在所有 npc-* 模块之前·让 generate 时能调 -->
+<script src="tm-faction-npc-news-bridge.js?v=2026051001"></script>
+<!-- 2026-05-17·NPC 势力精细化推演统一 action engine -->
+<script src="tm-faction-action-engine.js?v=2026052202"></script>
+<!-- 2026-05-10·Phase F2·player 干预 NPC 内政 -->
+<script src="tm-faction-npc-intervention.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase F4·NPC 内政 LLM 润色·cosmetic·依赖 npc-settings (开关) + callAI -->
+<script src="tm-faction-npc-llm-enrich.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase G·NPC LLM 决策接管·真改机制·替代模板 -->
+<script src="tm-faction-npc-llm-decision.js?v=2026052204"></script>
+<!-- 2026-05-10 Phase H3: in-turn NPC background LLM driver -->
+<script src="tm-faction-npc-in-turn-driver.js?v=2026051001"></script>
+<!-- 2026-05-17: unified faction precision LLM scheduler + dispatch ledger -->
+<script src="tm-faction-npc-dispatcher.js?v=20260531-party-class-llm"></script>
+<!-- 2026-05-10·Layer 2 势力反向索引·必须在 three-systems-ui 之前·game-loop 之后 -->
+<script src="tm-faction-index.js?v=2026051001"></script>
+<!-- 2026-05-10·Layer 3 势力派生健康度·依赖 _facIndex·必须在 index 之后 -->
+<script src="tm-faction-derived-health.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase B1-B3·派生经济/凝聚/综合·依赖 derived-health -->
+<script src="tm-faction-derived-economy.js?v=2026051001"></script>
+<script src="tm-faction-derived-cohesion.js?v=2026051001"></script>
+<script src="tm-faction-derived-strength.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase C1·NPC memorial 系统·依赖 derived -->
+<script src="tm-faction-npc-memorial.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase C2·NPC edict 系统·依赖 derived + memorial -->
+<script src="tm-faction-npc-edict.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase C3·NPC chaoyi 派系朝议·依赖 derived + memorial -->
+<script src="tm-faction-npc-chaoyi.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase C4·NPC office 人事任免·依赖 derived + memorial -->
+<script src="tm-faction-npc-office.js?v=2026051001"></script>
+<!-- 2026-05-10·Phase C5·NPC guoku 财政周期·依赖 derivedEconomy -->
+<script src="tm-faction-npc-guoku.js?v=2026051001"></script>
+<!-- 2026-05-10·Slice D 势力归属单一 mutator·依赖 index + derived (内部 refresh) -->
+<script src="tm-faction-membership.js?v=2026051001"></script>
+<script src="tm-three-systems-ui.js?v=2026052201"></script>
+<script src="tm-char-arcs.js?v=2026042714"></script>
+<!-- R112+R125+Phase3 (2026-05-03)·tm-chaoyi-keju 拆分链·朝议 4 文件 (chaoyi 入口·changchao 常朝·tinyi 廷议·yuqian 御前)·misc 已 redistribute 到 office-panel/launch/map-system -->
+<script src="tm-keju-learning-traits.js?v=2026052301"></script>
+<script src="tm-keju-tier.js?v=2026052302"></script>
+<script src="tm-keju-presets.js?v=2026052302"></script>
+<script src="tm-keju-paradigm-presets.js?v=20260523-L1"></script>
+<script src="tm-keju-paradigm.js?v=20260523-L1"></script>
+<script src="tm-keju-reform-llm.js?v=20260524-L3"></script>
+<script src="tm-keju-paradigm-panel.js?v=20260524-L3"></script>
+<script src="tm-keju-topic-router.js?v=2026052303"></script>
+<script src="tm-keju-examiner-view.js?v=2026052304"></script>
+<script src="tm-keju-tension.js?v=2026052304"></script>
+<script src="tm-keju-corruption.js?v=2026052304"></script>
+<script src="tm-keju-question-ui.js?v=2026052304"></script>
+<script src="tm-keju-budget-ui.js?v=2026052304"></script>
+<script src="tm-keju-dianshi-events.js?v=2026052305"></script>
+<script src="tm-keju-mentor.js?v=2026052305"></script>
+<script src="tm-keju-disciple-graph.js?v=2026052306"></script>
+<script src="tm-keju-disciple-memorial.js?v=2026052306"></script>
+<script src="tm-keju-cohort-meet.js?v=2026052307"></script>
+<script src="tm-keju-yanguan-attribution.js?v=2026052308"></script>
+<script src="tm-keju-yanguan-qingyi.js?v=20260523-2200"></script>
+<script src="tm-keju-reform-memorial.js?v=20260524-l7a"></script>
+<script src="tm-keju-reform-evolution.js?v=20260525-l9"></script>
+<script src="tm-keju-reform-presets-history.js?v=20260525-l10"></script>
+<script src="tm-keju-special-exams.js?v=20260525-g1"></script>
+<script src="tm-keju-event-hooks.js?v=20260525-g2-step0"></script>
+<script src="tm-keju-enke-player-initiative.js?v=20260525-g2-step0a"></script>
+<script src="tm-keju-enke.js?v=20260528-chardelete"></script>
+<script src="tm-keju-wuju.js?v=20260525-g3"></script>
+<script src="tm-keju-tongzi.js?v=20260526-g5"></script>
+<script src="tm-keju-school-network.js?v=20260526-h0h1"></script>
+<script src="tm-keju-reform-rollback.js?v=20260525-l11"></script>
+<script src="tm-keju-reformer-bio.js?v=20260525-l12"></script>
+<script src="tm-keju-reform-apply.js?v=20260524-l7a"></script>
+<script src="tm-keju-allocation.js?v=2026052305"></script>
+<script src="tm-keju-activation.js?v=2026052301"></script>
+<script src="tm-keju.js?v=2026052302"></script>
+<script src="tm-chaoyi.js?v=2026052202"></script>
+<script src="tm-official-scenario-seeder.js?v=20260520-official-scenarios"></script>
+<script src="tm-electron.js?v=20260522-focus-fix"></script>
+<script src="tm-keju-runtime.js?v=2026052303"></script>
+<script src="tm-chaoyi-tinyi.js?v=2026052803"></script>
+<script src="tm-chaoyi-yuqian.js?v=2026052803"></script>
+<script src="tm-chaoyi-changchao.js?v=2026052310"></script>
+<script src="tm-tinyi-v3.js?v=20260523-2200"></script>
+<script src="tm-char-autogen.js?v=20260528-chardelete"></script>
+<script src="tm-bgm-config.js?v=2026051201"></script>
+<!-- R131 (2026-04-25) tm-audio-theme.js 拆分 → audio-theme + save-lifecycle + office-editor -->
+<script src="tm-audio-theme.js?v=2026042714"></script>
+<script src="tm-save-lifecycle.js?v=2026052810"></script>
+<script src="tm-office-editor.js?v=2026050105a"></script>
+<script src="tm-topbar-vars.js?v=20260514-phase8-vars-2"></script>
+<!-- R137 (2026-04-25) 拆 shell-extras → shell UI + 时政面板 -->
+<script src="tm-shell-extras.js?v=2026042714"></script>
+<script src="tm-houguong.js?v=20260601-hougong"></script>
+<script src="tm-shizheng-panel.js?v=2026050702"></script>
+<script src="tm-corruption-engine.js?v=2026050406"></script>
+<script src="tm-lizhi-panel.js?v=2026042820"></script>
+<!-- R9 done (2026-05-04) tm-guoku-p2/p4/p5/p6 已全部 inline 入 engine·5 文件 → 1 -->
+<script src="tm-guoku-engine.js?v=2026050405"></script>
+<script src="tm-guoku-panel.js?v=2026042823"></script>
+<script src="tm-neitang-engine.js?v=2026050301"></script>
+<script src="tm-neitang-panel.js"></script>
+<script src="tm-char-economy-engine.js?v=2026042714"></script>
+<script src="tm-char-historical-profiles.js?v=2026042817"></script>
+<!-- 历史人物 ext (Phase 2 split·原 tm-char-historical-profiles-ext.js 10298 行 → 12 wave·按时间波次·preserve 原作者结构) -->
+<script src="tm-char-historical-wave-01.js"></script>
+<script src="tm-char-historical-wave-02.js"></script>
+<script src="tm-char-historical-wave-03.js"></script>
+<script src="tm-char-historical-wave-04.js"></script>
+<script src="tm-char-historical-wave-05.js"></script>
+<script src="tm-char-historical-wave-06.js"></script>
+<script src="tm-char-historical-wave-07.js"></script>
+<script src="tm-char-historical-wave-08.js"></script>
+<script src="tm-char-historical-wave-09.js"></script>
+<script src="tm-char-historical-wave-10.js"></script>
+<script src="tm-char-historical-wave-11.js"></script>
+<script src="tm-char-historical-wave-12.js"></script>
+<script src="tm-ceming.js?v=2026042817"></script>
+<script src="tm-char-economy-ui.js?v=2026042714"></script>
+<script src="tm-char-full-schema.js?v=2026042714"></script>
+<script src="tm-economy-engine.js?v=2026050301"></script>
+<script src="tm-central-local-engine.js"></script>
+<script src="tm-huji-engine.js"></script>
+<script src="tm-edict-parser.js"></script>
+<script src="tm-huji-deep-fill.js?v=2026042714"></script>
+<script src="tm-huji-runtime-bridge.js?v=20260601-huji-runtime-bridge"></script>
+<script src="tm-huji-governance-loop.js?v=20260602-huji-governance-loop"></script>
+<script src="tm-edict-complete.js?v=2026050701"></script>
+<script src="tm-env-recovery-fill.js"></script>
+<script src="tm-authority-engines.js?v=2026050701"></script>
+<script src="tm-building-works.js?v=20260612"></script>
+<script src="tm-field-pipelines.js?v=20260612"></script>
+<script src="tm-region-status.js?v=20260612"></script>
+<script src="tm-renli.js?v=20260616"></script>
+<script src="tm-social-foundation.js?v=20260612"></script>
+<script src="tm-authority-complete.js"></script>
+<script src="tm-historical-presets.js?v=2026042816"></script>
+<script src="tm-prophecy.js"></script>
+<script src="tm-region-enrich.js?v=2026042714"></script>
+<script src="tm-audit.js?v=2026042714"></script>
+<script src="tm-feedback-loops.js"></script>
+<script src="tm-event-bus.js?v=2026050701"></script>
+<script src="tm-class-mobility.js"></script>
+<script src="tm-authority-deep.js"></script>
+<script src="tm-player-tools.js"></script>
+<script src="tm-ledger-paper.js?v=2026042714"></script>
+<script src="tm-authority-ui.js"></script>
+<script src="tm-ethnic-religion.js?v=2026050701"></script>
+<script src="tm-edict-thresholds.js?v=2026042714"></script>
+<script src="tm-fiscal-ui.js?v=2026042714"></script>
+<script src="tm-integration-bridge.js?v=2026042714"></script>
+<script src="tm-fiscal-engine.js?v=2026050301"></script>
+<script src="tm-perf.js?v=2026042714"></script>
+<script src="tm-invariants.js?v=2026042714"></script>
+<script src="tm-namespaces.js?v=2026042714"></script>
+<script src="tm-state.js?v=2026042714"></script>
+<script src="tm-diff.js?v=2026042714"></script>
+<script src="tm-hooks-tracker.js?v=2026042714"></script>
+<script src="tm-diagnostics-panel.js?v=2026042714" defer></script>
+<script src="tm-checklist.js?v=2026042714" defer></script>
+<script src="tm-onboard-tools.js?v=2026042714" defer></script>
+<script src="tm-ai-schema.js?v=2026052201"></script>
+<script src="tm-ai-output-validator.js?v=2026052201"></script>
+<script src="tm-data-access.js?v=2026042714"></script>
+<!-- 2026-05-21·Slice 1+2+3·tm-ai-change-applier.js 拆出·路径 + army + narrative·必须在 applier 之前加载·pathutils → army → narrative → applier -->
+<script src="tm-ai-change-pathutils.js?v=20260521-slice1"></script>
+<script src="tm-ai-change-army.js?v=20260521-slice2"></script>
+<script src="tm-ai-change-narrative.js?v=20260521-slice3"></script>
+<script src="tm-ai-change-applier.js?v=20260528-movereconcile"></script>
+<script src="tm-ai-npc-memorials.js"></script>
+<!-- 侧边抽屉·已合并三代为单文件 (R116a, 2026-04-24) -->
+<script src="tm-var-drawers.js?v=2026042714"></script>
+<script src="editor-division-deep.js?v=2026050301" defer></script>
+<script src="editor-office-deep.js?v=2026050301" defer></script>
+<script src="editor-presets.js?v=2026050301" defer></script>
+<!-- 官方剧本 -->
+<script src="scenarios/tianqi7-1627.js?v=2026042821"></script>
+<!-- 性能·7MB 官方运行时快照延迟到首屏后空闲注入（原为同步解析·占首屏 JS 约 32%）。
+     快照 IIFE 加载即自应用·自带 setTimeout 重试 + tm:p-restored 自愈·幂等去重·
+     远早于玩家在启动页点选剧本（需数秒）；启动路径 _tmStartApplyOfficialSnapshot 再幂等兜底。 -->
+<script>
+(function(){
+  // 2026-06-06 在线版地图修复：天启 7MB 运行时快照（内含 43 地块的整份地图）原本只从相对路径
+  // （github.io）拉取。国内访问 github.io 时这个大文件常超时/拉不下来，导致 getMapData() 取空、
+  // 玩家看到「剧本没有配备地图」。这里仿照本文件顶部 styles.css 的 data-css-fallback 范式，
+  // 给快照加 CDN 兜底：相对路径失败（onerror）或迟迟未应用（超时）时改从 jsDelivr 镜像拉。
+  // 桌面端读本地文件仍走相对路径首选，不受影响。
+  var SNAP_QS = '?v=20260616-renli-shaanxi-pilot';
+  var SNAP_REL = 'data/scenario-supplements/tianqi7-official-runtime-snapshot.js' + SNAP_QS;
+  var SNAP_CDN = 'https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/data/scenario-supplements/tianqi7-official-runtime-snapshot.js' + SNAP_QS;
+  var _snapFallbackUsed = false;
+  function _applied(){ return !!window.TM_TIANQI_OFFICIAL_RUNTIME_SNAPSHOT; }
+  function _injectSnap(src, isFallback){
+    var s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onerror = function(){
+      if (!isFallback && !_snapFallbackUsed && !_applied()) {
+        _snapFallbackUsed = true;
+        console.warn('[tianqi-snap] 相对路径加载失败，改用 CDN 兜底：' + SNAP_CDN);
+        _injectSnap(SNAP_CDN, true);
+      }
+    };
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function _loadTianqiSnapshot(){
+    if (window.__tmTianqiSnapLoaded) return;
+    window.__tmTianqiSnapLoaded = true;
+    _injectSnap(SNAP_REL, false);
+    // 超时兜底：onerror 不会在「连上但下载卡住」时触发，故再加一道计时器——
+    // 12s 内快照仍未应用，则直接从 CDN 拉一份（幂等去重由快照 IIFE 自身保证）。
+    setTimeout(function(){
+      if (!_applied() && !_snapFallbackUsed) {
+        _snapFallbackUsed = true;
+        console.warn('[tianqi-snap] 相对路径 12s 内未应用，改用 CDN 兜底：' + SNAP_CDN);
+        _injectSnap(SNAP_CDN, true);
+      }
+    }, 12000);
+  }
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(_loadTianqiSnapshot, { timeout: 3000 });
+  } else {
+    window.addEventListener('load', function(){ setTimeout(_loadTianqiSnapshot, 600); });
+  }
+})();
+</script>
+
+<!-- 测试框架（?test=1 自动运行） -->
+<script src="tm-test-harness.js?v=2026042714" defer></script>
+
+<!-- 邸报·更新公告 -->
+<script src="tm-changelog.js?v=20260519-remote-changelog"></script>
+<script src="tm-online-client.js?v=20260603-online-client"></script>
+<link rel="stylesheet" href="tm-online-mall.css?v=20260605-mall-fullpage">
+<script src="tm-workshop-covers.js?v=20260604-mall-s1"></script>
+<script src="tm-zip-store.js?v=20260604-zip-s2c"></script>
+<script src="tm-content-manager.js?v=20260519-update-apply"></script>
+<script src="preview/img/east-asia-basemap-data.js?v=20260514-formal-map"></script>
+<script src="phase8-formal-bridge.js?v=20260527-mapdiag-trycatch"></script>
+<!-- phase8-formal·按 surface family 拆 6 module·主 bridge 必先 load·skeleton + alias 块·body 0 改动·2026-05-26 -->
+<script src="phase8-formal-topbar.js?v=20260526-split-skeleton"></script>
+<script src="phase8-formal-map.js?v=20260527-ownerkey-shadow-fix"></script>
+<script src="phase8-formal-modules.js?v=20260527-issuecard-aliases"></script>
+<script src="phase8-formal-drafts.js?v=20260526-split-skeleton"></script>
+<script src="phase8-formal-records.js?v=20260526-split-skeleton"></script>
+<script src="tm-renwu-tuzhi.js?v=20260604-renwu-yuan"></script>
+<script src="phase8-formal-rightrail.js?v=20260527-toast-alias"></script>
+<script src="preview/scenario-editor-sandbox-bridge.js?v=20260524-scenario-editor-sandbox"></script>
+<!-- 正式界面「宝相团花」悬浮设置/暂停按钮·锚 #bar-time 下方·点击=Esc·仅 GM.running 显示 -->
+<script src="tm-pause-fab.js?v=20260605-fab"></script>
+
+<!-- Capacitor 启动钩子（移植 Phase 3）·Capgo 热更 notifyAppReady + 在线·仅原生端·桌面/web no-op -->
+<script src="tm-capacitor-boot.js?v=20260604-ota-progress3"></script>
+
+<!-- 更新进度卡·三端共用 UI 组件·自身不判平台不发请求·由消费方挂载（不挂载即惰性） -->
+<script src="tm-update-card.js?v=20260611-upd1"></script>
+<!-- 桌面端启动自动检查更新·仅 window.tianming 在时生效·dev 静默·安卓/在线 no-op -->
+<script src="tm-desktop-update.js?v=20260611-upd1"></script>
+<!-- 在线版更新提示（仅 web 端查 version.json·桌面/安卓只同步 footer 版本号） -->
+<script src="tm-online-update.js?v=20260611-upd1"></script>
+
+<!-- 触屏手势桥（移植 Phase 2·S2.x）·长按=右键(contextmenu)·仅触屏设备挂载·鼠标零影响 -->
+<script src="tm-touch-gestures.js?v=20260603-longpress-rclick"></script>
+
+<!-- 触屏 pinch 缩放 + 拖拽通用桥（舆图 / 官制树）·仅 touch 事件·桌面零影响 -->
+<script src="tm-pinch-pan.js?v=20260614-pinchpan"></script>
+
+<!-- 触屏工效层（移植 Phase 2·S2.1）·仅 @media(pointer:coarse) 生效·桌面零影响·置尾以压过御案注入样式 -->
+<link rel="stylesheet" href="tm-touch.css?v=20260603-s21-touch">
+
+</body>
+</html>

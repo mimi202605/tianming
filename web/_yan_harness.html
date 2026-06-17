@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>鸿雁御案落地·harness</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="tm-phase8-formal">
+<div id="err" style="position:fixed;left:0;top:0;z-index:99999;color:#c00;font:12px monospace;white-space:pre-wrap;max-width:60vw"></div>
+<script>
+  window.P = window.P || {};
+  window.TM = window.TM || {};
+  window.GM = {
+    turn: 3,
+    _pendingLetterTo: '袁崇焕',
+    chars: [
+      { name:'魏忠贤', role:'司礼监掌印太监', region:'内廷', location:'京城·内廷', faction:'阉党', alive:true },
+      { name:'袁崇焕', role:'辽东巡抚', region:'辽东·北境', location:'辽东·宁远', faction:'边镇', alive:true },
+      { name:'满桂', role:'山海关总兵', region:'辽东·北境', location:'辽东·山海关', faction:'边镇', alive:true },
+      { name:'卢象升', role:'大名兵备道', region:'宣大·山西', location:'宣大·阳和', faction:'帝党', alive:true },
+      { name:'孙传庭', role:'顺天府丞', region:'西陲·边镇', location:'陕西·西安', faction:'中立', alive:true },
+      { name:'秦良玉', role:'石柱宣抚使', region:'西南·巴蜀', location:'四川·石柱', faction:'土司', alive:true },
+      { name:'文震孟', role:'翰林院侍读', region:'江南·江浙', location:'苏州·吴县', faction:'东林', alive:true }
+    ],
+    letters: [
+      { id:'l1', from:'玩家', to:'袁崇焕', content:'卿守宁远，劳苦功高。近闻建虏西移，似谋绕道蓟镇。卿可相机料理关宁防务，若京师有警，许卿便宜入援，毋拘成法。', status:'traveling', sentTurn:2, deliveryTurn:5, letterType:'secret_decree', urgency:'extreme', cipher:'yinshu', sendMode:'secret_agent', token:'seal', raw:{ status:'traveling' } },
+      { id:'l2', from:'玩家', to:'袁崇焕', content:'着卿统关宁马步精锐二万，克期赴蓟镇协防，毋得迁延。', status:'returned', sentTurn:1, deliveryTurn:2, replyTurn:3, letterType:'military_order', urgency:'urgent', cipher:'yinfu', token:'tally', reply:'臣崇焕谨奉。虎符既至，敢不效死。臣已克日整装东行。', raw:{ status:'returned' } },
+      { id:'l3', from:'玩家', to:'孙传庭', content:'特擢卿为陕西总督，假以便宜，专办流贼粮饷军务。', status:'blocked', sentTurn:3, letterType:'formal_edict', urgency:'urgent', cipher:'none', token:'seal', raw:{ status:'blocked' } },
+      { id:'l5', from:'玩家', to:'满桂', content:'着卿严守山海，无朕手诏，片兵不得擅离汛地。', status:'intercepted_forging', sentTurn:2, replyTurn:3, letterType:'military_order', urgency:'urgent', cipher:'none', token:'tally', reply:'臣桂愿率本部出关野战，与虏决死，何必株守孤城？', forged:true, raw:{ status:'intercepted_forging', _forgedReply:true } },
+      { id:'l6', from:'秦良玉', to:'玩家', content:'臣良玉谨奏：白杆兵三千已整械待发，凡朝廷有征，旦夕可东。乞先发开拔之资，并请明示进止方略。', status:'returned', sentTurn:1, letterType:'report', title:'白杆兵待发', playerRead:false, raw:{ status:'returned', _npcInitiated:true } },
+      { id:'l9', from:'文震孟', to:'玩家', content:'臣震孟谨谢天恩。蒙陛下不弃，擢侍讲幄，敢不竭诚启沃，以裨圣学。然今阉党虽除，余孽未尽，乞陛下亲贤远佞。', status:'returned', sentTurn:1, letterType:'thanks', title:'谢恩', playerRead:false, raw:{ status:'returned', _npcInitiated:true } }
+    ]
+  };
+  window.__log = [];
+  var _ce = console.error; console.error = function(){ window.__log.push('[err] '+Array.prototype.join.call(arguments,' ')); _ce.apply(console, arguments); };
+</script>
+<script src="phase8-formal-bridge.js"></script>
+<script src="phase8-formal-modules.js"></script>
+<script src="phase8-formal-drafts.js"></script>
+<script>
+  (function(){
+    var elErr = document.getElementById('err');
+    try {
+      var b = window.TMPhase8FormalBridge;
+      if (!b) throw new Error('TMPhase8FormalBridge 未初始化');
+      var dr = b.drafts || {};
+      if (typeof dr.openHongyanPreviewPanel === 'function') {
+        dr.openHongyanPreviewPanel();
+        window.__yanOK = true;
+      } else if (typeof window.openHongyan === 'function') {
+        window.openHongyan();
+        window.__yanOK = true;
+      } else {
+        throw new Error('找不到 openHongyanPreviewPanel / openHongyan 入口；bridge.drafts keys=' + Object.keys(dr).slice(0,40).join(','));
+      }
+      if (window.__log.length) elErr.textContent = window.__log.join('\n');
+    } catch (e) {
+      window.__yanErr = String(e && e.stack || e);
+      elErr.textContent = 'RENDER ERROR:\n' + window.__yanErr + '\n\n' + window.__log.join('\n');
+    }
+  })();
+</script>
+</body>
+</html>

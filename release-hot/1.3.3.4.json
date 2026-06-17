@@ -1,0 +1,69 @@
+{
+  "type": "tianming-hot-update",
+  "version": "1.3.3.4",
+  "entry": "index.html",
+  "generatedAt": "2026-06-08T16:09:07.405Z",
+  "files": [
+    {
+      "path": "_app_main.js",
+      "sha256": "dbc780b26685712bf8031b8f4c6a749c25b5c88ed345a7054678de1558fd91d8",
+      "size": 94683
+    },
+    {
+      "path": "_app_preload.js",
+      "sha256": "39c5c1fc525b12a9ee3ab39ce61ec45adb11ca45c5e1e9921560b4f4744dacc8",
+      "size": 5777
+    },
+    {
+      "path": "bundled-scenarios/111.json",
+      "sha256": "2470325ce63d122c23493e3ef324df65aade84a260e098d0983e6a6ca0b84a7f",
+      "size": 791243
+    },
+    {
+      "path": "bundled-scenarios/崇祯.json",
+      "sha256": "b54ad174be1c32ac5d7cb29412a6dec8740bd6e534037d8dac907fc0c899df5a",
+      "size": 243102
+    },
+    {
+      "path": "bundled-scenarios/绍宋·建炎元年八月（官方）.json",
+      "sha256": "0b41e159f8102c65942ba893ee1f12c8150c290cdae873740003b4c7af38c7e7",
+      "size": 602652
+    },
+    {
+      "path": "bundled-scenarios/天启七年·九月——君王初立-自用测试版V1.json",
+      "sha256": "277768781eed4d1daa7978e465734b2157b845fb7bc265eee2f35a9e63b63281",
+      "size": 14702058
+    },
+    {
+      "path": "bundled-scenarios/天启七年·九月（官方）.json",
+      "sha256": "6e0587320c1f77f7013bc4b98a366549b36a22812ae9fcf0c24064ae69781d66",
+      "size": 14805026
+    },
+    {
+      "path": "bundled-scenarios/挽天倾：崇祯死局.json",
+      "sha256": "b56b96ebbebfd2ce3f270c1141e1baf0a0a3bfcfa8fef1827ef9b1fe5373eed7",
+      "size": 228912
+    },
+    {
+      "path": "changelog.json",
+      "sha256": "61e80e96e8570c77b48b93872d43ad212f9df91f4dad58f3a25eaeeb6f60faec",
+      "size": 960002
+    },
+    {
+      "path": "preview/scenario-editor-sandbox-bridge.js",
+      "sha256": "71f32230296234c1b621321ed45fb397468254a7478f309821e58202caf84a6e",
+      "size": 13198
+    },
+    {
+      "path": "README.md",
+      "sha256": "7704c70c1173cc2baadb2f2fc0727a50365f3b1218e705f8006a296fe525651a",
+      "size": 23880
+    },
+    {
+      "path": "tm-electron.js",
+      "sha256": "5c0e9e47e4ff647e549062c2cc6f086ef74e80ecffd67b0b1674c065c6ab8574",
+      "size": 37525
+    }
+  ],
+  "remove": []
+}

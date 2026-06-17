@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>御案·史册库 · 史官实录(档案/资料库) 预览 v4</title>
+<style>
+/* 御案·史册库 v4 — 多视图史料数据库:概览/四库浏览/时间轴/人物列传/势力地域 + 跨库检索 + 多维标签 + 导出 */
+:root{
+  --desk-1:#dccca6;--desk-2:#c6b083;--desk-3:#a78f68;
+  --silk-hi:#fffdf3;--silk:#f6efda;--silk-lo:#ece1c6;--silk-edge:#dcc99c;
+  --paper:#fcf7ec;--ink:#241d15;--ink-soft:#574733;--ink-faint:#9c8b6b;
+  --gold-hi:#d8b96a;--gold:#a8833a;--gold-d:#7d5e22;
+  --cinnabar:#a83228;--cinnabar-hi:#c64a3e;--cinnabar-d:#7a2018;
+  --jade:#557f6f;--jade-hi:#6fa291;--indigo:#4a5e8a;--indigo-hi:#6a7eaa;--violet:#7c6a90;--amber:#b98b2f;
+  --vermilion:#b83a2b;--seal-faith:#a83228;--seal-doubt:#5c4a2e;--seal-rumor:#9c8b6b;
+  --rule-red:rgba(168,50,40,0.16);--rule-ink:rgba(80,60,36,0.1);
+  --font:"STKaiti","KaiTi","楷体","Noto Serif SC","STSong",serif;
+  --font-doc:"FangSong","STFangsong","仿宋","Noto Serif SC",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;
+  background:radial-gradient(46% 36% at 50% -4%,rgba(255,238,196,0.5),transparent 70%),radial-gradient(60% 50% at 18% 24%,rgba(120,100,70,0.13),transparent 60%),radial-gradient(52% 60% at 86% 76%,rgba(80,60,40,0.16),transparent 55%),radial-gradient(120% 120% at 50% 28%,var(--desk-1),var(--desk-2) 54%,var(--desk-3) 100%);}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.55;background:radial-gradient(66% 48% at 50% -2%,rgba(255,239,196,0.38),transparent 60%),radial-gradient(150% 130% at 50% 50%,transparent 58%,rgba(48,34,18,0.46) 100%);}
+.shi-stage{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;padding:13px 18px;}
+.shi-frame{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;}
+.shi-titlebar{flex:0 0 auto;position:relative;display:flex;align-items:center;justify-content:center;padding:3px 0 10px;margin-bottom:8px;}
+.shi-titlebar::after{content:"";position:absolute;left:6%;right:6%;bottom:2px;height:1px;background:linear-gradient(90deg,transparent,rgba(216,185,106,0.75) 22%,rgba(216,185,106,0.75) 78%,transparent);}
+.shi-titlebar::before{content:"";position:absolute;left:6%;right:6%;bottom:5px;height:1px;background:linear-gradient(90deg,transparent,rgba(168,131,58,0.32) 30%,rgba(168,131,58,0.32) 70%,transparent);}
+.st-main{font-size:23px;font-weight:bold;letter-spacing:0.32em;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,0.7),0 2px 4px rgba(120,90,36,0.26),0 0 16px rgba(216,185,106,0.24);}
+.st-main::before,.st-main::after{content:"";display:inline-block;width:26px;height:1px;vertical-align:0.34em;margin:0 14px;background:linear-gradient(90deg,transparent,var(--gold));}
+.st-main::after{background:linear-gradient(90deg,var(--gold),transparent);}
+.st-sub{font-size:11.5px;color:var(--ink-faint);letter-spacing:0.3em;margin-top:4px;}
+.st-sub::before,.st-sub::after{content:"❖";font-size:7px;color:var(--gold);opacity:0.62;vertical-align:0.22em;margin:0 9px;}
+.shi-chips{position:absolute;right:2px;top:5px;display:flex;gap:7px;}
+.chip{font-size:11px;letter-spacing:0.05em;padding:3px 10px;border-radius:11px;border:1px solid var(--gold-d);background:rgba(255,250,235,0.7);color:var(--ink-soft);white-space:nowrap;}
+.chip.hot{border-color:var(--cinnabar);color:#fff;background:linear-gradient(160deg,var(--cinnabar),var(--cinnabar-d));}
+.chip.green{border-color:var(--jade);color:#23463a;background:rgba(111,162,145,0.22);}
+.shi-close{position:absolute;left:0;top:0;z-index:40;width:31px;height:31px;border-radius:50%;border:1px solid var(--gold-d);background:rgba(255,253,243,0.7);color:var(--gold-d);font-size:17px;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;}
+.shi-close:hover{background:var(--cinnabar);color:#fff;border-color:var(--cinnabar);transform:rotate(90deg);}
+/* 顶部全局检索 */
+.global-bar{flex:0 0 auto;display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.gsearch{position:relative;flex:1;}
+.gsearch input{width:100%;font-family:var(--font);font-size:13px;color:var(--ink);padding:9px 13px 9px 36px;border:1px solid rgba(168,131,58,0.36);border-radius:9px;background:rgba(255,252,242,0.78);outline:none;transition:border-color .15s,box-shadow .15s;}
+.gsearch input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(168,131,58,0.1);}
+.gsearch input::placeholder{color:var(--ink-faint);}
+.gsearch::before{content:"⌕";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--gold-d);}
+.gsearch .gs-scope{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:10.5px;color:var(--ink-faint);letter-spacing:0.04em;}
+.gbtn{font-family:var(--font);font-size:12px;letter-spacing:0.04em;cursor:pointer;padding:8px 15px;border-radius:9px;border:1px solid rgba(168,131,58,0.4);background:rgba(255,252,243,0.6);color:var(--ink-soft);transition:all .15s;white-space:nowrap;}
+.gbtn:hover{background:#fffdf6;border-color:var(--gold);color:var(--ink);}
+.shi-body{flex:1;min-height:0;display:flex;gap:13px;}
+.panel{min-height:0;border:1px solid rgba(168,131,58,0.2);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(255,253,243,0.46),rgba(245,236,210,0.24));box-shadow:inset 0 1px 0 rgba(255,255,255,0.5),0 16px 36px -22px rgba(50,32,14,0.44);}
+.panel-hd{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:12px 14px 10px;border-bottom:1px solid rgba(168,131,58,0.18);}
+.panel-hd .seal{width:29px;height:29px;flex:0 0 auto;display:grid;place-items:center;border-radius:7px;font-size:14px;color:#fff;font-weight:bold;background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));border:1px solid rgba(122,32,24,0.55);box-shadow:0 2px 6px rgba(122,32,24,0.36);}
+.panel-hd b{font-size:13.5px;letter-spacing:0.1em;color:var(--ink);display:block;}
+.panel-hd span{font-size:10px;color:var(--ink-faint);}
+/* 左·导航 */
+.nav{flex:0 0 198px;}
+.nav-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:10px 11px 8px;}
+.nav-scroll::-webkit-scrollbar{width:0;}
+.nav-sect{font-size:10px;letter-spacing:0.16em;color:var(--ink-faint);margin:4px 0 7px 3px;}
+.gv{position:relative;display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;font-family:var(--font);padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;margin-bottom:3px;transition:all .15s;}
+.gv:hover{background:rgba(255,253,243,0.66);}
+.gv.active{border-color:rgba(168,50,40,0.26);background:linear-gradient(180deg,#fffdf6,#fbf4e2);box-shadow:0 6px 15px -9px rgba(60,40,20,0.4);}
+.gv-g{width:26px;height:26px;flex:0 0 auto;border-radius:6px;display:grid;place-items:center;font-size:13px;font-weight:bold;color:#fff;background:linear-gradient(155deg,var(--gold-hi),var(--gold-d));box-shadow:inset 0 1px 0 rgba(255,255,255,0.28);}
+.gv.active .gv-g{background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));}
+.gv b{font-size:13px;letter-spacing:0.08em;color:var(--ink);flex:1;}
+.gv-n{font-size:10px;color:var(--ink-faint);}
+.nav-div{height:1px;background:linear-gradient(90deg,transparent,rgba(168,131,58,0.3),transparent);margin:11px 2px;}
+.libcat{position:relative;display:flex;align-items:center;gap:8px;width:100%;text-align:left;cursor:pointer;font-family:var(--font);padding:7px 10px 7px 11px;border-radius:7px;border:1px solid rgba(168,131,58,0.24);background:linear-gradient(100deg,var(--silk-hi),var(--silk) 75%,var(--silk-lo));margin-bottom:5px;transition:all .16s;overflow:hidden;}
+.libcat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cc,var(--gold));}
+.libcat:hover{transform:translateX(2px);border-color:var(--gold);}
+.libcat.active{border-color:var(--cinnabar);box-shadow:-2px 0 0 var(--cinnabar);background:linear-gradient(100deg,#fffef7,#fbf4e0);}
+.libcat-g{width:24px;height:28px;flex:0 0 auto;border-radius:4px;display:grid;place-items:center;font-size:13px;font-weight:bold;color:#fff;background:linear-gradient(160deg,var(--cc,var(--gold)),color-mix(in srgb,var(--cc,var(--gold)) 62%,#000));}
+.libcat-m{flex:1;min-width:0;}
+.libcat-m b{font-size:12.5px;letter-spacing:0.08em;color:var(--ink);display:block;}
+.libcat-n{font-size:10px;color:var(--gold-d);background:rgba(168,131,58,0.14);border-radius:8px;padding:0 6px;}
+.libcat.active .libcat-n{color:#fff;background:var(--cinnabar);}
+.facet{margin:10px 0 0;}
+.facet-t{font-size:10px;letter-spacing:0.12em;color:var(--ink-faint);margin:0 0 5px 2px;}
+.facet-opts{display:flex;flex-wrap:wrap;gap:4px;}
+.fopt{font-family:var(--font);font-size:10.5px;cursor:pointer;padding:2px 8px;border-radius:10px;border:1px solid rgba(168,131,58,0.3);background:rgba(255,252,242,0.55);color:var(--ink-soft);transition:all .14s;display:inline-flex;align-items:center;gap:4px;}
+.fopt:hover{border-color:var(--gold);}
+.fopt.active{color:#fff;background:linear-gradient(150deg,var(--cinnabar),var(--cinnabar-d));border-color:var(--cinnabar-d);}
+.fopt .fn{font-size:9px;opacity:0.7;}
+.nav-stat{flex:0 0 auto;border-top:1px solid rgba(168,131,58,0.2);padding:10px 13px;font-size:10px;line-height:1.7;color:var(--ink-faint);}
+.nav-stat b{color:var(--ink-soft);}
+.nav-stat .ss-row{display:flex;justify-content:space-between;}
+/* 中·主区 */
+.main{flex:1;min-width:0;}
+.main-tools{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px 15px;border-bottom:1px solid rgba(168,131,58,0.16);}
+.main-title{font-size:14px;letter-spacing:0.1em;color:var(--ink);font-weight:bold;}
+.main-title small{font-size:10.5px;color:var(--ink-faint);font-weight:normal;margin-left:8px;letter-spacing:0.02em;}
+.cat-sort{display:flex;gap:4px;margin-left:auto;}
+.sortb{font-family:var(--font);font-size:10.5px;cursor:pointer;padding:5px 10px;border-radius:7px;border:1px solid rgba(168,131,58,0.3);background:rgba(255,252,242,0.5);color:var(--ink-soft);transition:all .14s;}
+.sortb.active{color:#fff;background:linear-gradient(150deg,var(--gold),var(--gold-d));border-color:var(--gold-d);}
+.tbtn{font-family:var(--font);font-size:10.5px;cursor:pointer;padding:5px 11px;border-radius:7px;border:1px solid rgba(168,131,58,0.36);background:rgba(255,252,243,0.5);color:var(--ink-soft);transition:all .14s;white-space:nowrap;}
+.tbtn:hover{background:#fffdf6;border-color:var(--gold);}
+.cat-active{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 15px 0;}
+.cat-active:empty{display:none;}
+.afilter{font-size:10px;padding:2px 8px 2px 9px;border-radius:10px;background:rgba(168,50,40,0.08);border:1px solid rgba(122,32,24,0.3);color:var(--cinnabar-d);display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
+.afilter::after{content:"✕";font-size:7px;opacity:0.7;}
+.cat-count{margin-left:auto;font-size:10px;color:var(--ink-faint);}
+.main-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:9px 13px 13px;}
+.main-scroll::-webkit-scrollbar{width:0;}
+.cat-group-t{font-size:10px;letter-spacing:0.14em;color:var(--ink-faint);margin:11px 2px 6px;display:flex;align-items:center;gap:7px;}
+.cat-group-t:first-child{margin-top:2px;}
+.cat-group-t::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(168,131,58,0.26),transparent);}
+.entry{position:relative;display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;cursor:pointer;font-family:var(--font);padding:9px 11px;border-radius:8px;border:1px solid transparent;background:transparent;margin-bottom:3px;transition:all .15s;}
+.entry:hover{background:rgba(255,253,243,0.66);transform:translateX(2px);}
+.entry.active{border-color:rgba(168,50,40,0.26);background:linear-gradient(180deg,#fffdf6,#fbf4e2);box-shadow:0 8px 20px -11px rgba(60,40,20,0.42);}
+.e-badge{flex:0 0 auto;width:32px;height:32px;border-radius:7px;display:grid;place-items:center;font-size:9.5px;font-weight:bold;line-height:1.1;text-align:center;color:#fff;margin-top:1px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.28),0 2px 5px -2px rgba(60,40,20,0.4);}
+.e-badge.turn{flex-direction:column;gap:1px;}.e-badge.turn b{font-size:12px;line-height:1;}.e-badge.turn span{font-size:7.5px;opacity:0.9;}
+.e-main{flex:1;min-width:0;}
+.e-title{font-size:13px;color:var(--ink);letter-spacing:0.02em;line-height:1.4;font-weight:bold;display:flex;align-items:center;gap:6px;}
+.e-title .et-star{font-size:10.5px;color:var(--gold-hi);}
+.e-meta{font-size:10px;color:var(--ink-faint);margin-top:3px;display:flex;flex-wrap:wrap;align-items:center;gap:3px 7px;}
+.e-meta .etag{font-size:9px;padding:0 6px;border-radius:7px;color:#fff;line-height:1.6;letter-spacing:0.04em;box-shadow:0 1px 3px -1px rgba(60,40,20,0.3);}
+.e-meta .src{color:var(--indigo);}.e-meta .dot{opacity:0.4;}
+.e-excerpt{font-family:var(--font-doc);font-size:11px;color:var(--ink-faint);line-height:1.5;margin-top:3px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+.e-delta{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;}
+.dchip{font-size:9px;padding:0 6px;border-radius:7px;border:1px solid;}
+.dchip.up{color:#2d5848;border-color:rgba(85,127,111,0.4);background:rgba(111,162,145,0.12);}
+.dchip.dn{color:var(--cinnabar-d);border-color:rgba(168,50,40,0.36);background:rgba(168,50,40,0.08);}
+.empty{padding:48px 18px;text-align:center;color:var(--ink-faint);}
+.empty b{font-size:15px;letter-spacing:0.16em;color:var(--ink-soft);display:block;margin-bottom:8px;}
+.empty p{font-size:12px;line-height:1.7;}
+/* 馆藏概览 */
+.ov-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.ov-card{border:1px solid rgba(168,131,58,0.24);border-radius:10px;padding:14px 16px;background:linear-gradient(180deg,rgba(255,253,243,0.7),rgba(246,239,218,0.5));box-shadow:inset 0 1px 0 rgba(255,255,255,0.5),0 8px 18px -12px rgba(60,40,20,0.3);}
+.ov-card.wide{grid-column:1 / -1;}
+.ov-card h4{font-size:12px;letter-spacing:0.12em;color:var(--ink-soft);margin-bottom:11px;display:flex;align-items:center;gap:7px;}
+.ov-card h4::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--gold);}
+.ov-libs{display:flex;gap:9px;}
+.ov-lib{flex:1;text-align:center;padding:9px 4px;border-radius:8px;border:1px solid rgba(168,131,58,0.2);background:rgba(255,250,235,0.5);cursor:pointer;transition:all .15s;}
+.ov-lib:hover{border-color:var(--gold);transform:translateY(-2px);}
+.ov-lib b{display:block;font-size:22px;color:var(--cinnabar-d);line-height:1;}
+.ov-lib span{font-size:11px;color:var(--ink-soft);letter-spacing:0.06em;margin-top:5px;display:block;}
+.era-bars{display:flex;flex-direction:column;gap:8px;}
+.era-row{display:flex;align-items:center;gap:9px;font-size:11px;}
+.era-row .er-lbl{flex:0 0 70px;color:var(--ink-soft);}
+.era-row .er-track{flex:1;height:14px;border-radius:7px;background:rgba(120,90,40,0.1);overflow:hidden;}
+.era-row .er-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--gold-d),var(--gold-hi));}
+.era-row .er-n{flex:0 0 auto;color:var(--ink-faint);font-size:10px;}
+.auth-ring{display:flex;align-items:center;gap:16px;}
+.ring{width:84px;height:84px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;position:relative;}
+.ring::before{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--paper);}
+.ring b{position:relative;font-size:20px;color:var(--cinnabar-d);}
+.auth-leg{flex:1;display:flex;flex-direction:column;gap:6px;font-size:11px;}
+.auth-leg .al{display:flex;align-items:center;gap:7px;color:var(--ink-soft);}
+.auth-leg .al i{width:11px;height:11px;border-radius:3px;}
+.auth-leg .al .n{margin-left:auto;color:var(--ink-faint);}
+.hot-persons{display:flex;flex-wrap:wrap;gap:7px;}
+.hotp{font-family:var(--font);font-size:11.5px;cursor:pointer;padding:5px 12px;border-radius:14px;border:1px solid rgba(74,94,138,0.3);background:rgba(74,94,138,0.07);color:var(--indigo);transition:all .14s;display:inline-flex;align-items:center;gap:6px;}
+.hotp:hover{background:rgba(74,94,138,0.16);transform:translateY(-1px);}
+.hotp b{font-size:10px;color:var(--gold-d);background:rgba(168,131,58,0.16);border-radius:8px;padding:0 6px;}
+/* 时间轴长卷 */
+.tl-era{margin-bottom:6px;}
+.tl-era-h{font-size:13px;letter-spacing:0.14em;color:var(--cinnabar-d);font-weight:bold;margin:13px 0 9px;display:flex;align-items:center;gap:9px;}
+.tl-era-h::before{content:"";width:9px;height:9px;border-radius:50%;background:linear-gradient(150deg,var(--cinnabar),var(--cinnabar-d));box-shadow:0 0 0 3px rgba(168,50,40,0.14);}
+.tl-era-h::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(168,50,40,0.3),transparent);}
+.tl-item{display:flex;flex-direction:column;padding:2px 0 6px 13px;margin-left:6px;border-left:2px solid rgba(168,131,58,0.28);}
+.tl-item-in{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;cursor:pointer;font-family:var(--font);padding:7px 11px;border-radius:8px;border:1px solid transparent;margin:2px 0 2px -7px;transition:all .15s;}
+.tl-item-in:hover{background:rgba(255,253,243,0.66);}
+.tl-item-in.active{border-color:rgba(168,50,40,0.24);background:linear-gradient(180deg,#fffdf6,#fbf4e2);}
+.tl-date{flex:0 0 auto;font-size:10px;color:var(--gold-d);background:rgba(168,131,58,0.12);border-radius:8px;padding:1px 8px;margin-top:2px;white-space:nowrap;}
+.tl-dot2{flex:0 0 auto;width:9px;height:9px;border-radius:50%;margin-top:5px;border:2px solid;}
+.tl-tx{flex:1;min-width:0;}
+.tl-tx b{font-size:12.5px;color:var(--ink);font-weight:bold;}
+.tl-tx .tt-meta{font-size:10px;color:var(--ink-faint);margin-top:2px;}
+.tl-tx .tt-meta .etag{font-size:9px;padding:0 6px;border-radius:7px;color:#fff;}
+/* 人物列传 / 势力地域 */
+.who-list{display:flex;flex-direction:column;gap:5px;}
+.who-card{display:flex;align-items:center;gap:11px;width:100%;text-align:left;cursor:pointer;font-family:var(--font);padding:10px 13px;border-radius:9px;border:1px solid rgba(168,131,58,0.22);background:linear-gradient(180deg,rgba(255,253,243,0.66),rgba(246,239,218,0.46));transition:all .15s;}
+.who-card:hover{border-color:var(--gold);transform:translateX(2px);box-shadow:0 6px 15px -9px rgba(60,40,20,0.34);}
+.who-card.active{border-color:var(--cinnabar);box-shadow:-2px 0 0 var(--cinnabar);}
+.who-face{width:38px;height:44px;flex:0 0 auto;border-radius:6px;display:grid;place-items:center;font-size:18px;font-weight:bold;color:var(--ink-soft);background:linear-gradient(160deg,#efe3c4,#dcca9f);border:1px solid rgba(168,131,58,0.34);}
+.who-card.fac .who-face{color:#2d5848;background:linear-gradient(160deg,rgba(111,162,145,0.3),rgba(85,127,111,0.18));}
+.who-card.reg .who-face{color:var(--gold-d);background:linear-gradient(160deg,rgba(216,185,106,0.3),rgba(168,131,58,0.18));}
+.who-m{flex:1;min-width:0;}
+.who-m b{font-size:14px;color:var(--ink);letter-spacing:0.04em;display:block;}
+.who-m span{font-size:10.5px;color:var(--ink-faint);display:block;margin-top:2px;}
+.who-n{font-size:11px;color:var(--gold-d);background:rgba(168,131,58,0.14);border:1px solid rgba(168,131,58,0.28);border-radius:10px;padding:1px 9px;}
+/* 列传聚合(右栏) */
+.lz-head{text-align:center;padding-bottom:13px;border-bottom:1px solid rgba(168,131,58,0.2);margin-bottom:13px;}
+.lz-face{width:56px;height:64px;margin:0 auto 9px;border-radius:7px;display:grid;place-items:center;font-size:26px;font-weight:bold;color:var(--ink);background:linear-gradient(160deg,#efe3c4,#d9c79d);border:1px solid var(--gold-d);box-shadow:inset 0 0 0 2px rgba(255,253,243,0.55),0 3px 9px rgba(60,40,20,0.22);}
+.lz-name{font-size:19px;letter-spacing:0.1em;color:var(--ink);font-weight:bold;}
+.lz-sub{font-size:11px;color:var(--ink-faint);margin-top:5px;letter-spacing:0.04em;}
+.lz-grp{font-size:10.5px;letter-spacing:0.14em;color:var(--ink-faint);margin:14px 0 7px;display:flex;align-items:center;gap:7px;}
+.lz-grp::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--gold);}
+.lz-grp::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(168,131,58,0.26),transparent);}
+.lz-rec{display:flex;gap:9px;width:100%;text-align:left;cursor:pointer;font-family:var(--font);padding:8px 11px;border-radius:8px;border:1px solid rgba(168,131,58,0.2);background:rgba(255,252,242,0.5);margin-bottom:5px;transition:all .14s;}
+.lz-rec:hover{border-color:var(--gold);background:#fffdf6;}
+.lz-rec .lzr-k{flex:0 0 auto;font-size:9px;color:#fff;padding:1px 6px;border-radius:5px;height:fit-content;margin-top:2px;}
+.lz-rec .lzr-t{flex:1;min-width:0;font-size:12px;color:var(--ink);}
+.lz-rec .lzr-t small{display:block;font-size:10px;color:var(--ink-faint);margin-top:2px;}
+/* 右·详情 (四类各异·复用 v3) */
+.folio{flex:0 0 400px;}
+.folio-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding:17px 19px 20px;}
+.folio-scroll::-webkit-scrollbar{width:0;}
+.fo-head{display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;border-bottom:1px solid rgba(168,131,58,0.2);margin-bottom:13px;position:relative;}
+.fo-seal{flex:0 0 auto;width:48px;height:48px;border-radius:7px;display:grid;place-items:center;position:relative;transform:rotate(-5deg);font-size:11.5px;font-weight:bold;line-height:1.1;text-align:center;}
+.fo-seal.faith{color:#fff;background:linear-gradient(150deg,var(--cinnabar-hi),var(--cinnabar-d));border:1px solid rgba(122,32,24,0.5);box-shadow:0 2px 7px rgba(122,32,24,0.4);}
+.fo-seal.faith::after{content:"";position:absolute;inset:3px;border:1px solid rgba(255,255,255,0.4);border-radius:5px;}
+.fo-seal.doubt{color:var(--seal-doubt);background:rgba(92,74,46,0.07);border:1.5px solid var(--seal-doubt);box-shadow:inset 0 0 0 2px rgba(92,74,46,0.1);}
+.fo-seal.rumor{color:var(--seal-rumor);background:rgba(156,139,107,0.05);border:1.5px dashed var(--seal-rumor);box-shadow:inset 0 0 0 2px rgba(156,139,107,0.08);}
+.fo-htext{flex:1;min-width:0;}
+.fo-title{font-size:17px;color:var(--ink);letter-spacing:0.03em;line-height:1.34;font-weight:bold;}
+.fo-sub{font-size:10.5px;color:var(--ink-faint);margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;}
+.fo-sub .ftag{font-size:9.5px;padding:1px 8px;border-radius:8px;color:#fff;}
+.fo-star{position:absolute;right:0;top:0;font-size:16px;cursor:pointer;color:var(--gold);background:none;border:none;opacity:0.55;transition:.15s;}
+.fo-star:hover{opacity:1;transform:scale(1.1);}.fo-star.on{opacity:1;color:var(--gold-hi);text-shadow:0 0 8px rgba(216,185,106,0.6);}
+.tiwen{margin-bottom:11px;border-radius:8px;overflow:hidden;border:1px solid rgba(168,131,58,0.2);}
+.tiwen-lbl{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:12px;letter-spacing:0.18em;font-weight:bold;border-left:3px solid var(--tlc,var(--gold));background:rgba(255,250,236,0.72);color:var(--tlc-d,var(--ink-soft));}
+.tiwen-lbl small{margin-left:auto;font-weight:normal;font-size:10px;color:var(--ink-faint);}
+.tiwen-body{font-family:var(--font-doc);font-size:13px;line-height:1.95;color:var(--ink);text-align:justify;padding:12px 15px;background:rgba(255,253,247,0.5);}
+.tiwen.shilu{border-color:rgba(168,50,40,0.3);}
+.tiwen.shilu .tiwen-lbl{background:linear-gradient(100deg,var(--cinnabar),var(--cinnabar-d));color:#fff;border-left:none;box-shadow:inset 0 1px 0 rgba(255,255,255,0.18);}
+.tiwen.shilu .tiwen-body{background:repeating-linear-gradient(0deg,transparent 0 calc(1.95em - 1px),var(--rule-red) calc(1.95em - 1px) 1.95em),rgba(255,252,247,0.62);}
+.tiwen.szj .tiwen-lbl{--tlc:var(--gold);--tlc-d:var(--gold-d);}
+.tiwen.zhengwen .tiwen-lbl{--tlc:var(--indigo);--tlc-d:#33456a;}
+.tiwen.houren .tiwen-lbl{--tlc:#8a7a5c;--tlc-d:#5c4a2e;}
+.tiwen.houren .tiwen-body{font-style:italic;color:var(--ink-soft);opacity:0.92;}
+.fo-sect{margin-top:17px;}
+.fo-sect-t{font-size:11px;letter-spacing:0.14em;color:var(--ink-faint);margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+.fo-sect-t::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--gold);}
+.fo-sect-t::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(168,131,58,0.26),transparent);}
+.personnel{display:flex;flex-direction:column;gap:5px;}
+.prow{display:flex;align-items:center;gap:9px;font-size:12px;padding:5px 10px;border-radius:6px;background:rgba(255,250,235,0.5);border:1px solid rgba(168,131,58,0.2);}
+.prow .pn{font-weight:bold;color:var(--ink);}.prow .pc{margin-left:auto;font-size:11px;padding:1px 9px;border-radius:9px;color:#fff;background:var(--indigo);}
+.delta-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.dbig{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:4px 11px;border-radius:8px;border:1px solid;}
+.dbig.up{color:#2d5848;border-color:rgba(85,127,111,0.4);background:rgba(111,162,145,0.1);}
+.dbig.dn{color:var(--cinnabar-d);border-color:rgba(168,50,40,0.34);background:rgba(168,50,40,0.07);}
+.edict-line{font-family:var(--font-doc);font-size:12px;line-height:1.7;color:var(--ink-soft);padding:6px 11px;border-radius:6px;border-left:3px solid var(--cinnabar);background:rgba(168,50,40,0.05);margin-bottom:5px;}
+.edict-line b{color:var(--cinnabar-d);font-family:var(--font);margin-right:5px;}
+.qjblock{font-family:var(--font-doc);font-size:13.5px;line-height:1.95;color:var(--ink);text-align:justify;padding:12px 15px;border-radius:6px;background:repeating-linear-gradient(0deg,transparent 0 calc(1.95em - 1px),var(--rule-ink) calc(1.95em - 1px) 1.95em),rgba(255,253,247,0.55);}
+.qj-memo{margin-top:11px;padding:10px 13px;border-radius:6px;border:1px solid rgba(168,131,58,0.26);background:rgba(255,250,235,0.5);}
+.qj-memo .qm-from{font-size:11.5px;color:var(--ink-soft);font-weight:bold;margin-bottom:5px;}
+.qj-memo .qm-from b{color:var(--cinnabar-d);}
+.qj-memo .qm-reply{font-family:var(--font);font-size:12.5px;color:var(--vermilion);margin-top:6px;padding-top:6px;border-top:1px dashed rgba(168,131,58,0.3);}
+.dialog{display:flex;flex-direction:column;gap:11px;}
+.dline{display:flex;flex-direction:column;gap:4px;}
+.dl-who{font-size:11.5px;font-weight:bold;letter-spacing:0.08em;display:flex;align-items:center;gap:6px;}
+.dl-who::before{content:"";width:7px;height:7px;border-radius:50%;}
+.dline.q .dl-who{color:var(--cinnabar-d);}.dline.q .dl-who::before{background:var(--cinnabar);box-shadow:0 0 0 2px rgba(168,50,40,0.14);}
+.dline.a .dl-who{color:var(--indigo);}.dline.a .dl-who::before{background:var(--indigo);box-shadow:0 0 0 2px rgba(74,94,138,0.14);}
+.dl-text{font-family:var(--font-doc);font-size:13.5px;line-height:1.82;color:var(--ink);padding:9px 13px;border-radius:9px;}
+.dline.q .dl-text{background:rgba(168,50,40,0.05);border:1px solid rgba(168,50,40,0.16);}
+.dline.a .dl-text{background:rgba(74,94,138,0.05);border:1px solid rgba(74,94,138,0.15);}
+.dl-ruling{margin-top:11px;padding:10px 13px;border-radius:6px;border-left:3px solid var(--jade);background:rgba(111,162,145,0.08);font-size:13px;line-height:1.7;color:#23463a;}
+.dl-ruling b{font-family:var(--font);color:#1d6b54;margin-right:5px;}
+.dialog-mood{margin-top:9px;font-size:11px;color:var(--ink-faint);}.dialog-mood b{color:var(--ink-soft);}
+/* 立绘 portraits (刀3·复用 tmfRenwuPortrait·失败降级字形) */
+.who-card .who-face.has-portrait{padding:0;overflow:hidden;}
+.who-face .pt-img,.pn-face .pt-img,.dl-face .pt-img{width:100%;height:100%;object-fit:cover;display:block;}
+.who-face.has-portrait.fallback .pt-img,.pn-face.fallback .pt-img,.dl-face.fallback .pt-img{display:none;}
+.who-face.has-portrait.fallback::after{content:attr(data-glyph);font-size:18px;font-weight:bold;color:var(--ink-soft);}
+.prow .pn-face{width:26px;height:30px;flex:0 0 auto;border-radius:5px;overflow:hidden;background:linear-gradient(160deg,#efe3c4,#dcca9f);border:1px solid rgba(168,131,58,0.34);display:grid;place-items:center;}
+.prow .pn-face.fallback::after{content:attr(data-glyph);font-size:12px;font-weight:bold;color:var(--ink-soft);}
+.dl-who.has-face::before{display:none;}
+.dl-who .dl-face{width:22px;height:26px;flex:0 0 auto;border-radius:4px;overflow:hidden;background:linear-gradient(160deg,#efe3c4,#dcca9f);border:1px solid rgba(168,131,58,0.3);display:grid;place-items:center;}
+.dl-who .dl-face.fallback::after{content:attr(data-glyph);font-size:11px;font-weight:bold;color:var(--ink-soft);}
+.annal{font-family:var(--font-doc);font-size:14px;line-height:2.05;color:var(--ink);text-align:justify;text-indent:2em;padding:14px 16px;border-radius:6px;background:repeating-linear-gradient(0deg,transparent 0 calc(2.05em - 1px),var(--rule-ink) calc(2.05em - 1px) 2.05em),rgba(255,253,247,0.55);}
+.afterword{margin-top:13px;padding:11px 14px 11px 15px;border-radius:6px;position:relative;border:1px solid rgba(168,131,58,0.3);background:rgba(168,131,58,0.06);}
+.afterword::before{content:"史 论";position:absolute;left:-1px;top:-10px;font-size:10px;letter-spacing:0.1em;color:#fff;background:linear-gradient(150deg,var(--gold),var(--gold-d));padding:2px 8px;border-radius:4px;}
+.afterword p{font-family:var(--font-doc);font-size:13px;line-height:1.85;color:var(--ink-soft);font-style:italic;margin-top:3px;}
+.timeline2{position:relative;height:40px;margin:13px 4px 0;}
+.timeline2::before{content:"";position:absolute;left:0;right:0;top:12px;height:3px;border-radius:2px;background:rgba(120,90,40,0.16);}
+.tl2-done{position:absolute;left:0;top:12px;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--gold-d),var(--gold-hi));box-shadow:0 0 6px rgba(216,185,106,0.5);}
+.tl2-node{position:absolute;top:7px;transform:translateX(-50%);}
+.tl2-node .tn-dot{width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid rgba(120,90,40,0.3);box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);}
+.tl2-node.reached .tn-dot{background:linear-gradient(150deg,var(--gold-hi),var(--gold-d));border-color:var(--gold-d);}
+.tl2-node.now .tn-dot{background:linear-gradient(150deg,var(--cinnabar-hi),var(--cinnabar-d));border-color:var(--cinnabar-d);box-shadow:0 0 0 3px rgba(168,50,40,0.18);}
+.tl2-node .tn-lbl{position:absolute;top:15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--ink-faint);white-space:nowrap;}
+.fo-annot{margin-top:13px;padding:10px 13px 10px 14px;border-radius:6px;position:relative;border:1px solid rgba(184,58,43,0.28);background:linear-gradient(180deg,rgba(184,58,43,0.05),rgba(184,58,43,0.02));}
+.fo-annot::before{content:"御 批";position:absolute;left:-1px;top:-10px;font-size:10px;letter-spacing:0.1em;color:#fff;background:linear-gradient(150deg,var(--vermilion),var(--cinnabar-d));padding:2px 8px;border-radius:4px;}
+.fo-annot p{font-family:var(--font);font-size:13.5px;line-height:1.75;color:var(--vermilion);margin-top:3px;}
+.refnote{font-family:var(--font-doc);font-size:11.5px;line-height:1.7;color:var(--ink-soft);padding:7px 11px;border-radius:6px;border-left:3px solid rgba(120,90,40,0.3);background:rgba(168,131,58,0.06);}
+.refnote .rn-lbl{color:var(--gold-d);margin-right:4px;font-family:var(--font);}.refnote div+div{margin-top:2px;}
+.xref{display:flex;align-items:center;gap:8px;width:100%;text-align:left;cursor:pointer;font-family:var(--font);margin-bottom:5px;padding:7px 11px;border-radius:7px;border:1px solid rgba(168,131,58,0.24);background:rgba(255,252,242,0.5);transition:all .14s;}
+.xref:hover{border-color:var(--gold);background:#fffdf6;transform:translateX(2px);}
+.xref .xr-kind{flex:0 0 auto;font-size:9.5px;color:#fff;padding:1px 7px;border-radius:6px;}
+.xref .xr-t{flex:1;min-width:0;font-size:12px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.xref .xr-go{flex:0 0 auto;font-size:11px;color:var(--gold-d);}
+.assoc{display:flex;flex-wrap:wrap;gap:6px;}
+.atag{font-family:var(--font);font-size:11px;cursor:pointer;padding:3px 11px;border-radius:11px;border:1px solid rgba(74,94,138,0.34);background:rgba(74,94,138,0.07);color:var(--indigo);transition:all .14s;}
+.atag:hover{background:rgba(74,94,138,0.16);}
+.atag.fac{border-color:rgba(85,127,111,0.36);background:rgba(111,162,145,0.1);color:#2d5848;}
+.atag.reg{border-color:rgba(184,139,47,0.36);background:rgba(184,139,47,0.1);color:var(--gold-d);}
+.fo-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(168,131,58,0.18);}
+.fact{font-family:var(--font);font-size:12px;cursor:pointer;padding:7px 14px;border-radius:8px;border:1px solid rgba(168,131,58,0.36);background:rgba(255,252,243,0.5);color:var(--ink-soft);transition:all .14s;}
+.fact:hover{background:#fffdf6;border-color:var(--gold);transform:translateY(-1px);}
+.fact.red{border-color:rgba(184,58,43,0.4);color:var(--cinnabar-d);}
+.folio-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:40px;text-align:center;color:var(--ink-faint);}
+.folio-empty .fe-seal{width:56px;height:56px;display:grid;place-items:center;border-radius:9px;font-size:26px;font-weight:bold;color:#fff;background:linear-gradient(155deg,var(--gold-hi),var(--gold-d));opacity:0.8;margin-bottom:6px;}
+.folio-empty b{font-size:14px;letter-spacing:0.16em;color:var(--ink-soft);}
+.folio-empty p{font-size:12px;line-height:1.7;}
+.toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);z-index:90;opacity:0;pointer-events:none;font-size:13px;letter-spacing:0.08em;color:#fff;padding:11px 22px;border-radius:9px;background:linear-gradient(155deg,rgba(58,40,22,0.96),rgba(36,24,14,0.96));border:1px solid var(--gold-d);box-shadow:0 8px 24px rgba(0,0,0,0.4);transition:opacity .25s,transform .25s;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}.toast b{color:var(--gold-hi);}
+.previewbar{position:fixed;left:50%;bottom:7px;transform:translateX(-50%);z-index:50;font-family:var(--font);font-size:10.5px;color:var(--ink-faint);background:rgba(255,250,235,0.7);border:1px solid rgba(168,131,58,0.3);padding:3px 12px;border-radius:20px;}
+.previewbar b{color:var(--cinnabar-d);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.main-scroll>*,.folio-scroll>*{animation:fadeUp .32s ease both;}
+</style>
+</head>
+<body class="tm-phase8-formal">
+<div class="shi-stage">
+  <div class="shi-frame">
+    <div class="shi-titlebar"><button class="shi-close" title="退回御案">×</button><div style="text-align:center"><div class="st-main">史 册 库</div><div class="st-sub">史官实录　稽古考献　博征旁稽</div></div><div class="shi-chips" id="hdChips"></div></div>
+    <div class="global-bar">
+      <div class="gsearch"><input id="gsearch" placeholder="跨库全检 —— 题名、人物、地域、事类、年月、正文……"><span class="gs-scope">遍检四库</span></div>
+      <button class="gbtn" id="exportBtn">导出此卷</button>
+    </div>
+    <div class="shi-body">
+      <aside class="panel nav">
+        <div class="panel-hd"><span class="seal">史</span><div><b>史册书库</b><span>视图 · 四库 · 检索</span></div></div>
+        <div class="nav-scroll" id="navScroll"></div>
+        <div class="nav-stat" id="navStat"></div>
+      </aside>
+      <main class="panel main">
+        <div class="main-tools"><div class="main-title" id="mainTitle"></div><div class="cat-sort" id="sortBar"></div></div>
+        <div class="cat-active" id="catActive"></div>
+        <div class="main-scroll" id="mainScroll"></div>
+      </main>
+      <aside class="panel folio">
+        <div class="panel-hd"><span class="seal" style="background:linear-gradient(155deg,var(--gold-hi),var(--gold-d));border-color:rgba(125,94,34,0.5)">阅</span><div><b>卷宗详阅</b><span>正文 · 引征 · 关联</span></div></div>
+        <div class="folio-scroll" id="folio"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="previewbar">御案·史册库 <b>v4</b> · 概览/四库/时间轴/人物列传/势力地域 + 跨库检索 + 多维标签 + 导出</div>
+<script>
+var CATS=[{key:'shiji',label:'史记',sub:'回合全景',g:'记',c:'#a83228'},{key:'qiju',label:'起居注',sub:'政务日志',g:'居',c:'#a8833a'},{key:'jishi',label:'纪事',sub:'议政对话',g:'纪',c:'#4a5e8a'},{key:'biannian',label:'编年',sub:'事势·年史',g:'编',c:'#557f6f'}];
+function catDef(k){return CATS.find(function(c){return c.key===k;})||CATS[0];}
+var VIEWS=[['overview','馆藏概览','览'],['library','四库浏览','库'],['timeline','时间轴总览','轴'],['persons','人物列传','传'],['realms','势力地域','疆']];
+var AUTH={faith:{label:'信史',g:'信史',c:'#a83228'},doubt:{label:'存疑',g:'存疑',c:'#5c4a2e'},rumor:{label:'风闻',g:'风闻',c:'#9c8b6b'}};
+var TYPE_C={'战事':'#7a2018','人事':'#8e6aa8','灾异':'#b98b2f','党争':'#a83228','边务':'#4a5e8a','财赋':'#557f6f','礼制':'#a8833a','外交':'#4a5e8a','工程':'#557f6f','军务':'#7a2018'};
+function typeColor(t){return TYPE_C[t]||'#a8833a';}
+var QJ_CAT={'诏令':'#a83228','奏疏':'#a8833a','朝议':'#4a5e8a','鸿雁':'#557f6f','人事':'#8e6aa8','行止':'#7d5e22','叙事':'#9c8b6b'};
+var SRC={changchao:{l:'常朝',g:'朝'},yuqian:{l:'御前',g:'御'},tingyi:{l:'廷议',g:'廷'},jingyan:{l:'经筵',g:'经'},private:{l:'问对·私',g:'私'},formal:{l:'问对·殿',g:'殿'},mizou:{l:'密报',g:'密'},qiujian:{l:'求见',g:'见'}};
+function srcDef(s){return SRC[s]||{l:'杂录',g:'录'};}
+
+/* 四类档案数据(承 v3·按真实承载) */
+var ARCHIVE=[
+{id:'sj3',cat:'shiji',turn:3,era:'天启七年',date:'三月',type:'边务',authority:'faith',star:true,persons:['袁崇焕','毕自严'],factions:['明朝廷','后金'],regions:['辽东','京师'],szjTitle:'付崇焕便宜·召自严议饷',turnSummary:'倚袁崇焕固守关宁，召毕自严议辽饷，边计渐定而国用方诎。',shilu:'三月，上密诏辽东巡抚袁崇焕，许便宜行边、便宜入援。又召户部尚书毕自严问辽饷出入，自严言太仓不继，请清屯裁冗。上俱可之。是月，建虏未大举，关宁稍安。',shizhengji:'本回要务二端：畀袁崇焕以便宜，定固守关宁、以辽人守辽土之略；召毕自严议辽饷，初定清核屯田、裁汰冗费之议。流贼于陕西渐起，未为大患。',zhengwen:'御前定策已下，袁崇焕受密旨，即日整军，关宁将士闻便宜入援之许，颇为振奋。毕自严退而具疏，条陈清屯六事。然部议未协，兵部以缓不济急相争，辽饷之困一时未解。',houren:'后人论之：天启之季，能假边臣以权者鲜矣，崇焕得君如此，惜乎未竟其功。至若辽饷一事，议者纷纷，卒以财匮误国。',personnel:[{name:'袁崇焕',change:'假便宜'},{name:'毕自严',change:'议饷'}],edicts:[{k:'军',t:'着袁崇焕相机料理关宁防务，许便宜入援'},{k:'经',t:'着户部详议清核屯田、裁汰冗费'}],delta:[{k:'兵威',v:'+4',dir:'up'},{k:'辽饷',v:'-6',dir:'dn'},{k:'民心',v:'-2',dir:'dn'}],sources:['御案推演·sc1','御前问对·毕自严','密旨·袁崇焕'],basis:'时政记·本回',evidence:'起居注三月',refs:['qj_zhao','js1','bn1'],annotation:'边事付崇焕，朕无北顾忧；饷事卿等实心任之。'},
+{id:'sj2',cat:'shiji',turn:2,era:'天启七年',date:'二月',type:'灾异',authority:'faith',star:false,persons:['孙承宗'],factions:['明朝廷'],regions:['陕西','辽东'],szjTitle:'起孙承宗·陕西大旱',turnSummary:'起孙承宗议辽，而陕西大旱，饥民将动，赈务未决。',shilu:'二月，起原督师孙承宗筹辽事。陕西自去秋不雨，至是大旱，斗米千钱，民相聚为盗。有司请蠲赈，部议未决。',shizhengji:'本回起孙承宗以图辽；陕西旱情告急，赈务与流民之防并为要务，惜部议迟回。',zhengwen:'孙承宗应召陈辽东守战之策，朝野倚重。然陕西旱魃为虐，饥民载道，户部以帑藏不足为辞，迁延未发。',houren:'史称秦中之乱，实始于此岁之旱而赈之不时。庙堂因循，遂酿流寇之祸。',personnel:[{name:'孙承宗',change:'起复'}],edicts:[{k:'政',t:'起孙承宗筹画辽东军务'}],delta:[{k:'民心',v:'-7',dir:'dn'},{k:'人望',v:'+3',dir:'up'}],sources:['御案推演·sc1','地块事变·陕西'],basis:'时政记·本回',evidence:'',refs:['bn3'],annotation:'着户部速议蠲赈，毋使流离为乱。'},
+{id:'qj_zhao',cat:'qiju',turn:3,date:'三月十二',category:'诏令',type:'边务',authority:'faith',star:false,persons:['袁崇焕'],factions:['明朝廷'],regions:['辽东'],title:'密诏袁崇焕便宜行边',era:'天启七年',edicts:[{k:'军',t:'着辽东巡抚袁崇焕相机料理关宁防务，若京师有警，许便宜入援，毋拘成法。'}],body:'',sources:['鸿雁·密旨'],refs:['sj3','js1'],annotation:''},
+{id:'qj_zou',cat:'qiju',turn:3,date:'三月十一',category:'奏疏',type:'财赋',authority:'faith',star:true,persons:['毕自严'],factions:['明朝廷'],regions:['京师'],title:'户部尚书毕自严请清屯裁冗疏',era:'天启七年',memo:{from:'户部尚书 毕自严',text:'太仓岁入不足支边，乞清核屯田、裁汰冗费，以纾军国之需。',reply:'着详议以闻，毋得空言。'},body:'',sources:['通政司·奏疏'],refs:['sj3','js1','bn2'],annotation:''},
+{id:'qj_xing',cat:'qiju',turn:3,date:'三月十一',category:'行止',type:'礼制',authority:'faith',star:false,persons:[],factions:['明朝廷'],regions:['京师'],title:'上御文华殿召对',era:'天启七年',body:'上御文华殿，召户部尚书毕自严入对，问辽饷出入之数，移时乃罢。退朝后，亲拟密旨一道。',sources:['起居郎记注'],refs:['qj_zou'],annotation:''},
+{id:'qj_xun',cat:'qiju',turn:3,date:'三月初九',category:'叙事',type:'灾异',authority:'doubt',star:false,persons:[],factions:['明朝廷'],regions:['陕西'],title:'览陕西塘报',era:'天启七年',body:'上览陕西塘报，言饥民聚众，恐生变。或言已成流寇数千，或言不过乌合，所报互异，未可遽信。',sources:['塘报·陕西'],refs:['sj2','bn3'],annotation:''},
+{id:'js1',cat:'jishi',turn:3,date:'三月十一',source:'yuqian',type:'财赋',authority:'faith',star:true,persons:['毕自严'],factions:['明朝廷'],regions:['京师'],era:'天启七年',char:'毕自严',topic:'辽饷出入与清屯之策',playerSaid:'辽饷岁耗几何？太仓尚可支几时？卿有何良策？',npcSaid:'臣核之，辽饷岁需五百余万，而太仓岁入不足四百万，缺口日大。臣愚以为，当清核屯田之隐占、裁汰各镇之冗员，开源节流并举，庶可稍纾。',outcome:'上颔之，命毕自严详议清屯六事以闻；然部议未协。',mood:'恳切',sources:['御前问对'],refs:['sj3','qj_zou','bn2'],annotation:''},
+{id:'js2',cat:'jishi',turn:3,date:'三月初八',source:'tingyi',type:'党争',authority:'doubt',star:false,persons:['文震孟','魏忠贤'],factions:['明朝廷'],regions:['京师'],era:'天启七年',char:'文震孟 等',topic:'阉党余孽当否究治',playerSaid:'魏珰既诛，余党当如何处分？卿等所论，可有实状？',npcSaid:'臣等以为余孽未尽，宜亟究治，以清朝纲。然所列名姓，亦多风闻，未敢遽断。',outcome:'廷议纷纭，未有定议。上命都察院核实再奏。',mood:'激切',sources:['廷议'],refs:['bn3'],annotation:''},
+{id:'bn1',cat:'biannian',sub:'affair',title:'辽东防务重整',category:'军务',authority:'faith',star:false,actor:'孙承宗·袁崇焕',persons:['袁崇焕','孙承宗'],factions:['明朝廷'],regions:['辽东'],era:'天启七年',startTurn:1,nowTurn:3,endTurn:8,status:'going',body:'自起孙承宗、用袁崇焕以来，关宁防线渐次重整。预计经数回合修城、练兵、积粮，方成犄角之势。',sources:['纪事·平辽方略'],refs:['sj3'],nodes:[{t:1,l:'起孙承宗'},{t:3,l:'畀袁崇焕'},{t:5,l:'修宁锦'},{t:8,l:'成防线'}],annotation:''},
+{id:'bn2',cat:'biannian',sub:'affair',title:'辽饷财政改革',category:'财赋',authority:'doubt',star:false,actor:'毕自严',persons:['毕自严'],factions:['明朝廷'],regions:['京师'],era:'天启七年',startTurn:2,nowTurn:3,endTurn:7,status:'going',body:'清核屯田、裁汰冗费、整顿盐法，以纾太仓之困。改革方兴，部议未协，阻力犹在。',sources:['纪事·清屯之策'],refs:['js1','qj_zou'],nodes:[{t:2,l:'议清核'},{t:3,l:'召自严'},{t:5,l:'行屯政'},{t:7,l:'见成效'}],annotation:''},
+{id:'bn3',cat:'biannian',sub:'affair',title:'肃清阉党',category:'党争',authority:'faith',star:false,actor:'都察院',persons:['魏忠贤','文震孟'],factions:['明朝廷'],regions:['京师'],era:'天启七年',startTurn:1,nowTurn:3,endTurn:4,status:'going',body:'魏忠贤虽除，党羽盘根。逐次罢黜、追论、定逆案，以清朝纲。',sources:['史记·阉党余孽'],refs:['js2','sj2'],nodes:[{t:1,l:'诛魏阉'},{t:3,l:'论余党'},{t:4,l:'定逆案'}],annotation:''},
+{id:'bn_annal',cat:'biannian',sub:'annal',year:'天启七年',era:'天启七年',title:'天启七年·编年',authority:'faith',star:false,persons:[],factions:['明朝廷'],regions:[],annal:'天启七年，春。上既诛魏忠贤，朝政稍清。二月，起孙承宗筹辽，陕西大旱，民始流离。三月，畀袁崇焕以便宜，定守关宁之策；召毕自严议辽饷，清屯之论起。是岁也，边圉粗安而内忧渐萌，财用日诎，流民将动，治乱之机，已伏于此矣。',afterword:'史臣曰：天启七年者，明室中兴之一机也。惜乎饷匮于内、虏炽于外，虽有忠贤之臣，势不能挽。',sources:['编年·月度汇辑'],refs:['sj2','sj3'],annotation:''}
+];
+function byId(id){return ARCHIVE.find(function(x){return x.id===id;});}
+function catRows(k){return ARCHIVE.filter(function(x){return x.cat===k;});}
+
+var state={view:'overview',cat:'shiji',gsearch:'',facet:{},sort:'era',sel:null,person:null,realm:null,stars:{}};
+ARCHIVE.forEach(function(x){if(x.star)state.stars[x.id]=true;});
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(m){var t=document.getElementById('toast');t.innerHTML=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},1900);}
+function titleOf(x){return x.szjTitle||x.title||(x.char?(x.char+' · '+x.topic):'')||'';}
+function aggr(rows,field){var m={};rows.forEach(function(x){var v=x[field];if(Array.isArray(v))v.forEach(function(o){if(o)m[o]=(m[o]||0)+1;});else if(v)m[v]=(m[v]||0)+1;});return m;}
+
+function renderChips(){document.getElementById('hdChips').innerHTML='<span class="chip green">馆藏 '+ARCHIVE.length+' 卷</span><span class="chip hot">信史 '+ARCHIVE.filter(function(x){return x.authority==='faith';}).length+'</span>';}
+
+/* 左·导航 */
+function facetDims(){
+  if(state.cat==='shiji')return[['type','事类','type'],['authority','权威','authority']];
+  if(state.cat==='qiju')return[['category','政类','category']];
+  if(state.cat==='jishi')return[['source','来源','source'],['person','人物','persons']];
+  if(state.cat==='biannian')return[['category','事类','category']];
+  return[];
+}
+function renderNav(){
+  var html='<div class="nav-sect">检索视图</div>';
+  VIEWS.forEach(function(v){
+    var n=v[0]==='library'?ARCHIVE.length:(v[0]==='persons'?aggrPersons().length:(v[0]==='realms'?(aggrRealms().length):''));
+    html+='<button class="gv '+(state.view===v[0]?'active':'')+'" data-view="'+v[0]+'"><span class="gv-g">'+esc(v[2])+'</span><b>'+esc(v[1])+'</b>'+(n!==''?'<span class="gv-n">'+n+'</span>':'')+'</button>';
+  });
+  if(state.view==='library'){
+    html+='<div class="nav-div"></div><div class="nav-sect">四库分卷</div>';
+    CATS.forEach(function(c){html+='<button class="libcat '+(state.cat===c.key?'active':'')+'" data-cat="'+c.key+'" style="--cc:'+c.c+'"><span class="libcat-g" style="--cc:'+c.c+'">'+esc(c.g)+'</span><span class="libcat-m"><b>'+esc(c.label)+'</b></span><span class="libcat-n">'+catRows(c.key).length+'</span></button>';});
+    facetDims().forEach(function(d){
+      var rows=catRows(state.cat),m=aggr(rows,d[2]);
+      var opts=Object.keys(m).sort(function(a,b){return m[b]-m[a];});
+      if(d[0]==='authority')opts=['faith','doubt','rumor'].filter(function(a){return m[a];});
+      if(!opts.length)return;
+      html+='<div class="facet"><div class="facet-t">'+esc(d[1])+'(可多选)</div><div class="facet-opts">'+opts.map(function(o){
+        var lbl=d[0]==='authority'?AUTH[o].label:(d[0]==='source'?srcDef(o).l:o);
+        var on=(state.facet[d[0]]||[]).indexOf(o)>=0;
+        return '<button class="fopt '+(on?'active':'')+'" data-facet="'+d[0]+'" data-val="'+esc(o)+'">'+esc(lbl)+'<span class="fn">'+m[o]+'</span></button>';
+      }).join('')+'</div></div>';
+    });
+  }
+  document.getElementById('navScroll').innerHTML=html;
+  var faith=ARCHIVE.filter(function(x){return x.authority==='faith';}).length;
+  document.getElementById('navStat').innerHTML='<div class="ss-row"><span>馆藏总卷</span><b>'+ARCHIVE.length+'</b></div><div class="ss-row"><span>信史占比</span><b>'+Math.round(faith/ARCHIVE.length*100)+'%</b></div><div class="ss-row"><span>星标</span><b>'+Object.keys(state.stars).filter(function(k){return state.stars[k];}).length+'</b></div>';
+  bindNav();
+}
+
+/* 中·主区分发 */
+function renderMain(){
+  var t=document.getElementById('mainTitle'),s=document.getElementById('sortBar'),a=document.getElementById('catActive'),el=document.getElementById('mainScroll');
+  s.innerHTML='';a.innerHTML='';
+  if(state.gsearch.trim()){renderSearch(t,a,el);return;}
+  if(state.view==='overview'){t.innerHTML='馆藏概览<small>史册库总目 · 一览四库</small>';el.innerHTML=overviewHtml();bindMain();return;}
+  if(state.view==='timeline'){t.innerHTML='时间轴总览<small>编年贯通 · 大事如绘</small>';el.innerHTML=timelineHtml();bindMain();return;}
+  if(state.view==='persons'){renderPersons(t,el);return;}
+  if(state.view==='realms'){renderRealms(t,el);return;}
+  // library
+  t.innerHTML=catDef(state.cat).label+'<small>'+libHint(state.cat)+'</small>';
+  s.innerHTML=[['era','年序'],['ref','引征']].map(function(o){return '<button class="sortb '+(state.sort===o[0]?'active':'')+'" data-sort="'+o[0]+'">'+esc(o[1])+'</button>';}).join('');
+  var chips=[];Object.keys(state.facet).forEach(function(k){(state.facet[k]||[]).forEach(function(v){var lbl=k==='authority'?AUTH[v].label:(k==='source'?srcDef(v).l:v);chips.push('<button class="afilter" data-clear="'+k+'|'+esc(v)+'">'+esc(lbl)+'</button>');});});
+  a.innerHTML=chips.join('');
+  var rows=libRows();
+  if(!rows.length){el.innerHTML='<div class="empty"><b>未检得此类档案</b><p>调整检索维度或关键词。</p></div>';bindMain();return;}
+  if(state.cat==='biannian'){var aff=rows.filter(function(x){return x.sub==='affair';}),ann=rows.filter(function(x){return x.sub==='annal';});var h='';if(aff.length)h+='<div class="cat-group-t">进行中事势</div>'+aff.map(entryHtml).join('');if(ann.length)h+='<div class="cat-group-t">年度正史</div>'+ann.map(entryHtml).join('');el.innerHTML=h;}
+  else el.innerHTML=rows.map(entryHtml).join('');
+  a.insertAdjacentHTML('beforeend','<span class="cat-count">共 '+rows.length+' 卷</span>');
+  bindMain();
+}
+function libHint(k){return ({shiji:'每回合正史全景 · 四层文体',qiju:'逐日政务日志 · 八类',jishi:'议政对话 · 多来源',biannian:'长期事势 + 年度正史'})[k]||'';}
+function libRows(){
+  var rows=catRows(state.cat);
+  Object.keys(state.facet).forEach(function(k){var vs=state.facet[k]||[];if(!vs.length)return;rows=rows.filter(function(x){if(k==='person')return vs.some(function(v){return (x.persons||[]).indexOf(v)>=0;});return vs.indexOf(x[k])>=0;});});
+  rows=rows.slice();
+  if(state.sort==='era')rows.sort(function(a,b){return (b.turn||b.nowTurn||0)-(a.turn||a.nowTurn||0);});
+  else if(state.sort==='ref')rows.sort(function(a,b){return (b.refs||[]).length-(a.refs||[]).length;});
+  return rows;
+}
+function entryHtml(x,showCat){
+  var act=state.sel===x.id?'active':'';
+  var catTag=showCat?'<span class="etag" style="background:'+catDef(x.cat).c+'">'+catDef(x.cat).label+'</span>':'';
+  if(x.cat==='shiji'){var delta=(x.delta||[]).slice(0,3).map(function(d){return '<span class="dchip '+d.dir+'">'+esc(d.k)+' '+esc(d.v)+'</span>';}).join('');
+    return '<button class="entry '+act+'" data-id="'+x.id+'"><span class="e-badge turn" style="background:linear-gradient(155deg,var(--gold-hi),var(--gold-d))"><b>'+x.turn+'</b><span>回</span></span><span class="e-main"><span class="e-title">'+(state.stars[x.id]?'<span class="et-star">★</span>':'')+esc(x.szjTitle)+'</span><span class="e-meta">'+catTag+'<span class="etag" style="background:'+typeColor(x.type)+'">'+esc(x.type)+'</span><span>'+esc(x.era)+'·'+esc(x.date)+'</span></span><span class="e-excerpt">'+esc(x.turnSummary)+'</span><span class="e-delta">'+delta+'</span></span></button>';}
+  if(x.cat==='qiju'){var col=QJ_CAT[x.category]||'#a8833a';var ex=x.body||(x.edicts&&x.edicts[0]&&x.edicts[0].t)||(x.memo&&x.memo.text)||'';
+    return '<button class="entry '+act+'" data-id="'+x.id+'"><span class="e-badge" style="background:linear-gradient(155deg,'+col+',color-mix(in srgb,'+col+' 62%,#000))">'+esc(x.category)+'</span><span class="e-main"><span class="e-title">'+esc(x.title)+'</span><span class="e-meta">'+catTag+'<span>'+esc(x.date)+'</span></span><span class="e-excerpt">'+esc(ex)+'</span></span></button>';}
+  if(x.cat==='jishi'){var sd=srcDef(x.source);
+    return '<button class="entry '+act+'" data-id="'+x.id+'"><span class="e-badge" style="background:linear-gradient(155deg,var(--indigo),#33456a)">'+esc(sd.g)+'</span><span class="e-main"><span class="e-title">'+(state.stars[x.id]?'<span class="et-star">★</span>':'')+esc(x.char)+' · '+esc(x.topic)+'</span><span class="e-meta">'+catTag+'<span class="etag" style="background:var(--indigo)">'+esc(sd.l)+'</span><span>'+esc(x.date)+'</span></span><span class="e-excerpt">问：'+esc((x.playerSaid||'').slice(0,20))+'…</span></span></button>';}
+  if(x.sub==='annal')return '<button class="entry '+act+'" data-id="'+x.id+'"><span class="e-badge" style="background:linear-gradient(155deg,var(--gold-hi),var(--gold-d))">年史</span><span class="e-main"><span class="e-title">'+esc(x.title)+'</span><span class="e-meta">'+catTag+'<span>年度编年正史</span></span><span class="e-excerpt">'+esc(x.annal||'')+'</span></span></button>';
+  var span=(x.endTurn-x.startTurn)||1,pct=Math.max(4,Math.min(100,Math.round((x.nowTurn-x.startTurn)/span*100)));
+  return '<button class="entry '+act+'" data-id="'+x.id+'"><span class="e-badge" style="background:linear-gradient(155deg,'+typeColor(x.category)+',color-mix(in srgb,'+typeColor(x.category)+' 62%,#000))">'+esc(x.category)+'</span><span class="e-main"><span class="e-title">'+esc(x.title)+'</span><span class="e-meta">'+catTag+'<span>'+esc(x.actor||'')+'</span><span class="dot">·</span><span>进行中 '+pct+'%</span></span><span class="e-excerpt">'+esc(x.body||'')+'</span></span></button>';
+}
+
+/* 馆藏概览 */
+function overviewHtml(){
+  var libs=CATS.map(function(c){return '<div class="ov-lib" data-golib="'+c.key+'"><b>'+catRows(c.key).length+'</b><span>'+esc(c.label)+'</span></div>';}).join('');
+  var eras=aggr(ARCHIVE,'era');var maxE=Math.max.apply(null,Object.keys(eras).map(function(k){return eras[k];}));
+  var eraBars=Object.keys(eras).map(function(e){return '<div class="era-row"><span class="er-lbl">'+esc(e)+'</span><span class="er-track"><span class="er-fill" style="width:'+Math.round(eras[e]/maxE*100)+'%"></span></span><span class="er-n">'+eras[e]+' 卷</span></div>';}).join('');
+  var fa=ARCHIVE.filter(function(x){return x.authority==='faith';}).length,du=ARCHIVE.filter(function(x){return x.authority==='doubt';}).length,ru=ARCHIVE.filter(function(x){return x.authority==='rumor';}).length;
+  var faPct=Math.round(fa/ARCHIVE.length*100);
+  var ring='<div class="ring" style="background:conic-gradient(var(--cinnabar) 0 '+faPct+'%,var(--seal-doubt) '+faPct+'% '+(faPct+Math.round(du/ARCHIVE.length*100))+'%,var(--seal-rumor) 0)"><b>'+faPct+'%</b></div>';
+  var pm=aggr(ARCHIVE,'persons');var hot=Object.keys(pm).filter(function(p){return p;}).sort(function(a,b){return pm[b]-pm[a];}).slice(0,8);
+  var hotp=hot.map(function(p){return '<button class="hotp" data-goperson="'+esc(p)+'">'+esc(p)+'<b>'+pm[p]+'</b></button>';}).join('');
+  return '<div class="ov-grid">'+
+    '<div class="ov-card wide"><h4>四库藏卷</h4><div class="ov-libs">'+libs+'</div></div>'+
+    '<div class="ov-card"><h4>纪年分布</h4><div class="era-bars">'+eraBars+'</div></div>'+
+    '<div class="ov-card"><h4>史料权威</h4><div class="auth-ring">'+ring+'<div class="auth-leg"><div class="al"><i style="background:var(--cinnabar)"></i>信史<span class="n">'+fa+' 卷</span></div><div class="al"><i style="background:var(--seal-doubt)"></i>存疑<span class="n">'+du+' 卷</span></div><div class="al"><i style="background:var(--seal-rumor)"></i>风闻<span class="n">'+ru+' 卷</span></div></div></div></div>'+
+    '<div class="ov-card wide"><h4>热点人物</h4><div class="hot-persons">'+hotp+'</div></div></div>';
+}
+
+/* 时间轴总览 */
+function timelineHtml(){
+  var rows=ARCHIVE.filter(function(x){return x.sub!=='annal';}).slice().sort(function(a,b){return (a.turn||a.nowTurn||a.startTurn||0)-(b.turn||b.nowTurn||b.startTurn||0);});
+  var byEra={};rows.forEach(function(x){(byEra[x.era]||(byEra[x.era]=[])).push(x);});
+  return Object.keys(byEra).map(function(era){
+    return '<div class="tl-era"><div class="tl-era-h">'+esc(era)+'</div><div class="tl-item">'+byEra[era].map(function(x){
+      var c=x.cat==='biannian'?typeColor(x.category):typeColor(x.type);
+      return '<button class="tl-item-in '+(state.sel===x.id?'active':'')+'" data-id="'+x.id+'"><span class="tl-date">'+esc(x.date||('第'+(x.startTurn||x.turn)+'回'))+'</span><span class="tl-dot2" style="border-color:'+c+'"></span><span class="tl-tx"><b>'+esc(titleOf(x))+'</b><span class="tt-meta"><span class="etag" style="background:'+catDef(x.cat).c+'">'+catDef(x.cat).label+'</span> '+esc((AUTH[x.authority]||{}).label||'')+'</span></span></button>';
+    }).join('')+'</div></div>';
+  }).join('');
+}
+
+/* 人物列传 / 势力地域 */
+function aggrPersons(){var m=aggr(ARCHIVE,'persons');return Object.keys(m).filter(function(p){return p;}).sort(function(a,b){return m[b]-m[a];}).map(function(p){return {name:p,n:m[p]};});}
+function aggrRealms(){var f=aggr(ARCHIVE,'factions'),r=aggr(ARCHIVE,'regions');var out=[];Object.keys(f).forEach(function(k){out.push({name:k,n:f[k],kind:'fac'});});Object.keys(r).forEach(function(k){out.push({name:k,n:r[k],kind:'reg'});});return out.sort(function(a,b){return b.n-a.n;});}
+function recsOfPerson(p){return ARCHIVE.filter(function(x){return (x.persons||[]).indexOf(p)>=0;});}
+function recsOfRealm(name,kind){var f=kind==='fac'?'factions':'regions';return ARCHIVE.filter(function(x){return (x[f]||[]).indexOf(name)>=0;});}
+function renderPersons(t,el){
+  if(state.person){
+    t.innerHTML='人物列传<small>'+esc(state.person)+' · 四库史档汇览</small>';
+    var recs=recsOfPerson(state.person);var byCat={};recs.forEach(function(x){(byCat[x.cat]||(byCat[x.cat]=[])).push(x);});
+    var h='<button class="tbtn" data-personback="1" style="margin-bottom:11px">‹ 返列传名录</button>';
+    CATS.forEach(function(c){if(!byCat[c.key])return;h+='<div class="cat-group-t">'+c.label+' · '+byCat[c.key].length+' 卷</div>'+byCat[c.key].map(entryHtml).join('');});
+    el.innerHTML=h;bindMain();return;
+  }
+  t.innerHTML='人物列传<small>点其名 · 汇出此人在四库的全部史档</small>';
+  el.innerHTML='<div class="who-list">'+aggrPersons().map(function(p){return '<button class="who-card" data-person="'+esc(p.name)+'"><span class="who-face">'+esc(p.name.slice(-2,-1)||p.name.slice(0,1))+'</span><span class="who-m"><b>'+esc(p.name)+'</b><span>四库史档</span></span><span class="who-n">'+p.n+' 卷</span></button>';}).join('')+'</div>';
+  bindMain();
+}
+function renderRealms(t,el){
+  if(state.realm){
+    var rk=state.realm.split('|');t.innerHTML='势力地域<small>'+esc(rk[1])+' · 史料汇聚</small>';
+    var recs=recsOfRealm(rk[1],rk[0]);var byCat={};recs.forEach(function(x){(byCat[x.cat]||(byCat[x.cat]=[])).push(x);});
+    var h='<button class="tbtn" data-realmback="1" style="margin-bottom:11px">‹ 返势力地域</button>';
+    CATS.forEach(function(c){if(!byCat[c.key])return;h+='<div class="cat-group-t">'+c.label+' · '+byCat[c.key].length+' 卷</div>'+byCat[c.key].map(entryHtml).join('');});
+    el.innerHTML=h;bindMain();return;
+  }
+  t.innerHTML='势力地域<small>按势力 / 疆域聚合史料</small>';
+  el.innerHTML='<div class="who-list">'+aggrRealms().map(function(r){return '<button class="who-card '+r.kind+'" data-realm="'+r.kind+'|'+esc(r.name)+'"><span class="who-face">'+esc(r.name.slice(0,1))+'</span><span class="who-m"><b>'+esc(r.name)+'</b><span>'+(r.kind==='fac'?'势力':'疆域')+'</span></span><span class="who-n">'+r.n+' 卷</span></button>';}).join('')+'</div>';
+  bindMain();
+}
+
+/* 跨库全局检索 */
+function renderSearch(t,a,el){
+  var q=state.gsearch.trim().toLowerCase();
+  var rows=ARCHIVE.filter(function(x){return JSON.stringify(x).toLowerCase().indexOf(q)>=0;});
+  t.innerHTML='跨库检索<small>“'+esc(state.gsearch)+'” · 遍检四库</small>';
+  a.innerHTML='<span class="cat-count">命中 '+rows.length+' 卷</span>';
+  if(!rows.length){el.innerHTML='<div class="empty"><b>四库无所获</b><p>另换检索词试试。</p></div>';bindMain();return;}
+  var byCat={};rows.forEach(function(x){(byCat[x.cat]||(byCat[x.cat]=[])).push(x);});
+  var h='';CATS.forEach(function(c){if(!byCat[c.key])return;h+='<div class="cat-group-t">'+c.label+' · '+byCat[c.key].length+' 卷</div>'+byCat[c.key].map(function(x){return entryHtml(x,true);}).join('');});
+  el.innerHTML=h;bindMain();
+}
+
+/* 右·详情(四类各异) */
+function commonTail(x){
+  var html='';
+  if(x.annotation)html+='<div class="fo-annot"><p>'+esc(x.annotation)+'</p></div>';
+  var rr='';if(x.sources&&x.sources.length)rr+='<div><span class="rn-lbl">来源</span>'+esc(x.sources.join('、'))+'</div>';if(x.basis)rr+='<div><span class="rn-lbl">依据</span>'+esc(x.basis)+'</div>';if(x.evidence)rr+='<div><span class="rn-lbl">佐证</span>'+esc(x.evidence)+'</div>';
+  if(rr)html+='<div class="fo-sect"><div class="fo-sect-t">引征</div><div class="refnote">'+rr+'</div></div>';
+  var seen=(x.refs||[]).map(byId).filter(Boolean);
+  if(seen.length)html+='<div class="fo-sect"><div class="fo-sect-t">互见 · 相关卷宗</div>'+seen.map(function(r){return '<button class="xref" data-go="'+r.id+'"><span class="xr-kind" style="background:'+catDef(r.cat).c+'">'+esc(catDef(r.cat).g)+'</span><span class="xr-t">'+esc(titleOf(r))+'</span><span class="xr-go">详阅 ›</span></button>';}).join('')+'</div>';
+  var assoc='';(x.persons||[]).forEach(function(p){assoc+='<button class="atag" data-goperson="'+esc(p)+'">▣ '+esc(p)+'</button>';});(x.factions||[]).forEach(function(f){assoc+='<button class="atag fac" data-gorealm="fac|'+esc(f)+'">'+esc(f)+'</button>';});(x.regions||[]).forEach(function(r){assoc+='<button class="atag reg" data-gorealm="reg|'+esc(r)+'">'+esc(r)+'</button>';});
+  if(assoc)html+='<div class="fo-sect"><div class="fo-sect-t">关联(可跳检)</div><div class="assoc">'+assoc+'</div></div>';
+  html+='<div class="fo-acts"><button class="fact red" data-fact="annot">'+(x.annotation?'改御批':'御批')+'</button><button class="fact" data-fact="excerpt">摘录</button><button class="fact" data-fact="export">导出</button></div>';
+  return html;
+}
+function renderFolio(){
+  var el=document.getElementById('folio');
+  if(!state.sel){el.innerHTML='<div class="folio-empty"><span class="fe-seal">阅</span><b>择卷详阅</b><p>检索或择一卷宗，<br>此处展其全文、引征与关联。</p></div>';return;}
+  var x=byId(state.sel);if(!x){state.sel=null;return renderFolio();}
+  var head='<div class="fo-head"><span class="fo-seal '+x.authority+'">'+esc((AUTH[x.authority]||{}).g)+'</span><div class="fo-htext"><div class="fo-title">'+esc(titleOf(x))+'</div><div class="fo-sub">';
+  var html='';
+  if(x.cat==='shiji'){
+    head+='<span class="ftag" style="background:'+typeColor(x.type)+'">'+esc(x.type)+'</span><span>史记·第 '+x.turn+' 回</span><span>·</span><span>'+esc(x.era)+'·'+esc(x.date)+'</span></div></div><button class="fo-star'+(state.stars[x.id]?' on':'')+'" data-fact="star">'+(state.stars[x.id]?'★':'☆')+'</button></div>';
+    html=head+'<div class="tiwen shilu"><div class="tiwen-lbl">实 录<small>正史体</small></div><div class="tiwen-body">'+esc(x.shilu)+'</div></div>'+'<div class="tiwen szj"><div class="tiwen-lbl">时政记<small>'+esc(x.szjTitle)+'</small></div><div class="tiwen-body">'+esc(x.shizhengji)+'</div></div>'+'<div class="tiwen zhengwen"><div class="tiwen-lbl">政 文<small>推演纪实</small></div><div class="tiwen-body">'+esc(x.zhengwen)+'</div></div>'+'<div class="tiwen houren"><div class="tiwen-lbl">后人戏说<small>稗野·参考</small></div><div class="tiwen-body">'+esc(x.houren)+'</div></div>';
+    if(x.personnel&&x.personnel.length)html+='<div class="fo-sect"><div class="fo-sect-t">人事变动</div><div class="personnel">'+x.personnel.map(function(p){return '<div class="prow"><span class="pn">'+esc(p.name)+'</span><span class="pc">'+esc(p.change)+'</span></div>';}).join('')+'</div></div>';
+    if(x.edicts&&x.edicts.length)html+='<div class="fo-sect"><div class="fo-sect-t">本回诏令</div>'+x.edicts.map(function(e){return '<div class="edict-line"><b>'+esc(e.k)+'</b>'+esc(e.t)+'</div>';}).join('')+'</div>';
+    if(x.delta&&x.delta.length)html+='<div class="fo-sect"><div class="fo-sect-t">国势变化</div><div class="delta-grid">'+x.delta.map(function(d){return '<span class="dbig '+d.dir+'">'+esc(d.k)+' '+esc(d.v)+'</span>';}).join('')+'</div></div>';
+    html+=commonTail(x);
+  } else if(x.cat==='qiju'){
+    var col=QJ_CAT[x.category]||'#a8833a';
+    head+='<span class="ftag" style="background:'+col+'">'+esc(x.category)+'</span><span>起居注·'+esc(x.date)+'</span></div></div><button class="fo-star'+(state.stars[x.id]?' on':'')+'" data-fact="star">'+(state.stars[x.id]?'★':'☆')+'</button></div>';
+    html=head;if(x.edicts&&x.edicts.length)html+='<div class="fo-sect"><div class="fo-sect-t">诏令</div>'+x.edicts.map(function(e){return '<div class="edict-line"><b>'+esc(e.k)+'</b>'+esc(e.t)+'</div>';}).join('')+'</div>';
+    if(x.memo)html+='<div class="qj-memo"><div class="qm-from">具奏：<b>'+esc(x.memo.from)+'</b></div><div style="font-family:var(--font-doc);font-size:13px;line-height:1.8">'+esc(x.memo.text)+'</div><div class="qm-reply">批：'+esc(x.memo.reply)+'</div></div>';
+    if(x.body)html+='<div class="qjblock">'+esc(x.body)+'</div>';
+    html+=commonTail(x);
+  } else if(x.cat==='jishi'){
+    var sd=srcDef(x.source);
+    head+='<span class="ftag" style="background:var(--indigo)">'+esc(sd.l)+'</span><span>纪事·'+esc(x.date)+'</span></div></div><button class="fo-star'+(state.stars[x.id]?' on':'')+'" data-fact="star">'+(state.stars[x.id]?'★':'☆')+'</button></div>';
+    html=head+'<div class="fo-sect"><div class="fo-sect-t">议题</div><div style="font-size:14px;color:var(--ink);font-weight:bold">'+esc(x.topic)+'</div></div><div class="fo-sect"><div class="fo-sect-t">问对</div><div class="dialog"><div class="dline q"><div class="dl-who">朕</div><div class="dl-text">'+esc(x.playerSaid)+'</div></div><div class="dline a"><div class="dl-who">'+esc(x.char)+'</div><div class="dl-text">'+esc(x.npcSaid)+'</div></div></div>';
+    if(x.outcome)html+='<div class="dl-ruling"><b>结论</b>'+esc(x.outcome)+'</div>';if(x.mood)html+='<div class="dialog-mood">语气 · <b>'+esc(x.mood)+'</b></div>';html+='</div>';
+    html+=commonTail(x);
+  } else {
+    if(x.sub==='annal'){head+='<span class="ftag" style="background:var(--gold-d)">年度正史</span><span>'+esc(x.year)+'</span></div></div><button class="fo-star'+(state.stars[x.id]?' on':'')+'" data-fact="star">'+(state.stars[x.id]?'★':'☆')+'</button></div>';
+      html=head+'<div class="annal">'+esc(x.annal)+'</div>'+(x.afterword?'<div class="afterword"><p>'+esc(x.afterword)+'</p></div>':'')+commonTail(x);
+    } else {var span=(x.endTurn-x.startTurn)||1,pct=Math.max(4,Math.min(100,Math.round((x.nowTurn-x.startTurn)/span*100)));
+      head+='<span class="ftag" style="background:'+typeColor(x.category)+'">'+esc(x.category)+'</span><span>编年·长期事势</span></div></div><button class="fo-star'+(state.stars[x.id]?' on':'')+'" data-fact="star">'+(state.stars[x.id]?'★':'☆')+'</button></div>';
+      var nodes=x.nodes.map(function(n){var px=Math.max(0,Math.min(100,Math.round((n.t-x.startTurn)/span*100)));var cls=n.t<x.nowTurn?'reached':(n.t===x.nowTurn?'now':'');return '<span class="tl2-node '+cls+'" style="left:'+px+'%"><span class="tn-dot"></span><span class="tn-lbl">'+esc(n.l)+'</span></span>';}).join('');
+      html=head+'<div class="qjblock">'+esc(x.body)+'</div><div class="fo-sect"><div class="fo-sect-t">事势进程</div><div class="timeline2"><span class="tl2-done" style="width:'+pct+'%"></span>'+nodes+'</div><div style="font-size:11px;color:var(--ink-faint);margin-top:20px;text-align:right">第 '+x.startTurn+' 回起 · 已历 <b style="color:var(--gold-d)">'+(x.nowTurn-x.startTurn)+'</b> 回 · '+pct+'%</div></div>'+commonTail(x);
+    }
+  }
+  el.innerHTML=html;bindFolio();
+}
+
+/* 交互 */
+function gotoView(v){state.view=v;state.sel=null;state.person=null;state.realm=null;state.gsearch='';document.getElementById('gsearch').value='';renderNav();renderMain();renderFolio();}
+function gotoPerson(p){state.view='persons';state.person=p;state.sel=null;state.gsearch='';document.getElementById('gsearch').value='';renderNav();renderMain();renderFolio();toast('人物列传 · <b>'+esc(p)+'</b>');}
+function gotoRealm(rk){state.view='realms';state.realm=rk;state.sel=null;state.gsearch='';document.getElementById('gsearch').value='';renderNav();renderMain();renderFolio();}
+function openRec(id){state.sel=id;renderMain();renderFolio();}
+function bindNav(){
+  document.querySelectorAll('[data-view]').forEach(function(b){b.onclick=function(){gotoView(this.getAttribute('data-view'));};});
+  document.querySelectorAll('[data-cat]').forEach(function(b){b.onclick=function(){state.cat=this.getAttribute('data-cat');state.facet={};state.sel=null;renderNav();renderMain();renderFolio();};});
+  document.querySelectorAll('[data-facet]').forEach(function(b){b.onclick=function(){var f=this.getAttribute('data-facet'),v=this.getAttribute('data-val');state.facet[f]=state.facet[f]||[];var i=state.facet[f].indexOf(v);if(i>=0)state.facet[f].splice(i,1);else state.facet[f].push(v);renderNav();renderMain();};});
+}
+function bindMain(){
+  document.querySelectorAll('.entry[data-id],.tl-item-in[data-id]').forEach(function(b){b.onclick=function(){openRec(this.getAttribute('data-id'));};});
+  document.querySelectorAll('[data-clear]').forEach(function(b){b.onclick=function(){var kv=this.getAttribute('data-clear').split('|');var arr=state.facet[kv[0]]||[];var i=arr.indexOf(kv[1]);if(i>=0)arr.splice(i,1);renderNav();renderMain();};});
+  document.querySelectorAll('[data-sort]').forEach(function(b){b.onclick=function(){state.sort=this.getAttribute('data-sort');renderMain();};});
+  document.querySelectorAll('[data-golib]').forEach(function(b){b.onclick=function(){state.view='library';state.cat=this.getAttribute('data-golib');state.facet={};renderNav();renderMain();renderFolio();};});
+  document.querySelectorAll('[data-goperson]').forEach(function(b){b.onclick=function(){gotoPerson(this.getAttribute('data-goperson'));};});
+  document.querySelectorAll('[data-person]').forEach(function(b){b.onclick=function(){gotoPerson(this.getAttribute('data-person'));};});
+  document.querySelectorAll('[data-realm]').forEach(function(b){b.onclick=function(){gotoRealm(this.getAttribute('data-realm'));};});
+  document.querySelectorAll('[data-personback]').forEach(function(b){b.onclick=function(){state.person=null;renderMain();};});
+  document.querySelectorAll('[data-realmback]').forEach(function(b){b.onclick=function(){state.realm=null;renderMain();};});
+}
+function bindFolio(){
+  document.querySelectorAll('.xref[data-go]').forEach(function(b){b.onclick=function(){var r=byId(this.getAttribute('data-go'));if(r){state.view='library';state.cat=r.cat;state.facet={};state.gsearch='';document.getElementById('gsearch').value='';state.sel=r.id;renderNav();renderMain();renderFolio();toast('已跳至 · <b>'+esc(titleOf(r))+'</b>');}};});
+  document.querySelectorAll('[data-goperson]').forEach(function(b){b.onclick=function(){gotoPerson(this.getAttribute('data-goperson'));};});
+  document.querySelectorAll('[data-gorealm]').forEach(function(b){b.onclick=function(){gotoRealm(this.getAttribute('data-gorealm'));};});
+  document.querySelectorAll('[data-fact]').forEach(function(b){b.onclick=function(){doFact(this.getAttribute('data-fact'));};});
+}
+function doFact(act){var x=byId(state.sel);if(!x)return;
+  if(act==='star'){state.stars[x.id]=!state.stars[x.id];renderNav();renderMain();renderFolio();return;}
+  if(act==='annot'){var v=prompt('御批（朱笔垂训）：',x.annotation||'');if(v!=null){x.annotation=v.trim();toast(x.annotation?'御批已朱书入卷':'御批已撤');renderFolio();}return;}
+  if(act==='excerpt'){toast('已摘录 · <b>'+esc(titleOf(x))+'</b>');return;}
+  if(act==='export'){toast('已导出 · <b>'+esc(titleOf(x))+'</b>');return;}
+}
+function bindTools(){
+  document.getElementById('gsearch').oninput=function(){state.gsearch=this.value;state.sel=null;renderMain();renderFolio();};
+  document.getElementById('exportBtn').onclick=function(){var scope=state.gsearch.trim()?('检索“'+state.gsearch+'”'):(state.view==='library'?catDef(state.cat).label:VIEWS.filter(function(v){return v[0]===state.view;})[0][1]);toast('已导出 · <b>'+esc(scope)+'</b> 全卷');};
+  document.querySelector('.shi-close').onclick=function(){toast('（预览）退回御案');};
+}
+function renderAll(){renderChips();renderNav();renderMain();renderFolio();}
+bindTools();renderAll();
+</script>
+</body>
+</html>

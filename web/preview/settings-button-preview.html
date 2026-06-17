@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>悬浮设置按钮 · 宝相团花 定稿</title>
+<style>
+:root{
+  --ink-500:#3a3530;--ink-600:#2a2520;--ink-700:#1c1914;--ink-800:#12100e;--ink-900:#0a0908;
+  --gold-300:#d4be7a;--gold-400:#b89a53;--gold-500:#8a6d2b;
+  --vermillion-400:#c04030;--vermillion-300:#d4706a;
+  --bg-1:var(--ink-800);--bg-2:var(--ink-700);--bg-3:var(--ink-600);
+  --gold:var(--gold-400);--gold-l:var(--gold-300);--gold-d:var(--gold-500);
+  --txt:#e7dcc4;--txt-s:#a99d86;--txt-d:#6f6354;--bdr:#2a2520;
+  --shadow-lg:0 8px 24px rgba(10,9,8,0.45);--shadow-md:0 4px 12px rgba(10,9,8,0.35);
+  --ease:cubic-bezier(0.0,0,0.2,1);--ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:radial-gradient(1200px 600px at 50% -10%,#1a1510,transparent 60%),linear-gradient(160deg,#0c0a07,#0a0908);
+  color:var(--txt);font-family:'Noto Serif SC','Songti SC','STSong','SimSun',serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+.pv-wrap{max-width:1120px;margin:0 auto;padding:28px 22px 80px;}
+.pv-head{text-align:center;}
+.pv-kicker{font-size:.74rem;letter-spacing:.42em;color:var(--gold-d);}
+.pv-h1{font-size:1.62rem;font-weight:700;color:var(--gold-l);letter-spacing:.16em;margin:.32rem 0 .2rem;}
+.pv-sub{font-size:.82rem;color:var(--txt-d);letter-spacing:.06em;}
+.pv-sec-title{display:flex;align-items:center;gap:.7rem;margin:36px 0 16px;color:var(--gold);font-size:.92rem;letter-spacing:.2em;}
+.pv-sec-title::before,.pv-sec-title::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--gold-d),transparent);}
+
+.stage{position:relative;border-radius:14px;overflow:hidden;height:430px;border:1px solid #241e16;
+  background:radial-gradient(900px 420px at 50% 120%,#16120c,transparent 60%),linear-gradient(180deg,#100d09,#0b0907);
+  box-shadow:inset 0 0 60px rgba(0,0,0,.6),var(--shadow-lg);}
+.stage-topbar{position:absolute;top:0;left:0;right:0;height:46px;display:flex;align-items:center;gap:14px;padding:0 16px;
+  background:linear-gradient(180deg,#171109,rgba(15,12,8,.4));border-bottom:1px solid #2a2014;}
+.stage-seal{width:24px;height:24px;border-radius:6px;border:1px solid var(--gold-d);background:radial-gradient(circle at 40% 35%,#3a2c14,#1a1308);flex-shrink:0;}
+.stage-pill{height:18px;border-radius:9px;background:linear-gradient(90deg,#241b10,#1a140c);border:1px solid #2e2415;opacity:.8;}
+.stage-spacer{flex:1;}
+.stage-desk{position:absolute;inset:46px 0 0 0;display:flex;}
+.stage-rail{width:54px;border-right:1px solid #1f1810;display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:16px;}
+.stage-rail i{width:26px;height:26px;border-radius:7px;border:1px solid #2a2014;background:linear-gradient(135deg,#191309,#120d07);opacity:.7;}
+.stage-main{flex:1;padding:22px;display:flex;flex-direction:column;gap:12px;}
+.stage-tag{font-size:.7rem;letter-spacing:.34em;color:#3f3527;}
+.stage-doc{height:14px;border-radius:4px;background:linear-gradient(90deg,#1c1610,#15100a);opacity:.55;}
+.stage-doc.w1{width:62%;}.stage-doc.w2{width:84%;}.stage-doc.w3{width:48%;}.stage-doc.w4{width:73%;}
+
+.gui-btn{position:absolute;top:56px;right:16px;z-index:30;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+  background:radial-gradient(circle at 36% 30%,#2c2417,#16110b 74%);border:1px solid var(--gold-d);
+  box-shadow:0 4px 14px rgba(0,0,0,.55),inset 0 1px 0 rgba(212,190,122,.10);
+  transition:transform .26s var(--ease-spring),box-shadow .3s var(--ease),border-color .3s var(--ease);-webkit-tap-highlight-color:transparent;}
+.gui-btn::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(184,154,83,.18);pointer-events:none;transition:.3s var(--ease);}
+.gui-btn svg{width:32px;height:32px;display:block;transition:transform .6s var(--ease);}
+.gui-btn:hover{transform:scale(1.06);border-color:var(--gold-l);box-shadow:0 6px 20px rgba(0,0,0,.6),0 0 18px rgba(184,154,83,.32),inset 0 1px 0 rgba(212,190,122,.18);}
+.gui-btn:hover::after{border-color:rgba(212,190,122,.45);inset:-5px;}
+.gui-btn:hover svg{transform:rotate(45deg);}
+.gui-btn:active{transform:scale(.96);}
+.gui-btn.is-open{border-color:var(--gold-l);box-shadow:0 0 0 3px rgba(184,154,83,.16),0 0 22px rgba(184,154,83,.4);}
+.gui-btn.is-open::after{border-color:rgba(212,190,122,.55);}
+
+.pause-bg{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.pause-bg.show{display:flex;}
+.pause-menu{background:var(--bg-1);border:1px solid var(--gold-d);border-radius:16px;padding:2rem;width:300px;display:flex;flex-direction:column;gap:.7rem;align-items:center;box-shadow:var(--shadow-lg);animation:modal-in .3s var(--ease);}
+@keyframes modal-in{from{opacity:0;transform:translateY(12px) scale(.96);}to{opacity:1;transform:none;}}
+.pause-title{font-size:1.3rem;font-weight:700;color:var(--gold);margin-bottom:.5rem;letter-spacing:.15em;}
+.pause-btn{width:100%;padding:.8rem;border:1px solid var(--bdr);background:linear-gradient(135deg,var(--bg-2),var(--bg-1));color:var(--txt);border-radius:10px;cursor:pointer;font-family:inherit;font-size:.95rem;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:all .25s var(--ease);}
+.pause-btn:hover{border-color:var(--gold-d);background:linear-gradient(135deg,var(--bg-3),var(--bg-2));transform:translateY(-1px);box-shadow:var(--shadow-md);}
+.pause-btn .tm-icon{display:inline-flex;align-items:center;color:var(--gold-l);}
+
+.row{display:flex;gap:16px;flex-wrap:wrap;}
+.card{background:linear-gradient(180deg,#13100b,#0f0c08);border:1px solid #211a12;border-radius:14px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:16px;flex:1;min-width:240px;}
+.card .cap{font-size:.76rem;color:var(--txt-d);letter-spacing:.14em;text-align:center;}
+.med-lg{width:172px;height:172px;border-radius:50%;display:grid;place-items:center;position:relative;
+  background:radial-gradient(circle at 36% 30%,#2c2417,#16110b 74%);border:2px solid var(--gold-d);box-shadow:0 8px 26px rgba(0,0,0,.55),inset 0 2px 0 rgba(212,190,122,.12);}
+.med-lg::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1.5px solid rgba(184,154,83,.3);}
+.med-lg svg{width:120px;height:120px;}
+.sizes{display:flex;align-items:flex-end;gap:18px;}
+.sizes figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.sizes .lab{font-size:.6rem;color:#5a4f3e;}
+.btn-row{display:flex;gap:26px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.btn-demo{display:flex;flex-direction:column;align-items:center;gap:9px;}
+.btn-demo .lab{font-size:.66rem;color:#5a4f3e;letter-spacing:.1em;}
+.sb{position:relative;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 36% 30%,#2c2417,#16110b 74%);border:1px solid var(--gold-d);box-shadow:0 4px 14px rgba(0,0,0,.55),inset 0 1px 0 rgba(212,190,122,.10);}
+.sb svg{width:32px;height:32px;}
+.sb::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(184,154,83,.18);}
+.sb.hover{transform:scale(1.06);border-color:var(--gold-l);box-shadow:0 6px 20px rgba(0,0,0,.6),0 0 18px rgba(184,154,83,.32);}
+.sb.hover::after{border-color:rgba(212,190,122,.45);inset:-5px;}
+.sb.hover svg{transform:rotate(45deg);}
+.sb.open{border-color:var(--gold-l);box-shadow:0 0 0 3px rgba(184,154,83,.16),0 0 22px rgba(184,154,83,.4);}
+.sb.open::after{border-color:rgba(212,190,122,.55);}
+
+.note{margin-top:30px;font-size:.78rem;line-height:1.9;color:var(--txt-s);background:linear-gradient(180deg,#120f0a,#0e0b07);border:1px solid #211a12;border-left:2px solid var(--gold-d);border-radius:10px;padding:16px 20px;}
+.note b{color:var(--gold-l);}
+.note code{background:#1c1610;border:1px solid #2a2014;border-radius:4px;padding:1px 6px;color:var(--gold-l);font-family:ui-monospace,Consolas,monospace;font-size:.72rem;}
+.hint{position:absolute;top:60px;right:78px;z-index:25;font-size:.7rem;color:var(--gold-d);letter-spacing:.1em;animation:hint-pulse 2.4s var(--ease) infinite;pointer-events:none;}
+@keyframes hint-pulse{0%,100%{opacity:.35;}50%{opacity:.9;}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="guiBronze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ecd9a0"/><stop offset="0.32" stop-color="#cdae64"/>
+      <stop offset="0.64" stop-color="#8f7230"/><stop offset="1" stop-color="#574119"/></linearGradient>
+    <linearGradient id="guiBronzeHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbf1cf"/><stop offset="1" stop-color="#d9bd7c"/></linearGradient>
+  </defs>
+  <defs id="symHost"></defs>
+</svg>
+
+<div class="pv-wrap">
+  <div class="pv-head">
+    <div class="pv-kicker">天 命 · 御 案</div>
+    <div class="pv-h1">宝 相 团 花 · 悬 浮 设 置</div>
+    <div class="pv-sub">正式界面右上悬浮按钮 — 点击唤出暂停菜单（等同 ESC）· 为平板/安卓无 ESC 键而设</div>
+  </div>
+
+  <div class="pv-sec-title">界 面 实 景</div>
+  <div class="stage" id="stage">
+    <div class="stage-topbar">
+      <div class="stage-seal"></div>
+      <div class="stage-pill" style="width:78px"></div><div class="stage-pill" style="width:64px"></div>
+      <div class="stage-pill" style="width:70px"></div><div class="stage-spacer"></div>
+      <div class="stage-pill" style="width:54px"></div>
+    </div>
+    <div class="stage-desk">
+      <div class="stage-rail"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="stage-main">
+        <div class="stage-tag">奉 天 承 运</div>
+        <div class="stage-doc w2"></div><div class="stage-doc w1"></div><div class="stage-doc w4"></div>
+        <div class="stage-doc w3"></div><div class="stage-doc w2"></div><div class="stage-doc w1"></div>
+      </div>
+    </div>
+    <div class="hint" id="hint">点 此 唤 出 ▸</div>
+    <button class="gui-btn" id="guiBtn" aria-label="设置 · 暂停" title="设置 · 暂停（Esc）"><svg><use href="#ico-rosette"/></svg></button>
+    <div class="pause-bg" id="pauseBg">
+      <div class="pause-menu" role="dialog" aria-label="暂停菜单">
+        <div class="pause-title">〔 天 命 〕</div>
+        <button class="pause-btn" data-act="close">继 续</button>
+        <button class="pause-btn" data-act="x"><span class="tm-icon">__SAVE__</span>案卷管理</button>
+        <button class="pause-btn" data-act="x"><span class="tm-icon">__SET__</span>设 置</button>
+        <button class="pause-btn" data-act="x"><span class="tm-icon">__HISTORY__</span>史 记</button>
+        <button class="pause-btn" data-act="x">禅让退位</button>
+        <button class="pause-btn" data-act="x" style="color:var(--vermillion-400)">归去来兮</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pv-sec-title">铜 章 版（按钮用）· 线 描 版（接 TM_ICONS）</div>
+  <div class="row">
+    <div class="card">
+      <div class="cap">铜 章 版 · 古铜渐变 + 花脉高光 + 青绿锈</div>
+      <div class="med-lg"><svg><use href="#ico-rosette"/></svg></div>
+      <div class="sizes">
+        <figure><svg width="44" height="44"><use href="#ico-rosette"/></svg><div class="lab">44</div></figure>
+        <figure><svg width="32" height="32"><use href="#ico-rosette"/></svg><div class="lab">32</div></figure>
+        <figure><svg width="22" height="22"><use href="#ico-rosette"/></svg><div class="lab">22</div></figure>
+        <figure><svg width="16" height="16"><use href="#ico-rosette"/></svg><div class="lab">16</div></figure>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cap">线 描 版 · currentColor 单色 · 随主题/语境变色</div>
+      <div class="med-lg" style="color:var(--gold-l)"><svg width="110" height="110"><use href="#ico-rosette-line"/></svg></div>
+      <div class="sizes">
+        <figure style="color:var(--gold-l)"><svg width="44" height="44"><use href="#ico-rosette-line"/></svg><div class="lab">44</div></figure>
+        <figure style="color:var(--gold-l)"><svg width="24" height="24"><use href="#ico-rosette-line"/></svg><div class="lab">24</div></figure>
+        <figure style="color:var(--vermillion-300)"><svg width="18" height="18"><use href="#ico-rosette-line"/></svg><div class="lab">朱18</div></figure>
+        <figure style="color:#cfc3aa"><svg width="16" height="16"><use href="#ico-rosette-line"/></svg><div class="lab">素16</div></figure>
+      </div>
+    </div>
+  </div>
+
+  <div class="pv-sec-title">悬 浮 按 钮 · 三 态</div>
+  <div class="card" style="min-width:auto">
+    <div class="btn-row">
+      <div class="btn-demo"><div class="sb"><svg><use href="#ico-rosette"/></svg></div><div class="lab">常 态</div></div>
+      <div class="btn-demo"><div class="sb hover"><svg><use href="#ico-rosette"/></svg></div><div class="lab">悬 停（团花转 45°·金圈外扩）</div></div>
+      <div class="btn-demo"><div class="sb open"><svg><use href="#ico-rosette"/></svg></div><div class="lab">激 活（菜单开启·满圈鎏金）</div></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>定稿 · 宝相团花</b> —— 八大瓣抱八小瓣、中心嵌珠，唐风器物纹样。铜章版为<b>纯矢量</b>古铜渐变（16px 仍清晰），线描版 <code>currentColor</code> 单色、随主题/朱素变色，可登记进 <code>TM_ICONS.tuanhua</code>。<br>
+    点击悬浮按钮 = 按 <code>Esc</code>，唤出 <code>openPause()</code> 暂停菜单（〔天命〕· 继续 / 案卷管理 / 设置 / 史记 / 禅让退位 / 归去来兮），与运行时<b>一字不差</b>。设置行图标也已换成团花线描版预览。<br>
+    <b>落位</b>：实景置于顶栏右下、避开资源栏；正式接入时按真实顶栏微调（候选：右上角栏下 / 右下角拇指可及）。本页仅<b>预览</b>，确认后再接进 <code>index.html</code>。
+  </div>
+</div>
+
+<script>
+var NS='http://www.w3.org/2000/svg';
+function E(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+function sym(id,vb){var s=E('symbol',{id:id,viewBox:vb||'0 0 64 64'});document.getElementById('symHost').appendChild(s);return s;}
+
+/* ───── 铜章版团花 ───── */
+(function(){
+  var s=sym('ico-rosette');
+  var big='M32 5 C25 13.5 25 22 32 28.5 C39 22 39 13.5 32 5 Z';
+  var sml='M32 13 C28.7 17.5 28.7 22.5 32 26.5 C35.3 22.5 35.3 17.5 32 13 Z';
+  var gs=E('g',{}), gb=E('g',{});
+  for(var i=0;i<8;i++){
+    gs.appendChild(E('path',{d:sml,fill:'url(#guiBronze)',opacity:0.6,transform:'rotate('+(i*45+22.5)+' 32 32)'}));
+  }
+  for(var j=0;j<8;j++){
+    gb.appendChild(E('path',{d:big,fill:'url(#guiBronze)',stroke:'#3a2c12','stroke-width':0.7,opacity:(j%2?0.84:0.98),transform:'rotate('+(j*45)+' 32 32)'}));
+    gb.appendChild(E('path',{d:'M32 9 L32 25',fill:'none',stroke:'url(#guiBronzeHi)','stroke-width':0.9,opacity:0.5,'stroke-linecap':'round',transform:'rotate('+(j*45)+' 32 32)'}));
+  }
+  s.appendChild(gs); s.appendChild(gb);
+  s.appendChild(E('circle',{cx:32,cy:32,r:6.2,fill:'#19120a',stroke:'url(#guiBronze)','stroke-width':2.7}));
+  s.appendChild(E('circle',{cx:32,cy:32,r:3.4,fill:'none',stroke:'url(#guiBronze)','stroke-width':1,opacity:0.55}));
+  s.appendChild(E('circle',{cx:30.6,cy:30.6,r:1.9,fill:'url(#guiBronzeHi)'}));
+  s.appendChild(E('circle',{cx:32,cy:32,r:28,fill:'none',stroke:'url(#guiBronze)','stroke-width':1,opacity:0.38}));
+})();
+
+/* ───── 线描版团花（currentColor / 0 0 24 24） ───── */
+(function(){
+  var s=sym('ico-rosette-line','0 0 24 24');
+  var g=E('g',{fill:'none',stroke:'currentColor','stroke-width':1.4,'stroke-linejoin':'round','stroke-linecap':'round'});
+  var petal='M12 2.4 C10 5.4 10 8.2 12 10.6 C14 8.2 14 5.4 12 2.4 Z';
+  for(var i=0;i<8;i++){
+    g.appendChild(E('path',{d:petal,transform:'rotate('+(i*45)+' 12 12)'}));
+  }
+  s.appendChild(g);
+  s.appendChild(E('circle',{cx:12,cy:12,r:2.3,fill:'none',stroke:'currentColor','stroke-width':1.4}));
+  s.appendChild(E('circle',{cx:12,cy:12,r:0.9,fill:'currentColor'}));
+})();
+
+/* ───── 交互 ───── */
+(function(){
+  var SAVE='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 4l2-2h12l2 2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="16" x2="12" y2="16"/></svg>';
+  var HIST='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v4h4"/><path d="M3 12h2"/><path d="M3 8h2"/><path d="M3 16h2"/><line x1="8" y1="9" x2="14" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>';
+  var SET='<svg width="16" height="16" viewBox="0 0 24 24"><use href="#ico-rosette-line"/></svg>';
+  var bg=document.getElementById('pauseBg');
+  bg.innerHTML=bg.innerHTML.replace('__SAVE__',SAVE).replace('__HISTORY__',HIST).replace('__SET__',SET);
+  var btn=document.getElementById('guiBtn'), hint=document.getElementById('hint');
+  function open(){bg.classList.add('show');btn.classList.add('is-open');if(hint)hint.style.display='none';}
+  function close(){bg.classList.remove('show');btn.classList.remove('is-open');}
+  btn.addEventListener('click',function(){bg.classList.contains('show')?close():open();});
+  bg.addEventListener('click',function(e){if(e.target===bg){close();return;}var a=e.target.closest&&e.target.closest('[data-act]');if(a)close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+</script>
+</body>
+</html>

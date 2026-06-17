@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>整体游戏界面·深化美化预览 v7</title>
+<style>
+:root {
+  --bg-1: #0f0d0a; --bg-2: #1a1510; --bg-paper: #241e18; --bg-sunken: #120f0a;
+  --ink-900: #f4eadd; --ink-700: #d9c9a9; --ink-500: #a69470; --ink-300: #6b5d47; --ink-100: #3d342a;
+  --gold-300: #c9a85f; --gold-400: #b89a53; --gold-500: #9d8244; --gold-d: #6b5a30;
+  --vermillion-300: #d15c47; --vermillion-400: #b84738; --vermillion-600: #8f3428;
+  --indigo-400: #5a6fa8; --indigo-600: #3e4e80;
+  --celadon-400: #6a9a7f; --celadon-600: #4a7a5f;
+  --amber-400: #c9a045; --amber-600: #8f6f28;
+  --purple-400: #8e6aa8; --purple-600: #5f3a7a;
+  --blue-400: #5a8fb8;
+  --border-subtle: rgba(184,154,83,0.15); --border-strong: rgba(184,154,83,0.35);
+  --font-serif: "STKaiti","KaiTi","楷体","Georgia",serif;
+  --font-song: "STSong","SimSun","宋体",serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;padding:0;background:radial-gradient(ellipse at top,#1a1510 0%,#0f0d0a 70%),var(--bg-1);color:var(--ink-700);font-family:var(--font-song);font-size:14px;line-height:1.6;min-height:100vh;}
+.preview-frame{max-width:1760px;margin:24px auto;background:var(--bg-2);border:1px solid var(--border-subtle);border-radius:6px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.55);position:relative;}
+.preview-frame::before,.preview-frame::after{content:"\2756";position:absolute;font-size:14px;color:var(--gold-d);opacity:0.35;z-index:1;pointer-events:none;}
+.preview-frame::before{top:6px;left:10px;}.preview-frame::after{bottom:6px;right:10px;}
+
+/* ═══ 顶栏 ═══ */
+.gs-topbar{height:62px;background:linear-gradient(180deg,var(--bg-paper) 0%,rgba(18,16,14,0.98) 100%),repeating-linear-gradient(90deg,transparent 0,transparent 3em,rgba(107,93,71,0.04) 3em,rgba(107,93,71,0.04) calc(3em + 1px));border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;padding:0 16px;gap:12px;position:relative;box-shadow:0 2px 12px rgba(10,9,8,0.4);z-index:50;}
+.gs-topbar::after{content:"";position:absolute;bottom:0;left:3%;right:3%;height:1px;background:linear-gradient(to right,transparent 0,var(--gold-500) 20%,var(--gold-300) 50%,var(--gold-500) 80%,transparent 100%);}
+.gs-logo{display:flex;align-items:center;gap:10px;padding-right:12px;border-right:1px solid var(--border-subtle);flex-shrink:0;}
+.gs-seal{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.92),rgba(140,40,30,0.82));color:#f4eadd;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:10.5px;font-weight:bold;line-height:1;transform:rotate(-5deg);box-shadow:0 2px 6px rgba(140,40,30,0.5),inset 0 1px 0 rgba(255,255,255,0.1);text-align:center;position:relative;}
+.gs-seal::before{content:"";position:absolute;inset:2px;border:1px solid rgba(244,234,221,0.2);border-radius:50%;}
+.gs-wentian{font-family:var(--font-serif);font-size:18px;font-weight:bold;background:linear-gradient(135deg,var(--gold-500),var(--gold-300),var(--gold-500));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:0.25em;cursor:pointer;padding:2px 6px;}
+.gs-era{display:flex;flex-direction:column;padding:0 12px;border-right:1px solid var(--border-subtle);flex-shrink:0;}
+.gs-era .dynasty{font-family:var(--font-serif);font-size:13px;color:var(--gold-300);letter-spacing:0.2em;}
+.gs-era .date{font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);letter-spacing:0.12em;font-style:italic;margin-top:1px;}
+.gs-era .turn{font-family:var(--font-serif);font-size:9.5px;color:var(--ink-300);letter-spacing:0.15em;margin-top:1px;}
+.gs-weather{display:flex;align-items:center;gap:6px;padding:0 10px;border-right:1px solid var(--border-subtle);flex-shrink:0;}
+.gs-weather-seal{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,rgba(201,160,69,0.2),rgba(26,20,16,0.6));border:1px solid var(--amber-400);display:flex;align-items:center;justify-content:center;color:var(--amber-400);font-family:var(--font-serif);font-size:14px;}
+.gs-weather-info{display:flex;flex-direction:column;}
+.gs-weather-name{font-family:var(--font-serif);font-size:11px;color:var(--amber-400);letter-spacing:0.15em;}
+.gs-weather-desc{font-family:var(--font-serif);font-size:9.5px;color:var(--ink-300);letter-spacing:0.08em;font-style:italic;}
+.gs-vars{display:flex;gap:3px;align-items:center;flex:1;flex-wrap:wrap;min-width:0;}
+.gs-var{display:flex;flex-direction:column;align-items:center;padding:4px 10px 3px;border-radius:3px;cursor:pointer;min-width:68px;border:1px solid transparent;transition:all 0.15s;position:relative;background:rgba(184,154,83,0.02);}
+.gs-var:hover{border-color:var(--gold-d);background:rgba(184,154,83,0.08);}
+.gs-var .name{font-family:var(--font-serif);font-size:9.5px;color:var(--ink-300);letter-spacing:0.12em;line-height:1;margin-bottom:3px;}
+.gs-var .val{font-family:var(--font-serif);font-size:15px;font-weight:700;line-height:1;color:var(--v-c,var(--gold-400));display:flex;align-items:baseline;gap:2px;}
+.gs-var .val .trend{font-size:9px;font-weight:400;opacity:0.8;}
+.gs-var .val .trend.up{color:var(--celadon-400);}
+.gs-var .val .trend.down{color:var(--vermillion-400);}
+.gs-var.v-guoku{--v-c:var(--gold-400);}
+.gs-var.v-neitang{--v-c:var(--gold-300);}
+.gs-var.v-hukou{--v-c:var(--celadon-400);}
+.gs-var.v-lizhi{--v-c:var(--ink-500);}
+.gs-var.v-minxin{--v-c:var(--celadon-400);}
+.gs-var.v-huangquan{--v-c:var(--gold-400);}
+.gs-var.v-huangwei{--v-c:var(--amber-400);}
+.gs-var.alert{border-color:var(--vermillion-400);background:rgba(192,64,48,0.1);animation:var-pulse 2.5s infinite;}
+@keyframes var-pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,64,48,0.3);}50%{box-shadow:0 0 0 4px rgba(192,64,48,0);}}
+.gs-var.alert::after{content:"\26A0";position:absolute;top:-2px;right:-2px;font-size:10px;color:var(--vermillion-400);}
+.gs-var.wide{min-width:106px;padding:3px 9px;align-items:stretch;}
+.gs-var.wide .name{text-align:center;}
+.gs-var-sub{display:flex;flex-direction:column;gap:1px;width:100%;margin-top:1px;}
+.gs-var-sub-item{display:flex;align-items:baseline;justify-content:space-between;gap:4px;font-family:var(--font-serif);font-size:10px;line-height:1.15;}
+.gs-var-sub-item .sk{color:var(--ink-300);letter-spacing:0.1em;font-size:9.5px;}
+.gs-var-sub-item .sv{color:var(--v-c,var(--gold-400));font-weight:600;font-variant-numeric:tabular-nums;}
+.gs-var-sub-item .sd{font-size:8.5px;font-weight:400;font-variant-numeric:tabular-nums;margin-left:2px;min-width:24px;text-align:right;}
+.gs-var-sub-item .sd.up{color:var(--celadon-400);}
+.gs-var-sub-item .sd.down{color:var(--vermillion-400);}
+.gs-var-sub-item .sd.flat{color:var(--ink-300);opacity:0.7;}
+.gs-topbar-right{display:flex;gap:6px;align-items:center;padding-left:10px;border-left:1px solid var(--border-subtle);flex-shrink:0;}
+.gs-icon-btn{width:32px;height:32px;background:transparent;border:1px solid var(--border-subtle);border-radius:3px;color:var(--ink-500);font-family:var(--font-serif);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;position:relative;}
+.gs-icon-btn:hover{color:var(--gold-400);border-color:var(--gold-d);background:rgba(184,154,83,0.08);}
+.gs-icon-btn.badge::after{content:attr(data-n);position:absolute;top:-4px;right:-4px;background:var(--vermillion-400);color:#f4eadd;font-size:9px;font-family:var(--font-serif);padding:1px 4px;border-radius:6px;min-width:14px;line-height:1;text-align:center;font-weight:bold;}
+.gs-icon-btn.ai-live{color:var(--celadon-400);border-color:var(--celadon-400);animation:ai-pulse 2s infinite;}
+@keyframes ai-pulse{0%,100%{box-shadow:0 0 0 0 rgba(106,154,127,0.4);}50%{box-shadow:0 0 0 3px rgba(106,154,127,0);}}
+.gs-save-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(106,154,127,0.06);border:1px solid var(--celadon-400);border-radius:14px;font-family:var(--font-serif);font-size:10.5px;color:var(--celadon-400);letter-spacing:0.1em;}
+.gs-save-chip::before{content:"";width:6px;height:6px;background:var(--celadon-400);border-radius:50%;box-shadow:0 0 4px var(--celadon-400);}
+
+/* ═══ 主体：中栏固定 + 两侧 rail + drawer overlay ═══ */
+.gs-body{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;min-height:1180px;position:relative;}
+
+.gs-rail-left,.gs-rail-right{background:var(--bg-2);position:relative;overflow:hidden;display:flex;flex-direction:column;z-index:20;}
+.gs-rail-left{border-right:1px solid var(--border-subtle);}
+.gs-rail-right{border-left:1px solid var(--border-subtle);}
+
+/* rail 纵列按钮 */
+.gs-rail{display:flex;flex-direction:column;gap:4px;align-items:center;padding:12px 0 8px;overflow-y:auto;scrollbar-width:none;flex:1;}
+.gs-rail::-webkit-scrollbar{display:none;}
+.gs-rail-btn{width:30px;height:32px;background:rgba(184,154,83,0.04);border:1px solid var(--m-c,var(--gold-d));color:var(--m-c,var(--gold-400));border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:11.5px;transition:all 0.18s;position:relative;flex-shrink:0;}
+.gs-rail-btn:hover{background:rgba(184,154,83,0.18);transform:scale(1.08);box-shadow:0 0 6px var(--m-c,var(--gold-400));}
+.gs-rail-btn .dot{position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:var(--vermillion-400);border:1px solid var(--bg-2);animation:rail-pulse 1.5s infinite;}
+@keyframes rail-pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,64,48,0.6);}50%{box-shadow:0 0 0 3px rgba(192,64,48,0);}}
+.gs-rail-btn.c-fac{--m-c:var(--indigo-400);}
+.gs-rail-btn.c-party{--m-c:var(--purple-400);}
+.gs-rail-btn.c-class{--m-c:var(--celadon-400);}
+.gs-rail-btn.c-army{--m-c:var(--vermillion-400);}
+.gs-rail-btn.c-admin{--m-c:var(--indigo-400);}
+.gs-rail-btn.c-keju{--m-c:var(--celadon-400);}
+.gs-rail-btn.c-item{--m-c:var(--gold-300);}
+.gs-rail-btn.c-harem{--m-c:var(--vermillion-300);}
+.gs-rail-btn.c-map{--m-c:var(--celadon-400);}
+.gs-rail-btn.c-help{--m-c:var(--gold-300);}
+.gs-rail-btn.c-theme{--m-c:var(--purple-400);}
+.gs-rail-btn.c-audio{--m-c:var(--blue-400);}
+.gs-rail-btn.c-self{--m-c:var(--gold-300);}
+.gs-rail-btn.c-time{--m-c:var(--indigo-400);}
+.gs-rail-btn.c-issue{--m-c:var(--vermillion-400);}
+.gs-rail-btn.c-news{--m-c:var(--amber-400);}
+.gs-rail-btn.c-goal{--m-c:var(--purple-400);}
+.gs-rail-btn.c-rumor{--m-c:var(--purple-400);}
+.gs-rail-btn.c-fin{--m-c:var(--gold-400);}
+.gs-rail-btn.c-bian{--m-c:var(--vermillion-400);}
+.gs-rail-btn.c-school{--m-c:var(--celadon-400);}
+.gs-rail-btn.c-price{--m-c:var(--amber-400);}
+.gs-rail-btn.c-book{--m-c:var(--gold-300);}
+.gs-rail-btn.c-palace{--m-c:var(--vermillion-300);}
+.gs-rail-btn.c-jifa{--m-c:var(--gold-400);}
+.gs-rail-btn.c-censor{--m-c:var(--indigo-400);}
+.gs-rail-btn.c-agenda{--m-c:var(--celadon-400);}
+.gs-rail-btn.c-char{--m-c:var(--celadon-400);}
+.gs-rail-btn.c-rel{--m-c:var(--celadon-400);}
+.gs-rail-toggle{width:30px;height:28px;background:linear-gradient(to bottom,rgba(184,154,83,0.12),rgba(26,20,16,0.8));border:1px solid var(--gold-d);color:var(--gold-400);border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:12px;margin-top:4px;flex-shrink:0;}
+.gs-rail-toggle:hover{color:var(--gold-300);border-color:var(--gold-300);background:rgba(184,154,83,0.22);}
+
+/* drawer overlay */
+.gs-drawer{
+  position:absolute;top:0;bottom:0;
+  width:320px;background:var(--bg-2);
+  border-right:1px solid var(--border-strong);
+  z-index:30;
+  display:flex;flex-direction:column;
+  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:6px 0 24px rgba(0,0,0,0.5);
+}
+.gs-drawer.left{left:44px;transform:translateX(-110%);}
+.gs-drawer.right{right:44px;left:auto;border-right:none;border-left:1px solid var(--border-strong);box-shadow:-6px 0 24px rgba(0,0,0,0.5);transform:translateX(110%);width:340px;}
+.gs-drawer.open{transform:translateX(0);}
+.gs-drawer-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:linear-gradient(to bottom,var(--bg-paper),var(--bg-2));border-bottom:1px solid var(--border-subtle);flex-shrink:0;}
+.gs-drawer-title{font-family:var(--font-serif);font-size:13px;color:var(--gold-300);letter-spacing:0.25em;font-weight:500;}
+.gs-drawer-title::before{content:"\25C6\u00A0";font-size:9px;color:var(--gold-d);}
+.gs-drawer-close{background:transparent;border:1px solid var(--border-subtle);color:var(--ink-500);font-family:var(--font-serif);font-size:13px;width:22px;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.gs-drawer-close:hover{color:var(--vermillion-400);border-color:var(--vermillion-400);}
+
+.gs-drawer-body{flex:1;overflow-y:auto;padding:10px 10px 20px;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:var(--gold-d) rgba(26,20,16,0.5);}
+.gs-drawer-body::-webkit-scrollbar{width:8px;}
+.gs-drawer-body::-webkit-scrollbar-track{background:rgba(26,20,16,0.5);border-radius:4px;border-left:1px solid var(--border-subtle);}
+.gs-drawer-body::-webkit-scrollbar-thumb{background:linear-gradient(to bottom,var(--gold-d),rgba(107,93,71,0.6));border-radius:4px;border:1px solid var(--bg-2);}
+.gs-drawer-body::-webkit-scrollbar-thumb:hover{background:linear-gradient(to bottom,var(--gold-400),var(--gold-d));}
+
+/* 面板 */
+.gs-panel{background:var(--bg-paper);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.03) 2.5em,rgba(107,93,71,0.03) calc(2.5em + 1px));border:1px solid var(--border-subtle);border-left:3px solid var(--panel-c,var(--gold-d));border-radius:3px;padding:10px 12px;position:relative;}
+.gs-panel.p-fac{--panel-c:var(--indigo-400);}
+.gs-panel.p-party{--panel-c:var(--purple-400);}
+.gs-panel.p-class{--panel-c:var(--celadon-400);}
+.gs-panel.p-army{--panel-c:var(--vermillion-400);}
+.gs-panel.p-family{--panel-c:var(--amber-400);}
+.gs-panel.p-issue{--panel-c:var(--vermillion-400);}
+.gs-panel.p-map{--panel-c:var(--celadon-400);}
+.gs-panel.p-news{--panel-c:var(--amber-400);}
+.gs-panel.p-goal{--panel-c:var(--purple-400);}
+.gs-panel.p-task{--panel-c:var(--vermillion-400);}
+.gs-panel.p-quick{--panel-c:var(--gold-400);}
+.gs-panel.p-weather{--panel-c:var(--amber-400);}
+.gs-panel.p-keju{--panel-c:var(--celadon-400);}
+.gs-panel.p-tech{--panel-c:var(--indigo-400);}
+.gs-panel.p-item{--panel-c:var(--gold-300);}
+.gs-panel.p-harem{--panel-c:var(--vermillion-300);}
+.gs-panel.p-rumor{--panel-c:var(--purple-400);}
+.gs-panel.p-finance{--panel-c:var(--gold-400);}
+.gs-panel.p-time{--panel-c:var(--indigo-400);}
+.gs-panel.p-rel{--panel-c:var(--celadon-400);}
+.gs-panel.p-admin{--panel-c:var(--indigo-400);}
+.gs-panel.p-help{--panel-c:var(--gold-300);}
+.gs-panel.p-theme{--panel-c:var(--purple-400);}
+.gs-panel.p-audio{--panel-c:var(--blue-400);}
+.gs-panel.p-dyn{--panel-c:var(--gold-400);}
+.gs-panel.p-bian{--panel-c:var(--vermillion-400);}
+.gs-panel.p-school{--panel-c:var(--celadon-400);}
+.gs-panel.p-price{--panel-c:var(--amber-400);}
+.gs-panel.p-book{--panel-c:var(--gold-300);}
+.gs-panel.p-palace{--panel-c:var(--vermillion-300);}
+.gs-panel.p-jifa{--panel-c:var(--gold-400);}
+.gs-panel.p-censor{--panel-c:var(--indigo-400);}
+.gs-panel.p-agenda{--panel-c:var(--celadon-400);}
+
+.gs-panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:4px;border-bottom:1px dashed var(--border-subtle);}
+.gs-panel-title{font-family:var(--font-serif);font-size:12.5px;color:var(--panel-c,var(--gold-400));letter-spacing:0.2em;font-weight:500;}
+.gs-panel-title::before{content:"\25C6\u00A0";font-size:8px;opacity:0.7;}
+.gs-panel-cnt{font-family:var(--font-serif);font-size:10px;color:var(--ink-300);letter-spacing:0.08em;padding:1px 5px;background:rgba(184,154,83,0.06);border-radius:2px;font-style:italic;}
+.gs-panel-tools{display:flex;gap:4px;align-items:center;}
+.gs-panel-tool-btn{background:transparent;border:1px solid var(--border-subtle);color:var(--ink-300);font-family:var(--font-serif);font-size:9.5px;padding:0 5px;border-radius:2px;cursor:pointer;letter-spacing:0.08em;line-height:14px;}
+.gs-panel-tool-btn:hover{color:var(--gold-400);border-color:var(--gold-d);}
+
+/* 四时物候 */
+.gs-weather-panel{display:flex;align-items:center;gap:10px;}
+.gs-season-disc{width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(201,160,69,0.2),transparent 60%),conic-gradient(from 0deg,var(--celadon-400) 0 25%,var(--amber-400) 25% 50%,var(--vermillion-300) 50% 75%,var(--indigo-400) 75% 100%);border:2px solid var(--amber-400);position:relative;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.4);}
+.gs-season-disc::before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--bg-paper);}
+.gs-season-disc::after{content:"\79CB";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:18px;font-weight:bold;color:var(--amber-400);line-height:1;}
+.gs-season-info{flex:1;min-width:0;}
+.gs-season-row{display:flex;align-items:baseline;gap:4px;font-size:11.5px;color:var(--ink-500);font-family:var(--font-serif);letter-spacing:0.08em;padding:2px 0;}
+.gs-season-row .k{color:var(--ink-300);min-width:32px;font-size:10px;}
+.gs-season-row .v{color:var(--ink-700);}
+.gs-season-row .v.warn{color:var(--amber-400);}
+.gs-season-row .v.danger{color:var(--vermillion-400);}
+
+/* 势力 */
+.gs-fac-row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed rgba(107,93,71,0.12);font-size:12px;cursor:pointer;transition:all 0.15s;border-radius:2px;}
+.gs-fac-row:hover{background:rgba(184,154,83,0.06);padding-left:4px;}
+.gs-fac-row:last-child{border-bottom:none;}
+.gs-fac-color{width:3px;height:22px;background:var(--f-c,var(--gold-d));border-radius:1px;flex-shrink:0;}
+.gs-fac-row.f-ming{--f-c:var(--gold-400);}
+.gs-fac-row.f-houjin{--f-c:var(--vermillion-400);}
+.gs-fac-row.f-mongolia{--f-c:var(--amber-400);}
+.gs-fac-row.f-liao{--f-c:var(--indigo-400);}
+.gs-fac-row.f-nan{--f-c:var(--celadon-400);}
+.gs-fac-info{flex:1;min-width:0;}
+.gs-fac-name{font-family:var(--font-serif);color:var(--ink-700);letter-spacing:0.08em;font-size:12px;}
+.gs-fac-leader{font-size:9.5px;color:var(--ink-300);font-family:var(--font-serif);font-style:italic;letter-spacing:0.04em;}
+.gs-fac-att{font-size:9.5px;font-family:var(--font-serif);letter-spacing:0.1em;padding:0 5px;border-radius:2px;line-height:14px;}
+.gs-fac-att.friend{color:var(--celadon-400);background:rgba(106,154,127,0.08);border:1px solid var(--celadon-400);}
+.gs-fac-att.hostile{color:var(--vermillion-400);background:rgba(192,64,48,0.08);border:1px solid var(--vermillion-400);}
+.gs-fac-att.neutral{color:var(--ink-500);background:rgba(166,148,112,0.06);border:1px solid var(--ink-300);}
+.gs-fac-att.vassal{color:var(--indigo-400);background:rgba(90,111,168,0.08);border:1px solid var(--indigo-400);}
+.gs-fac-str{font-size:10px;color:var(--ink-300);font-family:var(--font-serif);min-width:28px;text-align:right;}
+.gs-party-row{display:flex;align-items:center;gap:5px;padding:4px 0;font-size:11.5px;}
+.gs-party-name{flex:1;color:var(--ink-700);font-family:var(--font-serif);letter-spacing:0.06em;}
+.gs-party-infl{display:inline-flex;align-items:center;gap:3px;}
+.gs-party-bar{width:42px;height:4px;background:rgba(107,93,71,0.25);border-radius:2px;overflow:hidden;}
+.gs-party-fill{height:100%;}
+.gs-party-val{font-size:10px;color:var(--ink-300);font-family:var(--font-serif);min-width:16px;text-align:right;}
+.gs-class-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11.5px;}
+.gs-class-icon{width:20px;height:20px;border-radius:2px;background:linear-gradient(135deg,var(--c-c,var(--gold-400)),var(--ink-100));color:#1a1410;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:10px;font-weight:bold;}
+.gs-class-name{flex:1;color:var(--ink-700);font-family:var(--font-serif);letter-spacing:0.05em;}
+.gs-class-pop{font-size:9.5px;color:var(--ink-300);font-family:var(--font-serif);}
+.gs-class-mood{font-size:9.5px;font-family:var(--font-serif);padding:0 5px;border-radius:2px;line-height:14px;}
+.gs-class-mood.stable{color:var(--celadon-400);background:rgba(106,154,127,0.06);}
+.gs-class-mood.unrest{color:var(--amber-400);background:rgba(201,160,69,0.08);}
+.gs-class-mood.angry{color:var(--vermillion-400);background:rgba(192,64,48,0.08);}
+
+.gs-army-row{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11.5px;border-bottom:1px dashed rgba(107,93,71,0.12);}
+.gs-army-row:last-child{border-bottom:none;}
+.gs-army-icon{font-family:var(--font-serif);font-size:12px;color:var(--vermillion-400);width:14px;text-align:center;}
+.gs-army-info{flex:1;min-width:0;}
+.gs-army-name{color:var(--ink-700);font-family:var(--font-serif);font-size:11.5px;}
+.gs-army-loc{font-size:9.5px;color:var(--ink-300);font-family:var(--font-serif);font-style:italic;}
+.gs-army-size{font-size:10px;color:var(--vermillion-400);font-family:var(--font-serif);font-weight:500;min-width:36px;text-align:right;}
+.gs-army-morale{width:30px;height:3px;background:rgba(107,93,71,0.25);border-radius:2px;overflow:hidden;margin-top:2px;}
+.gs-army-morale-fill{height:100%;background:var(--celadon-400);}
+
+.gs-admin-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;}
+.gs-admin-dot{width:6px;height:6px;border-radius:50%;background:var(--indigo-400);flex-shrink:0;}
+.gs-admin-row.crisis .gs-admin-dot{background:var(--vermillion-400);animation:admin-pulse 1.5s infinite;}
+.gs-admin-row.war .gs-admin-dot{background:var(--amber-400);}
+.gs-admin-row.stable .gs-admin-dot{background:var(--celadon-400);}
+@keyframes admin-pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,64,48,0.5);}50%{box-shadow:0 0 0 3px rgba(192,64,48,0);}}
+.gs-admin-name{flex:1;color:var(--ink-700);font-family:var(--font-serif);}
+.gs-admin-type{font-size:9px;color:var(--ink-300);font-family:var(--font-serif);padding:0 4px;background:rgba(107,93,71,0.1);border-radius:2px;line-height:13px;}
+.gs-admin-unrest{font-size:9.5px;color:var(--ink-500);font-family:var(--font-serif);min-width:20px;text-align:right;}
+.gs-admin-row.crisis .gs-admin-unrest{color:var(--vermillion-400);}
+
+/* 边患 - NEW */
+.gs-bian-row{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px dashed rgba(107,93,71,0.12);}
+.gs-bian-row:last-child{border-bottom:none;}
+.gs-bian-threat{width:26px;height:20px;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:10px;color:#f4eadd;border-radius:2px;font-weight:500;}
+.gs-bian-threat.hi{background:var(--vermillion-400);animation:bian-pulse 2s infinite;}
+.gs-bian-threat.mid{background:var(--amber-400);color:#1a1410;}
+.gs-bian-threat.lo{background:var(--celadon-400);color:#1a1410;}
+@keyframes bian-pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,64,48,0.5);}50%{box-shadow:0 0 0 3px rgba(192,64,48,0);}}
+.gs-bian-info{flex:1;min-width:0;}
+.gs-bian-name{font-family:var(--font-serif);color:var(--ink-700);letter-spacing:0.06em;font-size:11.5px;}
+.gs-bian-desc{font-size:9.5px;color:var(--ink-300);font-family:var(--font-serif);font-style:italic;}
+.gs-bian-force{font-size:9.5px;color:var(--vermillion-400);font-family:var(--font-serif);}
+
+/* 学派 - NEW */
+.gs-school-row{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11.5px;}
+.gs-school-icon{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--s-c,var(--celadon-400)),rgba(26,20,16,0.6));border:1px solid var(--s-c,var(--celadon-400));color:#f4eadd;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:9.5px;font-weight:500;flex-shrink:0;}
+.gs-school-name{flex:1;color:var(--ink-700);font-family:var(--font-serif);letter-spacing:0.06em;}
+.gs-school-level{font-size:9.5px;font-family:var(--font-serif);padding:0 5px;border:1px solid var(--s-c,var(--celadon-400));color:var(--s-c,var(--celadon-400));border-radius:2px;line-height:14px;}
+.gs-school-infl{font-size:9.5px;color:var(--ink-300);font-family:var(--font-serif);min-width:22px;text-align:right;}
+
+/* 物价 - NEW */
+.gs-price-row{display:flex;align-items:center;gap:4px;padding:3px 0;font-size:11px;}
+.gs-price-name{font-family:var(--font-serif);color:var(--ink-700);letter-spacing:0.06em;min-width:26px;font-size:11px;}
+.gs-price-val{font-family:var(--font-serif);font-size:11px;color:var(--ink-900);font-weight:500;}
+.gs-price-unit{font-size:9px;color:var(--ink-300);font-family:var(--font-serif);}
+.gs-price-trend{display:inline-flex;align-items:center;gap:2px;font-family:var(--font-serif);font-size:9.5px;padding:0 5px;border-radius:2px;line-height:14px;margin-left:auto;}
+.gs-price-trend.up{color:var(--vermillion-400);background:rgba(192,64,48,0.06);}
+.gs-price-trend.down{color:var(--celadon-400);background:rgba(106,154,127,0.06);}
+.gs-price-trend.stable{color:var(--ink-500);background:rgba(107,93,71,0.08);}
+.gs-price-spark{width:40px;height:16px;display:flex;align-items:flex-end;gap:1px;}
+.gs-price-spark span{flex:1;background:var(--sp-c,var(--amber-400));opacity:0.7;border-radius:1px;}
+
+/* 典藏 - NEW */
+.gs-book-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.gs-book-card{padding:6px 8px;background:rgba(201,168,95,0.04);border:1px solid var(--border-subtle);border-left:3px solid var(--b-c,var(--gold-d));border-radius:2px;text-align:center;}
+.gs-book-card.b-jing{--b-c:var(--gold-400);}
+.gs-book-card.b-shi{--b-c:var(--celadon-400);}
+.gs-book-card.b-zi{--b-c:var(--indigo-400);}
+.gs-book-card.b-ji{--b-c:var(--amber-400);}
+.gs-book-name{font-family:var(--font-serif);font-size:12px;color:var(--b-c,var(--gold-400));letter-spacing:0.1em;font-weight:500;}
+.gs-book-num{font-family:var(--font-serif);font-size:16px;color:var(--ink-700);margin:2px 0;}
+.gs-book-sub{font-family:var(--font-serif);font-size:9px;color:var(--ink-300);font-style:italic;letter-spacing:0.05em;}
+
+/* 宫殿布局 - NEW */
+.gs-palace-diag{position:relative;height:130px;background:linear-gradient(to bottom,rgba(140,40,30,0.1),rgba(26,20,16,0.5));border:1px solid var(--vermillion-600);border-radius:3px;padding:10px;display:flex;flex-direction:column;gap:4px;align-items:center;}
+.gs-palace-row-block{display:flex;gap:4px;}
+.gs-palace-block{padding:3px 6px;font-family:var(--font-serif);font-size:9.5px;color:#f4eadd;background:linear-gradient(to bottom,var(--vermillion-400),var(--vermillion-600));border:0.5px solid var(--vermillion-300);border-radius:2px;letter-spacing:0.1em;box-shadow:0 1px 2px rgba(0,0,0,0.3);}
+.gs-palace-block.gold{background:linear-gradient(to bottom,var(--gold-400),var(--gold-500));color:#1a1410;}
+.gs-palace-block.small{padding:2px 4px;font-size:8.5px;}
+.gs-palace-gate{font-family:var(--font-serif);font-size:9.5px;color:var(--gold-300);letter-spacing:0.15em;margin-top:auto;padding-top:4px;border-top:1px dashed var(--border-subtle);width:100%;text-align:center;}
+
+/* 主题 */
+.gs-theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;}
+.gs-theme-card{padding:6px;border:1px solid var(--border-subtle);border-radius:3px;cursor:pointer;transition:all 0.2s;background:rgba(36,30,24,0.6);position:relative;}
+.gs-theme-card:hover{border-color:var(--gold-400);transform:translateY(-1px);}
+.gs-theme-card.active{border-color:var(--gold-300);box-shadow:0 0 0 1px var(--gold-300),0 2px 8px rgba(201,168,95,0.2);}
+.gs-theme-card.active::after{content:"\2713";position:absolute;top:3px;right:4px;color:var(--gold-300);font-size:11px;font-weight:bold;}
+.gs-theme-swatch{display:flex;height:22px;border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.gs-theme-swatch .c{flex:1;}
+.gs-theme-name{font-family:var(--font-serif);font-size:11px;color:var(--ink-700);letter-spacing:0.12em;text-align:center;}
+.gs-theme-card .desc{font-family:var(--font-serif);font-size:9px;color:var(--ink-300);letter-spacing:0.05em;text-align:center;margin-top:1px;font-style:italic;}
+
+/* 音声 */
+.gs-audio-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;font-family:var(--font-serif);letter-spacing:0.04em;}
+.gs-audio-name{flex:1;color:var(--ink-700);}
+.gs-audio-ctrl{display:flex;align-items:center;gap:4px;}
+.gs-audio-slider{width:56px;height:3px;background:rgba(107,93,71,0.25);border-radius:2px;position:relative;cursor:pointer;}
+.gs-audio-slider::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p,70%);background:linear-gradient(to right,var(--blue-400),var(--celadon-400));border-radius:2px;}
+.gs-audio-slider::after{content:"";position:absolute;left:calc(var(--p,70%) - 4px);top:-3px;width:8px;height:8px;background:var(--gold-300);border-radius:50%;box-shadow:0 0 4px rgba(201,168,95,0.5);}
+.gs-audio-val{font-size:9.5px;color:var(--ink-300);min-width:18px;text-align:right;}
+.gs-audio-now{margin-top:5px;padding:4px 6px;background:rgba(90,143,184,0.05);border-left:2px solid var(--blue-400);border-radius:0 2px 2px 0;font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);font-style:italic;display:flex;align-items:center;gap:4px;}
+.gs-audio-now::before{content:"\266A";color:var(--blue-400);animation:note-bob 2s infinite;}
+@keyframes note-bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-2px);}}
+.gs-audio-now .h{color:var(--blue-400);}
+
+.gs-dyn-arc{padding:6px 8px;background:rgba(201,168,95,0.04);border:1px dashed var(--gold-d);border-radius:3px;font-family:var(--font-serif);font-size:11px;line-height:1.7;color:var(--ink-700);letter-spacing:0.03em;}
+.gs-dyn-arc .phase{display:inline-block;padding:0 6px;margin-right:4px;background:linear-gradient(to bottom,var(--vermillion-400),var(--vermillion-600));color:#f4eadd;font-size:10px;letter-spacing:0.15em;border-radius:2px;line-height:16px;}
+.gs-dyn-arc .em{color:var(--gold-300);font-weight:500;}
+.gs-dyn-arc .warn{color:var(--vermillion-400);}
+
+/* 科举 */
+.gs-keju-time{position:relative;padding:8px 0 4px;}
+.gs-keju-track{position:relative;height:2px;background:rgba(107,93,71,0.22);border-radius:1px;margin:0 8px;}
+.gs-keju-track-done{position:absolute;top:0;left:0;height:100%;background:linear-gradient(to right,var(--celadon-400),var(--gold-300));border-radius:1px;}
+.gs-keju-nodes{display:flex;justify-content:space-between;margin-top:-9px;padding:0 2px;}
+.gs-keju-node{width:14px;height:14px;border-radius:50%;background:var(--bg-paper);border:2px solid var(--ink-300);}
+.gs-keju-node.done{border-color:var(--celadon-400);background:var(--celadon-400);}
+.gs-keju-node.current{border-color:var(--gold-300);animation:keju-pulse 2s infinite;}
+@keyframes keju-pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,95,0.5);}50%{box-shadow:0 0 0 5px rgba(201,168,95,0);}}
+.gs-keju-labels{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-serif);font-size:9.5px;color:var(--ink-300);letter-spacing:0.08em;}
+.gs-keju-labels span.done{color:var(--celadon-400);}
+.gs-keju-labels span.current{color:var(--gold-300);font-weight:500;}
+.gs-keju-sub{margin-top:4px;padding:4px 6px;background:rgba(106,154,127,0.04);border-left:2px solid var(--celadon-400);border-radius:0 2px 2px 0;font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);font-style:italic;}
+
+.gs-fam-row{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11px;}
+.gs-fam-name{flex:1;color:var(--ink-700);font-family:var(--font-serif);}
+.gs-fam-tier{font-size:9px;padding:0 4px;border-radius:2px;font-family:var(--font-serif);letter-spacing:0.1em;line-height:13px;}
+.gs-fam-tier.gaomen{color:var(--gold-300);background:rgba(201,168,95,0.1);border:1px solid var(--gold-d);}
+.gs-fam-tier.shizu{color:var(--celadon-400);background:rgba(106,154,127,0.06);border:1px solid var(--celadon-400);}
+.gs-fam-tier.hanmen{color:var(--ink-500);background:rgba(166,148,112,0.06);border:1px solid var(--ink-300);}
+.gs-fam-renown{font-size:9.5px;color:var(--ink-300);font-family:var(--font-serif);min-width:22px;text-align:right;}
+
+.gs-tech-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;font-family:var(--font-serif);}
+.gs-tech-icon{font-size:11px;color:var(--indigo-400);width:14px;text-align:center;}
+.gs-tech-name{flex:1;color:var(--ink-700);letter-spacing:0.05em;}
+.gs-tech-prog{width:50px;height:3px;background:rgba(107,93,71,0.22);border-radius:2px;overflow:hidden;}
+.gs-tech-prog-fill{height:100%;background:linear-gradient(to right,var(--indigo-400),var(--gold-300));border-radius:2px;}
+.gs-tech-val{font-size:9.5px;color:var(--ink-300);min-width:26px;text-align:right;}
+
+.gs-item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:4px;}
+.gs-item-slot{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 30%,rgba(201,168,95,0.2),rgba(26,20,16,0.6));border:1px solid var(--i-c,var(--gold-d));border-radius:3px;color:var(--i-c,var(--gold-400));font-family:var(--font-serif);font-size:15px;position:relative;cursor:pointer;transition:all 0.2s;}
+.gs-item-slot.r-jing{--i-c:var(--vermillion-400);}
+.gs-item-slot.r-gui{--i-c:var(--purple-400);}
+.gs-item-slot.r-bi{--i-c:var(--indigo-400);}
+.gs-item-slot.r-chang{--i-c:var(--celadon-400);}
+.gs-item-slot.empty{--i-c:var(--ink-300);background:repeating-linear-gradient(45deg,rgba(107,93,71,0.08),rgba(107,93,71,0.08) 2px,transparent 2px,transparent 5px);border-style:dashed;opacity:0.45;}
+.gs-item-slot:hover:not(.empty){transform:scale(1.08);}
+.gs-item-slot .tag{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:var(--i-c);border:1px solid var(--bg-paper);}
+
+.gs-harem-row{display:flex;gap:6px;overflow-x:auto;padding:2px 0;}
+.gs-consort{flex-shrink:0;width:42px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.gs-consort-port{width:38px;height:48px;background:linear-gradient(145deg,var(--co-c,var(--vermillion-300)),rgba(26,20,16,0.6));border:1px solid var(--co-c,var(--vermillion-300));border-radius:2px;display:flex;align-items:center;justify-content:center;color:#f4eadd;font-family:var(--font-serif);font-size:16px;font-weight:500;position:relative;}
+.gs-consort-port::after{content:"";position:absolute;top:-3px;left:-2px;right:-2px;height:3px;background:linear-gradient(to bottom,#8d7640,#6b5a30);border-radius:1px;}
+.gs-consort.empress{--co-c:var(--gold-300);}
+.gs-consort.guifei{--co-c:var(--vermillion-300);}
+.gs-consort.fei{--co-c:var(--purple-400);}
+.gs-consort.pin{--co-c:var(--celadon-400);}
+.gs-consort-name{font-family:var(--font-serif);font-size:9.5px;color:var(--co-c,var(--ink-500));}
+.gs-consort-rank{font-family:var(--font-serif);font-size:8.5px;color:var(--ink-300);letter-spacing:0.1em;}
+
+.gs-mini-map{position:relative;height:150px;background:linear-gradient(to bottom,rgba(107,93,71,0.15),rgba(26,20,16,0.6));border:1px dashed var(--border-subtle);border-radius:3px;margin-top:4px;overflow:hidden;}
+.gs-mini-map::before{content:"\5929 \u4E0B \u4E4B \u56FE";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--ink-300);font-family:var(--font-serif);font-size:22px;letter-spacing:0.4em;opacity:0.15;white-space:nowrap;}
+.gs-map-pin{position:absolute;width:8px;height:8px;border-radius:50%;border:1px solid #f4eadd;box-shadow:0 0 6px rgba(0,0,0,0.6);}
+.gs-map-pin.crisis{background:var(--vermillion-400);animation:pin-pulse 1.5s infinite;}
+.gs-map-pin.war{background:var(--amber-400);}
+.gs-map-pin.stable{background:var(--celadon-400);}
+.gs-map-pin.self{background:var(--gold-300);width:10px;height:10px;}
+@keyframes pin-pulse{0%,100%{box-shadow:0 0 0 0 rgba(192,64,48,0.6);}50%{box-shadow:0 0 0 6px rgba(192,64,48,0);}}
+.gs-map-label{position:absolute;font-family:var(--font-serif);font-size:9px;color:var(--ink-700);background:rgba(26,20,16,0.7);padding:0 3px;border-radius:2px;}
+
+.gs-help-item{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;cursor:pointer;font-family:var(--font-serif);letter-spacing:0.06em;}
+.gs-help-item:hover{color:var(--gold-300);}
+.gs-help-item .ic{width:18px;height:18px;border-radius:50%;background:rgba(201,168,95,0.1);border:1px solid var(--gold-d);color:var(--gold-300);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+.gs-help-item .t{flex:1;color:var(--ink-700);}
+.gs-help-item .arr{color:var(--ink-300);font-size:10px;}
+
+/* ═══ 右栏面板 ═══ */
+.gs-self-card{position:relative;padding:12px 14px;background:linear-gradient(to bottom right,rgba(201,168,95,0.12),var(--bg-paper) 40%);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px));border:1px solid var(--gold-300);border-radius:3px;box-shadow:0 0 0 1px rgba(201,168,95,0.15),0 2px 8px rgba(201,168,95,0.08);}
+.gs-self-card::before{content:"\6715";position:absolute;top:8px;right:10px;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.92),rgba(140,40,30,0.82));color:#f4eadd;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:14px;font-weight:bold;transform:rotate(-8deg);}
+.gs-self-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.gs-self-portrait{width:64px;height:82px;flex-shrink:0;position:relative;background:linear-gradient(145deg,var(--gold-400) 0%,rgba(26,20,16,0.6) 100%);border:1.5px solid var(--gold-400);border-radius:2px;display:flex;align-items:center;justify-content:center;color:#f4eadd;font-family:var(--font-serif);font-size:28px;font-weight:500;}
+.gs-self-portrait::before{content:"";position:absolute;inset:3px;border:0.5px solid rgba(184,154,83,0.35);border-radius:1px;}
+.gs-self-portrait::after{content:"";position:absolute;top:-5px;left:-4px;right:-4px;height:6px;background:linear-gradient(to bottom,#8d7640,#6b5a30,#5a4a28);border:0.5px solid #3d2e18;border-radius:1px;}
+.gs-self-info{flex:1;min-width:0;padding-right:30px;}
+.gs-self-name{font-family:var(--font-serif);font-size:16px;color:var(--gold-300);letter-spacing:0.14em;font-weight:500;}
+.gs-self-title{font-family:var(--font-serif);font-size:11px;color:var(--ink-500);letter-spacing:0.1em;margin-top:2px;font-style:italic;}
+.gs-self-meta{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.gs-self-tag{display:inline-flex;align-items:center;font-family:var(--font-serif);font-size:9.5px;padding:0 5px;border:1px solid var(--t-c,var(--gold-d));color:var(--t-c,var(--gold-400));background:rgba(184,154,83,0.06);border-radius:2px;letter-spacing:0.1em;line-height:14px;}
+.gs-self-tag.trait-pos{--t-c:var(--celadon-400);}
+.gs-self-tag.trait-neg{--t-c:var(--vermillion-400);}
+.gs-self-tag.trait-neu{--t-c:var(--gold-400);}
+.gs-self-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 8px;margin-top:4px;padding-top:6px;border-top:1px dashed var(--border-subtle);}
+.gs-stat{display:flex;align-items:center;gap:3px;font-family:var(--font-serif);font-size:10.5px;}
+.gs-stat-k{color:var(--ink-300);width:16px;}
+.gs-stat-bar{flex:1;height:4px;background:rgba(107,93,71,0.22);border-radius:2px;overflow:hidden;}
+.gs-stat-fill{height:100%;background:var(--s-c,var(--gold-400));}
+.gs-stat-v{color:var(--ink-700);font-size:10.5px;min-width:18px;text-align:right;}
+.gs-stat.zhi .gs-stat-fill{--s-c:var(--gold-400);}
+.gs-stat.zheng .gs-stat-fill{--s-c:var(--celadon-400);}
+.gs-stat.jun .gs-stat-fill{--s-c:var(--vermillion-400);}
+.gs-stat.jiao .gs-stat-fill{--s-c:var(--indigo-400);}
+.gs-stat.ren .gs-stat-fill{--s-c:var(--purple-400);}
+.gs-stat.wei .gs-stat-fill{--s-c:var(--amber-400);}
+.gs-self-wuchang{margin-top:5px;padding-top:4px;border-top:1px dashed var(--border-subtle);display:flex;align-items:center;gap:3px;}
+.gs-self-wuchang .lbl{font-family:var(--font-serif);font-size:9px;color:var(--ink-300);letter-spacing:0.15em;margin-right:2px;}
+.gs-wc-dot{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;font-family:var(--font-serif);font-size:9px;color:#1a1410;font-weight:bold;}
+.gs-wc-dot.hi{background:var(--celadon-400);}
+.gs-wc-dot.mid{background:var(--gold-400);}
+.gs-wc-dot.lo{background:var(--vermillion-400);}
+
+.gs-time-dial{position:relative;width:120px;height:120px;margin:4px auto;flex-shrink:0;}
+.gs-time-dial::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(184,154,83,0.04),transparent 65%),conic-gradient(from 0deg,var(--ink-100) 0deg,var(--ink-100) 360deg);border:2px solid var(--gold-d);box-shadow:inset 0 0 8px rgba(184,154,83,0.1);}
+.gs-time-dial::after{content:"";position:absolute;inset:12px;border-radius:50%;border:1px dashed rgba(184,154,83,0.2);}
+.gs-time-hand{position:absolute;top:50%;left:50%;width:2px;height:44px;background:linear-gradient(to top,transparent,var(--vermillion-400),#f4eadd);transform-origin:bottom center;transform:translate(-50%,-100%) rotate(210deg);box-shadow:0 0 4px rgba(192,64,48,0.5);border-radius:2px;}
+.gs-time-center{position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,var(--gold-300),var(--gold-d));transform:translate(-50%,-50%);}
+.gs-time-mark{position:absolute;font-family:var(--font-serif);font-size:11px;color:var(--ink-500);font-weight:500;transform:translate(-50%,-50%);}
+.gs-time-mark.cur{color:var(--vermillion-400);font-weight:bold;}
+.gs-time-text{text-align:center;font-family:var(--font-serif);margin-top:2px;}
+.gs-time-text .main{font-size:13px;color:var(--vermillion-400);letter-spacing:0.2em;font-weight:500;}
+.gs-time-text .sub{font-size:10px;color:var(--ink-300);letter-spacing:0.12em;font-style:italic;}
+
+/* 人物卡 */
+.gs-chars-grid{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.gs-char-card{display:flex;gap:8px;padding:6px 8px 6px 6px;background:var(--bg-paper);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.03) 2.5em,rgba(107,93,71,0.03) calc(2.5em + 1px));border:1px solid var(--border-subtle);border-left:3px solid var(--ch-c,var(--gold-d));border-radius:3px;cursor:pointer;transition:all 0.15s;}
+.gs-char-card:hover{border-color:var(--gold-400);box-shadow:0 2px 6px rgba(184,154,83,0.12);transform:translateX(1px);}
+.gs-char-card.f-dongin{--ch-c:var(--celadon-400);}
+.gs-char-card.f-mili{--ch-c:var(--vermillion-400);}
+.gs-char-card.f-eunuch{--ch-c:var(--purple-400);}
+.gs-char-card.f-consort{--ch-c:var(--vermillion-300);}
+.gs-char-card.f-kun{--ch-c:var(--amber-400);}
+.gs-char-port{width:36px;height:46px;flex-shrink:0;position:relative;background:linear-gradient(145deg,var(--ch-c,var(--gold-400)) 0%,rgba(26,20,16,0.6) 100%);border:1px solid var(--ch-c,var(--gold-400));border-radius:2px;display:flex;align-items:center;justify-content:center;color:#f4eadd;font-family:var(--font-serif);font-size:17px;font-weight:500;}
+.gs-char-port::after{content:"";position:absolute;top:-3px;left:-2px;right:-2px;height:3px;background:linear-gradient(to bottom,#8d7640,#6b5a30);border-radius:1px;}
+.gs-char-info{flex:1;min-width:0;}
+.gs-char-name-row{display:flex;align-items:baseline;gap:5px;}
+.gs-char-name{font-family:var(--font-serif);font-size:13px;color:var(--ink-700);letter-spacing:0.06em;font-weight:500;}
+.gs-char-age{font-size:9.5px;color:var(--ink-300);}
+.gs-char-loy{font-size:9.5px;margin-left:auto;padding:0 5px;border-radius:8px;font-family:var(--font-serif);line-height:14px;}
+.gs-char-loy.hi{color:var(--celadon-400);background:rgba(106,154,127,0.1);border:1px solid var(--celadon-400);}
+.gs-char-loy.mid{color:var(--gold-400);background:rgba(184,154,83,0.08);border:1px solid var(--gold-d);}
+.gs-char-loy.lo{color:var(--vermillion-400);background:rgba(192,64,48,0.08);border:1px solid var(--vermillion-400);}
+.gs-char-office{font-size:10.5px;color:var(--ch-c,var(--gold-400));font-family:var(--font-serif);margin-top:1px;}
+.gs-char-ministat{display:flex;gap:4px;align-items:center;margin-top:3px;flex-wrap:wrap;}
+.gs-char-mini{font-family:var(--font-serif);font-size:9.5px;color:var(--ink-500);padding:0 3px;background:rgba(107,93,71,0.08);border-radius:2px;}
+.gs-char-mini .v{color:var(--ink-700);margin-left:1px;}
+.gs-char-state{font-size:9px;color:var(--amber-400);font-family:var(--font-serif);padding:0 3px;border:1px solid var(--amber-400);border-radius:2px;background:rgba(201,160,69,0.08);line-height:12px;}
+.gs-char-state.new{color:var(--celadon-400);border-color:var(--celadon-400);background:rgba(106,154,127,0.08);}
+
+/* 关系网 */
+.gs-rel-net{position:relative;height:150px;padding:4px;overflow:hidden;}
+.gs-rel-node{position:absolute;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:10px;color:#f4eadd;font-weight:bold;background:var(--gold-400);border:1px solid rgba(244,234,221,0.3);box-shadow:0 1px 3px rgba(0,0,0,0.4);cursor:pointer;}
+.gs-rel-node.center{width:28px;height:28px;background:var(--gold-300);color:#1a1410;z-index:3;box-shadow:0 0 8px rgba(201,168,95,0.5);}
+.gs-rel-node.friend{background:var(--celadon-400);}
+.gs-rel-node.foe{background:var(--vermillion-400);}
+.gs-rel-node.neutral{background:var(--ink-500);}
+.gs-rel-edge{position:absolute;height:1px;background:var(--e-c,var(--ink-300));transform-origin:left center;opacity:0.6;}
+.gs-rel-edge.friend{--e-c:var(--celadon-400);}
+.gs-rel-edge.foe{--e-c:var(--vermillion-400);}
+.gs-rel-edge.dashed{border-top:1px dashed var(--e-c,var(--ink-300));background:transparent;}
+
+/* 议题 */
+.gs-issue-item{display:flex;align-items:flex-start;gap:5px;padding:5px 6px;margin-bottom:4px;background:rgba(192,64,48,0.04);border-left:2px solid var(--i-c,var(--vermillion-400));border-radius:0 2px 2px 0;font-size:11px;line-height:1.5;}
+.gs-issue-item.urgent{--i-c:var(--vermillion-400);}
+.gs-issue-item.warn{--i-c:var(--amber-400);background:rgba(201,160,69,0.05);}
+.gs-issue-item.info{--i-c:var(--celadon-400);background:rgba(106,154,127,0.04);}
+.gs-issue-num{font-family:var(--font-serif);font-size:11px;color:var(--i-c);font-weight:700;width:14px;text-align:right;}
+.gs-issue-text{flex:1;color:var(--ink-700);font-family:var(--font-serif);}
+.gs-issue-text .h{color:var(--i-c);}
+.gs-issue-time{font-size:9.5px;color:var(--ink-300);font-style:italic;font-family:var(--font-serif);}
+
+/* 目标 */
+.gs-goal-item{padding:5px 8px;margin-bottom:5px;background:rgba(142,106,168,0.05);border:1px dashed var(--purple-400);border-radius:3px;}
+.gs-goal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+.gs-goal-title{font-family:var(--font-serif);font-size:11.5px;color:var(--purple-400);font-weight:500;}
+.gs-goal-prio{font-size:9px;color:var(--amber-400);font-family:var(--font-serif);padding:0 3px;border:1px solid var(--amber-400);border-radius:2px;line-height:12px;}
+.gs-goal-desc{font-size:10.5px;color:var(--ink-700);font-family:var(--font-serif);font-style:italic;line-height:1.5;}
+.gs-goal-prog{height:3px;background:rgba(107,93,71,0.22);border-radius:2px;overflow:hidden;margin-top:4px;}
+.gs-goal-prog-fill{height:100%;background:linear-gradient(to right,var(--purple-400),var(--gold-300));}
+
+/* 祭祀礼仪 - NEW */
+.gs-jifa-calendar{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:4px;}
+.gs-jifa-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:10px;color:var(--ink-500);background:rgba(107,93,71,0.06);border-radius:2px;position:relative;border:1px solid transparent;}
+.gs-jifa-cell.jisi{background:rgba(192,64,48,0.1);color:var(--vermillion-400);border-color:var(--vermillion-400);font-weight:500;}
+.gs-jifa-cell.auspicious{background:rgba(201,168,95,0.1);color:var(--gold-300);border-color:var(--gold-d);}
+.gs-jifa-cell.today{box-shadow:0 0 0 2px var(--gold-300);animation:today-pulse 2s infinite;}
+@keyframes today-pulse{0%,100%{box-shadow:0 0 0 2px var(--gold-300);}50%{box-shadow:0 0 0 2px var(--gold-300),0 0 8px rgba(201,168,95,0.5);}}
+.gs-jifa-row{display:flex;align-items:center;gap:4px;font-family:var(--font-serif);font-size:10.5px;padding:2px 0;}
+.gs-jifa-type{font-size:9.5px;color:var(--vermillion-400);letter-spacing:0.1em;min-width:28px;}
+.gs-jifa-name{flex:1;color:var(--ink-700);}
+.gs-jifa-due{font-size:9px;color:var(--ink-300);font-style:italic;}
+
+/* 监察百司 - NEW */
+.gs-censor-row{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;border-bottom:1px dashed rgba(107,93,71,0.12);}
+.gs-censor-row:last-child{border-bottom:none;}
+.gs-censor-icon{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--ce-c,var(--indigo-400)),rgba(26,20,16,0.6));color:#f4eadd;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:10px;font-weight:500;flex-shrink:0;}
+.gs-censor-name{flex:1;color:var(--ink-700);font-family:var(--font-serif);}
+.gs-censor-alert{font-size:9.5px;font-family:var(--font-serif);padding:0 5px;border-radius:8px;line-height:14px;}
+.gs-censor-alert.hi{color:var(--vermillion-400);background:rgba(192,64,48,0.08);border:1px solid var(--vermillion-400);}
+.gs-censor-alert.mid{color:var(--amber-400);background:rgba(201,160,69,0.06);border:1px solid var(--amber-400);}
+.gs-censor-alert.lo{color:var(--celadon-400);background:rgba(106,154,127,0.06);border:1px solid var(--celadon-400);}
+
+/* 宫廷日程 - NEW */
+.gs-agenda-row{display:flex;align-items:center;gap:5px;padding:4px 6px;margin-bottom:3px;background:rgba(106,154,127,0.04);border-left:2px solid var(--ag-c,var(--celadon-400));border-radius:0 2px 2px 0;font-size:11px;font-family:var(--font-serif);}
+.gs-agenda-row.chaoyi{--ag-c:var(--purple-400);background:rgba(142,106,168,0.04);}
+.gs-agenda-row.zhaojian{--ag-c:var(--celadon-400);}
+.gs-agenda-row.jisi{--ag-c:var(--vermillion-400);background:rgba(192,64,48,0.04);}
+.gs-agenda-row.kejvi{--ag-c:var(--amber-400);background:rgba(201,160,69,0.05);}
+.gs-agenda-time{font-size:9.5px;color:var(--ink-300);min-width:32px;font-style:italic;}
+.gs-agenda-name{flex:1;color:var(--ink-700);}
+.gs-agenda-with{font-size:9.5px;color:var(--ink-500);}
+
+/* 近事 */
+.gs-news-item{display:flex;align-items:flex-start;gap:5px;padding:5px 8px;background:rgba(184,154,83,0.03);border-left:2px solid var(--nw-c,var(--gold-d));margin-bottom:4px;font-size:11px;font-family:var(--font-serif);line-height:1.5;color:var(--ink-700);}
+.gs-news-item.edict{--nw-c:var(--indigo-400);}
+.gs-news-item.memo{--nw-c:var(--vermillion-400);}
+.gs-news-item.letter{--nw-c:var(--amber-400);}
+.gs-news-item.person{--nw-c:var(--celadon-400);}
+.gs-news-item.chaoyi{--nw-c:var(--purple-400);}
+.gs-news-item .t{font-size:9px;color:var(--ink-300);font-style:italic;flex-shrink:0;}
+.gs-news-item .h{color:var(--gold-300);font-weight:500;}
+.gs-news-item .body{flex:1;min-width:0;}
+
+/* 风闻 */
+.gs-rumor-item{padding:5px 8px;margin-bottom:4px;background:rgba(142,106,168,0.04);border-left:2px solid var(--purple-400);border-radius:0 2px 2px 0;font-family:var(--font-serif);font-size:11px;color:var(--ink-700);line-height:1.6;font-style:italic;}
+.gs-rumor-item::before{content:"\201C";color:var(--purple-400);font-size:14px;margin-right:2px;opacity:0.7;}
+.gs-rumor-item .cred{float:right;font-size:9px;color:var(--ink-300);font-style:normal;}
+
+/* 财政 */
+.gs-fin-chart{position:relative;height:80px;padding:6px 4px 4px;}
+.gs-fin-bars{display:flex;align-items:flex-end;justify-content:space-around;height:62px;gap:3px;}
+.gs-fin-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.gs-fin-bar-stack{display:flex;flex-direction:column-reverse;width:100%;height:54px;}
+.gs-fin-bar{width:100%;opacity:0.85;}
+.gs-fin-bar.income{background:var(--celadon-400);}
+.gs-fin-bar.expense{background:var(--vermillion-400);}
+.gs-fin-lbl{font-family:var(--font-serif);font-size:9px;color:var(--ink-300);}
+.gs-fin-legend{display:flex;justify-content:center;gap:10px;font-family:var(--font-serif);font-size:9.5px;color:var(--ink-500);margin-top:2px;}
+.gs-fin-legend span::before{content:"";display:inline-block;width:8px;height:8px;margin-right:3px;vertical-align:middle;border-radius:1px;}
+.gs-fin-legend .in::before{background:var(--celadon-400);}
+.gs-fin-legend .out::before{background:var(--vermillion-400);}
+
+/* 精力 */
+.gs-energy{padding:10px 12px;background:var(--bg-paper);border:1px solid var(--border-subtle);border-left:3px solid var(--celadon-400);border-radius:3px;}
+.gs-energy-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+.gs-energy-lbl{font-family:var(--font-serif);font-size:12px;color:var(--celadon-400);letter-spacing:0.2em;}
+.gs-energy-val{font-family:var(--font-serif);font-size:12.5px;color:var(--ink-700);}
+.gs-energy-val .max{color:var(--ink-300);font-size:10px;}
+.gs-energy-bar{height:5px;background:rgba(107,93,71,0.25);border-radius:2px;overflow:hidden;}
+.gs-energy-fill{height:100%;background:linear-gradient(to right,var(--celadon-400),var(--gold-300));}
+.gs-energy-tick{display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--ink-300);font-family:var(--font-serif);}
+
+/* ═══ 中栏 ═══ */
+.gs-center{display:flex;flex-direction:column;overflow:hidden;background:var(--bg-1);}
+.gs-breadcrumb{display:flex;align-items:center;gap:6px;padding:5px 12px;background:linear-gradient(to right,rgba(36,30,24,0.9),var(--bg-1));border-bottom:1px solid var(--border-subtle);font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);letter-spacing:0.15em;}
+.gs-breadcrumb .sep{color:var(--ink-300);opacity:0.6;}
+.gs-breadcrumb .cur{color:var(--gold-300);}
+.gs-breadcrumb-right{margin-left:auto;display:flex;gap:4px;}
+.gs-bc-btn{background:transparent;border:none;color:var(--ink-300);font-family:var(--font-serif);font-size:10.5px;cursor:pointer;padding:0 5px;}
+.gs-bc-btn:hover{color:var(--gold-400);}
+
+.gs-tab-bar{display:flex;gap:0;background:linear-gradient(180deg,var(--bg-paper),var(--bg-1));border-bottom:1px solid var(--border-subtle);overflow-x:auto;padding:0 6px;align-items:stretch;}
+.gs-tab-group{display:flex;align-items:stretch;position:relative;padding-right:6px;margin-right:2px;padding-top:8px;}
+.gs-tab-group:not(:last-child)::after{content:"";position:absolute;right:0;top:20%;bottom:20%;width:1px;background:linear-gradient(to bottom,transparent,var(--border-strong),transparent);}
+.gs-tab-group::before{content:attr(data-label);position:absolute;top:-2px;left:8px;font-family:var(--font-serif);font-size:8.5px;color:var(--gold-d);letter-spacing:0.2em;opacity:0.7;pointer-events:none;}
+.gs-tab-btn{padding:10px 16px;background:transparent;border:none;color:var(--ink-300);font-family:var(--font-serif);font-size:13.5px;letter-spacing:0.08em;cursor:pointer;border-bottom:2px solid transparent;position:relative;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.gs-tab-btn .ic{font-size:10px;opacity:0.7;}
+.gs-tab-btn:hover{color:var(--ink-700);}
+.gs-tab-btn.active{color:var(--gold-400);border-bottom-color:var(--gold-400);background:rgba(184,154,83,0.04);}
+.gs-tab-btn.active::before{content:"";position:absolute;top:6px;right:6px;width:5px;height:5px;background:var(--vermillion-400);border-radius:1px;transform:rotate(12deg);}
+.gs-tab-btn.alert::after{content:attr(data-badge);position:absolute;top:4px;right:3px;background:var(--vermillion-400);color:#f4eadd;font-size:9px;font-family:var(--font-serif);padding:1px 4px;border-radius:6px;min-width:14px;line-height:1;text-align:center;font-weight:bold;}
+
+.gs-tab-content{flex:1;overflow-y:auto;background-color:var(--bg-paper);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px)),linear-gradient(to bottom,rgba(184,154,83,0.05) 0%,transparent 80px);padding:24px 40px;position:relative;}
+.gs-tab-content::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,rgba(139,90,50,0.025) 0.5px,transparent 1px),radial-gradient(circle at 80% 60%,rgba(139,90,50,0.03) 0.5px,transparent 1px);background-size:80px 80px,120px 120px;}
+.gs-content-inner{position:relative;z-index:1;max-width:1100px;margin:0 auto;}
+.gs-sample-title{text-align:center;margin-bottom:18px;position:relative;padding:10px 0 14px;}
+.gs-sample-title::before,.gs-sample-title::after{content:"";position:absolute;left:50%;width:160px;height:1px;transform:translateX(-50%);background:linear-gradient(to right,transparent,var(--gold-d),transparent);}
+.gs-sample-title::before{top:0;}.gs-sample-title::after{bottom:0;}
+.gs-sample-title .main{font-family:var(--font-serif);font-size:24px;letter-spacing:0.45em;color:var(--ink-900);margin-bottom:4px;}
+.gs-sample-title .sub{font-size:11px;color:var(--ink-300);letter-spacing:0.3em;font-family:var(--font-serif);font-style:italic;}
+.gs-sample-demo{padding:18px;background:rgba(184,154,83,0.03);border:1px dashed var(--border-subtle);border-radius:3px;text-align:center;font-family:var(--font-serif);color:var(--ink-500);letter-spacing:0.1em;font-style:italic;line-height:2.2;margin-bottom:14px;}
+.gs-sample-demo .k{color:var(--gold-300);}.gs-sample-demo .m{color:var(--vermillion-400);}.gs-sample-demo .big{font-size:16px;color:var(--gold-300);letter-spacing:0.2em;}
+.gs-sample-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
+.gs-sample-card{padding:12px 14px;background:var(--bg-paper);border:1px solid var(--border-subtle);border-left:3px solid var(--c,var(--gold-400));border-radius:3px;}
+.gs-sample-card .lbl{font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);letter-spacing:0.25em;margin-bottom:4px;}
+.gs-sample-card .num{font-family:var(--font-serif);font-size:22px;color:var(--c,var(--gold-400));letter-spacing:0.05em;font-weight:700;}
+.gs-sample-card .sub{font-size:10px;color:var(--ink-300);font-style:italic;margin-top:2px;}
+.gs-toast{position:absolute;top:20px;right:20px;padding:8px 14px;background:rgba(36,30,24,0.95);border:1px solid var(--gold-300);border-left:3px solid var(--celadon-400);border-radius:3px;font-family:var(--font-serif);font-size:11.5px;color:var(--ink-700);box-shadow:0 4px 12px rgba(0,0,0,0.45);display:flex;align-items:center;gap:6px;}
+.gs-toast::before{content:"\2713";width:16px;height:16px;border-radius:50%;background:var(--celadon-400);color:#1a1410;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;}
+.gs-toast .k{color:var(--gold-300);}
+
+/* ═══ 右下角固定推演按钮（独立·页面级固定）═══ */
+.gs-turn-float{
+  position:absolute;bottom:56px;right:24px;
+  display:flex;flex-direction:column;gap:8px;
+  align-items:flex-end;
+  z-index:60;pointer-events:none;
+}
+.gs-turn-float > *{pointer-events:auto;}
+.gs-turn-fab-bar{
+  display:flex;gap:6px;align-items:center;
+  padding:6px 10px;
+  background:linear-gradient(to right,rgba(36,30,24,0.92),rgba(26,20,16,0.94));
+  border:1px solid var(--border-strong);
+  border-radius:24px;
+  backdrop-filter:blur(8px);
+  box-shadow:0 4px 16px rgba(0,0,0,0.45);
+}
+.gs-fab-btn{width:36px;height:36px;border:1px solid var(--gold-d);background:rgba(184,154,83,0.06);color:var(--gold-400);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-serif);font-size:13px;cursor:pointer;transition:all 0.2s;position:relative;}
+.gs-fab-btn:hover{background:rgba(184,154,83,0.2);border-color:var(--gold-300);transform:translateY(-2px);box-shadow:0 4px 10px rgba(184,154,83,0.3);}
+.gs-fab-btn[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);font-family:var(--font-serif);font-size:10.5px;padding:3px 8px;background:rgba(26,20,16,0.95);color:var(--gold-300);border:1px solid var(--gold-d);border-radius:3px;white-space:nowrap;pointer-events:none;z-index:100;}
+.gs-turn-summary{padding:7px 14px;background:linear-gradient(to right,rgba(36,30,24,0.92),rgba(26,20,16,0.94));border:1px solid var(--border-strong);border-radius:16px;backdrop-filter:blur(6px);font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);letter-spacing:0.1em;text-align:right;box-shadow:0 2px 8px rgba(0,0,0,0.35);}
+.gs-turn-summary .hl{color:var(--gold-300);font-weight:500;}
+.gs-turn-summary .warn{color:var(--vermillion-400);}
+.gs-turn-big{min-width:210px;padding:16px 24px;background:linear-gradient(135deg,var(--vermillion-400),var(--vermillion-600));color:#f4eadd;font-family:var(--font-serif);font-size:20px;font-weight:bold;letter-spacing:0.45em;border:1px solid var(--vermillion-600);border-radius:6px;cursor:pointer;text-align:center;position:relative;box-shadow:0 6px 20px rgba(140,40,30,0.5),inset 0 1px 0 rgba(255,255,255,0.12);animation:turn-glow 3s ease-in-out infinite;}
+@keyframes turn-glow{0%,100%{box-shadow:0 6px 20px rgba(140,40,30,0.5),inset 0 1px 0 rgba(255,255,255,0.12),0 0 0 0 rgba(192,64,48,0.4);}50%{box-shadow:0 6px 20px rgba(140,40,30,0.5),inset 0 1px 0 rgba(255,255,255,0.12),0 0 0 8px rgba(192,64,48,0);}}
+.gs-turn-big::before,.gs-turn-big::after{content:"";position:absolute;width:22px;height:2px;background:linear-gradient(to right,transparent,#f4eadd,transparent);top:50%;transform:translateY(-50%);opacity:0.6;}
+.gs-turn-big::before{left:12px;}.gs-turn-big::after{right:12px;}
+.gs-turn-big:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(140,40,30,0.55);animation:none;}
+.gs-turn-big .sub{display:block;font-size:10.5px;color:rgba(244,234,221,0.78);letter-spacing:0.22em;font-weight:400;margin-top:4px;font-style:italic;}
+
+/* 底部状态栏 */
+.gs-status-bar{position:absolute;bottom:0;left:0;right:0;height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;gap:14px;background:linear-gradient(180deg,rgba(18,16,14,0.95),var(--bg-paper));border-top:1px solid var(--border-subtle);font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);letter-spacing:0.08em;z-index:55;backdrop-filter:blur(6px);}
+.gs-status-bar::before{content:"";position:absolute;top:0;left:5%;right:5%;height:1px;background:linear-gradient(to right,transparent,var(--gold-500),transparent);opacity:0.5;}
+.gs-status-left,.gs-status-right{display:flex;align-items:center;gap:12px;}
+.gs-status-item{display:flex;align-items:center;gap:4px;padding:0 6px;}
+.gs-status-item .dot{width:6px;height:6px;border-radius:50%;background:var(--celadon-400);box-shadow:0 0 4px var(--celadon-400);}
+.gs-status-item.busy .dot{background:var(--amber-400);box-shadow:0 0 4px var(--amber-400);animation:busy-dot 1.5s infinite;}
+@keyframes busy-dot{0%,100%{opacity:0.4;}50%{opacity:1;}}
+.gs-status-item .k{color:var(--ink-300);}
+.gs-status-item .v{color:var(--ink-700);}
+.gs-status-tip{color:var(--gold-300);font-style:italic;}
+.gs-status-shortcut{color:var(--ink-500);font-size:10px;}
+.gs-status-shortcut kbd{background:rgba(184,154,83,0.08);border:1px solid var(--gold-d);color:var(--gold-400);padding:0 4px;border-radius:2px;font-size:9.5px;font-family:monospace;margin:0 2px;}
+
+.legend{padding:22px 24px;background:var(--bg-1);border-top:1px solid var(--border-subtle);font-size:11px;color:var(--ink-500);text-align:center;letter-spacing:0.08em;line-height:2.1;}
+.legend .k{color:var(--gold-400);}.legend .m{color:var(--vermillion-400);}.legend .c{color:var(--celadon-400);}.legend .p{color:var(--purple-400);}
+
+/* ═══ 人物卡 v2 · 参考 preview-char-full 格局 ═══ */
+.gs-char2{position:relative;padding:10px 12px;background:var(--bg-paper);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.03) 2.5em,rgba(107,93,71,0.03) calc(2.5em + 1px));border:1px solid var(--border-subtle);border-left:3px solid var(--ch-c,var(--gold-d));border-radius:3px;cursor:pointer;transition:all 0.2s;margin-bottom:8px;}
+.gs-char2:hover{border-color:var(--gold-400);box-shadow:0 2px 10px rgba(184,154,83,0.15);transform:translateX(1px);}
+.gs-char2.f-dongin{--ch-c:var(--celadon-400);}
+.gs-char2.f-mili{--ch-c:var(--vermillion-400);}
+.gs-char2.f-eunuch{--ch-c:var(--purple-400);}
+.gs-char2.f-consort{--ch-c:var(--vermillion-300);}
+.gs-char2.f-kun{--ch-c:var(--amber-400);}
+.gs-char2-row{display:flex;gap:10px;align-items:flex-start;}
+.gs-char2-port{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,rgba(42,35,24,0.9) 60%,rgba(26,22,18,1));border:2px solid var(--ch-c,var(--gold-400));display:flex;align-items:center;justify-content:center;color:var(--gold-300);font-family:var(--font-serif);font-size:22px;font-weight:500;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.4),inset 0 1px 0 rgba(184,154,83,0.15);overflow:hidden;position:relative;}
+.gs-char2-port::before{content:"";position:absolute;inset:2px;border:0.5px solid rgba(244,234,221,0.1);border-radius:50%;}
+.gs-char2-body{flex:1;min-width:0;padding-top:1px;}
+.gs-char2-name-row{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;margin-bottom:2px;}
+.gs-char2-name{font-family:var(--font-serif);font-size:15px;color:var(--gold-300);letter-spacing:0.14em;font-weight:600;line-height:1.1;}
+.gs-char2-zi{font-size:10px;color:var(--ink-300);font-family:var(--font-serif);font-style:italic;letter-spacing:0.06em;}
+.gs-char2-zi::before{content:"字\u00A0";font-size:8.5px;color:var(--gold-d);letter-spacing:0.2em;}
+.gs-char2-gender{display:inline-flex;align-items:center;padding:0 5px;font-size:9.5px;border:1px solid;border-radius:2px;letter-spacing:0.08em;line-height:14px;}
+.gs-char2-gender.male{color:var(--indigo-400);border-color:rgba(90,111,168,0.5);background:rgba(90,111,168,0.06);}
+.gs-char2-gender.female{color:var(--vermillion-300);border-color:rgba(209,92,71,0.5);background:rgba(209,92,71,0.06);}
+.gs-char2-title{font-family:var(--font-serif);font-size:11px;color:var(--ink-500);letter-spacing:0.06em;margin:2px 0 4px;line-height:1.4;}
+.gs-char2-title b{color:var(--ch-c,var(--gold-400));letter-spacing:0.1em;font-weight:500;}
+.gs-char2-tags{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;}
+.gs-char2-tag{font-family:var(--font-serif);font-size:9px;padding:0 5px;border:1px solid rgba(184,154,83,0.3);border-radius:2px;color:var(--ink-500);background:rgba(184,154,83,0.04);letter-spacing:0.08em;line-height:14px;}
+.gs-char2-tag.loc{color:var(--gold-300);border-color:rgba(184,154,83,0.5);background:rgba(184,154,83,0.08);}
+.gs-char2-tag.travel{color:var(--amber-400);border-color:rgba(201,160,69,0.4);}
+.gs-char2-tag.fac{color:var(--vermillion-300);border-color:rgba(209,92,71,0.3);background:rgba(192,64,48,0.05);}
+.gs-char2-tag.clan{color:var(--celadon-400);border-color:rgba(106,154,127,0.3);background:rgba(106,154,127,0.05);}
+.gs-char2-tag.origin{color:var(--indigo-400);border-color:rgba(90,111,168,0.3);background:rgba(90,111,168,0.05);}
+.gs-char2-hearts{display:flex;flex-direction:column;gap:4px;padding-top:5px;border-top:1px dashed var(--border-subtle);margin-top:4px;}
+.gs-char2-heart{display:flex;align-items:center;gap:6px;font-family:var(--font-serif);font-size:10px;}
+.gs-char2-heart .lbl{color:var(--gold-400);letter-spacing:0.25em;width:26px;flex-shrink:0;}
+.gs-char2-heart .bar{flex:1;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;}
+.gs-char2-heart .fill{height:100%;border-radius:2px;}
+.gs-char2-heart.loyalty .fill.hi{background:linear-gradient(90deg,var(--celadon-600),var(--celadon-400));}
+.gs-char2-heart.loyalty .fill.mid{background:linear-gradient(90deg,var(--gold-500),var(--gold-300));}
+.gs-char2-heart.loyalty .fill.lo{background:linear-gradient(90deg,var(--vermillion-600),var(--vermillion-300));}
+.gs-char2-heart.ambition .fill.hi{background:linear-gradient(90deg,var(--purple-600),var(--vermillion-400));}
+.gs-char2-heart.ambition .fill.mid{background:linear-gradient(90deg,var(--gold-500),var(--gold-300));}
+.gs-char2-heart.ambition .fill.lo{background:linear-gradient(90deg,var(--celadon-600),var(--celadon-400));}
+.gs-char2-heart .val{font-size:11px;color:var(--ink-900);font-weight:600;min-width:22px;text-align:right;font-variant-numeric:tabular-nums;}
+.gs-char2-heart .verd{font-size:9px;color:var(--ink-300);letter-spacing:0.1em;font-style:italic;padding-left:4px;border-left:1px solid var(--border-subtle);margin-left:2px;}
+.gs-char2-verdict{margin-top:5px;padding:3px 8px;background:rgba(106,154,127,0.06);border:1px solid rgba(106,154,127,0.22);border-radius:2px;font-family:var(--font-serif);font-size:10px;color:var(--celadon-400);letter-spacing:0.12em;text-align:center;}
+.gs-char2-verdict.warn{background:rgba(201,160,69,0.06);border-color:rgba(201,160,69,0.25);color:var(--amber-400);}
+.gs-char2-verdict.danger{background:rgba(192,64,48,0.06);border-color:rgba(192,64,48,0.25);color:var(--vermillion-300);}
+
+/* ═══ 主题：字体大小+字体选择 ═══ */
+.gs-font-row{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-subtle);font-family:var(--font-serif);font-size:10.5px;}
+.gs-font-row .lbl{color:var(--ink-500);letter-spacing:0.15em;min-width:54px;}
+.gs-font-sizes{display:flex;gap:2px;flex:1;}
+.gs-sz-btn{flex:1;padding:3px 0;background:transparent;border:1px solid var(--border-subtle);color:var(--ink-500);font-family:var(--font-serif);cursor:pointer;border-radius:2px;letter-spacing:0.1em;}
+.gs-sz-btn.sm{font-size:9.5px;}
+.gs-sz-btn.md{font-size:11px;}
+.gs-sz-btn.lg{font-size:12.5px;}
+.gs-sz-btn.xl{font-size:14px;}
+.gs-sz-btn.active{background:linear-gradient(to bottom,rgba(201,168,95,0.15),rgba(184,154,83,0.06));color:var(--gold-300);border-color:var(--gold-d);}
+.gs-sz-btn:hover{color:var(--gold-400);border-color:var(--gold-d);}
+.gs-font-select{flex:1;padding:4px 8px;background:rgba(26,20,16,0.6);border:1px solid var(--border-subtle);color:var(--ink-700);font-family:var(--font-serif);font-size:10.5px;border-radius:2px;letter-spacing:0.08em;cursor:pointer;}
+.gs-font-select:hover{border-color:var(--gold-d);}
+
+/* ═══ 音声：曲谱导入 ═══ */
+.gs-audio-custom{margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-subtle);}
+.gs-audio-import{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;padding:6px 10px;background:linear-gradient(to bottom,rgba(90,143,184,0.12),rgba(90,143,184,0.04));border:1px dashed var(--blue-400);color:var(--blue-400);font-family:var(--font-serif);font-size:11px;letter-spacing:0.15em;border-radius:3px;cursor:pointer;transition:all 0.15s;}
+.gs-audio-import::before{content:"\2756";font-size:11px;opacity:0.8;}
+.gs-audio-import:hover{background:linear-gradient(to bottom,rgba(90,143,184,0.22),rgba(90,143,184,0.08));border-style:solid;}
+.gs-audio-lib{margin-top:6px;display:flex;flex-direction:column;gap:3px;max-height:100px;overflow-y:auto;}
+.gs-audio-song{display:flex;align-items:center;gap:6px;padding:3px 6px;background:rgba(90,143,184,0.04);border-left:2px solid var(--blue-400);border-radius:0 2px 2px 0;font-family:var(--font-serif);font-size:10px;color:var(--ink-700);letter-spacing:0.04em;}
+.gs-audio-song.playing{background:rgba(90,143,184,0.12);color:var(--blue-400);}
+.gs-audio-song.playing::before{content:"\25B6";font-size:9px;color:var(--blue-400);}
+.gs-audio-song.paused::before{content:"";width:7px;height:7px;border-radius:50%;border:1px solid var(--ink-500);display:inline-block;}
+.gs-audio-song .title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gs-audio-song .meta{font-size:8.5px;color:var(--ink-300);font-style:italic;}
+.gs-audio-song .del{background:transparent;border:none;color:var(--ink-300);cursor:pointer;padding:0 3px;font-size:10px;}
+.gs-audio-song .del:hover{color:var(--vermillion-400);}
+.gs-audio-loop{display:flex;gap:3px;margin-top:6px;font-family:var(--font-serif);font-size:9.5px;}
+.gs-audio-loop-btn{flex:1;padding:2px 0;background:transparent;border:1px solid var(--border-subtle);color:var(--ink-500);font-family:var(--font-serif);font-size:10px;letter-spacing:0.1em;border-radius:2px;cursor:pointer;}
+.gs-audio-loop-btn.active{background:rgba(90,143,184,0.15);color:var(--blue-400);border-color:var(--blue-400);}
+
+/* drawer 打开/关闭切换 */
+.gs-drawer{transform:translateX(-110%);}
+.gs-drawer.right{transform:translateX(110%);}
+.gs-drawer.open{transform:translateX(0);}
+</style>
+</head>
+<body>
+
+<div class="preview-frame">
+
+<!-- 顶栏 -->
+<div class="gs-topbar">
+  <div class="gs-logo"><div class="gs-seal">天<br>命</div><span class="gs-wentian">问　天</span></div>
+  <div class="gs-era">
+    <div class="dynasty">大明 · 崇祯元年</div>
+    <div class="date">戊辰 · 仲秋 · 己卯</div>
+    <div class="turn">第 四 十 二 回 合</div>
+  </div>
+  <div class="gs-weather">
+    <div class="gs-weather-seal">秋</div>
+    <div class="gs-weather-info"><div class="gs-weather-name">秋分 · 丙申</div><div class="gs-weather-desc">北风起 · 寒气初降</div></div>
+  </div>
+  <div class="gs-vars">
+    <div class="gs-var v-guoku wide"><span class="name">帑 廪</span><div class="gs-var-sub"><div class="gs-var-sub-item"><span class="sk">银</span><span class="sv">368</span><span class="sd up">+12</span></div><div class="gs-var-sub-item"><span class="sk">粮</span><span class="sv">2.5万</span><span class="sd down">-80</span></div><div class="gs-var-sub-item"><span class="sk">布</span><span class="sv">320</span><span class="sd flat">±0</span></div></div></div>
+    <div class="gs-var v-neitang wide"><span class="name">内 帑</span><div class="gs-var-sub"><div class="gs-var-sub-item"><span class="sk">银</span><span class="sv">142</span><span class="sd down">-8</span></div><div class="gs-var-sub-item"><span class="sk">粮</span><span class="sv">8千</span><span class="sd down">-20</span></div><div class="gs-var-sub-item"><span class="sk">布</span><span class="sv">120</span><span class="sd flat">±0</span></div></div></div>
+    <div class="gs-var v-hukou"><span class="name">户 口</span><span class="val">6213<span class="trend down">↓</span></span></div>
+    <div class="gs-var v-lizhi alert"><span class="name">吏 治</span><span class="val">43<span class="trend down">↓</span></span></div>
+    <div class="gs-var v-minxin"><span class="name">民 心</span><span class="val">54<span class="trend">·</span></span></div>
+    <div class="gs-var v-huangquan"><span class="name">皇 权</span><span class="val">71<span class="trend up">↑</span></span></div>
+    <div class="gs-var v-huangwei"><span class="name">皇 威</span><span class="val">68<span class="trend up">↑</span></span></div>
+  </div>
+  <div class="gs-topbar-right">
+    <span class="gs-save-chip">已 存</span>
+    <button class="gs-icon-btn ai-live" title="AI 推演中">AI</button>
+    <button class="gs-icon-btn badge" data-n="3" title="待办">办</button>
+    <button class="gs-icon-btn badge" data-n="5" title="消息">讯</button>
+    <button class="gs-icon-btn" title="全部变量">全</button>
+    <button class="gs-icon-btn" title="设置">设</button>
+    <button class="gs-icon-btn" title="暂停">暂</button>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div class="gs-body">
+
+<!-- 左 rail（始终可见）-->
+<aside class="gs-rail-left">
+  <div class="gs-rail">
+    <button class="gs-rail-btn c-fac" title="势力">势</button>
+    <button class="gs-rail-btn c-party" title="党派">党<span class="dot"></span></button>
+    <button class="gs-rail-btn c-class" title="阶层">阶</button>
+    <button class="gs-rail-btn c-army" title="军事">军</button>
+    <button class="gs-rail-btn c-admin" title="行政区划">政</button>
+    <button class="gs-rail-btn c-bian" title="边患">边</button>
+    <button class="gs-rail-btn c-keju" title="科举">科</button>
+    <button class="gs-rail-btn c-school" title="学派">派</button>
+    <button class="gs-rail-btn c-price" title="物价">市</button>
+    <button class="gs-rail-btn c-item" title="文物">物</button>
+    <button class="gs-rail-btn c-book" title="典藏">书</button>
+    <button class="gs-rail-btn c-palace" title="宫殿">殿</button>
+    <button class="gs-rail-btn c-harem" title="后宫">宫</button>
+    <button class="gs-rail-btn c-map" title="天下图">图</button>
+    <button class="gs-rail-btn c-theme" title="主题">题</button>
+    <button class="gs-rail-btn c-audio" title="音声">声</button>
+    <button class="gs-rail-btn c-help" title="帮助">帮</button>
+  </div>
+</aside>
+
+<!-- 中栏 -->
+<div class="gs-center">
+  <div class="gs-breadcrumb">
+    <span>朝野要务</span><span class="sep">›</span><span>本朝纪要</span><span class="sep">›</span><span class="cur">史 记</span>
+    <div class="gs-breadcrumb-right">
+      <button class="gs-bc-btn">搜 寻</button>
+      <button class="gs-bc-btn">帮 助</button>
+    </div>
+  </div>
+  <div class="gs-tab-bar">
+    <div class="gs-tab-group" data-label="政　务">
+      <button class="gs-tab-btn"><span class="ic">◇</span>朝 政</button>
+      <button class="gs-tab-btn alert" data-badge="5"><span class="ic">◇</span>诏 令</button>
+      <button class="gs-tab-btn alert" data-badge="12"><span class="ic">◇</span>奏 疏</button>
+      <button class="gs-tab-btn"><span class="ic">◇</span>朝 议</button>
+    </div>
+    <div class="gs-tab-group" data-label="问　答">
+      <button class="gs-tab-btn"><span class="ic">◇</span>问 对</button>
+      <button class="gs-tab-btn"><span class="ic">◇</span>鸿 雁</button>
+    </div>
+    <div class="gs-tab-group" data-label="纪　录">
+      <button class="gs-tab-btn"><span class="ic">◇</span>编 年</button>
+      <button class="gs-tab-btn"><span class="ic">◇</span>起居注</button>
+      <button class="gs-tab-btn alert" data-badge="3"><span class="ic">◇</span>纪 事</button>
+      <button class="gs-tab-btn active"><span class="ic">◇</span>史 记</button>
+    </div>
+    <div class="gs-tab-group" data-label="臣　子">
+      <button class="gs-tab-btn"><span class="ic">◇</span>官 制</button>
+      <button class="gs-tab-btn"><span class="ic">◇</span>人物志</button>
+      <button class="gs-tab-btn"><span class="ic">◇</span>地 方</button>
+    </div>
+    <div class="gs-tab-group" data-label="文　考">
+      <button class="gs-tab-btn"><span class="ic">◇</span>文 苑</button>
+      <button class="gs-tab-btn"><span class="ic">◇</span>科 举</button>
+    </div>
+  </div>
+  <div class="gs-tab-content">
+    <div class="gs-toast">已载入编年 <span class="k">· 第 42 回</span></div>
+    <div class="gs-content-inner">
+      <div class="gs-sample-title">
+        <div class="main">史　记</div>
+        <div class="sub">君 临 天 下 · 编 年 纪 传 · 春 秋 笔 法</div>
+      </div>
+      <div class="gs-sample-grid">
+        <div class="gs-sample-card" style="--c:var(--gold-400);"><div class="lbl">本 朝 纪 要</div><div class="num">42</div><div class="sub">回合</div></div>
+        <div class="gs-sample-card" style="--c:var(--celadon-400);"><div class="lbl">要 事 纪 录</div><div class="num">186</div><div class="sub">事</div></div>
+        <div class="gs-sample-card" style="--c:var(--vermillion-400);"><div class="lbl">大 政 议 决</div><div class="num">87</div><div class="sub">议</div></div>
+        <div class="gs-sample-card" style="--c:var(--indigo-400);"><div class="lbl">名 臣 列 传</div><div class="num">32</div><div class="sub">传</div></div>
+      </div>
+      <div class="gs-sample-demo">
+        <span class="big">中 栏 全 宽 · 聚 焦 内 容</span><br><br>
+        两 侧 仅 显 纵 列 <span class="k">小 印 按 钮 rail（44px）</span><br>
+        点 任 一 侧 印 · <span class="k">抽屉 slide-in 覆 盖</span> · 中 栏 宽 度 不 变<br>
+        右 下 角 <span class="m">"推 演 本 回"</span> 朱 砂 大 印 独 立 悬 浮 · 不 随 侧 栏 开 关<br><br>
+        <span class="m">诏令</span>·<span class="m">奏疏</span>·<span class="m">问对</span>·<span class="m">鸿雁</span>·<span class="m">编年</span>·<span class="m">官制</span>·<span class="m">文苑</span>·<span class="m">起居注</span>·<span class="m">纪事</span>·<span class="m">史记</span>·<span class="m">地方</span>·<span class="m">人物志</span>·<span class="m">朝议</span>·<span class="m">科举</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 右 rail -->
+<aside class="gs-rail-right">
+  <div class="gs-rail">
+    <button class="gs-rail-btn c-self" title="朕亲">朕</button>
+    <button class="gs-rail-btn c-time" title="时辰">辰</button>
+    <button class="gs-rail-btn c-char" title="紧要之臣">臣</button>
+    <button class="gs-rail-btn c-rel" title="关系网">缘</button>
+    <button class="gs-rail-btn c-issue" title="议题">议<span class="dot"></span></button>
+    <button class="gs-rail-btn c-goal" title="大志">志</button>
+    <button class="gs-rail-btn c-jifa" title="祭祀">祀</button>
+    <button class="gs-rail-btn c-censor" title="监察">察</button>
+    <button class="gs-rail-btn c-agenda" title="宫廷日程">程</button>
+    <button class="gs-rail-btn c-fin" title="岁入岁出">帑</button>
+    <button class="gs-rail-btn c-news" title="近事">讯</button>
+    <button class="gs-rail-btn c-rumor" title="风闻">闻</button>
+  </div>
+</aside>
+
+<!-- 左 drawer 打开态示例 -->
+<div class="gs-drawer left" id="drawerLeft">
+  <div class="gs-drawer-hdr">
+    <div class="gs-drawer-title">朝 野 内 情</div>
+    <button class="gs-drawer-close">×</button>
+  </div>
+  <div class="gs-drawer-body">
+
+    <div class="gs-panel p-dyn">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">朝 代 主 题</div><span class="gs-panel-cnt">明·衰期</span></div>
+      <div class="gs-dyn-arc">
+        <span class="phase">衰 期</span>新帝登基·<span class="em">魏阉初除</span>·党争未息<br>
+        外有强虏·内多流民·<span class="warn">天象示警</span><br>
+        <span class="em">关键决断</span>：中兴之基在今朝
+      </div>
+    </div>
+
+    <div class="gs-panel p-weather">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">四 时 物 候</div><span class="gs-panel-cnt">秋分</span></div>
+      <div class="gs-weather-panel">
+        <div class="gs-season-disc"></div>
+        <div class="gs-season-info">
+          <div class="gs-season-row"><span class="k">天象</span><span class="v warn">秋旱</span></div>
+          <div class="gs-season-row"><span class="k">物候</span><span class="v">鸿雁南飞</span></div>
+          <div class="gs-season-row"><span class="k">农事</span><span class="v">收获·仓储</span></div>
+          <div class="gs-season-row"><span class="k">异象</span><span class="v danger">荧惑守心</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gs-panel p-fac">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">势 力 格 局</div><span class="gs-panel-cnt">5</span></div>
+      <div class="gs-fac-row f-ming"><span class="gs-fac-color"></span><div class="gs-fac-info"><div class="gs-fac-name">大明</div><div class="gs-fac-leader">朱由检·京师</div></div><span class="gs-fac-att friend">宗主</span><span class="gs-fac-str">78</span></div>
+      <div class="gs-fac-row f-houjin"><span class="gs-fac-color"></span><div class="gs-fac-info"><div class="gs-fac-name">后金</div><div class="gs-fac-leader">皇太极·盛京</div></div><span class="gs-fac-att hostile">敌对</span><span class="gs-fac-str">62</span></div>
+      <div class="gs-fac-row f-mongolia"><span class="gs-fac-color"></span><div class="gs-fac-info"><div class="gs-fac-name">蒙古诸部</div><div class="gs-fac-leader">林丹汗·察哈尔</div></div><span class="gs-fac-att neutral">中立</span><span class="gs-fac-str">48</span></div>
+      <div class="gs-fac-row f-liao"><span class="gs-fac-color"></span><div class="gs-fac-info"><div class="gs-fac-name">辽东</div><div class="gs-fac-leader">袁崇焕·宁远</div></div><span class="gs-fac-att vassal">臣属</span><span class="gs-fac-str">54</span></div>
+      <div class="gs-fac-row f-nan"><span class="gs-fac-color"></span><div class="gs-fac-info"><div class="gs-fac-name">南明遗老</div><div class="gs-fac-leader">钱谦益·南京</div></div><span class="gs-fac-att friend">友好</span><span class="gs-fac-str">31</span></div>
+    </div>
+
+    <div class="gs-panel p-party">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">党 派 纷 争</div><span class="gs-panel-cnt">4</span></div>
+      <div class="gs-party-row"><span class="gs-party-name">东林党</span><span class="gs-party-infl"><span class="gs-party-bar"><span class="gs-party-fill" style="width:72%;background:var(--celadon-400);"></span></span><span class="gs-party-val">72</span></span></div>
+      <div class="gs-party-row"><span class="gs-party-name">宦党</span><span class="gs-party-infl"><span class="gs-party-bar"><span class="gs-party-fill" style="width:48%;background:var(--purple-400);"></span></span><span class="gs-party-val">48</span></span></div>
+      <div class="gs-party-row"><span class="gs-party-name">浙党</span><span class="gs-party-infl"><span class="gs-party-bar"><span class="gs-party-fill" style="width:35%;background:var(--indigo-400);"></span></span><span class="gs-party-val">35</span></span></div>
+      <div class="gs-party-row"><span class="gs-party-name">昆党</span><span class="gs-party-infl"><span class="gs-party-bar"><span class="gs-party-fill" style="width:22%;background:var(--amber-400);"></span></span><span class="gs-party-val">22</span></span></div>
+    </div>
+
+    <div class="gs-panel p-class">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">阶 层 动 静</div><span class="gs-panel-cnt">6</span></div>
+      <div class="gs-class-row"><span class="gs-class-icon" style="--c-c:var(--gold-400);">士</span><span class="gs-class-name">士大夫</span><span class="gs-class-pop">8%</span><span class="gs-class-mood stable">安</span></div>
+      <div class="gs-class-row"><span class="gs-class-icon" style="--c-c:var(--celadon-400);">农</span><span class="gs-class-name">农民</span><span class="gs-class-pop">71%</span><span class="gs-class-mood unrest">躁</span></div>
+      <div class="gs-class-row"><span class="gs-class-icon" style="--c-c:var(--amber-400);">工</span><span class="gs-class-name">工匠</span><span class="gs-class-pop">7%</span><span class="gs-class-mood stable">安</span></div>
+      <div class="gs-class-row"><span class="gs-class-icon" style="--c-c:var(--indigo-400);">商</span><span class="gs-class-name">商贾</span><span class="gs-class-pop">4%</span><span class="gs-class-mood stable">安</span></div>
+      <div class="gs-class-row"><span class="gs-class-icon" style="--c-c:var(--vermillion-400);">军</span><span class="gs-class-name">军户</span><span class="gs-class-pop">8%</span><span class="gs-class-mood angry">怨</span></div>
+      <div class="gs-class-row"><span class="gs-class-icon" style="--c-c:var(--purple-400);">宗</span><span class="gs-class-name">宗室</span><span class="gs-class-pop">2%</span><span class="gs-class-mood stable">安</span></div>
+    </div>
+
+    <div class="gs-panel p-army">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">军 事 要 务</div><span class="gs-panel-cnt">4</span></div>
+      <div class="gs-army-row"><span class="gs-army-icon">⚔</span><div class="gs-army-info"><div class="gs-army-name">关宁铁骑</div><div class="gs-army-loc">宁远·袁崇焕督</div></div><div style="text-align:right;"><div class="gs-army-size">9800</div><div class="gs-army-morale"><div class="gs-army-morale-fill" style="width:85%;"></div></div></div></div>
+      <div class="gs-army-row"><span class="gs-army-icon">⚔</span><div class="gs-army-info"><div class="gs-army-name">宣府重兵</div><div class="gs-army-loc">宣府·卢象升督</div></div><div style="text-align:right;"><div class="gs-army-size">6400</div><div class="gs-army-morale"><div class="gs-army-morale-fill" style="width:78%;"></div></div></div></div>
+      <div class="gs-army-row"><span class="gs-army-icon">⚔</span><div class="gs-army-info"><div class="gs-army-name">京营</div><div class="gs-army-loc">京师</div></div><div style="text-align:right;"><div class="gs-army-size">4200</div><div class="gs-army-morale"><div class="gs-army-morale-fill" style="width:62%;background:var(--amber-400);"></div></div></div></div>
+      <div class="gs-army-row"><span class="gs-army-icon">⚔</span><div class="gs-army-info"><div class="gs-army-name">秦军</div><div class="gs-army-loc">西安·孙传庭</div></div><div style="text-align:right;"><div class="gs-army-size">3100</div><div class="gs-army-morale"><div class="gs-army-morale-fill" style="width:45%;background:var(--vermillion-400);"></div></div></div></div>
+    </div>
+
+    <div class="gs-panel p-admin">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">行 政 区 划</div><span class="gs-panel-cnt">17省</span></div>
+      <div class="gs-admin-row crisis"><span class="gs-admin-dot"></span><span class="gs-admin-name">陕西</span><span class="gs-admin-type">直辖</span><span class="gs-admin-unrest">81</span></div>
+      <div class="gs-admin-row war"><span class="gs-admin-dot"></span><span class="gs-admin-name">辽东</span><span class="gs-admin-type">藩镇</span><span class="gs-admin-unrest">55</span></div>
+      <div class="gs-admin-row"><span class="gs-admin-dot"></span><span class="gs-admin-name">北直隶</span><span class="gs-admin-type">直辖</span><span class="gs-admin-unrest">28</span></div>
+      <div class="gs-admin-row stable"><span class="gs-admin-dot"></span><span class="gs-admin-name">浙江</span><span class="gs-admin-type">直辖</span><span class="gs-admin-unrest">15</span></div>
+      <div class="gs-admin-row stable"><span class="gs-admin-dot"></span><span class="gs-admin-name">福建</span><span class="gs-admin-type">羁縻</span><span class="gs-admin-unrest">18</span></div>
+      <div class="gs-admin-row"><span class="gs-admin-dot"></span><span class="gs-admin-name">山东</span><span class="gs-admin-type">直辖</span><span class="gs-admin-unrest">45</span></div>
+      <div class="gs-admin-row"><span class="gs-admin-dot"></span><span class="gs-admin-name">河南</span><span class="gs-admin-type">直辖</span><span class="gs-admin-unrest">52</span></div>
+      <div class="gs-admin-row"><span class="gs-admin-dot"></span><span class="gs-admin-name">云贵</span><span class="gs-admin-type">土司</span><span class="gs-admin-unrest">48</span></div>
+    </div>
+
+    <!-- 边患外族 (NEW) -->
+    <div class="gs-panel p-bian">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">边 患 外 族</div><span class="gs-panel-cnt">3 患</span></div>
+      <div class="gs-bian-row"><span class="gs-bian-threat hi">急</span><div class="gs-bian-info"><div class="gs-bian-name">后金八旗</div><div class="gs-bian-desc">皇太极·虎视关外</div></div><span class="gs-bian-force">精锐 6 万</span></div>
+      <div class="gs-bian-row"><span class="gs-bian-threat mid">中</span><div class="gs-bian-info"><div class="gs-bian-name">察哈尔蒙古</div><div class="gs-bian-desc">林丹汗·盟约未定</div></div><span class="gs-bian-force">骑射 3 万</span></div>
+      <div class="gs-bian-row"><span class="gs-bian-threat lo">缓</span><div class="gs-bian-info"><div class="gs-bian-name">西南土司</div><div class="gs-bian-desc">奢安余部·蠢蠢欲动</div></div><span class="gs-bian-force">残众 数千</span></div>
+    </div>
+
+    <div class="gs-panel p-keju">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">科 举 进 程</div><span class="gs-panel-cnt">会试期</span></div>
+      <div class="gs-keju-time">
+        <div class="gs-keju-track"><div class="gs-keju-track-done" style="width:60%;"></div></div>
+        <div class="gs-keju-nodes"><div class="gs-keju-node done"></div><div class="gs-keju-node done"></div><div class="gs-keju-node current"></div><div class="gs-keju-node"></div><div class="gs-keju-node"></div></div>
+      </div>
+      <div class="gs-keju-labels"><span class="done">童 试</span><span class="done">乡 试</span><span class="current">会 试</span><span>殿 试</span><span>授 官</span></div>
+      <div class="gs-keju-sub">主考官温体仁·应试 380 人·预放 48 名</div>
+    </div>
+
+    <!-- 学派思想 (NEW) -->
+    <div class="gs-panel p-school">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">学 派 流 变</div><span class="gs-panel-cnt">5 派</span></div>
+      <div class="gs-school-row"><span class="gs-school-icon" style="--s-c:var(--gold-400);">程</span><span class="gs-school-name">程朱理学</span><span class="gs-school-level" style="--s-c:var(--gold-400);">主流</span><span class="gs-school-infl">72</span></div>
+      <div class="gs-school-row"><span class="gs-school-icon" style="--s-c:var(--celadon-400);">阳</span><span class="gs-school-name">陆王心学</span><span class="gs-school-level" style="--s-c:var(--celadon-400);">方兴</span><span class="gs-school-infl">48</span></div>
+      <div class="gs-school-row"><span class="gs-school-icon" style="--s-c:var(--indigo-400);">考</span><span class="gs-school-name">考据朴学</span><span class="gs-school-level" style="--s-c:var(--indigo-400);">渐盛</span><span class="gs-school-infl">35</span></div>
+      <div class="gs-school-row"><span class="gs-school-icon" style="--s-c:var(--amber-400);">西</span><span class="gs-school-name">西学东渐</span><span class="gs-school-level" style="--s-c:var(--amber-400);">新潮</span><span class="gs-school-infl">18</span></div>
+      <div class="gs-school-row"><span class="gs-school-icon" style="--s-c:var(--purple-400);">佛</span><span class="gs-school-name">禅净儒释</span><span class="gs-school-level" style="--s-c:var(--purple-400);">民间</span><span class="gs-school-infl">26</span></div>
+    </div>
+
+    <!-- 物价行情 (NEW) -->
+    <div class="gs-panel p-price">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">物 价 行 情</div><span class="gs-panel-cnt">京 师</span></div>
+      <div class="gs-price-row"><span class="gs-price-name">米</span><span class="gs-price-val">1.8</span><span class="gs-price-unit">两/石</span><span class="gs-price-spark"><span style="height:30%;"></span><span style="height:45%;"></span><span style="height:40%;"></span><span style="height:55%;"></span><span style="height:70%;"></span><span style="height:85%;"></span></span><span class="gs-price-trend up">↑42%</span></div>
+      <div class="gs-price-row"><span class="gs-price-name">布</span><span class="gs-price-val">0.8</span><span class="gs-price-unit">两/匹</span><span class="gs-price-spark"><span style="height:50%;"></span><span style="height:52%;"></span><span style="height:55%;"></span><span style="height:54%;"></span><span style="height:58%;"></span><span style="height:60%;"></span></span><span class="gs-price-trend up">↑8%</span></div>
+      <div class="gs-price-row"><span class="gs-price-name">盐</span><span class="gs-price-val">3.2</span><span class="gs-price-unit">两/引</span><span class="gs-price-spark"><span style="height:70%;"></span><span style="height:65%;"></span><span style="height:68%;"></span><span style="height:72%;"></span><span style="height:75%;"></span><span style="height:78%;"></span></span><span class="gs-price-trend stable">· 6%</span></div>
+      <div class="gs-price-row"><span class="gs-price-name">银</span><span class="gs-price-val">650</span><span class="gs-price-unit">/两金</span><span class="gs-price-spark"><span style="height:75%;"></span><span style="height:70%;"></span><span style="height:68%;"></span><span style="height:65%;"></span><span style="height:60%;"></span><span style="height:58%;"></span></span><span class="gs-price-trend down">↓14%</span></div>
+    </div>
+
+    <div class="gs-panel p-family">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">家 族 门 第</div><span class="gs-panel-cnt">22</span></div>
+      <div class="gs-fam-row"><span class="gs-fam-name">朱氏(宗室)</span><span class="gs-fam-tier gaomen">甲</span><span class="gs-fam-renown">98</span></div>
+      <div class="gs-fam-row"><span class="gs-fam-name">钱氏(常熟)</span><span class="gs-fam-tier gaomen">甲</span><span class="gs-fam-renown">82</span></div>
+      <div class="gs-fam-row"><span class="gs-fam-name">徐氏(上海)</span><span class="gs-fam-tier shizu">乙</span><span class="gs-fam-renown">75</span></div>
+      <div class="gs-fam-row"><span class="gs-fam-name">袁氏(东莞)</span><span class="gs-fam-tier shizu">乙</span><span class="gs-fam-renown">68</span></div>
+      <div class="gs-fam-row"><span class="gs-fam-name">毕氏(淄川)</span><span class="gs-fam-tier hanmen">丙</span><span class="gs-fam-renown">52</span></div>
+    </div>
+
+    <div class="gs-panel p-tech">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">制 度 演 进</div><span class="gs-panel-cnt">4</span></div>
+      <div class="gs-tech-row"><span class="gs-tech-icon">⚙</span><span class="gs-tech-name">火器改良</span><span class="gs-tech-prog"><span class="gs-tech-prog-fill" style="width:78%;"></span></span><span class="gs-tech-val">78</span></div>
+      <div class="gs-tech-row"><span class="gs-tech-icon">⚙</span><span class="gs-tech-name">漕运整饬</span><span class="gs-tech-prog"><span class="gs-tech-prog-fill" style="width:52%;"></span></span><span class="gs-tech-val">52</span></div>
+      <div class="gs-tech-row"><span class="gs-tech-icon">⚙</span><span class="gs-tech-name">考成法</span><span class="gs-tech-prog"><span class="gs-tech-prog-fill" style="width:35%;"></span></span><span class="gs-tech-val">35</span></div>
+      <div class="gs-tech-row"><span class="gs-tech-icon">⚙</span><span class="gs-tech-name">一条鞭法</span><span class="gs-tech-prog"><span class="gs-tech-prog-fill" style="width:22%;"></span></span><span class="gs-tech-val">22</span></div>
+    </div>
+
+    <div class="gs-panel p-item">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">文 物 奇 珍</div><span class="gs-panel-cnt">12</span></div>
+      <div class="gs-item-grid">
+        <div class="gs-item-slot r-jing">玺<div class="tag"></div></div>
+        <div class="gs-item-slot r-gui">鼎<div class="tag"></div></div>
+        <div class="gs-item-slot r-bi">瓶<div class="tag"></div></div>
+        <div class="gs-item-slot r-chang">剑</div>
+        <div class="gs-item-slot r-gui">卷</div>
+        <div class="gs-item-slot r-chang">弓</div>
+        <div class="gs-item-slot r-bi">印</div>
+        <div class="gs-item-slot empty">—</div>
+      </div>
+    </div>
+
+    <!-- 典藏书阁 (NEW) -->
+    <div class="gs-panel p-book">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">典 藏 书 阁</div><span class="gs-panel-cnt">文渊阁</span></div>
+      <div class="gs-book-grid">
+        <div class="gs-book-card b-jing"><div class="gs-book-name">经</div><div class="gs-book-num">2,418</div><div class="gs-book-sub">十三经·注疏</div></div>
+        <div class="gs-book-card b-shi"><div class="gs-book-name">史</div><div class="gs-book-num">3,862</div><div class="gs-book-sub">二十二史·实录</div></div>
+        <div class="gs-book-card b-zi"><div class="gs-book-name">子</div><div class="gs-book-num">5,273</div><div class="gs-book-sub">百家·兵农医</div></div>
+        <div class="gs-book-card b-ji"><div class="gs-book-name">集</div><div class="gs-book-num">8,146</div><div class="gs-book-sub">诗文·笔记</div></div>
+      </div>
+    </div>
+
+    <!-- 宫殿布局 (NEW) -->
+    <div class="gs-panel p-palace">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">宫 殿 之 序</div><span class="gs-panel-cnt">紫禁城</span></div>
+      <div class="gs-palace-diag">
+        <div class="gs-palace-row-block"><div class="gs-palace-block gold">乾清宫</div></div>
+        <div class="gs-palace-row-block"><div class="gs-palace-block">保和殿</div></div>
+        <div class="gs-palace-row-block"><div class="gs-palace-block">中和殿</div></div>
+        <div class="gs-palace-row-block"><div class="gs-palace-block gold">太和殿</div></div>
+        <div class="gs-palace-row-block">
+          <div class="gs-palace-block small">文华殿</div>
+          <div class="gs-palace-block small">武英殿</div>
+        </div>
+        <div class="gs-palace-gate">午 门 · 端 门 · 承 天 门</div>
+      </div>
+    </div>
+
+    <div class="gs-panel p-harem">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">后 宫 嫔 御</div><span class="gs-panel-cnt">4</span></div>
+      <div class="gs-harem-row">
+        <div class="gs-consort empress"><div class="gs-consort-port">周</div><div class="gs-consort-name">周</div><div class="gs-consort-rank">皇后</div></div>
+        <div class="gs-consort guifei"><div class="gs-consort-port">田</div><div class="gs-consort-name">田</div><div class="gs-consort-rank">贵妃</div></div>
+        <div class="gs-consort fei"><div class="gs-consort-port">袁</div><div class="gs-consort-name">袁</div><div class="gs-consort-rank">淑妃</div></div>
+        <div class="gs-consort pin"><div class="gs-consort-port">王</div><div class="gs-consort-name">王</div><div class="gs-consort-rank">嫔</div></div>
+      </div>
+    </div>
+
+    <div class="gs-panel p-map">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">天 下 之 图</div><div class="gs-panel-tools"><button class="gs-panel-tool-btn">放大</button></div></div>
+      <div class="gs-mini-map">
+        <span class="gs-map-pin self" style="top:32%;left:48%;"></span><span class="gs-map-label" style="top:36%;left:44%;">京师</span>
+        <span class="gs-map-pin crisis" style="top:58%;left:28%;"></span><span class="gs-map-label" style="top:62%;left:22%;">陕西(旱)</span>
+        <span class="gs-map-pin war" style="top:26%;left:72%;"></span><span class="gs-map-label" style="top:22%;left:68%;">宁远</span>
+        <span class="gs-map-pin war" style="top:18%;left:58%;"></span>
+        <span class="gs-map-pin crisis" style="top:68%;left:58%;"></span><span class="gs-map-label" style="top:72%;left:54%;">张秋口</span>
+        <span class="gs-map-pin stable" style="top:78%;left:64%;"></span><span class="gs-map-label" style="top:82%;left:60%;">南京</span>
+      </div>
+    </div>
+
+    <div class="gs-panel p-theme">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">界 面 主 题</div><span class="gs-panel-cnt">4 色</span></div>
+      <div class="gs-theme-grid">
+        <div class="gs-theme-card active">
+          <div class="gs-theme-swatch"><span class="c" style="background:#b89a53;"></span><span class="c" style="background:#c9a85f;"></span><span class="c" style="background:#6a9a7f;"></span><span class="c" style="background:#b84738;"></span></div>
+          <div class="gs-theme-name">素 纸</div>
+          <div class="desc">宣纸金线·朱砂</div>
+        </div>
+        <div class="gs-theme-card">
+          <div class="gs-theme-swatch"><span class="c" style="background:#3d342a;"></span><span class="c" style="background:#6b5d47;"></span><span class="c" style="background:#a69470;"></span><span class="c" style="background:#d9c9a9;"></span></div>
+          <div class="gs-theme-name">水 墨</div>
+          <div class="desc">墨分五色·冷调</div>
+        </div>
+        <div class="gs-theme-card">
+          <div class="gs-theme-swatch"><span class="c" style="background:#8f3428;"></span><span class="c" style="background:#b84738;"></span><span class="c" style="background:#d15c47;"></span><span class="c" style="background:#c9a85f;"></span></div>
+          <div class="gs-theme-name">朱 砂</div>
+          <div class="desc">浓朱重赤·烈</div>
+        </div>
+        <div class="gs-theme-card">
+          <div class="gs-theme-swatch"><span class="c" style="background:#4a7a5f;"></span><span class="c" style="background:#6a9a7f;"></span><span class="c" style="background:#b89a53;"></span><span class="c" style="background:#d9c9a9;"></span></div>
+          <div class="gs-theme-name">青 绿</div>
+          <div class="desc">青绿山水·雅</div>
+        </div>
+      </div>
+      <div class="gs-font-row">
+        <span class="lbl">字 号</span>
+        <div class="gs-font-sizes">
+          <button class="gs-sz-btn sm">小</button>
+          <button class="gs-sz-btn md active">中</button>
+          <button class="gs-sz-btn lg">大</button>
+          <button class="gs-sz-btn xl">特大</button>
+        </div>
+      </div>
+      <div class="gs-font-row">
+        <span class="lbl">正 文</span>
+        <select class="gs-font-select">
+          <option>宋体 SimSun</option>
+          <option>楷体 STKaiti</option>
+          <option>仿宋 FangSong</option>
+          <option>方正启体</option>
+          <option>思源宋体</option>
+          <option>霞鹜文楷</option>
+        </select>
+      </div>
+      <div class="gs-font-row">
+        <span class="lbl">标 题</span>
+        <select class="gs-font-select">
+          <option>楷体 STKaiti</option>
+          <option>行楷</option>
+          <option>隶书</option>
+          <option>华文行楷</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="gs-panel p-audio">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">音 声 调 度</div><span class="gs-panel-cnt">开</span></div>
+      <div class="gs-audio-row"><span class="gs-audio-name">殿 乐</span><div class="gs-audio-ctrl"><div class="gs-audio-slider" style="--p:70%;"></div><span class="gs-audio-val">70</span></div></div>
+      <div class="gs-audio-row"><span class="gs-audio-name">朝 钟</span><div class="gs-audio-ctrl"><div class="gs-audio-slider" style="--p:45%;"></div><span class="gs-audio-val">45</span></div></div>
+      <div class="gs-audio-row"><span class="gs-audio-name">笔 墨</span><div class="gs-audio-ctrl"><div class="gs-audio-slider" style="--p:60%;"></div><span class="gs-audio-val">60</span></div></div>
+      <div class="gs-audio-now">正 奏：<span class="h">《秋声赋》</span>·古琴独奏</div>
+      <div class="gs-audio-custom">
+        <button class="gs-audio-import" onclick="document.getElementById('audioFile').click();">导 入 曲 谱</button>
+        <input type="file" id="audioFile" accept="audio/*" multiple style="display:none;">
+        <div class="gs-audio-lib">
+          <div class="gs-audio-song playing"><span class="title">秋声赋</span><span class="meta">古琴</span><button class="del">×</button></div>
+          <div class="gs-audio-song paused"><span class="title">流水</span><span class="meta">古琴</span><button class="del">×</button></div>
+          <div class="gs-audio-song paused"><span class="title">阳关三叠</span><span class="meta">琵琶</span><button class="del">×</button></div>
+          <div class="gs-audio-song paused"><span class="title">渔樵问答</span><span class="meta">洞箫</span><button class="del">×</button></div>
+          <div class="gs-audio-song paused"><span class="title">(自导) 宫廷组曲.mp3</span><span class="meta">自导</span><button class="del">×</button></div>
+        </div>
+        <div class="gs-audio-loop">
+          <button class="gs-audio-loop-btn active">顺 序</button>
+          <button class="gs-audio-loop-btn">单 曲</button>
+          <button class="gs-audio-loop-btn">随 机</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="gs-panel p-help">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">帮 助 · 典 范</div><span class="gs-panel-cnt">4</span></div>
+      <div class="gs-help-item"><span class="ic">?</span><span class="t">新 手 入 门</span><span class="arr">›</span></div>
+      <div class="gs-help-item"><span class="ic">典</span><span class="t">历 代 典 范</span><span class="arr">›</span></div>
+      <div class="gs-help-item"><span class="ic">AI</span><span class="t">AI 推 演 原 理</span><span class="arr">›</span></div>
+      <div class="gs-help-item"><span class="ic">键</span><span class="t">键 位 速 查</span><span class="arr">›</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 右 drawer 打开态示例 -->
+<div class="gs-drawer right" id="drawerRight">
+  <div class="gs-drawer-hdr">
+    <div class="gs-drawer-title">朕 之 案 上</div>
+    <button class="gs-drawer-close">×</button>
+  </div>
+  <div class="gs-drawer-body">
+
+    <div class="gs-self-card">
+      <div class="gs-self-row">
+        <div class="gs-self-portrait">朱</div>
+        <div class="gs-self-info">
+          <div class="gs-self-name">朱由检</div>
+          <div class="gs-self-title">大 明 皇 帝　字 德 约</div>
+          <div class="gs-self-meta">
+            <span class="gs-self-tag">18岁</span>
+            <span class="gs-self-tag trait-pos">勤政</span>
+            <span class="gs-self-tag trait-pos">节俭</span>
+            <span class="gs-self-tag trait-neg">多疑</span>
+            <span class="gs-self-tag trait-neu">急躁</span>
+          </div>
+        </div>
+      </div>
+      <div class="gs-self-stats">
+        <div class="gs-stat zhi"><span class="gs-stat-k">智</span><span class="gs-stat-bar"><span class="gs-stat-fill" style="width:82%;"></span></span><span class="gs-stat-v">82</span></div>
+        <div class="gs-stat zheng"><span class="gs-stat-k">政</span><span class="gs-stat-bar"><span class="gs-stat-fill" style="width:74%;"></span></span><span class="gs-stat-v">74</span></div>
+        <div class="gs-stat jun"><span class="gs-stat-k">军</span><span class="gs-stat-bar"><span class="gs-stat-fill" style="width:48%;"></span></span><span class="gs-stat-v">48</span></div>
+        <div class="gs-stat jiao"><span class="gs-stat-k">交</span><span class="gs-stat-bar"><span class="gs-stat-fill" style="width:55%;"></span></span><span class="gs-stat-v">55</span></div>
+        <div class="gs-stat ren"><span class="gs-stat-k">仁</span><span class="gs-stat-bar"><span class="gs-stat-fill" style="width:68%;"></span></span><span class="gs-stat-v">68</span></div>
+        <div class="gs-stat wei"><span class="gs-stat-k">威</span><span class="gs-stat-bar"><span class="gs-stat-fill" style="width:68%;"></span></span><span class="gs-stat-v">68</span></div>
+      </div>
+      <div class="gs-self-wuchang">
+        <span class="lbl">五常</span>
+        <span class="gs-wc-dot hi">仁</span><span class="gs-wc-dot mid">义</span><span class="gs-wc-dot hi">礼</span><span class="gs-wc-dot hi">智</span><span class="gs-wc-dot mid">信</span>
+      </div>
+    </div>
+
+    <div class="gs-panel p-time">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">十 二 时 辰</div><span class="gs-panel-cnt">申时</span></div>
+      <div class="gs-time-dial">
+        <div class="gs-time-mark" style="top:10%;left:50%;">子</div>
+        <div class="gs-time-mark" style="top:23%;left:82%;">卯</div>
+        <div class="gs-time-mark cur" style="top:50%;left:90%;">午</div>
+        <div class="gs-time-mark cur" style="top:77%;left:82%;">申</div>
+        <div class="gs-time-mark" style="top:90%;left:50%;">酉</div>
+        <div class="gs-time-mark" style="top:77%;left:18%;">戌</div>
+        <div class="gs-time-mark" style="top:50%;left:10%;">卯</div>
+        <div class="gs-time-mark" style="top:23%;left:18%;">丑</div>
+        <div class="gs-time-hand"></div>
+        <div class="gs-time-center"></div>
+      </div>
+      <div class="gs-time-text">
+        <div class="main">申 时 · 三 刻</div>
+        <div class="sub">日 昳 · 未 至 酉 将 明</div>
+      </div>
+    </div>
+
+    <!-- 紧要之臣 (v2 · 参考 char-full) -->
+    <div class="gs-panel p-quick">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">紧 要 之 臣</div><span class="gs-panel-cnt">7</span></div>
+
+      <div class="gs-char2 f-mili">
+        <div class="gs-char2-row">
+          <div class="gs-char2-port">袁</div>
+          <div class="gs-char2-body">
+            <div class="gs-char2-name-row">
+              <span class="gs-char2-name">袁崇焕</span>
+              <span class="gs-char2-zi">元素</span>
+              <span class="gs-char2-gender male">男·45</span>
+            </div>
+            <div class="gs-char2-title"><b>兵部尚书</b> · 正二品 · 督师蓟辽</div>
+            <div class="gs-char2-tags">
+              <span class="gs-char2-tag loc">宁远</span>
+              <span class="gs-char2-tag travel">→ 京师</span>
+              <span class="gs-char2-tag fac">朝廷·辽党</span>
+              <span class="gs-char2-tag clan">袁氏·寒门</span>
+              <span class="gs-char2-tag origin">科举·进士</span>
+            </div>
+            <div class="gs-char2-hearts">
+              <div class="gs-char2-heart loyalty"><span class="lbl">忠诚</span><div class="bar"><div class="fill hi" style="width:78%;"></div></div><span class="val">78</span><span class="verd">忠贞可托</span></div>
+              <div class="gs-char2-heart ambition"><span class="lbl">野心</span><div class="bar"><div class="fill mid" style="width:62%;"></div></div><span class="val">62</span><span class="verd">有所图</span></div>
+            </div>
+            <div class="gs-char2-verdict">综合：可托以一方 · 良臣之选</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-char2 f-dongin">
+        <div class="gs-char2-row">
+          <div class="gs-char2-port">钱</div>
+          <div class="gs-char2-body">
+            <div class="gs-char2-name-row">
+              <span class="gs-char2-name">钱谦益</span>
+              <span class="gs-char2-zi">受之</span>
+              <span class="gs-char2-gender male">男·46</span>
+            </div>
+            <div class="gs-char2-title"><b>礼部尚书</b> · 正二品 · 东林领袖</div>
+            <div class="gs-char2-tags">
+              <span class="gs-char2-tag loc">京师</span>
+              <span class="gs-char2-tag fac">朝廷·东林</span>
+              <span class="gs-char2-tag clan">钱氏·常熟甲</span>
+              <span class="gs-char2-tag origin">科举·探花</span>
+            </div>
+            <div class="gs-char2-hearts">
+              <div class="gs-char2-heart loyalty"><span class="lbl">忠诚</span><div class="bar"><div class="fill mid" style="width:62%;"></div></div><span class="val">62</span><span class="verd">存观望心</span></div>
+              <div class="gs-char2-heart ambition"><span class="lbl">野心</span><div class="bar"><div class="fill hi" style="width:76%;"></div></div><span class="val">76</span><span class="verd">志在首揆</span></div>
+            </div>
+            <div class="gs-char2-verdict warn">综合：才华绝世 · 须加防范</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-char2 f-kun">
+        <div class="gs-char2-row">
+          <div class="gs-char2-port">温</div>
+          <div class="gs-char2-body">
+            <div class="gs-char2-name-row">
+              <span class="gs-char2-name">温体仁</span>
+              <span class="gs-char2-zi">长卿</span>
+              <span class="gs-char2-gender male">男·55</span>
+            </div>
+            <div class="gs-char2-title"><b>礼部侍郎</b> · 正三品 · 昆党</div>
+            <div class="gs-char2-tags">
+              <span class="gs-char2-tag loc">京师</span>
+              <span class="gs-char2-tag fac">朝廷·昆党</span>
+              <span class="gs-char2-tag clan">温氏·乌程</span>
+              <span class="gs-char2-tag origin">科举·进士</span>
+            </div>
+            <div class="gs-char2-hearts">
+              <div class="gs-char2-heart loyalty"><span class="lbl">忠诚</span><div class="bar"><div class="fill mid" style="width:58%;"></div></div><span class="val">58</span><span class="verd">诡随</span></div>
+              <div class="gs-char2-heart ambition"><span class="lbl">野心</span><div class="bar"><div class="fill hi" style="width:85%;"></div></div><span class="val">85</span><span class="verd">图相</span></div>
+            </div>
+            <div class="gs-char2-verdict danger">综合：智术工巧 · 恐成权奸</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-char2 f-dongin">
+        <div class="gs-char2-row">
+          <div class="gs-char2-port">毕</div>
+          <div class="gs-char2-body">
+            <div class="gs-char2-name-row">
+              <span class="gs-char2-name">毕自严</span>
+              <span class="gs-char2-zi">景曾</span>
+              <span class="gs-char2-gender male">男·60</span>
+            </div>
+            <div class="gs-char2-title"><b>户部尚书</b> · 正二品 · 理财能臣</div>
+            <div class="gs-char2-tags">
+              <span class="gs-char2-tag loc">京师</span>
+              <span class="gs-char2-tag fac">朝廷·清流</span>
+              <span class="gs-char2-tag clan">毕氏·淄川</span>
+              <span class="gs-char2-tag origin">科举·进士</span>
+            </div>
+            <div class="gs-char2-hearts">
+              <div class="gs-char2-heart loyalty"><span class="lbl">忠诚</span><div class="bar"><div class="fill hi" style="width:82%;"></div></div><span class="val">82</span><span class="verd">鞠躬尽瘁</span></div>
+              <div class="gs-char2-heart ambition"><span class="lbl">野心</span><div class="bar"><div class="fill lo" style="width:28%;"></div></div><span class="val">28</span><span class="verd">恬淡</span></div>
+            </div>
+            <div class="gs-char2-verdict">综合：社稷之臣 · 赤心可鉴</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gs-char2 f-consort">
+        <div class="gs-char2-row">
+          <div class="gs-char2-port">周</div>
+          <div class="gs-char2-body">
+            <div class="gs-char2-name-row">
+              <span class="gs-char2-name">周后</span>
+              <span class="gs-char2-zi">周嘉玉</span>
+              <span class="gs-char2-gender female">女·17</span>
+            </div>
+            <div class="gs-char2-title"><b>坤宁宫·皇后</b> · 中宫</div>
+            <div class="gs-char2-tags">
+              <span class="gs-char2-tag loc">坤宁宫</span>
+              <span class="gs-char2-tag fac">后宫·中宫</span>
+              <span class="gs-char2-tag clan">周氏·苏州</span>
+            </div>
+            <div class="gs-char2-hearts">
+              <div class="gs-char2-heart loyalty"><span class="lbl">忠诚</span><div class="bar"><div class="fill hi" style="width:95%;"></div></div><span class="val">95</span><span class="verd">同心同德</span></div>
+              <div class="gs-char2-heart ambition"><span class="lbl">野心</span><div class="bar"><div class="fill lo" style="width:12%;"></div></div><span class="val">12</span><span class="verd">无求</span></div>
+            </div>
+            <div class="gs-char2-verdict">综合：贤德可依 · 夫妻同心</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 关系网 -->
+    <div class="gs-panel p-rel">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">人 脉 关 系</div><div class="gs-panel-tools"><button class="gs-panel-tool-btn">详图</button></div></div>
+      <div class="gs-rel-net">
+        <div class="gs-rel-edge friend" style="top:50%;left:50%;width:64px;transform:rotate(-55deg);"></div>
+        <div class="gs-rel-edge friend" style="top:50%;left:50%;width:56px;transform:rotate(42deg);"></div>
+        <div class="gs-rel-edge foe" style="top:50%;left:50%;width:68px;transform:rotate(170deg);"></div>
+        <div class="gs-rel-edge dashed" style="top:50%;left:50%;width:54px;transform:rotate(130deg);"></div>
+        <div class="gs-rel-edge friend" style="top:50%;left:50%;width:48px;transform:rotate(-130deg);"></div>
+        <div class="gs-rel-edge dashed" style="top:50%;left:50%;width:50px;transform:rotate(90deg);"></div>
+        <div class="gs-rel-node center" style="top:calc(50% - 14px);left:calc(50% - 14px);">朕</div>
+        <div class="gs-rel-node friend" style="top:20%;left:76%;">袁</div>
+        <div class="gs-rel-node friend" style="top:82%;left:72%;">毕</div>
+        <div class="gs-rel-node foe" style="top:38%;left:6%;">温</div>
+        <div class="gs-rel-node neutral" style="top:72%;left:14%;">钱</div>
+        <div class="gs-rel-node friend" style="top:12%;left:28%;">周</div>
+        <div class="gs-rel-node neutral" style="top:82%;left:40%;">曹</div>
+      </div>
+    </div>
+
+    <div class="gs-panel p-issue">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">当 前 议 题</div><span class="gs-panel-cnt">5 要</span></div>
+      <div class="gs-issue-item urgent"><span class="gs-issue-num">一</span><span class="gs-issue-text"><span class="h">陕西大旱</span>·流民蜂起</span><span class="gs-issue-time">即刻</span></div>
+      <div class="gs-issue-item urgent"><span class="gs-issue-num">二</span><span class="gs-issue-text"><span class="h">辽饷</span>加征廷议</span><span class="gs-issue-time">本回</span></div>
+      <div class="gs-issue-item warn"><span class="gs-issue-num">三</span><span class="gs-issue-text"><span class="h">黄河</span>张秋口决</span><span class="gs-issue-time">本回</span></div>
+      <div class="gs-issue-item warn"><span class="gs-issue-num">四</span><span class="gs-issue-text">南科<span class="h">举额</span>增减</span><span class="gs-issue-time">近日</span></div>
+      <div class="gs-issue-item info"><span class="gs-issue-num">五</span><span class="gs-issue-text">内阁<span class="h">值班</span>轮替</span><span class="gs-issue-time">待办</span></div>
+    </div>
+
+    <div class="gs-panel p-goal">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">朕 之 大 志</div><span class="gs-panel-cnt">3</span></div>
+      <div class="gs-goal-item"><div class="gs-goal-hdr"><span class="gs-goal-title">中 兴 大 明</span><span class="gs-goal-prio">甲</span></div><div class="gs-goal-desc">内清党争·外御强虏</div><div class="gs-goal-prog"><div class="gs-goal-prog-fill" style="width:28%;"></div></div></div>
+      <div class="gs-goal-item"><div class="gs-goal-hdr"><span class="gs-goal-title">平 辽 事</span><span class="gs-goal-prio" style="color:var(--vermillion-400);border-color:var(--vermillion-400);">急</span></div><div class="gs-goal-desc">收复锦州·辽阳·沈阳</div><div class="gs-goal-prog"><div class="gs-goal-prog-fill" style="width:12%;"></div></div></div>
+      <div class="gs-goal-item"><div class="gs-goal-hdr"><span class="gs-goal-title">清 理 阉 党</span><span class="gs-goal-prio">甲</span></div><div class="gs-goal-desc">魏忠贤已诛·余孽未尽</div><div class="gs-goal-prog"><div class="gs-goal-prog-fill" style="width:62%;"></div></div></div>
+    </div>
+
+    <!-- 祭祀礼仪 (NEW) -->
+    <div class="gs-panel p-jifa">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">祭 祀 礼 仪</div><span class="gs-panel-cnt">本月</span></div>
+      <div class="gs-jifa-calendar">
+        <div class="gs-jifa-cell">朔</div>
+        <div class="gs-jifa-cell">初二</div>
+        <div class="gs-jifa-cell jisi">祭太庙</div>
+        <div class="gs-jifa-cell">初四</div>
+        <div class="gs-jifa-cell auspicious">吉日</div>
+        <div class="gs-jifa-cell">初六</div>
+        <div class="gs-jifa-cell">初七</div>
+        <div class="gs-jifa-cell today auspicious">今 日</div>
+        <div class="gs-jifa-cell">初九</div>
+        <div class="gs-jifa-cell jisi">祀天</div>
+        <div class="gs-jifa-cell">十一</div>
+        <div class="gs-jifa-cell">望</div>
+      </div>
+      <div class="gs-jifa-row"><span class="gs-jifa-type">【祀天】</span><span class="gs-jifa-name">秋分大祀·圜丘</span><span class="gs-jifa-due">2日后</span></div>
+      <div class="gs-jifa-row"><span class="gs-jifa-type">【祭祖】</span><span class="gs-jifa-name">太庙告庙·升祔</span><span class="gs-jifa-due">已备</span></div>
+      <div class="gs-jifa-row"><span class="gs-jifa-type">【朝贺】</span><span class="gs-jifa-name">万寿节·百官朝贺</span><span class="gs-jifa-due">下月</span></div>
+    </div>
+
+    <!-- 监察百司 (NEW) -->
+    <div class="gs-panel p-censor">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">监 察 百 司</div><span class="gs-panel-cnt">4 司</span></div>
+      <div class="gs-censor-row"><span class="gs-censor-icon" style="--ce-c:var(--indigo-400);">都</span><span class="gs-censor-name">都察院</span><span class="gs-censor-alert mid">弹劾 3</span></div>
+      <div class="gs-censor-row"><span class="gs-censor-icon" style="--ce-c:var(--purple-400);">厂</span><span class="gs-censor-name">东厂</span><span class="gs-censor-alert hi">密奏 2</span></div>
+      <div class="gs-censor-row"><span class="gs-censor-icon" style="--ce-c:var(--vermillion-400);">锦</span><span class="gs-censor-name">锦衣卫</span><span class="gs-censor-alert lo">巡视</span></div>
+      <div class="gs-censor-row"><span class="gs-censor-icon" style="--ce-c:var(--celadon-400);">理</span><span class="gs-censor-name">大理寺</span><span class="gs-censor-alert mid">刑案 8</span></div>
+    </div>
+
+    <!-- 宫廷日程 (NEW) -->
+    <div class="gs-panel p-agenda">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">宫 廷 日 程</div><span class="gs-panel-cnt">明日</span></div>
+      <div class="gs-agenda-row chaoyi"><span class="gs-agenda-time">卯时</span><span class="gs-agenda-name">常 朝</span><span class="gs-agenda-with">群臣</span></div>
+      <div class="gs-agenda-row zhaojian"><span class="gs-agenda-time">辰时</span><span class="gs-agenda-name">召 见</span><span class="gs-agenda-with">毕自严</span></div>
+      <div class="gs-agenda-row"><span class="gs-agenda-time">巳时</span><span class="gs-agenda-name">批 阅 奏 疏</span><span class="gs-agenda-with">文华殿</span></div>
+      <div class="gs-agenda-row chaoyi"><span class="gs-agenda-time">午时</span><span class="gs-agenda-name">廷 议</span><span class="gs-agenda-with">辽饷 议</span></div>
+      <div class="gs-agenda-row jisi"><span class="gs-agenda-time">申时</span><span class="gs-agenda-name">祀 秋 分</span><span class="gs-agenda-with">圜丘</span></div>
+      <div class="gs-agenda-row kejvi"><span class="gs-agenda-time">酉时</span><span class="gs-agenda-name">阅 会 试 卷</span><span class="gs-agenda-with">20 卷</span></div>
+    </div>
+
+    <div class="gs-panel p-finance">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">岁 入 岁 出</div><span class="gs-panel-cnt">近6月</span></div>
+      <div class="gs-fin-chart">
+        <div class="gs-fin-bars">
+          <div class="gs-fin-group"><div class="gs-fin-bar-stack"><div class="gs-fin-bar income" style="height:70%;"></div></div><div class="gs-fin-lbl">四</div></div>
+          <div class="gs-fin-group"><div class="gs-fin-bar-stack"><div class="gs-fin-bar expense" style="height:62%;"></div></div><div class="gs-fin-lbl">四</div></div>
+          <div class="gs-fin-group"><div class="gs-fin-bar-stack"><div class="gs-fin-bar income" style="height:82%;"></div></div><div class="gs-fin-lbl">五</div></div>
+          <div class="gs-fin-group"><div class="gs-fin-bar-stack"><div class="gs-fin-bar expense" style="height:88%;"></div></div><div class="gs-fin-lbl">五</div></div>
+          <div class="gs-fin-group"><div class="gs-fin-bar-stack"><div class="gs-fin-bar income" style="height:75%;"></div></div><div class="gs-fin-lbl">六</div></div>
+          <div class="gs-fin-group"><div class="gs-fin-bar-stack"><div class="gs-fin-bar expense" style="height:92%;"></div></div><div class="gs-fin-lbl">六</div></div>
+        </div>
+        <div class="gs-fin-legend"><span class="in">岁 入</span><span class="out">岁 出</span></div>
+      </div>
+    </div>
+
+    <div class="gs-panel p-news">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">近 事 快 报</div><span class="gs-panel-cnt">本回 8</span></div>
+      <div class="gs-news-item edict"><span class="t">辰</span><span class="body"><span class="h">蠲免灾区诏</span>已颁</span></div>
+      <div class="gs-news-item memo"><span class="t">巳</span><span class="body"><span class="h">袁崇焕</span>奏请增饷三万</span></div>
+      <div class="gs-news-item chaoyi"><span class="t">午</span><span class="body">廷议辽饷·党争不决</span></div>
+      <div class="gs-news-item letter"><span class="t">未</span><span class="body">致<span class="h">卢象升</span>密旨发</span></div>
+      <div class="gs-news-item person"><span class="t">申</span><span class="body"><span class="h">周延儒</span>升户部侍郎</span></div>
+    </div>
+
+    <div class="gs-panel p-rumor">
+      <div class="gs-panel-hdr"><div class="gs-panel-title">风 闻 坊 录</div><span class="gs-panel-cnt">4</span></div>
+      <div class="gs-rumor-item">近察京师谣传"龙种在外"，恐有宵小借此构衅。<span class="cred">·中</span></div>
+      <div class="gs-rumor-item">江南士子私议：辽饷加征，民力已竭。<span class="cred">·高</span></div>
+      <div class="gs-rumor-item">秦地流民据传已聚万人，渭南有异动。<span class="cred">·高</span></div>
+      <div class="gs-rumor-item">温阁老府中近来门客频集，恐有密谋。<span class="cred">·低</span></div>
+    </div>
+
+    <div class="gs-energy">
+      <div class="gs-energy-hdr"><span class="gs-energy-lbl">精 力 气 血</span><span class="gs-energy-val">68 <span class="max">/ 100</span></span></div>
+      <div class="gs-energy-bar"><div class="gs-energy-fill" style="width:68%;"></div></div>
+      <div class="gs-energy-tick"><span>疲</span><span>可议 3</span><span>充</span></div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /gs-body -->
+
+<!-- ═══ 右下角独立浮动：推演按钮（不纳入滑动条·不随侧栏开关）═══ -->
+<div class="gs-turn-float">
+  <div class="gs-turn-fab-bar">
+    <button class="gs-fab-btn" data-tip="拟诏">✎</button>
+    <button class="gs-fab-btn" data-tip="发信">✉</button>
+    <button class="gs-fab-btn" data-tip="召对">❋</button>
+    <button class="gs-fab-btn" data-tip="朝议">☰</button>
+    <button class="gs-fab-btn" data-tip="赏赐">◆</button>
+    <button class="gs-fab-btn" data-tip="校阅">❖</button>
+  </div>
+  <div class="gs-turn-summary">已下诏 <span class="hl">2</span>道 · 批奏 <span class="hl">4</span>封 · <span class="warn">3</span>要务待办</div>
+  <button class="gs-turn-big">诏　付　有　司<span class="sub">朕 意 已 决　付 之 百 司</span></button>
+</div>
+
+<!-- 底部状态栏 -->
+<div class="gs-status-bar">
+  <div class="gs-status-left">
+    <div class="gs-status-item busy"><span class="dot"></span><span class="k">推 演</span><span class="v">朝臣反应中……</span></div>
+    <div class="gs-status-item"><span class="k">存档</span><span class="v">崇祯元年秋分</span></div>
+    <div class="gs-status-item"><span class="k">回合</span><span class="v">42 · 秋 9 月</span></div>
+  </div>
+  <div class="gs-status-tip">〘 提示 〙 默 认 最 小 化 · 点 侧 印 展 开 · 再 点 折 回 · 中 栏 恒 宽</div>
+  <div class="gs-status-right">
+    <div class="gs-status-shortcut"><kbd>Ctrl</kbd>+<kbd>1..9</kbd> 切 tab</div>
+    <div class="gs-status-shortcut"><kbd>[</kbd>／<kbd>]</kbd> 折 叠</div>
+    <div class="gs-status-shortcut"><kbd>F1</kbd> 帮助</div>
+  </div>
+</div>
+
+<div class="legend">
+  <span class="k">默 认 态</span> 中 栏 标 签 页 <span class="k">全 宽</span> · 两 侧 仅 显 44px <span class="k">小 印 纵 列 rail</span>（始终常驻）。<br>
+  <span class="k">侧 印 点 开</span> → 抽 屉 <span class="k">overlay 覆 盖</span>（left:44px 或 right:44px，不 挤 压 中 栏）· 内 置 <span class="k">金 渐 变 滚 动 条</span>（高度固定可任意加内容）· 头 顶 × 按 钮 关 闭。<br>
+  <span class="k">左 抽 屉 新 增 或 恢 复</span>：朝代主题／四时物候／势力／党派／阶层／军事／行政区划／<span class="m">边患外族</span>（后金急/蒙古中/土司缓·脉冲红印）／科举／<span class="c">学派流变</span>（程朱主流/心学方兴/考据渐盛/西学新潮/禅净民间）／<span class="m">物价行情</span>（米布盐银 + sparkline 6月 + 涨跌色chip）／家族／制度演进／文物／<span class="k">典藏书阁</span>（经/史/子/集 四格统计）／<span class="m">宫殿之序</span>（紫禁城殿宇纵贯+午端承三门）／后宫／天下图／<span class="p">主题 4 色板</span>／<span class="p">音声调度</span>（殿乐/朝钟/笔墨 slider + 正奏曲）／帮助·典范。<br>
+  <span class="k">右 抽 屉 新 增 或 恢 复</span>：朕亲卡／时辰／<span class="c">紧要之臣 7 人物卡（袁崇焕/钱谦益/温体仁/毕自严/卢象升/曹化淳/周后）</span>／<span class="c">人脉关系网</span>／议题／大志／<span class="m">祭祀礼仪</span>（4×3 月历 + 今日光圈脉冲 + 祀天/祭祖/朝贺清单）／<span class="p">监察百司</span>（都察院/东厂/锦衣卫/大理寺 + 弹劾/密奏/巡视/刑案 chip）／<span class="c">宫廷日程</span>（明日六辰安排：常朝→召见→批阅→廷议→祀→阅卷）／岁入岁出／近事／风闻／精力。<br>
+  <span class="m">右 下 角 独 立 悬 浮 推 演 按 钮</span>——不 纳 入 侧 栏 滚 动 条 · 不 随 侧 栏 开 关 · 避 让 底 部 状 态 栏 · 朱 砂 脉 冲 光 · 上 含 6 圆 快 速 操 作 及 摘 要 条。
+</div>
+
+</div>
+
+<script>
+// v7 · 抽屉开关交互
+(function(){
+  var L = document.getElementById('drawerLeft');
+  var R = document.getElementById('drawerRight');
+  // 左栏 rail 按钮点击 → 打开 left drawer
+  document.querySelectorAll('.gs-rail-left .gs-rail-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); L.classList.add('open'); });
+  });
+  // 右栏 rail 按钮点击 → 打开 right drawer
+  document.querySelectorAll('.gs-rail-right .gs-rail-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); R.classList.add('open'); });
+  });
+  // × 关闭按钮
+  document.querySelectorAll('.gs-drawer-close').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); btn.closest('.gs-drawer').classList.remove('open'); });
+  });
+  // 键盘 [ ] 切换
+  document.addEventListener('keydown', function(e){
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.key === '[') L.classList.toggle('open');
+    else if (e.key === ']') R.classList.toggle('open');
+    else if (e.key === 'Escape'){ L.classList.remove('open'); R.classList.remove('open'); }
+  });
+  // 字号按钮切换
+  document.querySelectorAll('.gs-font-sizes').forEach(function(grp){
+    grp.querySelectorAll('.gs-sz-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        grp.querySelectorAll('.gs-sz-btn').forEach(function(x){ x.classList.remove('active'); });
+        b.classList.add('active');
+      });
+    });
+  });
+  // 主题卡切换
+  document.querySelectorAll('.gs-theme-grid').forEach(function(grp){
+    grp.querySelectorAll('.gs-theme-card').forEach(function(c){
+      c.addEventListener('click', function(){
+        grp.querySelectorAll('.gs-theme-card').forEach(function(x){ x.classList.remove('active'); });
+        c.classList.add('active');
+      });
+    });
+  });
+  // 循环模式
+  document.querySelectorAll('.gs-audio-loop').forEach(function(grp){
+    grp.querySelectorAll('.gs-audio-loop-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        grp.querySelectorAll('.gs-audio-loop-btn').forEach(function(x){ x.classList.remove('active'); });
+        b.classList.add('active');
+      });
+    });
+  });
+  // 面板展开/折叠
+  document.querySelectorAll('.gs-panel-chev').forEach(function(chev){
+    chev.addEventListener('click', function(e){
+      e.stopPropagation();
+      chev.closest('.gs-panel').classList.toggle('expanded');
+    });
+  });
+  // 导入曲谱提示
+  var aIn = document.getElementById('audioFile');
+  if (aIn) aIn.addEventListener('change', function(){ alert('已选择 ' + (aIn.files ? aIn.files.length : 0) + ' 首曲目（实施时将加入曲库）'); });
+})();
+</script>
+</body>
+</html>

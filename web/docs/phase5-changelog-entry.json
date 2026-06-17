@@ -1,0 +1,68 @@
+{
+  "_comment": "Phase 5 close changelog entry draft·待 P5-θ done 后·把此对象 unshift 到 changelog.json entries 数组最前·verify-all 数据 (47/47) 待 P5-θ 落地后填",
+  "_status": "draft·frame complete·P5-θ TBD·final assertions count TBD",
+  "_target_position": "changelog.json entries[0] (unshift)",
+
+  "draft_entry": {
+    "date": "2026-05-04",
+    "module": "Phase 5·命名规约 + namespace 清理·24 canonical 全建·R200-R207",
+    "title": "把散落 1081 globals 收口到 24 canonical TM.X 命名空间·R87 facade 留 + sub-ns 上挂·alias-then-rename ladder stage 2 完·Phase 6 退役 alias 在即",
+    "items": [
+      {
+        "what": "【架构】tm-namespaces.js 304 行 → ~620 行·新增 R200-R207 八段·24 canonical namespaces (Chaoyi/Wendui/Endturn(.AI)/Military/Fiscal/Economy/Guoku/Neitang/Huji/Office/Authority/Corruption/Keju/Edict/NPC/Char/Map/UI/Save/Editor/Memory/Player/Diagnostics)·R87 5 whitelist facade + 3 engine proxy + Storage 全保 alias·两个 helper (_buildWindowRefGroup / _defineWindowAlias·Codex P5-β 加) 让 sub-ns 自带 has/list/listAvailable/listMissing 诊断接口。",
+        "why": "原 R87 stage 1 (getter 门面) 只覆盖 5 facade·~91 fn·剩 990 散落 window·新代码混调 TM.X 与 window.fn·维护混乱。Phase 5 完成 R87 设计的 stage 2·alias 留 (Phase 6 退役)·新代码强制走 TM.X.X·grep 调用方为 namespace migration 做准备。"
+      },
+      {
+        "what": "【pair-mode 分工】Claude 4 slice (α reconcile / γ Edict / δ Fiscal-Economy-Guoku-Neitang / ε Authority-Office-Keju-Corruption-Lizhi)·Codex 4 slice (β NPC/Char / ζ Map-UI / η Endturn / θ Editor)·总 17h target·并行 ~9h actual。每 slice 必 prep audit-first (大 slice doc-only audit 锁结构)·verify-all gate 每 round·一 slice 一 letter。",
+        "why": "Phase 1-4 同模式·Phase 5 文件大跨度 (Map 14k 行·Endturn 22k 行·Editor 21k 行·Fiscal 11k 行)·若不分工不 prep 会变 grab-bag·prep audit 让 sub-ns 形状·命名冲突·HTML inline 处理在实施前就锁定。"
+      },
+      {
+        "what": "【关键决策 8 条】Q1·24 vs 18 namespace → 扩 24 (补 Authority/Corruption/Diagnostics/Economy)。Q2·R87 facade keep vs rebuild → keep + reconcile (TM.Storage→TM.Save·TM.MapSystem→TM.Map alias 留)。Q3·alias 期 → Phase 5 全程·Phase 6 退役。Q4·HTML inline onclick 412 处 → 方案 B (Phase 5 不动·Phase 6 半自动)。Q5·slice 分工 → 4/4 平衡。R10 dead code rescue·EDICT_TYPES 两版本隔离·close-by-value 沿用 P4。",
+        "why": "Codex 5 答清楚锁结构·避免后续讨论。这 8 条决议在 phase5-prep.md §8 明确·并在 head note R200-R207 各 R 段引用·任何后续维护者打开 tm-namespaces.js 第一眼就知道为什么。"
+      },
+      {
+        "what": "【R10 dead code rescue·P5-δ 发现】tm-fiscal-engine.js L1746-1751 写 global.TM.Economy.sum/getDiv/topContributors/triggerSurvey 4 fn — 但 load 顺序中 tm-fiscal-engine 在 tm-namespaces 之前·R87 _buildFacade('Economy') 后 load 完全 overwrite·这 4 fn 实际从未生效·grep 0 live caller。P5-δ 删 dead code·R203 中用 Object.defineProperty getter alias 至 CascadeTax.sumEconomyBase 等·changelog 历史契约 (R10 R94) 真生效。",
+        "why": "R10 fiscal compat fix 时埋的 bug·~半年才发现。原意'公共 API 给 UI/诏令系统调用'(changelog R94)·实因 load order 失败·UI/诏令调用方拿 undefined。P5-δ 修复路径走 sub-ns 透传·Phase 6 退役期可单独 grep 验证此 alias 是否仍需保留。"
+      },
+      {
+        "what": "【EDICT_TYPES 两版本隔离·P5-γ 发现】tm-edict-parser.js:27 内部 17 个详 type 定义 (含 trigger/effect/duration 字段) 与 tm-edict-lifecycle.js:10 的 11 个 broad category 枚举·**含义不同·目前 window.EDICT_TYPES = lifecycle 版** (load order)。P5-γ R202 sub-ns 强隔离·TM.Edict.parser.EDICT_TYPES (17 详定义) 与 TM.Edict.lifecycle.EDICT_TYPES (11 大类) 不同对象·smoke-p5-gamma-edict.js 显式 assert·永远不可合。",
+        "why": "命名相同·语义不同·此前散落 window 时调用方常误用。sub-ns 隔离让两版本各有名空间·smoke 锁住·避免未来某个'看似简单的 cleanup'误合。"
+      },
+      {
+        "what": "【zero regression 全程】verify-all 39/39 (P4 close) → 47/47 (P5 close target·+8 新 smoke·~400 个 individual assertions)·headless smoke 212/0/0 维持·cc3-smoke 56/0 维持·encoding markers 159 维持·R8 layered 177 baseline 全保·LAYERED 0 残留 (R12 真清后维持)。每 slice 必 verify-all 全绿才 letter ACK·非全绿 abort。",
+        "why": "Phase 5 是大规模架构改动·若中途引回归·后续 slice 越堆越多很难定位。按 verify-all fail-fast (scripts/verify-all.js 行 121 process.exit(1))·任何 slice 引入回归立即 stop·不允许累积。"
+      },
+      {
+        "what": "【docs】写 phase5-prep.md (~280 行)·6 prep audit (gamma/delta·Codex beta·zeta/eta/theta Claude 帮 Codex 写)·phase5-final-audit.md (~290 行 frame)·refactor-playbook.md v1 (~470 行·新建·Phase 6 P6-δ 待发布)·phase6-prep.md (~210 行·alias 退役 + HTML inline 412 处 audit + 3 doc finalize plan)。",
+        "why": "Phase 5 决议密度高·文档 frame 让 Phase 6 启动时不需重新 audit·refactor-playbook 提炼 Phase 1-5 经验·防下一轮重构从零开始 (LAYERED 真合·redistribute·alias-rename ladder 等模式可直接 reuse)。"
+      },
+      {
+        "what": "【cache-bust】tm-namespaces.js 当前 v=2026042714·建议 Phase 6 close 时升 v=2026050405·index.html 不需改其他文件版本号 (Phase 5 只改 namespaces + 删 fiscal-engine 6 行 dead code·后者无 cache 影响)。",
+        "why": "cache-bust 失效会让玩家 / Electron 仍跑 R87 stage 1 老 namespaces·R200-R207 sub-ns 不可见·新代码若已开始走 TM.Edict.parser.X 等 sub-ns 会拿 undefined 报错。"
+      },
+      {
+        "what": "【后续】Phase 6·alias 退役 (R200 rename alias 删·改 3 production call site) + HTML inline 412 处改 TM.X.fn() (~230 处实改·~180 处 by design 留 window) + 3 文档 finalize (architecture-map v1·module-boundaries v1·refactor-playbook v1)·target 1 day 内 close。lint-namespace.js (optional)·新代码强制 TM.X·禁裸 window.fn 调。",
+        "why": "Phase 5 完成 stage 2·Phase 6 是 alias 退役 stage 3·R87 设计 3 阶段终结。Phase 6 后·若再有重构·refactor-playbook v1 是直接复用的实操指南·不必从零。"
+      }
+    ],
+
+    "_metadata": {
+      "verifyAll": "TBD·target 47/47 P5-θ done 后填",
+      "individualAssertions": "TBD·target ~900 P5-θ done 后填",
+      "files": [
+        "tm-namespaces.js (304→~620 行·R200-R207)",
+        "tm-fiscal-engine.js (-6 行 dead code L1746-1751)",
+        "scripts/smoke-p5-{alpha,beta,gamma,delta,epsilon,zeta,eta,theta}-*.js (8 new)",
+        "scripts/verify-all.js (+8 entries)",
+        "docs/phase5-prep.md (新)",
+        "docs/phase5-{beta,gamma,delta,zeta,eta,theta}-*-audit.md (6 prep audit)",
+        "docs/phase5-final-audit.md (本 doc)",
+        "docs/phase6-prep.md (新·Phase 6 启动信号)",
+        "docs/refactor-playbook.md (新·v1 草稿)"
+      ],
+      "owner": "Claude (4 slice α·γ·δ·ε + 6 prep audit + 3 frame doc) + Codex (4 slice β·ζ·η·θ + 2 helper)",
+      "rounds": ["R200·P5-α", "R201·P5-β", "R202·P5-γ", "R203·P5-δ", "R204·P5-ε", "R205·P5-ζ", "R206·P5-η", "R207·P5-θ"],
+      "phase5_letter_count": "TBD·~14-16 letters"
+    }
+  }
+}

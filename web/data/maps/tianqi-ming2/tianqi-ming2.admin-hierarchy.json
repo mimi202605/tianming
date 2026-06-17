@@ -1,0 +1,6251 @@
+{
+  "player": {
+    "factionId": "fac-ming",
+    "factionName": "明朝廷",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2lzxgxq",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 8200000,
+          "fugitives": 180000,
+          "hiddenCount": 200000,
+          "households": 1576923,
+          "ding": 2132000
+        },
+        "byGender": {
+          "male": 4182000,
+          "female": 4018000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 820000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 4510000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 2870000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.4,
+          "佛": 0.18,
+          "道": 0.14,
+          "民间": 0.25,
+          "伊斯兰": 0.03
+        },
+        "baojia": {
+          "baoCount": 15769,
+          "jiaCount": 157692,
+          "paiCount": 157692,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 10660000,
+          "water": 9020000,
+          "climate": 1,
+          "historicalCap": 11480000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 46,
+        "corruptionLocal": 74,
+        "fiscalDetail": {
+          "claimedRevenue": 10660000,
+          "actualRevenue": 8741200,
+          "remittedToCenter": 5863000,
+          "retainedBudget": 2878200,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 400000,
+          "grain": 800000,
+          "cloth": 60000
+        },
+        "children": [],
+        "name": "北直隶",
+        "level": "province",
+        "officialPosition": "顺天巡抚",
+        "governor": "刘诏",
+        "description": "京师所在，天下首善。下辖顺天/保定/河间/真定/大名/永平/顺德/广平八府 + 延庆/保安两州 + 宣府镇。宣府为九边第一。",
+        "terrain": "平原",
+        "specialResources": "漕运·煤·铁·海盐(长芦)",
+        "taxLevel": "重",
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": true,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": true
+        },
+        "economyBase": {
+          "farmland": 58000000,
+          "commerceCoefficient": 1.4,
+          "commerceVolume": 12300000,
+          "maritimeTradeVolume": 800000,
+          "saltProduction": 800000000,
+          "mineralProduction": 3800000,
+          "horseProduction": 0,
+          "fishingProduction": 350000,
+          "imperialFarmland": 2900000,
+          "imperialAssets": {
+            "zhizao": 1,
+            "kuangchang": 2,
+            "yuyao": 0
+          },
+          "postRelays": 95,
+          "kejuQuota": 95,
+          "roadQuality": 60,
+          "landsAnnexed": 580000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 8200000,
+        "prosperity": 62,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 656000,
+            "households": 130000
+          },
+          "shi": {
+            "mouths": 410000,
+            "households": 82000
+          },
+          "zhen": {
+            "mouths": 1230000,
+            "households": 250000
+          },
+          "cun": {
+            "mouths": 5904000,
+            "households": 1180000
+          }
+        },
+        "specialCulture": "京畿重地·北戏昆曲·皇城文化。宫廷审美主导。",
+        "strategicValue": "首善之区，天下中枢。宣府镇为防蒙古北门户。",
+        "leadingGentry": [
+          "保定李氏",
+          "真定梁氏",
+          "河间毛氏",
+          "永平赵氏"
+        ],
+        "academies": [
+          "国子监(北)",
+          "首善书院(被阉党毁)",
+          "紫阳书院"
+        ],
+        "tradeRoutes": [
+          "漕运通州入京",
+          "张家口茶马互市(延伸蒙古)",
+          "山海关辽东商路"
+        ],
+        "recentDisasters": [
+          "天启三年(1623) 王恭厂大爆炸·死万余",
+          "天启六年冬大雪冰冻",
+          "天启七年夏旱"
+        ],
+        "religiousSites": [
+          "天坛",
+          "地坛",
+          "潭柘寺",
+          "白云观",
+          "东岳庙"
+        ],
+        "threats": [
+          "后金破宣府大同塞入塞",
+          "宣府镇守将叛变",
+          "京营兵变"
+        ],
+        "mapRegionId": "ming-01"
+      },
+      {
+        "id": "div_mp9rsc2lbpxij",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 16500000,
+          "fugitives": 150000,
+          "hiddenCount": 550000,
+          "households": 3173076,
+          "ding": 4290000
+        },
+        "byGender": {
+          "male": 8415000,
+          "female": 8085000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 1650000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 9075000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 5775000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.45,
+          "佛": 0.22,
+          "道": 0.15,
+          "民间": 0.14,
+          "天主教": 0.02,
+          "伊斯兰": 0.02
+        },
+        "baojia": {
+          "baoCount": 31730,
+          "jiaCount": 317307,
+          "paiCount": 317307,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 21450000,
+          "water": 18150000,
+          "climate": 1,
+          "historicalCap": 23100000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 55,
+        "corruptionLocal": 66,
+        "fiscalDetail": {
+          "claimedRevenue": 21450000,
+          "actualRevenue": 17589000,
+          "remittedToCenter": 11797500,
+          "retainedBudget": 5791500,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 800000,
+          "grain": 1500000,
+          "cloth": 200000
+        },
+        "children": [],
+        "name": "南直隶",
+        "level": "province",
+        "officialPosition": "应天巡抚",
+        "governor": "毛一鹭",
+        "description": "留都应天府所在，财赋半天下。下辖应天/凤阳/庐州/淮安/扬州/徐州/苏州/松江/常州/镇江/太平/宁国/池州/安庆十四府。苏松赋甲天下。",
+        "terrain": "平原",
+        "specialResources": "丝绸·棉布·茶·漕米·盐(两淮)",
+        "taxLevel": "重",
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": true
+        },
+        "economyBase": {
+          "farmland": 95000000,
+          "commerceCoefficient": 1.8,
+          "commerceVolume": 24000000,
+          "maritimeTradeVolume": 3200000,
+          "saltProduction": 2200000000,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 1500000,
+          "imperialFarmland": 4750000,
+          "imperialAssets": {
+            "zhizao": 3,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 130,
+          "kejuQuota": 135,
+          "roadQuality": 60,
+          "landsAnnexed": 950000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 16500000,
+        "prosperity": 88,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 1650000,
+            "households": 330000
+          },
+          "shi": {
+            "mouths": 990000,
+            "households": 198000
+          },
+          "zhen": {
+            "mouths": 3300000,
+            "households": 660000
+          },
+          "cun": {
+            "mouths": 10560000,
+            "households": 2120000
+          }
+        },
+        "specialCulture": "江南文采。昆曲鼎盛·东林遗风·市民小说《金瓶梅》《三言二拍》·董其昌书画。",
+        "strategicValue": "天下财赋半出于此。留都应天府若再都则国脉不断。",
+        "leadingGentry": [
+          "华亭董氏(董其昌)",
+          "常熟钱氏(钱谦益)",
+          "宜兴周氏(周延儒)",
+          "昆山顾氏",
+          "苏州文氏(文震孟)",
+          "无锡顾氏(东林)"
+        ],
+        "academies": [
+          "东林书院遗址(被毁)",
+          "首善书院(北)",
+          "南京国子监",
+          "复社雏形(即将立)"
+        ],
+        "tradeRoutes": [
+          "京杭大运河-漕运",
+          "海运登莱(已停)",
+          "苏杭丝绸海外",
+          "两淮盐引"
+        ],
+        "recentDisasters": [
+          "天启六年苏州五人墓事件(百姓护周顺昌抗阉)",
+          "天启七年夏水"
+        ],
+        "religiousSites": [
+          "钟山孝陵",
+          "灵谷寺",
+          "栖霞寺",
+          "寒山寺",
+          "玄武山"
+        ],
+        "threats": [
+          "江南缙绅抗税",
+          "漕运阻塞",
+          "倭寇海盗(已衰)",
+          "红毛(荷兰)登岸"
+        ],
+        "mapRegionId": "ming-02"
+      },
+      {
+        "id": "div_mp9rsc2l04i3p",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 9200000,
+          "fugitives": 90000,
+          "hiddenCount": 320000,
+          "households": 1769230,
+          "ding": 2392000
+        },
+        "byGender": {
+          "male": 4692000,
+          "female": 4508000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 920000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 5060000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 3220000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.42,
+          "佛": 0.26,
+          "道": 0.18,
+          "民间": 0.13,
+          "天主教": 0.01
+        },
+        "baojia": {
+          "baoCount": 17692,
+          "jiaCount": 176923,
+          "paiCount": 176923,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 11960000,
+          "water": 10120000,
+          "climate": 1,
+          "historicalCap": 12880000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 58,
+        "corruptionLocal": 68,
+        "fiscalDetail": {
+          "claimedRevenue": 11960000,
+          "actualRevenue": 9807200,
+          "remittedToCenter": 6578000,
+          "retainedBudget": 3229200,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 500000,
+          "grain": 900000,
+          "cloth": 180000
+        },
+        "children": [],
+        "name": "浙江布政使司",
+        "level": "province",
+        "officialPosition": "浙江巡抚",
+        "governor": "潘汝桢",
+        "description": "东南形胜。下辖杭/嘉/湖/宁/绍/台/金华/衢/严/温/处十一府。杭州为东南财赋中枢，宁波通日本朝鲜；潘汝桢附阉党首建生祠。《万历会计录》在籍口 512 万，含商贾隐户实际约 900 万。",
+        "terrain": "丘陵",
+        "specialResources": "丝绸·茶·纸·瓷·海贸",
+        "taxLevel": "重",
+        "tags": {
+          "hasPort": true,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": true
+        },
+        "economyBase": {
+          "farmland": 46300000,
+          "commerceCoefficient": 1.8,
+          "commerceVolume": 21500000,
+          "maritimeTradeVolume": 3400000,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 850000,
+          "imperialFarmland": 2300000,
+          "imperialAssets": {
+            "zhizao": 1,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 110,
+          "kejuQuota": 90,
+          "roadQuality": 42,
+          "landsAnnexed": 460000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 9200000,
+        "prosperity": 84,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 780000
+          },
+          "shi": {
+            "mouths": 468000
+          },
+          "zhen": {
+            "mouths": 1560000
+          },
+          "cun": {
+            "mouths": 4992000
+          }
+        },
+        "specialCulture": "浙学传承(王阳明故里)·永嘉永康学派·南戏·越剧·佛教胜地",
+        "strategicValue": "鱼米之乡·丝瓷外销中枢·浙东沿海防倭",
+        "leadingGentry": [
+          "余姚王氏(王阳明后)",
+          "海宁陈氏",
+          "归安沈氏",
+          "山阴张岱家族",
+          "宁波全祖望祖",
+          "嘉兴项氏"
+        ],
+        "academies": [
+          "万松书院(杭州)",
+          "鳌江书院",
+          "阳明祠·稽山书院(王学圣地)"
+        ],
+        "tradeRoutes": [
+          "宁波港日本贸易",
+          "舟山岛日本-南洋中转",
+          "运河北段",
+          "苏杭丝路"
+        ],
+        "recentDisasters": [
+          "天启七年沿海台风",
+          "天启六年钱塘潮溢"
+        ],
+        "religiousSites": [
+          "普陀山",
+          "灵隐寺",
+          "天台国清寺",
+          "天童寺",
+          "雪窦山"
+        ],
+        "threats": [
+          "沿海海盗(郑芝龙前期)",
+          "倭寇复燃",
+          "吴越王后裔非议"
+        ],
+        "mapRegionId": "ming-03"
+      },
+      {
+        "id": "div_mp9rsc2l3tavr",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 8100000,
+          "fugitives": 80000,
+          "hiddenCount": 260000,
+          "households": 1557692,
+          "ding": 2106000
+        },
+        "byGender": {
+          "male": 4131000,
+          "female": 3969000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 810000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 4455000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 2835000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.48,
+          "佛": 0.22,
+          "道": 0.2,
+          "民间": 0.1
+        },
+        "baojia": {
+          "baoCount": 15576,
+          "jiaCount": 155769,
+          "paiCount": 155769,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 10530000,
+          "water": 8910000,
+          "climate": 1,
+          "historicalCap": 11340000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 52,
+        "corruptionLocal": 62,
+        "fiscalDetail": {
+          "claimedRevenue": 10530000,
+          "actualRevenue": 8634600,
+          "remittedToCenter": 5791500,
+          "retainedBudget": 2843100,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 260000,
+          "grain": 620000,
+          "cloth": 90000
+        },
+        "children": [],
+        "name": "江西布政使司",
+        "level": "province",
+        "officialPosition": "江西巡抚",
+        "governor": "谢元珧",
+        "description": "文献之邦。下辖南昌/饶州/广信/南康/九江/建昌/抚州/临江/吉安/瑞州/袁州/赣州/南安十三府。景德镇御窑所在。《万历会计录》在籍 583 万，含宗族隐户实际 800 余万。谢元珧天启五年至七年任江西巡抚。",
+        "terrain": "丘陵",
+        "specialResources": "瓷(景德镇)·纸·米·茶",
+        "taxLevel": "中",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": true,
+          "horseRegion": false,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 40120000,
+          "commerceCoefficient": 1,
+          "commerceVolume": 6500000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 1000000,
+          "horseProduction": 0,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 2,
+            "yuyao": 1
+          },
+          "postRelays": 80,
+          "kejuQuota": 95,
+          "roadQuality": 42,
+          "landsAnnexed": 200000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 8100000,
+        "prosperity": 68,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 544000
+          },
+          "shi": {
+            "mouths": 340000
+          },
+          "zhen": {
+            "mouths": 1088000
+          },
+          "cun": {
+            "mouths": 4828000
+          }
+        },
+        "specialCulture": "理学故里(陆九渊-鹅湖)·戏曲(弋阳腔)·瓷都文化",
+        "strategicValue": "瓷器出口主地·漕粮输京大省·长江中枢",
+        "leadingGentry": [
+          "吉水邹氏(东林)",
+          "安福刘氏",
+          "南昌熊氏(熊廷弼同乡)",
+          "临川汤氏(汤显祖)",
+          "铅山费氏"
+        ],
+        "academies": [
+          "鹅湖书院",
+          "白鹿洞书院(理学圣地)",
+          "象山书院",
+          "东湖书院"
+        ],
+        "tradeRoutes": [
+          "景德镇瓷器-大运河-海运",
+          "章水贡水漕运",
+          "茶叶外销"
+        ],
+        "recentDisasters": [
+          "天启六年鄱阳水溢"
+        ],
+        "religiousSites": [
+          "庐山东林寺",
+          "龙虎山(道教祖庭)",
+          "西山万寿宫",
+          "三清山"
+        ],
+        "threats": [
+          "土匪啸聚山区",
+          "瓷工罢工"
+        ],
+        "mapRegionId": "ming-07"
+      },
+      {
+        "id": "div_mp9rsc2lwr3oi",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 8300000,
+          "fugitives": 120000,
+          "hiddenCount": 380000,
+          "households": 1596153,
+          "ding": 2158000
+        },
+        "byGender": {
+          "male": 4233000,
+          "female": 4067000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 830000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 4565000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 2905000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.4,
+          "佛": 0.22,
+          "道": 0.25,
+          "民间": 0.13
+        },
+        "baojia": {
+          "baoCount": 15961,
+          "jiaCount": 159615,
+          "paiCount": 159615,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 10790000,
+          "water": 9130000,
+          "climate": 1,
+          "historicalCap": 11620000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 50,
+        "corruptionLocal": 60,
+        "fiscalDetail": {
+          "claimedRevenue": 10790000,
+          "actualRevenue": 8847800,
+          "remittedToCenter": 5934500,
+          "retainedBudget": 2913300,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 200000,
+          "grain": 720000,
+          "cloth": 65000
+        },
+        "children": [],
+        "name": "湖广布政使司",
+        "level": "province",
+        "officialPosition": "湖广巡抚",
+        "governor": "钱希言",
+        "description": "楚地广大。下辖武昌/汉阳/黄州/承天/德安/岳州/荆州/襄阳/郧阳/长沙/宝庆/衡州/常德/辰州/永州十五府 + 靖州等。\"湖广熟、天下足\"。《万历会计录》在籍 438 万，然苗汉杂居+江湖隐户极多，实际 800 余万。钱希言天启六年起任湖广巡抚。",
+        "terrain": "平原",
+        "specialResources": "稻米·茶·桐油·湘水军器",
+        "taxLevel": "中",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 58170000,
+          "commerceCoefficient": 1,
+          "commerceVolume": 8300000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 90,
+          "kejuQuota": 80,
+          "roadQuality": 60,
+          "landsAnnexed": 290000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 8300000,
+        "prosperity": 72,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 496000
+          },
+          "shi": {
+            "mouths": 310000
+          },
+          "zhen": {
+            "mouths": 992000
+          },
+          "cun": {
+            "mouths": 4402000
+          }
+        },
+        "specialCulture": "楚学·汉水文化·公安派(袁宏道)·竟陵派(钟惺谭元春)",
+        "strategicValue": "\"湖广熟、天下足\"——稻米天下粮仓。水道通南北。",
+        "leadingGentry": [
+          "湘潭(黄忠懋-黄道周祖)",
+          "公安袁氏",
+          "竟陵钟氏",
+          "岳阳方氏"
+        ],
+        "academies": [
+          "岳麓书院(长沙)",
+          "石鼓书院(衡阳)",
+          "问津书院(黄冈)"
+        ],
+        "tradeRoutes": [
+          "长江主航道",
+          "汉水北上",
+          "湘水入湖南"
+        ],
+        "recentDisasters": [
+          "天启五年湖广大饥",
+          "天启六年夏汉水决堤"
+        ],
+        "religiousSites": [
+          "武当山(道教圣地)",
+          "黄龙寺",
+          "归元寺"
+        ],
+        "threats": [
+          "苗乱",
+          "流民南下"
+        ],
+        "mapRegionId": "ming-08"
+      },
+      {
+        "id": "div_mp9rsc2ly0rr3",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 4800000,
+          "fugitives": 70000,
+          "hiddenCount": 300000,
+          "households": 923076,
+          "ding": 1248000
+        },
+        "byGender": {
+          "male": 2448000,
+          "female": 2352000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 480000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 2640000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 1680000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.4,
+          "佛": 0.28,
+          "道": 0.18,
+          "民间": 0.13,
+          "天主教": 0.01
+        },
+        "baojia": {
+          "baoCount": 9230,
+          "jiaCount": 92307,
+          "paiCount": 92307,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 6240000,
+          "water": 5280000,
+          "climate": 1,
+          "historicalCap": 6720000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 54,
+        "corruptionLocal": 63,
+        "fiscalDetail": {
+          "claimedRevenue": 6240000,
+          "actualRevenue": 5116800,
+          "remittedToCenter": 3432000,
+          "retainedBudget": 1684800,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 180000,
+          "grain": 340000,
+          "cloth": 45000
+        },
+        "children": [],
+        "name": "福建布政使司",
+        "level": "province",
+        "officialPosition": "福建巡抚",
+        "governor": "朱一冯",
+        "description": "沿海省份。下辖福州/兴化/泉州/漳州/延平/建宁/邵武/汀州八府 + 福宁州。海禁时松时紧；郑芝龙等海商据闽南。",
+        "terrain": "沿海",
+        "specialResources": "海贸·茶·糖·木材·海船",
+        "taxLevel": "中",
+        "tags": {
+          "hasPort": true,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 13690000,
+          "commerceCoefficient": 1.5,
+          "commerceVolume": 14500000,
+          "maritimeTradeVolume": 2800000,
+          "saltProduction": 400000000,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 660000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 60,
+          "kejuQuota": 90,
+          "roadQuality": 16,
+          "landsAnnexed": 100000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 4800000,
+        "prosperity": 64,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 384000
+          },
+          "shi": {
+            "mouths": 240000
+          },
+          "zhen": {
+            "mouths": 768000
+          },
+          "cun": {
+            "mouths": 3408000
+          }
+        },
+        "specialCulture": "闽学(朱熹)·刻书业(建阳)·海洋文化·妈祖崇拜·天主教早期",
+        "strategicValue": "海贸门户(月港-厦门-泉州)。台海要冲。红毛与郑氏争台。",
+        "leadingGentry": [
+          "漳州林氏",
+          "泉州蔡氏",
+          "福州陈氏",
+          "莆田黄氏",
+          "晋江郑氏(郑芝龙族)"
+        ],
+        "academies": [
+          "武夷精舍(朱熹)",
+          "鳌峰书院",
+          "福州紫阳书院"
+        ],
+        "tradeRoutes": [
+          "月港-马尼拉-澳门(三角贸易)",
+          "厦门-台海-日本",
+          "汀州入江西瓷"
+        ],
+        "recentDisasters": [
+          "天启五年泉州海啸",
+          "天启七年福州台风"
+        ],
+        "religiousSites": [
+          "湄州妈祖庙",
+          "开元寺(泉州)",
+          "武夷山道教"
+        ],
+        "threats": [
+          "荷兰东印度公司(据台)",
+          "西班牙马尼拉",
+          "郑芝龙海盗"
+        ],
+        "mapRegionId": "ming-04"
+      },
+      {
+        "id": "div_mp9rsc2l500u6",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 6200000,
+          "fugitives": 100000,
+          "hiddenCount": 180000,
+          "households": 1192307,
+          "ding": 1612000
+        },
+        "byGender": {
+          "male": 3162000,
+          "female": 3038000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 620000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 3410000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 2170000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.52,
+          "佛": 0.16,
+          "道": 0.16,
+          "民间": 0.14,
+          "伊斯兰": 0.02
+        },
+        "baojia": {
+          "baoCount": 11923,
+          "jiaCount": 119230,
+          "paiCount": 119230,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 8060000,
+          "water": 6820000,
+          "climate": 1,
+          "historicalCap": 8680000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 44,
+        "corruptionLocal": 65,
+        "fiscalDetail": {
+          "claimedRevenue": 8060000,
+          "actualRevenue": 6609200,
+          "remittedToCenter": 4433000,
+          "retainedBudget": 2176200,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 240000,
+          "grain": 580000,
+          "cloth": 70000
+        },
+        "children": [],
+        "name": "山东布政使司",
+        "level": "province",
+        "officialPosition": "山东巡抚",
+        "governor": "李精白",
+        "description": "孔孟之乡。下辖济南/兖州/东昌/青州/莱州/登州六府 + 辽海卫属。登州为对辽前哨，孙元化日后所驻。《万历会计录》在籍 563 万。",
+        "terrain": "平原",
+        "specialResources": "盐(长芦下延)·麦·棉·铁·海鲜",
+        "taxLevel": "中",
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 61250000,
+          "commerceCoefficient": 1,
+          "commerceVolume": 8000000,
+          "maritimeTradeVolume": 600000,
+          "saltProduction": 600000000,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 700000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 90,
+          "kejuQuota": 75,
+          "roadQuality": 60,
+          "landsAnnexed": 310000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 6200000,
+        "prosperity": 56,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 432000
+          },
+          "shi": {
+            "mouths": 270000
+          },
+          "zhen": {
+            "mouths": 864000
+          },
+          "cun": {
+            "mouths": 3834000
+          }
+        },
+        "specialCulture": "孔孟之乡·齐鲁儒学·济南历下文化·登州海商(与辽东关联)",
+        "strategicValue": "拱卫京师东门户·漕运咽喉(临清-济宁)·登莱对辽前哨",
+        "leadingGentry": [
+          "曲阜孔氏(衍圣公)",
+          "邹城孟氏",
+          "济南陈氏",
+          "章丘李氏(李开先)",
+          "临清谢氏"
+        ],
+        "academies": [
+          "尼山书院",
+          "尚书院",
+          "泰山书院",
+          "冶源书院"
+        ],
+        "tradeRoutes": [
+          "漕运临清段",
+          "运盐道(河东盐池)",
+          "登州-辽东海运"
+        ],
+        "recentDisasters": [
+          "天启六年胶东旱",
+          "天启七年黄河决口"
+        ],
+        "religiousSites": [
+          "曲阜孔庙三孔",
+          "泰山",
+          "崂山(道教)",
+          "灵岩寺"
+        ],
+        "threats": [
+          "白莲教(徐鸿儒 1622 之乱余烬)",
+          "漕工罢工",
+          "登州叛乱(1631 将起)"
+        ],
+        "mapRegionId": "ming-26"
+      },
+      {
+        "id": "div_mp9rsc2mykatn",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 5200000,
+          "fugitives": 120000,
+          "hiddenCount": 140000,
+          "households": 1000000,
+          "ding": 1352000
+        },
+        "byGender": {
+          "male": 2652000,
+          "female": 2548000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 520000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 2860000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 1820000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.42,
+          "佛": 0.2,
+          "道": 0.22,
+          "民间": 0.15,
+          "伊斯兰": 0.01
+        },
+        "baojia": {
+          "baoCount": 10000,
+          "jiaCount": 100000,
+          "paiCount": 100000,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 6760000,
+          "water": 5720000,
+          "climate": 0.82,
+          "historicalCap": 7280000,
+          "currentLoad": 0.98,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 40,
+        "corruptionLocal": 68,
+        "fiscalDetail": {
+          "claimedRevenue": 6760000,
+          "actualRevenue": 5543200,
+          "remittedToCenter": 3718000,
+          "retainedBudget": 1825200,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 220000,
+          "grain": 480000,
+          "cloth": 40000
+        },
+        "children": [],
+        "name": "山西布政使司",
+        "level": "province",
+        "officialPosition": "山西巡抚",
+        "governor": "牟志夔",
+        "description": "表里山河。下辖太原/平阳/潞安/汾州/大同/泽州/辽州/沁州等。北有大同九边，南有平阳盐池；晋商巨贾。",
+        "terrain": "山地",
+        "specialResources": "煤·铁·盐(运城)·马·晋商",
+        "taxLevel": "中",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": true,
+          "mineralRegion": true,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 36620000,
+          "commerceCoefficient": 1,
+          "commerceVolume": 5500000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 100000000,
+          "mineralProduction": 2200000,
+          "horseProduction": 8000,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 4,
+            "yuyao": 0
+          },
+          "postRelays": 70,
+          "kejuQuota": 65,
+          "roadQuality": 22,
+          "landsAnnexed": 180000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 5200000,
+        "prosperity": 48,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 416000
+          },
+          "shi": {
+            "mouths": 260000
+          },
+          "zhen": {
+            "mouths": 832000
+          },
+          "cun": {
+            "mouths": 3692000
+          }
+        },
+        "specialCulture": "晋学·票号商业·解盐文化·北方武人传统",
+        "strategicValue": "表里山河·九边大同/山西两镇·晋商控边贸",
+        "leadingGentry": [
+          "蒲州韩氏(韩爌)",
+          "太原王氏",
+          "平阳霍氏",
+          "介休范氏(日后八大皇商)",
+          "阳城张氏"
+        ],
+        "academies": [
+          "晋阳书院",
+          "汾州书院"
+        ],
+        "tradeRoutes": [
+          "张家口-大同-归化(茶马互市)",
+          "太原-平阳盐池",
+          "潞泽煤铁"
+        ],
+        "recentDisasters": [
+          "天启五年晋中旱",
+          "天启六年冬奇寒"
+        ],
+        "religiousSites": [
+          "五台山(佛教圣地)",
+          "北岳恒山",
+          "芮城永乐宫",
+          "大同华严寺"
+        ],
+        "threats": [
+          "蒙古入寇",
+          "晋商通敌(日后传闻通后金)",
+          "饥民外逃"
+        ],
+        "mapRegionId": "ming-10"
+      },
+      {
+        "id": "div_mp9rsc2m3vtpq",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 6800000,
+          "fugitives": 200000,
+          "hiddenCount": 240000,
+          "households": 1307692,
+          "ding": 1768000
+        },
+        "byGender": {
+          "male": 3468000,
+          "female": 3332000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 680000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 3740000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 2380000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.35,
+          "佛": 0.2,
+          "道": 0.15,
+          "民间": 0.3
+        },
+        "baojia": {
+          "baoCount": 13076,
+          "jiaCount": 130769,
+          "paiCount": 130769,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 8840000,
+          "water": 7480000,
+          "climate": 0.78,
+          "historicalCap": 9520000,
+          "currentLoad": 1.05,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 38,
+        "corruptionLocal": 72,
+        "fiscalDetail": {
+          "claimedRevenue": 8840000,
+          "actualRevenue": 7248800,
+          "remittedToCenter": 4862000,
+          "retainedBudget": 2386800,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 180000,
+          "grain": 520000,
+          "cloth": 55000
+        },
+        "children": [],
+        "name": "河南布政使司",
+        "level": "province",
+        "officialPosition": "河南巡抚",
+        "governor": "郭增光",
+        "description": "中州古地。下辖开封/归德/河南/怀庆/彰德/卫辉/南阳/汝宁八府。福王就国洛阳，侵吞大量民田。黄河频溃。《万历会计录》在籍 519 万。福王岁米 2 万石+田 4 万顷，宗藩压力最重。",
+        "terrain": "平原",
+        "specialResources": "麦·棉·豆·药材",
+        "taxLevel": "重",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": false,
+          "imperialDomain": true
+        },
+        "economyBase": {
+          "farmland": 74240000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 5400000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 0,
+          "imperialFarmland": 4000000,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 100,
+          "kejuQuota": 70,
+          "roadQuality": 60,
+          "landsAnnexed": 1500000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 6800000,
+        "prosperity": 44,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 448000
+          },
+          "shi": {
+            "mouths": 280000
+          },
+          "zhen": {
+            "mouths": 896000
+          },
+          "cun": {
+            "mouths": 3976000
+          }
+        },
+        "specialCulture": "中原古学·儒道佛三教鼎立·牡丹文化(洛阳)",
+        "strategicValue": "中州腹地·九边补给站·福王就国之所",
+        "leadingGentry": [
+          "商丘侯氏(侯方域家)",
+          "大名成氏(成基命)",
+          "开封方氏",
+          "洛阳(福王田产侵占)",
+          "怀庆孙氏"
+        ],
+        "academies": [
+          "睢阳书院(应天府书院旧址)",
+          "嵩阳书院",
+          "白沙书院"
+        ],
+        "tradeRoutes": [
+          "黄河漕运",
+          "南北官道",
+          "汴洛商路"
+        ],
+        "recentDisasters": [
+          "天启五年河南蝗",
+          "天启六年黄河决口开封"
+        ],
+        "religiousSites": [
+          "少林寺",
+          "白马寺",
+          "相国寺",
+          "中岳嵩山"
+        ],
+        "threats": [
+          "福王敛财民怨",
+          "黄河水患",
+          "流民南下"
+        ],
+        "mapRegionId": "ming-09"
+      },
+      {
+        "id": "div_mp9rsc2mmjx69",
+        "regionType": "disaster_zone",
+        "populationDetail": {
+          "mouths": 5800000,
+          "fugitives": 420000,
+          "hiddenCount": 220000,
+          "households": 1115384,
+          "ding": 1508000
+        },
+        "byGender": {
+          "male": 2958000,
+          "female": 2842000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 580000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 3190000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 2030000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.96,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.35,
+          "佛": 0.18,
+          "道": 0.18,
+          "民间": 0.23,
+          "伊斯兰": 0.06
+        },
+        "baojia": {
+          "baoCount": 11153,
+          "jiaCount": 111538,
+          "paiCount": 111538,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 7540000,
+          "water": 6380000,
+          "climate": 0.45,
+          "historicalCap": 8120000,
+          "currentLoad": 1.32,
+          "carryingRegime": "collapse"
+        },
+        "minxinLocal": 15,
+        "corruptionLocal": 76,
+        "fiscalDetail": {
+          "claimedRevenue": 7540000,
+          "actualRevenue": 6182800,
+          "remittedToCenter": 4147000,
+          "retainedBudget": 2035800,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 25000,
+          "grain": 35000,
+          "cloth": 4000
+        },
+        "children": [],
+        "name": "陕西布政使司",
+        "level": "province",
+        "officialPosition": "陕西巡抚",
+        "governor": "胡廷宴",
+        "description": "秦地饥馑之乡。下辖西安/凤翔/汉中/平凉/巩昌/临洮六府 + 延安/庆阳/榆林镇 + 宁夏/甘肃/固原/延绥四镇。三边总督武之望节制。连年大旱(天启六-七年)，西北大饥，民变之薪已积。",
+        "terrain": "山地",
+        "specialResources": "棉·盐·铁·马·边塞",
+        "taxLevel": "重",
+        "disaster": {
+          "active": true,
+          "type": "大饥荒",
+          "subTypes": [
+            "连年大旱",
+            "蝗灾",
+            "瘟疫",
+            "草木食尽"
+          ],
+          "since": "天启六年(1626)·第三年",
+          "severity": 95,
+          "affectedSubDivisions": [
+            "延安府",
+            "庆阳府",
+            "榆林卫",
+            "西安府",
+            "凤翔府",
+            "汉中府",
+            "固原卫",
+            "延绥镇"
+          ],
+          "casualties": {
+            "starved": 180000,
+            "fled": 420000,
+            "sold": 30000
+          },
+          "desc": "连年大旱·民食树皮观音土·道殣相望·白骨塞川·父子相食·延绥饥卒鼓噪索饷。巡抚胡廷宴粉饰太平不肯报饥·三边总督武之望暗奏朝廷。边兵欠饷数月·饥民+边卒+流寇即将三股汇流成民变大潮",
+          "historicalNote": "《明史·五行志》《杨鹤奏疏》《怀陵流寇始终录》·次年(1628)澄城县王二起义即肇始于此·十七年流寇大乱之源",
+          "willSpawnIfUnanswered": "王嘉胤(1628 起事)·王二(1628 澄城杀令)·高迎祥·李自成·张献忠(1630 前后加入)",
+          "mitigations": [
+            "开仓赈济需银百万石万",
+            "免派(辽饷+九厘)需中央财政缓冲",
+            "调漕粮入陕需漕运改道",
+            "抚民需选清廉疆臣如杨鹤"
+          ]
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 29420000,
+          "commerceCoefficient": 0.55,
+          "commerceVolume": 1800000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 50000000,
+          "mineralProduction": 500000,
+          "horseProduction": 12000,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 90,
+          "kejuQuota": 65,
+          "roadQuality": 14,
+          "landsAnnexed": 500000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": [
+            {
+              "type": "drought",
+              "severity": 3,
+              "startTurn": 1,
+              "note": "连年大旱·延绥/榆林/西安重灾"
+            },
+            {
+              "type": "locust",
+              "severity": 2,
+              "startTurn": 1,
+              "note": "蝗起延绥·吃尽草木"
+            },
+            {
+              "type": "plague",
+              "severity": 2,
+              "startTurn": 1,
+              "note": "饥饿引发疫·关中蔓延"
+            }
+          ]
+        },
+        "population": 5800000,
+        "prosperity": 22,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 464000
+          },
+          "shi": {
+            "mouths": 290000
+          },
+          "zhen": {
+            "mouths": 928000
+          },
+          "cun": {
+            "mouths": 4118000
+          }
+        },
+        "specialCulture": "秦学·汉唐故地·西北武风·回儒文化",
+        "strategicValue": "三边重镇·九边延绥/宁夏/甘肃/固原四镇。然饥荒燎原即从此起。",
+        "leadingGentry": [
+          "三原王氏(王恕旧族)",
+          "华阴杨氏",
+          "韩城王氏",
+          "朝邑阎氏"
+        ],
+        "academies": [
+          "横渠书院(张载故地)",
+          "关中书院(冯从吾)"
+        ],
+        "tradeRoutes": [
+          "关中丝路(衰)",
+          "茶马互市",
+          "漕粮北运"
+        ],
+        "recentDisasters": [
+          "天启五年-七年连年三载大旱",
+          "天启六年瘟疫",
+          "天启七年秋田卒歉收"
+        ],
+        "religiousSites": [
+          "华山",
+          "法门寺",
+          "大雁塔",
+          "楼观台(道教)"
+        ],
+        "threats": [
+          "流民起义（将燎原）",
+          "后金经蒙古绕入",
+          "藏族土司"
+        ],
+        "mapRegionId": "ming-11"
+      },
+      {
+        "id": "div_mp9rsc2m2jp7z",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 3400000,
+          "fugitives": 50000,
+          "hiddenCount": 350000,
+          "households": 653846,
+          "ding": 884000
+        },
+        "byGender": {
+          "male": 1734000,
+          "female": 1666000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 340000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 1870000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 1190000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.82,
+          "藏": 0.08,
+          "彝": 0.05,
+          "其他": 0.05
+        },
+        "byFaith": {
+          "儒": 0.36,
+          "佛": 0.22,
+          "道": 0.24,
+          "民间": 0.14,
+          "藏传佛教": 0.04
+        },
+        "baojia": {
+          "baoCount": 6538,
+          "jiaCount": 65384,
+          "paiCount": 65384,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 4420000,
+          "water": 3740000,
+          "climate": 1,
+          "historicalCap": 4760000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 48,
+        "corruptionLocal": 58,
+        "fiscalDetail": {
+          "claimedRevenue": 4420000,
+          "actualRevenue": 3624400,
+          "remittedToCenter": 2431000,
+          "retainedBudget": 1193400,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 120000,
+          "grain": 380000,
+          "cloth": 50000
+        },
+        "children": [],
+        "name": "四川布政使司",
+        "level": "province",
+        "officialPosition": "四川巡抚",
+        "governor": "尹同皋",
+        "description": "天府之国。下辖成都/保宁/顺庆/夔州/重庆/夔门 + 嘉定/眉/邛等州。西番土司林立；川西藏缅杂处。",
+        "terrain": "山地",
+        "specialResources": "米·蜀锦·茶·盐井·药材",
+        "taxLevel": "轻",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": true,
+          "mineralRegion": true,
+          "horseRegion": false,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 13420000,
+          "commerceCoefficient": 0.85,
+          "commerceVolume": 2900000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 100000000,
+          "mineralProduction": 800000,
+          "horseProduction": 0,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 70,
+          "kejuQuota": 60,
+          "roadQuality": 9,
+          "landsAnnexed": 50000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 3400000,
+        "prosperity": 58,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 272000
+          },
+          "shi": {
+            "mouths": 170000
+          },
+          "zhen": {
+            "mouths": 544000
+          },
+          "cun": {
+            "mouths": 2414000
+          }
+        },
+        "specialCulture": "蜀学·巴渝文化·川剧萌芽·茶马古道",
+        "strategicValue": "天府之国·控滇缅藏·川粮入湘",
+        "leadingGentry": [
+          "成都杨氏(杨慎族)",
+          "内江赵氏",
+          "新都杨氏(杨廷和/杨慎)",
+          "遂宁吕氏"
+        ],
+        "academies": [
+          "锦江书院",
+          "墨池书院"
+        ],
+        "tradeRoutes": [
+          "茶马古道(川藏)",
+          "蜀道入长安(衰)",
+          "川江入楚"
+        ],
+        "recentDisasters": [
+          "奢安之乱中波及(1621-1629)"
+        ],
+        "religiousSites": [
+          "青城山",
+          "峨眉山",
+          "乐山大佛",
+          "文殊院"
+        ],
+        "threats": [
+          "永宁奢崇明叛(将平)",
+          "土司反叛",
+          "张献忠日后入蜀屠杀"
+        ],
+        "mapRegionId": "ming-12"
+      },
+      {
+        "id": "div_mp9rsc2m6eq76",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 5000000,
+          "fugitives": 60000,
+          "hiddenCount": 280000,
+          "households": 961538,
+          "ding": 1300000
+        },
+        "byGender": {
+          "male": 2550000,
+          "female": 2450000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 500000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 2750000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 1750000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.86,
+          "壮": 0.05,
+          "黎": 0.04,
+          "瑶": 0.03,
+          "疍": 0.01,
+          "其他": 0.01
+        },
+        "byFaith": {
+          "儒": 0.42,
+          "佛": 0.22,
+          "道": 0.18,
+          "民间": 0.16,
+          "天主教": 0.01,
+          "伊斯兰": 0.01
+        },
+        "baojia": {
+          "baoCount": 9615,
+          "jiaCount": 96153,
+          "paiCount": 96153,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 6500000,
+          "water": 5500000,
+          "climate": 1,
+          "historicalCap": 7000000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 56,
+        "corruptionLocal": 60,
+        "fiscalDetail": {
+          "claimedRevenue": 6500000,
+          "actualRevenue": 5330000,
+          "remittedToCenter": 3575000,
+          "retainedBudget": 1755000,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 240000,
+          "grain": 280000,
+          "cloth": 60000
+        },
+        "children": [],
+        "name": "广东布政使司",
+        "level": "province",
+        "officialPosition": "广东巡抚",
+        "governor": "李待问",
+        "description": "岭海之邦。下辖广州/韶州/南雄/惠州/潮州/肇庆/高州/雷州/廉州/琼州十府。广州为海上贸易枢纽，葡萄牙居澳门(月租银五百两)；琼州辖海南岛。《万历会计录》在籍 504 万，含疍户/山客/瑶民实际近 600 万。",
+        "terrain": "沿海",
+        "specialResources": "海贸·糖·果·珠(合浦)·瓷·香料",
+        "taxLevel": "中",
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 25700000,
+          "commerceCoefficient": 1.6,
+          "commerceVolume": 12000000,
+          "maritimeTradeVolume": 4000000,
+          "saltProduction": 400000000,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 900000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 70,
+          "kejuQuota": 75,
+          "roadQuality": 16,
+          "landsAnnexed": 150000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 5000000,
+        "prosperity": 66,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 256000
+          },
+          "shi": {
+            "mouths": 160000
+          },
+          "zhen": {
+            "mouths": 512000
+          },
+          "cun": {
+            "mouths": 2272000
+          }
+        },
+        "specialCulture": "岭南文化·粤商·天主教广州教区·咸淡水交融",
+        "strategicValue": "海贸门户·澳门葡人·琼州辖海南岛",
+        "leadingGentry": [
+          "南海庞氏(庞尚鹏族)",
+          "顺德陈氏",
+          "东莞袁氏(袁崇焕族)",
+          "番禺陈氏",
+          "海康莫氏"
+        ],
+        "academies": [
+          "白沙书院(陈白沙)",
+          "端溪书院",
+          "越秀书院"
+        ],
+        "tradeRoutes": [
+          "澳门-马六甲(葡属)",
+          "广州-菲律宾-墨西哥(银流入)",
+          "珠江水系"
+        ],
+        "recentDisasters": [
+          "天启六年琼州台风"
+        ],
+        "religiousSites": [
+          "六榕寺",
+          "光孝寺",
+          "澳门大三巴(葡)",
+          "雷州天宁寺"
+        ],
+        "threats": [
+          "澳门葡萄牙商武装",
+          "海南黎族反抗",
+          "海盗(郑氏及其他)"
+        ],
+        "mapRegionId": "ming-05"
+      },
+      {
+        "id": "div_mp9rsc2mg07v4",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 1800000,
+          "fugitives": 30000,
+          "hiddenCount": 180000,
+          "households": 346153,
+          "ding": 468000
+        },
+        "byGender": {
+          "male": 918000,
+          "female": 882000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 180000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 990000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 630000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.45,
+          "壮": 0.35,
+          "瑶": 0.1,
+          "苗": 0.06,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "儒": 0.35,
+          "佛": 0.2,
+          "道": 0.15,
+          "民间": 0.3
+        },
+        "baojia": {
+          "baoCount": 3461,
+          "jiaCount": 34615,
+          "paiCount": 34615,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 2340000,
+          "water": 1980000,
+          "climate": 1,
+          "historicalCap": 2520000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 44,
+        "corruptionLocal": 58,
+        "fiscalDetail": {
+          "claimedRevenue": 2340000,
+          "actualRevenue": 1918800,
+          "remittedToCenter": 1287000,
+          "retainedBudget": 631800,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 60000,
+          "grain": 160000,
+          "cloth": 18000
+        },
+        "children": [],
+        "name": "广西布政使司",
+        "level": "province",
+        "officialPosition": "广西巡抚",
+        "governor": "毛堪",
+        "description": "山川险阻。下辖桂林/平乐/梧州/浔州/柳州/庆远/思恩/南宁/太平/镇安/思明十余府。僮/瑶/苗诸民杂居；土司林立。",
+        "terrain": "山地",
+        "specialResources": "桂皮·药材·糯米·马",
+        "taxLevel": "轻",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": true,
+          "horseRegion": false,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 10240000,
+          "commerceCoefficient": 0.6,
+          "commerceVolume": 1100000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 600000,
+          "horseProduction": 0,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 2,
+            "yuyao": 0
+          },
+          "postRelays": 50,
+          "kejuQuota": 55,
+          "roadQuality": 9,
+          "landsAnnexed": 30000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 1800000,
+        "prosperity": 38,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 144000
+          },
+          "shi": {
+            "mouths": 90000
+          },
+          "zhen": {
+            "mouths": 288000
+          },
+          "cun": {
+            "mouths": 1278000
+          }
+        },
+        "specialCulture": "僮(壮)汉瑶苗多元·桂学(石鼓书院)·伏波祭",
+        "strategicValue": "西南门户·控交趾边境·僮兵(狼兵)强悍",
+        "leadingGentry": [
+          "桂林朱氏(靖江王)",
+          "临桂陈氏",
+          "博白王氏"
+        ],
+        "academies": [
+          "石鼓书院",
+          "宣成书院"
+        ],
+        "tradeRoutes": [
+          "贡道广州",
+          "西江水运",
+          "边贸安南"
+        ],
+        "recentDisasters": [
+          "天启七年桂北旱"
+        ],
+        "religiousSites": [
+          "伏波庙",
+          "阳朔普陀山",
+          "靖江王陵"
+        ],
+        "threats": [
+          "瑶民起义",
+          "壮人反叛",
+          "安南越境"
+        ],
+        "mapRegionId": "ming-06"
+      },
+      {
+        "id": "div_mp9rsc2ml2n6w",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 1400000,
+          "fugitives": 20000,
+          "hiddenCount": 120000,
+          "households": 269230,
+          "ding": 364000
+        },
+        "byGender": {
+          "male": 714000,
+          "female": 686000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 140000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 770000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 490000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.42,
+          "彝": 0.18,
+          "白": 0.12,
+          "纳西": 0.08,
+          "苗": 0.06,
+          "傣": 0.05,
+          "其他": 0.09
+        },
+        "byFaith": {
+          "儒": 0.25,
+          "佛": 0.3,
+          "道": 0.1,
+          "藏传佛教": 0.1,
+          "民间": 0.22,
+          "伊斯兰": 0.03
+        },
+        "baojia": {
+          "baoCount": 2692,
+          "jiaCount": 26923,
+          "paiCount": 26923,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 1820000,
+          "water": 1540000,
+          "climate": 1,
+          "historicalCap": 1960000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 50,
+        "corruptionLocal": 55,
+        "fiscalDetail": {
+          "claimedRevenue": 1820000,
+          "actualRevenue": 1492400,
+          "remittedToCenter": 1001000,
+          "retainedBudget": 491400,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 50000,
+          "grain": 140000,
+          "cloth": 15000
+        },
+        "children": [],
+        "name": "云南布政使司",
+        "level": "province",
+        "officialPosition": "云南巡抚",
+        "governor": "闵洪学",
+        "description": "西南边陲。下辖云南/大理/临安/楚雄/澂江/广西/广南/曲靖/姚安/鹤庆/丽江等府 + 木氏/沐氏土司。黔国公沐天波世镇云南。",
+        "terrain": "山地",
+        "specialResources": "铜·银·锡·茶·马·木材",
+        "taxLevel": "轻",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": true,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 1750000,
+          "commerceCoefficient": 0.6,
+          "commerceVolume": 700000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 2000000,
+          "horseProduction": 5000,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 6,
+            "yuyao": 0
+          },
+          "postRelays": 40,
+          "kejuQuota": 47,
+          "roadQuality": 9,
+          "landsAnnexed": 10000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 1400000,
+        "prosperity": 40,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 112000
+          },
+          "shi": {
+            "mouths": 70000
+          },
+          "zhen": {
+            "mouths": 224000
+          },
+          "cun": {
+            "mouths": 994000
+          }
+        },
+        "specialCulture": "汉彝白纳西傣多元·木氏土司文化·南丝绸之路",
+        "strategicValue": "控滇缅·通缅甸金银矿·沐氏世镇",
+        "leadingGentry": [
+          "云南沐氏(黔国公·世镇云南)",
+          "大理段氏(已废王)",
+          "丽江木氏(土司·纳西)",
+          "楚雄李氏"
+        ],
+        "academies": [
+          "五华书院",
+          "三迤书院"
+        ],
+        "tradeRoutes": [
+          "滇缅古道",
+          "茶马古道(滇藏)",
+          "南丝绸之路"
+        ],
+        "recentDisasters": [
+          "天启五年滇东地震"
+        ],
+        "religiousSites": [
+          "鸡足山(佛教)",
+          "石钟寺",
+          "曼飞龙塔"
+        ],
+        "threats": [
+          "缅甸东吁王朝侵扰",
+          "木邦孟养叛",
+          "缅甸南掌(老挝)争边"
+        ],
+        "mapRegionId": "ming-14"
+      },
+      {
+        "id": "div_mp9rsc2mlffnx",
+        "regionType": "tusi",
+        "populationDetail": {
+          "mouths": 1150000,
+          "fugitives": 70000,
+          "hiddenCount": 280000,
+          "households": 221153,
+          "ding": 299000
+        },
+        "byGender": {
+          "male": 586500,
+          "female": 563500,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 115000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 632500,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 402500,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.28,
+          "苗": 0.28,
+          "布依": 0.16,
+          "侗": 0.1,
+          "彝": 0.08,
+          "其他": 0.1
+        },
+        "byFaith": {
+          "儒": 0.18,
+          "佛": 0.2,
+          "道": 0.12,
+          "民间": 0.45,
+          "伊斯兰": 0.05
+        },
+        "baojia": {
+          "baoCount": 2211,
+          "jiaCount": 22115,
+          "paiCount": 22115,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 1495000,
+          "water": 1265000,
+          "climate": 1,
+          "historicalCap": 1610000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 38,
+        "corruptionLocal": 65,
+        "fiscalDetail": {
+          "claimedRevenue": 1495000,
+          "actualRevenue": 1225900,
+          "remittedToCenter": 822250,
+          "retainedBudget": 403650,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 30000,
+          "grain": 80000,
+          "cloth": 8000
+        },
+        "children": [],
+        "name": "贵州布政使司",
+        "level": "province",
+        "officialPosition": "贵州巡抚",
+        "governor": "王瑊",
+        "description": "黔中山地。下辖贵阳/思南/镇远/思州/石阡/铜仁/都匀/平越/黎平/安顺等府 + 水西安氏、播州杨氏（1600年被平）、永宁奢氏（1621起事）等大土司。奢安之乱仍在进行(第七年)定。《万历会计录》在籍 29 万（汉民为主），然苗彝布依诸族多未入籍，实际约 110-130 万。",
+        "terrain": "山地",
+        "specialResources": "汞·铅·朱砂·马·木材",
+        "taxLevel": "轻",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": true,
+          "horseRegion": false,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 510000,
+          "commerceCoefficient": 0.5,
+          "commerceVolume": 350000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 300000,
+          "horseProduction": 0,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 2,
+            "yuyao": 0
+          },
+          "postRelays": 30,
+          "kejuQuota": 35,
+          "roadQuality": 9,
+          "landsAnnexed": 5000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 1150000,
+        "prosperity": 28,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 72000
+          },
+          "shi": {
+            "mouths": 45000
+          },
+          "zhen": {
+            "mouths": 144000
+          },
+          "cun": {
+            "mouths": 639000
+          }
+        },
+        "specialCulture": "苗布依侗汉多元·水西彝族传统·贵州四大土司余脉",
+        "strategicValue": "西南咽喉·控湘桂滇·奢安之乱未平",
+        "leadingGentry": [
+          "(无大汉族乡绅·土司为主)",
+          "水西安氏",
+          "永宁奢氏(叛)",
+          "播州杨氏(已平)"
+        ],
+        "academies": [
+          "阳明洞(王阳明贬谪悟道)",
+          "文明书院",
+          "龙冈书院"
+        ],
+        "tradeRoutes": [
+          "川黔-滇黔商路",
+          "朱砂汞北运"
+        ],
+        "recentDisasters": [
+          "奢安之乱持续六年(1621-1629)·毁田数百万亩"
+        ],
+        "religiousSites": [
+          "阳明洞",
+          "甲秀楼",
+          "黔灵山"
+        ],
+        "threats": [
+          "水西安邦彦叛(将平)",
+          "土司联军",
+          "苗瑶不时啸聚"
+        ],
+        "mapRegionId": "ming-13"
+      },
+      {
+        "id": "div_mp9rsc2ml1zla",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 500000,
+          "fugitives": 280000,
+          "hiddenCount": 40000,
+          "households": 96153,
+          "ding": 130000
+        },
+        "byGender": {
+          "male": 255000,
+          "female": 245000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 50000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 275000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 175000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.92,
+          "蒙古": 0.04,
+          "女真": 0.02,
+          "朝鲜": 0.02
+        },
+        "byFaith": {
+          "儒": 0.35,
+          "佛": 0.2,
+          "道": 0.15,
+          "民间": 0.3
+        },
+        "baojia": {
+          "baoCount": 961,
+          "jiaCount": 9615,
+          "paiCount": 9615,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 650000,
+          "water": 550000,
+          "climate": 0.74,
+          "historicalCap": 700000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 38,
+        "corruptionLocal": 58,
+        "fiscalDetail": {
+          "claimedRevenue": 650000,
+          "actualRevenue": 533000,
+          "remittedToCenter": 357500,
+          "retainedBudget": 175500,
+          "compliance": 0.72,
+          "skimmingRate": 0.18,
+          "autonomyLevel": 0.2
+        },
+        "publicTreasuryInit": {
+          "money": 150000,
+          "grain": 300000,
+          "cloth": 20000
+        },
+        "children": [],
+        "name": "辽东都指挥使司",
+        "level": "province",
+        "officialPosition": "辽东经略",
+        "governor": "阎鸣泰",
+        "description": "九边之首。山东布政使司节制。辖辽阳/广宁/沈阳/铁岭/开原/锦州/广宁卫/宁远卫/前屯卫/山海关等二十五卫。沈阳/辽阳已陷后金；现只余辽西走廊+山海关+东江镇(皮岛)。天启五年广宁战役后实控人口锐减，仅存 30-50 万汉民（军户+流民）。王之臣天启七年五月因宁锦失守被罢，阎鸣泰继任。",
+        "terrain": "山地",
+        "specialResources": "马·皮毛·人参·煤·铁",
+        "taxLevel": "轻",
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "economyBase": {
+          "farmland": 2200000,
+          "commerceCoefficient": 0.7,
+          "commerceVolume": 750000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 8000,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 50,
+          "kejuQuota": 50,
+          "roadQuality": 30,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "population": 500000,
+        "prosperity": 32,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 68000
+          },
+          "shi": {
+            "mouths": 42500
+          },
+          "zhen": {
+            "mouths": 136000
+          },
+          "cun": {
+            "mouths": 603500
+          }
+        },
+        "specialCulture": "汉女真蒙古朝鲜混居·边疆武风·关宁铁骑",
+        "strategicValue": "九边之首·关宁锦防线核心·东江镇扰后金后方",
+        "leadingGentry": [
+          "宁远祖氏(祖大寿祖家)",
+          "广宁马氏(马世龙族)",
+          "义州刘氏(刘兴祚,将降金)"
+        ],
+        "academies": [
+          "辽阳武学",
+          "宁远文庙"
+        ],
+        "tradeRoutes": [
+          "海运登莱-辽东(已断)",
+          "山海关官道",
+          "女真马市(已停)"
+        ],
+        "recentDisasters": [
+          "天启元年广宁失守",
+          "天启五年柳河之役败",
+          "天启六年宁远大捷"
+        ],
+        "religiousSites": [
+          "千山(佛教)",
+          "医巫闾山",
+          "辽阳白塔"
+        ],
+        "threats": [
+          "后金围城",
+          "朝鲜被迫纳贡于金",
+          "毛文龙东江镇不受节制"
+        ],
+        "mapRegionId": "ming-28"
+      },
+      {
+        "id": "div_mp9rsc2mbhlbf",
+        "regionType": "jimi",
+        "populationDetail": {
+          "mouths": 1800000,
+          "fugitives": 0,
+          "hiddenCount": 1200000,
+          "households": 346153,
+          "ding": 468000
+        },
+        "byGender": {
+          "male": 918000,
+          "female": 882000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 180000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 990000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 630000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "藏": 0.94,
+          "汉": 0.02,
+          "蒙古": 0.02,
+          "其他": 0.02
+        },
+        "byFaith": {
+          "藏传佛教": 0.92,
+          "苯教": 0.06,
+          "其他": 0.02
+        },
+        "baojia": {
+          "baoCount": 3461,
+          "jiaCount": 34615,
+          "paiCount": 34615,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 2340000,
+          "water": 1980000,
+          "climate": 1,
+          "historicalCap": 2520000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 55,
+        "corruptionLocal": 50,
+        "fiscalDetail": {
+          "claimedRevenue": 2340000,
+          "actualRevenue": 1918800,
+          "remittedToCenter": 1287000,
+          "retainedBudget": 631800,
+          "compliance": 0.15,
+          "skimmingRate": 0.3,
+          "autonomyLevel": 0.9
+        },
+        "publicTreasuryInit": {
+          "money": 5000,
+          "grain": 10000,
+          "cloth": 1000
+        },
+        "children": [],
+        "name": "乌思藏都指挥使司",
+        "level": "province",
+        "officialPosition": "灌顶国师",
+        "governor": "(五世达赖未立·此时洛桑嘉措幼)",
+        "description": "乌思藏(前藏)及朵甘(康区)。此时为藏传佛教格鲁/噶举诸派并立之局。明朝以册封诸派法王与赐金印羁縻之。实际内政由各大寺院与土司自治。藏族主体居住区，人口估 300 万左右（格鲁派僧众约 30 万）。",
+        "terrain": "山地",
+        "specialResources": "马·羊毛·药材·盐(湖盐)·金",
+        "taxLevel": "贡赋",
+        "population": 1800000,
+        "prosperity": 25,
+        "dejureOwner": "明朝廷",
+        "capitalChildId": "",
+        "bySettlement": {
+          "fang": {
+            "mouths": 40000
+          },
+          "shi": {
+            "mouths": 25000
+          },
+          "zhen": {
+            "mouths": 80000
+          },
+          "cun": {
+            "mouths": 355000
+          }
+        },
+        "specialCulture": "藏传佛教·格鲁派黄教·寺院封建·赞普遗风·苯教残余",
+        "strategicValue": "西陲羁縻·茶马互市·藏传佛教朝圣地",
+        "leadingGentry": [
+          "(无汉人乡绅·寺院集团为首)",
+          "萨迦派法王",
+          "噶举派帕木竹巴",
+          "格鲁派宗喀巴传人",
+          "蒙古土默特顾实汗(将介入)"
+        ],
+        "academies": [
+          "哲蚌寺",
+          "色拉寺",
+          "甘丹寺(格鲁三大寺)",
+          "萨迦寺"
+        ],
+        "tradeRoutes": [
+          "茶马古道(川藏·滇藏)",
+          "丝路南道",
+          "青藏商路"
+        ],
+        "recentDisasters": [
+          "天启六年拉萨冰雹"
+        ],
+        "religiousSites": [
+          "大昭寺",
+          "布达拉宫(早期)",
+          "扎什伦布寺",
+          "冈仁波齐"
+        ],
+        "threats": [
+          "格鲁派与噶举派冲突",
+          "蒙古介入(1640 顾实汗将入藏)",
+          "苯教复兴"
+        ],
+        "mapRegionId": "ming-17"
+      }
+    ]
+  },
+  "laterJin": {
+    "factionId": "fac-later-jin",
+    "factionName": "后金",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2oxuwcj",
+        "regionType": "normal",
+        "populationDetail": {
+          "mouths": 970000,
+          "fugitives": 40000,
+          "hiddenCount": 111000,
+          "households": 186538,
+          "ding": 252200
+        },
+        "byGender": {
+          "male": 494700,
+          "female": 475300,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 97000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 533500,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 339500,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "女真": 0.48,
+          "汉": 0.35,
+          "蒙古": 0.1,
+          "朝鲜": 0.04,
+          "其他": 0.03
+        },
+        "byFaith": {
+          "萨满": 0.46,
+          "儒": 0.18,
+          "藏传佛教": 0.12,
+          "佛": 0.08,
+          "民间": 0.16
+        },
+        "baojia": {
+          "baoCount": 1865,
+          "jiaCount": 18653,
+          "paiCount": 18653,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 1261000,
+          "water": 1067000,
+          "climate": 1,
+          "historicalCap": 1358000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 59,
+        "corruptionLocal": 34,
+        "fiscalDetail": {
+          "claimedRevenue": 1261000,
+          "actualRevenue": 1034020,
+          "remittedToCenter": 693550,
+          "retainedBudget": 340470,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 398000,
+          "grain": 1250000,
+          "cloth": 99000
+        },
+        "children": [],
+        "name": "辽沈建州八旗辖区",
+        "level": "province",
+        "officialPosition": "后金汗廷直辖",
+        "governor": "皇太极",
+        "description": "沈阳、辽阳、建州旧地、辽北边旗合为一个省级大区。后金体量不按明朝省制拆细，核心是八旗军政与辽东降民屯粮。",
+        "terrain": "平原/山地",
+        "specialResources": "辽河粮·铁匠·人参·皮毛·战马",
+        "taxLevel": "旗役",
+        "tags": {
+          "mineralRegion": true,
+          "horseRegion": true
+        },
+        "economyBase": {
+          "farmland": 4970000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 680000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 950000,
+          "horseProduction": 35800,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 47,
+          "kejuQuota": 0,
+          "roadQuality": 28,
+          "landsAnnexed": 0,
+          "landsReclaimed": 220000,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "沈阳-辽阳",
+          "沈阳-科尔沁",
+          "鸭绿江贡道"
+        ],
+        "threats": [
+          "宁锦明军反攻",
+          "汉民逃亡",
+          "四大贝勒分权",
+          "朝鲜亲明派抵触"
+        ],
+        "specialCulture": "八旗军政合一·女真、辽东汉民与蒙古盟部混居。汗廷以贝勒议政维系新征服区。",
+        "strategicValue": "辽沈为后金国本与入关前进基地，连接朝鲜、科尔沁与宁锦防线。",
+        "recentDisasters": [
+          "天启元年辽沈易手后汉民逃亡与屯粮重编",
+          "天启六年宁远失利后攻势暂挫"
+        ],
+        "population": 970000,
+        "mapRegionId": "ming2-29"
+      }
+    ]
+  },
+  "chahar": {
+    "factionId": "fac-chahar",
+    "factionName": "察哈尔",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pq38wr",
+        "regionType": "jimi",
+        "populationDetail": {
+          "mouths": 330000,
+          "fugitives": 42000,
+          "hiddenCount": 74000,
+          "households": 63461,
+          "ding": 85800
+        },
+        "byGender": {
+          "male": 168300,
+          "female": 161700,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 33000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 181500,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 115500,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "蒙古": 0.92,
+          "汉": 0.05,
+          "回回": 0.01,
+          "其他": 0.02
+        },
+        "byFaith": {
+          "藏传佛教": 0.6,
+          "萨满": 0.25,
+          "民间": 0.12,
+          "伊斯兰": 0.03
+        },
+        "baojia": {
+          "baoCount": 634,
+          "jiaCount": 6346,
+          "paiCount": 6346,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 429000,
+          "water": 363000,
+          "climate": 1,
+          "historicalCap": 462000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 43,
+        "corruptionLocal": 34,
+        "fiscalDetail": {
+          "claimedRevenue": 429000,
+          "actualRevenue": 351780,
+          "remittedToCenter": 235950,
+          "retainedBudget": 115830,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 48000,
+          "grain": 88000,
+          "cloth": 26000
+        },
+        "children": [],
+        "name": "察哈尔漠南牧地",
+        "level": "province",
+        "officialPosition": "察哈尔大汗本营",
+        "governor": "林丹汗",
+        "description": "察哈尔本部、归化城与宣府塞外合为一个草原大区。它不是布政使司式国家，更像移动汗帐与部盟牧地。",
+        "terrain": "草原",
+        "specialResources": "战马·羊群·边市·寺院供养",
+        "taxLevel": "部盟贡赋",
+        "tags": {
+          "horseRegion": true
+        },
+        "economyBase": {
+          "farmland": 260000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 155000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 39000,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 9,
+          "kejuQuota": 0,
+          "roadQuality": 22,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "归化城-宣府互市",
+          "漠南草原路"
+        ],
+        "threats": [
+          "后金东压",
+          "科尔沁倒向后金",
+          "部众离散"
+        ],
+        "specialCulture": "蒙古黄金家族余威·藏传佛教与游牧盟誓并行，汗帐政治重于城郭官署。",
+        "strategicValue": "漠南屏障，夹在明边、后金与归化城商道之间，是后金西进绕边的关键障碍。",
+        "recentDisasters": [
+          "天启年间林丹汗西迁压力渐重",
+          "科尔沁等东蒙古诸部倒向后金"
+        ],
+        "population": 330000,
+        "mapRegionId": "ming2-36"
+      },
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 37,
+        "corruptionLocal": 18,
+        "id": "supp-southern-mongols",
+        "name": "漠南诸部",
+        "factionId": "fac-chahar",
+        "factionName": "察哈尔",
+        "officialPosition": "漠南诸部盟",
+        "governor": "林丹汗影响下诸部",
+        "regionType": "nomadic_confederation",
+        "dejureOwner": "蒙古漠南诸部",
+        "description": "漠南诸部处于察哈尔、科尔沁、土默特与后金之间，1620 年代部盟分化快速，林丹汗试图恢复大汗权威。",
+        "terrain": "漠南草原",
+        "specialResources": "马群、边市、羊群、皮毛",
+        "population": 330000,
+        "prosperity": 37,
+        "byEthnicity": {
+          "蒙古": 0.9,
+          "汉商屯民": 0.06,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "藏传佛教": 0.66,
+          "萨满旧俗": 0.22,
+          "其他": 0.12
+        },
+        "bySettlement": {
+          "牧帐": 0.82,
+          "边市聚落": 0.1,
+          "山前营地": 0.08
+        },
+        "strategicValue": "后金西进、察哈尔南下与明边互市交汇",
+        "tradeRoutes": [
+          "宣大互市",
+          "漠南牧道"
+        ],
+        "threats": [
+          "部盟倒向后金",
+          "林丹汗征发",
+          "边市断绝"
+        ],
+        "recentDisasters": [
+          "部盟分化"
+        ],
+        "specialCulture": "漠南蒙古文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "chahar-khorchin"
+        ],
+        "populationDetail": {
+          "households": 66000,
+          "mouths": 330000,
+          "ding": 138600,
+          "fugitives": 4950,
+          "hiddenCount": 39600
+        },
+        "economyBase": {
+          "farmland": 1650,
+          "commerceCoefficient": 0.74,
+          "commerceVolume": 976800,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 29700,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 33,
+          "landsAnnexed": 0,
+          "landsReclaimed": 83,
+          "landsSurveyed": 693,
+          "disasterRecord": [
+            "部盟分化"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 427350,
+          "actualRevenue": 179487,
+          "remittedToCenter": 32308,
+          "retainedBudget": 93333,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 125641,
+          "grain": 82500,
+          "cloth": 9900
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-chahar",
+        "mapRegionId": "ming2-34"
+      }
+    ]
+  },
+  "khorchin": {
+    "factionId": "fac-khorchin",
+    "factionName": "科尔沁蒙古",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pnhaer",
+        "regionType": "jimi",
+        "populationDetail": {
+          "mouths": 280000,
+          "fugitives": 8000,
+          "hiddenCount": 43000,
+          "households": 53846,
+          "ding": 72800
+        },
+        "byGender": {
+          "male": 142800,
+          "female": 137200,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 28000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 154000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 98000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "蒙古": 0.94,
+          "女真": 0.04,
+          "其他": 0.02
+        },
+        "byFaith": {
+          "萨满": 0.46,
+          "藏传佛教": 0.38,
+          "民间": 0.16
+        },
+        "baojia": {
+          "baoCount": 538,
+          "jiaCount": 5384,
+          "paiCount": 5384,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 364000,
+          "water": 308000,
+          "climate": 1,
+          "historicalCap": 392000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 61,
+        "corruptionLocal": 27,
+        "fiscalDetail": {
+          "claimedRevenue": 364000,
+          "actualRevenue": 298480,
+          "remittedToCenter": 200200,
+          "retainedBudget": 98280,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 47000,
+          "grain": 41000,
+          "cloth": 15000
+        },
+        "children": [],
+        "name": "科尔沁东蒙古牧地",
+        "level": "province",
+        "officialPosition": "科尔沁部帐",
+        "governor": "奥巴台吉",
+        "description": "嫩科尔沁、西拉木伦河与辽河北岸牧地合并。游戏上作为后金侧翼盟友的一个省级牧区处理。",
+        "terrain": "草原",
+        "specialResources": "战马·牛羊·骑兵·联姻网络",
+        "taxLevel": "盟贡",
+        "tags": {
+          "horseRegion": true
+        },
+        "economyBase": {
+          "farmland": 110000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 62000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 33500,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 8,
+          "kejuQuota": 0,
+          "roadQuality": 22,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "科尔沁-沈阳盟路",
+          "辽河草原路"
+        ],
+        "threats": [
+          "察哈尔报复",
+          "后金过度征调"
+        ],
+        "specialCulture": "东蒙古部盟文化·姻亲外交浓厚，骑兵与牛羊牧产是政治筹码。",
+        "strategicValue": "后金侧翼盟友和骑兵来源，控制辽河草原通道，可牵制察哈尔。",
+        "recentDisasters": [
+          "天启六年前后与后金结盟加深",
+          "察哈尔压力与部众迁徙持续"
+        ],
+        "population": 280000,
+        "mapRegionId": "ming2-30"
+      }
+    ]
+  },
+  "joseon": {
+    "factionId": "fac-joseon",
+    "factionName": "朝鲜",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pxp70y",
+        "regionType": "fanbang",
+        "populationDetail": {
+          "mouths": 6950000,
+          "fugitives": 205000,
+          "hiddenCount": 485000,
+          "households": 1336538,
+          "ding": 1807000
+        },
+        "byGender": {
+          "male": 3544500,
+          "female": 3405500,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 695000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 3822500,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 2432500,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "朝鲜": 0.98,
+          "女真": 0.01,
+          "汉": 0.005,
+          "其他": 0.005
+        },
+        "byFaith": {
+          "儒": 0.52,
+          "佛": 0.18,
+          "民间": 0.25,
+          "萨满": 0.05
+        },
+        "baojia": {
+          "baoCount": 13365,
+          "jiaCount": 133653,
+          "paiCount": 133653,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 9035000,
+          "water": 7645000,
+          "climate": 1,
+          "historicalCap": 9730000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 46,
+        "corruptionLocal": 46,
+        "fiscalDetail": {
+          "claimedRevenue": 9035000,
+          "actualRevenue": 7408700,
+          "remittedToCenter": 4969250,
+          "retainedBudget": 2439450,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 93000,
+          "grain": 730000,
+          "cloth": 39500
+        },
+        "children": [],
+        "name": "朝鲜八道",
+        "level": "province",
+        "officialPosition": "朝鲜国王辖境",
+        "governor": "仁祖·李倧",
+        "description": "京畿、忠清、庆尚、全罗、江原、黄海、平安、咸镜合为一个外藩国家大区。具体八道不在本剧本展开。",
+        "terrain": "山地/沿海",
+        "specialResources": "稻米·人参·纸·海产·山城",
+        "taxLevel": "藩国贡赋",
+        "tags": {
+          "hasPort": true,
+          "fishingRegion": true,
+          "mineralRegion": true,
+          "saltRegion": true,
+          "horseRegion": true
+        },
+        "economyBase": {
+          "farmland": 9470000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 1015000,
+          "maritimeTradeVolume": 328000,
+          "saltProduction": 210000000,
+          "mineralProduction": 340000,
+          "horseProduction": 12200,
+          "fishingProduction": 650000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 194,
+          "kejuQuota": 0,
+          "roadQuality": 23,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "汉城-义州",
+          "汉城-釜山",
+          "全罗粮道"
+        ],
+        "threats": [
+          "后金二次入侵",
+          "主战主和党争",
+          "边民逃亡"
+        ],
+        "specialCulture": "朝鲜王朝儒学官僚国家·两班政治与义理事大观念强，边郡山城传统深。",
+        "strategicValue": "鸭绿江以东屏障，既是明后金外交缓冲，也是粮道、人参和海路节点。",
+        "recentDisasters": [
+          "天启七年丁卯胡乱后朝野震荡",
+          "义州至平安道边民逃散"
+        ],
+        "population": 6950000,
+        "mapRegionId": "ming-29"
+      }
+    ]
+  },
+  "bozhouYang": {
+    "factionId": "fac-bozhou-yang",
+    "factionName": "播州土司·杨氏(余裔)",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pljwli",
+        "regionType": "tusi",
+        "populationDetail": {
+          "mouths": 68000,
+          "fugitives": 9000,
+          "hiddenCount": 22000,
+          "households": 13076,
+          "ding": 17680
+        },
+        "byGender": {
+          "male": 34680,
+          "female": 33320,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 6800,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 37400,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 23800,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.34,
+          "彝": 0.3,
+          "苗": 0.18,
+          "仡佬": 0.1,
+          "其他": 0.08
+        },
+        "byFaith": {
+          "民间": 0.42,
+          "毕摩/土司祭祀": 0.28,
+          "佛": 0.14,
+          "道": 0.1,
+          "儒": 0.06
+        },
+        "baojia": {
+          "baoCount": 130,
+          "jiaCount": 1307,
+          "paiCount": 1307,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 88400,
+          "water": 74800,
+          "climate": 1,
+          "historicalCap": 95200,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 40,
+        "corruptionLocal": 35,
+        "fiscalDetail": {
+          "claimedRevenue": 88400,
+          "actualRevenue": 72488,
+          "remittedToCenter": 48620,
+          "retainedBudget": 23868,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 4000,
+          "grain": 9000,
+          "cloth": 900
+        },
+        "children": [],
+        "name": "播州余裔山寨",
+        "level": "province",
+        "officialPosition": "原播州残部寨主",
+        "governor": "杨朝栋",
+        "description": "播州杨氏正统土司在万历二十八年已被明廷废除；此处仅为旧土司亲族、逃亡寨兵与山地附从的残余山寨，不是正式政权。",
+        "terrain": "山地",
+        "specialResources": "木材·朱砂·山寨粮",
+        "taxLevel": "寨粮",
+        "tags": {
+          "mineralRegion": true
+        },
+        "economyBase": {
+          "farmland": 90000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 12000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 60000,
+          "horseProduction": 300,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 1,
+          "kejuQuota": 0,
+          "roadQuality": 8,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "娄山关旧道",
+          "播州-水西山路",
+          "乌江盐粮小道"
+        ],
+        "threats": [
+          "明廷改土归流清剿",
+          "周边土司吞并",
+          "寨粮短缺",
+          "旧部合法性不足"
+        ],
+        "specialCulture": "播州旧土司记忆·山寨盟誓与汉彝苗仡佬杂居，政治号召来自杨氏旧名望而非正式官署。",
+        "strategicValue": "黔北山地小节点，可扰乌江与娄山关交通，但体量远低于奢安主战场。",
+        "recentDisasters": [
+          "万历二十八年播州之役后杨氏土司被废",
+          "改土归流后旧部散入山寨"
+        ],
+        "population": 68000,
+        "mapRegionId": null
+      }
+    ]
+  },
+  "zhengMaritime": {
+    "factionId": "fac-zheng-maritime",
+    "factionName": "郑氏海商",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pz11km",
+        "regionType": "maritime",
+        "populationDetail": {
+          "mouths": 100000,
+          "fugitives": 6500,
+          "hiddenCount": 31000,
+          "households": 19230,
+          "ding": 26000
+        },
+        "byGender": {
+          "male": 51000,
+          "female": 49000,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 10000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 55000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 35000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.7,
+          "平埔族": 0.12,
+          "日本": 0.1,
+          "葡/西混血": 0.02,
+          "其他": 0.06
+        },
+        "byFaith": {
+          "民间": 0.42,
+          "佛": 0.22,
+          "道": 0.12,
+          "天主教": 0.08,
+          "原住民信仰": 0.16
+        },
+        "baojia": {
+          "baoCount": 192,
+          "jiaCount": 1923,
+          "paiCount": 1923,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 130000,
+          "water": 110000,
+          "climate": 1,
+          "historicalCap": 140000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 56,
+        "corruptionLocal": 40,
+        "fiscalDetail": {
+          "claimedRevenue": 130000,
+          "actualRevenue": 106600,
+          "remittedToCenter": 71500,
+          "retainedBudget": 35100,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 260000,
+          "grain": 32000,
+          "cloth": 16000
+        },
+        "children": [],
+        "name": "郑氏台海商路",
+        "level": "province",
+        "officialPosition": "船帮总寨",
+        "governor": "郑芝龙",
+        "description": "厦门金门、平户贸易站与东番航线合为一个海商势力区。它是船队和商路，不是陆上省制国家。",
+        "terrain": "沿海/海域",
+        "specialResources": "海船·日本银·鹿皮·走私税·火器",
+        "taxLevel": "航路抽分",
+        "tags": {
+          "hasPort": true,
+          "fishingRegion": true,
+          "saltRegion": true
+        },
+        "economyBase": {
+          "farmland": 118000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 1350000,
+          "maritimeTradeVolume": 2500000,
+          "saltProduction": 30000000,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 195000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 0,
+          "kejuQuota": 0,
+          "roadQuality": 23,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "厦门-平户",
+          "厦门-大员",
+          "厦门-马尼拉"
+        ],
+        "threats": [
+          "福建官军招剿",
+          "荷兰竞争",
+          "船队内讧"
+        ],
+        "specialCulture": "闽南海商、倭寇遗脉与天主教海贸圈混合，船帮义气强于陆上官制。",
+        "strategicValue": "台海航路枢纽，连接福建、日本、澳门、马尼拉和大员，能左右白银与火器流向。",
+        "recentDisasters": [
+          "天启年间海禁与招抚并行",
+          "荷兰大员扩张压迫台海商路"
+        ],
+        "population": 100000,
+        "mapRegionId": null
+      }
+    ]
+  },
+  "shaanbeiFamine": {
+    "factionId": "fac-shaanbei-famine",
+    "factionName": "陕北饥民(将起)",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pfqvz1",
+        "regionType": "disaster_zone",
+        "populationDetail": {
+          "mouths": 180000,
+          "fugitives": 108000,
+          "hiddenCount": 42000,
+          "households": 34615,
+          "ding": 46800
+        },
+        "byGender": {
+          "male": 91800,
+          "female": 88200,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 18000,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 99000,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 63000,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.92,
+          "回": 0.04,
+          "蒙古": 0.02,
+          "其他": 0.02
+        },
+        "byFaith": {
+          "民间": 0.5,
+          "道": 0.18,
+          "佛": 0.11,
+          "儒": 0.11,
+          "白莲/秘密信仰": 0.1
+        },
+        "baojia": {
+          "baoCount": 346,
+          "jiaCount": 3461,
+          "paiCount": 3461,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 234000,
+          "water": 198000,
+          "climate": 1,
+          "historicalCap": 252000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 8,
+        "corruptionLocal": 70,
+        "fiscalDetail": {
+          "claimedRevenue": 234000,
+          "actualRevenue": 191880,
+          "remittedToCenter": 128700,
+          "retainedBudget": 63180,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 300,
+          "grain": 1100,
+          "cloth": 0
+        },
+        "children": [],
+        "name": "陕北饥民流动区",
+        "level": "province",
+        "officialPosition": "流民聚啸区",
+        "governor": "王嘉胤(潜)",
+        "description": "延安、榆林、米脂府谷等饥区合并。它还不是正式政权，只是一团即将点燃的流民火场。",
+        "terrain": "高原/边塞",
+        "specialResources": "饥民·逃卒·残粮·兵器",
+        "taxLevel": "无",
+        "tags": {
+          "saltRegion": true,
+          "horseRegion": true
+        },
+        "economyBase": {
+          "farmland": 230000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 6000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 8000000,
+          "mineralProduction": 0,
+          "horseProduction": 3100,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 10,
+          "kejuQuota": 0,
+          "roadQuality": 6,
+          "landsAnnexed": 65000,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "延安-米脂山路",
+          "榆林塞路"
+        ],
+        "threats": [
+          "饥饿内耗",
+          "官军围剿",
+          "民变燎原"
+        ],
+        "specialCulture": "陕北边民、逃卒、驿夫与饥民混杂，乡约失效后靠结伙求生。",
+        "strategicValue": "三边腹地燃点，若饥荒、欠饷、逃卒合流，会从流动饥区变成连锁民变。",
+        "recentDisasters": [
+          "天启五年至七年陕北连旱",
+          "延安榆林饥民逃散与驿路崩坏"
+        ],
+        "population": 180000,
+        "mapRegionId": null
+      }
+    ]
+  },
+  "portugueseMacau": {
+    "factionId": "fac-portuguese-macau",
+    "factionName": "葡萄牙·澳门",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2p731jx",
+        "regionType": "leased_port",
+        "populationDetail": {
+          "mouths": 13500,
+          "fugitives": 300,
+          "hiddenCount": 1500,
+          "households": 2596,
+          "ding": 3510
+        },
+        "byGender": {
+          "male": 6885,
+          "female": 6615,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 1350,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 7425,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 4725,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "汉": 0.72,
+          "葡萄牙": 0.05,
+          "土生葡人": 0.08,
+          "马来/印度/非洲仆役": 0.1,
+          "其他": 0.05
+        },
+        "byFaith": {
+          "天主教": 0.22,
+          "民间": 0.52,
+          "佛": 0.12,
+          "道": 0.08,
+          "其他": 0.06
+        },
+        "baojia": {
+          "baoCount": 25,
+          "jiaCount": 259,
+          "paiCount": 259,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 17550,
+          "water": 14850,
+          "climate": 1,
+          "historicalCap": 18900,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 59,
+        "corruptionLocal": 31,
+        "fiscalDetail": {
+          "claimedRevenue": 17550,
+          "actualRevenue": 14391,
+          "remittedToCenter": 9653,
+          "retainedBudget": 4739,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 105000,
+          "grain": 16000,
+          "cloth": 6000
+        },
+        "children": [],
+        "name": "澳门葡人租居地",
+        "level": "province",
+        "officialPosition": "澳门议事会与总督辖区",
+        "governor": "罗保",
+        "description": "澳门半岛、炮厂、商馆和外港合并为一个租居港区。小港口不再拆成多区。",
+        "terrain": "沿海",
+        "specialResources": "红衣炮·耶稣会·中日转口贸易·船坞",
+        "taxLevel": "租银/商税",
+        "tags": {
+          "hasPort": true,
+          "fishingRegion": true
+        },
+        "economyBase": {
+          "farmland": 1000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 1150000,
+          "maritimeTradeVolume": 2100000,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 18000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 0,
+          "kejuQuota": 0,
+          "roadQuality": 39,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "澳门-长崎黑船",
+          "澳门-果阿-马六甲",
+          "澳门-广州香山"
+        ],
+        "threats": [
+          "荷兰封锁",
+          "明廷禁教",
+          "粮食依赖广东"
+        ],
+        "specialCulture": "华人居民占多数，葡人议事会、耶稣会和多族仆役商帮共处，口岸身份依赖明廷默许。",
+        "strategicValue": "广州外海转口港，连接日本白银、果阿航线和红衣炮技术，是明廷与西洋技术接触点。",
+        "recentDisasters": [
+          "天启二年荷兰攻澳门失败后戒备增强",
+          "日本贸易波动与荷兰封锁压力上升"
+        ],
+        "population": 13500,
+        "mapRegionId": "ming-31"
+      }
+    ]
+  },
+  "dutchFormosa": {
+    "factionId": "fac-dutch-formosa",
+    "factionName": "荷兰·台海(东印度公司)",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pcm2iq",
+        "regionType": "company_colony",
+        "populationDetail": {
+          "mouths": 35500,
+          "fugitives": 700,
+          "hiddenCount": 8500,
+          "households": 6826,
+          "ding": 9230
+        },
+        "byGender": {
+          "male": 18105,
+          "female": 17395,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 3550,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 19525,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 12425,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "平埔族": 0.62,
+          "汉": 0.25,
+          "荷兰": 0.02,
+          "日本/东南亚雇佣兵": 0.06,
+          "其他": 0.05
+        },
+        "byFaith": {
+          "原住民信仰": 0.58,
+          "民间": 0.22,
+          "加尔文派": 0.04,
+          "佛/道": 0.1,
+          "其他": 0.06
+        },
+        "baojia": {
+          "baoCount": 68,
+          "jiaCount": 682,
+          "paiCount": 682,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 46150,
+          "water": 39050,
+          "climate": 1,
+          "historicalCap": 49700,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 38,
+        "corruptionLocal": 34,
+        "fiscalDetail": {
+          "claimedRevenue": 46150,
+          "actualRevenue": 37843,
+          "remittedToCenter": 25383,
+          "retainedBudget": 12461,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 207000,
+          "grain": 48000,
+          "cloth": 10000
+        },
+        "children": [],
+        "name": "大员荷兰商馆区",
+        "level": "province",
+        "officialPosition": "VOC 大员长官辖区",
+        "governor": "德威特",
+        "description": "热兰遮、赤崁与台海舰队合并为一个公司殖民据点。它是商馆加要塞，不按省制拆细。",
+        "terrain": "沿海/海域",
+        "specialResources": "鹿皮·糖·转口贸易·火炮·武装商船",
+        "taxLevel": "公司税",
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "fishingRegion": true
+        },
+        "economyBase": {
+          "farmland": 130000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 760000,
+          "maritimeTradeVolume": 1790000,
+          "saltProduction": 25000000,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 200000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 0,
+          "kejuQuota": 0,
+          "roadQuality": 15,
+          "landsAnnexed": 0,
+          "landsReclaimed": 20000,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "大员-巴达维亚",
+          "大员-厦门",
+          "大员-日本"
+        ],
+        "threats": [
+          "郑氏竞争",
+          "原住民反抗",
+          "西班牙基隆牵制"
+        ],
+        "specialCulture": "VOC 商馆军政、平埔村社、汉人海商和雇佣兵并存，公司契约压过传统官制。",
+        "strategicValue": "台海转口与鹿皮贸易据点，控制福建、日本、巴达维亚之间的海上中继。",
+        "recentDisasters": [
+          "天启四年荷兰入据大员后筑热兰遮",
+          "西班牙占北台湾基隆形成牵制"
+        ],
+        "population": 35500,
+        "mapRegionId": "ming-30"
+      }
+    ]
+  },
+  "spanishManila": {
+    "factionId": "fac-spanish-manila",
+    "factionName": "西班牙·马尼拉",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pgd5p0",
+        "regionType": "colonial_governorate",
+        "populationDetail": {
+          "mouths": 499500,
+          "fugitives": 18100,
+          "hiddenCount": 97000,
+          "households": 96057,
+          "ding": 129870
+        },
+        "byGender": {
+          "male": 254745,
+          "female": 244755,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 49950,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 274725,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 174825,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "菲律宾原住民": 0.76,
+          "华商(Sangley)": 0.13,
+          "西班牙/拉美士兵": 0.015,
+          "混血": 0.045,
+          "其他": 0.05
+        },
+        "byFaith": {
+          "天主教": 0.5,
+          "原住民信仰": 0.3,
+          "佛/道": 0.07,
+          "伊斯兰": 0.09,
+          "其他": 0.04
+        },
+        "baojia": {
+          "baoCount": 960,
+          "jiaCount": 9605,
+          "paiCount": 9605,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 649350,
+          "water": 549450,
+          "climate": 1,
+          "historicalCap": 699300,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 34,
+        "corruptionLocal": 49,
+        "fiscalDetail": {
+          "claimedRevenue": 649350,
+          "actualRevenue": 532467,
+          "remittedToCenter": 357143,
+          "retainedBudget": 175325,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 251000,
+          "grain": 252000,
+          "cloth": 28500
+        },
+        "children": [],
+        "name": "菲律宾马尼拉总督区",
+        "level": "province",
+        "officialPosition": "菲律宾总督府",
+        "governor": "尼尼奥·德·塔沃拉",
+        "description": "马尼拉、吕宋、宿务、北台湾基隆与摩洛边区压成一个殖民总督区。海外殖民势力只做一个省级大区。",
+        "terrain": "沿海/群岛",
+        "specialResources": "美洲银·大帆船·华商·船坞·基隆炮台",
+        "taxLevel": "殖民商税",
+        "tags": {
+          "hasPort": true,
+          "fishingRegion": true,
+          "mineralRegion": true
+        },
+        "economyBase": {
+          "farmland": 1128000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 1125000,
+          "maritimeTradeVolume": 2050000,
+          "saltProduction": 0,
+          "mineralProduction": 80000,
+          "horseProduction": 0,
+          "fishingProduction": 400000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 0,
+          "kejuQuota": 0,
+          "roadQuality": 18,
+          "landsAnnexed": 0,
+          "landsReclaimed": 46000,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "马尼拉-阿卡普尔科",
+          "马尼拉-月港",
+          "马尼拉-澳门",
+          "马尼拉-基隆"
+        ],
+        "threats": [
+          "荷兰封锁",
+          "华商暴动",
+          "摩洛战争",
+          "大帆船失事"
+        ],
+        "specialCulture": "西班牙总督、修会、菲律宾村社与华商 Parián 并存，白银贸易使少数殖民官兵支配大口岸。",
+        "strategicValue": "马尼拉大帆船贸易核心，连接美洲白银、中国货物与南海岛链。",
+        "recentDisasters": [
+          "天启六年西班牙进占基隆牵制荷兰",
+          "华商社群与殖民当局关系长期紧张"
+        ],
+        "population": 499500,
+        "mapRegionId": "ming2-32"
+      }
+    ]
+  },
+  "sheAnRebels": {
+    "factionId": "fac-she-an-rebels",
+    "factionName": "奢安之乱联军",
+    "divisions": [
+      {
+        "id": "div_mp9rsc2pgmcpi",
+        "regionType": "tusi",
+        "populationDetail": {
+          "mouths": 505000,
+          "fugitives": 97000,
+          "hiddenCount": 200000,
+          "households": 97115,
+          "ding": 131300
+        },
+        "byGender": {
+          "male": 257550,
+          "female": 247450,
+          "sexRatio": 1.05
+        },
+        "byAge": {
+          "old": {
+            "count": 50500,
+            "ratio": 0.1
+          },
+          "ding": {
+            "count": 277750,
+            "ratio": 0.55
+          },
+          "young": {
+            "count": 176750,
+            "ratio": 0.35
+          }
+        },
+        "byEthnicity": {
+          "彝": 0.54,
+          "汉": 0.18,
+          "苗": 0.15,
+          "仡佬": 0.07,
+          "其他": 0.06
+        },
+        "byFaith": {
+          "毕摩/土司祭祀": 0.48,
+          "民间": 0.3,
+          "佛": 0.1,
+          "道": 0.07,
+          "儒": 0.05
+        },
+        "baojia": {
+          "baoCount": 971,
+          "jiaCount": 9711,
+          "paiCount": 9711,
+          "registerAccuracy": 0.62
+        },
+        "carryingCapacity": {
+          "arable": 656500,
+          "water": 555500,
+          "climate": 1,
+          "historicalCap": 707000,
+          "currentLoad": 0.85,
+          "carryingRegime": "strained"
+        },
+        "minxinLocal": 39,
+        "corruptionLocal": 37,
+        "fiscalDetail": {
+          "claimedRevenue": 656500,
+          "actualRevenue": 538330,
+          "remittedToCenter": 361075,
+          "retainedBudget": 177255,
+          "compliance": 0.55,
+          "skimmingRate": 0.12,
+          "autonomyLevel": 0.75
+        },
+        "publicTreasuryInit": {
+          "money": 25000,
+          "grain": 86000,
+          "cloth": 6200
+        },
+        "children": [],
+        "name": "奢安水西永宁山地",
+        "level": "province",
+        "officialPosition": "奢安联军山地辖区",
+        "governor": "奢崇明·安邦彦",
+        "description": "永宁、水西、乌撒乌蒙合并为一个西南土司叛乱大区。对玩家来说是一个山地战场，不需要三层细拆。",
+        "terrain": "山地",
+        "specialResources": "山寨粮·朱砂·罗罗土兵·土司向导",
+        "taxLevel": "土司征粮",
+        "tags": {
+          "mineralRegion": true,
+          "horseRegion": true
+        },
+        "economyBase": {
+          "farmland": 740000,
+          "commerceCoefficient": 0.8,
+          "commerceVolume": 74000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 250000,
+          "horseProduction": 2300,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 4,
+          "kejuQuota": 0,
+          "roadQuality": 6,
+          "landsAnnexed": 0,
+          "landsReclaimed": 0,
+          "landsSurveyed": 0,
+          "disasterRecord": []
+        },
+        "tradeRoutes": [
+          "水西山寨路",
+          "永宁-水西联络路",
+          "乌撒乌蒙山路"
+        ],
+        "threats": [
+          "朱燮元持久围剿",
+          "秦良玉白杆兵",
+          "粮源枯竭",
+          "部目离心"
+        ],
+        "specialCulture": "西南彝族土司军事网络·山寨、头目与血缘盟誓并行，熟悉高山峡谷作战。",
+        "strategicValue": "牵制四川贵州的山地战场，若久拖会吞噬明廷西南粮饷与白杆兵机动力。",
+        "recentDisasters": [
+          "天启元年奢安之乱爆发",
+          "朱燮元持久围剿造成田土荒废与部众离散"
+        ],
+        "population": 505000,
+        "mapRegionId": null
+      }
+    ]
+  },
+  "dokham": {
+    "factionId": "fac-ming",
+    "factionName": "明朝廷",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 38,
+        "corruptionLocal": 18,
+        "id": "supp-dokham",
+        "name": "朵甘思宣慰司",
+        "factionId": "fac-ming",
+        "factionName": "明朝廷",
+        "officialPosition": "朵甘行都指挥使司 / 宣慰司土官体系",
+        "governor": "诸招讨、万户、土官袭替",
+        "regionType": "jimi",
+        "dejureOwner": "明朝羁縻",
+        "description": "康藏东部朵甘思诸部。明廷名义设都司、宣慰、招讨、万户等职，实际依宗教法王、土官与茶马道维系册封朝贡。",
+        "terrain": "高原山地",
+        "specialResources": "茶马道、马匹、麝香、牦牛、皮毛",
+        "population": 380000,
+        "prosperity": 38,
+        "byEthnicity": {
+          "藏": 0.82,
+          "羌": 0.1,
+          "汉回商旅": 0.08
+        },
+        "byFaith": {
+          "藏传佛教": 0.86,
+          "本地信仰": 0.1,
+          "其他": 0.04
+        },
+        "bySettlement": {
+          "寺院庄园": 0.26,
+          "牧帐": 0.44,
+          "山谷村寨": 0.3
+        },
+        "leadingGentry": [
+          "诸法王封地",
+          "宣慰土官",
+          "茶马商旅"
+        ],
+        "academies": [
+          "寺院经院"
+        ],
+        "religiousSites": [
+          "康区寺院",
+          "茶马古道驿寺"
+        ],
+        "strategicValue": "西番羁縻、茶马互市、川陕藏通道",
+        "tradeRoutes": [
+          "茶马道",
+          "川藏道",
+          "青海河湟通道"
+        ],
+        "threats": [
+          "土官互争",
+          "交通艰险",
+          "册封名实不一"
+        ],
+        "recentDisasters": [
+          "高寒歉收"
+        ],
+        "specialCulture": "康藏藏传佛教文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "tibet-dokham",
+          "ming-geography"
+        ],
+        "populationDetail": {
+          "households": 76000,
+          "mouths": 380000,
+          "ding": 159600,
+          "fugitives": 5700,
+          "hiddenCount": 45600
+        },
+        "economyBase": {
+          "farmland": 1900,
+          "commerceCoefficient": 0.76,
+          "commerceVolume": 1155200,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 34200,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 34,
+          "landsAnnexed": 0,
+          "landsReclaimed": 95,
+          "landsSurveyed": 798,
+          "disasterRecord": [
+            "高寒歉收"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 505400,
+          "actualRevenue": 212268,
+          "remittedToCenter": 38208,
+          "retainedBudget": 110379,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.74
+        },
+        "publicTreasuryInit": {
+          "money": 148588,
+          "grain": 418000,
+          "cloth": 11400
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-ming",
+        "mapRegionId": "ming-15"
+      }
+    ]
+  },
+  "tumed": {
+    "factionId": "fac-tumed",
+    "factionName": "土默特蒙古",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 42,
+        "corruptionLocal": 18,
+        "id": "supp-tumed",
+        "name": "鞑靼土默特部",
+        "factionId": "fac-tumed",
+        "factionName": "土默特蒙古",
+        "officialPosition": "部盟汗帐",
+        "governor": "卜失兔汗",
+        "regionType": "nomadic_confederation",
+        "dejureOwner": "土默特部",
+        "description": "归化城与河套一线蒙古部盟，依赖明边互市、马群与部众牧场。1627 年前后受察哈尔林丹汗西压。",
+        "terrain": "草原河套",
+        "specialResources": "马匹、牛羊、边市盐茶",
+        "population": 260000,
+        "prosperity": 42,
+        "byEthnicity": {
+          "蒙古": 0.86,
+          "汉商屯民": 0.1,
+          "回回商旅": 0.04
+        },
+        "byFaith": {
+          "藏传佛教": 0.65,
+          "萨满": 0.2,
+          "民间信仰": 0.15
+        },
+        "bySettlement": {
+          "牧帐": 0.7,
+          "归化城": 0.16,
+          "边市聚落": 0.14
+        },
+        "strategicValue": "漠南互市口、河套牧场、长城北翼",
+        "tradeRoutes": [
+          "大同互市",
+          "宣府互市",
+          "归化城商路"
+        ],
+        "threats": [
+          "察哈尔吞并",
+          "边市断绝",
+          "部众离散"
+        ],
+        "recentDisasters": [
+          "牧场争夺"
+        ],
+        "specialCulture": "漠南蒙古部盟文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "chahar-khorchin"
+        ],
+        "populationDetail": {
+          "households": 52000,
+          "mouths": 260000,
+          "ding": 109200,
+          "fugitives": 3900,
+          "hiddenCount": 31200
+        },
+        "economyBase": {
+          "farmland": 1300,
+          "commerceCoefficient": 0.84,
+          "commerceVolume": 873600,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 3900,
+          "mineralProduction": 0,
+          "horseProduction": 23400,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 4,
+          "kejuQuota": 0,
+          "roadQuality": 38,
+          "landsAnnexed": 0,
+          "landsReclaimed": 65,
+          "landsSurveyed": 546,
+          "disasterRecord": [
+            "牧场争夺"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 382200,
+          "actualRevenue": 160524,
+          "remittedToCenter": 28894,
+          "retainedBudget": 83472,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 112367,
+          "grain": 65000,
+          "cloth": 7800
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-tumed",
+        "mapRegionId": "ming-16"
+      }
+    ]
+  },
+  "yarkand": {
+    "factionId": "fac-yarkand",
+    "factionName": "叶尔羌汗国",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "中",
+        "minxinLocal": 52,
+        "corruptionLocal": 18,
+        "id": "supp-yarkand",
+        "name": "叶尔羌",
+        "factionId": "fac-yarkand",
+        "factionName": "叶尔羌汗国",
+        "officialPosition": "叶尔羌汗廷",
+        "governor": "阿布达勒拉提甫汗",
+        "regionType": "foreign_khanate",
+        "dejureOwner": "叶尔羌汗国",
+        "description": "塔里木盆地西南绿洲中心，汗廷控制叶尔羌、喀什噶尔、和阗等地，依赖绿洲农业、玉石和商队税。",
+        "terrain": "绿洲盆地",
+        "specialResources": "玉石、棉布、葡萄、绿洲粮、马匹",
+        "population": 760000,
+        "prosperity": 52,
+        "byEthnicity": {
+          "维吾尔": 0.76,
+          "察合台蒙古": 0.08,
+          "吉尔吉斯": 0.06,
+          "回回商旅": 0.1
+        },
+        "byFaith": {
+          "逊尼派伊斯兰": 0.94,
+          "其他": 0.06
+        },
+        "bySettlement": {
+          "绿洲城镇": 0.44,
+          "乡村农户": 0.42,
+          "游牧边部": 0.14
+        },
+        "leadingGentry": [
+          "汗廷贵族",
+          "伯克",
+          "和卓与宗教人士"
+        ],
+        "religiousSites": [
+          "清真寺",
+          "汗王陵寝"
+        ],
+        "strategicValue": "西域绿洲核心、丝路商税、玉石来源",
+        "tradeRoutes": [
+          "喀什噶尔商路",
+          "和阗玉路",
+          "叶尔羌-拉达克道"
+        ],
+        "threats": [
+          "瓦刺压力",
+          "哈萨克袭扰",
+          "伯克割据"
+        ],
+        "recentDisasters": [
+          "商路受阻"
+        ],
+        "specialCulture": "察合台-维吾尔绿洲文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "yarkand",
+          "central-asia"
+        ],
+        "populationDetail": {
+          "households": 152000,
+          "mouths": 760000,
+          "ding": 319200,
+          "fugitives": 11400,
+          "hiddenCount": 91200
+        },
+        "economyBase": {
+          "farmland": 13680,
+          "commerceCoefficient": 1.04,
+          "commerceVolume": 3161600,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 7600,
+          "horseProduction": 68400,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 4,
+          "kejuQuota": 0,
+          "roadQuality": 48,
+          "landsAnnexed": 0,
+          "landsReclaimed": 684,
+          "landsSurveyed": 5746,
+          "disasterRecord": [
+            "商路受阻"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 2568800,
+          "actualRevenue": 1078896,
+          "remittedToCenter": 194201,
+          "retainedBudget": 561026,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 755227,
+          "grain": 836000,
+          "cloth": 22800
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": true,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-yarkand",
+        "mapRegionId": "ming-18"
+      }
+    ]
+  },
+  "turpan": {
+    "factionId": "fac-turpan",
+    "factionName": "吐鲁番诸伯克",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "中",
+        "minxinLocal": 45,
+        "corruptionLocal": 28,
+        "id": "supp-turpan",
+        "name": "吐鲁番",
+        "factionId": "fac-turpan",
+        "factionName": "吐鲁番诸伯克",
+        "officialPosition": "地方伯克",
+        "governor": "察合台系地方伯克",
+        "regionType": "oasis_beglik",
+        "dejureOwner": "吐鲁番诸伯克",
+        "description": "天山东路绿洲，明末更接近地方伯克自治与叶尔羌影响交错区，而非明朝实控卫所。",
+        "terrain": "盆地绿洲",
+        "specialResources": "葡萄、棉布、驼队、绿洲粮",
+        "population": 135000,
+        "prosperity": 45,
+        "byEthnicity": {
+          "维吾尔": 0.78,
+          "察合台蒙古": 0.08,
+          "商旅": 0.14
+        },
+        "byFaith": {
+          "逊尼派伊斯兰": 0.92,
+          "其他": 0.08
+        },
+        "bySettlement": {
+          "绿洲城镇": 0.5,
+          "乡村农户": 0.38,
+          "驿站商队": 0.12
+        },
+        "strategicValue": "天山东路节点、哈密以西缓冲",
+        "tradeRoutes": [
+          "吐鲁番-哈密道",
+          "天山北路",
+          "塔里木北缘商道"
+        ],
+        "threats": [
+          "瓦刺南压",
+          "汗廷内争",
+          "商路断绝"
+        ],
+        "recentDisasters": [
+          "水源争夺"
+        ],
+        "specialCulture": "绿洲伯克文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "yarkand",
+          "central-asia"
+        ],
+        "populationDetail": {
+          "households": 27000,
+          "mouths": 135000,
+          "ding": 56700,
+          "fugitives": 2025,
+          "hiddenCount": 16200
+        },
+        "economyBase": {
+          "farmland": 2430,
+          "commerceCoefficient": 0.9,
+          "commerceVolume": 486000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 4,
+          "kejuQuota": 1,
+          "roadQuality": 41,
+          "landsAnnexed": 0,
+          "landsReclaimed": 122,
+          "landsSurveyed": 1021,
+          "disasterRecord": [
+            "水源争夺"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 394875,
+          "actualRevenue": 268515,
+          "remittedToCenter": 48333,
+          "retainedBudget": 139628,
+          "compliance": 0.68,
+          "skimmingRate": 0.14,
+          "autonomyLevel": 0.45
+        },
+        "publicTreasuryInit": {
+          "money": 187961,
+          "grain": 148500,
+          "cloth": 4050
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-turpan",
+        "mapRegionId": "ming-19"
+      }
+    ]
+  },
+  "kazakh": {
+    "factionId": "fac-kazakh",
+    "factionName": "哈萨克汗国",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 39,
+        "corruptionLocal": 18,
+        "id": "supp-kazakh-core",
+        "name": "哈萨克",
+        "factionId": "fac-kazakh",
+        "factionName": "哈萨克汗国",
+        "officialPosition": "汗国诸玉兹",
+        "governor": "也昔木汗",
+        "regionType": "nomadic_khanate",
+        "dejureOwner": "哈萨克汗国",
+        "description": "哈萨克草原诸玉兹共主区域，骑兵动员强，财政依赖牧产、商道和锡尔河城镇。",
+        "terrain": "草原荒漠",
+        "specialResources": "马群、羊群、皮毛、锡尔河城镇商税",
+        "population": 680000,
+        "prosperity": 39,
+        "byEthnicity": {
+          "哈萨克": 0.88,
+          "乌兹别克城镇": 0.06,
+          "吉尔吉斯": 0.04,
+          "其他": 0.02
+        },
+        "byFaith": {
+          "逊尼派伊斯兰": 0.82,
+          "腾格里旧俗": 0.14,
+          "其他": 0.04
+        },
+        "bySettlement": {
+          "游牧营地": 0.78,
+          "河城商镇": 0.12,
+          "半农村落": 0.1
+        },
+        "strategicValue": "中亚草原纵深、骑兵来源",
+        "tradeRoutes": [
+          "锡尔河商路",
+          "七河牧道"
+        ],
+        "threats": [
+          "瓦刺东压",
+          "绿洲争夺",
+          "诸玉兹分权"
+        ],
+        "recentDisasters": [
+          "草场争夺"
+        ],
+        "specialCulture": "哈萨克游牧汗国文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "kazakh",
+          "central-asia"
+        ],
+        "populationDetail": {
+          "households": 136000,
+          "mouths": 680000,
+          "ding": 285600,
+          "fugitives": 10200,
+          "hiddenCount": 81600
+        },
+        "economyBase": {
+          "farmland": 3400,
+          "commerceCoefficient": 0.78,
+          "commerceVolume": 2121600,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 6800,
+          "horseProduction": 61200,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 35,
+          "landsAnnexed": 0,
+          "landsReclaimed": 170,
+          "landsSurveyed": 1428,
+          "disasterRecord": [
+            "草场争夺"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 928200,
+          "actualRevenue": 389844,
+          "remittedToCenter": 70172,
+          "retainedBudget": 202719,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 272891,
+          "grain": 170000,
+          "cloth": 20400
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": true,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-kazakh",
+        "mapRegionId": "ming-20"
+      },
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 34,
+        "corruptionLocal": 18,
+        "id": "supp-kazakh-north",
+        "name": "北哈萨克",
+        "factionId": "fac-kazakh",
+        "factionName": "哈萨克汗国",
+        "officialPosition": "北部玉兹牧地",
+        "governor": "哈萨克诸苏丹",
+        "regionType": "nomadic_khanate",
+        "dejureOwner": "哈萨克汗国",
+        "description": "北部草原牧场与诸苏丹部众，人口稀疏但战略纵深大。",
+        "terrain": "北方草原",
+        "specialResources": "马群、皮毛、盐湖",
+        "population": 420000,
+        "prosperity": 34,
+        "byEthnicity": {
+          "哈萨克": 0.9,
+          "西伯利亚诸部": 0.07,
+          "其他": 0.03
+        },
+        "byFaith": {
+          "逊尼派伊斯兰": 0.72,
+          "草原旧俗": 0.24,
+          "其他": 0.04
+        },
+        "bySettlement": {
+          "游牧营地": 0.9,
+          "商道营站": 0.1
+        },
+        "strategicValue": "北方牧场与退却纵深",
+        "tradeRoutes": [
+          "额尔齐斯草原道",
+          "锡尔河北道"
+        ],
+        "threats": [
+          "冬季白灾",
+          "瓦刺袭扰"
+        ],
+        "recentDisasters": [
+          "白灾风险"
+        ],
+        "specialCulture": "哈萨克游牧文化",
+        "dataConfidence": "low",
+        "sourceRefs": [
+          "kazakh",
+          "central-asia"
+        ],
+        "populationDetail": {
+          "households": 84000,
+          "mouths": 420000,
+          "ding": 176400,
+          "fugitives": 6300,
+          "hiddenCount": 50400
+        },
+        "economyBase": {
+          "farmland": 2100,
+          "commerceCoefficient": 0.68,
+          "commerceVolume": 1142400,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 6300,
+          "mineralProduction": 0,
+          "horseProduction": 37800,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 30,
+          "landsAnnexed": 0,
+          "landsReclaimed": 105,
+          "landsSurveyed": 882,
+          "disasterRecord": [
+            "白灾风险"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 499800,
+          "actualRevenue": 209916,
+          "remittedToCenter": 37785,
+          "retainedBudget": 109156,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 146941,
+          "grain": 105000,
+          "cloth": 12600
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-kazakh",
+        "mapRegionId": "ming2-27"
+      },
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 32,
+        "corruptionLocal": 18,
+        "id": "supp-kazakh-east",
+        "name": "东哈萨克",
+        "factionId": "fac-kazakh",
+        "factionName": "哈萨克汗国",
+        "officialPosition": "东部玉兹牧地",
+        "governor": "哈萨克诸苏丹",
+        "regionType": "nomadic_khanate",
+        "dejureOwner": "哈萨克汗国",
+        "description": "面向天山北路与瓦刺诸部的东部牧地，冲突频率高于核心草原。",
+        "terrain": "山前草原",
+        "specialResources": "马群、山地牧场、皮毛",
+        "population": 360000,
+        "prosperity": 32,
+        "byEthnicity": {
+          "哈萨克": 0.82,
+          "卫拉特接触部": 0.08,
+          "吉尔吉斯": 0.06,
+          "其他": 0.04
+        },
+        "byFaith": {
+          "逊尼派伊斯兰": 0.78,
+          "草原旧俗": 0.18,
+          "其他": 0.04
+        },
+        "bySettlement": {
+          "游牧营地": 0.86,
+          "山前牧站": 0.14
+        },
+        "strategicValue": "哈萨克-瓦刺接触面",
+        "tradeRoutes": [
+          "天山北麓牧道",
+          "伊犁河谷道"
+        ],
+        "threats": [
+          "瓦刺骑兵",
+          "牧场争夺"
+        ],
+        "recentDisasters": [
+          "边牧冲突"
+        ],
+        "specialCulture": "哈萨克游牧文化",
+        "dataConfidence": "low",
+        "sourceRefs": [
+          "kazakh",
+          "central-asia"
+        ],
+        "populationDetail": {
+          "households": 72000,
+          "mouths": 360000,
+          "ding": 151200,
+          "fugitives": 5400,
+          "hiddenCount": 43200
+        },
+        "economyBase": {
+          "farmland": 1800,
+          "commerceCoefficient": 0.64,
+          "commerceVolume": 921600,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 32400,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 28,
+          "landsAnnexed": 0,
+          "landsReclaimed": 90,
+          "landsSurveyed": 756,
+          "disasterRecord": [
+            "边牧冲突"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 403200,
+          "actualRevenue": 169344,
+          "remittedToCenter": 30482,
+          "retainedBudget": 88059,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 118541,
+          "grain": 90000,
+          "cloth": 10800
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-kazakh",
+        "mapRegionId": "ming2-28"
+      }
+    ]
+  },
+  "oirat": {
+    "factionId": "fac-oirat",
+    "factionName": "瓦刺诸部",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 35,
+        "corruptionLocal": 18,
+        "id": "supp-oirat",
+        "name": "瓦刺",
+        "factionId": "fac-oirat",
+        "factionName": "瓦刺诸部",
+        "officialPosition": "卫拉特诸台吉",
+        "governor": "和硕特、准噶尔、杜尔伯特诸台吉",
+        "regionType": "nomadic_confederation",
+        "dejureOwner": "瓦刺诸部",
+        "description": "天山北路与准噶尔盆地诸卫拉特部落，尚未形成后来的准噶尔汗国，但已是西北草原重要压力源。",
+        "terrain": "山地草原",
+        "specialResources": "马群、羊群、皮毛、金属矿",
+        "population": 520000,
+        "prosperity": 35,
+        "byEthnicity": {
+          "卫拉特蒙古": 0.86,
+          "突厥绿洲民": 0.08,
+          "其他": 0.06
+        },
+        "byFaith": {
+          "藏传佛教": 0.62,
+          "萨满旧俗": 0.26,
+          "伊斯兰": 0.08,
+          "其他": 0.04
+        },
+        "bySettlement": {
+          "游牧营地": 0.82,
+          "山地据点": 0.12,
+          "商队营站": 0.06
+        },
+        "strategicValue": "天山北路与准噶尔草原",
+        "tradeRoutes": [
+          "伊犁河谷",
+          "额尔齐斯草原道",
+          "天山北路"
+        ],
+        "threats": [
+          "诸台吉互争",
+          "哈萨克冲突",
+          "绿洲争夺"
+        ],
+        "recentDisasters": [
+          "部盟分裂"
+        ],
+        "specialCulture": "卫拉特蒙古文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "central-asia"
+        ],
+        "populationDetail": {
+          "households": 104000,
+          "mouths": 520000,
+          "ding": 218400,
+          "fugitives": 7800,
+          "hiddenCount": 62400
+        },
+        "economyBase": {
+          "farmland": 2600,
+          "commerceCoefficient": 0.7,
+          "commerceVolume": 1456000,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 5200,
+          "horseProduction": 46800,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 31,
+          "landsAnnexed": 0,
+          "landsReclaimed": 130,
+          "landsSurveyed": 1092,
+          "disasterRecord": [
+            "部盟分裂"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 637000,
+          "actualRevenue": 267540,
+          "remittedToCenter": 48157,
+          "retainedBudget": 139121,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 187278,
+          "grain": 130000,
+          "cloth": 15600
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": true,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-oirat",
+        "mapRegionId": "ming-21"
+      }
+    ]
+  },
+  "wildJurchen": {
+    "factionId": "fac-wild-jurchen",
+    "factionName": "野人女真诸部",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 26,
+        "corruptionLocal": 18,
+        "id": "supp-kuwu-jurchen",
+        "name": "苦兀（野人女真）",
+        "factionId": "fac-wild-jurchen",
+        "factionName": "野人女真诸部",
+        "officialPosition": "岛屿部落",
+        "governor": "苦兀诸酋",
+        "regionType": "tribal_frontier",
+        "dejureOwner": "野人女真诸部",
+        "description": "苦兀岛及黑龙江入海口附近渔猎部落，远离明朝实控，受后金招抚与东北贡貂网络影响。",
+        "terrain": "寒地岛屿林海",
+        "specialResources": "鱼猎、海兽皮、貂皮、东珠",
+        "population": 45000,
+        "prosperity": 26,
+        "byEthnicity": {
+          "尼夫赫/苦兀诸部": 0.58,
+          "通古斯诸部": 0.34,
+          "其他": 0.08
+        },
+        "byFaith": {
+          "萨满": 0.88,
+          "其他": 0.12
+        },
+        "bySettlement": {
+          "渔猎寨落": 0.86,
+          "季节营地": 0.14
+        },
+        "strategicValue": "黑龙江入海口、北海皮毛来源",
+        "tradeRoutes": [
+          "黑龙江水道",
+          "乌苏里-松花江贸易线"
+        ],
+        "threats": [
+          "严寒",
+          "部落冲突",
+          "后金招抚"
+        ],
+        "recentDisasters": [
+          "严寒歉获"
+        ],
+        "specialCulture": "东北渔猎文化",
+        "dataConfidence": "low",
+        "sourceRefs": [
+          "jurchen"
+        ],
+        "populationDetail": {
+          "households": 9000,
+          "mouths": 45000,
+          "ding": 18900,
+          "fugitives": 675,
+          "hiddenCount": 5400
+        },
+        "economyBase": {
+          "farmland": 225,
+          "commerceCoefficient": 0.52,
+          "commerceVolume": 210600,
+          "maritimeTradeVolume": 115830,
+          "saltProduction": 675,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 1575,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 2,
+          "kejuQuota": 0,
+          "roadQuality": 31,
+          "landsAnnexed": 0,
+          "landsReclaimed": 11,
+          "landsSurveyed": 95,
+          "disasterRecord": [
+            "严寒歉获"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 40950,
+          "actualRevenue": 17199,
+          "remittedToCenter": 3096,
+          "retainedBudget": 8943,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 12039,
+          "grain": 11250,
+          "cloth": 1350
+        },
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-wild-jurchen",
+        "mapRegionId": "ming2-22"
+      },
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 30,
+        "corruptionLocal": 18,
+        "id": "supp-north-jurchen",
+        "name": "北山女真",
+        "factionId": "fac-wild-jurchen",
+        "factionName": "野人女真诸部",
+        "officialPosition": "山林部落",
+        "governor": "北山诸酋",
+        "regionType": "tribal_frontier",
+        "dejureOwner": "野人女真诸部",
+        "description": "黑龙江、乌苏里江以北山林水网中的野人女真与通古斯诸部，经济以渔猎、人参、貂皮为主。",
+        "terrain": "寒地林海",
+        "specialResources": "貂皮、人参、东珠、鱼猎",
+        "population": 105000,
+        "prosperity": 30,
+        "byEthnicity": {
+          "野人女真": 0.72,
+          "通古斯诸部": 0.22,
+          "其他": 0.06
+        },
+        "byFaith": {
+          "萨满": 0.86,
+          "其他": 0.14
+        },
+        "bySettlement": {
+          "山林寨落": 0.68,
+          "季节营地": 0.32
+        },
+        "strategicValue": "东北山林、八旗招抚潜力、人参貂皮",
+        "tradeRoutes": [
+          "松花江水道",
+          "黑龙江水道"
+        ],
+        "threats": [
+          "后金编户",
+          "部落互斗",
+          "贸易依附"
+        ],
+        "recentDisasters": [
+          "山林严寒"
+        ],
+        "specialCulture": "野人女真山林文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "jurchen"
+        ],
+        "populationDetail": {
+          "households": 21000,
+          "mouths": 105000,
+          "ding": 44100,
+          "fugitives": 1575,
+          "hiddenCount": 12600
+        },
+        "economyBase": {
+          "farmland": 525,
+          "commerceCoefficient": 0.6,
+          "commerceVolume": 567000,
+          "maritimeTradeVolume": 311850,
+          "saltProduction": 1575,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 3675,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 35,
+          "landsAnnexed": 0,
+          "landsReclaimed": 26,
+          "landsSurveyed": 221,
+          "disasterRecord": [
+            "山林严寒"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 110250,
+          "actualRevenue": 46305,
+          "remittedToCenter": 8335,
+          "retainedBudget": 24079,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 32413,
+          "grain": 26250,
+          "cloth": 3150
+        },
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-wild-jurchen",
+        "mapRegionId": "ming2-31"
+      }
+    ]
+  },
+  "matsumaeAinu": {
+    "factionId": "fac-matsumae-ainu",
+    "factionName": "虾夷地与松前氏",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 29,
+        "corruptionLocal": 28,
+        "id": "supp-ezo",
+        "name": "北海道",
+        "factionId": "fac-matsumae-ainu",
+        "factionName": "虾夷地与松前氏",
+        "officialPosition": "松前藩商权 / 阿伊努诸部",
+        "governor": "松前氏与阿伊努诸酋",
+        "regionType": "frontier_trade_zone",
+        "dejureOwner": "虾夷地诸部",
+        "description": "1627 年北海道更适合称虾夷地。松前氏控制南端商权，大部分沿海与内陆仍由阿伊努社会维系渔猎和贸易。",
+        "terrain": "寒地山林海岸",
+        "specialResources": "鲱鱼、昆布、海獭皮、鹰羽",
+        "population": 65000,
+        "prosperity": 29,
+        "byEthnicity": {
+          "阿伊努": 0.72,
+          "和人": 0.18,
+          "北方诸部": 0.1
+        },
+        "byFaith": {
+          "阿伊努信仰": 0.68,
+          "神道佛教": 0.24,
+          "其他": 0.08
+        },
+        "bySettlement": {
+          "阿伊努聚落": 0.62,
+          "松前商港": 0.18,
+          "渔猎季节营地": 0.2
+        },
+        "strategicValue": "北海贸易边疆、渔猎资源、松前商权",
+        "tradeRoutes": [
+          "松前-本州航路",
+          "北海渔猎贸易"
+        ],
+        "threats": [
+          "贸易压迫",
+          "寒地灾荒",
+          "幕府边控"
+        ],
+        "recentDisasters": [
+          "严寒歉获"
+        ],
+        "specialCulture": "阿伊努-松前边地文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "matsumae-ainu",
+          "tokugawa"
+        ],
+        "populationDetail": {
+          "households": 13000,
+          "mouths": 65000,
+          "ding": 27300,
+          "fugitives": 975,
+          "hiddenCount": 7800
+        },
+        "economyBase": {
+          "farmland": 325,
+          "commerceCoefficient": 0.58,
+          "commerceVolume": 339300,
+          "maritimeTradeVolume": 186615,
+          "saltProduction": 975,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 2275,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 2,
+          "kejuQuota": 0,
+          "roadQuality": 34,
+          "landsAnnexed": 0,
+          "landsReclaimed": 16,
+          "landsSurveyed": 137,
+          "disasterRecord": [
+            "严寒歉获"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 65975,
+          "actualRevenue": 27710,
+          "remittedToCenter": 4988,
+          "retainedBudget": 14409,
+          "compliance": 0.42,
+          "skimmingRate": 0.14,
+          "autonomyLevel": 0.45
+        },
+        "publicTreasuryInit": {
+          "money": 19397,
+          "grain": 71500,
+          "cloth": 1950
+        },
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-matsumae-ainu",
+        "mapRegionId": "ming2-24"
+      }
+    ]
+  },
+  "tokugawaJapan": {
+    "factionId": "fac-tokugawa-japan",
+    "factionName": "日本幕府",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "中",
+        "minxinLocal": 68,
+        "corruptionLocal": 18,
+        "id": "supp-honshu",
+        "name": "本州",
+        "factionId": "fac-tokugawa-japan",
+        "factionName": "日本幕府",
+        "officialPosition": "江户幕府与诸藩",
+        "governor": "德川家光",
+        "regionType": "foreign_shogunate",
+        "dejureOwner": "德川幕府",
+        "description": "江户幕府核心岛，京都朝廷、江户幕府与诸藩并存。1627 年家光为将军，秀忠仍以大御所保持影响。",
+        "terrain": "山地平原海岸",
+        "specialResources": "稻米、银铜、手工业、港口",
+        "population": 16500000,
+        "prosperity": 68,
+        "byEthnicity": {
+          "和人": 0.98,
+          "其他": 0.02
+        },
+        "byFaith": {
+          "神道佛教": 0.82,
+          "基督教残余": 0.03,
+          "其他": 0.15
+        },
+        "bySettlement": {
+          "城下町": 0.28,
+          "村落": 0.58,
+          "港町商人": 0.14
+        },
+        "strategicValue": "江户幕府核心、银铜与稻米财政",
+        "tradeRoutes": [
+          "濑户内海",
+          "东海道",
+          "长崎贸易线"
+        ],
+        "threats": [
+          "外贸控制",
+          "基督教禁制",
+          "诸藩约束"
+        ],
+        "recentDisasters": [
+          "????????",
+          "????????????"
+        ],
+        "specialCulture": "江户幕藩文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "tokugawa"
+        ],
+        "populationDetail": {
+          "households": 3300000,
+          "mouths": 16500000,
+          "ding": 6930000,
+          "fugitives": 247500,
+          "hiddenCount": 1320000
+        },
+        "economyBase": {
+          "farmland": 297000,
+          "commerceCoefficient": 1.36,
+          "commerceVolume": 201960000,
+          "maritimeTradeVolume": 111078000,
+          "saltProduction": 247500,
+          "mineralProduction": 165000,
+          "horseProduction": 0,
+          "fishingProduction": 577500,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 6,
+          "kejuQuota": 0,
+          "roadQuality": 72,
+          "landsAnnexed": 0,
+          "landsReclaimed": 14850,
+          "landsSurveyed": 124740,
+          "disasterRecord": [
+            "????????",
+            "????????????"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 72930000,
+          "actualRevenue": 30630600,
+          "remittedToCenter": 5513508,
+          "retainedBudget": 15927912,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 21441420,
+          "grain": 18150000,
+          "cloth": 495000
+        },
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": true,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-tokugawa-japan",
+        "mapRegionId": "ming2-38"
+      },
+      {
+        "level": "province",
+        "taxLevel": "中",
+        "minxinLocal": 58,
+        "corruptionLocal": 18,
+        "id": "supp-kyushu",
+        "name": "九州",
+        "factionId": "fac-tokugawa-japan",
+        "factionName": "日本幕府",
+        "officialPosition": "九州诸藩",
+        "governor": "岛津、细川、有马等诸藩",
+        "regionType": "foreign_shogunate",
+        "dejureOwner": "德川幕府下诸藩",
+        "description": "九州为日本对外贸易和基督教问题最敏感区域，长崎、平户等港口连接葡萄牙、荷兰和明清海贸。",
+        "terrain": "山地海岸",
+        "specialResources": "稻米、港口、银铜、硫磺",
+        "population": 3100000,
+        "prosperity": 58,
+        "byEthnicity": {
+          "和人": 0.98,
+          "琉球与外商": 0.02
+        },
+        "byFaith": {
+          "神道佛教": 0.76,
+          "基督教残余": 0.09,
+          "其他": 0.15
+        },
+        "bySettlement": {
+          "城下町": 0.24,
+          "村落": 0.58,
+          "港町": 0.18
+        },
+        "strategicValue": "南蛮贸易口、对华对欧联系节点",
+        "tradeRoutes": [
+          "长崎贸易",
+          "平户商路",
+          "萨摩-琉球线"
+        ],
+        "threats": [
+          "基督教禁制",
+          "海外贸易冲突",
+          "诸藩离心"
+        ],
+        "recentDisasters": [
+          "???????????",
+          "???????????"
+        ],
+        "specialCulture": "西国诸藩文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "tokugawa",
+          "ming-britannica"
+        ],
+        "populationDetail": {
+          "households": 620000,
+          "mouths": 3100000,
+          "ding": 1302000,
+          "fugitives": 46500,
+          "hiddenCount": 248000
+        },
+        "economyBase": {
+          "farmland": 55800,
+          "commerceCoefficient": 1.16,
+          "commerceVolume": 32364000,
+          "maritimeTradeVolume": 17800200,
+          "saltProduction": 46500,
+          "mineralProduction": 31000,
+          "horseProduction": 0,
+          "fishingProduction": 108500,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 1,
+            "yuyao": 0
+          },
+          "postRelays": 5,
+          "kejuQuota": 0,
+          "roadQuality": 63,
+          "landsAnnexed": 0,
+          "landsReclaimed": 2790,
+          "landsSurveyed": 23436,
+          "disasterRecord": [
+            "???????????",
+            "???????????"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 11687000,
+          "actualRevenue": 4908540,
+          "remittedToCenter": 883537,
+          "retainedBudget": 2552441,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 3435978,
+          "grain": 3410000,
+          "cloth": 93000
+        },
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": true,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-tokugawa-japan",
+        "mapRegionId": "ming2-25"
+      },
+      {
+        "level": "province",
+        "taxLevel": "中",
+        "minxinLocal": 50,
+        "corruptionLocal": 18,
+        "id": "supp-shikoku",
+        "name": "四国",
+        "factionId": "fac-tokugawa-japan",
+        "factionName": "日本幕府",
+        "officialPosition": "四国诸藩",
+        "governor": "蜂须贺、山内等诸藩",
+        "regionType": "foreign_shogunate",
+        "dejureOwner": "德川幕府下诸藩",
+        "description": "四国为濑户内海西部岛屿，诸藩财政依稻米、海运与山地资源。",
+        "terrain": "山地海岸",
+        "specialResources": "稻米、木材、海运、盐",
+        "population": 1050000,
+        "prosperity": 50,
+        "byEthnicity": {
+          "和人": 0.99,
+          "其他": 0.01
+        },
+        "byFaith": {
+          "神道佛教": 0.86,
+          "其他": 0.14
+        },
+        "bySettlement": {
+          "村落": 0.62,
+          "城下町": 0.24,
+          "港町": 0.14
+        },
+        "strategicValue": "濑户内海交通与西国诸藩屏障",
+        "tradeRoutes": [
+          "濑户内海航路"
+        ],
+        "threats": [
+          "诸藩财政",
+          "海运控制"
+        ],
+        "recentDisasters": [
+          "??????",
+          "??????????"
+        ],
+        "specialCulture": "西国诸藩文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "tokugawa"
+        ],
+        "populationDetail": {
+          "households": 210000,
+          "mouths": 1050000,
+          "ding": 441000,
+          "fugitives": 15750,
+          "hiddenCount": 84000
+        },
+        "economyBase": {
+          "farmland": 5250,
+          "commerceCoefficient": 1,
+          "commerceVolume": 9450000,
+          "maritimeTradeVolume": 5197500,
+          "saltProduction": 15750,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 36750,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 4,
+          "kejuQuota": 0,
+          "roadQuality": 55,
+          "landsAnnexed": 0,
+          "landsReclaimed": 263,
+          "landsSurveyed": 2205,
+          "disasterRecord": [
+            "??????",
+            "??????????"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 3412500,
+          "actualRevenue": 1433250,
+          "remittedToCenter": 257985,
+          "retainedBudget": 745290,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 1003275,
+          "grain": 1155000,
+          "cloth": 31500
+        },
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-tokugawa-japan",
+        "mapRegionId": "ming2-26"
+      }
+    ]
+  },
+  "daiViet": {
+    "factionId": "fac-dai-viet",
+    "factionName": "大越黎郑阮格局",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "中",
+        "minxinLocal": 50,
+        "corruptionLocal": 18,
+        "id": "supp-dai-viet",
+        "name": "交趾",
+        "factionId": "fac-dai-viet",
+        "factionName": "大越黎郑阮格局",
+        "officialPosition": "后黎皇统 / 郑主阮主分权",
+        "governor": "黎神宗、郑梉、阮福源",
+        "regionType": "foreign_kingdom_split",
+        "dejureOwner": "大越",
+        "description": "1627 年郑阮战争爆发，北方郑主挟后黎皇帝，南方阮主据顺化以南。交趾地块应承接这种南北分裂格局。",
+        "terrain": "红河与中南半岛山河",
+        "specialResources": "稻米、漆木、象牙、海贸港口",
+        "population": 5200000,
+        "prosperity": 50,
+        "byEthnicity": {
+          "越": 0.86,
+          "占城遗民": 0.04,
+          "山地诸族": 0.08,
+          "华商": 0.02
+        },
+        "byFaith": {
+          "儒教": 0.42,
+          "佛教": 0.34,
+          "民间信仰": 0.22,
+          "天主教初传": 0.02
+        },
+        "bySettlement": {
+          "稻作村落": 0.66,
+          "城镇官府": 0.18,
+          "港口商贸": 0.08,
+          "山地部族": 0.08
+        },
+        "strategicValue": "南方朝贡国、郑阮战争、南海贸易",
+        "tradeRoutes": [
+          "升龙商路",
+          "顺化海贸",
+          "南海航路"
+        ],
+        "threats": [
+          "郑阮战争",
+          "南北分治",
+          "山地边患"
+        ],
+        "recentDisasters": [
+          "内战初起"
+        ],
+        "specialCulture": "大越儒佛混合文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "vietnam"
+        ],
+        "populationDetail": {
+          "households": 1040000,
+          "mouths": 5200000,
+          "ding": 2184000,
+          "fugitives": 78000,
+          "hiddenCount": 624000
+        },
+        "economyBase": {
+          "farmland": 93600,
+          "commerceCoefficient": 1,
+          "commerceVolume": 46800000,
+          "maritimeTradeVolume": 25740000,
+          "saltProduction": 78000,
+          "mineralProduction": 0,
+          "horseProduction": 0,
+          "fishingProduction": 182000,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 4,
+          "kejuQuota": 0,
+          "roadQuality": 55,
+          "landsAnnexed": 0,
+          "landsReclaimed": 4680,
+          "landsSurveyed": 39312,
+          "disasterRecord": [
+            "内战初起"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 16900000,
+          "actualRevenue": 7098000,
+          "remittedToCenter": 1277640,
+          "retainedBudget": 3690960,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 4968600,
+          "grain": 5720000,
+          "cloth": 156000
+        },
+        "tags": {
+          "hasPort": true,
+          "saltRegion": true,
+          "mineralRegion": false,
+          "horseRegion": false,
+          "fishingRegion": true,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-dai-viet",
+        "mapRegionId": "ming2-33"
+      }
+    ]
+  },
+  "khalkha": {
+    "factionId": "fac-khalkha",
+    "factionName": "喀尔喀蒙古",
+    "divisions": [
+      {
+        "level": "province",
+        "taxLevel": "轻",
+        "minxinLocal": 34,
+        "corruptionLocal": 18,
+        "id": "supp-khalkha",
+        "name": "喀尔喀蒙古",
+        "factionId": "fac-khalkha",
+        "factionName": "喀尔喀蒙古",
+        "officialPosition": "喀尔喀三汗诸部",
+        "governor": "三汗诸部",
+        "regionType": "nomadic_confederation",
+        "dejureOwner": "喀尔喀诸部",
+        "description": "漠北喀尔喀诸部远离明朝直接影响，处于察哈尔、瓦刺与后金扩张之间的北亚缓冲地带。",
+        "terrain": "漠北草原",
+        "specialResources": "马群、羊群、皮毛、草原商路",
+        "population": 410000,
+        "prosperity": 34,
+        "byEthnicity": {
+          "喀尔喀蒙古": 0.92,
+          "其他蒙古部": 0.06,
+          "其他": 0.02
+        },
+        "byFaith": {
+          "藏传佛教": 0.58,
+          "萨满旧俗": 0.3,
+          "其他": 0.12
+        },
+        "bySettlement": {
+          "游牧营地": 0.9,
+          "寺院与商队营站": 0.1
+        },
+        "strategicValue": "漠北纵深、草原联盟平衡",
+        "tradeRoutes": [
+          "漠北牧道",
+          "库伦方向商路"
+        ],
+        "threats": [
+          "瓦刺压力",
+          "察哈尔号令",
+          "后金外交渗透"
+        ],
+        "recentDisasters": [
+          "牧场争夺"
+        ],
+        "specialCulture": "喀尔喀蒙古文化",
+        "dataConfidence": "medium",
+        "sourceRefs": [
+          "central-asia",
+          "chahar-khorchin"
+        ],
+        "populationDetail": {
+          "households": 82000,
+          "mouths": 410000,
+          "ding": 172200,
+          "fugitives": 6150,
+          "hiddenCount": 49200
+        },
+        "economyBase": {
+          "farmland": 2050,
+          "commerceCoefficient": 0.68,
+          "commerceVolume": 1115200,
+          "maritimeTradeVolume": 0,
+          "saltProduction": 0,
+          "mineralProduction": 0,
+          "horseProduction": 36900,
+          "fishingProduction": 0,
+          "imperialFarmland": 0,
+          "imperialAssets": {
+            "zhizao": 0,
+            "kuangchang": 0,
+            "yuyao": 0
+          },
+          "postRelays": 3,
+          "kejuQuota": 0,
+          "roadQuality": 30,
+          "landsAnnexed": 0,
+          "landsReclaimed": 103,
+          "landsSurveyed": 861,
+          "disasterRecord": [
+            "牧场争夺"
+          ]
+        },
+        "fiscalDetail": {
+          "claimedRevenue": 487900,
+          "actualRevenue": 204918,
+          "remittedToCenter": 36885,
+          "retainedBudget": 106557,
+          "compliance": 0.42,
+          "skimmingRate": 0.08,
+          "autonomyLevel": 0.86
+        },
+        "publicTreasuryInit": {
+          "money": 143443,
+          "grain": 102500,
+          "cloth": 12300
+        },
+        "tags": {
+          "hasPort": false,
+          "saltRegion": false,
+          "mineralRegion": false,
+          "horseRegion": true,
+          "fishingRegion": false,
+          "imperialDomain": false
+        },
+        "isSupplement": true,
+        "groupKey": "supplement-fac-khalkha",
+        "mapRegionId": "ming2-35"
+      }
+    ]
+  }
+}

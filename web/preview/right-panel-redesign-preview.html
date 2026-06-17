@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>右侧栏面板 · 重设计 mockup</title>
+<style>
+/* ===== 御案令牌（取自 phase8-formal-bridge.js:1817-1886 实际 CSS） ===== */
+:root{
+  --g1:#f2d98d; --g2:#e7d39e; --g3:#d8c27c; --g-act:#ffe1ac;
+  --verm:#c85e49; --verm2:#d56b55; --celadon:#8dbdab;
+  --txt:#eadfbd; --txt2:rgba(232,220,187,.70); --txt3:rgba(232,220,187,.46);
+  --bd:rgba(201,168,95,.18); --bd2:rgba(201,168,95,.30);
+  --card:linear-gradient(180deg,rgba(255,245,210,.05),rgba(0,0,0,.20));
+  --kai:"STKaiti","KaiTi","楷体",serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:radial-gradient(1000px 500px at 50% -8%,#1a140d,transparent 60%),linear-gradient(160deg,#0c0a07,#0a0807);
+  color:var(--txt);font-family:var(--kai);-webkit-font-smoothing:antialiased;padding:26px 22px 70px;}
+.pv-head{text-align:center;margin-bottom:8px;}
+.pv-k{font-size:.72rem;letter-spacing:.42em;color:var(--g3);opacity:.7;}
+.pv-h1{font-size:1.5rem;font-weight:700;color:var(--g1);letter-spacing:.16em;margin:.3rem 0;}
+.pv-sub{font-size:.8rem;color:var(--txt3);}
+.pv-compare-label{display:flex;gap:14px;justify-content:center;margin:14px 0 6px;font-size:.74rem;color:var(--txt3);letter-spacing:.1em;}
+.stage{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;align-items:flex-start;margin-top:14px;}
+
+/* ===== 重设计·面板壳 ===== */
+.rp2{width:392px;height:686px;display:flex;flex-direction:column;position:relative;
+  background:
+    linear-gradient(180deg,rgba(36,28,19,.30),rgba(0,0,0,0) 18%),
+    linear-gradient(180deg,#141009,#0d0a07);
+  border:1px solid var(--bd2);border-radius:3px;
+  box-shadow:0 18px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,238,186,.05);overflow:hidden;}
+/* 头部：标题 + 鎏金细描 + 关闭 */
+.rp2-head{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:13px 14px 11px 16px;
+  border-bottom:1px solid var(--bd);
+  background:linear-gradient(90deg,rgba(68,46,24,.30),rgba(0,0,0,0) 70%);}
+.rp2-mark{width:22px;height:22px;flex:0 0 auto;display:grid;place-items:center;border:1px solid var(--bd2);border-radius:2px;
+  color:var(--g1);font-size:13px;background:radial-gradient(circle at 36% 26%,rgba(255,229,153,.22),rgba(73,43,20,.55));}
+.rp2-title{flex:1;font-size:18px;font-weight:700;color:var(--g1);letter-spacing:.18em;}
+.rp2-title small{display:block;font-size:10.5px;font-weight:400;color:var(--txt3);letter-spacing:.12em;margin-top:2px;}
+.rp2-close{width:28px;height:28px;flex:0 0 auto;border:1px solid rgba(214,188,116,.28);border-radius:2px;
+  background:rgba(0,0,0,.22);color:var(--g3);font-size:17px;cursor:pointer;line-height:1;}
+.rp2-close:hover{border-color:var(--bd2);color:var(--g-act);}
+/* 滚动体 */
+.rp2-body{flex:1;overflow-y:auto;padding:14px;scrollbar-width:thin;scrollbar-color:rgba(201,168,95,.4) transparent;}
+.rp2-body::-webkit-scrollbar{width:7px;}
+.rp2-body::-webkit-scrollbar-thumb{background:rgba(201,168,95,.4);border-radius:4px;}
+
+/* 三大数 hero —— 提为面板视觉锚 */
+.rp2-hero{display:grid;grid-template-columns:repeat(3,1fr);position:relative;
+  border:1px solid var(--bd);border-radius:2px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,245,210,.06),rgba(0,0,0,.22));margin-bottom:16px;}
+.rp2-hero::before,.rp2-hero::after{content:"";position:absolute;left:8px;right:8px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,95,.45),transparent);}
+.rp2-hero::before{top:0;} .rp2-hero::after{bottom:0;}
+.rp2-stat{padding:13px 6px 12px;text-align:center;position:relative;}
+.rp2-stat + .rp2-stat::before{content:"";position:absolute;left:0;top:22%;bottom:22%;width:1px;background:linear-gradient(180deg,transparent,rgba(201,168,95,.30),transparent);}
+.rp2-stat b{display:block;font-size:24px;line-height:1;color:var(--g1);font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 1px 4px rgba(0,0,0,.5);}
+.rp2-stat b.verm{color:var(--verm2);} .rp2-stat b.cela{color:var(--celadon);}
+.rp2-stat span{display:block;margin-top:7px;font-size:11px;color:var(--txt3);letter-spacing:.14em;}
+
+/* 标签页 */
+.rp2-tabs{display:grid;grid-auto-flow:column;gap:6px;margin-bottom:14px;}
+.rp2-tabs button{height:34px;border:1px solid rgba(201,168,95,.22);border-radius:2px;background:rgba(0,0,0,.22);
+  color:var(--txt2);font-family:var(--kai);font-size:13px;letter-spacing:.16em;cursor:pointer;}
+.rp2-tabs button.on{border-color:rgba(213,103,73,.5);color:var(--g-act);
+  background:linear-gradient(180deg,rgba(104,42,30,.7),rgba(35,20,14,.86));}
+
+/* 分区标题 —— 朱点 + 金字 + 右计数 + 细描线 */
+.rp2-sec{margin:0 0 16px;}
+.rp2-sec-h{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.rp2-sec-h i{width:5px;height:5px;flex:0 0 auto;background:var(--verm);transform:rotate(45deg);box-shadow:0 0 6px rgba(200,94,73,.6);}
+.rp2-sec-h b{font-size:13.5px;color:var(--g1);letter-spacing:.16em;font-weight:700;}
+.rp2-sec-h .ln{flex:1;height:1px;background:linear-gradient(90deg,rgba(201,168,95,.32),transparent);}
+.rp2-sec-h em{font-style:normal;font-size:10.5px;color:var(--txt3);letter-spacing:.08em;}
+
+/* 卡 */
+.rp2-card{border:1px solid var(--bd);border-radius:2px;background:var(--card);padding:12px;margin-bottom:9px;
+  box-shadow:inset 0 1px 0 rgba(255,238,186,.04);}
+.rp2-card.hot{border-color:rgba(198,78,55,.42);box-shadow:inset 3px 0 rgba(198,78,55,.34),inset 0 1px 0 rgba(255,238,186,.04);}
+
+/* 2 列数据网格 */
+.rp2-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rp2-cell{border:1px solid rgba(201,168,95,.14);border-radius:2px;background:rgba(0,0,0,.16);padding:9px 10px;}
+.rp2-cell span{display:block;font-size:10.5px;color:var(--txt3);letter-spacing:.06em;}
+.rp2-cell b{display:block;margin-top:4px;font-size:14px;color:var(--g2);font-variant-numeric:tabular-nums;}
+.rp2-cell b.verm{color:var(--verm2);} .rp2-cell b.cela{color:var(--celadon);}
+
+/* 进度条 —— 渐变按值裁切·非满铺 */
+.rp2-bar{display:grid;grid-template-columns:62px 1fr 34px;align-items:center;gap:9px;margin:9px 0;}
+.rp2-bar > span{font-size:11.5px;color:var(--txt2);}
+.rp2-bar i{height:7px;border-radius:4px;background:rgba(0,0,0,.34);border:1px solid rgba(201,168,95,.14);overflow:hidden;display:block;}
+.rp2-bar i u{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#8dbdab,#f2d98d 60%,#c85e49);}
+.rp2-bar em{font-style:normal;text-align:right;font-size:11.5px;color:var(--g2);font-variant-numeric:tabular-nums;}
+
+/* 名册卡（部队/区划） */
+.rp2-ledger{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;
+  border:1px solid var(--bd);border-left:2px solid var(--accent,rgba(201,168,95,.5));border-radius:2px;
+  background:rgba(0,0,0,.18);padding:9px 11px;margin-bottom:7px;cursor:pointer;transition:background .18s,border-color .18s;}
+.rp2-ledger:hover{background:rgba(40,30,18,.4);border-color:var(--bd2);}
+.rp2-seal{width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--bd2);border-radius:2px;
+  color:var(--g1);font-size:14px;background:radial-gradient(circle at 35% 24%,rgba(255,229,153,.22),rgba(73,43,20,.7));}
+.rp2-ledger .nm{font-size:13.5px;color:var(--g1);letter-spacing:.04em;}
+.rp2-ledger .sub{font-size:10.5px;color:var(--txt3);margin-top:2px;}
+.rp2-ledger .qty{font-size:14px;color:var(--g2);font-variant-numeric:tabular-nums;text-align:right;}
+.rp2-ledger .qty small{display:block;font-size:9.5px;color:var(--txt3);}
+
+/* 空状态 —— 印章纹 + CTA + 幽灵示例（不再大片死白） */
+.rp2-empty{text-align:center;padding:22px 14px 16px;border:1px dashed rgba(201,168,95,.26);border-radius:3px;
+  background:radial-gradient(120px 80px at 50% 30%,rgba(201,168,95,.06),transparent);margin-bottom:14px;}
+.rp2-empty .em-seal{width:54px;height:54px;margin:0 auto 12px;display:grid;place-items:center;border:1.5px solid var(--bd2);border-radius:50%;
+  color:var(--g3);font-size:24px;background:radial-gradient(circle at 36% 26%,rgba(255,229,153,.14),rgba(30,22,12,.6));}
+.rp2-empty .em-t{font-size:13px;color:var(--g2);letter-spacing:.08em;}
+.rp2-empty .em-d{font-size:11.5px;color:var(--txt3);margin-top:6px;line-height:1.7;}
+.rp2-empty .em-cta{margin-top:13px;display:inline-flex;height:34px;align-items:center;padding:0 18px;border-radius:2px;
+  border:1px solid rgba(213,103,73,.52);background:linear-gradient(180deg,rgba(126,45,32,.84),rgba(58,25,18,.92));color:var(--g-act);font-size:12.5px;letter-spacing:.1em;cursor:pointer;}
+.rp2-ghost-label{font-size:10.5px;color:var(--txt3);letter-spacing:.14em;margin:4px 0 8px;text-align:center;}
+.rp2-ghost{opacity:.4;filter:grayscale(.3);pointer-events:none;}
+.rp2-ghost .rp2-ledger{cursor:default;}
+
+/* 底部动作钉底栏 */
+.rp2-foot{flex:0 0 auto;display:flex;gap:7px;padding:10px 14px;border-top:1px solid var(--bd);
+  background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.32));}
+.rp2-btn{flex:1;min-height:34px;border:1px solid rgba(201,168,95,.24);border-radius:2px;background:rgba(18,13,10,.74);
+  color:var(--txt);font-family:var(--kai);font-size:12.5px;letter-spacing:.06em;cursor:pointer;}
+.rp2-btn:hover{border-color:var(--bd2);color:var(--g2);}
+.rp2-btn.primary{border-color:rgba(213,103,73,.52);color:var(--g-act);background:linear-gradient(180deg,rgba(126,45,32,.84),rgba(58,25,18,.92));}
+
+.note{max-width:1180px;margin:34px auto 0;font-size:.78rem;line-height:1.95;color:var(--txt2);
+  background:linear-gradient(180deg,#120f0a,#0e0b07);border:1px solid #211a12;border-left:2px solid var(--g3);border-radius:8px;padding:16px 20px;}
+.note b{color:var(--g1);} .note code{background:#1c1610;border:1px solid #2a2014;border-radius:3px;padding:1px 6px;color:var(--g2);font-family:ui-monospace,Consolas,monospace;font-size:.72rem;}
+.tag{display:inline-block;font-size:.66rem;letter-spacing:.14em;color:var(--g3);border:1px solid var(--bd);border-radius:2px;padding:1px 8px;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="pv-head">
+  <div class="pv-k">天 命 · 御 案</div>
+  <div class="pv-h1">右 侧 栏 面 板 · 重 设 计</div>
+  <div class="pv-sub">在现有御案语言上精修字阶/间距/层级 + 治硬伤(空态幽灵预览·动作钉底) · 三个代表面板</div>
+</div>
+
+<div class="stage">
+
+  <!-- ========== 甲 · 纲纪总览（数据/进度密集型） ========== -->
+  <div class="rp2">
+    <div class="rp2-head">
+      <div class="rp2-mark">纲</div>
+      <div class="rp2-title">纲纪总览<small>国 势 · 民 心 · 皇 威</small></div>
+      <button class="rp2-close">×</button>
+    </div>
+    <div class="rp2-body">
+      <div class="rp2-hero">
+        <div class="rp2-stat"><b class="verm">39</b><span>国 势</span></div>
+        <div class="rp2-stat"><b>40</b><span>民 心</span></div>
+        <div class="rp2-stat"><b class="cela">67</b><span>皇 威</span></div>
+      </div>
+
+      <div class="rp2-tabs"><button class="on">殿 议</button><button>览 卷</button></div>
+
+      <div class="rp2-sec">
+        <div class="rp2-sec-h"><i></i><b>宗室门第</b><span class="ln"></span><em>4 宗藩</em></div>
+        <div class="rp2-card">
+          <div class="rp2-bar"><span>满意</span><i><u style="width:67%"></u></i><em>67</em></div>
+          <div class="rp2-bar"><span>恭顺</span><i><u style="width:42%"></u></i><em>42</em></div>
+        </div>
+      </div>
+
+      <div class="rp2-sec">
+        <div class="rp2-sec-h"><i></i><b>吏治政情</b><span class="ln"></span></div>
+        <div class="rp2-card">
+          <div class="rp2-grid">
+            <div class="rp2-cell"><span>吏治浊度</span><b class="verm">偏浊</b></div>
+            <div class="rp2-cell"><span>治理力</span><b>中</b></div>
+            <div class="rp2-cell"><span>财计储备</span><b class="verm">不足</b></div>
+            <div class="rp2-cell"><span>边备</span><b>吃紧</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rp2-sec">
+        <div class="rp2-sec-h"><i></i><b>当务之急</b><span class="ln"></span><em>3</em></div>
+        <div class="rp2-card hot">
+          <div style="font-size:13px;color:var(--g1);">辽饷亏空 · 九边欠饷</div>
+          <div style="font-size:11.5px;color:var(--txt3);margin-top:5px;line-height:1.65;">蓟辽欠饷已逾三月，军心浮动；户部太仓告罄，加派恐激民变。</div>
+        </div>
+        <div class="rp2-card">
+          <div style="font-size:13px;color:var(--g2);">阉党未清 · 清议汹汹</div>
+        </div>
+      </div>
+    </div>
+    <div class="rp2-foot">
+      <button class="rp2-btn primary">召 对 阁 臣</button>
+      <button class="rp2-btn">下 诏 罪 己</button>
+    </div>
+  </div>
+
+  <!-- ========== 乙 · 军务边防（名册/列表型） ========== -->
+  <div class="rp2">
+    <div class="rp2-head">
+      <div class="rp2-mark">军</div>
+      <div class="rp2-title">军务边防<small>京 营 · 九 边 · 边 患</small></div>
+      <button class="rp2-close">×</button>
+    </div>
+    <div class="rp2-body">
+      <div class="rp2-hero">
+        <div class="rp2-stat"><b>40</b><span>军 队</span></div>
+        <div class="rp2-stat"><b style="font-size:19px">181.6万</b><span>总 兵 力</span></div>
+        <div class="rp2-stat"><b class="cela" style="font-size:19px">49/44</b><span>士气/训练</span></div>
+      </div>
+
+      <div class="rp2-sec">
+        <div class="rp2-sec-h"><i></i><b>军务总览</b><span class="ln"></span></div>
+        <div class="rp2-card">
+          <div style="font-size:11.5px;color:var(--txt2);line-height:1.75;">京营三大营驻守京畿，九边重镇当辽事。粮饷已欠，士气低迷，亟需补饷整训。</div>
+        </div>
+      </div>
+
+      <div class="rp2-sec">
+        <div class="rp2-sec-h"><i></i><b>部队名册</b><span class="ln"></span><em>共 8 部 · 60.6万</em></div>
+        <div class="rp2-ledger" style="--accent:#c95340">
+          <div class="rp2-seal">营</div>
+          <div><div class="nm">京营 · 五军营</div><div class="sub">京师 · 步骑混编</div></div>
+          <div class="qty">60,000<small>员额</small></div>
+        </div>
+        <div class="rp2-ledger" style="--accent:#c9a84c">
+          <div class="rp2-seal">营</div>
+          <div><div class="nm">京营 · 三千营</div><div class="sub">京师 · 骑兵</div></div>
+          <div class="qty">8,000<small>员额</small></div>
+        </div>
+        <div class="rp2-ledger" style="--accent:#70b097">
+          <div class="rp2-seal">营</div>
+          <div><div class="nm">京营 · 神机营</div><div class="sub">京师 · 火器</div></div>
+          <div class="qty">12,000<small>员额</small></div>
+        </div>
+        <div class="rp2-ledger" style="--accent:#8e6aa8">
+          <div class="rp2-seal">镇</div>
+          <div><div class="nm">辽东镇</div><div class="sub">宁远 · 关宁铁骑</div></div>
+          <div class="qty">90,000<small>员额</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="rp2-foot">
+      <button class="rp2-btn primary">补 饷 整 军</button>
+      <button class="rp2-btn">调 防 部 署</button>
+    </div>
+  </div>
+
+  <!-- ========== 丙 · 百官人事（空态重设计） ========== -->
+  <div class="rp2">
+    <div class="rp2-head">
+      <div class="rp2-mark">臣</div>
+      <div class="rp2-title">百官人事<small>钉 选 臣 僚 · 集 中 处 置</small></div>
+      <button class="rp2-close">×</button>
+    </div>
+    <div class="rp2-body">
+      <div class="rp2-hero">
+        <div class="rp2-stat"><b>0</b><span>钉 选</span></div>
+        <div class="rp2-stat"><b>0</b><span>在 京</span></div>
+        <div class="rp2-stat"><b>0</b><span>低 忠</span></div>
+      </div>
+
+      <div class="rp2-empty">
+        <div class="em-seal">钉</div>
+        <div class="em-t">尚未钉选臣僚</div>
+        <div class="em-d">从人物图志或人物卡片「钉选」要员，<br>即可在此集中查看忠诚、派系与处置。</div>
+        <button class="em-cta">打 开 人 物 图 志</button>
+      </div>
+
+      <div class="rp2-ghost-label">— 钉选后这里将呈现 · 示例 —</div>
+      <div class="rp2-ghost">
+        <div class="rp2-ledger" style="--accent:#c95340">
+          <div class="rp2-seal">魏</div>
+          <div><div class="nm">魏忠贤</div><div class="sub">司礼监 · 阉党魁首 · 忠 12</div></div>
+          <div class="qty" style="color:var(--verm2)">险</div>
+        </div>
+        <div class="rp2-ledger" style="--accent:#70b097">
+          <div class="rp2-seal">孙</div>
+          <div><div class="nm">孙承宗</div><div class="sub">蓟辽督师 · 帝党柱石 · 忠 88</div></div>
+          <div class="qty" style="color:var(--celadon)">忠</div>
+        </div>
+        <div class="rp2-ledger" style="--accent:#c9a84c">
+          <div class="rp2-seal">袁</div>
+          <div><div class="nm">袁崇焕</div><div class="sub">辽东巡抚 · 边帅 · 忠 74</div></div>
+          <div class="qty">稳</div>
+        </div>
+      </div>
+    </div>
+    <div class="rp2-foot">
+      <button class="rp2-btn primary">打 开 人 物 图 志</button>
+      <button class="rp2-btn">朝 局 排 行</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <span class="tag">改了什么</span><br>
+  <b>① 字阶分明</b> —— 三大数提到 24px 主锚(tabular-nums 对齐)、标题 18px、分区标题 13.5px 金字配朱点细描线、标签 11px 淡，层级一眼分清(原版字号普遍 10-13px 拉平、糊作一团)。<br>
+  <b>② 间距有呼吸</b> —— 分区间距 16px、卡内 12px、行 8-9px(原版普遍 6-7px 挤);三大数 hero 加上下鎏金细描 + 竖分隔,成视觉锚。<br>
+  <b>③ 空态不再死白</b> —— 百官/文事空面板:印章纹 + 一句引导 + CTA,下接<b>「示例·幽灵预览」</b>(灰显真实条目示意钉选后长什么样),整屏不再大片留白。<br>
+  <b>④ 动作钉底</b> —— 主次动作收进底部常驻栏(<code>.rp2-foot</code>),滚动时永远够得着,不再淹在长内容末尾。<br>
+  <b>⑤ 名册卡左缘色码</b> —— 部队/区划/人物按势力或状态着左缘色(朱=险/金=土/青=忠),hover 微亮。<br>
+  <span class="tag" style="margin-top:10px">另行(数据层)</span> 舆图省名乱码(player1/lamJin)是 <code>renderMapPanelRich</code> 取名 fallback 到 ID 的 bug,属数据修复,与本视觉稿并行。<br>
+  <b>这是 mockup·未动任何运行时。</b>方向你认可的话,我据此逐刀落进 <code>phase8-formal-rightrail.js</code> 渲染器 + <code>bridge.js</code> 的 <code>.tmrp-*</code> CSS。
+</div>
+</body>
+</html>

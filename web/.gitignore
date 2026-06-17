@@ -1,0 +1,72 @@
+# 操作系统 / IDE 垃圾
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# 依赖（此项目应该无需）
+node_modules/
+
+# 构建产物 / 本地测试
+dist/
+build/
+.cache/
+.playwright-cli/
+_screenshots/
+dev-tools/
+backups/
+godot/.godot/
+godot/.import/
+godot/export.cfg
+
+# 本地存档 / 用户私有
+*.save.json
+localStorage-backup/
+
+# API 密钥（以防万一）
+.env
+.env.local
+*.key
+secrets.json
+
+# 开发备份（每轮 R 重构产生·本地保留）
+.bak-r*/
+*.backup-r*
+*.bak-r*
+*.bak
+*.bak*
+*.log
+*.yml
+
+# 预览验证产物（截图 / 临时镜头）
+preview/**/*verify.png
+preview/shots/
+
+# 本地调试脚本（非生产）
+analyze_globals.py
+detect_globals.js
+scan.sh
+final_scan.sh
+scan_globals.js
+tools/debug-officetree.js
+tools/push-fiscal-fix.js
+tools/smoke-1627-fiscal.js
+tools/smoke-1627-runtime.js
+tools/smoke-fiscal-three-numbers.js
+tools/smoke-pre-endturn-save.js
+tools/smoke-save-name-and-double.js
+tools/fill-shaosong-traits.js
+tools/add-dingyou-field.js
+tools/fill-tianqi-mentors.js
+tools/add-tinyi-convening-config.js
+
+# 一次性 asset 处理工具 (alpha 处理图片等·非生产)
+preview/img/_remove-white-bg.js
+data/maps/tianqi-ming2/tianqi-ming2.preview-data.js
+
+# Phase 9.1 模型预打包·Electron 打包前下载（23 MB）·勿入仓库
+vendor/models/Xenova/
+!vendor/models/README.md

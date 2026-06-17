@@ -1,0 +1,1438 @@
+{
+  "id": "tianqi7-ming2-historical-supplement",
+  "name": "天启七年新舆图历史补丁",
+  "scope": "补齐 ming-2 地块地图中未被官方天启剧本 adminHierarchy/factions 覆盖的域外、羁縻、海贸与边外势力。",
+  "dataConfidenceNote": "数值字段为游戏化历史估算；政权、领属、资源、冲突和人物字段据可核史实整理，带 sourceRefs。",
+  "sourceCatalog": {
+    "ming-geography": {
+      "title": "《明史》地理志 / 明代两京十三省与羁縻都司体系",
+      "url": "https://ctext.org/wiki.pl?if=en&res=410835"
+    },
+    "ming-britannica": {
+      "title": "Britannica: The Ming dynasty",
+      "url": "https://www.britannica.com/topic/history-of-China/The-Ming-dynasty"
+    },
+    "tibet-dokham": {
+      "title": "朵甘行都指挥使司与乌思藏都司资料",
+      "url": "https://zh.wikipedia.org/wiki/%E6%9C%B5%E7%94%98%E8%A1%8C%E9%83%BD%E6%8C%87%E6%8C%A5%E4%BD%BF%E5%8F%B8"
+    },
+    "chahar-khorchin": {
+      "title": "Chahar-Jurchen War / Ligdan Khan and Khorchin conflict",
+      "url": "https://en.wikipedia.org/wiki/Chahar-Jurchen_War"
+    },
+    "yarkand": {
+      "title": "List of khans of the Yarkent and Turpan khanates",
+      "url": "https://en.wikipedia.org/wiki/List_of_khans_of_the_Yarkent_and_Turpan_khanates"
+    },
+    "central-asia": {
+      "title": "Historical Atlas of Central Asia / early 17th-century khanates",
+      "url": "https://turkistanilibrary.com/sites/default/files/-yuri_bregel-an_historical_atlas_of_central_asia.pdf"
+    },
+    "kazakh": {
+      "title": "Kazakh Khanate in the first half of the 17th century",
+      "url": "https://e-history.kz/storage/upload/library_en_files/iblock/a3a/a3a3145694aea3b79df14de511a01ebf.pdf"
+    },
+    "jurchen": {
+      "title": "Ming-Qing transition Jurchen tribal economy and divisions",
+      "url": "https://www.cambridge.org/core/journals/international-review-of-social-history/article/tributary-labour-relations-in-china-during-the-mingqing-transition-seventeenth-to-eighteenth-centuries/7AC034138FC2F5591D10313C256F2E53"
+    },
+    "tokugawa": {
+      "title": "Britannica: Tokugawa Iemitsu",
+      "url": "https://www.britannica.com/biography/Tokugawa-Iemitsu"
+    },
+    "matsumae-ainu": {
+      "title": "Matsumae and Ainu trade in early modern Ezo",
+      "url": "https://hokkaidowilds.org/a-very-short-history-of-the-ainu-of-hokkaido"
+    },
+    "vietnam": {
+      "title": "Britannica: Later Le Dynasty / Trinh-Nguyen split",
+      "url": "https://www.britannica.com/topic/Later-Le-dynasty"
+    },
+    "macau-dutch-formosa": {
+      "title": "Britannica: Ming maritime trade, Macau, and Dutch Taiwan",
+      "url": "https://www.britannica.com/topic/history-of-China/The-Ming-dynasty"
+    },
+    "manila": {
+      "title": "Manila galleon and Spanish Manila trade",
+      "url": "https://www.worldhistory.org/Manila_Galleon/"
+    }
+  },
+  "factions": {
+    "fac-tumed": {
+      "name": "土默特蒙古",
+      "leader": "卜失兔汗",
+      "color": "#9b7b3e",
+      "strength": 42,
+      "militaryStrength": 42000,
+      "economy": 38,
+      "courtInfluence": 8,
+      "popularInfluence": 35,
+      "territory": "归化城、河套与漠南土默特牧地",
+      "capital": "归化城一带",
+      "ideology": "蒙古部盟·藏传佛教·互市马政",
+      "desc": "土默特部处于明边互市、察哈尔压力和后金东扩之间。天启七年前后林丹汗西压漠南，土默特成为草原势力再分配的焦点。",
+      "traits": [
+        "骑牧",
+        "互市",
+        "边墙邻接",
+        "部盟政治"
+      ],
+      "leaderTitle": "汗",
+      "goal": "守归化互市，避免被察哈尔吞并，同时维持与明边镇的马市生路。",
+      "mainstream": "藏传佛教",
+      "culture": "蒙古",
+      "resources": "马匹·牛羊·皮毛·边市盐茶",
+      "cohesion": {
+        "political": 44,
+        "military": 54,
+        "economic": 42,
+        "cultural": 70,
+        "ethnic": 72,
+        "loyalty": 48
+      },
+      "militaryBreakdown": {
+        "elite": 8000,
+        "standingArmy": 18000,
+        "militia": 16000,
+        "fleet": 0
+      },
+      "economicStructure": {
+        "agriculture": 12,
+        "trade": 30,
+        "handicraft": 8,
+        "tribute": 50
+      },
+      "relations": {
+        "明朝廷": 25,
+        "察哈尔": -60,
+        "后金": -25,
+        "科尔沁蒙古": 10
+      },
+      "warState": {
+        "activeFronts": [
+          "漠南部盟冲突"
+        ],
+        "readiness": 52
+      },
+      "strategy": "以互市养部，以边墙为屏；在察哈尔、后金、明朝之间保持回旋。",
+      "sourceRefs": [
+        "chahar-khorchin",
+        "ming-geography"
+      ]
+    },
+    "fac-yarkand": {
+      "name": "叶尔羌汗国",
+      "leader": "阿布达勒拉提甫汗",
+      "color": "#a87945",
+      "strength": 48,
+      "militaryStrength": 52000,
+      "economy": 46,
+      "territory": "叶尔羌、喀什噶尔、和阗、阿克苏诸绿洲",
+      "capital": "叶尔羌城",
+      "ideology": "逊尼派伊斯兰·察合台汗统",
+      "desc": "叶尔羌汗国为东察合台诸汗后继政权，控制塔里木盆地西南诸绿洲。1627 年处阿布达勒拉提甫汗在位期，汗权与伯克、和卓及绿洲商路相互牵制。",
+      "traits": [
+        "绿洲城邦",
+        "丝路商贸",
+        "察合台汗统",
+        "伊斯兰"
+      ],
+      "leaderTitle": "汗",
+      "goal": "稳住喀什噶尔至和阗绿洲，防御准噶尔前身瓦刺诸部与哈萨克游牧压力。",
+      "mainstream": "逊尼派",
+      "culture": "维吾尔-察合台",
+      "resources": "棉布·玉石·马匹·葡萄·绿洲粮",
+      "cohesion": {
+        "political": 44,
+        "military": 48,
+        "economic": 55,
+        "cultural": 74,
+        "ethnic": 68,
+        "loyalty": 45
+      },
+      "militaryBreakdown": {
+        "elite": 7000,
+        "standingArmy": 25000,
+        "militia": 20000,
+        "fleet": 0
+      },
+      "economicStructure": {
+        "agriculture": 46,
+        "trade": 38,
+        "handicraft": 12,
+        "tribute": 4
+      },
+      "relations": {
+        "吐鲁番诸伯克": 25,
+        "哈萨克汗国": -15,
+        "瓦刺诸部": -35,
+        "明朝廷": 5
+      },
+      "strategy": "以绿洲税、商队与宗教声望维持汗权，避免东西两线同时开战。",
+      "sourceRefs": [
+        "yarkand",
+        "central-asia"
+      ]
+    },
+    "fac-turpan": {
+      "name": "吐鲁番诸伯克",
+      "leader": "察合台系地方伯克",
+      "color": "#b78a4b",
+      "strength": 32,
+      "militaryStrength": 15000,
+      "economy": 34,
+      "territory": "吐鲁番、哈密以西绿洲与天山东路驿道",
+      "capital": "吐鲁番绿洲",
+      "ideology": "绿洲伯克·伊斯兰·商路自治",
+      "desc": "吐鲁番在明末已不再是明朝哈密卫式强控制区域，更多表现为东察合台、叶尔羌和地方伯克之间的绿洲自治。",
+      "traits": [
+        "绿洲",
+        "驿路",
+        "地方伯克",
+        "瓜果棉粮"
+      ],
+      "leaderTitle": "伯克",
+      "goal": "守住天山东路商道，在叶尔羌、瓦刺与哈萨克之间维持自治。",
+      "mainstream": "逊尼派",
+      "culture": "维吾尔-察合台",
+      "resources": "葡萄·棉布·绿洲粮·骆驼商队",
+      "cohesion": {
+        "political": 36,
+        "military": 34,
+        "economic": 46,
+        "cultural": 70,
+        "ethnic": 65,
+        "loyalty": 40
+      },
+      "militaryBreakdown": {
+        "elite": 2000,
+        "standingArmy": 7000,
+        "militia": 6000,
+        "fleet": 0
+      },
+      "relations": {
+        "叶尔羌汗国": 25,
+        "瓦刺诸部": -25,
+        "哈萨克汗国": -10
+      },
+      "sourceRefs": [
+        "yarkand",
+        "central-asia"
+      ]
+    },
+    "fac-kazakh": {
+      "name": "哈萨克汗国",
+      "leader": "也昔木汗",
+      "color": "#8f8350",
+      "strength": 52,
+      "militaryStrength": 72000,
+      "economy": 36,
+      "territory": "七河、锡尔河以北与哈萨克草原诸玉兹",
+      "capital": "游牧汗帐",
+      "ideology": "钦察草原汗统·伊斯兰·游牧联盟",
+      "desc": "也昔木汗在 17 世纪前期维持哈萨克汗国威望，诸玉兹与苏丹体系分权明显，军力强在骑射动员，弱在长期粮秣与城镇财政。",
+      "traits": [
+        "游牧",
+        "骑射",
+        "诸玉兹",
+        "草原商路"
+      ],
+      "leaderTitle": "汗",
+      "goal": "保持诸玉兹共主地位，控制锡尔河城镇与天山北路牧场。",
+      "mainstream": "逊尼派",
+      "culture": "哈萨克-钦察",
+      "resources": "战马·羊群·皮毛·草原商路",
+      "cohesion": {
+        "political": 46,
+        "military": 66,
+        "economic": 34,
+        "cultural": 72,
+        "ethnic": 72,
+        "loyalty": 45
+      },
+      "militaryBreakdown": {
+        "elite": 12000,
+        "standingArmy": 22000,
+        "militia": 38000,
+        "fleet": 0
+      },
+      "economicStructure": {
+        "agriculture": 12,
+        "trade": 22,
+        "handicraft": 6,
+        "tribute": 60
+      },
+      "relations": {
+        "叶尔羌汗国": -10,
+        "瓦刺诸部": -35,
+        "吐鲁番诸伯克": -5
+      },
+      "strategy": "以诸玉兹骑兵压制边缘绿洲，同时避免被瓦刺诸部从东侧挤压。",
+      "sourceRefs": [
+        "kazakh",
+        "central-asia"
+      ]
+    },
+    "fac-oirat": {
+      "name": "瓦刺诸部",
+      "leader": "和硕特、准噶尔、杜尔伯特诸台吉",
+      "color": "#7b7359",
+      "strength": 46,
+      "militaryStrength": 58000,
+      "economy": 32,
+      "territory": "天山北路、准噶尔盆地与额尔齐斯草原",
+      "capital": "游牧诸营",
+      "ideology": "瓦刺部盟·藏传佛教·草原共议",
+      "desc": "1627 年的瓦刺尚未形成后来的准噶尔汗国，但四部势力已在天山北路、伊犁、额尔齐斯一线活动，是哈萨克与叶尔羌的长期压力源。",
+      "traits": [
+        "游牧",
+        "部盟",
+        "骑射",
+        "西北边患"
+      ],
+      "leaderTitle": "台吉",
+      "goal": "整合瓦刺诸部，争夺天山北路与伊犁牧场。",
+      "mainstream": "藏传佛教",
+      "culture": "卫拉特蒙古",
+      "resources": "马群·羊群·皮毛·金属矿",
+      "cohesion": {
+        "political": 38,
+        "military": 62,
+        "economic": 30,
+        "cultural": 66,
+        "ethnic": 70,
+        "loyalty": 42
+      },
+      "militaryBreakdown": {
+        "elite": 9000,
+        "standingArmy": 21000,
+        "militia": 28000,
+        "fleet": 0
+      },
+      "relations": {
+        "哈萨克汗国": -35,
+        "叶尔羌汗国": -30,
+        "喀尔喀蒙古": -10
+      },
+      "strategy": "待诸台吉合势后东压喀尔喀、西逼哈萨克、南扰绿洲。",
+      "sourceRefs": [
+        "central-asia",
+        "kazakh"
+      ]
+    },
+    "fac-wild-jurchen": {
+      "name": "野人女真诸部",
+      "leader": "黑龙江、乌苏里诸部酋长",
+      "color": "#60624f",
+      "strength": 26,
+      "militaryStrength": 18000,
+      "economy": 24,
+      "territory": "黑龙江、乌苏里江、苦兀岛与北山林海",
+      "capital": "诸部寨落",
+      "ideology": "氏族部落·狩猎渔猎·贡貂贸易",
+      "desc": "明代女真常分建州、海西、野人三大类。野人女真处于更北、更东的林海水网，经济以渔猎、貂皮、人参和贡市为主，受后金招抚压力渐增。",
+      "traits": [
+        "渔猎",
+        "貂皮",
+        "人参",
+        "松花黑龙江水网"
+      ],
+      "leaderTitle": "部酋",
+      "goal": "维持部落自立，在后金招抚、明朝羁縻旧制和东北商路之间求存。",
+      "mainstream": "萨满",
+      "culture": "通古斯诸部",
+      "resources": "貂皮·鱼猎·人参·东珠",
+      "cohesion": {
+        "political": 24,
+        "military": 42,
+        "economic": 28,
+        "cultural": 58,
+        "ethnic": 60,
+        "loyalty": 30
+      },
+      "militaryBreakdown": {
+        "elite": 2000,
+        "standingArmy": 6000,
+        "militia": 10000,
+        "fleet": 0
+      },
+      "relations": {
+        "后金": -20,
+        "明朝廷": 5,
+        "朝鲜": -5
+      },
+      "strategy": "以贡貂与山货贸易换铁器，避免被八旗强行编户。",
+      "sourceRefs": [
+        "jurchen"
+      ]
+    },
+    "fac-matsumae-ainu": {
+      "name": "虾夷地与松前氏",
+      "leader": "松前氏与阿伊努诸酋",
+      "color": "#7a8060",
+      "strength": 24,
+      "militaryStrength": 9000,
+      "economy": 28,
+      "territory": "渡岛半岛、虾夷沿海与阿伊努交易圈",
+      "capital": "松前馆",
+      "ideology": "松前藩商权·阿伊努部落自治",
+      "desc": "17 世纪初松前氏控制北海道南端贸易据点，岛内大部分仍属阿伊努社会与渔猎贸易网络，不能简单等同为幕府直辖。",
+      "traits": [
+        "阿伊努贸易",
+        "北海渔猎",
+        "松前藩",
+        "边疆自治"
+      ],
+      "leaderTitle": "藩主 / 部酋",
+      "goal": "控制南端商权，借幕府承认维持对阿伊努贸易的独占。",
+      "mainstream": "神道佛教 / 阿伊努信仰",
+      "culture": "和人-阿伊努混合边地",
+      "resources": "鲱鱼·昆布·海獭皮·鹰羽",
+      "cohesion": {
+        "political": 28,
+        "military": 30,
+        "economic": 42,
+        "cultural": 36,
+        "ethnic": 26,
+        "loyalty": 24
+      },
+      "militaryBreakdown": {
+        "elite": 800,
+        "standingArmy": 2200,
+        "militia": 6000,
+        "fleet": 0
+      },
+      "relations": {
+        "日本幕府": 55,
+        "阿伊努诸部": -10,
+        "后金": 0
+      },
+      "strategy": "把虾夷地作为贸易边疆而非完全内地，稳住南端据点与北海物产。",
+      "sourceRefs": [
+        "matsumae-ainu",
+        "tokugawa"
+      ]
+    },
+    "fac-tokugawa-japan": {
+      "name": "日本幕府",
+      "leader": "德川家光",
+      "color": "#68775d",
+      "strength": 74,
+      "militaryStrength": 240000,
+      "economy": 68,
+      "courtInfluence": 80,
+      "popularInfluence": 62,
+      "territory": "本州、九州、四国与诸藩",
+      "capital": "江户",
+      "ideology": "江户幕府·武家诸法度·幕藩体制",
+      "desc": "德川家光 1623 年任第三代将军，父秀忠至 1632 年仍握大御所权力。1627 年的日本已经进入幕藩秩序巩固期，对外贸易和基督教问题即将趋严。",
+      "traits": [
+        "幕藩体制",
+        "参勤交代前夜",
+        "海贸限制",
+        "诸藩治理"
+      ],
+      "leaderTitle": "征夷大将军",
+      "goal": "巩固江户幕府权威，压制基督教与外贸风险，约束诸藩。",
+      "mainstream": "神道佛教·朱子学",
+      "culture": "日本",
+      "resources": "稻米·银铜·刀剑·海贸港口",
+      "cohesion": {
+        "political": 68,
+        "military": 72,
+        "economic": 64,
+        "cultural": 78,
+        "ethnic": 82,
+        "loyalty": 62
+      },
+      "militaryBreakdown": {
+        "elite": 35000,
+        "standingArmy": 85000,
+        "militia": 120000,
+        "fleet": 0
+      },
+      "economicStructure": {
+        "agriculture": 68,
+        "trade": 18,
+        "handicraft": 12,
+        "tribute": 2
+      },
+      "relations": {
+        "明朝廷": 5,
+        "葡萄牙·澳门": 10,
+        "荷兰·台海(东印度公司)": 20,
+        "朝鲜": 30
+      },
+      "strategy": "以幕府法度压诸藩，以海禁前置政策管控天主教和南蛮贸易。",
+      "sourceRefs": [
+        "tokugawa",
+        "ming-britannica"
+      ]
+    },
+    "fac-dai-viet": {
+      "name": "大越黎郑阮格局",
+      "leader": "黎神宗、郑梉、阮福源",
+      "color": "#567763",
+      "strength": 48,
+      "militaryStrength": 66000,
+      "economy": 44,
+      "territory": "东京郑主与顺化阮主控制区",
+      "capital": "升龙 / 顺化",
+      "ideology": "后黎皇统·郑阮分权·儒教官僚",
+      "desc": "1627 年郑阮战争爆发，后黎皇帝名义仍在，北方郑主掌权，南方阮主割据顺化以南，交趾地块应表现为分裂的大越而非空白外域。",
+      "traits": [
+        "郑阮战争",
+        "儒教官僚",
+        "南北分治",
+        "海贸"
+      ],
+      "leaderTitle": "皇帝 / 主",
+      "goal": "郑主图压阮氏，阮主守顺化扩南方海贸。",
+      "mainstream": "儒教",
+      "culture": "越文化",
+      "resources": "稻米·漆木·象牙·海贸港口",
+      "cohesion": {
+        "political": 35,
+        "military": 58,
+        "economic": 48,
+        "cultural": 76,
+        "ethnic": 70,
+        "loyalty": 42
+      },
+      "militaryBreakdown": {
+        "elite": 8000,
+        "standingArmy": 28000,
+        "militia": 30000,
+        "fleet": 0
+      },
+      "relations": {
+        "明朝廷": 30,
+        "西班牙·马尼拉": 5,
+        "葡萄牙·澳门": 10
+      },
+      "warState": {
+        "activeFronts": [
+          "郑阮战争"
+        ],
+        "readiness": 66
+      },
+      "strategy": "以南北对峙为核心变量，外交上维持对明朝的名义朝贡与海贸通路。",
+      "sourceRefs": [
+        "vietnam"
+      ]
+    },
+    "fac-khalkha": {
+      "name": "喀尔喀蒙古",
+      "leader": "三汗诸部",
+      "color": "#7a6d4c",
+      "strength": 44,
+      "militaryStrength": 52000,
+      "economy": 30,
+      "territory": "漠北喀尔喀诸部牧地",
+      "capital": "游牧汗帐",
+      "ideology": "蒙古部盟·藏传佛教·三汗分立",
+      "desc": "喀尔喀为漠北主要蒙古部盟，远离明边直接控制，与察哈尔、瓦刺及后金的关系会影响北亚格局。",
+      "traits": [
+        "漠北",
+        "游牧",
+        "部盟",
+        "藏传佛教"
+      ],
+      "leaderTitle": "汗",
+      "goal": "维持三汗分立的部盟平衡，防止察哈尔与瓦刺压力越界。",
+      "mainstream": "藏传佛教",
+      "culture": "蒙古",
+      "resources": "马群·羊群·皮毛",
+      "cohesion": {
+        "political": 36,
+        "military": 52,
+        "economic": 28,
+        "cultural": 72,
+        "ethnic": 74,
+        "loyalty": 40
+      },
+      "militaryBreakdown": {
+        "elite": 7000,
+        "standingArmy": 18000,
+        "militia": 27000,
+        "fleet": 0
+      },
+      "relations": {
+        "察哈尔": -10,
+        "瓦刺诸部": -20,
+        "后金": -5
+      },
+      "strategy": "以远距游牧空间换取战略纵深，保持与各方若即若离。",
+      "sourceRefs": [
+        "central-asia",
+        "chahar-khorchin"
+      ]
+    }
+  },
+  "adminRecords": {
+    "朵甘思宣慰司": {
+      "id": "supp-dokham",
+      "name": "朵甘思宣慰司",
+      "factionId": "fac-ming",
+      "factionName": "明朝廷",
+      "officialPosition": "朵甘行都指挥使司 / 宣慰司土官体系",
+      "governor": "诸招讨、万户、土官袭替",
+      "regionType": "jimi",
+      "dejureOwner": "明朝羁縻",
+      "description": "康藏东部朵甘思诸部。明廷名义设都司、宣慰、招讨、万户等职，实际依宗教法王、土官与茶马道维系册封朝贡。",
+      "terrain": "高原山地",
+      "specialResources": "茶马道、马匹、麝香、牦牛、皮毛",
+      "population": 380000,
+      "prosperity": 38,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "藏": 0.82,
+        "羌": 0.1,
+        "汉回商旅": 0.08
+      },
+      "byFaith": {
+        "藏传佛教": 0.86,
+        "本地信仰": 0.1,
+        "其他": 0.04
+      },
+      "bySettlement": {
+        "寺院庄园": 0.26,
+        "牧帐": 0.44,
+        "山谷村寨": 0.3
+      },
+      "leadingGentry": [
+        "诸法王封地",
+        "宣慰土官",
+        "茶马商旅"
+      ],
+      "academies": [
+        "寺院经院"
+      ],
+      "religiousSites": [
+        "康区寺院",
+        "茶马古道驿寺"
+      ],
+      "strategicValue": "西番羁縻、茶马互市、川陕藏通道",
+      "tradeRoutes": [
+        "茶马道",
+        "川藏道",
+        "青海河湟通道"
+      ],
+      "threats": [
+        "土官互争",
+        "交通艰险",
+        "册封名实不一"
+      ],
+      "recentDisasters": [
+        "高寒歉收"
+      ],
+      "specialCulture": "康藏藏传佛教文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "tibet-dokham",
+        "ming-geography"
+      ]
+    },
+    "鞑靼土默特部": {
+      "id": "supp-tumed",
+      "name": "鞑靼土默特部",
+      "factionId": "fac-tumed",
+      "factionName": "土默特蒙古",
+      "officialPosition": "部盟汗帐",
+      "governor": "卜失兔汗",
+      "regionType": "nomadic_confederation",
+      "dejureOwner": "土默特部",
+      "description": "归化城与河套一线蒙古部盟，依赖明边互市、马群与部众牧场。1627 年前后受察哈尔林丹汗西压。",
+      "terrain": "草原河套",
+      "specialResources": "马匹、牛羊、边市盐茶",
+      "population": 260000,
+      "prosperity": 42,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "蒙古": 0.86,
+        "汉商屯民": 0.1,
+        "回回商旅": 0.04
+      },
+      "byFaith": {
+        "藏传佛教": 0.65,
+        "萨满": 0.2,
+        "民间信仰": 0.15
+      },
+      "bySettlement": {
+        "牧帐": 0.7,
+        "归化城": 0.16,
+        "边市聚落": 0.14
+      },
+      "strategicValue": "漠南互市口、河套牧场、长城北翼",
+      "tradeRoutes": [
+        "大同互市",
+        "宣府互市",
+        "归化城商路"
+      ],
+      "threats": [
+        "察哈尔吞并",
+        "边市断绝",
+        "部众离散"
+      ],
+      "recentDisasters": [
+        "牧场争夺"
+      ],
+      "specialCulture": "漠南蒙古部盟文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "chahar-khorchin"
+      ]
+    },
+    "叶尔羌": {
+      "id": "supp-yarkand",
+      "name": "叶尔羌",
+      "factionId": "fac-yarkand",
+      "factionName": "叶尔羌汗国",
+      "officialPosition": "叶尔羌汗廷",
+      "governor": "阿布达勒拉提甫汗",
+      "regionType": "foreign_khanate",
+      "dejureOwner": "叶尔羌汗国",
+      "description": "塔里木盆地西南绿洲中心，汗廷控制叶尔羌、喀什噶尔、和阗等地，依赖绿洲农业、玉石和商队税。",
+      "terrain": "绿洲盆地",
+      "specialResources": "玉石、棉布、葡萄、绿洲粮、马匹",
+      "population": 760000,
+      "prosperity": 52,
+      "taxLevel": "中",
+      "byEthnicity": {
+        "维吾尔": 0.76,
+        "察合台蒙古": 0.08,
+        "吉尔吉斯": 0.06,
+        "回回商旅": 0.1
+      },
+      "byFaith": {
+        "逊尼派伊斯兰": 0.94,
+        "其他": 0.06
+      },
+      "bySettlement": {
+        "绿洲城镇": 0.44,
+        "乡村农户": 0.42,
+        "游牧边部": 0.14
+      },
+      "leadingGentry": [
+        "汗廷贵族",
+        "伯克",
+        "和卓与宗教人士"
+      ],
+      "religiousSites": [
+        "清真寺",
+        "汗王陵寝"
+      ],
+      "strategicValue": "西域绿洲核心、丝路商税、玉石来源",
+      "tradeRoutes": [
+        "喀什噶尔商路",
+        "和阗玉路",
+        "叶尔羌-拉达克道"
+      ],
+      "threats": [
+        "瓦刺压力",
+        "哈萨克袭扰",
+        "伯克割据"
+      ],
+      "recentDisasters": [
+        "商路受阻"
+      ],
+      "specialCulture": "察合台-维吾尔绿洲文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "yarkand",
+        "central-asia"
+      ]
+    },
+    "吐鲁番": {
+      "id": "supp-turpan",
+      "name": "吐鲁番",
+      "factionId": "fac-turpan",
+      "factionName": "吐鲁番诸伯克",
+      "officialPosition": "地方伯克",
+      "governor": "察合台系地方伯克",
+      "regionType": "oasis_beglik",
+      "dejureOwner": "吐鲁番诸伯克",
+      "description": "天山东路绿洲，明末更接近地方伯克自治与叶尔羌影响交错区，而非明朝实控卫所。",
+      "terrain": "盆地绿洲",
+      "specialResources": "葡萄、棉布、驼队、绿洲粮",
+      "population": 135000,
+      "prosperity": 45,
+      "taxLevel": "中",
+      "byEthnicity": {
+        "维吾尔": 0.78,
+        "察合台蒙古": 0.08,
+        "商旅": 0.14
+      },
+      "byFaith": {
+        "逊尼派伊斯兰": 0.92,
+        "其他": 0.08
+      },
+      "bySettlement": {
+        "绿洲城镇": 0.5,
+        "乡村农户": 0.38,
+        "驿站商队": 0.12
+      },
+      "strategicValue": "天山东路节点、哈密以西缓冲",
+      "tradeRoutes": [
+        "吐鲁番-哈密道",
+        "天山北路",
+        "塔里木北缘商道"
+      ],
+      "threats": [
+        "瓦刺南压",
+        "汗廷内争",
+        "商路断绝"
+      ],
+      "recentDisasters": [
+        "水源争夺"
+      ],
+      "specialCulture": "绿洲伯克文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "yarkand",
+        "central-asia"
+      ]
+    },
+    "哈萨克": {
+      "id": "supp-kazakh-core",
+      "name": "哈萨克",
+      "factionId": "fac-kazakh",
+      "factionName": "哈萨克汗国",
+      "officialPosition": "汗国诸玉兹",
+      "governor": "也昔木汗",
+      "regionType": "nomadic_khanate",
+      "dejureOwner": "哈萨克汗国",
+      "description": "哈萨克草原诸玉兹共主区域，骑兵动员强，财政依赖牧产、商道和锡尔河城镇。",
+      "terrain": "草原荒漠",
+      "specialResources": "马群、羊群、皮毛、锡尔河城镇商税",
+      "population": 680000,
+      "prosperity": 39,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "哈萨克": 0.88,
+        "乌兹别克城镇": 0.06,
+        "吉尔吉斯": 0.04,
+        "其他": 0.02
+      },
+      "byFaith": {
+        "逊尼派伊斯兰": 0.82,
+        "腾格里旧俗": 0.14,
+        "其他": 0.04
+      },
+      "bySettlement": {
+        "游牧营地": 0.78,
+        "河城商镇": 0.12,
+        "半农村落": 0.1
+      },
+      "strategicValue": "中亚草原纵深、骑兵来源",
+      "tradeRoutes": [
+        "锡尔河商路",
+        "七河牧道"
+      ],
+      "threats": [
+        "瓦刺东压",
+        "绿洲争夺",
+        "诸玉兹分权"
+      ],
+      "recentDisasters": [
+        "草场争夺"
+      ],
+      "specialCulture": "哈萨克游牧汗国文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "kazakh",
+        "central-asia"
+      ]
+    },
+    "北哈萨克": {
+      "id": "supp-kazakh-north",
+      "name": "北哈萨克",
+      "factionId": "fac-kazakh",
+      "factionName": "哈萨克汗国",
+      "officialPosition": "北部玉兹牧地",
+      "governor": "哈萨克诸苏丹",
+      "regionType": "nomadic_khanate",
+      "dejureOwner": "哈萨克汗国",
+      "description": "北部草原牧场与诸苏丹部众，人口稀疏但战略纵深大。",
+      "terrain": "北方草原",
+      "specialResources": "马群、皮毛、盐湖",
+      "population": 420000,
+      "prosperity": 34,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "哈萨克": 0.9,
+        "西伯利亚诸部": 0.07,
+        "其他": 0.03
+      },
+      "byFaith": {
+        "逊尼派伊斯兰": 0.72,
+        "草原旧俗": 0.24,
+        "其他": 0.04
+      },
+      "bySettlement": {
+        "游牧营地": 0.9,
+        "商道营站": 0.1
+      },
+      "strategicValue": "北方牧场与退却纵深",
+      "tradeRoutes": [
+        "额尔齐斯草原道",
+        "锡尔河北道"
+      ],
+      "threats": [
+        "冬季白灾",
+        "瓦刺袭扰"
+      ],
+      "recentDisasters": [
+        "白灾风险"
+      ],
+      "specialCulture": "哈萨克游牧文化",
+      "dataConfidence": "low",
+      "sourceRefs": [
+        "kazakh",
+        "central-asia"
+      ]
+    },
+    "东哈萨克": {
+      "id": "supp-kazakh-east",
+      "name": "东哈萨克",
+      "factionId": "fac-kazakh",
+      "factionName": "哈萨克汗国",
+      "officialPosition": "东部玉兹牧地",
+      "governor": "哈萨克诸苏丹",
+      "regionType": "nomadic_khanate",
+      "dejureOwner": "哈萨克汗国",
+      "description": "面向天山北路与瓦刺诸部的东部牧地，冲突频率高于核心草原。",
+      "terrain": "山前草原",
+      "specialResources": "马群、山地牧场、皮毛",
+      "population": 360000,
+      "prosperity": 32,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "哈萨克": 0.82,
+        "卫拉特接触部": 0.08,
+        "吉尔吉斯": 0.06,
+        "其他": 0.04
+      },
+      "byFaith": {
+        "逊尼派伊斯兰": 0.78,
+        "草原旧俗": 0.18,
+        "其他": 0.04
+      },
+      "bySettlement": {
+        "游牧营地": 0.86,
+        "山前牧站": 0.14
+      },
+      "strategicValue": "哈萨克-瓦刺接触面",
+      "tradeRoutes": [
+        "天山北麓牧道",
+        "伊犁河谷道"
+      ],
+      "threats": [
+        "瓦刺骑兵",
+        "牧场争夺"
+      ],
+      "recentDisasters": [
+        "边牧冲突"
+      ],
+      "specialCulture": "哈萨克游牧文化",
+      "dataConfidence": "low",
+      "sourceRefs": [
+        "kazakh",
+        "central-asia"
+      ]
+    },
+    "瓦刺": {
+      "id": "supp-oirat",
+      "name": "瓦刺",
+      "factionId": "fac-oirat",
+      "factionName": "瓦刺诸部",
+      "officialPosition": "卫拉特诸台吉",
+      "governor": "和硕特、准噶尔、杜尔伯特诸台吉",
+      "regionType": "nomadic_confederation",
+      "dejureOwner": "瓦刺诸部",
+      "description": "天山北路与准噶尔盆地诸卫拉特部落，尚未形成后来的准噶尔汗国，但已是西北草原重要压力源。",
+      "terrain": "山地草原",
+      "specialResources": "马群、羊群、皮毛、金属矿",
+      "population": 520000,
+      "prosperity": 35,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "卫拉特蒙古": 0.86,
+        "突厥绿洲民": 0.08,
+        "其他": 0.06
+      },
+      "byFaith": {
+        "藏传佛教": 0.62,
+        "萨满旧俗": 0.26,
+        "伊斯兰": 0.08,
+        "其他": 0.04
+      },
+      "bySettlement": {
+        "游牧营地": 0.82,
+        "山地据点": 0.12,
+        "商队营站": 0.06
+      },
+      "strategicValue": "天山北路与准噶尔草原",
+      "tradeRoutes": [
+        "伊犁河谷",
+        "额尔齐斯草原道",
+        "天山北路"
+      ],
+      "threats": [
+        "诸台吉互争",
+        "哈萨克冲突",
+        "绿洲争夺"
+      ],
+      "recentDisasters": [
+        "部盟分裂"
+      ],
+      "specialCulture": "卫拉特蒙古文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "central-asia"
+      ]
+    },
+    "苦兀（野人女真）": {
+      "id": "supp-kuwu-jurchen",
+      "name": "苦兀（野人女真）",
+      "factionId": "fac-wild-jurchen",
+      "factionName": "野人女真诸部",
+      "officialPosition": "岛屿部落",
+      "governor": "苦兀诸酋",
+      "regionType": "tribal_frontier",
+      "dejureOwner": "野人女真诸部",
+      "description": "苦兀岛及黑龙江入海口附近渔猎部落，远离明朝实控，受后金招抚与东北贡貂网络影响。",
+      "terrain": "寒地岛屿林海",
+      "specialResources": "鱼猎、海兽皮、貂皮、东珠",
+      "population": 45000,
+      "prosperity": 26,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "尼夫赫/苦兀诸部": 0.58,
+        "通古斯诸部": 0.34,
+        "其他": 0.08
+      },
+      "byFaith": {
+        "萨满": 0.88,
+        "其他": 0.12
+      },
+      "bySettlement": {
+        "渔猎寨落": 0.86,
+        "季节营地": 0.14
+      },
+      "strategicValue": "黑龙江入海口、北海皮毛来源",
+      "tradeRoutes": [
+        "黑龙江水道",
+        "乌苏里-松花江贸易线"
+      ],
+      "threats": [
+        "严寒",
+        "部落冲突",
+        "后金招抚"
+      ],
+      "recentDisasters": [
+        "严寒歉获"
+      ],
+      "specialCulture": "东北渔猎文化",
+      "dataConfidence": "low",
+      "sourceRefs": [
+        "jurchen"
+      ]
+    },
+    "北山女真": {
+      "id": "supp-north-jurchen",
+      "name": "北山女真",
+      "factionId": "fac-wild-jurchen",
+      "factionName": "野人女真诸部",
+      "officialPosition": "山林部落",
+      "governor": "北山诸酋",
+      "regionType": "tribal_frontier",
+      "dejureOwner": "野人女真诸部",
+      "description": "黑龙江、乌苏里江以北山林水网中的野人女真与通古斯诸部，经济以渔猎、人参、貂皮为主。",
+      "terrain": "寒地林海",
+      "specialResources": "貂皮、人参、东珠、鱼猎",
+      "population": 105000,
+      "prosperity": 30,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "野人女真": 0.72,
+        "通古斯诸部": 0.22,
+        "其他": 0.06
+      },
+      "byFaith": {
+        "萨满": 0.86,
+        "其他": 0.14
+      },
+      "bySettlement": {
+        "山林寨落": 0.68,
+        "季节营地": 0.32
+      },
+      "strategicValue": "东北山林、八旗招抚潜力、人参貂皮",
+      "tradeRoutes": [
+        "松花江水道",
+        "黑龙江水道"
+      ],
+      "threats": [
+        "后金编户",
+        "部落互斗",
+        "贸易依附"
+      ],
+      "recentDisasters": [
+        "山林严寒"
+      ],
+      "specialCulture": "野人女真山林文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "jurchen"
+      ]
+    },
+    "北海道": {
+      "id": "supp-ezo",
+      "name": "北海道",
+      "factionId": "fac-matsumae-ainu",
+      "factionName": "虾夷地与松前氏",
+      "officialPosition": "松前藩商权 / 阿伊努诸部",
+      "governor": "松前氏与阿伊努诸酋",
+      "regionType": "frontier_trade_zone",
+      "dejureOwner": "虾夷地诸部",
+      "description": "1627 年北海道更适合称虾夷地。松前氏控制南端商权，大部分沿海与内陆仍由阿伊努社会维系渔猎和贸易。",
+      "terrain": "寒地山林海岸",
+      "specialResources": "鲱鱼、昆布、海獭皮、鹰羽",
+      "population": 65000,
+      "prosperity": 29,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "阿伊努": 0.72,
+        "和人": 0.18,
+        "北方诸部": 0.1
+      },
+      "byFaith": {
+        "阿伊努信仰": 0.68,
+        "神道佛教": 0.24,
+        "其他": 0.08
+      },
+      "bySettlement": {
+        "阿伊努聚落": 0.62,
+        "松前商港": 0.18,
+        "渔猎季节营地": 0.2
+      },
+      "strategicValue": "北海贸易边疆、渔猎资源、松前商权",
+      "tradeRoutes": [
+        "松前-本州航路",
+        "北海渔猎贸易"
+      ],
+      "threats": [
+        "贸易压迫",
+        "寒地灾荒",
+        "幕府边控"
+      ],
+      "recentDisasters": [
+        "严寒歉获"
+      ],
+      "specialCulture": "阿伊努-松前边地文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "matsumae-ainu",
+        "tokugawa"
+      ]
+    },
+    "本州": {
+      "id": "supp-honshu",
+      "name": "本州",
+      "factionId": "fac-tokugawa-japan",
+      "factionName": "日本幕府",
+      "officialPosition": "江户幕府与诸藩",
+      "governor": "德川家光",
+      "regionType": "foreign_shogunate",
+      "dejureOwner": "德川幕府",
+      "description": "江户幕府核心岛，京都朝廷、江户幕府与诸藩并存。1627 年家光为将军，秀忠仍以大御所保持影响。",
+      "terrain": "山地平原海岸",
+      "specialResources": "稻米、银铜、手工业、港口",
+      "population": 16500000,
+      "prosperity": 68,
+      "taxLevel": "中",
+      "byEthnicity": {
+        "和人": 0.98,
+        "其他": 0.02
+      },
+      "byFaith": {
+        "神道佛教": 0.82,
+        "基督教残余": 0.03,
+        "其他": 0.15
+      },
+      "bySettlement": {
+        "城下町": 0.28,
+        "村落": 0.58,
+        "港町商人": 0.14
+      },
+      "strategicValue": "江户幕府核心、银铜与稻米财政",
+      "tradeRoutes": [
+        "濑户内海",
+        "东海道",
+        "长崎贸易线"
+      ],
+      "threats": [
+        "外贸控制",
+        "基督教禁制",
+        "诸藩约束"
+      ],
+      "recentDisasters": [
+        "????????",
+        "????????????"
+      ],
+      "specialCulture": "江户幕藩文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "tokugawa"
+      ]
+    },
+    "九州": {
+      "id": "supp-kyushu",
+      "name": "九州",
+      "factionId": "fac-tokugawa-japan",
+      "factionName": "日本幕府",
+      "officialPosition": "九州诸藩",
+      "governor": "岛津、细川、有马等诸藩",
+      "regionType": "foreign_shogunate",
+      "dejureOwner": "德川幕府下诸藩",
+      "description": "九州为日本对外贸易和基督教问题最敏感区域，长崎、平户等港口连接葡萄牙、荷兰和明清海贸。",
+      "terrain": "山地海岸",
+      "specialResources": "稻米、港口、银铜、硫磺",
+      "population": 3100000,
+      "prosperity": 58,
+      "taxLevel": "中",
+      "byEthnicity": {
+        "和人": 0.98,
+        "琉球与外商": 0.02
+      },
+      "byFaith": {
+        "神道佛教": 0.76,
+        "基督教残余": 0.09,
+        "其他": 0.15
+      },
+      "bySettlement": {
+        "城下町": 0.24,
+        "村落": 0.58,
+        "港町": 0.18
+      },
+      "strategicValue": "南蛮贸易口、对华对欧联系节点",
+      "tradeRoutes": [
+        "长崎贸易",
+        "平户商路",
+        "萨摩-琉球线"
+      ],
+      "threats": [
+        "基督教禁制",
+        "海外贸易冲突",
+        "诸藩离心"
+      ],
+      "recentDisasters": [
+        "???????????",
+        "???????????"
+      ],
+      "specialCulture": "西国诸藩文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "tokugawa",
+        "ming-britannica"
+      ]
+    },
+    "四国": {
+      "id": "supp-shikoku",
+      "name": "四国",
+      "factionId": "fac-tokugawa-japan",
+      "factionName": "日本幕府",
+      "officialPosition": "四国诸藩",
+      "governor": "蜂须贺、山内等诸藩",
+      "regionType": "foreign_shogunate",
+      "dejureOwner": "德川幕府下诸藩",
+      "description": "四国为濑户内海西部岛屿，诸藩财政依稻米、海运与山地资源。",
+      "terrain": "山地海岸",
+      "specialResources": "稻米、木材、海运、盐",
+      "population": 1050000,
+      "prosperity": 50,
+      "taxLevel": "中",
+      "byEthnicity": {
+        "和人": 0.99,
+        "其他": 0.01
+      },
+      "byFaith": {
+        "神道佛教": 0.86,
+        "其他": 0.14
+      },
+      "bySettlement": {
+        "村落": 0.62,
+        "城下町": 0.24,
+        "港町": 0.14
+      },
+      "strategicValue": "濑户内海交通与西国诸藩屏障",
+      "tradeRoutes": [
+        "濑户内海航路"
+      ],
+      "threats": [
+        "诸藩财政",
+        "海运控制"
+      ],
+      "recentDisasters": [
+        "??????",
+        "??????????"
+      ],
+      "specialCulture": "西国诸藩文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "tokugawa"
+      ]
+    },
+    "交趾": {
+      "id": "supp-dai-viet",
+      "name": "交趾",
+      "factionId": "fac-dai-viet",
+      "factionName": "大越黎郑阮格局",
+      "officialPosition": "后黎皇统 / 郑主阮主分权",
+      "governor": "黎神宗、郑梉、阮福源",
+      "regionType": "foreign_kingdom_split",
+      "dejureOwner": "大越",
+      "description": "1627 年郑阮战争爆发，北方郑主挟后黎皇帝，南方阮主据顺化以南。交趾地块应承接这种南北分裂格局。",
+      "terrain": "红河与中南半岛山河",
+      "specialResources": "稻米、漆木、象牙、海贸港口",
+      "population": 5200000,
+      "prosperity": 50,
+      "taxLevel": "中",
+      "byEthnicity": {
+        "越": 0.86,
+        "占城遗民": 0.04,
+        "山地诸族": 0.08,
+        "华商": 0.02
+      },
+      "byFaith": {
+        "儒教": 0.42,
+        "佛教": 0.34,
+        "民间信仰": 0.22,
+        "天主教初传": 0.02
+      },
+      "bySettlement": {
+        "稻作村落": 0.66,
+        "城镇官府": 0.18,
+        "港口商贸": 0.08,
+        "山地部族": 0.08
+      },
+      "strategicValue": "南方朝贡国、郑阮战争、南海贸易",
+      "tradeRoutes": [
+        "升龙商路",
+        "顺化海贸",
+        "南海航路"
+      ],
+      "threats": [
+        "郑阮战争",
+        "南北分治",
+        "山地边患"
+      ],
+      "recentDisasters": [
+        "内战初起"
+      ],
+      "specialCulture": "大越儒佛混合文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "vietnam"
+      ]
+    },
+    "漠南诸部": {
+      "id": "supp-southern-mongols",
+      "name": "漠南诸部",
+      "factionId": "fac-chahar",
+      "factionName": "察哈尔",
+      "officialPosition": "漠南诸部盟",
+      "governor": "林丹汗影响下诸部",
+      "regionType": "nomadic_confederation",
+      "dejureOwner": "蒙古漠南诸部",
+      "description": "漠南诸部处于察哈尔、科尔沁、土默特与后金之间，1620 年代部盟分化快速，林丹汗试图恢复大汗权威。",
+      "terrain": "漠南草原",
+      "specialResources": "马群、边市、羊群、皮毛",
+      "population": 330000,
+      "prosperity": 37,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "蒙古": 0.9,
+        "汉商屯民": 0.06,
+        "其他": 0.04
+      },
+      "byFaith": {
+        "藏传佛教": 0.66,
+        "萨满旧俗": 0.22,
+        "其他": 0.12
+      },
+      "bySettlement": {
+        "牧帐": 0.82,
+        "边市聚落": 0.1,
+        "山前营地": 0.08
+      },
+      "strategicValue": "后金西进、察哈尔南下与明边互市交汇",
+      "tradeRoutes": [
+        "宣大互市",
+        "漠南牧道"
+      ],
+      "threats": [
+        "部盟倒向后金",
+        "林丹汗征发",
+        "边市断绝"
+      ],
+      "recentDisasters": [
+        "部盟分化"
+      ],
+      "specialCulture": "漠南蒙古文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "chahar-khorchin"
+      ]
+    },
+    "喀尔喀蒙古": {
+      "id": "supp-khalkha",
+      "name": "喀尔喀蒙古",
+      "factionId": "fac-khalkha",
+      "factionName": "喀尔喀蒙古",
+      "officialPosition": "喀尔喀三汗诸部",
+      "governor": "三汗诸部",
+      "regionType": "nomadic_confederation",
+      "dejureOwner": "喀尔喀诸部",
+      "description": "漠北喀尔喀诸部远离明朝直接影响，处于察哈尔、瓦刺与后金扩张之间的北亚缓冲地带。",
+      "terrain": "漠北草原",
+      "specialResources": "马群、羊群、皮毛、草原商路",
+      "population": 410000,
+      "prosperity": 34,
+      "taxLevel": "轻",
+      "byEthnicity": {
+        "喀尔喀蒙古": 0.92,
+        "其他蒙古部": 0.06,
+        "其他": 0.02
+      },
+      "byFaith": {
+        "藏传佛教": 0.58,
+        "萨满旧俗": 0.3,
+        "其他": 0.12
+      },
+      "bySettlement": {
+        "游牧营地": 0.9,
+        "寺院与商队营站": 0.1
+      },
+      "strategicValue": "漠北纵深、草原联盟平衡",
+      "tradeRoutes": [
+        "漠北牧道",
+        "库伦方向商路"
+      ],
+      "threats": [
+        "瓦刺压力",
+        "察哈尔号令",
+        "后金外交渗透"
+      ],
+      "recentDisasters": [
+        "牧场争夺"
+      ],
+      "specialCulture": "喀尔喀蒙古文化",
+      "dataConfidence": "medium",
+      "sourceRefs": [
+        "central-asia",
+        "chahar-khorchin"
+      ]
+    }
+  }
+}

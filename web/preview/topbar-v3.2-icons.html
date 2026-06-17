@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>v3.2·SVG 真矢量·11 件套重绘</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg-void: #0a0a0f; --gold-bright: #e6c87a; --gold-mid: #b8924e; --gold-dim: #7a5c3a;
+  --vermillion: #c8342e; --vermillion-deep: #8a2018; --vermillion-glow: #e54a3c;
+  --jade: #7a9b6e; --jade-deep: #4a6b40; --celadon: #b8ccae;
+  --ink-faded: #a8a098; --ink-muted: #6a635a; --ink-white: #f4ede0;
+}
+html, body { background: var(--bg-void); color: var(--ink-white); font-family: 'Noto Serif SC', serif; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse 1400px 900px at 20% 15%, rgba(184,146,78,0.04), transparent 60%);
+}
+main { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 56px 36px 120px; }
+
+.hdr { margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid rgba(184,146,78,0.2); }
+.hdr-meta { display: flex; justify-content: space-between; font: 11px/1 'Cinzel', serif; letter-spacing: 0.42em; color: var(--gold-mid); margin-bottom: 22px; }
+.hdr-meta span:first-child { color: var(--vermillion-glow); }
+.hdr h1 {
+  font: 400 72px/1.05 'Ma Shan Zheng', cursive; letter-spacing: 0.16em;
+  background: linear-gradient(135deg, #f4ede0 0%, #e6c87a 40%, #b8924e 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 18px;
+}
+.hdr-desc { font-size: 14.5px; line-height: 1.9; color: var(--ink-faded); max-width: 960px; font-weight: 300; }
+.hdr-desc strong { color: var(--gold-bright); }
+.hdr-desc .fix { color: var(--vermillion-glow); font-weight: 500; }
+
+.section-head {
+  display: flex; align-items: baseline; gap: 22px; margin: 64px 0 28px;
+  padding-bottom: 14px; border-bottom: 1px dashed rgba(184,146,78,0.2);
+}
+.sh-num { font: 40px/1 'Ma Shan Zheng', cursive; color: var(--ink-muted); }
+.sh-title { font: 22px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; color: var(--ink-faded); }
+.sh-tag { margin-left: auto; font: 10px/1 'Cinzel', serif; letter-spacing: 0.34em; color: var(--ink-muted); }
+
+.section-intro { font-size: 13.5px; line-height: 1.88; color: var(--ink-faded); max-width: 960px; margin-bottom: 24px; }
+.section-intro strong { color: var(--gold-bright); }
+
+.subgrid { display: grid; gap: 14px; margin-bottom: 48px; }
+.subgrid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.subgrid.cols-7 { grid-template-columns: repeat(7, 1fr); }
+
+.pal-card {
+  padding: 26px 14px 18px;
+  background: linear-gradient(180deg, rgba(30, 22, 14, 0.78), rgba(12, 9, 7, 0.86));
+  border: 1px solid rgba(184, 146, 78, 0.3);
+  position: relative;
+}
+
+.pal-card::before {
+  content: '';
+  position: absolute;
+  left: 8px; right: 8px; top: 2px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 218, 130, 0.55), transparent);
+}
+
+.pal-num {
+  font: 9px/1 'Cinzel', serif;
+  letter-spacing: 0.4em;
+  color: var(--gold-mid);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.pal-glyph {
+  height: 96px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+}
+
+.pal-glyph svg { display: block; }
+
+.pal-name {
+  font: 500 17px/1 'Ma Shan Zheng', cursive;
+  color: var(--gold-bright);
+  text-align: center;
+  letter-spacing: 0.22em;
+  margin-bottom: 4px;
+}
+
+.pal-key {
+  font: 9px/1 'Cinzel', serif;
+  letter-spacing: 0.32em;
+  color: var(--ink-muted);
+  text-align: center;
+  margin-bottom: 11px;
+}
+
+.pal-meaning {
+  font: 10.5px/1.6 'Noto Serif SC', serif;
+  color: var(--ink-faded);
+  text-align: center;
+  letter-spacing: 0.02em;
+  padding-top: 9px;
+  border-top: 1px dashed rgba(184, 146, 78, 0.22);
+}
+
+.pal-meaning b { color: var(--gold-bright); font-weight: 500; }
+
+/* in-context preview */
+.context {
+  margin-top: 32px;
+  padding: 26px 28px;
+  background: linear-gradient(180deg, rgba(20, 16, 12, 0.78), rgba(8, 6, 4, 0.86));
+  border: 1px solid rgba(184, 146, 78, 0.28);
+}
+.context-title {
+  font: 500 16px/1 'Ma Shan Zheng', cursive;
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+  margin-bottom: 16px;
+}
+.context-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  background:
+    linear-gradient(180deg, rgba(41, 32, 23, 0.86), rgba(13, 10, 8, 0.86)),
+    linear-gradient(90deg, rgba(94, 54, 27, 0.22), rgba(0,0,0,.04) 12%, rgba(0,0,0,.04) 88%, rgba(94, 54, 27, 0.22));
+  border: 1px solid rgba(203, 166, 88, 0.36);
+  align-items: stretch;
+}
+
+.ctx-wide {
+  width: 220px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  padding: 7px 11px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(184, 146, 78, 0.22);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ctx-wide-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ctx-wide-glyph { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
+.ctx-wide-glyph svg { display: block; }
+.ctx-wide-name { font: 500 13px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.18em; }
+.ctx-wide-subs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; align-items: center; }
+.ctx-sub { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ctx-sub-ic { width: 24px; height: 22px; display: grid; place-items: center; flex-shrink: 0; }
+.ctx-sub-ic svg { display: block; }
+.ctx-sub-val { display: flex; flex-direction: column; line-height: 1.06; min-width: 0; }
+.ctx-sub-val b { font: 600 11px/1.1 'Noto Serif SC', serif; color: var(--gold-bright); white-space: nowrap; }
+.ctx-sub-val .sd { font: 500 7px/1 'Noto Serif SC', serif; }
+.ctx-sub-val .sd.up { color: var(--celadon); }
+.ctx-sub-val .sd.dn { color: var(--vermillion-glow); }
+.ctx-sub-val .sd.flat { color: rgba(214, 188, 116, 0.5); }
+
+.ctx-narrow {
+  width: 100px;
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+  background: rgba(0,0,0,0.14);
+  border: 1px solid rgba(184, 146, 78, 0.22);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ctx-narrow-glyph { width: 36px; height: 36px; display: grid; place-items: center; }
+.ctx-narrow-glyph svg { display: block; }
+.ctx-narrow-body { text-align: center; }
+.ctx-narrow-name { font: 9px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em; color: rgba(221, 202, 155, 0.76); margin-bottom: 2px; }
+.ctx-narrow-val { font: 600 12px/1 'Ma Shan Zheng', cursive; color: var(--gold-bright); letter-spacing: 0.06em; }
+
+.note-block {
+  margin-top: 32px;
+  padding: 22px 26px;
+  background: rgba(40, 16, 8, 0.5);
+  border-left: 3px solid var(--vermillion);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ink-faded);
+}
+.note-block strong { color: var(--gold-bright); }
+.note-block .fix { color: var(--vermillion-glow); }
+
+</style>
+</head>
+<body>
+<main>
+
+  <section class="hdr">
+    <div class="hdr-meta">
+      <span>v 3.2 · SVG · REDESIGN</span>
+      <span>11 GLYPHS · 真 矢 量</span>
+    </div>
+    <h1>SVG 真 矢 量 · 11 件 重 绘</h1>
+    <p class="hdr-desc">
+      <span class="fix">v3.2 升级</span>·v3.1 用 CSS div + clip-path 太抽象·改用 <strong>SVG 多 path 矢量</strong>·
+      每件器物 30-60 个 path·真历史 artifact 质感——
+      <strong>元宝弧形 / 铜钱方孔 / 升斗木纹 / 绢匹云纹 / 珊瑚分枝 / 库房斗拱 / 朱漆龙箱 / 黄册装订 / 官秤砝码 / 水田农人 / 玉玺龙钮 / 龙旗虎符</strong>。
+    </p>
+  </section>
+
+  <!-- ============ SUB-ITEMS (4) ============ -->
+  <div class="section-head">
+    <span class="sh-num">壹</span>
+    <span class="sh-title">子 项 图 像 · 4 件</span>
+    <span class="sh-tag">SVG · 银 钱 粮 布 珍</span>
+  </div>
+
+  <p class="section-intro">
+    <strong>银 / 钱</strong> 朝代切货币本位自动换 (秦汉用 钱 / 唐宋用 贯 / 明清用 银)·<strong>粮 / 布</strong> 通用·<strong>珍</strong> 内帑专属。
+  </p>
+
+  <div class="subgrid cols-4">
+    <div class="pal-card">
+      <div class="pal-num">子·壹</div>
+      <div class="pal-glyph">
+        <!-- 银 · 元宝 ingot -->
+        <svg width="78" height="50" viewBox="0 0 78 50">
+          <defs>
+            <linearGradient id="yin-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f8f4ec"/>
+              <stop offset="32%" stop-color="#e0d8c8"/>
+              <stop offset="68%" stop-color="#9c9488"/>
+              <stop offset="100%" stop-color="#4a4438"/>
+            </linearGradient>
+            <radialGradient id="yin-shine" cx="50%" cy="20%" r="60%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.7)"/>
+              <stop offset="60%" stop-color="rgba(255,255,255,0)"/>
+            </radialGradient>
+          </defs>
+          <!-- ingot main shape (boat/saddle silhouette) -->
+          <path d="M 4 36 Q 4 22 10 16 L 22 10 Q 30 8 39 7 Q 48 8 56 10 L 68 16 Q 74 22 74 36 L 70 44 L 8 44 Z"
+                fill="url(#yin-body)" stroke="#3a3428" stroke-width="0.8"/>
+          <!-- saddle depression on top -->
+          <path d="M 20 14 Q 28 11 39 10 Q 50 11 58 14 Q 50 18 39 19 Q 28 18 20 14 Z"
+                fill="rgba(60,52,42,0.42)"/>
+          <!-- top highlight -->
+          <path d="M 16 14 Q 26 9 39 8 Q 52 9 62 14 Q 52 12 39 11 Q 26 12 16 14 Z"
+                fill="url(#yin-shine)"/>
+          <!-- bottom rim -->
+          <path d="M 8 41 L 70 41" stroke="rgba(40,32,22,0.55)" stroke-width="0.6"/>
+          <path d="M 10 44 L 68 44" stroke="rgba(20,16,10,0.4)" stroke-width="0.5"/>
+          <!-- inscription panel -->
+          <rect x="26" y="28" width="26" height="9" rx="0.5" fill="rgba(40,32,22,0.18)" stroke="rgba(40,32,22,0.36)" stroke-width="0.4"/>
+          <text x="39" y="34.5" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a3428" font-weight="600">五十两</text>
+          <!-- side highlights -->
+          <path d="M 7 36 Q 7 24 12 18" stroke="rgba(255,255,255,0.32)" stroke-width="0.8" fill="none"/>
+          <path d="M 71 36 Q 71 24 66 18" stroke="rgba(0,0,0,0.28)" stroke-width="0.8" fill="none"/>
+        </svg>
+      </div>
+      <div class="pal-name">银 · 两</div>
+      <div class="pal-key">YIN · LIANG</div>
+      <div class="pal-meaning"><b>元宝</b>·明清白银·五十两·凸鞍 + 凹底</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">子·壹 alt</div>
+      <div class="pal-glyph">
+        <!-- 钱 · 铜钱串 -->
+        <svg width="64" height="78" viewBox="0 0 64 78">
+          <defs>
+            <radialGradient id="qian-coin" cx="35%" cy="32%" r="65%">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="38%" stop-color="#c8a050"/>
+              <stop offset="78%" stop-color="#7a5828"/>
+              <stop offset="100%" stop-color="#3a2810"/>
+            </radialGradient>
+            <linearGradient id="qian-string" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e54a3c"/>
+              <stop offset="50%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#5a1410"/>
+            </linearGradient>
+          </defs>
+          <!-- red string tail top -->
+          <path d="M 32 0 L 32 14 Q 30 16 32 18 Q 34 20 32 22" stroke="url(#qian-string)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <!-- coin 3 (back, smallest visible) -->
+          <ellipse cx="32" cy="56" rx="22" ry="6" fill="rgba(0,0,0,0.4)"/>
+          <ellipse cx="32" cy="54" rx="22" ry="20" fill="url(#qian-coin)" stroke="#5a3814" stroke-width="0.5"/>
+          <rect x="28" y="50" width="8" height="8" fill="#1c1208" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <!-- coin 2 -->
+          <ellipse cx="32" cy="46" rx="22" ry="6" fill="rgba(0,0,0,0.42)"/>
+          <ellipse cx="32" cy="44" rx="22" ry="20" fill="url(#qian-coin)" stroke="#5a3814" stroke-width="0.5"/>
+          <text x="32" y="34" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">永</text>
+          <text x="48" y="46" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">樂</text>
+          <text x="32" y="56" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">通</text>
+          <text x="16" y="46" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">寶</text>
+          <rect x="28" y="40" width="8" height="8" fill="#1c1208" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <!-- coin 1 top -->
+          <ellipse cx="32" cy="36" rx="22" ry="6" fill="rgba(0,0,0,0.42)"/>
+          <ellipse cx="32" cy="34" rx="22" ry="20" fill="url(#qian-coin)" stroke="#5a3814" stroke-width="0.6"/>
+          <text x="32" y="24" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">永</text>
+          <text x="48" y="36" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">樂</text>
+          <text x="32" y="46" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">通</text>
+          <text x="16" y="36" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="#3a2008" font-weight="700">寶</text>
+          <rect x="28" y="30" width="8" height="8" fill="#1c1208" stroke="rgba(80,50,22,0.6)" stroke-width="0.4"/>
+          <!-- string through hole on top -->
+          <path d="M 32 22 L 32 38" stroke="url(#qian-string)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <!-- knot below -->
+          <path d="M 28 60 Q 32 64 36 60 Q 38 66 32 70 Q 26 66 28 60 Z" fill="url(#qian-string)"/>
+          <!-- highlight crescent -->
+          <ellipse cx="32" cy="30" rx="18" ry="14" fill="none" stroke="rgba(255,232,170,0.32)" stroke-width="0.5" stroke-dasharray="2 32"/>
+        </svg>
+      </div>
+      <div class="pal-name">钱 · 贯</div>
+      <div class="pal-key">QIAN · GUAN</div>
+      <div class="pal-meaning"><b>串铜钱</b>·永乐通宝·朱绳穿方孔</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">子·贰</div>
+      <div class="pal-glyph">
+        <!-- 粮 · 升斗 -->
+        <svg width="68" height="74" viewBox="0 0 68 74">
+          <defs>
+            <linearGradient id="liang-wood" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c89c5a"/>
+              <stop offset="40%" stop-color="#8a6428"/>
+              <stop offset="80%" stop-color="#4a3210"/>
+              <stop offset="100%" stop-color="#2a1c08"/>
+            </linearGradient>
+            <radialGradient id="liang-grain" cx="50%" cy="40%" r="65%">
+              <stop offset="0%" stop-color="#f0d488"/>
+              <stop offset="50%" stop-color="#d8b870"/>
+              <stop offset="100%" stop-color="#7a5824"/>
+            </radialGradient>
+          </defs>
+          <!-- rice stalks (behind bucket) -->
+          <g transform="translate(34 22)">
+            <!-- center stalk -->
+            <path d="M 0 30 L 0 -16" stroke="#5a4218" stroke-width="0.9" fill="none"/>
+            <!-- center ear -->
+            <ellipse cx="0" cy="-14" rx="2" ry="5" fill="#d8b870"/>
+            <ellipse cx="-1" cy="-12" rx="1.6" ry="3" fill="#c8a050"/>
+            <ellipse cx="1" cy="-12" rx="1.6" ry="3" fill="#c8a050"/>
+            <ellipse cx="-2" cy="-9" rx="1.5" ry="2.5" fill="#b89040"/>
+            <ellipse cx="2" cy="-9" rx="1.5" ry="2.5" fill="#b89040"/>
+            <!-- left stalk -->
+            <path d="M -6 30 L -8 -10" stroke="#5a4218" stroke-width="0.7" fill="none" transform="rotate(-6)"/>
+            <ellipse cx="-9" cy="-9" rx="1.4" ry="3.6" fill="#c8a050"/>
+            <ellipse cx="-10" cy="-7" rx="1.2" ry="2.2" fill="#a88838"/>
+            <ellipse cx="-7" cy="-7" rx="1.2" ry="2.2" fill="#a88838"/>
+            <!-- right stalk -->
+            <path d="M 6 30 L 8 -10" stroke="#5a4218" stroke-width="0.7" fill="none" transform="rotate(6)"/>
+            <ellipse cx="9" cy="-9" rx="1.4" ry="3.6" fill="#c8a050"/>
+            <ellipse cx="10" cy="-7" rx="1.2" ry="2.2" fill="#a88838"/>
+            <ellipse cx="7" cy="-7" rx="1.2" ry="2.2" fill="#a88838"/>
+          </g>
+          <!-- grain mound on top -->
+          <path d="M 14 32 Q 26 22 34 22 Q 42 22 54 32 Q 50 36 34 38 Q 18 36 14 32 Z" fill="url(#liang-grain)" stroke="#6a4818" stroke-width="0.4"/>
+          <!-- grain texture dots -->
+          <g fill="rgba(106,72,24,0.5)">
+            <circle cx="20" cy="30" r="0.8"/>
+            <circle cx="26" cy="27" r="0.6"/>
+            <circle cx="32" cy="26" r="0.7"/>
+            <circle cx="38" cy="27" r="0.7"/>
+            <circle cx="44" cy="29" r="0.6"/>
+            <circle cx="22" cy="34" r="0.5"/>
+            <circle cx="28" cy="33" r="0.7"/>
+            <circle cx="36" cy="33" r="0.6"/>
+            <circle cx="44" cy="34" r="0.6"/>
+            <circle cx="48" cy="32" r="0.5"/>
+          </g>
+          <!-- bucket -->
+          <path d="M 10 36 L 14 70 L 54 70 L 58 36 Z" fill="url(#liang-wood)" stroke="#2a1808" stroke-width="0.8"/>
+          <!-- bucket bands (iron hoops) -->
+          <path d="M 12 42 L 56 42" stroke="rgba(40,22,8,0.7)" stroke-width="1.2"/>
+          <path d="M 12 56 L 56 56" stroke="rgba(40,22,8,0.7)" stroke-width="1.2"/>
+          <!-- vertical wood grain -->
+          <path d="M 22 36 L 24 70" stroke="rgba(40,22,8,0.32)" stroke-width="0.5"/>
+          <path d="M 34 36 L 34 70" stroke="rgba(40,22,8,0.32)" stroke-width="0.5"/>
+          <path d="M 46 36 L 44 70" stroke="rgba(40,22,8,0.32)" stroke-width="0.5"/>
+          <!-- handle -->
+          <path d="M 58 50 Q 64 52 64 56 Q 64 60 58 60" fill="none" stroke="#3a2810" stroke-width="2.2"/>
+          <!-- top rim highlight -->
+          <path d="M 10 36 L 58 36" stroke="rgba(255,232,170,0.4)" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="pal-name">粮 · 石</div>
+      <div class="pal-key">LIANG · SHI</div>
+      <div class="pal-meaning"><b>升斗</b>·铁箍木斗 + 谷堆 + 三穗</div>
+    </div>
+
+    <div class="pal-card">
+      <div class="pal-num">子·叁</div>
+      <div class="pal-glyph">
+        <!-- 布 · 绢匹 -->
+        <svg width="78" height="56" viewBox="0 0 78 56">
+          <defs>
+            <linearGradient id="bu-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e8eef4"/>
+              <stop offset="40%" stop-color="#b8c8d8"/>
+              <stop offset="100%" stop-color="#5a7090"/>
+            </linearGradient>
+            <radialGradient id="bu-end" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="#a8c0d8"/>
+              <stop offset="60%" stop-color="#5a7090"/>
+              <stop offset="100%" stop-color="#2a3850"/>
+            </radialGradient>
+          </defs>
+          <!-- back roll -->
+          <ellipse cx="68" cy="28" rx="8" ry="22" fill="url(#bu-end)" stroke="#3a4860" stroke-width="0.5"/>
+          <!-- main bolt body -->
+          <rect x="10" y="6" width="58" height="44" rx="2" fill="url(#bu-body)" stroke="#3a4860" stroke-width="0.6"/>
+          <!-- brocade cloud pattern -->
+          <g fill="rgba(60,80,110,0.32)" stroke="rgba(60,80,110,0.5)" stroke-width="0.4">
+            <path d="M 16 16 Q 20 12 26 15 Q 30 12 32 18 Q 28 22 22 20 Q 18 22 16 16 Z"/>
+            <path d="M 40 18 Q 46 13 52 17 Q 56 14 58 20 Q 54 24 48 22 Q 42 24 40 18 Z"/>
+            <path d="M 20 36 Q 26 30 32 35 Q 38 30 42 36 Q 36 42 30 38 Q 24 42 20 36 Z"/>
+            <path d="M 48 38 Q 54 34 60 38 Q 60 42 56 44 Q 50 44 48 38 Z"/>
+          </g>
+          <!-- weft lines (texture) -->
+          <g stroke="rgba(60,80,110,0.18)" stroke-width="0.4">
+            <line x1="10" y1="10" x2="68" y2="10"/>
+            <line x1="10" y1="22" x2="68" y2="22"/>
+            <line x1="10" y1="32" x2="68" y2="32"/>
+            <line x1="10" y1="44" x2="68" y2="44"/>
+          </g>
+          <!-- front end disc -->
+          <ellipse cx="10" cy="28" rx="6" ry="22" fill="url(#bu-end)" stroke="#3a4860" stroke-width="0.7"/>
+          <!-- end inner ring -->
+          <ellipse cx="10" cy="28" rx="3" ry="16" fill="none" stroke="rgba(40,56,80,0.6)" stroke-width="0.5"/>
+          <!-- vermillion tying band -->
+          <rect x="32" y="4" width="14" height="48" fill="url(#bu-body)" stroke="rgba(60,80,110,0.5)" stroke-width="0.3"/>
+          <path d="M 32 4 L 46 4 L 46 52 L 32 52 Z" fill="rgba(200,52,46,0.92)"/>
+          <path d="M 33 6 L 45 6 L 45 50 L 33 50 Z" fill="none" stroke="rgba(245,218,130,0.55)" stroke-width="0.4"/>
+          <!-- knot/tassel -->
+          <path d="M 36 28 Q 39 24 42 28 Q 45 30 42 33 Q 39 36 36 33 Q 33 30 36 28 Z" fill="#8a2018" stroke="rgba(245,218,130,0.5)" stroke-width="0.3"/>
+          <!-- tassel strings -->
+          <path d="M 39 36 L 37 46" stroke="#8a2018" stroke-width="1"/>
+          <path d="M 39 36 L 41 46" stroke="#8a2018" stroke-width="1"/>
+          <path d="M 39 36 L 39 50" stroke="#8a2018" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="pal-name">布 · 匹</div>
+      <div class="pal-key">BU · PI</div>
+      <div class="pal-meaning"><b>绢匹</b>·云纹织 + 朱缠 + 两端轴</div>
+    </div>
+  </div>
+
+  <div class="subgrid cols-4" style="grid-template-columns: 1fr 3fr;">
+    <div class="pal-card">
+      <div class="pal-num">子·肆</div>
+      <div class="pal-glyph">
+        <!-- 珍 · 珊瑚珠宝 -->
+        <svg width="74" height="64" viewBox="0 0 74 64">
+          <defs>
+            <radialGradient id="zhen-pearl" cx="32%" cy="28%" r="60%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="38%" stop-color="#f4e8d8"/>
+              <stop offset="80%" stop-color="#b8a890"/>
+              <stop offset="100%" stop-color="#5a4838"/>
+            </radialGradient>
+            <linearGradient id="zhen-coral" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e54a3c"/>
+              <stop offset="50%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#5a1410"/>
+            </linearGradient>
+            <radialGradient id="zhen-jade" cx="32%" cy="32%" r="65%">
+              <stop offset="0%" stop-color="#d4e8c4"/>
+              <stop offset="50%" stop-color="#7a9b6e"/>
+              <stop offset="100%" stop-color="#2a4828"/>
+            </radialGradient>
+            <linearGradient id="zhen-tray" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6a3820"/>
+              <stop offset="50%" stop-color="#3a1c0a"/>
+              <stop offset="100%" stop-color="#1c0e04"/>
+            </linearGradient>
+          </defs>
+          <!-- lacquer tray -->
+          <ellipse cx="37" cy="56" rx="32" ry="6" fill="url(#zhen-tray)" stroke="#1a0c04" stroke-width="0.6"/>
+          <ellipse cx="37" cy="54" rx="32" ry="6" fill="url(#zhen-tray)"/>
+          <!-- tray gold rim -->
+          <ellipse cx="37" cy="54" rx="32" ry="6" fill="none" stroke="rgba(245,218,130,0.55)" stroke-width="0.5"/>
+          <ellipse cx="37" cy="54" rx="28" ry="4" fill="none" stroke="rgba(245,218,130,0.3)" stroke-width="0.4"/>
+          <!-- coral branch (center) -->
+          <g transform="translate(37 30)">
+            <path d="M 0 24 Q -2 18 -1 12 Q -4 10 -3 6 Q -6 4 -4 -2 Q -2 -6 0 -8" stroke="url(#zhen-coral)" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M 0 12 Q 4 10 6 14" stroke="url(#zhen-coral)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M -1 6 Q -4 3 -6 5" stroke="url(#zhen-coral)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M -4 -2 Q -7 -5 -10 -3" stroke="url(#zhen-coral)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <path d="M -2 -6 Q 1 -10 4 -8" stroke="url(#zhen-coral)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <!-- coral tips -->
+            <circle cx="6" cy="14" r="1.2" fill="#f4604a"/>
+            <circle cx="-6" cy="5" r="1.2" fill="#f4604a"/>
+            <circle cx="-10" cy="-3" r="1.2" fill="#f4604a"/>
+            <circle cx="4" cy="-8" r="1.2" fill="#f4604a"/>
+            <circle cx="0" cy="-8" r="1" fill="#f4604a"/>
+          </g>
+          <!-- pearl (left) -->
+          <circle cx="14" cy="44" r="8" fill="url(#zhen-pearl)" stroke="#3a2818" stroke-width="0.4"/>
+          <ellipse cx="11" cy="40" rx="3" ry="2" fill="rgba(255,255,255,0.85)"/>
+          <ellipse cx="12" cy="41" rx="1" ry="0.5" fill="#ffffff"/>
+          <!-- jade ring (right) - 玉环 with hole -->
+          <g transform="translate(60 44)">
+            <circle r="9" fill="url(#zhen-jade)" stroke="#2a4828" stroke-width="0.5"/>
+            <circle r="3.4" fill="#1c0e04" stroke="#2a4828" stroke-width="0.4"/>
+            <!-- jade vein detail -->
+            <path d="M -7 -2 Q -2 -4 4 -3 Q 6 0 4 4" stroke="rgba(180,210,160,0.6)" stroke-width="0.5" fill="none"/>
+            <!-- jade highlight -->
+            <ellipse cx="-3" cy="-4" rx="2.5" ry="1.5" fill="rgba(220,240,200,0.5)"/>
+          </g>
+        </svg>
+      </div>
+      <div class="pal-name">珍 宝</div>
+      <div class="pal-key">ZHEN</div>
+      <div class="pal-meaning"><b>朱漆托 + 珊瑚 + 珠 + 玉环</b>·内帑专属</div>
+    </div>
+
+    <div class="pal-card" style="padding: 22px 26px;">
+      <div style="font: 500 16px/1 'Ma Shan Zheng', cursive; letter-spacing: 0.2em; color: var(--gold-bright); margin-bottom: 14px;">v3 → v3.2 升 级 要 点</div>
+      <table style="width: 100%; font-size: 11.5px; line-height: 1.85; color: var(--ink-faded); border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid rgba(184,146,78,0.16);">
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font: 11px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">项</th>
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font: 11px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">v3.1 (CSS)</th>
+          <th style="text-align: left; padding: 6px 8px; color: var(--gold-mid); font-weight: 500; font: 11px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.18em;">v3.2 (SVG)</th>
+        </tr>
+        <tr><td style="padding: 6px 8px;">银元宝</td><td style="padding: 6px 8px; color: var(--vermillion-glow);">梯形 clip-path</td><td style="padding: 6px 8px;">弧形侧 + 凹鞍 + 印纹</td></tr>
+        <tr><td style="padding: 6px 8px;">铜钱</td><td style="padding: 6px 8px; color: var(--vermillion-glow);">圆 div 叠</td><td style="padding: 6px 8px;">3 椭圆透视 + 4 字方孔</td></tr>
+        <tr><td style="padding: 6px 8px;">升斗</td><td style="padding: 6px 8px; color: var(--vermillion-glow);">无穗</td><td style="padding: 6px 8px;">铁箍 + 谷堆 + 3 穗</td></tr>
+        <tr><td style="padding: 6px 8px;">绢匹</td><td style="padding: 6px 8px; color: var(--vermillion-glow);">交叉纹 div</td><td style="padding: 6px 8px;">云纹织 + 朱缠 + 流苏</td></tr>
+        <tr><td style="padding: 6px 8px;">珍宝</td><td style="padding: 6px 8px; color: var(--vermillion-glow);">3 圆点</td><td style="padding: 6px 8px;">珊瑚分枝 + 珍珠光晕 + 玉环纹</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ MAIN 7 ============ -->
+  <div class="section-head">
+    <span class="sh-num">贰</span>
+    <span class="sh-title">主 变 量 图 像 · 7 件</span>
+    <span class="sh-tag">SVG · 真 历 史 ARTIFACT</span>
+  </div>
+
+  <p class="section-intro">
+    每件 30-60 个 SVG path·真博物质感·渐变 + 描边 + 装饰纹·读图 = 读历史。
+  </p>
+
+  <div class="subgrid cols-4">
+
+    <!-- 1·帑廪 -->
+    <div class="pal-card">
+      <div class="pal-num">主·壹</div>
+      <div class="pal-glyph">
+        <svg width="84" height="80" viewBox="0 0 84 80">
+          <defs>
+            <linearGradient id="gk-roof" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3a2410"/>
+              <stop offset="60%" stop-color="#1a1208"/>
+              <stop offset="100%" stop-color="#0a0604"/>
+            </linearGradient>
+            <linearGradient id="gk-body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#a85828"/>
+              <stop offset="50%" stop-color="#6a3818"/>
+              <stop offset="100%" stop-color="#3a1c08"/>
+            </linearGradient>
+            <linearGradient id="gk-stone" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8a8478"/>
+              <stop offset="100%" stop-color="#3a3428"/>
+            </linearGradient>
+          </defs>
+          <!-- foundation stone -->
+          <rect x="6" y="64" width="72" height="10" fill="url(#gk-stone)" stroke="#1a1410" stroke-width="0.5"/>
+          <path d="M 6 64 L 78 64" stroke="rgba(255,232,170,0.34)" stroke-width="0.5"/>
+          <!-- body wall -->
+          <rect x="10" y="36" width="64" height="30" fill="url(#gk-body)" stroke="#1a0e04" stroke-width="0.6"/>
+          <!-- pillars (3 visible) -->
+          <rect x="14" y="36" width="3" height="28" fill="#2a1408"/>
+          <rect x="40.5" y="36" width="3" height="28" fill="#2a1408"/>
+          <rect x="67" y="36" width="3" height="28" fill="#2a1408"/>
+          <!-- door (center) -->
+          <rect x="34" y="44" width="16" height="22" fill="#1a0a04" stroke="rgba(245,218,130,0.45)" stroke-width="0.5"/>
+          <line x1="42" y1="44" x2="42" y2="66" stroke="rgba(245,218,130,0.3)" stroke-width="0.3"/>
+          <!-- door studs -->
+          <circle cx="38" cy="50" r="1" fill="var(--gold-bright)"/>
+          <circle cx="46" cy="50" r="1" fill="var(--gold-bright)"/>
+          <circle cx="38" cy="58" r="1" fill="var(--gold-bright)"/>
+          <circle cx="46" cy="58" r="1" fill="var(--gold-bright)"/>
+          <!-- under-eave dougong band -->
+          <rect x="6" y="32" width="72" height="5" fill="rgba(40,22,8,0.85)" stroke="#1a0e04" stroke-width="0.4"/>
+          <g fill="rgba(245,218,130,0.62)">
+            <rect x="10" y="33" width="2" height="3"/>
+            <rect x="18" y="33" width="2" height="3"/>
+            <rect x="26" y="33" width="2" height="3"/>
+            <rect x="34" y="33" width="2" height="3"/>
+            <rect x="42" y="33" width="2" height="3"/>
+            <rect x="50" y="33" width="2" height="3"/>
+            <rect x="58" y="33" width="2" height="3"/>
+            <rect x="66" y="33" width="2" height="3"/>
+            <rect x="74" y="33" width="2" height="3"/>
+          </g>
+          <!-- hipped roof -->
+          <path d="M 4 32 L 16 14 L 68 14 L 80 32 Z" fill="url(#gk-roof)" stroke="#0a0604" stroke-width="0.6"/>
+          <!-- roof curve eaves -->
+          <path d="M 4 32 Q 0 28 -2 30" stroke="rgba(40,22,8,0.92)" stroke-width="2" fill="none"/>
+          <path d="M 80 32 Q 84 28 86 30" stroke="rgba(40,22,8,0.92)" stroke-width="2" fill="none"/>
+          <!-- roof ridge -->
+          <rect x="14" y="12" width="56" height="3" fill="#2a1408" stroke="rgba(245,218,130,0.4)" stroke-width="0.3"/>
+          <!-- ridge terminals (鴟尾) -->
+          <path d="M 14 14 Q 10 8 14 4 Q 18 8 14 14 Z" fill="#2a1408" stroke="rgba(245,218,130,0.5)" stroke-width="0.4"/>
+          <path d="M 70 14 Q 66 8 70 4 Q 74 8 70 14 Z" fill="#2a1408" stroke="rgba(245,218,130,0.5)" stroke-width="0.4"/>
+          <!-- roof tiles (rows) -->
+          <g stroke="rgba(245,218,130,0.22)" stroke-width="0.3" fill="none">
+            <path d="M 6 30 L 78 30"/>
+            <path d="M 8 26 L 76 26"/>
+            <path d="M 10 22 L 74 22"/>
+            <path d="M 12 18 L 72 18"/>
+          </g>
+          <!-- plaque above door -->
+          <rect x="36" y="38" width="12" height="4" fill="#1a0a04" stroke="var(--gold-bright)" stroke-width="0.5"/>
+          <text x="42" y="41" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="3" fill="var(--gold-bright)" font-weight="700">廪</text>
+          <!-- ingot heap at base front -->
+          <ellipse cx="22" cy="74" rx="9" ry="2.4" fill="rgba(0,0,0,0.4)"/>
+          <path d="M 14 71 Q 14 68 18 67 Q 22 66 26 67 Q 30 68 30 71 L 29 74 L 15 74 Z" fill="url(#yin-body)" stroke="#3a3428" stroke-width="0.4"/>
+          <path d="M 18 69 Q 22 68 26 69" stroke="rgba(60,52,42,0.4)" stroke-width="0.3" fill="none"/>
+          <ellipse cx="62" cy="74" rx="9" ry="2.4" fill="rgba(0,0,0,0.4)"/>
+          <path d="M 54 71 Q 54 68 58 67 Q 62 66 66 67 Q 70 68 70 71 L 69 74 L 55 74 Z" fill="url(#yin-body)" stroke="#3a3428" stroke-width="0.4"/>
+        </svg>
+      </div>
+      <div class="pal-name">帑 廪</div>
+      <div class="pal-key">GUOKU</div>
+      <div class="pal-meaning"><b>歇山顶库房</b>·斗拱 + 三柱 + 朱门 + 双元宝堆</div>
+    </div>
+
+    <!-- 2·内帑 -->
+    <div class="pal-card">
+      <div class="pal-num">主·贰</div>
+      <div class="pal-glyph">
+        <svg width="82" height="72" viewBox="0 0 82 72">
+          <defs>
+            <linearGradient id="nt-lacquer" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d84028"/>
+              <stop offset="35%" stop-color="#b8341c"/>
+              <stop offset="80%" stop-color="#6a1610"/>
+              <stop offset="100%" stop-color="#2a0804"/>
+            </linearGradient>
+            <linearGradient id="nt-lid" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f44830"/>
+              <stop offset="50%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#7a1814"/>
+            </linearGradient>
+          </defs>
+          <!-- ground shadow -->
+          <ellipse cx="41" cy="66" rx="36" ry="3" fill="rgba(0,0,0,0.5)"/>
+          <!-- chest body -->
+          <rect x="6" y="28" width="70" height="36" rx="1" fill="url(#nt-lacquer)" stroke="#1a0604" stroke-width="0.8"/>
+          <!-- lid (slightly arched) -->
+          <path d="M 4 28 L 4 18 Q 4 14 8 14 L 74 14 Q 78 14 78 18 L 78 28 Z" fill="url(#nt-lid)" stroke="#1a0604" stroke-width="0.8"/>
+          <!-- lid highlight -->
+          <path d="M 6 20 Q 16 16 41 16 Q 66 16 76 20" stroke="rgba(255,220,170,0.55)" stroke-width="0.8" fill="none"/>
+          <!-- lid divider line -->
+          <line x1="6" y1="28" x2="76" y2="28" stroke="rgba(40,8,4,0.8)" stroke-width="0.6"/>
+          <!-- brass corner reinforcements -->
+          <g fill="var(--gold-bright)" stroke="#5a3814" stroke-width="0.4">
+            <!-- top-left -->
+            <path d="M 4 14 L 14 14 L 14 16 L 6 16 L 6 24 L 4 24 Z"/>
+            <!-- top-right -->
+            <path d="M 78 14 L 68 14 L 68 16 L 76 16 L 76 24 L 78 24 Z"/>
+            <!-- bottom-left -->
+            <path d="M 6 64 L 6 56 L 8 56 L 8 62 L 16 62 L 16 64 Z"/>
+            <!-- bottom-right -->
+            <path d="M 76 64 L 76 56 L 74 56 L 74 62 L 66 62 L 66 64 Z"/>
+          </g>
+          <!-- brass corner studs -->
+          <g fill="var(--gold-bright)">
+            <circle cx="8" cy="32" r="1.2"/>
+            <circle cx="74" cy="32" r="1.2"/>
+            <circle cx="8" cy="42" r="1.2"/>
+            <circle cx="74" cy="42" r="1.2"/>
+            <circle cx="8" cy="52" r="1.2"/>
+            <circle cx="74" cy="52" r="1.2"/>
+          </g>
+          <!-- gold dragon emblem (front center) -->
+          <g transform="translate(41 46)" stroke="var(--gold-bright)" stroke-width="0.8" fill="none">
+            <!-- dragon body coiled -->
+            <path d="M -10 4 Q -14 0 -12 -4 Q -8 -6 -4 -4 Q 0 0 2 -2 Q 6 -6 10 -2 Q 14 2 10 6 Q 6 8 4 4 Q 0 6 -2 4 Q -6 6 -10 4 Z"/>
+            <!-- dragon head -->
+            <circle cx="-12" cy="-3" r="2" fill="rgba(245,218,130,0.18)"/>
+            <!-- dragon eye -->
+            <circle cx="-12" cy="-3" r="0.6" fill="var(--vermillion-glow)"/>
+            <!-- pearl -->
+            <circle cx="6" cy="-3" r="1.5" fill="rgba(245,218,130,0.4)"/>
+          </g>
+          <!-- center lock plate -->
+          <rect x="36" y="22" width="10" height="14" rx="0.5" fill="var(--gold-bright)" stroke="#5a3814" stroke-width="0.5"/>
+          <rect x="38" y="24" width="6" height="6" fill="#2a1808" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+          <!-- lock keyhole -->
+          <circle cx="41" cy="27" r="1" fill="var(--gold-bright)"/>
+          <rect x="40.5" y="27" width="1" height="2" fill="var(--gold-bright)"/>
+          <!-- cinnabar tassel hanging -->
+          <path d="M 41 36 L 41 50 Q 41 54 39 54 L 43 54 Q 41 54 41 50" stroke="var(--vermillion-deep)" stroke-width="1.2" fill="none"/>
+          <circle cx="41" cy="44" r="2" fill="var(--vermillion-glow)" stroke="#5a1410" stroke-width="0.3"/>
+          <!-- tassel threads -->
+          <line x1="39" y1="54" x2="38" y2="60" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+          <line x1="41" y1="54" x2="41" y2="62" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+          <line x1="43" y1="54" x2="44" y2="60" stroke="var(--vermillion-deep)" stroke-width="0.6"/>
+          <!-- top handle/ring -->
+          <path d="M 35 14 Q 35 6 41 6 Q 47 6 47 14" fill="none" stroke="var(--gold-bright)" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="pal-name">内 帑</div>
+      <div class="pal-key">NEITANG</div>
+      <div class="pal-meaning"><b>朱漆龙纹箱</b>·铜角 + 金锁 + 龙纹 + 朱穗</div>
+    </div>
+
+    <!-- 3·户口 -->
+    <div class="pal-card">
+      <div class="pal-num">主·叁</div>
+      <div class="pal-glyph">
+        <svg width="74" height="74" viewBox="0 0 74 74">
+          <defs>
+            <linearGradient id="hk-page" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="50%" stop-color="#c8a050"/>
+              <stop offset="100%" stop-color="#8a6c28"/>
+            </linearGradient>
+            <linearGradient id="hk-cover" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7a3818"/>
+              <stop offset="60%" stop-color="#4a2410"/>
+              <stop offset="100%" stop-color="#1a0c04"/>
+            </linearGradient>
+          </defs>
+          <!-- shadow -->
+          <ellipse cx="37" cy="68" rx="32" ry="3" fill="rgba(0,0,0,0.5)"/>
+          <!-- back pages (faded) -->
+          <path d="M 8 64 Q 8 22 10 14 L 64 14 Q 66 22 66 64 Z" fill="url(#hk-page)" stroke="#5a3814" stroke-width="0.5"/>
+          <!-- page edges (showing thickness from side) -->
+          <g stroke="rgba(80,50,22,0.5)" stroke-width="0.3" fill="none">
+            <path d="M 8 60 L 66 60"/>
+            <path d="M 8 56 L 66 56"/>
+            <path d="M 8 52 L 66 52"/>
+            <path d="M 8 48 L 66 48"/>
+            <path d="M 8 44 L 66 44"/>
+            <path d="M 8 40 L 66 40"/>
+          </g>
+          <!-- yellow cover (front) -->
+          <path d="M 10 60 L 8 14 L 60 12 L 62 60 Z" fill="url(#hk-cover)" stroke="#1a0c04" stroke-width="0.7"/>
+          <!-- cover gold border -->
+          <path d="M 12 56 L 11 18 L 58 16 L 59 56 Z" fill="none" stroke="rgba(245,218,130,0.7)" stroke-width="0.6"/>
+          <!-- cover label (rectangular) -->
+          <rect x="22" y="22" width="26" height="32" fill="rgba(255,245,220,0.85)" stroke="rgba(80,50,22,0.7)" stroke-width="0.4"/>
+          <!-- vertical title 黄册 -->
+          <text x="35" y="32" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">黃</text>
+          <text x="35" y="44" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">冊</text>
+          <!-- small seal mark below title -->
+          <rect x="32" y="48" width="6" height="6" fill="var(--vermillion)" stroke="rgba(80,12,8,0.5)" stroke-width="0.3"/>
+          <text x="35" y="52.5" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="4" fill="rgba(245,218,130,0.85)">印</text>
+          <!-- 5-hole stitched binding (left side, red thread) -->
+          <g stroke="var(--vermillion-deep)" stroke-width="1.4" fill="none">
+            <line x1="14" y1="22" x2="18" y2="22"/>
+            <line x1="14" y1="30" x2="18" y2="30"/>
+            <line x1="14" y1="38" x2="18" y2="38"/>
+            <line x1="14" y1="46" x2="18" y2="46"/>
+            <line x1="14" y1="54" x2="18" y2="54"/>
+          </g>
+          <g fill="var(--vermillion-deep)">
+            <circle cx="16" cy="22" r="0.8"/>
+            <circle cx="16" cy="30" r="0.8"/>
+            <circle cx="16" cy="38" r="0.8"/>
+            <circle cx="16" cy="46" r="0.8"/>
+            <circle cx="16" cy="54" r="0.8"/>
+          </g>
+          <!-- back vertical binding -->
+          <line x1="20" y1="16" x2="20" y2="58" stroke="rgba(40,12,4,0.7)" stroke-width="0.5"/>
+          <!-- top side seal/stamp -->
+          <rect x="48" y="20" width="8" height="8" fill="var(--vermillion)" stroke="rgba(80,12,8,0.6)" stroke-width="0.4" transform="rotate(-8 52 24)"/>
+          <text x="52" y="26.5" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="4" fill="rgba(245,218,130,0.85)" transform="rotate(-8 52 24)">官</text>
+        </svg>
+      </div>
+      <div class="pal-name">户 口</div>
+      <div class="pal-key">HUKOU</div>
+      <div class="pal-meaning"><b>黄册</b>·朱漆封皮 + 五眼朱线装 + 官印 + 黄页</div>
+    </div>
+
+    <!-- 4·吏治 -->
+    <div class="pal-card">
+      <div class="pal-num">主·肆</div>
+      <div class="pal-glyph">
+        <svg width="84" height="80" viewBox="0 0 84 80">
+          <defs>
+            <linearGradient id="lz-bronze" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="40%" stop-color="#c8a050"/>
+              <stop offset="80%" stop-color="#7a5828"/>
+              <stop offset="100%" stop-color="#3a2810"/>
+            </linearGradient>
+            <radialGradient id="lz-pan" cx="50%" cy="20%" r="80%">
+              <stop offset="0%" stop-color="#f4d98a"/>
+              <stop offset="60%" stop-color="#8a5828"/>
+              <stop offset="100%" stop-color="#2a1808"/>
+            </radialGradient>
+          </defs>
+          <!-- base -->
+          <ellipse cx="42" cy="74" rx="22" ry="3" fill="rgba(0,0,0,0.6)"/>
+          <rect x="26" y="66" width="32" height="7" rx="1" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.6"/>
+          <!-- base decoration -->
+          <line x1="28" y1="68" x2="56" y2="68" stroke="rgba(40,22,8,0.65)" stroke-width="0.3"/>
+          <line x1="28" y1="71" x2="56" y2="71" stroke="rgba(40,22,8,0.5)" stroke-width="0.3"/>
+          <!-- vertical post -->
+          <rect x="40" y="20" width="4" height="46" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+          <!-- post decoration bands -->
+          <rect x="38" y="40" width="8" height="2.5" fill="#3a2410" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+          <rect x="38" y="56" width="8" height="2.5" fill="#3a2410" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+          <!-- top finial (lotus/cap) -->
+          <path d="M 36 20 Q 42 12 48 20" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.5"/>
+          <circle cx="42" cy="14" r="2.4" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+          <circle cx="42" cy="14" r="0.8" fill="var(--vermillion-deep)"/>
+          <!-- beam (TILTED -14° for 渐弊 state) -->
+          <g transform="rotate(-14 42 24)">
+            <!-- beam -->
+            <rect x="8" y="22.5" width="68" height="2.5" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            <!-- beam end caps -->
+            <rect x="6" y="21.5" width="3" height="4.5" fill="#3a2410" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+            <rect x="75" y="21.5" width="3" height="4.5" fill="#3a2410" stroke="rgba(245,218,130,0.6)" stroke-width="0.3"/>
+            <!-- pivot center -->
+            <circle cx="42" cy="24" r="2" fill="#3a2410" stroke="var(--gold-bright)" stroke-width="0.6"/>
+            <circle cx="42" cy="24" r="0.8" fill="var(--vermillion-glow)"/>
+            <!-- chains to left pan -->
+            <line x1="11" y1="26" x2="11" y2="36" stroke="#3a2410" stroke-width="0.4"/>
+            <line x1="13" y1="26" x2="13" y2="36" stroke="#3a2410" stroke-width="0.4"/>
+            <!-- chains to right pan -->
+            <line x1="71" y1="26" x2="71" y2="36" stroke="#3a2410" stroke-width="0.4"/>
+            <line x1="73" y1="26" x2="73" y2="36" stroke="#3a2410" stroke-width="0.4"/>
+            <!-- left pan (empty - higher) -->
+            <ellipse cx="12" cy="38" rx="9" ry="2" fill="rgba(0,0,0,0.5)"/>
+            <path d="M 3 36 Q 3 40 6 42 L 18 42 Q 21 40 21 36 Z" fill="url(#lz-pan)" stroke="#1a0e04" stroke-width="0.4"/>
+            <ellipse cx="12" cy="36" rx="9" ry="2" fill="rgba(245,218,130,0.4)"/>
+            <!-- right pan (loaded with weights - lower visual) -->
+            <ellipse cx="72" cy="38" rx="9" ry="2" fill="rgba(0,0,0,0.5)"/>
+            <path d="M 63 36 Q 63 40 66 42 L 78 42 Q 81 40 81 36 Z" fill="url(#lz-pan)" stroke="#1a0e04" stroke-width="0.4"/>
+            <ellipse cx="72" cy="36" rx="9" ry="2" fill="rgba(245,218,130,0.4)"/>
+            <!-- weights on right pan (stacked) -->
+            <ellipse cx="72" cy="32" rx="4" ry="1.5" fill="rgba(0,0,0,0.4)"/>
+            <rect x="68" y="29" width="8" height="3" rx="0.5" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            <ellipse cx="72" cy="27" rx="3.5" ry="1.3" fill="rgba(0,0,0,0.4)"/>
+            <rect x="68.5" y="24.5" width="7" height="2.8" rx="0.4" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+          </g>
+          <!-- 朱针 pointer indicator (centered, marks deviation) -->
+          <line x1="42" y1="36" x2="42" y2="44" stroke="var(--vermillion-glow)" stroke-width="0.8"/>
+        </svg>
+      </div>
+      <div class="pal-name">吏 治</div>
+      <div class="pal-key">LIZHI</div>
+      <div class="pal-meaning"><b>官秤</b>·铜柱莲首 + 双盘 + 砝码 + 朱针·秤倾 -14° 渐弊</div>
+    </div>
+
+  </div>
+
+  <div class="subgrid cols-4">
+
+    <!-- 5·民心 -->
+    <div class="pal-card">
+      <div class="pal-num">主·伍</div>
+      <div class="pal-glyph">
+        <svg width="84" height="74" viewBox="0 0 84 74">
+          <defs>
+            <linearGradient id="mx-sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7090b0"/>
+              <stop offset="100%" stop-color="#a8c0d8"/>
+            </linearGradient>
+            <linearGradient id="mx-field" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b8d4a0"/>
+              <stop offset="50%" stop-color="#6a945a"/>
+              <stop offset="100%" stop-color="#2a4828"/>
+            </linearGradient>
+            <linearGradient id="mx-water" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#b8d4d8"/>
+              <stop offset="100%" stop-color="#5a7480"/>
+            </linearGradient>
+          </defs>
+          <!-- sky strip -->
+          <rect x="0" y="0" width="84" height="14" fill="url(#mx-sky)"/>
+          <!-- cloud -->
+          <g fill="rgba(255,255,255,0.65)">
+            <ellipse cx="20" cy="6" rx="8" ry="2"/>
+            <ellipse cx="14" cy="8" rx="4" ry="1.5"/>
+            <ellipse cx="58" cy="4" rx="10" ry="2"/>
+            <ellipse cx="68" cy="6" rx="5" ry="1.8"/>
+          </g>
+          <!-- sun (small) -->
+          <circle cx="74" cy="8" r="3" fill="#f4d98a"/>
+          <circle cx="74" cy="8" r="2" fill="#f8e8a8"/>
+          <!-- distant mountains -->
+          <path d="M 0 18 L 14 12 L 28 16 L 46 10 L 62 14 L 84 12 L 84 18 Z" fill="rgba(80,90,110,0.6)"/>
+          <!-- field/paddy area -->
+          <path d="M 0 18 L 84 18 L 84 60 L 0 60 Z" fill="url(#mx-field)"/>
+          <!-- field divisions (raised paths) -->
+          <g stroke="#3a2810" stroke-width="0.6" fill="none">
+            <line x1="0" y1="28" x2="84" y2="32"/>
+            <line x1="0" y1="40" x2="84" y2="46"/>
+            <line x1="28" y1="18" x2="22" y2="60"/>
+            <line x1="56" y1="18" x2="62" y2="60"/>
+          </g>
+          <!-- rice plants (rows of small Y shapes) -->
+          <g stroke="#6a4818" stroke-width="0.5" fill="none">
+            <path d="M 8 30 L 8 24 M 6 26 L 8 24 L 10 26"/>
+            <path d="M 16 30 L 16 24 M 14 26 L 16 24 L 18 26"/>
+            <path d="M 24 32 L 24 26 M 22 28 L 24 26 L 26 28"/>
+            <path d="M 40 32 L 40 26 M 38 28 L 40 26 L 42 28"/>
+            <path d="M 48 30 L 48 24 M 46 26 L 48 24 L 50 26"/>
+            <path d="M 60 32 L 60 26 M 58 28 L 60 26 L 62 28"/>
+            <path d="M 70 30 L 70 24 M 68 26 L 70 24 L 72 26"/>
+            <path d="M 12 44 L 12 38 M 10 40 L 12 38 L 14 40"/>
+            <path d="M 30 46 L 30 40 M 28 42 L 30 40 L 32 42"/>
+            <path d="M 52 46 L 52 40 M 50 42 L 52 40 L 54 42"/>
+            <path d="M 64 44 L 64 38 M 62 40 L 64 38 L 66 40"/>
+          </g>
+          <!-- water strip below field -->
+          <rect x="0" y="60" width="84" height="14" fill="url(#mx-water)"/>
+          <!-- water ripples -->
+          <g stroke="rgba(255,255,255,0.45)" stroke-width="0.6" fill="none">
+            <path d="M 4 64 Q 12 62 20 64 T 36 64 T 52 64 T 68 64 T 84 64"/>
+            <path d="M 0 68 Q 8 66 16 68 T 32 68 T 48 68 T 64 68 T 80 68"/>
+            <path d="M 4 72 Q 12 70 20 72 T 36 72"/>
+          </g>
+          <!-- three peasants in water -->
+          <g>
+            <!-- peasant 1 (left, bent over working) -->
+            <g transform="translate(20 56)">
+              <!-- hat (bamboo) -->
+              <path d="M -4 -4 L 4 -4 L 5 -2 L -5 -2 Z" fill="#a07840" stroke="#3a2810" stroke-width="0.3"/>
+              <path d="M -2 -4 L 2 -4 L 0 -7 Z" fill="#7a5828" stroke="#3a2810" stroke-width="0.3"/>
+              <!-- body (bent) -->
+              <path d="M -3 -1 L -2 5 L 2 5 L 3 -1 Z" fill="#3a2818" stroke="#1a0e04" stroke-width="0.3"/>
+              <!-- arms reaching down -->
+              <line x1="-2" y1="2" x2="-4" y2="8" stroke="#3a2818" stroke-width="1.2"/>
+              <line x1="2" y1="2" x2="4" y2="8" stroke="#3a2818" stroke-width="1.2"/>
+            </g>
+            <!-- peasant 2 (center, standing) -->
+            <g transform="translate(42 52)">
+              <!-- hat -->
+              <path d="M -4 -4 L 4 -4 L 5 -2 L -5 -2 Z" fill="#a07840" stroke="#3a2810" stroke-width="0.3"/>
+              <path d="M -2 -4 L 2 -4 L 0 -8 Z" fill="#7a5828" stroke="#3a2810" stroke-width="0.3"/>
+              <!-- body -->
+              <path d="M -3 -1 L -3 8 L 3 8 L 3 -1 Z" fill="#4a3220" stroke="#1a0e04" stroke-width="0.3"/>
+              <!-- arms with tool -->
+              <line x1="-3" y1="2" x2="-6" y2="6" stroke="#4a3220" stroke-width="1.2"/>
+              <line x1="3" y1="2" x2="8" y2="0" stroke="#4a3220" stroke-width="1.2"/>
+              <!-- 锄头 hoe -->
+              <line x1="8" y1="0" x2="8" y2="-8" stroke="#3a2810" stroke-width="0.8"/>
+              <path d="M 6 -8 L 10 -8 L 11 -6 L 5 -6 Z" fill="#5a7080" stroke="#1a0e04" stroke-width="0.3"/>
+            </g>
+            <!-- peasant 3 (right, walking) -->
+            <g transform="translate(66 54)">
+              <path d="M -4 -4 L 4 -4 L 5 -2 L -5 -2 Z" fill="#a07840" stroke="#3a2810" stroke-width="0.3"/>
+              <path d="M -2 -4 L 2 -4 L 0 -7 Z" fill="#7a5828" stroke="#3a2810" stroke-width="0.3"/>
+              <path d="M -3 -1 L -3 6 L 3 6 L 3 -1 Z" fill="#4a3220" stroke="#1a0e04" stroke-width="0.3"/>
+              <line x1="-3" y1="2" x2="-2" y2="6" stroke="#4a3220" stroke-width="1.2"/>
+              <line x1="3" y1="2" x2="4" y2="6" stroke="#4a3220" stroke-width="1.2"/>
+              <!-- carrying pole (担) over shoulder -->
+              <line x1="-5" y1="0" x2="5" y2="-2" stroke="#3a2810" stroke-width="0.6"/>
+              <ellipse cx="-6" cy="2" rx="3" ry="1.5" fill="#a07840" stroke="#3a2810" stroke-width="0.3"/>
+              <ellipse cx="6" cy="0" rx="3" ry="1.5" fill="#a07840" stroke="#3a2810" stroke-width="0.3"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="pal-name">民 心</div>
+      <div class="pal-key">MINXIN</div>
+      <div class="pal-meaning"><b>水田农耕图</b>·云山 + 稻田 + 三农 + 锄担·士农并立</div>
+    </div>
+
+    <!-- 6·皇权 -->
+    <div class="pal-card">
+      <div class="pal-num">主·陆</div>
+      <div class="pal-glyph">
+        <svg width="68" height="84" viewBox="0 0 68 84">
+          <defs>
+            <linearGradient id="hq-jade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f8f4ec"/>
+              <stop offset="25%" stop-color="#dac890"/>
+              <stop offset="65%" stop-color="#a88c5a"/>
+              <stop offset="100%" stop-color="#3a2c14"/>
+            </linearGradient>
+            <radialGradient id="hq-cinnabar" cx="50%" cy="50%" r="65%">
+              <stop offset="0%" stop-color="#f4604a"/>
+              <stop offset="60%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#5a1410"/>
+            </radialGradient>
+          </defs>
+          <!-- cinnabar (印泥) below -->
+          <ellipse cx="34" cy="80" rx="26" ry="3.5" fill="url(#hq-cinnabar)" opacity="0.84"/>
+          <ellipse cx="34" cy="80" rx="22" ry="2.5" fill="rgba(245,218,130,0.34)"/>
+          <!-- seal base (square) -->
+          <rect x="12" y="46" width="44" height="30" rx="0.5" fill="url(#hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+          <!-- base inner border -->
+          <rect x="15" y="49" width="38" height="24" fill="none" stroke="rgba(60,40,16,0.55)" stroke-width="0.5"/>
+          <!-- base seal face character (受命于天 - simplified to single) -->
+          <text x="34" y="64" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="14" fill="#3a2c14" font-weight="800" letter-spacing="2">玺</text>
+          <!-- jade veins on base -->
+          <g stroke="rgba(255,245,220,0.42)" stroke-width="0.4" fill="none">
+            <path d="M 14 52 Q 22 50 28 53"/>
+            <path d="M 38 70 Q 46 68 54 71"/>
+          </g>
+          <!-- base highlight strip -->
+          <path d="M 12 48 L 56 48" stroke="rgba(255,245,220,0.6)" stroke-width="1"/>
+          <!-- base shadow strip -->
+          <path d="M 12 74 L 56 74" stroke="rgba(40,28,12,0.65)" stroke-width="0.6"/>
+          <!-- dragon knob (carved on top) -->
+          <g>
+            <!-- coiled dragon body -->
+            <path d="M 18 46 Q 14 38 18 30 Q 22 22 30 22 Q 38 22 46 28 Q 50 34 50 40 Q 48 44 50 46 L 50 46 L 18 46 Z"
+                  fill="url(#hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+            <!-- dragon head detail -->
+            <ellipse cx="42" cy="28" rx="5" ry="4" fill="url(#hq-jade)" stroke="#3a2c14" stroke-width="0.6"/>
+            <!-- dragon eye -->
+            <circle cx="44" cy="27" r="1.2" fill="#3a2c14"/>
+            <circle cx="44.5" cy="26.5" r="0.4" fill="#ffffff"/>
+            <!-- dragon eye (other) -->
+            <circle cx="40" cy="29" r="0.8" fill="#3a2c14"/>
+            <!-- dragon mouth/whiskers -->
+            <path d="M 46 30 Q 50 32 52 28" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <path d="M 47 32 Q 51 36 50 38" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <!-- dragon mane (top of head) -->
+            <path d="M 38 22 Q 38 18 36 16 Q 38 18 40 18 Q 40 14 42 12 Q 42 16 44 16" stroke="#3a2c14" stroke-width="0.6" fill="none"/>
+            <!-- dragon body scales/coils -->
+            <path d="M 22 36 Q 22 32 26 30 Q 30 28 32 30" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <path d="M 20 42 Q 24 40 28 42" stroke="#3a2c14" stroke-width="0.5" fill="none"/>
+            <!-- scale dots -->
+            <g fill="#3a2c14" opacity="0.5">
+              <circle cx="22" cy="38" r="0.5"/>
+              <circle cx="26" cy="36" r="0.5"/>
+              <circle cx="30" cy="34" r="0.5"/>
+              <circle cx="28" cy="40" r="0.5"/>
+              <circle cx="32" cy="38" r="0.5"/>
+              <circle cx="36" cy="36" r="0.5"/>
+              <circle cx="34" cy="42" r="0.5"/>
+              <circle cx="38" cy="40" r="0.5"/>
+            </g>
+            <!-- dragon claws/tail at left -->
+            <path d="M 18 40 Q 16 36 14 34 Q 14 38 16 42" stroke="#3a2c14" stroke-width="0.5" fill="rgba(160,140,90,0.4)"/>
+          </g>
+          <!-- top knob highlight -->
+          <path d="M 22 28 Q 26 24 32 24" stroke="rgba(255,245,220,0.55)" stroke-width="0.8" fill="none"/>
+        </svg>
+      </div>
+      <div class="pal-name">皇 权</div>
+      <div class="pal-key">HUANGQUAN</div>
+      <div class="pal-meaning"><b>龙钮玉玺</b>·盘龙浮雕 + 玉脉 + 朱泥印底</div>
+    </div>
+
+    <!-- 7·皇威 -->
+    <div class="pal-card">
+      <div class="pal-num">主·柒</div>
+      <div class="pal-glyph">
+        <svg width="72" height="88" viewBox="0 0 72 88">
+          <defs>
+            <linearGradient id="hw-banner" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e54a3c"/>
+              <stop offset="55%" stop-color="#c8342e"/>
+              <stop offset="100%" stop-color="#5a1410"/>
+            </linearGradient>
+            <linearGradient id="hw-pole" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#5a3814"/>
+              <stop offset="50%" stop-color="#c8a050"/>
+              <stop offset="100%" stop-color="#5a3814"/>
+            </linearGradient>
+            <linearGradient id="hw-bronze" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d8a060"/>
+              <stop offset="50%" stop-color="#8a5828"/>
+              <stop offset="100%" stop-color="#3a2208"/>
+            </linearGradient>
+          </defs>
+          <!-- spear finial -->
+          <path d="M 32 4 L 32 14 L 30 16 L 34 16 L 32 14 Z" fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.4"/>
+          <path d="M 28 10 L 32 2 L 36 10 L 32 14 Z" fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.5"/>
+          <!-- pole -->
+          <rect x="30.5" y="14" width="3" height="68" fill="url(#hw-pole)" stroke="#1a0c04" stroke-width="0.3"/>
+          <!-- pole rings -->
+          <rect x="29" y="26" width="6" height="2" fill="#3a2208" stroke="rgba(245,218,130,0.5)" stroke-width="0.3"/>
+          <rect x="29" y="50" width="6" height="2" fill="#3a2208" stroke="rgba(245,218,130,0.5)" stroke-width="0.3"/>
+          <!-- banner top tassel -->
+          <g stroke="var(--gold-bright)" stroke-width="0.6">
+            <line x1="32" y1="16" x2="29" y2="20"/>
+            <line x1="32" y1="16" x2="32" y2="20"/>
+            <line x1="32" y1="16" x2="35" y2="20"/>
+          </g>
+          <!-- banner (swallow-tail) -->
+          <path d="M 33 20 L 64 20 L 60 30 L 64 40 L 33 40 Z" fill="url(#hw-banner)" stroke="#1a0604" stroke-width="0.6"/>
+          <!-- banner gold border -->
+          <path d="M 33 20 L 64 20 L 60 30 L 64 40 L 33 40" fill="none" stroke="var(--gold-bright)" stroke-width="0.7"/>
+          <!-- banner inner border -->
+          <path d="M 35 22 L 60 22 L 56 30 L 60 38 L 35 38" fill="none" stroke="rgba(245,218,130,0.5)" stroke-width="0.4"/>
+          <!-- banner dragon emblem -->
+          <g stroke="var(--gold-bright)" stroke-width="0.6" fill="none">
+            <!-- coiled dragon (simplified) -->
+            <path d="M 40 26 Q 42 24 46 24 Q 50 24 52 28 Q 54 32 50 34 Q 46 34 44 32"/>
+            <path d="M 42 30 Q 44 32 48 32"/>
+            <circle cx="40" cy="26" r="1.4" fill="rgba(245,218,130,0.42)"/>
+            <circle cx="40" cy="26" r="0.5" fill="var(--vermillion-glow)"/>
+            <!-- dragon tail -->
+            <path d="M 52 28 Q 56 30 56 34 Q 55 36 53 35"/>
+            <!-- character 威 -->
+            <text x="48" y="36" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="var(--gold-bright)" font-weight="800">威</text>
+          </g>
+          <!-- banner bottom tassels -->
+          <g stroke="var(--gold-bright)" stroke-width="0.5">
+            <line x1="40" y1="40" x2="38" y2="46"/>
+            <line x1="48" y1="40" x2="48" y2="46"/>
+            <line x1="56" y1="40" x2="58" y2="46"/>
+            <line x1="62" y1="40" x2="62" y2="46"/>
+          </g>
+          <!-- tiger tally (hanging below) -->
+          <g transform="translate(28 56)">
+            <!-- tally body (half-tiger shape) -->
+            <path d="M 4 2 L 12 0 L 18 4 L 24 0 L 32 2 L 36 8 L 32 24 L 4 24 L 0 8 Z"
+                  fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.6"/>
+            <!-- tiger stripes (gold inlay) -->
+            <g stroke="var(--gold-bright)" stroke-width="1.2" stroke-linecap="round">
+              <line x1="6" y1="10" x2="6" y2="20"/>
+              <line x1="12" y1="8" x2="12" y2="22"/>
+              <line x1="18" y1="6" x2="18" y2="22"/>
+              <line x1="24" y1="8" x2="24" y2="22"/>
+              <line x1="30" y1="10" x2="30" y2="20"/>
+            </g>
+            <!-- tiger head (left side) - 虎首 stylized -->
+            <ellipse cx="9" cy="6" rx="4" ry="3" fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.4"/>
+            <!-- tiger ears -->
+            <path d="M 6 4 L 5 1 L 8 3 Z" fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.4"/>
+            <path d="M 12 4 L 13 1 L 10 3 Z" fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.4"/>
+            <!-- tiger eye (red glow indicates status) -->
+            <circle cx="8" cy="6" r="1.5" fill="var(--vermillion-glow)" stroke="rgba(60,8,4,0.7)" stroke-width="0.3"/>
+            <circle cx="8" cy="6" r="0.6" fill="#ffffff"/>
+            <!-- tiger nose -->
+            <path d="M 9 8 L 8 9 L 10 9 Z" fill="#1a0c04"/>
+            <!-- tally split edge (right side, broken half) -->
+            <path d="M 36 8 L 33 10 L 36 12 L 33 14 L 36 16 L 33 18 L 36 20" stroke="#1a0c04" stroke-width="0.4" fill="none"/>
+            <!-- inscribed character -->
+            <text x="22" y="22" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="5" fill="rgba(60,16,8,0.85)" font-weight="700">虎</text>
+            <!-- gold seal/hole -->
+            <circle cx="20" cy="4" r="1.2" fill="rgba(40,16,8,0.85)" stroke="var(--gold-bright)" stroke-width="0.4"/>
+          </g>
+          <!-- silk cord linking tally to pole -->
+          <path d="M 33 56 Q 34 50 32 48" stroke="var(--vermillion-deep)" stroke-width="0.8" fill="none"/>
+        </svg>
+      </div>
+      <div class="pal-name">皇 威</div>
+      <div class="pal-key">HUANGWEI</div>
+      <div class="pal-meaning"><b>龙旗 + 虎符</b>·朱旗金边龙 + 铜虎符·虎眼朱 = 暴君</div>
+    </div>
+
+    <!-- spacer cards or notes -->
+    <div class="pal-card" style="grid-column: span 2; display: flex; flex-direction: column; justify-content: center; padding: 24px 28px;">
+      <div style="font: 500 17px/1 'Ma Shan Zheng', cursive; letter-spacing: 0.2em; color: var(--gold-bright); margin-bottom: 14px;">SVG 真 矢 量 优 势</div>
+      <ul style="list-style: none; font-size: 12.5px; line-height: 1.95; color: var(--ink-faded);">
+        <li style="padding-left: 16px; position: relative;"><span style="position: absolute; left: 4px; color: var(--gold-mid);">·</span><b style="color: var(--gold-bright); font-weight: 500;">无损缩放</b>·小到 22px (rail narrow cell) 大到 96px (palette) 全清晰</li>
+        <li style="padding-left: 16px; position: relative;"><span style="position: absolute; left: 4px; color: var(--gold-mid);">·</span><b style="color: var(--gold-bright); font-weight: 500;">渐变深度</b>·每件用 linearGradient + radialGradient 多色阶·CSS 仅 1-2 阶</li>
+        <li style="padding-left: 16px; position: relative;"><span style="position: absolute; left: 4px; color: var(--gold-mid);">·</span><b style="color: var(--gold-bright); font-weight: 500;">描边精度</b>·0.3-0.8px stroke 区分主次轮廓·CSS 仅 1px</li>
+        <li style="padding-left: 16px; position: relative;"><span style="position: absolute; left: 4px; color: var(--gold-mid);">·</span><b style="color: var(--gold-bright); font-weight: 500;">装饰纹</b>·真龙纹/铜钱铭文/绢匹云纹/水波纹·非装饰边框</li>
+        <li style="padding-left: 16px; position: relative;"><span style="position: absolute; left: 4px; color: var(--gold-mid);">·</span><b style="color: var(--gold-bright); font-weight: 500;">状态动画</b>·SVG transform / fill / stroke 可独立动画 (秤臂旋转/虎眼变色)</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- ============ IN-CONTEXT preview ============ -->
+  <div class="section-head">
+    <span class="sh-num">叁</span>
+    <span class="sh-title">真 顶 栏 装 配 预 览</span>
+    <span class="sh-tag">IN-CONTEXT · TOPBAR ROW</span>
+  </div>
+
+  <div class="context">
+    <div class="context-title">顶 栏 中 央 资 源 轨 · v 3.2 SVG 实 测</div>
+    <div class="context-row">
+
+      <div class="ctx-wide">
+        <div class="ctx-wide-head">
+          <div class="ctx-wide-glyph">
+            <svg width="28" height="28" viewBox="0 0 84 80">
+              <use href="#gk-icon"/>
+              <rect x="6" y="64" width="72" height="10" fill="url(#gk-stone)" stroke="#1a1410" stroke-width="0.5"/>
+              <rect x="10" y="36" width="64" height="30" fill="url(#gk-body)" stroke="#1a0e04" stroke-width="0.6"/>
+              <rect x="14" y="36" width="3" height="28" fill="#2a1408"/>
+              <rect x="40.5" y="36" width="3" height="28" fill="#2a1408"/>
+              <rect x="67" y="36" width="3" height="28" fill="#2a1408"/>
+              <rect x="34" y="44" width="16" height="22" fill="#1a0a04" stroke="rgba(245,218,130,0.45)" stroke-width="0.5"/>
+              <rect x="6" y="32" width="72" height="5" fill="rgba(40,22,8,0.85)" stroke="#1a0e04" stroke-width="0.4"/>
+              <path d="M 4 32 L 16 14 L 68 14 L 80 32 Z" fill="url(#gk-roof)" stroke="#0a0604" stroke-width="0.6"/>
+              <rect x="14" y="12" width="56" height="3" fill="#2a1408" stroke="rgba(245,218,130,0.4)" stroke-width="0.3"/>
+            </svg>
+          </div>
+          <div class="ctx-wide-name">帑 廪</div>
+        </div>
+        <div class="ctx-wide-subs">
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="24" height="16" viewBox="0 0 78 50">
+                <path d="M 4 36 Q 4 22 10 16 L 22 10 Q 30 8 39 7 Q 48 8 56 10 L 68 16 Q 74 22 74 36 L 70 44 L 8 44 Z" fill="url(#yin-body)" stroke="#3a3428" stroke-width="0.8"/>
+                <path d="M 20 14 Q 28 11 39 10 Q 50 11 58 14 Q 50 18 39 19 Q 28 18 20 14 Z" fill="rgba(60,52,42,0.42)"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>4.6万</b><span class="sd up">+820</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="20" height="22" viewBox="0 0 68 74">
+                <path d="M 10 36 L 14 70 L 54 70 L 58 36 Z" fill="url(#liang-wood)" stroke="#2a1808" stroke-width="0.8"/>
+                <path d="M 14 32 Q 26 22 34 22 Q 42 22 54 32 Q 50 36 34 38 Q 18 36 14 32 Z" fill="url(#liang-grain)" stroke="#6a4818" stroke-width="0.4"/>
+                <path d="M 12 42 L 56 42" stroke="rgba(40,22,8,0.7)" stroke-width="1.2"/>
+                <path d="M 12 56 L 56 56" stroke="rgba(40,22,8,0.7)" stroke-width="1.2"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>1.2万</b><span class="sd flat">±0</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="24" height="18" viewBox="0 0 78 56">
+                <ellipse cx="68" cy="28" rx="8" ry="22" fill="url(#bu-end)" stroke="#3a4860" stroke-width="0.5"/>
+                <rect x="10" y="6" width="58" height="44" rx="2" fill="url(#bu-body)" stroke="#3a4860" stroke-width="0.6"/>
+                <ellipse cx="10" cy="28" rx="6" ry="22" fill="url(#bu-end)" stroke="#3a4860" stroke-width="0.7"/>
+                <rect x="32" y="4" width="14" height="48" fill="rgba(200,52,46,0.92)" stroke="rgba(245,218,130,0.55)" stroke-width="0.3"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>320</b><span class="sd dn">-12</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-wide">
+        <div class="ctx-wide-head">
+          <div class="ctx-wide-glyph">
+            <svg width="28" height="24" viewBox="0 0 82 72">
+              <rect x="6" y="28" width="70" height="36" rx="1" fill="url(#nt-lacquer)" stroke="#1a0604" stroke-width="0.8"/>
+              <path d="M 4 28 L 4 18 Q 4 14 8 14 L 74 14 Q 78 14 78 18 L 78 28 Z" fill="url(#nt-lid)" stroke="#1a0604" stroke-width="0.8"/>
+              <rect x="36" y="22" width="10" height="14" rx="0.5" fill="var(--gold-bright)" stroke="#5a3814" stroke-width="0.5"/>
+              <circle cx="41" cy="44" r="2" fill="var(--vermillion-glow)" stroke="#5a1410" stroke-width="0.3"/>
+            </svg>
+          </div>
+          <div class="ctx-wide-name">内 帑</div>
+        </div>
+        <div class="ctx-wide-subs">
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="24" height="16" viewBox="0 0 78 50">
+                <path d="M 4 36 Q 4 22 10 16 L 22 10 Q 30 8 39 7 Q 48 8 56 10 L 68 16 Q 74 22 74 36 L 70 44 L 8 44 Z" fill="url(#yin-body)" stroke="#3a3428" stroke-width="0.8"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>8.4万</b><span class="sd up">+120</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="20" height="22" viewBox="0 0 68 74">
+                <path d="M 10 36 L 14 70 L 54 70 L 58 36 Z" fill="url(#liang-wood)" stroke="#2a1808" stroke-width="0.8"/>
+                <path d="M 14 32 Q 26 22 34 22 Q 42 22 54 32 Q 50 36 34 38 Q 18 36 14 32 Z" fill="url(#liang-grain)" stroke="#6a4818" stroke-width="0.4"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>2.6千</b><span class="sd flat">±0</span></div>
+          </div>
+          <div class="ctx-sub">
+            <div class="ctx-sub-ic">
+              <svg width="24" height="20" viewBox="0 0 74 64">
+                <ellipse cx="37" cy="56" rx="32" ry="6" fill="url(#zhen-tray)" stroke="#1a0c04" stroke-width="0.6"/>
+                <g transform="translate(37 34)">
+                  <path d="M 0 20 Q -2 14 -1 8 Q -4 6 -3 2 Q -2 -4 0 -8" stroke="url(#zhen-coral)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                  <path d="M 0 8 Q 4 6 6 10" stroke="url(#zhen-coral)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                </g>
+                <circle cx="14" cy="44" r="6" fill="url(#zhen-pearl)"/>
+                <circle r="7" cx="60" cy="44" fill="url(#zhen-jade)"/>
+                <circle r="2.4" cx="60" cy="44" fill="#1c0e04"/>
+              </svg>
+            </div>
+            <div class="ctx-sub-val"><b>328</b><span class="sd up">+5</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="36" height="36" viewBox="0 0 74 74">
+            <path d="M 8 64 Q 8 22 10 14 L 64 14 Q 66 22 66 64 Z" fill="url(#hk-page)" stroke="#5a3814" stroke-width="0.5"/>
+            <path d="M 10 60 L 8 14 L 60 12 L 62 60 Z" fill="url(#hk-cover)" stroke="#1a0c04" stroke-width="0.7"/>
+            <rect x="22" y="22" width="26" height="32" fill="rgba(255,245,220,0.85)" stroke="rgba(80,50,22,0.7)" stroke-width="0.4"/>
+            <text x="35" y="32" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">黃</text>
+            <text x="35" y="44" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="9" fill="#3a1a08" font-weight="700">冊</text>
+            <g stroke="var(--vermillion-deep)" stroke-width="1.4" fill="none">
+              <line x1="14" y1="22" x2="18" y2="22"/>
+              <line x1="14" y1="30" x2="18" y2="30"/>
+              <line x1="14" y1="38" x2="18" y2="38"/>
+              <line x1="14" y1="46" x2="18" y2="46"/>
+              <line x1="14" y1="54" x2="18" y2="54"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">户 口</div>
+          <div class="ctx-narrow-val">1180 万</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="36" height="36" viewBox="0 0 84 80">
+            <rect x="26" y="66" width="32" height="7" rx="1" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.6"/>
+            <rect x="40" y="20" width="4" height="46" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            <circle cx="42" cy="14" r="2.4" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            <g transform="rotate(-14 42 24)">
+              <rect x="8" y="22.5" width="68" height="2.5" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+              <circle cx="42" cy="24" r="2" fill="#3a2410" stroke="var(--gold-bright)" stroke-width="0.6"/>
+              <line x1="12" y1="26" x2="12" y2="36" stroke="#3a2410" stroke-width="0.4"/>
+              <line x1="72" y1="26" x2="72" y2="36" stroke="#3a2410" stroke-width="0.4"/>
+              <path d="M 3 36 Q 3 40 6 42 L 18 42 Q 21 40 21 36 Z" fill="url(#lz-pan)" stroke="#1a0e04" stroke-width="0.4"/>
+              <path d="M 63 36 Q 63 40 66 42 L 78 42 Q 81 40 81 36 Z" fill="url(#lz-pan)" stroke="#1a0e04" stroke-width="0.4"/>
+              <rect x="68" y="29" width="8" height="3" rx="0.5" fill="url(#lz-bronze)" stroke="#1a0e04" stroke-width="0.4"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">吏 治</div>
+          <div class="ctx-narrow-val" style="color: #e88a78;">渐 弊</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="36" height="32" viewBox="0 0 84 74">
+            <rect x="0" y="0" width="84" height="14" fill="url(#mx-sky)"/>
+            <path d="M 0 18 L 14 12 L 28 16 L 46 10 L 62 14 L 84 12 L 84 18 Z" fill="rgba(80,90,110,0.6)"/>
+            <path d="M 0 18 L 84 18 L 84 60 L 0 60 Z" fill="url(#mx-field)"/>
+            <rect x="0" y="60" width="84" height="14" fill="url(#mx-water)"/>
+            <g stroke="#6a4818" stroke-width="0.5" fill="none">
+              <path d="M 24 32 L 24 26 M 22 28 L 24 26 L 26 28"/>
+              <path d="M 40 32 L 40 26 M 38 28 L 40 26 L 42 28"/>
+              <path d="M 60 32 L 60 26 M 58 28 L 60 26 L 62 28"/>
+            </g>
+            <g transform="translate(42 52)">
+              <path d="M -4 -4 L 4 -4 L 5 -2 L -5 -2 Z" fill="#a07840" stroke="#3a2810" stroke-width="0.3"/>
+              <path d="M -3 -1 L -3 8 L 3 8 L 3 -1 Z" fill="#4a3220" stroke="#1a0e04" stroke-width="0.3"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">民 心</div>
+          <div class="ctx-narrow-val">61 · 安</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="32" height="40" viewBox="0 0 68 84">
+            <ellipse cx="34" cy="80" rx="26" ry="3.5" fill="url(#hq-cinnabar)" opacity="0.84"/>
+            <rect x="12" y="46" width="44" height="30" rx="0.5" fill="url(#hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+            <text x="34" y="64" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="14" fill="#3a2c14" font-weight="800">玺</text>
+            <path d="M 18 46 Q 14 38 18 30 Q 22 22 30 22 Q 38 22 46 28 Q 50 34 50 40 Q 48 44 50 46 L 50 46 L 18 46 Z" fill="url(#hq-jade)" stroke="#3a2c14" stroke-width="0.8"/>
+            <ellipse cx="42" cy="28" rx="5" ry="4" fill="url(#hq-jade)" stroke="#3a2c14" stroke-width="0.6"/>
+            <circle cx="44" cy="27" r="1.2" fill="#3a2c14"/>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">皇 权</div>
+          <div class="ctx-narrow-val">52 · 衡</div>
+        </div>
+      </div>
+
+      <div class="ctx-narrow">
+        <div class="ctx-narrow-glyph">
+          <svg width="32" height="40" viewBox="0 0 72 88">
+            <path d="M 28 10 L 32 2 L 36 10 L 32 14 Z" fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.5"/>
+            <rect x="30.5" y="14" width="3" height="68" fill="url(#hw-pole)" stroke="#1a0c04" stroke-width="0.3"/>
+            <path d="M 33 20 L 64 20 L 60 30 L 64 40 L 33 40 Z" fill="url(#hw-banner)" stroke="#1a0604" stroke-width="0.6"/>
+            <text x="48" y="36" text-anchor="middle" font-family="'Ma Shan Zheng', serif" font-size="6" fill="var(--gold-bright)" font-weight="800">威</text>
+            <g transform="translate(28 56)">
+              <path d="M 4 2 L 12 0 L 18 4 L 24 0 L 32 2 L 36 8 L 32 24 L 4 24 L 0 8 Z" fill="url(#hw-bronze)" stroke="#1a0c04" stroke-width="0.6"/>
+              <g stroke="var(--gold-bright)" stroke-width="1" stroke-linecap="round">
+                <line x1="6" y1="10" x2="6" y2="20"/>
+                <line x1="12" y1="8" x2="12" y2="22"/>
+                <line x1="18" y1="6" x2="18" y2="22"/>
+                <line x1="24" y1="8" x2="24" y2="22"/>
+                <line x1="30" y1="10" x2="30" y2="20"/>
+              </g>
+              <circle cx="8" cy="6" r="1.5" fill="var(--vermillion-glow)"/>
+            </g>
+          </svg>
+        </div>
+        <div class="ctx-narrow-body">
+          <div class="ctx-narrow-name">皇 威</div>
+          <div class="ctx-narrow-val">68 · 威</div>
+        </div>
+      </div>
+
+    </div>
+    <p style="font-size: 12px; line-height: 1.7; color: var(--ink-muted); margin-top: 16px;">
+      ▲ 真顶栏装配·两 wide (帑廪 220 + 内帑 220) + 5 narrow (各 100·hukou/lizhi/minxin/huangquan/huangwei)。
+      所有 11 件 SVG 矢量·渐变 ID 复用·缩放无损。
+    </p>
+  </div>
+
+  <div class="note-block">
+    <strong style="font: 500 15px/1 'ZCOOL XiaoWei', serif; letter-spacing: 0.22em; display: block; margin-bottom: 12px;">v3.2 本块完结</strong>
+    <p><span class="fix">已交</span>·11 件全 SVG 矢量·真历史 artifact 质感·每件 30-60 path·渐变 + 描边 + 装饰纹·状态可视化。</p>
+    <p>哪几件需要继续打磨？常见再设计点·<br>
+      · <strong>帑廪</strong> 库房可加 红灯笼 / 守卫 / 仓门朱铜钉<br>
+      · <strong>内帑</strong> 龙纹可换更细的 五爪龙·或加 彩缎覆盖<br>
+      · <strong>户口</strong> 黄册可加 散落的人口竹简·或 户主姓名<br>
+      · <strong>吏治</strong> 官秤可加 砝码刻字 / 监察御史人形<br>
+      · <strong>民心</strong> 加远山雾·或 春耕节风·或 米仓<br>
+      · <strong>皇权</strong> 玺面真刻"受命于天既寿永昌"<br>
+      · <strong>皇威</strong> 虎符可拆 (左右半符) · 龙旗可加 火云</p>
+    <p style="margin-top: 12px; color: var(--ink-muted);">先校 v3.2 SVG 11 件再 piece 2 (4 paradigm 用新图像各质感重做)。</p>
+  </div>
+
+</main>
+</body>
+</html>

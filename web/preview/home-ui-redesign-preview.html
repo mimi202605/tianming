@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天命 · 主页面重构预览</title>
+<link rel="preload" as="image" href="../assets/ui/home/home-menu-imperial-study-v1-ambient.gif">
+<style>
+:root {
+  --ink: #100d0a;
+  --ink-2: #17120d;
+  --paper: #d8c18a;
+  --paper-2: #b99655;
+  --paper-3: #806234;
+  --gold: #d7b968;
+  --gold-2: #f0db9a;
+  --gold-dim: #8e6b2d;
+  --cinnabar: #a93b2f;
+  --cinnabar-2: #d9644f;
+  --jade: #83bda2;
+  --blue: #7790c8;
+  --text: #f3e7bd;
+  --muted: #9d8860;
+  --line: rgba(215, 185, 104, 0.36);
+  --shadow: 0 22px 70px rgba(0, 0, 0, 0.62);
+  --font-display: "FZKai-Z03", "STKaiti", "KaiTi", "SimKai", serif;
+  --font-ui: "LXGW WenKai", "STKaiti", "KaiTi", "Microsoft YaHei", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--text);
+  background: #070604;
+  font-family: var(--font-ui);
+  letter-spacing: 0;
+}
+
+button { font: inherit; }
+
+.bg {
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.48), rgba(0,0,0,0.28) 32%, rgba(0,0,0,0.72)),
+    radial-gradient(circle at 52% 46%, rgba(252,222,147,0.10), transparent 34%),
+    url("../assets/ui/home/home-menu-imperial-study-v1-ambient.gif") center / cover no-repeat;
+  transform: scale(1.012);
+}
+
+.bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 34%, rgba(0,0,0,0.46) 88%),
+    repeating-linear-gradient(90deg, rgba(247,216,139,0.035) 0 1px, transparent 1px 82px);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 30% 72%, rgba(255,245,214,0.09), transparent 18%),
+    linear-gradient(90deg, rgba(0,0,0,0.74), transparent 17%, transparent 83%, rgba(0,0,0,0.72));
+  pointer-events: none;
+}
+
+.stage {
+  position: relative;
+  z-index: 2;
+  min-height: calc(100vh - 50px);
+  display: grid;
+  grid-template-columns: minmax(74px, 1fr) minmax(760px, 1120px) minmax(74px, 1fr);
+  grid-template-rows: 1fr auto;
+  padding: 34px 22px 62px;
+}
+
+.couplet {
+  align-self: center;
+  justify-self: center;
+  writing-mode: vertical-rl;
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 2.5;
+  letter-spacing: 0.7em;
+  color: rgba(215,185,104,0.38);
+  text-shadow: 0 0 18px rgba(0,0,0,0.8);
+  user-select: none;
+}
+
+.couplet .source {
+  color: rgba(215,185,104,0.62);
+  font-size: 16px;
+  letter-spacing: 0.24em;
+  margin-block-start: 18px;
+}
+
+.main {
+  grid-column: 2;
+  align-self: start;
+  display: grid;
+  grid-template-columns: minmax(470px, 650px) minmax(260px, 330px);
+  gap: 24px;
+  align-items: center;
+  margin-top: clamp(10px, 2vh, 24px);
+}
+
+.brand {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  margin: 0 auto 14px;
+  width: min(760px, 100%);
+}
+
+.brand::before,
+.brand::after {
+  content: "";
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(215,185,104,0.55), transparent);
+}
+
+.brand-core {
+  position: relative;
+  text-align: center;
+  min-width: 360px;
+}
+
+.brand-kicker {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: rgba(246,226,172,0.86);
+  letter-spacing: 0.46em;
+  text-indent: 0.46em;
+  margin-bottom: 8px;
+}
+
+.title-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(68px, 6.8vw, 108px);
+  font-weight: 900;
+  line-height: 0.92;
+  margin: 0;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  color: transparent;
+  background: linear-gradient(180deg, #ffe9a6 0%, #d8b35d 38%, #866121 77%, #f1dda1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 18px 34px rgba(0,0,0,0.65));
+}
+
+.seal {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 31px;
+  font-weight: 800;
+  color: #fff1de;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255,190,158,0.5), transparent 24%),
+    linear-gradient(150deg, #d5604c, #8d2f2c 72%);
+  border: 1px solid rgba(255,219,180,0.42);
+  border-radius: 8px;
+  box-shadow: inset 0 0 16px rgba(255,255,255,0.1), 0 14px 28px rgba(0,0,0,0.55);
+  transform: rotate(-4deg);
+}
+
+.sub {
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: rgba(232,211,151,0.86);
+  letter-spacing: 0.72em;
+  text-indent: 0.72em;
+}
+
+.commands {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.commands::before {
+  content: "";
+  position: absolute;
+  inset: -14px -16px -14px;
+  background: linear-gradient(180deg, rgba(27,18,10,0.38), rgba(11,8,5,0.46));
+  border: 1px solid rgba(215,185,104,0.16);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.command {
+  --accent: var(--gold);
+  position: relative;
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 82px;
+  padding: 12px 16px 12px 14px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid rgba(215,185,104,0.3);
+  background:
+    linear-gradient(90deg, rgba(12,9,5,0.88), rgba(35,25,13,0.74) 48%, rgba(10,8,5,0.86)),
+    repeating-linear-gradient(90deg, transparent 0 52px, rgba(215,185,104,0.04) 52px 53px);
+  box-shadow: inset 0 1px 0 rgba(255,238,188,0.08), 0 12px 34px rgba(0,0,0,0.38);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.command::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(215,185,104,0.12);
+  pointer-events: none;
+}
+
+.command::after {
+  content: "";
+  position: absolute;
+  top: 11px;
+  bottom: 11px;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, var(--accent), transparent);
+}
+
+.command:hover,
+.command:focus-visible {
+  outline: none;
+  transform: translateX(6px);
+  border-color: rgba(240,219,154,0.74);
+  background:
+    linear-gradient(90deg, rgba(18,12,5,0.96), rgba(57,39,15,0.84) 50%, rgba(12,8,4,0.92)),
+    repeating-linear-gradient(90deg, transparent 0 52px, rgba(215,185,104,0.055) 52px 53px);
+}
+
+.command.primary {
+  min-height: 104px;
+  grid-template-columns: 92px minmax(0, 1fr) auto;
+  border-color: rgba(240,219,154,0.58);
+}
+
+.command.load { --accent: var(--jade); }
+.command.editor { --accent: var(--blue); }
+.command.settings { --accent: #f2ce6b; }
+
+.cmd-seal {
+  width: 54px;
+  height: 54px;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 80%, transparent);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 25px;
+  box-shadow: inset 0 0 18px rgba(0,0,0,0.34), 0 0 22px color-mix(in srgb, var(--accent) 20%, transparent);
+  background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent) 16%, transparent), rgba(0,0,0,0.3));
+}
+
+.primary .cmd-seal { width: 66px; height: 66px; font-size: 31px; }
+
+.cmd-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--accent);
+  font-weight: 800;
+  letter-spacing: 0.38em;
+  text-indent: 0.38em;
+  margin-bottom: 6px;
+}
+
+.primary .cmd-title { font-size: 32px; }
+
+.cmd-sub {
+  font-size: 13px;
+  color: rgba(247,230,184,0.76);
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  margin-bottom: 8px;
+}
+
+.cmd-desc {
+  max-width: 410px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(226,208,158,0.82);
+}
+
+.cmd-key {
+  align-self: end;
+  min-width: 74px;
+  text-align: right;
+  color: var(--gold-2);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.side {
+  align-self: stretch;
+  min-height: 454px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+}
+
+.panel {
+  position: relative;
+  padding: 18px;
+  border: 1px solid rgba(215,185,104,0.28);
+  background:
+    linear-gradient(180deg, rgba(219,190,122,0.15), rgba(38,25,11,0.72) 18%, rgba(13,9,6,0.84)),
+    repeating-linear-gradient(0deg, transparent 0 42px, rgba(215,185,104,0.035) 42px 43px);
+  box-shadow: var(--shadow);
+}
+
+.panel::before,
+.panel::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: rgba(240,219,154,0.7);
+  pointer-events: none;
+}
+
+.panel::before { top: 7px; left: 7px; border-top: 1px solid; border-left: 1px solid; }
+.panel::after { right: 7px; bottom: 7px; border-right: 1px solid; border-bottom: 1px solid; }
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-family: var(--font-display);
+  color: var(--gold-2);
+}
+
+.panel-title strong {
+  font-size: 20px;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+}
+
+.panel-title span {
+  font-size: 12px;
+  color: rgba(215,185,104,0.66);
+}
+
+.recent-list {
+  display: grid;
+  gap: 8px;
+  max-height: 184px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.recent-list::-webkit-scrollbar { width: 4px; }
+.recent-list::-webkit-scrollbar-thumb { background: rgba(215,185,104,0.4); }
+
+.recent-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px;
+  align-items: start;
+  padding: 9px 9px 10px;
+  border: 1px solid rgba(215,185,104,0.14);
+  background: rgba(255,237,182,0.05);
+}
+
+.recent-seal {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: #fff2df;
+  background: linear-gradient(145deg, #cc5c46, #802c28);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 14px;
+}
+
+.recent-name {
+  font-size: 14px;
+  color: rgba(245,229,180,0.9);
+  line-height: 1.45;
+}
+
+.recent-meta {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.state-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.state {
+  min-height: 58px;
+  padding: 10px 9px;
+  border: 1px solid rgba(215,185,104,0.16);
+  background: rgba(0,0,0,0.22);
+}
+
+.state .label {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.state .value {
+  color: var(--gold-2);
+  font-size: 16px;
+}
+
+.tools {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tool {
+  min-height: 42px;
+  border: 1px solid rgba(215,185,104,0.24);
+  background: rgba(13,9,5,0.72);
+  color: rgba(243,231,189,0.86);
+  cursor: pointer;
+}
+
+.tool:hover,
+.tool:focus-visible {
+  outline: none;
+  border-color: rgba(240,219,154,0.68);
+  color: var(--gold-2);
+}
+
+.foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 14;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(360px, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 9px 22px;
+  color: rgba(215,185,104,0.72);
+  background: linear-gradient(180deg, rgba(9,7,5,0.54), rgba(6,5,4,0.94));
+  border-top: 1px solid rgba(215,185,104,0.16);
+  backdrop-filter: blur(7px);
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.version { color: var(--gold); letter-spacing: 0.22em; }
+.omens { justify-self: center; letter-spacing: 0.42em; color: rgba(246,226,172,0.84); }
+.omens b { color: var(--cinnabar-2); font-weight: 400; margin-inline: 12px; }
+.hotkeys {
+  justify-self: end;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 26px;
+  padding: 1px 7px 2px;
+  margin-right: 5px;
+  text-align: center;
+  color: var(--gold-2);
+  border: 1px solid rgba(215,185,104,0.38);
+  background: rgba(215,185,104,0.08);
+  border-radius: 2px;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 74px;
+  z-index: 30;
+  transform: translateX(-50%) translateY(18px);
+  opacity: 0;
+  padding: 10px 18px;
+  color: var(--gold-2);
+  background: rgba(13,9,5,0.92);
+  border: 1px solid rgba(215,185,104,0.36);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  place-items: center;
+  background: rgba(0,0,0,0.58);
+  backdrop-filter: blur(5px);
+}
+
+.modal.show { display: grid; }
+
+.modal-sheet {
+  width: min(640px, calc(100vw - 36px));
+  padding: 26px;
+  border: 1px solid rgba(215,185,104,0.42);
+  background:
+    linear-gradient(180deg, rgba(236,211,142,0.13), rgba(20,13,7,0.94)),
+    url("../assets/ui/home/home-menu-imperial-study-v1.png") center / cover no-repeat;
+  box-shadow: 0 36px 100px rgba(0,0,0,0.72);
+}
+
+.modal-sheet h2 {
+  margin: 0 0 10px;
+  color: var(--gold-2);
+  font-family: var(--font-display);
+  letter-spacing: 0.22em;
+}
+
+.modal-sheet p {
+  margin: 0;
+  color: rgba(245,229,180,0.86);
+  line-height: 1.9;
+}
+
+.modal-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  min-width: 90px;
+  height: 38px;
+  border: 1px solid rgba(215,185,104,0.34);
+  background: rgba(0,0,0,0.42);
+  color: var(--gold-2);
+  cursor: pointer;
+}
+
+.modal-actions button.primary {
+  background: linear-gradient(145deg, rgba(169,59,47,0.96), rgba(112,34,30,0.96));
+  color: #fff0df;
+}
+
+@media (max-width: 980px) {
+  body { overflow: auto; }
+  .stage {
+    min-height: 100vh;
+    display: block;
+    padding: 32px 16px 86px;
+  }
+  .couplet { display: none; }
+  .main {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .brand { grid-template-columns: 1fr; }
+  .brand::before, .brand::after { display: none; }
+  .brand-core { min-width: 0; }
+  .title { font-size: 72px; }
+  .sub { letter-spacing: 0.44em; text-indent: 0.44em; }
+  .command, .command.primary {
+    grid-template-columns: 68px 1fr;
+  }
+  .cmd-key { grid-column: 2; text-align: left; margin-top: 6px; }
+  .side { min-height: 0; }
+  .foot {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    text-align: center;
+  }
+  .hotkeys { justify-self: center; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .bg {
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.48), rgba(0,0,0,0.28) 32%, rgba(0,0,0,0.72)),
+      radial-gradient(circle at 52% 46%, rgba(252,222,147,0.10), transparent 34%),
+      url("../assets/ui/home/home-menu-imperial-study-v1.png") center / cover no-repeat;
+  }
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+
+<main class="stage">
+  <aside class="couplet">天行健 · 君子以自强不息<span class="source">周易</span></aside>
+
+  <section class="main" aria-label="天命主菜单预览">
+    <header class="brand">
+      <div class="brand-core">
+        <div class="brand-kicker">奉天承运皇帝　诏曰</div>
+        <div class="title-row">
+          <h1 class="title">天命</h1>
+          <div class="seal" aria-hidden="true">玺</div>
+        </div>
+        <div class="sub">AI 历史模拟推演</div>
+      </div>
+    </header>
+
+    <section class="commands" aria-label="主要入口">
+      <button class="command primary" data-action="new">
+        <span class="cmd-seal">卷</span>
+        <span>
+          <span class="cmd-title">开卷</span>
+          <span class="cmd-sub">开始新游戏</span>
+          <span class="cmd-desc">选择剧本，载入世界，敕定天命。保留正式页面的剧本选择入口。</span>
+        </span>
+        <span class="cmd-key">Enter</span>
+      </button>
+
+      <button class="command load" data-action="load">
+        <span class="cmd-seal">续</span>
+        <span>
+          <span class="cmd-title">续卷</span>
+          <span class="cmd-sub">读取存档</span>
+          <span class="cmd-desc">启封卷宗，承续推演；对应正式游戏的存档管理。</span>
+        </span>
+        <span class="cmd-key">Ctrl+L</span>
+      </button>
+
+      <button class="command editor" data-action="editor">
+        <span class="cmd-seal">著</span>
+        <span>
+          <span class="cmd-title">著卷</span>
+          <span class="cmd-sub">创作新剧本</span>
+          <span class="cmd-desc">进入剧本编辑器，撰写时代、人物、势力与规则。</span>
+        </span>
+        <span class="cmd-key">Ctrl+E</span>
+      </button>
+
+      <button class="command settings" data-action="settings">
+        <span class="cmd-seal">典</span>
+        <span>
+          <span class="cmd-title">典章</span>
+          <span class="cmd-sub">游戏设置</span>
+          <span class="cmd-desc">API、字数、文风、音声与偏好调度。</span>
+        </span>
+        <span class="cmd-key">Ctrl+,</span>
+      </button>
+    </section>
+
+    <aside class="side">
+      <section class="panel" aria-label="近事卷宗">
+        <div class="panel-title"><strong>近事</strong><span>最近三卷</span></div>
+        <div class="recent-list" id="recentList"></div>
+        <div class="state-grid">
+          <div class="state"><span class="label">节令</span><span class="value">春分</span></div>
+          <div class="state"><span class="label">世态</span><span class="value">太平</span></div>
+          <div class="state"><span class="label">剧本源</span><span class="value">官方 / 自定</span></div>
+          <div class="state"><span class="label">地图</span><span class="value">可载入</span></div>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="辅助入口">
+        <div class="panel-title"><strong>案具</strong><span>底栏职能上移</span></div>
+        <div class="tools">
+          <button class="tool" data-action="changelog">邸报</button>
+          <button class="tool" data-action="map">载图</button>
+          <button class="tool" data-action="help">帮助</button>
+          <button class="tool" data-action="exit">退出</button>
+        </div>
+      </section>
+    </aside>
+  </section>
+
+  <aside class="couplet">地势坤 · 君子以厚德载物<span class="source">周易</span></aside>
+</main>
+
+<footer class="foot">
+  <div class="version">天命　v0.9-β</div>
+  <div class="omens">春分 <b>◆</b> 太平 <b>◆</b> 河清海晏</div>
+  <div class="hotkeys">
+    <span><kbd>Enter</kbd>开卷</span>
+    <span><kbd>Ctrl</kbd><kbd>L</kbd>续卷</span>
+    <span><kbd>Ctrl</kbd><kbd>E</kbd>著卷</span>
+    <span><kbd>Esc</kbd>退出</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-sheet">
+    <h2 id="modalTitle">开卷</h2>
+    <p id="modalText"></p>
+    <div class="modal-actions">
+      <button id="modalClose">搁置</button>
+      <button class="primary" id="modalPrimary">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const actionText = {
+  new: ["开卷", "正式接入时应调用 doNewGame()：关闭启动层，进入剧本选择页。预览中先展示入口状态。"],
+  load: ["续卷", "正式接入时应调用 doLoadSave()：打开存档管理或导入存档。右侧近事栏可直接取 tm_save_index。"],
+  editor: ["著卷", "正式接入时应调用 doEditor()：进入剧本编辑器/剧本管理流程。"],
+  settings: ["典章", "正式接入时应调用 openSettings()：API、字数、文风、音声等设置集中在这里。"],
+  changelog: ["邸报", "对应当前底栏的更新公告入口：window.TM_Changelog.show()。"],
+  map: ["载图", "对应当前底栏的地图 JSON 载入入口：window._loadMapEditorJSON()。"],
+  help: ["帮助", "保留帮助入口，但从底栏弱化为案具按钮，避免长期占满视线。"],
+  exit: ["退出", "对应 Esc 或退出游戏流程。预览中不执行关闭窗口。"]
+};
+
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const modalText = document.getElementById("modalText");
+const toast = document.getElementById("toast");
+
+function openAction(action) {
+  const data = actionText[action] || ["案卷", "此入口将在正式接入时绑定真实游戏函数。"];
+  modalTitle.textContent = data[0];
+  modalText.textContent = data[1];
+  modal.classList.add("show");
+}
+
+function showToast(text) {
+  toast.textContent = text;
+  toast.classList.add("show");
+  window.clearTimeout(showToast._t);
+  showToast._t = window.setTimeout(() => toast.classList.remove("show"), 1800);
+}
+
+document.querySelectorAll("[data-action]").forEach(btn => {
+  btn.addEventListener("click", () => openAction(btn.dataset.action));
+});
+
+document.getElementById("modalClose").addEventListener("click", () => modal.classList.remove("show"));
+document.getElementById("modalPrimary").addEventListener("click", () => {
+  modal.classList.remove("show");
+  showToast("预览页已记录：正式接入时绑定真实函数");
+});
+modal.addEventListener("click", event => {
+  if (event.target === modal) modal.classList.remove("show");
+});
+
+function fillRecent() {
+  const host = document.getElementById("recentList");
+  let rows = [];
+  try {
+    const idx = JSON.parse(localStorage.getItem("tm_save_index") || "{}");
+    rows = Object.keys(idx)
+      .map(key => Object.assign({_slot: key}, idx[key]))
+      .filter(row => row && row.timestamp)
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 3);
+  } catch (_) {}
+  if (!rows.length) {
+    rows = [
+      { _slot: "slot_0", eraName: "天启", turn: 2, name: "自动封卷" },
+      { _slot: "slot_1", eraName: "天启", turn: 1, name: "京师初定" },
+      { _slot: "slot_2", eraName: "天启", turn: 1, name: "信邸入宫" }
+    ];
+  }
+  host.innerHTML = rows.map(row => {
+    const seal = row._slot === "slot_0" ? "自" : "封";
+    const title = `${row.eraName || row.date || row.name || "案卷"}${row.turn ? " · 第" + row.turn + "回" : ""}`;
+    const meta = row.name || (row._slot === "slot_0" ? "自动存档" : "手动存档");
+    return `<div class="recent-item"><span class="recent-seal">${seal}</span><span><span class="recent-name">${escapeHtml(title)}</span><span class="recent-meta">${escapeHtml(meta)}</span></span></div>`;
+  }).join("");
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    if (modal.classList.contains("show")) modal.classList.remove("show");
+    else openAction("exit");
+  }
+  if (event.key === "Enter" && !modal.classList.contains("show")) openAction("new");
+  if (event.ctrlKey && event.key.toLowerCase() === "l") { event.preventDefault(); openAction("load"); }
+  if (event.ctrlKey && event.key.toLowerCase() === "e") { event.preventDefault(); openAction("editor"); }
+  if (event.ctrlKey && event.key === ",") { event.preventDefault(); openAction("settings"); }
+});
+
+fillRecent();
+</script>
+</body>
+</html>

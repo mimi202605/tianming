@@ -1,0 +1,5936 @@
+{
+  "id": "scn_1774945158308",
+  "name": "挽天倾：崇祯死局",
+  "dynasty": "明末",
+  "emperor": "朱由检",
+  "overview": "天启七年（1627年）九月，明熹宗朱由校于乾清宫驾崩，未留子嗣。年仅十七岁的信王朱由检兄终弟及，于惊惧交加中登基称帝，次年改元崇祯。此时的大明帝国已如一座朽木大厦，内忧外患交织，风雨飘摇。朝堂之上，九千岁魏忠贤及其阉党势力盘根错节，提督东厂，只手遮天，与自诩清流的东林党人势成水火，党争倾轧导致朝政极度瘫痪。辽东关外，皇太极刚刚继位，后金铁骑历经宁锦之战后虽暂退，但仍在伺机而动，山海关防线的糜费甚巨，辽饷成了压垮国家财政的重担。而在中原大地，史无前例的“小冰河期”正悄然展现其狰狞面目，陕北连年大旱，赤地千里，颗粒无收，朝廷却因国库空虚仍在加派赋税，饥民遍野，民变的火种已在底层酝酿。身为大明第十六位皇帝，你接手的是一个党争酷烈、武备废弛、财政破产、天灾频发的绝对死局。你将如何在阉党的监视下夺回皇权？如何平衡文武、筹措军饷以御外辱？是重蹈煤山自缢的覆辙，还是力挽狂澜，重铸大明二百六十年荣光？",
+  "startYear": null,
+  "dynastyPhaseHint": "",
+  "openingText": "紫禁城的秋风带着彻骨的寒意，卷起满地枯黄的落叶，宛如大明帝国日渐凋零的国运。天启七年九月的钟声敲响，皇兄熹宗的龙驭宾天，让你猝不及防地从藩王府被推上了帝国最高权力的宝座。昨夜，在这空旷阴冷的乾清宫暖阁内，你未敢合眼，甚至不敢饮用宫女奉上的一口茶水，不敢进食御膳房的一口饭菜。你的怀中，紧紧揣着从信王府自带的几张干瘪麦饼，因为你深知，那权倾朝野、被称为“九千九百岁”的魏忠贤，正躲在重重帷幕之后死死盯着你，东厂的番子和锦衣卫的眼线早已遍布宫闱的每一个角落。\n殿外，文武百官正按部就班地跪地叩首，山呼万岁，声音在大殿回荡，却显得如此空洞虚伪。这件华丽沉重的龙袍穿在十七岁的你身上，掩盖的却是一个千疮百孔、奄奄一息的庞大帝国。御案上堆积如山的奏折，仿佛是一张张催命符：辽东前线的八百里加急战报正诉说着建州女真的凶残；户部尚书的折子里，太仓的存银已然见底，连京军的粮饷都已拖欠数月；而来自西北的急递中，字字泣血地描绘着陕北的旱魃肆虐，易子而食的惨状已将无数百姓推向造反的绝路。\n寒风顺着窗棂缝隙渗入，烛火摇曳，将你的影子拉得长长的，显得孤独而悲凉。陛下，满朝文武都在试探这位新君的深浅，魏忠贤的辞呈就在案头，那是退让还是以退为进的试探？大明二百六十年的基业，此刻全系于你一人之手。你的第一个抉择，是将在这错综复杂的死局中撕开一线生机，还是加速坠入那万劫不复的深渊？",
+  "globalRules": "1.【党争倾轧】朝堂分为阉党、东林党及中立派，提拔/贬谪将改变势力天平；一党独大将触发结党营私，导致国家行政效率急剧下降。\n2.【财政枯竭】国库初始极度匮乏，强行加派“三饷”会直接拉升全国民怨值；民怨值突破阈值将自动在受灾省份生成流寇武装。\n3.【小冰河期】内置气候灾害系统，北方省份高概率发生干旱、蝗灾或大疫；灾区治安度每月自动骤降，若不拨银赈灾将转化为叛军兵源。\n4.【文官御将】明朝奉行以文制武，武将忠诚与战力受统兵文官（督师/巡抚）属性牵制；皇帝若频繁越级微操或听信谗言诛杀边将，将导致边军哗变倒戈。\n5.【厂卫双刃】玩家可动用东厂与锦衣卫获取真实情报或清洗政敌，但过度依赖会增加“宦官专权”危险度，引发文官集团集体怠政。\n6.【驿站危机】削减驿站经费可立竿见影地降低国库支出，但必定触发“裁员驿卒暴动”事件（生成高阶流寇将领如李自成）。\n7.【信息茧房】地方官员上呈的奏折存在“报喜不报忧”概率，灾情与战况可能被隐瞒伪造；需消耗内库私银派遣亲信太监核实，方可获取真实数值。",
+  "playerInfo": {
+    "factionName": "大明",
+    "factionDesc": "大明帝国由明太祖朱元璋于公元1368年建立，历经两百余年风雨，曾创下永乐盛世与仁宣之治，是东亚无可争议的宗主国。然而至天启七年，帝国已步入暮年，危机四伏。朝堂之上，九千岁魏忠贤把持朝政，阉党与东林党水火不容，党争倾轧导致政治极度腐败；边疆之外，辽东后金势力在皇太极的带领下日益壮大，宁锦防线压力剧增；国内则因小冰河期导致天灾频发，加之三饷加派，百姓苦不堪言。大明的优势在于庞大的疆域、众多的人口以及深厚的正统文化底蕴；但劣势同样致命：国库空虚、军备废弛、官僚系统僵化失能。新帝登基，帝国急需一场大刀阔斧的改革来挽救颓势。",
+    "characterName": "朱由检",
+    "characterDesc": "年仅十六的朱由检身形清瘦，面容俊朗却常带忧郁凝重。其眼神敏锐警惕，透出超乎年龄的深沉。身穿明黄衮服，举止端庄，不苟言笑。眉宇间既透出匡扶社稷的锐气，又因深宫经历，时刻散发着多疑与戒备的气质，宛如一张紧绷的良弓。",
+    "leaderIsPlayer": true,
+    "playerRole": "",
+    "characterAppearance": "",
+    "characterCharisma": "",
+    "factionLeader": "朱由检",
+    "factionLeaderTitle": "大明皇帝",
+    "factionType": "朝廷",
+    "factionTerritory": "名义上控制两京十三布政使司，但辽东部分领土已被后金占据，西南边陲时有土司叛乱。",
+    "factionStrength": "体量庞大但外强中干，军事防御压力极大，国家机器运转迟缓。",
+    "factionCulture": "儒家正统，理学主导，宗法制度与科举官僚体系",
+    "factionGoal": "铲除阉党，重振朝纲；平定辽东，安抚流民；中兴大明。",
+    "factionResources": "人口众多，江南物产丰饶；但太仓空虚，财政濒临破产，军饷严重短缺。",
+    "characterTitle": "大明皇帝",
+    "characterFaction": "大明",
+    "characterAge": 16,
+    "characterGender": "男",
+    "characterPersonality": "勤勉，多疑，隐忍，刚愎自用，急躁，节俭",
+    "characterFaith": "儒家天命观",
+    "characterCulture": "汉族皇室传统",
+    "characterBio": "朱由检生于万历三十九年，是明光宗第五子，明熹宗异母弟。幼年丧母，在深宫倾轧中养成了隐忍与多疑的性格。天启二年受封信王。天启七年八月，熹宗病重绝嗣，传位于他。十六岁的朱由检临危受命，于九月正式登极。此时朝政大权尽入魏忠贤之手，朱由检表面对阉党恩宠有加，暗中却积蓄力量筹划清算。他深知大明已千疮百孔：内有严酷党争与财政破产，外有后金铁骑步步紧逼。这位年轻帝王怀揣中兴大明的抱负，决心以极度的勤勉肃清朝野，重振朝纲，试图凭一己之力挽狂澜于既倒，做一位力挽颓势的中兴之主。",
+    "coreContradictions": [
+      {
+        "title": "皇权与阉党之争",
+        "dimension": "political",
+        "severity": "critical",
+        "parties": "崇祯帝与清流 vs 魏忠贤及阉党",
+        "description": "天启驾崩崇祯初立，以魏忠贤为首的阉党把持朝政，形成“只知厂卫不知朝廷”的权力异化。皇权作为国家绝对意志（正题），必然要求消灭僭越的宦官专权（反题）。当前阉党盘根错节，崇祯正隐忍筹谋，双方在朝堂权力重组上暗流涌动。此矛盾的扬弃直接决定帝国中枢能否恢复运转，是解决其他危机的政治前提。"
+      },
+      {
+        "title": "汲取与破产之盾",
+        "dimension": "economic",
+        "severity": "critical",
+        "parties": "大明朝廷与边军 vs 底层自耕农",
+        "description": "辽东战事糜费极巨，国家财政濒临破产（正题）。为维持战争机器，朝廷不断加派辽饷，而拥有免税特权的藩王士绅疯狂兼并土地，致使赋税全压在底层自耕农身上（反题）。这种国家汲取与民间承受力的绝对对立，导致经济崩溃的量变正迅速向社会动荡的质变转化，并直接联动军事上的欠饷危机与流民潮。"
+      },
+      {
+        "title": "镇防与哗变之危",
+        "dimension": "military",
+        "severity": "major",
+        "parties": "兵部与统兵大员 vs 辽东及九边基层将士",
+        "description": "面对后金铁骑压迫，大明急需构建坚固的宁锦防线以维系国家安全（正题）。然受制于财政破产，九边军饷长期拖欠，士兵哗变频发，将领逐渐军阀化（反题）。防卫本能与基层生存诉求发生剧烈冲撞，军事系统的异化不仅削弱了对外抵抗力，更因兵变与欠饷的恶性循环，随时可能化为反噬帝国的武装力量。"
+      },
+      {
+        "title": "兼并与流民之变",
+        "dimension": "social",
+        "severity": "major",
+        "parties": "皇庄藩王与官绅 vs 破产流民与饥民",
+        "description": "陕北连年大旱，明宗室与官绅阶层却持续兼并土地、垄断社会财富（正题），导致大量失地农民在天灾与重税双重催化下沦为流民（反题）。这种极端的阶级对立打破了传统宗法秩序，生存权的绝对剥夺使得底层百姓抛弃对体制的幻想。王二等人的暴动已然打响，社会矛盾正酝酿成埋葬帝国的农民起义狂潮。"
+      },
+      {
+        "title": "党争与内耗之悖",
+        "dimension": "political",
+        "severity": "minor",
+        "parties": "东林党与复社士子 vs 齐楚浙党及阉党残余",
+        "description": "崇祯登基带来权力洗牌，被压制的东林党企图清算阉党重塑道德政治（正题）。然文官集团内部基于地域与私利的非东林派系互不相让，形成新的利益板结（反题）。在国家危亡之际，士大夫未能形成救国合力，反陷于为反对而反对的内耗。这种意识形态的异化严重瘫痪了行政效率，阻碍了任何实质性的经济与军事改革。"
+      }
+    ]
+  },
+  "gameSettings": {
+    "enabledSystems": {
+      "items": true,
+      "military": true,
+      "techTree": true,
+      "civicTree": true,
+      "events": true,
+      "map": true
+    },
+    "startYear": 1627,
+    "startMonth": 9,
+    "startDay": 1,
+    "enableGanzhi": true,
+    "enableGanzhiDay": true,
+    "enableEraName": true,
+    "eraName": "崇祯",
+    "eraStartYear": 1,
+    "eraNames": [
+      {
+        "name": "",
+        "startYear": 1
+      }
+    ],
+    "daysPerTurn": 3
+  },
+  "time": {
+    "year": 1627,
+    "prefix": "公元",
+    "suffix": "年",
+    "perTurn": "1s",
+    "customDays": 90,
+    "varSpeed": false,
+    "seasons": [
+      "春",
+      "夏",
+      "秋",
+      "冬"
+    ],
+    "startS": 2,
+    "sEffects": [],
+    "reign": "",
+    "reignY": 1,
+    "display": "year_season",
+    "template": "{reign}{ry}年 {season}",
+    "startMonth": 9,
+    "startDay": 1,
+    "enableGanzhi": true,
+    "enableGanzhiDay": true,
+    "enableEraName": true,
+    "eraNames": [
+      {
+        "name": "",
+        "startYear": 1
+      }
+    ],
+    "startLunarMonth": 1,
+    "startLunarDay": 4,
+    "daysPerTurn": 3
+  },
+  "characters": [
+    {
+      "name": "朱由检",
+      "title": "大明皇帝",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "皇权",
+      "role": "君主",
+      "attitude": "友好",
+      "age": 16,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "北京",
+      "faith": "儒家",
+      "culture": "中原文化",
+      "appearance": "身材消瘦，面容清俊但眉宇间常带忧郁与坚毅之色，双目炯炯有神，透出审慎与多疑。",
+      "personality": "勤政多疑，刚愎自用",
+      "personalGoal": "铲除阉党，中兴大明，恢复海内清平",
+      "description": "身材消瘦且眉宇间常带忧郁坚毅之色，双目透出审慎。他勤政多疑，刚愎自用，立志中兴大明，不惜一切代价。",
+      "bio": "据《明史·本纪第二十三》记载，朱由检“即位任事，锐意图治”。公元1627年登基，面临内忧外患，虽有中兴之志，却因性情多疑、刻薄寡恩，最终未能挽救大明倾覆的命运。",
+      "family": "沛郡朱氏",
+      "familyTier": "imperial",
+      "loyalty": 100,
+      "ambition": 95,
+      "intelligence": 72,
+      "valor": 55,
+      "administration": 65,
+      "charisma": 70,
+      "diplomacy": 45,
+      "spouse": true,
+      "spouseRank": "emperor",
+      "motherClan": "刘氏",
+      "benevolence": 50,
+      "isPlayer": true,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "diligent",
+        "calm",
+        "arbitrary",
+        "paranoid",
+        "aggressive_attacker",
+        "depressed"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "周皇后",
+      "title": "皇后",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "后党",
+      "role": "国母",
+      "attitude": "死忠",
+      "age": 16,
+      "gender": "女",
+      "ethnicity": "汉族",
+      "birthplace": "苏州",
+      "faith": "佛教",
+      "culture": "江南文化",
+      "appearance": "端庄秀丽，肌肤胜雪，举止从容有度，眉眼间透着温婉与母仪天下的不可侵犯之威仪。",
+      "personality": "贤良淑德，深明大义",
+      "personalGoal": "辅佐皇帝，母仪天下，维持后宫安宁",
+      "description": "端庄秀丽且举止从容，眉眼间透着温婉与母仪天下的威仪。她贤良淑德，深明大义，时常在私下规劝皇帝的过失。",
+      "bio": "据《明史·后妃传》记载，周皇后“性严慎，起居动有法度”。她出身平民，选秀入王府，朱由检登基后册立为后。性情节俭，常劝谏皇帝，后在李自成破城时自缢殉国，全其大节。",
+      "family": "苏州周氏",
+      "familyTier": "common",
+      "loyalty": 100,
+      "ambition": 20,
+      "intelligence": 75,
+      "valor": 40,
+      "administration": 80,
+      "charisma": 92,
+      "diplomacy": 70,
+      "spouse": true,
+      "spouseRank": "empress",
+      "motherClan": "丁氏",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "calm",
+        "temperate",
+        "holy_warrior"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "田贵妃",
+      "title": "贵妃",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "后党",
+      "role": "宠妃",
+      "attitude": "亲密",
+      "age": 16,
+      "gender": "女",
+      "ethnicity": "汉族",
+      "birthplace": "扬州",
+      "faith": "道教",
+      "culture": "江南文化",
+      "appearance": "身姿曼妙，娇艳动人，精通音律，十指纤纤，眼波流转间尽显江南女子的灵动与出众才情。",
+      "personality": "多才多艺，恃宠而骄",
+      "personalGoal": "独得圣宠，提升家族地位",
+      "description": "身姿曼妙且娇艳动人，眼波流转间尽显江南女子的灵动。她多才多艺，精通琴棋书画，但也因此恃宠而骄。",
+      "bio": "据《明史·后妃传》记载，田贵妃“生而纤妍，性寡言，多才艺”。深受崇祯帝宠爱，精通琴棋书画与骑射，但在后宫中与周皇后常有不和，争宠好胜，后因痛失爱子而病早逝。",
+      "family": "扬州田氏",
+      "familyTier": "gentry",
+      "loyalty": 85,
+      "ambition": 60,
+      "intelligence": 78,
+      "valor": 15,
+      "administration": 50,
+      "charisma": 96,
+      "diplomacy": 65,
+      "spouse": true,
+      "spouseRank": "consort",
+      "motherClan": "吴氏",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "shy",
+        "arrogant"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "魏忠贤",
+      "title": "司礼监秉笔太监",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "阉党",
+      "role": "权臣",
+      "attitude": "敌对",
+      "age": 59,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "肃宁",
+      "faith": "无",
+      "culture": "中原文化",
+      "appearance": "面庞白净微胖，眼角下垂却藏着阴鸷之光，常常面带伪善的笑容，举手投足令人不寒而栗。",
+      "personality": "阴险毒辣，贪权嗜势",
+      "personalGoal": "架空新君，维持九千岁的绝对权力",
+      "description": "面庞白净微胖，眼角下垂藏着阴鸷之光，常带伪善笑容。他阴险毒辣，贪权嗜势，为保住权力不择手段。",
+      "bio": "据《明史·魏忠贤传》记载，魏忠贤“性狡黠”。天启朝权倾天下，号称九千岁，结党营私，残害东林党人。崇祯帝即位后，其权势面临极大危机，正试图试探新帝态度以图自保。",
+      "family": "肃宁魏氏",
+      "familyTier": "common",
+      "loyalty": 15,
+      "ambition": 98,
+      "intelligence": 82,
+      "valor": 30,
+      "administration": 75,
+      "charisma": 40,
+      "diplomacy": 85,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "_dingyou": false
+    },
+    {
+      "name": "袁崇焕",
+      "title": "兵部尚书兼右副都御史",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "孤臣",
+      "role": "将领",
+      "attitude": "忠诚",
+      "age": 43,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "东莞",
+      "faith": "儒家",
+      "culture": "岭南文化",
+      "appearance": "身材中等，面容黑瘦，目光如炬，留有短须，常穿布衣，显出久经沙场的儒将风范与傲骨。",
+      "personality": "慷慨激昂，刚烈自负",
+      "personalGoal": "五年平辽，彻底击败后金收复失地",
+      "description": "面容黑瘦且目光如炬，常穿布衣显出儒将风范。他慷慨激昂，刚烈自负，虽有卓越军事才能却极易得罪同僚。",
+      "bio": "据《明史·袁崇焕传》记载，袁崇焕“为人慷慨，富有胆略，好谈兵”。宁远大捷击退努尔哈赤，是明末抗清名将。然其性格刚愎，虽有五年平辽之志，却因擅杀毛文龙等事暗藏杀身之祸。",
+      "family": "东莞袁氏",
+      "familyTier": "gentry",
+      "loyalty": 88,
+      "ambition": 75,
+      "intelligence": 84,
+      "valor": 86,
+      "administration": 78,
+      "charisma": 80,
+      "diplomacy": 50,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "wrathful",
+        "generous",
+        "arrogant",
+        "arbitrary"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "孙承宗",
+      "title": "太傅兼兵部尚书",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "东林党",
+      "role": "重臣",
+      "attitude": "友好",
+      "age": 64,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "高阳",
+      "faith": "儒家",
+      "culture": "中原文化",
+      "appearance": "须发皆白，身形高大，虽年迈但精神矍铄，目光深邃，举手投足间尽显儒雅与大国重臣的威严。",
+      "personality": "老成谋国，坚韧不拔",
+      "personalGoal": "构筑宁锦防线，保卫京畿，辅佐君王",
+      "description": "须发皆白且身形高大，精神矍铄目光深邃。他老成谋国，坚韧不拔，是明末少有的战略大师与帝王之师。",
+      "bio": "据《明史·孙承宗传》记载，孙承宗“貌魁梧，声音如钟”。曾为天启帝之师，督师辽东，修筑宁锦防线，提拔袁崇焕等人。他是明末不可多得的战略家与忠臣，多次在危难之际挺身而出。",
+      "family": "高阳孙氏",
+      "familyTier": "gentry",
+      "loyalty": 95,
+      "ambition": 40,
+      "intelligence": 92,
+      "valor": 60,
+      "administration": 90,
+      "charisma": 85,
+      "diplomacy": 82,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "patient"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "钱谦益",
+      "title": "礼部侍郎",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "东林党",
+      "role": "文臣",
+      "attitude": "观望",
+      "age": 45,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "常熟",
+      "faith": "儒家",
+      "culture": "江南文化",
+      "appearance": "面如冠玉，气质儒雅，常着宽袍大袖，谈吐风雅，一派江南名士的潇洒风度与清高之气。",
+      "personality": "才华横溢，首鼠两端",
+      "personalGoal": "成为内阁首辅，重振东林党声威",
+      "description": "面如冠玉且气质儒雅，常着宽袍大袖。他才华横溢但首鼠两端，虽为文坛领袖，却在政治上缺乏坚定的气节。",
+      "bio": "据《明史·文苑传》记载，钱谦益才华出众，为东林党领袖之一。此时正图谋在崇祯朝复出，打压阉党。然其为人缺乏气节，重名利而轻生死，日后在明亡时留下“水太凉”的千古笑柄。",
+      "family": "常熟钱氏",
+      "familyTier": "gentry",
+      "loyalty": 60,
+      "ambition": 85,
+      "intelligence": 88,
+      "valor": 10,
+      "administration": 75,
+      "charisma": 90,
+      "diplomacy": 88,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "ambitious"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "客氏",
+      "title": "奉圣夫人",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "阉党",
+      "role": "权妇",
+      "attitude": "敌对",
+      "age": 40,
+      "gender": "女",
+      "ethnicity": "汉族",
+      "birthplace": "定兴",
+      "faith": "无",
+      "culture": "中原文化",
+      "appearance": "虽徐娘半老但风韵犹存，眉眼间透着精明与刻薄，衣着华贵，神态倨傲，不可一世。",
+      "personality": "专横跋扈，贪婪无度",
+      "personalGoal": "保住自己的荣华富贵与宫中特权",
+      "description": "风韵犹存但眉眼间透着精明刻薄，衣着华贵神态倨傲。她专横跋扈，贪婪无度，仗着天启帝的宠爱为非作歹。",
+      "bio": "据《明史·后妃传》记载，客氏为天启帝乳母，“性狡悍”。与魏忠贤勾结，对食结盟，把持后宫，残害妃嫔与皇子。新帝崇祯登基后，她失去了最大的靠山，正惶惶不可终日，企图垂死挣扎。",
+      "family": "定兴客氏",
+      "familyTier": "common",
+      "loyalty": 10,
+      "ambition": 80,
+      "intelligence": 65,
+      "valor": 5,
+      "administration": 40,
+      "charisma": 75,
+      "diplomacy": 60,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "arrogant",
+        "greedy",
+        "arbitrary"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "黄立极",
+      "title": "内阁首辅",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "阉党",
+      "role": "文臣",
+      "attitude": "顺从",
+      "age": 62,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "元氏",
+      "faith": "儒家",
+      "culture": "中原文化",
+      "appearance": "须发斑白，身形佝偻，面庞圆润，总是挂着和事佬般的微笑，眼神圆滑世故，深藏不露。",
+      "personality": "圆滑怯懦，见风使舵",
+      "personalGoal": "平稳致仕，保全家族与自身性命",
+      "description": "须发斑白且面庞圆润，总是挂着和事佬般的微笑。他圆滑怯懦，见风使舵，在险恶的党争中只求明哲保身。",
+      "bio": "据《明史·黄立极传》记载，黄立极“依附忠贤，得至首辅”。天启末年担任首辅，虽身为百官之首，却对阉党唯唯诺诺。崇祯即位初，他正试图摸清皇帝意图，随时准备倒戈以保全自身。",
+      "family": "元氏黄氏",
+      "familyTier": "gentry",
+      "loyalty": 50,
+      "ambition": 60,
+      "intelligence": 70,
+      "valor": 12,
+      "administration": 82,
+      "charisma": 65,
+      "diplomacy": 80,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "craven",
+        "deceitful"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "徐光启",
+      "title": "礼部左侍郎",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "孤臣",
+      "role": "文臣",
+      "attitude": "友好",
+      "age": 65,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "上海",
+      "faith": "天主教",
+      "culture": "江南文化",
+      "appearance": "清癯消瘦，目光明亮而充满求知欲，鼻梁挺直，带有几分不同于传统儒臣的务实与开明气质。",
+      "personality": "务实求真，忧国忧民",
+      "personalGoal": "推广西学与火器，实现富国强兵",
+      "description": "清癯消瘦且目光明亮充满求知欲，气质务实开明。他务实求真，忧国忧民，是明末少有的放眼世界的科学家。",
+      "bio": "据《明史·徐光启传》记载，徐光启“雅负经济才”。致力于西学东渐，精通天文、历法、农业与火器，译《几何原本》。在朝中不参与党争，一心希望通过实学和引进西洋科技来挽救大明。",
+      "family": "上海徐氏",
+      "familyTier": "gentry",
+      "loyalty": 92,
+      "ambition": 30,
+      "intelligence": 96,
+      "valor": 35,
+      "administration": 88,
+      "charisma": 75,
+      "diplomacy": 68,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "_dingyou": false
+    },
+    {
+      "name": "毛文龙",
+      "title": "平辽总兵官",
+      "type": "historical",
+      "faction": "东江镇",
+      "party": "军阀",
+      "role": "将领",
+      "attitude": "观望",
+      "age": 51,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "杭州",
+      "faith": "民间信仰",
+      "culture": "江南文化",
+      "appearance": "身材魁梧，满脸络腮胡，面色黝黑，眼神桀骜不驯，举止间带有浓重的军阀与江湖气息。",
+      "personality": "桀骜不驯，贪功好利",
+      "personalGoal": "割据皮岛，索要军饷，维持半独立状态",
+      "description": "身材魁梧且满脸络腮胡，眼神桀骜不驯。他桀骜不驯，贪功好利，虽有牵制后金之功，却日益骄横跋扈。",
+      "bio": "据《明史·毛文龙传》记载，毛文龙开镇皮岛，屡次派兵袭扰后金后方，有牵制之功。然其“好大言，糜饷无算”，拥兵自重，不听调遣，与袁崇焕等朝廷将领矛盾重重，最终埋下被杀的祸根。",
+      "family": "杭州毛氏",
+      "familyTier": "noble",
+      "loyalty": 45,
+      "ambition": 82,
+      "intelligence": 70,
+      "valor": 84,
+      "administration": 60,
+      "charisma": 68,
+      "diplomacy": 55,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "factionId": "faction_3",
+      "position": "节度使",
+      "military": 74,
+      "alive": true,
+      "_generatedByD1": true,
+      "traitIds": [
+        "zealous",
+        "gallant",
+        "reckless"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "洪承畴",
+      "title": "陕西督道参议",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "孤臣",
+      "role": "官员",
+      "attitude": "顺从",
+      "age": 34,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "泉州",
+      "faith": "儒家",
+      "culture": "闽南文化",
+      "appearance": "正值壮年，面容坚毅，目光深沉冷酷，不苟言笑，透出一种谋定而后动的沉稳与狠辣。",
+      "personality": "深谋远虑，冷酷无情",
+      "personalGoal": "平定民变，建功立业，位极人臣",
+      "description": "面容坚毅且目光深沉冷酷，不苟言笑。他深谋远虑，冷酷无情，为了建功立业可以毫不留情地镇压一切叛乱。",
+      "bio": "据《明史·洪承畴传》记载，洪承畴此时在陕西任职，即将因镇压农民军而崛起。他极具军事与政治才能，手段残酷，是明末镇压流寇的得力干将，但其内心的忠诚度并不绝对，重利轻义。",
+      "family": "泉州洪氏",
+      "familyTier": "gentry",
+      "loyalty": 65,
+      "ambition": 80,
+      "intelligence": 90,
+      "valor": 78,
+      "administration": 85,
+      "charisma": 72,
+      "diplomacy": 75,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "calm",
+        "callous",
+        "patient",
+        "sadistic",
+        "schemer",
+        "administrator_ls"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "王承恩",
+      "title": "司礼监太监",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "皇权",
+      "role": "近侍",
+      "attitude": "死忠",
+      "age": 30,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "邢台",
+      "faith": "无",
+      "culture": "中原文化",
+      "appearance": "身材瘦弱，面容温和谦卑，目光始终追随着皇帝，透露出绝对的忠诚与顺从，行事极度低调。",
+      "personality": "忠心耿耿，谨慎细致",
+      "personalGoal": "誓死保护皇帝，料理宫中琐事",
+      "description": "身材瘦弱且面容温和谦卑，目光始终追随皇帝。他忠心耿耿，谨慎细致，是崇祯帝身边最可信赖的奴婢。",
+      "bio": "据《明史·宦官传》记载，王承恩为崇祯帝心腹太监，自潜邸时便跟随。为人忠诚本分，不结交外臣，不参与党争。在李自成攻破北京时，满朝文武皆散，唯有他陪伴崇祯帝在煤山自缢殉国。",
+      "family": "邢台王氏",
+      "familyTier": "common",
+      "loyalty": 100,
+      "ambition": 10,
+      "intelligence": 68,
+      "valor": 20,
+      "administration": 70,
+      "charisma": 55,
+      "diplomacy": 40,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "humble",
+        "content",
+        "patient",
+        "cautious_leader",
+        "holy_warrior"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "崔呈秀",
+      "title": "兵部尚书兼都察院左都御史",
+      "type": "historical",
+      "faction": "大明朝廷",
+      "party": "阉党",
+      "role": "文臣",
+      "attitude": "敌对",
+      "age": 43,
+      "gender": "男",
+      "ethnicity": "汉族",
+      "birthplace": "蓟州",
+      "faith": "儒家",
+      "culture": "中原文化",
+      "appearance": "面容白皙，留有精致的山羊胡，眼神闪烁不定，衣着华丽，总是一副谄媚而又不可一世的模样。",
+      "personality": "谄媚无耻，贪婪狠毒",
+      "personalGoal": "协助魏忠贤铲除异己，攫取更多财富",
+      "description": "面容白皙留有山羊胡，眼神闪烁不定。他谄媚无耻，贪婪狠毒，甘当魏忠贤的鹰犬，疯狂迫害东林党人。",
+      "bio": "据《明史·崔呈秀传》记载，崔呈秀“为忠贤画策，悉诛诸异己者”。身为魏忠贤的“五虎”之首，无耻认魏忠贤为义父。贪污受贿，迫害忠良，随着新帝登基，其作为阉党核心面临清算。",
+      "family": "蓟州崔氏",
+      "familyTier": "gentry",
+      "loyalty": 20,
+      "ambition": 78,
+      "intelligence": 75,
+      "valor": 15,
+      "administration": 65,
+      "charisma": 50,
+      "diplomacy": 80,
+      "spouse": false,
+      "spouseRank": "none",
+      "motherClan": "无",
+      "benevolence": 50,
+      "sid": "scn_1774945158308",
+      "traitIds": [
+        "greedy",
+        "just"
+      ],
+      "_dingyou": false
+    },
+    {
+      "name": "皇太极",
+      "faction": "后金",
+      "factionId": "faction_0",
+      "position": "汗",
+      "party": "满洲八旗",
+      "loyalty": 95,
+      "charisma": 68,
+      "military": 59,
+      "intelligence": 67,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "后金·近臣甲",
+      "faction": "后金",
+      "factionId": "faction_0",
+      "position": "贝勒",
+      "party": "汉军八旗",
+      "loyalty": 73,
+      "charisma": 77,
+      "military": 62,
+      "intelligence": 81,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "后金·近臣乙",
+      "faction": "后金",
+      "factionId": "faction_0",
+      "position": "大臣",
+      "party": "满洲八旗",
+      "loyalty": 88,
+      "charisma": 75,
+      "military": 72,
+      "intelligence": 73,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "后金·近臣丙",
+      "faction": "后金",
+      "factionId": "faction_0",
+      "position": "旗主总兵",
+      "party": "汉军八旗",
+      "loyalty": 71,
+      "charisma": 66,
+      "military": 54,
+      "intelligence": 76,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "林丹汗",
+      "faction": "察哈尔部",
+      "factionId": "faction_1",
+      "position": "可汗",
+      "party": "本部",
+      "loyalty": 80,
+      "charisma": 56,
+      "military": 52,
+      "intelligence": 62,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "察哈尔部·近臣甲",
+      "faction": "察哈尔部",
+      "factionId": "faction_1",
+      "position": "台吉",
+      "party": "附属部",
+      "loyalty": 61,
+      "charisma": 61,
+      "military": 72,
+      "intelligence": 79,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "察哈尔部·近臣乙",
+      "faction": "察哈尔部",
+      "factionId": "faction_1",
+      "position": "那颜",
+      "party": "本部",
+      "loyalty": 56,
+      "charisma": 78,
+      "military": 67,
+      "intelligence": 72,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "察哈尔部·近臣丙",
+      "faction": "察哈尔部",
+      "factionId": "faction_1",
+      "position": "部落贵族",
+      "party": "附属部",
+      "loyalty": 68,
+      "charisma": 51,
+      "military": 73,
+      "intelligence": 67,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "李倧",
+      "faction": "朝鲜国",
+      "factionId": "faction_2",
+      "position": "国王",
+      "party": "西人",
+      "loyalty": 70,
+      "charisma": 74,
+      "military": 52,
+      "intelligence": 84,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "朝鲜国·近臣甲",
+      "faction": "朝鲜国",
+      "factionId": "faction_2",
+      "position": "领议政",
+      "party": "南人",
+      "loyalty": 58,
+      "charisma": 79,
+      "military": 67,
+      "intelligence": 74,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "朝鲜国·近臣乙",
+      "faction": "朝鲜国",
+      "factionId": "faction_2",
+      "position": "兵曹判书",
+      "party": "西人",
+      "loyalty": 64,
+      "charisma": 72,
+      "military": 56,
+      "intelligence": 75,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "朝鲜国·近臣丙",
+      "faction": "朝鲜国",
+      "factionId": "faction_2",
+      "position": "大君",
+      "party": "南人",
+      "loyalty": 51,
+      "charisma": 74,
+      "military": 54,
+      "intelligence": 72,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "东江镇·近臣甲",
+      "faction": "东江镇",
+      "factionId": "faction_3",
+      "position": "都统制",
+      "party": "新归",
+      "loyalty": 72,
+      "charisma": 78,
+      "military": 50,
+      "intelligence": 78,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "东江镇·近臣乙",
+      "faction": "东江镇",
+      "factionId": "faction_3",
+      "position": "参议",
+      "party": "老兵",
+      "loyalty": 70,
+      "charisma": 75,
+      "military": 73,
+      "intelligence": 65,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "东江镇·近臣丙",
+      "faction": "东江镇",
+      "factionId": "faction_3",
+      "position": "裨将",
+      "party": "新归",
+      "loyalty": 61,
+      "charisma": 72,
+      "military": 71,
+      "intelligence": 66,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "郑芝龙",
+      "faction": "郑氏海商集团",
+      "factionId": "faction_4",
+      "position": "海商首领",
+      "party": "郑氏宗族",
+      "loyalty": 65,
+      "charisma": 71,
+      "military": 70,
+      "intelligence": 65,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "郑氏海商集团·近臣甲",
+      "faction": "郑氏海商集团",
+      "factionId": "faction_4",
+      "position": "副帅",
+      "party": "客卿团",
+      "loyalty": 50,
+      "charisma": 61,
+      "military": 73,
+      "intelligence": 73,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "郑氏海商集团·近臣乙",
+      "faction": "郑氏海商集团",
+      "factionId": "faction_4",
+      "position": "帐房",
+      "party": "郑氏宗族",
+      "loyalty": 40,
+      "charisma": 69,
+      "military": 65,
+      "intelligence": 73,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "郑氏海商集团·近臣丙",
+      "faction": "郑氏海商集团",
+      "factionId": "faction_4",
+      "position": "舵手统领",
+      "party": "客卿团",
+      "loyalty": 49,
+      "charisma": 52,
+      "military": 55,
+      "intelligence": 82,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "彼得·纳茨",
+      "faction": "荷兰东印度公司大员当局",
+      "factionId": "faction_5",
+      "position": "总督",
+      "party": "商团",
+      "loyalty": 85,
+      "charisma": 64,
+      "military": 71,
+      "intelligence": 80,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "荷兰东印度公司大员当局·近臣甲",
+      "faction": "荷兰东印度公司大员当局",
+      "factionId": "faction_5",
+      "position": "主教",
+      "party": "教士团",
+      "loyalty": 81,
+      "charisma": 56,
+      "military": 74,
+      "intelligence": 63,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "荷兰东印度公司大员当局·近臣乙",
+      "faction": "荷兰东印度公司大员当局",
+      "factionId": "faction_5",
+      "position": "商团长官",
+      "party": "商团",
+      "loyalty": 69,
+      "charisma": 76,
+      "military": 63,
+      "intelligence": 68,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "荷兰东印度公司大员当局·近臣丙",
+      "faction": "荷兰东印度公司大员当局",
+      "factionId": "faction_5",
+      "position": "舰队司令",
+      "party": "教士团",
+      "loyalty": 63,
+      "charisma": 53,
+      "military": 51,
+      "intelligence": 70,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "郑梉",
+      "faction": "安南郑主",
+      "factionId": "faction_6",
+      "position": "首领",
+      "party": "本派",
+      "loyalty": 70,
+      "charisma": 77,
+      "military": 56,
+      "intelligence": 81,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "安南郑主·近臣甲",
+      "faction": "安南郑主",
+      "factionId": "faction_6",
+      "position": "大臣",
+      "party": "客派",
+      "loyalty": 65,
+      "charisma": 54,
+      "military": 51,
+      "intelligence": 78,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "安南郑主·近臣乙",
+      "faction": "安南郑主",
+      "factionId": "faction_6",
+      "position": "将领",
+      "party": "本派",
+      "loyalty": 45,
+      "charisma": 73,
+      "military": 70,
+      "intelligence": 75,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "安南郑主·近臣丙",
+      "faction": "安南郑主",
+      "factionId": "faction_6",
+      "position": "宗室",
+      "party": "客派",
+      "loyalty": 66,
+      "charisma": 52,
+      "military": 74,
+      "intelligence": 66,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "安邦彦",
+      "faction": "奢安叛军",
+      "factionId": "faction_7",
+      "position": "首领",
+      "party": "元从",
+      "loyalty": 55,
+      "charisma": 54,
+      "military": 52,
+      "intelligence": 69,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "奢安叛军·近臣甲",
+      "faction": "奢安叛军",
+      "factionId": "faction_7",
+      "position": "军师",
+      "party": "新附",
+      "loyalty": 34,
+      "charisma": 64,
+      "military": 60,
+      "intelligence": 65,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "奢安叛军·近臣乙",
+      "faction": "奢安叛军",
+      "factionId": "faction_7",
+      "position": "大将",
+      "party": "元从",
+      "loyalty": 34,
+      "charisma": 79,
+      "military": 50,
+      "intelligence": 76,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    },
+    {
+      "name": "奢安叛军·近臣丙",
+      "faction": "奢安叛军",
+      "factionId": "faction_7",
+      "position": "副将",
+      "party": "新附",
+      "loyalty": 39,
+      "charisma": 67,
+      "military": 67,
+      "intelligence": 72,
+      "alive": true,
+      "_generatedByD1": true,
+      "_dingyou": false
+    }
+  ],
+  "factions": [
+    {
+      "name": "后金",
+      "type": "主权国",
+      "leader": "皇太极",
+      "leaderTitle": "大汗",
+      "territory": "辽东大部、建州",
+      "goal": "征服漠南蒙古，打破明朝关宁防线，入主中原",
+      "strength": 85,
+      "attitude": "敌对",
+      "resources": "战马、人参、毛皮、铁矿",
+      "mainstream": "女真族",
+      "culture": "渔猎游牧混合文化、八旗制度",
+      "militaryStrength": 120000,
+      "economy": 40,
+      "playerRelation": -100,
+      "description": "崛起于白山黑水间的强大政权。皇太极继位后进行汉化改革，整合八旗战力，并于年初迫使朝鲜臣服。此时正厉兵秣马，企图绕道蒙古叩关，是大明最致命的外部威胁。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_0"
+    },
+    {
+      "name": "察哈尔部",
+      "type": "主权国",
+      "leader": "林丹汗",
+      "leaderTitle": "蒙古大汗",
+      "territory": "漠南蒙古大部",
+      "goal": "统一蒙古各部，抵抗后金扩张，向明朝索要市赏",
+      "strength": 65,
+      "attitude": "中立",
+      "resources": "战马、牛羊、皮革",
+      "mainstream": "蒙古族",
+      "culture": "传统草原游牧文化、藏传佛教",
+      "militaryStrength": 80000,
+      "economy": 25,
+      "playerRelation": -20,
+      "description": "名义上的蒙古共主，林丹汗试图恢复大元旧疆。面临后金的猛烈挤压，他一方面西迁吞并其他蒙古部落，另一方面频繁叩边袭扰大明，以武力勒索巨额市赏维持其统治。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_1"
+    },
+    {
+      "name": "朝鲜国",
+      "type": "番属小国",
+      "leader": "李倧",
+      "leaderTitle": "国王",
+      "territory": "朝鲜半岛",
+      "goal": "在明金夹缝中求生，保全宗社，暗中维持对明朝的忠诚",
+      "strength": 45,
+      "attitude": "朝贡",
+      "resources": "粮食、布匹、人参、火绳枪",
+      "mainstream": "朝鲜族",
+      "culture": "儒家理学、小中华思想",
+      "militaryStrength": 40000,
+      "economy": 50,
+      "playerRelation": 60,
+      "description": "大明最忠诚的属国。年初刚经历“丁卯胡乱”被后金击败，被迫与后金结盟。但其君臣深受儒家大义影响，视大明为父母之邦，暗中仍向大明输送情报并提供有限支援。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_2"
+    },
+    {
+      "name": "东江镇",
+      "type": "藩镇",
+      "leader": "毛文龙",
+      "leaderTitle": "平辽总兵官",
+      "territory": "皮岛及辽东沿海岛屿",
+      "goal": "维持军阀割据状态，垄断辽东走私贸易，牵制后金",
+      "strength": 50,
+      "attitude": "名义从属",
+      "resources": "白银、粮食、走私商品、流民兵源",
+      "mainstream": "汉族",
+      "culture": "军镇文化、海商走私文化",
+      "militaryStrength": 35000,
+      "economy": 55,
+      "playerRelation": 20,
+      "description": "孤悬海外的明军抗金桥头堡。毛文龙开镇皮岛，收留大量辽东难民。虽名义上听命于朝廷，实则已成高度自治的军阀，掌控着渤海湾贸易网，对后金起到重要牵制作用。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_3"
+    },
+    {
+      "name": "郑氏海商集团",
+      "type": "藩镇",
+      "leader": "郑芝龙",
+      "leaderTitle": "海贼盟主",
+      "territory": "台湾海峡、闽粤沿海",
+      "goal": "垄断东亚海上贸易，谋求明朝官方合法身份",
+      "strength": 60,
+      "attitude": "中立",
+      "resources": "白银、丝绸、瓷器、远洋船只、火炮",
+      "mainstream": "汉族",
+      "culture": "海洋商业文化、妈祖信仰、黑道江湖",
+      "militaryStrength": 50000,
+      "economy": 90,
+      "playerRelation": 10,
+      "description": "活跃于东南沿海的庞大武装海商集团。郑芝龙此时正处于势力上升期，拥有庞大舰队。他们掌控着东亚至东南亚的海上生命线，随时准备以雄厚实力接受大明朝廷招安。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_4"
+    },
+    {
+      "name": "荷兰东印度公司大员当局",
+      "type": "主权国",
+      "leader": "彼得·纳茨",
+      "leaderTitle": "台湾长官",
+      "territory": "台湾南部大员地区",
+      "goal": "垄断对华丝银贸易，建立远东殖民霸权，打击西班牙势力",
+      "strength": 55,
+      "attitude": "敌对",
+      "resources": "白银、香料、火绳枪、红夷大炮、盖伦帆船",
+      "mainstream": "荷兰人",
+      "culture": "重商主义、新教文化、殖民扩张",
+      "militaryStrength": 3000,
+      "economy": 85,
+      "playerRelation": -30,
+      "description": "欧洲早期殖民帝国在远东的触角。通过在台湾修筑热兰遮城，荷兰人试图强迫明朝开放通商，并经常袭击中国商船。虽然兵力不多，但其坚船利炮在海战中极具威胁。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_5"
+    },
+    {
+      "name": "安南郑主",
+      "type": "番属小国",
+      "leader": "郑梉",
+      "leaderTitle": "清都王",
+      "territory": "交趾北部",
+      "goal": "消灭南方的阮主政权，维持对黎朝皇帝的挟天子以令诸侯",
+      "strength": 50,
+      "attitude": "朝贡",
+      "resources": "粮食、大象、热带木材",
+      "mainstream": "京族",
+      "culture": "儒家文化、东南亚本土习俗混合",
+      "militaryStrength": 60000,
+      "economy": 40,
+      "playerRelation": 40,
+      "description": "名义上尊奉安南黎朝皇帝及大明宗主权，实则是北越的实际统治者。此时正与南方的阮主政权爆发旷日持久的郑阮纷争，对大明朝贡主要是为了获取政治法统与贸易利益。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_6"
+    },
+    {
+      "name": "奢安叛军",
+      "type": "藩镇",
+      "leader": "安邦彦",
+      "leaderTitle": "罗甸大王",
+      "territory": "贵州、四川交界山区",
+      "goal": "割据西南，反抗明朝改土归流政策，恢复土司特权",
+      "strength": 40,
+      "attitude": "敌对",
+      "resources": "铅锌矿、木材、山地步兵",
+      "mainstream": "彝族",
+      "culture": "西南土司文化、部落信仰",
+      "militaryStrength": 40000,
+      "economy": 15,
+      "playerRelation": -80,
+      "description": "由水西土司与永宁土司发动的西南大叛乱武装。叛军利用云贵川险峻的地理优势，擅长山地游击战，牵制了明朝西南腹地大量兵力与财力，是天启末至崇祯初的内陆毒瘤。",
+      "color": "#000000",
+      "sid": "scn_1774945158308",
+      "id": "faction_7"
+    }
+  ],
+  "parties": [
+    {
+      "name": "阉党",
+      "ideology": "专权独裁，利益结盟",
+      "leader": "魏忠贤",
+      "influence": 90,
+      "members": "崔呈秀,田尔耕,许显纯,客氏",
+      "base": "厂卫特务,投机官僚,皇宫内官",
+      "status": "活跃",
+      "org": "极高",
+      "shortGoal": "试探新帝态度，保住九千岁权位",
+      "longGoal": "永久把持朝政，架空皇权",
+      "currentAgenda": "向新帝进献美女珍宝以图试探与控制",
+      "rivalParty": "东林党",
+      "policyStance": [
+        "重用厂卫",
+        "打压异己",
+        "横征暴敛"
+      ],
+      "description": "以司礼监秉笔太监魏忠贤为核心的庞大政治利益集团。在天启朝权倾天下，势力遍布内阁、六部及地方。面对崇祯登基，表面恭顺实则暗中试探，企图继续把持朝政，对任何反对声音实行残酷镇压，正处于权力巅峰但暗藏覆灭危机。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "东林党",
+      "ideology": "理学正统，清流治国",
+      "leader": "钱谦益",
+      "influence": 35,
+      "members": "韩爌,刘宗周,黄尊素",
+      "base": "江南士绅,太学生,清流文官",
+      "status": "被压制",
+      "org": "松散",
+      "shortGoal": "平反天启朝冤案，营救狱中同僚",
+      "longGoal": "恢复众正盈朝，实现儒家士大夫共治天下",
+      "currentAgenda": "串联上疏弹劾魏忠贤及阉党核心党羽",
+      "rivalParty": "阉党",
+      "policyStance": [
+        "反宦官干政",
+        "轻徭薄赋",
+        "重塑纲常"
+      ],
+      "description": "以江南士大夫为主的清流文官集团。在天启朝惨遭魏忠贤屠戮，骨干尽失。新帝登基为他们带来了曙光。他们自诩道德高尚，主张开放言路、整顿吏治，急切期望通过清算阉党来重夺朝堂话语权，但内部常因门户之见陷入党争。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "齐浙联盟",
+      "ideology": "地域结党，实用主义",
+      "leader": "姚宗文",
+      "influence": 55,
+      "members": "亓诗教,邵辅忠,郭巩",
+      "base": "北方及浙江籍官僚,地方豪强",
+      "status": "活跃",
+      "org": "中等",
+      "shortGoal": "与阉党切割，保住自身官位与既得利益",
+      "longGoal": "压制江南士绅，保障北方及沿海自身地域利益",
+      "currentAgenda": "见风使舵，寻找新帝身边的政治靠山",
+      "rivalParty": "东林党",
+      "policyStance": [
+        "地域保护",
+        "政治投机",
+        "反对清流"
+      ],
+      "description": "由齐党、楚党、浙党等地域性官僚组成的松散联盟。曾依附魏忠贤以对抗东林党，占据了朝廷部分重要职位。随着新帝登基和阉党显露颓势，他们正极力洗清与阉党的关系谋求自保。他们极度反感东林党的道德绑架，行事更重实际利益。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "潜邸旧臣",
+      "ideology": "皇权至上，忠君救国",
+      "leader": "王承恩",
+      "influence": 40,
+      "members": "曹化淳,徐应元,李标",
+      "base": "信王府旧人,忠诚太监,部分中立文臣",
+      "status": "活跃",
+      "org": "严密",
+      "shortGoal": "护驾新帝安全，稳固崇祯初期皇权",
+      "longGoal": "肃清朝堂乱象，实现中兴大明",
+      "currentAgenda": "暗中收集阉党罪证，分化禁军与太监集团",
+      "rivalParty": "阉党",
+      "policyStance": [
+        "强化皇权",
+        "肃清权臣",
+        "务实维稳"
+      ],
+      "description": "伴随崇祯帝从信王府进入紫禁城的绝对亲信班底。人数虽少但深得皇帝信任，是目前崇祯唯一能完全依赖的力量。面对危机四伏的朝堂，他们行事极为谨慎，正密谋协助皇帝兵不血刃地拔除魏忠贤势力，是皇权意志的直接执行者。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "实干派",
+      "ideology": "经世致用，富国强兵",
+      "leader": "徐光启",
+      "influence": 30,
+      "members": "毕自严,孙承宗,袁崇焕",
+      "base": "边将,工部实务官员,西学士人",
+      "status": "式微",
+      "org": "松散",
+      "shortGoal": "筹措辽东军饷，维持边防与财政稳定",
+      "longGoal": "引入西学，改革军制与农政，彻底击败后金",
+      "currentAgenda": "请求皇帝拨付军费，启用知兵之臣前往辽东",
+      "rivalParty": "齐浙联盟",
+      "policyStance": [
+        "主张抗金",
+        "引进西学",
+        "注重农田水利"
+      ],
+      "description": "厌恶朝堂无休止党争的务实官员与将领群体。他们不拉帮结派，唯重国家实务。面临后金的严重军事威胁和国内的财政危机，他们四处奔走筹措军饷，主张学习西方火器、改革军制。但在党争倾轧的政治漩涡中，他们往往被边缘化。",
+      "sid": "scn_1774945158308"
+    }
+  ],
+  "classes": [
+    {
+      "name": "文官士绅",
+      "mobility": "中",
+      "size": "约2%",
+      "privileges": "免除徭役，享有司法特权，掌控地方话语权",
+      "obligations": "牧民理政，教化乡里，维持地方治安与秩序",
+      "status": "统治阶级，律法优待",
+      "satisfaction": 65,
+      "influence": 85,
+      "economicRole": "治理",
+      "demands": "清算阉党势力，减免江南赋税，掌握朝政大权",
+      "unrestThreshold": 30,
+      "description": "通过科举掌握帝国官僚机器的精英阶层。此时正逢新帝登基，东林党人图谋反扑阉党。他们拥有大量免税田产，是国家治理的基石，但也因土地兼并和党争成为帝国毒瘤。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "宗室藩王",
+      "mobility": "低",
+      "size": "约0.5%",
+      "privileges": "世袭罔替，由国家全额供养，拥有庞大免税庄田",
+      "obligations": "无实际差役，仅需安分守己，不可干预地方政务",
+      "status": "超然于平民与官僚之上的皇亲国戚",
+      "satisfaction": 75,
+      "influence": 60,
+      "economicRole": "治理",
+      "demands": "确保宗禄按时足额发放，维持奢靡无度的生活",
+      "unrestThreshold": 40,
+      "description": "朱明皇室的繁衍产物。至天启末年，数十万宗室如同巨大的吸血鬼趴在帝国财政上。他们拥有海量田庄且无需纳粮，虽无政治实权，但在地方上横行霸道，令地方官无比头疼。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "边军将领",
+      "mobility": "中",
+      "size": "约1%",
+      "privileges": "掌控军队，截留军饷，拥有不受节制的家丁亲兵",
+      "obligations": "抵御建州女真与蒙古，镇压内部随时爆发的民变",
+      "status": "武官体系顶层，但名义上受制于文官体系",
+      "satisfaction": 45,
+      "influence": 75,
+      "economicRole": "军事",
+      "demands": "获取更多粮饷支援，减少朝廷文官的瞎指挥与掣肘",
+      "unrestThreshold": 40,
+      "description": "驻守辽东及九边重镇的实权武将。他们手握重兵，依靠克扣军饷蓄养精锐家丁作为政治资本。面对后金的猛烈攻势，他们既是长城，也随时可能因欠饷或文官倾轧而兵变哗噪。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "商贾巨富",
+      "mobility": "中",
+      "size": "约5%",
+      "privileges": "可通过金钱捐官或结交权贵获取商业垄断与隐性特权",
+      "obligations": "缴纳钞关税及各类商税（常通过官商勾结逃避）",
+      "status": "传统四民之末，但实际社会地位因财富而大幅提升",
+      "satisfaction": 50,
+      "influence": 65,
+      "economicRole": "商贸",
+      "demands": "打通海内外贸易路线，抵制朝廷增加矿税与商税",
+      "unrestThreshold": 35,
+      "description": "活跃于江南、晋商及徽商等群体的富裕阶层。他们通过盐业、丝茶及走私积累了惊人财富，常与文官士绅结成利益同盟。面对帝国财政危机，他们极力抗拒朝廷的任何增税企图。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "百工匠役",
+      "mobility": "低",
+      "size": "约5%",
+      "privileges": "部分匠户可通过以银代役获得自由做工的权利",
+      "obligations": "需定期为皇家及官府无偿服匠役，打造军器与营建",
+      "status": "世袭匠籍，社会地位低下",
+      "satisfaction": 25,
+      "influence": 15,
+      "economicRole": "手工",
+      "demands": "全面推行以银代役，废除无偿且繁重的官府劳役",
+      "unrestThreshold": 25,
+      "description": "承担帝国武器锻造、宫殿营建及各类手工业生产的群体。虽然晚明商品经济发展让他们有了更多谋生空间，但沉重的官府无偿摊派和严苛的匠籍制度依然是压在他们头上的大山。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "卫所军户",
+      "mobility": "低",
+      "size": "约8%",
+      "privileges": "名义上拥有军屯土地的使用权（实际多被将领侵占）",
+      "obligations": "世代当兵，承担沉重的军屯差役与无偿劳作",
+      "status": "贱籍边缘，受制于严苛的世袭军籍制度",
+      "satisfaction": 15,
+      "influence": 10,
+      "economicRole": "军事",
+      "demands": "补发拖欠积年的粮饷，停止将领的压榨与非人奴役",
+      "unrestThreshold": 20,
+      "description": "明初设立的世袭军人阶层，如今已彻底败坏。军屯被军官大量私吞，底层军户沦为将领的农奴，食不果腹且常年欠饷。辽东战事吃紧更是让他们面临九死一生的征调，逃亡成风。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "农户小民",
+      "mobility": "低",
+      "size": "约78.5%",
+      "privileges": "无任何特权，任人宰割",
+      "obligations": "缴纳田赋、辽饷，承担繁重的地方徭役与杂派",
+      "status": "编户齐民，王朝的绝对底层",
+      "satisfaction": 10,
+      "influence": 15,
+      "economicRole": "生产",
+      "demands": "废除辽饷等苛捐杂税，赈济陕北等地的连年旱灾",
+      "unrestThreshold": 15,
+      "description": "帝国人口的绝大多数，支撑大明运转的基石。天启七年气候极端，陕北等地大旱颗粒无收，加之为了平息辽东战事而不断加派的辽饷，已将他们逼至易子而食、揭竿而起的悬崖边缘。",
+      "sid": "scn_1774945158308"
+    }
+  ],
+  "items": [
+    {
+      "name": "大明皇帝之宝",
+      "type": "seal",
+      "rarity": "传说",
+      "owner": "朱由检",
+      "value": 100000,
+      "effect": "持有者可发布最高级圣旨，提升所有友军50%士气，威慑并压制所有大明阵营非敌对NPC。",
+      "description": "大明正统皇帝的象征，由上等和田玉雕刻而成。天启七年九月，信王朱由检登基后方才真正掌握此印，象征着皇权平稳交接与阉党末日的来临。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "天启遗诏",
+      "type": "document",
+      "rarity": "珍贵",
+      "owner": "朱由检",
+      "value": 50000,
+      "effect": "剧情关键道具，揭示信王兄终弟及的合法性，解锁隐藏史诗剧情线【肃清阉党】。",
+      "description": "天启帝临终前由内阁与司礼监共同草拟的遗诏，明确传位于信王朱由检。这份文书表面上宣告了皇权的更迭，暗地里却沾满了惊心动魄的权力斗争血腥气。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "东厂密杀令",
+      "type": "document",
+      "rarity": "精良",
+      "owner": "魏忠贤",
+      "value": 2000,
+      "effect": "可召唤3名精英东厂番子协助战斗，或在暗杀任务中获得额外的暴击伤害加成20%。",
+      "description": "盖有九千岁私印的秘密手谕，记录着即将被清洗的东林党残余及信王府亲信名单。纸张虽轻，却承载着无数冤魂与阉党覆灭前最后的疯狂。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "御赐尚方宝剑",
+      "type": "weapon",
+      "rarity": "传说",
+      "owner": "袁崇焕",
+      "value": 15000,
+      "effect": "攻击力+300，对贪官污吏及叛军造成200%真实伤害，附带主动处决技能【先斩后奏】。",
+      "description": "崇祯帝为平定辽东特赐的宝剑，剑身刻有日月星辰与龙纹。它不仅是一把削铁如泥的神兵，更是皇权特许、生杀予夺的无上权力象征。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "五年平辽军令状",
+      "type": "document",
+      "rarity": "珍贵",
+      "owner": "袁崇焕",
+      "value": 5000,
+      "effect": "接取【五年平辽】史诗级任务，佩戴时统帅值+50，辽东阵营声望获取率翻倍。",
+      "description": "袁崇焕在平台召对时向崇祯帝立下的军令状，承诺五年内收复辽东全境。字迹刚劲有力，透出主帅收复失地的坚定决心与一丝悲壮的宿命感。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "大红飞鱼服",
+      "type": "armor",
+      "rarity": "精良",
+      "owner": "田尔耕",
+      "value": 8000,
+      "effect": "防御力+150，魅力+20，潜行检定失败率增加，但可直接威压并审问低级官员NPC。",
+      "description": "锦衣卫指挥使田尔耕的朝服，以华贵的云锦织就，绣有张牙舞爪的飞鱼图案。鲜艳的红色令人不寒而栗，是那个时代恐怖特务统治的视觉图腾。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "宫廷秘制红丸",
+      "type": "consumable",
+      "rarity": "珍贵",
+      "owner": "客氏",
+      "value": 10000,
+      "effect": "服用后全属性提升100%持续60秒，效果结束后进入濒死状态，且最大生命值永久减少10%。",
+      "description": "牵涉明末三大案之一的神秘丹药。客氏私藏于宫中，表面为壮阳延寿之仙丹，实则含有虎狼之毒。药丸散发异香，引诱着渴求权力与欲望的人。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "关宁三眼火铳",
+      "type": "weapon",
+      "rarity": "精良",
+      "owner": "满桂",
+      "value": 3000,
+      "effect": "远程攻击力+180，可连续发射三次；火药耗尽后近战可作钝器使用（攻击力+80），破甲率30%。",
+      "description": "明朝辽东精锐关宁铁骑的标准配备。枪管由精钢打造，历经战火洗礼。火药燃尽后，沉重的枪身便是砸碎建州女真头骨的致命利器。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "宁远城防堪舆图",
+      "type": "treasure",
+      "rarity": "珍贵",
+      "owner": "祖大寿",
+      "value": 12000,
+      "effect": "揭示辽东地区所有隐藏地点与敌军驻扎情报，城防战中己方红夷大炮命中率与伤害提升25%。",
+      "description": "详细记录了宁远及山海关一线城防布置的军事地图，精确标注了火炮的覆盖范围。它是大明抵御后金铁骑的最后屏障，被守将视若性命。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "九千岁金印",
+      "type": "seal",
+      "rarity": "传说",
+      "owner": "魏忠贤",
+      "value": 80000,
+      "effect": "装备时金钱获取+300%，可调动太监势力；但在崇祯登基后装备此物，将每秒流失生命且引来全图锦衣卫追杀。",
+      "description": "魏忠贤权倾朝野时私铸的金印，其规制几乎僭越皇权。这枚沉甸甸的金印曾决定了无数朝臣的生死，在天启七年九月却成了催命的谋逆罪证。",
+      "sid": "scn_1774945158308"
+    }
+  ],
+  "military": {
+    "troops": [],
+    "facilities": [],
+    "organization": [],
+    "campaigns": [],
+    "initialTroops": [
+      {
+        "name": "京营三大营",
+        "armyType": "禁军",
+        "soldiers": 45000,
+        "garrison": "北京皇城及京郊大营",
+        "commander": "张维贤",
+        "commanderTitle": "京营总督",
+        "composition": [
+          {
+            "type": "神机营鸟铳手",
+            "count": 15000
+          },
+          {
+            "type": "五军营步卒",
+            "count": 20000
+          },
+          {
+            "type": "三千营轻骑",
+            "count": 10000
+          }
+        ],
+        "equipment": [
+          {
+            "name": "三眼铳",
+            "count": 15000,
+            "condition": "一般"
+          },
+          {
+            "name": "制式罩甲",
+            "count": 30000,
+            "condition": "一般"
+          },
+          {
+            "name": "战马",
+            "count": 10000,
+            "condition": "一般"
+          }
+        ],
+        "equipmentCondition": "一般",
+        "salary": [
+          {
+            "resource": "银",
+            "amount": 800000,
+            "unit": "两"
+          },
+          {
+            "resource": "粮食",
+            "amount": 1000000,
+            "unit": "石"
+          }
+        ],
+        "morale": 96,
+        "training": 65,
+        "loyalty": 95,
+        "control": 95,
+        "quality": "普通",
+        "description": "明朝中央禁军，曾是天下精锐。至天启末年，京营多为勋贵子弟充数，吃空饷严重。虽火器列装率极高，但武备废弛，实际战力低下，急需崇祯帝登基后大刀阔斧地整顿重组。",
+        "size": 5000,
+        "location": "待部署",
+        "faction": "明朝廷",
+        "controlLevel": 35,
+        "payArrearsMonths": 1,
+        "mutinyRisk": 25
+      },
+      {
+        "name": "关宁军",
+        "armyType": "边军",
+        "soldiers": 40000,
+        "garrison": "辽东宁远卫及锦州一线",
+        "commander": "满桂",
+        "commanderTitle": "辽东总兵",
+        "composition": [
+          {
+            "type": "关宁铁骑",
+            "count": 8000
+          },
+          {
+            "type": "车营步卒",
+            "count": 20000
+          },
+          {
+            "type": "火炮及火铳手",
+            "count": 12000
+          }
+        ],
+        "equipment": [
+          {
+            "name": "三眼火铳",
+            "count": 8000,
+            "condition": "优良"
+          },
+          {
+            "name": "红夷大炮",
+            "count": 20,
+            "condition": "优良"
+          },
+          {
+            "name": "明光铠",
+            "count": 15000,
+            "condition": "优良"
+          }
+        ],
+        "equipmentCondition": "优良",
+        "salary": [
+          {
+            "resource": "银",
+            "amount": 1200000,
+            "unit": "两"
+          },
+          {
+            "resource": "粮食",
+            "amount": 1500000,
+            "unit": "石"
+          }
+        ],
+        "morale": 85,
+        "training": 90,
+        "loyalty": 80,
+        "control": 75,
+        "quality": "精锐",
+        "description": "晚明为抵御后金在辽东倾全国之力打造的精锐边军。以关宁铁骑为核心，配以车营与红夷大炮，采取凭坚城用大炮的战法。战力极强但极度消耗国库，且将领逐渐有拥兵自重之势。",
+        "size": 5000,
+        "location": "待部署",
+        "faction": "明朝廷",
+        "controlLevel": 75,
+        "payArrearsMonths": 3,
+        "mutinyRisk": 30
+      },
+      {
+        "name": "东江军",
+        "armyType": "边军",
+        "soldiers": 30000,
+        "garrison": "皮岛及辽东半岛沿海",
+        "commander": "毛文龙",
+        "commanderTitle": "平辽总兵官",
+        "composition": [
+          {
+            "type": "游击步兵",
+            "count": 20000
+          },
+          {
+            "type": "水兵",
+            "count": 8000
+          },
+          {
+            "type": "轻骑兵",
+            "count": 2000
+          }
+        ],
+        "equipment": [
+          {
+            "name": "杂式刀矛",
+            "count": 20000,
+            "condition": "简陋"
+          },
+          {
+            "name": "鸟铳",
+            "count": 3000,
+            "condition": "严重不足"
+          }
+        ],
+        "equipmentCondition": "简陋",
+        "salary": [
+          {
+            "resource": "银",
+            "amount": 300000,
+            "unit": "两"
+          },
+          {
+            "resource": "粮食",
+            "amount": 500000,
+            "unit": "石"
+          }
+        ],
+        "morale": 75,
+        "training": 70,
+        "loyalty": 60,
+        "control": 55,
+        "quality": "普通",
+        "description": "毛文龙在辽东半岛及皮岛开创的海外镇军。以游击战和敌后骚扰见长，牵制了后金大量兵力。部队成分复杂，补给极其困难，装备简陋，对朝廷的归属感高度依附于统帅个人。",
+        "size": 5000,
+        "location": "待部署",
+        "faction": "明朝廷",
+        "controlLevel": 90,
+        "payArrearsMonths": 5,
+        "mutinyRisk": 60
+      },
+      {
+        "name": "石柱白杆兵",
+        "armyType": "藩镇军",
+        "soldiers": 6000,
+        "garrison": "四川石柱宣抚司",
+        "commander": "秦良玉",
+        "commanderTitle": "石柱宣抚使",
+        "composition": [
+          {
+            "type": "白杆长枪兵",
+            "count": 4000
+          },
+          {
+            "type": "弓弩手",
+            "count": 2000
+          }
+        ],
+        "equipment": [
+          {
+            "name": "白蜡木长枪",
+            "count": 6000,
+            "condition": "优良"
+          },
+          {
+            "name": "皮甲",
+            "count": 5000,
+            "condition": "一般"
+          }
+        ],
+        "equipmentCondition": "一般",
+        "salary": [
+          {
+            "resource": "银",
+            "amount": 100000,
+            "unit": "两"
+          },
+          {
+            "resource": "粮食",
+            "amount": 150000,
+            "unit": "石"
+          }
+        ],
+        "morale": 95,
+        "training": 85,
+        "loyalty": 90,
+        "control": 65,
+        "quality": "精锐",
+        "description": "由四川石柱土司秦良玉统领的家族武装。士兵多为山地夷人，手持白蜡木长枪，翻山越岭如履平地。曾在浑河血战中重创八旗，是晚明少有能在野战中硬撼后金的无当飞军。",
+        "size": 5000,
+        "location": "待部署",
+        "faction": "明朝廷",
+        "controlLevel": 75,
+        "payArrearsMonths": 1,
+        "mutinyRisk": 15
+      },
+      {
+        "name": "三边镇军",
+        "armyType": "边军",
+        "soldiers": 35000,
+        "garrison": "陕北延绥、宁夏、甘肃三边要塞",
+        "commander": "贺人龙",
+        "commanderTitle": "延绥游击将军",
+        "composition": [
+          {
+            "type": "边地轻骑",
+            "count": 10000
+          },
+          {
+            "type": "刀牌手",
+            "count": 15000
+          },
+          {
+            "type": "弓箭手",
+            "count": 10000
+          }
+        ],
+        "equipment": [
+          {
+            "name": "边军制式刀剑",
+            "count": 25000,
+            "condition": "严重不足"
+          },
+          {
+            "name": "破损镶铁棉甲",
+            "count": 15000,
+            "condition": "严重不足"
+          }
+        ],
+        "equipmentCondition": "严重不足",
+        "salary": [
+          {
+            "resource": "银",
+            "amount": 400000,
+            "unit": "两"
+          },
+          {
+            "resource": "粮食",
+            "amount": 600000,
+            "unit": "石"
+          }
+        ],
+        "morale": 62,
+        "training": 75,
+        "loyalty": 55,
+        "control": 70,
+        "quality": "普通",
+        "description": "驻守陕甘宁三边的西北边防军。民风剽悍，骑射俱佳。然而常年欠饷导致军心极度涣散，士兵食不果腹，基层多有怨言。若不加安抚，这支部队极易哗变并成为农民军的核心骨干。",
+        "size": 5000,
+        "location": "待部署",
+        "faction": "明朝廷",
+        "controlLevel": 65,
+        "payArrearsMonths": 6,
+        "mutinyRisk": 60
+      },
+      {
+        "name": "福建水师",
+        "armyType": "水师",
+        "soldiers": 15000,
+        "garrison": "福建泉州及厦门水域",
+        "commander": "俞咨皋",
+        "commanderTitle": "福建总兵",
+        "composition": [
+          {
+            "type": "福船水手",
+            "count": 10000
+          },
+          {
+            "type": "舰载火炮手",
+            "count": 5000
+          }
+        ],
+        "equipment": [
+          {
+            "name": "佛郎机炮",
+            "count": 300,
+            "condition": "一般"
+          },
+          {
+            "name": "登船接舷刀",
+            "count": 10000,
+            "condition": "一般"
+          }
+        ],
+        "equipmentCondition": "一般",
+        "salary": [
+          {
+            "resource": "银",
+            "amount": 250000,
+            "unit": "两"
+          },
+          {
+            "resource": "粮食",
+            "amount": 300000,
+            "unit": "石"
+          }
+        ],
+        "morale": 72,
+        "training": 65,
+        "loyalty": 80,
+        "control": 85,
+        "quality": "普通",
+        "description": "负责东南沿海海防的水师部队。装备有传统福船与引进的佛郎机炮。此时正面临海上郑芝龙等海盗集团的严峻挑战，战船老化，海战能力逐渐落后于新兴的民间海上武装势力。",
+        "size": 5000,
+        "location": "待部署",
+        "faction": "明朝廷",
+        "controlLevel": 60,
+        "payArrearsMonths": 2,
+        "mutinyRisk": 25
+      },
+      {
+        "name": "登莱镇军",
+        "armyType": "地方守备",
+        "soldiers": 20000,
+        "garrison": "山东登州及莱州卫",
+        "commander": "孙元化",
+        "commanderTitle": "登莱巡抚",
+        "composition": [
+          {
+            "type": "西洋火枪手",
+            "count": 5000
+          },
+          {
+            "type": "炮营步卒",
+            "count": 15000
+          }
+        ],
+        "equipment": [
+          {
+            "name": "仿制红夷大炮",
+            "count": 30,
+            "condition": "优良"
+          },
+          {
+            "name": "斑鸠铳",
+            "count": 5000,
+            "condition": "优良"
+          }
+        ],
+        "equipmentCondition": "优良",
+        "salary": [
+          {
+            "resource": "银",
+            "amount": 350000,
+            "unit": "两"
+          },
+          {
+            "resource": "粮食",
+            "amount": 400000,
+            "unit": "石"
+          }
+        ],
+        "morale": 80,
+        "training": 85,
+        "loyalty": 85,
+        "control": 85,
+        "quality": "普通",
+        "description": "驻扎于山东半岛的跨海支援部队。在徐光启等人影响下，积极引进西洋火器与战法，甚至聘请葡萄牙教官训练。火器装备精良，是明军中火器近代化程度最高的部队之一。",
+        "size": 5000,
+        "location": "待部署",
+        "faction": "明朝廷",
+        "controlLevel": 50,
+        "payArrearsMonths": 3,
+        "mutinyRisk": 40
+      }
+    ],
+    "militarySystem": [
+      {
+        "name": "卫所制",
+        "type": "兵役制度",
+        "era": "明朝",
+        "description": "明初设立的军户世袭制度，寓兵于农。至天启、崇祯年间已高度腐败，军屯被将领侵占，军户沦为农奴，逃兵现象极为严重，已无法承担主要的国防作战任务。",
+        "effects": [
+          "基础兵源维持成本降低30%",
+          "部队基础士气上限降低20%",
+          "训练度每月自然下降2点"
+        ]
+      },
+      {
+        "name": "募兵制",
+        "type": "兵役制度",
+        "era": "晚明",
+        "description": "为弥补卫所制崩溃而全面推行的招募志愿兵制度。虽然能招募到具备较强战斗力的亡命之徒或边地壮汉，但极度依赖军饷发放，给风雨飘摇的国家财政带来了毁灭性打击。",
+        "effects": [
+          "部队初始训练度提高20%",
+          "新兵质量提升为【精锐】概率增加15%",
+          "国家军饷总开支增加150%"
+        ]
+      },
+      {
+        "name": "泰西火器法",
+        "type": "装备与战术",
+        "era": "晚明",
+        "description": "面对后金重甲骑兵的威胁，明廷积极引进并仿制红夷大炮及西洋火绳枪，配合传统的车营与坚城，形成了独特的重火力防御战术体系。",
+        "effects": [
+          "部队火器杀伤力提升40%",
+          "城防战时守军士气+15",
+          "火器装备维护费增加50%"
+        ]
+      },
+      {
+        "name": "辽饷加派",
+        "type": "军需后勤",
+        "era": "晚明",
+        "description": "为支撑辽东前线庞大的军费开支，朝廷向全国田亩加派的特别赋税。虽勉强维持了辽东防线，却将无数濒临破产的农民逼上绝路，成为引爆明末农民大起义的导火索。",
+        "effects": [
+          "辽东边军军饷获得100%保障",
+          "全国各省民心每月下降2点",
+          "非辽东地区地方守备部队忠诚度下降"
+        ]
+      }
+    ]
+  },
+  "techTree": {
+    "military": [
+      {
+        "name": "斑鸠铳",
+        "category": "military",
+        "era": "中级",
+        "prereqs": [
+          "鸟铳锻造"
+        ],
+        "costs": [
+          {
+            "variable": "军事点数",
+            "amount": 150
+          },
+          {
+            "variable": "银两",
+            "amount": 800
+          }
+        ],
+        "effect": {
+          "步兵火力": 0.15,
+          "破甲能力": 0.1
+        },
+        "description": "仿制自佛郎机人的重型火绳枪，需架设于支架上射击。其口径大、威力猛，能有效击穿建州女真的重步兵与骑兵重甲，是辽东军镇不可或缺的单兵利器。"
+      },
+      {
+        "name": "红夷大炮",
+        "category": "military",
+        "era": "高级",
+        "prereqs": [
+          "西洋冶铸",
+          "斑鸠铳"
+        ],
+        "costs": [
+          {
+            "variable": "军事点数",
+            "amount": 300
+          },
+          {
+            "variable": "银两",
+            "amount": 2000
+          }
+        ],
+        "effect": {
+          "炮兵威力": 0.25,
+          "守城防御": 0.2,
+          "攻城能力": 0.15
+        },
+        "description": "经由澳门引进的西洋前膛重型滑膛炮，管壁厚、射程远。配备于宁远等辽东重镇，在城防战中对密集冲锋的敌军具有毁灭性打击能力，乃国之重器。"
+      },
+      {
+        "name": "车营战法",
+        "category": "military",
+        "era": "中级",
+        "prereqs": [
+          "阵法演练"
+        ],
+        "costs": [
+          {
+            "variable": "军事点数",
+            "amount": 100
+          },
+          {
+            "variable": "木材",
+            "amount": 800
+          }
+        ],
+        "effect": {
+          "对抗骑兵": 0.2,
+          "野战防御": 0.15
+        },
+        "description": "继承戚继光与孙承宗的战术思想，以偏厢车为掩体，火器与冷兵器交替掩护。此战法专克游牧轻重骑兵的冲锋，是明军在野战中抗衡八旗铁骑的核心战术。"
+      },
+      {
+        "name": "西洋筑城术",
+        "category": "military",
+        "era": "高级",
+        "prereqs": [
+          "几何学",
+          "红夷大炮"
+        ],
+        "costs": [
+          {
+            "variable": "军事点数",
+            "amount": 200
+          },
+          {
+            "variable": "银两",
+            "amount": 1500
+          },
+          {
+            "variable": "石料",
+            "amount": 1000
+          }
+        ],
+        "effect": {
+          "要塞防御": 0.3,
+          "城墙耐久": 0.25
+        },
+        "description": "吸收西方棱堡设计理念，加厚城墙并突出炮台，消除射击死角。宁远城即依此法修筑，配合重炮构成了坚不可摧的防线，令后金军队望墙兴叹。"
+      }
+    ],
+    "civil": [
+      {
+        "name": "番薯引种",
+        "category": "civil",
+        "era": "中级",
+        "prereqs": [
+          "远洋通商"
+        ],
+        "costs": [
+          {
+            "variable": "行政点数",
+            "amount": 100
+          },
+          {
+            "variable": "银两",
+            "amount": 500
+          }
+        ],
+        "effect": {
+          "农业产出": 0.15,
+          "抗饥荒能力": 0.2
+        },
+        "description": "随着海禁渐开，耐旱且高产的番薯、玉米等作物自海外传入。在小冰河期的天灾下，大面积推广此类作物能有效缓解饥荒，保障底层百姓口粮，稳定大明社稷。"
+      },
+      {
+        "name": "泰西水法",
+        "category": "civil",
+        "era": "高级",
+        "prereqs": [
+          "几何学"
+        ],
+        "costs": [
+          {
+            "variable": "行政点数",
+            "amount": 200
+          },
+          {
+            "variable": "银两",
+            "amount": 1000
+          }
+        ],
+        "effect": {
+          "抗灾能力": 0.2,
+          "基建效率": 0.1
+        },
+        "description": "结合传教士带来的西方水利学知识与传统农业，制造龙尾车等新型提水机械。极大提升了旱灾年份的灌溉效率，为北方连年大旱的农业生产提供技术保障。"
+      },
+      {
+        "name": "历局修历",
+        "category": "civil",
+        "era": "高级",
+        "prereqs": [
+          "天文观测"
+        ],
+        "costs": [
+          {
+            "variable": "行政点数",
+            "amount": 250
+          },
+          {
+            "variable": "银两",
+            "amount": 800
+          }
+        ],
+        "effect": {
+          "国家正统性": 0.15,
+          "科研速度": 0.1
+        },
+        "description": "皇帝下令开设历局，由徐光启主持编译《崇祯历书》。引入西方球面天文学与经纬度概念，不仅精准校准了农业节气，更大幅提升了王朝的正统性与学术氛围。"
+      },
+      {
+        "name": "天工开物",
+        "category": "civil",
+        "era": "顶级",
+        "prereqs": [
+          "百工技艺",
+          "泰西水法"
+        ],
+        "costs": [
+          {
+            "variable": "行政点数",
+            "amount": 400
+          },
+          {
+            "variable": "银两",
+            "amount": 3000
+          }
+        ],
+        "effect": {
+          "工业产值": 0.25,
+          "全国生产效率": 0.2
+        },
+        "description": "总结大明农业与手工业的巅峰技术，涵盖冶铸、纺织、火器等十八个领域。这一百科全书式的知识标准化，将极大促进全国作坊的生产效率与技术革新。"
+      }
+    ]
+  },
+  "civicTree": {
+    "city": [
+      {
+        "name": "修缮京营",
+        "category": "city",
+        "era": "中级",
+        "prereqs": [
+          "清算阉党"
+        ],
+        "costs": [
+          {
+            "variable": "国库白银",
+            "amount": 1500
+          },
+          {
+            "variable": "劳动力",
+            "amount": 3000
+          }
+        ],
+        "effect": {
+          "京师城防": 0.2,
+          "中央军力": 0.1
+        },
+        "description": "京营久历承平，军备废弛，老弱充数。重新选拔精壮，修缮京师城防与火器，以备不测。此乃保卫大明中枢之关键，需耗费巨资与劳力。"
+      }
+    ],
+    "policy": [
+      {
+        "name": "辽饷加派",
+        "category": "policy",
+        "era": "初级",
+        "prereqs": [],
+        "costs": [
+          {
+            "variable": "民心",
+            "amount": 20
+          }
+        ],
+        "effect": {
+          "国库白银": 800,
+          "社会稳定": -0.08,
+          "起义倾向": 0.1
+        },
+        "description": "辽东战事吃紧，国库入不敷出。唯有向天下田亩加派赋税，虽能解一时军费之急，却令百姓雪上加霜，流民剧增，动摇大明统治根基。"
+      },
+      {
+        "name": "裁撤驿站",
+        "category": "policy",
+        "era": "中级",
+        "prereqs": [
+          "辽饷加派"
+        ],
+        "costs": [
+          {
+            "variable": "行政效率",
+            "amount": 10
+          }
+        ],
+        "effect": {
+          "财政支出": -300,
+          "起义倾向": 0.2,
+          "流民数量": 5000
+        },
+        "description": "驿站系统冗员充斥，耗费巨大。裁撤部分驿站可每年为朝廷节省数十万两白银，但无数驿卒将因此失业，若受饥寒交迫，极易落草为寇。"
+      },
+      {
+        "name": "严立考成",
+        "category": "policy",
+        "era": "高级",
+        "prereqs": [
+          "起用清流"
+        ],
+        "costs": [
+          {
+            "variable": "皇室威望",
+            "amount": 80
+          }
+        ],
+        "effect": {
+          "行政效率": 0.2,
+          "官僚忠诚": -0.15,
+          "国家税收": 0.15
+        },
+        "description": "效仿万历初年张居正之法，严考六部百司。以事责人，以理责实，严惩怠政与贪污。此法能极大提升朝廷运转效率，但必遭文官集团抵制。"
+      }
+    ],
+    "resource": [
+      {
+        "name": "赈济陕北",
+        "category": "resource",
+        "era": "初级",
+        "prereqs": [],
+        "costs": [
+          {
+            "variable": "粮食",
+            "amount": 1000
+          },
+          {
+            "variable": "国库白银",
+            "amount": 500
+          }
+        ],
+        "effect": {
+          "社会稳定": 0.08,
+          "起义倾向": -0.15
+        },
+        "description": "陕北连年大旱，寸草不生，饿殍遍野。拨发内帑与库粮前往赈灾，安抚饥民。此举可暂缓民变之火，但若地方官员贪墨，恐收效甚微。"
+      },
+      {
+        "name": "边镇屯田",
+        "category": "resource",
+        "era": "高级",
+        "prereqs": [
+          "辽饷加派",
+          "修缮京营"
+        ],
+        "costs": [
+          {
+            "variable": "国库白银",
+            "amount": 2000
+          },
+          {
+            "variable": "劳动力",
+            "amount": 5000
+          }
+        ],
+        "effect": {
+          "边防自给率": 0.25,
+          "军队士气": 0.1
+        },
+        "description": "辽东与九边军费浩大，单靠内地协饷难以维系。推行军屯与商屯，开垦荒地，使边军能够部分自给自足，从而减轻中原百姓的赋税负担。"
+      }
+    ],
+    "corruption": [
+      {
+        "name": "清算阉党",
+        "category": "corruption",
+        "era": "初级",
+        "prereqs": [],
+        "costs": [
+          {
+            "variable": "皇室威望",
+            "amount": 50
+          }
+        ],
+        "effect": {
+          "腐败度": -0.15,
+          "皇权掌控": 0.1,
+          "官僚忠诚": 0.05
+        },
+        "description": "天启驾崩，新君继位，魏忠贤党羽权倾朝野。雷厉风行地铲除阉党，可大幅肃清朝堂风气，重振皇权，但需防百官反扑，引发朝局动荡。"
+      },
+      {
+        "name": "起用清流",
+        "category": "corruption",
+        "era": "中级",
+        "prereqs": [
+          "清算阉党"
+        ],
+        "costs": [
+          {
+            "variable": "皇权掌控",
+            "amount": 15
+          }
+        ],
+        "effect": {
+          "行政效率": 0.1,
+          "党争程度": 0.15,
+          "腐败度": -0.08
+        },
+        "description": "阉党既除，起用曾受迫害的东林党人重返朝堂。他们多以清流自居，有助于整顿吏治，但其党同伐异的做派亦可能引发新一轮的朝堂党争。"
+      }
+    ]
+  },
+  "variables": {
+    "base": [
+      {
+        "name": "国库",
+        "type": "number",
+        "defaultValue": 1500000,
+        "description": "大明国库与内帑的白银总数（两）。天启末年连年用兵且贪腐严重，财政极度枯竭。"
+      },
+      {
+        "name": "民心",
+        "type": "number",
+        "defaultValue": 40,
+        "description": "全国百姓对朝廷的拥护度（0-100）。受天灾、重税与土地兼并影响，民怨四起，处于危险边缘。"
+      },
+      {
+        "name": "军心",
+        "type": "number",
+        "defaultValue": 45,
+        "description": "大明军队的士气与忠诚度（0-100）。长期欠饷导致边军与京营士气低迷，各地卫所暗流涌动。"
+      },
+      {
+        "name": "粮食储备",
+        "type": "number",
+        "defaultValue": 2500000,
+        "description": "朝廷太仓可调用的粮食储备（石）。连年灾荒导致赈灾与军粮捉襟见肘。"
+      },
+      {
+        "name": "人口",
+        "type": "number",
+        "defaultValue": 100000000,
+        "description": "大明实际控制的总人口数。随着饥荒蔓延和流民增加，人口面临锐减的风险。"
+      },
+      {
+        "name": "税率",
+        "type": "number",
+        "defaultValue": 0.15,
+        "description": "全国平均农业税率及各项加派（如辽饷）的综合比例。税率过高会迅速降低民心并激起民变。"
+      },
+      {
+        "name": "阉党影响力",
+        "type": "number",
+        "defaultValue": 90,
+        "description": "以魏忠贤为首的阉党对朝政的控制力（0-100）。公元1627年9月新皇刚登基，九千岁依然权倾朝野。"
+      },
+      {
+        "name": "皇权威望",
+        "type": "number",
+        "defaultValue": 30,
+        "description": "新君朱由检在朝野的个人威信与掌控力（0-100）。登基之初，亟需通过政治手腕确立绝对皇权。"
+      },
+      {
+        "name": "气候状态",
+        "type": "string",
+        "defaultValue": "小冰河期",
+        "description": "当前的宏观气候环境。极端严寒与大旱频发，严重影响农业产出与北方游牧民族动向。"
+      },
+      {
+        "name": "戒严状态",
+        "type": "boolean",
+        "defaultValue": true,
+        "description": "京师及九边重镇是否处于高度军事戒严状态。因皇权交替，京城目前实行严格宵禁与防范。"
+      }
+    ],
+    "other": [
+      {
+        "name": "阉党权势值",
+        "type": "integer",
+        "defaultValue": 85,
+        "description": "魏忠贤及其党羽在朝野的实际控制力。公元1627年九月崇祯帝刚刚登基，魏忠贤尚未被清算，九千岁的势力依然笼罩朝野，该数值过高将限制玩家的政治决策。"
+      },
+      {
+        "name": "辽东防线稳固度",
+        "type": "integer",
+        "defaultValue": 40,
+        "description": "关外抵御后金（皇太极）入侵的军事防御能力。受军饷发放、将领调度和战略决策影响，若数值过低将导致后金铁骑绕道入关劫掠。"
+      },
+      {
+        "name": "太仓银储量",
+        "type": "integer",
+        "defaultValue": 15,
+        "description": "大明国库的白银充裕程度（百分比）。天启朝的挥霍与庞大的辽饷开支已令国库见底，该数值直接影响赈灾效率与军队士气。"
+      },
+      {
+        "name": "西北灾荒怨气",
+        "type": "integer",
+        "defaultValue": 75,
+        "description": "以陕北为核心的西北地区百姓因饥荒和重税产生的叛乱倾向。1627年正值大旱，若无法有效赈灾降下此值，将全面爆发明末农民起义（如王二、高迎祥等）。"
+      },
+      {
+        "name": "东林党复苏进度",
+        "type": "integer",
+        "defaultValue": 20,
+        "description": "东林党人从天启朝政治迫害中恢复并重返朝堂的进度。提升该值可获得清流名望与文官支持，但过高会引发新一轮的党争内耗。"
+      },
+      {
+        "name": "小冰河凛冬指数",
+        "type": "integer",
+        "defaultValue": 80,
+        "description": "剧本特有的环境气候变量，反映极端严寒对帝国的破坏。数值越高，全国粮食减产概率越大，且北方卫所军队的战斗力会因缺乏冬衣而大幅削弱。"
+      }
+    ],
+    "formulas": [
+      {
+        "name": "国库盈亏结算",
+        "expression": "岁入总额 - (辽东兵力 × 饷银单价) × (1 + 阉党贪腐系数) - 赈灾支出",
+        "relatedVars": [
+          "岁入总额",
+          "辽东兵力",
+          "饷银单价",
+          "阉党贪腐系数",
+          "赈灾支出"
+        ],
+        "description": "计算大明国库的实际盈亏。天启七年辽饷开支巨大，且受魏忠贤阉党贪腐的严重剥削，导致崇祯初年国库极度空虚，是引发财政崩溃的核心公式。"
+      },
+      {
+        "name": "皇权稳固度评估",
+        "expression": "基础皇权 + 东林党支持度 × 0.5 - 阉党权势 × 1.2 + 边镇军心 × 0.3",
+        "relatedVars": [
+          "基础皇权",
+          "东林党支持度",
+          "阉党权势",
+          "边镇军心"
+        ],
+        "description": "崇祯即位之初（1627年九月），皇权受到魏忠贤势力的严重威胁。暗中拉拢东林党、稳住边军并逐步削弱阉党权势是前期政治博弈的核心逻辑。"
+      },
+      {
+        "name": "流民暴动概率",
+        "expression": "(陕北灾荒程度 × 2 + 辽饷加派税率 × 1.5) - (赈灾银两 ÷ 10000) × (1 - 地方贪腐率)",
+        "relatedVars": [
+          "陕北灾荒程度",
+          "辽饷加派税率",
+          "赈灾银两",
+          "地方贪腐率"
+        ],
+        "description": "小冰河期导致的陕北旱灾与为了支撑辽东战局的加派税收相互叠加，若赈灾银两被地方贪污，将直接引爆明末农民起义（如高迎祥、李自成等）。"
+      },
+      {
+        "name": "辽东防线压力",
+        "expression": "(后金八旗战力 × 后金兵力) ÷ (辽东兵力 × 边镇军心 × 辽东统帅能力)",
+        "relatedVars": [
+          "后金八旗战力",
+          "后金兵力",
+          "辽东兵力",
+          "边镇军心",
+          "辽东统帅能力"
+        ],
+        "description": "皇太极（同年即位）在辽东步步紧逼。明军防线不仅依赖兵力数量，更受欠饷导致的低迷军心以及前线统帅（如袁崇焕）能力的严重制约。"
+      }
+    ]
+  },
+  "rules": {
+    "economy": "【小冰河期效应】副本全局绑定「小冰河期」负面状态，每年冬季农业基础产出额外下降30%，且流民生成速度增加50%。若未能在受灾省份及时拨付足额赈灾款，该省份爆发农民起义的概率提升100%。\n【宗室藩王之患】游戏开局时，全国岁入的40%将自动扣除用于支付「宗室禄米」。玩家可颁布「宗室考成法」或「停发禄米」来强行收回资金，但这会使皇家法统声望骤降，并有极高概率导致各地藩王暗中资助流寇。\n【赈灾与辽饷的经济博弈】小冰河期导致北方连年大旱，国库空虚。玩家每回合必须在“加派辽饷”与“开仓赈灾”间抉择。加征赋税可维持关外军队士气，但会急剧升高地方叛乱度；赈济灾民能稳定民心，却可能使九边重镇因缺饷而发生兵变。",
+    "diplomacy": "【朋党之争】朝堂官员带有隐藏的派系标签。当重用某一派系官员超过朝堂重要职位总数的60%时，将触发「党同伐异」机制，国家行政效率降低40%，且对立派系官员忠诚度每月持续大幅下降，极易引发贪腐与通敌事件。\n【秘密议和的代价】玩家可派遣密使与关外势力进行议和以争取发育时间。但议和期间每月需进行一次保密判定，若消息走漏，将触发「清流误国」事件，全国民心剧降，主和派大臣将被迫下野，且前线军队士气降低20%。\n【远交近攻与藩属周旋】皇太极即位后正虎视眈眈，玩家需利用外交手段稳固朝鲜等藩属国，避免其倒向后金。同时可派遣使节与蒙古诸部交涉，花费白银或承诺互市来换取他们对后金的牵制。外交失败将导致边境防线面临多线作战的绝境。",
+    "combat": "【两线作战泥潭】若同时在关外（对抗后金）和关内（镇压流寇）维持超过10万规模的军队，国家后勤维护将受到「十羊九牧」惩罚机制影响，额外增加50%的银两消耗与粮草运输损耗。\n【军镇骄兵】招募精锐边军（如关宁铁骑、秦兵）可获得强大战力，但自带「听调不听宣」特性。若欠饷超过两个月，或指派声望不足的文官督师统领，此类精锐部队有30%的概率拒绝执行进攻指令，甚至触发哗变。\n【关外铁骑与流寇烽烟】面对后金崛起与陕北民变，战斗系统分为“阵地防御”与“平叛剿匪”。在辽东战场需依托坚城火器抵抗八旗冲锋，消耗极大；对内则需派遣机动兵力围剿流寇。若流寇攻陷府县或后金突破长城，天命值将大幅扣除。",
+    "base": "【圣意难测】玩家作为崇祯帝，拥有特殊的「猜忌值」属性。当统帅在前线战败、避战或拥兵自重时，猜忌值自动上升。猜忌值达到临界点将强制触发「临阵换将」或「下狱论死」事件，强制处决统帅并导致该部队士气瞬间崩溃。\n【皇权更迭与阉党清洗】崇祯初立，朝廷内阉党与东林党水火不容。玩家需在维持朝政运转的同时，通过暗中收集魏忠贤罪证来触发“清洗阉党”事件。若操之过急将导致禁军哗变或朝廷瘫痪，若坐视不管则皇权旁落，天命值持续下降。\n【崇祯天命与亡国危机】游戏核心资源为“天命值”，初始极低。天灾、兵败、党争均会扣除天命；反之，肃清权臣、打赢关键战役可恢复天命。当天命值归零时，将直接触发“煤山自缢”结局。玩家必须在各方势力的走钢丝博弈中逆天改命。"
+  },
+  "events": [
+    {
+      "name": "信王履极",
+      "type": "story",
+      "trigger": "剧本开局（公元1627年9月）",
+      "description": "天启皇帝朱由校驾崩，信王朱由检兄终弟及，登基称帝。内有魏忠贤及其党羽把持朝政，外有建州女真虎视眈眈。年轻的皇帝正面临大明二百年来未有之危局，在深宫中如履薄冰。",
+      "effect": "初始皇权值设定为20（极低），阉党掌控度设定为90（极高）。玩家获得特质【如履薄冰】（暗杀抗性+50%，但每月精力消耗增加），解锁隐藏任务进度条【隐忍伺机】。"
+    },
+    {
+      "name": "清算魏忠贤",
+      "type": "historical",
+      "trigger": "游戏时间到达1627年11月，且玩家【隐忍】值>50，未触发阉党兵变",
+      "description": "经过数月的精心布局与隐忍，皇帝接连罢免阉党核心官员，最终下旨将魏忠贤谪发凤阳。魏忠贤自知大势已去，于途中在阜城自缢身亡，阉党集团土崩瓦解。",
+      "effect": "阉党掌控度清零，皇权值+40。国库增加200万两白银（查抄家产所得）。朝堂派系洗牌，触发后续事件机制【钦定逆案】。"
+    },
+    {
+      "name": "平反冤狱与东林复起",
+      "type": "story",
+      "trigger": "【清算魏忠贤】事件完成后的次月",
+      "description": "阉党倒台后，朝廷开始平反天启年间的冤狱。大量被罢免、流放甚至害死的东林党官员被重新起用或追赠，文官集团重新占据朝堂主导地位。",
+      "effect": "文官集团忠诚度+30，朝廷廉洁度临时+15。解锁【党争】机制，东林党势力大幅上升，3个月后行政效率将开始受党争牵制而下降。"
+    },
+    {
+      "name": "陕北天灾",
+      "type": "random",
+      "trigger": "游戏时间进入秋/冬季，且大明气象处于【小冰河期】状态",
+      "description": "天降大旱，陕北颗粒无收。百姓剥树皮、掘草根甚至易子而食，而地方官吏依然严令催缴赋税，民怨已达沸点。",
+      "effect": "陕西行省繁荣度-30，民心剧降至10以下。激活【流寇滋生】倒计时，若不立即下发至少50万两赈灾款项，下个月将大概率爆发农民起义。"
+    },
+    {
+      "name": "澄城王二起义",
+      "type": "conditional",
+      "trigger": "陕西行省民心<10，且赈灾资金未到位",
+      "description": "“谁敢杀知县？”饥民王二在澄城县振臂一呼，率领数百饥民冲入县衙，杀死知县张斗耀。星星之火，即将燎原，拉开了明末农民大起义的序幕。",
+      "effect": "在陕西大地图生成第一支敌对实体【农民叛军】（初始兵力：1000）。大明全国稳定度-10，所有受灾省份叛乱概率+20%。"
+    },
+    {
+      "name": "皇太极的试探",
+      "type": "random",
+      "trigger": "辽东防线驻军<5万人，或边关将领忠诚度<50",
+      "description": "后金大汗皇太极听闻明朝新旧交替、政局动荡，派出轻骑在锦州、宁远一线游弋劫掠，试探明军虚实。",
+      "effect": "辽东防备值-15。玩家需在【拨发军饷】（国库-50万两，防备值恢复）或【严令固守】（将领忠诚度-10，防备值继续下降，边境遇袭概率上升）中做出抉择。"
+    },
+    {
+      "name": "平台召对与起用袁崇焕",
+      "type": "conditional",
+      "trigger": "玩家在朝堂界面主动执行【起复旧臣】指令，且目标选择为袁崇焕",
+      "description": "为挽救辽东危局，皇帝力排众议，任命袁崇焕为兵部尚书兼右副都御史，督师蓟辽。袁崇焕在平台召对时慷慨陈词，向皇帝许下“五年平辽”的宏愿。",
+      "effect": "获得传奇将领【袁崇焕】。辽东军团士气+30，防备值+40。开启【五年平辽】倒计时机制，若五年内未能消灭或重创后金，皇权值与威望将遭受毁灭性打击。"
+    },
+    {
+      "name": "太仓告急",
+      "type": "random",
+      "trigger": "国库白银储备<100万两",
+      "description": "户部尚书面色铁青地上奏：连年辽事与各省灾荒已将太仓掏空，如今九边军饷已拖欠数月，朝廷财政面临全面崩溃的边缘，军队随时可能哗变。",
+      "effect": "触发政策抉择：1.【加派辽饷】（全国民心-20，国库+300万两）；2.【动用内帑】（皇帝私库资金清零，国库+100万两，百官忠诚+5）；3.【拖欠军饷】（全国军队士气-20，爆发兵变概率+50%）。"
+    }
+  ],
+  "timeline": {
+    "past": [
+      {
+        "name": "熹宗龙驭宾天",
+        "year": "天启七年八月",
+        "type": "past",
+        "importance": "关键",
+        "description": "大明熹宗朱由校于乾清宫驾崩，遗诏传位于信王朱由检。魏忠贤企图隐瞒死讯并矫诏，但在张皇后与部分朝臣防备下未能得逞。大明皇权正处于危险的交接期，阉党与清流暗流涌动，危机四伏。",
+        "linkedChars": [],
+        "linkedFactions": []
+      },
+      {
+        "name": "信王登基",
+        "year": "天启七年九月",
+        "type": "past",
+        "importance": "关键",
+        "description": "信王朱由检正式登基称帝，是为崇祯帝。为防魏忠贤暗算，新帝入宫时自带干粮，彻夜未眠。此时朝廷内外皆受阉党把控，新帝表面上对魏忠贤优容有加，实则暗中隐忍，筹谋破局之法。",
+        "linkedChars": [],
+        "linkedFactions": []
+      },
+      {
+        "name": "丁卯之役",
+        "year": "天启七年正月",
+        "type": "past",
+        "importance": "重要",
+        "description": "后金大汗皇太极以朝鲜助明为由，遣大军渡鸭绿江入侵朝鲜。朝鲜军大败，被迫与后金结为兄弟之邦。此役导致大明东江镇毛文龙部失去重要的后勤依托，辽东局势进一步恶化，边患加剧。",
+        "linkedChars": [],
+        "linkedFactions": []
+      }
+    ],
+    "future": [
+      {
+        "name": "阉党覆灭",
+        "year": "天启七年十一月",
+        "type": "future",
+        "importance": "关键",
+        "description": "崇祯帝在稳固帝位后，开始清算魏忠贤及其党羽。若外朝群臣上疏弹劾的声浪达到顶峰，皇帝将下旨褫夺魏忠贤官爵并流放。魏忠贤或在途中覆灭，大明朝堂格局将面临全面大洗牌。",
+        "linkedChars": [],
+        "linkedFactions": [],
+        "triggerCondition": "崇祯帝皇权稳固度达到阈值，且朝臣上疏弹劾魏忠贤的事件累计超过三次。"
+      },
+      {
+        "name": "陕北赤地千里",
+        "year": "崇祯元年春",
+        "type": "future",
+        "importance": "关键",
+        "description": "陕西延安府等地连年大旱，颗粒无收，加上官府催缴辽饷等繁重赋税，百姓剥树皮、食观音土仍无法果腹。若朝廷赈灾不力或裁撤驿站，必将激起民变，揭开明末农民大起义的血腥序幕。",
+        "linkedChars": [],
+        "linkedFactions": [],
+        "triggerCondition": "陕西地区灾荒值达到极高，且朝廷未能在此前拨付足够赈灾粮款，或推行了裁撤驿站政策。"
+      },
+      {
+        "name": "宁远兵变",
+        "year": "崇祯元年夏",
+        "type": "future",
+        "importance": "重要",
+        "description": "辽东宁远十三营因朝廷长期拖欠粮饷，加之军官克扣，士兵哗变，将巡抚及总兵等官员围困。此事件若处理不当，将严重动摇辽东防线的军心，致使九边重镇面临从内部瓦解的致命危机。",
+        "linkedChars": [],
+        "linkedFactions": [],
+        "triggerCondition": "辽东军镇欠饷时间超过四个月，且边军士气低于临界值。"
+      },
+      {
+        "name": "己巳之变",
+        "year": "崇祯二年秋",
+        "type": "future",
+        "importance": "关键",
+        "description": "后金军绕道蒙古，避开关宁锦防线，由喜峰口突破长城直逼京师。京城戒严，天下震动。此役将极大考验崇祯帝的统御能力，亦可能导致君臣猜忌加剧，引发重大人事地震与将领冤案。",
+        "linkedChars": [],
+        "linkedFactions": [],
+        "triggerCondition": "后金成功与蒙古结盟或降服蒙古各部，且明朝关内防线（蓟镇等地）防御兵力调配空虚。"
+      }
+    ]
+  },
+  "map": {
+    "items": [
+      {
+        "type": "city",
+        "name": "北京",
+        "owner": "大明",
+        "population": 800000,
+        "resources": [
+          "火器",
+          "白银",
+          "工匠"
+        ],
+        "defenses": 95,
+        "description": "大明京师，城防坚固但面临鼠疫与粮饷断绝的危机，朝廷百官人心惶惶，崇祯帝在此苦苦支撑。"
+      },
+      {
+        "type": "strategic",
+        "name": "山海关",
+        "controller": "大明",
+        "significance": "扼守辽西走廊，是抵御后金入关的天下第一关，关乎大明国运。",
+        "description": "由辽东总兵吴三桂重兵驻守，城墙高耸，配备红夷大炮。一旦失守，京师将无险可守。"
+      },
+      {
+        "type": "strategic",
+        "name": "潼关",
+        "controller": "大明",
+        "significance": "关中咽喉，阻挡西北流寇东进中原的最后屏障。",
+        "description": "明军统帅孙传庭曾在此与李自成血战。关隘险峻，但守军士气低落，粮草匮乏，岌岌可危。"
+      },
+      {
+        "type": "geo",
+        "name": "陕北黄土高原",
+        "climate": "极度干旱/小冰河期",
+        "description": "受小冰河期影响，连年大旱，蝗灾肆虐，寸草不生。恶劣的自然环境导致饥民遍野，成为席卷天下的大起义温床。"
+      },
+      {
+        "type": "geo",
+        "name": "辽东平原",
+        "climate": "严寒/暴雪",
+        "description": "冬季极其漫长寒冷，风雪交加。极寒天气导致明军火器故障率升高且补给困难，却极度适合八旗骑兵的冰雪机动作战。"
+      },
+      {
+        "type": "city",
+        "name": "西安",
+        "owner": "大顺",
+        "population": 400000,
+        "resources": [
+          "中原粮草",
+          "流民兵源"
+        ],
+        "defenses": 75,
+        "description": "李自成建立大顺政权的核心都城，汇聚了西北与中原的大量饥民，起义军在此休养生息，图谋京师。"
+      },
+      {
+        "type": "city",
+        "name": "盛京",
+        "owner": "大清",
+        "population": 250000,
+        "resources": [
+          "优良战马",
+          "重甲",
+          "辽东人参"
+        ],
+        "defenses": 85,
+        "description": "满清关外都城，八旗军气焰正盛，皇太极与多尔衮在此厉兵秣马，时刻窥探中原的虚实。"
+      },
+      {
+        "type": "strategic",
+        "name": "山海关",
+        "controller": "大明 (吴三桂)",
+        "significance": "天下第一关，扼守辽西走廊，是阻挡满清铁骑入关的绝对屏障。",
+        "description": "关宁锦防线的仅存硕果，驻扎着大明最精锐的关宁铁骑，但孤悬关外，粮饷供应随时可能断绝。"
+      },
+      {
+        "type": "strategic",
+        "name": "潼关",
+        "controller": "大明 (孙传庭)",
+        "significance": "关中门户，阻挡西北流寇进入中原与京畿的关键天险。",
+        "description": "孙传庭在此苦心练兵拒贼，但崇祯帝屡屡催战。此关若破，李自成大军将席卷中原，再无阻碍。"
+      },
+      {
+        "type": "geo",
+        "name": "华北平原",
+        "climate": "极寒干旱 (小冰河期)",
+        "description": "连年大旱与异常严寒导致赤地千里，颗粒无收，蝗灾与瘟疫接踵而至，成为大明王朝崩溃的自然催化剂。"
+      },
+      {
+        "type": "geo",
+        "name": "辽西走廊",
+        "climate": "凛冬苦寒",
+        "description": "连接关内外的一条狭长冻土带，冬季风雪肆虐。极端的严寒使得明军火器故障率倍增，却极度利于八旗骑兵的机动与野战。"
+      },
+      {
+        "type": "city",
+        "name": "西安",
+        "owner": "大明",
+        "population": 300000,
+        "resources": [
+          "粮食",
+          "布匹",
+          "役夫"
+        ],
+        "defenses": 75,
+        "description": "西北重镇，三秦大地之核心。受连年灾荒与沉重驿站摊派影响，周边流民激增，治安急剧恶化，地方财政捉襟见肘。"
+      },
+      {
+        "type": "city",
+        "name": "沈阳",
+        "owner": "后金",
+        "population": 150000,
+        "resources": [
+          "战马",
+          "铁甲",
+          "人参"
+        ],
+        "defenses": 85,
+        "description": "后金都城，皇太极继位后在此秣马厉兵，整顿八旗，虎视关内，对大明辽东防线构成致命的战略威慑。"
+      },
+      {
+        "type": "strategic",
+        "name": "山海关",
+        "controller": "大明",
+        "significance": "天下第一关，扼守辽西走廊进入中原的咽喉要道，京师的最后一道防线。",
+        "description": "关宁锦防线的后方支撑点，城防极为坚固。重兵把守，一旦失陷，后金铁骑即可长驱直入饮马黄河。"
+      },
+      {
+        "type": "strategic",
+        "name": "宁远城",
+        "controller": "大明",
+        "significance": "关外抗金前线桥头堡，宁锦防线的核心节点。",
+        "description": "曾在此重创努尔哈赤，城头配备红夷大炮。作为袁崇焕经略辽东的重镇，是插在后金腹地前方的一把尖刀。"
+      },
+      {
+        "type": "strategic",
+        "name": "延绥镇",
+        "controller": "大明",
+        "significance": "九边重镇之一，防御蒙古诸部并肩负镇压西北流民之责。",
+        "description": "由于朝廷财政枯竭，边军长期欠饷，士兵哗变频发，王二起义已在此地蔓延，是明末农民军爆发的火药桶。"
+      },
+      {
+        "type": "geo",
+        "name": "陕北黄土高原",
+        "climate": "极度干旱",
+        "description": "受小冰河期气候剧变影响，该地区遭遇百年不遇的大旱，赤地千里，寸草不生，饥民遍野，极易滋生大规模叛乱。"
+      },
+      {
+        "type": "geo",
+        "name": "辽西走廊",
+        "climate": "严寒冰雪",
+        "description": "连接关内外的狭长通道，一侧临海一侧靠山。冬季滴水成冰，暴雪频发，极大地考验着明军的后勤补给与驻守将士的生存极限。"
+      }
+    ],
+    "regions": [
+      {
+        "name": "北京",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [
+          "火器",
+          "白银",
+          "工匠"
+        ],
+        "owner": "大明",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "山海关",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "潼关",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "陕北黄土高原",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "辽东平原",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "西安",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [
+          "中原粮草",
+          "流民兵源"
+        ],
+        "owner": "大顺",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "盛京",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [
+          "优良战马",
+          "重甲",
+          "辽东人参"
+        ],
+        "owner": "大清",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "山海关",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "潼关",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "华北平原",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "辽西走廊",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "西安",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [
+          "粮食",
+          "布匹",
+          "役夫"
+        ],
+        "owner": "大明",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "沈阳",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [
+          "战马",
+          "铁甲",
+          "人参"
+        ],
+        "owner": "后金",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "山海关",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "宁远城",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "延绥镇",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "陕北黄土高原",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      },
+      {
+        "name": "辽西走廊",
+        "coords": [],
+        "polygon": [],
+        "center": {
+          "x": 0,
+          "y": 0
+        },
+        "neighbors": [],
+        "terrain": "plains",
+        "resources": [],
+        "owner": "",
+        "characters": [],
+        "troops": 0,
+        "development": 50,
+        "color": "#cccccc"
+      }
+    ],
+    "roads": [],
+    "width": 1320,
+    "height": 881
+  },
+  "mapData": {},
+  "externalForces": [],
+  "relations": [
+    {
+      "name": "与后金（皇太极）关系",
+      "value": -85,
+      "min": -100,
+      "max": 100,
+      "description": "后金大汗皇太极已在辽东站稳脚跟，宁锦之战后双方暂处对峙。两国处于实质上的全面战争状态，满洲铁骑随时可能再次叩关。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "阉党势力控制度",
+      "value": -40,
+      "min": -100,
+      "max": 100,
+      "description": "九千岁魏忠贤权倾朝野，党羽遍布内阁与六部。新君初登大宝，羽翼未丰，表面优待阉党，实则暗中筹谋雷霆一击，双方暗流涌动。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "东林党（清流）支持度",
+      "value": 45,
+      "min": -100,
+      "max": 100,
+      "description": "天启年间遭阉党残酷镇压的东林党人正蛰伏待机。新皇登基让他们看到了平反与起复的希望，目前对皇权抱有极高的期待与支持。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "西北底层民心",
+      "value": -60,
+      "min": -100,
+      "max": 100,
+      "description": "陕北等地连年大旱，颗粒无收，朝廷却因辽东战事继续加派‘辽饷’。地方官员贪腐横征，饥民与底层兵卒正处于大规模流寇民变爆发的边缘。",
+      "sid": "scn_1774945158308"
+    },
+    {
+      "name": "关宁军镇统御度",
+      "value": 30,
+      "min": -100,
+      "max": 100,
+      "description": "辽东关宁防线是抵御后金的核心屏障。因天启朝党争倾轧、主将频换及长期欠饷，前线将士对中枢的绝对忠诚出现裂痕，军阀化倾向初显。",
+      "sid": "scn_1774945158308"
+    }
+  ],
+  "factionRelations": [
+    {
+      "from": "大明",
+      "to": "后金",
+      "type": "交战",
+      "value": -100,
+      "desc": "皇太极发动宁锦之战被明军击退，双方在辽东持续血战。"
+    },
+    {
+      "from": "大明",
+      "to": "朝鲜",
+      "type": "宗藩",
+      "value": 80,
+      "desc": "朝鲜为大明忠实藩属，虽受后金武力胁迫仍暗中支持明军抗金。"
+    },
+    {
+      "from": "大明",
+      "to": "蒙古察哈尔部",
+      "type": "联盟",
+      "value": 50,
+      "desc": "明朝通过岁赐市赏拉拢林丹汗，企图借助其力量在辽西牵制后金。"
+    },
+    {
+      "from": "大明",
+      "to": "郑氏海商",
+      "type": "交战",
+      "value": -70,
+      "desc": "郑芝龙武装集团在东南沿海崛起并屡败明朝水师，此时尚未接受招抚。"
+    },
+    {
+      "from": "大明",
+      "to": "荷兰东印度公司",
+      "type": "敌视",
+      "value": -40,
+      "desc": "荷兰人占据台湾大员企图垄断对华贸易，明朝对其严加防范限制。"
+    },
+    {
+      "from": "后金",
+      "to": "朝鲜",
+      "type": "名义从属",
+      "value": -40,
+      "desc": "后金于年初发动丁卯胡乱迫使朝鲜结为兄弟之盟，但朝鲜内心敌视。"
+    },
+    {
+      "from": "后金",
+      "to": "蒙古察哈尔部",
+      "type": "交战",
+      "value": -90,
+      "desc": "皇太极积极拉拢科尔沁等蒙古诸部，并持续用兵打击孤立林丹汗。"
+    },
+    {
+      "from": "后金",
+      "to": "郑氏海商",
+      "type": "中立",
+      "value": 0,
+      "desc": "辽东的建州女真政权与东南海商势力无地理交集与直接接触。"
+    },
+    {
+      "from": "后金",
+      "to": "荷兰东印度公司",
+      "type": "中立",
+      "value": 0,
+      "desc": "双方地理位置悬殊，此时尚无任何外交或贸易往来。"
+    },
+    {
+      "from": "朝鲜",
+      "to": "蒙古察哈尔部",
+      "type": "中立",
+      "value": 0,
+      "desc": "双方各自应对后金威胁，彼此之间无直接外交往来。"
+    },
+    {
+      "from": "朝鲜",
+      "to": "郑氏海商",
+      "type": "中立",
+      "value": 0,
+      "desc": "双方在此期间无直接的官方或大规模贸易往来。"
+    },
+    {
+      "from": "朝鲜",
+      "to": "荷兰东印度公司",
+      "type": "中立",
+      "value": 0,
+      "desc": "仅有极少数荷兰水手因海难漂流至朝鲜，无官方实质接触。"
+    },
+    {
+      "from": "蒙古察哈尔部",
+      "to": "郑氏海商",
+      "type": "中立",
+      "value": 0,
+      "desc": "漠南蒙古游牧政权与东南海商势力毫无交集。"
+    },
+    {
+      "from": "蒙古察哈尔部",
+      "to": "荷兰东印度公司",
+      "type": "中立",
+      "value": 0,
+      "desc": "内陆游牧部落与西方航海殖民势力不存在接触。"
+    },
+    {
+      "from": "郑氏海商",
+      "to": "荷兰东印度公司",
+      "type": "敌视",
+      "value": -60,
+      "desc": "郑芝龙在台湾海峡与荷兰人争夺海上贸易主导权，双方时有武力冲突。"
+    }
+  ],
+  "worldSettings": {
+    "culture": "天启七年秋，新君崇祯初立，朝野震荡。江南城市商品经济繁荣，秦淮风月与戏曲小说流行，王学左派带来思想解放，奢靡僭越之风冲击传统儒家礼制。朝堂上阉党余威尚存，东林士大夫以气节相尚。民间重宗族礼法，形成上层党争惨烈、中产纵情声色、底层挣扎求生的割裂图景。",
+    "weather": "正值“明清小冰期”巅峰，气候极端异常。北方冬春大旱连绵，夏秋常伴暴雨洪涝与蝗灾，四季错乱。九月入秋后气温骤降，北方已现酷寒。极寒干旱导致农作物绝收，陕北赤地千里，直接催生流民暴动。同时，严寒令辽东边军挨冻受馁，战马草料短缺，极大削弱明军御金战斗力。",
+    "religion": "晚明儒释道三教合流，民间信仰繁杂。佛教与道教在士绅与平民中根深蒂固，城隍、关帝庙香火鼎盛，僧道势力掌握大量庙产。与此同时，白莲教等秘密宗教在北方灾区暗流涌动，借饥荒招募信徒，成为动乱隐患。天主教伴随耶稣会士深入，徐光启等受洗，初现中西宗教交汇之景。",
+    "economy": "经济呈现南北割裂。江南商品经济发达，丝织等手工业涌现资本主义萌芽，白银为绝对主导货币。然国家财政濒临崩溃，为应对辽东战事，朝廷在“一条鞭法”外屡加“辽饷”，沉重赋税彻底压垮北方农户。对外方面，海外白银大量流入，但官办贸易萎缩，郑芝龙等武装海商垄断海贸。",
+    "technology": "处于传统科技总结与西学东渐交汇点。手工业技术成熟，生铁冶炼、丝织提花领先。军事科技因辽东战事急剧催化，明军大量引进并仿制西方“红夷大炮”，与传统鸟铳混编建立火器阵型，应用于宁远等战役。历法水利方面，引入西方几何、测量及天文仪器，初显近代科学启蒙。",
+    "diplomacy": "宗藩朝贡体系濒临瓦解，深陷多线边患。东北方，皇太极统领的后金屡次寇边，宁锦防线如履薄冰，为明朝最大外患；西北蒙古诸部首鼠两端。东南面临大航海时代冲击，葡萄牙盘踞澳门，荷兰侵扰台湾。明廷外交趋于被动，在建州女真、海上红毛夷的夹击与国内流民暴动中疲于奔命。"
+  },
+  "government": {
+    "name": "高度集权的君主专制政体。",
+    "description": "此时的大明废除了丞相制度，由皇帝直接统领六部，皇权专制达到了顶峰。内阁作为最高政务机构协助理政，但常受司礼监太监的牵制与干预。随着崇祯帝朱由检刚刚登基，朝廷正处于清除魏忠贤阉党势力、重塑官僚格局的动荡期。地方行政则实行布政使司、按察使司与都指挥使司的三司分立，军政大权最终皆收归中央。",
+    "nodes": [
+      {
+        "name": "内阁",
+        "desc": "明朝中枢辅政机构。明初废丞相后设立，至崇祯时期实质上掌握宰辅之权，负责票拟批答天下奏章，是皇帝处理国政的最高幕僚与决策咨询机构。",
+        "functions": [
+          "票拟天下奏章",
+          "参预机务与重大军国大事决策",
+          "起草重要诏书与圣旨"
+        ],
+        "positions": [
+          {
+            "name": "内阁首辅",
+            "rank": "正五品（常以尚书兼任，实享正二品以上待遇）",
+            "holder": "周延儒/温体仁等",
+            "desc": "内阁大学士之首，百官之长，大明帝国的实际宰相。",
+            "headCount": 1,
+            "duties": "作为内阁的领头人，内阁首辅在崇祯朝拥有极其重要的政治地位。其核心职责是负责对全国各地呈报给皇帝的奏章进行“票拟”，即代拟圣旨的草稿，贴在奏章上供皇帝“批红”参考。首辅不仅要协调内阁其他大学士的意见，还要在皇权与庞大的文官集团之间进行斡旋，对国家大政方针、重大人事任免以及军事战略部署提出决定性的建议，实质上行使着宰相的职权，是挽救大明危局的关键枢纽。"
+          },
+          {
+            "name": "内阁次辅及群辅",
+            "rank": "正五品（常兼他职提秩）",
+            "holder": "陈演/魏藻德等",
+            "desc": "协助首辅处理政务的内阁大学士。",
+            "headCount": 3,
+            "duties": "内阁次辅及群辅协助首辅处理每日繁杂的全国政务，分管不同领域的奏章票拟工作。在首辅缺位或因事请辞时，次辅需暂代首辅之职维持中枢运转。他们需要参与朝廷的廷推、廷议，对边关战事、农民军剿抚等重大议题发表意见。在崇祯朝严酷的政治斗争中，群辅往往代表着不同党派的利益，其职责不仅在于辅佐君王，更在于制衡首辅权力，防止朝政被一人独揽，同时承担着分担皇帝政务压力的重任。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "六部",
+        "desc": "明朝最高行政机构，直接对皇帝负责。统理全国军政、民政、财政、刑狱等各项事务，是国家机器运转的六大支柱。",
+        "functions": [
+          "执行国家行政指令",
+          "管理全国人事、财政、教育、军事、司法、工程"
+        ],
+        "positions": [],
+        "subs": [
+          {
+            "name": "吏部",
+            "desc": "六部之首，掌管全国文官的任免、考课、升降等事务。",
+            "functions": [
+              "文官选拔与铨选",
+              "京察与大计考核"
+            ],
+            "positions": [
+              {
+                "name": "吏部尚书",
+                "rank": "正二品",
+                "holder": "王应熊/郑三俊等",
+                "desc": "六部之首，尊称“天官”，掌握天下文官升迁任免大权。",
+                "headCount": 1,
+                "duties": "吏部尚书全面掌管全国文官的任免、考课、升降、勋封、调动等核心人事大权。在崇祯朝频繁的党争与人事更迭中，吏部尚书需要通过“京察”和“大计”来严格考核百官，选拔能够安邦定国的能臣干吏。同时，他还必须防范阉党残余与东林党等各派系在铨选官员时的营私舞弊，平衡各方势力。其权势直接关系到朝廷官僚机器的运转效率和政治风气，是维持明末官场秩序的第一责任人。"
+              }
+            ],
+            "subs": []
+          },
+          {
+            "name": "户部",
+            "desc": "主管全国土地、户籍、赋税、财政收支的部门。",
+            "functions": [
+              "征收天下赋税",
+              "统筹全国军饷与粮草",
+              "管理户籍与土地黄册"
+            ],
+            "positions": [
+              {
+                "name": "户部尚书",
+                "rank": "正二品",
+                "holder": "侯恂/倪元璐等",
+                "desc": "执掌明朝天下的钱粮命脉，尊称“地官”。",
+                "headCount": 1,
+                "duties": "户部尚书的主要职责是管理全国的土地、户籍、赋税、财政收支以及军饷的发放。面对崇祯朝连年征战导致的国库极度空虚，户部尚书必须殚精竭虑地筹措“辽饷”、“剿饷”和“练饷”这沉重的三饷。在保证九边重镇和中原剿匪前线军队粮草不断绝的同时，又要尽量避免因横征暴敛而进一步激化国内的农民起义。他是维持大明王朝战争机器运转的首席大管家，在财政枯竭的困局中苦苦支撑。"
+              }
+            ],
+            "subs": []
+          },
+          {
+            "name": "兵部",
+            "desc": "主管全国武卫官军选授、简练、屯军、边备及武举的部门。",
+            "functions": [
+              "制定军事战略与防务规划",
+              "调动全国兵马",
+              "武将的考核与升降"
+            ],
+            "positions": [
+              {
+                "name": "兵部尚书",
+                "rank": "正二品",
+                "holder": "陈新甲/卢象升/杨嗣昌等",
+                "desc": "天下军马总管，崇祯朝最高危的官职之一，尊称“本兵”。",
+                "headCount": 1,
+                "duties": "在内忧外患的崇祯朝，兵部尚书肩负着极其沉重的军事重任。其职责包括统筹全国的军事防务、制定平定农民起义（如李自成、张献忠）以及抵御后金（清朝）辽东入侵的宏大战略计划。不仅要负责军队的调动、将领的选拔与考核，还要与户部、工部协调粮草辎重与武器装备的供应。兵部尚书常常需要亲自出镇督师，统领千军万马，稍有不慎或战败便面临下狱甚至被皇帝处决的极刑风险，是挽天倾的最前线指挥官。"
+              }
+            ],
+            "subs": []
+          }
+        ]
+      },
+      {
+        "name": "都察院",
+        "desc": "明朝最高监察、弹劾及建言机构，与六部平行，为天子耳目风纪之司。",
+        "functions": [
+          "纠劾百司，监督百官",
+          "巡按地方，体察民情",
+          "参与重大刑狱会审"
+        ],
+        "positions": [
+          {
+            "name": "左都御史",
+            "rank": "正二品",
+            "holder": "刘宗周/李邦华等",
+            "desc": "都察院最高长官，掌管全国监察大权。",
+            "headCount": 1,
+            "duties": "作为都察院的最高长官，左都御史掌管着全国的监察大权，是整顿朝纲、维持风纪的核心人物。其职责包括纠劾文武百官的贪赃枉法、失职渎职行为，参与重大刑事案件的审理（三法司会审），并对国家的各项政策提出直言不讳的谏言。在崇祯时期，左都御史还需要督促各道监察御史巡按地方，监督将领在辽东和中原战场的作战情况，防止将帅拥兵自重或谎报军情，对匡正时弊、打击腐败具有不可替代的作用。"
+          }
+        ],
+        "subs": [
+          {
+            "name": "十三道监察御史",
+            "desc": "分管全国十三个布政使司的监察工作，代天巡狩。",
+            "functions": [
+              "巡按地方",
+              "监军纪律",
+              "弹劾不法官员"
+            ],
+            "positions": [
+              {
+                "name": "巡按御史",
+                "rank": "正七品",
+                "holder": "各道御史百余人",
+                "desc": "品秩虽低但权力极大，可直接风闻奏事。",
+                "headCount": 110,
+                "duties": "巡按御史的品级虽仅为正七品，但作为天子耳目，其权力极大。主要职责是奉命巡视地方或随军监军，负责考察地方官员的政绩与操守，审理地方冤假错案，监督地方赋税征收与军务筹备。在崇祯朝的战争状态下，他们常常充当监军的角色，在军中监督总兵、巡抚等大员的作战表现，防止将领怯战溃逃。他们拥有“风闻言事”的特权，可以直接向皇帝上密疏弹劾任何品级的文武官员，是皇帝控制地方和军队的重要触角。"
+              }
+            ],
+            "subs": []
+          }
+        ]
+      },
+      {
+        "name": "大理寺",
+        "desc": "明朝最高法院，掌审核刑狱案件，与刑部、都察院合称“三法司”。",
+        "functions": [
+          "驳正刑部定罪之误",
+          "复核全国死刑案件",
+          "参与三法司会审"
+        ],
+        "positions": [
+          {
+            "name": "大理寺卿",
+            "rank": "正三品",
+            "holder": "凌义渠等",
+            "desc": "大理寺最高长官，掌握全国刑狱的最后复核权。",
+            "headCount": 1,
+            "duties": "大理寺卿是明朝最高司法复核机构的掌舵人。其核心职责是对刑部审结的案件进行严格的复核，尤其是针对死刑和涉及官员的重大案件，必须仔细审阅卷宗，防止冤假错案的发生。若发现定罪量刑有误，有权驳回刑部重审。在崇祯朝频繁的政治大狱和将领问责中，大理寺卿需要与刑部尚书、左都御史共同进行“三法司会审”，在皇帝的严苛要求与法律的公正之间寻找平衡，其决断直接关系到无数官员和将士的身家性命。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "五军都督府",
+        "desc": "明朝名义上的最高军事统辖机构，分中、左、右、前、后五军，掌管全国卫所军籍。",
+        "functions": [
+          "管理天下卫所军籍",
+          "负责武官的袭替与俸禄",
+          "统辖京营兵马操练"
+        ],
+        "positions": [
+          {
+            "name": "左右都督",
+            "rank": "正一品",
+            "holder": "勋臣及高级武将",
+            "desc": "五军都督府的最高长官，多由公爵、侯爵等勋贵担任。",
+            "headCount": 10,
+            "duties": "左右都督名义上是明朝最高级别的军事统帅，位极人臣。其日常职责主要集中于管理全国数以百万计的卫所军籍、监督京营部队的日常操练与防务、处理各地武官的世袭更替以及军职的评定。然而，在明朝“以文制武”的体制下，五军都督府有统兵权而无调兵权，调兵大权归属兵部。在崇祯朝的末日危机中，都督们更多是负责拱卫京师的安全，维持京营这支最后战略预备队的战斗力，并在京城戒严时承担九门防守的重任。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "内阁",
+        "desc": "明朝最高行政决策与顾问中枢，名义上为皇帝秘书机构，实则行使宰相之责。",
+        "functions": [
+          "票拟政务",
+          "参预机密",
+          "起草诏令"
+        ],
+        "positions": [
+          {
+            "name": "内阁首辅",
+            "rank": "正一品至正五品（依本官品秩）",
+            "holder": "温体仁/周延儒等",
+            "desc": "内阁大学士之首，百官之揆。",
+            "headCount": 1,
+            "duties": "作为内阁的最高领导者，首辅掌握着最为核心的票拟权，负责在各地呈送的奏章上附上处理意见的草签，供崇祯皇帝朱笔批红。在内忧外患的明末，首辅不仅要调和百官与多疑皇帝之间的尖锐矛盾，还需直接参与平定流寇和抵御后金等国家重大战略的决策，是政治风暴的中心，权力极大但也时刻面临皇帝的猜忌、罢免甚至杀戮。"
+          },
+          {
+            "name": "内阁群辅",
+            "rank": "正一品至正五品（依本官品秩）",
+            "holder": "多名",
+            "desc": "协助首辅处理政务的内阁大学士。",
+            "headCount": 5,
+            "duties": "内阁群辅（次辅及其他大学士）主要负责协助首辅分阅天下奏章，共同商议并草拟处理意见。在崇祯朝频繁更迭的内阁中，群辅们往往代表着不同的政治派系（如复社、东林或阉党余孽），他们不仅需要处理繁重的日常行政公文，还经常在廷推、廷议中互相倾轧，试图通过获取皇帝的信任来取代首辅之位，是朝廷党争的核心参与者。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "六部",
+        "desc": "明朝中央最高行政执行机构，下辖六大职能部门，直接对皇帝负责。",
+        "functions": [
+          "全国行政管理",
+          "政策执行",
+          "百官考核与调遣"
+        ],
+        "positions": [],
+        "subs": [
+          {
+            "name": "吏部",
+            "desc": "六部之首，掌管全国文官的任免、考选、升降、调动等事务。",
+            "functions": [
+              "官员铨选",
+              "京察大计",
+              "勋阶封赠"
+            ],
+            "positions": [
+              {
+                "name": "吏部尚书",
+                "rank": "正二品",
+                "holder": "郑三俊/侯恂等",
+                "desc": "吏部最高长官，被称为“天官”。",
+                "headCount": 1,
+                "duties": "吏部尚书统管全国文职官吏的铨选、考课、升降、勋封、调任等极其重要的政务。在明末党争激烈的背景下，吏部尚书不仅要为崇祯帝选拔能够挽救危局的实干之臣，还要在东林党、阉党余孽以及其他政治派别之间维持脆弱的平衡。其手中掌握的官帽分配权使其成为朝廷各方势力极力拉拢或疯狂打击的首要目标。"
+              }
+            ],
+            "subs": []
+          },
+          {
+            "name": "兵部",
+            "desc": "掌管全国武卫官军选授、简练及军政之令。",
+            "functions": [
+              "武官铨选",
+              "军事调遣",
+              "兵籍与军械管理"
+            ],
+            "positions": [
+              {
+                "name": "兵部尚书",
+                "rank": "正二品",
+                "holder": "杨嗣昌/陈新甲/孙传庭等",
+                "desc": "兵部最高长官，被称为“本兵”。",
+                "headCount": 1,
+                "duties": "兵部尚书全面负责明朝全国的军事行政事务，包括武官的选拔考课、兵籍的管理、军械的制造与分配以及各地卫所兵马的调遣。在崇祯朝面临李自成起义与清军入关双重威胁的绝境下，兵部尚书需时刻筹谋剿饷、练兵与御敌之策，往往还要以本官兼任督师或总督奔赴前线，承担着极为沉重的军事压力，稍有不慎便会落得下狱伏法的下场。"
+              },
+              {
+                "name": "职方清吏司郎中",
+                "rank": "正五品",
+                "holder": "张若麒等",
+                "desc": "掌管天下舆图、军制、城隍、镇戍等要务的司官。",
+                "headCount": 1,
+                "duties": "职方司郎中虽仅为正五品，但执掌天下军防图籍、各地兵马调遣计划、将领战功勘核以及关隘守备的规划，是兵部最为核心的实权职位。在明末战事频发的时期，职方司郎中直接参与制定中原剿寇与辽东抗清的战略部署，其提供的情报与建议往往直接影响兵部尚书乃至皇帝的军事决策，甚至有权干预前线督师的实际指挥。"
+              }
+            ],
+            "subs": []
+          },
+          {
+            "name": "户部",
+            "desc": "掌管全国土地、户籍、赋税、货币及财政收支。",
+            "functions": [
+              "征收赋税",
+              "筹集军饷",
+              "掌管国库"
+            ],
+            "positions": [
+              {
+                "name": "户部尚书",
+                "rank": "正二品",
+                "holder": "倪元璐等",
+                "desc": "掌管国家财政的最高长官，被称为“地官”。",
+                "headCount": 1,
+                "duties": "户部尚书负责统筹全国的田地赋税、户籍人口、盐铁茶马之利以及太仓银库的收支。在崇祯朝，随着辽东战事和镇压农民军的开销呈几何级数增长，户部尚书的核心职责变成了近乎不可能完成的“筹饷”任务。他们必须在国库空虚、民不聊生的绝境中，通过加派“三饷”（辽饷、剿饷、练饷）或四处搜刮来维持摇摇欲坠的帝国战争机器，承受着巨大的财政与道德双重压力。"
+              }
+            ],
+            "subs": []
+          }
+        ]
+      },
+      {
+        "name": "都察院",
+        "desc": "明朝最高监察、弹劾及建言机关，与六科给事中合称“科道”。",
+        "functions": [
+          "纠劾百官",
+          "辨明冤狱",
+          "提督各道"
+        ],
+        "positions": [
+          {
+            "name": "左都御史",
+            "rank": "正二品",
+            "holder": "李邦华等",
+            "desc": "都察院最高长官，总宪。",
+            "headCount": 1,
+            "duties": "左都御史作为全国最高监察长官，全权执掌纠察内外百官、整顿朝纲之重任。不仅需要监督六部及地方各级官员的行政作为与道德操守，还要参与朝廷重大案件的廷推、廷议和三法司会审。在崇祯朝严苛且多疑的政治环境中，左都御史既是皇帝整肃贪腐和怠政的利器，也常沦为党争中倾轧异己、发动舆论攻击的幕后指挥者。"
+          },
+          {
+            "name": "监察御史",
+            "rank": "正七品",
+            "holder": "多名",
+            "desc": "分道巡察的基层监察官。",
+            "headCount": 110,
+            "duties": "监察御史虽然品秩仅为正七品，但代天子巡狩，拥有极大的言事权和纠察权。他们分属十三道，负责巡视地方政务、审理冤假错案、监督地方官吏的施政与贪腐情况，并可风闻言事，直接向皇帝上疏弹劾包括内阁首辅在内的任何高级官员。在明末乱世，御史的奏疏往往能引发朝局大地震，是左右政治风向、掀起党争波澜的重要力量。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "宦官二十四衙门",
+        "desc": "明朝内廷宦官机构的总称，以十二监最为重要，充当皇帝的内廷代理人。",
+        "functions": [
+          "内廷管理",
+          "代笔批红",
+          "特务统治"
+        ],
+        "positions": [],
+        "subs": [
+          {
+            "name": "司礼监",
+            "desc": "二十四衙门之首，代皇帝行使批红权，权势极盛。",
+            "functions": [
+              "代笔批红",
+              "提督东厂",
+              "传达圣意"
+            ],
+            "positions": [
+              {
+                "name": "掌印太监",
+                "rank": "正四品",
+                "holder": "王承恩",
+                "desc": "司礼监最高负责人，内廷大总管。",
+                "headCount": 1,
+                "duties": "司礼监掌印太监是明朝内廷宦官中的最高掌权者，负责在内阁提交的票拟上盖上皇帝的印信，并代行朱笔批红之权以确立最终的圣旨。尽管崇祯帝初登基时清除了魏忠贤并对宦官严加防范，但在局势糜烂的晚期，皇帝仍不得不重新依赖掌印太监等亲信宦官来制衡文官集团、传达机密谕旨、甚至监军督战。他们是皇帝意志的直接延伸，掌握着极大的隐性政治与生杀大权。"
+              },
+              {
+                "name": "秉笔太监",
+                "rank": "正四品",
+                "holder": "曹化淳/王德化等",
+                "desc": "负责执笔批红，常兼任东厂提督。",
+                "headCount": 4,
+                "duties": "司礼监秉笔太监的主要职责是协助皇帝阅读群臣奏章，并根据皇帝的口述或意图，用朱笔在奏折上写下批示。更为致命的是，秉笔太监中通常会有一人被委任提督东厂，掌控全国性的特务情报网络，负责监视百官言行、缉捕叛逆及刺探军情。在崇祯末年，他们是皇帝搜集文官贪腐失职证据、绕过三法司直接诏狱审讯以及掌控京师治安的重要耳目与爪牙。"
+              }
+            ],
+            "subs": []
+          }
+        ]
+      },
+      {
+        "name": "司礼监",
+        "description": "明代宦官二十四衙门之首，代皇帝批阅奏章，拥有“批红”大权，在天启年间其权力一度凌驾于内阁与六部之上。",
+        "functions": [
+          "代拟批红",
+          "传达圣意",
+          "统领内廷宦官",
+          "提督东厂"
+        ],
+        "positions": [
+          {
+            "name": "掌印太监",
+            "rank": "正四品(内廷品秩，实权极高)",
+            "duties": "司礼监掌印太监虽然品秩仅为正四品，但作为内廷宦官的最高首领，握有代替皇帝在内阁票拟上进行“批红”的绝对皇权，是事实上的国家最高决策者之一。在天启七年九月这个惊心动魄的历史节点，前任掌权者魏忠贤的势力依然盘根错节，新任掌印太监需要极其小心地在新登基、城府极深的崇祯皇帝与庞大的太监集团之间周旋。其职责不仅是管理庞大繁杂的皇宫内廷事务，更要暗中操控东厂的特务网络，严密监视外朝文官的动向，其手中的朱笔哪怕只是一次漫不经心的勾画，都足以决定成百上千朝廷命官的生死荣辱。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "吏部",
+        "description": "明代六部之首，掌管全国文职官吏的任免、考课、升降、勋封，被称为“天官”。",
+        "functions": [
+          "文官铨选",
+          "京察大计",
+          "勋封赐爵",
+          "官吏调动"
+        ],
+        "positions": [
+          {
+            "name": "吏部尚书",
+            "rank": "正二品",
+            "duties": "吏部尚书被尊称为“天官”，掌握着大明朝廷最为核心的人事大权。其核心职责在于主持全国文官的铨选与任命，并在每三年一次的“京察”与“大计”中决定无数各级官员的仕途生死。在天启七年九月新旧皇权交替的敏感时期，吏部尚书更需要如履薄冰地处理魏忠贤遗留的阉党官员与即将复起的东林党人之间的人事安排。任何一次京官职位的调动或外放，都可能引发朝堂上激烈的党争与权力洗牌，他是各方势力极力巴结、拉拢与敬畏的核心人物，必须具备极高的政治智慧与平衡手腕。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "兵部",
+        "description": "掌管全国卫所军官的选拔、兵籍、军械、驿站及军事调遣，是大明的最高军事行政机关。",
+        "functions": [
+          "武官铨选",
+          "兵籍军械管理",
+          "全国驿传统筹",
+          "军事战略规划"
+        ],
+        "positions": [
+          {
+            "name": "兵部尚书",
+            "rank": "正二品",
+            "duties": "兵部尚书统管大明全国的武装力量与军事行政，被称为“大司马”。在天启七年辽东后金政权虎视眈眈、国内局势动荡的危机时刻，兵部尚书必须日夜筹划九边重镇的防御部署、粮草军械的调配以及前线武将的选拔任命。除了要紧急处理来自辽东前线袁崇焕等将领的十万火急军情，他还需统筹全国庞大且濒临崩溃的驿站系统以确保军令传递畅通无阻，并在朝堂上与户部激烈博弈以争取更多的辽饷。其军事决策的正确与否，直接决定了大明帝国北方防线的稳固乃至整个王朝的存亡。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "户部",
+        "description": "掌管全国土地、户籍、赋税、货币、财政收支及官员俸禄，是大明帝国的钱袋子。",
+        "functions": [
+          "征收赋税",
+          "户口黄册管理",
+          "边镇粮饷调配",
+          "国家财政预算"
+        ],
+        "positions": [
+          {
+            "name": "户部尚书",
+            "rank": "正二品",
+            "duties": "户部尚书是大明帝国的“大管家”，全权负责国家的财政收支、田地丈量、户籍黄册管理以及盐茶专卖等经济命脉。面对天启末年因辽东连年战事和皇室无度挥霍导致的国库极度空虚，户部尚书必须绞尽脑汁在全国范围内强行征收“辽饷”，同时又要想方设法安抚因沉重赋税而濒临造反边缘的底层百姓。在日常的朝政运转中，他还要面对其他五部关于经费拨付的无休止催讨，并在御前会议上就国家财政的开源节流展开唇枪舌剑的争论，承载着维系大明这部庞大国家机器运转的巨大压力与沉重责任。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "刑部",
+        "description": "掌管全国法律刑狱，负责审理重大刑事案件及复核死刑，与都察院、大理寺并称三法司。",
+        "functions": [
+          "重案审理",
+          "死刑复核",
+          "秋审朝审",
+          "制定修订律令"
+        ],
+        "positions": [
+          {
+            "name": "刑部尚书",
+            "rank": "正二品",
+            "duties": "刑部尚书作为国家最高司法行政长官，负责执掌《大明律》的执行与修订，统筹全国范围内的重大刑事案件审理与死刑复核，并在与都察院、大理寺组成的“三法司”会审中占据主导地位。在天启七年九月这个新君继位的特殊节点，刑部尚书面临着极度复杂的司法环境。他不仅要处理民间积压如山的冤假错案，更要准备迎接即将到来的、针对魏忠贤阉党核心成员的彻底清算与大审判。在这场风暴中，刑部尚书的每一次落笔判决都牵涉着错综复杂的政治利益与朝代更迭的血雨腥风，稍有不慎便会引火烧身。"
+          }
+        ],
+        "subs": []
+      },
+      {
+        "name": "锦衣卫",
+        "description": "皇帝的私人禁卫与特务情报机构，掌管诏狱，拥有绕过常规司法系统直接拿人的特权，令人闻风丧胆。",
+        "functions": [
+          "侍卫仪仗",
+          "侦察逮捕",
+          "执掌诏狱",
+          "收集军政情报"
+        ],
+        "positions": [
+          {
+            "name": "锦衣卫指挥使",
+            "rank": "正三品",
+            "duties": "锦衣卫指挥使作为皇帝最为信任的鹰犬与贴身禁卫首领，直接听命于皇帝本人，拥有绕过三法司直接逮捕、残酷审讯乃至秘密处决皇亲国戚与当朝大员的恐怖特权。其日常工作不仅包括安排皇城内外的严密安保与朝会上的华丽仪仗，更核心的是指挥遍布天下的缇骑与密探，无孔不入地监视文武百官的一言一行。在天启七年九月的诡谲政局中，指挥使必须敏锐地察觉新帝朱由检深藏的杀机，随时准备带领精锐校尉查抄阉党羽翼的豪华府邸，将昔日不可一世的权贵投入阴森恐怖的诏狱之中进行清算。"
+          }
+        ],
+        "subs": []
+      }
+    ],
+    "selectionSystem": "官员选拔高度依赖以八股文为主的科举制度，士子需通过乡试、会试、殿试的层层筛选。此外，朝廷也辅以少数的国子监荫监、捐纳与大臣保举作为补充入仕途径。",
+    "promotionSystem": "官员的升迁与贬黜主要依据吏部与都察院定期主持的“京察”和“大计”考课结果。但在天启与崇祯皇权交替的特殊节点，官员的仕途升降往往被残酷的党争与皇帝的政治肃清行动所左右。"
+  },
+  "officeTree": [
+    {
+      "name": "内阁",
+      "description": "大明帝国的最高机密顾问与行政决策中枢，名义上为皇帝秘书，实则握有“票拟”之权，是事实上的宰相机构。",
+      "functions": [
+        "票拟批答",
+        "参预机务",
+        "草拟诏令",
+        "统筹六部"
+      ],
+      "positions": [
+        {
+          "name": "内阁首辅",
+          "rank": "正二品(常加正一品太师/太傅衔)",
+          "duties": "作为内阁的绝对领袖，首辅不仅负责统领群臣、主持内阁日常的票拟工作，是皇帝最为倚重的最高国务顾问；还需要在波诡云谲的朝堂斗争中平衡阉党残余与清流东林党的势力，审阅全国各地呈报的重大军政奏折。在天启七年九月新帝朱由检刚刚登基、皇权交替的极度敏感期，首辅必须为关乎大明帝国生死存亡的最高军政国策（如平息辽东战事、安抚流民）定下基调，其每一次落笔与表态皆可引发朝野大地震，是名副其实的百官之首。"
+        }
+      ],
+      "subs": []
+    },
+    {
+      "name": "司礼监",
+      "description": "明代宦官二十四衙门之首，代皇帝批阅奏章，拥有“批红”大权，在天启年间其权力一度凌驾于内阁与六部之上。",
+      "functions": [
+        "代拟批红",
+        "传达圣意",
+        "统领内廷宦官",
+        "提督东厂"
+      ],
+      "positions": [
+        {
+          "name": "掌印太监",
+          "rank": "正四品(内廷品秩，实权极高)",
+          "duties": "司礼监掌印太监虽然品秩仅为正四品，但作为内廷宦官的最高首领，握有代替皇帝在内阁票拟上进行“批红”的绝对皇权，是事实上的国家最高决策者之一。在天启七年九月这个惊心动魄的历史节点，前任掌权者魏忠贤的势力依然盘根错节，新任掌印太监需要极其小心地在新登基、城府极深的崇祯皇帝与庞大的太监集团之间周旋。其职责不仅是管理庞大繁杂的皇宫内廷事务，更要暗中操控东厂的特务网络，严密监视外朝文官的动向，其手中的朱笔哪怕只是一次漫不经心的勾画，都足以决定成百上千朝廷命官的生死荣辱。"
+        }
+      ],
+      "subs": []
+    },
+    {
+      "name": "吏部",
+      "description": "明代六部之首，掌管全国文职官吏的任免、考课、升降、勋封，被称为“天官”。",
+      "functions": [
+        "文官铨选",
+        "京察大计",
+        "勋封赐爵",
+        "官吏调动"
+      ],
+      "positions": [
+        {
+          "name": "吏部尚书",
+          "rank": "正二品",
+          "duties": "吏部尚书被尊称为“天官”，掌握着大明朝廷最为核心的人事大权。其核心职责在于主持全国文官的铨选与任命，并在每三年一次的“京察”与“大计”中决定无数各级官员的仕途生死。在天启七年九月新旧皇权交替的敏感时期，吏部尚书更需要如履薄冰地处理魏忠贤遗留的阉党官员与即将复起的东林党人之间的人事安排。任何一次京官职位的调动或外放，都可能引发朝堂上激烈的党争与权力洗牌，他是各方势力极力巴结、拉拢与敬畏的核心人物，必须具备极高的政治智慧与平衡手腕。"
+        }
+      ],
+      "subs": []
+    },
+    {
+      "name": "兵部",
+      "description": "掌管全国卫所军官的选拔、兵籍、军械、驿站及军事调遣，是大明的最高军事行政机关。",
+      "functions": [
+        "武官铨选",
+        "兵籍军械管理",
+        "全国驿传统筹",
+        "军事战略规划"
+      ],
+      "positions": [
+        {
+          "name": "兵部尚书",
+          "rank": "正二品",
+          "duties": "兵部尚书统管大明全国的武装力量与军事行政，被称为“大司马”。在天启七年辽东后金政权虎视眈眈、国内局势动荡的危机时刻，兵部尚书必须日夜筹划九边重镇的防御部署、粮草军械的调配以及前线武将的选拔任命。除了要紧急处理来自辽东前线袁崇焕等将领的十万火急军情，他还需统筹全国庞大且濒临崩溃的驿站系统以确保军令传递畅通无阻，并在朝堂上与户部激烈博弈以争取更多的辽饷。其军事决策的正确与否，直接决定了大明帝国北方防线的稳固乃至整个王朝的存亡。"
+        }
+      ],
+      "subs": []
+    },
+    {
+      "name": "户部",
+      "description": "掌管全国土地、户籍、赋税、货币、财政收支及官员俸禄，是大明帝国的钱袋子。",
+      "functions": [
+        "征收赋税",
+        "户口黄册管理",
+        "边镇粮饷调配",
+        "国家财政预算"
+      ],
+      "positions": [
+        {
+          "name": "户部尚书",
+          "rank": "正二品",
+          "duties": "户部尚书是大明帝国的“大管家”，全权负责国家的财政收支、田地丈量、户籍黄册管理以及盐茶专卖等经济命脉。面对天启末年因辽东连年战事和皇室无度挥霍导致的国库极度空虚，户部尚书必须绞尽脑汁在全国范围内强行征收“辽饷”，同时又要想方设法安抚因沉重赋税而濒临造反边缘的底层百姓。在日常的朝政运转中，他还要面对其他五部关于经费拨付的无休止催讨，并在御前会议上就国家财政的开源节流展开唇枪舌剑的争论，承载着维系大明这部庞大国家机器运转的巨大压力与沉重责任。"
+        }
+      ],
+      "subs": []
+    },
+    {
+      "name": "刑部",
+      "description": "掌管全国法律刑狱，负责审理重大刑事案件及复核死刑，与都察院、大理寺并称三法司。",
+      "functions": [
+        "重案审理",
+        "死刑复核",
+        "秋审朝审",
+        "制定修订律令"
+      ],
+      "positions": [
+        {
+          "name": "刑部尚书",
+          "rank": "正二品",
+          "duties": "刑部尚书作为国家最高司法行政长官，负责执掌《大明律》的执行与修订，统筹全国范围内的重大刑事案件审理与死刑复核，并在与都察院、大理寺组成的“三法司”会审中占据主导地位。在天启七年九月这个新君继位的特殊节点，刑部尚书面临着极度复杂的司法环境。他不仅要处理民间积压如山的冤假错案，更要准备迎接即将到来的、针对魏忠贤阉党核心成员的彻底清算与大审判。在这场风暴中，刑部尚书的每一次落笔判决都牵涉着错综复杂的政治利益与朝代更迭的血雨腥风，稍有不慎便会引火烧身。"
+        }
+      ],
+      "subs": []
+    },
+    {
+      "name": "都察院",
+      "description": "明代最高监察、弹劾及建言机关，负责纠察百官、巡视地方，是朝堂舆论与党争的核心阵地。",
+      "functions": [
+        "纠劾百司",
+        "巡视地方",
+        "参与廷推",
+        "建言献策"
+      ],
+      "positions": [
+        {
+          "name": "左都御史",
+          "rank": "正二品",
+          "duties": "左都御史是都察院的最高长官，统领全国十三道监察御史，拥有闻风言事、直接向皇帝上疏纠劾文武百官的特权。其职责不仅在于监督六部九卿的行政过失，更在于派遣巡按御史巡视地方、平反冤狱、整顿日益腐败的吏治。在崇祯皇帝刚刚登基的权力真空期，左都御史手中的弹劾奏疏成为了打击政敌、引导朝廷舆论走向的最致命武器。他需要指挥麾下的言官阵营，在朝堂上向权倾朝野的阉党发起猛烈的政治攻势，为新君扫清执政障碍，是明末朝堂党争中冲锋陷阵的统帅级人物。"
+        }
+      ],
+      "subs": []
+    },
+    {
+      "name": "锦衣卫",
+      "description": "皇帝的私人禁卫与特务情报机构，掌管诏狱，拥有绕过常规司法系统直接拿人的特权，令人闻风丧胆。",
+      "functions": [
+        "侍卫仪仗",
+        "侦察逮捕",
+        "执掌诏狱",
+        "收集军政情报"
+      ],
+      "positions": [
+        {
+          "name": "锦衣卫指挥使",
+          "rank": "正三品",
+          "duties": "锦衣卫指挥使作为皇帝最为信任的鹰犬与贴身禁卫首领，直接听命于皇帝本人，拥有绕过三法司直接逮捕、残酷审讯乃至秘密处决皇亲国戚与当朝大员的恐怖特权。其日常工作不仅包括安排皇城内外的严密安保与朝会上的华丽仪仗，更核心的是指挥遍布天下的缇骑与密探，无孔不入地监视文武百官的一言一行。在天启七年九月的诡谲政局中，指挥使必须敏锐地察觉新帝朱由检深藏的杀机，随时准备带领精锐校尉查抄阉党羽翼的豪华府邸，将昔日不可一世的权贵投入阴森恐怖的诏狱之中进行清算。"
+        }
+      ],
+      "subs": []
+    }
+  ],
+  "cities": [],
+  "eraState": {
+    "politicalUnity": 0.35,
+    "centralControl": 0.55,
+    "legitimacySource": "declining",
+    "socialStability": 0.25,
+    "economicProsperity": 0.35,
+    "culturalVibrancy": 0.75,
+    "bureaucracyStrength": 0.3,
+    "militaryProfessionalism": 0.4,
+    "landSystemType": "private",
+    "dynastyPhase": "crisis",
+    "contextDescription": "公元1627年九月，明熹宗驾崩，朱由检（崇祯帝）刚刚登基。此时大明已步入深重危机。政治上，魏忠贤阉党与东林党的血腥党争极度撕裂了官僚体系，朝政腐败瘫痪。经济上，辽东战事导致“辽饷”等赋税沉重，国库枯竭。社会层面，正值“小冰河期”，陕北等地连年大旱，饥荒严重，王二等明末农民起义已于本年爆发。外部后金政权虎视眈眈。尽管江南仍有晚明商业与世俗文化的畸形繁荣，但帝国整体已处于全面崩溃的前夜。"
+  },
+  "adminHierarchy": {
+    "player": {
+      "name": "玩家势力行政区划",
+      "description": "玩家势力的行政层级结构",
+      "divisions": [
+        {
+          "id": "div_n_zhili",
+          "name": "北直隶",
+          "level": "province",
+          "description": "大明京师所在，天子守国门，防御后金与蒙古的腹心之地，帝国政治中枢。",
+          "children": [
+            {
+              "id": "div_shuntian",
+              "name": "顺天府",
+              "level": "prefecture",
+              "description": "京城所在之府，天下首府，辖京师内外及周边重镇。",
+              "children": [
+                {
+                  "id": "div_daxing",
+                  "name": "大兴县",
+                  "level": "county",
+                  "description": "京师附郭县之一，皇城东部及东郊所在，权贵云集。",
+                  "children": []
+                },
+                {
+                  "id": "div_wanping",
+                  "name": "宛平县",
+                  "level": "county",
+                  "description": "京师附郭县之二，皇城西部及西郊所在，京畿要冲。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_baoding",
+              "name": "保定府",
+              "level": "prefecture",
+              "description": "京师南大门，畿辅重地，设保定巡抚镇守。",
+              "children": [
+                {
+                  "id": "div_qingyuan",
+                  "name": "清苑县",
+                  "level": "county",
+                  "description": "保定府治所在，扼守京汉交通要道。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_shanxi_prov",
+          "name": "陕西承宣布政使司",
+          "level": "province",
+          "description": "大明西北边陲，连年大旱，民不聊生，驿站裁撤后流民激增，暗流涌动。",
+          "children": [
+            {
+              "id": "div_xian_pref",
+              "name": "西安府",
+              "level": "prefecture",
+              "description": "西北第一重镇，陕西布政使司及三边总督驻地。",
+              "children": [
+                {
+                  "id": "div_changan",
+                  "name": "长安县",
+                  "level": "county",
+                  "description": "西安府附郭县，汉唐故都所在，西北军政中心。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_yanan",
+              "name": "延安府",
+              "level": "prefecture",
+              "description": "陕北重镇，土地贫瘠，连年灾荒，民变火种正在酝酿。",
+              "children": [
+                {
+                  "id": "div_fushi",
+                  "name": "肤施县",
+                  "level": "county",
+                  "description": "延安府治所在，陕北军事与交通要冲。",
+                  "children": []
+                },
+                {
+                  "id": "div_mizhi",
+                  "name": "米脂县",
+                  "level": "county",
+                  "description": "陕北穷苦之县，驿卒李自成家乡，饥荒极为严重。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_liaodong",
+          "name": "辽东都指挥使司",
+          "level": "province",
+          "description": "关外抗击后金的最后防线，自广宁兵败后，仅余宁锦一线，局势危若累卵。",
+          "children": [
+            {
+              "id": "div_ningyuan",
+              "name": "宁远卫",
+              "level": "prefecture",
+              "description": "关外防线核心，辽东巡抚驻地，曾在此击退努尔哈赤。",
+              "children": [
+                {
+                  "id": "div_ningyuan_city",
+                  "name": "宁远城",
+                  "level": "county",
+                  "description": "固若金汤的军事重镇，配备红夷大炮，扼守辽西走廊。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_jinzhou",
+              "name": "锦州卫",
+              "level": "prefecture",
+              "description": "宁锦防线的最前沿，直面后金八旗的兵锋。",
+              "children": [
+                {
+                  "id": "div_jinzhou_city",
+                  "name": "锦州城",
+                  "level": "county",
+                  "description": "关外极关，城池残破正在抢修，大明前线桥头堡。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_s_zhili",
+          "name": "南直隶",
+          "level": "province",
+          "description": "大明留都所在，江南财赋与人文重地，帝国经济命脉，东林党人活跃。",
+          "children": [
+            {
+              "id": "div_yingtian",
+              "name": "应天府",
+              "level": "prefecture",
+              "description": "南京所在，设有六部等留都全套机构，江南政治中心。",
+              "children": [
+                {
+                  "id": "div_jiangning",
+                  "name": "江宁县",
+                  "level": "county",
+                  "description": "应天府附郭县，秦淮繁华之地，商贾云集。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_suzhou",
+              "name": "苏州府",
+              "level": "prefecture",
+              "description": "天下财赋第一府，丝织业发达，市民阶层庞大。",
+              "children": [
+                {
+                  "id": "div_wu_county",
+                  "name": "吴县",
+                  "level": "county",
+                  "description": "苏州府附郭县，江南水乡核心，抗税运动频发。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_n_zhili",
+          "name": "北直隶",
+          "level": "province",
+          "description": "大明京师所在，天子守国门，防御后金与蒙古的腹心之地，帝国政治中枢。",
+          "children": [
+            {
+              "id": "div_yongping",
+              "name": "永平府",
+              "level": "prefecture",
+              "description": "京师东大门，扼守辽西走廊与山海关之咽喉重镇。",
+              "children": [
+                {
+                  "id": "div_lulong",
+                  "name": "卢龙县",
+                  "level": "county",
+                  "description": "永平府治所，古之右北平，兵家必争之地。",
+                  "children": []
+                },
+                {
+                  "id": "div_shanhaiguan",
+                  "name": "山海卫",
+                  "level": "county",
+                  "description": "天下第一关，防备后金入关的绝对防线。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_zhending",
+              "name": "真定府",
+              "level": "prefecture",
+              "description": "京师南控中原的交通枢纽，畿南重镇。",
+              "children": [
+                {
+                  "id": "div_zhending_county",
+                  "name": "真定县",
+                  "level": "county",
+                  "description": "真定府治所，商贾云集，粮草转运之枢纽。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_s_zhili",
+          "name": "南直隶",
+          "level": "province",
+          "description": "留都南京所在，大明财赋重地，东南人文荟萃之所。",
+          "children": [
+            {
+              "id": "div_fengyang",
+              "name": "凤阳府",
+              "level": "prefecture",
+              "description": "大明中都所在，太祖龙兴之地，政治地位崇高。",
+              "children": [
+                {
+                  "id": "div_fengyang_county",
+                  "name": "凤阳县",
+                  "level": "county",
+                  "description": "中都皇城所在，皇陵守备森严。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_songjiang",
+              "name": "松江府",
+              "level": "prefecture",
+              "description": "江南丝织棉纺中心，赋税甲于天下。",
+              "children": [
+                {
+                  "id": "div_huating",
+                  "name": "华亭县",
+                  "level": "county",
+                  "description": "松江府治，士绅富商聚集，文风鼎盛。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_shaanxi",
+          "name": "陕西承宣布政使司",
+          "level": "province",
+          "description": "西北边防重地，连年旱灾，民变四起，九边重镇多位于此。",
+          "children": [
+            {
+              "id": "div_hanzhong",
+              "name": "汉中府",
+              "level": "prefecture",
+              "description": "陕南重镇，沟通巴蜀与关中的咽喉要道。",
+              "children": [
+                {
+                  "id": "div_nanzheng",
+                  "name": "南郑县",
+                  "level": "county",
+                  "description": "汉中府治，物产丰饶，为西北用兵之粮仓。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_gongchang",
+              "name": "巩昌府",
+              "level": "prefecture",
+              "description": "控扼陇右，防备番夷与流寇的西部屏障。",
+              "children": [
+                {
+                  "id": "div_longxi",
+                  "name": "陇西县",
+                  "level": "county",
+                  "description": "巩昌府治，古丝绸之路重镇，民风彪悍。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_shanxi",
+          "name": "山西承宣布政使司",
+          "level": "province",
+          "description": "表里山河，晋商云集，兼具九边防备蒙古之重责。",
+          "children": [
+            {
+              "id": "div_taiyuan",
+              "name": "太原府",
+              "level": "prefecture",
+              "description": "山西首府，晋藩所在，控太行而扼汾河。",
+              "children": [
+                {
+                  "id": "div_yangqu",
+                  "name": "阳曲县",
+                  "level": "county",
+                  "description": "太原府治，城池坚固，商业繁盛。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_datong",
+              "name": "大同府",
+              "level": "prefecture",
+              "description": "九边重镇之一，直面蒙古诸部，百战之地。",
+              "children": [
+                {
+                  "id": "div_datong_county",
+                  "name": "大同县",
+                  "level": "county",
+                  "description": "大同府治，驻扎重兵，城防极其完备。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_shandong",
+          "name": "山东承宣布政使司",
+          "level": "province",
+          "description": "齐鲁大地，孔孟之乡，运河贯穿，漕运枢纽。",
+          "children": [
+            {
+              "id": "div_jinan",
+              "name": "济南府",
+              "level": "prefecture",
+              "description": "山东首府，德王藩封，控扼南北交通。",
+              "children": [
+                {
+                  "id": "div_licheng",
+                  "name": "历城县",
+                  "level": "county",
+                  "description": "济南府治，名泉众多，文人骚客汇聚。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_dengzhou",
+              "name": "登州府",
+              "level": "prefecture",
+              "description": "山东半岛重镇，水师驻扎地，扼守渤海海峡。",
+              "children": [
+                {
+                  "id": "div_penglai",
+                  "name": "蓬莱县",
+                  "level": "county",
+                  "description": "登州府治，登莱巡抚驻地，支援辽东的海上跳板。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_henan",
+          "name": "河南承宣布政使司",
+          "level": "province",
+          "description": "中原腹地，天下之枢，藩王宗室封地最为密集之省。",
+          "children": [
+            {
+              "id": "div_kaifeng",
+              "name": "开封府",
+              "level": "prefecture",
+              "description": "河南首府，周王藩封，黄河水患与流寇的焦点。",
+              "children": [
+                {
+                  "id": "div_xiangfu",
+                  "name": "祥符县",
+                  "level": "county",
+                  "description": "开封府治，城高池深，中原第一重镇。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_henan_pref",
+              "name": "河南府",
+              "level": "prefecture",
+              "description": "九朝古都所在，福王藩封，极其富庶。",
+              "children": [
+                {
+                  "id": "div_luoyang",
+                  "name": "洛阳县",
+                  "level": "county",
+                  "description": "河南府治，洛水之滨，福王府穷极奢华。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_zhejiang",
+          "name": "浙江承宣布政使司",
+          "level": "province",
+          "description": "大明东南财赋重地，人文渊薮，海防与海外贸易要冲。",
+          "children": [
+            {
+              "id": "div_hangzhou",
+              "name": "杭州府",
+              "level": "prefecture",
+              "description": "浙江省城所在，上有天堂下有苏杭，江南丝绸与商业中心。",
+              "children": [
+                {
+                  "id": "div_qiantang",
+                  "name": "钱塘县",
+                  "level": "county",
+                  "description": "杭州附郭县之一，西湖所在，商贾云集，市井繁华。",
+                  "children": []
+                },
+                {
+                  "id": "div_renhe",
+                  "name": "仁和县",
+                  "level": "county",
+                  "description": "杭州附郭县之二，文风鼎盛，科举名士辈出。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_ningbo",
+              "name": "宁波府",
+              "level": "prefecture",
+              "description": "浙东重镇，大明重要市舶司所在地，防备倭寇的海防前线。",
+              "children": [
+                {
+                  "id": "div_yin",
+                  "name": "鄞县",
+                  "level": "county",
+                  "description": "宁波府治所在，港口贸易发达，浙东学术中心。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_huguang",
+          "name": "湖广承宣布政使司",
+          "level": "province",
+          "description": "湖广熟天下足，大明帝国的核心粮仓，长江中游战略枢纽。",
+          "children": [
+            {
+              "id": "div_wuchang",
+              "name": "武昌府",
+              "level": "prefecture",
+              "description": "湖广省城所在，楚王封藩之地，扼守长江天险。",
+              "children": [
+                {
+                  "id": "div_jiangxia",
+                  "name": "江夏县",
+                  "level": "county",
+                  "description": "武昌府治所在，九省通衢，水陆交通极其便利。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_xiangyang",
+              "name": "襄阳府",
+              "level": "prefecture",
+              "description": "汉水流域重镇，连接南北的军事要冲，历代兵家必争之地。",
+              "children": [
+                {
+                  "id": "div_xiangyang_county",
+                  "name": "襄阳县",
+                  "level": "county",
+                  "description": "襄阳府治所在，城防坚固，控扼中原与西南的咽喉。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_sichuan",
+          "name": "四川承宣布政使司",
+          "level": "province",
+          "description": "天府之国，物产丰饶，西南边陲的战略大后方。",
+          "children": [
+            {
+              "id": "div_chengdu",
+              "name": "成都府",
+              "level": "prefecture",
+              "description": "四川首府，蜀王封藩之地，沃野千里，民殷国富。",
+              "children": [
+                {
+                  "id": "div_chengdu_county",
+                  "name": "成都县",
+                  "level": "county",
+                  "description": "成都附郭县之一，蜀锦产地，西南政治经济中心。",
+                  "children": []
+                },
+                {
+                  "id": "div_huayang",
+                  "name": "华阳县",
+                  "level": "county",
+                  "description": "成都附郭县之二，与成都县分理府治，农业极其发达。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_chongqing",
+              "name": "重庆府",
+              "level": "prefecture",
+              "description": "川东重镇，长江三峡门户，水路扼守巴蜀东大门。",
+              "children": [
+                {
+                  "id": "div_baxian",
+                  "name": "巴县",
+                  "level": "county",
+                  "description": "重庆府治所在，依山傍水，川江木材与药材集散地。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_fujian",
+          "name": "福建承宣布政使司",
+          "level": "province",
+          "description": "东南沿海重地，山多田少，海外贸易与海防剿寇的重点区域。",
+          "children": [
+            {
+              "id": "div_fuzhou",
+              "name": "福州府",
+              "level": "prefecture",
+              "description": "福建省城所在，八闽首府，造船业与海路交通发达。",
+              "children": [
+                {
+                  "id": "div_minxian",
+                  "name": "闽县",
+                  "level": "county",
+                  "description": "福州附郭县之一，闽江入海口要冲，海防前哨。",
+                  "children": []
+                },
+                {
+                  "id": "div_houguan",
+                  "name": "侯官县",
+                  "level": "county",
+                  "description": "福州附郭县之二，文教兴盛，物产丰富。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_quanzhou",
+              "name": "泉州府",
+              "level": "prefecture",
+              "description": "海上丝绸之路起点之一，商舶交会，郑氏海商集团发迹地。",
+              "children": [
+                {
+                  "id": "div_jinjiang",
+                  "name": "晋江县",
+                  "level": "county",
+                  "description": "泉州府治所在，侨乡重地，民间海贸走私极其活跃。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_guangdong",
+          "name": "广东承宣布政使司",
+          "level": "province",
+          "description": "岭南重地，连接南洋的重要门户，中西文化与贸易交汇处。",
+          "children": [
+            {
+              "id": "div_guangzhou",
+              "name": "广州府",
+              "level": "prefecture",
+              "description": "广东省城所在，对外贸易的唯一官方通商口岸，财富聚集地。",
+              "children": [
+                {
+                  "id": "div_nanhai",
+                  "name": "南海县",
+                  "level": "county",
+                  "description": "广州附郭县之一，商贾云集，洋船停泊之所。",
+                  "children": []
+                },
+                {
+                  "id": "div_panyu",
+                  "name": "番禺县",
+                  "level": "county",
+                  "description": "广州附郭县之二，岭南农商腹地，珠江航运枢纽。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_n_zhili",
+          "name": "北直隶",
+          "level": "province",
+          "description": "大明京师所在，天子守国门，防御后金与蒙古的腹心之地，帝国政治中枢。",
+          "children": [
+            {
+              "id": "div_hejian",
+              "name": "河间府",
+              "level": "prefecture",
+              "description": "京南重地，扼守京杭大运河要冲，拱卫京师南路。",
+              "children": [
+                {
+                  "id": "div_hejian_county",
+                  "name": "河间县",
+                  "level": "county",
+                  "description": "河间府治所，水陆交通便利，商贾云集。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_s_zhili",
+          "name": "南直隶",
+          "level": "province",
+          "description": "留都南京所在，大明财赋重地，江南人文荟萃之乡。",
+          "children": [
+            {
+              "id": "div_yangzhou",
+              "name": "扬州府",
+              "level": "prefecture",
+              "description": "两淮盐业中心，大运河枢纽，富甲天下。",
+              "children": [
+                {
+                  "id": "div_jiangdu",
+                  "name": "江都县",
+                  "level": "county",
+                  "description": "扬州府附郭县，盐商聚集，极为繁华。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_anqing",
+              "name": "安庆府",
+              "level": "prefecture",
+              "description": "长江中下游重镇，扼守长江天险，南直隶西部门户。",
+              "children": [
+                {
+                  "id": "div_huaining",
+                  "name": "怀宁县",
+                  "level": "county",
+                  "description": "安庆府治所，江防要地。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_shandong",
+          "name": "山东承宣布政使司",
+          "level": "province",
+          "description": "齐鲁大地，漕运要道，东扼黄海、渤海。",
+          "children": [
+            {
+              "id": "div_laizhou",
+              "name": "莱州府",
+              "level": "prefecture",
+              "description": "山东半岛重镇，频临渤海，海防要冲。",
+              "children": [
+                {
+                  "id": "div_ye",
+                  "name": "掖县",
+                  "level": "county",
+                  "description": "莱州府治所，胶东半岛交通枢纽。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_shanxi",
+          "name": "山西承宣布政使司",
+          "level": "province",
+          "description": "表里山河，九边重镇所在，晋商发源地。",
+          "children": [
+            {
+              "id": "div_pingyang",
+              "name": "平阳府",
+              "level": "prefecture",
+              "description": "晋南重镇，农业发达，人口稠密。",
+              "children": [
+                {
+                  "id": "div_linfen",
+                  "name": "临汾县",
+                  "level": "county",
+                  "description": "平阳府治所，汾河流域重要城池。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_huguang",
+          "name": "湖广承宣布政使司",
+          "level": "province",
+          "description": "湖广熟天下足，大明粮仓，长江中游腹地。",
+          "children": [
+            {
+              "id": "div_changsha",
+              "name": "长沙府",
+              "level": "prefecture",
+              "description": "湖广南部重镇，湘江流域核心，物产丰饶。",
+              "children": [
+                {
+                  "id": "div_changsha_county",
+                  "name": "长沙县",
+                  "level": "county",
+                  "description": "长沙府附郭县，三湘首邑。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_jiangxi",
+          "name": "江西承宣布政使司",
+          "level": "province",
+          "description": "江南西道，文风鼎盛，控扼长江与岭南之交通。",
+          "children": [
+            {
+              "id": "div_nanchang",
+              "name": "南昌府",
+              "level": "prefecture",
+              "description": "江西首府，赣江枢纽，藩王宁王旧藩地。",
+              "children": [
+                {
+                  "id": "div_nanchang_county",
+                  "name": "南昌县",
+                  "level": "county",
+                  "description": "南昌府附郭县之一，水陆交汇，商贸繁荣。",
+                  "children": []
+                },
+                {
+                  "id": "div_xinjian",
+                  "name": "新建县",
+                  "level": "county",
+                  "description": "南昌府附郭县之二，与南昌县分治府城。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_jiujiang",
+              "name": "九江府",
+              "level": "prefecture",
+              "description": "江西水路门户，扼守长江与鄱阳湖交汇处。",
+              "children": [
+                {
+                  "id": "div_dehua",
+                  "name": "德化县",
+                  "level": "county",
+                  "description": "九江府治所，江防重镇，商船云集。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_guangxi",
+          "name": "广西承宣布政使司",
+          "level": "province",
+          "description": "岭南西道，山水甲天下，西南边陲重地与土司交错区。",
+          "children": [
+            {
+              "id": "div_guilin",
+              "name": "桂林府",
+              "level": "prefecture",
+              "description": "广西首府，靖江王藩地，扼守湘桂走廊。",
+              "children": [
+                {
+                  "id": "div_lingui",
+                  "name": "临桂县",
+                  "level": "county",
+                  "description": "桂林府治所，城池坚固，漓江水运起点。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_yunnan",
+          "name": "云南承宣布政使司",
+          "level": "province",
+          "description": "西南极边，沐氏世守之地，多民族聚居与铜矿产区。",
+          "children": [
+            {
+              "id": "div_yunnan_pref",
+              "name": "云南府",
+              "level": "prefecture",
+              "description": "云南首府，滇池之畔，西南政治军事中心。",
+              "children": [
+                {
+                  "id": "div_kunming",
+                  "name": "昆明县",
+                  "level": "county",
+                  "description": "云南府治所，沐王府所在，滇中重镇。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_guizhou",
+          "name": "贵州承宣布政使司",
+          "level": "province",
+          "description": "西南通道，明初建省，土司林立，平播之役后逐渐改土归流。",
+          "children": [
+            {
+              "id": "div_guiyang",
+              "name": "贵阳府",
+              "level": "prefecture",
+              "description": "贵州首府，连接云贵川湖之交通枢纽。",
+              "children": [
+                {
+                  "id": "div_xingui",
+                  "name": "新贵县",
+                  "level": "county",
+                  "description": "贵阳府治所，明代贵州军政中枢。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_shaanxi_ext",
+          "name": "陕西承宣布政使司",
+          "level": "province",
+          "description": "西北边防重地，连年灾荒，民不聊生，即将成为明末农民起义的策源地。",
+          "children": [
+            {
+              "id": "div_yanan_ext",
+              "name": "延安府",
+              "level": "prefecture",
+              "description": "陕北重镇，土地贫瘠，边兵云集，民风彪悍。",
+              "children": [
+                {
+                  "id": "div_ansai",
+                  "name": "安塞县",
+                  "level": "county",
+                  "description": "延安府辖县，驿站裁撤后流民日增，高迎祥等起义军早期活动频繁。",
+                  "children": []
+                },
+                {
+                  "id": "div_suide",
+                  "name": "绥德州",
+                  "level": "county",
+                  "description": "延安府辖州，扼守无定河谷，为陕北军事咽喉。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_qingyang",
+              "name": "庆阳府",
+              "level": "prefecture",
+              "description": "地处陕甘交界，黄土高原腹地，防御套寇的后方屏障。",
+              "children": [
+                {
+                  "id": "div_anhua",
+                  "name": "安化县",
+                  "level": "county",
+                  "description": "庆阳府治所，地势险要，历来为兵家必争之地。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_pingliang",
+              "name": "平凉府",
+              "level": "prefecture",
+              "description": "控扼陇东，素有“陇上旱码头”之称，韩王藩封所在地。",
+              "children": [
+                {
+                  "id": "div_pingliang_county",
+                  "name": "平凉县",
+                  "level": "county",
+                  "description": "平凉府附郭县，商贾云集，丝绸之路东段重镇。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_henan_ext",
+          "name": "河南承宣布政使司",
+          "level": "province",
+          "description": "天下之中，中原腹地，黄河横贯，藩王宗室封地极多。",
+          "children": [
+            {
+              "id": "div_nanyang",
+              "name": "南阳府",
+              "level": "prefecture",
+              "description": "地处豫西南盆地，物产丰饶，唐王朱聿键藩封所在地。",
+              "children": [
+                {
+                  "id": "div_nanyang_county",
+                  "name": "南阳县",
+                  "level": "county",
+                  "description": "南阳府治，三面环山，南临汉水，农业极其发达。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_guide",
+              "name": "归德府",
+              "level": "prefecture",
+              "description": "豫东重镇，地扼鲁豫皖交界，黄河泛滥的重灾区。",
+              "children": [
+                {
+                  "id": "div_shangqiu",
+                  "name": "商丘县",
+                  "level": "county",
+                  "description": "归德府治所，历史名城，城池坚固，商业繁盛。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_runing",
+              "name": "汝宁府",
+              "level": "prefecture",
+              "description": "豫南屏障，崇藩封地，战略地位重要，扼守大别山北麓。",
+              "children": [
+                {
+                  "id": "div_ruyang",
+                  "name": "汝阳县",
+                  "level": "county",
+                  "description": "汝宁府附郭县，交通便利，中原通往湖广的孔道。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_n_zhili_ext",
+          "name": "北直隶",
+          "level": "province",
+          "description": "大明京师所在，天子守国门，防御后金与蒙古的腹心之地。",
+          "children": [
+            {
+              "id": "div_daming",
+              "name": "大名府",
+              "level": "prefecture",
+              "description": "北直隶最南端，与山东、河南接壤，京畿南翼重镇。",
+              "children": [
+                {
+                  "id": "div_daming_county",
+                  "name": "大名县",
+                  "level": "county",
+                  "description": "大名府附郭县，城池高大，常设重兵防守中原变故。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_guangping",
+              "name": "广平府",
+              "level": "prefecture",
+              "description": "太行山东麓，滏阳河流域，京师南下的交通要道。",
+              "children": [
+                {
+                  "id": "div_yongnian",
+                  "name": "永年县",
+                  "level": "county",
+                  "description": "广平府治，水网密布，素有北国小江南之称。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_yanqing",
+              "name": "延庆州",
+              "level": "prefecture",
+              "description": "长城内侧重镇，居庸关外围屏障，拱卫京师西北。",
+              "children": [
+                {
+                  "id": "div_yanqingwei",
+                  "name": "延庆卫",
+                  "level": "county",
+                  "description": "军政合一的卫所，负责长城防线的修缮与驻防。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_s_zhili_ext",
+          "name": "南直隶",
+          "level": "province",
+          "description": "留都南京所在，大明财赋重地，江南士大夫与东林党的核心区域。",
+          "children": [
+            {
+              "id": "div_huizhou",
+              "name": "徽州府",
+              "level": "prefecture",
+              "description": "地处万山之中，文风鼎盛，徽商发源地，财力雄厚。",
+              "children": [
+                {
+                  "id": "div_shexian",
+                  "name": "歙县",
+                  "level": "county",
+                  "description": "徽州府治，盐商聚居，宗族势力极为强大。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_changzhou",
+              "name": "常州府",
+              "level": "prefecture",
+              "description": "太湖流域富庶之地，苏常熟天下足，丝织业极度发达。",
+              "children": [
+                {
+                  "id": "div_wujin",
+                  "name": "武进县",
+                  "level": "county",
+                  "description": "常州府附郭县，运河穿城而过，漕运繁忙，文人荟萃。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_zhenjiang",
+              "name": "镇江府",
+              "level": "prefecture",
+              "description": "长江与京杭大运河交汇处，南都门户，漕运咽喉。",
+              "children": [
+                {
+                  "id": "div_dantu",
+                  "name": "丹徒县",
+                  "level": "county",
+                  "description": "镇江府治，金山、北固山险要，扼守长江水路天险。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "div_liaodong_ext",
+          "name": "辽东都指挥使司",
+          "level": "province",
+          "description": "抗击后金的最前线，关宁锦防线所在地，辽饷消耗的无底洞。",
+          "children": [
+            {
+              "id": "div_qiantun",
+              "name": "前屯卫",
+              "level": "prefecture",
+              "description": "宁远与山海关之间的重要卫所，关外粮草转运的枢纽。",
+              "children": [
+                {
+                  "id": "div_zhonghou",
+                  "name": "中后所",
+                  "level": "county",
+                  "description": "前屯卫下辖千户所，屯田军堡，拱卫关外走廊。",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "div_guangning",
+              "name": "广宁卫",
+              "level": "prefecture",
+              "description": "原辽东巡抚驻地，虽大部已被后金占领，但明廷仍设虚职以图收复。",
+              "children": [
+                {
+                  "id": "div_dalinghe",
+                  "name": "大凌河堡",
+                  "level": "county",
+                  "description": "锦州外围极锋之地，屡建屡毁，明清在此反复拉锯。",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "buildingSystem": {
+    "enabled": false,
+    "buildingTypes": [
+      {
+        "name": "农田",
+        "category": "economic",
+        "description": "晚明时期遭遇小冰河期，气候严寒导致传统农业歉收，但番薯、玉米等美洲高产作物的逐渐引入为农业带来了新的生机。农田是维系帝国庞大人口、保障基层稳定与军屯粮饷的绝对命脉。"
+      },
+      {
+        "name": "官营织坊",
+        "category": "economic",
+        "description": "明代中后期江南丝织业极度繁荣，出现了‘机户出资，机工出力’的早期资本主义萌芽。织坊不仅满足皇室与官僚的奢侈消费，更是帝国获取巨额商业利润与出口白银流入的重要产业。"
+      },
+      {
+        "name": "盐场",
+        "category": "economic",
+        "description": "明代实行严格的食盐专卖制度，通过‘开中法’和‘纲法’进行管理。盐场不仅生产生活必需品，更是朝廷汲取巨额商业税收、支撑辽东前线庞大军费开支的核心财政支柱。"
+      },
+      {
+        "name": "牙行",
+        "category": "economic",
+        "description": "明末商品经济高度发达的产物，作为市场交易的中介与物价评定机构。牙行促进了徽商、晋商等跨地域商帮的贸易往来，推动了全国性市场的形成与白银的广泛流通。"
+      },
+      {
+        "name": "卫所",
+        "category": "military",
+        "description": "明代世袭的基层军事编制，初衷为‘寓兵于农，守屯结合’。至天启、崇祯年间虽已面临严重的军屯废弛与军士逃亡问题，但其军事堡垒依然是帝国维持地方治安与边防防线的基础骨架。"
+      },
+      {
+        "name": "火器局",
+        "category": "military",
+        "description": "面对辽东后金骑兵的致命威胁，晚明朝廷高度重视热兵器的研发与仿制。火器局负责铸造红夷大炮、三眼铳与火绳枪，代表了当时东亚最前沿的军事工业，是明军城防与野战的火力保障。"
+      },
+      {
+        "name": "墩堡",
+        "category": "military",
+        "description": "明长城防御体系与辽东防线（如关宁锦防线）的关键节点。主要用于警戒侦察、传递烽火军情及屯驻小股精锐部队，是迟滞游牧与渔猎民族骑兵袭扰的第一道钢铁防线。"
+      },
+      {
+        "name": "书院",
+        "category": "cultural",
+        "description": "明代中后期士大夫讲学、结社与议政的重镇。天启年间虽屡遭魏忠贤阉党残酷打压与毁毁，但书院依然是理学传播、清流舆论发源地及东林党人抗争的精神堡垒。"
+      },
+      {
+        "name": "城隍庙",
+        "category": "cultural",
+        "description": "自明初朱元璋大举敕封以来，城隍庙成为帝国官方认可的地方保护神信仰中心。它兼具祈福禳灾、祭祀先贤与乡里宗族公共集散地的功能，是朝廷进行基层社会控制与道德教化的空间。"
+      },
+      {
+        "name": "戏台",
+        "category": "cultural",
+        "description": "晚明市井文化极度繁荣，昆曲等地方戏曲风靡天下。戏台不仅是王公贵族与平民百姓跨越阶层共享娱乐的场所，更是通过演义故事向底层民众传播忠孝节义等正统价值观的通俗媒介。"
+      },
+      {
+        "name": "知府衙门",
+        "category": "administrative",
+        "description": "作为府级行政区划的权力中枢，承载着词讼理刑、劝农征税、教化百姓与调解纠纷等重任。在内忧外患的明末，衙门官僚的清廉与效能直接决定了地方社会的存亡与民心的向背。"
+      },
+      {
+        "name": "常平仓",
+        "category": "administrative",
+        "description": "中国古代重要的荒政与战略储备设施，秉持‘丰年籴进，歉年粜出’的原则平抑粮价。在灾情频发、流民激增的晚明，常平仓储备的丰歉往往成为引发或平息农民起义的导火索。"
+      },
+      {
+        "name": "驿站",
+        "category": "administrative",
+        "description": "明代庞大而严密的国家通信与物流网络节点，负责传递军政急递与接待往来官员。然而在明末，驿站开销浩大且腐败丛生，成为地方财政的沉重负担，其裁撤更是直接促成了底层驿卒（如李自成）的叛乱。"
+      }
+    ]
+  },
+  "postSystem": {
+    "enabled": false,
+    "postRules": [
+      {
+        "positionName": "内阁首辅",
+        "succession": "bureaucratic",
+        "hasAppointmentRight": false,
+        "description": "明代文官之首，虽无宰相之名但具宰相之实。通过‘票拟’（替皇帝草拟处理意见）掌控国家大政。首辅由科举出身的流官担任，其权力高度依附皇权。明代严防权臣，首辅无权直接辟署下属官员，全国人事大权名义上归属吏部与皇帝，AI推演时其政治影响力极大，但缺乏合法的私人幕府组建权。"
+      },
+      {
+        "positionName": "吏部尚书",
+        "succession": "bureaucratic",
+        "hasAppointmentRight": false,
+        "description": "六部之首，号称‘天官’，负责全国文官的考选、任免、升降与调动。明代高度集权，吏部尚书虽掌握帝国官僚机器的人事铨选大权，但这属于代天子行权。其本衙门属官及全国官员的任命均需遵循严格的流官选拔制度和廷推程序，自身并无跳过中央体制私自辟署官员的特权。"
+      },
+      {
+        "positionName": "总督",
+        "succession": "bureaucratic",
+        "hasAppointmentRight": false,
+        "description": "明中后期为应对边疆危机（如辽东）或地方民变设立的高级军政长官，通常由兵部尚书或都御史兼任，总揽数省军政。天启、崇祯年间战事频发，总督拥有极大的‘便宜行事’之权，可保举将领甚至斩杀犯法将领，但正式官职的任命仍需中央兵部和吏部核准，在法理上不具备藩镇级别的辟署权。"
+      },
+      {
+        "positionName": "卫指挥使",
+        "succession": "hereditary",
+        "hasAppointmentRight": false,
+        "description": "明代卫所兵制下的高级武官，掌管一卫（约五千六百人）的军政。该职位为世袭制，父死子继。但在明末天启、崇祯年间，卫所制度已严重败坏，武官地位远低于文官，受文官巡抚、总兵节制。其下属千户、百户的承袭与升迁需经兵部严格核准，卫指挥使无法自由任命军官。"
+      },
+      {
+        "positionName": "宣慰使",
+        "succession": "hereditary",
+        "hasAppointmentRight": true,
+        "description": "明代在西南少数民族地区设立的土司最高长官，品秩极高（从三品）。由当地势力最大的部族首领世袭，朝廷仅作名义上的册封。在明末‘改土归流’尚未彻底完成时，宣慰使在辖区内享有高度自治权，掌握地方军政、税收，并拥有绝对的辟署权，可自由任命下属土官，运作逻辑近似于地方割据藩镇。"
+      },
+      {
+        "positionName": "知县",
+        "succession": "bureaucratic",
+        "hasAppointmentRight": false,
+        "description": "明代地方基层行政长官（正七品），统管一县之钱粮、刑名、教化。严格执行流官制与籍贯回避制度，任期通常为三年。知县在县衙内只能自费聘请无朝廷编制的幕僚（师爷）协助办公，而县丞、主簿等佐贰官及六房书吏均由中央或上级官府指派，严禁知县私自辟署正式官员以防形成地方势力。"
+      },
+      {
+        "positionName": "司礼监掌印太监",
+        "succession": "bureaucratic",
+        "hasAppointmentRight": false,
+        "description": "明代宦官二十四衙门之首，代皇帝行使‘批红’（用朱笔批示内阁票拟）之权，是牵制内阁、掌控朝政的核心枢纽。天启七年魏忠贤虽倒台，但该职位的运作机制依然保留。其权力完全来源于皇权信任，属于内廷流转的宦官，太监的升迁调补由皇帝直接决定，不具备制度化的辟署权。"
+      }
+    ]
+  },
+  "vassalSystem": {
+    "enabled": false,
+    "vassalTypes": [
+      {
+        "name": "宗室藩王",
+        "rank": "高级封臣",
+        "obligations": "遵守《皇明祖训》与宗藩条例、不得干预地方军政与民事、非奉诏不得出城离藩、定期上表请安",
+        "rights": "享受极高宗禄（亲王岁禄万石）、拥有王府护卫（至明末已极度削弱）、拥有大量赐地与庄田收益、免除一切赋役、司法特权",
+        "succession": "世袭罔替（嫡长子袭亲王，余子降等袭爵）",
+        "era": "明朝",
+        "relatedTo": "宗藩制度、宗人府、禄饷系统",
+        "description": "明朝宗室封爵的最高等级。至公元1627年（天启七年），藩王已完全失去明初的军事指挥权与地方行政权，被严格限制在封地王府内，‘分封而不锡土，列爵而不临民’。他们虽然是法理上地位尊崇的皇室藩屏，但实际上已成为国家的巨大财政包袱。明末农民起义中，富庶的藩王往往成为起义军首要的攻击目标。"
+      },
+      {
+        "name": "世袭土司",
+        "rank": "中级封臣",
+        "obligations": "定期向朝廷朝贡（缴纳方物）、接受朝廷征调提供土军参与平叛或国防、按规定缴纳赋税",
+        "rights": "辖区内军政、民政、司法高度自主、拥有私人武装（土兵）、可按本民族习俗治理领地、对领地内百姓拥有生杀大权",
+        "succession": "世袭（需经朝廷兵部或吏部勘合批准方可承袭）",
+        "era": "元明清",
+        "relatedTo": "土司制度、羁縻政策、改土归流",
+        "description": "明廷在西南少数民族地区（如云贵川桂）任命的部族首领，分为宣慰使、宣抚使、安抚使等武职，以及土知府、土知州等文职。天启、崇祯交替之际，西南正值‘奢安之乱’（水西土司安邦彦与永宁土司奢崇明叛乱），土司既是朝廷倚重的精锐作战力量（如石柱土司秦良玉的白杆兵），又是极具割据倾向、极易引发地方动荡的潜在叛乱源头。"
+      },
+      {
+        "name": "卫所世官",
+        "rank": "低级封臣",
+        "obligations": "世世代代充当军户、平时组织屯田、战时随军出征、维持地方治安、向朝廷缴纳屯粮",
+        "rights": "世袭军职（如卫指挥使、千户、百户）、拥有朝廷分配的屯田、管辖卫所内的军户、免除部分民户赋役",
+        "succession": "世袭（长子袭职，需经过比试与兵部袭替程序）",
+        "era": "明朝",
+        "relatedTo": "卫所制度、军户制度、九边重镇",
+        "description": "明代军事制度的核心基层与中层统帅。至明末天启七年，卫所制已严重崩坏，世官们大量侵占军屯土地，将其转化为私产，并将手下军户视为农奴，导致军户大量逃亡，军队战斗力极度低下。尽管如此，世官在法理上依然是对国家承担军事义务并享有世袭特权的封建化军事领主，在地方拥有盘根错节的利益网络。"
+      }
+    ],
+    "officialVassalMapping": {},
+    "vassalRelations": []
+  },
+  "titleSystem": {
+    "enabled": false,
+    "titleRanks": [
+      {
+        "name": "亲王",
+        "level": 1,
+        "category": "王爵",
+        "succession": "世袭罔替",
+        "privileges": "岁禄万石、建王府、设护卫军、极高礼遇（无需对大臣答拜），但受“分封而不锡土，列爵而不临民”限制，严禁参与朝政及离开封地。",
+        "requirements": "皇帝之嫡子及庶子（皇太子除外）。",
+        "era": "明代",
+        "relatedTo": "宗室系统、财政系统",
+        "description": "明代宗室最高爵位。天启七年（1627年）时，明朝宗室人口已极度膨胀，亲王岁禄成为朝廷极其沉重的财政负担。亲王虽地位尊崇，但在“藩禁”政策下毫无政治实权，形同被朝廷高级圈养。"
+      },
+      {
+        "name": "郡王",
+        "level": 2,
+        "category": "王爵",
+        "succession": "世袭递降",
+        "privileges": "岁禄二千石、建郡王府、免除赋税徭役、享有宗室特权与司法豁免（由宗人府管辖）。",
+        "requirements": "亲王除嫡长子（袭亲王）之外的其余诸子。",
+        "era": "明代",
+        "relatedTo": "宗室系统、财政系统",
+        "description": "明代宗室第二等爵位。郡王由亲王诸子降等受封，其嫡长子可世袭郡王，余子继续降等。在明末乱世中，许多地方郡王拥有大量庄田，加剧了土地兼并。"
+      },
+      {
+        "name": "国公",
+        "level": 3,
+        "category": "公爵",
+        "succession": "世袭罔替",
+        "privileges": "岁禄二千五百至五千石、赐丹书铁券（免死特权）、出任五军都督府左右都督、提督京营等最高军职。",
+        "requirements": "立下极高军功的武将、开国或靖难元勋、极少数深受宠信的皇亲国戚。",
+        "era": "明代",
+        "relatedTo": "军制系统、封臣系统",
+        "description": "明代异姓功臣的最高爵位。明代废除子爵与男爵，功臣仅设公、侯、伯三等。国公多为世袭，是明代武臣的顶点，拥有极高的军事指挥权与朝廷话语权，如魏国公、英国公等在天启、崇祯年间依然举足轻重。"
+      },
+      {
+        "name": "侯爵",
+        "level": 4,
+        "category": "侯爵",
+        "succession": "世袭罔替",
+        "privileges": "岁禄一千至一千五百石、赐铁券、统领军队、担任总兵官或提督等高级武职。",
+        "requirements": "在开疆拓土或平叛中立下重大军功的将领。",
+        "era": "明代",
+        "relatedTo": "军制系统、封臣系统",
+        "description": "明代功臣第二等爵位。分为世袭与流爵（终身制，不传子）两种。侯爵是明朝中后期统兵作战的中坚力量核心，也是武将极其渴望的荣誉。"
+      },
+      {
+        "name": "伯爵",
+        "level": 5,
+        "category": "伯爵",
+        "succession": "世袭罔替",
+        "privileges": "岁禄数百至一千石、赐铁券、统领军队、参与高级军事决策。",
+        "requirements": "立下显著军功的将领或因特殊功绩受封的文臣（如王守仁封新建伯）。",
+        "era": "明代",
+        "relatedTo": "军制系统、封臣系统",
+        "description": "明代功臣第三等爵位，也是功臣爵位的门槛。明末辽东战事频繁，朝廷常以伯爵之位（如宁远伯）悬赏能平定后金的将领，是激励军心的重要手段。"
+      },
+      {
+        "name": "镇国将军",
+        "level": 6,
+        "category": "其他",
+        "succession": "世袭递降",
+        "privileges": "岁禄一千石、赐诰命、冠服违禁豁免、免除平民赋役。",
+        "requirements": "郡王除嫡长子（袭郡王）之外的其余诸子。",
+        "era": "明代",
+        "relatedTo": "宗室系统",
+        "description": "宗室中下层爵位之首。从这一级别开始，宗室成员不再拥有“王”的头衔，但依然由国家财政供养。天启七年，大量镇国将军因朝廷财政枯竭而遭遇欠禄，生活逐渐窘迫。"
+      },
+      {
+        "name": "辅国将军",
+        "level": 7,
+        "category": "其他",
+        "succession": "世袭递降",
+        "privileges": "岁禄八百石、宗亲身份庇护、免除平民赋役。",
+        "requirements": "镇国将军除嫡长子之外的其余诸子。",
+        "era": "明代",
+        "relatedTo": "宗室系统",
+        "description": "宗室中下层爵位。随着繁衍，辅国将军数量庞大。明末崇祯初年，此类宗室因限制经商与科举，又无法足额领取禄米，成为明末社会的一大特殊贫困群体。"
+      },
+      {
+        "name": "奉国将军",
+        "level": 8,
+        "category": "其他",
+        "succession": "世袭递降",
+        "privileges": "岁禄六百石、宗亲身份庇护。",
+        "requirements": "辅国将军除嫡长子之外的其余诸子。",
+        "era": "明代",
+        "relatedTo": "宗室系统",
+        "description": "宗室底层将军爵位。在名义上依然属于皇亲国戚，但在天启、崇祯年间的实际生活中，部分奉国将军甚至不得不暗中从事贱业以谋生。"
+      },
+      {
+        "name": "镇国中尉",
+        "level": 9,
+        "category": "其他",
+        "succession": "世袭递降",
+        "privileges": "岁禄四百石、免除部分差役。",
+        "requirements": "奉国将军除嫡长子之外的其余诸子。",
+        "era": "明代",
+        "relatedTo": "宗室系统",
+        "description": "宗室低级爵位。明代宗室爵位制度至“中尉”一级已是极其边缘的皇室旁系，虽有皇家玉牒记录，但与平民生活已无太大差异。"
+      },
+      {
+        "name": "奉国中尉",
+        "level": 10,
+        "category": "其他",
+        "succession": "世袭罔替",
+        "privileges": "岁禄二百石（名义上）。",
+        "requirements": "辅国中尉及奉国中尉之子。",
+        "era": "明代",
+        "relatedTo": "宗室系统",
+        "description": "明代宗室最低一级的爵位。明制规定爵位降至奉国中尉后不再递降，其所有后代皆世袭奉国中尉。在1627年的大明，这类底层宗室数以万计，是地方政府巨大的维稳与财政难题。"
+      }
+    ]
+  },
+  "officialVassalMapping": {
+    "mappings": []
+  },
+  "economyConfig": {
+    "enabled": false,
+    "currency": "贯",
+    "baseIncome": 45,
+    "tributeRatio": 0.3,
+    "tributeAdjustment": 0,
+    "taxRate": 0.3,
+    "inflationRate": 0.15,
+    "economicCycle": "stable",
+    "specialResources": "",
+    "tradeSystem": "",
+    "description": "",
+    "redistributionRate": 0.2,
+    "tradeBonus": 0.1,
+    "agricultureMultiplier": 0.6,
+    "commerceMultiplier": 0.9
+  },
+  "goals": [
+    {
+      "name": "扫清阉党",
+      "type": "milestone",
+      "description": "隐忍不发，伺机而动，成功将魏忠贤及其党羽一网打尽，肃清朝堂，将国家大权彻底收归皇权。",
+      "conditions": [
+        {
+          "type": "variable_gte",
+          "variable": "imperial_centralization",
+          "value": 85
+        }
+      ]
+    },
+    {
+      "name": "稳固关宁",
+      "type": "milestone",
+      "description": "合理任用辽东将领，拨付充足军饷，成功构筑宁锦防线，遏制后金皇太极的南下攻势。",
+      "conditions": [
+        {
+          "type": "variable_gte",
+          "variable": "liaodong_defense_level",
+          "value": 80
+        }
+      ]
+    },
+    {
+      "name": "崇祯中兴",
+      "type": "win",
+      "description": "内平流寇民变，外御建奴铁骑，整顿吏治，充盈国库。挽狂澜于既倒，扶大厦之将倾，实现大明中兴之伟业。",
+      "conditions": [
+        {
+          "type": "variable_gte",
+          "variable": "national_prosperity",
+          "value": 100
+        },
+        {
+          "type": "variable_gte",
+          "variable": "treasury_silver_reserves",
+          "value": 15000000
+        }
+      ]
+    },
+    {
+      "name": "煤山遗恨",
+      "type": "lose",
+      "description": "内忧外患彻底失控，流寇或后金兵临北京城下，京城防线崩溃，被迫自缢于煤山，大明覆灭。",
+      "conditions": [
+        {
+          "type": "variable_gte",
+          "variable": "capital_crisis_level",
+          "value": 100
+        }
+      ]
+    },
+    {
+      "name": "财政崩盘",
+      "type": "lose",
+      "description": "连年天灾与战乱导致三饷加派无度，民怨沸腾，国库彻底枯竭，九边重镇因欠饷引发全面哗变。",
+      "conditions": [
+        {
+          "type": "variable_gte",
+          "variable": "rebellion_scale",
+          "value": 100
+        },
+        {
+          "type": "variable_gte",
+          "variable": "financial_deficit_level",
+          "value": 100
+        }
+      ]
+    }
+  ],
+  "offendGroups": {
+    "enabled": false,
+    "decayEnabled": false,
+    "decayRate": 0.05,
+    "groups": []
+  },
+  "keju": {
+    "enabled": true,
+    "reformed": false,
+    "examIntervalNote": "三年一科",
+    "examNote": "明代科举制度高度完备但也走向僵化。考试分为乡试、会试、殿试三级。专以四书五经命题，答卷必须采用格式极其严格的“八股文”，考生需代圣人立言。同时全面实行南北中卷制，以平衡南北方地域的录取差异。",
+    "examSubjects": "进士科/武举",
+    "quotaPerExam": 300,
+    "specialRules": "八股文定式、南北中卷（地域配额）、糊名制、誊录制、严格搜检防弊、避讳规则"
+  },
+  "haremConfig": {
+    "rankSystem": [
+      {
+        "id": "empress",
+        "name": "皇后",
+        "level": 0
+      },
+      {
+        "id": "imperial_noble_consort",
+        "name": "皇贵妃",
+        "level": 1
+      },
+      {
+        "id": "noble_consort",
+        "name": "贵妃",
+        "level": 2
+      },
+      {
+        "id": "consort",
+        "name": "妃",
+        "level": 3
+      },
+      {
+        "id": "concubine",
+        "name": "嫔",
+        "level": 4
+      },
+      {
+        "id": "noble_lady",
+        "name": "贵人",
+        "level": 5
+      },
+      {
+        "id": "talented_lady",
+        "name": "才人",
+        "level": 6
+      },
+      {
+        "id": "selected_attendant",
+        "name": "选侍",
+        "level": 7
+      },
+      {
+        "id": "fair_lady",
+        "name": "淑女",
+        "level": 8
+      }
+    ],
+    "succession": "eldest_legitimate"
+  },
+  "warConfig": {
+    "casusBelliTypes": [
+      {
+        "id": "rebellion",
+        "name": "平叛讨逆",
+        "prestigeCost": 0,
+        "legitimacyCost": 0,
+        "truceMonths": 12
+      },
+      {
+        "id": "border",
+        "name": "边境争端",
+        "prestigeCost": 3,
+        "legitimacyCost": 0,
+        "truceMonths": 12
+      },
+      {
+        "id": "claim",
+        "name": "宣称领土",
+        "prestigeCost": 8,
+        "legitimacyCost": 10,
+        "truceMonths": 36
+      },
+      {
+        "id": "holy",
+        "name": "天子讨不臣",
+        "prestigeCost": 0,
+        "legitimacyCost": 0,
+        "truceMonths": 36
+      },
+      {
+        "id": "subjugation",
+        "name": "武力征服",
+        "prestigeCost": 15,
+        "legitimacyCost": 20,
+        "truceMonths": 48
+      },
+      {
+        "id": "none",
+        "name": "无端开衅",
+        "prestigeCost": 25,
+        "legitimacyCost": 40,
+        "truceMonths": 60
+      },
+      {
+        "id": "new_1776100891028",
+        "name": "不宣而战",
+        "prestigeCost": 80,
+        "truceMonths": 12
+      }
+    ]
+  },
+  "diplomacyConfig": {
+    "treatyTypes": [
+      {
+        "id": "alliance",
+        "name": "同盟",
+        "durationMonths": 36,
+        "mutual_defense": true,
+        "breakPenalty": {
+          "prestige": -20
+        }
+      },
+      {
+        "id": "truce",
+        "name": "停战",
+        "durationMonths": 12,
+        "breakPenalty": {
+          "prestige": -15
+        }
+      },
+      {
+        "id": "tribute",
+        "name": "朝贡",
+        "durationMonths": 0
+      },
+      {
+        "id": "marriage",
+        "name": "和亲",
+        "durationMonths": 0,
+        "breakPenalty": {
+          "prestige": -25
+        }
+      },
+      {
+        "id": "trade",
+        "name": "互市",
+        "durationMonths": 12
+      }
+    ]
+  },
+  "schemeConfig": {
+    "enabled": true,
+    "schemeTypes": [
+      {
+        "id": "assassination",
+        "name": "刺杀",
+        "baseSuccess": 0.15,
+        "offenseWeight": 0.005,
+        "defenseAttr": "valor",
+        "defenseWeight": 0.003,
+        "cooldownMonths": 24,
+        "cost": 500,
+        "discoveryChance": 0.3
+      },
+      {
+        "id": "fabricate",
+        "name": "伪造宣称",
+        "baseSuccess": 0.25,
+        "offenseWeight": 0.008,
+        "cooldownMonths": 12,
+        "cost": 300,
+        "discoveryChance": 0.2
+      },
+      {
+        "id": "seduce",
+        "name": "策反",
+        "baseSuccess": 0.2,
+        "offenseWeight": 0.006,
+        "defenseAttr": "loyalty",
+        "defenseWeight": 0.005,
+        "cooldownMonths": 6,
+        "cost": 200,
+        "discoveryChance": 0.15
+      },
+      {
+        "id": "spy",
+        "name": "刺探",
+        "baseSuccess": 0.4,
+        "offenseWeight": 0.004,
+        "cooldownMonths": 3,
+        "cost": 50,
+        "discoveryChance": 0.1
+      }
+    ]
+  },
+  "decisionConfig": {
+    "decisions": [
+      {
+        "id": "create_emperor",
+        "name": "称帝",
+        "conditions": [
+          "eraPhase==乱世",
+          "noExistingEmperor",
+          "controlRatio>=0.6"
+        ],
+        "cost": {
+          "prestige": 40,
+          "money": 10000
+        },
+        "effects": [
+          {
+            "type": "grant_title",
+            "level": "emperor"
+          },
+          {
+            "type": "set_era",
+            "phase": "治世"
+          }
+        ],
+        "description": "登基称帝，开创新朝"
+      },
+      {
+        "id": "create_kingdom",
+        "name": "称王",
+        "conditions": [
+          "controlRatio>=0.5"
+        ],
+        "cost": {
+          "prestige": 20,
+          "money": 5000
+        },
+        "effects": [
+          {
+            "type": "grant_title",
+            "level": "king"
+          }
+        ],
+        "description": "称王建国"
+      }
+    ]
+  },
+  "chronicleConfig": {
+    "yearlyEnabled": true,
+    "yearlyMinChars": 2000,
+    "yearlyMaxChars": 5000,
+    "style": "biannian",
+    "styleOptions": [
+      {
+        "id": "biannian",
+        "name": "编年体",
+        "ref": "《资治通鉴》《续资治通鉴长编》"
+      },
+      {
+        "id": "shilu",
+        "name": "实录体",
+        "ref": "各朝实录（《明实录》《清实录》）"
+      },
+      {
+        "id": "jizhuan",
+        "name": "纪传体",
+        "ref": "《史记》《汉书》《新唐书》"
+      },
+      {
+        "id": "jishi",
+        "name": "纪事本末体",
+        "ref": "《通鉴纪事本末》"
+      },
+      {
+        "id": "biji",
+        "name": "笔记体",
+        "ref": "《世说新语》《容斋随笔》"
+      },
+      {
+        "id": "custom",
+        "name": "自定义",
+        "ref": ""
+      }
+    ],
+    "customStyleDesc": ""
+  },
+  "eventConstraints": {
+    "enabled": true,
+    "types": [
+      {
+        "id": "rebellion",
+        "name": "叛乱",
+        "maxPerYear": 2,
+        "minIntervalMonths": 6,
+        "condition": "unrest>=50",
+        "priority": "major"
+      },
+      {
+        "id": "disaster",
+        "name": "天灾",
+        "maxPerYear": 3,
+        "minIntervalMonths": 4,
+        "priority": "major"
+      },
+      {
+        "id": "plague",
+        "name": "瘟疫",
+        "maxPerYear": 1,
+        "minIntervalMonths": 12,
+        "priority": "major"
+      },
+      {
+        "id": "court_intrigue",
+        "name": "宫变",
+        "maxPerYear": 1,
+        "minIntervalMonths": 12,
+        "condition": "partyStrife>=80",
+        "priority": "major"
+      },
+      {
+        "id": "foreign_invasion",
+        "name": "外族入侵",
+        "maxPerYear": 1,
+        "minIntervalMonths": 12,
+        "priority": "major"
+      },
+      {
+        "id": "economic_crisis",
+        "name": "经济危机",
+        "maxPerYear": 1,
+        "minIntervalMonths": 12,
+        "priority": "normal"
+      }
+    ],
+    "rankThreshold": 5,
+    "unknownPolicy": "narrative_only"
+  },
+  "mechanicsConfig": {},
+  "militaryConfig": {},
+  "officeConfig": {
+    "costVariables": [],
+    "shortfallEffects": ""
+  },
+  "battleConfig": {
+    "enabled": true,
+    "thresholds": {
+      "decisive": 1.5,
+      "victory": 1,
+      "stalemate": 0.7
+    },
+    "varianceRange": 0.15,
+    "seasonMod": {
+      "春": 1,
+      "夏": 0.95,
+      "秋": 1,
+      "冬": 0.85
+    },
+    "fortLevelBonus": [
+      1,
+      1.3,
+      1.6,
+      2,
+      2.5,
+      3
+    ],
+    "terrainModifiers": null,
+    "unitTypes": null,
+    "marchConfig": {
+      "enabled": false
+    },
+    "supplyConfig": {
+      "enabled": false
+    },
+    "siegeConfig": {
+      "enabled": false
+    }
+  },
+  "initialEnYuan": [],
+  "initialPatronNetwork": [],
+  "era": "明末",
+  "role": "朱由检",
+  "background": "天启七年（1627年）九月，明熹宗朱由校于乾清宫驾崩，未留子嗣。年仅十七岁的信王朱由检兄终弟及，于惊惧交加中登基称帝，次年改元崇祯。此时的大明帝国已如一座朽木大厦，内忧外患交织，风雨飘摇。朝堂之上，九千岁魏忠贤及其阉党势力盘根错节，提督东厂，只手遮天，与自诩清流的东林党人势成水火，党争倾轧导致朝政极度瘫痪。辽东关外，皇太极刚刚继位，后金铁骑历经宁锦之战后虽暂退，但仍在伺机而动，山海关防线的糜费甚巨，辽饷成了压垮国家财政的重担。而在中原大地，史无前例的“小冰河期”正悄然展现其狰狞面目，陕北连年大旱，赤地千里，颗粒无收，朝廷却因国库空虚仍在加派赋税，饥民遍野，民变的火种已在底层酝酿。身为大明第十六位皇帝，你接手的是一个党争酷烈、武备废弛、财政破产、天灾频发的绝对死局。你将如何在阉党的监视下夺回皇权？如何平衡文武、筹措军饷以御外辱？是重蹈煤山自缢的覆辙，还是力挽狂澜，重铸大明二百六十年荣光？",
+  "tinyi": {
+    "convening": {
+      "requiredCallList": [
+        "首辅",
+        "次辅",
+        "吏部尚书",
+        "户部尚书",
+        "礼部尚书",
+        "兵部尚书",
+        "刑部尚书",
+        "工部尚书",
+        "都察院左都御史"
+      ],
+      "topicSpecificRequired": {
+        "succession": [
+          "首辅",
+          "次辅",
+          "礼部尚书",
+          "宗人府宗令"
+        ],
+        "regicide-pursuit": [
+          "都察院左都御史",
+          "刑部尚书",
+          "锦衣卫指挥"
+        ],
+        "military-command": [
+          "兵部尚书",
+          "兵部右侍郎",
+          "戎政尚书"
+        ],
+        "finance": [
+          "户部尚书",
+          "户部左侍郎"
+        ]
+      },
+      "topicSpecificForbidden": {
+        "succession": [
+          "外戚",
+          "内监"
+        ],
+        "regicide-pursuit": [
+          "阉党头目"
+        ]
+      },
+      "maxAttendees": 30,
+      "minAttendees": 5,
+      "maxFrequencyPerMonth": 2
+    },
+    "taboos": {
+      "guosang": {
+        "forbidActions": [
+          "廷杖",
+          "革职",
+          "削籍"
+        ],
+        "muteCeremony": true,
+        "atmosphereOverride": "grave"
+      },
+      "zaiyi": {
+        "mandatoryAppend": "罪己",
+        "playerAutoFromBias": -10,
+        "yanguanAutoUrge": true
+      },
+      "junzheng": {
+        "forbidActions": [
+          "休假",
+          "致仕"
+        ],
+        "mandatoryAttendees": [
+          "兵部尚书",
+          "戎政尚书",
+          "督师"
+        ],
+        "urgentMode": true
+      }
+    },
+    "populationConfidenceInit": 0
+  }
+}

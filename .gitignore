@@ -1,0 +1,106 @@
+# 天命项目根 .gitignore · 2026-06-17 建立版本控制基线
+# 原则：源码与配置入库；依赖 / 产物 / 归档 / 临时 / 大媒体 / 敏感数据 一律排除。
+
+# ── 依赖 ──
+node_modules/
+**/node_modules/
+
+# ── 嵌套的烂尾 git 仓库（顶层接管后移走备份）──
+web/.git/
+web/.git-defunct*/
+
+# ── 归档 / 临时 / scratch（不入版本控制）──
+_archive/
+dev-tools/
+_asset-backups/
+_codex_tmp/
+_codex_release_*/
+_codex_tmp_*
+_pw-scratch/
+_scratch_online/
+_scratch_uiux/
+.pushtmp/
+.playwright-cli/
+**/.playwright-cli/
+__pycache__/
+**/__pycache__/
+*.pyc
+stdout
+
+# ── 构建 / 发布产物 ──
+output/
+**/output/
+dist/
+build/
+**/dist/
+**/build/
+mobile/android/
+mobile/ios/
+mobile/.gradle/
+**/*.zip
+**/*.tm-pack
+**/*.bin
+release-hot/_release-*/
+release-hot/downloads/
+release-hot/files/
+release-hot/manifests/
+mobile/capgo-dist/
+mobile/capgo/
+*.apk
+*.aab
+.hot-update-manifest.json
+web/.hot-update-manifest.json
+
+# ── 大媒体 / 生成资源 / 独立工程（基线聚焦代码·媒体与 godot 另管）──
+宣传片/
+web/godot/
+web/generated_images/
+web/_screenshots/
+web/test-results/
+web/vendor/models/Xenova/
+*.gif
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.bmp
+*.ico
+*.mp3
+*.mp4
+*.wav
+*.webm
+*.mov
+*.ttf
+*.otf
+*.woff
+*.woff2
+
+# ── 备份文件（.bak 家族·本地保留不入库）──
+*.bak
+*.bak-*
+*.bak*
+*.backup-*
+
+# ── 敏感：密钥 / 凭据 / 用户数据（绝不入库）──
+*.key
+*.pem
+*.p12
+.env
+.env.*
+secrets.json
+**/server-secret.key
+**/*.sqlite
+**/*.sqlite3
+**/saves/
+**/__autosave__.json
+*_repro-save.json
+
+# ── 日志 / IDE / OS ──
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~

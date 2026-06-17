@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>御案批红 · 百官奏疏新 UI 预览 v1</title>
+<style>
+/* ============================================================
+   御案批红 v1 — 百官奏疏面板重做 (frontend-design skill)
+   paradigm: 御案上的实体折子 · 核心交互 = 朱批
+   材质承诏书御案: 绢纸米金 / 朱砂 / 描金 / 墨 / KaiTi
+   三区: 左奏牍架 | 中御览批红 | 右票拟与影响
+   ============================================================ */
+:root{
+  --desk-1:#dccca6;--desk-2:#c6b083;--desk-3:#a78f68;
+  --silk-hi:#fffdf3;--silk:#f6efda;--silk-lo:#ece1c6;--silk-edge:#dcc99c;
+  --silk-shadow:rgba(120,90,36,0.1);
+  --ink:#241d15;--ink-soft:#574733;--ink-faint:#9c8b6b;
+  --gold-hi:#d8b96a;--gold:#a8833a;--gold-d:#7d5e22;
+  --cinnabar:#a83228;--cinnabar-hi:#c64a3e;--cinnabar-d:#7a2018;
+  --wood-1:#6b4a28;--wood-2:#3f2a14;--wood-edge:#2a1b0c;--knob:#241810;
+  --jade:#557f6f;--jade-hi:#6fa291;
+  --indigo:#4a5e8a;--violet:#8e6aa8;--amber:#b98b2f;
+  --font:"STKaiti","KaiTi","楷体","Noto Serif SC","Source Han Serif CN","STSong",serif;
+  --font-doc:"FangSong","STFangsong","仿宋","Noto Serif SC",serif;
+  --font-song:"STSong","SimSun","宋体",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow:hidden;
+  background:
+    radial-gradient(46% 36% at 50% -4%, rgba(255,238,196,0.5), transparent 70%),
+    radial-gradient(60% 50% at 18% 24%, rgba(120,100,70,0.13), transparent 60%),
+    radial-gradient(52% 60% at 86% 76%, rgba(80,60,40,0.16), transparent 55%),
+    radial-gradient(120% 120% at 50% 28%, var(--desk-1), var(--desk-2) 54%, var(--desk-3) 100%);}
+/* 御座暖光池 + 案几木纹 + 四隅晕影 */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.6;
+  background:
+    radial-gradient(58% 40% at 50% 0%, rgba(255,236,188,0.32), transparent 66%),
+    radial-gradient(150% 120% at 50% 42%, transparent 54%, rgba(58,42,22,0.5) 100%),
+    repeating-linear-gradient(91deg, rgba(92,68,40,0.05) 0 2px, transparent 2px 7px),
+    repeating-linear-gradient(106deg, rgba(80,60,36,0.03) 0 3px, transparent 3px 9px);}
+
+.zou-stage{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;padding:16px 22px;}
+.zou-frame{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;}
+
+/* ── 顶饰：御样标题条 ── */
+.zou-titlebar{flex:0 0 auto;position:relative;display:flex;align-items:center;justify-content:center;
+  padding:6px 0 12px;margin-bottom:10px;}
+.zou-titlebar::after{content:"";position:absolute;left:6%;right:6%;bottom:2px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(216,185,106,0.75) 22%,rgba(216,185,106,0.75) 78%,transparent);}
+.zou-titlebar::before{content:"";position:absolute;left:6%;right:6%;bottom:5px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(168,131,58,0.32) 30%,rgba(168,131,58,0.32) 70%,transparent);}
+.zt-center{text-align:center;position:relative;}
+.zt-center::before{content:"";position:absolute;left:50%;top:50%;width:88px;height:88px;transform:translate(-50%,-56%);
+  pointer-events:none;z-index:0;opacity:0.42;background:no-repeat center/contain;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23a8833a'%3E%3Ccircle cx='50' cy='50' r='44' stroke-width='1.4' stroke-opacity='0.5'/%3E%3Ccircle cx='50' cy='50' r='37' stroke-width='2.6' stroke-opacity='0.34'/%3E%3Ccircle cx='50' cy='50' r='30' stroke-width='1' stroke-opacity='0.4' stroke-dasharray='2 4'/%3E%3C/g%3E%3C/svg%3E");}
+.zt-main{position:relative;z-index:1;font-size:25px;font-weight:bold;letter-spacing:0.32em;color:var(--ink);line-height:1.05;
+  text-shadow:0 1px 0 rgba(255,255,255,0.7),0 2px 4px rgba(120,90,36,0.26),0 0 16px rgba(216,185,106,0.24);}
+.zt-main::before,.zt-main::after{content:"";display:inline-block;width:30px;height:1px;vertical-align:0.34em;margin:0 16px;background:linear-gradient(90deg,transparent,var(--gold));}
+.zt-main::after{background:linear-gradient(90deg,var(--gold),transparent);}
+.zt-sub{font-size:12.5px;color:var(--ink-faint);letter-spacing:0.34em;margin-top:5px;}
+.zt-sub::before,.zt-sub::after{content:"◆";font-size:7px;color:var(--gold);opacity:0.62;vertical-align:0.22em;margin:0 11px;letter-spacing:0;}
+.zou-chips{position:absolute;right:2px;top:8px;display:flex;gap:7px;}
+.zou-close{position:absolute;left:0;top:2px;z-index:40;width:34px;height:34px;border-radius:50%;border:1px solid var(--gold-d);
+  background:rgba(255,253,243,0.7);color:var(--gold-d);font-size:18px;line-height:1;cursor:pointer;transition:all .18s ease;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(60,40,20,0.25);}
+.zou-close:hover{background:var(--cinnabar);color:#fff;border-color:var(--cinnabar);transform:rotate(90deg);}
+.chip{font-size:11.5px;letter-spacing:0.06em;padding:3px 11px;border-radius:11px;border:1px solid var(--gold-d);
+  background:rgba(255,250,235,0.7);color:var(--ink-soft);white-space:nowrap;}
+.chip.hot{border-color:var(--cinnabar);color:#fff;background:linear-gradient(160deg,var(--cinnabar),var(--cinnabar-d));box-shadow:0 1px 5px rgba(122,32,24,0.4);}
+.chip.green{border-color:var(--jade);color:#23463a;background:rgba(111,162,145,0.22);}
+
+/* ── 三区主体 ── */
+.zou-body{flex:1;min-height:0;display:flex;gap:16px;}
+
+/* ════════ 左 · 奏牍架 ════════ */
+.shelf{flex:0 0 286px;min-height:0;display:flex;flex-direction:column;position:relative;
+  border:1px solid rgba(168,131,58,0.4);border-radius:6px;overflow:hidden;
+  background:
+    linear-gradient(180deg,rgba(255,253,243,0.5),rgba(245,236,210,0.32)),
+    linear-gradient(135deg,rgba(58,40,22,0.04),rgba(40,28,15,0.07));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.5),0 10px 26px rgba(50,32,14,0.22);}
+.shelf-hd{flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:11px 13px 9px;border-bottom:1px solid rgba(168,131,58,0.3);}
+.shelf-seal{width:32px;height:32px;flex:0 0 auto;display:grid;place-items:center;border-radius:5px;font-size:17px;color:#fff;font-weight:bold;
+  background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));border:1px solid rgba(122,32,24,0.6);
+  box-shadow:0 2px 6px rgba(122,32,24,0.4),inset 0 1px 0 rgba(255,255,255,0.28);}
+.shelf-hd b{font-size:15px;letter-spacing:0.12em;color:var(--ink);display:block;}
+.shelf-hd span{font-size:11px;color:var(--ink-faint);letter-spacing:0.06em;}
+
+/* 筛选签条 */
+.filters{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 11px;border-bottom:1px solid rgba(168,131,58,0.22);}
+.filter{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 9px;cursor:pointer;font-family:var(--font);
+  border:1px solid rgba(168,131,58,0.28);border-radius:4px;background:rgba(255,252,240,0.5);color:var(--ink-soft);
+  font-size:12.5px;letter-spacing:0.04em;transition:all .15s;}
+.filter:first-child{grid-column:1 / -1;}
+.filter:hover{background:rgba(168,131,58,0.12);border-color:var(--gold);}
+.filter.active{color:#fff;background:linear-gradient(150deg,var(--cinnabar),var(--cinnabar-d));border-color:var(--cinnabar-d);box-shadow:0 2px 7px rgba(122,32,24,0.35);}
+.filter .fc{font-size:10.5px;min-width:18px;height:16px;padding:0 5px;border-radius:8px;display:inline-grid;place-items:center;
+  background:rgba(120,90,40,0.16);color:var(--ink-soft);}
+.filter.active .fc{background:rgba(255,255,255,0.26);color:#fff;}
+
+/* 折子列表 */
+.shelf-scroll{flex:1;min-height:0;overflow-y:auto;padding:10px 11px 4px;scrollbar-width:none;}
+.shelf-scroll::-webkit-scrollbar{width:0;height:0;}
+.shelf-group{margin-bottom:12px;}
+.shelf-group-t{font-size:11.5px;letter-spacing:0.16em;color:var(--ink-faint);margin:0 0 7px 2px;display:flex;align-items:center;gap:7px;}
+.shelf-group-t::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px rgba(168,131,58,0.2);}
+.shelf-group-t small{color:var(--ink-faint);opacity:0.7;letter-spacing:0;}
+
+/* 折子卡 = 一封折叠的奏本 */
+.zou-folder{position:relative;display:block;width:100%;text-align:left;cursor:pointer;font-family:var(--font);
+  margin-bottom:8px;padding:9px 11px 9px 15px;border-radius:4px;border:1px solid rgba(168,131,58,0.3);
+  background:linear-gradient(180deg,var(--silk-hi),var(--silk) 70%,var(--silk-lo));
+  box-shadow:0 2px 7px rgba(60,40,20,0.13),inset 0 1px 0 rgba(255,255,255,0.5);transition:transform .16s,box-shadow .16s,border-color .16s;overflow:hidden;}
+/* 折子左缘色带 = 类型分色 */
+.zou-folder::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--tc,var(--gold));}
+/* 折痕 */
+.zou-folder::after{content:"";position:absolute;right:26%;top:0;bottom:0;width:1px;background:rgba(120,90,40,0.1);}
+.zou-folder:hover{transform:translateX(3px);box-shadow:0 4px 12px rgba(60,40,20,0.2);border-color:var(--gold);}
+.zou-folder.active{border-color:var(--cinnabar);box-shadow:-2px 0 0 var(--cinnabar),0 6px 16px rgba(60,40,20,0.26);transform:translateX(4px);
+  background:linear-gradient(180deg,#fffef7,#fbf4e0);}
+.zf-top{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.zf-type{font-size:10.5px;font-weight:bold;letter-spacing:0.05em;padding:1px 7px;border-radius:3px;color:#fff;background:var(--tc,var(--gold));white-space:nowrap;}
+.zf-sub{font-size:10px;letter-spacing:0.04em;color:var(--ink-faint);padding:1px 6px;border-radius:3px;border:1px solid rgba(168,131,58,0.32);background:rgba(255,255,255,0.4);}
+.zf-sub.mi{color:var(--cinnabar-d);border-color:rgba(122,32,24,0.4);background:rgba(168,50,40,0.08);}
+.zf-urgent{margin-left:auto;width:7px;height:7px;border-radius:50%;background:var(--cinnabar);box-shadow:0 0 0 3px rgba(168,50,40,0.18);animation:pulse 1.8s ease-in-out infinite;}
+.zf-title{font-size:13.5px;color:var(--ink);line-height:1.35;font-weight:bold;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+.zf-meta{font-size:11px;color:var(--ink-faint);margin-top:3px;letter-spacing:0.02em;display:flex;align-items:center;gap:6px;}
+.zf-meta .dot{opacity:0.5;}
+.zf-rel{font-size:9.5px;letter-spacing:0;}
+.zf-rel i{font-style:normal;color:var(--gold);}
+.zf-rel i.off{color:rgba(120,90,40,0.25);}
+.zou-folder.done{opacity:0.78;}
+.zou-folder.done .zf-title{font-weight:normal;}
+.zf-stamp{position:absolute;right:7px;bottom:6px;font-size:9.5px;color:var(--cinnabar-d);opacity:0.7;border:1px solid rgba(122,32,24,0.4);border-radius:3px;padding:0 4px;transform:rotate(-7deg);}
+.zf-remote{font-size:9.5px;font-style:normal;width:16px;height:16px;display:inline-grid;place-items:center;border-radius:3px;color:var(--indigo);border:1px solid rgba(74,94,138,0.45);background:rgba(74,94,138,0.1);}
+.zf-held{margin-top:5px;font-size:10px;letter-spacing:0.03em;color:var(--ink-faint);}
+.zf-held.warn{color:var(--cinnabar-d);font-weight:bold;}
+
+/* 在途奏疏 */
+.transit{flex:0 0 auto;border-top:1px solid rgba(168,131,58,0.3);padding:10px 12px 11px;background:rgba(58,40,22,0.04);}
+.transit-t{font-size:11.5px;letter-spacing:0.14em;color:var(--ink-faint);margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.transit-t::before{content:"⛟";font-size:12px;color:var(--gold);}
+.transit-row{font-size:11px;color:var(--ink-soft);padding:5px 0 6px 12px;position:relative;border-bottom:1px dashed rgba(168,131,58,0.22);}
+.transit-row:last-child{border-bottom:0;}
+.transit-row::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;border:1px solid var(--gold);background:rgba(168,131,58,0.2);}
+.transit-row b{color:var(--ink);font-size:11.5px;}
+.transit-row em{font-style:normal;color:var(--ink-faint);float:right;font-size:10px;}
+
+/* ════════ 中 · 御览批红 ════════ */
+.read{flex:1;min-height:0;display:flex;justify-content:center;position:relative;}
+.zouben{flex:1;max-width:760px;min-height:0;position:relative;display:flex;flex-direction:column;
+  background:
+    radial-gradient(80% 22% at 50% 0%, rgba(255,255,255,0.6), transparent 60%),
+    radial-gradient(42% 50% at 16% 26%, rgba(198,162,98,0.09), transparent 70%),
+    radial-gradient(46% 56% at 86% 76%, rgba(150,116,60,0.1), transparent 72%),
+    linear-gradient(180deg,var(--silk-hi),var(--silk) 38%,var(--silk-lo) 100%);
+  border:1px solid var(--silk-edge);border-radius:5px;
+  box-shadow:0 18px 44px rgba(50,32,14,0.32),0 0 36px rgba(120,90,40,0.14),inset 0 1px 0 rgba(255,255,255,0.55),inset 0 0 110px var(--silk-shadow);
+  overflow:hidden;animation:benIn .5s cubic-bezier(.2,.72,.28,1) both;}
+/* 绢纸纤维 */
+.zouben::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:0.46;mix-blend-mode:multiply;z-index:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='fib'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.55' numOctaves='3' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fib)'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(0deg, rgba(120,90,40,0.04) 0 1px, transparent 1px 4px);
+  background-size:240px 240px, auto;}
+.zouben > *{position:relative;z-index:1;}
+
+/* 奏本抬头 = 具题衔名 */
+.ben-head{flex:0 0 auto;padding:16px 30px 13px;border-bottom:1px solid rgba(168,131,58,0.36);position:relative;}
+.ben-head::after{content:"";position:absolute;left:24px;right:24px;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(216,185,106,0.6) 20%,rgba(216,185,106,0.6) 80%,transparent);}
+.bh-row{display:flex;align-items:flex-start;gap:14px;}
+.bh-seal{flex:0 0 auto;width:52px;height:64px;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:#fff;background:linear-gradient(155deg,var(--tc,var(--gold)),color-mix(in srgb,var(--tc,var(--gold)) 64%,#000));
+  border:1px solid rgba(0,0,0,0.25);box-shadow:0 3px 9px rgba(40,28,15,0.34),inset 0 1px 0 rgba(255,255,255,0.3);position:relative;}
+.bh-seal::after{content:"";position:absolute;inset:3px;border:1px solid rgba(255,255,255,0.32);border-radius:3px;}
+.bh-seal b{font-size:18px;font-weight:bold;line-height:1;letter-spacing:0.02em;}
+.bh-seal span{font-size:9px;letter-spacing:0.04em;opacity:0.92;}
+.bh-main{flex:1;min-width:0;}
+.bh-title{font-size:21px;font-weight:bold;letter-spacing:0.04em;color:var(--ink);line-height:1.3;
+  text-shadow:0 1px 0 rgba(255,255,255,0.6);}
+.bh-author{font-size:13px;color:var(--ink-soft);margin-top:6px;letter-spacing:0.03em;}
+.bh-author b{color:var(--ink);font-size:14px;}
+.bh-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+.bh-tag{font-size:11px;letter-spacing:0.04em;padding:2px 9px;border-radius:11px;border:1px solid rgba(168,131,58,0.4);background:rgba(255,252,240,0.6);color:var(--ink-soft);}
+.bh-tag.mi{color:var(--cinnabar-d);border-color:rgba(122,32,24,0.45);background:rgba(168,50,40,0.07);}
+.bh-tag.impeach{color:#fff;border-color:var(--cinnabar-d);background:linear-gradient(150deg,var(--cinnabar),var(--cinnabar-d));font-weight:bold;box-shadow:0 1px 4px rgba(122,32,24,0.3);}
+.bh-tag.remote{color:var(--indigo);border-color:rgba(74,94,138,0.5);background:rgba(74,94,138,0.09);}
+.bh-tag .rel-d{color:var(--jade-hi);}
+.bh-tag .rel-d.lo{color:var(--cinnabar);}
+.bh-status{position:absolute;top:14px;right:30px;}
+
+/* 奏本正文 · 朱丝栏 */
+.ben-body{flex:1;min-height:0;overflow-y:auto;padding:20px 32px 16px;scrollbar-width:none;position:relative;}
+.ben-body::-webkit-scrollbar{width:0;height:0;}
+/* 朱丝栏 = 红格竖线(经典奏本纸) */
+.ben-paper{position:relative;padding:18px 22px 20px;border:1px double rgba(168,50,40,0.42);border-radius:2px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(2.05em - 1px), rgba(168,50,40,0.12) calc(2.05em - 1px) 2.05em),
+    linear-gradient(180deg, rgba(255,252,242,0.55), rgba(248,240,222,0.4));
+  box-shadow:inset 0 0 24px rgba(168,131,58,0.08);}
+/* 朱丝栏 上下双红线 */
+.ben-paper::before,.ben-paper::after{content:"";position:absolute;left:8px;right:8px;height:1px;background:rgba(168,50,40,0.4);}
+.ben-paper::before{top:7px;box-shadow:0 3px 0 rgba(168,50,40,0.18);}
+.ben-paper::after{bottom:7px;box-shadow:0 -3px 0 rgba(168,50,40,0.18);}
+.bp-open{font-size:14.5px;letter-spacing:0.04em;color:var(--ink-soft);margin-bottom:10px;}
+.bp-open b{color:var(--ink);}
+.ben-text{font-family:var(--font-doc);font-size:15.5px;line-height:2.05;color:var(--ink);letter-spacing:0.02em;text-align:justify;white-space:pre-wrap;
+  text-indent:2em;}
+.ben-text.collapsed{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;}
+.bp-close{font-family:var(--font-doc);font-size:14px;color:var(--ink-soft);margin-top:12px;text-align:right;letter-spacing:0.04em;}
+.ben-toggle{display:inline-block;margin-top:8px;font-size:12.5px;color:var(--cinnabar-d);cursor:pointer;border:none;background:none;font-family:var(--font);letter-spacing:0.06em;}
+.ben-toggle:hover{color:var(--cinnabar);text-decoration:underline;}
+
+/* 密折火漆封缄态 */
+.ben-sealed{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:40px;}
+/* 空态·案牍清净 */
+.ben-empty{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:40px;text-align:center;}
+.ben-empty-seal{width:64px;height:64px;display:grid;place-items:center;border-radius:9px;font-size:31px;font-weight:bold;color:#fff;background:linear-gradient(155deg,var(--gold-hi),var(--gold-d));box-shadow:0 4px 13px rgba(125,94,34,0.38),inset 0 1px 0 rgba(255,255,255,0.3);opacity:0.82;margin-bottom:8px;}
+.ben-empty h3{font-size:19px;letter-spacing:0.32em;color:var(--ink-soft);font-weight:bold;}
+.ben-empty p{font-size:13px;color:var(--ink-faint);letter-spacing:0.08em;}
+.ben-empty small{font-size:11px;color:var(--ink-faint);opacity:0.72;letter-spacing:0.04em;margin-top:5px;}
+.wax{width:118px;height:118px;border-radius:50%;position:relative;display:grid;place-items:center;cursor:pointer;
+  background:radial-gradient(circle at 38% 32%, var(--cinnabar-hi), var(--cinnabar) 45%, var(--cinnabar-d) 100%);
+  box-shadow:0 8px 22px rgba(122,32,24,0.5),inset 0 3px 8px rgba(255,180,160,0.4),inset 0 -8px 14px rgba(60,10,6,0.5);
+  border:2px solid rgba(80,16,10,0.6);transition:transform .2s;animation:waxBreath 3s ease-in-out infinite;}
+.wax:hover{transform:scale(1.05);}
+.wax::before{content:"";position:absolute;inset:-9px;border-radius:50%;border:1px dashed rgba(122,32,24,0.4);}
+.wax b{font-size:30px;color:#ffe8df;font-weight:bold;text-shadow:0 2px 3px rgba(60,10,6,0.6);letter-spacing:0.05em;transform:rotate(-6deg);}
+.sealed-hint{text-align:center;color:var(--ink-soft);}
+.sealed-hint h4{font-size:16px;letter-spacing:0.16em;color:var(--cinnabar-d);margin-bottom:6px;}
+.sealed-hint p{font-size:12.5px;color:var(--ink-faint);letter-spacing:0.04em;}
+
+/* 朱批写区 */
+.ben-foot{flex:0 0 auto;padding:13px 30px 16px;border-top:1px solid rgba(168,131,58,0.36);position:relative;background:linear-gradient(180deg,transparent,rgba(168,131,58,0.05));}
+.pizhu-lbl{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.pizhu-lbl b{font-size:14px;letter-spacing:0.16em;color:var(--cinnabar-d);}
+.pizhu-lbl::before{content:"御 笔";font-size:10px;letter-spacing:0.1em;color:#fff;background:linear-gradient(150deg,var(--cinnabar),var(--cinnabar-d));padding:2px 7px;border-radius:3px;}
+.pizhu-lbl small{margin-left:auto;font-size:10.5px;color:var(--ink-faint);}
+/* 批红常用语 */
+.pizhu-quick{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.qphrase{font-family:var(--font);font-size:11.5px;letter-spacing:0.05em;color:var(--cinnabar-d);cursor:pointer;
+  padding:2px 10px;border-radius:12px;border:1px solid rgba(122,32,24,0.34);background:rgba(168,50,40,0.05);transition:all .14s;}
+.qphrase:hover{background:var(--cinnabar);color:#fff;border-color:var(--cinnabar);}
+/* 朱批 textarea = 朱笔写字 */
+.pizhu-ta{width:100%;min-height:54px;resize:vertical;font-family:var(--font);font-size:15px;line-height:1.7;letter-spacing:0.04em;
+  color:var(--cinnabar);padding:9px 13px;border:1px solid rgba(122,32,24,0.3);border-radius:4px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 calc(1.7em - 1px), rgba(168,50,40,0.08) calc(1.7em - 1px) 1.7em),
+    rgba(255,252,244,0.7);
+  box-shadow:inset 0 1px 3px rgba(120,40,30,0.1);outline:none;transition:border-color .15s,box-shadow .15s;}
+.pizhu-ta::placeholder{color:rgba(168,50,40,0.4);}
+.pizhu-ta:focus{border-color:var(--cinnabar);box-shadow:inset 0 1px 3px rgba(120,40,30,0.12),0 0 0 3px rgba(168,50,40,0.1);}
+
+/* 批红动作 */
+.pizhu-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;}
+.pact{font-family:var(--font);font-size:13px;letter-spacing:0.08em;cursor:pointer;padding:7px 16px;border-radius:5px;
+  border:1px solid var(--gold-d);background:#fbf4e2;color:var(--ink-soft);transition:all .15s;display:inline-flex;align-items:center;gap:4px;
+  box-shadow:0 1px 3px rgba(80,56,24,0.12);}
+.pact:hover{background:#fff;border-color:var(--gold);color:var(--ink);transform:translateY(-1px);}
+.pact.primary{color:#fff;background:linear-gradient(155deg,var(--cinnabar-hi),var(--cinnabar-d));border-color:var(--cinnabar-d);box-shadow:0 2px 8px rgba(122,32,24,0.34);}
+.pact.primary:hover{background:linear-gradient(155deg,#d2564a,var(--cinnabar));color:#fff;}
+.pact.jade{border-color:var(--jade);color:#23463a;background:rgba(111,162,145,0.18);}
+.pact.jade:hover{background:rgba(111,162,145,0.32);color:#16302a;}
+.pact.danger{border-color:rgba(122,32,24,0.5);color:var(--cinnabar-d);}
+.pact.danger:hover{background:rgba(168,50,40,0.1);}
+.pact-sep{flex:0 0 1px;align-self:stretch;margin:2px 3px;background:rgba(168,131,58,0.3);}
+
+/* ════════ 右 · 票拟与影响 ════════ */
+.aside{flex:0 0 250px;min-height:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;scrollbar-width:none;}
+.aside::-webkit-scrollbar{width:0;}
+.card{flex:0 0 auto;border:1px solid rgba(168,131,58,0.38);border-radius:6px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,253,243,0.55),rgba(245,236,210,0.34));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.5),0 6px 16px rgba(50,32,14,0.16);}
+.card-hd{display:flex;align-items:center;gap:7px;padding:9px 13px;border-bottom:1px solid rgba(168,131,58,0.28);
+  font-size:13.5px;letter-spacing:0.1em;color:var(--ink);background:linear-gradient(90deg,rgba(168,131,58,0.1),transparent);}
+.card-hd .ci{width:20px;height:20px;flex:0 0 auto;display:grid;place-items:center;border-radius:4px;font-size:11px;color:#fff;
+  background:linear-gradient(150deg,var(--gold-hi),var(--gold-d));}
+.card-bd{padding:11px 13px 13px;}
+
+/* 辅臣拟议 */
+.piaoni{font-family:var(--font-doc);font-size:13.5px;line-height:1.85;color:var(--ink-soft);letter-spacing:0.02em;
+  padding:9px 11px;border-radius:4px;border:1px dashed rgba(120,90,40,0.34);background:rgba(255,250,235,0.5);position:relative;}
+.piaoni::before{content:"拟";position:absolute;right:8px;top:6px;font-size:24px;color:rgba(120,90,40,0.1);font-weight:bold;}
+.piaoni .pn-from{display:block;font-family:var(--font);font-size:11px;color:var(--ink-faint);margin-top:7px;letter-spacing:0.04em;}
+.piaoni-take{margin-top:9px;width:100%;font-family:var(--font);font-size:12px;letter-spacing:0.08em;cursor:pointer;
+  padding:6px;border-radius:4px;border:1px solid var(--gold-d);background:#fbf4e2;color:var(--gold-d);transition:all .14s;}
+.piaoni-take:hover{background:var(--gold);color:#fff;border-color:var(--gold);}
+
+/* 具题人 */
+.who{display:flex;align-items:center;gap:11px;}
+.who-face{width:46px;height:56px;flex:0 0 auto;border-radius:4px;display:grid;place-items:center;font-size:22px;font-weight:bold;color:var(--ink);
+  background:linear-gradient(160deg,#efe3c4,#d9c79d);border:1px solid rgba(168,131,58,0.5);box-shadow:inset 0 1px 0 rgba(255,255,255,0.5),0 2px 6px rgba(60,40,20,0.18);}
+.who-info b{font-size:14.5px;color:var(--ink);display:block;letter-spacing:0.03em;}
+.who-info span{font-size:11.5px;color:var(--ink-faint);display:block;margin-top:2px;letter-spacing:0.02em;}
+.who-meta{display:grid;grid-template-columns:auto 1fr;gap:5px 9px;margin-top:11px;font-size:12px;}
+.who-meta dt{color:var(--ink-faint);letter-spacing:0.06em;}
+.who-meta dd{color:var(--ink);text-align:right;}
+.relbar{display:inline-flex;align-items:center;gap:2px;}
+.relbar i{width:14px;height:4px;border-radius:2px;background:rgba(120,90,40,0.18);}
+.relbar i.on{background:var(--jade);}
+.relbar i.on.bad{background:var(--cinnabar);}
+
+/* 链路 */
+.chain{display:flex;flex-direction:column;gap:0;font-size:12px;}
+.chain-row{display:flex;align-items:flex-start;gap:9px;padding:5px 0;position:relative;}
+.chain-row:not(:last-child)::after{content:"";position:absolute;left:9px;top:21px;bottom:-3px;width:1px;background:rgba(168,131,58,0.3);}
+.chain-dot{flex:0 0 auto;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:9px;color:#fff;margin-top:1px;
+  background:linear-gradient(150deg,var(--gold-hi),var(--gold-d));}
+.chain-row b{color:var(--ink);font-size:12px;letter-spacing:0.04em;}
+.chain-row p{color:var(--ink-faint);font-size:11px;line-height:1.5;margin-top:1px;}
+
+/* 影响预估 */
+.impact{display:grid;gap:8px;}
+.imp-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:5px 9px;border-radius:4px;background:rgba(255,250,235,0.5);border:1px solid rgba(168,131,58,0.22);}
+.imp-row span{color:var(--ink-faint);letter-spacing:0.04em;}
+.imp-row b{color:var(--ink);}
+.imp-row b.up{color:var(--jade);}
+.imp-row b.dn{color:var(--cinnabar);}
+.imp-foot{margin-top:8px;font-size:10.5px;color:var(--ink-faint);letter-spacing:0.04em;text-align:right;font-style:italic;}
+.imp-pending{font-size:12px;color:var(--ink-faint);line-height:1.78;letter-spacing:0.03em;}
+.imp-pending b{color:var(--ink-soft);}
+.imp-note{display:inline-block;margin-top:7px;padding:1px 8px;border-radius:10px;font-size:10.5px;color:var(--cinnabar-d);background:rgba(168,50,40,0.06);border:1px dashed rgba(122,32,24,0.3);letter-spacing:0.03em;}
+.imp-relay{margin-top:9px;padding:7px 10px;font-size:11.5px;line-height:1.6;color:var(--indigo);background:rgba(74,94,138,0.07);border:1px dashed rgba(74,94,138,0.35);border-radius:4px;letter-spacing:0.03em;}
+.imp-relay b{color:var(--indigo);}
+/* 留中时长 banner */
+.held-banner{flex:0 0 auto;margin:9px 30px 0;padding:8px 14px;font-size:12px;letter-spacing:0.03em;color:var(--ink-soft);background:rgba(168,131,58,0.1);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;}
+.held-banner b{color:var(--ink);}
+.held-banner.warn{color:var(--cinnabar-d);background:rgba(168,50,40,0.07);border-left-color:var(--cinnabar);}
+.held-banner.warn b{color:var(--cinnabar-d);}
+/* 辅臣拟议·之见提示 */
+.card-hd .hd-note{margin-left:auto;font-size:10.5px;font-weight:normal;letter-spacing:0.04em;color:var(--ink-faint);padding:1px 8px;border-radius:9px;background:rgba(120,90,40,0.08);}
+
+/* ── 提示气泡 ── */
+.toast{position:fixed;left:50%;bottom:38px;transform:translateX(-50%) translateY(20px);z-index:90;opacity:0;pointer-events:none;
+  font-size:13.5px;letter-spacing:0.08em;color:#fff;padding:10px 22px;border-radius:7px;
+  background:linear-gradient(155deg,rgba(58,40,22,0.96),rgba(36,24,14,0.96));border:1px solid var(--gold-d);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);transition:opacity .25s,transform .25s;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast b{color:var(--gold-hi);}
+
+/* 朱印盖印动效 */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(168,50,40,0.18);}50%{box-shadow:0 0 0 5px rgba(168,50,40,0.05);}}
+@keyframes waxBreath{0%,100%{box-shadow:0 8px 22px rgba(122,32,24,0.5),inset 0 3px 8px rgba(255,180,160,0.4),inset 0 -8px 14px rgba(60,10,6,0.5);}50%{box-shadow:0 8px 28px rgba(122,32,24,0.62),inset 0 3px 8px rgba(255,180,160,0.5),inset 0 -8px 14px rgba(60,10,6,0.5);}}
+@keyframes headDrop{from{opacity:0;transform:translateY(-14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes bodyRise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes benIn{from{opacity:0;transform:translateY(10px) scale(0.99);}to{opacity:1;transform:translateY(0) scale(1);}}
+/* 盖朱印 */
+.stamp-fx{position:absolute;left:50%;top:50%;width:120px;height:120px;transform:translate(-50%,-50%) scale(2.4) rotate(-12deg);
+  opacity:0;pointer-events:none;z-index:30;border-radius:8px;border:3px solid var(--cinnabar);
+  display:grid;place-items:center;font-size:30px;font-weight:bold;color:var(--cinnabar);
+  box-shadow:0 0 0 4px rgba(168,50,40,0.2);}
+.stamp-fx.go{animation:stampDrop .6s cubic-bezier(.3,1.4,.5,1) forwards;}
+@keyframes stampDrop{0%{opacity:0;transform:translate(-50%,-50%) scale(2.4) rotate(-12deg);}40%{opacity:0.95;transform:translate(-50%,-50%) scale(1) rotate(-12deg);}100%{opacity:0;transform:translate(-50%,-50%) scale(1.05) rotate(-12deg);}}
+
+/* 预览专用·非游戏 UI */
+.previewbar{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:50;display:flex;gap:8px;align-items:center;
+  font-family:var(--font);font-size:11px;color:var(--ink-faint);background:rgba(255,250,235,0.7);border:1px solid rgba(168,131,58,0.3);
+  padding:4px 12px;border-radius:20px;backdrop-filter:blur(3px);}
+.previewbar b{color:var(--cinnabar-d);}
+</style>
+</head>
+<body class="tm-phase8-formal">
+<div class="zou-stage">
+  <div class="zou-frame">
+    <!-- 标题条 -->
+    <div class="zou-titlebar">
+      <button class="zou-close" title="退回御案">×</button>
+      <div class="zt-center">
+        <div class="zt-main">百 官 奏 疏</div>
+        <div class="zt-sub">通政司　百官启奏　御前批红</div>
+      </div>
+      <div class="zou-chips" id="hdChips"></div>
+    </div>
+    <!-- 三区 -->
+    <div class="zou-body">
+      <!-- 左·奏牍架 -->
+      <aside class="shelf">
+        <div class="shelf-hd"><span class="shelf-seal">奏</span><div><b>朱批案牍</b><span>急奏 · 留中 · 已批</span></div></div>
+        <div class="filters" id="filters"></div>
+        <div class="shelf-scroll" id="shelfList"></div>
+        <div class="transit" id="transit"></div>
+      </aside>
+      <!-- 中·御览批红 -->
+      <main class="read">
+        <article class="zouben" id="zouben"></article>
+      </main>
+      <!-- 右·票拟与影响 -->
+      <aside class="aside" id="aside"></aside>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="previewbar">御案批红 · 百官奏疏新 UI 预览 <b>v1</b> · 数据驱动 · 点左侧折子切换 · 密折需启封 · 朱批可写</div>
+
+<script>
+/* ───────── 类型分色 / 标签字典 ───────── */
+var TYPE_META = {
+  '弹章': {c:'#a83228', label:'弹章', glyph:'劾', chip:'hot'},
+  '警报': {c:'#7a2018', label:'警报', glyph:'警', chip:'hot'},
+  '军务': {c:'#4a5e8a', label:'军务', glyph:'兵', chip:''},
+  '荐表': {c:'#557f6f', label:'荐表', glyph:'荐', chip:'green'},
+  '政务': {c:'#a8833a', label:'政务', glyph:'政', chip:''},
+  '人事': {c:'#8e6aa8', label:'人事', glyph:'铨', chip:''},
+  '民生': {c:'#b98b2f', label:'民生', glyph:'民', chip:''},
+  'territory': {c:'#a83228', label:'侨置', glyph:'疆', chip:'hot'}
+};
+function typeMeta(t){ return TYPE_META[t] || {c:'#a8833a', label:t||'奏疏', glyph:'奏', chip:''}; }
+var SUB_META = { '密折':{secret:true}, '题本':{}, '公疏':{}, '抗疏':{}, '荐表':{} };
+var REL_LABEL = { high:'信据确凿', medium:'尚需查核', low:'风闻待核' };
+var REL_LEVEL = { high:3, medium:2, low:1 };
+
+/* ───────── 状态分组 (照引擎 memorialGroupKey) ───────── */
+function groupKey(m){
+  var s = String(m.status||'').toLowerCase();
+  if (/done|approved|rejected|annotated|referred|court_debate|已批|已决|准|驳|批示|转|廷议/.test(s)) return 'done';
+  if (/pending_review|hold|held|留中/.test(s)) return 'held';
+  return /急|urgent|high/.test(String(m.priority||'')+s+(m.title||'')) ? 'urgent' : 'pending';
+}
+var GROUP_LABEL = {
+  urgent:['急奏待批','红签急奏，优先于常规折件'],
+  pending:['百官启奏','可准奏、驳回、批示、转有司或发廷议'],
+  held:['留中之折','暂不下发，保留御前判断与后续回合'],
+  done:['已批档案','已形成朱批，可追踪回函与承办']
+};
+var STATUS_TEXT = { pending:'待批', pending_review:'待核', hold:'留中', held:'留中', approved:'已准', rejected:'已驳', annotated:'已批示', referred:'已转', court_debate:'付廷议' };
+
+/* ───────── 样本奏疏 (覆盖全类型/全状态) ───────── */
+var MEMORIALS = [
+  {
+    id:'m1', type:'弹章', subtype:'公疏', status:'pending', priority:'urgent', reliability:'high',
+    title:'劾兵部尚书冒功欺君、虚报关宁斩级',
+    from:'李邦华', office:'都察院左都御史', dept:'都察院', faction:'东林',
+    relation:'素以风骨自持，与player无私怨', loyalty:74, impeachTarget:'兵部尚书 王在晋',
+    open:'臣都察院左都御史李邦华谨奏，为劾兵部冒功欺君事：',
+    text:'近关宁塘报，称斩获建虏首级二百，朝廷已照册颁赏。然臣遣人密访宁远，所谓「斩级」多取自阵亡夜不收及流民首级，杂以羊豕之骨充数。兵部尚书明知其伪而代为题请，是欺君也。夫边功不实，则赏不当功，士卒解体；冒滥成风，则边将益骄，封疆益坏。臣请下兵部、都察院会勘，核实斩级真伪，如确系冒功，乞将该尚书并经手司官一并论处，以肃军政、以儆效尤。',
+    piaoni:'辅臣拟议：所劾事关边赏，宜先遣员赴边勘验，未可遽加大臣之罪；俟勘实再议。',
+    piaoniFrom:'辅臣 拟议',
+    impact:[['皇威','若坐实严办','up'],['吏治','整肃军政','up'],['党争','东林·阉党激化','dn'],['边将','关宁诸将离心','dn']]
+  },
+  {
+    id:'m2', type:'军务', subtype:'密折', status:'pending', priority:'urgent', reliability:'medium',
+    title:'密陈建虏西移、似谋绕道蓟镇叩关',
+    from:'袁崇焕', office:'辽东巡抚', dept:'蓟辽督师行辕', faction:'边镇',
+    relation:'锐于任事，性刚自专，需君主信任', loyalty:68, remoteFrom:'辽东·宁远',
+    open:'臣辽东巡抚袁崇焕谨密奏，乞御前独览：',
+    text:'臣探报，建虏近月调动频繁，主力西向，似有避坚就隙、绕道蒙古自蓟镇墙子岭、大安口一带叩关之谋。蓟镇久不修备，墙垣颓圮，戍卒不满额，若虏骑突至，京师震动。臣职在关宁，未敢越境调度，然事关宗社，不敢缄默。乞敕兵部速饬蓟镇整备，并许臣相机入援。此折干系重大，乞勿宣付外廷，以免泄于虏谍。',
+    piaoni:'密折直达御前，不付外廷拟议。近臣拟议：此系密陈边情，宜留中独断，或召枢臣一二人面商。',
+    piaoniFrom:'近臣 拟议',
+    impact:[['军备','蓟镇整备','up'],['军费','调度耗饷','dn'],['皇威','先见之明','up'],['风险','若虚惊则疑边臣','dn']]
+  },
+  {
+    id:'m3', type:'荐表', subtype:'公疏', status:'pending', priority:'normal', reliability:'high',
+    title:'举荐知兵之臣孙传庭堪任陕西总督',
+    from:'刘鸿训', office:'内阁辅臣', dept:'内阁', faction:'中立',
+    relation:'老成谋国，所荐多公', loyalty:80,
+    open:'臣内阁辅臣刘鸿训谨奏，为举荐封疆大臣事：',
+    text:'陕西流贼蔓延，三边总督久虚，非得文武兼资之臣不能弹压。臣窃见原任顺天府丞孙传庭，沉毅有大略，知兵善断，居官清正，向在吏部考功，剔弊不避权贵。今流氛日炽，正资其才。臣愿以身家保举孙传庭擢任陕西总督，假以便宜、专以兵饷，必能戡乱安民。若臣所荐非人，甘与同罪。',
+    piaoni:'辅臣拟议：所举之人考语称职，宜下廷推、会官详议，再请简用。',
+    piaoniFrom:'有司 拟议',
+    impact:[['平乱','得人则西陲可定','up'],['吏治','保举连坐','up'],['财政','专饷需开支','dn'],['人物','孙传庭得用','up']]
+  },
+  {
+    id:'m4', type:'政务', subtype:'题本', status:'pending', priority:'normal', reliability:'high',
+    title:'题请漕粮改折、以纾东南民困',
+    from:'毕自严', office:'户部尚书', dept:'户部', faction:'中立',
+    relation:'理财能臣，账目清明', loyalty:82,
+    open:'臣户部尚书毕自严谨题，为漕务事：',
+    text:'东南连岁水旱，漕粮额征四百万石，运费、耗米、过淮折阅，民不堪命，逋负累累。臣议本年苏松常镇四府漕粮量改折色，每石折银七钱，解部转输辽饷，既纾民困，又省运费，于国于民两便。惟折多则京通仓储渐薄，乞酌定折征之数，仍留半本色以充禄米、备凶荒。伏候圣裁。',
+    piaoni:'辅臣拟议：改折便民，但京储所系，宜详议折征分数，毋使仓储匮乏。',
+    piaoniFrom:'辅臣 拟议',
+    impact:[['民心','东南纾困','up'],['国库','折银补辽饷','up'],['粮储','京通仓减','dn'],['漕军','运额减、漕军失业','dn']]
+  },
+  {
+    id:'m5', type:'人事', subtype:'题本', status:'pending', priority:'normal', reliability:'high',
+    title:'京察拾遗、纠拾不职台省官十二员',
+    from:'王永光', office:'吏部尚书', dept:'吏部', faction:'中立',
+    relation:'掌铨衡，立场圆滑', loyalty:65,
+    open:'臣吏部尚书王永光谨题，为京察事竣事：',
+    text:'六年大计京察已毕，谨将考察不谨、浮躁、才力不及、年老有疾各官造册题请处分，计降调者七员、致仕者三员、闲住者二员。其中或风力素优而一眚被纠者，乞容覆核；或赃迹昭著者，已移送都察院究问。京察乃祖宗澄叙之典，臣不敢徇情，亦不敢苛刻，惟陛下裁定。',
+    piaoni:'辅臣拟议：考课处分宜照部议，惟被纠各官如有称屈陈诉，准其一体覆核，以昭平允。',
+    piaoniFrom:'辅臣 拟议',
+    impact:[['吏治','澄叙官常','up'],['皇权','铨政归君','up'],['党争','察典或成党争工具','dn']]
+  },
+  {
+    id:'m6', type:'警报', subtype:'密折', status:'pending_review', priority:'urgent', reliability:'low',
+    title:'密报：某勋镇暗结边将、私蓄甲士似有异图',
+    from:'东厂', office:'东缉事厂', dept:'司礼监', faction:'内廷',
+    relation:'厂卫密报，真伪难辨，易成构陷', loyalty:50,
+    open:'东厂访得密事一件，谨密题：',
+    text:'缉事番役探报，京营某勋臣近与边镇游击往还密切，私市铠仗弓矢，畜养健儿数百，夜聚晓散，踪迹诡秘。又闻其家人言语怨望，似有觊觎之意。事涉不测，未敢径行擒拿，谨密题请旨。惟此系风闻，证据未确，伏乞圣明独断，或密遣干员暗查，毋使打草惊蛇，亦毋枉及无辜。',
+    piaoni:'密折直达御前，不付外廷拟议。近臣拟议：可密遣干员暗访，未宜遽兴大狱。',
+    piaoniFrom:'近臣 拟议',
+    impact:[['皇权','防患于未然','up'],['人心','厂卫横行致百官惧','dn'],['风险','若系构陷则冤滥','dn']]
+  },
+  {
+    id:'m7', type:'民生', subtype:'公疏', status:'pending', priority:'normal', reliability:'medium',
+    title:'江南诸生联名陈情、乞免历年积逋',
+    from:'苏松士民', office:'生员联名', dept:'通政司转', faction:'士绅',
+    relation:'民意所聚，亦士绅自利', loyalty:0,
+    open:'苏松常镇生员士民一百三十七人联名吁恳：',
+    text:'江南赋重甲天下，连年水患，田庐漂没，而有司催科如故，鞭笞遍野，卖儿鬻女以输官者比比。今积逋已累数十万，催之不能得，徒滋扰累。伏乞圣恩，将崇祯元年以前历年积逋尽行蠲免，使小民得以更生。诸生不敢妄渎天听，惟以阖郡之困，冒死上闻。',
+    piaoni:'辅臣拟议：积逋蠲免事关国课，宜核议蠲缓分数，未可尽免，以防开幸。',
+    piaoniFrom:'有司 拟议',
+    impact:[['民心','江南感恩','up'],['国库','蠲免减收','dn'],['士绅','缙绅借机诡寄','dn']]
+  },
+  {
+    id:'m8', type:'政务', subtype:'题本', status:'held', priority:'normal', reliability:'high',
+    title:'题请举行大婚、册立中宫仪注',
+    from:'来宗道', office:'礼部尚书', dept:'礼部', faction:'中立',
+    relation:'谙熟典礼，事君以礼', loyalty:78, heldTurns:3,
+    open:'臣礼部尚书来宗道谨题，为大婚典礼事：',
+    text:'国本攸关，中宫宜正。臣部谨按祖宗旧典，拟具大婚纳采、问名、纳吉、纳征、告期、册立、奉迎七礼仪注，并合用金册、宝玺、采舆、卤簿之数，缮册进呈。所需礼费约银二十万两，乞敕户部、工部预备。伏候钦定吉期。',
+    piaoni:'辅臣拟议：大婚为国家盛典，所议仪注尚合典制，惟时值边饷孔亟，礼费可量加裁省。',
+    piaoniFrom:'辅臣 拟议',
+    impact:[['皇权','正位中宫','up'],['国库','礼费二十万','dn'],['民心','盛典与边饷之议','dn']]
+  },
+  {
+    id:'m9', type:'军务', subtype:'题本', status:'approved', priority:'urgent', reliability:'high',
+    title:'请发关宁军饷三十万、以靖军心',
+    from:'王在晋', office:'兵部尚书', dept:'兵部', faction:'中立',
+    relation:'持重老练', loyalty:75,
+    open:'臣兵部尚书王在晋谨题，为关宁缺饷事：',
+    text:'关宁四镇额兵十一万，月饷积欠四月，军心浮动，已有鼓噪之渐。辽事方殷，若因欠饷生变，则前功尽弃、门户洞开。臣请于太仓、内帑速发银三十万两，星驰解关，以靖军心、以固封疆。事在燃眉，乞速赐裁夺。',
+    reply:'览。着户部即于太仓发银二十万，内帑发十万，星夜解关，毋得稽延。如再有欠饷鼓噪，惟该部是问。钦此。',
+    piaoni:'辅臣拟议：缺饷危急，所请宜准，惟数目浩大，宜分太仓、内帑两项支给。',
+    piaoniFrom:'辅臣 拟议',
+    impact:[['军心','关宁暂安','up'],['内帑','发银十万','dn'],['国库','太仓二十万','dn']]
+  },
+  {
+    id:'m10', type:'territory', subtype:'题本', status:'pending', priority:'urgent', reliability:'high',
+    qiaozhi:true,
+    title:'辽东失地州县官民请于关内侨置安插',
+    from:'流寓辽民', office:'失地州县', dept:'兵部转', faction:'流民',
+    relation:'失土遗黎，无所归依', loyalty:0, remoteFrom:'辽东·广宁(已陷)',
+    open:'辽东沦陷州县流寓官民泣血上陈：',
+    text:'广宁、义州诸城既陷，官无衙署、民无室庐，数万遗黎流寓关内，转徙沟壑。乞朝廷于山海关内择地侨置广宁等州县，仍设官管摄，编入版籍，给以荒田、贷以牛种，使流亡有归、版图不废。庶他日恢复有基，亦免遗黎离散为虏所用。',
+    piaoni:'辅臣拟议：侨置之议，事关版籍、安插、给田，宜会议地亩、钱粮，再定。',
+    piaoniFrom:'有司 拟议',
+    impact:[['民心','遗黎得安','up'],['行政','增侨置州县','up'],['财政','给田贷种','dn'],['版图','存广宁建制','up']]
+  }
+];
+
+/* ───────── 在途奏疏 ───────── */
+var TRANSIT = [
+  {from:'石柱土司 秦良玉', office:'四川 → 通政司', type:'奏报 · 题本', eta:'约 2 回合到京', body:'白杆兵请增饷械、愿东援'},
+  {from:'福建巡抚', office:'福建 → 通政司', type:'海防 · 题本', eta:'在途', body:'红夷舰泊澎湖，请筹海防'},
+  {from:'宣大总督', office:'宣府 → 通政司', type:'边情 · 密折', eta:'加急在途', body:'插汉部求市，款抚之议'}
+];
+
+/* ───────── 状态 ───────── */
+var FILTERS = [
+  ['all','全部','旧奏疏总览'],
+  ['urgent','急奏','红签优先'],
+  ['pending','百官启奏','常规待批'],
+  ['held','留中','御前暂存'],
+  ['done','已批','朱批归档']
+];
+var state = { filter:'all', activeId:'m1', opened:{}, replies:{}, collapsed:{} };
+
+/* ───────── 工具 ───────── */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function matches(f,m){ return f==='all' ? true : groupKey(m)===f; }
+function toast(msg){ var t=document.getElementById('toast'); t.innerHTML=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},1900); }
+
+/* ───────── 渲染：标题 chips ───────── */
+function renderChips(){
+  var pend = MEMORIALS.filter(function(m){return groupKey(m)!=='done';}).length;
+  var urg = MEMORIALS.filter(function(m){return groupKey(m)==='urgent';}).length;
+  document.getElementById('hdChips').innerHTML =
+    '<span class="chip green">本回 '+pend+' 件</span><span class="chip hot">急 '+urg+'</span>';
+}
+
+/* ───────── 渲染：筛选 ───────── */
+function renderFilters(){
+  document.getElementById('filters').innerHTML = FILTERS.map(function(f){
+    var n = MEMORIALS.filter(function(m){return matches(f[0],m);}).length;
+    return '<button class="filter '+(state.filter===f[0]?'active':'')+'" data-f="'+f[0]+'" title="'+esc(f[2])+'"><span>'+esc(f[1])+'</span><span class="fc">'+n+'</span></button>';
+  }).join('');
+}
+
+/* ───────── 渲染：折子列表 (分组) ───────── */
+function relDots(rel){
+  var lv = REL_LEVEL[rel]||0, h='';
+  for(var i=0;i<3;i++) h+='<i class="'+(i<lv?'':'off')+'">●</i>';
+  return '<span class="zf-rel" title="'+esc(REL_LABEL[rel]||'')+'">'+h+'</span>';
+}
+function renderShelf(){
+  var vis = MEMORIALS.filter(function(m){return matches(state.filter,m);});
+  var order = ['urgent','pending','held','done'];
+  var html = order.map(function(g){
+    var rows = vis.filter(function(m){return groupKey(m)===g;});
+    if(!rows.length) return '';
+    return '<div class="shelf-group"><div class="shelf-group-t">'+esc(GROUP_LABEL[g][0])+' <small>'+rows.length+' 件</small></div>'+
+      rows.map(folderCard).join('')+'</div>';
+  }).join('');
+  document.getElementById('shelfList').innerHTML = html || '<div style="padding:30px 10px;text-align:center;color:var(--ink-faint);font-size:12.5px;">案牍清净　无此类奏疏</div>';
+}
+function folderCard(m){
+  var tm = typeMeta(m.type), g = groupKey(m), sub = SUB_META[m.subtype]||{};
+  var secret = sub.secret && !state.opened[m.id];
+  return '<button class="zou-folder '+(state.activeId===m.id?'active':'')+(g==='done'?' done':'')+'" data-id="'+m.id+'" style="--tc:'+tm.c+'">'+
+    '<div class="zf-top"><span class="zf-type" style="background:'+tm.c+'">'+esc(tm.label)+'</span>'+
+      (m.subtype && m.subtype!=='公疏'?'<span class="zf-sub'+(secret?' mi':'')+'">'+esc(secret?'密 · 封缄':m.subtype)+'</span>':'')+
+      (m.remoteFrom?'<span class="zf-remote" title="远方奏疏 · '+esc(m.remoteFrom)+'">远</span>':'')+
+      (g==='urgent'?'<span class="zf-urgent"></span>':'')+'</div>'+
+    '<div class="zf-title">'+esc(m.title)+'</div>'+
+    '<div class="zf-meta"><b style="color:var(--ink)">'+esc(m.from)+'</b><span class="dot">·</span><span>'+esc(m.office||m.dept)+'</span></div>'+
+    (g==='done'?'<span class="zf-stamp">'+esc(STATUS_TEXT[m.status]||'已批')+'</span>'
+      :g==='held'&&m.heldTurns?'<div class="zf-held'+(m.heldTurns>=2?' warn':'')+'">已留中 '+m.heldTurns+' 回'+(m.heldTurns>=2?' · 恐续奏':'')+'</div>'
+      :'<div style="margin-top:5px">'+relDots(m.reliability)+'</div>')+
+  '</button>';
+}
+
+/* ───────── 渲染：在途 ───────── */
+function renderTransit(){
+  document.getElementById('transit').innerHTML =
+    '<div class="transit-t">在途奏疏 · '+TRANSIT.length+' 件</div>'+
+    TRANSIT.map(function(t){
+      return '<div class="transit-row"><b>'+esc(t.from)+'</b><em>'+esc(t.eta)+'</em><div style="color:var(--ink-faint);font-size:10.5px;margin-top:2px">'+esc(t.office)+' · '+esc(t.type)+'</div><div style="margin-top:1px">'+esc(t.body)+'</div></div>';
+    }).join('');
+}
+
+/* ───────── 渲染：中央 御览批红 ───────── */
+function activeM(){ return MEMORIALS.find(function(m){return m.id===state.activeId;}) || MEMORIALS[0] || null; }
+function renderReader(){
+  var m = activeM();
+  var el = document.getElementById('zouben');
+  if(!m){ el.innerHTML = '<div class="ben-empty"><div class="ben-empty-seal">奏</div><h3>案 牍 清 净</h3><p>百官无事启奏　·　通政司暂无折件转入</p><small>新奏疏会于每回合由百官、有司、边镇陆续呈入</small></div>'; return; }
+  var tm = typeMeta(m.type), g = groupKey(m), sub = SUB_META[m.subtype]||{};
+  // 密折封缄态
+  if (sub.secret && !state.opened[m.id]){
+    el.innerHTML = benHead(m,tm,g) +
+      '<div class="ben-sealed"><div class="wax" data-open="'+m.id+'"><b>缄</b></div>'+
+      '<div class="sealed-hint"><h4>密 折 · 火 漆 封 缄</h4><p>'+esc(m.from)+' 直达御前 · 不付外廷拟议<br>点火漆启封，方可御览</p></div></div>';
+    bindReader();
+    return;
+  }
+  var done = g==='done';
+  var reply = (state.replies[m.id]!=null) ? state.replies[m.id] : (m.reply||'');
+  var collapsed = state.collapsed[m.id];
+  var long = (m.text||'').length>150;
+  var textCls = (long && collapsed!==false) ? 'collapsed' : '';
+  el.innerHTML =
+    benHead(m,tm,g) +
+    (g==='held'&&m.heldTurns?'<div class="held-banner'+(m.heldTurns>=2?' warn':'')+'"><b>已留中 '+m.heldTurns+' 回合</b>'+(m.heldTurns>=2?'　·　'+esc(m.from)+'恐焦虑续奏，或求见当面追问':'　·　御前暂存，可继续保留或下发')+'</div>':'')+
+    '<div class="ben-body"><div class="ben-paper">'+
+      '<div class="bp-open">'+esc(m.open||'')+'</div>'+
+      '<div class="ben-text '+textCls+'" id="bt-'+m.id+'">'+esc(m.text||'暂无正文。')+'</div>'+
+      (long?'<button class="ben-toggle" data-toggle="'+m.id+'">'+(textCls?'▼ 展开全文':'▲ 收起')+'</button>':'')+
+      '<div class="bp-close">臣不胜屏营待命之至，谨奏。</div>'+
+    '</div></div>'+
+    '<div class="ben-foot">'+
+      '<div class="pizhu-lbl"><b>朱 批</b>'+(done?'<small>已批·朱批归档</small>':'<small>御笔朱批，下发有司</small>')+'</div>'+
+      (done?'':'<div class="pizhu-quick">'+['知道了','依议','该部知道','着实奏来','览','准奏，钦此','着会官详议'].map(function(p){return '<span class="qphrase" data-q="'+esc(p)+'">'+esc(p)+'</span>';}).join('')+'</div>')+
+      '<textarea class="pizhu-ta" id="reply-'+m.id+'" '+(done?'readonly':'')+' placeholder="御笔亲批……">'+esc(reply)+'</textarea>'+
+      renderActs(m,g,done)+
+    '</div>'+
+    '<div class="stamp-fx" id="stampfx">准</div>';
+  bindReader();
+}
+function benHead(m,tm,g){
+  var sub = SUB_META[m.subtype]||{};
+  var relCls = m.reliability==='low'?'lo':'';
+  var statusChip = g==='urgent'?'<span class="chip hot">急奏</span>':g==='done'?'<span class="chip green">'+esc(STATUS_TEXT[m.status]||'已批')+'</span>':g==='held'?'<span class="chip">留中</span>':'<span class="chip">待批</span>';
+  return '<div class="ben-head"><div class="bh-status">'+statusChip+'</div><div class="bh-row">'+
+    '<div class="bh-seal" style="--tc:'+tm.c+'"><b>'+esc(tm.glyph)+'</b><span>'+esc(tm.label)+'</span></div>'+
+    '<div class="bh-main"><div class="bh-title">'+esc(m.title)+'</div>'+
+      '<div class="bh-author">具题　<b>'+esc(m.from)+'</b>　'+esc(m.office||'')+'　〔'+esc(m.dept||'')+'〕</div>'+
+      '<div class="bh-tags">'+
+        '<span class="bh-tag">'+esc(tm.label)+'</span>'+
+        (m.subtype?'<span class="bh-tag'+(sub.secret?' mi':'')+'">'+esc(m.subtype)+'</span>':'')+
+        (m.impeachTarget?'<span class="bh-tag impeach">被劾 · '+esc(m.impeachTarget)+'</span>':'')+
+        (m.remoteFrom?'<span class="bh-tag remote">远方 · '+esc(m.remoteFrom)+'</span>':'')+
+        '<span class="bh-tag">可靠 <span class="rel-d '+relCls+'">'+esc(REL_LABEL[m.reliability]||'未明')+'</span></span>'+
+        (m.faction?'<span class="bh-tag">'+esc(m.faction)+'</span>':'')+
+      '</div></div></div></div>';
+}
+function renderActs(m,g,done){
+  if(done) return '<div class="pizhu-acts"><span style="font-size:12px;color:var(--ink-faint);letter-spacing:0.06em">此折已批·'+esc(STATUS_TEXT[m.status])+' · 可追踪回函与承办</span></div>';
+  var a = '<div class="pizhu-acts">';
+  a += '<button class="pact primary" data-act="approved">准奏</button>';
+  a += '<button class="pact danger" data-act="rejected">驳回</button>';
+  a += '<button class="pact" data-act="annotated">批示</button>';
+  a += '<button class="pact" data-act="referred">转有司</button>';
+  a += '<button class="pact" data-act="court_debate">发廷议</button>';
+  if(g!=='held') a += '<button class="pact" data-act="hold">留中</button>';
+  a += '<span class="pact-sep"></span>';
+  a += '<button class="pact jade" data-act="edict">摘入拟诏</button>';
+  a += '<button class="pact" data-act="summon">传召问询</button>';
+  if(m.qiaozhi) a += '<button class="pact primary" data-act="qiaozhi">侨置决策</button>';
+  a += '</div>';
+  return a;
+}
+
+/* ───────── 渲染：右 票拟与影响 ───────── */
+function renderAside(){
+  var m = activeM();
+  if(!m){ document.getElementById('aside').innerHTML = ''; return; }
+  var g = groupKey(m);
+  var relLv = REL_LEVEL[m.reliability]||0;
+  var loyalty = m.loyalty||0;
+  var aside = '';
+  // 辅臣拟议
+  aside += '<div class="card"><div class="card-hd"><span class="ci">拟</span>辅臣拟议<span class="hd-note">辅臣之见 · 可采可驳</span></div><div class="card-bd">'+
+    '<div class="piaoni">'+esc(m.piaoni||'此折直达御前，未经辅臣拟议。')+'<span class="pn-from">—— '+esc(m.piaoniFrom||'辅臣 拟议')+'</span></div>'+
+    (g!=='done'?'<button class="piaoni-take" data-takepn="1">采拟议入朱批</button>':'')+
+  '</div></div>';
+  // 具题人
+  aside += '<div class="card"><div class="card-hd"><span class="ci">臣</span>具题之臣</div><div class="card-bd">'+
+    '<div class="who"><div class="who-face">'+esc((m.from||'臣').slice(0,1))+'</div>'+
+      '<div class="who-info"><b>'+esc(m.from)+'</b><span>'+esc(m.office||'')+'</span><span>'+esc(m.dept||'')+(m.faction?' · '+esc(m.faction):'')+'</span></div></div>'+
+    '<dl class="who-meta">'+
+      (loyalty?'<dt>忠悃</dt><dd>'+loyalty+' / 100</dd>':'')+
+      '<dt>可靠</dt><dd><span class="relbar">'+[0,1,2].map(function(i){return '<i class="'+(i<relLv?'on':'')+(m.reliability==='low'&&i<relLv?' bad':'')+'"></i>';}).join('')+'</span></dd>'+
+    '</dl>'+
+    (m.relation?'<div style="margin-top:9px;font-size:11.5px;color:var(--ink-soft);line-height:1.6;font-family:var(--font-doc)">「'+esc(m.relation)+'」</div>':'')+
+  '</div></div>';
+  // 批阅链路
+  aside += '<div class="card"><div class="card-hd"><span class="ci">链</span>批阅链路</div><div class="card-bd"><div class="chain">'+
+    chainRow('源','来源','奏疏 · '+esc(typeMeta(m.type).label)+(m.subtype?' · '+esc(m.subtype):''))+
+    chainRow('批','批复','准奏 / 驳回 / 留中 / 转有司 / 发廷议')+
+    chainRow('行','执行','君主 → 中枢辅臣 → 有司 → 州县地方')+
+    chainRow('档','归档','写入近事 · 人物记忆 · 史官实录')+
+  '</div></div></div>';
+  // 批后结果 · 本折后续 (已批折回显真实已发生的后续·纯文字·不预估数字·后果不预告)
+  if(g==='done'){
+    var fu=[], st=m.status||'';
+    var DEC={approved:'已准奏 · 交有司施行',rejected:'已驳回 · 所请不行',annotated:'已批示 · 候有司遵行',referred:'已交有司核议',court_debate:'已付廷议 · 候朝议'};
+    fu.push(['朱批',DEC[st]||'已得朱批']);
+    if(st==='referred') fu.push(['承办','所交有司应于后续上折复议']);
+    if(m.remoteFrom) fu.push(['回传','朱批回传中 · 信使在途 · '+(m.from||'具题人')+'尚不知结果']);
+    if(m.from) fu.push(['具题人',m.from+'：'+(st==='rejected'?'闻驳 · 或忧惧或离心':'闻准 · 感念在心')]);
+    fu.push(['归档','已入近事 · 人物记忆 · 史官实录（后续于近事、实录追踪）']);
+    aside += '<div class="card"><div class="card-hd"><span class="ci">果</span>批后结果 · 本折后续</div><div class="card-bd"><div class="chain">'+
+      fu.map(function(r){return chainRow(r[0].slice(0,1),r[0],r[1]);}).join('')+
+    '</div></div></div>';
+  } else {
+    aside += '<div class="card"><div class="card-hd"><span class="ci">果</span>批后结果</div><div class="card-bd"><div class="imp-pending">尚未批复。<br>朱批下发后，此处回显该折引发的<b>实际</b>影响（民心 / 财政 / 人物 / 边事…）。<br><span class="imp-note">后果应自然发生·不事前预告</span></div></div></div>';
+  }
+  document.getElementById('aside').innerHTML = aside;
+}
+function chainRow(d,b,p){ return '<div class="chain-row"><span class="chain-dot">'+esc(d)+'</span><div><b>'+esc(b)+'</b><p>'+esc(p)+'</p></div></div>'; }
+
+/* ───────── 交互绑定 ───────── */
+function bindReader(){
+  var el = document.getElementById('zouben');
+  // 启封
+  el.querySelectorAll('[data-open]').forEach(function(b){ b.onclick=function(){ state.opened[this.getAttribute('data-open')]=true; toast('密折已<b>启封</b> · 御前独览'); renderAll(); }; });
+  // 展开折叠
+  el.querySelectorAll('[data-toggle]').forEach(function(b){ b.onclick=function(){ var id=this.getAttribute('data-toggle'); var t=document.getElementById('bt-'+id); var col=t.classList.toggle('collapsed'); state.collapsed[id]=col; this.textContent=col?'▼ 展开全文':'▲ 收起'; }; });
+  // 批红常用语
+  el.querySelectorAll('[data-q]').forEach(function(b){ b.onclick=function(){ var m=activeM(); var ta=document.getElementById('reply-'+m.id); var p=this.getAttribute('data-q'); ta.value=(ta.value?ta.value.replace(/[。\s]*$/,'')+'，':'')+p; state.replies[m.id]=ta.value; ta.focus(); }; });
+  // 朱批输入
+  var ta = el.querySelector('.pizhu-ta'); if(ta && !ta.readOnly){ ta.oninput=function(){ state.replies[activeM().id]=this.value; }; }
+  // 批红动作
+  el.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){ doAct(this.getAttribute('data-act')); }; });
+}
+var ACT_LABEL = { approved:'准奏', rejected:'驳回', annotated:'批示', referred:'转有司', court_debate:'发廷议', hold:'留中', edict:'摘入拟诏', summon:'传召问询', qiaozhi:'侨置决策' };
+var ACT_STAMP = { approved:'准', rejected:'驳', annotated:'批', referred:'转', court_debate:'议', hold:'留' };
+function doAct(act){
+  var m = activeM();
+  if(ACT_STAMP[act]){
+    var fx = document.getElementById('stampfx');
+    if(fx){ fx.textContent=ACT_STAMP[act]; fx.classList.remove('go'); void fx.offsetWidth; fx.classList.add('go'); }
+  }
+  var verb = ACT_LABEL[act]||act;
+  if(act==='edict') toast('已将「'+esc(m.title)+'」<b>摘入诏书草拟</b>');
+  else if(act==='summon') toast('已传召 <b>'+esc(m.from)+'</b> 御前问询');
+  else if(act==='qiaozhi') toast('转入<b>侨置决策</b>面板');
+  else toast('御笔朱批 · <b>'+esc(verb)+'</b>　'+esc(m.title));
+  // 演示: 准/驳/转/议/留 → 该折转入已批/留中 (仅预览态切状态)
+  if(['approved','rejected','annotated','referred','court_debate'].indexOf(act)>=0){
+    m.status = act; m.reply = state.replies[m.id]||m.reply||'';
+    setTimeout(function(){ renderAll(); }, 620);
+  } else if(act==='hold'){
+    m.status='held'; setTimeout(function(){ renderAll(); }, 300);
+  }
+}
+function bindShelf(){
+  document.querySelectorAll('.zou-folder').forEach(function(b){ b.onclick=function(){ state.activeId=this.getAttribute('data-id'); renderReader(); renderAside(); renderShelf(); }; });
+  document.querySelectorAll('.filter').forEach(function(b){ b.onclick=function(){
+    state.filter=this.getAttribute('data-f');
+    var vis=MEMORIALS.filter(function(m){return matches(state.filter,m);});
+    if(vis.length && !vis.some(function(m){return m.id===state.activeId;})) state.activeId=vis[0].id;
+    renderFilters(); renderShelf(); renderReader(); renderAside();
+  }; });
+}
+function bindAside(){
+  var b=document.querySelector('[data-takepn]'); if(b) b.onclick=function(){ var m=activeM(); var pn=(m.piaoni||'').replace(/^.*?拟议[：:]/,'').trim(); var ta=document.getElementById('reply-'+m.id); if(ta){ ta.value=(ta.value?ta.value+'\n':'')+'依辅臣所拟，'+pn; state.replies[m.id]=ta.value; ta.focus(); toast('已采<b>辅臣拟议</b>入朱批'); } };
+}
+
+/* ───────── 主渲染 ───────── */
+function renderAll(){ renderChips(); renderFilters(); renderShelf(); renderTransit(); renderReader(); renderAside(); bindShelf(); bindAside(); }
+document.querySelector('.zou-close').onclick=function(){ toast('（预览）退回御案'); };
+renderAll();
+</script>
+</body>
+</html>

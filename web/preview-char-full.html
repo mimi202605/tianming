@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>角色 UI 全面升级预览 · 天命</title>
+<style>
+:root {
+  --ink-50:#f8f3e8; --ink-100:#ede5d0; --ink-200:#d4c9b0; --ink-300:#9d917d;
+  --ink-400:#6b5d4f; --ink-500:#3a3530; --ink-600:#2a2520; --ink-700:#1c1914;
+  --ink-800:#12100e; --ink-900:#0a0908;
+  --gold-300:#d4be7a; --gold-400:#b89a53; --gold-500:#8a6d2b; --gold-600:#6b5010;
+  --vermillion-300:#d4706a; --vermillion-400:#c04030; --vermillion-500:#8b2e25;
+  --celadon-300:#a3d4c7; --celadon-400:#7eb8a7; --celadon-500:#5a8f7f;
+  --green-400:#7eb87e;
+  --indigo-400:#6e84b8;
+  --purple-400:#8e44ad;
+  --amber-400:#e67e22;
+  --bg-0:#0a0908; --bg-1:#12100e; --bg-2:#1c1914; --bg-3:#2a2520; --bg-4:#3a3530;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px;
+  --radius-sm:3px; --radius-md:5px; --radius-lg:8px;
+}
+* { box-sizing: border-box; }
+body {
+  margin:0; padding:24px;
+  background:var(--bg-1);
+  color:var(--ink-50);
+  font-family:"Noto Serif SC","Source Han Serif","思源宋体","KaiTi","楷体",serif;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(184,154,83,0.04), transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(192,64,48,0.02), transparent 50%);
+  min-height:100vh;
+}
+.page-label { color:var(--gold-400); font-size:13px; letter-spacing:0.35em; margin:32px 0 10px; padding-left:6px; border-left:3px solid var(--gold-500); }
+.page-sub { color:var(--ink-300); font-size:11px; margin-bottom:18px; letter-spacing:0.08em; font-style:italic; padding-left:9px; }
+.legend { background:rgba(184,154,83,0.04); border:1px dashed rgba(184,154,83,0.3); border-radius:var(--radius-md); padding:12px 16px; font-size:11px; color:var(--ink-300); line-height:1.8; margin-bottom:24px; }
+.legend b { color:var(--gold-400); }
+.legend code { color:var(--celadon-400); background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:2px; font-size:10px; }
+.layout { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+
+/* ============================================================
+   人物志完整页
+   ============================================================ */
+.renwu-page {
+  max-width:1120px;
+  background:linear-gradient(to bottom, #1a1612 0%, #15120e 100%);
+  border:1px solid var(--gold-500);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0, transparent 2.5em,
+      rgba(184,154,83,0.012) 2.5em, rgba(184,154,83,0.012) calc(2.5em + 1px)),
+    linear-gradient(to bottom, rgba(184,154,83,0.04) 0%, transparent 180px),
+    linear-gradient(to bottom, #1a1612 0%, #15120e 100%);
+  box-shadow:0 4px 28px rgba(0,0,0,0.6);
+  position:relative;
+}
+.renwu-page::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, transparent 0%, var(--gold-500) 15%, var(--gold-400) 50%, var(--gold-500) 85%, transparent 100%); }
+
+/* 顶部永固定区 */
+.rwp-top { padding:20px 28px 14px; border-bottom:1px solid var(--bg-3); position:relative; }
+.rwp-top::after { content:""; position:absolute; left:24px; right:24px; bottom:-1px; height:1px; background:linear-gradient(90deg, transparent, var(--gold-500), transparent); }
+
+.rwp-identity-row { display:flex; align-items:flex-start; gap:18px; margin-bottom:14px; }
+.rwp-portrait { width:72px; height:72px; border:2px solid var(--gold-500); border-radius:50%; background:radial-gradient(circle, #2a2318 60%, #1a1612 100%); display:flex; align-items:center; justify-content:center; color:var(--gold-300); font-size:32px; font-weight:500; flex-shrink:0; box-shadow:0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(184,154,83,0.15); overflow:hidden; position:relative; }
+.rwp-portrait.has-image { background:linear-gradient(145deg, #3a2a1a, #1a1612); }
+.rwp-portrait img { width:100%; height:100%; object-fit:cover; object-position:center top; }
+.rwp-portrait-placeholder { font-size:32px; color:var(--gold-300); font-family:"KaiTi","楷体",serif; font-weight:500; }
+.rwp-ident-body { flex:1; min-width:0; padding-top:4px; }
+.rwp-name-row { display:flex; align-items:baseline; gap:12px; margin-bottom:4px; flex-wrap:wrap; }
+.rwp-name { font-size:28px; color:var(--gold-300); letter-spacing:0.15em; font-weight:600; line-height:1.1; }
+.rwp-courtesy { font-size:14px; color:var(--ink-300); letter-spacing:0.1em; font-style:italic; opacity:0.9; }
+.rwp-courtesy::before { content:"字"; display:inline-block; margin-right:5px; font-size:10px; color:var(--gold-500); letter-spacing:0.3em; vertical-align:2px; }
+.rwp-gender { display:inline-flex; align-items:center; padding:2px 8px; font-size:11px; border:1px solid; border-radius:2px; letter-spacing:0.15em; margin-left:4px; }
+.rwp-gender.male { color:var(--indigo-400); border-color:rgba(110,132,184,0.4); background:rgba(110,132,184,0.05); }
+.rwp-gender.female { color:#e84393; border-color:rgba(232,67,147,0.4); background:rgba(232,67,147,0.05); }
+.rwp-title { font-size:13px; color:var(--ink-300); letter-spacing:0.08em; margin-bottom:6px; }
+.rwp-title b { color:var(--gold-400); letter-spacing:0.15em; }
+
+.rwp-mini-tags { display:flex; gap:4px; flex-wrap:wrap; }
+.rwp-mini-tag { font-size:10px; padding:1px 7px; border:1px solid rgba(184,154,83,0.3); border-radius:2px; color:var(--ink-200); background:rgba(184,154,83,0.05); letter-spacing:0.1em; }
+.rwp-mini-tag.loc { color:var(--gold-300); border-color:rgba(184,154,83,0.5); background:rgba(184,154,83,0.08); }
+.rwp-mini-tag.travel { color:var(--amber-400); border-color:rgba(230,126,34,0.4); }
+.rwp-mini-tag.fac { color:var(--vermillion-300); border-color:rgba(212,112,106,0.3); background:rgba(192,64,48,0.05); }
+.rwp-mini-tag.clan { color:var(--celadon-300); border-color:rgba(126,184,167,0.3); background:rgba(126,184,167,0.05); }
+.rwp-mini-tag.origin { color:var(--indigo-400); border-color:rgba(110,132,184,0.3); background:rgba(110,132,184,0.05); }
+
+.rwp-actions { display:flex; gap:6px; flex-shrink:0; }
+.rwp-act-btn { padding:6px 14px; background:linear-gradient(to bottom, rgba(184,154,83,0.12), rgba(184,154,83,0.04)); border:1px solid var(--gold-500); color:var(--gold-300); font-family:inherit; font-size:13px; letter-spacing:0.15em; cursor:pointer; border-radius:var(--radius-sm); transition:all 0.2s; }
+.rwp-act-btn:hover { background:linear-gradient(to bottom, rgba(184,154,83,0.25), rgba(184,154,83,0.1)); border-color:var(--gold-300); }
+.rwp-act-btn.close { padding:6px 10px; font-size:16px; letter-spacing:0; color:var(--ink-400); border-color:var(--ink-500); }
+.rwp-act-btn.close:hover { color:var(--vermillion-400); border-color:var(--vermillion-400); }
+
+/* 心性二维 */
+.rwp-heart { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:6px; }
+.rwp-heart-item { display:flex; align-items:center; gap:12px; padding:10px 14px; background:rgba(0,0,0,0.28); border:1px solid rgba(184,154,83,0.2); border-radius:var(--radius-md); position:relative; overflow:hidden; }
+.rwp-heart-item.loyalty { border-left:3px solid var(--celadon-500); }
+.rwp-heart-item.ambition { border-left:3px solid var(--purple-400); }
+.rwp-heart-label { font-size:11px; color:var(--gold-400); letter-spacing:0.3em; width:36px; flex-shrink:0; }
+.rwp-heart-bar { flex:1; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; overflow:hidden; }
+.rwp-heart-bar-fill { height:100%; border-radius:4px; }
+.rwp-heart-bar-fill.loyalty-hi { background:linear-gradient(90deg, var(--celadon-500), var(--celadon-300)); }
+.rwp-heart-bar-fill.ambition-mid { background:linear-gradient(90deg, var(--gold-500), var(--gold-400)); }
+.rwp-heart-bar-fill.ambition-hi { background:linear-gradient(90deg, var(--purple-400), var(--vermillion-400)); }
+.rwp-heart-value { font-size:20px; color:var(--ink-50); font-variant-numeric:tabular-nums; font-weight:600; width:50px; text-align:right; flex-shrink:0; }
+.rwp-heart-tag { font-size:10px; color:var(--ink-300); letter-spacing:0.15em; font-style:italic; margin-left:auto; padding-left:8px; border-left:1px solid rgba(184,154,83,0.15); white-space:nowrap; }
+.rwp-verdict { margin-top:8px; padding:6px 14px; text-align:center; background:rgba(126,184,167,0.07); border:1px solid rgba(126,184,167,0.25); border-radius:var(--radius-sm); font-size:11px; color:var(--celadon-300); letter-spacing:0.15em; }
+.rwp-verdict.warn { background:rgba(230,126,34,0.07); border-color:rgba(230,126,34,0.25); color:var(--amber-400); }
+.rwp-verdict.danger { background:rgba(192,64,48,0.07); border-color:rgba(192,64,48,0.25); color:var(--vermillion-300); }
+
+/* Tab 导航 */
+.rwp-tabs { display:flex; padding:0 24px; border-bottom:1px solid var(--bg-3); gap:0; background:rgba(0,0,0,0.15); }
+.rwp-tab { padding:12px 22px; font-size:13px; color:var(--ink-300); letter-spacing:0.25em; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; position:relative; }
+.rwp-tab:hover { color:var(--gold-300); background:rgba(184,154,83,0.04); }
+.rwp-tab.active { color:var(--gold-400); border-bottom-color:var(--gold-400); background:linear-gradient(to bottom, rgba(184,154,83,0.08), transparent); }
+.rwp-tab.active::before { content:""; position:absolute; top:6px; left:50%; width:5px; height:5px; background:var(--gold-400); border-radius:50%; transform:translateX(-50%); box-shadow:0 0 8px var(--gold-400); }
+
+.rwp-tab-panels { padding:20px 28px 28px; min-height:600px; }
+.rwp-tab-panel { display:none; animation:fadeIn 0.25s ease-out; }
+.rwp-tab-panel.active { display:block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+.rwp-sec { margin-bottom:18px; }
+.rwp-sec-title { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--gold-400); letter-spacing:0.3em; font-weight:600; margin-bottom:10px; padding-bottom:6px; border-bottom:1px dashed rgba(184,154,83,0.25); }
+.rwp-sec-title::before { content:""; display:inline-block; width:3px; height:13px; background:var(--gold-400); }
+.rwp-sec-title small { color:var(--ink-400); letter-spacing:0.15em; font-size:10px; font-weight:400; margin-left:auto; }
+
+.rwp-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.rwp-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.rwp-grid-4 { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+.rwp-grid-5 { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; }
+.rwp-grid-6 { display:grid; grid-template-columns:repeat(6, 1fr); gap:8px; }
+
+/* 资源模块 */
+.rwp-res-block { padding:14px; background:rgba(0,0,0,0.3); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-md); }
+.rwp-res-subgroup { margin-bottom:10px; }
+.rwp-res-subgroup:last-child { margin-bottom:0; }
+.rwp-res-sublabel { font-size:10px; color:var(--gold-400); letter-spacing:0.25em; margin-bottom:6px; text-align:center; padding-bottom:3px; border-bottom:1px dashed rgba(184,154,83,0.15); }
+.rwp-res-items { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; }
+.rwp-res-item { display:flex; align-items:center; justify-content:space-between; padding:4px 8px; background:rgba(0,0,0,0.25); border-radius:2px; }
+.rwp-res-icon { width:14px; height:14px; color:var(--gold-400); opacity:0.85; flex-shrink:0; }
+.rwp-res-val { font-size:12px; color:var(--ink-50); font-variant-numeric:tabular-nums; font-weight:600; }
+.rwp-res-val.neg { color:var(--vermillion-300); }
+.rwp-res-val.neg::before { content:"⚠"; font-size:9px; margin-right:2px; opacity:0.7; }
+.rwp-res-unit { font-size:9px; color:var(--ink-400); margin-left:2px; }
+
+/* 品行状态（含贤能/健康/压力/名望印章） */
+.rwp-stats-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-top:6px; }
+.rwp-stat-card { padding:10px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.12); border-radius:var(--radius-sm); text-align:center; position:relative; }
+.rwp-stat-card-icon { width:18px; height:18px; color:var(--gold-400); margin:0 auto 4px; display:block; opacity:0.85; }
+.rwp-stat-card-label { font-size:10px; color:var(--ink-300); letter-spacing:0.2em; margin-bottom:4px; }
+.rwp-stat-card-value { font-size:20px; font-weight:600; font-variant-numeric:tabular-nums; }
+.rwp-stat-card-sub { font-size:10px; margin-top:2px; letter-spacing:0.15em; }
+
+/* 名望印章 */
+.rwp-fame-seal { display:inline-block; padding:4px 16px; border:2px solid; border-radius:2px; font-weight:600; background:rgba(0,0,0,0.2); letter-spacing:0.1em; }
+.rwp-fame-seal.radiant { border-color:var(--gold-300); color:var(--gold-300); box-shadow:0 0 8px rgba(212,190,122,0.3); }
+.rwp-fame-seal.bright { border-color:var(--celadon-400); color:var(--celadon-300); }
+.rwp-fame-seal.clear { border-color:var(--gold-400); color:var(--gold-400); }
+.rwp-fame-seal.neutral { border-color:var(--ink-400); color:var(--ink-200); }
+.rwp-fame-seal.stain { border-color:var(--amber-400); color:var(--amber-400); }
+.rwp-fame-seal.infamy { border-color:var(--vermillion-400); color:var(--vermillion-300); }
+
+/* 贤能阶名+进度 */
+.rwp-xian-card .rwp-stat-card-value { color:var(--gold-300); }
+.rwp-xian-tier { color:var(--gold-400); font-size:11px; letter-spacing:0.15em; margin-top:3px; }
+.rwp-xian-prog { height:2px; background:rgba(255,255,255,0.05); border-radius:1px; overflow:hidden; margin-top:4px; }
+.rwp-xian-prog-fill { height:100%; background:linear-gradient(90deg, var(--gold-500), var(--gold-300)); }
+
+/* 健康/压力 带条 */
+.rwp-health-card .rwp-stat-card-value { color:var(--celadon-300); }
+.rwp-health-card.warn .rwp-stat-card-value { color:var(--amber-400); }
+.rwp-health-card.crit .rwp-stat-card-value { color:var(--vermillion-300); }
+.rwp-health-bar { height:3px; background:rgba(255,255,255,0.05); border-radius:2px; margin-top:6px; overflow:hidden; }
+.rwp-health-bar-fill { height:100%; border-radius:2px; }
+.rwp-health-bar-fill.health { background:linear-gradient(90deg, var(--vermillion-400), var(--gold-400), var(--green-400)); }
+.rwp-health-bar-fill.stress-hi { background:var(--vermillion-400); }
+.rwp-health-bar-fill.stress-mid { background:var(--gold-400); }
+.rwp-health-bar-fill.stress-lo { background:var(--celadon-400); }
+
+/* 能力八才 · 雷达 + 数值列 */
+.rwp-abilities { display:grid; grid-template-columns:260px 1fr; gap:18px; align-items:center; padding:14px; background:rgba(0,0,0,0.2); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-md); }
+.rwp-radar { position:relative; width:240px; height:240px; margin:0 auto; }
+.rwp-ability-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.rwp-ability-cell { display:flex; align-items:center; justify-content:space-between; padding:7px 12px; background:rgba(0,0,0,0.28); border:1px solid rgba(184,154,83,0.12); border-radius:var(--radius-sm); border-left:3px solid rgba(184,154,83,0.4); }
+.rwp-ability-cell.excel { border-left-color:var(--celadon-400); background:rgba(126,184,167,0.05); }
+.rwp-ability-cell.good { border-left-color:var(--gold-400); }
+.rwp-ability-cell.poor { border-left-color:var(--vermillion-400); background:rgba(192,64,48,0.04); }
+.rwp-ability-cell-name { font-size:13px; color:var(--ink-50); letter-spacing:0.1em; }
+.rwp-ability-cell-right { display:flex; align-items:center; gap:8px; }
+.rwp-ability-cell-value { font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; min-width:30px; text-align:right; color:var(--ink-50); }
+.rwp-ability-cell.excel .rwp-ability-cell-value { color:var(--celadon-300); }
+.rwp-ability-cell.poor .rwp-ability-cell-value { color:var(--vermillion-300); }
+.rwp-ability-cell-rank { font-size:10px; letter-spacing:0.15em; color:var(--ink-300); min-width:32px; text-align:right; }
+.rwp-ability-cell.excel .rwp-ability-cell-rank { color:var(--celadon-400); }
+.rwp-ability-cell.poor .rwp-ability-cell-rank { color:var(--vermillion-400); }
+.rwp-ability-cell.good .rwp-ability-cell-rank { color:var(--gold-400); }
+
+/* 五常 */
+.rwp-stat-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
+.rwp-stat-grid.five { grid-template-columns:repeat(5, 1fr); }
+.rwp-stat-grid.four { grid-template-columns:repeat(4, 1fr); }
+.rwp-stat { padding:8px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.1); border-radius:var(--radius-sm); text-align:center; }
+.rwp-stat-label { font-size:9px; color:var(--ink-300); letter-spacing:0.15em; margin-bottom:3px; }
+.rwp-stat-value { font-size:14px; color:var(--ink-50); font-weight:600; font-variant-numeric:tabular-nums; }
+
+/* 特质 */
+.rwp-trait-tag { display:inline-flex; align-items:center; gap:4px; font-size:12px; padding:3px 12px; border-radius:var(--radius-sm); border:1px solid; margin:0 4px 4px 0; background:rgba(0,0,0,0.15); letter-spacing:0.08em; }
+.rwp-trait-tag.valor { border-color:var(--vermillion-400); color:var(--vermillion-300); }
+.rwp-trait-tag.heart { border-color:var(--celadon-400); color:var(--celadon-300); }
+.rwp-trait-tag.mind { border-color:var(--indigo-400); color:var(--indigo-400); }
+.rwp-trait-tag.gold { border-color:var(--gold-400); color:var(--gold-300); }
+
+/* 散文 */
+.rwp-prose { font-size:13px; color:var(--ink-200); line-height:1.8; padding:10px 14px; background:rgba(0,0,0,0.15); border-left:2px solid var(--gold-500); border-radius:0 var(--radius-sm) var(--radius-sm) 0; text-indent:2em; }
+.rwp-prose.italic { font-style:italic; }
+
+/* 身份档案大表 */
+.rwp-identity-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
+.rwp-id-cell { padding:8px 10px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.1); border-radius:var(--radius-sm); }
+.rwp-id-label { font-size:9px; color:var(--ink-300); letter-spacing:0.2em; margin-bottom:3px; }
+.rwp-id-value { font-size:13px; color:var(--ink-50); font-weight:500; }
+.rwp-id-value.hi { color:var(--celadon-300); }
+.rwp-id-value.warn { color:var(--amber-400); }
+
+/* 家谱 SVG 树 */
+.rwp-ft-svg-wrap { padding:12px; background:linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.2)); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-md); overflow-x:auto; }
+.rwp-ft-svg { width:100%; min-width:900px; height:auto; display:block; }
+.rwp-ft-svg .ft-node { cursor:pointer; transition:transform 0.2s; }
+.rwp-ft-svg .ft-node:hover { transform:translateY(-2px); }
+.rwp-ft-svg .ft-node:hover rect { filter:drop-shadow(0 2px 6px rgba(184,154,83,0.4)); }
+.rwp-ft-svg .ft-node.self rect { animation:selfGlow 2s ease-in-out infinite; }
+@keyframes selfGlow { 0%,100% { filter:drop-shadow(0 0 8px rgba(184,154,83,0.3)); } 50% { filter:drop-shadow(0 0 14px rgba(184,154,83,0.6)); } }
+
+.rwp-ft-legend { display:flex; justify-content:center; gap:18px; padding:10px; margin-top:10px; font-size:11px; color:var(--ink-300); flex-wrap:wrap; background:rgba(0,0,0,0.2); border:1px solid rgba(184,154,83,0.1); border-radius:var(--radius-sm); }
+.rwp-ft-lg { display:inline-flex; align-items:center; gap:5px; letter-spacing:0.1em; }
+.rwp-ft-lg-mark { display:inline-block; width:16px; height:10px; border-radius:2px; }
+.rwp-ft-lg-mark.self { background:rgba(184,154,83,0.15); border:2px solid var(--gold-300); }
+.rwp-ft-lg-mark.blood { background:rgba(0,0,0,0.3); border:1px solid var(--gold-400); }
+.rwp-ft-lg-mark.inlaw { background:rgba(126,184,167,0.05); border:1px dashed var(--celadon-400); }
+.rwp-ft-lg-mark.dead { background:rgba(0,0,0,0.4); border:1px solid var(--gold-500); opacity:0.5; }
+.rwp-ft-lg-mark.marry { background:transparent; height:2px; background:#e84393; border:none; border-radius:0; margin-top:4px; }
+.rwp-ft-lg-mark.parent { background:transparent; height:2px; background:var(--gold-500); border:none; border-radius:0; margin-top:4px; }
+
+/* 家族统览栏 */
+.rwp-ft-clan-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.rwp-ft-clan-item { padding:10px 12px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-sm); text-align:center; }
+.rwp-ft-clan-v-big { font-size:20px; color:var(--gold-300); font-weight:600; margin:3px 0; font-variant-numeric:tabular-nums; }
+.rwp-ft-clan-sub { font-size:10px; color:var(--ink-400); letter-spacing:0.1em; }
+.rwp-ft-clan-bar { height:4px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; margin-top:6px; }
+.rwp-ft-clan-bar-fill { display:block; height:100%; background:linear-gradient(90deg, var(--gold-500), var(--gold-300)); }
+
+/* 旧版布局（保留以防兼容） */
+.rwp-family-tree { padding:16px 10px 14px; background:linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.2)); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-md); display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; }
+.rwp-ft-gen-label { font-size:10px; color:var(--gold-500); letter-spacing:0.4em; margin-top:6px; margin-bottom:2px; padding:1px 10px; border-top:1px dashed rgba(184,154,83,0.2); border-bottom:1px dashed rgba(184,154,83,0.2); width:90%; text-align:center; background:rgba(184,154,83,0.04); }
+.rwp-ft-gen-label.minor { color:var(--ink-400); opacity:0.8; }
+.rwp-ft-row { display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap; position:relative; padding:4px 0; }
+.rwp-ft-member { display:flex; flex-direction:column; align-items:center; gap:2px; padding:5px 10px; background:rgba(0,0,0,0.3); border:1px solid rgba(184,154,83,0.25); border-radius:var(--radius-sm); min-width:78px; cursor:pointer; transition:all 0.2s; }
+.rwp-ft-member:hover { background:rgba(184,154,83,0.1); border-color:var(--gold-400); transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+.rwp-ft-member.self { background:linear-gradient(to bottom, rgba(184,154,83,0.18), rgba(184,154,83,0.08)); border-color:var(--gold-300); box-shadow:0 0 14px rgba(184,154,83,0.35); min-width:92px; padding:8px 12px; }
+.rwp-ft-member.self .rwp-ft-relation { color:var(--gold-300); }
+.rwp-ft-member.self .rwp-ft-name { color:var(--gold-300); font-size:14px; font-weight:600; }
+.rwp-ft-member.in-law { border-color:rgba(126,184,167,0.4); border-style:dashed; background:rgba(126,184,167,0.04); }
+.rwp-ft-member.in-law .rwp-ft-relation { color:var(--celadon-500); }
+.rwp-ft-member.young { background:rgba(184,154,83,0.04); border-color:rgba(184,154,83,0.2); padding:3px 8px; min-width:60px; }
+.rwp-ft-relation { font-size:9px; color:var(--gold-500); letter-spacing:0.15em; }
+.rwp-ft-name { font-size:12px; color:var(--ink-50); font-weight:500; }
+.rwp-ft-meta { font-size:9px; color:var(--ink-400); letter-spacing:0.05em; }
+.rwp-ft-member.dead { opacity:0.5; }
+.rwp-ft-member.dead .rwp-ft-name::after { content:" †"; color:var(--vermillion-400); font-size:10px; }
+/* 婚姻连接符 */
+.rwp-ft-marry { color:var(--gold-500); font-size:14px; letter-spacing:2px; align-self:center; transform:rotate(90deg); opacity:0.7; padding:0 2px; }
+.rwp-ft-marry.spouse { color:#e84393; opacity:0.8; }
+/* 间隔器 */
+.rwp-ft-spacer { width:18px; position:relative; }
+.rwp-ft-spacer::before { content:"·"; color:rgba(184,154,83,0.3); font-size:16px; line-height:1; }
+/* 族谱信息栏 */
+.rwp-ft-clan-info { width:100%; margin-top:12px; padding-top:12px; border-top:1px dashed rgba(184,154,83,0.25); display:flex; flex-direction:column; gap:5px; }
+.rwp-ft-clan-row { display:flex; align-items:center; gap:10px; font-size:11px; }
+.rwp-ft-clan-lb { color:var(--gold-400); letter-spacing:0.2em; min-width:68px; font-size:10px; }
+.rwp-ft-clan-v { color:var(--ink-200); flex:1; }
+.rwp-ft-clan-bar { flex:0 1 120px; height:4px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; }
+.rwp-ft-clan-bar-fill { display:block; height:100%; background:linear-gradient(90deg, var(--gold-500), var(--gold-300)); border-radius:2px; }
+
+/* 公私身份 */
+.rwp-duo { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.rwp-duo-col { padding:12px 14px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-md); }
+.rwp-duo-col.public { border-left:3px solid var(--gold-500); }
+.rwp-duo-col.private { border-left:3px solid var(--celadon-500); }
+.rwp-duo-header { display:flex; align-items:center; gap:6px; font-size:11px; letter-spacing:0.25em; margin-bottom:8px; padding-bottom:4px; border-bottom:1px dashed rgba(184,154,83,0.2); }
+.rwp-duo-col.public .rwp-duo-header { color:var(--gold-400); }
+.rwp-duo-col.private .rwp-duo-header { color:var(--celadon-400); }
+.rwp-duo-row { display:flex; justify-content:space-between; padding:3px 0; font-size:12px; }
+.rwp-duo-row .label { color:var(--ink-300); }
+.rwp-duo-row .val { color:var(--ink-50); }
+
+/* Timeline */
+.rwp-timeline { padding:4px 0 4px 20px; position:relative; }
+.rwp-timeline::before { content:""; position:absolute; left:6px; top:8px; bottom:8px; width:1px; background:linear-gradient(to bottom, var(--gold-500), var(--gold-500) 80%, transparent); }
+.rwp-timeline-item { position:relative; padding:6px 0 6px 20px; margin-bottom:8px; }
+.rwp-timeline-item::before { content:""; position:absolute; left:-18px; top:11px; width:7px; height:7px; border:1.5px solid var(--gold-400); border-radius:50%; background:var(--bg-1); }
+.rwp-timeline-item.milestone::before { background:var(--gold-400); box-shadow:0 0 6px var(--gold-400); }
+.rwp-timeline-date { font-size:10px; color:var(--gold-400); letter-spacing:0.1em; margin-bottom:2px; }
+.rwp-timeline-title { font-size:13px; color:var(--ink-50); margin-bottom:2px; }
+.rwp-timeline-desc { font-size:11px; color:var(--ink-300); line-height:1.6; }
+
+/* 关系 */
+.rwp-aff-list { display:flex; flex-direction:column; gap:4px; }
+.rwp-aff-item { display:flex; align-items:center; gap:10px; padding:6px 10px; background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); border-left:3px solid; cursor:pointer; transition:background 0.15s; }
+.rwp-aff-item:hover { background:rgba(184,154,83,0.08); }
+.rwp-aff-item.pos { border-left-color:var(--celadon-400); }
+.rwp-aff-item.neu { border-left-color:var(--ink-400); }
+.rwp-aff-item.neg { border-left-color:var(--vermillion-400); }
+.rwp-aff-name { font-size:12px; color:var(--ink-50); font-weight:500; min-width:68px; }
+.rwp-aff-rel { font-size:10px; color:var(--ink-300); letter-spacing:0.1em; flex:1; }
+.rwp-aff-value { font-size:11px; font-variant-numeric:tabular-nums; font-weight:600; font-family:monospace; }
+.rwp-aff-item.pos .rwp-aff-value { color:var(--celadon-300); }
+.rwp-aff-item.neg .rwp-aff-value { color:var(--vermillion-300); }
+
+.rwp-opinion-breakdown { padding:12px 14px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-md); }
+.rwp-opinion-total { display:flex; justify-content:space-between; margin-bottom:10px; align-items:baseline; }
+.rwp-opinion-total-lb { color:var(--ink-300); font-size:12px; letter-spacing:0.15em; }
+.rwp-opinion-total-v { color:var(--celadon-300); font-size:22px; font-weight:600; font-variant-numeric:tabular-nums; }
+.rwp-opinion-bar { height:5px; background:rgba(255,255,255,0.05); border-radius:2.5px; overflow:hidden; position:relative; margin-bottom:10px; }
+.rwp-opinion-bar::after { content:""; position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.3); }
+.rwp-opinion-fill { height:100%; border-radius:2.5px; }
+.rwp-opinion-fill.pos { background:var(--celadon-400); margin-left:50%; }
+.rwp-opinion-item { font-size:11px; color:var(--ink-200); display:flex; justify-content:space-between; padding:2px 0; }
+.rwp-opinion-item .v { font-variant-numeric:tabular-nums; font-weight:500; }
+.rwp-opinion-item .v.pos { color:var(--celadon-300); }
+.rwp-opinion-item .v.neg { color:var(--vermillion-300); }
+
+/* 心绪记忆 */
+.rwp-mood-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 14px; border:2px solid; border-radius:16px; font-size:13px; letter-spacing:0.2em; }
+.rwp-mood-chip.happy { border-color:var(--celadon-400); color:var(--celadon-300); background:rgba(126,184,167,0.08); }
+.rwp-mood-chip.angry { border-color:var(--vermillion-400); color:var(--vermillion-300); background:rgba(192,64,48,0.08); }
+.rwp-mood-chip.worry { border-color:var(--gold-400); color:var(--gold-300); background:rgba(184,154,83,0.08); }
+.rwp-mood-chip.fear { border-color:var(--indigo-400); color:var(--indigo-400); background:rgba(110,132,184,0.08); }
+
+.rwp-mem { padding:6px 0 6px 14px; border-left:2px solid; margin-bottom:4px; font-size:12px; color:var(--ink-200); line-height:1.5; }
+.rwp-mem.happy { border-color:var(--celadon-400); } .rwp-mem.angry { border-color:var(--vermillion-400); } .rwp-mem.worry { border-color:var(--gold-400); } .rwp-mem.fear { border-color:var(--indigo-400); } .rwp-mem.hate { border-color:var(--vermillion-500); } .rwp-mem.respect { border-color:var(--celadon-300); } .rwp-mem.peace { border-color:var(--ink-400); }
+.rwp-mem-mood { font-size:10px; margin-right:4px; }
+.rwp-mem-mood.happy { color:var(--celadon-400); } .rwp-mem-mood.angry { color:var(--vermillion-400); } .rwp-mem-mood.worry { color:var(--gold-400); } .rwp-mem-mood.fear { color:var(--indigo-400); } .rwp-mem-mood.hate { color:var(--vermillion-500); } .rwp-mem-mood.respect { color:var(--celadon-300); }
+.rwp-mem-who { color:var(--ink-400); font-size:10px; margin-left:6px; }
+
+.rwp-mem-archive-toggle { margin-top:8px; font-size:11px; color:var(--gold-400); cursor:pointer; letter-spacing:0.15em; padding-left:14px; }
+.rwp-mem-archive-toggle:hover { color:var(--gold-300); }
+
+.rwp-scar-box { padding:10px 14px; background:rgba(192,64,48,0.06); border:1px solid rgba(192,64,48,0.25); border-radius:var(--radius-md); }
+.rwp-scar-label { color:var(--vermillion-400); font-size:11px; letter-spacing:0.25em; margin-bottom:8px; font-weight:600; }
+.rwp-impressions { padding:10px 14px; background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); font-size:11px; color:var(--ink-200); line-height:1.9; }
+.rwp-impressions b { color:var(--gold-400); margin-right:6px; letter-spacing:0.1em; }
+
+/* 压力详情 */
+.rwp-stress-detail { padding:12px 14px; background:rgba(192,64,48,0.06); border:1px solid rgba(192,64,48,0.2); border-radius:var(--radius-md); }
+.rwp-stress-label { display:flex; align-items:center; gap:6px; color:var(--vermillion-300); font-size:12px; margin-bottom:8px; letter-spacing:0.2em; }
+.rwp-stress-sublists { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.rwp-stress-sublist-title { font-size:10px; letter-spacing:0.2em; margin-bottom:5px; }
+.rwp-stress-sublist-title.on { color:var(--vermillion-400); }
+.rwp-stress-sublist-title.off { color:var(--celadon-400); }
+.rwp-stress-item { font-size:11px; color:var(--ink-200); padding:2px 0 2px 10px; border-left:1px dashed rgba(255,255,255,0.1); margin:1px 0; }
+
+/* 人生历练 */
+.rwp-exp-domains { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:12px; }
+.rwp-exp-domain { text-align:center; padding:8px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.12); border-radius:var(--radius-sm); }
+.rwp-exp-icon { width:20px; height:20px; color:var(--gold-400); margin:0 auto 4px; display:block; }
+.rwp-exp-name { font-size:10px; color:var(--ink-300); letter-spacing:0.15em; }
+.rwp-exp-count { font-size:16px; color:var(--gold-300); font-weight:600; font-variant-numeric:tabular-nums; }
+.rwp-exp-recent { font-size:11px; color:var(--ink-200); padding:5px 0 5px 10px; border-left:1px solid rgba(184,154,83,0.2); margin:2px 0; line-height:1.5; }
+
+/* 文事作品 */
+.rwp-work-card { padding:10px 12px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-sm); margin-bottom:6px; cursor:pointer; transition:all 0.2s; }
+.rwp-work-card:hover { border-color:var(--gold-400); background:rgba(184,154,83,0.05); }
+.rwp-work-title { font-size:13px; color:var(--gold-300); margin-bottom:3px; }
+.rwp-work-meta { font-size:10px; color:var(--ink-400); margin-bottom:4px; letter-spacing:0.1em; }
+.rwp-work-extract { font-size:11px; color:var(--ink-200); font-style:italic; line-height:1.6; }
+
+/* 颜面 */
+.rwp-face-card { padding:14px 18px; background:rgba(0,0,0,0.25); border:1px solid rgba(184,154,83,0.15); border-radius:var(--radius-md); display:flex; align-items:center; gap:14px; }
+.rwp-face-value { font-size:28px; color:var(--gold-300); font-variant-numeric:tabular-nums; font-weight:600; }
+.rwp-face-label { font-size:12px; color:var(--ink-50); }
+.rwp-face-desc { font-size:11px; color:var(--ink-300); font-style:italic; }
+
+/* 志向 */
+.rwp-goal-card { padding:14px; background:rgba(0,0,0,0.25); border-left:3px solid var(--gold-500); border-radius:0 var(--radius-md) var(--radius-md) 0; }
+.rwp-goal-text { font-size:13px; color:var(--ink-50); line-height:1.7; margin-bottom:10px; }
+.rwp-goal-progress { display:flex; align-items:center; gap:10px; }
+.rwp-goal-label { font-size:11px; color:var(--ink-300); letter-spacing:0.15em; }
+.rwp-goal-bar { flex:1; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden; }
+.rwp-goal-bar-fill { height:100%; background:linear-gradient(90deg,var(--gold-500),var(--celadon-400)); border-radius:3px; }
+.rwp-goal-pct { font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; }
+.rwp-goal-pct.hi { color:var(--celadon-300); } .rwp-goal-pct.mid { color:var(--gold-300); } .rwp-goal-pct.lo { color:var(--vermillion-300); }
+.rwp-goal-note { margin-top:6px; font-size:10px; color:var(--ink-400); letter-spacing:0.1em; }
+
+/* 内心独白 */
+.rwp-inner-thought { padding:12px 16px; background:rgba(110,132,184,0.06); border:1px solid rgba(110,132,184,0.2); border-radius:var(--radius-md); font-size:12px; color:var(--ink-200); line-height:1.8; font-style:italic; }
+.rwp-inner-thought::before { content:"「"; color:var(--indigo-400); font-size:20px; vertical-align:-4px; margin-right:2px; }
+.rwp-inner-thought::after { content:"」"; color:var(--indigo-400); font-size:20px; vertical-align:-4px; margin-left:2px; }
+
+/* ============================================================
+   快速详情面板
+   ============================================================ */
+.quick-panel { width:440px; padding:18px 22px; background:linear-gradient(to bottom, #1c1914, #15120e); border:1px solid var(--gold-500); border-left-width:2px; border-radius:var(--radius-lg); background-image:repeating-linear-gradient(90deg, transparent 0, transparent 2.5em, rgba(184,154,83,0.012) 2.5em, rgba(184,154,83,0.012) calc(2.5em + 1px)), linear-gradient(to bottom, #1c1914, #15120e); }
+.qp-head { display:flex; align-items:center; gap:10px; padding-bottom:10px; margin-bottom:12px; border-bottom:1px solid rgba(184,154,83,0.25); }
+.qp-portrait { width:48px; height:48px; border:2px solid var(--gold-500); border-radius:50%; background:radial-gradient(circle, #2a2318, #1a1612); display:flex; align-items:center; justify-content:center; color:var(--gold-300); font-size:22px; flex-shrink:0; overflow:hidden; position:relative; }
+.qp-portrait img { width:100%; height:100%; object-fit:cover; object-position:center top; }
+.qp-heading { flex:1; }
+.qp-name { font-size:18px; color:var(--gold-300); letter-spacing:0.12em; font-weight:600; }
+.qp-courtesy { font-size:11px; color:var(--ink-300); font-style:italic; margin-left:8px; }
+.qp-courtesy::before { content:"字"; font-size:8px; color:var(--gold-500); letter-spacing:0.2em; margin-right:3px; }
+.qp-gender-age { font-size:10px; color:var(--ink-400); margin-left:6px; }
+.qp-title { font-size:11px; color:var(--ink-300); margin-top:2px; }
+.qp-location-line { display:flex; gap:4px; flex-wrap:wrap; margin-top:3px; }
+.qp-close { padding:4px 8px; background:transparent; border:1px solid var(--ink-500); color:var(--ink-400); cursor:pointer; border-radius:var(--radius-sm); font-size:14px; }
+
+.qp-sec { margin-bottom:12px; }
+.qp-sec-title { font-size:10px; color:var(--gold-400); letter-spacing:0.3em; margin-bottom:6px; text-align:center; padding:2px 0; }
+.qp-sec-title::before, .qp-sec-title::after { content:""; display:inline-block; width:14px; height:1px; background:rgba(184,154,83,0.4); vertical-align:middle; margin:0 8px; }
+
+.qp-heart-mini { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.qp-heart-mini-item { display:flex; align-items:center; gap:6px; padding:5px 8px; background:rgba(0,0,0,0.25); border-radius:3px; border-left:2px solid; }
+.qp-heart-mini-item.loy { border-color:var(--celadon-400); }
+.qp-heart-mini-item.amb { border-color:var(--purple-400); }
+.qp-heart-mini-lb { font-size:10px; color:var(--ink-300); letter-spacing:0.15em; flex-shrink:0; }
+.qp-heart-mini-v { font-size:15px; font-weight:600; color:var(--ink-50); margin-left:auto; font-variant-numeric:tabular-nums; }
+
+.qp-link-more { margin-top:10px; text-align:center; padding:8px; background:rgba(184,154,83,0.05); border:1px dashed rgba(184,154,83,0.3); border-radius:var(--radius-sm); font-size:11px; color:var(--gold-400); letter-spacing:0.2em; cursor:pointer; }
+.qp-link-more:hover { background:rgba(184,154,83,0.1); }
+
+/* 侧栏卡片 */
+.sidebar-demo { width:320px; padding:8px; background:linear-gradient(to bottom, #15120e, #120f0a); border-radius:var(--radius-md); border:1px solid rgba(184,154,83,0.12); }
+.sidebar-title { display:flex; align-items:center; gap:6px; padding:6px 10px; font-size:0.72rem; color:var(--gold-400); letter-spacing:0.15em; border-bottom:1px solid rgba(184,154,83,0.1); margin-bottom:8px; }
+.sb-count { font-size:0.65rem; color:var(--ink-400); font-weight:400; margin-left:auto; letter-spacing:0; }
+.cd { background:var(--bg-3); border:1px solid var(--bg-4); border-left:3px solid var(--gold-500); border-radius:var(--radius-md); padding:0.5rem 0.6rem; margin-bottom:0.35rem; cursor:pointer; transition:all 0.22s ease; }
+.cd:hover { border-left-color:var(--gold-300); background:linear-gradient(to right, rgba(184,154,83,0.08), var(--bg-3) 60%); transform:translateX(-1px); }
+.cd-main { display:flex; align-items:center; gap:6px; }
+.cd-portrait { width:34px; height:34px; border:1px solid var(--gold-500); border-radius:4px; flex-shrink:0; background:radial-gradient(circle, #2a2318, #1a1612); display:flex; align-items:center; justify-content:center; color:var(--gold-400); font-size:14px; overflow:hidden; position:relative; }
+.cd-portrait img { width:100%; height:100%; object-fit:cover; object-position:center top; }
+.cd-body { flex:1; min-width:0; }
+.cd-name-row { display:flex; justify-content:space-between; align-items:center; gap:4px; }
+.cd-name-left { display:flex; align-items:baseline; gap:4px; font-size:0.85rem; font-weight:600; min-width:0; flex-wrap:wrap; }
+.cd-courtesy { font-size:0.58rem; color:var(--ink-400); font-style:italic; letter-spacing:0.05em; }
+.cd-gender-age { font-size:0.55rem; color:var(--ink-400); }
+.cd-gender-age.female { color:#e84393; }
+.cd-mood { font-size:0.6rem; }
+.cd-mood.worry { color:var(--amber-400); } .cd-mood.happy { color:var(--celadon-400); } .cd-mood.angry { color:var(--vermillion-400); }
+.cd-loc-badge { font-size:0.55rem; padding:1px 5px; border-radius:2px; background:rgba(184,154,83,0.1); color:var(--gold-400); margin-left:2px; }
+.cd-spouse { font-size:0.62rem; color:#e84393; }
+.cd-face-badge { font-size:0.55rem; padding:0 4px; border-radius:2px; border:1px solid var(--vermillion-400); color:var(--vermillion-400); margin-left:3px; }
+.cd-name-right { font-size:0.65rem; display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.cd-loy { font-variant-numeric:tabular-nums; font-weight:600; }
+.cd-loy.hi { color:var(--celadon-400); } .cd-loy.mid { color:var(--gold-400); } .cd-loy.lo { color:var(--vermillion-400); }
+.cd-amb { font-size:0.58rem; color:var(--purple-400); font-weight:600; }
+.cd-stress { font-size:0.62rem; padding:1px 5px; border-radius:3px; }
+.cd-stress.crit { background:rgba(192,64,48,0.2); color:var(--vermillion-400); }
+.cd-stress.warn { background:rgba(230,126,34,0.15); color:var(--amber-400); }
+.cd-subrow { display:flex; justify-content:space-between; align-items:center; margin-top:2px; }
+.cd-office { font-size:0.7rem; color:var(--ink-400); }
+.cd-faction { font-size:0.62rem; color:var(--ink-400); }
+.cd-tags { margin-top:3px; display:flex; flex-wrap:wrap; gap:2px; }
+.cd-tag { font-size:0.55rem; padding:0 3px; border-radius:2px; border:1px solid; }
+.cd-tag.valor { border-color:var(--vermillion-400); color:var(--vermillion-300); }
+.cd-tag.heart { border-color:var(--celadon-400); color:var(--celadon-300); }
+.cd-tag.mind { border-color:var(--indigo-400); color:var(--indigo-400); }
+.cd-tag.gold { border-color:var(--gold-400); color:var(--gold-300); }
+.cd-tag.reform { border-color:var(--celadon-400); color:var(--celadon-300); }
+.cd-tag.conserve { border-color:var(--indigo-400); color:var(--indigo-400); }
+.cd-tag.party { background:var(--bg-4); border:none; color:var(--ink-300); padding:0 4px; }
+.cd-wuchang { font-size:0.6rem; color:var(--celadon-400); margin-top:3px; letter-spacing:0.03em; }
+.cd-wuchang-qz { color:var(--gold-400); margin-left:4px; }
+.cd-resources { margin-top:4px; padding:4px 6px; background:rgba(0,0,0,0.22); border-radius:3px; border:1px solid rgba(184,154,83,0.1); font-size:0.6rem; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.cd-res-grp { display:inline-flex; align-items:center; gap:2px; }
+.cd-res-grp-lb { font-size:0.52rem; color:var(--gold-500); letter-spacing:0.1em; margin-right:2px; }
+.cd-res-it { display:inline-flex; align-items:center; gap:1px; }
+.cd-res-it svg { width:9px; height:9px; color:var(--gold-400); opacity:0.8; }
+.cd-res-val { color:var(--ink-50); font-variant-numeric:tabular-nums; }
+.cd-res-val.neg { color:var(--vermillion-300); }
+.cd-res-sep { width:1px; height:10px; background:rgba(184,154,83,0.2); margin:0 2px; }
+.cd-stats-pills { margin-top:3px; display:flex; gap:3px; flex-wrap:wrap; }
+.cd-pill { font-size:0.55rem; padding:1px 5px; border-radius:6px; background:rgba(184,154,83,0.05); border:1px solid rgba(184,154,83,0.2); display:inline-flex; align-items:center; gap:2px; }
+.cd-pill.warn { border-color:rgba(192,64,48,0.4); background:rgba(192,64,48,0.08); }
+.cd-pill-lb { color:var(--ink-400); }
+.cd-pill-val { font-weight:500; font-variant-numeric:tabular-nums; }
+.cd-pill-val.neg { color:var(--vermillion-300); }
+.cd-goal { font-size:0.6rem; color:var(--ink-400); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:280px; }
+.cd-goal-pct.hi { color:var(--celadon-400); } .cd-goal-pct.mid { color:var(--gold-400); } .cd-goal-pct.lo { color:var(--vermillion-400); }
+.cd-enyuan { font-size:0.55rem; color:var(--ink-400); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:280px; font-style:italic; }
+</style>
+</head>
+<body>
+
+<div class="legend">
+  <b>角色 UI 全面重组升级（v2）</b> — 三视图一体、<b>48+ 字段</b>全部保留。10 维重排：忠诚+野心 → <b>心性</b>（顶部独立）；其余八维 → <b>能力八才</b>（雷达图+品评）。<br>
+  新增 <code>字</code> / <code>性别</code>；名望改<b>印章</b>；六资源（公库/私产/名望/贤能/健康/压力）全上阵。<br>
+  ① 人物志完整页：<b>6 Tab 切换</b>（概要 / 身世 / 家谱 / 仕途 / 心绪 / 关系）。点击顶部 Tab 可切换内容。<br>
+  ② <b>家谱为独立 Tab</b> · SVG 树状图（五代 · 婚姻粉红线 · 血缘金色线 · 姻亲虚线 · 本人金框脉冲）。<br>
+  ③ 快速详情面板：扩容含外貌 / 生平 / 八才 / 近五记忆 / 特质 / 志向。<br>
+  ④ 头像立绘规则：<b>剧本编辑器配置 portrait 字段 → 使用立绘图</b>（王甫此处用 SVG 模拟）；<b>未配置 → 显示占位（姓氏首字）</b>。
+</div>
+
+<!-- ============================================================
+     一、人物志完整页
+     ============================================================ -->
+<div class="page-label">一、人物志完整页（双击角色卡或人物志 tab 进入）</div>
+<div class="page-sub">固定顶部（身份+字+性别+所在地+势力+操作）+ 心性二维 + 5 Tab 分类（每 Tab 含若干模块，22+ 子模块全入）</div>
+
+<div class="renwu-page">
+
+  <!-- 顶部固定区 -->
+  <div class="rwp-top">
+    <div class="rwp-identity-row">
+      <!-- 立绘模式：配置了 portrait 就显示图片；此处用内嵌 SVG 模拟国风人物立绘 -->
+      <div class="rwp-portrait has-image">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;">
+          <rect width="100" height="100" fill="url(#liHue1)"/>
+          <!-- 简笔人物轮廓（模拟立绘）-->
+          <g stroke="#d4be7a" stroke-width="0.8" fill="rgba(26,22,18,0.4)" stroke-linejoin="round">
+            <!-- 头部 -->
+            <ellipse cx="50" cy="38" rx="14" ry="17"/>
+            <!-- 冠帽 -->
+            <path d="M36 28 Q50 18 64 28 L62 34 Q50 28 38 34 Z" fill="#8a6d2b"/>
+            <path d="M40 23 L50 14 L60 23" fill="none"/>
+            <!-- 面部五官简化 -->
+            <line x1="44" y1="37" x2="46" y2="37" stroke-width="1.2"/>
+            <line x1="54" y1="37" x2="56" y2="37" stroke-width="1.2"/>
+            <path d="M47 44 Q50 46 53 44" fill="none"/>
+            <!-- 胡须 -->
+            <path d="M47 48 Q50 52 53 48 M44 50 Q50 54 56 50" stroke="#3a3530" stroke-width="0.4" fill="none"/>
+            <!-- 衣领 -->
+            <path d="M38 55 L28 85 L72 85 L62 55 Q55 58 50 58 Q45 58 38 55 Z" fill="#2a2520"/>
+            <path d="M45 57 Q50 60 55 57 L55 75 L45 75 Z" fill="#8a6d2b"/>
+          </g>
+        </svg>
+      </div>
+      <div class="rwp-ident-body">
+        <div class="rwp-name-row">
+          <div class="rwp-name">王 甫</div>
+          <div class="rwp-courtesy">子直</div>
+          <span class="rwp-gender male">男 · 42</span>
+        </div>
+        <div class="rwp-title"><b>江南路知府</b> · 正四品 · 户部观政</div>
+        <div class="rwp-mini-tags">
+          <span class="rwp-mini-tag loc">所在地 苏州</span>
+          <span class="rwp-mini-tag travel">→ 京城</span>
+          <span class="rwp-mini-tag fac">势力 · 朝廷</span>
+          <span class="rwp-mini-tag clan">王氏 · 士族</span>
+          <span class="rwp-mini-tag origin">科举 · 进士</span>
+          <span class="rwp-mini-tag">籍贯 苏州</span>
+          <span class="rwp-mini-tag">汉 · 儒</span>
+          <span class="rwp-mini-tag">江南儒</span>
+          <span class="rwp-mini-tag">清流 · 中坚</span>
+        </div>
+      </div>
+      <div class="rwp-actions">
+        <button class="rwp-act-btn">问 对</button>
+        <button class="rwp-act-btn">传 书</button>
+        <button class="rwp-act-btn">官 制</button>
+        <button class="rwp-act-btn close">×</button>
+      </div>
+    </div>
+
+    <!-- 心性二维 -->
+    <div class="rwp-heart">
+      <div class="rwp-heart-item loyalty">
+        <span class="rwp-heart-label">忠 诚</span>
+        <div class="rwp-heart-bar"><div class="rwp-heart-bar-fill loyalty-hi" style="width:78.5%;"></div></div>
+        <span class="rwp-heart-value">78.5</span>
+        <span class="rwp-heart-tag">忠贞可托</span>
+      </div>
+      <div class="rwp-heart-item ambition">
+        <span class="rwp-heart-label">野 心</span>
+        <div class="rwp-heart-bar"><div class="rwp-heart-bar-fill ambition-mid" style="width:55%;"></div></div>
+        <span class="rwp-heart-value">55</span>
+        <span class="rwp-heart-tag">知进退</span>
+      </div>
+    </div>
+    <div class="rwp-verdict">综合评估：可 托 以 一 方 · 良 臣 之 选</div>
+  </div>
+
+  <!-- Tab 导航 -->
+  <div class="rwp-tabs">
+    <div class="rwp-tab active">概 要</div>
+    <div class="rwp-tab">身 世</div>
+    <div class="rwp-tab">家 谱</div>
+    <div class="rwp-tab">仕 途</div>
+    <div class="rwp-tab">心 绪</div>
+    <div class="rwp-tab">关 系</div>
+  </div>
+
+  <div class="rwp-tab-panels">
+
+    <!-- ======== Tab 1: 概要 ======== -->
+    <div class="rwp-tab-panel active" data-section-title="概 要">
+
+      <!-- 资源 -->
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">资 源<small>公库与官职绑定，私产归个人</small></div>
+        <div class="rwp-grid-2">
+          <div class="rwp-res-block">
+            <div class="rwp-res-subgroup">
+              <div class="rwp-res-sublabel">公 库 · 知 府 职 权</div>
+              <div class="rwp-res-items">
+                <div class="rwp-res-item"><svg class="rwp-res-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span><span class="rwp-res-val">5.5万</span><span class="rwp-res-unit">贯</span></span></div>
+                <div class="rwp-res-item"><svg class="rwp-res-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 10C8.5 10 6 8.5 5 6"/><path d="M12 10C15.5 10 18 8.5 19 6"/><path d="M12 14C8.5 14 6 12.5 5 10"/><path d="M12 14C15.5 14 18 12.5 19 10"/></svg><span><span class="rwp-res-val">2.9万</span><span class="rwp-res-unit">石</span></span></div>
+                <div class="rwp-res-item"><svg class="rwp-res-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 7Q12 4 20 7L20 9Q12 6 4 9Z"/><path d="M4 11Q12 8 20 11L20 13Q12 10 4 13Z"/></svg><span><span class="rwp-res-val">320</span><span class="rwp-res-unit">匹</span></span></div>
+              </div>
+            </div>
+            <div class="rwp-res-subgroup">
+              <div class="rwp-res-sublabel">私 产</div>
+              <div class="rwp-res-items">
+                <div class="rwp-res-item"><svg class="rwp-res-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span><span class="rwp-res-val neg">1.2万</span><span class="rwp-res-unit">贯</span></span></div>
+                <div class="rwp-res-item"><svg class="rwp-res-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 10C8.5 10 6 8.5 5 6"/><path d="M12 10C15.5 10 18 8.5 19 6"/></svg><span><span class="rwp-res-val">4,530</span><span class="rwp-res-unit">石</span></span></div>
+                <div class="rwp-res-item"><svg class="rwp-res-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 7Q12 4 20 7L20 9Q12 6 4 9Z"/><path d="M4 11Q12 8 20 11L20 13Q12 10 4 13Z"/></svg><span><span class="rwp-res-val">180</span><span class="rwp-res-unit">匹</span></span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 品行状态四格（名望印章 + 贤能阶名 + 健康/压力） -->
+          <div class="rwp-res-block">
+            <div class="rwp-res-sublabel">品 行 状 态</div>
+            <div class="rwp-stats-row">
+              <div class="rwp-stat-card">
+                <svg class="rwp-stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="4" width="14" height="16" rx="1"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <div class="rwp-stat-card-label">名 望</div>
+                <div class="rwp-fame-seal bright">+36 清誉</div>
+              </div>
+              <div class="rwp-stat-card rwp-xian-card">
+                <svg class="rwp-stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4l2.5 5 5.5.8-4 3.9.9 5.5L12 16.5 7.1 19.2 8 13.7 4 9.8l5.5-.8z"/></svg>
+                <div class="rwp-stat-card-label">贤 能</div>
+                <div class="rwp-stat-card-value">158</div>
+                <div class="rwp-xian-tier">地方重臣</div>
+                <div class="rwp-xian-prog"><div class="rwp-xian-prog-fill" style="width:4%;"></div></div>
+              </div>
+              <div class="rwp-stat-card rwp-health-card">
+                <svg class="rwp-stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20s-7-4.5-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.5-7 10-7 10z"/></svg>
+                <div class="rwp-stat-card-label">健 康</div>
+                <div class="rwp-stat-card-value">72</div>
+                <div class="rwp-health-bar"><div class="rwp-health-bar-fill health" style="width:72%;"></div></div>
+              </div>
+              <div class="rwp-stat-card rwp-health-card crit">
+                <svg class="rwp-stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12c1.5-3 5.5-5 7-5s5.5 2 7 5M12 7v10M8 17h8"/></svg>
+                <div class="rwp-stat-card-label">压 力</div>
+                <div class="rwp-stat-card-value">85</div>
+                <div class="rwp-stat-card-sub" style="color:var(--vermillion-300);">将 崩</div>
+                <div class="rwp-health-bar"><div class="rwp-health-bar-fill stress-hi" style="width:85%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 能力八才：雷达 + 品评列 -->
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">能 力 八 才<small>忠诚野心已移至顶部心性</small></div>
+        <div class="rwp-abilities">
+          <!-- 雷达图 -->
+          <svg class="rwp-radar" viewBox="0 0 220 220">
+            <!-- 参考网格 -->
+            <g stroke="rgba(184,154,83,0.12)" fill="none" stroke-width="1">
+              <polygon points="110,30 166.57,53.43 190,110 166.57,166.57 110,190 53.43,166.57 30,110 53.43,53.43"/>
+              <polygon points="110,50 148.28,66.57 170,110 148.28,153.43 110,170 71.72,153.43 50,110 71.72,66.57"/>
+              <polygon points="110,70 130,79.72 150,110 130,140.28 110,150 90,140.28 70,110 90,79.72"/>
+              <polygon points="110,90 111,92 110,110 111,128 110,130 109,128 90,110 109,92" transform="translate(0,0)" opacity="0.5"/>
+            </g>
+            <!-- 8 轴线 -->
+            <g stroke="rgba(184,154,83,0.15)" stroke-width="1">
+              <line x1="110" y1="110" x2="110" y2="30"/>
+              <line x1="110" y1="110" x2="166.57" y2="53.43"/>
+              <line x1="110" y1="110" x2="190" y2="110"/>
+              <line x1="110" y1="110" x2="166.57" y2="166.57"/>
+              <line x1="110" y1="110" x2="110" y2="190"/>
+              <line x1="110" y1="110" x2="53.43" y2="166.57"/>
+              <line x1="110" y1="110" x2="30" y2="110"/>
+              <line x1="110" y1="110" x2="53.43" y2="53.43"/>
+            </g>
+            <!-- 数据多边形（王甫：智82 武45 军40 政85 管80 魅68 交72 仁70） -->
+            <polygon points="110,44.4 135.46,84.54 142,110 158.08,158.08 110,174 71.54,148.46 52.4,110 70.4,70.4"
+              fill="rgba(184,154,83,0.2)" stroke="var(--gold-400)" stroke-width="1.5" stroke-linejoin="round"/>
+            <!-- 数据点 -->
+            <g fill="var(--gold-300)">
+              <circle cx="110" cy="44.4" r="2.5"/>
+              <circle cx="135.46" cy="84.54" r="2.5"/>
+              <circle cx="142" cy="110" r="2.5"/>
+              <circle cx="158.08" cy="158.08" r="2.5"/>
+              <circle cx="110" cy="174" r="2.5"/>
+              <circle cx="71.54" cy="148.46" r="2.5"/>
+              <circle cx="52.4" cy="110" r="2.5"/>
+              <circle cx="70.4" cy="70.4" r="2.5"/>
+            </g>
+            <!-- 标签 -->
+            <g fill="var(--ink-300)" font-size="11" font-family="serif" text-anchor="middle" letter-spacing="2">
+              <text x="110" y="20">智</text>
+              <text x="178" y="48">武</text>
+              <text x="205" y="114">军</text>
+              <text x="178" y="178">政</text>
+              <text x="110" y="207">管</text>
+              <text x="42" y="178">魅</text>
+              <text x="15" y="114">交</text>
+              <text x="42" y="48">仁</text>
+            </g>
+          </svg>
+          <!-- 品评列 -->
+          <div class="rwp-ability-grid">
+            <div class="rwp-ability-cell excel"><span class="rwp-ability-cell-name">智 力</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">82</span><span class="rwp-ability-cell-rank">优秀</span></div></div>
+            <div class="rwp-ability-cell"><span class="rwp-ability-cell-name">武 勇</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">45</span><span class="rwp-ability-cell-rank">寻常</span></div></div>
+            <div class="rwp-ability-cell poor"><span class="rwp-ability-cell-name">军 事</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">40</span><span class="rwp-ability-cell-rank">稍逊</span></div></div>
+            <div class="rwp-ability-cell excel"><span class="rwp-ability-cell-name">政 务</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">85</span><span class="rwp-ability-cell-rank">卓异</span></div></div>
+            <div class="rwp-ability-cell excel"><span class="rwp-ability-cell-name">管 理</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">80</span><span class="rwp-ability-cell-rank">优秀</span></div></div>
+            <div class="rwp-ability-cell good"><span class="rwp-ability-cell-name">魅 力</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">68</span><span class="rwp-ability-cell-rank">中上</span></div></div>
+            <div class="rwp-ability-cell good"><span class="rwp-ability-cell-name">外 交</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">72</span><span class="rwp-ability-cell-rank">优秀</span></div></div>
+            <div class="rwp-ability-cell good"><span class="rwp-ability-cell-name">仁 厚</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value">70</span><span class="rwp-ability-cell-rank">中上</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 五常 + 核心特质 + 志向 -->
+      <div class="rwp-grid-2">
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">五 常 · 士 人 之 风</div>
+          <div class="rwp-stat-grid five">
+            <div class="rwp-stat"><div class="rwp-stat-label">仁</div><div class="rwp-stat-value">68</div></div>
+            <div class="rwp-stat"><div class="rwp-stat-label">义</div><div class="rwp-stat-value">72</div></div>
+            <div class="rwp-stat"><div class="rwp-stat-label">礼</div><div class="rwp-stat-value">65</div></div>
+            <div class="rwp-stat"><div class="rwp-stat-label">智</div><div class="rwp-stat-value">70</div></div>
+            <div class="rwp-stat"><div class="rwp-stat-label">信</div><div class="rwp-stat-value">58</div></div>
+          </div>
+        </div>
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">性 格 特 质</div>
+          <div>
+            <span class="rwp-trait-tag mind">深谋远虑</span>
+            <span class="rwp-trait-tag heart">爱民如子</span>
+            <span class="rwp-trait-tag gold">慎言敏行</span>
+          </div>
+          <div style="font-size:11px;color:var(--ink-300);margin-top:6px;line-height:1.6;font-style:italic;">温和内敛，决事谨慎，不慕浮华，对下属体恤有加，对权贵不卑不亢。</div>
+        </div>
+      </div>
+
+      <div class="rwp-sec" style="margin-top:18px;">
+        <div class="rwp-sec-title">个 人 志 向</div>
+        <div class="rwp-goal-card">
+          <div class="rwp-goal-text">整顿江南漕运，令农商各得其所；三年之内使辖府赋税充盈，民心归附。</div>
+          <div class="rwp-goal-progress">
+            <span class="rwp-goal-label">满 足 度</span>
+            <div class="rwp-goal-bar"><div class="rwp-goal-bar-fill" style="width:67%;"></div></div>
+            <span class="rwp-goal-pct hi">67%</span>
+          </div>
+          <div class="rwp-goal-note">水利已成 · 漕运待兴</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== Tab 2: 身世 ======== -->
+    <div class="rwp-tab-panel" data-section-title="身 世">
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">身 份 档 案<small>16 项基础信息</small></div>
+        <div class="rwp-identity-grid">
+          <div class="rwp-id-cell"><div class="rwp-id-label">性 别</div><div class="rwp-id-value">男</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">年 龄</div><div class="rwp-id-value">42</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">身 份</div><div class="rwp-id-value">文臣</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">职 业</div><div class="rwp-id-value">知府</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">籍 贯</div><div class="rwp-id-value">苏州</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">所 在 地</div><div class="rwp-id-value warn">苏州 → 京城</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">势 力</div><div class="rwp-id-value">朝廷</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">民 族</div><div class="rwp-id-value">汉</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">信 仰</div><div class="rwp-id-value">儒</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">文 化</div><div class="rwp-id-value">江南儒</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">学 识</div><div class="rwp-id-value hi">进士</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">辞 令</div><div class="rwp-id-value">清隽</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">立 场</div><div class="rwp-id-value hi">改革</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">党 派</div><div class="rwp-id-value">清流 · 中坚</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">家 族</div><div class="rwp-id-value">王氏 · 士族</div></div>
+          <div class="rwp-id-cell"><div class="rwp-id-label">与 君 主</div><div class="rwp-id-value">科举门生</div></div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">公 私 身 份 对 照</div>
+        <div class="rwp-duo">
+          <div class="rwp-duo-col public">
+            <div class="rwp-duo-header">官 职 身 份</div>
+            <div class="rwp-duo-row"><span class="label">官职</span><span class="val">江南路知府</span></div>
+            <div class="rwp-duo-row"><span class="label">品级</span><span class="val">正四品</span></div>
+            <div class="rwp-duo-row"><span class="label">职事</span><span class="val">总辖江南府州</span></div>
+            <div class="rwp-duo-row"><span class="label">上司</span><span class="val">江南路总督</span></div>
+            <div class="rwp-duo-row"><span class="label">兼衔</span><span class="val">户部观政</span></div>
+          </div>
+          <div class="rwp-duo-col private">
+            <div class="rwp-duo-header">私 人 身 份</div>
+            <div class="rwp-duo-row"><span class="label">家中</span><span class="val">王家长子</span></div>
+            <div class="rwp-duo-row"><span class="label">师承</span><span class="val">张太傅门生</span></div>
+            <div class="rwp-duo-row"><span class="label">好友</span><span class="val">李尚书 · 赵侍郎</span></div>
+            <div class="rwp-duo-row"><span class="label">爱好</span><span class="val">诗文 · 书画</span></div>
+            <div class="rwp-duo-row"><span class="label">字号</span><span class="val">子直 · 号东堤居士</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">外 貌</div>
+        <div class="rwp-prose italic">身长七尺，面清目朗，蓄短须，常着青色襦袍。举止从容有节，言语温婉而不失锋锐。眉宇间略有忧色。</div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">生 平</div>
+        <div class="rwp-prose">咸通七年春科举进士第五，授翰林编修；八年秋出任苏州府同知；九年夏升江南知府，主修东堤水利；十年冬上疏陈江南水患，奏准拨银十万赈济灾民；今春继续知府任，府务繁重，日夜勤劳。府中以"清直"著称，然而家中债务未消。</div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">角 色 描 写</div>
+        <div class="rwp-prose">王氏苏州本家长房嫡子，自幼受家学熏陶，十八岁中秀才，二十二登进士。性恪守礼，不与权贵结交。家中清贫，发妻沈氏贤淑，育有两子一女。父早逝，兄王融为盐运使，然兄弟理念不合。此刻在京畿传召中，心中忐忑。</div>
+      </div>
+
+    </div>
+
+    <!-- ======== Tab 3: 家谱 ======== -->
+    <div class="rwp-tab-panel" data-section-title="家 谱">
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">家 谱 · 五 代 树<small>金框为本人 · 虚线为姻亲 · 灰色为已故 · 点击姓名可跳转</small></div>
+
+        <div class="rwp-ft-svg-wrap">
+          <svg viewBox="0 0 960 640" class="rwp-ft-svg">
+            <!-- 连接线层（先画，便于盖在下面） -->
+            <g class="ft-lines" stroke="#8a6d2b" stroke-width="1.5" fill="none" stroke-linejoin="round">
+              <!-- 祖父祖母婚姻 (y=55) -->
+              <line x1="180" y1="55" x2="210" y2="55"/>
+              <!-- 外祖外祖母婚姻 -->
+              <line x1="730" y1="55" x2="760" y2="55"/>
+
+              <!-- 祖父+祖母 → 父/伯/叔/姑 (4子女) -->
+              <path d="M 195 75 L 195 115 L 190 115 M 195 115 L 650 115"/>
+              <line x1="190" y1="115" x2="190" y2="155"/>
+              <line x1="450" y1="115" x2="450" y2="155"/>
+              <line x1="550" y1="115" x2="550" y2="155"/>
+              <line x1="650" y1="115" x2="650" y2="155"/>
+
+              <!-- 外祖+外祖母 → 母陆氏 (跨婚姻的母系来源，用虚线) -->
+              <path d="M 745 75 L 745 95 L 320 95 L 320 155" stroke-dasharray="4,3" opacity="0.5"/>
+
+              <!-- 父+母 婚姻线 -->
+              <line x1="240" y1="175" x2="290" y2="175"/>
+
+              <!-- 父+母 → 兄/本人/弟/妹 (4子女) -->
+              <path d="M 265 195 L 265 235 L 60 235 L 60 275" />
+              <line x1="60" y1="235" x2="700" y2="235"/>
+              <line x1="330" y1="235" x2="330" y2="275"/>
+              <line x1="590" y1="235" x2="590" y2="275"/>
+              <line x1="700" y1="235" x2="700" y2="275"/>
+
+              <!-- 兄+嫂婚姻线 -->
+              <line x1="110" y1="295" x2="120" y2="295" stroke="#e84393" opacity="0.7"/>
+              <!-- 本人+妻婚姻线 -->
+              <line x1="380" y1="295" x2="420" y2="295" stroke="#e84393" opacity="0.9" stroke-width="2"/>
+
+              <!-- 沈家姻亲与妻的连线（虚线，表明是姻亲家的兄弟） -->
+              <path d="M 470 295 L 830 295" stroke-dasharray="3,3" opacity="0.4" stroke="#7eb8a7"/>
+              <line x1="830" y1="310" x2="830" y2="335" stroke-dasharray="3,3" opacity="0.4" stroke="#7eb8a7"/>
+
+              <!-- 本人+妻 → 子嗣 (3子女) -->
+              <path d="M 400 315 L 400 385"/>
+              <line x1="230" y1="385" x2="580" y2="385"/>
+              <line x1="230" y1="385" x2="230" y2="420"/>
+              <line x1="460" y1="385" x2="460" y2="420"/>
+              <line x1="580" y1="385" x2="580" y2="420"/>
+
+              <!-- 长子+长媳婚姻 -->
+              <line x1="280" y1="440" x2="290" y2="440" stroke="#e84393" opacity="0.7"/>
+
+              <!-- 长子+长媳 → 长孙 -->
+              <path d="M 285 460 L 285 530"/>
+            </g>
+
+            <!-- 世代标签 -->
+            <g class="ft-gen-labels" font-family="serif" font-size="11" letter-spacing="3" fill="#8a6d2b">
+              <text x="14" y="60">祖 辈</text>
+              <text x="14" y="180">父 辈</text>
+              <text x="14" y="300">同 辈</text>
+              <text x="14" y="425">子 嗣</text>
+              <text x="14" y="550">孙 辈</text>
+              <line x1="8" y1="35" x2="8" y2="575" stroke="#8a6d2b" stroke-width="1" opacity="0.4"/>
+            </g>
+
+            <!-- 成员节点层 -->
+            <g class="ft-nodes" font-family="serif">
+
+              <!-- Gen 1 祖辈 -->
+              <g class="ft-node dead" transform="translate(80,35)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.4)" stroke="#8a6d2b" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#8a6d2b" letter-spacing="2">祖父</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#9d917d">王 景 †</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#6b5d4f">翰林学士</text>
+              </g>
+              <g class="ft-node dead" transform="translate(210,35)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.4)" stroke="#8a6d2b" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#8a6d2b" letter-spacing="2">祖母</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#9d917d">顾 氏 †</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#6b5d4f">苏州顾氏女</text>
+              </g>
+              <g class="ft-node dead" transform="translate(630,35)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.4)" stroke="#8a6d2b" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#8a6d2b" letter-spacing="2">外祖</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#9d917d">陆 岳 †</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#6b5d4f">前吏部侍郎</text>
+              </g>
+              <g class="ft-node dead" transform="translate(760,35)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.4)" stroke="#8a6d2b" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#8a6d2b" letter-spacing="2">外祖母</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#9d917d">钱 氏 †</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#6b5d4f">钱塘钱氏</text>
+              </g>
+
+              <!-- Gen 2 父辈 -->
+              <g class="ft-node dead" transform="translate(140,155)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.4)" stroke="#8a6d2b" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#8a6d2b" letter-spacing="2">父</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#9d917d">王 恭 †</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#6b5d4f">前户部郎中</text>
+              </g>
+              <g class="ft-node" transform="translate(270,155)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">母</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">陆 氏</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">68 · 安养乡里</text>
+              </g>
+              <g class="ft-node dead" transform="translate(400,155)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.4)" stroke="#8a6d2b" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#8a6d2b" letter-spacing="2">伯</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#9d917d">王 敬 †</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#6b5d4f">早夭</text>
+              </g>
+              <g class="ft-node dead" transform="translate(500,155)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.4)" stroke="#8a6d2b" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#8a6d2b" letter-spacing="2">叔</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#9d917d">王 慎 †</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#6b5d4f">前苏州府判</text>
+              </g>
+              <g class="ft-node" transform="translate(600,155)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">姑</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 蓉</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">60 · 嫁赵氏</text>
+              </g>
+
+              <!-- Gen 3 同辈 -->
+              <g class="ft-node" transform="translate(10,275)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">兄</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 融</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">45 · 盐运使</text>
+              </g>
+              <g class="ft-node in-law" transform="translate(120,275)">
+                <rect width="100" height="40" rx="4" fill="rgba(126,184,167,0.05)" stroke="#7eb8a7" stroke-width="1" stroke-dasharray="3,2"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#7eb8a7" letter-spacing="2">嫂</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#d4c9b0">陈 氏</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">42</text>
+              </g>
+              <!-- 本人（highlight） -->
+              <g class="ft-node self" transform="translate(280,270)">
+                <rect width="100" height="50" rx="4" fill="rgba(184,154,83,0.12)" stroke="#d4be7a" stroke-width="2" filter="drop-shadow(0 0 8px rgba(184,154,83,0.3))"/>
+                <text x="50" y="17" text-anchor="middle" font-size="10" fill="#d4be7a" letter-spacing="3">本 人</text>
+                <text x="50" y="33" text-anchor="middle" font-size="15" fill="#d4be7a" font-weight="bold">王 甫</text>
+                <text x="50" y="44" text-anchor="middle" font-size="9" fill="#b89a53">字子直 · 42 · 知府</text>
+              </g>
+              <g class="ft-node in-law" transform="translate(420,275)">
+                <rect width="100" height="40" rx="4" fill="rgba(126,184,167,0.05)" stroke="#7eb8a7" stroke-width="1" stroke-dasharray="3,2"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#7eb8a7" letter-spacing="2">妻</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#d4c9b0">沈 慧</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">40 · 沈氏女</text>
+              </g>
+              <g class="ft-node" transform="translate(540,275)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">弟</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 宣</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">38 · 白身</text>
+              </g>
+              <g class="ft-node" transform="translate(650,275)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">妹</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 璇</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">35 · 嫁李氏</text>
+              </g>
+
+              <!-- 妻族姻亲（右侧独立分支，不继承父辈） -->
+              <g class="ft-node in-law" transform="translate(780,275)">
+                <rect width="100" height="40" rx="4" fill="rgba(126,184,167,0.05)" stroke="#7eb8a7" stroke-width="1" stroke-dasharray="3,2"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#7eb8a7" letter-spacing="2">妻兄</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#d4c9b0">沈 毅</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">礼部员外郎</text>
+              </g>
+              <g class="ft-node in-law" transform="translate(780,325)">
+                <rect width="100" height="40" rx="4" fill="rgba(126,184,167,0.05)" stroke="#7eb8a7" stroke-width="1" stroke-dasharray="3,2"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#7eb8a7" letter-spacing="2">妻弟</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#d4c9b0">沈 钰</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">38 · 商人</text>
+              </g>
+
+              <!-- Gen 4 子嗣 -->
+              <g class="ft-node" transform="translate(180,400)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">长子</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 诚</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">18 · 举人</text>
+              </g>
+              <g class="ft-node in-law" transform="translate(290,400)">
+                <rect width="100" height="40" rx="4" fill="rgba(126,184,167,0.05)" stroke="#7eb8a7" stroke-width="1" stroke-dasharray="3,2"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#7eb8a7" letter-spacing="2">长媳</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#d4c9b0">冯 氏</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">17 · 冯员外女</text>
+              </g>
+              <g class="ft-node" transform="translate(410,400)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">次子</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 清</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">15 · 生员</text>
+              </g>
+              <g class="ft-node" transform="translate(530,400)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">女</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 婉</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">12 · 未字</text>
+              </g>
+
+              <!-- Gen 5 孙辈 -->
+              <g class="ft-node" transform="translate(235,525)">
+                <rect width="100" height="40" rx="4" fill="rgba(0,0,0,0.3)" stroke="#b89a53" stroke-width="1"/>
+                <text x="50" y="16" text-anchor="middle" font-size="9" fill="#b89a53" letter-spacing="2">长孙</text>
+                <text x="50" y="29" text-anchor="middle" font-size="13" fill="#f8f3e8">王 德</text>
+                <text x="50" y="38" text-anchor="middle" font-size="8" fill="#9d917d">2 岁</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <!-- 图例 -->
+        <div class="rwp-ft-legend">
+          <span class="rwp-ft-lg"><span class="rwp-ft-lg-mark self"></span>本 人</span>
+          <span class="rwp-ft-lg"><span class="rwp-ft-lg-mark blood"></span>血 亲</span>
+          <span class="rwp-ft-lg"><span class="rwp-ft-lg-mark inlaw"></span>姻 亲</span>
+          <span class="rwp-ft-lg"><span class="rwp-ft-lg-mark dead"></span>已 故</span>
+          <span class="rwp-ft-lg"><span class="rwp-ft-lg-mark marry"></span>婚 姻 线</span>
+          <span class="rwp-ft-lg"><span class="rwp-ft-lg-mark parent"></span>血 缘 线</span>
+        </div>
+      </div>
+
+      <!-- 族谱信息栏 -->
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">家 族 · 统 览</div>
+        <div class="rwp-ft-clan-grid">
+          <div class="rwp-ft-clan-item">
+            <div class="rwp-ft-clan-lb">族 望</div>
+            <div class="rwp-ft-clan-v-big">68</div>
+            <div class="rwp-ft-clan-bar"><span class="rwp-ft-clan-bar-fill" style="width:68%;"></span></div>
+          </div>
+          <div class="rwp-ft-clan-item">
+            <div class="rwp-ft-clan-lb">门 第</div>
+            <div class="rwp-ft-clan-v-big" style="color:var(--celadon-300);">士 族</div>
+            <div class="rwp-ft-clan-sub">第三等</div>
+          </div>
+          <div class="rwp-ft-clan-item">
+            <div class="rwp-ft-clan-lb">家 族 势 力</div>
+            <div class="rwp-ft-clan-v-big" style="font-size:16px;">清 流</div>
+            <div class="rwp-ft-clan-sub">中坚成员</div>
+          </div>
+          <div class="rwp-ft-clan-item">
+            <div class="rwp-ft-clan-lb">族 丁 总 数</div>
+            <div class="rwp-ft-clan-v-big">25</div>
+            <div class="rwp-ft-clan-sub">三房合计</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="rwp-res-block">
+            <div class="rwp-res-sublabel">分 支</div>
+            <div style="font-size:11px;line-height:1.9;color:var(--ink-200);padding:4px 8px;">
+              • 苏州本家（嫡）12 丁 — 含本人<br>
+              • 余杭旁支（庶）8 丁 — 以经商为业<br>
+              • 湖州远房 5 丁 — 耕读自守
+            </div>
+          </div>
+          <div class="rwp-res-block">
+            <div class="rwp-res-sublabel">姻 亲 四 族</div>
+            <div style="font-size:11px;line-height:1.9;color:var(--ink-200);padding:4px 8px;">
+              • <span style="color:var(--celadon-300);">沈氏</span>（妻族 · 苏州）<br>
+              • <span style="color:var(--celadon-300);">陆氏</span>（母族 · 钱塘）<br>
+              • <span style="color:var(--celadon-300);">冯氏</span>（亲家 · 亲家公冯员外）<br>
+              • <span style="color:var(--celadon-300);">赵氏</span>（姑族 · 吴县）
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;padding:10px 14px;background:rgba(184,154,83,0.06);border:1px solid rgba(184,154,83,0.2);border-radius:var(--radius-sm);">
+          <div style="font-size:10px;color:var(--gold-400);letter-spacing:0.25em;margin-bottom:6px;">在 朝 者</div>
+          <div style="font-size:11px;line-height:1.8;color:var(--ink-200);">
+            · <b style="color:var(--gold-300);">王 甫</b>（本人 · 江南路知府 · 正四品）<br>
+            · <b style="color:var(--ink-50);">王 融</b>（兄 · 盐运使 · 从四品）<br>
+            · <b style="color:var(--celadon-300);">沈 毅</b>（妻兄 · 礼部员外郎 · 从五品）
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== Tab 4: 仕途 ======== -->
+    <div class="rwp-tab-panel" data-section-title="仕 途">
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">仕 途 履 历</div>
+        <div class="rwp-timeline">
+          <div class="rwp-timeline-item milestone"><div class="rwp-timeline-date">咸通 七年 春</div><div class="rwp-timeline-title">科举进士第五</div><div class="rwp-timeline-desc">授翰林编修</div></div>
+          <div class="rwp-timeline-item"><div class="rwp-timeline-date">咸通 八年 秋</div><div class="rwp-timeline-title">出任苏州府同知</div><div class="rwp-timeline-desc">初历地方，初涉州务</div></div>
+          <div class="rwp-timeline-item milestone"><div class="rwp-timeline-date">咸通 九年 夏</div><div class="rwp-timeline-title">升任江南路知府</div><div class="rwp-timeline-desc">主修东堤水利，当年完工</div></div>
+          <div class="rwp-timeline-item"><div class="rwp-timeline-date">咸通 十年 冬</div><div class="rwp-timeline-title">上疏陈江南水患</div><div class="rwp-timeline-desc">奏准拨银赈灾</div></div>
+          <div class="rwp-timeline-item"><div class="rwp-timeline-date">咸通 十一年 春</div><div class="rwp-timeline-title">继续知府任，受诏赴京</div><div class="rwp-timeline-desc">原因未明，疑为漕运改制之议</div></div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">经 历 · 大 事 纪</div>
+        <div class="rwp-timeline">
+          <div class="rwp-timeline-item milestone"><div class="rwp-timeline-date">T58 · 九年夏</div><div class="rwp-timeline-title">东堤水利奏准竣工</div><div class="rwp-timeline-desc">筑堤三百步，护田万顷（贤+15）</div></div>
+          <div class="rwp-timeline-item"><div class="rwp-timeline-date">T64 · 九年冬</div><div class="rwp-timeline-title">上疏陈漕运弊</div><div class="rwp-timeline-desc">李尚书褒赞（名+8）</div></div>
+          <div class="rwp-timeline-item milestone"><div class="rwp-timeline-date">T72 · 十年春</div><div class="rwp-timeline-title">弹劾嘉兴县令</div><div class="rwp-timeline-desc">贪墨赈灾粮案</div></div>
+          <div class="rwp-timeline-item"><div class="rwp-timeline-date">T80 · 十一年春</div><div class="rwp-timeline-title">受传召赴京</div><div class="rwp-timeline-desc">原因不明</div></div>
+        </div>
+      </div>
+
+      <div class="rwp-grid-2">
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">颜 面</div>
+          <div class="rwp-face-card">
+            <div class="rwp-face-value">68</div>
+            <div><div class="rwp-face-label">颜 面 在</div><div class="rwp-face-desc">廷议有份量 · 无明显丢面之事</div></div>
+          </div>
+        </div>
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">个 人 志 向 详 情</div>
+          <div class="rwp-goal-card">
+            <div class="rwp-goal-text" style="font-size:12px;">整顿江南漕运，三年之内使辖府赋税充盈。</div>
+            <div class="rwp-goal-progress"><span class="rwp-goal-label">满足</span><div class="rwp-goal-bar"><div class="rwp-goal-bar-fill" style="width:67%;"></div></div><span class="rwp-goal-pct hi">67%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">文 事 作 品 集<small>近 8 件</small></div>
+        <div class="rwp-work-card"><div class="rwp-work-title">《东 堤 记》</div><div class="rwp-work-meta">咸通九年 · 记游记工 · 本府刊行</div><div class="rwp-work-extract">"江南之水，利害相半。筑堤三百步，民享安则利见焉……"</div></div>
+        <div class="rwp-work-card"><div class="rwp-work-title">《上 漕 运 策》</div><div class="rwp-work-meta">咸通十年 · 奏疏 · 户部存档</div><div class="rwp-work-extract">"臣闻漕运者国之命脉也，其弊始于……"</div></div>
+        <div class="rwp-work-card"><div class="rwp-work-title">《春 日 苏 州 即 事》</div><div class="rwp-work-meta">咸通八年 · 七律 · 流传乡邑</div><div class="rwp-work-extract">"烟雨江南柳色新，画船归去隔红尘……"</div></div>
+      </div>
+    </div>
+
+    <!-- ======== Tab 4: 心绪 ======== -->
+    <div class="rwp-tab-panel" data-section-title="心 绪">
+
+      <div class="rwp-grid-2">
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">当 前 情 绪</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <span class="rwp-mood-chip worry">〔 忧 〕 心 事 深 重</span>
+            <span style="font-size:11px;color:var(--ink-300);font-style:italic;">府务繁重，夜常惊醒</span>
+          </div>
+        </div>
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">近 期 心 绪<small>player 心声</small></div>
+          <div class="rwp-inner-thought">漕运当兴，其弊在官；吾欲奏请改制，奈何朝中有掣肘者。夜思之，不能眠。</div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">压 力 详 情</div>
+        <div class="rwp-stress-detail">
+          <div class="rwp-stress-label">压 力 值 · 85/100 · 将 崩</div>
+          <div class="rwp-stress-sublists">
+            <div>
+              <div class="rwp-stress-sublist-title on">当 下 压 源</div>
+              <div class="rwp-stress-item">· 漕运款缺口未补</div>
+              <div class="rwp-stress-item">· 族弟屡试不第</div>
+              <div class="rwp-stress-item">· 张运使暗中作梗</div>
+              <div class="rwp-stress-item">· 京中传召不明</div>
+            </div>
+            <div>
+              <div class="rwp-stress-sublist-title off">释 压 之 法</div>
+              <div class="rwp-stress-item">· 诗文会友</div>
+              <div class="rwp-stress-item">· 赏玩碑帖</div>
+              <div class="rwp-stress-item">· 与妻共话</div>
+              <div class="rwp-stress-item">· 归乡小住</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">人 生 历 练<small>分域累计</small></div>
+        <div class="rwp-exp-domains">
+          <div class="rwp-exp-domain"><svg class="rwp-exp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 18L12 6L20 18Z"/></svg><div class="rwp-exp-name">治 理</div><div class="rwp-exp-count">17</div></div>
+          <div class="rwp-exp-domain"><svg class="rwp-exp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 10L12 3L19 10M5 10V20H19V10"/></svg><div class="rwp-exp-name">民 生</div><div class="rwp-exp-count">11</div></div>
+          <div class="rwp-exp-domain"><svg class="rwp-exp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4H20M4 12H20M4 20H20"/></svg><div class="rwp-exp-name">文 事</div><div class="rwp-exp-count">8</div></div>
+          <div class="rwp-exp-domain"><svg class="rwp-exp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><path d="M8 12H16M12 8V16"/></svg><div class="rwp-exp-name">党 议</div><div class="rwp-exp-count">5</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--ink-300);letter-spacing:0.1em;margin-bottom:4px;">近 期</div>
+        <div class="rwp-exp-recent">〔治理〕亲赴苏州东堤察看水势，指挥筑坝三百步</div>
+        <div class="rwp-exp-recent">〔民生〕亲审贫户冤案三件，平反一人</div>
+        <div class="rwp-exp-recent">〔文事〕撰《东堤记》刊于乡邑</div>
+        <div class="rwp-exp-recent">〔党议〕清流小集于府中，议削减浮费</div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">此 人 记 忆<small>近 5 条</small></div>
+        <div>
+          <div class="rwp-mem happy"><span class="rwp-mem-mood happy">〔喜〕</span>东堤水利竣工，乡民夹道相送<span class="rwp-mem-who">(苏州父老)</span></div>
+          <div class="rwp-mem worry"><span class="rwp-mem-mood worry">〔忧〕</span>盐运使私扣水利款三千贯<span class="rwp-mem-who">(张运使)</span></div>
+          <div class="rwp-mem angry"><span class="rwp-mem-mood angry">〔怒〕</span>府下县令贪墨赈灾粮千石<span class="rwp-mem-who">(嘉兴县令)</span></div>
+          <div class="rwp-mem respect"><span class="rwp-mem-mood respect">〔敬〕</span>李尚书亲信赴苏督漕<span class="rwp-mem-who">(李尚书)</span></div>
+          <div class="rwp-mem peace"><span class="rwp-mem-mood">〔平〕</span>与妻共赏梅，偶得一诗</div>
+        </div>
+        <div class="rwp-mem-archive-toggle">▸ 展 开 早 年 记 忆（尘封 23 条）</div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">对 他 人 印 象</div>
+        <div class="rwp-impressions">
+          <div><b>李尚书：</b>感恩(+18)<b>　张太傅：</b>敬畏(+25)<b>　皇帝：</b>忠笃(+15)<b>　赵侍郎：</b>好感(+12)</div>
+          <div><b>严首辅：</b>警惕(-8)<b>　嘉兴县令：</b>不满(-14)<b>　张运使：</b>深恨(-22)<b>　钱县丞：</b>信赖(+7)</div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-scar-box">
+          <div class="rwp-scar-label">刻 骨 铭 心 · 不 忘</div>
+          <div class="rwp-mem hate"><span class="rwp-mem-mood hate">〔恨〕</span>咸通四年父病死，求医无门，立志为官以济民</div>
+          <div class="rwp-mem fear"><span class="rwp-mem-mood fear">〔惧〕</span>八年秋江南大水，目睹灾民浮尸，夜不成寐</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== Tab 5: 关系 ======== -->
+    <div class="rwp-tab-panel" data-section-title="关 系">
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">对 玩 家 好 感</div>
+        <div class="rwp-opinion-breakdown">
+          <div class="rwp-opinion-total">
+            <span class="rwp-opinion-total-lb">合 计 好 感</span>
+            <span class="rwp-opinion-total-v">+42</span>
+          </div>
+          <div class="rwp-opinion-bar"><div class="rwp-opinion-fill pos" style="width:21%;"></div></div>
+          <div class="rwp-opinion-item"><span>基础值（科举门生）</span><span class="v pos">+25</span></div>
+          <div class="rwp-opinion-item"><span>东堤水利被嘉奖</span><span class="v pos">+12</span></div>
+          <div class="rwp-opinion-item"><span>赈灾诏令被采纳</span><span class="v pos">+8</span></div>
+          <div class="rwp-opinion-item"><span>户部拨款迟到</span><span class="v neg">-3</span></div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">人 际 关 系 网</div>
+        <div class="rwp-aff-list">
+          <div class="rwp-aff-item pos"><span class="rwp-aff-name">李 尚 书</span><span class="rwp-aff-rel">举荐之恩 · 户部上司</span><span class="rwp-aff-value">+18</span></div>
+          <div class="rwp-aff-item pos"><span class="rwp-aff-name">赵 侍 郎</span><span class="rwp-aff-rel">同年挚友</span><span class="rwp-aff-value">+12</span></div>
+          <div class="rwp-aff-item pos"><span class="rwp-aff-name">张 太 傅</span><span class="rwp-aff-rel">授业恩师</span><span class="rwp-aff-value">+25</span></div>
+          <div class="rwp-aff-item neu"><span class="rwp-aff-name">严 首 辅</span><span class="rwp-aff-rel">朝堂对手</span><span class="rwp-aff-value">-8</span></div>
+          <div class="rwp-aff-item neg"><span class="rwp-aff-name">张 运 使</span><span class="rwp-aff-rel">水利款之争</span><span class="rwp-aff-value">-22</span></div>
+          <div class="rwp-aff-item neg"><span class="rwp-aff-name">嘉兴县令</span><span class="rwp-aff-rel">贪腐被惩</span><span class="rwp-aff-value">-14</span></div>
+        </div>
+      </div>
+
+      <div class="rwp-grid-2">
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">血 缘 关 系</div>
+          <div class="rwp-aff-list">
+            <div class="rwp-aff-item pos"><span class="rwp-aff-name">王 融</span><span class="rwp-aff-rel">兄长 · 现任盐运使</span><span class="rwp-aff-value">亲</span></div>
+            <div class="rwp-aff-item pos"><span class="rwp-aff-name">王 宣</span><span class="rwp-aff-rel">幼弟 · 尚白身</span><span class="rwp-aff-value">亲</span></div>
+            <div class="rwp-aff-item pos"><span class="rwp-aff-name">沈 慧</span><span class="rwp-aff-rel">发妻 · 沈氏女</span><span class="rwp-aff-value">亲</span></div>
+            <div class="rwp-aff-item pos"><span class="rwp-aff-name">王 诚</span><span class="rwp-aff-rel">长子 · 举人</span><span class="rwp-aff-value">亲</span></div>
+          </div>
+        </div>
+        <div class="rwp-sec" style="margin-bottom:0;">
+          <div class="rwp-sec-title">门 生 故 吏</div>
+          <div class="rwp-aff-list">
+            <div class="rwp-aff-item pos"><span class="rwp-aff-name">朱 季 卿</span><span class="rwp-aff-rel">苏州同知</span><span class="rwp-aff-value">门生</span></div>
+            <div class="rwp-aff-item pos"><span class="rwp-aff-name">吴 守 正</span><span class="rwp-aff-rel">湖州司法</span><span class="rwp-aff-value">门生</span></div>
+            <div class="rwp-aff-item pos"><span class="rwp-aff-name">钱 穆</span><span class="rwp-aff-rel">嘉兴县丞</span><span class="rwp-aff-value">故吏</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rwp-sec">
+        <div class="rwp-sec-title">恩 怨 · 因 果</div>
+        <div class="rwp-prose">受李尚书举荐之恩，今每年春节致礼以谢；与江南盐运使张某积怨甚深，因水利工程款之争数次口角，张某暗中阻挠东堤督办；对族弟王宣照拂有加（每月资助二十贯），望其参加科举；对嘉兴县令贪墨赈灾粮一事深恶痛绝，上奏弹劾致其贬职。</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 立绘示范：内嵌 SVG data-uri，模拟"已配置立绘"的外观 -->
+<svg width="0" height="0" style="position:absolute;">
+  <defs>
+    <linearGradient id="liHue1" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#3a2a1a"/>
+      <stop offset="0.3" stop-color="#8a6d2b"/>
+      <stop offset="1" stop-color="#1a1612"/>
+    </linearGradient>
+    <linearGradient id="liHue2" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#1c2538"/>
+      <stop offset="0.5" stop-color="#5a8f7f"/>
+      <stop offset="1" stop-color="#0e1515"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- ============================================================
+     二、快速详情面板（大幅扩容）
+     ============================================================ -->
+<div class="page-label">二、快速详情面板（点击角色名，右滑出）</div>
+<div class="page-sub">扩容版：含八才品评 + 心性 + 资源 + 近五记忆 + 五常 + 特质 + 志向 + 情绪，入口 "查看完整人物志"</div>
+
+<div class="layout">
+
+<div class="quick-panel">
+  <div class="qp-head">
+    <!-- 立绘模式示范 -->
+    <div class="qp-portrait">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;">
+        <rect width="100" height="100" fill="url(#liHue1)"/>
+        <g stroke="#d4be7a" stroke-width="0.8" fill="rgba(26,22,18,0.4)" stroke-linejoin="round">
+          <ellipse cx="50" cy="38" rx="14" ry="17"/>
+          <path d="M36 28 Q50 18 64 28 L62 34 Q50 28 38 34 Z" fill="#8a6d2b"/>
+          <line x1="44" y1="37" x2="46" y2="37" stroke-width="1.2"/>
+          <line x1="54" y1="37" x2="56" y2="37" stroke-width="1.2"/>
+          <path d="M47 44 Q50 46 53 44" fill="none"/>
+          <path d="M38 55 L28 85 L72 85 L62 55 Q55 58 50 58 Q45 58 38 55 Z" fill="#2a2520"/>
+        </g>
+      </svg>
+    </div>
+    <div class="qp-heading">
+      <div><span class="qp-name">王 甫</span><span class="qp-courtesy">子直</span><span class="qp-gender-age">男 · 42</span></div>
+      <div class="qp-title">江南路知府 · 正四品</div>
+      <div class="qp-location-line">
+        <span class="rwp-mini-tag loc" style="font-size:9px;">苏州</span>
+        <span class="rwp-mini-tag travel" style="font-size:9px;">→ 京</span>
+        <span class="rwp-mini-tag fac" style="font-size:9px;">朝廷 · 清流</span>
+      </div>
+    </div>
+    <button class="qp-close">×</button>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">心 性</div>
+    <div class="qp-heart-mini">
+      <div class="qp-heart-mini-item loy"><span class="qp-heart-mini-lb">忠</span><span class="qp-heart-mini-v" style="color:var(--celadon-300);">78.5</span></div>
+      <div class="qp-heart-mini-item amb"><span class="qp-heart-mini-lb">野</span><span class="qp-heart-mini-v">55</span></div>
+    </div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">品 行 状 态</div>
+    <div class="rwp-stats-row" style="gap:6px;">
+      <div class="rwp-stat-card" style="padding:6px 4px;"><div class="rwp-stat-card-label" style="font-size:9px;">名望</div><div class="rwp-fame-seal bright" style="font-size:11px;padding:2px 6px;">+36</div></div>
+      <div class="rwp-stat-card rwp-xian-card" style="padding:6px 4px;"><div class="rwp-stat-card-label" style="font-size:9px;">贤能</div><div class="rwp-stat-card-value" style="font-size:16px;">158</div><div class="rwp-xian-tier" style="font-size:8px;">地方重臣</div></div>
+      <div class="rwp-stat-card" style="padding:6px 4px;"><div class="rwp-stat-card-label" style="font-size:9px;">健</div><div class="rwp-stat-card-value" style="font-size:16px;color:var(--celadon-300);">72</div></div>
+      <div class="rwp-stat-card crit" style="padding:6px 4px;"><div class="rwp-stat-card-label" style="font-size:9px;">压</div><div class="rwp-stat-card-value" style="font-size:16px;color:var(--vermillion-300);">85</div></div>
+    </div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">公 库 · 私 产</div>
+    <div class="rwp-grid-2" style="gap:6px;">
+      <div style="padding:6px 8px;background:rgba(0,0,0,0.25);border-radius:3px;">
+        <div style="font-size:9px;color:var(--gold-400);letter-spacing:0.2em;text-align:center;margin-bottom:3px;">公 库</div>
+        <div style="font-size:10px;line-height:1.7;">钱 5.5万 · 粮 2.9万 · 布 320</div>
+      </div>
+      <div style="padding:6px 8px;background:rgba(0,0,0,0.25);border-radius:3px;">
+        <div style="font-size:9px;color:var(--gold-400);letter-spacing:0.2em;text-align:center;margin-bottom:3px;">私 产</div>
+        <div style="font-size:10px;line-height:1.7;"><span style="color:var(--vermillion-300);">钱 -1.2万</span> · 粮 4,530 · 布 180</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">能 力 八 才</div>
+    <div class="rwp-ability-grid" style="gap:4px;">
+      <div class="rwp-ability-cell excel" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">智</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">82</span><span class="rwp-ability-cell-rank" style="font-size:9px;">优</span></div></div>
+      <div class="rwp-ability-cell" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">武</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">45</span><span class="rwp-ability-cell-rank" style="font-size:9px;">寻</span></div></div>
+      <div class="rwp-ability-cell poor" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">军</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">40</span><span class="rwp-ability-cell-rank" style="font-size:9px;">稍</span></div></div>
+      <div class="rwp-ability-cell excel" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">政</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">85</span><span class="rwp-ability-cell-rank" style="font-size:9px;">卓</span></div></div>
+      <div class="rwp-ability-cell excel" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">管</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">80</span><span class="rwp-ability-cell-rank" style="font-size:9px;">优</span></div></div>
+      <div class="rwp-ability-cell good" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">魅</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">68</span><span class="rwp-ability-cell-rank" style="font-size:9px;">中</span></div></div>
+      <div class="rwp-ability-cell good" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">交</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">72</span><span class="rwp-ability-cell-rank" style="font-size:9px;">优</span></div></div>
+      <div class="rwp-ability-cell good" style="padding:4px 8px;"><span class="rwp-ability-cell-name" style="font-size:11px;">仁</span><div class="rwp-ability-cell-right"><span class="rwp-ability-cell-value" style="font-size:14px;">70</span><span class="rwp-ability-cell-rank" style="font-size:9px;">中</span></div></div>
+    </div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">五 常 · 气 质</div>
+    <div class="rwp-stat-grid five" style="gap:3px;">
+      <div class="rwp-stat" style="padding:4px;"><div class="rwp-stat-label">仁</div><div class="rwp-stat-value" style="font-size:12px;">68</div></div>
+      <div class="rwp-stat" style="padding:4px;"><div class="rwp-stat-label">义</div><div class="rwp-stat-value" style="font-size:12px;">72</div></div>
+      <div class="rwp-stat" style="padding:4px;"><div class="rwp-stat-label">礼</div><div class="rwp-stat-value" style="font-size:12px;">65</div></div>
+      <div class="rwp-stat" style="padding:4px;"><div class="rwp-stat-label">智</div><div class="rwp-stat-value" style="font-size:12px;">70</div></div>
+      <div class="rwp-stat" style="padding:4px;"><div class="rwp-stat-label">信</div><div class="rwp-stat-value" style="font-size:12px;">58</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--gold-400);text-align:center;margin-top:4px;letter-spacing:0.2em;">气质 · 士 人</div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">特 质 · 情 绪</div>
+    <div>
+      <span class="rwp-trait-tag mind" style="font-size:10px;padding:2px 8px;">深谋远虑</span>
+      <span class="rwp-trait-tag heart" style="font-size:10px;padding:2px 8px;">爱民如子</span>
+      <span class="rwp-trait-tag gold" style="font-size:10px;padding:2px 8px;">慎言敏行</span>
+    </div>
+    <div style="margin-top:6px;"><span class="rwp-mood-chip worry" style="font-size:11px;padding:3px 10px;">〔忧〕心事深重</span></div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">外 貌</div>
+    <div class="rwp-prose italic" style="font-size:11px;padding:6px 10px;line-height:1.6;text-indent:0;">身长七尺，面清目朗，蓄短须，常着青色襦袍。举止从容有节，眉宇略有忧色。</div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">生 平</div>
+    <div class="rwp-prose" style="font-size:11px;padding:6px 10px;line-height:1.6;text-indent:0;">咸通七年进士第五，授翰林；八年秋苏州同知；九年夏升江南知府，主修东堤水利；十年冬奏准赈济；今春受诏赴京。</div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">近 五 记 忆</div>
+    <div style="font-size:11px;">
+      <div class="rwp-mem happy" style="padding:3px 0 3px 10px;font-size:10px;"><span class="rwp-mem-mood happy">〔喜〕</span>东堤水利竣工，乡民夹道<span class="rwp-mem-who">(苏州父老)</span></div>
+      <div class="rwp-mem worry" style="padding:3px 0 3px 10px;font-size:10px;"><span class="rwp-mem-mood worry">〔忧〕</span>盐运使私扣水利款<span class="rwp-mem-who">(张运使)</span></div>
+      <div class="rwp-mem angry" style="padding:3px 0 3px 10px;font-size:10px;"><span class="rwp-mem-mood angry">〔怒〕</span>府下县令贪墨赈灾粮<span class="rwp-mem-who">(嘉兴县令)</span></div>
+      <div class="rwp-mem respect" style="padding:3px 0 3px 10px;font-size:10px;"><span class="rwp-mem-mood respect">〔敬〕</span>李尚书亲信赴苏督漕<span class="rwp-mem-who">(李尚书)</span></div>
+      <div class="rwp-mem peace" style="padding:3px 0 3px 10px;font-size:10px;"><span class="rwp-mem-mood">〔平〕</span>与妻共赏梅，偶得一诗</div>
+    </div>
+  </div>
+
+  <div class="qp-sec">
+    <div class="qp-sec-title">个 人 志 向</div>
+    <div style="padding:8px 10px;background:rgba(0,0,0,0.22);border-left:2px solid var(--gold-500);border-radius:0 3px 3px 0;font-size:11px;line-height:1.6;">
+      整顿江南漕运，令农商各得其所。
+      <div style="margin-top:4px;font-size:10px;"><span style="color:var(--ink-400);">满足度</span> <span style="color:var(--celadon-300);font-weight:600;">67%</span></div>
+    </div>
+  </div>
+
+  <div class="qp-link-more">〔 点 开 人 物 志 查 看 完 整 〕</div>
+</div>
+
+<!-- ============================================================
+     三、右侧栏人物卡片
+     ============================================================ -->
+<div>
+<div class="page-label" style="margin-top:0;">三、右侧栏人物卡片</div>
+<div class="page-sub">列表式 · 压缩信息流 · 含 字 + 性别 + 资源</div>
+<div class="sidebar-demo">
+  <div class="sidebar-title">
+    <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+    人 物
+    <span class="sb-count">38 人</span>
+  </div>
+
+  <!-- 王甫 · 已配置立绘模式 -->
+  <div class="cd">
+    <div class="cd-main">
+      <div class="cd-portrait">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;">
+          <rect width="100" height="100" fill="url(#liHue1)"/>
+          <g stroke="#d4be7a" stroke-width="1" fill="rgba(26,22,18,0.4)" stroke-linejoin="round">
+            <ellipse cx="50" cy="38" rx="14" ry="17"/>
+            <path d="M36 28 Q50 18 64 28 L62 34 Q50 28 38 34 Z" fill="#8a6d2b"/>
+            <path d="M38 55 L28 85 L72 85 L62 55" fill="#2a2520"/>
+          </g>
+        </svg>
+      </div>
+      <div class="cd-body">
+        <div class="cd-name-row">
+          <div class="cd-name-left">
+            <span class="cd-mood worry">〔忧〕</span>王 甫
+            <span class="cd-courtesy">· 子直</span>
+            <span class="cd-gender-age">♂42</span>
+            <span class="cd-loc-badge">→京</span>
+          </div>
+          <div class="cd-name-right">
+            <span class="cd-loy hi">忠78.5</span>
+            <span class="cd-amb">野55</span>
+            <span class="cd-stress crit">崩</span>
+          </div>
+        </div>
+        <div class="cd-subrow">
+          <span class="cd-office">江南知府 · 正四品</span>
+          <span class="cd-faction">朝廷</span>
+        </div>
+        <div class="cd-tags">
+          <span class="cd-tag reform">改革</span><span class="cd-tag party">清流</span>
+          <span class="cd-tag mind">深谋远虑</span><span class="cd-tag heart">爱民如子</span>
+        </div>
+        <div class="cd-wuchang">仁68 义72 礼65 智70 信58<span class="cd-wuchang-qz">· 士人</span></div>
+        <div class="cd-resources">
+          <div class="cd-res-grp">
+            <span class="cd-res-grp-lb">公</span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="cd-res-val">5.5万</span></span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/></svg><span class="cd-res-val">2.9万</span></span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 8Q12 5 20 8L20 10Q12 7 4 10Z"/><path d="M4 13Q12 10 20 13L20 15Q12 12 4 15Z"/></svg><span class="cd-res-val">320</span></span>
+          </div>
+          <div class="cd-res-sep"></div>
+          <div class="cd-res-grp">
+            <span class="cd-res-grp-lb">私</span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="cd-res-val neg">-1.2万</span></span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/></svg><span class="cd-res-val">4,530</span></span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 8Q12 5 20 8L20 10Q12 7 4 10Z"/><path d="M4 13Q12 10 20 13L20 15Q12 12 4 15Z"/></svg><span class="cd-res-val">180</span></span>
+          </div>
+        </div>
+        <div class="cd-stats-pills">
+          <span class="cd-pill"><span class="cd-pill-lb">名</span><span class="cd-pill-val">+36</span></span>
+          <span class="cd-pill" title="地方重臣"><span class="cd-pill-lb">贤</span><span class="cd-pill-val">158</span></span>
+          <span class="cd-pill"><span class="cd-pill-lb">健</span><span class="cd-pill-val">72</span></span>
+          <span class="cd-pill warn"><span class="cd-pill-lb">压</span><span class="cd-pill-val">85</span></span>
+        </div>
+        <div class="cd-goal">志：整顿江南漕运... <span class="cd-goal-pct hi">67%</span></div>
+        <div class="cd-enyuan">受李尚书举荐之恩，与盐运使张某积怨</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 严崇 -->
+  <div class="cd">
+    <div class="cd-main">
+      <div class="cd-portrait">严</div>
+      <div class="cd-body">
+        <div class="cd-name-row">
+          <div class="cd-name-left">
+            严 崇
+            <span class="cd-courtesy">· 泰山</span>
+            <span class="cd-gender-age">♂68</span>
+            <span class="cd-spouse">🌸</span>
+            <span class="cd-face-badge">颜面尽失</span>
+          </div>
+          <div class="cd-name-right">
+            <span class="cd-loy hi">忠92</span>
+            <span class="cd-amb" style="color:var(--vermillion-400);">野88</span>
+          </div>
+        </div>
+        <div class="cd-subrow"><span class="cd-office">内阁首辅 · 正一品</span><span class="cd-faction">朝廷</span></div>
+        <div class="cd-tags">
+          <span class="cd-tag conserve">保守</span><span class="cd-tag party">严党</span>
+          <span class="cd-tag valor">权谋</span><span class="cd-tag gold">识人善任</span>
+        </div>
+        <div class="cd-wuchang">仁32 义28 礼58 智85 信40<span class="cd-wuchang-qz">· 权臣</span></div>
+        <div class="cd-resources">
+          <div class="cd-res-grp">
+            <span class="cd-res-grp-lb">公</span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="cd-res-val">580万</span></span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/></svg><span class="cd-res-val">420万</span></span>
+          </div>
+          <div class="cd-res-sep"></div>
+          <div class="cd-res-grp">
+            <span class="cd-res-grp-lb">私</span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><rect x="9.5" y="9.5" width="5" height="5" stroke-width="1.3"/></svg><span class="cd-res-val">320万</span></span>
+            <span class="cd-res-it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 21V6"/><path d="M12 11C9 11 6.5 9.5 5.5 7.5"/><path d="M12 11C15 11 17.5 9.5 18.5 7.5"/></svg><span class="cd-res-val">85万</span></span>
+          </div>
+        </div>
+        <div class="cd-stats-pills">
+          <span class="cd-pill warn"><span class="cd-pill-lb">名</span><span class="cd-pill-val neg">-45</span></span>
+          <span class="cd-pill" title="朝廷要员"><span class="cd-pill-lb">贤</span><span class="cd-pill-val">488</span></span>
+          <span class="cd-pill"><span class="cd-pill-lb">健</span><span class="cd-pill-val">62</span></span>
+          <span class="cd-pill"><span class="cd-pill-lb">压</span><span class="cd-pill-val">50</span></span>
+        </div>
+        <div class="cd-goal">志：把持朝政三十年... <span class="cd-goal-pct hi">82%</span></div>
+        <div class="cd-enyuan">门生故吏遍布朝野，与清流积怨</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 苏婉 女性角色 -->
+  <div class="cd">
+    <div class="cd-main">
+      <div class="cd-portrait" style="color:#e84393;border-color:#e84393;">苏</div>
+      <div class="cd-body">
+        <div class="cd-name-row">
+          <div class="cd-name-left">
+            <span class="cd-mood happy">〔喜〕</span>苏 婉
+            <span class="cd-courtesy">· 清漪</span>
+            <span class="cd-gender-age female">♀32</span>
+          </div>
+          <div class="cd-name-right">
+            <span class="cd-loy hi">忠85</span><span class="cd-amb">野22</span>
+          </div>
+        </div>
+        <div class="cd-subrow"><span class="cd-office">贤妃 · 正一品</span><span class="cd-faction">后宫</span></div>
+        <div class="cd-tags">
+          <span class="cd-tag heart">温婉贤淑</span><span class="cd-tag mind">才思敏捷</span><span class="cd-tag gold">善书画</span>
+        </div>
+        <div class="cd-wuchang">仁82 义70 礼88 智75 信80<span class="cd-wuchang-qz">· 淑女</span></div>
+        <div class="cd-stats-pills">
+          <span class="cd-pill"><span class="cd-pill-lb">名</span><span class="cd-pill-val">+58</span></span>
+          <span class="cd-pill" title="初入仕途"><span class="cd-pill-lb">贤</span><span class="cd-pill-val">38</span></span>
+          <span class="cd-pill"><span class="cd-pill-lb">健</span><span class="cd-pill-val">82</span></span>
+          <span class="cd-pill"><span class="cd-pill-lb">压</span><span class="cd-pill-val">25</span></span>
+        </div>
+        <div class="cd-goal">志：育太子于德，安内廷... <span class="cd-goal-pct hi">78%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.rwp-tab');
+  var panels = document.querySelectorAll('.rwp-tab-panel');
+  if (!tabs.length || !panels.length) return;
+  tabs.forEach(function(tab, i){
+    tab.addEventListener('click', function(){
+      tabs.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      panels.forEach(function(p){ p.classList.remove('active'); });
+      if (panels[i]) panels[i].classList.add('active');
+    });
+  });
+})();
+</script>
+</body>
+</html>
+</content>
+</invoke>

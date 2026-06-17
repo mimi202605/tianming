@@ -1,0 +1,28 @@
+{
+  "id": "tianqi-ming2",
+  "name": "天启七年新舆图",
+  "sourceMap": "C:\\Users\\37814\\Downloads\\ming-2________ming_2026-05-12.json",
+  "sourceScenario": "C:\\Users\\37814\\Desktop\\tianming\\scenarios\\天启七年·九月（官方）.json",
+  "sourceSupplement": "C:\\Users\\37814\\Desktop\\tianming\\web\\data\\scenario-supplements\\tianqi7-ming2-historical-supplement.json",
+  "supplementId": "tianqi7-ming2-historical-supplement",
+  "supplementName": "天启七年新舆图历史补丁",
+  "dataConfidenceNote": "数值字段为游戏化历史估算；政权、领属、资源、冲突和人物字段据可核史实整理，带 sourceRefs。",
+  "generatedAt": "2026-05-17T12:47:16.865Z",
+  "width": 1200,
+  "height": 720,
+  "landRegionCount": 43,
+  "oceanRegionCount": 8,
+  "unboundLandRegions": [],
+  "notes": [
+    "海域地块进入 MING_MAP_OCEANS，不进入可选中 MING_MAP_REGIONS。",
+    "陆地地块优先绑定天启官方剧本 adminHierarchy；官方剧本未覆盖的域外/羁縻地块由历史补丁补齐。",
+    "输出仅供 Phase 8 预览页使用，正式游戏 UI 未改动。"
+  ],
+  "files": {
+    "previewData": "tianqi-ming2.preview-data.js",
+    "gameMap": "tianqi-ming2.game-map.json",
+    "adminHierarchy": "tianqi-ming2.admin-hierarchy.json",
+    "scenarioFragment": "tianqi-ming2.scenario-fragment.json",
+    "historicalSupplement": "tianqi-ming2.historical-supplement.json"
+  }
+}

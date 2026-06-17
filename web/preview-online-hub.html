@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>联网中枢 · 御案重制 预览</title>
+<style>
+:root{
+  --gold:#d8b56a; --gold-bright:#f3da92; --gold-deep:#a9762e;
+  --ink:#ece1cd; --ink-dim:rgba(236,225,205,.74); --ink-faint:rgba(236,225,205,.55);
+  --cinnabar1:#c1503b; --cinnabar2:#7f241d;
+  --bg0:#0b0704; --panel-edge:rgba(214,177,93,.26);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;}
+body{
+  font-family:var(--sans); color:var(--ink);
+  background:
+    radial-gradient(1200px 600px at 18% -8%,rgba(174,41,33,.20),transparent 42%),
+    radial-gradient(900px 500px at 100% 110%,rgba(120,30,22,.16),transparent 46%),
+    #050302;
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  padding:22px 14px 60px; min-height:100%;
+}
+/* ===== 预览控制条（不属于模态本身） ===== */
+.demo-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink-dim);
+  background:rgba(0,0,0,.4);border:1px solid var(--panel-edge);padding:8px 12px;}
+.demo-bar b{color:var(--gold-bright);font-family:var(--serif);}
+.demo-bar button{font:inherit;color:var(--ink);background:rgba(0,0,0,.3);border:1px solid var(--panel-edge);
+  padding:5px 10px;cursor:pointer;min-height:30px;}
+.demo-bar button:hover{border-color:var(--gold);}
+.demo-bar button.on{background:linear-gradient(180deg,var(--cinnabar1),var(--cinnabar2));border-color:var(--gold);color:#fff1c2;}
+
+/* ===== 御案外壳 ===== */
+.hub{
+  width:min(1060px,96vw); height:min(780px,86vh);
+  position:relative; display:grid; grid-template-rows:auto auto 1fr;
+  background:
+    linear-gradient(180deg,rgba(40,24,16,.99),rgba(12,8,5,.99));
+  border:1px solid rgba(214,177,93,.6);
+  box-shadow:0 30px 90px rgba(0,0,0,.7),
+             inset 0 0 0 1px rgba(255,238,184,.06),
+             inset 0 0 60px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+/* 双线描金内框 + 四角回纹印记 */
+.hub::before{content:"";position:absolute;inset:7px;border:1px solid rgba(214,177,93,.22);pointer-events:none;z-index:5;}
+.corner{position:absolute;width:20px;height:20px;z-index:6;pointer-events:none;opacity:.8;}
+.corner::before,.corner::after{content:"";position:absolute;background:linear-gradient(90deg,var(--gold-bright),var(--gold-deep));}
+.corner::before{width:20px;height:2px;}
+.corner::after{width:2px;height:20px;}
+.corner.tl{top:3px;left:3px;} .corner.tr{top:3px;right:3px;}
+.corner.tr::before{right:0;} .corner.tr::after{right:0;}
+.corner.bl{bottom:3px;left:3px;} .corner.bl::before{bottom:0;} .corner.bl::after{bottom:0;}
+.corner.br{bottom:3px;right:3px;} .corner.br::before{right:0;bottom:0;} .corner.br::after{right:0;bottom:0;}
+
+/* 抬头 */
+.hub-head{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;
+  padding:16px 20px 14px;border-bottom:1px solid rgba(214,177,93,.3);
+  background:linear-gradient(90deg,rgba(120,32,22,.34),rgba(0,0,0,.05));}
+.seal{width:46px;height:46px;border-radius:6px;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 36%,#c4503b,#7c1d15);
+  border:1px solid rgba(255,225,180,.45);
+  box-shadow:inset 0 0 10px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.5);
+  color:#ffe6c0;font-family:var(--serif);font-weight:700;font-size:22px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.hub-title{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:2px;color:var(--gold-bright);}
+.hub-sub{margin-top:3px;font-size:11.5px;color:var(--ink-dim);letter-spacing:.3px;}
+.x-btn{min-height:38px;min-width:64px;padding:0 14px;font:inherit;color:var(--ink);cursor:pointer;
+  background:rgba(0,0,0,.25);border:1px solid var(--panel-edge);transition:border-color .2s var(--ease),background .2s var(--ease);}
+.x-btn:hover{border-color:var(--gold);background:rgba(214,177,93,.1);}
+
+/* 书签式标签 */
+.tabs{display:flex;gap:4px;padding:12px 18px 0;background:rgba(0,0,0,.18);}
+.tab{position:relative;min-height:44px;padding:11px 20px 13px;font-family:var(--serif);font-size:15px;letter-spacing:1px;
+  color:var(--ink-dim);cursor:pointer;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.32));
+  border:1px solid rgba(214,177,93,.22);border-bottom:none;transition:color .2s var(--ease),background .2s var(--ease);}
+.tab:hover{color:var(--gold-bright);}
+.tab:focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px;}
+.tab.on{color:#ffe7ab;background:linear-gradient(180deg,rgba(150,42,30,.6),rgba(70,22,16,.5));border-color:rgba(214,177,93,.6);}
+.tab.on::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold-bright),transparent);box-shadow:0 0 8px rgba(243,218,146,.7);}
+
+/* 正文滚动区 */
+.body{min-height:0;overflow-y:auto;overflow-x:hidden;padding:16px 18px 22px;
+  scrollbar-width:thin;scrollbar-color:rgba(214,177,93,.4) transparent;}
+.body::-webkit-scrollbar{width:10px;}
+.body::-webkit-scrollbar-thumb{background:rgba(214,177,93,.32);border:2px solid transparent;background-clip:padding-box;border-radius:6px;}
+.grid2{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(280px,.92fr);gap:14px;}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+
+/* 案牍面板（折子）*/
+.panel{position:relative;border:1px solid var(--panel-edge);padding:15px 16px 16px;min-width:0;
+  background:
+    linear-gradient(180deg,rgba(255,244,210,.05),rgba(0,0,0,.16)),
+    repeating-linear-gradient(135deg,rgba(255,240,200,.012) 0 2px,transparent 2px 5px);
+  box-shadow:inset 0 1px 0 rgba(255,238,184,.06),inset 0 0 26px rgba(0,0,0,.28);}
+.panel.mt{margin-top:14px;}
+.ph{display:flex;align-items:center;gap:9px;margin:0 0 11px;}
+.ph .bar{width:4px;height:17px;background:linear-gradient(180deg,var(--gold-bright),var(--gold-deep));box-shadow:0 0 7px rgba(214,177,93,.5);}
+.ph h4{margin:0;font-family:var(--serif);font-size:16px;font-weight:700;letter-spacing:1px;color:var(--gold-bright);}
+.ph .right{margin-left:auto;}
+.copy{font-size:12.5px;line-height:1.7;color:var(--ink-dim);}
+
+/* 表单 */
+.field{display:grid;gap:6px;margin-top:11px;}
+.field label{font-size:12px;color:rgba(214,177,93,.94);display:flex;align-items:center;gap:7px;}
+.step{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(214,177,93,.6);
+  background:rgba(214,177,93,.12);color:var(--gold-bright);font-size:11px;font-weight:700;}
+.input{min-height:44px;width:100%;border:1px solid rgba(214,177,93,.3);background:rgba(0,0,0,.3);color:#f6edda;
+  padding:10px 12px;font:inherit;outline:none;transition:border-color .2s var(--ease),box-shadow .2s var(--ease);}
+.input::placeholder{color:rgba(236,225,205,.42);}
+.input:focus{border-color:rgba(214,177,93,.85);box-shadow:0 0 0 2px rgba(214,177,93,.2);}
+
+/* 按钮 */
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;}
+.btn{position:relative;min-height:44px;padding:11px 16px;font:inherit;color:var(--ink);cursor:pointer;
+  background:rgba(0,0,0,.2);border:1px solid rgba(214,177,93,.34);
+  transition:transform .18s var(--ease),background .2s var(--ease),border-color .2s var(--ease);}
+.btn:hover{background:rgba(214,177,93,.1);border-color:var(--gold);}
+.btn:active{transform:translateY(1px) scale(.985);}
+.btn:focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px;}
+.btn.primary{color:#fff2c8;border-color:var(--gold);
+  background:linear-gradient(180deg,var(--cinnabar1),var(--cinnabar2));
+  box-shadow:0 0 0 1px rgba(255,235,180,.15),0 6px 18px rgba(150,40,28,.4);}
+.btn.primary::before{content:"";position:absolute;inset:-6px;z-index:-1;border-radius:8px;
+  background:radial-gradient(closest-side,rgba(214,120,80,.5),transparent);opacity:.7;filter:blur(6px);}
+.btn.danger{color:#ffd9ce;border-color:rgba(231,105,82,.5);background:rgba(119,29,23,.6);}
+.btn .spin{display:inline-block;width:13px;height:13px;margin-right:7px;vertical-align:-2px;border-radius:50%;
+  border:2px solid rgba(255,241,200,.35);border-top-color:#fff1c8;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.btn[disabled]{opacity:.6;cursor:progress;}
+
+/* 状态条 */
+.status{margin-top:13px;border-left:3px solid rgba(214,177,93,.7);background:rgba(214,177,93,.08);
+  padding:9px 12px;font-size:12.5px;line-height:1.6;color:#ecd6a0;}
+.status.warn{border-left-color:#d66e4d;background:rgba(173,45,30,.16);color:#ffd6c7;}
+
+/* KV */
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.kv>div{border:1px solid rgba(214,177,93,.2);background:rgba(0,0,0,.2);padding:9px 11px;}
+.kv small{display:block;color:var(--ink-faint);font-size:11px;margin-bottom:3px;}
+.kv b{color:#f2d487;font-size:13px;font-variant-numeric:tabular-nums;}
+
+/* feature 卡 */
+.feat{border:1px solid rgba(214,177,93,.22);background:rgba(0,0,0,.2);padding:11px;
+  box-shadow:inset 0 0 18px rgba(0,0,0,.25);}
+.feat-h{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.dot{width:9px;height:9px;border-radius:50%;background:#7c5a2a;}
+.dot.on{background:#6fcf97;box-shadow:0 0 8px rgba(111,207,151,.75);}
+.feat-h b{font-size:13px;color:#f2d487;}
+.pill{margin-left:auto;display:inline-flex;align-items:center;min-height:22px;padding:0 9px;font-size:11px;
+  border:1px solid rgba(99,186,132,.5);background:rgba(50,128,79,.16);color:#bfe7c8;}
+
+/* 工坊卡 */
+.pack{display:grid;grid-template-columns:64px 1fr auto;gap:13px;align-items:start;
+  border:1px solid rgba(214,177,93,.22);padding:13px;margin-top:11px;
+  background:linear-gradient(100deg,rgba(58,28,18,.6),rgba(12,8,6,.75));
+  transition:transform .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease);}
+.pack:hover{transform:translateY(-2px);border-color:rgba(214,177,93,.5);box-shadow:0 8px 22px rgba(0,0,0,.4);}
+.pack-cover{width:64px;height:64px;display:grid;place-items:center;font-family:var(--serif);font-size:26px;
+  color:#f0d58a;border:1px solid rgba(214,177,93,.4);
+  background:radial-gradient(circle at 50% 34%,rgba(150,42,30,.5),rgba(8,6,4,.9));
+  box-shadow:inset 0 0 12px rgba(0,0,0,.55);}
+.pack-title{font-family:var(--serif);font-size:15px;font-weight:700;color:#f4d89a;letter-spacing:.5px;}
+.pack-meta{font-size:11.5px;color:var(--ink-dim);margin-top:4px;font-variant-numeric:tabular-nums;}
+.pack-meta a{color:var(--gold);text-decoration:underline;cursor:pointer;}
+.stars{color:#e8c46a;font-size:13px;letter-spacing:1px;margin-top:5px;}
+.stars span{color:var(--ink-dim);font-size:11.5px;margin-left:6px;letter-spacing:0;}
+.pack-desc{font-size:12px;line-height:1.6;color:var(--ink-dim);margin-top:6px;}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.tag{display:inline-flex;align-items:center;min-height:21px;padding:0 8px;font-size:11px;
+  border:1px solid rgba(214,177,93,.3);background:rgba(214,177,93,.09);color:rgba(240,213,138,.92);}
+
+/* 骨架屏 */
+.sk{position:relative;overflow:hidden;background:rgba(255,255,255,.05);}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(214,177,93,.14),transparent);animation:shim 1.25s var(--ease) infinite;}
+@keyframes shim{100%{transform:translateX(100%);}}
+.sk-line{height:11px;border-radius:2px;margin-top:9px;}
+
+/* 空态 */
+.empty{display:grid;place-items:center;gap:10px;padding:30px 16px;border:1px dashed rgba(214,177,93,.3);
+  text-align:center;color:var(--ink-dim);margin-top:12px;}
+.empty .glyph{width:54px;height:54px;display:grid;place-items:center;font-family:var(--serif);font-size:26px;color:#caa45e;
+  border:1px solid rgba(214,177,93,.35);border-radius:50%;background:rgba(0,0,0,.25);}
+.empty .t{font-family:var(--serif);font-size:15px;color:#e7cf8e;}
+.empty .d{font-size:12px;}
+
+/* 登录主区 / 次区 */
+.loginbox{margin-top:12px;border:1px solid rgba(214,177,93,.34);border-left:3px solid rgba(214,177,93,.85);
+  padding:12px 14px 14px;background:linear-gradient(180deg,rgba(255,244,200,.06),rgba(0,0,0,.18));}
+.loginbox-h{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-size:15px;font-weight:700;color:#f2d487;}
+.subform{margin-top:12px;border:1px dashed rgba(214,177,93,.28);background:rgba(0,0,0,.16);padding:10px 13px 13px;}
+.subform-head{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--ink-dim);min-height:36px;}
+.subform-head .caret{margin-left:auto;color:var(--gold);transition:transform .2s var(--ease);}
+.subform.collapsed .subform-head .caret{transform:rotate(-90deg);}
+.subform.collapsed .subform-body{display:none;}
+.pw{position:relative;}
+.pw .input{padding-right:64px;}
+.pw-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);min-height:32px;padding:0 10px;font:inherit;
+  color:rgba(240,213,138,.92);background:rgba(0,0,0,.35);border:1px solid rgba(214,177,93,.32);cursor:pointer;}
+
+/* 身份牌 */
+.acct{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:14px;
+  border:1px solid rgba(214,177,93,.34);background:linear-gradient(120deg,rgba(157,39,28,.3),rgba(255,244,200,.05) 72%);}
+.acct-seal{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;
+  border:2px solid rgba(214,177,93,.72);font-family:var(--serif);font-size:30px;font-weight:700;color:#ffe6ad;
+  background:radial-gradient(circle at 50% 36%,rgba(190,72,54,.65),rgba(8,6,4,.94));
+  box-shadow:inset 0 0 12px rgba(0,0,0,.55),0 0 0 1px rgba(255,238,184,.18);text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.acct-name{font-family:var(--serif);font-size:20px;font-weight:700;color:#f7e7b8;}
+.acct-sub{margin-top:4px;font-size:12.5px;color:var(--ink-dim);}
+.badge{display:inline-flex;align-items:center;min-height:21px;padding:0 8px;margin-top:7px;font-size:11px;
+  border:1px solid rgba(99,186,132,.5);background:rgba(50,128,79,.16);color:#bfe7c8;}
+.or{display:flex;align-items:center;gap:10px;margin:14px 0 2px;color:var(--ink-faint);font-size:11.5px;}
+.or::before,.or::after{content:"";flex:1;height:1px;background:rgba(214,177,93,.22);}
+
+.hidden{display:none;}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+@media (max-width:880px){.grid2,.grid3{grid-template-columns:1fr;}.pack{grid-template-columns:48px 1fr;}}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <b>预览 · 联网中枢御案重制</b>
+  <span>切换页签：</span>
+  <button data-tab="online" class="on">联网总览</button>
+  <button data-tab="update">游戏更新</button>
+  <button data-tab="workshop">创意工坊</button>
+  <button data-tab="account">账号</button>
+  <span style="margin-left:10px;">账号态：</span>
+  <button id="loginToggle">未登录</button>
+  <span style="margin-left:10px;">工坊态：</span>
+  <button id="wsState">已载入</button>
+</div>
+
+<div class="hub" role="dialog" aria-label="天命联网中枢">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+  <div class="hub-head">
+    <div class="seal">命</div>
+    <div>
+      <div class="hub-title">天命 · 联网中枢</div>
+      <div class="hub-sub">热更 · 在线工坊 · 账号身份；服务器不可用时，本地开局、读档与离线游玩照常。</div>
+    </div>
+    <button class="x-btn" aria-label="关闭">关闭</button>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <div class="tab on" data-tab="online" role="tab" tabindex="0">联网总览</div>
+    <div class="tab" data-tab="update" role="tab" tabindex="0">游戏更新</div>
+    <div class="tab" data-tab="workshop" role="tab" tabindex="0">创意工坊</div>
+    <div class="tab" data-tab="account" role="tab" tabindex="0">账号</div>
+  </div>
+
+  <div class="body">
+
+    <!-- ===== 联网总览 ===== -->
+    <section data-pane="online">
+      <div class="grid2">
+        <div class="panel">
+          <div class="ph"><span class="bar"></span><h4>联网总览</h4></div>
+          <div class="copy">游戏内的联网中枢。前端热更、在线创意工坊与账号身份都从这里接入；网络不可用时，不影响本地开局、读档与离线游玩。</div>
+          <div class="field"><label for="o1">在线服务地址</label><input id="o1" class="input" value="https://api.themisfitserspeople.top/tianming-api/"></div>
+          <div class="actions"><button class="btn primary">检查在线服务</button></div>
+          <div class="status">在线服务连接成功。接口版本 0.5.0。</div>
+          <div class="grid3" style="margin-top:13px;">
+            <div class="feat"><div class="feat-h"><span class="dot on"></span><b>前端热更</b><span class="pill">可用</span></div><div class="copy">无安装包更新 UI、剧本、地图、立绘与音乐等前端资源。</div></div>
+            <div class="feat"><div class="feat-h"><span class="dot on"></span><b>在线工坊</b><span class="pill">可用</span></div><div class="copy">从官方目录浏览、安装玩家内容包，并保留本地导入。</div></div>
+            <div class="feat"><div class="feat-h"><span class="dot on"></span><b>账号身份</b><span class="pill">可用</span></div><div class="copy">作者身份、评分、订阅与跨设备同步；不阻挡离线游戏。</div></div>
+          </div>
+        </div>
+        <aside class="panel">
+          <div class="ph"><span class="bar"></span><h4>服务账本</h4></div>
+          <div class="kv">
+            <div><small>服务</small><b>tianming-online</b></div>
+            <div><small>接口版本</small><b>0.5.0</b></div>
+            <div><small>服务器时间</small><b>06-04 11:20</b></div>
+            <div><small>离线策略</small><b>可离线运行</b></div>
+          </div>
+          <div class="status">服务正常时进入工坊或账号页；服务不可用时当前局与本地内容照常，不会被锁死。</div>
+          <div class="actions">
+            <button class="btn primary" data-goto="workshop">进入创意工坊</button>
+            <button class="btn" data-goto="account">账号登录</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===== 游戏更新（网页路） ===== -->
+    <section data-pane="update" class="hidden">
+      <div class="grid2">
+        <div class="panel">
+          <div class="ph"><span class="bar"></span><h4>游戏更新</h4></div>
+          <div class="copy">网页版始终运行服务器上的最新在线版本，<b style="color:#f2d487;">无需手动更新</b>。前端热更与安装包更新是桌面客户端专属功能。</div>
+          <div class="status">想要离线游玩、自动热更与本地落盘装包，可下载桌面客户端；网页版与桌面版共用同一套在线工坊与账号体系。</div>
+          <div class="actions"><button class="btn primary" data-goto="workshop">进入创意工坊</button><button class="btn" data-goto="account">账号登录</button></div>
+        </div>
+        <aside class="panel">
+          <div class="ph"><span class="bar"></span><h4>版本信息</h4></div>
+          <div class="kv">
+            <div><small>运行模式</small><b>网页在线版</b></div>
+            <div><small>更新方式</small><b>随服务器最新</b></div>
+            <div><small>在线服务</small><b>0.5.0</b></div>
+            <div><small>离线策略</small><b>可离线运行</b></div>
+          </div>
+          <div class="status">公告与版本说明见「联网总览」与游戏内邸报。</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ===== 创意工坊 ===== -->
+    <section data-pane="workshop" class="hidden">
+      <div class="grid2">
+        <div class="panel">
+          <div class="ph"><span class="bar"></span><h4>已装工坊剧本</h4></div>
+          <div class="copy">从在线工坊安装的剧本（存于本机，开局前并入剧本列表）。作者发新版后可一键更新。</div>
+          <div class="actions"><button class="btn primary">检查更新</button></div>
+          <!-- 空态示例 -->
+          <div class="empty">
+            <div class="glyph">卷</div>
+            <div class="t">尚未安装工坊剧本</div>
+            <div class="d">从右侧在线目录挑一个，点「在线安装」即可。</div>
+          </div>
+        </div>
+        <section class="panel">
+          <div class="ph"><span class="bar"></span><h4>在线工坊目录</h4><span class="right" id="wsTag" style="font-size:11px;color:var(--ink-faint);">共 3 个</span></div>
+          <div class="field"><label for="w1">搜索</label><input id="w1" class="input" placeholder="标题 / 作者 / 标签关键词"></div>
+          <div class="actions" style="margin-top:10px;"><button class="btn primary">刷新 / 搜索</button></div>
+
+          <div id="wsList">
+            <div class="pack">
+              <div class="pack-cover">启</div>
+              <div>
+                <div class="pack-title">天启七年·九月——君王初立，权阉当国</div>
+                <div class="pack-meta">v1.2.0 · 作者 <a>天命官方</a> · 下载 1287</div>
+                <div class="stars">★★★★★<span>4.7 · 53 评</span></div>
+                <div class="pack-desc">天启七年九月，十七岁的信王入继大统，魏忠贤权倾朝野。新君初立，如何在阉党环伺中收回权柄？</div>
+                <div class="tags"><span class="tag">明末</span><span class="tag">官方</span><span class="tag">权谋</span></div>
+              </div>
+              <div><button class="btn primary">在线安装</button></div>
+            </div>
+            <div class="pack">
+              <div class="pack-cover">宋</div>
+              <div>
+                <div class="pack-title">绍宋·建炎元年八月——亳州明道宫，九龙井醒</div>
+                <div class="pack-meta">v1.1.0 · 作者 <a>天命官方</a> · 下载 842</div>
+                <div class="stars">★★★★★<span>4.6 · 31 评</span></div>
+                <div class="pack-desc">建炎元年，二帝北狩，康王构于乱世中重建宋祚。九龙井畔一梦醒来，山河待整。</div>
+                <div class="tags"><span class="tag">南宋</span><span class="tag">官方</span><span class="tag">中兴</span></div>
+              </div>
+              <div><button class="btn primary">在线安装</button></div>
+            </div>
+          </div>
+
+          <!-- 骨架屏示例 -->
+          <div id="wsSkeleton" class="hidden">
+            <div class="pack">
+              <div class="pack-cover sk" style="border:none;"></div>
+              <div style="width:100%;">
+                <div class="sk sk-line" style="width:70%;height:15px;"></div>
+                <div class="sk sk-line" style="width:40%;"></div>
+                <div class="sk sk-line" style="width:90%;"></div>
+                <div class="sk sk-line" style="width:55%;"></div>
+              </div>
+              <div><div class="sk" style="width:84px;height:44px;"></div></div>
+            </div>
+            <div class="pack">
+              <div class="pack-cover sk" style="border:none;"></div>
+              <div style="width:100%;">
+                <div class="sk sk-line" style="width:60%;height:15px;"></div>
+                <div class="sk sk-line" style="width:45%;"></div>
+                <div class="sk sk-line" style="width:88%;"></div>
+              </div>
+              <div><div class="sk" style="width:84px;height:44px;"></div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <section class="panel mt">
+        <div class="ph"><span class="bar"></span><h4>发布到在线工坊</h4></div>
+        <div class="copy">从你的剧本库选一个剧本上传到工坊（纯文本剧本）。经审核通过后，其他玩家即可浏览并安装。带立绘 / 音频的大包请用桌面版发布。</div>
+        <div class="actions"><button class="btn primary">登录后发布</button></div>
+      </section>
+    </section>
+
+    <!-- ===== 账号 ===== -->
+    <section data-pane="account" class="hidden">
+      <div class="grid2">
+        <!-- 登出态 -->
+        <div class="panel" id="accOut">
+          <div class="ph"><span class="bar"></span><h4>账号登录</h4></div>
+          <div class="copy">账号用于工坊作者身份、评分、订阅与跨设备同步。离线开局、读档与本地工坊始终不受影响。</div>
+          <div class="loginbox">
+            <div class="loginbox-h"><span class="dot on"></span>邮箱验证码登录<span class="tag" style="margin-left:auto;">推荐 · 免密</span></div>
+            <div class="field"><label for="e1"><span class="step">1</span> 邮箱（新邮箱自动注册）</label><input id="e1" class="input" type="email" placeholder="输入邮箱，点发送验证码"></div>
+            <div class="field"><label for="e2"><span class="step">2</span> 验证码</label><input id="e2" class="input" inputmode="numeric" maxlength="6" placeholder="邮件里的 6 位验证码"></div>
+            <div class="actions"><button class="btn primary" id="sendCode">发送验证码</button><button class="btn">登录</button></div>
+          </div>
+          <div class="subform collapsed" id="sub">
+            <div class="subform-head" id="subHead" role="button" tabindex="0" aria-expanded="false"><span>或：账号密码登录 / 注册</span><span class="caret">▾</span></div>
+            <div class="subform-body">
+              <div class="field"><label for="a1">账号</label><input id="a1" class="input" autocomplete="username" placeholder="3-24 位中文/英文/数字/下划线"></div>
+              <div class="field"><label for="a2">密码</label><div class="pw"><input id="a2" class="input" type="password" autocomplete="current-password" placeholder="至少 8 位"><button type="button" class="pw-toggle" id="pwT">显示</button></div></div>
+              <div class="actions"><button class="btn primary">登录</button><button class="btn">注册并登录</button></div>
+            </div>
+          </div>
+          <div class="status">尚未登录。</div>
+        </div>
+
+        <!-- 登入态 -->
+        <div class="panel hidden" id="accIn">
+          <div class="ph"><span class="bar"></span><h4>账号</h4></div>
+          <div class="acct">
+            <div class="acct-seal">同</div>
+            <div>
+              <div class="acct-name">同志</div>
+              <div class="acct-sub">@roman · roman@qq.com</div>
+              <span class="badge">● 已登录</span>
+            </div>
+          </div>
+          <div class="actions"><button class="btn primary">刷新身份</button><button class="btn danger">退出登录</button></div>
+          <div class="status">账号已连接，可在创意工坊以作者身份发布、评分。</div>
+        </div>
+
+        <aside class="panel">
+          <div class="ph"><span class="bar"></span><h4>账号权限</h4></div>
+          <div class="kv" id="accKv">
+            <div><small>工坊作者</small><b>未登录</b></div>
+            <div><small>注册时间</small><b>未登录</b></div>
+            <div><small>最近登录</small><b>未登录</b></div>
+            <div><small>找回邮箱</small><b>未登录</b></div>
+          </div>
+          <div class="status">账号是增强功能，不是启动门槛。设置找回邮箱后，忘记密码也能找回；云存档与跨设备同步将基于此账号。</div>
+        </aside>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  function showTab(t){
+    document.querySelectorAll('[data-pane]').forEach(p=>p.classList.toggle('hidden',p.dataset.pane!==t));
+    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+    document.querySelectorAll('.demo-bar [data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  }
+  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+  document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.goto)));
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showTab(b.dataset.tab);}}));
+
+  // 登录态切换
+  let logged=false;
+  document.getElementById('loginToggle').addEventListener('click',e=>{
+    logged=!logged; e.target.textContent=logged?'已登录':'未登录'; e.target.classList.toggle('on',logged);
+    document.getElementById('accOut').classList.toggle('hidden',logged);
+    document.getElementById('accIn').classList.toggle('hidden',!logged);
+    document.getElementById('accKv').innerHTML = logged
+      ? '<div><small>工坊作者</small><b>同志</b></div><div><small>注册时间</small><b>2026-05-01</b></div><div><small>最近登录</small><b>2026-06-04</b></div><div><small>找回邮箱</small><b>roman@qq.com</b></div>'
+      : '<div><small>工坊作者</small><b>未登录</b></div><div><small>注册时间</small><b>未登录</b></div><div><small>最近登录</small><b>未登录</b></div><div><small>找回邮箱</small><b>未登录</b></div>';
+  });
+
+  // 工坊态切换：已载入 / 加载中（骨架屏） / 空
+  let ws=0;
+  document.getElementById('wsState').addEventListener('click',e=>{
+    ws=(ws+1)%3;
+    const list=document.getElementById('wsList'), sk=document.getElementById('wsSkeleton'), tag=document.getElementById('wsTag');
+    if(ws===0){e.target.textContent='已载入';list.classList.remove('hidden');sk.classList.add('hidden');tag.textContent='共 3 个';}
+    if(ws===1){e.target.textContent='加载中';list.classList.add('hidden');sk.classList.remove('hidden');tag.textContent='载入中…';}
+    if(ws===2){e.target.textContent='空目录';list.classList.add('hidden');sk.classList.add('hidden');tag.textContent='共 0 个';
+      if(!document.getElementById('wsEmpty')){const d=document.createElement('div');d.id='wsEmpty';d.className='empty';
+        d.innerHTML='<div class="glyph">坊</div><div class="t">在线目录暂无内容</div><div class="d">检查服务后，可从官方目录安装工坊包。</div>';
+        sk.parentNode.appendChild(d);} document.getElementById('wsEmpty').classList.remove('hidden');}
+    else if(document.getElementById('wsEmpty')) document.getElementById('wsEmpty').classList.add('hidden');
+    showTab('workshop');
+  });
+
+  // 折叠
+  const sub=document.getElementById('sub'), subHead=document.getElementById('subHead');
+  function tog(){const c=sub.classList.toggle('collapsed');subHead.setAttribute('aria-expanded',String(!c));}
+  subHead.addEventListener('click',tog);
+  subHead.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();}});
+
+  // 密码显隐
+  document.getElementById('pwT').addEventListener('click',()=>{const i=document.getElementById('a2');const s=i.type==='password';i.type=s?'text':'password';document.getElementById('pwT').textContent=s?'隐藏':'显示';});
+
+  // 按钮异步态演示（发送验证码 → 转圈 → 状态）
+  document.getElementById('sendCode').addEventListener('click',e=>{
+    const b=e.target;if(b.disabled)return;const t=b.textContent;b.disabled=true;b.innerHTML='<span class="spin"></span>发送中…';
+    setTimeout(()=>{b.disabled=false;b.textContent=t;b.closest('.panel').querySelector('.status').textContent='验证码已发送，请查收邮件（5 分钟内有效）。';},1400);
+  });
+</script>
+</body>
+</html>

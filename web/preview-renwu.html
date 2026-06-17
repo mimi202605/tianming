@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>人物志标签页·美化预览</title>
+<style>
+:root {
+  --bg-1: #0f0d0a; --bg-2: #1a1510; --bg-paper: #241e18; --bg-sunken: #120f0a;
+  --ink-900: #f4eadd; --ink-700: #d9c9a9; --ink-500: #a69470; --ink-300: #6b5d47; --ink-100: #3d342a;
+  --gold-300: #c9a85f; --gold-400: #b89a53; --gold-500: #9d8244; --gold-d: #6b5a30;
+  --vermillion-300: #d15c47; --vermillion-400: #b84738; --vermillion-600: #8f3428;
+  --indigo-400: #5a6fa8; --indigo-600: #3e4e80;
+  --celadon-400: #6a9a7f; --celadon-600: #4a7a5f;
+  --amber-400: #c9a045; --amber-600: #8f6f28;
+  --purple-400: #8e6aa8; --purple-600: #5f3a7a;
+  --blue-400: #5a8fb8;
+  --border-subtle: rgba(184,154,83,0.15); --border-strong: rgba(184,154,83,0.35);
+  --shadow-scroll: 0 6px 18px rgba(0,0,0,0.45),0 0 0 1px rgba(184,154,83,0.08);
+  --font-serif: "STKaiti","KaiTi","楷体","Georgia",serif;
+  --font-song: "STSong","SimSun","宋体",serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;padding:0;background:radial-gradient(ellipse at top,#1a1510 0%,#0f0d0a 70%),var(--bg-1);color:var(--ink-700);font-family:var(--font-song);font-size:14px;line-height:1.7;min-height:100vh;}
+.preview-frame{max-width:1420px;margin:32px auto;background:var(--bg-2);border:1px solid var(--border-subtle);border-radius:6px;overflow:hidden;box-shadow:var(--shadow-scroll);}
+.preview-header{background:linear-gradient(to bottom,rgba(184,154,83,0.04),transparent);padding:12px 20px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;gap:12px;font-size:11px;color:var(--ink-500);letter-spacing:0.1em;}
+.preview-header .dot{width:10px;height:10px;border-radius:50%;}
+.preview-header .dot.r{background:#d15c47;} .preview-header .dot.y{background:#c9a85f;} .preview-header .dot.g{background:#6a9a7f;}
+.preview-header .title{margin-left:auto;font-family:var(--font-serif);letter-spacing:0.3em;color:var(--ink-300);}
+.tab-bar{display:flex;gap:0;background:var(--bg-1);border-bottom:1px solid var(--border-subtle);overflow-x:auto;}
+.tab-btn{padding:10px 16px;background:transparent;border:none;color:var(--ink-300);font-family:var(--font-serif);font-size:14px;letter-spacing:0.1em;cursor:pointer;border-bottom:2px solid transparent;position:relative;}
+.tab-btn:hover{color:var(--ink-700);}
+.tab-btn.active{color:var(--gold-400);border-bottom-color:var(--gold-400);}
+.tab-btn.active::before{content:"";position:absolute;top:6px;right:6px;width:5px;height:5px;background:var(--vermillion-400);border-radius:1px;transform:rotate(12deg);}
+
+/* ═══ 人物志主区 ═══ */
+.rw-panel{padding:24px 28px;background-color:var(--bg-paper);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px)),repeating-linear-gradient(0deg,transparent 0,transparent 3em,rgba(107,93,71,0.02) 3em,rgba(107,93,71,0.02) calc(3em + 1px)),linear-gradient(to bottom,rgba(184,154,83,0.05) 0%,transparent 80px);position:relative;min-height:900px;}
+.rw-panel::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,rgba(139,90,50,0.025) 0.5px,transparent 1px),radial-gradient(circle at 80% 60%,rgba(139,90,50,0.03) 0.5px,transparent 1px);background-size:80px 80px,120px 120px;}
+.rw-inner{position:relative;z-index:1;}
+.rw-title{text-align:center;margin-bottom:20px;position:relative;padding:14px 0 18px;}
+.rw-title::before,.rw-title::after{content:"";position:absolute;left:50%;width:180px;height:1px;transform:translateX(-50%);background:linear-gradient(to right,transparent,var(--gold-d),transparent);}
+.rw-title::before{top:0;} .rw-title::after{bottom:0;}
+.rw-title .main{font-family:var(--font-serif);font-size:24px;letter-spacing:0.5em;color:var(--ink-900);margin-bottom:6px;}
+.rw-title .sub{font-size:12px;color:var(--ink-300);letter-spacing:0.3em;font-family:var(--font-serif);font-style:italic;}
+.rw-title .seal{position:absolute;right:28px;top:10px;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.85),rgba(140,40,30,0.75));display:flex;align-items:center;justify-content:center;color:#f4eadd;font-size:11px;font-family:var(--font-serif);letter-spacing:0.05em;font-weight:bold;transform:rotate(-6deg);box-shadow:0 2px 6px rgba(140,40,30,0.4);opacity:0.88;line-height:1.2;text-align:center;}
+
+/* 统计栏 */
+.rw-statbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+.rw-stat-card{padding:10px 14px;background:var(--bg-paper);border:1px solid var(--border-subtle);border-left:3px solid var(--sc-c,var(--gold-d));border-radius:3px;background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.025) 2.5em,rgba(107,93,71,0.025) calc(2.5em + 1px));}
+.rw-stat-card.s-all{--sc-c:var(--gold-400);}
+.rw-stat-card.s-civil{--sc-c:var(--celadon-400);}
+.rw-stat-card.s-mili{--sc-c:var(--vermillion-400);}
+.rw-stat-card.s-harem{--sc-c:var(--vermillion-300);}
+.rw-stat-card.s-bu{--sc-c:var(--ink-500);}
+.rw-stat-card.s-dead{--sc-c:var(--vermillion-600);}
+.rw-stat-lbl{font-family:var(--font-serif);font-size:10.5px;color:var(--ink-500);letter-spacing:0.25em;margin-bottom:4px;}
+.rw-stat-num{font-family:var(--font-serif);font-size:22px;color:var(--sc-c);letter-spacing:0.05em;font-weight:700;line-height:1;}
+.rw-stat-sub{font-size:10.5px;color:var(--ink-300);margin-top:3px;font-style:italic;}
+
+/* 工具栏 */
+.rw-tools{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(184,154,83,0.04);border:1px solid var(--border-subtle);border-radius:2px;margin-bottom:12px;flex-wrap:wrap;}
+.rw-tools-lbl{font-family:var(--font-serif);font-size:12px;color:var(--ink-500);letter-spacing:0.2em;padding-right:6px;border-right:1px solid var(--border-subtle);flex-shrink:0;}
+.rw-view-switch{display:inline-flex;border:1px solid var(--border-subtle);border-radius:2px;overflow:hidden;}
+.rw-view-btn{padding:4px 12px;background:transparent;border:none;color:var(--ink-500);font-family:var(--font-serif);font-size:12px;letter-spacing:0.12em;cursor:pointer;border-right:1px solid var(--border-subtle);}
+.rw-view-btn:last-child{border-right:none;}
+.rw-view-btn.active{background:linear-gradient(to bottom,rgba(184,154,83,0.15),rgba(184,154,83,0.05));color:var(--gold-400);}
+.rw-view-btn:hover{color:var(--gold-400);}
+.rw-search-wrap{position:relative;flex:1;min-width:180px;max-width:260px;}
+.rw-search-wrap::before{content:"⌕";position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink-300);font-size:14px;pointer-events:none;}
+.rw-search{width:100%;padding:5px 12px 5px 28px;background:var(--bg-1);border:1px solid var(--border-subtle);color:var(--ink-700);font-family:var(--font-song);font-size:12px;border-radius:2px;outline:none;}
+.rw-filter{padding:5px 12px;background:var(--bg-1);border:1px solid var(--border-subtle);color:var(--ink-700);font-family:var(--font-serif);font-size:12px;letter-spacing:0.1em;border-radius:2px;cursor:pointer;}
+.rw-chk{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-500);font-family:var(--font-serif);letter-spacing:0.1em;cursor:pointer;}
+.rw-chk input{accent-color:var(--gold-400);}
+
+/* 派系图例 */
+.rw-legend{display:flex;gap:6px 10px;padding:8px 14px;margin-bottom:14px;background:rgba(184,154,83,0.02);border:1px solid var(--border-subtle);border-radius:2px;font-size:11px;flex-wrap:wrap;align-items:center;}
+.rw-legend-lbl{font-family:var(--font-serif);font-size:11px;color:var(--ink-500);letter-spacing:0.2em;margin-right:4px;padding-right:6px;border-right:1px solid var(--border-subtle);}
+.rw-legend-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:2px;font-family:var(--font-serif);letter-spacing:0.08em;font-size:11px;border:1px solid var(--chip-c);color:var(--chip-c);background:rgba(var(--chip-rgb),0.06);}
+.rw-legend-chip.dongin{--chip-c:var(--celadon-400);--chip-rgb:106,154,127;}
+.rw-legend-chip.zhe{--chip-c:var(--indigo-400);--chip-rgb:90,111,168;}
+.rw-legend-chip.yan{--chip-c:var(--purple-400);--chip-rgb:142,106,168;}
+.rw-legend-chip.kun{--chip-c:var(--amber-400);--chip-rgb:201,160,69;}
+.rw-legend-chip.qing{--chip-c:var(--gold-400);--chip-rgb:184,154,83;}
+.rw-legend-chip.bu{--chip-c:var(--ink-500);--chip-rgb:166,148,112;}
+.rw-legend-chip .num{color:var(--chip-c);font-weight:500;font-size:10px;opacity:0.85;}
+
+/* ═══ 人物卡网格 ═══ */
+.rw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+
+.rw-card{
+  position:relative;display:flex;gap:10px;
+  padding:10px 12px 12px 10px;
+  background:var(--bg-paper);
+  background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.03) 2.5em,rgba(107,93,71,0.03) calc(2.5em + 1px));
+  border:1px solid var(--border-subtle);
+  border-left:3px solid var(--fac-c,var(--gold-d));
+  border-radius:3px;
+  cursor:pointer;transition:all 0.25s;
+  overflow:hidden;
+}
+.rw-card:hover{border-color:var(--gold-400);box-shadow:0 3px 12px rgba(184,154,83,0.15),0 0 8px rgba(184,154,83,0.1);transform:translateY(-2px);}
+.rw-card.dead{opacity:0.55;filter:grayscale(70%);}
+.rw-card.dead::after{content:"殁";position:absolute;top:6px;right:10px;font-size:18px;color:var(--vermillion-600);font-family:var(--font-serif);font-weight:bold;opacity:0.8;}
+.rw-card.player{border-color:var(--gold-300);background:linear-gradient(to right,rgba(201,168,95,0.08),var(--bg-paper) 30%);box-shadow:0 0 0 1px rgba(201,168,95,0.2);}
+.rw-card.player::before{content:"朕";position:absolute;top:6px;right:10px;font-size:14px;color:var(--gold-300);font-family:var(--font-serif);font-weight:bold;padding:1px 6px;background:rgba(201,168,95,0.15);border:1px solid var(--gold-300);border-radius:2px;}
+
+/* 派系色（左竖条） */
+.rw-dongin{--fac-c:var(--celadon-400);--fac-rgb:106,154,127;}
+.rw-zhe{--fac-c:var(--indigo-400);--fac-rgb:90,111,168;}
+.rw-yan{--fac-c:var(--purple-400);--fac-rgb:142,106,168;}
+.rw-kun{--fac-c:var(--amber-400);--fac-rgb:201,160,69;}
+.rw-qing{--fac-c:var(--gold-400);--fac-rgb:184,154,83;}
+.rw-bu{--fac-c:var(--ink-500);--fac-rgb:166,148,112;}
+.rw-consort{--fac-c:var(--vermillion-300);--fac-rgb:209,92,71;}
+.rw-mili{--fac-c:var(--vermillion-400);--fac-rgb:184,71,56;}
+
+/* 画像立轴 */
+.rw-portrait-col{flex-shrink:0;width:72px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.rw-portrait{
+  width:72px;height:88px;
+  background:linear-gradient(145deg,var(--fac-c) 0%,rgba(26,20,16,0.6) 100%),radial-gradient(ellipse at 50% 30%,rgba(244,234,221,0.15),transparent 60%);
+  border:1.5px solid var(--fac-c);border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink-900);font-family:var(--font-serif);font-size:32px;font-weight:500;
+  position:relative;box-shadow:0 2px 6px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08);
+  overflow:hidden;
+}
+.rw-portrait img{width:100%;height:100%;object-fit:cover;}
+.rw-portrait::before{content:"";position:absolute;inset:3px;border:0.5px solid rgba(184,154,83,0.25);border-radius:1px;pointer-events:none;}
+.rw-portrait::after{content:"";position:absolute;top:-4px;left:-3px;right:-3px;height:5px;background:linear-gradient(to bottom,#8d7640 0%,#6b5a30 60%,#5a4a28 100%);border:0.5px solid #3d2e18;border-radius:1px;box-shadow:0 1px 0 rgba(0,0,0,0.4);}
+
+/* 忠诚度环 */
+.rw-loy-ring{width:54px;height:54px;position:relative;margin-top:2px;}
+.rw-loy-ring svg{width:100%;height:100%;transform:rotate(-90deg);}
+.rw-loy-ring .bg{stroke:rgba(107,93,71,0.25);}
+.rw-loy-ring .fg{stroke:var(--loy-c,var(--gold-400));stroke-linecap:round;}
+.rw-loy-ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;}
+.rw-loy-ring .val .n{font-family:var(--font-serif);font-size:15px;color:var(--loy-c);font-weight:700;}
+.rw-loy-ring .val .k{font-size:8px;color:var(--ink-300);letter-spacing:0.15em;margin-top:1px;}
+.rw-loy-hi{--loy-c:var(--celadon-400);}
+.rw-loy-mid{--loy-c:var(--gold-400);}
+.rw-loy-lo{--loy-c:var(--vermillion-400);}
+
+/* 右侧信息 */
+.rw-info-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+
+/* 姓名行 */
+.rw-name-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.rw-name{font-family:var(--font-serif);font-size:16px;color:var(--ink-900);letter-spacing:0.14em;font-weight:500;}
+.rw-zi{font-size:10.5px;color:var(--ink-300);font-style:italic;letter-spacing:0.1em;}
+.rw-age{font-size:10px;color:var(--ink-500);padding:0 5px;background:rgba(184,154,83,0.06);border:1px solid var(--border-subtle);border-radius:2px;font-family:var(--font-serif);letter-spacing:0.08em;}
+
+/* 官职行 */
+.rw-office-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:11px;}
+.rw-dept{color:var(--gold-400);font-family:var(--font-serif);letter-spacing:0.08em;}
+.rw-dept::after{content:"·";color:var(--ink-300);margin:0 3px;opacity:0.6;}
+.rw-pos{color:var(--ink-900);font-family:var(--font-serif);font-weight:500;letter-spacing:0.08em;}
+.rw-rank-chip{display:inline-flex;align-items:center;font-size:9.5px;padding:0 5px;background:linear-gradient(to bottom,var(--rank-c,var(--gold-400)),rgba(0,0,0,0.12));color:#1a1410;border-radius:2px;font-family:var(--font-serif);font-weight:500;letter-spacing:0.05em;line-height:14px;}
+.rw-rank-top{--rank-c:#e4c579;}
+.rw-rank-high{--rank-c:var(--gold-400);}
+.rw-rank-mid{--rank-c:var(--celadon-400);}
+.rw-rank-low{--rank-c:var(--ink-500);}
+
+/* 派系徽章 */
+.rw-fac-chip{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;padding:0 5px;border:1px solid var(--fac-c);color:var(--fac-c);background:rgba(var(--fac-rgb),0.08);border-radius:2px;font-family:var(--font-serif);letter-spacing:0.1em;line-height:14px;}
+.rw-fac-chip::before{content:"●";font-size:7px;opacity:0.8;}
+
+/* 地点 */
+.rw-loc{font-size:10px;color:var(--ink-300);font-family:var(--font-serif);letter-spacing:0.08em;font-style:italic;display:inline-flex;align-items:center;gap:3px;}
+.rw-loc::before{content:"◉";font-size:7px;color:var(--amber-400);opacity:0.7;}
+.rw-loc.away{color:var(--amber-400);}
+.rw-loc .travel{color:var(--celadon-400);margin:0 2px;}
+
+/* 状态徽章 */
+.rw-states{display:flex;gap:3px;flex-wrap:wrap;}
+.rw-state-chip{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:0 5px;border:1px solid var(--st-c);color:var(--st-c);background:rgba(var(--st-rgb),0.08);border-radius:2px;font-family:var(--font-serif);letter-spacing:0.08em;line-height:14px;}
+.rw-state-chip.mourn{--st-c:var(--amber-400);--st-rgb:201,160,69;}
+.rw-state-chip.stress{--st-c:var(--vermillion-400);--st-rgb:184,71,56;}
+.rw-state-chip.scheme{--st-c:var(--indigo-400);--st-rgb:90,111,168;}
+.rw-state-chip.new{--st-c:var(--celadon-400);--st-rgb:106,154,127;}
+.rw-state-chip.veteran{--st-c:var(--gold-300);--st-rgb:201,168,95;}
+.rw-state-chip.away{--st-c:var(--amber-400);--st-rgb:201,160,69;}
+
+/* 六维属性 */
+.rw-stats{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;margin-top:3px;}
+.rw-stat{display:flex;align-items:center;gap:4px;font-size:10px;font-family:var(--font-serif);}
+.rw-stat-k{color:var(--ink-500);width:18px;letter-spacing:0.1em;flex-shrink:0;}
+.rw-stat-bar{flex:1;height:4px;background:rgba(107,93,71,0.22);border-radius:2px;overflow:hidden;}
+.rw-stat-fill{height:100%;background:var(--stat-c,var(--gold-400));border-radius:2px;}
+.rw-stat-v{min-width:20px;text-align:right;color:var(--ink-900);font-weight:500;font-size:10.5px;}
+.rw-stat.zhi .rw-stat-fill{--stat-c:var(--gold-400);}
+.rw-stat.zheng .rw-stat-fill{--stat-c:var(--celadon-400);}
+.rw-stat.jun .rw-stat-fill{--stat-c:var(--vermillion-400);}
+.rw-stat.jiao .rw-stat-fill{--stat-c:var(--indigo-400);}
+.rw-stat.ye .rw-stat-fill{--stat-c:var(--amber-400);}
+.rw-stat.ya .rw-stat-fill{--stat-c:var(--purple-400);}
+
+/* 五常·迷你五角星 */
+.rw-wuchang{display:flex;gap:3px;align-items:center;margin-top:3px;}
+.rw-wuchang .lbl{font-size:9px;color:var(--ink-300);font-family:var(--font-serif);letter-spacing:0.15em;margin-right:2px;}
+.rw-wc-dot{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;font-family:var(--font-serif);font-size:9px;color:#1a1410;font-weight:bold;background:var(--wc-c,var(--ink-300));}
+.rw-wc-dot.hi{--wc-c:var(--celadon-400);}
+.rw-wc-dot.mid{--wc-c:var(--gold-400);}
+.rw-wc-dot.lo{--wc-c:var(--vermillion-400);}
+.rw-wc-dot.none{--wc-c:rgba(107,93,71,0.3);color:var(--ink-300);}
+
+/* 名望贤能 */
+.rw-rep{display:flex;gap:8px;margin-top:3px;padding-top:4px;border-top:1px dashed var(--border-subtle);font-size:10px;}
+.rw-rep-item{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-serif);letter-spacing:0.05em;}
+.rw-rep-item .k{color:var(--ink-300);font-size:9.5px;}
+.rw-rep-item .v{font-weight:500;}
+.rw-rep-item.ming .v{color:var(--gold-300);}
+.rw-rep-item.xian .v{color:var(--celadon-400);}
+
+/* 特质 */
+.rw-traits{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px;}
+.rw-trait-chip{display:inline-flex;align-items:center;font-size:9.5px;padding:0 5px;background:rgba(184,154,83,0.06);border:1px solid var(--border-subtle);color:var(--ink-500);border-radius:2px;font-family:var(--font-serif);letter-spacing:0.08em;line-height:14px;}
+.rw-trait-chip.pos{color:var(--celadon-400);border-color:var(--celadon-400);background:rgba(106,154,127,0.06);}
+.rw-trait-chip.neg{color:var(--vermillion-400);border-color:var(--vermillion-400);background:rgba(192,64,48,0.06);}
+.rw-trait-chip.neu{color:var(--gold-400);border-color:var(--gold-d);}
+
+/* 关系预览 */
+.rw-rels{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;}
+.rw-rel-chip{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;padding:0 5px;border-radius:2px;font-family:var(--font-serif);letter-spacing:0.05em;line-height:14px;}
+.rw-rel-chip.friend{color:var(--celadon-400);background:rgba(106,154,127,0.08);border:1px solid var(--celadon-400);}
+.rw-rel-chip.foe{color:var(--vermillion-400);background:rgba(192,64,48,0.08);border:1px solid var(--vermillion-400);}
+.rw-rel-chip.spouse{color:var(--vermillion-300);background:rgba(209,92,71,0.08);border:1px solid var(--vermillion-300);}
+.rw-rel-chip::before{font-size:8px;}
+.rw-rel-chip.friend::before{content:"♡";}
+.rw-rel-chip.foe::before{content:"⚔";}
+.rw-rel-chip.spouse::before{content:"❀";}
+
+/* 底部操作 */
+.rw-actions{display:flex;gap:4px;margin-top:6px;padding-top:5px;border-top:1px dashed var(--border-subtle);}
+.rw-btn{padding:3px 9px;font-size:10.5px;background:linear-gradient(to bottom,rgba(184,154,83,0.1),rgba(184,154,83,0.02));border:1px solid var(--gold-d);color:var(--gold-400);font-family:var(--font-serif);letter-spacing:0.1em;border-radius:2px;cursor:pointer;}
+.rw-btn:hover{background:rgba(184,154,83,0.18);border-color:var(--gold-400);}
+.rw-btn.primary{background:linear-gradient(to bottom,var(--vermillion-400),var(--vermillion-600));color:#f4eadd;border-color:var(--vermillion-600);}
+.rw-btn.primary:hover{transform:translateY(-1px);}
+
+/* 分页 */
+.rw-paging{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;padding:10px 0;}
+.rw-pg-btn{width:28px;height:28px;padding:0;background:transparent;border:1px solid var(--border-subtle);color:var(--ink-500);font-family:var(--font-serif);font-size:14px;border-radius:2px;cursor:pointer;line-height:26px;}
+.rw-pg-info{font-family:var(--font-serif);font-size:12px;color:var(--ink-500);letter-spacing:0.08em;}
+.rw-pg-info .n{color:var(--gold-400);}
+
+.legend{padding:14px 20px;background:var(--bg-2);border-top:1px solid var(--border-subtle);font-size:11px;color:var(--ink-500);text-align:center;letter-spacing:0.08em;line-height:1.9;}
+.legend .k{color:var(--gold-400);} .legend .m{color:var(--vermillion-400);}
+</style>
+</head>
+<body>
+
+<div class="preview-frame">
+
+  <div class="preview-header">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span>tianming · 人物志标签页美化预览</span>
+    <span class="title">〔 人 物 志 · 英 杰 列 传 〕</span>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">朝政</button>
+    <button class="tab-btn">诏令</button>
+    <button class="tab-btn">奏疏</button>
+    <button class="tab-btn">问对</button>
+    <button class="tab-btn">鸿雁</button>
+    <button class="tab-btn">编年</button>
+    <button class="tab-btn">官制</button>
+    <button class="tab-btn active">人物志</button>
+    <button class="tab-btn">地方</button>
+    <button class="tab-btn">纪事</button>
+    <button class="tab-btn">史记</button>
+  </div>
+
+  <div class="rw-panel">
+    <div class="rw-inner">
+
+      <!-- 标题 -->
+      <div class="rw-title">
+        <div class="seal">人<br>物</div>
+        <div class="main">人 物 志</div>
+        <div class="sub">英 杰 列 传　　臧 否 品 评　　考 其 行 迹 · 度 其 才 器</div>
+      </div>
+
+      <!-- 统计栏 -->
+      <div class="rw-statbar">
+        <div class="rw-stat-card s-all">
+          <div class="rw-stat-lbl">在 朝 群 臣</div>
+          <div class="rw-stat-num">128</div>
+          <div class="rw-stat-sub">文 68 · 武 42 · 宫 12 · 布 6</div>
+        </div>
+        <div class="rw-stat-card s-civil">
+          <div class="rw-stat-lbl">文 臣</div>
+          <div class="rw-stat-num">68</div>
+          <div class="rw-stat-sub">内阁/六部/翰林/都察</div>
+        </div>
+        <div class="rw-stat-card s-mili">
+          <div class="rw-stat-lbl">武 将</div>
+          <div class="rw-stat-num">42</div>
+          <div class="rw-stat-sub">总督/总兵/督师/参将</div>
+        </div>
+        <div class="rw-stat-card s-harem">
+          <div class="rw-stat-lbl">后 宫</div>
+          <div class="rw-stat-num">12</div>
+          <div class="rw-stat-sub">中宫·嫔妃·公主</div>
+        </div>
+        <div class="rw-stat-card s-bu">
+          <div class="rw-stat-lbl">布 衣 名 士</div>
+          <div class="rw-stat-num">6</div>
+          <div class="rw-stat-sub">山居·隐逸·未仕</div>
+        </div>
+        <div class="rw-stat-card s-dead">
+          <div class="rw-stat-lbl">⚜ 已 殁</div>
+          <div class="rw-stat-num">9</div>
+          <div class="rw-stat-sub">近年故旧</div>
+        </div>
+      </div>
+
+      <!-- 工具栏 -->
+      <div class="rw-tools">
+        <span class="rw-tools-lbl">披　览</span>
+        <div class="rw-view-switch">
+          <button class="rw-view-btn active">全 部</button>
+          <button class="rw-view-btn">在 京</button>
+          <button class="rw-view-btn">远 方</button>
+          <button class="rw-view-btn">待 具 象</button>
+        </div>
+        <div class="rw-search-wrap"><input class="rw-search" placeholder="搜索姓名·字号·官职……"></div>
+        <select class="rw-filter">
+          <option>全部派系</option>
+          <option>东林党 (42)</option>
+          <option>浙党 (28)</option>
+          <option>宦党 (16)</option>
+          <option>昆党 (9)</option>
+          <option>清流 (22)</option>
+          <option>布衣 (11)</option>
+        </select>
+        <select class="rw-filter">
+          <option>全部身份</option>
+          <option>文臣</option>
+          <option>武将</option>
+          <option>后宫</option>
+          <option>布衣</option>
+        </select>
+        <select class="rw-filter">
+          <option>排：忠诚 ↓</option>
+          <option>排：智力 ↓</option>
+          <option>排：政务 ↓</option>
+          <option>排：军事 ↓</option>
+          <option>排：名望 ↓</option>
+          <option>排：品级 ↑</option>
+        </select>
+        <label class="rw-chk"><input type="checkbox"> 已 殁</label>
+      </div>
+
+      <!-- 派系图例 -->
+      <div class="rw-legend">
+        <span class="rw-legend-lbl">派　系</span>
+        <span class="rw-legend-chip dongin">东 林 <span class="num">42</span></span>
+        <span class="rw-legend-chip zhe">浙 党 <span class="num">28</span></span>
+        <span class="rw-legend-chip yan">宦 党 <span class="num">16</span></span>
+        <span class="rw-legend-chip kun">昆 党 <span class="num">9</span></span>
+        <span class="rw-legend-chip qing">清 流 <span class="num">22</span></span>
+        <span class="rw-legend-chip bu">布 衣 <span class="num">11</span></span>
+      </div>
+
+      <!-- 人物卡网格 -->
+      <div class="rw-grid">
+
+        <!-- 朱由检·皇帝 -->
+        <div class="rw-card rw-qing player">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">朱</div>
+            <div class="rw-loy-ring rw-loy-hi">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="0"/></svg>
+              <div class="val"><span class="n">100</span><span class="k">自</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">朱由检</span>
+              <span class="rw-zi">字 德约</span>
+              <span class="rw-age">年 18</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">皇 帝</span>
+              <span class="rw-pos">大 明</span>
+              <span class="rw-rank-chip rw-rank-top">至尊</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">朕</span>
+              <span class="rw-loc">京师·紫禁城</span>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:72%;"></div></div><span class="rw-stat-v">72</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:65%;"></div></div><span class="rw-stat-v">65</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:40%;"></div></div><span class="rw-stat-v">40</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:55%;"></div></div><span class="rw-stat-v">55</span></div>
+              <div class="rw-stat ye"><span class="rw-stat-k">抱</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:88%;"></div></div><span class="rw-stat-v">88</span></div>
+              <div class="rw-stat ya"><span class="rw-stat-k">压</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:62%;"></div></div><span class="rw-stat-v">62</span></div>
+            </div>
+            <div class="rw-wuchang">
+              <span class="lbl">五常</span>
+              <span class="rw-wc-dot hi" title="仁 75">仁</span>
+              <span class="rw-wc-dot hi" title="义 82">义</span>
+              <span class="rw-wc-dot mid" title="礼 68">礼</span>
+              <span class="rw-wc-dot hi" title="智 78">智</span>
+              <span class="rw-wc-dot hi" title="信 85">信</span>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">72</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">65</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">勤政减膳</span>
+              <span class="rw-trait-chip neu">多疑</span>
+              <span class="rw-trait-chip neg">急躁</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 温体仁·首辅 -->
+        <div class="rw-card rw-zhe">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">温</div>
+            <div class="rw-loy-ring rw-loy-mid">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="35"/></svg>
+              <div class="val"><span class="n">68</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">温体仁</span>
+              <span class="rw-zi">字 长卿</span>
+              <span class="rw-age">年 62</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">内 阁</span>
+              <span class="rw-pos">首 辅</span>
+              <span class="rw-rank-chip rw-rank-top">正一品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">浙 党</span>
+              <span class="rw-loc">京师</span>
+              <div class="rw-states">
+                <span class="rw-state-chip veteran">任 6 回</span>
+                <span class="rw-state-chip scheme">秘谋</span>
+              </div>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:85%;"></div></div><span class="rw-stat-v">85</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:78%;"></div></div><span class="rw-stat-v">78</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:40%;"></div></div><span class="rw-stat-v">40</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:72%;"></div></div><span class="rw-stat-v">72</span></div>
+              <div class="rw-stat ye"><span class="rw-stat-k">抱</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:88%;"></div></div><span class="rw-stat-v">88</span></div>
+            </div>
+            <div class="rw-wuchang">
+              <span class="lbl">五常</span>
+              <span class="rw-wc-dot lo" title="仁 32">仁</span>
+              <span class="rw-wc-dot mid" title="义 48">义</span>
+              <span class="rw-wc-dot hi" title="礼 80">礼</span>
+              <span class="rw-wc-dot hi" title="智 92">智</span>
+              <span class="rw-wc-dot mid" title="信 55">信</span>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">68</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">75</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">理财</span>
+              <span class="rw-trait-chip pos">治事</span>
+              <span class="rw-trait-chip neg">倾险</span>
+              <span class="rw-trait-chip neg">结党</span>
+            </div>
+            <div class="rw-rels">
+              <span class="rw-rel-chip friend">薛国观 +42</span>
+              <span class="rw-rel-chip foe">钱谦益 −38</span>
+            </div>
+            <div class="rw-actions">
+              <button class="rw-btn">问 对</button>
+              <button class="rw-btn">任 命</button>
+              <button class="rw-btn primary">详 情</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 袁崇焕·督师 -->
+        <div class="rw-card rw-mili">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">袁</div>
+            <div class="rw-loy-ring rw-loy-hi">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="17"/></svg>
+              <div class="val"><span class="n">82</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">袁崇焕</span>
+              <span class="rw-zi">字 元素</span>
+              <span class="rw-age">年 44</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">兵 部</span>
+              <span class="rw-pos">尚 书 衔 督 师</span>
+              <span class="rw-rank-chip rw-rank-high">正二品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">东 林</span>
+              <span class="rw-loc away">宁远·辽东<span class="travel">→</span>锦州</span>
+              <div class="rw-states">
+                <span class="rw-state-chip stress">压 82</span>
+                <span class="rw-state-chip away">远 方</span>
+              </div>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:78%;"></div></div><span class="rw-stat-v">78</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:65%;"></div></div><span class="rw-stat-v">65</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:92%;"></div></div><span class="rw-stat-v">92</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:58%;"></div></div><span class="rw-stat-v">58</span></div>
+              <div class="rw-stat ye"><span class="rw-stat-k">抱</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:70%;"></div></div><span class="rw-stat-v">70</span></div>
+            </div>
+            <div class="rw-wuchang">
+              <span class="lbl">五常</span>
+              <span class="rw-wc-dot hi" title="仁 65">仁</span>
+              <span class="rw-wc-dot hi" title="义 88">义</span>
+              <span class="rw-wc-dot mid" title="礼 52">礼</span>
+              <span class="rw-wc-dot hi" title="智 82">智</span>
+              <span class="rw-wc-dot hi" title="信 90">信</span>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">88</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">92</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">善守</span>
+              <span class="rw-trait-chip pos">红夷大炮</span>
+              <span class="rw-trait-chip neg">刚愎</span>
+              <span class="rw-trait-chip neg">独断</span>
+            </div>
+            <div class="rw-rels">
+              <span class="rw-rel-chip friend">孙承宗 +68</span>
+              <span class="rw-rel-chip friend">满桂 +45</span>
+            </div>
+            <div class="rw-actions">
+              <button class="rw-btn">鸿 雁</button>
+              <button class="rw-btn">召 回</button>
+              <button class="rw-btn primary">详 情</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 钱谦益·礼部尚书 -->
+        <div class="rw-card rw-dongin">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">钱</div>
+            <div class="rw-loy-ring rw-loy-mid">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="36"/></svg>
+              <div class="val"><span class="n">62</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">钱谦益</span>
+              <span class="rw-zi">字 受之</span>
+              <span class="rw-age">年 46</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">礼 部</span>
+              <span class="rw-pos">尚 书</span>
+              <span class="rw-rank-chip rw-rank-high">正二品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">东 林</span>
+              <span class="rw-loc">京师</span>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:82%;"></div></div><span class="rw-stat-v">82</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:70%;"></div></div><span class="rw-stat-v">70</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:35%;"></div></div><span class="rw-stat-v">35</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:85%;"></div></div><span class="rw-stat-v">85</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">78</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">70</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">文宗</span>
+              <span class="rw-trait-chip pos">士林领袖</span>
+              <span class="rw-trait-chip neg">怯懦</span>
+            </div>
+            <div class="rw-actions">
+              <button class="rw-btn">问 对</button>
+              <button class="rw-btn">改 任</button>
+              <button class="rw-btn primary">详 情</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 毕自严·户部尚书 -->
+        <div class="rw-card rw-qing">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">毕</div>
+            <div class="rw-loy-ring rw-loy-hi">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="14"/></svg>
+              <div class="val"><span class="n">85</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">毕自严</span>
+              <span class="rw-zi">字 景曾</span>
+              <span class="rw-age">年 60</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">户 部</span>
+              <span class="rw-pos">尚 书</span>
+              <span class="rw-rank-chip rw-rank-high">正二品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">清 流</span>
+              <span class="rw-loc">京师</span>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:88%;"></div></div><span class="rw-stat-v">88</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:92%;"></div></div><span class="rw-stat-v">92</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:25%;"></div></div><span class="rw-stat-v">25</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:68%;"></div></div><span class="rw-stat-v">68</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">82</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">88</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">理财</span>
+              <span class="rw-trait-chip pos">持重</span>
+              <span class="rw-trait-chip pos">清廉</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 周皇后 -->
+        <div class="rw-card rw-consort">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">周<br style="line-height:0.5;"><span style="font-size:14px;color:var(--vermillion-300);">❀</span></div>
+            <div class="rw-loy-ring rw-loy-hi">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="4"/></svg>
+              <div class="val"><span class="n">95</span><span class="k">亲</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">周 皇后</span>
+              <span class="rw-zi">姓 周氏</span>
+              <span class="rw-age">年 17</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">中 宫</span>
+              <span class="rw-pos">皇 后</span>
+              <span class="rw-rank-chip rw-rank-top">中宫</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">中 宫</span>
+              <span class="rw-loc">坤宁宫</span>
+              <div class="rw-states">
+                <span class="rw-state-chip new">新 册</span>
+              </div>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:72%;"></div></div><span class="rw-stat-v">72</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:45%;"></div></div><span class="rw-stat-v">45</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:65%;"></div></div><span class="rw-stat-v">65</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">贤誉</span><span class="v">92</span></span>
+              <span class="rw-rep-item xian"><span class="k">德行</span><span class="v">95</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">端庄</span>
+              <span class="rw-trait-chip pos">节俭</span>
+              <span class="rw-trait-chip pos">贤德</span>
+            </div>
+            <div class="rw-rels">
+              <span class="rw-rel-chip spouse">朱由检 +95</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 卢象升·宣大总督 -->
+        <div class="rw-card rw-mili">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">卢</div>
+            <div class="rw-loy-ring rw-loy-hi">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="8"/></svg>
+              <div class="val"><span class="n">91</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">卢象升</span>
+              <span class="rw-zi">字 建斗</span>
+              <span class="rw-age">年 28</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">兵 部</span>
+              <span class="rw-pos">宣 大 总 督</span>
+              <span class="rw-rank-chip rw-rank-high">从二品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">清 流</span>
+              <span class="rw-loc away">大同</span>
+              <div class="rw-states">
+                <span class="rw-state-chip away">远 方</span>
+              </div>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:76%;"></div></div><span class="rw-stat-v">76</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:70%;"></div></div><span class="rw-stat-v">70</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:95%;"></div></div><span class="rw-stat-v">95</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:60%;"></div></div><span class="rw-stat-v">60</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">85</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">90</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">勇将</span>
+              <span class="rw-trait-chip pos">清廉</span>
+              <span class="rw-trait-chip pos">孝悌</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 曹化淳·司礼太监 -->
+        <div class="rw-card rw-yan">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">曹</div>
+            <div class="rw-loy-ring rw-loy-lo">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="59"/></svg>
+              <div class="val"><span class="n">38</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">曹化淳</span>
+              <span class="rw-age">年 47</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">司 礼 监</span>
+              <span class="rw-pos">掌 印</span>
+              <span class="rw-rank-chip rw-rank-top">从一品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">宦 党</span>
+              <span class="rw-loc">京师·宫禁</span>
+              <div class="rw-states">
+                <span class="rw-state-chip scheme">秘谋</span>
+                <span class="rw-state-chip stress">压 70</span>
+              </div>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:68%;"></div></div><span class="rw-stat-v">68</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:58%;"></div></div><span class="rw-stat-v">58</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:45%;"></div></div><span class="rw-stat-v">45</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:72%;"></div></div><span class="rw-stat-v">72</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">42</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">58</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip neg">贪婪</span>
+              <span class="rw-trait-chip neg">阴鸷</span>
+              <span class="rw-trait-chip neu">善侍</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 徐光启·礼部侍郎 -->
+        <div class="rw-card rw-qing">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">徐</div>
+            <div class="rw-loy-ring rw-loy-hi">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="12"/></svg>
+              <div class="val"><span class="n">87</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">徐光启</span>
+              <span class="rw-zi">字 子先</span>
+              <span class="rw-age">年 66</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">礼 部</span>
+              <span class="rw-pos">左 侍 郎</span>
+              <span class="rw-rank-chip rw-rank-high">正三品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">清 流</span>
+              <span class="rw-loc">京师</span>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:95%;"></div></div><span class="rw-stat-v">95</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:75%;"></div></div><span class="rw-stat-v">75</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:60%;"></div></div><span class="rw-stat-v">60</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:62%;"></div></div><span class="rw-stat-v">62</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">88</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">96</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">西学</span>
+              <span class="rw-trait-chip pos">农政</span>
+              <span class="rw-trait-chip pos">火器</span>
+              <span class="rw-trait-chip pos">天文</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 倪元璐·翰林（丁忧） -->
+        <div class="rw-card rw-dongin">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">倪</div>
+            <div class="rw-loy-ring rw-loy-hi">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="11"/></svg>
+              <div class="val"><span class="n">88</span><span class="k">忠</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">倪元璐</span>
+              <span class="rw-zi">字 玉汝</span>
+              <span class="rw-age">年 35</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">翰 林</span>
+              <span class="rw-pos">侍 讲 学 士</span>
+              <span class="rw-rank-chip rw-rank-mid">从五品</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">东 林</span>
+              <span class="rw-loc away">浙江 上虞</span>
+              <div class="rw-states">
+                <span class="rw-state-chip mourn">丁 忧</span>
+                <span class="rw-state-chip away">远 方</span>
+              </div>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:88%;"></div></div><span class="rw-stat-v">88</span></div>
+              <div class="rw-stat zheng"><span class="rw-stat-k">政</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:72%;"></div></div><span class="rw-stat-v">72</span></div>
+              <div class="rw-stat jun"><span class="rw-stat-k">军</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:30%;"></div></div><span class="rw-stat-v">30</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:68%;"></div></div><span class="rw-stat-v">68</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">72</span></span>
+              <span class="rw-rep-item xian"><span class="k">贤能</span><span class="v">78</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">书法</span>
+              <span class="rw-trait-chip pos">忠耿</span>
+              <span class="rw-trait-chip pos">经学</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 王公克·已故 -->
+        <div class="rw-card rw-bu dead">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">王</div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">王公克</span>
+              <span class="rw-age">享 74</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">工 部</span>
+              <span class="rw-pos">原任侍郎</span>
+              <span class="rw-rank-chip rw-rank-high">追赠尚书</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-loc">殁 于 崇祯元年 七月廿五</span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip neu">老成持重</span>
+              <span class="rw-trait-chip neu">工政</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 张岱·布衣（待征召） -->
+        <div class="rw-card rw-bu">
+          <div class="rw-portrait-col">
+            <div class="rw-portrait">张</div>
+            <div class="rw-loy-ring rw-loy-mid">
+              <svg viewBox="0 0 36 36"><circle class="bg" cx="18" cy="18" r="15" fill="none" stroke-width="3"/><circle class="fg" cx="18" cy="18" r="15" fill="none" stroke-width="3" stroke-dasharray="94.2" stroke-dashoffset="47"/></svg>
+              <div class="val"><span class="n">50</span><span class="k">心</span></div>
+            </div>
+          </div>
+          <div class="rw-info-col">
+            <div class="rw-name-row">
+              <span class="rw-name">张岱</span>
+              <span class="rw-zi">字 宗子</span>
+              <span class="rw-age">年 30</span>
+            </div>
+            <div class="rw-office-row">
+              <span class="rw-dept">布 衣</span>
+              <span class="rw-pos">山 阴 处 士</span>
+            </div>
+            <div class="rw-name-row">
+              <span class="rw-fac-chip">布 衣</span>
+              <span class="rw-loc away">绍兴·山阴</span>
+              <div class="rw-states">
+                <span class="rw-state-chip new">待 征 召</span>
+              </div>
+            </div>
+            <div class="rw-stats">
+              <div class="rw-stat zhi"><span class="rw-stat-k">智</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:85%;"></div></div><span class="rw-stat-v">85</span></div>
+              <div class="rw-stat jiao"><span class="rw-stat-k">交</span><div class="rw-stat-bar"><div class="rw-stat-fill" style="width:78%;"></div></div><span class="rw-stat-v">78</span></div>
+            </div>
+            <div class="rw-rep">
+              <span class="rw-rep-item ming"><span class="k">名望</span><span class="v">72</span></span>
+            </div>
+            <div class="rw-traits">
+              <span class="rw-trait-chip pos">文章</span>
+              <span class="rw-trait-chip pos">通达</span>
+              <span class="rw-trait-chip neg">豪奢</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 分页 -->
+      <div class="rw-paging">
+        <button class="rw-pg-btn">‹</button>
+        <span class="rw-pg-info"><span class="n">1</span> / 12 · 共 <span class="n">137</span> 人</span>
+        <button class="rw-pg-btn">›</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legend">
+    ★ 设计要点：<span class="k">宣纸纹+朱砂"人"印</span> · 金线双框"人物志"+副标"英杰列传·臧否品评·考其行迹·度其才器" · <span class="k">6 卡统计栏</span>（在朝群臣/文臣/武将/后宫/布衣名士/⚜已殁）· 工具栏含披览视图(全部/在京/远方/待具象)+搜索⌕+派系/身份/排序三下拉+已殁勾选 · <span class="k">6 色派系 chip 图例</span>（东林青/浙党靛/宦党紫/昆党琥/清流金/布衣墨）<br>
+    ★ <span class="k">人物卡</span>（自适应 280px 网格 · 左侧立轴人像 + 右侧信息）· 卡片左色条按派系 8 色 · <span class="k">立轴头像</span>含顶部木杆（丹界红边饰）· <span class="k">忠诚度 SVG 环形</span>（青/金/朱 3 档）· 主角专属<span class="m">"朕"</span>印+金底；已殁者灰度+右上<span class="m">"殁"</span>字 · 姓名+字号+年龄 chip · 部门·官职·品级金牌徽 · 派系徽章+地点（远方者琥色+◉朝京）· 状态徽章（丁忧琥/秘谋靛/压力朱/新册青/远方琥/久任金）· <span class="k">六维属性条</span>（智/政/军/交/抱/压 按类色分）· <span class="k">五常迷你五角</span>（仁义礼智信 3 档青/金/朱）· 名望贤能（金/青）· 特质 chip 3 色（褒青/贬朱/中金）· 关系 Top 2（友/敌/配偶 3 色带 ♡⚔❀ 符号）· 操作行（问对/任命/鸿雁/召回/改任/详情朱砂主按钮）<br>
+    <span style="color:var(--ink-300);margin-top:6px;display:inline-block;">这是纯预览页面。若满意将此样式应用到 renderRenwu() 渲染函数中。</span>
+  </div>
+
+</div>
+
+</body>
+</html>

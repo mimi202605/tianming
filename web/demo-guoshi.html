@@ -1,0 +1,12 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>国师 UI 演示（指向本地 mock）</title>
+<script>
+  // Dev-only 演示加载页：把国师 API 预置成本地 mock 中转，再跳到剧本编辑器。
+  // 这样点开即可跑「生成 / 问答 / 审阅」看到完整 UI（流式/工具卡/diff/实体链接/折叠等），无需接你自己的 API。
+  try {
+    localStorage.setItem('tm_api', JSON.stringify({ url: 'http://127.0.0.1:8799/v1', key: 'sk-demo', model: 'gpt-4o', temp: 0.7 }));
+  } catch (e) {}
+  location.replace('preview/scenario-editor-reset-preview.html');
+</script>
+<body style="font-family:system-ui;background:#0e0b08;color:#e8dcb8;padding:40px">正在打开国师演示…（已预置本地 mock API）</body>

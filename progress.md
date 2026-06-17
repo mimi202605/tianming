@@ -1,0 +1,100 @@
+# AI Memory Research Progress
+
+## 2026-05-31
+- Initialized planning files for the AI memory research and architecture-planning task.
+- Completed first academic search pass covering Generative Agents, MemGPT, memory surveys, MemoryBank, Mem0, Zep, and MIRIX; saved initial taxonomy in findings.md.
+- Added second academic pass covering Reflexion, Voyager, HippoRAG, A-MEM, and benchmark/evaluation concerns.
+- Surveyed SillyTavern World Info, Data Bank, Chat Vectorization, Summarize, CharMemory, MemoryBooks, and qvink MessageSummarize patterns.
+- Added evaluation pass covering LongMemEval, LoCoMo, Lost in the Middle, RULER, U-NIAH, StructMemEval, and Anatomy of Agentic Memory.
+- Inspected Tianming memory code: table memory, anchors, L1/L2/L3 consolidation jobs, SC_RECALL, semantic recall, recall gate, memory UI, adapter, prompt composer, data-model knobs, Godot diplomacy memory, and smoke tests.
+- User requested a broader/deeper continuation. Added Phases 6-8 to the plan and started expanded literature/plugin research.
+- Added expanded literature notes for MemOS, MemoryOS, MemoRAG, ReadAgent, AgeMem, MemSkill, and EvoMemBench.
+- Added game/simulation/multi-agent notes for M2PA, MineNPC-Task, PANGeA, Intrinsic Memory Agents, H2R, LEGOMem, and cognitive-architecture memory foundations.
+- Added expanded roleplay/product ecosystem notes for Agnai, RisuAI, VectFox, MemoryBooks, qvink MessageSummarize, Honcho, Letta/MemGPT, Zep, and LangMem.
+- Added safety/evaluation/failure-mode notes for PersistBench, LongMemEval-V2, circuit analysis of agent memory, MemInsight, REMem, reflective semantic/episodic supervision, and MemFactory.
+- Created deep Chinese research addendum with expanded literature map, roleplay ecosystem map, Tianming v2 design decisions, implementation route, test scenarios, and design red lines.
+- Third continuation requested: start parallel-agent mega survey plus local sweep for broader/deeper AI memory research.
+- Local sweep added memory-security and governance sources: memory poisoning/defense, A-MemGuard, AgentSys, longitudinal safety, MemMorph, SuperLocalMemory, and mnemonic sovereignty survey.
+- Completed six parallel-agent research briefs covering academic frontier papers, evaluation/safety, game/NPC memory, roleplay/SillyTavern ecosystem, production memory frameworks, and cognitive foundations.
+- Local sweep added stale-memory, roleplay-persona consistency, OpenMemory/MCP, AriGraph, Agent Workflow Memory, MAGMA, and ByteRover notes.
+- Integrated the parallel-agent results and additional local sources into findings.md for the v3 synthesis pass.
+- Created web/docs/ai-memory-mega-survey-and-tianming-v3-blueprint-2026-05-31.md with the consolidated v3 research dossier, Tianming Memory Constitution, Memory Spine architecture, golden-test plan, and staged implementation roadmap.
+- Verified the v3 report as UTF-8 text with 566 lines and 18,842 characters.
+- Fourth continuation requested: expand into a much larger multi-agent swarm survey, several times larger than the prior six-agent pass, while continuing local live research.
+- Added Phases 13-17 to task_plan.md for swarm planning, multi-dozen survey, local gap filling, v4 synthesis, and final v4 dossier.
+- Tried to spawn 12 fourth-round agents at once; platform accepted 6 and returned `agent thread limit reached` for the rest. Switched to rolling six-agent waves so the total research breadth can still reach multi-dozen topics.
+- Swarm wave 1 launched: survey/taxonomy, cognitive-inspired memory, memory OS, graph/temporal memory, hierarchical summarization, and procedural/workflow memory.
+- Local live sweep added 2026 survey sources, GroupMemBench multi-party memory, Memory-Driven Role-Playing/MRBench, STALE emphasis, and persona-consistency evaluation notes to findings.md.
+- Local live sweep added Luker, MemoryBooks expanded workflow, PlugMem, and timeline-based memory notes.
+- Swarm wave 1 agent 06 returned procedural/workflow/skill memory brief covering Voyager, Agent Workflow Memory, Memp, Reflexion, MemSkill, ProcMEM, evaluation layers, and low-authority strategy-memory injection.
+- Swarm wave 1 agent 03 returned Memory OS brief covering MemGPT/Letta, MemoryOS, MemOS, EverMemOS, AMV-L, MemForest, Mem0, LangMem, Zep/Graphiti, and memory OS safety/permissions.
+- Local live sweep added AMV-L, MemForest, SAGE graph memory, HAGE, EvolveMem, and FORGE notes.
+- Swarm wave 1 agent 04 returned graph/temporal/causal memory brief covering Zep/Graphiti, AriGraph, MAGMA, HippoRAG/HippoRAG 2, and REMem.
+- Swarm wave 1 agent 02 returned cognitive-inspired memory brief covering CoALA, working memory, episodic/semantic/procedural memory, CLS, ACT-R/Soar/CMC, Generative Agents, Reflexion, Voyager, MemoryBank, MemGPT, Zep, MIRIX, and NPC adaptation.
+- Swarm wave 1 agent 01 returned survey/taxonomy brief comparing 20+ sources against Tianming v3 Memory Spine and identifying incremental gaps: control policy, latency/token metrics, hard quarantine/rollback/audience fields, decay/strength, graph-first retrieval, operation APIs, and lane-specific tests.
+- Swarm wave 1 agent 05 returned hierarchical summarization/compression brief covering recursive summaries, ReadAgent, Timeline Memory, TiMem/HiMem, Useful Memories Become Faulty, SillyTavern Summarize, MessageSummarize, MemoryBooks, CharMemory, Letta, and Zep.
+- Closed swarm wave 1 agents after integrating their briefs.
+- Swarm wave 2 launched: multimodal/spatial memory, multi-agent/group memory, long-context vs memory benchmarks, long-term dialogue/roleplay benchmarks, structured/stale-state benchmarks, and memory safety/privacy/poisoning/deletion.
+- Local live sweep added NovelAI, KoboldAI, SillyTavern World Info, World Info extension ecosystem, and DeepWiki code-oriented context/memory notes.
+- Local live sweep added CrewAI Memory, LlamaIndex Memory, Cognee, Cognee docs/GitHub, database-workload framing, and graph-native belief revision notes.
+- Swarm wave 2 agent 12 returned memory safety/privacy/poisoning/deletion brief covering OWASP memory/context poisoning, PersistBench, CIMemories, MemPrivacy, MEXTRA/ADAM, AgentPoison, MemPoison, MemMorph, A-MemGuard, AgentSys, and six-stage security testing.
+- Swarm wave 2 agent 11 returned structured/stale/state benchmark brief covering StructMemEval, STALE, Memora, MemoryAgentBench, MemGym, STATE-Bench, and Tianming ledger/tree/DAG/stale fact tests.
+- Swarm wave 2 agent 09 returned long-context vs memory benchmark boundary brief covering Needle, Lost in the Middle, RULER, HELMET, InfiniteBench, LongBench v2, LongMemEval, LongMemEval-V2, and STATE-Bench.
+- Swarm wave 2 agent 08 returned multi-agent/shared/group memory brief covering Generative Agents, GroupMemBench, Collaborative Memory, G-Memory, LEGOMem, rumor spreading, S3, SALM, AgentSociety, and Tianming multi-view memory layers.
+- Swarm wave 2 agent 10 returned long-term dialogue/roleplay benchmark brief covering LoCoMo, LongMemEval, BEAM, LoCoMo-Plus, Memory-Driven Role-Playing/MREval/MRBench, RPEval, character consistency, long-term relationship tests, and Tianming NPC goldens.
+- Swarm wave 2 agent 07 returned multimodal/visual/spatial memory brief covering 3D/multimodal/spatial memory, semantic maps, scene graphs, OpenEQA, M3-Agent, WorldMM, MemEye, PANGeA, MineNPC-Task, JARVIS-1, MIRIX, and Tianming spatial/resource memory design.
+- Closed swarm wave 2 agents after integrating their briefs.
+- Swarm wave 3 launched: SillyTavern/plugin ecosystem, non-SillyTavern roleplay products, production memory frameworks, memory UX/observability/debuggers, local single-player implementation data model, and Tianming memory golden case library.
+- Local live sweep added Chinese SillyTavern memory plugin comparison, Luker Chinese docs, Chinese/community memory-panel/table/summary patterns, and BOOKMARKS active storyline memory.
+- Local live sweep expanded BOOKMARKS notes and added roleplay community pain patterns plus caution about self-reported memory benchmark leaderboards.
+- Swarm wave 3 agent 18 returned Tianming memory golden case library with 50 cases across edicts, offices, territory, factions, NPC knowledge, rumors, procedural memory, hidden state, governance, and consolidation drift.
+- Swarm wave 3 agent 15 returned production memory framework comparison covering Mem0/OpenMemory, Zep/Graphiti, Letta, LangMem/LangGraph, Honcho, Cognee, CrewAI, LlamaIndex, Memobase, Supermemory, Mengram, Cheshire Cat, and AutoGen.
+- Swarm wave 3 agent 14 returned non-SillyTavern roleplay product memory brief covering AI Dungeon, NovelAI, KoboldAI/KoboldCpp Lite, RisuAI, Agnai, SpicyChat, FictionLab, JanitorAI, Luker, and Xoul.
+- Swarm wave 3 agent 17 returned local-first implementation data model brief covering SQLite/FTS5, IndexedDB, JSONL append-only ledger, GeoJSON/map schema, deterministic replay, indexes, migrations, performance, and offline constraints.
+- Swarm wave 3 agent 16 returned memory UX/observability/debugger brief with Memory Observatory spec covering Injection Viewer, Prompt Itemization, Retrieval Trace, Memory Inspector, Graph Visualizer, Audit Log, Draft Inbox, and MemoryTrace JSON.
+- Swarm wave 3 agent 13 returned SillyTavern/plugin ecosystem matrix covering World Info, Data Bank, Chat Vectorization, Summarize, CharMemory, MemoryBooks, MessageSummarize, VectHare, VectFox, LoreVault, Timeline Memory, TunnelVision, WorldInfo-Info, LorebookOrdering, World Info Locks, and World Info Recommender.
+- Completed fourth-round synthesis from 18 rolling agents plus local live research.
+- Created web/docs/ai-memory-fourth-round-swarm-research-and-implementation-plan-2026-05-31.md with v4 Memory Operating Layer, MemoryEnvelope v4, Retrieval Composer v4, Memory Observatory, local-first data model, 10 smoke goldens, and staged implementation roadmap.
+- Verified the v4 report as UTF-8 text with 674 lines and 19,446 characters.
+- Fifth continuation requested: continue broader/deeper AI memory and roleplay memory-plugin research with more agents while main thread keeps researching.
+- Added Phases 18-23 for fifth-round super-swarm planning, rolling swarm survey, local live research, evidence normalization, v5 synthesis, and final v5 dossier.
+- Swarm wave 4 launched: latest papers, roleplay plugin/product design, benchmarks/goldens, event sourcing/bitemporal architecture, cognitive psychology memory, and memory security/governance.
+- Local live sweep added fifth-round notes on memory safety/deletion/forgetting, roleplay product UX, event sourcing/bitemporal data, cognitive psychology, benchmark caveats, and roleplay-specific benchmarks.
+- Swarm wave 4 agent 22 returned event-sourcing/bitemporal/replay architecture brief; integrated into findings.md.
+- Swarm wave 4 agent 21 returned benchmark taxonomy, Tianming golden-case layering, scoring fields, human review rubric, and no-full-history-stuffing experiment protocol; integrated into findings.md.
+- Swarm wave 4 agent 24 returned memory security/privacy/red-team/governance brief covering OWASP/NIST/GDPR/PIPL/CCPA, poisoning, indirect injection, privacy extraction, cascade deletion, and implementation priorities; integrated into findings.md.
+- Swarm wave 4 agent 19 returned latest 2025-2026 papers and v5 deltas; integrated into findings.md.
+- Swarm wave 4 agent 23 returned cognitive psychology/human-like NPC memory brief; integrated into findings.md.
+- Swarm wave 4 agent 20 returned roleplay product/plugin memory UX matrix across SillyTavern, CharMemory, MemoryBooks, AI Dungeon, NovelAI, RisuAI, Agnai, Chub, Xoul, FictionLab, Luker, KoboldAI, and JanitorAI; integrated into findings.md.
+- Closed all six wave 4 agents after integrating their summaries.
+- Swarm wave 5 launched: local storage/index implementation, Chinese historical roleplay memory, map/resource/spatial memory, Memory Observatory UI, migration risk, and evidence ranking.
+- Local live sweep added fifth-round notes on SQLite/FTS5/hybrid index implementation, Memory Observatory/RAG debugging UX, Chinese historical roleplay entity/register failures, and spatial/resource memory.
+- Local live sweep added migration/rollout engineering notes covering feature flags, expand-contract, event versioning, upcasters, projection rebuilds, shadow memory, and readiness gates.
+- Swarm wave 5 agent 30 returned evidence ranking framework and Must/Should/Could/Won't decision matrix; integrated into findings.md.
+- Swarm wave 5 agent 29 returned Tianming-specific migration plan, shadow instrumentation points, backfill/reindex strategy, risks, rollback, and acceptance gates; integrated into findings.md.
+- Swarm wave 5 agent 25 returned local storage/index implementation matrix and minimum schema; integrated into findings.md.
+- Swarm wave 5 agent 26 returned Chinese historical roleplay/entity alias/register brief; integrated into findings.md.
+- Swarm wave 5 agent 28 returned Memory Observatory UI/UX prototype with player/designer/developer modes, panel inventory, MVP order, and spoiler-safe design; integrated into findings.md.
+- Swarm wave 5 agent 27 returned map/resource/spatial/economy memory brief; integrated into findings.md.
+- Closed all six wave 5 agents after integrating their summaries.
+- Created web/docs/ai-memory-v5-evidence-review-and-implementation-readiness-2026-05-31.md as the fifth-round evidence review and implementation-readiness dossier.
+- Verified the v5 report as UTF-8 text with 497 lines and 12,212 characters.
+- Sixth continuation requested: continue even broader/deeper AI memory and roleplay memory-system research with many agents while the main thread keeps researching.
+- Added Phases 24-28 for sixth-round foundation planning, rolling swarm survey, local live research, v6 synthesis, and final foundation compendium.
+- Swarm wave 6 launched: cognitive memory foundations, schema-grounded write paths, retrieval/context budgeting, roleplay product memory design, safety/governance, and Tianming architecture audit.
+- Local live sweep added sixth-round foundation notes on schema-grounded memory, memory-specific reranking, GroupMemBench, STALE, Zep/Graphiti, Luker Memory Graph, NovelAI/SillyTavern/Agnai context placement, and memory poisoning.
+- Local live sweep added sixth-round evaluation/cognitive notes on StructMemEval, MemoryAgentBench, MemGym, CoALA, Soar episodic memory, Useful Memories Become Faulty, Missing Knowledge Layer, Memory-Driven Role-Playing, EverMemBench, ConStory-Bench, CHGIS, and Talk of the Town belief simulation.
+- Swarm wave 6 completed: six agents returned briefs on cognitive architecture, schema-grounded write path, retrieval/context budgeting, roleplay product design, memory safety/governance, and Tianming architecture audit; integrated their findings into findings.md.
+- Closed all six wave 6 agents after integration.
+- Swarm wave 7 launched: memory evaluation/goldens, Chinese historical entity/time/office modeling, event-sourced ledger engineering, MemoryTrace standards, player/designer UX, and final v6 Memory Constitution synthesis.
+- Local live sweep added seventh-wave notes on event sourcing, schema evolution/upcasters, bitemporal semantics, OpenTelemetry GenAI spans, MemTrace, and RAG observability requirements for memory debugging.
+- Local live sweep added seventh-wave notes on CBDB, CHGIS, CHisIEC, Chinese historical entity/time/place granularity, and creator UX patterns from LoreVia, StoryLine, Plotiar, and SillyTavern debugging discussions.
+- Swarm wave 7 completed: six agents returned briefs on Tianming memory evaluation/goldens, Chinese historical entity modeling, event ledger engineering, MemoryTrace data standards, player/creator/designer UX, and the final Memory Constitution v6 minimum kernel; integrated their findings into findings.md.
+- Closed all six wave 7 agents after integration.
+- Swarm wave 8 launched to exceed the previous turn's agent count: production memory frameworks, authority/visibility adjudication, prompt lane/context placement, local-first implementation performance, current Tianming traceOnly hook exploration, and red-team critique.
+- Swarm wave 8 completed: six agents returned briefs on production memory frameworks, authority/visibility/status adjudication, prompt lanes/context placement, local-first implementation, current Tianming traceOnly hooks, and red-team scope critique; integrated their findings into findings.md and the v6 foundation report.
+- Closed all six wave 8 agents after integration.
+- Created web/docs/ai-memory-v6-foundation-compendium-2026-05-31.md as the detailed v6 foundation compendium.
+- Created web/docs/ai-memory-v6-foundation-compendium-zh-2026-05-31.md as the Chinese v6 foundation compendium for planning and review.
+- Verified v6 reports as UTF-8 without replacement characters: English compendium 1,157 lines / 39,598 chars; Chinese compendium 744 lines / 16,954 chars.
+- Attempted git status, but C:\Users\37814\Desktop\tianming is not a git repository.

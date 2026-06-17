@@ -1,0 +1,117 @@
+/* ============================================================
+ * tm-touch.css — 触屏工效层（移植 Phase 2 · S2.1 · 2026-06-03）
+ *
+ * 设计见 web/docs/mobile-port-design.md §9 Phase 2。
+ *
+ * 全部规则只在 @media (pointer: coarse) 内生效 —— 即「主输入是触摸」的设备。
+ * 桌面（pointer: fine，鼠标）完全不匹配 ⇒ 桌面 100% 不受影响 = 构造性零回归。
+ *
+ * 本刀（S2.1）只做「不改布局」的触屏工效，绝不动元件尺寸：
+ *   ① touch-action: manipulation —— 去掉 ~300ms 点击延迟 + 防控件上双击缩放
+ *   ② -webkit-overflow-scrolling: touch —— 给滚动列表开惯性滚动
+ *   ③ hover 位移粘滞复位 —— 触屏点一下 :hover 会「卡住」，复位最显眼的 transform 位移
+ *      （只去 transform，不影响布局、不破图；颜色/边框类 hover 粘滞无害，不动）
+ *
+ * 为何不放大 tap 目标：御案（body.tm-phase8-formal）是**图像对齐的像素级布局**
+ * （topbar 用背景图 rail、动作钮绝对定位带倾角），改尺寸会破图 → 留 S2.2 逐元件评估。
+ *
+ * 末尾 <link>（index.html body 尾）加载 → 源序在御案 JS 注入样式之后 ⇒
+ * 等特异性下 !important 复位能压过御案的 :hover !important。
+ * ============================================================ */
+
+@media (pointer: coarse) {
+
+  /* ① 点击响应：去 300ms 延迟 + 防双击缩放（全站可点元素 + 御案具体交互类） */
+  button,
+  [role="button"],
+  body.tm-phase8-formal .zb-img-btn,
+  body.tm-phase8-formal .tmf-action,
+  body.tm-phase8-formal .tmf-desk-action,
+  body.tm-phase8-formal .tmf-rail-btn,
+  body.tm-phase8-formal .pp-action,
+  body.tm-phase8-formal .tm-event-item,
+  body.tm-phase8-formal .tm-event-turn-button,
+  body.tm-phase8-formal .tm-event-turn-choice,
+  body.tm-phase8-formal .tmv3-item,
+  body.tm-phase8-formal .tmv3-open,
+  body.tm-phase8-formal .tmv3-fchip,
+  body.tm-phase8-formal .tmv3-collapse,
+  body.tm-phase8-formal .renwu-card,
+  body.tm-phase8-formal .renwu-tab,
+  body.tm-phase8-formal .renwu-head-btn,
+  body.tm-phase8-formal .renwu-ceming-btn,
+  body.tm-phase8-formal .tmf-sz-card,
+  body.tm-phase8-formal .tmf-sz-choice,
+  body.tm-phase8-formal .tmf-sz-action,
+  body.tm-phase8-formal .tmf-renwu-entry,
+  body.tm-phase8-formal .map-layer,
+  body.tm-phase8-formal .map-alert,
+  body.tm-phase8-formal .tb-var,
+  body.tm-phase8-formal .tm-rc-icon,
+  body.tm-phase8-formal .gs-turn-big {
+    touch-action: manipulation;
+  }
+
+  /* ② 滚动惯性（部分安卓 WebView / iOS 需显式开，否则滚动生硬不跟手） */
+  body.tm-phase8-formal .tm-event-list,
+  body.tm-phase8-formal .tmv3-list,
+  body.tm-phase8-formal .tmv3-feed {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ③ hover 位移粘滞复位：触屏 tap 残留的 :hover lift（translateX/Y）复位为无位移。
+     只复位 transform（合成层属性·不触发重排·不破图）；阴影/边框等观感粘滞无害，保留。 */
+  body.tm-phase8-formal .zb-img-btn:hover,
+  body.tm-phase8-formal .tm-event-item:hover,
+  body.tm-phase8-formal .tmv3-item:hover,
+  body.tm-phase8-formal .renwu-card:hover,
+  body.tm-phase8-formal .tmf-sz-card:hover,
+  body.tm-phase8-formal .scn-card:hover,
+  body.tm-phase8-formal .tmf-renwu-entry:hover {
+    transform: none !important;
+  }
+
+  /* ④ 隐形热区扩展（S2.2）：御案是图像对齐像素布局，不能硬撑小控件的视觉尺寸；
+     改用 ::after 把「可点区」撑到 ≥44px，视觉零变化。实测过小元件（@1280×800）：
+       .tmv3-collapse 18×18 · .tb-wentian 36×34 · .tmv3-fchip 23×18 · .map-layer 44×23。
+     ::after 均空闲（.tb-wentian 仅 :before 被占）。横向有邻居者只纵向撑高(width:100%)避免重叠。
+     暂缓 .tmv3-item(折子列·纵向堆叠·须改 min-height 动密度) / .map-alert(成列·重叠)。 */
+  body.tm-phase8-formal .tmv3-collapse,
+  body.tm-phase8-formal .tb-wentian,
+  body.tm-phase8-formal .tmv3-fchip,
+  body.tm-phase8-formal .map-layer { position: relative; }
+
+  /* 孤立小钮：全向撑 44×44（居中·不可见） */
+  body.tm-phase8-formal .tmv3-collapse::after,
+  body.tm-phase8-formal .tb-wentian::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px; height: 44px;
+  }
+  /* 成行小钮：仅纵向撑高 44（横向 100%·不越界） */
+  body.tm-phase8-formal .tmv3-fchip::after,
+  body.tm-phase8-formal .map-layer::after {
+    content: ""; position: absolute; left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 100%; height: 44px;
+  }
+
+  /* ⑤ 长按=右键（tm-touch-gestures.js）的目标元件：禁原生 callout/文字选区，
+     避免真机长按时跳出系统「复制/选择」菜单或选中文字，干扰右键手势。 */
+  body.tm-phase8-formal .ming-region,
+  body.tm-phase8-formal .tb-var,
+  body.tm-phase8-formal .renwu-card,
+  body.tm-phase8-formal [data-region-id] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* ⑥ 舆图 / 官制树手势面：touch-action:none —— 让浏览器把单/双指手势全部交给
+     JS(tm-pinch-pan.js)做 pan / pinch 缩放，而不是抢去做页面滚动或整页缩放。
+     仅这两个手势面、仅触屏（桌面 pointer:fine 不匹配本 @media）⇒ 桌面零影响。 */
+  #ming-map-layer,
+  #office-tree-wrap-game {
+    touch-action: none;
+  }
+}

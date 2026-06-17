@@ -1,0 +1,163 @@
+{
+  "capturedAt": "2026-05-22T02:32:20.210Z",
+  "timestamp": 1779417140212,
+  "note": "AI pipeline upgrade kickoff baseline·Phase 0-7.5 实施前快照",
+  "files": {
+    "endturnAi": {
+      "exists": true,
+      "lineCount": 3371
+    },
+    "aiSchema": {
+      "exists": true,
+      "lineCount": 847
+    },
+    "saveLifecycle": {
+      "exists": true,
+      "lineCount": 1142
+    },
+    "endturnFollowup": {
+      "exists": true,
+      "lineCount": 2750
+    },
+    "patches": {
+      "exists": true,
+      "lineCount": 2477
+    },
+    "endturnApply": {
+      "exists": true,
+      "lineCount": 4844
+    }
+  },
+  "signals": {
+    "subcallRegistry": {
+      "count": 17,
+      "ids": [
+        "sc0",
+        "sc05",
+        "sc1",
+        "sc1b",
+        "sc1c",
+        "sc1d",
+        "sc15",
+        "sc_memwrite",
+        "sc16",
+        "sc17",
+        "sc18",
+        "sc_audit",
+        "sc2",
+        "sc25",
+        "sc27",
+        "sc07",
+        "sc28"
+      ],
+      "expectedAfterPhase2_5": "sc1q 加入·共 18",
+      "expectedAfterPhase3": "sc16/sc17/sc18 删·sc1d 改并入 sc1c·变 14",
+      "expectedAfterPhase4": "sc25+sc_consolidate→sc25c·sc07+sc15→sc15n·变 12"
+    },
+    "callPolicies": {
+      "count": 24,
+      "keys": [
+        "sc0",
+        "sc05",
+        "sc1",
+        "sc1_rescue",
+        "sc1b",
+        "sc1c",
+        "sc1d",
+        "sc15",
+        "sc_memwrite",
+        "sc16",
+        "sc17",
+        "sc18",
+        "sc_audit",
+        "sc19",
+        "sc2",
+        "sc25",
+        "sc27",
+        "sc07",
+        "sc28",
+        "sc_consolidate",
+        "compress_ai_memory",
+        "compress_foreshadows",
+        "compress_conversation",
+        "history_check"
+      ]
+    },
+    "streamSc1Default": {
+      "currentDefault": "ON",
+      "phase0_D1_expected": "OFF",
+      "anchorLine": 2441
+    },
+    "sc1FamilyBlock": {
+      "chars": 0,
+      "note": "Phase 2 SC1 重构后预期 -40% (~30K→18K tokens)·此处为字符长度参考"
+    },
+    "ghostFieldFactionRelationShift": {
+      "occurrences": 1,
+      "note": "#98 Ghost 调查任务·Phase 2 前必清查"
+    },
+    "aiSchemaFields": {
+      "count": 244,
+      "sample": [
+        "reply:string",
+        "loyaltyDelta:number",
+        "emotionState:string",
+        "toneEffect:string",
+        "suggestions:array",
+        "memoryImpact:object",
+        "stance:string",
+        "vote:string",
+        "rebuttal:string",
+        "exam_opinion:string",
+        "narrative:string",
+        "shilu_text:string",
+        "shizhengji:string",
+        "event:object",
+        "era_state_delta:object"
+      ],
+      "hasDialogueCommitmentFeedback": false,
+      "expectedPhase2_5": "+dialogue_commitment_feedback"
+    },
+    "saveLifecycleMirrors": {
+      "count": 4,
+      "present": [
+        "_savedFacUndercurrents",
+        "_savedCourtRecords",
+        "_savedNpcCommitments",
+        "_savedSecretMeetings"
+      ],
+      "hasLastSc28Snapshot": false,
+      "hasCostHistory": false,
+      "expectedPhase4": "+_lastSc28Snapshot",
+      "expectedPhase7": "+_costHistory"
+    },
+    "postTurnNextRequiredId": {
+      "current": "sc25",
+      "expectedPhase4": "sc25c"
+    },
+    "sc27ExpectedKeys": {
+      "current": [
+        "mood_shifts",
+        "relationship_changes",
+        "hidden_moves",
+        "faction_undercurrents"
+      ],
+      "anchorLine": 1891,
+      "expectedPhase5": "+name_errors_fixed +rewritten_passages may change shape"
+    },
+    "aiCallDepthUiCounts": {
+      "currentHardcoded": [],
+      "anchorLine": 520,
+      "expectedPhase7_5": "dynamic from CALL_POLICIES"
+    },
+    "zombieToggleShowRelation": {
+      "present": true,
+      "expectedPhase7_5": "removed"
+    },
+    "dialogueCommitmentFeedbackApply": {
+      "hasApplyFunc": false,
+      "hasCommitmentUpdate": true,
+      "expectedPhase2_5": "+_applyDialogueCommitmentFeedback (separate from commitment_update)"
+    }
+  }
+}

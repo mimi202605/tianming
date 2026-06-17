@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>右侧栏图标 · v4 · 金描定稿 + 虎符升级 + 图重切</title>
+<style>
+:root{
+  --ink-50:#f8f3e8;--ink-100:#ede5d0;--ink-200:#d4c9b0;--ink-300:#9d917d;
+  --ink-400:#6b5d4f;--ink-500:#3a3530;--ink-600:#2a2520;--ink-700:#1c1914;
+  --ink-800:#12100e;--ink-900:#0a0908;
+  --gold-300:#d4be7a;--gold-400:#b89a53;--gold-500:#8a6d2b;--gold-600:#6b5010;
+  --vermillion-300:#d4706a;--vermillion-400:#c04030;--vermillion-500:#8b2e25;
+  --celadon-400:#7eb8a7;--indigo-400:#4a6fa5;--amber-400:#c9a84c;
+  --seal-red:#a32312;--cream:#f4ecd4;
+}
+html,body{margin:0;padding:0;background:#0a0807;color:var(--ink-100);font-family:"STKaiti","KaiTi","楷体",serif;line-height:1.55;}
+body{padding:36px 40px 96px;background-image:
+  radial-gradient(circle at 20% 10%,rgba(184,154,83,.06),transparent 50%),
+  radial-gradient(circle at 80% 90%,rgba(192,64,48,.04),transparent 50%);}
+h1{font-size:28px;letter-spacing:.36em;color:var(--gold-300);margin:0 0 6px;text-align:center;font-weight:500;}
+.subtitle{font-size:13px;color:var(--ink-300);letter-spacing:.24em;text-align:center;margin-bottom:36px;}
+h2.tier{margin:48px 0 16px;font-size:17px;letter-spacing:.28em;color:var(--gold-300);font-weight:500;
+  padding-left:14px;border-left:3px solid var(--vermillion-400);}
+h2.tier .tier-sub{font-size:12px;color:var(--ink-300);letter-spacing:.14em;margin-left:14px;font-weight:400;}
+.intro{font-size:12.5px;color:var(--ink-300);letter-spacing:.06em;margin:0 0 18px;padding-left:18px;line-height:1.85;}
+.intro b{color:var(--gold-300);}
+.intro code{font-family:Consolas,monospace;font-size:12px;color:var(--vermillion-300);background:rgba(192,64,48,.1);padding:1px 6px;border-radius:2px;}
+.status-table{width:100%;max-width:920px;margin:0 auto 12px;border-collapse:collapse;background:rgba(20,18,14,.7);border:1px solid rgba(184,154,83,.22);}
+.status-table th,.status-table td{padding:10px 14px;text-align:left;border-bottom:1px solid rgba(58,53,48,.55);font-size:13px;letter-spacing:.06em;}
+.status-table th{background:rgba(40,32,22,.95);color:var(--gold-300);letter-spacing:.18em;font-size:12px;font-weight:500;}
+.status-table .icon-cell{width:64px;text-align:center;}
+.status-table .lock{color:var(--celadon-400);}
+.status-table .pending{color:var(--amber-400);}
+.status-table .upgrade{color:var(--vermillion-300);}
+.status-table b{color:var(--gold-300);}
+.cand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.cand{padding:14px 12px 12px;background:rgba(28,25,20,.55);border:1px solid rgba(184,154,83,.16);border-radius:3px;text-align:center;transition:all .2s;}
+.cand:hover{border-color:rgba(244,211,128,.55);background:rgba(28,25,20,.9);}
+.cand.recommended{border-color:rgba(216,107,73,.65);background:rgba(48,18,10,.45);box-shadow:0 0 14px rgba(180,40,20,.18);}
+.cand.recommended .cand-name:before{content:"★ ";color:var(--vermillion-300);}
+.cand-name{font-size:15px;color:var(--gold-300);letter-spacing:.16em;margin-bottom:2px;}
+.cand-key{font-size:10px;color:var(--ink-400);letter-spacing:.08em;}
+.cand-desc{font-size:11px;color:var(--ink-400);letter-spacing:.06em;margin:6px 0 12px;min-height:42px;line-height:1.65;}
+.cand-icons{display:flex;justify-content:center;gap:8px;align-items:center;}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,rgba(60,42,24,.92),rgba(14,11,9,.96) 70%);
+  border:1px solid rgba(184,154,83,.45);
+  box-shadow:inset 0 1px 0 rgba(255,239,180,.12),inset 0 -8px 14px rgba(0,0,0,.36),
+    0 2px 8px rgba(0,0,0,.44),0 0 9px rgba(205,166,82,.14);}
+.icon-btn.s-72{width:72px;height:72px;}
+.icon-btn.s-56{width:56px;height:56px;}
+.icon-btn.s-48{width:48px;height:48px;}
+.rails{display:flex;justify-content:center;margin:24px auto;gap:24px;}
+.rail{padding:18px 14px;background:linear-gradient(180deg,rgba(34,28,20,.96),rgba(12,9,7,.96));
+  border:1px solid rgba(184,154,83,.32);border-radius:6px;display:flex;flex-direction:column;gap:11px;align-items:center;min-width:96px;}
+.rail-title{font-size:12px;color:var(--gold-400);letter-spacing:.32em;padding-bottom:8px;border-bottom:1px solid rgba(184,154,83,.18);width:76px;text-align:center;margin-bottom:6px;}
+.rail-foot{font-size:10.5px;color:var(--ink-300);letter-spacing:.16em;text-align:center;margin-top:10px;line-height:1.7;padding-top:8px;border-top:1px solid rgba(184,154,83,.16);width:76px;}
+.note-box{margin:32px auto 0;max-width:980px;padding:18px 24px;background:rgba(28,25,20,.7);
+  border:1px solid rgba(184,154,83,.2);border-radius:4px;font-size:13px;line-height:1.85;color:var(--ink-200);}
+.note-box h3{margin:0 0 10px;font-size:14px;color:var(--gold-300);letter-spacing:.2em;font-weight:500;}
+.note-box ul{margin:8px 0;padding-left:22px;}
+.note-box li{margin-bottom:6px;}
+.note-box b{color:var(--gold-300);}
+.note-box code{font-family:Consolas,monospace;font-size:12px;color:var(--vermillion-300);background:rgba(192,64,48,.1);padding:1px 6px;border-radius:2px;}
+.upgrade-label{display:inline-block;font-size:9.5px;color:#e88a78;letter-spacing:.22em;padding:2px 8px;margin-top:6px;border:1px solid rgba(216,107,73,.5);background:rgba(192,64,48,.15);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<h1>右 侧 栏 图 标 · v 4</h1>
+<div class="subtitle">金描定稿 · 虎符升级 · 图重切 (基于实际面板内容)</div>
+
+<!-- ============ 状态总览 ============ -->
+<h2 class="tier">壹 · 选定状态<span class="tier-sub">8 slot · 6 锁 · 2 待</span></h2>
+<div class="intro">style 统一 <b>金描</b>。剩 2 项·虎符 升级 (3 variant 选一) + 图 重切 (基于面板实际内容)。</div>
+
+<table class="status-table">
+  <thead>
+    <tr><th>slot</th><th>立意</th><th>状态</th><th class="icon-cell">预览</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><b>ol · 纲</b></td><td>司南罗盘</td><td class="lock">✓ 锁</td><td class="icon-cell">
+      <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+        <rect x="5" y="5" width="38" height="38" rx="1" fill="none" stroke="#d4be7a" stroke-width="1.4"/>
+        <circle cx="24" cy="24" r="14" fill="rgba(60,42,24,.45)" stroke="#d4be7a" stroke-width=".9"/>
+        <g stroke="#d4be7a" stroke-width=".9"><line x1="24" y1="10" x2="24" y2="13"/><line x1="24" y1="35" x2="24" y2="38"/><line x1="10" y1="24" x2="13" y2="24"/><line x1="35" y1="24" x2="38" y2="24"/></g>
+        <ellipse cx="22" cy="26" rx="6.5" ry="3" fill="#d4be7a" transform="rotate(-32 22 26)"/>
+        <circle cx="24" cy="24" r="1.2" fill="#1c1914"/>
+      </svg></div>
+    </td></tr>
+    <tr><td><b>issue · 政</b></td><td>衙门殿宇 (改)</td><td class="lock">✓ 锁</td><td class="icon-cell">
+      <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+        <defs><linearGradient id="t-dy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4be7a"/><stop offset="1" stop-color="#6b5010"/></linearGradient></defs>
+        <path d="M14 12 L34 12" stroke="#6b5010" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M14 12 Q12 9 13 6" stroke="#6b5010" stroke-width="1.4" fill="none"/>
+        <path d="M34 12 Q36 9 35 6" stroke="#6b5010" stroke-width="1.4" fill="none"/>
+        <path d="M14 12 L4 22 Q3 23 4 24 L44 24 Q45 23 44 22 L34 12 Z" fill="url(#t-dy)" stroke="#6b5010" stroke-width=".8"/>
+        <line x1="6" y1="22" x2="42" y2="22" stroke="#6b5010" stroke-width=".5"/>
+        <g fill="#8b2e25"><rect x="9" y="24" width="2.5" height="14"/><rect x="36.5" y="24" width="2.5" height="14"/>
+          <rect x="17" y="24" width="2.5" height="14"/><rect x="28.5" y="24" width="2.5" height="14"/></g>
+        <rect x="16" y="25" width="16" height="2.5" fill="#1c1914" stroke="#d4be7a" stroke-width=".4"/>
+        <path d="M20 38 L20 30 L28 30 L28 38" fill="#a32312" stroke="#6b5010" stroke-width=".5"/>
+        <line x1="24" y1="30" x2="24" y2="38" stroke="#741108" stroke-width=".6"/>
+        <circle cx="22" cy="33" r=".7" fill="#d4be7a"/><circle cx="26" cy="33" r=".7" fill="#d4be7a"/>
+        <rect x="6" y="38" width="36" height="1.6" fill="#9d917d"/>
+        <rect x="4" y="40" width="40" height="1.6" fill="#9d917d"/>
+        <rect x="2" y="42" width="44" height="1.6" fill="#9d917d"/>
+      </svg></div>
+    </td></tr>
+    <tr><td><b>policy · 文</b></td><td>竹简卷</td><td class="lock">✓ 锁</td><td class="icon-cell">
+      <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+        <defs><linearGradient id="t-zj" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6d2b"/><stop offset=".5" stop-color="#d4be7a"/><stop offset="1" stop-color="#6b5010"/></linearGradient></defs>
+        <g fill="url(#t-zj)" stroke="#6b5010" stroke-width=".4">
+          <rect x="6.4" y="7" width="3.4" height="34" rx=".4"/><rect x="10.6" y="7" width="3.4" height="34" rx=".4"/>
+          <rect x="14.8" y="7" width="3.4" height="34" rx=".4"/><rect x="19" y="7" width="3.4" height="34" rx=".4"/>
+          <rect x="23.2" y="7" width="3.4" height="34" rx=".4"/><rect x="27.4" y="7" width="3.4" height="34" rx=".4"/>
+          <rect x="31.6" y="7" width="3.4" height="34" rx=".4"/>
+          <path d="M35.8 7 Q39 8 41 10 Q42 12 40 14 Q41 18 41 22 Q41 28 41 34 Q42 38 40 40 Q39 41 35.8 41 Z"/>
+        </g>
+        <rect x="4" y="9.5" width="38" height="2" fill="#a32312"/>
+        <rect x="4" y="37" width="38" height="2" fill="#a32312"/>
+      </svg></div>
+    </td></tr>
+    <tr><td><b>office · 臣</b></td><td>朝班 v2 一品紫</td><td class="lock">✓ 锁</td><td class="icon-cell">
+      <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+        <defs><linearGradient id="t-cb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8e44ad"/><stop offset="1" stop-color="#2a163a"/></linearGradient></defs>
+        <rect x="2" y="42" width="44" height="2" fill="#3a3530"/>
+        <g opacity=".88">
+          <path d="M5.5 42 L5 22 Q5 18 6 16 Q7 14 9.5 14 L10.5 14 Q13 14 14 16 Q15 18 15 22 L14.5 42 Z" fill="#5a8f7f"/>
+          <ellipse cx="10" cy="12" rx="2.6" ry="3" fill="#ede5d0"/>
+          <path d="M6.5 9.5 Q6.5 6 10 5 Q13.5 6 13.5 9.5 Z" fill="#1c1914"/>
+          <ellipse cx="4.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+          <ellipse cx="15.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+          <path d="M9.2 22 L10.8 22 L10.7 31 Q10.5 32 10 32 Q9.5 32 9.3 31 Z" fill="#f8f3e8"/>
+        </g>
+        <path d="M18 43 L17.5 21 Q17.5 17 18.5 14 Q19.5 11 23 11 L25 11 Q28.5 11 29.5 14 Q30.5 17 30.5 21 L30 43 Z" fill="url(#t-cb)"/>
+        <rect x="18" y="29" width="12" height="2.4" fill="#6b5010"/>
+        <ellipse cx="24" cy="9" rx="3" ry="3.4" fill="#f4ecd4"/>
+        <path d="M19 6 Q19 1.5 24 0.5 Q29 1.5 29 6 L29 7 L19 7 Z" fill="#1c1914"/>
+        <ellipse cx="13" cy="5.5" rx="3.5" ry="1.2" fill="#1c1914"/>
+        <ellipse cx="35" cy="5.5" rx="3.5" ry="1.2" fill="#1c1914"/>
+        <path d="M22.5 14 L25.5 14 L25.5 30 Q25 31 24 31 Q23 31 22.5 30 Z" fill="#f8f3e8"/>
+        <g opacity=".92">
+          <path d="M33.5 42 L33 22 Q33 18 34 16 Q35 14 37.5 14 L38.5 14 Q41 14 42 16 Q43 18 43 22 L42.5 42 Z" fill="#8b2e25"/>
+          <ellipse cx="38" cy="12" rx="2.6" ry="3" fill="#ede5d0"/>
+          <path d="M34.5 9.5 Q34.5 6 38 5 Q41.5 6 41.5 9.5 Z" fill="#1c1914"/>
+          <ellipse cx="32.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+          <ellipse cx="43.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+          <path d="M37.2 22 L38.8 22 L38.7 31 Q38.5 32 38 32 Q37.5 32 37.3 31 Z" fill="#f8f3e8"/>
+        </g>
+      </svg></div>
+    </td></tr>
+    <tr><td><b>army · 军</b></td><td>虎符</td><td class="upgrade">↑ 升级 (3 variant 选)</td><td class="icon-cell">见下</td></tr>
+    <tr><td><b>map · 图</b></td><td>—</td><td class="pending">⌛ 待 (6 新立意)</td><td class="icon-cell">见下</td></tr>
+    <tr><td><b>finance · 户</b></td><td>算盘 (改)</td><td class="lock">✓ 锁</td><td class="icon-cell">
+      <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+        <defs><linearGradient id="t-sp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a6d2b"/><stop offset="1" stop-color="#3a3530"/></linearGradient></defs>
+        <rect x="6" y="8" width="36" height="32" fill="none" stroke="url(#t-sp)" stroke-width="2.5" rx="1"/>
+        <rect x="5" y="7" width="3" height="3" fill="#6b5010"/><rect x="40" y="7" width="3" height="3" fill="#6b5010"/>
+        <rect x="5" y="38" width="3" height="3" fill="#6b5010"/><rect x="40" y="38" width="3" height="3" fill="#6b5010"/>
+        <rect x="6" y="20" width="36" height="2" fill="#6b5010"/>
+        <g stroke="#6b5010" stroke-width=".7">
+          <line x1="10" y1="10" x2="10" y2="38"/><line x1="14.5" y1="10" x2="14.5" y2="38"/>
+          <line x1="19" y1="10" x2="19" y2="38"/><line x1="24" y1="10" x2="24" y2="38"/>
+          <line x1="29" y1="10" x2="29" y2="38"/><line x1="33.5" y1="10" x2="33.5" y2="38"/>
+          <line x1="38" y1="10" x2="38" y2="38"/>
+        </g>
+        <g fill="#d4be7a" stroke="#6b5010" stroke-width=".3">
+          <rect x="8.4" y="11.5" width="3.2" height="2.4" rx=".8"/><rect x="8.4" y="14.7" width="3.2" height="2.4" rx=".8"/>
+          <rect x="12.9" y="11.5" width="3.2" height="2.4" rx=".8"/><rect x="12.9" y="14.7" width="3.2" height="2.4" rx=".8"/>
+          <rect x="17.4" y="11.5" width="3.2" height="2.4" rx=".8"/><rect x="17.4" y="14.7" width="3.2" height="2.4" rx=".8"/>
+          <rect x="22.4" y="11.5" width="3.2" height="2.4" rx=".8"/><rect x="22.4" y="14.7" width="3.2" height="2.4" rx=".8"/>
+          <rect x="27.4" y="11.5" width="3.2" height="2.4" rx=".8"/><rect x="27.4" y="14.7" width="3.2" height="2.4" rx=".8"/>
+          <rect x="31.9" y="11.5" width="3.2" height="2.4" rx=".8"/><rect x="31.9" y="14.7" width="3.2" height="2.4" rx=".8"/>
+          <rect x="36.4" y="11.5" width="3.2" height="2.4" rx=".8"/><rect x="36.4" y="14.7" width="3.2" height="2.4" rx=".8"/>
+        </g>
+        <g fill="#d4be7a" stroke="#6b5010" stroke-width=".3">
+          <rect x="8.4" y="29.5" width="3.2" height="2.4" rx=".8"/><rect x="8.4" y="32.5" width="3.2" height="2.4" rx=".8"/>
+          <rect x="22.4" y="32.5" width="3.2" height="2.4" rx=".8"/>
+          <rect x="36.4" y="29.5" width="3.2" height="2.4" rx=".8"/><rect x="36.4" y="32.5" width="3.2" height="2.4" rx=".8"/>
+        </g>
+      </svg></div>
+    </td></tr>
+    <tr><td><b>archive · 制</b></td><td>官制树</td><td class="lock">✓ 锁</td><td class="icon-cell">
+      <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+        <rect x="19" y="4" width="10" height="6.5" rx=".8" fill="#c04030" stroke="#d4be7a" stroke-width=".7"/>
+        <line x1="24" y1="10.5" x2="24" y2="14.5" stroke="#d4be7a" stroke-width=".9"/>
+        <line x1="9" y1="14.5" x2="39" y2="14.5" stroke="#d4be7a" stroke-width=".8"/>
+        <g fill="#d4be7a" stroke="#6b5010" stroke-width=".5">
+          <rect x="7" y="16.5" width="8" height="5.5" rx=".6"/>
+          <rect x="20" y="16.5" width="8" height="5.5" rx=".6"/>
+          <rect x="33" y="16.5" width="8" height="5.5" rx=".6"/>
+        </g>
+        <line x1="4" y1="25" x2="44" y2="25" stroke="#d4be7a" stroke-width=".6"/>
+        <g fill="#8a6d2b" stroke="#6b5010" stroke-width=".3">
+          <rect x="3.5" y="25" width="6" height="4" rx=".4"/><rect x="10.5" y="25" width="6" height="4" rx=".4"/>
+          <rect x="17.5" y="25" width="6" height="4" rx=".4"/><rect x="24.5" y="25" width="6" height="4" rx=".4"/>
+          <rect x="31.5" y="25" width="6" height="4" rx=".4"/><rect x="38.5" y="25" width="6" height="4" rx=".4"/>
+        </g>
+        <g fill="#d4be7a">
+          <circle cx="6.5" cy="35" r="1.1"/><circle cx="13.5" cy="35" r="1.1"/><circle cx="20.5" cy="35" r="1.1"/>
+          <circle cx="27.5" cy="35" r="1.1"/><circle cx="34.5" cy="35" r="1.1"/><circle cx="41.5" cy="35" r="1.1"/>
+        </g>
+      </svg></div>
+    </td></tr>
+  </tbody>
+</table>
+
+
+
+
+
+<!-- ============================================================
+     贰 · 虎符 · 3 variant 升级
+     ============================================================ -->
+<h2 class="tier">贰 · 虎符 升级<span class="tier-sub">3 variant 选一 · 蹲虎精修 / 双半合符 / 虎首特写</span></h2>
+<div class="intro">原 v3 蹲虎过简 · 现 3 variant 让你定方向。</div>
+
+<div class="cand-grid">
+
+  <!-- v2a · 蹲虎精修 -->
+  <div class="cand">
+    <div class="cand-name">蹲 虎 精 修</div>
+    <div class="cand-key">army-tiger-a</div>
+    <div class="cand-desc">v3 蹲虎细化 · 立体光影 · 篆纹刻字 + 朱书 · 单半符状态</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs>
+          <linearGradient id="ta-body" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#e6c47e"/><stop offset=".35" stop-color="#a8884a"/><stop offset=".75" stop-color="#6b5010"/><stop offset="1" stop-color="#2a1808"/>
+          </linearGradient>
+          <linearGradient id="ta-shadow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3a2818"/><stop offset="1" stop-color="#1c1408"/>
+          </linearGradient>
+        </defs>
+        <!-- shadow under tiger -->
+        <ellipse cx="24" cy="40" rx="20" ry="2.5" fill="#0a0908" opacity=".6"/>
+        <!-- tiger body crouching profile -->
+        <path d="M5 28 Q5 23 9 22 L14 20 Q18 17 24 17 Q31 17 36 20 Q40 22 42 26 Q44 30 42 32 L38 33 Q34 35 26 35 Q18 35 11 33 Q6 32 5 30 Z"
+              fill="url(#ta-body)" stroke="#2a1808" stroke-width=".7"/>
+        <!-- back ridge highlight -->
+        <path d="M9 22 Q18 18 30 18 Q38 19 41 22" stroke="#e6c47e" stroke-width=".5" fill="none" opacity=".5"/>
+        <!-- head + ear -->
+        <path d="M36 20 Q41 16 43 18 Q44 21 41 23" fill="url(#ta-body)" stroke="#2a1808" stroke-width=".6"/>
+        <path d="M40 16 L41.5 14 L43 17 Z" fill="url(#ta-body)" stroke="#2a1808" stroke-width=".4"/>
+        <!-- eye -->
+        <circle cx="40" cy="20" r=".9" fill="#1c1914"/>
+        <circle cx="40.2" cy="19.8" r=".3" fill="#f4ecd4"/>
+        <!-- snout / mouth -->
+        <path d="M43 22 L43.5 21 L43 22.5" stroke="#1c1914" stroke-width=".4" fill="none"/>
+        <!-- whiskers -->
+        <g stroke="#3a2818" stroke-width=".3"><line x1="42" y1="21.5" x2="44.5" y2="21"/><line x1="42" y1="22.2" x2="44.5" y2="22.5"/></g>
+        <!-- 4 legs -->
+        <g fill="url(#ta-body)" stroke="#2a1808" stroke-width=".4">
+          <path d="M10 33 L9 39 L13 39 L13 33 Z"/>
+          <path d="M18 34 L17 39 L21 39 L21 34 Z"/>
+          <path d="M27 35 L26 39 L30 39 L30 34 Z"/>
+          <path d="M36 33 L35 39 L39 39 L39 32 Z"/>
+        </g>
+        <!-- paw pads (small dots) -->
+        <g fill="#1c1914">
+          <circle cx="11" cy="39" r=".5"/><circle cx="19" cy="39" r=".5"/>
+          <circle cx="28" cy="39" r=".5"/><circle cx="37" cy="39" r=".5"/>
+        </g>
+        <!-- tail curled -->
+        <path d="M5 28 Q2 26 1 28 Q1 31 4 30" stroke="#a8884a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M5 28 Q2 26 1 28 Q1 31 4 30" stroke="#1c1914" stroke-width=".5" fill="none"/>
+        <!-- tiger stripes (5 thick + 2 thin) -->
+        <g stroke="#1c1914" stroke-width="1" fill="none" stroke-linecap="round">
+          <path d="M12 21 Q12 26 12 31"/>
+          <path d="M18 19 Q18 25 18 33"/>
+          <path d="M24 18 Q24 25 24 34"/>
+          <path d="M30 19 Q30 25 30 33"/>
+          <path d="M35 21 Q35 26 35 32"/>
+        </g>
+        <g stroke="#1c1914" stroke-width=".4" fill="none" opacity=".75">
+          <path d="M15 20 Q15 24 15 30"/>
+          <path d="M21 19 Q21 24 21 32"/>
+          <path d="M27 19 Q27 24 27 33"/>
+          <path d="M32 19 Q32 24 32 31"/>
+        </g>
+        <!-- 篆 inscription strip (3 lines on body) -->
+        <g stroke="#a32312" stroke-width=".5" fill="none" opacity=".88">
+          <path d="M14 26 L17 26 M14 28 L17 28"/>
+          <path d="M20 26 L23 26 M20 28 L22 28"/>
+          <path d="M26 26 L29 26 M26 28 L29 28"/>
+          <path d="M32 26 L35 26 M32 28 L34 28"/>
+        </g>
+        <!-- split line (left edge·dashed showing this is the LEFT half) -->
+        <path d="M5 23 L6 26 L6 30 L5 33" stroke="#a32312" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-dasharray="2.5,1.5"/>
+      </svg></div>
+    </div>
+  </div>
+
+  <!-- v2b · 双半合符 -->
+  <div class="cand">
+    <div class="cand-name">双 半 合 符</div>
+    <div class="cand-key">army-tiger-b</div>
+    <div class="cand-desc">左右两半 · 中央合缝 · 一目了然 "符" 字本义 · 调兵之凭信</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs>
+          <linearGradient id="tb-bodyL" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#e6c47e"/><stop offset=".5" stop-color="#a8884a"/><stop offset="1" stop-color="#3a2818"/>
+          </linearGradient>
+          <linearGradient id="tb-bodyR" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#caa05a"/><stop offset=".5" stop-color="#8a6d2b"/><stop offset="1" stop-color="#2a1808"/>
+          </linearGradient>
+        </defs>
+        <!-- shadow -->
+        <ellipse cx="24" cy="40" rx="20" ry="2.5" fill="#0a0908" opacity=".55"/>
+
+        <!-- LEFT half (slightly forward / offset) -->
+        <g>
+          <!-- left body -->
+          <path d="M3 25 Q3 21 7 20 L13 18 Q18 16 22 17 Q23 18 23 21 L23 33 Q22 35 18 35 Q12 35 8 33 Q4 32 3 29 Z"
+                fill="url(#tb-bodyL)" stroke="#2a1808" stroke-width=".7"/>
+          <!-- left head -->
+          <path d="M22 17 L22 13 Q22 12 23 12 L23 16 Z" fill="url(#tb-bodyL)" stroke="#2a1808" stroke-width=".4"/>
+          <!-- left ear -->
+          <path d="M23 13 L22 11 L21 13 Z" fill="url(#tb-bodyL)" stroke="#2a1808" stroke-width=".3"/>
+          <!-- left tail (curling back) -->
+          <path d="M3 25 Q1 22 2 24 Q2 28 4 28" stroke="#a8884a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+          <!-- left legs -->
+          <path d="M7 33 L7 38 L10 38 L10 33" fill="url(#tb-bodyL)" stroke="#2a1808" stroke-width=".4"/>
+          <path d="M14 34 L14 38 L17 38 L17 33" fill="url(#tb-bodyL)" stroke="#2a1808" stroke-width=".4"/>
+          <!-- left stripes -->
+          <g stroke="#1c1914" stroke-width=".8" fill="none" stroke-linecap="round">
+            <path d="M9 19 Q9 25 9 32"/><path d="M14 18 Q14 25 14 33"/><path d="M19 17 Q19 25 19 33"/>
+          </g>
+          <!-- 篆 inscription on left -->
+          <g stroke="#a32312" stroke-width=".5" fill="none">
+            <line x1="6" y1="26" x2="9" y2="26"/>
+            <line x1="11" y1="26" x2="14" y2="26"/>
+            <line x1="16" y1="26" x2="19" y2="26"/>
+            <line x1="7" y1="28" x2="9" y2="28"/>
+            <line x1="12" y1="28" x2="14" y2="28"/>
+            <line x1="17" y1="28" x2="19" y2="28"/>
+          </g>
+        </g>
+
+        <!-- RIGHT half (offset back showing they JOIN) -->
+        <g>
+          <path d="M25 17 Q26 16 30 17 L36 18 Q41 19 43 22 Q45 25 45 28 Q45 32 42 33 L36 35 Q30 35 27 33 Q25 32 25 30 Z"
+                fill="url(#tb-bodyR)" stroke="#2a1808" stroke-width=".7"/>
+          <!-- right head + ear -->
+          <path d="M40 18 L41.5 14 L43 17" fill="url(#tb-bodyR)" stroke="#2a1808" stroke-width=".4"/>
+          <ellipse cx="42" cy="20" rx="1.5" ry="1.8" fill="url(#tb-bodyR)" stroke="#2a1808" stroke-width=".4"/>
+          <!-- right eye -->
+          <circle cx="42" cy="20" r=".6" fill="#1c1914"/>
+          <!-- right legs -->
+          <path d="M30 33 L30 38 L33 38 L33 33" fill="url(#tb-bodyR)" stroke="#2a1808" stroke-width=".4"/>
+          <path d="M37 33 L37 38 L40 38 L40 32" fill="url(#tb-bodyR)" stroke="#2a1808" stroke-width=".4"/>
+          <!-- right stripes -->
+          <g stroke="#1c1914" stroke-width=".8" fill="none" stroke-linecap="round">
+            <path d="M28 18 Q28 25 28 33"/><path d="M33 18 Q33 25 33 33"/><path d="M38 18 Q38 25 38 32"/>
+          </g>
+          <!-- 篆 inscription on right -->
+          <g stroke="#a32312" stroke-width=".5" fill="none">
+            <line x1="26" y1="26" x2="29" y2="26"/>
+            <line x1="31" y1="26" x2="34" y2="26"/>
+            <line x1="36" y1="26" x2="39" y2="26"/>
+            <line x1="27" y1="28" x2="29" y2="28"/>
+            <line x1="32" y1="28" x2="34" y2="28"/>
+            <line x1="37" y1="28" x2="39" y2="28"/>
+          </g>
+        </g>
+
+        <!-- center seam (where two halves join) -->
+        <line x1="24" y1="14" x2="24" y2="35" stroke="#a32312" stroke-width=".8" stroke-dasharray="1.5,1.2"/>
+        <!-- joint emphasis dots -->
+        <circle cx="24" cy="18" r=".7" fill="#741108"/>
+        <circle cx="24" cy="26" r=".9" fill="#a32312"/>
+        <circle cx="24" cy="33" r=".7" fill="#741108"/>
+      </svg></div>
+    </div>
+    <span class="upgrade-label">推 荐 ★</span>
+  </div>
+
+  <!-- v2c · 虎首特写 -->
+  <div class="cand">
+    <div class="cand-name">虎 首 特 写</div>
+    <div class="cand-key">army-tiger-c</div>
+    <div class="cand-desc">正面虎首铜面 · 双目威慑 + 獠牙 + 王字 + 鬃毛 · 强 "威" 感</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs>
+          <radialGradient id="tc-head" cx="50%" cy="40%">
+            <stop offset="0" stop-color="#e6c47e"/><stop offset=".4" stop-color="#a8884a"/><stop offset=".85" stop-color="#3a2818"/>
+          </radialGradient>
+        </defs>
+        <!-- shadow -->
+        <ellipse cx="24" cy="44" rx="14" ry="1.5" fill="#0a0908" opacity=".55"/>
+        <!-- mane / ruff outer -->
+        <g fill="url(#tc-head)" stroke="#2a1808" stroke-width=".4">
+          <path d="M5 18 L4 14 L7 14 L7 18 Z"/>
+          <path d="M8 12 L7 9 L10 9 L11 13 Z"/>
+          <path d="M12 8 L11 5 L14 5 L15 8 Z"/>
+          <path d="M16 4 L17 7 L19 7 L18 4 Z"/>
+          <path d="M22 3 L24 3 L26 3 Z"/>
+          <path d="M30 4 L31 7 L29 7 L30 4 Z"/>
+          <path d="M34 5 L37 5 L36 8 L33 8 Z"/>
+          <path d="M38 9 L41 9 L40 12 L37 13 Z"/>
+          <path d="M41 14 L44 14 L43 18 L40 18 Z"/>
+        </g>
+        <!-- main head shape (rounded square·front view) -->
+        <path d="M8 14 Q8 7 16 5 Q24 4 32 5 Q40 7 40 14 L40 26 Q40 32 32 36 L24 38 L16 36 Q8 32 8 26 Z"
+              fill="url(#tc-head)" stroke="#2a1808" stroke-width="1"/>
+        <!-- 王 character forehead marking (3 horizontal lines) -->
+        <g stroke="#1c1914" stroke-width="1.4" stroke-linecap="round">
+          <line x1="20" y1="9" x2="28" y2="9"/>
+          <line x1="20" y1="13" x2="28" y2="13"/>
+          <line x1="24" y1="9" x2="24" y2="18"/>
+          <line x1="20" y1="17" x2="28" y2="17"/>
+        </g>
+        <!-- ears -->
+        <path d="M9 12 L7 8 L13 10 Z" fill="url(#tc-head)" stroke="#2a1808" stroke-width=".5"/>
+        <path d="M39 12 L41 8 L35 10 Z" fill="url(#tc-head)" stroke="#2a1808" stroke-width=".5"/>
+        <!-- ear inner -->
+        <path d="M10 11 L9.5 9 L12 10 Z" fill="#741108"/>
+        <path d="M38 11 L38.5 9 L36 10 Z" fill="#741108"/>
+        <!-- eyes (large·glaring) -->
+        <g>
+          <ellipse cx="16" cy="22" rx="3" ry="2.5" fill="#1c1914" stroke="#3a2818" stroke-width=".5"/>
+          <ellipse cx="16" cy="22" rx="2.5" ry="2" fill="#c9a84c"/>
+          <ellipse cx="16" cy="22" rx="1.2" ry="1.8" fill="#0a0908"/>
+          <circle cx="16.4" cy="21.4" r=".5" fill="#f4ecd4"/>
+        </g>
+        <g>
+          <ellipse cx="32" cy="22" rx="3" ry="2.5" fill="#1c1914" stroke="#3a2818" stroke-width=".5"/>
+          <ellipse cx="32" cy="22" rx="2.5" ry="2" fill="#c9a84c"/>
+          <ellipse cx="32" cy="22" rx="1.2" ry="1.8" fill="#0a0908"/>
+          <circle cx="32.4" cy="21.4" r=".5" fill="#f4ecd4"/>
+        </g>
+        <!-- snout outline -->
+        <path d="M20 26 Q20 30 24 31 Q28 30 28 26" stroke="#1c1914" stroke-width=".6" fill="rgba(247,234,212,.25)"/>
+        <!-- nose -->
+        <path d="M22 25 L26 25 L25 27 L23 27 Z" fill="#1c1914"/>
+        <!-- mouth split -->
+        <line x1="24" y1="27" x2="24" y2="30" stroke="#1c1914" stroke-width=".5"/>
+        <path d="M20 30 Q24 32 28 30" stroke="#1c1914" stroke-width=".7" fill="none"/>
+        <!-- fangs -->
+        <path d="M21 30 L21 33 L22 31 Z" fill="#f4ecd4" stroke="#1c1914" stroke-width=".3"/>
+        <path d="M27 30 L27 33 L26 31 Z" fill="#f4ecd4" stroke="#1c1914" stroke-width=".3"/>
+        <!-- whiskers -->
+        <g stroke="#1c1914" stroke-width=".4">
+          <line x1="20" y1="28" x2="14" y2="27"/>
+          <line x1="20" y1="29" x2="14" y2="29.5"/>
+          <line x1="28" y1="28" x2="34" y2="27"/>
+          <line x1="28" y1="29" x2="34" y2="29.5"/>
+        </g>
+        <!-- 篆 inscription on bottom face / chin -->
+        <g stroke="#a32312" stroke-width=".5">
+          <line x1="18" y1="34" x2="22" y2="34"/>
+          <line x1="26" y1="34" x2="30" y2="34"/>
+          <line x1="18" y1="36" x2="20" y2="36"/>
+          <line x1="22" y1="36" x2="24" y2="36"/>
+          <line x1="26" y1="36" x2="28" y2="36"/>
+        </g>
+      </svg></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     叁 · 图 重切 · 6 立意 (基于实际面板内容)
+     ============================================================ -->
+<h2 class="tier">叁 · 图 · 6 新立意<span class="tier-sub">点击后开 = <code>renderMapPanelRich</code> · 行政区划面板 · 非天下舆图</span></h2>
+<div class="intro">
+  <b>关键发现</b> · grep <code>phase8-formal-rightrail.js L794</code> · 此 slot 开的是 <b>行政区划面板</b>·内容是 区划数 / 总人口 / 危机 / 势力 / 区划 detail (主官/官职/人口/户数/民心/腐败/地形/特产/税负) + 4 action (安民/巡按/调粮/拟诏)。<br>
+  → 不是 "天下舆图" (中央地图)·是 "区划户籍管理"。意象应反映 <b>图册 / 簿 / 户口 / 主官 / 田赋</b>·非纯地理。
+</div>
+
+<div class="cand-grid">
+
+  <!-- 鱼鳞图册 -->
+  <div class="cand recommended">
+    <div class="cand-name">鱼 鳞 图 册</div>
+    <div class="cand-key">map-1 · 明代量田画方</div>
+    <div class="cand-desc">明代登记田亩 · 图鳞状 · 主官查验 · 文字"图册" 本义对应</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs>
+          <linearGradient id="ylt-cover" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6d2b"/><stop offset=".5" stop-color="#caa05a"/><stop offset="1" stop-color="#6b5010"/></linearGradient>
+          <linearGradient id="ylt-page" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4ecd4"/><stop offset="1" stop-color="#d4c9b0"/></linearGradient>
+        </defs>
+        <!-- back cover (slight angle showing depth) -->
+        <path d="M6 8 L41 6 L42 41 L7 43 Z" fill="#3a2818" stroke="#1c1408" stroke-width=".7"/>
+        <!-- spine -->
+        <path d="M7 8 L7 43 L6 43 L6 8 Z" fill="#1c1408"/>
+        <!-- front cover (slightly tilted) -->
+        <path d="M8 6 L40 4 L41 41 L9 43 Z" fill="url(#ylt-cover)" stroke="#1c1408" stroke-width=".7"/>
+        <!-- title plaque (blank·no chars) -->
+        <rect x="16" y="9" width="14" height="6" fill="#a32312" stroke="#1c1408" stroke-width=".4"/>
+        <line x1="18" y1="11" x2="28" y2="11" stroke="#f4ecd4" stroke-width=".4"/>
+        <line x1="18" y1="13" x2="28" y2="13" stroke="#f4ecd4" stroke-width=".4"/>
+        <!-- decorative border on cover -->
+        <rect x="10" y="6.5" width="29" height="34" fill="none" stroke="#1c1408" stroke-width=".4" rx="1"/>
+        <rect x="11" y="7.5" width="27" height="32" fill="none" stroke="#1c1408" stroke-width=".3" rx="1"/>
+        <!-- fish-scale plots pattern on cover (鱼鳞 grid) -->
+        <g stroke="#1c1408" stroke-width=".35" fill="rgba(247,234,212,.15)">
+          <path d="M14 18 L17 17.5 L20 18 L17 19.5 Z"/>
+          <path d="M20 18 L23 17.5 L26 18 L23 19.5 Z"/>
+          <path d="M26 18 L29 17.5 L32 18 L29 19.5 Z"/>
+          <path d="M32 18 L35 17.5 L37 18 L34 19.5 Z"/>
+          <path d="M14 21 L17 20.5 L20 21 L17 22.5 Z"/>
+          <path d="M20 21 L23 20.5 L26 21 L23 22.5 Z"/>
+          <path d="M26 21 L29 20.5 L32 21 L29 22.5 Z"/>
+          <path d="M32 21 L35 20.5 L37 21 L34 22.5 Z"/>
+          <path d="M14 24 L17 23.5 L20 24 L17 25.5 Z"/>
+          <path d="M20 24 L23 23.5 L26 24 L23 25.5 Z"/>
+          <path d="M26 24 L29 23.5 L32 24 L29 25.5 Z"/>
+          <path d="M32 24 L35 23.5 L37 24 L34 25.5 Z"/>
+          <path d="M14 27 L17 26.5 L20 27 L17 28.5 Z"/>
+          <path d="M20 27 L23 26.5 L26 27 L23 28.5 Z"/>
+          <path d="M26 27 L29 26.5 L32 27 L29 28.5 Z"/>
+          <path d="M32 27 L35 26.5 L37 27 L34 28.5 Z"/>
+          <path d="M14 30 L17 29.5 L20 30 L17 31.5 Z"/>
+          <path d="M20 30 L23 29.5 L26 30 L23 31.5 Z"/>
+          <path d="M26 30 L29 29.5 L32 30 L29 31.5 Z"/>
+          <path d="M32 30 L35 29.5 L37 30 L34 31.5 Z"/>
+          <path d="M14 33 L17 32.5 L20 33 L17 34.5 Z"/>
+          <path d="M20 33 L23 32.5 L26 33 L23 34.5 Z"/>
+          <path d="M26 33 L29 32.5 L32 33 L29 34.5 Z"/>
+          <path d="M32 33 L35 32.5 L37 33 L34 34.5 Z"/>
+          <path d="M14 36 L17 35.5 L20 36 L17 37.5 Z"/>
+          <path d="M20 36 L23 35.5 L26 36 L23 37.5 Z"/>
+          <path d="M26 36 L29 35.5 L32 36 L29 37.5 Z"/>
+          <path d="M32 36 L35 35.5 L37 36 L34 37.5 Z"/>
+        </g>
+        <!-- small red dots (selected plots) -->
+        <g fill="#a32312">
+          <circle cx="23" cy="22" r=".7"/><circle cx="29" cy="28" r=".7"/><circle cx="17" cy="34" r=".7"/>
+        </g>
+        <!-- binding cords on left -->
+        <g fill="#a32312">
+          <rect x="9" y="13" width="1" height=".8"/>
+          <rect x="9" y="22" width="1" height=".8"/>
+          <rect x="9" y="31" width="1" height=".8"/>
+        </g>
+      </svg></div>
+    </div>
+  </div>
+
+  <!-- 黄册 户籍簿 -->
+  <div class="cand">
+    <div class="cand-name">黄 册 户 籍 簿</div>
+    <div class="cand-key">map-2 · 明代户口簿</div>
+    <div class="cand-desc">登记户口资产 · 黄绢封 · 十年一造 · 直对应面板 "户数/人口"</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs>
+          <linearGradient id="hc-cover" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8c862"/><stop offset="1" stop-color="#a8884a"/></linearGradient>
+        </defs>
+        <!-- bottom paper edges (multiple pages stacked) -->
+        <g stroke="#9d917d" stroke-width=".4" fill="#ede5d0">
+          <rect x="11" y="11" width="26" height="32" rx=".5"/>
+          <rect x="10" y="9" width="26" height="32" rx=".5"/>
+        </g>
+        <!-- main cover -->
+        <rect x="9" y="6" width="28" height="34" rx=".7" fill="url(#hc-cover)" stroke="#6b5010" stroke-width=".8"/>
+        <!-- title area (red) -->
+        <rect x="14" y="10" width="18" height="7" fill="#a32312" stroke="#741108" stroke-width=".5"/>
+        <!-- title strokes (abstract·no real chars) -->
+        <g stroke="#f4ecd4" stroke-width=".7" stroke-linecap="round">
+          <line x1="17" y1="12" x2="20" y2="12"/><line x1="17" y1="14" x2="20" y2="14"/>
+          <line x1="22" y1="12" x2="25" y2="12"/><line x1="22" y1="14" x2="25" y2="14"/>
+          <line x1="27" y1="12" x2="30" y2="12"/><line x1="27" y1="14" x2="30" y2="14"/>
+          <line x1="18.5" y1="13" x2="18.5" y2="15"/>
+          <line x1="23.5" y1="13" x2="23.5" y2="15"/>
+          <line x1="28.5" y1="13" x2="28.5" y2="15"/>
+        </g>
+        <!-- household records (text-like dots in columns) -->
+        <g fill="#3a3530" opacity=".85">
+          <!-- col 1 -->
+          <circle cx="13" cy="21" r=".5"/><circle cx="13" cy="23" r=".5"/><circle cx="13" cy="25" r=".5"/><circle cx="13" cy="28" r=".5"/><circle cx="13" cy="31" r=".5"/><circle cx="13" cy="34" r=".5"/>
+          <!-- col 2 -->
+          <circle cx="16" cy="21" r=".5"/><circle cx="16" cy="25" r=".5"/><circle cx="16" cy="28" r=".5"/><circle cx="16" cy="31" r=".5"/>
+          <!-- col 3 -->
+          <circle cx="19" cy="21" r=".5"/><circle cx="19" cy="23" r=".5"/><circle cx="19" cy="28" r=".5"/><circle cx="19" cy="31" r=".5"/><circle cx="19" cy="34" r=".5"/>
+          <!-- col 4 -->
+          <circle cx="22" cy="21" r=".5"/><circle cx="22" cy="25" r=".5"/><circle cx="22" cy="31" r=".5"/>
+          <!-- col 5 -->
+          <circle cx="25" cy="21" r=".5"/><circle cx="25" cy="23" r=".5"/><circle cx="25" cy="25" r=".5"/><circle cx="25" cy="28" r=".5"/><circle cx="25" cy="34" r=".5"/>
+          <!-- col 6 -->
+          <circle cx="28" cy="21" r=".5"/><circle cx="28" cy="25" r=".5"/><circle cx="28" cy="28" r=".5"/><circle cx="28" cy="31" r=".5"/>
+          <!-- col 7 -->
+          <circle cx="31" cy="21" r=".5"/><circle cx="31" cy="23" r=".5"/><circle cx="31" cy="25" r=".5"/><circle cx="31" cy="28" r=".5"/><circle cx="31" cy="34" r=".5"/>
+        </g>
+        <!-- red seal stamp bottom right -->
+        <g>
+          <rect x="29" y="34" width="6" height="5" fill="#a32312" stroke="#741108" stroke-width=".4"/>
+          <g stroke="#f4ecd4" stroke-width=".4">
+            <line x1="30.5" y1="35.5" x2="33.5" y2="35.5"/>
+            <line x1="30.5" y1="37" x2="33.5" y2="37"/>
+            <line x1="32" y1="35.5" x2="32" y2="38"/>
+          </g>
+        </g>
+        <!-- binding holes/cords on left -->
+        <g fill="#741108">
+          <circle cx="10.5" cy="14" r=".7"/>
+          <circle cx="10.5" cy="23" r=".7"/>
+          <circle cx="10.5" cy="32" r=".7"/>
+        </g>
+        <!-- corner decoration -->
+        <g stroke="#741108" stroke-width=".4" fill="none">
+          <path d="M11 7 L13 7 L13 9"/>
+          <path d="M35 7 L33 7 L33 9"/>
+          <path d="M11 39 L13 39 L13 37"/>
+          <path d="M35 39 L33 39 L33 37"/>
+        </g>
+      </svg></div>
+    </div>
+  </div>
+
+  <!-- 舆图卷轴 -->
+  <div class="cand">
+    <div class="cand-name">舆 图 卷 轴</div>
+    <div class="cand-key">map-3 · 政区全图</div>
+    <div class="cand-desc">经典展卷 · 山川河流 + 政区点 · 整体地理观</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs><linearGradient id="yt-3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4ecd4"/><stop offset="1" stop-color="#d4be7a"/></linearGradient></defs>
+        <ellipse cx="6" cy="24" rx="2.6" ry="10" fill="#d4be7a" stroke="#6b5010" stroke-width=".8"/>
+        <ellipse cx="42" cy="24" rx="2.6" ry="10" fill="#d4be7a" stroke="#6b5010" stroke-width=".8"/>
+        <ellipse cx="6" cy="14" rx="2.8" ry="1.3" fill="#8a6d2b"/>
+        <ellipse cx="6" cy="34" rx="2.8" ry="1.3" fill="#8a6d2b"/>
+        <ellipse cx="42" cy="14" rx="2.8" ry="1.3" fill="#8a6d2b"/>
+        <ellipse cx="42" cy="34" rx="2.8" ry="1.3" fill="#8a6d2b"/>
+        <path d="M6 15 L42 15 L42 33 L6 33 Z" fill="url(#yt-3)" stroke="#8a6d2b" stroke-width=".7"/>
+        <!-- mountains (3 ridges) -->
+        <path d="M8 28 L13 19 L17 22 L21 17 L26 21 L31 18 L35 22 L40 19 L40 28 Z" fill="#3a5580" stroke="#1c1914" stroke-width=".4"/>
+        <path d="M8 30 L12 23 L16 25 L20 21 L25 23 L29 20 L34 24 L40 22 L40 30 Z" fill="#4a6fa5" opacity=".7"/>
+        <!-- river -->
+        <path d="M8 31 Q14 31.5 22 31 Q30 30.5 40 31" stroke="#a3d4c7" stroke-width="1" fill="none"/>
+        <!-- city / 政区 dots -->
+        <g fill="#a32312">
+          <circle cx="14" cy="20" r="1"/><circle cx="22" cy="18" r="1.3"/>
+          <circle cx="30" cy="20" r="1"/><circle cx="38" cy="22" r="1"/>
+        </g>
+        <!-- 印 marks -->
+        <rect x="36" y="17" width="2.5" height="2.5" fill="#a32312"/>
+      </svg></div>
+    </div>
+  </div>
+
+  <!-- 田 阡陌 -->
+  <div class="cand">
+    <div class="cand-name">阡 陌 田 垄</div>
+    <div class="cand-key">map-4 · 井田农区</div>
+    <div class="cand-desc">井田制九宫格 · 沟洫田垄 · 农田区划本相</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs>
+          <linearGradient id="qm-soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8884a"/><stop offset="1" stop-color="#6b5010"/></linearGradient>
+          <linearGradient id="qm-crop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9d917d"/><stop offset=".5" stop-color="#c9a84c"/><stop offset="1" stop-color="#a8884a"/></linearGradient>
+        </defs>
+        <!-- perspective field viewed from angle -->
+        <path d="M3 28 L24 18 L45 28 L45 44 L3 44 Z" fill="url(#qm-soil)" stroke="#3a2818" stroke-width=".7"/>
+        <!-- 9-field井 lines (perspective) -->
+        <g stroke="#3a2818" stroke-width=".7" fill="none">
+          <!-- horizontal lines -->
+          <path d="M10 32 L38 32"/>
+          <path d="M7 38 L41 38"/>
+          <!-- diagonal lines (perspective) -->
+          <path d="M17 22 L11 44"/>
+          <path d="M31 22 L37 44"/>
+        </g>
+        <!-- crop fields (each cell·subtle cross-hatch suggesting crops) -->
+        <g stroke="#c9a84c" stroke-width=".4" fill="none">
+          <!-- top row -->
+          <path d="M9 24 L13 24 M9 26 L13 26"/>
+          <path d="M19 22 L23 22 M19 24 L23 24"/>
+          <path d="M30 24 L34 24 M30 26 L34 26"/>
+          <!-- mid row -->
+          <path d="M9 33 L13 33 M9 35 L13 35"/>
+          <path d="M21 33 L25 33 M21 35 L25 35"/>
+          <path d="M33 33 L37 33 M33 35 L37 35"/>
+          <!-- bottom row -->
+          <path d="M9 40 L13 40 M9 42 L13 42"/>
+          <path d="M22 40 L26 40 M22 42 L26 42"/>
+          <path d="M35 40 L39 40 M35 42 L39 42"/>
+        </g>
+        <!-- center field has highlight (公田 - public field) -->
+        <path d="M20 27 L28 27 L28 32 L20 32 Z" fill="#a32312" opacity=".55" stroke="#741108" stroke-width=".4"/>
+        <!-- small house silhouette (village dot) -->
+        <g fill="#3a2818">
+          <path d="M14 17 L17 14 L20 17 L20 19 L14 19 Z"/>
+          <rect x="16" y="17" width="2" height="2" fill="#1c1408"/>
+        </g>
+        <!-- water canal at edge -->
+        <path d="M3 28 L8 28 L8 44 L3 44 Z" fill="#4a6fa5" opacity=".55"/>
+        <g stroke="#a3d4c7" stroke-width=".4" fill="none">
+          <path d="M4 30 Q6 30.5 7 30"/>
+          <path d="M4 34 Q6 34.5 7 34"/>
+          <path d="M4 38 Q6 38.5 7 38"/>
+          <path d="M4 42 Q6 42.5 7 42"/>
+        </g>
+      </svg></div>
+    </div>
+  </div>
+
+  <!-- 知府公堂 -->
+  <div class="cand">
+    <div class="cand-name">知 府 公 堂</div>
+    <div class="cand-key">map-5 · 主官审政</div>
+    <div class="cand-desc">公案 + 笏 + 印 + 朝服 · 直对应面板 "主官/官职" 强调</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <defs>
+          <linearGradient id="zf-desk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8884a"/><stop offset="1" stop-color="#3a2818"/></linearGradient>
+          <linearGradient id="zf-robe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c04030"/><stop offset="1" stop-color="#4a1810"/></linearGradient>
+        </defs>
+        <!-- back curtain / 屏风 -->
+        <rect x="6" y="3" width="36" height="22" fill="#1c1914" stroke="#6b5010" stroke-width=".6"/>
+        <g stroke="#d4be7a" stroke-width=".3" fill="none">
+          <line x1="14" y1="3" x2="14" y2="25"/>
+          <line x1="22" y1="3" x2="22" y2="25"/>
+          <line x1="26" y1="3" x2="26" y2="25"/>
+          <line x1="34" y1="3" x2="34" y2="25"/>
+        </g>
+        <!-- 匾额 (blank·no chars) -->
+        <rect x="18" y="5" width="12" height="3.5" fill="#a32312" stroke="#741108" stroke-width=".4"/>
+        <g stroke="#f4ecd4" stroke-width=".3"><line x1="20" y1="6.5" x2="28" y2="6.5"/></g>
+        <!-- magistrate figure (centered) -->
+        <g>
+          <!-- robe -->
+          <path d="M18 28 L17 20 Q17 15 19 13 Q21 11 24 11 Q27 11 29 13 Q31 15 31 20 L30 28 Z" fill="url(#zf-robe)" stroke="#2a1408" stroke-width=".5"/>
+          <!-- collar -->
+          <path d="M21 13 Q24 15 27 13" stroke="#1c1914" stroke-width=".5" fill="none"/>
+          <!-- head -->
+          <ellipse cx="24" cy="9" rx="2.6" ry="3" fill="#f4ecd4"/>
+          <!-- 乌纱帽 -->
+          <path d="M20 6 Q20 3 24 2 Q28 3 28 6 L28 7 L20 7 Z" fill="#1c1914" stroke="#6b5010" stroke-width=".4"/>
+          <ellipse cx="15" cy="5.5" rx="3" ry="1" fill="#1c1914" stroke="#6b5010" stroke-width=".3"/>
+          <ellipse cx="33" cy="5.5" rx="3" ry="1" fill="#1c1914" stroke="#6b5010" stroke-width=".3"/>
+          <!-- beard -->
+          <path d="M23 11 Q24 12 25 11" stroke="#1c1914" stroke-width=".4" fill="none"/>
+          <!-- 笏 held -->
+          <path d="M22.5 14 L25.5 14 L25.5 22 L22.5 22 Z" fill="#f8f3e8" stroke="#9d917d" stroke-width=".3"/>
+        </g>
+        <!-- desk (公案) in front -->
+        <path d="M4 28 L44 28 L42 32 L6 32 Z" fill="url(#zf-desk)" stroke="#1c1408" stroke-width=".5"/>
+        <!-- desk side legs -->
+        <rect x="5" y="32" width="2" height="10" fill="#6b5010"/>
+        <rect x="41" y="32" width="2" height="10" fill="#6b5010"/>
+        <!-- desk top items -->
+        <!-- inkstone -->
+        <rect x="9" y="26" width="6" height="2.5" rx=".5" fill="#1c1914" stroke="#d4be7a" stroke-width=".3"/>
+        <!-- brush rack with brush -->
+        <line x1="33" y1="22" x2="33" y2="28" stroke="#6b5010" stroke-width=".4"/>
+        <rect x="32" y="20" width="2" height="3" fill="#1c1914"/>
+        <!-- scroll on desk -->
+        <rect x="18" y="26" width="12" height="2.5" rx="1" fill="#f4ecd4" stroke="#9d917d" stroke-width=".3"/>
+        <!-- seal (small red square) -->
+        <rect x="36" y="25" width="3" height="3" fill="#a32312" stroke="#741108" stroke-width=".3"/>
+        <!-- floor -->
+        <line x1="2" y1="42" x2="46" y2="42" stroke="#6b5010" stroke-width=".5"/>
+      </svg></div>
+    </div>
+  </div>
+
+  <!-- 九州方鼎 -->
+  <div class="cand">
+    <div class="cand-name">九 州 方 鼎</div>
+    <div class="cand-key">map-6 · 大禹划州</div>
+    <div class="cand-desc">3×3 网格 · 中州朱印 · 抽象制度划分</div>
+    <div class="cand-icons">
+      <div class="icon-btn s-72"><svg width="50" height="50" viewBox="0 0 48 48">
+        <rect x="6" y="6" width="36" height="36" fill="none" stroke="#d4be7a" stroke-width="1.4"/>
+        <g stroke="#d4be7a" stroke-width=".7"><line x1="6" y1="18" x2="42" y2="18"/><line x1="6" y1="30" x2="42" y2="30"/><line x1="18" y1="6" x2="18" y2="42"/><line x1="30" y1="6" x2="30" y2="42"/></g>
+        <rect x="18.6" y="18.6" width="10.8" height="10.8" fill="#c04030" opacity=".45" stroke="#a32312" stroke-width=".5"/>
+        <circle cx="24" cy="24" r="2" fill="#d4be7a"/>
+        <g fill="#d4be7a" opacity=".85">
+          <circle cx="12" cy="12" r="1.4"/><circle cx="24" cy="12" r="1.4"/><circle cx="36" cy="12" r="1.4"/>
+          <circle cx="12" cy="24" r="1.4"/><circle cx="36" cy="24" r="1.4"/>
+          <circle cx="12" cy="36" r="1.4"/><circle cx="24" cy="36" r="1.4"/><circle cx="36" cy="36" r="1.4"/>
+        </g>
+        <g stroke="#d4be7a" stroke-width=".6" fill="none">
+          <path d="M6 6 L10 6 M6 6 L6 10"/><path d="M42 6 L38 6 M42 6 L42 10"/>
+          <path d="M6 42 L10 42 M6 42 L6 38"/><path d="M42 42 L38 42 M42 42 L42 38"/>
+        </g>
+      </svg></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     肆 · 金描 final rail · 待 user 定军/图后实装
+     ============================================================ -->
+<h2 class="tier">肆 · 金描 final rail · 缺 2 placeholder<span class="tier-sub">user 定军/图后填实 · 实装走 ensurePreviewRail L1770-1789</span></h2>
+<div class="intro">下面 rail 反映已锁 6 + 当前推荐 (军=双半合符 · 图=鱼鳞图册)·你定的不同我就替换。</div>
+
+<div class="rails">
+  <div class="rail">
+    <div class="rail-title">金 描</div>
+    <!-- ol 司南 -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <rect x="5" y="5" width="38" height="38" rx="1" fill="none" stroke="#d4be7a" stroke-width="1.4"/>
+      <circle cx="24" cy="24" r="14" fill="rgba(60,42,24,.45)" stroke="#d4be7a" stroke-width=".9"/>
+      <g stroke="#d4be7a" stroke-width=".9"><line x1="24" y1="10" x2="24" y2="13"/><line x1="24" y1="35" x2="24" y2="38"/><line x1="10" y1="24" x2="13" y2="24"/><line x1="35" y1="24" x2="38" y2="24"/></g>
+      <ellipse cx="22" cy="26" rx="6.5" ry="3" fill="#d4be7a" transform="rotate(-32 22 26)"/>
+      <circle cx="24" cy="24" r="1.2" fill="#1c1914"/>
+    </svg></div>
+    <!-- issue 衙门 -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <defs><linearGradient id="ra-dy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4be7a"/><stop offset="1" stop-color="#6b5010"/></linearGradient></defs>
+      <path d="M14 12 L34 12" stroke="#6b5010" stroke-width="1.6"/>
+      <path d="M14 12 Q12 9 13 6" stroke="#6b5010" stroke-width="1.4" fill="none"/>
+      <path d="M34 12 Q36 9 35 6" stroke="#6b5010" stroke-width="1.4" fill="none"/>
+      <path d="M14 12 L4 22 Q3 23 4 24 L44 24 Q45 23 44 22 L34 12 Z" fill="url(#ra-dy)" stroke="#6b5010" stroke-width=".8"/>
+      <g fill="#8b2e25"><rect x="9" y="24" width="2.5" height="14"/><rect x="36.5" y="24" width="2.5" height="14"/><rect x="17" y="24" width="2.5" height="14"/><rect x="28.5" y="24" width="2.5" height="14"/></g>
+      <rect x="16" y="25" width="16" height="2.5" fill="#1c1914" stroke="#d4be7a" stroke-width=".4"/>
+      <path d="M20 38 L20 30 L28 30 L28 38" fill="#a32312"/>
+      <rect x="6" y="38" width="36" height="1.6" fill="#9d917d"/>
+      <rect x="4" y="40" width="40" height="1.6" fill="#9d917d"/>
+    </svg></div>
+    <!-- policy 竹简 -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <defs><linearGradient id="ra-zj" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6d2b"/><stop offset=".5" stop-color="#d4be7a"/><stop offset="1" stop-color="#6b5010"/></linearGradient></defs>
+      <g fill="url(#ra-zj)" stroke="#6b5010" stroke-width=".4">
+        <rect x="6.4" y="7" width="3.4" height="34" rx=".4"/><rect x="10.6" y="7" width="3.4" height="34" rx=".4"/>
+        <rect x="14.8" y="7" width="3.4" height="34" rx=".4"/><rect x="19" y="7" width="3.4" height="34" rx=".4"/>
+        <rect x="23.2" y="7" width="3.4" height="34" rx=".4"/><rect x="27.4" y="7" width="3.4" height="34" rx=".4"/>
+        <rect x="31.6" y="7" width="3.4" height="34" rx=".4"/>
+        <path d="M35.8 7 Q39 8 41 10 Q42 12 40 14 Q41 18 41 22 Q41 28 41 34 Q42 38 40 40 Q39 41 35.8 41 Z"/>
+      </g>
+      <rect x="4" y="9.5" width="38" height="2" fill="#a32312"/>
+      <rect x="4" y="37" width="38" height="2" fill="#a32312"/>
+    </svg></div>
+    <!-- office 朝班 -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <defs><linearGradient id="ra-cb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8e44ad"/><stop offset="1" stop-color="#2a163a"/></linearGradient></defs>
+      <rect x="2" y="42" width="44" height="2" fill="#3a3530"/>
+      <g opacity=".88">
+        <path d="M5.5 42 L5 22 Q5 18 6 16 Q7 14 9.5 14 L10.5 14 Q13 14 14 16 Q15 18 15 22 L14.5 42 Z" fill="#5a8f7f"/>
+        <ellipse cx="10" cy="12" rx="2.6" ry="3" fill="#ede5d0"/>
+        <path d="M6.5 9.5 Q6.5 6 10 5 Q13.5 6 13.5 9.5 Z" fill="#1c1914"/>
+        <ellipse cx="4.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+        <ellipse cx="15.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+      </g>
+      <path d="M18 43 L17.5 21 Q17.5 17 18.5 14 Q19.5 11 23 11 L25 11 Q28.5 11 29.5 14 Q30.5 17 30.5 21 L30 43 Z" fill="url(#ra-cb)"/>
+      <ellipse cx="24" cy="9" rx="3" ry="3.4" fill="#f4ecd4"/>
+      <path d="M19 6 Q19 1.5 24 0.5 Q29 1.5 29 6 L29 7 L19 7 Z" fill="#1c1914"/>
+      <ellipse cx="13" cy="5.5" rx="3.5" ry="1.2" fill="#1c1914"/>
+      <ellipse cx="35" cy="5.5" rx="3.5" ry="1.2" fill="#1c1914"/>
+      <g opacity=".92">
+        <path d="M33.5 42 L33 22 Q33 18 34 16 Q35 14 37.5 14 L38.5 14 Q41 14 42 16 Q43 18 43 22 L42.5 42 Z" fill="#8b2e25"/>
+        <ellipse cx="38" cy="12" rx="2.6" ry="3" fill="#ede5d0"/>
+        <path d="M34.5 9.5 Q34.5 6 38 5 Q41.5 6 41.5 9.5 Z" fill="#1c1914"/>
+        <ellipse cx="32.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+        <ellipse cx="43.5" cy="9" rx="2" ry=".8" fill="#1c1914"/>
+      </g>
+    </svg></div>
+    <!-- army 双半合符 (placeholder·recommend) -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <defs>
+        <linearGradient id="ra-tbL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6c47e"/><stop offset="1" stop-color="#3a2818"/></linearGradient>
+        <linearGradient id="ra-tbR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#caa05a"/><stop offset="1" stop-color="#2a1808"/></linearGradient>
+      </defs>
+      <path d="M3 25 Q3 21 7 20 L13 18 Q18 16 22 17 Q23 18 23 21 L23 33 Q22 35 18 35 Q12 35 8 33 Q4 32 3 29 Z" fill="url(#ra-tbL)" stroke="#2a1808" stroke-width=".7"/>
+      <path d="M25 17 Q26 16 30 17 L36 18 Q41 19 43 22 Q45 25 45 28 Q45 32 42 33 L36 35 Q30 35 27 33 Q25 32 25 30 Z" fill="url(#ra-tbR)" stroke="#2a1808" stroke-width=".7"/>
+      <g stroke="#1c1914" stroke-width=".7" fill="none">
+        <path d="M9 19 Q9 25 9 32"/><path d="M14 18 Q14 25 14 33"/><path d="M19 17 Q19 25 19 33"/>
+        <path d="M28 18 Q28 25 28 33"/><path d="M33 18 Q33 25 33 33"/><path d="M38 18 Q38 25 38 32"/>
+      </g>
+      <line x1="24" y1="14" x2="24" y2="35" stroke="#a32312" stroke-width=".8" stroke-dasharray="1.5,1.2"/>
+      <circle cx="24" cy="26" r=".9" fill="#a32312"/>
+    </svg></div>
+    <!-- map 鱼鳞图册 (placeholder·recommend) -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <defs><linearGradient id="ra-ylt" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a6d2b"/><stop offset=".5" stop-color="#caa05a"/><stop offset="1" stop-color="#6b5010"/></linearGradient></defs>
+      <path d="M8 6 L40 4 L41 41 L9 43 Z" fill="url(#ra-ylt)" stroke="#1c1408" stroke-width=".7"/>
+      <rect x="16" y="9" width="14" height="6" fill="#a32312" stroke="#1c1408" stroke-width=".4"/>
+      <line x1="18" y1="11" x2="28" y2="11" stroke="#f4ecd4" stroke-width=".4"/>
+      <line x1="18" y1="13" x2="28" y2="13" stroke="#f4ecd4" stroke-width=".4"/>
+      <g stroke="#1c1408" stroke-width=".3" fill="rgba(247,234,212,.15)">
+        <path d="M14 19 L20 19 L17 21 Z"/><path d="M20 19 L26 19 L23 21 Z"/><path d="M26 19 L32 19 L29 21 Z"/><path d="M32 19 L38 19 L35 21 Z"/>
+        <path d="M14 23 L20 23 L17 25 Z"/><path d="M20 23 L26 23 L23 25 Z"/><path d="M26 23 L32 23 L29 25 Z"/><path d="M32 23 L38 23 L35 25 Z"/>
+        <path d="M14 27 L20 27 L17 29 Z"/><path d="M20 27 L26 27 L23 29 Z"/><path d="M26 27 L32 27 L29 29 Z"/><path d="M32 27 L38 27 L35 29 Z"/>
+        <path d="M14 31 L20 31 L17 33 Z"/><path d="M20 31 L26 31 L23 33 Z"/><path d="M26 31 L32 31 L29 33 Z"/><path d="M32 31 L38 31 L35 33 Z"/>
+        <path d="M14 35 L20 35 L17 37 Z"/><path d="M20 35 L26 35 L23 37 Z"/><path d="M26 35 L32 35 L29 37 Z"/><path d="M32 35 L38 35 L35 37 Z"/>
+      </g>
+    </svg></div>
+    <!-- finance 算盘 -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <defs><linearGradient id="ra-sp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a6d2b"/><stop offset="1" stop-color="#3a3530"/></linearGradient></defs>
+      <rect x="6" y="8" width="36" height="32" fill="none" stroke="url(#ra-sp)" stroke-width="2.5" rx="1"/>
+      <rect x="6" y="20" width="36" height="2" fill="#6b5010"/>
+      <g stroke="#6b5010" stroke-width=".7"><line x1="10" y1="10" x2="10" y2="38"/><line x1="19" y1="10" x2="19" y2="38"/><line x1="29" y1="10" x2="29" y2="38"/><line x1="38" y1="10" x2="38" y2="38"/></g>
+      <g fill="#d4be7a"><rect x="8.4" y="13" width="3.2" height="2.4" rx=".8"/><rect x="17.4" y="13" width="3.2" height="2.4" rx=".8"/><rect x="27.4" y="13" width="3.2" height="2.4" rx=".8"/><rect x="36.4" y="13" width="3.2" height="2.4" rx=".8"/></g>
+      <g fill="#d4be7a"><rect x="8.4" y="32" width="3.2" height="2.4" rx=".8"/><rect x="17.4" y="32" width="3.2" height="2.4" rx=".8"/><rect x="27.4" y="32" width="3.2" height="2.4" rx=".8"/><rect x="36.4" y="32" width="3.2" height="2.4" rx=".8"/></g>
+    </svg></div>
+    <!-- archive 官制树 -->
+    <div class="icon-btn s-48"><svg width="34" height="34" viewBox="0 0 48 48">
+      <rect x="19" y="4" width="10" height="6.5" rx=".8" fill="#c04030" stroke="#d4be7a" stroke-width=".7"/>
+      <line x1="24" y1="10.5" x2="24" y2="14.5" stroke="#d4be7a" stroke-width=".9"/>
+      <line x1="9" y1="14.5" x2="39" y2="14.5" stroke="#d4be7a" stroke-width=".8"/>
+      <g fill="#d4be7a" stroke="#6b5010" stroke-width=".5">
+        <rect x="7" y="16.5" width="8" height="5.5" rx=".6"/>
+        <rect x="20" y="16.5" width="8" height="5.5" rx=".6"/>
+        <rect x="33" y="16.5" width="8" height="5.5" rx=".6"/>
+      </g>
+      <line x1="4" y1="25" x2="44" y2="25" stroke="#d4be7a" stroke-width=".6"/>
+      <g fill="#8a6d2b"><rect x="3.5" y="25" width="6" height="4" rx=".4"/><rect x="10.5" y="25" width="6" height="4" rx=".4"/><rect x="17.5" y="25" width="6" height="4" rx=".4"/><rect x="24.5" y="25" width="6" height="4" rx=".4"/><rect x="31.5" y="25" width="6" height="4" rx=".4"/><rect x="38.5" y="25" width="6" height="4" rx=".4"/></g>
+      <g fill="#d4be7a"><circle cx="6.5" cy="35" r="1.1"/><circle cx="13.5" cy="35" r="1.1"/><circle cx="20.5" cy="35" r="1.1"/><circle cx="27.5" cy="35" r="1.1"/><circle cx="34.5" cy="35" r="1.1"/><circle cx="41.5" cy="35" r="1.1"/></g>
+    </svg></div>
+    <div class="rail-foot">司南<br>衙门<br>竹简<br>朝班<br>双半符<br>鱼鳞<br>算盘<br>官制</div>
+  </div>
+</div>
+
+<div class="note-box">
+  <h3>2 项待定</h3>
+  <ul>
+    <li><b>军 · 虎符</b> — 3 variant 选 · 蹲虎精修 / <b>双半合符 ★</b> / 虎首特写</li>
+    <li><b>图 · 行政区划</b> — 6 立意选 · <b>鱼鳞图册 ★</b> / 黄册户籍 / 舆图卷轴 / 阡陌田垄 / 知府公堂 / 九州方鼎</li>
+  </ul>
+  <h3>立意切换原因</h3>
+  <ul>
+    <li><b>图 slot 重切</b> — 此 slot 开 <code>renderMapPanelRich</code> · 内容是 <b>行政区划</b> (区划数/主官/户数/民心/腐败/税负 + 安民/巡按/调粮 action) · 非"天下舆图"。原 candidates (舆图卷轴/九州/山海经/长城/大河/里坊) 偏纯地理 · 已重切到 <b>图册 / 簿 / 户口 / 主官 / 田赋</b> 域。</li>
+  </ul>
+  <h3>下一步</h3>
+  <ul>
+    <li>定军 + 图 · 我把 8 SVG inline 进 <code>phase8-formal-bridge.js</code> 的 <code>ensurePreviewRail()</code> L1770-1789 · button mapping 第 2 参从 <code>'纲'</code> 改成 <code>'&lt;svg ...&gt;...&lt;/svg&gt;'</code> · esc 改 raw (跟 hot/pin badge 不冲突)。</li>
+    <li>8 个 inline SVG 总 ~6-8 KB · 零网络 round-trip。</li>
+  </ul>
+</div>
+
+</body>
+</html>

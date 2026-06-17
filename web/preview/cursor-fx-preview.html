@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>御案 · 鼠标光标效果预览</title>
+<style>
+:root{
+  --silk-hi:#fffdf3;--silk:#f6efda;--silk-lo:#ece1c6;--silk-edge:#dcc99c;
+  --desk-1:#dccca6;--desk-2:#c6b083;--desk-3:#a78f68;
+  --ink:#241d15;--ink-soft:#574733;--ink-faint:#9c8b6b;
+  --gold-hi:#d8b96a;--gold:#a8833a;--gold-d:#7d5e22;
+  --cinnabar:#a83228;--cinnabar-hi:#c64a3e;--cinnabar-d:#7a2018;
+  --jade:#557f6f;--jade-hi:#6fa291;
+  --font:"STKaiti","KaiTi","楷体","Noto Serif SC","Source Han Serif CN","STSong",serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font);color:var(--ink);min-height:100%;overflow:hidden;-webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(46% 34% at 50% -4%, rgba(255,238,196,0.5), transparent 70%),
+    radial-gradient(60% 50% at 18% 26%, rgba(120,100,70,0.13), transparent 60%),
+    radial-gradient(52% 60% at 84% 74%, rgba(80,60,40,0.16), transparent 55%),
+    radial-gradient(120% 120% at 50% 28%, var(--desk-1), var(--desk-2) 54%, var(--desk-3) 100%);}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.55;
+  background:radial-gradient(60% 42% at 50% 0%, rgba(255,236,188,0.32), transparent 66%),
+    radial-gradient(150% 120% at 50% 42%, transparent 54%, rgba(58,42,22,0.5) 100%),
+    repeating-linear-gradient(91deg, rgba(92,68,40,0.05) 0 2px, transparent 2px 7px);}
+
+/* ── 效果②: 光标本体替换 (body[data-cur=造型]) ── 4 候选精修 SVG ── */
+/* ① 斜毫朱笔 (48px·竹杆描金箍·笔肚渐变·墨锋·朱尖·hotspot=笔尖 6,42) */
+body[data-cur="brush"], body[data-cur="brush"] *{
+  cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='bs' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%238a6a36'/%3E%3Cstop offset='.42' stop-color='%23c9a24a'/%3E%3Cstop offset='.45' stop-color='%23d8b96a'/%3E%3Cstop offset='1' stop-color='%237d5e22'/%3E%3C/linearGradient%3E%3ClinearGradient id='nib' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234a3a2a'/%3E%3Cstop offset='1' stop-color='%23120c07'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg transform='rotate(-38 24 24)'%3E%3Crect x='20.4' y='3' width='7.2' height='23' rx='3.2' fill='%237d5e22'/%3E%3Crect x='21' y='3.6' width='6' height='22' rx='2.8' fill='url(%23bs)'/%3E%3Crect x='22.2' y='4.4' width='1.5' height='20' rx='.7' fill='%23fff' opacity='.4'/%3E%3Crect x='20' y='6.2' width='8' height='2.4' rx='1' fill='%23d8b96a' stroke='%237d5e22' stroke-width='.5'/%3E%3Crect x='20' y='22' width='8' height='2.4' rx='1' fill='%23d8b96a' stroke='%237d5e22' stroke-width='.5'/%3E%3Cpath d='M20.6 25.6 L27.4 25.6 L26 33 Q24 42 24 42 Q24 42 22 33 Z' fill='url(%23nib)'/%3E%3Cpath d='M23.4 33 Q24 39.5 24 42 Q24 39.5 24.6 33 Z' fill='%23a83228'/%3E%3Cpath d='M24 39.6 L24 42 L24.5 39.6 Z' fill='%23c64a3e'/%3E%3C/g%3E%3C/svg%3E") 6 42, auto;}
+body[data-cur="brush"] textarea, body[data-cur="brush"] input{cursor:text;}
+/* ② 立式御笔 (竖直垂笔·笔尖在底·hotspot=底尖 16,46) */
+body[data-cur="brushV"], body[data-cur="brushV"] *{
+  cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='48' viewBox='0 0 32 48'%3E%3Cdefs%3E%3ClinearGradient id='v' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%238a6a36'/%3E%3Cstop offset='.5' stop-color='%23d8b96a'/%3E%3Cstop offset='1' stop-color='%237d5e22'/%3E%3C/linearGradient%3E%3ClinearGradient id='vn' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%234a3a2a'/%3E%3Cstop offset='1' stop-color='%23120c07'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='12' y='2' width='8' height='24' rx='3.4' fill='%237d5e22'/%3E%3Crect x='12.6' y='2.6' width='6.8' height='23' rx='3' fill='url(%23v)'/%3E%3Crect x='14' y='3.4' width='1.6' height='21' rx='.8' fill='%23fff' opacity='.4'/%3E%3Crect x='11.4' y='5' width='9.2' height='2.6' rx='1' fill='%23d8b96a' stroke='%237d5e22' stroke-width='.5'/%3E%3Crect x='11.4' y='22' width='9.2' height='2.6' rx='1' fill='%23d8b96a' stroke='%237d5e22' stroke-width='.5'/%3E%3Cpath d='M12.2 25.6 L19.8 25.6 L17.6 37 Q16 46 16 46 Q16 46 14.4 37 Z' fill='url(%23vn)'/%3E%3Cpath d='M15.4 37 Q16 43 16 46 Q16 43 16.6 37 Z' fill='%23a83228'/%3E%3C/svg%3E") 16 46, auto;}
+body[data-cur="brushV"] textarea, body[data-cur="brushV"] input{cursor:text;}
+/* ③ 朱印钮 (印钮+方印+回纹+朱印面·hotspot=印面中心 16,20) */
+body[data-cur="seal"], body[data-cur="seal"] *{
+  cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='40' viewBox='0 0 34 40'%3E%3Cdefs%3E%3ClinearGradient id='zhu' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23c64a3e'/%3E%3Cstop offset='1' stop-color='%237a2018'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M14 2 Q17 0 20 2 L19 9 L15 9 Z' fill='%237d5e22'/%3E%3Crect x='13' y='8' width='8' height='4' rx='1.5' fill='%238a6a36'/%3E%3Crect x='5' y='11' width='24' height='24' rx='3' fill='url(%23zhu)' stroke='%237a2018' stroke-width='1'/%3E%3Crect x='8' y='14' width='18' height='18' rx='1.5' fill='none' stroke='%23ffeccc' stroke-width='1' stroke-opacity='.55'/%3E%3Crect x='10.5' y='16.5' width='13' height='13' fill='none' stroke='%23ffeccc' stroke-width='.8' stroke-opacity='.32'/%3E%3Crect x='6.5' y='12.5' width='6' height='6' fill='%23fff' opacity='.14'/%3E%3C/svg%3E") 16 20, auto;}
+body[data-cur="seal"] textarea, body[data-cur="seal"] input{cursor:text;}
+/* ④ 朱玉箭 (系统箭头精修·墨描金边+朱砂尖点·hotspot=尖 4,3·最准) */
+body[data-cur="arrow"], body[data-cur="arrow"] *{
+  cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='30' viewBox='0 0 28 30'%3E%3Cdefs%3E%3ClinearGradient id='ar' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23fffdf3'/%3E%3Cstop offset='1' stop-color='%23ecd9a8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 3 L4 23 L9.5 18 L13 25.5 L16.5 24 L13 16.5 L20 16.5 Z' fill='url(%23ar)' stroke='%237d5e22' stroke-width='1.4' stroke-linejoin='round'/%3E%3Ccircle cx='4.6' cy='4' r='2' fill='%23a83228'/%3E%3C/svg%3E") 4 3, auto;}
+body[data-cur="arrow"] textarea, body[data-cur="arrow"] input{cursor:text;}
+
+.stage{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;padding:26px 30px;gap:18px;}
+
+/* 标题 */
+.hd{flex:0 0 auto;text-align:center;position:relative;}
+.hd h1{font-size:25px;letter-spacing:0.22em;color:var(--ink);font-weight:bold;text-shadow:0 1px 0 rgba(255,255,255,0.6),0 0 14px rgba(216,185,106,0.24);}
+.hd h1::before,.hd h1::after{content:"";display:inline-block;width:30px;height:1px;vertical-align:0.34em;margin:0 16px;background:linear-gradient(90deg,transparent,var(--gold));}
+.hd h1::after{background:linear-gradient(90deg,var(--gold),transparent);}
+.hd p{margin-top:6px;font-size:12.5px;color:var(--ink-faint);letter-spacing:0.16em;}
+
+/* 御案演示区 */
+.desk{flex:1;min-height:0;position:relative;border-radius:7px;
+  background:linear-gradient(180deg,var(--silk-hi),var(--silk) 38%,var(--silk-lo));
+  border:1px solid var(--silk-edge);
+  box-shadow:0 18px 48px rgba(50,32,14,0.3), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 0 100px rgba(120,90,36,0.1);
+  padding:30px 36px;display:flex;flex-direction:column;gap:24px;overflow:hidden;}
+.desk::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:0.45;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.5' numOctaves='3' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),repeating-linear-gradient(0deg,rgba(120,90,40,0.04) 0 1px,transparent 1px 4px);background-size:220px 220px,auto;}
+.desk-note{position:relative;z-index:1;font-size:13px;color:var(--ink-soft);letter-spacing:0.06em;line-height:1.9;text-align:center;}
+.desk-note b{color:var(--cinnabar-d);}
+
+/* 试手元素区 */
+.tryrow{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:22px;align-items:center;justify-content:center;}
+.tryrow.cards{margin-top:auto;}
+
+/* 朱漆描金按钮 */
+.btn-zhu{position:relative;overflow:hidden;font-family:var(--font);font-size:15px;letter-spacing:0.2em;cursor:pointer;padding:12px 30px;border-radius:5px;color:#fff8e6;
+  border:1px solid var(--gold-d);background:linear-gradient(160deg,var(--cinnabar-hi),var(--cinnabar) 55%,var(--cinnabar-d));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),inset 0 0 0 1px rgba(216,185,106,0.32),0 3px 8px rgba(122,32,24,0.32);transition:box-shadow .18s,transform .1s;}
+.btn-zhu:active{transform:translateY(1px);}
+/* 米金描边按钮 */
+.btn-gold{font-family:var(--font);font-size:15px;letter-spacing:0.2em;cursor:pointer;padding:12px 28px;border-radius:5px;color:var(--gold-d);
+  border:1px solid var(--gold-d);background:linear-gradient(162deg,#fefaef,#f1e2bd);
+  box-shadow:0 2px 7px rgba(80,56,24,0.14),inset 0 1px 0 rgba(255,255,255,0.7);transition:all .18s;}
+
+/* 钻形金印 */
+.seal{position:relative;width:64px;height:64px;cursor:pointer;flex:0 0 auto;}
+.seal::before{content:"";position:absolute;inset:6px;border:1.5px solid var(--gold-d);border-radius:5px;transform:rotate(45deg);
+  background:rgba(255,253,243,0.4);box-shadow:inset 0 0 0 4px rgba(255,255,255,0.45),0 1px 3px rgba(80,56,24,0.2);transition:box-shadow .2s;}
+.seal span{position:absolute;inset:0;display:grid;place-items:center;font-size:26px;font-weight:bold;color:var(--gold-d);text-shadow:0 1px 0 rgba(255,255,255,0.5);}
+.seal.cn::before{border-color:var(--cinnabar-d);background:rgba(168,50,40,0.06);}
+.seal.cn span{color:var(--cinnabar-d);}
+
+/* 议事卡 */
+.card{position:relative;width:240px;cursor:pointer;border:1px solid rgba(168,131,58,0.26);border-radius:6px;padding:14px 16px;
+  background:linear-gradient(165deg,#fffefa,#fbf4e1);box-shadow:0 2px 8px rgba(80,56,24,0.08);transition:transform .18s,box-shadow .18s,border-color .18s;}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:6px 0 0 6px;background:linear-gradient(180deg,var(--jade-hi),var(--jade));opacity:0.7;}
+.card h4{font-size:14.5px;color:var(--ink);letter-spacing:0.08em;margin-bottom:6px;}
+.card p{font-size:12.5px;color:var(--ink-soft);line-height:1.7;}
+
+/* ── 效果③: hover 泛金光/墨晕 (body[data-hover=on]) ── */
+body[data-hover="on"] .btn-zhu:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),inset 0 0 0 1px rgba(216,185,106,0.7),0 6px 18px rgba(122,32,24,0.42),0 0 22px rgba(216,185,106,0.5);}
+body[data-hover="on"] .btn-gold:hover{color:#fff;background:linear-gradient(160deg,var(--gold-hi),var(--gold));border-color:var(--gold-d);box-shadow:0 6px 18px rgba(168,131,58,0.5),0 0 24px rgba(216,185,106,0.45);}
+body[data-hover="on"] .seal:hover::before{box-shadow:inset 0 0 0 4px rgba(255,255,255,0.5),0 1px 3px rgba(80,56,24,0.2),0 0 22px rgba(216,185,106,0.6);}
+body[data-hover="on"] .seal.cn:hover::before{box-shadow:inset 0 0 0 4px rgba(255,255,255,0.5),0 1px 3px rgba(80,56,24,0.2),0 0 22px rgba(200,74,62,0.55);}
+body[data-hover="on"] .card:hover{transform:translateY(-3px);border-color:rgba(168,131,58,0.6);box-shadow:0 8px 22px rgba(80,56,24,0.18),0 0 22px rgba(216,185,106,0.35);}
+/* hover 关时仍给极轻的基础反馈(否则完全没反应像坏了) */
+.btn-zhu:hover,.btn-gold:hover,.card:hover,.seal:hover::before{filter:brightness(1.02);}
+
+/* ── 效果①: 点击朱印涟漪 (JS 注入 .ripple) ── */
+.ripple{position:fixed;z-index:9000;left:0;top:0;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:4px;pointer-events:none;
+  border:2px solid var(--cinnabar);background:radial-gradient(circle,rgba(200,74,62,0.42),rgba(168,50,40,0.16) 50%,transparent 72%);
+  transform:rotate(45deg) scale(0.3);opacity:0;animation:rip .62s cubic-bezier(.2,.7,.3,1) forwards;}
+@keyframes rip{0%{opacity:0;transform:rotate(45deg) scale(0.3);}22%{opacity:0.95;}100%{opacity:0;transform:rotate(45deg) scale(4.6);}}
+/* 印泥小实心(涟漪中心一点·像钤下的印) */
+.ripple-dot{position:fixed;z-index:9001;left:0;top:0;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:3px;pointer-events:none;
+  background:radial-gradient(circle at 36% 30%,var(--cinnabar-hi),var(--cinnabar-d));transform:rotate(45deg) scale(0);opacity:0;
+  box-shadow:0 1px 3px rgba(90,16,10,0.5);animation:ripdot .5s ease forwards;}
+@keyframes ripdot{0%{opacity:0;transform:rotate(45deg) scale(0);}30%{opacity:0.9;transform:rotate(45deg) scale(1);}100%{opacity:0;transform:rotate(45deg) scale(0.85);}}
+
+/* ── 效果④: 朱砂墨点拖尾 (JS 注入 .trail) ── */
+.trail{position:fixed;z-index:8000;left:0;top:0;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 38% 32%,rgba(168,50,40,0.55),rgba(122,32,24,0.32) 60%,transparent 75%);
+  transform:scale(1);opacity:0.7;animation:trailfade .6s ease forwards;}
+@keyframes trailfade{0%{opacity:0.7;transform:scale(1);}100%{opacity:0;transform:scale(0.3);}}
+
+/* 开关面板 */
+.panel{position:fixed;top:18px;right:20px;z-index:9500;width:218px;padding:14px 16px 12px;border-radius:8px;
+  background:linear-gradient(180deg,#fffdf3,#f3e8cc);border:1px solid var(--gold);
+  box-shadow:0 16px 40px rgba(40,24,10,0.4),inset 0 0 0 1px rgba(255,255,255,0.5),inset 0 0 0 4px rgba(168,131,58,0.13);}
+.panel h3{font-size:14px;letter-spacing:0.2em;color:var(--cinnabar-d);text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(168,131,58,0.3);}
+.sw{display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer;border-radius:5px;transition:background .12s;}
+.sw:hover{background:rgba(168,131,58,0.1);}
+.sw-box{flex:0 0 auto;width:38px;height:21px;border-radius:11px;border:1px solid var(--gold-d);background:rgba(120,90,40,0.12);position:relative;transition:background .18s;}
+.sw-box::after{content:"";position:absolute;top:1.5px;left:1.5px;width:16px;height:16px;border-radius:50%;background:linear-gradient(160deg,#fffdf3,#e7d6ad);box-shadow:0 1px 2px rgba(80,56,24,0.3);transition:transform .2s cubic-bezier(.3,.7,.3,1);}
+.sw.on .sw-box{background:linear-gradient(160deg,var(--cinnabar-hi),var(--cinnabar-d));}
+.sw.on .sw-box::after{transform:translateX(17px);}
+.sw-label{flex:1;min-width:0;}
+.sw-label b{display:block;font-size:13px;color:var(--ink);letter-spacing:0.06em;}
+.sw-label span{display:block;font-size:10.5px;color:var(--ink-faint);margin-top:1px;}
+.curpick{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:2px 2px 6px;padding:6px;border-radius:6px;background:rgba(120,90,40,0.07);border:1px solid rgba(168,131,58,0.2);}
+.curpick .cp{font-family:var(--font);font-size:12px;letter-spacing:0.04em;cursor:pointer;padding:6px 2px;border-radius:4px;color:var(--ink-soft);border:1px solid rgba(168,131,58,0.3);background:#fffefa;transition:all .14s;}
+.curpick .cp:hover{border-color:var(--gold);color:var(--ink);}
+.curpick .cp.on{color:#fff8e6;border-color:var(--gold-d);background:linear-gradient(160deg,var(--cinnabar-hi),var(--cinnabar-d));box-shadow:inset 0 1px 0 rgba(255,255,255,0.2);}
+.panel-foot{margin-top:8px;padding-top:8px;border-top:1px dotted rgba(140,124,96,0.4);font-size:10.5px;color:var(--ink-faint);line-height:1.6;text-align:center;}
+
+.preview-ribbon{position:fixed;top:0;left:0;z-index:99;background:var(--cinnabar);color:#fff;font-family:var(--font);font-size:12px;letter-spacing:0.18em;padding:5px 14px;border-radius:0 0 6px 0;box-shadow:0 2px 8px rgba(40,24,10,0.3);}
+</style>
+</head>
+<body data-cur="brush" data-hover="on" data-ripple="on" data-trail="on">
+<div class="preview-ribbon">设计预览 · 御案鼠标光标效果（四效可独立开关）</div>
+
+<div class="stage">
+  <div class="hd">
+    <h1>御 案 · 光 标 之 制</h1>
+    <p>移动 · 悬停 · 点击，试四种效果之手感</p>
+  </div>
+
+  <div class="desk">
+    <div class="desk-note">在此案上挪移鼠标，可见<b>朱砂墨点拖尾</b>；划过下方按钮印章，元素<b>泛金光</b>；<b>点击任意处</b>，落点钤下<b>朱印涟漪</b>。光标本身为<b>朱笔尖</b>。</div>
+
+    <div class="tryrow">
+      <button class="btn-zhu">诏 付 有 司</button>
+      <button class="btn-gold">有 司 润 色</button>
+      <div class="seal cn"><span>印</span></div>
+      <div class="seal"><span>政</span></div>
+      <div class="seal"><span>军</span></div>
+    </div>
+
+    <div class="tryrow cards">
+      <article class="card"><h4>辽东军饷急缺</h4><p>关宁将士三月未得粮饷，恐生哗变。兵部请先发内帑十万以安军心。</p></article>
+      <article class="card"><h4>辽饷加派民怨</h4><p>各省累欠辽饷，催科酷烈，流民渐起。户部请旨缓征或改折。</p></article>
+      <article class="card"><h4>阉党余孽待清</h4><p>魏忠贤虽除，党羽盘踞要津。内阁请旨次第罢黜，以正朝纲。</p></article>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>光 标 四 制</h3>
+  <div class="sw on" data-fx="ripple"><span class="sw-box"></span><span class="sw-label"><b>朱印涟漪</b><span>点击落点·钤印涟漪</span></span></div>
+  <div class="sw on" data-fx="brush"><span class="sw-box"></span><span class="sw-label"><b>光标本体</b><span>替换系统箭头</span></span></div>
+  <div class="curpick">
+    <button class="cp on" data-shape="brush">斜笔</button>
+    <button class="cp" data-shape="brushV">立笔</button>
+    <button class="cp" data-shape="seal">朱印</button>
+    <button class="cp" data-shape="arrow">朱箭</button>
+  </div>
+  <div class="sw on" data-fx="hover"><span class="sw-box"></span><span class="sw-label"><b>悬停泛光</b><span>可点元素·金光墨晕</span></span></div>
+  <div class="sw on" data-fx="trail"><span class="sw-box"></span><span class="sw-label"><b>朱砂拖尾</b><span>移动跟随·朱墨点</span></span></div>
+  <div class="panel-foot">逐个开关·对比取舍</div>
+</div>
+
+<script>
+(function(){
+  var body = document.body;
+  // 开关
+  document.querySelectorAll('.sw').forEach(function(sw){
+    sw.addEventListener('click', function(){
+      var fx = sw.dataset.fx;
+      var on = !sw.classList.contains('on');
+      sw.classList.toggle('on', on);
+      if(fx === 'brush'){ if(on){ body.setAttribute('data-cur', curShape); } else { body.removeAttribute('data-cur'); } }
+      else body.setAttribute('data-' + fx, on ? 'on' : 'off');
+    });
+  });
+  // 光标造型选择
+  var curShape = 'brush';
+  document.querySelectorAll('.curpick .cp').forEach(function(cp){
+    cp.addEventListener('click', function(){
+      curShape = cp.dataset.shape;
+      document.querySelectorAll('.curpick .cp').forEach(function(x){ x.classList.toggle('on', x === cp); });
+      var sw = document.querySelector('.sw[data-fx="brush"]');
+      if(sw) sw.classList.add('on');
+      body.setAttribute('data-cur', curShape);
+    });
+  });
+
+  // ① 点击朱印涟漪
+  document.addEventListener('pointerdown', function(e){
+    if(body.getAttribute('data-ripple') !== 'on') return;
+    if(e.target.closest && e.target.closest('.panel')) return; // 开关区不弹
+    spawn('ripple', e.clientX, e.clientY, 620);
+    spawn('ripple-dot', e.clientX, e.clientY, 500);
+  });
+
+  // ④ 朱砂墨点拖尾 (rAF 节流·按移动距离落点)
+  var lastX=0,lastY=0,curX=0,curY=0,acc=0,moved=false;
+  document.addEventListener('pointermove', function(e){ curX=e.clientX; curY=e.clientY; moved=true; });
+  function tick(){
+    if(moved && body.getAttribute('data-trail')==='on'){
+      var dx=curX-lastX, dy=curY-lastY, d=Math.sqrt(dx*dx+dy*dy);
+      acc += d;
+      if(acc >= 16){ acc=0; spawn('trail', curX, curY, 600); }
+    }
+    lastX=curX; lastY=curY; moved=false;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  function spawn(cls, x, y, ttl){
+    var el = document.createElement('div');
+    el.className = cls;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    // 拖尾随机微抖+大小·更像泼墨
+    if(cls==='trail'){ var s=0.7+Math.random()*0.8; el.style.transform='scale('+s+')'; el.style.marginLeft=(-4.5+(Math.random()*4-2))+'px'; }
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, ttl);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+'use strict';
+// smoke-eventbus-vestigial — StoryEventBus 死代码归档标注(二梯·清理)
+// 核实:① 事件处理逻辑(processNext/enqueue)零 gameplay 驱动 ② serialize/deserialize 仅 save-compat(×2)
+// ③ @vestigial 头注到位且指向真系统 tm-history-events ④ 纯注释改·模块仍正常加载(零行为变更)
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+const ROOT = path.resolve(__dirname, '..');
+let A = 0;
+function ok(c, m) { if (!c) throw new Error('FAIL: ' + m); A++; console.log('  ✓ ' + m); }
+
+function grepCount(re) {
+  let n = 0;
+  fs.readdirSync(ROOT).forEach(function (f) {
+    if (!/\.(js)$/.test(f) || f === 'tm-event-system.js') return;
+    if (!/^(tm-|phase8-)/.test(f)) return;
+    let s; try { s = fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch (_) { return; }
+    const m = s.match(re); if (m) n += m.length;
+  });
+  return n;
+}
+
+console.log('smoke-eventbus-vestigial');
+
+// ── ① 归档依据:事件处理逻辑零外部驱动 ──
+ok(grepCount(/\.processNext\(/g) === 0, '① processNext 全库零外部调用方(无每回合驱动)');
+ok(grepCount(/StoryEventBus\.enqueue\(/g) === 0, '① StoryEventBus.enqueue 零 gameplay 调用方(总线恒空)');
+// ── ② serialize/deserialize 仅 save-compat ──
+ok(grepCount(/StoryEventBus\.(serialize|deserialize)/g) === 2, '② serialize/deserialize 仅 2 处(save-lifecycle·save-compat)');
+
+// ── ③ @vestigial 头注到位 + 指向真系统 ──
+const src = fs.readFileSync(path.join(ROOT, 'tm-event-system.js'), 'utf8');
+ok(/@vestigial/.test(src), '③ 头注含 @vestigial 标注');
+ok(/tm-history-events\.js/.test(src), '③ 头注指向真事件系统 tm-history-events.js');
+ok(/checkHistoryEvents|checkRigidTriggers/.test(src), '③ 头注点明真驱动(checkHistoryEvents/checkRigidTriggers)');
+ok(/存档兼容|save-compat|serialize\/deserialize/.test(src), '③ 头注说明保留原因(存档兼容)');
+
+// ── ④ 真系统每回合驱动确认(tm-endturn-systems) ──
+const sys = fs.readFileSync(path.join(ROOT, 'tm-endturn-systems.js'), 'utf8');
+ok(/checkHistoryEvents\(\)/.test(sys) && /checkRigidTriggers\(\)/.test(sys), '④ tm-endturn-systems 每回合驱动真事件系统');
+
+// ── ⑤ 纯注释改·模块仍正常加载(零行为变更) ──
+const ctx = { console: { log() {}, warn() {}, error() {} }, Math, JSON, String, Array, Object, Date: { now: () => 0 } };
+ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx; ctx.GM = { turn: 1 };
+vm.createContext(ctx);
+vm.runInContext(src, ctx, { filename: 'tm-event-system.js' });
+ok(ctx.StoryEventBus && typeof ctx.StoryEventBus.processNext === 'function', '⑤ StoryEventBus 仍正常导出(processNext 在·未删·save-compat 保留)');
+ok(typeof ctx.StoryEventBus.serialize === 'function' && typeof ctx.StoryEventBus.deserialize === 'function', '⑤ serialize/deserialize 仍在(存档兼容不破)');
+ok(ctx.EffectRegistry && typeof ctx.EffectRegistry === 'object', '⑤ EffectRegistry 仍在(骨架保留)');
+
+console.log('\n结果: ' + A + ' 通过 / 0 失败');

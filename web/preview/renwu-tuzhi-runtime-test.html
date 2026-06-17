@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>人物图志运行时·mock GM 测试桩</title></head>
+<body style="margin:0;background:#2a2a2a;font-family:serif;">
+<script>
+/* ===== mock 引擎真 shape（验适配器 adaptChar 读真字段） ===== */
+window.TRAIT_LIBRARY={
+  ganglie:{name:'刚烈',effects:{}}, qinzheng:{name:'勤政',effects:{administration:3}}, duoyi:{name:'多疑',effects:{loyalty:-3}},
+  ganren:{name:'敢任',effects:{military:4}}, jixie:{name:'急切',effects:{}}, yinzhi:{name:'阴鸷',effects:{benevolence:-4}}, jibian:{name:'机变',effects:{intelligence:3}}
+};
+window.getEffectiveAttr=function(c,k){var v=c[k]||0;(c.traits||[]).forEach(function(t){var d=TRAIT_LIBRARY[t];if(d&&d.effects&&d.effects[k])v+=d.effects[k];});return v;};
+window.findCharByName=function(n){return (window.GM.chars||[]).find(function(c){return c.name===n;});};
+var BLOOD={
+  '朱由检':[{name:'朱常洛',relation:'父'},{name:'朱由校',relation:'皇兄'},{name:'周氏',relation:'皇后'}],
+  '袁崇焕':[{name:'黄氏',relation:'妻'},{name:'袁子',relation:'子'}]
+};
+window.getBloodRelatives=function(n){return BLOOD[n]||[];};
+var AFF={
+  '朱由检':[{name:'孙承宗',value:58},{name:'魏忠贤',value:-72},{name:'袁崇焕',value:50}],
+  '袁崇焕':[{name:'孙承宗',value:76},{name:'魏忠贤',value:-32},{name:'毛文龙',value:-48}],
+  '魏忠贤':[{name:'朱由检',value:-66},{name:'孙承宗',value:-44}]
+};
+window.AffinityMap={getRelations:function(n){return AFF[n]||[];},add:function(){},get:function(){}};
+window.P={playerInfo:{characterName:'朱由检'},traitDefinitions:[]};
+window.GM={
+  turn:3,
+  characterArcs:{
+    '袁崇焕':[{turn:1,type:'军务',desc:'修宁锦防线，练关宁铁骑'},{turn:2,type:'授权',desc:'得便宜行事之诏'},{turn:3,type:'危机',desc:'军饷火药俱缺，告急于朝'}],
+    '朱由检':[{turn:1,type:'即位',desc:'天启七年八月即皇帝位'}]
+  },
+  _memoryArchiveFull:[
+    {char:'袁崇焕',turn:1,emotion:'怒',event:'催军饷不至，几误战机',who:'毕自严'},
+    {char:'袁崇焕',turn:3,emotion:'忧',event:'药铅只可支一旬',who:''},
+    {char:'朱由检',turn:1,emotion:'惧',event:'仓促入继，夜不能寐',who:''}
+  ],
+  culturalWorks:[
+    {author:'袁崇焕',title:'宁远守议',genre:'memorial',quality:78,turn:1,isPreserved:true,mood:'慷慨'}
+  ],
+  families:{'朱氏·明':{renown:100,branches:[]}},
+  chars:[
+    {name:'朱由检',courtesy:'',officialTitle:'皇帝',role:'皇帝',rank:'九五至尊',faction:'皇室',age:17,gender:'男',birthplace:'京师·慈庆宫',ethnicity:'汉',faith:'儒',culture:'汉',learning:'皇子·经筵',stance:'中兴之主',speechStyle:'文言凝重，自称朕',family:'朱氏·明',familyTier:'imperial',isPlayer:true,alive:true,
+      loyalty:100,intelligence:82,valor:52,administration:62,management:55,charisma:55,diplomacy:42,military:40,benevolence:52,ambition:90,stress:64,health:78,integrity:82,mingwang:72,xianneng:60,
+      wuchang:{'仁':55,'义':70,'礼':75,'智':72,'信':50},traits:['ganglie','qinzheng','duoyi'],_mood:'忧',location:'京师·乾清宫',
+      appearance:'面容清癯，常带倦色，目光锐而多疑。',bio:'光宗第五子，天启七年八月以皇弟入继大统。初登大宝，内有阉党盘踞，外有辽事糜烂。',personality:'刚烈而多疑，勤政而急切。',personalGoal:'除阉党、中兴大明、扫平虏寇。',
+      children:['朱慈烺'],spouse:'周氏',spouseRank:'empress',
+      career:[{year:'天启二年',title:'信王',desc:'封信王'},{year:'天启七年',title:'入继大统',desc:'皇兄崩，以皇弟即位',milestone:true}],
+      _lifeExp:[{domain:'求学',desc:'潜邸读书'},{domain:'蛰伏',desc:'韬晦避祸十六年'}]
+    },
+    {name:'袁崇焕',courtesy:'元素',officialTitle:'巡抚辽东',role:'边臣',rank:'正四品',faction:'边镇',age:43,gender:'男',birthplace:'广东·东莞',ethnicity:'汉',faith:'儒',culture:'汉',learning:'万历四十七年进士',stance:'主战守关',family:'袁氏',familyTier:'gentry',alive:true,
+      loyalty:74,intelligence:78,valor:80,administration:63,management:60,charisma:62,diplomacy:50,military:86,benevolence:54,ambition:68,stress:73,health:75,integrity:70,mingwang:80,xianneng:74,
+      wuchang:{'仁':48,'义':72,'礼':50,'智':75,'信':66},traits:['ganren','jixie'],_mood:'怒',location:'宁远',_travelTo:{toLocation:'山海关'},
+      appearance:'身不甚长，目光如炬，甲衣常带风尘。',bio:'东莞人，进士起家，自请督辽。守宁远以却努尔哈赤，威名震边。',personality:'刚烈敢任，自负而急切。',goal:'守关宁、补军饷，五年复辽。',
+      children:['袁子'],spouse:'黄氏',
+      _relationships:{'孙承宗':[{type:'friend',strength:76}],'魏忠贤':[{type:'rival',strength:-32}]},
+      _impressions:{'孙承宗':{favor:18,events:[]},'朱由检':{favor:8,events:[]}},
+      career:[{year:'万历四十七年',title:'进士',desc:'登第'},{year:'天启六年',title:'宁远大捷',desc:'红夷炮却敌',milestone:true},{year:'天启七年',title:'巡抚辽东',desc:'总关宁防务',milestone:true}],
+      _lifeExp:[{domain:'军旅',desc:'自请督辽，宁远却敌'},{domain:'治理',desc:'以辽人守辽土'}]
+    },
+    {name:'魏忠贤',courtesy:'完吾',officialTitle:'司礼监秉笔太监',role:'权阉',rank:'内官之首',faction:'阉党',party:'阉党',partyRank:'魁首',age:59,gender:'男',birthplace:'北直隶·肃宁',ethnicity:'汉',culture:'汉',learning:'目不识丁',stance:'恋权自保',family:'魏氏',familyTier:'common',alive:true,
+      loyalty:18,intelligence:74,valor:30,administration:66,management:70,charisma:60,diplomacy:55,military:25,benevolence:8,ambition:88,stress:82,health:64,integrity:6,mingwang:22,xianneng:30,
+      wuchang:{'仁':10,'义':15,'礼':30,'智':68,'信':20},traits:['yinzhi','jibian'],_mood:'惧',location:'京师·东厂',_scheming:true,
+      appearance:'体貌肥硕，眉目阴鸷。',bio:'肃宁无赖，自宫入内，窃柄天启一朝。今熹宗已崩，新主欲除之。',personality:'阴鸷而机变，贪权而怯死。',personalGoal:'保住司礼监之权与身家性命。',
+      _relationships:{'朱由检':[{type:'foe',strength:-66}]},
+      _impressions:{'朱由检':{favor:-20,events:[]}},
+      career:[{year:'天启元年',title:'司礼监秉笔',desc:'兼掌东厂',milestone:true}],
+      _lifeExp:[{domain:'磨难',desc:'市井无赖，自宫求活'}]
+    },
+    {name:'杨涟',courtesy:'文孺',officialTitle:'左副都御史(赠)',role:'谏臣',rank:'正三品(赠)',faction:'清流',party:'东林',age:55,gender:'男',birthplace:'湖广·应山',learning:'万历三十五年进士',stance:'死谏抗阉',family:'杨氏',familyTier:'gentry',alive:false,deathReason:'死于诏狱',deathTurn:0,
+      loyalty:95,intelligence:76,valor:60,administration:70,charisma:70,military:25,benevolence:78,ambition:35,stress:0,health:0,integrity:96,mingwang:90,xianneng:80,
+      wuchang:{'仁':80,'义':92,'礼':78,'智':74,'信':90},traits:[],bio:'应山人，东林直臣。劾魏忠贤二十四大罪，竟死诏狱。',personality:'刚直不挠，舍生取义。',
+      career:[{year:'天启四年',title:'劾魏忠贤',desc:'二十四大罪',milestone:true}]
+    }
+  ]
+};
+</script>
+<script src="../tm-renwu-tuzhi.js"></script>
+<script>
+window.addEventListener('load',function(){ setTimeout(function(){ window.openCharRenwuPage('朱由检'); }, 100); });
+</script>
+</body></html>

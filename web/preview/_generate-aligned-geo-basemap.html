@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="img/ming-1582-map-data.js"></script>
+  <script src="img/east-asia-basemap-data.js"></script>
+  <style>
+    html,body{margin:0;width:3200px;height:1920px;background:#9a6b38;overflow:hidden;}
+    svg{display:block;width:3200px;height:1920px;background:#9a6b38;}
+    .sea-bg{fill:url(#sea);opacity:.94;}
+    .paper-noise{mix-blend-mode:multiply;opacity:.18;}
+    .paper-fiber{stroke:#694722;stroke-linecap:round;mix-blend-mode:multiply;}
+    .context-land path{fill:#947145;fill-opacity:.38;stroke:#3c2813;stroke-width:.64;stroke-opacity:.24;}
+    .context-land-shadow path{fill:#4e3319;fill-opacity:.045;}
+    .context-lake path{fill:#5e8378;fill-opacity:.18;stroke:#203f39;stroke-opacity:.3;stroke-width:.56;}
+    .context-river path{fill:none;stroke:#234c47;stroke-opacity:.3;stroke-linecap:round;stroke-linejoin:round;}
+    .context-river .major{stroke-opacity:.44;stroke-width:1.22;}
+    .ming-primer{fill:url(#mingLand);opacity:.96;}
+    .ming-tonal path{mix-blend-mode:multiply;}
+    .ming-edge path{fill:none;stroke:#301a09;stroke-width:1.12;stroke-opacity:.42;stroke-linejoin:round;stroke-linecap:round;}
+    .ming-edge-soft path{fill:none;stroke:#f3dba0;stroke-width:3.6;stroke-opacity:.018;stroke-linejoin:round;stroke-linecap:round;}
+    .mountain .wash{fill:#5b4223;fill-opacity:.1;}
+    .mountain .ink{fill:none;stroke:#241608;stroke-width:.96;stroke-opacity:.58;stroke-linecap:round;stroke-linejoin:round;}
+    .mountain .light{fill:none;stroke:#f3d899;stroke-width:.5;stroke-opacity:.16;stroke-linecap:round;}
+    .ridge{fill:none;stroke:#2f1d0b;stroke-opacity:.34;stroke-width:.94;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 8;}
+    .river-glow{fill:none;stroke:#a8c0ae;stroke-opacity:.075;stroke-linecap:round;stroke-linejoin:round;}
+    .river{fill:none;stroke:#183f3a;stroke-opacity:.64;stroke-linecap:round;stroke-linejoin:round;}
+    .tree{fill:#334e2b;fill-opacity:.18;mix-blend-mode:multiply;}
+    .wave{fill:none;stroke:#274d48;stroke-width:.68;stroke-opacity:.22;stroke-linecap:round;stroke-linejoin:round;}
+    .crease{fill:none;stroke:#f4d797;stroke-width:36;stroke-opacity:.04;stroke-linecap:round;}
+  </style>
+</head>
+<body>
+<svg id="aligned-geo-basemap" xmlns="http://www.w3.org/2000/svg" width="3200" height="1920" viewBox="0 0 1200 720"></svg>
+<script>
+(() => {
+  const regions = window.MING_MAP_REGIONS || [];
+  const base = window.EAST_ASIA_BASEMAP || {};
+  const esc = v => String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const regionPaths = regions.map(r => `<path d="${esc(r.d)}"/>`).join('');
+  const regionMask = regions.map(r => `<path d="${esc(r.d)}" fill="white"/>`).join('');
+  const contextLand = (base.landPaths || []).map(d => `<path d="${esc(d)}"/>`).join('');
+  const contextLakes = (base.lakePaths || []).map(d => `<path d="${esc(d)}"/>`).join('');
+  const contextRivers = (base.riverPaths || []).map(r => `<path class="${r.major ? 'major' : ''}" d="${esc(r.d)}"/>`).join('');
+
+  let seed = 15820509;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const n = x => Number(x).toFixed(1);
+
+  const mountain = (x, y, s, rot, o) => `
+    <g class="mountain" transform="translate(${n(x)} ${n(y)}) rotate(${n(rot)}) scale(${s.toFixed(3)})" opacity="${o.toFixed(3)}">
+      <path class="wash" d="M-23 12 C-15 -1 -8 -17 0 -26 C9 -12 18 2 27 12 C17 10 8 14 -2 13 C-11 12 -17 10 -23 12 Z"/>
+      <path class="ink" d="M-23 12 C-15 -1 -8 -17 0 -26 C9 -12 18 2 27 12"/>
+      <path class="ink" d="M-8 11 C-3 1 1 -6 6 -13 C8 -5 13 4 18 11"/>
+      <path class="ink" d="M-16 8 C-8 6 -1 7 6 5 C14 3 21 7 28 11"/>
+      <path class="light" d="M-2 -14 C2 -10 4 -6 6 -1"/>
+    </g>`;
+
+  const range = (x1, y1, x2, y2, count, scale, bow = 0) => {
+    let out = '';
+    for (let i = 0; i < count; i++) {
+      const t = count < 2 ? 0 : i / (count - 1);
+      const curve = Math.sin(t * Math.PI);
+      const x = x1 + (x2 - x1) * t + (rnd() - .5) * 28;
+      const y = y1 + (y2 - y1) * t + curve * bow + (rnd() - .5) * 18;
+      out += mountain(x, y, scale * (.72 + rnd() * .58), -13 + rnd() * 26, .38 + rnd() * .24);
+    }
+    return out;
+  };
+
+  const mountains = [
+    range(92, 402, 358, 382, 30, .55, -20),
+    range(154, 505, 446, 540, 34, .62, -8),
+    range(405, 304, 650, 326, 25, .4, -9),
+    range(498, 450, 690, 520, 28, .47, -14),
+    range(625, 198, 882, 190, 28, .43, -24),
+    range(710, 352, 884, 430, 24, .37, -18),
+    range(525, 558, 708, 588, 20, .4, -10),
+    range(306, 220, 510, 198, 21, .38, -20)
+  ].join('');
+
+  const ridges = [
+    'M108 398 C176 360 253 361 318 391 C371 416 424 400 472 365',
+    'M178 483 C270 427 381 436 459 499',
+    'M408 174 C496 140 590 150 686 180 C748 199 810 188 878 164',
+    'M438 462 C492 431 558 438 622 468 C673 493 723 478 779 449',
+    'M678 338 C737 305 814 315 878 358',
+    'M720 424 C764 393 824 399 873 436',
+    'M308 260 C385 231 480 234 558 267'
+  ].map(d => `<path class="ridge" d="${d}"/>`).join('');
+
+  const rivers = [
+    ['M402 272 C480 248 552 251 620 278 C678 301 734 291 800 315 C840 330 876 329 916 318', 1.8],
+    ['M420 374 C492 357 560 371 628 365 C698 356 770 362 856 394 C888 406 918 405 954 392', 2.1],
+    ['M552 452 C612 438 658 454 707 452 C748 450 784 463 830 445', 1.2],
+    ['M518 504 C566 491 612 505 646 535 C673 560 704 560 741 544', .95],
+    ['M724 286 C758 267 790 272 825 294', .82],
+    ['M360 476 C430 452 490 466 548 496', .78]
+  ].map(([d, w]) => `<path class="river-glow" d="${d}" stroke-width="${w * 4.2}"/><path class="river" d="${d}" stroke-width="${w}"/>`).join('');
+
+  let trees = '';
+  for (let i = 0; i < 330; i++) {
+    const x = 240 + rnd() * 660;
+    const y = 205 + rnd() * 395;
+    const s = .34 + rnd() * 1.05;
+    trees += `<path class="tree" d="M${n(x)} ${n(y + 7 * s)} C${n(x - 5 * s)} ${n(y + 1 * s)} ${n(x - 2 * s)} ${n(y - 5 * s)} ${n(x)} ${n(y - 9 * s)} C${n(x + 4 * s)} ${n(y - 3 * s)} ${n(x + 6 * s)} ${n(y + 3 * s)} ${n(x)} ${n(y + 7 * s)} Z"/>`;
+  }
+
+  let waves = '';
+  for (let i = 0; i < 360; i++) {
+    const east = i < 260;
+    const x = east ? 750 + rnd() * 405 : 350 + rnd() * 570;
+    const y = east ? 235 + rnd() * 410 : 560 + rnd() * 126;
+    const w = 8 + rnd() * 22;
+    const h = 1.6 + rnd() * 4.3;
+    const rot = -10 + rnd() * 20;
+    waves += `<path class="wave" opacity="${(.045 + rnd() * .075).toFixed(3)}" transform="rotate(${n(rot)} ${n(x)} ${n(y)})" d="M${n(x)} ${n(y)} C${n(x + w * .28)} ${n(y - h)} ${n(x + w * .62)} ${n(y + h)} ${n(x + w)} ${n(y)}"/>`;
+  }
+
+  let fibers = '';
+  for (let i = 0; i < 240; i++) {
+    const x = rnd() * 1200;
+    const y = rnd() * 720;
+    const len = 18 + rnd() * 120;
+    const a = (-8 + rnd() * 16) * Math.PI / 180;
+    fibers += `<path class="paper-fiber" d="M${n(x)} ${n(y)} l${n(Math.cos(a) * len)} ${n(Math.sin(a) * len)}" stroke-width="${(.16 + rnd() * .42).toFixed(2)}" stroke-opacity="${(.022 + rnd() * .04).toFixed(3)}"/>`;
+  }
+
+  const tonal = regions.map((r, i) => {
+    const palette = ['#a7743b','#b1844a','#967a46','#9d8a55','#8c7a54','#ac7443','#8d8d62','#b09052'];
+    return `<path d="${esc(r.d)}" fill="${palette[i % palette.length]}" fill-opacity="${(.13 + (i % 5) * .014).toFixed(3)}"/>`;
+  }).join('');
+
+  const svg = document.getElementById('aligned-geo-basemap');
+  svg.innerHTML = `
+    <defs>
+      <filter id="paperNoise" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency=".014 .022" numOctaves="4" seed="53" result="n"/>
+        <feColorMatrix in="n" type="matrix" values=".24 0 0 0 .43 0 .18 0 0 .33 0 0 .13 0 .19 0 0 0 .38 0"/>
+      </filter>
+      <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#c8934e"/>
+        <stop offset=".48" stop-color="#d1aa63"/>
+        <stop offset="1" stop-color="#886236"/>
+      </linearGradient>
+      <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#8b7146"/>
+        <stop offset=".42" stop-color="#638277"/>
+        <stop offset=".72" stop-color="#5d7d73"/>
+        <stop offset="1" stop-color="#45685f"/>
+      </linearGradient>
+      <linearGradient id="mingLand" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#c7904b"/>
+        <stop offset=".44" stop-color="#ddb56a"/>
+        <stop offset=".72" stop-color="#b88343"/>
+        <stop offset="1" stop-color="#84572b"/>
+      </linearGradient>
+      <clipPath id="mingLandClip">${regionMask}</clipPath>
+      <mask id="mingLandMask"><rect width="1200" height="720" fill="black"/>${regionMask}</mask>
+    </defs>
+    <rect width="1200" height="720" fill="url(#paper)"/>
+    <rect class="sea-bg" width="1200" height="720"/>
+    <rect class="paper-noise" width="1200" height="720" filter="url(#paperNoise)"/>
+    <g>${fibers}</g>
+    <g class="context-land-shadow">${contextLand}</g>
+    <g class="context-land">${contextLand}</g>
+    <g class="context-lake">${contextLakes}</g>
+    <g class="context-river">${contextRivers}</g>
+    <rect class="ming-primer" width="1200" height="720" mask="url(#mingLandMask)"/>
+    <g class="ming-tonal">${tonal}</g>
+    <g clip-path="url(#mingLandClip)">${trees}${ridges}${mountains}${rivers}</g>
+    <g>${waves}</g>
+    <g class="ming-edge-soft">${regionPaths}</g>
+    <g class="ming-edge">${regionPaths}</g>
+    <path class="crease" d="M48 66 C280 28 488 44 620 57 C824 78 998 76 1164 122"/>
+    <rect width="1200" height="720" fill="none" stroke="#53351a" stroke-opacity=".11" stroke-width="6"/>
+  `;
+})();
+</script>
+</body>
+</html>

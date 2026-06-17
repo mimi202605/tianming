@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>方向三 · 藏书阁</title>
+<link rel="stylesheet" href="preview-redux.css">
+<style>
+body{display:grid;place-items:center;min-height:100%;padding:20px 12px;}
+.hub{width:min(1140px,97vw);height:min(800px,90vh);display:grid;grid-template-rows:auto 1fr;
+  background:
+    radial-gradient(900px 500px at 30% 0%,rgba(120,60,28,.18),transparent 50%),
+    linear-gradient(180deg,rgba(36,22,14,.99),rgba(14,9,6,.99));}
+.head{display:grid;grid-template-columns:1fr auto;align-items:center;padding:15px 22px;
+  border-bottom:1px solid var(--line-strong);background:linear-gradient(90deg,rgba(120,32,22,.3),rgba(0,0,0,.05));}
+.head .ttl{font-family:var(--serif);font-size:20px;letter-spacing:6px;color:var(--gold-bright);}
+.head .ttl small{display:block;font-family:var(--sans);font-size:11px;letter-spacing:1px;color:var(--ink-dim);margin-top:4px;}
+.head .tools{display:flex;gap:9px;align-items:center;}
+.notice{display:flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--line);background:rgba(0,0,0,.25);cursor:pointer;font-size:12.5px;color:var(--ink-dim);}
+.notice .badge{background:var(--cin1);color:#fff;border-radius:9px;padding:0 6px;font-size:10px;}
+.x{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(0,0,0,.25);cursor:pointer;}
+
+.scene{display:grid;grid-template-columns:1fr 330px;min-height:0;}
+
+/* 书架 */
+.stacks{min-height:0;padding:16px 18px;position:relative;}
+.stacks .scroll{height:100%;padding-right:6px;}
+.shelf{position:relative;margin-bottom:26px;}
+.shelf .label{font-family:var(--serif);font-size:13px;color:var(--gold);letter-spacing:2px;margin-bottom:8px;opacity:.9;}
+.books{display:flex;align-items:flex-end;gap:7px;min-height:150px;padding:0 6px;}
+/* 木板 */
+.board{height:16px;margin-top:-3px;border-radius:2px;
+  background:linear-gradient(180deg,#5a3a21,#3a2414 60%,#23150b);
+  box-shadow:0 6px 14px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,200,140,.18);}
+/* 书脊 */
+.spine{width:42px;height:138px;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,235,190,.22);border-bottom:none;
+  box-shadow:inset 0 0 14px rgba(0,0,0,.5),inset 2px 0 0 rgba(255,235,190,.12);
+  transition:transform .2s var(--ease),box-shadow .2s var(--ease);}
+.spine:hover{transform:translateY(-10px);box-shadow:0 12px 22px rgba(0,0,0,.5),inset 0 0 14px rgba(0,0,0,.4);}
+.spine.on{transform:translateY(-14px);outline:1px solid var(--gold-bright);box-shadow:0 14px 26px rgba(0,0,0,.55),0 0 0 2px rgba(243,218,146,.35);}
+.spine .t{writing-mode:vertical-rl;text-orientation:upright;font-family:var(--serif);font-size:14px;letter-spacing:3px;
+  color:#f3e0b4;text-shadow:0 1px 2px rgba(0,0,0,.7);max-height:118px;overflow:hidden;}
+/* 书脊金顶/底 */
+.spine::before,.spine::after{content:"";position:absolute;left:4px;right:4px;height:8px;
+  background:linear-gradient(90deg,var(--gold-deep),var(--gold-bright),var(--gold-deep));opacity:.8;}
+.spine::before{top:7px;}.spine::after{bottom:9px;}
+.spine.add{background:repeating-linear-gradient(135deg,rgba(214,177,93,.08) 0 6px,transparent 6px 12px);border:1px dashed rgba(214,177,93,.4);}
+.spine.add .t{color:var(--gold);}
+/* 漆色 */
+.zhu{background:linear-gradient(180deg,#a23a2c,var(--lac-zhu));}
+.dai{background:linear-gradient(180deg,#2c5350,var(--lac-dai));}
+.jin{background:linear-gradient(180deg,#8f7019,var(--lac-jin));}
+.zhe{background:linear-gradient(180deg,#8a5a22,var(--lac-zhe));}
+.mo{background:linear-gradient(180deg,#352720,var(--lac-mo));}
+.jiang{background:linear-gradient(180deg,#7a2c26,var(--lac-jiang));}
+.qing{background:linear-gradient(180deg,#2e4655,var(--lac-qing));}
+
+/* 右侧：案上展读 + 牙牌 + 邸报 */
+.side{border-left:1px solid var(--line-strong);background:rgba(0,0,0,.22);min-height:0;display:grid;grid-template-rows:1fr auto;}
+.desk{min-height:0;padding:16px;}
+.desk .scroll{height:100%;}
+/* 摊开的卷·羊皮纸 */
+.scrollpaper{position:relative;padding:18px 18px 20px;border:1px solid rgba(214,177,93,.4);
+  background:
+    linear-gradient(180deg,rgba(238,224,190,.96),rgba(224,206,166,.94)),
+    repeating-linear-gradient(0deg,rgba(120,80,30,.04) 0 22px,transparent 22px 24px);
+  color:#3a2a14;box-shadow:0 10px 26px rgba(0,0,0,.5),inset 0 0 30px rgba(150,110,50,.25);}
+.scrollpaper::before,.scrollpaper::after{content:"";position:absolute;top:-7px;bottom:-7px;width:12px;
+  background:linear-gradient(90deg,#7a4a1e,#caa45e,#7a4a1e);border-radius:6px;box-shadow:0 4px 8px rgba(0,0,0,.5);}
+.scrollpaper::before{left:-9px;}.scrollpaper::after{right:-9px;}
+.scrollpaper .kick{font-size:11px;letter-spacing:3px;color:#8a4a22;}
+.scrollpaper h2{font-family:var(--serif);font-size:20px;margin:6px 0 8px;color:#5a1d12;line-height:1.35;}
+.scrollpaper .rate{display:flex;gap:12px;align-items:center;font-size:12px;color:#6a4a26;margin-bottom:10px;}
+.scrollpaper .rate .s{color:#9a6a16;}
+.scrollpaper p{font-size:13px;line-height:1.9;color:#43321b;margin:0 0 12px;text-align:justify;}
+.scrollpaper .tags .tag{border-color:rgba(120,70,20,.4);background:rgba(120,70,20,.1);color:#6a3a14;}
+.scrollpaper .seal-stamp{position:absolute;right:18px;bottom:14px;width:54px;height:54px;border-radius:6px;
+  border:2px solid rgba(150,30,20,.6);color:rgba(150,30,20,.7);display:grid;place-items:center;
+  font-family:var(--serif);font-size:13px;line-height:1.1;text-align:center;transform:rotate(-8deg);opacity:.8;}
+.deskacts{display:flex;gap:10px;margin-top:16px;}
+.deskacts .btn{flex:1;min-height:46px;font-size:15px;}
+
+/* 牙牌 + 邸报 */
+.shelf-foot{border-top:1px solid var(--line);padding:14px 16px;display:grid;gap:12px;}
+.yapai{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:12px;
+  border:1px solid var(--line-strong);background:linear-gradient(120deg,rgba(120,40,28,.3),rgba(110,82,18,.12));
+  position:relative;}
+.yapai::before{content:"";position:absolute;top:-9px;left:50%;width:2px;height:9px;background:var(--gold);}
+.yapai .seal{width:48px;height:48px;border-radius:50%;font-size:24px;}
+.yapai b{font-family:var(--serif);font-size:16px;color:#f7e7b8;}
+.yapai small{display:block;font-size:11.5px;color:var(--ink-dim);margin-top:2px;}
+.dibao{border:1px solid var(--line);background:rgba(0,0,0,.2);padding:11px 13px;}
+.dibao h4{margin:0 0 7px;font-family:var(--serif);font-size:13px;color:var(--gold-bright);letter-spacing:1px;}
+.dibao .row{font-size:12px;color:var(--ink-dim);padding:4px 0;display:flex;gap:8px;}
+.dibao .row .d{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:6px;flex:none;}
+@media(max-width:980px){.scene{grid-template-columns:1fr}.side{border-left:none;border-top:1px solid var(--line-strong)}}
+</style></head>
+<body>
+<div class="hub frame">
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+
+  <div class="head">
+    <div class="ttl">天命 · 藏书阁<small>取一卷展读 · 入府库即载入剧本 · 网络不通时本地照常</small></div>
+    <div class="tools"><div class="notice">邸报 <span class="badge">2</span></div><div class="x">✕</div></div>
+  </div>
+
+  <div class="scene">
+    <!-- 书架 -->
+    <div class="stacks"><div class="scroll">
+      <div class="shelf">
+        <div class="label">官修 · 正史卷</div>
+        <div class="books">
+          <div class="spine zhu on"><div class="t">天启七年</div></div>
+          <div class="spine dai"><div class="t">绍宋建炎</div></div>
+          <div class="spine zhu"><div class="t">永乐靖难</div></div>
+          <div class="spine jin"><div class="t">贞观之治</div></div>
+          <div class="spine zhe"><div class="t">万历宁夏</div></div>
+        </div>
+        <div class="board"></div>
+      </div>
+      <div class="shelf">
+        <div class="label">稗官 · 玩家卷</div>
+        <div class="books">
+          <div class="spine mo"><div class="t">靖康围城</div></div>
+          <div class="spine jiang"><div class="t">天宝安史</div></div>
+          <div class="spine qing"><div class="t">嘉靖大礼</div></div>
+          <div class="spine zhe"><div class="t">绍兴和议</div></div>
+          <div class="spine dai"><div class="t">淳熙北伐</div></div>
+          <div class="spine zhu"><div class="t">洪武开国</div></div>
+        </div>
+        <div class="board"></div>
+      </div>
+      <div class="shelf">
+        <div class="label">待装 · 我的收藏</div>
+        <div class="books">
+          <div class="spine zhu"><div class="t">天启七年</div></div>
+          <div class="spine dai"><div class="t">绍宋建炎</div></div>
+          <div class="spine add"><div class="t">投我新卷</div></div>
+        </div>
+        <div class="board"></div>
+      </div>
+    </div></div>
+
+    <!-- 案上 + 牙牌 + 邸报 -->
+    <aside class="side">
+      <div class="desk"><div class="scroll">
+        <div class="scrollpaper">
+          <div class="kick">官修正史 · 明末</div>
+          <h2>天启七年·九月<br>君王初立，权阉当国</h2>
+          <div class="rate"><span class="s">★★★★★ 4.7</span><span>53 评</span><span>↓1287</span><span>天命官方</span></div>
+          <p>天启七年九月，明熹宗驾崩无嗣，十七岁的信王入继大统。其时魏忠贤提督东厂、总揽内外，生祠遍于天下；东林阉党积怨已深，辽东后金虎视，西南奢安未平。少年天子深居九重，耳目尽制于人——徐图收权、平衡党争、重整边防，一步踏错，便是社稷倾覆。</p>
+          <div class="tags"><span class="tag">明末</span><span class="tag">权谋</span><span class="tag">52 角色</span><span class="tag">8.7 MB</span></div>
+          <div class="seal-stamp">天命<br>官修</div>
+        </div>
+        <div class="deskacts"><button class="btn primary">请入府库</button><button class="btn">评卷 ★</button></div>
+      </div></div>
+
+      <div class="shelf-foot">
+        <div class="yapai">
+          <div class="seal">同</div>
+          <div><b>同志</b><small>牙牌已验 · 作者身份 · @roman</small></div>
+        </div>
+        <div class="dibao">
+          <h4>邸报</h4>
+          <div class="row"><span class="d"></span>在线服务 0.5.0 正常，工坊新上「绍兴和议」。</div>
+          <div class="row"><span class="d"></span>你收藏的「绍宋」有新版 v1.1.0，可更新。</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+</body></html>
