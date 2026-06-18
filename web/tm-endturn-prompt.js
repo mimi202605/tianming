@@ -3122,6 +3122,7 @@
       if (_brLines.length) {
         sysP += '\n\n【各地现有营造册】(玩家已建/在建工程·须认得并纳入推演与叙事:在推演中体现其当下作用与长远价值,勿无视、勿重复新建已有同名工程)';
         sysP += '\n' + _brLines.slice(0, 40).join('\n');
+        sysP += '\n(长远价值提示·推演须认其潜在/累积之效、勿只看当下数字:军工[冶铁/火器/船厂/军械]=强军根基;新学[格物/算学/译书/新式学堂]=格物兴邦、长远国力所系;文教[书院/学宫/贡院]=育才储士;水利[河渠/垦屯/陂堰]=农本久利——这类工程当下未必加收入,却系国运长远,须在叙事与推演中认可并体现。)';
       }
     }
     // 5.1: 注入贸易路线报告
@@ -3249,6 +3250,7 @@
     sysP += '\n    【自拟营造核定】custom_build（玩家自拟工役）必须另给 effectsStructured——结构化效果账，完工后照此入账（judgedEffects 叙述不入账）。格式示例：';
     sysP += '\n    "effectsStructured":{"pct":{"economyBase.commerceVolume":0.05},"abs":{"militaryRecruits":1000},"minxin":1,"corruption":-1,"upkeepPerTurn":120}';
     sysP += '\n    ★回报须与造价相称：大额营造(数万两以上)应给绝对值经济产出(abs:economyBase.commerceVolume/mineralProduction/saltProduction/farmland 等直接增量)、而非只给小比例(pct)——五百万两的矿场该有相称的矿课绝对增收,让玩家巨资投入有可信的财政开源回报；abs 上限随造价放宽(约 costActual×8),勿畏手畏脚。';
+    sysP += '\n    估算标尺:经济类营造合理年回报约为造价的 8%~15%(五百万两矿场/工坊,一年该有四十万至七十五万两进项,折入 abs 经济产出;摊到当年起步亦不应少于此数一两成)。据此给足绝对产出,既不可「投五百万只回一两万」的失衡、也不可凭空暴富。';
     sysP += '\n    账目白名单（名单外引擎直接丢弃）：economyBase.{farmland,commerceVolume,commerceCoefficient,maritimeTradeVolume,saltProduction,mineralProduction,fishingProduction,horseProduction,postRelays,roadQuality,kejuQuota}、fortLevel、militaryRecruits、minxin(±2内)、corruption(±3内)';
     sysP += '\n    【费效为度】小费小效：千两以下至多 1-3% 微利；万两可至 8%；两万两以上方可 15% 或城防+1；十万两巨役方可 25%。十两银修不出雄关——越界效果引擎会削顶。维护费 upkeepPerTurn 约为费用 2%/回合。';
     sysP += '\n- region_status_changes: 地块状态变动（action:add/remove + region区划名 + name状态名 + kind:wonder奇观/disaster灾异/event风云/player圣裁 + econPct地方岁入乘数增减(±0.25内) + minxinPerTurn每回合民心(±2内) + durationTurns持续回合(缺省=永续·至多24) + desc叙述 + reason）';

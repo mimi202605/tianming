@@ -83,7 +83,7 @@
     var actual = num(bld && bld.costActual, 0);
     var base = num(typeDef && typeDef.baseCost, 0);
     if (actual <= 0 || base <= 0) return 1;
-    return Math.max(1, Math.min(12, actual / base));
+    return Math.max(1, Math.min(24, actual / base)); // cap widened to 24x: big preset builds return more (custom_build uses the AI yardstick, not this)
   }
 
   function typeDefFor(name, P) {

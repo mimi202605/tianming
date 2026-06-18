@@ -3704,6 +3704,9 @@ inst._imprisonedTurn = GM.turn||0;
                     var _exB = _targetDiv.buildings.find(function(b) { return b.name === bc.type; });
                     if (_exB) {
                       _exB.level = (_exB.level || 1) + 1;
+                      // 丙:扩建按本次追加投入/新核定入账——回报随投入,不再只给固定一级
+                      if (bc.costActual) _exB.costActual = bc.costActual;
+                      if (bc.effectsStructured && typeof bc.effectsStructured === 'object') _exB.effectsStructured = bc.effectsStructured;
                       // 2026-06-12: 升级即时再入账一级份效果（appliedDelta 累计·拆毁整体回退）
                       if (typeof TM !== 'undefined' && TM.BuildingWorks) {
                         try {
