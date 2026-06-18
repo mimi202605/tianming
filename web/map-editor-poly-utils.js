@@ -238,6 +238,78 @@
     }
     return arr;
   }
+
+  // Greiner-Hormann polygon boolean (intersection/difference·concave-capable). 退化(共边/共点)未处理·见单测。
+  function _ghPip(pt, poly){ var x=pt[0],y=pt[1],inside=false,n=poly.length; for(var i=0,j=n-1;i<n;j=i++){var xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;} return inside; }
+  function _ghRing(poly){ var head=null,prev=null; for(var i=0;i<poly.length;i++){var v={x:poly[i][0],y:poly[i][1],next:null,prev:null,inter:false,neighbour:null,entry:false,alpha:0,visited:false}; if(!head){head=v;prev=v;}else{prev.next=v;v.prev=prev;prev=v;}} prev.next=head;head.prev=prev; return head; }
+  function _ghIns(a,b,v){ var cur=a; while(cur!==b&&cur.alpha<v.alpha)cur=cur.next; v.prev=cur.prev;v.next=cur;cur.prev.next=v;cur.prev=v; }
+  function _ghIsect(p1,p2,q1,q2){ var x1=p1.x,y1=p1.y,x2=p2.x,y2=p2.y,x3=q1.x,y3=q1.y,x4=q2.x,y4=q2.y; var den=(x2-x1)*(y4-y3)-(y2-y1)*(x4-x3); if(Math.abs(den)<1e-12)return null; var t=((x3-x1)*(y4-y3)-(y3-y1)*(x4-x3))/den, u=((x3-x1)*(y2-y1)-(y3-y1)*(x2-x1))/den; if(t<=1e-12||t>=1-1e-12||u<=1e-12||u>=1-1e-12)return null; return {x:x1+t*(x2-x1),y:y1+t*(y2-y1),aP:t,aQ:u}; }
+  // snap result vertices back to original subject/clip vertices (removes perturbation residue + collinear artifacts)
+  function _ghSnapRing(ring, pts, tol){
+    var out = ring.map(function(p){ var best=null, bd=tol*tol; for(var i=0;i<pts.length;i++){ var dx=pts[i][0]-p[0], dy=pts[i][1]-p[1], d=dx*dx+dy*dy; if(d<bd){bd=d; best=pts[i];} } return best?[best[0],best[1]]:p; });
+    var dd=[]; for(var i=0;i<out.length;i++){ var q=out[(i+1)%out.length]; var dx=out[i][0]-q[0], dy=out[i][1]-q[1]; if(dx*dx+dy*dy>1e-9) dd.push(out[i]); }
+    return dd.length>=3?dd:out;
+  }
+  // robust polygon boolean: tiny clip perturbation breaks shared-edge/vertex degeneracy, then snap back.
+  function polygonBoolean(subject, clip, op){
+    if(!subject||subject.length<3) return [];
+    if(!clip||clip.length<3) return op==='diff'?[subject.slice()]:[];
+    var E=1e-6; var pClip=clip.map(function(p){ return [p[0]+E, p[1]+E*0.6180339887]; });
+    var res=_ghCore(subject, pClip, op);
+    var pts=subject.concat(clip); var tol=1e-3;
+    return res.map(function(r){ return r.outer?{outer:_ghSnapRing(r.outer,pts,tol),hole:_ghSnapRing(r.hole,pts,tol)}:_ghSnapRing(r,pts,tol); });
+  }
+  function _ghCore(subjectPoly, clipPoly, op){
+    if(!subjectPoly||subjectPoly.length<3) return [];
+    if(!clipPoly||clipPoly.length<3) return op==='diff'?[subjectPoly.slice()]:[];
+    var S=_ghRing(subjectPoly), C=_ghRing(clipPoly), anyInter=false;
+    var sv=S; do { var cv=C; do {
+      var X=_ghIsect(sv,sv.next,cv,cv.next);
+      if(X){ anyInter=true;
+        var iS={x:X.x,y:X.y,inter:true,alpha:X.aP,visited:false,entry:false,next:null,prev:null,neighbour:null};
+        var iC={x:X.x,y:X.y,inter:true,alpha:X.aQ,visited:false,entry:false,next:null,prev:null,neighbour:null};
+        iS.neighbour=iC; iC.neighbour=iS; _ghIns(sv,sv.next,iS); _ghIns(cv,cv.next,iC);
+      } cv=cv.next; } while(cv!==C); sv=sv.next; } while(sv!==S);
+    if(!anyInter){
+      var sIn=_ghPip(subjectPoly[0],clipPoly), cIn=_ghPip(clipPoly[0],subjectPoly);
+      if(op==='int') return sIn?[subjectPoly.slice()] : (cIn?[clipPoly.slice()] : []);
+      if(sIn) return [];
+      if(cIn) return [{outer:subjectPoly.slice(), hole:clipPoly.slice()}];
+      return [subjectPoly.slice()];
+    }
+    var status=_ghPip([S.x,S.y],clipPoly); var v=S; do { if(v.inter){v.entry=!status;status=!status;} v=v.next; } while(v!==S);
+    var cStatus=(op==='diff')?!_ghPip([C.x,C.y],subjectPoly):_ghPip([C.x,C.y],subjectPoly);
+    v=C; do { if(v.inter){v.entry=!cStatus;cStatus=!cStatus;} v=v.next; } while(v!==C);
+    var result=[];
+    function nextU(){ var v=S; do { if(v.inter&&!v.visited)return v; v=v.next; } while(v!==S); return null; }
+    var start;
+    while((start=nextU())){
+      var ring=[]; var cur=start;
+      do {
+        cur.visited=true; if(cur.neighbour)cur.neighbour.visited=true;
+        var fwd=(op==='diff')?!cur.entry:cur.entry;
+        if(fwd){ do{cur=cur.next;ring.push([cur.x,cur.y]);}while(!cur.inter); }
+        else  { do{cur=cur.prev;ring.push([cur.x,cur.y]);}while(!cur.inter); }
+        cur.visited=true; cur=cur.neighbour;
+      } while(cur&&cur!==start&&!cur.visited);
+      if(ring.length>=3) result.push(ring);
+      if(!cur) break;
+    }
+    return result;
+  }
+
+  // apply polygonBoolean to a division (largest ring=main·余=飞地·hole 情形→holes). 注:飞地未重裁。
+  function divisionBooleanGeometry(div, clipPoly, op){
+    var res = polygonBoolean(div.polygon || [], clipPoly, op);
+    if(!res || !res.length) return { polygon: [], extraPolygons: [], holes: [], empty: true };
+    if(res[0] && res[0].outer){
+      var o = res[0].outer;
+      return { polygon: o, extraPolygons: (div.extraPolygons||[]).slice(), holes: (div.holes||[]).concat([res[0].hole]), empty: o.length<3 };
+    }
+    function _a(p){ var s=0; for(var i=0;i<p.length;i++){var a=p[i],b=p[(i+1)%p.length]; s+=a[0]*b[1]-b[0]*a[1];} return Math.abs(s)/2; }
+    var sorted = res.slice().sort(function(x,y){ return _a(y)-_a(x); });
+    return { polygon: sorted[0], extraPolygons: (div.extraPolygons||[]).concat(sorted.slice(1)), holes: (div.holes||[]).slice(), empty: sorted[0].length<3 };
+  }
   global.TM = global.TM || {};
   global.TM.MapEditor = global.TM.MapEditor || {};
   global.TM.MapEditor.polyUtils = {
@@ -254,7 +326,9 @@
     makeLayer: makeLayer,
     clipPolygonToRect: clipPolygonToRect,
     cropDivisionGeometry: cropDivisionGeometry,
-    findCrossings: findCrossings
+    findCrossings: findCrossings,
+    polygonBoolean: polygonBoolean,
+    divisionBooleanGeometry: divisionBooleanGeometry
   };
 
 })(typeof window !== 'undefined' ? window : this);

@@ -688,7 +688,7 @@
     if (!modalEl){
       modalEl = document.createElement('div');
       modalEl.id = 'me-text-modal';
-      modalEl.style.cssText = 'position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:9999; background:#1a1a1f; border:1px solid #3a3530; border-radius:6px; padding:14px 18px; min-width:980px; max-width:96vw; max-height:80vh; overflow:auto; color:#e8ddc8; font-family:inherit; box-shadow:0 8px 30px rgba(0,0,0,0.6); display:none;';
+      modalEl.style.cssText = 'position:fixed; left:8px; right:8px; bottom:8px; z-index:9999; background:#1a1a1f; border:1px solid #3a3530; border-radius:6px; padding:12px 16px; max-height:44vh; overflow:auto; color:#e8ddc8; font-family:inherit; box-shadow:0 -6px 24px rgba(0,0,0,0.6); display:none;';
       document.body.appendChild(modalEl);
     }
 

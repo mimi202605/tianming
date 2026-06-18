@@ -1104,6 +1104,10 @@
       // Shift+C·crop selected divisions to bitmap bounds (裁剪选省到底图边界)
       if (TM.MapEditor.mergeSplit) TM.MapEditor.mergeSplit.cropSelectedToBounds();
     }
+    else if ((k === 'd' || k === 'D') && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey){
+      // Shift+D·从先选省减去后选省的重叠 (boolean difference)
+      if (TM.MapEditor.mergeSplit) TM.MapEditor.mergeSplit.cropSubtractSelected();
+    }
     else if (k === 's' || k === 'S') ME.setTool('split');
     else if (k === 't' || k === 'T') ME.setTool('text');
     else if (k === '+' && e.shiftKey == false){

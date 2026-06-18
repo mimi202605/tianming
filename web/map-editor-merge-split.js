@@ -728,12 +728,28 @@
   }
 
   // expose
+  function cropSubtractSelected(){
+    var sel = ME.getSelected();
+    if (sel.length !== 2){ meAlert('需正好选 2 省 (V 工具 shift 多选)·先选的减后选的'); return false; }
+    var pu = ME.polyUtils;
+    if (!pu || !pu.divisionBooleanGeometry){ meAlert('polyUtils 未加载'); return false; }
+    var a = sel[0], b = sel[1];
+    if (!a.polygon || a.polygon.length<3 || !b.polygon || b.polygon.length<3){ meAlert('两省都需有效多边形'); return false; }
+    var r = pu.divisionBooleanGeometry(a, b.polygon, 'diff');
+    if (r.empty){ meAlert('「' + (a.name||'A') + '」整体被覆盖·未改 (避免裁空)'); return false; }
+    ME.commitMutation('subtract overlap', function(){
+      a.polygon = r.polygon; a.extraPolygons = r.extraPolygons; a.holes = r.holes;
+    });
+    if (global.meToast) meToast('已从「' + (a.name||'A') + '」减去与「' + (b.name||'B') + '」的重叠', 'success');
+    return true;
+  }
   global.TM = global.TM || {};
   global.TM.MapEditor = global.TM.MapEditor || {};
   global.TM.MapEditor.mergeSplit = {
     mergeDivisions: mergeDivisions,
     mergeSelected: mergeSelected,
     cropSelectedToBounds: cropSelectedToBounds,
+    cropSubtractSelected: cropSubtractSelected,
     splitDivisionByLine: splitDivisionByLine,
     extendCut: _extendCut,
     polygonBbox: _polygonBbox,
