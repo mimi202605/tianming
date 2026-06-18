@@ -499,6 +499,15 @@
           _localWarnings.push('[\u5730\u56FE\u5339\u914D] \u884C\u653F\u533A\u5212' + _ahAllNames.length + '\u4E2A\u5355\u4F4D\uFF0C\u5730\u56FE\u4EC5' + _mapNames.length + '\u4E2A\u533A\u57DF\uFF0C\u5DEE\u5F02\u8FC7\u5927');
         }
       }
+      // 6. 外键悬空·离线即时 (faction→势力存在·officeTree holder→角色存在·镜像 authoring-agent 校验)
+      var _facNames = {}; facs.forEach(function(f){ if(f&&f.name)_facNames[f.name]=true; });
+      var _dFac = [];
+      chars.forEach(function(c){ if(c&&c.faction&&!_facNames[c.faction])_dFac.push((c.name||'?')+'→'+c.faction); });
+      if(_dFac.length)_localWarnings.push('[外键悬空] '+_dFac.length+' 个角色的势力不存在: '+_dFac.slice(0,5).join('、')+(_dFac.length>5?'…':''));
+      var _charNames = {}; chars.forEach(function(c){ if(c&&c.name)_charNames[c.name]=true; });
+      var _phantom = [], _tree = sd.officeTree;
+      if(Array.isArray(_tree)){ (function _wOff(nodes){ (nodes||[]).forEach(function(n){ if(!n)return; (n.positions||[]).forEach(function(p){ if(p&&p.holder&&p.holder!=='空缺'&&p.holder!==''&&!_charNames[p.holder])_phantom.push(p.holder); }); if(Array.isArray(n.subs))_wOff(n.subs); if(Array.isArray(n.children))_wOff(n.children); }); })(_tree); }
+      if(_phantom.length)_localWarnings.push('[外键悬空] '+_phantom.length+' 个官职holder指向不存在角色: '+_phantom.slice(0,5).join('/')+(_phantom.length>5?'…':''));
     })();
     // 将本地检查结果加入摘要
     if (_localWarnings.length > 0) {
