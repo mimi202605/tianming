@@ -455,12 +455,18 @@
     if (typeof order.toRegion === 'string') toRegion = resolveRegionById(G, order.toRegion);
     else if (order.toRegion && typeof order.toRegion === 'object') toRegion = order.toRegion;
 
+    // Transfer attrition: en-route skimming (magnate/bandit wave). Sender remits full; receiver gets less; gap = lost in transit.
+    var _amt = Number(order.amount || 0);
+    var _lost = (typeof _transferAttritionRate === 'function') ? Math.round(_amt * _transferAttritionRate(G)) : 0;
+    var _arrived = Math.max(0, _amt - _lost);
+    order.lost = _lost;
+    order.arrived = _arrived;
     if (fromRegion && fromRegion.fiscal) {
-      fromRegion.fiscal.remitted = Number(fromRegion.fiscal.remitted || 0) - Number(order.amount || 0);
+      fromRegion.fiscal.remitted = Number(fromRegion.fiscal.remitted || 0) - _amt;
     }
     if (toRegion && toRegion.fiscal) {
-      toRegion.fiscal.actual = Number(toRegion.fiscal.actual || 0) + Number(order.amount || 0);
-      toRegion.fiscal.retained = Number(toRegion.fiscal.retained || 0) + Number(order.amount || 0);
+      toRegion.fiscal.actual = Number(toRegion.fiscal.actual || 0) + _arrived;
+      toRegion.fiscal.retained = Number(toRegion.fiscal.retained || 0) + _arrived;
     }
 
     order.status = 'delivered';

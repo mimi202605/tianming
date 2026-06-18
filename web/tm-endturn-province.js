@@ -264,6 +264,10 @@ function updateProvinceEconomy() {
       var _corDrift = (_corTarget - province.corruption) * 0.03 * _driftScale;
       province.corruption = clamp(province.corruption + _corDrift, 0, 100);
     }
+    // M-magnate: 省级豪强坐大 × 勾结知府 × 吞田瞒税(供养魂·flag P.conf.useRegionMagnate)
+    if (typeof _tickProvinceMagnate === 'function') {
+      try { _tickProvinceMagnate(province, _gov, { GM: GM, P: P, months: _ms }); } catch (_mgE) {}
+    }
 
     // ═══ M8: 征兵池月度回复（征兵上限=人口/50，年度回满）═══
     var _maxRecruits = Math.floor(province.population / 50);

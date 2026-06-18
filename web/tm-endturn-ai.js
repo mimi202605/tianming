@@ -985,7 +985,7 @@
         var _turn = (GM && GM.turn) || 1;
         var _dateText = ''; try { _dateText = (typeof getTSText === 'function') ? getTSText(_turn) : ''; } catch(_) {}
         var _why = reason && (reason.message || String(reason)) || 'SC1 returned no usable structured JSON';
-        var _brief = (_dateText ? (_dateText + '，') : '') + '本回合主推演结构化返回暂缺，系统以保守账本推进：未凭空增减资源、人物、势力或军政结果，玩家已提交事务保留至后续推演继续处理。';
+        var _brief = (_dateText ? (_dateText + '，') : '') + '朝廷诸务照常，所颁诏令俱已分发有司奉行，一时未有大变上闻，余事俟后报。';
         var _p = { shizhengji:_brief, zhengwen:_brief, shilu_text:_brief, szj_title:'时移事去', szj_summary:'主推演结构化结果暂缺，系统采用保守降级账本。', turn_summary:'SC1 emergency fallback: no synthetic gameplay deltas applied.', player_status:'朝局暂按既有状态延续。', player_inner:'', events:[{ type:'AI降级', title:'主推演结构化结果暂缺', text:_brief, turn:_turn }], _g2Fallback:true, _emergencyFallback:true, _fallbackReason:String(_why).slice(0, 200) };
         ['changes','resource_changes','variable_changes','char_updates','character_deaths','npc_actions','npc_interactions','npc_letters','npc_correspondence','cultural_works','faction_changes','faction_events','faction_relation_changes','faction_interactions','fiscal_adjustments','currency_adjustments','population_adjustments','central_local_actions','environment_actions','institution_changes','office_assignments','office_dismissals','personnel_changes','army_changes','province_changes','table_updates','suggestions'].forEach(function(k){ _p[k] = []; });
         try {
@@ -998,18 +998,22 @@
       }
 
       function _hasSc1StructuredResult(obj) {
-        // Phase 1 C-2·"≥3 key" 而非 "≥1 key"·防止 partial JSON 仅含 turn_summary 一项就被认作"成功"·导致后续 SC1d/SC2 失去 sc1 数据基础
+        // Phase 1 C-2 + 2026-06 hardcore fix: require >=3 fields AND at least one "heavy" field
+        // (one carrying real entity references / deltas), so a partial JSON of only shallow text
+        // summaries (turn_summary / player_status) can no longer masquerade as a usable result.
         if (!obj || typeof obj !== 'object') return false;
-        var keys = ['events','resource_changes','variable_changes','char_updates','edict_feedback','fiscal_adjustments','changes','personnel_changes','office_assignments','office_dismissals','army_changes','province_changes','table_updates','turn_summary','shizhengji_basis','player_status','playerStatus'];
-        var _hit = 0;
-        for (var i = 0; i < keys.length; i++) {
-          var v = obj[keys[i]];
-          if (Array.isArray(v) && v.length) _hit++;
-          else if (v && typeof v === 'object' && Object.keys(v).length) _hit++;
-          else if (typeof v === 'string' && v.trim()) _hit++;
-          if (_hit >= 3) return true;
+        var heavyKeys = ['events','resource_changes','variable_changes','char_updates','fiscal_adjustments','changes','personnel_changes','office_assignments','office_dismissals','army_changes','province_changes'];
+        var lightKeys = ['edict_feedback','table_updates','turn_summary','shizhengji_basis','player_status','playerStatus'];
+        function _nonEmpty(v) {
+          if (Array.isArray(v)) return v.length > 0;
+          if (v && typeof v === 'object') return Object.keys(v).length > 0;
+          return typeof v === 'string' && v.trim().length > 0;
         }
-        return false;
+        var _heavy = 0, _hit = 0, i;
+        for (i = 0; i < heavyKeys.length; i++) { if (_nonEmpty(obj[heavyKeys[i]])) { _heavy++; _hit++; } }
+        for (i = 0; i < lightKeys.length; i++) { if (_nonEmpty(obj[lightKeys[i]])) { _hit++; } }
+        // heavy field present -> 3 total is enough; pure shallow text -> demand 4 to reject thin partials
+        return (_heavy >= 1 && _hit >= 3) || (_hit >= 4);
       }
 
       // Phase 7 Q4·SC1 增量 retry·只重生成缺失字段·只 retry 一次
@@ -3772,7 +3776,8 @@
             _facts1d.player_status = (P.playerInfo.characterName ? P.playerInfo.characterName + ' ' : '') + '在朝·' + (GM._capital || P.playerInfo.capital || '京城') + '·维持现有政局';
           }
           if (!_facts1d.turn_summary && _facts1d._edictsSupplemented) {
-            _facts1d.turn_summary = '本回合主要处理玩家颁布的 ' + _facts1d.edict_feedback.length + ' 条诏令·SC1 主推演结构化未稳·SC1d 据诏令兜底成文';
+            _facts1d.turn_summary = '本回合主要处理玩家颁布的 ' + _facts1d.edict_feedback.length + ' 条诏令，余者朝局照常。';
+            _facts1d._fallbackNote = 'SC1 main inference unstable; SC1d composed from edicts (debug-only, not player-facing)';
           }
         } catch(_supplE) { _dbg('[SC1d Slice 5] supplement fail', _supplE); }
         var _dateText1d = ''; try { _dateText1d = (typeof getTSText === 'function') ? getTSText(GM.turn || 1) : ''; } catch(_) {}

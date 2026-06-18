@@ -2362,6 +2362,31 @@
       }
     }
 
+    // Era language base fallback: when a scenario didn't fill these fields (or has no deep digest),
+    // inject the dynasty default pack so a non-flagship scenario keeps its period flavor.
+    // Cross-dynasty rule: engine only does the neutral eraLangField(era,...) lookup;
+    // every dynasty-specific term lives in tm-era-language-pack.js (the scenario-data layer).
+    try {
+      if (typeof eraLangField === 'function') {
+        var _scnForEra = (typeof sc !== 'undefined' && sc) ? sc : ((typeof P !== 'undefined' && P && P.scenario) || null);
+        var _eraKey = (_scnForEra && (_scnForEra.dynasty || _scnForEra.era))
+          || (typeof GM !== 'undefined' && GM && GM.eraState && (GM.eraState.dynasty || GM.eraState.dynastyPhase)) || '';
+        var _digestNow = (typeof GM !== 'undefined' && GM && GM._aiScenarioDigest) || {};
+        var _langBase = [
+          ['imperialAddress', '\u5E1D\u738B\u79F0\u8C13'], ['officialAddress', '\u5B98\u573A\u79F0\u547C'],
+          ['writtenStyle', '\u516C\u6587\u884C\u6587'], ['tabooWords', '\u907F\u8BB3\u5236\u5EA6'],
+          ['periodVocabulary', '\u65F6\u4EE3\u7528\u8BED'], ['etiquetteNorms', '\u793C\u4EEA\u89C4\u8303'],
+          ['commonExpressions', '\u65E5\u5E38\u53E3\u8BED'], ['sensoryDetails', '\u611F\u5B98\u7EC6\u8282']
+        ];
+        for (var _li = 0; _li < _langBase.length; _li++) {
+          if (!_digestNow[_langBase[_li][0]]) {
+            var _lv = eraLangField(_eraKey, _langBase[_li][0], '');
+            if (_lv) sysP += '\n\u3010' + _langBase[_li][1] + '\u3011' + _lv;
+          }
+        }
+      }
+    } catch (_eraE) { /* era fallback must not break prompt building */ }
+
     _mark('digest');
     // 7.4: 历史索引目录——AI可按需请求详细历史
     if (typeof HistoryIndex !== 'undefined') {
@@ -3069,6 +3094,36 @@
       sysP += '\n\n【本回合建筑经济产出】';
       sysP += '\n' + GM._buildingOutputReport;
     }
+
+    // 2.6: 注入各地现有营造册(让 AI 看见建筑、认其价值、纳入推演——治建筑对 AI 失明/间接效果/扩建误判)
+    if (P.adminHierarchy) {
+      var _brLines = [];
+      Object.keys(P.adminHierarchy).forEach(function(_fk){
+        var _fh = P.adminHierarchy[_fk];
+        if (!_fh || !_fh.divisions) return;
+        (function _walkBld(ds){
+          ds.forEach(function(d){
+            if (!d) return;
+            if (Array.isArray(d.buildings) && d.buildings.length) {
+              var _items = d.buildings.slice(0, 12).map(function(b){
+                var _st = b.status === 'building' ? ('在建·剩' + (b.remainingTurns || 0) + '回合') : (b.status === 'neglected' ? '失修' : (b.status === 'damaged' ? '损毁' : '已成'));
+                var _lv = (b.level && b.level > 1) ? (b.level + '级·') : '';
+                var _eff = b.effectSummary || b.judgedEffects || '';
+                var _cost = b.costActual ? ('·造价' + b.costActual + '两') : '';
+                return b.name + '(' + _lv + _st + (_eff ? '·' + _eff : '') + _cost + ')';
+              }).join('、');
+              _brLines.push((d.name || '某地') + '：' + _items);
+            }
+            var _kids = d.children || d.divisions;
+            if (_kids && _kids.length) _walkBld(_kids);
+          });
+        })(_fh.divisions);
+      });
+      if (_brLines.length) {
+        sysP += '\n\n【各地现有营造册】(玩家已建/在建工程·须认得并纳入推演与叙事:在推演中体现其当下作用与长远价值,勿无视、勿重复新建已有同名工程)';
+        sysP += '\n' + _brLines.slice(0, 40).join('\n');
+      }
+    }
     // 5.1: 注入贸易路线报告
     if (GM._tradeReport) {
       sysP += '\n\n\u3010\u8D38\u6613\u8DEF\u7EBF\u72B6\u51B5\uFF08\u53C2\u8003\uFF09\u3011' + GM._tradeReport;
@@ -3189,9 +3244,11 @@
     sysP += '\n- vassal_changes: 封臣关系变动（establish建立/break解除/change_tribute调整贡奉）';
     sysP += '\n- title_changes: 头衔爵位变动（grant册封/revoke剥夺/inherit继承需指定from来源角色/promote晋升）';
     sysP += '\n- building_changes: 建筑变动（build建造/custom_build自拟营造/upgrade升级/destroy拆除，需指定territory和type）';
+    sysP += '\n    ※该地已有同名建筑时,追加投入须用 upgrade(扩建增产)、勿用 build 重复新建同名工程。';
     sysP += '\n    build/custom_build 另给 feasibility(合理/勉强/不合理)、costActual实际费用(两)、timeActual工期(回合)、judgedEffects效果叙述、reason判语';
     sysP += '\n    【自拟营造核定】custom_build（玩家自拟工役）必须另给 effectsStructured——结构化效果账，完工后照此入账（judgedEffects 叙述不入账）。格式示例：';
     sysP += '\n    "effectsStructured":{"pct":{"economyBase.commerceVolume":0.05},"abs":{"militaryRecruits":1000},"minxin":1,"corruption":-1,"upkeepPerTurn":120}';
+    sysP += '\n    ★回报须与造价相称：大额营造(数万两以上)应给绝对值经济产出(abs:economyBase.commerceVolume/mineralProduction/saltProduction/farmland 等直接增量)、而非只给小比例(pct)——五百万两的矿场该有相称的矿课绝对增收,让玩家巨资投入有可信的财政开源回报；abs 上限随造价放宽(约 costActual×8),勿畏手畏脚。';
     sysP += '\n    账目白名单（名单外引擎直接丢弃）：economyBase.{farmland,commerceVolume,commerceCoefficient,maritimeTradeVolume,saltProduction,mineralProduction,fishingProduction,horseProduction,postRelays,roadQuality,kejuQuota}、fortLevel、militaryRecruits、minxin(±2内)、corruption(±3内)';
     sysP += '\n    【费效为度】小费小效：千两以下至多 1-3% 微利；万两可至 8%；两万两以上方可 15% 或城防+1；十万两巨役方可 25%。十两银修不出雄关——越界效果引擎会削顶。维护费 upkeepPerTurn 约为费用 2%/回合。';
     sysP += '\n- region_status_changes: 地块状态变动（action:add/remove + region区划名 + name状态名 + kind:wonder奇观/disaster灾异/event风云/player圣裁 + econPct地方岁入乘数增减(±0.25内) + minxinPerTurn每回合民心(±2内) + durationTurns持续回合(缺省=永续·至多24) + desc叙述 + reason）';

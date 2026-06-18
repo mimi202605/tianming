@@ -3686,6 +3686,11 @@ inst._imprisonedTurn = GM.turn||0;
                 if (_targetDiv) {
                   if (!_targetDiv.buildings) _targetDiv.buildings = [];
                   var _bcDisp = ((typeof BUILDING_TYPES !== 'undefined' && BUILDING_TYPES[bc.type] && BUILDING_TYPES[bc.type].name) || bc.type);
+                  // 刀三:标准 build 但该地已有同名建筑 → 规范为 upgrade(扩建意图),不重复新建同名工程
+                  if (bc.action === 'build' && !bc.isCustom) {
+                    var _sameName = _targetDiv.buildings.find(function(b){ return b && b.name === bc.type; });
+                    if (_sameName) bc.action = 'upgrade';
+                  }
                   if (bc.action === 'destroy') {
                     // 2026-06-12: 拆毁前按 appliedDelta 回退已入账效果（建筑工役引擎·存量可逆）
                     _targetDiv.buildings.forEach(function(b) {
@@ -4488,7 +4493,7 @@ inst._imprisonedTurn = GM.turn||0;
               id: 'work_T' + GM.turn + '_' + Math.random().toString(36).slice(2, 8),
               author: w.author,
               turn: GM.turn,
-              date: w.date || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
+              date: (typeof getTSText === 'function' ? getTSText(GM.turn) : (w.date || '')),  // engine-deterministic year for this-turn works; ignore AI-hallucinated dates
               location: w.location || '',
               triggerCategory: w.triggerCategory || 'mood',
               trigger: w.trigger || 'casual_mood',

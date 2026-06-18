@@ -627,6 +627,11 @@
                 try { _kjCheckSpecialExamTriggers(); }
                 catch(e) { try { console.warn('[deferred·phase5] G1 special exam trigger', e); } catch(_){} }
               }
+              // Phase J·J4·科场弊案 trigger check (flag gate by P.conf.useNewKejuScandal inside)
+              if (typeof _kjCheckScandalTriggers === 'function') {
+                try { _kjCheckScandalTriggers(); }
+                catch(e) { try { console.warn('[deferred·phase5] J4 scandal trigger', e); } catch(_){} }
+              }
               // Phase L·L8·evolution tick (在 L7 tick 之后·状态推进先于 evolve·flag gate by P.conf.useNewKejuL8)
               if (typeof _kjpL8EvolveTick === 'function') {
                 try { _kjpL8EvolveTick(); }
@@ -794,6 +799,9 @@
         // Phase G·G1·特科 trigger check
         try { if (typeof _kjCheckSpecialExamTriggers === 'function') _kjCheckSpecialExamTriggers(); }
         catch(e) { try { console.warn('[pipeline.render-finalize] G1 special exam trigger', e); } catch(_){} }
+        // Phase J·J4·科场弊案 keyi 拉起 (检测在 deferred·此处结算渲染后弹议政)
+        try { if (typeof _kjMaybeRaiseScandalKeyi === 'function') _kjMaybeRaiseScandalKeyi(); }
+        catch(e) { try { console.warn('[pipeline.render-finalize] J4 scandal keyi', e); } catch(_){} }
         // Phase H·H0+H1·school network resume + tier check
         try { if (typeof _kjpResumeIfPending === 'function') _kjpResumeIfPending(); }
         catch(e) { try { console.warn('[pipeline.render-finalize] H resume', e); } catch(_){} }

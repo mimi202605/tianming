@@ -273,6 +273,7 @@
     } else {
       ch.resources.publicTreasury.binding = binding || null;
     }
+    var _preApptTitle = ch.officialTitle || '';  // remember pre-appointment title, to roll back if the office turns out not to exist
     if (position) {
       if (typeof global._offAddCharOfficeTitle === 'function') {
         global._offAddCharOfficeTitle(ch, position, { concurrent: isConcurrent });
@@ -392,6 +393,11 @@
           ch.resources.publicTreasury.binding = { dept: hit.node.name, position: pos.name, hint: pos.bindingHint };
         }
       } else {
+        // office tree has no such seat: the AI invented a non-existent office (often an anachronistic post);
+        // roll back the ghost title instead of leaving it stuck on a real person
+        if (typeof global._offRemoveCharOfficeTitle === 'function') { try { global._offRemoveCharOfficeTitle(ch, position); } catch (_gh) {} }
+        if (ch.officialTitle === position) ch.officialTitle = _preApptTitle;
+        if (ch.currentPosition && ch.currentPosition.title === position) ch.currentPosition.title = _preApptTitle;
         if (global.addEB) global.addEB('\u4EFB\u514D\u203B', '\u5B98\u5236\u65E0 \u300C' + position + '\u300D\u4E00\u804C\uFF0C\u4EC5\u8BB0\u5728\u89D2\u8272\u8868 officialTitle');
       }
     }
@@ -1776,6 +1782,8 @@
 
     // ── 14f-14. 宗教·教派一致性校验·扫『立教/灭佛/白莲/天主/邪教』 ──
     try { _validateReligionConsistency(G, aiOutput, applied); } catch(_rgE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_rgE, 'applier] religion validator:') : console.warn('[applier] religion validator:', _rgE); }
+    try { if (typeof window !== 'undefined' && typeof window._validateLivingActorConsistency === 'function') window._validateLivingActorConsistency(G, aiOutput); } catch(_laE) { console.warn('[applier] livingActor guard:', _laE); }
+    try { if (typeof window !== 'undefined' && typeof window._validateNarrativeAnachronism === 'function') window._validateNarrativeAnachronism(G, aiOutput); } catch(_anE) { console.warn('[applier] anachronism guard:', _anE); }
 
     // ── 14g. 二次 AI 自审·若多个 validator 报警·调一次 AI 让其自查 narrative-vs-structured ──
     // 仅当本回合校验器累计补录 > 5 条时触发·避免每回合都额外烧 token

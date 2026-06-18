@@ -2627,6 +2627,14 @@
     var vs = ppValue(v);
     return '<div class="bk-lr"' + (cause ? ' data-bk-cause="' + attr(cause) + '"' : '') + '><span class="bk-k">' + esc(k) + '</span><span class="bk-v ' + (tone || '') + (vs.length > 14 ? ' wrap' : '') + '">' + esc(vs) + '</span></div>';
   }
+  // 豪强势力数值条(读 provinceStats.magnatePower·tm-region-magnate 引擎):势力<20 不扰目,渐进定性。
+  function _magnateLabel(ls){
+    if (!ls || typeof ls.magnatePower !== 'number') return '';
+    var mp = ls.magnatePower;
+    if (mp < 20) return '';
+    var label = mp >= 70 ? '势大难制' : mp >= 50 ? '坐大' : mp >= 35 ? '渐起' : '抬头';
+    return Math.round(mp) + ' · ' + label + (ls._magnateCollusion ? ' · 勾结州县' : '');
+  }
   function bkLan(rows, one){
     var html = rows.join('');
     return html ? '<div class="bk-lan' + (one ? ' one' : '') + '">' + html + '</div>' : '';
@@ -2932,7 +2940,8 @@
       bkRow('库藏粮', b.treasury.grain),
       bkRow('库藏布', b.treasury.cloth),
       bkRow('本回合银产', b.fiscal.moneyOutput, 'jin'),
-      bkRow('本回合粮产', b.fiscal.grainOutput, 'jin')
+      bkRow('本回合粮产', b.fiscal.grainOutput, 'jin'),
+      bkRow('豪强', _magnateLabel(b.liveStats), 'zhu', 'magnate')
     ]);
     var fortRow = hasDisplayValue(firstValue(data.fortification, b.army.fortification)) || (b.liveDivision && Number(b.liveDivision.fortLevel) > 0);
     // 活军卡（军地绑定·2026-06-12）：GM.armies 驻此地者列于卷首——驻军数即其合计

@@ -71,6 +71,21 @@
 
   function num(v, d) { var n = Number(v); return isFinite(n) ? n : (d || 0); }
 
+  // Cost-driven yield boost: preset/inferred buildings have fixed per-level effects that ignore
+  // actual spend -- a 5,000,000-tael mine yielded the same as a 50,000 one. Scale the absolute
+  // economic-yield floor by how far costActual exceeds the type baseCost (capped 12x). Economic
+  // yield paths only; fort/keju/recruits/minxin stay tiered, not money-scaled.
+  var _ECON_YIELD = {
+    'economyBase.saltProduction': 1, 'economyBase.mineralProduction': 1, 'economyBase.fishingProduction': 1,
+    'economyBase.commerceVolume': 1, 'economyBase.maritimeTradeVolume': 1, 'economyBase.farmland': 1, 'economyBase.horseProduction': 1
+  };
+  function _costReturnBoost(bld, typeDef) {
+    var actual = num(bld && bld.costActual, 0);
+    var base = num(typeDef && typeDef.baseCost, 0);
+    if (actual <= 0 || base <= 0) return 1;
+    return Math.max(1, Math.min(12, actual / base));
+  }
+
   function typeDefFor(name, P) {
     var types = (P && P.buildingSystem && P.buildingSystem.buildingTypes) || [];
     if (!name) return null;
@@ -207,9 +222,14 @@
   function applyCompletion(div, bld, P, GM) {
     if (!div || !bld) return false;
     if (bld.appliedTurn != null) return false;
-    var fx = resolveEffects(bld, typeDefFor(bld.name, P));
+    var _typeDef = typeDefFor(bld.name, P);
+    var fx = resolveEffects(bld, _typeDef);
     bld.appliedTurn = (GM && GM.turn) || 0;
     if (!fx) return false; // 纯叙事建筑（烽燧等）：完工但不入账，AI prompt 可见其名
+    // Boost only fixed-source effects (preset/inferred); AI custom_build already went through
+    // fxCostCaps (cost-scaled), so do not double-scale it.
+    var _fromStructured = !!(bld && bld.effectsStructured && !(_typeDef && _typeDef.effects));
+    var _costBoost = _fromStructured ? 1 : _costReturnBoost(bld, _typeDef);
     var applied = {};
     var dropped = [];
     function addEntry(path, delta) {
@@ -218,11 +238,16 @@
       addPath(div, path, delta);
       applied[path] = num(applied[path], 0) + delta;
     }
-    Object.keys(fx.abs || {}).forEach(function (k) { addEntry(k, num(fx.abs[k])); });
+    Object.keys(fx.abs || {}).forEach(function (k) {
+      var v = num(fx.abs[k]);
+      if (_ECON_YIELD[k]) v = Math.round(v * _costBoost);
+      addEntry(k, v);
+    });
     Object.keys(fx.pct || {}).forEach(function (k) {
       var current = num(getPath(div, k), 0);
       var delta = Math.round(current * num(fx.pct[k]));
       var floor = num(fx.base && fx.base[k], 0);
+      if (_ECON_YIELD[k]) floor = Math.round(floor * _costBoost);
       addEntry(k, Math.max(delta, floor));
     });
     if (fx.corruption) {
@@ -250,6 +275,10 @@
         if (applied.militaryRecruits) FP.ledgerPush(div, 'recruits', applied.militaryRecruits, '「' + bld.name + '」工成', GM);
       }
     } catch (_) {}
+    // building politics: works-budget graft + corvee resentment (flag P.conf.useRegionMagnate)
+    if (typeof _buildingPolitics === 'function') {
+      try { _buildingPolitics(div, bld, P, GM); } catch (_bpE) {}
+    }
     return true;
   }
 

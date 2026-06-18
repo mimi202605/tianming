@@ -115,7 +115,7 @@
   function buildNarrativeGuide(modeParams, chronicleConfig) {
     modeParams = modeParams || {};
     var s = '';
-    var ns = modeParams.narrativeStyle || '';
+    var ns = modeParams.narrativeStyle || '半文言';  // default to the half-classical tier (not the weakest vernacular) when a scenario sets no style
     if (ns.indexOf('资治通鉴') >= 0) {
       s = '\n【叙事风格·严格文言】仿《资治通鉴》体例。用词典雅·句式简洁。禁用一切现代词汇 (如·OK / 搞定 / 给力)。对话用"曰""言""谓"引述。';
     } else if (ns.indexOf('半文言') >= 0) {
