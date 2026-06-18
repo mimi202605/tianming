@@ -310,6 +310,12 @@
     var sorted = res.slice().sort(function(x,y){ return _a(y)-_a(x); });
     return { polygon: sorted[0], extraPolygons: (div.extraPolygons||[]).concat(sorted.slice(1)), holes: (div.holes||[]).slice(), empty: sorted[0].length<3 };
   }
+
+  // un-tangle a self-intersecting polygon: split at self-crossings into simple loops, keep largest.
+  function _utArea(poly){ var s=0; for(var i=0;i<poly.length;i++){var a=poly[i],b=poly[(i+1)%poly.length]; s+=a[0]*b[1]-b[0]*a[1];} return Math.abs(s)/2; }
+  function _utSegX(p1,p2,p3,p4){ var x1=p1[0],y1=p1[1],x2=p2[0],y2=p2[1],x3=p3[0],y3=p3[1],x4=p4[0],y4=p4[1]; var den=(x2-x1)*(y4-y3)-(y2-y1)*(x4-x3); if(Math.abs(den)<1e-12)return null; var t=((x3-x1)*(y4-y3)-(y3-y1)*(x4-x3))/den,u=((x3-x1)*(y2-y1)-(y3-y1)*(x2-x1))/den; if(t<=1e-9||t>=1-1e-9||u<=1e-9||u>=1-1e-9)return null; return [x1+t*(x2-x1),y1+t*(y2-y1)]; }
+  function _utDecompose(poly, depth){ if(depth>60)return [poly]; var n=poly.length; if(n<4)return n>=3?[poly]:[]; for(var i=0;i<n;i++){var a1=poly[i],a2=poly[(i+1)%n]; for(var j=i+2;j<n;j++){ if(i===0&&j===n-1)continue; var X=_utSegX(a1,a2,poly[j],poly[(j+1)%n]); if(X){ var l1=[X]; for(var k=i+1;k<=j;k++)l1.push(poly[k]); var l2=[X]; for(var k=j+1;k<=i+n;k++)l2.push(poly[k%n]); return _utDecompose(l1,depth+1).concat(_utDecompose(l2,depth+1)); } } } return [poly]; }
+  function untanglePolygon(poly){ if(!poly||poly.length<4)return poly; var loops=_utDecompose(poly,0).filter(function(l){return l.length>=3;}); if(!loops.length)return poly; loops.sort(function(a,b){return _utArea(b)-_utArea(a);}); return loops[0]; }
   global.TM = global.TM || {};
   global.TM.MapEditor = global.TM.MapEditor || {};
   global.TM.MapEditor.polyUtils = {
@@ -328,7 +334,8 @@
     cropDivisionGeometry: cropDivisionGeometry,
     findCrossings: findCrossings,
     polygonBoolean: polygonBoolean,
-    divisionBooleanGeometry: divisionBooleanGeometry
+    divisionBooleanGeometry: divisionBooleanGeometry,
+    untanglePolygon: untanglePolygon
   };
 
 })(typeof window !== 'undefined' ? window : this);

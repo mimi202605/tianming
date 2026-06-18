@@ -171,6 +171,10 @@
       }
     });
 
+    // self-intersect (error severity·非 auto): 收集待解结
+    var selfIntKeys = {}, untangled = 0;
+    issues.forEach(function(iss){ if (iss.type !== 'self_intersect') return; selfIntKeys[iss.divId + '|' + iss.polyIdx + '|' + iss.polyKind] = { divId: iss.divId, polyIdx: iss.polyIdx, polyKind: iss.polyKind }; });
+
     var fixed = 0, droppedPolys = 0, droppedDivs = 0;
     ME.commitMutation('polygon 修复', function(){
       var divs = ME.EDITOR.map.divisions;
@@ -216,10 +220,22 @@
         // 重 derive
         if (info.polyKind === 'main') ME.recomputeDerived(d);
       });
+      // 解结自相交·untanglePolygon(取最大简单环)
+      var _pu = ME.polyUtils;
+      if (_pu && _pu.untanglePolygon){
+        Object.keys(selfIntKeys).forEach(function(k){
+          var info = selfIntKeys[k];
+          var d = divs.find(function(D){ return D.id === info.divId; });
+          if (!d) return;
+          if (info.polyKind === 'main' && d.polygon && d.polygon.length>=4){ d.polygon = _pu.untanglePolygon(d.polygon); ME.recomputeDerived(d); untangled++; }
+          else if (info.polyKind === 'extra' && d.extraPolygons && d.extraPolygons[info.polyIdx-1]){ d.extraPolygons[info.polyIdx-1] = _pu.untanglePolygon(d.extraPolygons[info.polyIdx-1]); untangled++; }
+          else if (info.polyKind === 'hole' && d.holes && d.holes[info.polyIdx-1]){ d.holes[info.polyIdx-1] = _pu.untanglePolygon(d.holes[info.polyIdx-1]); untangled++; }
+        });
+      }
     });
 
     if (global.meToast){
-      meToast('修·' + fixed + ' 顶 / -' + droppedPolys + ' poly / -' + droppedDivs + ' div', 'success');
+      meToast('修·' + fixed + ' 顶 / 解结 ' + untangled + ' / -' + droppedPolys + ' poly / -' + droppedDivs + ' div', 'success');
     }
     return fixed;
   }

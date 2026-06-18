@@ -235,7 +235,12 @@
     var nameOps = (prefix || suffix) ? 1 : 0;
     var totalCols = keys.length + fkeys.length + nameOps;
     var n = sel.length;
-    if (!confirm('批量改 ' + totalCols + ' 字段 → ' + n + ' 省·确认?')) return;
+    // 批量编辑·改前列出 field → value 预览 (代替仅计数的确认)
+    var _lines = [];
+    keys.forEach(function(k){ _lines.push('  · ' + k + ' → ' + patches[k]); });
+    fkeys.forEach(function(fk){ _lines.push('  · 标记 ' + fk + ' = 是'); });
+    if (prefix || suffix) _lines.push('  · 名: ' + (prefix ? '前缀「' + prefix + '」' : '') + (suffix ? ' 后缀「' + suffix + '」' : ''));
+    if (!confirm('批量编辑 → ' + n + ' 省·将改以下 ' + totalCols + ' 项:\n\n' + _lines.join('\n') + '\n\n确认应用?')) return;
 
     ME.commitMutation('batch edit ' + n + ' x ' + totalCols, function(){
       sel.forEach(function(d){
