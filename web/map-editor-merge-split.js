@@ -246,11 +246,15 @@
     };
 
     var extraInfo = extraPolygonsResult.length > 0 ? ('\n飞地·' + extraPolygonsResult.length + ' 块') : '';
-    if (!confirm('合并 ' + divs.length + ' 省 → 1 省·\n方法·' + method + '\n名→ "' + mergedFields.name + '"\n人口和→ ' + mergedFields.populationDetail.mouths + extraInfo + '\n确认?')) return false;
+    var _methodWarn = (method !== 'shared-edge') ? ('\n※ 所选省并不相邻·将' + (method === 'convex-hull' ? '以凸包近似圈合' : '保留为多块飞地') + '·并非真正合为一体') : '';
+    if (!confirm('合并 ' + divs.length + ' 省 → 1 省·\n方法·' + method + '\n名→ "' + mergedFields.name + '"\n人口和→ ' + mergedFields.populationDetail.mouths + extraInfo + _methodWarn + '\n确认?')) return false;
 
+    var _hMaxDiv = divs.reduce(function(a, b){ return ((b.area || 0) > (a.area || 0)) ? b : a; }, divs[0]);
+    var _mergedHoles = (_hMaxDiv && Array.isArray(_hMaxDiv.holes) && _hMaxDiv.holes.length) ? _hMaxDiv.holes.map(function(h){ return h.slice(); }) : [];
     var newDiv = ME.createDivision(Object.assign({
       polygon: mergedPoly,
-      extraPolygons: extraPolygonsResult
+      extraPolygons: extraPolygonsResult,
+      holes: _mergedHoles
     }, mergedFields));
     ME.recomputeDerived(newDiv);
 
@@ -264,6 +268,15 @@
       });
       ME.EDITOR.map.divisions.push(newDiv);
       if (topoOn) TP.syncDivisionToTopology(ME.EDITOR.map, newDiv);
+      // 甲:merge 后重算邻接(new + 其邻居)·堵"邻接错→寻路/贸易/AI 跟着错"的隐患
+      var _NB = global.TM && TM.MapEditor.neighbor;
+      if (_NB && _NB.computeFor){
+        newDiv.neighbors = _NB.computeFor(newDiv.id);
+        (newDiv.neighbors || []).slice().forEach(function(_nid){
+          var _nb = ME.EDITOR.map.divisions.find(function(D){ return D.id === _nid; });
+          if (_nb) _nb.neighbors = _NB.computeFor(_nid);
+        });
+      }
     });
     ME.selectOne(newDiv.id);
 
@@ -279,7 +292,7 @@
       sumW += it.w || 0;
       sumVW += (it.v || 0) * (it.w || 0);
     });
-    return sumW === 0 ? 0 : sumVW / sumW;
+    return sumW === 0 ? null : sumVW / sumW;
   }
 
   function weightedRatioMerge(items){
@@ -484,6 +497,7 @@
         return false;
       }
     } else if (crossings.length > 2){
+      var _multiCross = true;
       // 凹陷 polygon·取距 click 中点最近的 2 交·user 大概率想切的就是这条
       var mid = [(cutA[0] + cutB[0]) / 2, (cutA[1] + cutB[1]) / 2];
       crossings.sort(function(a, b){
@@ -628,6 +642,10 @@
     var name2 = d.name + '·乙';
     var child1 = makeChild(name1, r1, poly1);
     var child2 = makeChild(name2, r2, poly2);
+    if (Array.isArray(d.holes) && d.holes.length){
+      child1.holes = d.holes.map(function(h){ return h.slice(); }); // 孔洞归主块(甲)·用户可再调
+      if (typeof ME.recomputeDerived === 'function') ME.recomputeDerived(child1);
+    }
 
     // 飞地·area 比例分配到甲乙·按 centroid 距离 (近哪边归哪)
     if (d.extraPolygons && d.extraPolygons.length > 0){
@@ -648,7 +666,8 @@
     }
 
     var extraNote = (d.extraPolygons && d.extraPolygons.length > 0) ? ('\n飞地分配·甲 ' + (child1.extraPolygons || []).length + ' / 乙 ' + (child2.extraPolygons || []).length) : '';
-    if (!confirm('分割 ' + d.name + ' → 2 省·\n甲 (' + Math.round(r1*100) + '% 面积·人口 ' + child1.populationDetail.mouths + ')\n乙 (' + Math.round(r2*100) + '%·' + child2.populationDetail.mouths + ')' + extraNote + '\n确认?')) return false;
+    var _mcNote = (typeof _multiCross !== 'undefined' && _multiCross) ? '\n※ 切线与边界多处相交·已取最可能的一对·请核对切割位置' : '';
+    if (!confirm('分割 ' + d.name + ' → 2 省·\n甲 (' + Math.round(r1*100) + '% 面积·人口 ' + child1.populationDetail.mouths + ')\n乙 (' + Math.round(r2*100) + '%·' + child2.populationDetail.mouths + ')' + extraNote + _mcNote + '\n确认?')) return false;
 
     var TPs = global.TM && TM.MapEditor.topology;
     var topoOnS = TPs && TPs.isEnabled();
@@ -660,6 +679,17 @@
       if (topoOnS){
         TPs.syncDivisionToTopology(ME.EDITOR.map, child1);
         TPs.syncDivisionToTopology(ME.EDITOR.map, child2);
+      }
+      // 甲:split 后重算邻接(两新块 + 其邻居)
+      var _NBs = global.TM && TM.MapEditor.neighbor;
+      if (_NBs && _NBs.computeFor){
+        [child1, child2].forEach(function(_ch){
+          _ch.neighbors = _NBs.computeFor(_ch.id);
+          (_ch.neighbors || []).slice().forEach(function(_nid){
+            var _nb = ME.EDITOR.map.divisions.find(function(D){ return D.id === _nid; });
+            if (_nb && _nb.id !== child1.id && _nb.id !== child2.id) _nb.neighbors = _NBs.computeFor(_nid);
+          });
+        });
       }
     });
     ME.selectOne(child1.id);

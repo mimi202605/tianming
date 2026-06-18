@@ -42,6 +42,40 @@
     return dx*dx + dy*dy;
   }
 
+  // 复制地块:全字段 deep-clone + 偏移几何 + 新 id/colorKey·neighbors 清空(偏移后多为孤立·用户落位后 N 工具重算)
+  function _cloneDivGeometry(src, off){
+    function _offP(poly){ return (poly || []).map(function(p){ return [p[0] + off, p[1] + off]; }); }
+    var d = JSON.parse(JSON.stringify(src));
+    d.id = 'div_' + Date.now() + '_' + Math.floor(Math.random() * 99999);
+    delete d.colorKey;
+    d.neighbors = [];
+    d.name = (src.name || '未命名') + '·摹';
+    d.polygon = _offP(src.polygon);
+    if (Array.isArray(src.extraPolygons)) d.extraPolygons = src.extraPolygons.map(_offP);
+    if (Array.isArray(src.holes)) d.holes = src.holes.map(_offP);
+    if (typeof ME.recomputeDerived === 'function') ME.recomputeDerived(d);
+    return d;
+  }
+
+  // ③ 多边形自相交检测(seg-seg·跳过相邻边)·用于绘制/拖动后实时警告
+  function _segInt(a, b, c, d){
+    function ccw(p, q, r){ return (r[1]-p[1])*(q[0]-p[0]) - (q[1]-p[1])*(r[0]-p[0]); }
+    var d1 = ccw(c,d,a), d2 = ccw(c,d,b), d3 = ccw(a,b,c), d4 = ccw(a,b,d);
+    return ((d1>0) !== (d2>0)) && ((d3>0) !== (d4>0));
+  }
+  function _selfIntersects(poly){
+    if (!poly || poly.length < 4) return false;
+    var n = poly.length;
+    for (var i = 0; i < n; i++){
+      var a = poly[i], b = poly[(i+1)%n];
+      for (var j = i+1; j < n; j++){
+        if (j === (i+1)%n || (j+1)%n === i) continue;
+        if (_segInt(a, b, poly[j], poly[(j+1)%n])) return true;
+      }
+    }
+    return false;
+  }
+
   // 旋转手柄世界坐标·返回 { x, y, cx, cy, hitR } 或 null
   // x,y = 手柄圆球中心  cx,cy = bitmap 中心 (旋转锚)  hitR = world-space 命中半径
   function _bitmapHandlePos(){
@@ -330,6 +364,7 @@
         if (distSq(first, [m.worldX, m.worldY]) <= closeDistWorld * closeDistWorld){
           // 闭合·新建 division
           var poly = EDITOR.penPoints.slice();
+          if (_selfIntersects(poly) && global.meToast) meToast('新地块边界自相交·请检查顶点', 'warn', 2200);
           var d = ME.createDivision({
             polygon: poly,
             name: '新省 ' + (EDITOR.map.divisions.length + 1)
@@ -356,6 +391,18 @@
             var idx = findVertexNear(D, m.worldX, m.worldY, snapPxWorld);
             if (idx >= 0) snapped = D.polygon[idx];
           });
+        }
+        // ② 顶点没吸到 → 试吸附到已有地块的边(投影点·画相邻地块不留缝隙/重叠·flag snapToEdge)
+        if (!snapped && EDITOR.snapToEdge !== false){
+          var _bestEP = null, _bestED = snapPxWorld * snapPxWorld;
+          EDITOR.map.divisions.forEach(function(D){
+            var _eh = findRingEdgeNear(D, m.worldX, m.worldY, snapPxWorld);
+            if (_eh && _eh.point){
+              var _dd = distSq(_eh.point, [m.worldX, m.worldY]);
+              if (_dd < _bestED){ _bestED = _dd; _bestEP = _eh.point; }
+            }
+          });
+          if (_bestEP) snapped = [_bestEP[0], _bestEP[1]];
         }
         if (snapped){
           EDITOR.penPoints.push([snapped[0], snapped[1]]);
@@ -411,6 +458,7 @@
             }
           } else {
             EDITOR.draggingVertex = { divId: d.id, kind: hit.kind, polyIdx: hit.polyIdx, vertexIdx: hit.idx };
+            EDITOR._dragVertexSnap = true; // ① 首帧真拖动时记拖前快照
           }
           return;
         }
@@ -730,6 +778,11 @@
       var dv = EDITOR.draggingVertex;
       var d = EDITOR.map.divisions.find(function(D){ return D.id === dv.divId; });
       if (d){
+        // ① 首帧真拖动时记拖前快照(点了没拖不记)→ Ctrl+Z 可回拖前
+        if (EDITOR._dragVertexSnap){
+          EDITOR._dragVertexSnap = false;
+          if (EDITOR.undo && TM.MapEditor.undo && TM.MapEditor.undo.snapshot) TM.MapEditor.undo.snapshot(EDITOR.undo, EDITOR.map, 'drag vertex');
+        }
         var TP = global.TM && TM.MapEditor.topology;
         var topologyOn = TP && TP.isEnabled();
         if (topologyOn && dv.kind){
@@ -768,6 +821,18 @@
       ME.requestRender();
     }
     if (EDITOR.activeTool === 'pen' && EDITOR.penPoints.length){
+      // 乙:算吸附 hint(顶点优先·否则边投影)供 render 高亮
+      var _shW = EDITOR.snapDistance / EDITOR.camera.zoom;
+      var _hint = null;
+      if (EDITOR.snapToVertex){
+        EDITOR.map.divisions.forEach(function(D){ var _vi = findVertexNear(D, m.worldX, m.worldY, _shW); if (_vi >= 0) _hint = { kind: 'vertex', point: [D.polygon[_vi][0], D.polygon[_vi][1]] }; });
+      }
+      if (!_hint && EDITOR.snapToEdge !== false){
+        var _bEP = null, _bED = _shW * _shW;
+        EDITOR.map.divisions.forEach(function(D){ var _eh = findRingEdgeNear(D, m.worldX, m.worldY, _shW); if (_eh && _eh.point){ var _dd = distSq(_eh.point, [m.worldX, m.worldY]); if (_dd < _bED){ _bED = _dd; _bEP = _eh.point; } } });
+        if (_bEP) _hint = { kind: 'edge', point: [_bEP[0], _bEP[1]] };
+      }
+      EDITOR._penSnapHint = _hint;
       ME.requestRender();
     }
 
@@ -874,12 +939,15 @@
       EDITOR.canvas.style.cursor = '';
     }
     if (EDITOR.draggingVertex){
-      // commit a snapshot for undo (since we mutated without commitMutation)
-      // 简化·上次 commit 在 mousedown·move 期间没 snapshot
-      // 这里补 snapshot 以便 undo 回到拖前
-      // 由于 dragging 已修改 state·我们不能再 snapshot before
-      // 先简化·暂忽略 undo precision (后续优化)
+      // ① 拖前快照已在 mousemove 首帧记下(撤销回拖前)·此处收尾 + ③ 拖后自交检测
+      var _dvE = EDITOR.draggingVertex;
+      var _dE = EDITOR.map.divisions.find(function(D){ return D.id === _dvE.divId; });
+      if (_dE){
+        var _ringE = _dvE.kind ? getRingArray(_dE, _dvE.kind, _dvE.polyIdx) : ((_dvE.polyIdx == null || _dvE.polyIdx === 0) ? _dE.polygon : (_dE.extraPolygons || [])[_dvE.polyIdx - 1]);
+        if (_ringE && _selfIntersects(_ringE) && global.meToast) meToast('拖动致边界自相交·请检查', 'warn', 2200);
+      }
       EDITOR.draggingVertex = null;
+      EDITOR._dragVertexSnap = false;
       EDITOR.dirty = true;
       ME.fire('mutation', { label: 'drag vertex' });
     }
@@ -1012,7 +1080,7 @@
     // tool shortcuts
     if (k === 'b' || k === 'B') ME.setTool('brush');
     else if (k === 'r' || k === 'R') ME.setTool('river');
-    else if (k === 'd' || k === 'D') ME.setTool('road');
+    else if ((k === 'd' || k === 'D') && !e.ctrlKey && !e.metaKey) ME.setTool('road');
     else if (k === 'g' || k === 'G') ME.setTool('stronghold');
     else if (k === 'i' || k === 'I') ME.setTool('pick');
     else if (k === 'u' || k === 'U') ME.setTool('paint-height');
@@ -1058,6 +1126,13 @@
       }
     }
     else if (k === 'Delete' || k === 'Backspace'){
+      // 甲:pen 绘制中 → 退最后一个顶点(而非删整块)
+      if (EDITOR.activeTool === 'pen' && EDITOR.penPoints.length){
+        EDITOR.penPoints.pop();
+        EDITOR._penSnapHint = null;
+        ME.requestRender();
+        return;
+      }
       var sel = ME.getSelected();
       if (sel.length){
         sel.forEach(function(d){ ME.removeDivision(d.id); });
@@ -1072,6 +1147,17 @@
     else if ((e.ctrlKey || e.metaKey) && (k === 'y' || k === 'Y')){
       ME.doRedo();
       e.preventDefault();
+    }
+    else if ((e.ctrlKey || e.metaKey) && (k === 'd' || k === 'D')){
+      e.preventDefault(); // 防浏览器加书签
+      var _selCp = ME.getSelected();
+      if (_selCp.length){
+        var _OFF = 20 / EDITOR.camera.zoom; // 屏幕约 20px 偏移·避免与原块完全重叠
+        var _newCpId = null;
+        _selCp.forEach(function(_src){ var _c = _cloneDivGeometry(_src, _OFF); ME.addDivision(_c); _newCpId = _c.id; });
+        if (_selCp.length === 1 && _newCpId) ME.selectOne(_newCpId);
+        if (global.meToast) meToast('已复制 ' + _selCp.length + ' 块(偏移摹写·名带「摹」)', 'info', 1600);
+      }
     }
     else if (k === '0'){
       ME.fitToContent();

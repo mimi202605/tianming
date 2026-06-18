@@ -603,7 +603,16 @@
     var inDiff = !!EDITOR.diffMode;
     var TL = global.TM && TM.MapEditor.timeline;
     var list = [];
+    // 视口裁剪:算 world 视口矩形·屏外地块跳过(大地图性能·flag viewportCull 默认开·hover 不受影响因鼠标必在视口内)
+    var _vp = null;
+    if (EDITOR.viewportCull !== false && EDITOR.canvas){
+      var _vtl = screenToWorld(0, 0), _vbr = screenToWorld(EDITOR.canvas.width, EDITOR.canvas.height);
+      var _vpad = 40 / (EDITOR.camera.zoom || 1);
+      _vp = { minX: Math.min(_vtl.x, _vbr.x) - _vpad, minY: Math.min(_vtl.y, _vbr.y) - _vpad, maxX: Math.max(_vtl.x, _vbr.x) + _vpad, maxY: Math.max(_vtl.y, _vbr.y) + _vpad };
+    }
     EDITOR.map.divisions.forEach(function(d){
+      // 视口裁剪:bbox 完全在视口外 → 跳过(部分相交/包住视口仍画)
+      if (_vp && d.bbox && (d.bbox.x > _vp.maxX || d.bbox.x + d.bbox.w < _vp.minX || d.bbox.y > _vp.maxY || d.bbox.y + d.bbox.h < _vp.minY)) return;
       var state = d;
       if (!inDiff && EDITOR.viewYear != null && TL){
         var s = TL.getStateAt(d, EDITOR.viewYear);
@@ -989,6 +998,28 @@
         ctx.fillStyle = idx === 0 ? '#ff5630' : penColor;
         ctx.fill();
       });
+      // 乙:吸附命中高亮(顶点=蓝圈·边=青圈)
+      var _ph = EDITOR._penSnapHint;
+      if (_ph && _ph.point){
+        ctx.beginPath();
+        ctx.arc(_ph.point[0], _ph.point[1], 7 / EDITOR.camera.zoom, 0, Math.PI * 2);
+        ctx.lineWidth = 2 / EDITOR.camera.zoom;
+        ctx.strokeStyle = _ph.kind === 'edge' ? '#3bd6c6' : '#3b9dff';
+        ctx.stroke();
+      }
+      // 丙:近首点可闭合 → 首点白圈高亮
+      if (EDITOR.penPoints.length >= (EDITOR.minVerticesToClose || 3)){
+        var _f0 = EDITOR.penPoints[0];
+        var _cW = (EDITOR.closingDistance || 12) / EDITOR.camera.zoom;
+        var _ddx = EDITOR.mouse.worldX - _f0[0], _ddy = EDITOR.mouse.worldY - _f0[1];
+        if (_ddx * _ddx + _ddy * _ddy <= _cW * _cW){
+          ctx.beginPath();
+          ctx.arc(_f0[0], _f0[1], 9 / EDITOR.camera.zoom, 0, Math.PI * 2);
+          ctx.lineWidth = 2.5 / EDITOR.camera.zoom;
+          ctx.strokeStyle = '#fff';
+          ctx.stroke();
+        }
+      }
     }
 
     // label layer·timeline-aware
