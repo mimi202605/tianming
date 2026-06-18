@@ -121,6 +121,10 @@
         <input type="number" id="bm-minarea" value="200" min="10" max="100000" style="background:#26262d; border:1px solid #3a3530; color:#e8ddc8; padding:4px 8px; border-radius:3px;" />\
         <span style="font-size:11px; color:#6a6560;">simplify·边简化</span>\
         <label><input type="checkbox" id="bm-simplify" checked /> 启用 (RDP)</label>\
+        <span style="font-size:11px; color:#6a6560;">简化强度·epsilon</span>\
+        <input type="number" id="bm-epsilon" placeholder="留空=自动" min="0" max="20" step="0.5" style="background:#26262d; border:1px solid #3a3530; color:#e8ddc8; padding:4px 8px; border-radius:3px;" />\
+        <span style="font-size:11px; color:#6a6560;">碎块并入</span>\
+        <label><input type="checkbox" id="bm-mergefrag" /> 并入相邻最大块（去碎渣）</label>\
       </div>\
       \
       <div style="display:flex; gap:8px; justify-content:flex-end;">\
@@ -136,7 +140,9 @@
       var opts = {
         tolerance: Number(document.getElementById('bm-tolerance').value) || 10,
         minArea: Number(document.getElementById('bm-minarea').value) || 200,
-        simplify: document.getElementById('bm-simplify').checked
+        simplify: document.getElementById('bm-simplify').checked,
+        epsilon: (function(){ var v = parseFloat((document.getElementById('bm-epsilon')||{}).value); return (isFinite(v) && v > 0) ? v : undefined; })(),
+        mergeFragments: !!(document.getElementById('bm-mergefrag') && document.getElementById('bm-mergefrag').checked)
       };
       modal.style.display = 'none';
       callback(method, opts);
@@ -177,7 +183,7 @@
         return;
       }
       // 转 division·preview 模态
-      previewAndImport(regions);
+      previewAndImport(regions, file, method, opts);
     }).catch(function(err){
       hideProgress();
       console.error('[bitmap] recognize fail:', err);
@@ -187,7 +193,7 @@
 
   // ─── preview + import ───────────────────────────────────
 
-  function previewAndImport(regions){
+  function previewAndImport(regions, _file, _method, _opts){
     // 按色组聚类·相似 ≤ tolerance 视同色
     var groups = clusterByColor(regions, 30);
     var excludedColors = {};   // colorKey → bool
@@ -250,12 +256,15 @@
         </div>\
         <div style="display:flex; gap:8px; justify-content:flex-end;">\
           <button class="me-btn" id="bm-cancel-import">取消</button>\
+          ' + (_file ? '<button class="me-btn" id="bm-rereco" title="换算法或调参数·重新识别">⟳ 调参重识</button>' : '') + '\
           <button class="me-btn me-btn-warn" id="bm-do-import">导入 ' + visibleRegions.length + ' 省</button>\
         </div>\
       ';
       modal.style.display = 'block';
 
       document.getElementById('bm-cancel-import').onclick = function(){ modal.style.display = 'none'; };
+      var _rb = document.getElementById('bm-rereco');
+      if (_rb) _rb.onclick = function(){ modal.style.display = 'none'; if (_file) openOptsModal(_file, function(_m, _o){ recognize(_file, _m, _o); }); };
       document.getElementById('bm-do-import').onclick = function(){
         var strategy = document.getElementById('bm-strategy').value;
         var mergeColor = document.getElementById('bm-merge-color').checked;

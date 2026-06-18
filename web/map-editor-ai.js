@@ -111,17 +111,50 @@
   // ─── AI call (复用 editor-ai-gen) ────────────────────────
 
   function callAI(prompt, callback){
-    // 复用 editor-ai-gen.js·若 TM.Editor.aiGen.callAI 或 callAI 暴露
+    // 1·剧本编辑器 AI 层同页时复用（callback 风格兼容）
     if (global.TM && TM.Editor && TM.Editor.aiGen && typeof TM.Editor.aiGen.callAI === 'function'){
       TM.Editor.aiGen.callAI(prompt, callback);
       return;
     }
-    if (typeof global.callAI === 'function'){
-      global.callAI(prompt, callback);
+    // 2·内置自包含网关·复用全局 BYOK 配置 localStorage['tm_api']
+    //    用户在游戏/剧本编辑器配过 API·此处同源自动读出·零额外配置
+    _builtinCallAI(prompt, callback);
+  }
+
+  // ─── 内置 AI 网关·移植自 editor-ai-gen.js callAIEditor·读 localStorage['tm_api'] ───
+  function _builtinCallAI(prompt, callback){
+    var cfg = {};
+    try { cfg = JSON.parse(localStorage.getItem('tm_api') || '{}'); } catch(e){}
+    var key = cfg.key || '';
+    var url = (cfg.url || '').replace(/\/+$/, '');
+    var model = cfg.model || 'gpt-4o';
+    if (!key || !url){
+      callback(null, new Error('API 未配置·去游戏或剧本编辑器设置面板配 API·暂用规则填充'));
       return;
     }
-    // fallback·提示 user 用 fallback
-    callback(null, new Error('AI 接口未挂载·使用 rule-based 默认填充'));
+    var isAnthropic = url.indexOf('anthropic') >= 0;
+    var endpoint, headers, body;
+    if (isAnthropic){
+      endpoint = url.indexOf('/messages') < 0 ? url + '/v1/messages' : url;
+      headers = { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' };
+      body = JSON.stringify({ model: model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] });
+    } else {
+      endpoint = (url.indexOf('/chat/completions') < 0 && url.indexOf('/messages') < 0) ? url + '/chat/completions' : url;
+      headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key };
+      body = JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], temperature: 0.8, max_tokens: 2000 });
+    }
+    fetch(endpoint, { method: 'POST', headers: headers, body: body })
+      .then(function(r){
+        if (!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 200)); });
+        return r.json();
+      })
+      .then(function(data){
+        var txt = '';
+        if (data.choices && data.choices[0] && data.choices[0].message) txt = data.choices[0].message.content;
+        else if (data.content && Array.isArray(data.content)) txt = data.content.map(function(b){ return b.text || ''; }).join('');
+        callback(txt, null);
+      })
+      .catch(function(e){ callback(null, e); });
   }
 
   // ─── parse response ─────────────────────────────────────

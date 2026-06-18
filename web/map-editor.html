@@ -1896,9 +1896,13 @@ body.me-player-mode #map-canvas {
     });
 
     // try restore draft (仅在 localStorage 有草稿时询问)
-    var hasDraft = false;
-    try { hasDraft = !!localStorage.getItem('tm.mapEditor.draft.v1'); } catch(e){}
-    if (hasDraft && confirm('检测到上次草稿·载入? (取消则新建空地图)')){
+    var hasDraft = false, _draftN = 0;
+    try {
+      var _draftStr = localStorage.getItem('tm.mapEditor.draft.v1');
+      hasDraft = !!_draftStr;
+      if (_draftStr){ var _dObj = JSON.parse(_draftStr); _draftN = (_dObj && _dObj.divisions ? _dObj.divisions.length : 0); }
+    } catch(e){}
+    if (hasDraft && confirm('检测到上次草稿 (' + _draftN + ' 个地块)·载入? (取消则新建空地图)')){
       var ok = ME.io.loadDraft();
       if (!ok) ME.newMap(ME.dynasty.DEFAULT_DYNASTY);
     } else {
@@ -2367,7 +2371,12 @@ body.me-player-mode #map-canvas {
     ME.on('map-loaded', function(){ updateStatus(); updateLegend(); });
     ME.on('mutation', function(){ updateLegend(); });
     ME.on('draft-saved', function(){
-      document.getElementById('status-tip').textContent = '草稿已自动保存 (' + new Date().toLocaleTimeString() + ')';
+      var _st = document.getElementById('status-tip');
+      if (_st){ _st.textContent = '草稿已自动保存 (' + new Date().toLocaleTimeString() + ')'; _st.style.color = ''; }
+    });
+    ME.on('draft-save-failed', function(){
+      var _st = document.getElementById('status-tip');
+      if (_st){ _st.textContent = '⚠ 自动保存失败·地图可能过大超出浏览器存储·请手动导出 JSON 备份'; _st.style.color = '#ff6b6b'; }
     });
     ME.on('bitmap-loaded', function(){
       document.getElementById('status-tip').textContent = '底图已载入 ' + ME.EDITOR.map.bitmapWidth + '×' + ME.EDITOR.map.bitmapHeight;

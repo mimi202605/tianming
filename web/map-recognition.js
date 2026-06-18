@@ -14,6 +14,44 @@
 // 图像处理核心算法
 // ============================================================
 
+// P4: UI-tunable Douglas-Peucker simplify strength.
+//     null => each algorithm keeps its own hard-coded default (zero behavior change).
+var _TM_RECOG_EPSILON = null;
+function _tmEpsFor(def){ return (_TM_RECOG_EPSILON != null && isFinite(_TM_RECOG_EPSILON) && _TM_RECOG_EPSILON > 0) ? _TM_RECOG_EPSILON : def; }
+
+// P4: optional fragment-merge - sub-minArea blobs are absorbed into the adjacent largest region instead of dropped.
+var _TM_RECOG_MERGE_FRAG = false;
+var _TM_FRAGS = [];
+function _assignFragmentsToRegions(regions, fragments, width, height){
+  if (!fragments || !fragments.length || !regions.length) return regions;
+  var owner = new Int32Array(width * height).fill(-1);
+  for (var i = 0; i < regions.length; i++){
+    var px = regions[i].pixels;
+    for (var k = 0; k < px.length; k++) owner[px[k][1] * width + px[k][0]] = i;
+  }
+  fragments.sort(function(a, b){ return a.pixels.length - b.pixels.length; });
+  for (var f = 0; f < fragments.length; f++){
+    var frag = fragments[f], votes = {};
+    for (var j = 0; j < frag.pixels.length; j++){
+      var x = frag.pixels[j][0], y = frag.pixels[j][1];
+      var nb = [[x+1,y],[x-1,y],[x,y+1],[x,y-1]];
+      for (var n = 0; n < 4; n++){
+        var nx = nb[n][0], ny = nb[n][1];
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+        var o = owner[ny * width + nx];
+        if (o >= 0) votes[o] = (votes[o] || 0) + 1;
+      }
+    }
+    var best = -1, bestN = 0;
+    for (var key in votes){ if (votes[key] > bestN){ bestN = votes[key]; best = +key; } }
+    if (best >= 0){
+      var target = regions[best];
+      for (var m = 0; m < frag.pixels.length; m++){ var p = frag.pixels[m]; target.pixels.push(p); owner[p[1] * width + p[0]] = best; }
+    }
+  }
+  return regions;
+}
+
 /**
  * 智能识别地图中的地块
  * @param {HTMLImageElement} image - 地图图片
@@ -23,6 +61,9 @@
 async function recognizeMapRegions(image, options) {
     options = options || {};
     const tolerance = options.tolerance || 10; // 颜色容差
+    _TM_RECOG_EPSILON = (options.epsilon != null && isFinite(+options.epsilon) && +options.epsilon > 0) ? +options.epsilon : null;
+    _TM_RECOG_MERGE_FRAG = (options.mergeFragments === true);
+    _TM_FRAGS = [];
     const minArea = options.minArea || 100; // 最小区域面积
     const simplify = options.simplify !== false; // 是否简化边界
 
@@ -51,6 +92,7 @@ async function recognizeMapRegions(image, options) {
 
             // 步骤2: 区域分割 - 使用洪水填充算法
             const regions = floodFillRegions(pixels, canvas.width, canvas.height, colorMap, minArea);
+            if (_TM_RECOG_MERGE_FRAG) _assignFragmentsToRegions(regions, _TM_FRAGS, canvas.width, canvas.height);
             console.log('\u5206\u5272\u51fa', regions.length, '\u4e2a\u5730\u5757');
 
             // 步骤3: 边界追踪 - 提取每个区域的边界
@@ -59,7 +101,7 @@ async function recognizeMapRegions(image, options) {
 
                 // 简化边界（减少点数）
                 const simplifiedBoundary = simplify ?
-                    simplifyBoundary(boundary, 2.0) : boundary;
+                    simplifyBoundary(boundary, _tmEpsFor(2.0)) : boundary;
 
                 // 计算中心点
                 const center = calculateCenter(region.pixels);
@@ -123,7 +165,7 @@ function floodFillRegions(pixels, width, height, colorMap, minArea) {
                             color: `rgb(${targetR},${targetG},${targetB})`,
                             pixels: regionPixels
                         });
-                    }
+                    } else { _TM_FRAGS.push({ pixels: regionPixels }); }
                 }
             }
         }
@@ -376,6 +418,9 @@ async function recognizeMapByBorders(image, options) {
     const borderThreshold = options.borderThreshold || 100; // 边界线阈值（0-255，越小越严格）
     const minArea = options.minArea || 100;
     const fillGaps = options.fillGaps !== false; // 是否填充边界线间隙
+    _TM_RECOG_EPSILON = (options.epsilon != null && isFinite(+options.epsilon) && +options.epsilon > 0) ? +options.epsilon : null;
+    _TM_RECOG_MERGE_FRAG = (options.mergeFragments === true);
+    _TM_FRAGS = [];
 
     return new Promise((resolve, reject) => {
         try {
@@ -408,6 +453,7 @@ async function recognizeMapByBorders(image, options) {
 
             // 步骤3: 识别封闭区域
             const regions = findEnclosedRegions(borderMap, canvas.width, canvas.height, minArea);
+            if (_TM_RECOG_MERGE_FRAG) _assignFragmentsToRegions(regions, _TM_FRAGS, canvas.width, canvas.height);
             console.log('\u8bc6\u522b\u5230', regions.length, '\u4e2a\u5c01\u95ed\u533a\u57df');
 
             // 步骤4: 提取区域边界
@@ -535,7 +581,7 @@ function findEnclosedRegions(borderMap, width, height, minArea) {
                 regions.push({
                     pixels: regionPixels
                 });
-            }
+            } else { _TM_FRAGS.push({ pixels: regionPixels }); }
         }
     }
 
@@ -765,6 +811,9 @@ async function recognizeMapByBordersFast(image, options) {
     const borderThreshold = options.borderThreshold || 100;
     const minArea = options.minArea || 50;
     const maxSize = 800; // 最大处理尺寸
+    _TM_RECOG_EPSILON = (options.epsilon != null && isFinite(+options.epsilon) && +options.epsilon > 0) ? +options.epsilon : null;
+    _TM_RECOG_MERGE_FRAG = (options.mergeFragments === true);
+    _TM_FRAGS = [];
 
     return new Promise((resolve, reject) => {
         try {
@@ -794,6 +843,7 @@ async function recognizeMapByBordersFast(image, options) {
 
             // 步骤2: 识别封闭区域
             const regions = findEnclosedRegionsFast(borderMap, targetWidth, targetHeight, minArea);
+            if (_TM_RECOG_MERGE_FRAG) _assignFragmentsToRegions(regions, _TM_FRAGS, targetWidth, targetHeight);
             console.log('\u8bc6\u522b\u5230', regions.length, '\u4e2a\u5730\u5757');
 
             // 步骤3: 提取边界并缩放回原始尺寸
@@ -878,7 +928,7 @@ function findEnclosedRegionsFast(borderMap, width, height, minArea) {
 
             if (regionPixels.length >= minArea) {
                 regions.push({ pixels: regionPixels });
-            }
+            } else { _TM_FRAGS.push({ pixels: regionPixels }); }
         }
     }
 
@@ -1045,6 +1095,9 @@ async function recognizeMapByBordersImproved(image, options) {
     options = options || {};
     const borderThreshold = options.borderThreshold || 100;
     const minArea = options.minArea || 500; // 提高最小面积到500
+    _TM_RECOG_EPSILON = (options.epsilon != null && isFinite(+options.epsilon) && +options.epsilon > 0) ? +options.epsilon : null;
+    _TM_RECOG_MERGE_FRAG = (options.mergeFragments === true);
+    _TM_FRAGS = [];
     const maxSize = 1600; // 提高到1600px保留更多细节
 
     return new Promise((resolve, reject) => {
@@ -1081,6 +1134,7 @@ async function recognizeMapByBordersImproved(image, options) {
             // 步骤3: 识别封闭区域
             console.log('步骤3: 识别封闭区域...');
             const regions = findEnclosedRegionsImproved(borderMap, targetWidth, targetHeight, minArea);
+            if (_TM_RECOG_MERGE_FRAG) _assignFragmentsToRegions(regions, _TM_FRAGS, targetWidth, targetHeight);
 
             // 过滤掉细长区域（长宽比过大的）
             const filteredRegions = regions.filter(region => {
@@ -1275,7 +1329,7 @@ function findEnclosedRegionsImproved(borderMap, width, height, minArea) {
 
             if (regionPixels.length >= minArea) {
                 regions.push({ pixels: regionPixels });
-            }
+            } else { _TM_FRAGS.push({ pixels: regionPixels }); }
         }
     }
 
@@ -1342,7 +1396,7 @@ function extractRealBoundary(pixels, width, height) {
 
     // 简化边界（Douglas-Peucker算法）
     if (boundaryPixels.length > 100) {
-        return simplifyBoundary(boundaryPixels, 2.0);
+        return simplifyBoundary(boundaryPixels, _tmEpsFor(2.0));
     }
 
     return boundaryPixels;
@@ -1599,6 +1653,9 @@ async function recognizeMapEU4Style(image, options, progressCallback) {
     const minArea = options.minArea || 100;
     const colorTolerance = options.colorTolerance || 1;
     const maxSize = options.maxSize || 1500; // 最大尺寸限制
+    _TM_RECOG_EPSILON = (options.epsilon != null && isFinite(+options.epsilon) && +options.epsilon > 0) ? +options.epsilon : null;
+    _TM_RECOG_MERGE_FRAG = (options.mergeFragments === true);
+    _TM_FRAGS = [];
 
     return new Promise((resolve, reject) => {
         try {
@@ -1659,6 +1716,7 @@ async function recognizeMapEU4Style(image, options, progressCallback) {
                 // 步骤2: 为每种颜色识别区域
                 console.log('步骤2: 识别省份...');
                 identifyRegionsByColor(pixels, img.width, img.height, colorMap, minArea, progressCallback).then(regions => {
+                    if (_TM_RECOG_MERGE_FRAG) _assignFragmentsToRegions(regions, _TM_FRAGS, img.width, img.height);
                     console.log('识别到', regions.length, '个省份');
 
                     if (progressCallback) progressCallback(80, `识别到 ${regions.length} 个省份，正在提取边界...`);
@@ -1813,7 +1871,7 @@ function identifyRegionsByColor(pixels, width, height, colorMap, minArea, progre
                             pixels: regionPixels,
                             color: `rgb(${r},${g},${b})`
                         });
-                    }
+                    } else { _TM_FRAGS.push({ pixels: regionPixels }); }
 
                     processedPixels += regionPixels.length;
                 }
@@ -1907,7 +1965,7 @@ function extractRegionBoundary(pixels, width, height) {
 
     // 简化边界
     if (boundaryPixels.length > 50) {
-        return simplifyPolygon(boundaryPixels, 3.0);
+        return simplifyPolygon(boundaryPixels, _tmEpsFor(3.0));
     }
 
     return boundaryPixels;

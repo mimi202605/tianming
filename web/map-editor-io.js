@@ -736,6 +736,7 @@
       return true;
     } catch(e){
       console.error('[io] saveDraft fail:', e);
+      try { ME.fire('draft-save-failed', e); } catch(_){}
       return false;
     }
   }

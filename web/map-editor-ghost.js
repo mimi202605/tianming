@@ -33,7 +33,9 @@
     var crossings = findCrossings(poly, ext.a, ext.b, ms.segmentIntersect);
 
     if (crossings.length < 2) return null;
+    var _allCross = null;
     if (crossings.length > 2){
+      _allCross = crossings.slice();  // keep all crossings for visual feedback
       // 凹陷·取距 click 中点最近 2 交
       var mid = [(cutA[0] + cutB[0]) / 2, (cutA[1] + cutB[1]) / 2];
       crossings.sort(function(a, b){
@@ -69,7 +71,7 @@
     poly2.push(c0.point.slice());
 
     if (poly1.length < 3 || poly2.length < 3) return null;
-    return { poly1: poly1, poly2: poly2 };
+    return { poly1: poly1, poly2: poly2, allCrossings: _allCross, chosen: [c0.point, c1.point] };
   }
 
   function pickTargetPreview(allPs, cutA, cutB){
@@ -156,6 +158,7 @@
         // 浅色 fill 2 半
         drawPolyFilled(ctx, preview.poly1, 'rgba(106,138,58,0.30)', '#6a8a3a');
         drawPolyFilled(ctx, preview.poly2, 'rgba(255,160,77,0.30)', '#c5a04d');
+        if (preview.allCrossings) drawCrossingMarkers(ctx, preview.allCrossings, preview.chosen);
       }
     }
 
@@ -185,6 +188,31 @@
       ctx.setLineDash([8 / ME.EDITOR.camera.zoom, 4 / ME.EDITOR.camera.zoom]);
       ctx.stroke();
       ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+
+  // P4·multi-crossing visual feedback: number every crossing, highlight the chosen pair
+  function drawCrossingMarkers(ctx, crossings, chosen){
+    if (!crossings || !crossings.length) return;
+    var z = ME.EDITOR.camera.zoom;
+    var r = 5 / z;
+    ctx.save();
+    ctx.font = (12 / z) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (var i = 0; i < crossings.length; i++){
+      var p = crossings[i].point;
+      var isChosen = chosen && chosen.some(function(c){ return Math.abs(c[0]-p[0]) < 0.5 && Math.abs(c[1]-p[1]) < 0.5; });
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
+      ctx.fillStyle = isChosen ? '#ffd24a' : 'rgba(190,190,200,0.9)';
+      ctx.fill();
+      ctx.lineWidth = 1.5 / z;
+      ctx.strokeStyle = isChosen ? '#c98a1a' : '#4a4a52';
+      ctx.stroke();
+      ctx.fillStyle = isChosen ? '#3a2a00' : '#1a1a1a';
+      ctx.fillText(String(i + 1), p[0], p[1]);
     }
     ctx.restore();
   }
