@@ -177,6 +177,67 @@
 
   // ─── expose ────────────────────────────────────────────
 
+  // P4·crop·Sutherland-Hodgman rectangle clip (winding-agnostic·pure coord compare)
+  function _clipHalf(poly, inside, isect){
+    if (!poly || poly.length === 0) return [];
+    var out = [];
+    for (var i = 0; i < poly.length; i++){
+      var A = poly[i], B = poly[(i + 1) % poly.length];
+      var Ain = inside(A), Bin = inside(B);
+      if (Bin){ if (!Ain) out.push(isect(A, B)); out.push(B); }
+      else if (Ain){ out.push(isect(A, B)); }
+    }
+    return out;
+  }
+  function _interpX(A, B, x){ var t = (x - A[0]) / ((B[0] - A[0]) || 1e-9); return [x, A[1] + t * (B[1] - A[1])]; }
+  function _interpY(A, B, y){ var t = (y - A[1]) / ((B[1] - A[1]) || 1e-9); return [A[0] + t * (B[0] - A[0]), y]; }
+  function clipPolygonToRect(poly, minX, minY, maxX, maxY){
+    if (!poly || poly.length < 3) return [];
+    var p = poly;
+    p = _clipHalf(p, function(pt){ return pt[0] >= minX; }, function(A, B){ return _interpX(A, B, minX); });
+    p = _clipHalf(p, function(pt){ return pt[0] <= maxX; }, function(A, B){ return _interpX(A, B, maxX); });
+    p = _clipHalf(p, function(pt){ return pt[1] >= minY; }, function(A, B){ return _interpY(A, B, minY); });
+    p = _clipHalf(p, function(pt){ return pt[1] <= maxY; }, function(A, B){ return _interpY(A, B, maxY); });
+    return p;
+  }
+
+  // crop a whole division to a rect (main polygon + exclaves + holes); empty=主多边形被裁空
+  function cropDivisionGeometry(div, minX, minY, maxX, maxY){
+    var poly = clipPolygonToRect(div.polygon || [], minX, minY, maxX, maxY);
+    var extras = [];
+    if (div.extraPolygons){
+      for (var i = 0; i < div.extraPolygons.length; i++){
+        var e = clipPolygonToRect(div.extraPolygons[i], minX, minY, maxX, maxY);
+        if (e.length >= 3) extras.push(e);
+      }
+    }
+    var holes = [];
+    if (div.holes){
+      for (var h = 0; h < div.holes.length; h++){
+        var hh = clipPolygonToRect(div.holes[h], minX, minY, maxX, maxY);
+        if (hh.length >= 3) holes.push(hh);
+      }
+    }
+    return { polygon: poly, extraPolygons: extras, holes: holes, empty: poly.length < 3 };
+  }
+
+  // line-vs-polygon crossings (unified·split preview + commit). eps = dedup distance (vertex-tangent dup skip).
+  function findCrossings(poly, cutA, cutB, segIntFn, eps){
+    var e2 = (eps || 0.5); e2 = e2 * e2;
+    var arr = [];
+    for (var i = 0; i < poly.length; i++){
+      var hit = segIntFn(poly[i], poly[(i + 1) % poly.length], cutA, cutB);
+      if (!hit) continue;
+      var dup = false;
+      for (var k = 0; k < arr.length; k++){
+        var dx = arr[k].point[0] - hit.point[0];
+        var dy = arr[k].point[1] - hit.point[1];
+        if (dx*dx + dy*dy < e2){ dup = true; break; }
+      }
+      if (!dup) arr.push({ edgeIdx: i, t: hit.t1, point: hit.point });
+    }
+    return arr;
+  }
   global.TM = global.TM || {};
   global.TM.MapEditor = global.TM.MapEditor || {};
   global.TM.MapEditor.polyUtils = {
@@ -190,7 +251,10 @@
     divRand: divRand,
     hexToRgb: hexToRgb,
     rgbaStr: rgbaStr,
-    makeLayer: makeLayer
+    makeLayer: makeLayer,
+    clipPolygonToRect: clipPolygonToRect,
+    cropDivisionGeometry: cropDivisionGeometry,
+    findCrossings: findCrossings
   };
 
 })(typeof window !== 'undefined' ? window : this);

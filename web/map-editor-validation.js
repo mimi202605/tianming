@@ -28,6 +28,54 @@
     return issues;
   }
 
+  function checkSelfIntersection(d){
+    var issues = [];
+    var poly = d.polygon;
+    if (!poly || poly.length < 4) return issues;
+    var n = poly.length;
+    if (n > 600) return issues;  // O(n^2) cap
+    for (var i = 0; i < n; i++){
+      var a1 = poly[i], a2 = poly[(i + 1) % n];
+      for (var j = i + 1; j < n; j++){
+        if ((j + 1) % n === i || (i + 1) % n === j) continue;  // skip adjacent edges
+        if (_segCross(a1, a2, poly[j], poly[(j + 1) % n])){
+          issues.push({ level: 'error', code: 'GEO_SELFINT', msg: 'polygon 自相交 (边 ' + i + ' x ' + j + ')' });
+          return issues;
+        }
+      }
+    }
+    return issues;
+  }
+  function _segCross(p1, p2, p3, p4){
+    function ccw(a, b, c){ return (c[1]-a[1])*(b[0]-a[0]) - (b[1]-a[1])*(c[0]-a[0]); }
+    var d1 = ccw(p3, p4, p1), d2 = ccw(p3, p4, p2), d3 = ccw(p1, p2, p3), d4 = ccw(p1, p2, p4);
+    return (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)));
+  }
+  function checkIsolated(d, allDivs){
+    if (!allDivs || allDivs.length <= 1) return [];
+    if (!d.neighbors || d.neighbors.length === 0){
+      return [{ level: 'warn', code: 'NB_ISOLATED', msg: '无邻接·孤岛 (寻路/贸易不可达)' }];
+    }
+    return [];
+  }
+
+  function checkTimeline(d){
+    var issues = [];
+    var est = d.establishedYear, abol = d.abolishedYear;
+    if (est != null && abol != null && est >= abol){
+      issues.push({ level: 'error', code: 'TL_RANGE', msg: 'establishedYear(' + est + ') >= abolishedYear(' + abol + ')' });
+    }
+    if (Array.isArray(d.timeline)){
+      for (var i = 0; i < d.timeline.length; i++){
+        var snap = d.timeline[i];
+        var y = snap && snap.year;
+        if (y == null) continue;
+        if (est != null && y < est){ issues.push({ level: 'warn', code: 'TL_BEFORE', msg: 'timeline 年(' + y + ') 早于 established(' + est + ')' }); }
+        if (abol != null && y >= abol){ issues.push({ level: 'warn', code: 'TL_AFTER', msg: 'timeline 年(' + y + ') 不早于 abolished(' + abol + ')' }); }
+      }
+    }
+    return issues;
+  }
   function checkLevel(d, dynastyId){
     var dyn = TM.MapEditor.dynasty.get(dynastyId);
     var allowed = (dyn.levels || []).map(function(L){ return L.key; });
@@ -147,11 +195,14 @@
   function validateOne(d, allDivs, dynastyId){
     var all = [];
     all = all.concat(checkGeometry(d));
+    all = all.concat(checkSelfIntersection(d));
+    all = all.concat(checkTimeline(d));
     all = all.concat(checkLevel(d, dynastyId));
     all = all.concat(checkAutonomy(d));
     all = all.concat(checkRatioMap(d));
     all = all.concat(checkPopulationConsistency(d));
     all = all.concat(checkNeighborSymmetry(d, allDivs));
+    all = all.concat(checkIsolated(d, allDivs));
     all = all.concat(checkCapitalChild(d, allDivs));
     return all;
   }
@@ -305,6 +356,8 @@
   global.TM.MapEditor.validation = {
     validateOne: validateOne,
     validateAll: validateAll,
+    checkSelfIntersection: checkSelfIntersection,
+    checkTimeline: checkTimeline,
     summarize: summarize,
     bindChip: bindChip,
     updateChip: updateChip

@@ -96,22 +96,8 @@
   }
 
   function findCrossings(poly, cutA, cutB, segIntFn){
-    var arr = [];
-    for (var i = 0; i < poly.length; i++){
-      var p1 = poly[i];
-      var p2 = poly[(i + 1) % poly.length];
-      var hit = segIntFn(p1, p2, cutA, cutB);
-      if (hit){
-        var dup = false;
-        for (var k = 0; k < arr.length; k++){
-          var dx = arr[k].point[0] - hit.point[0];
-          var dy = arr[k].point[1] - hit.point[1];
-          if (dx*dx + dy*dy < 0.25){ dup = true; break; }
-        }
-        if (!dup) arr.push({ edgeIdx: i, t: hit.t1, point: hit.point });
-      }
-    }
-    return arr;
+    // unified·see poly-utils.findCrossings (single source)
+    return ME.polyUtils.findCrossings(poly, cutA, cutB, segIntFn, 0.5);
   }
 
   // ─── merge preview ─────────────────────────────────────

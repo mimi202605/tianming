@@ -363,25 +363,8 @@
   // 找 polygon 与切线的所有交·返回 [{ edgeIdx, t, point }]
   // dedup·vertex hit 会被相邻 2 edge 各报一次·按 distance < EPS 去重
   function findCrossings(poly, cutA, cutB){
-    var crossings = [];
-    for (var i = 0; i < poly.length; i++){
-      var p1 = poly[i];
-      var p2 = poly[(i + 1) % poly.length];
-      var hit = segmentIntersect(p1, p2, cutA, cutB);
-      if (hit){
-        // vertex tangent·t1 ≈ 1 (终点) 时·下条边的 t1 ≈ 0 会同点·跳后者
-        var dup = false;
-        for (var k = 0; k < crossings.length; k++){
-          var dx = crossings[k].point[0] - hit.point[0];
-          var dy = crossings[k].point[1] - hit.point[1];
-          if (dx*dx + dy*dy < EPS*EPS){ dup = true; break; }
-        }
-        if (!dup){
-          crossings.push({ edgeIdx: i, t: hit.t1, point: hit.point });
-        }
-      }
-    }
-    return crossings;
+    // unified·see poly-utils.findCrossings (single source)
+    return ME.polyUtils.findCrossings(poly, cutA, cutB, segmentIntersect, EPS);
   }
 
   // 把用户两点延伸成"穿过整个 bbox"的长线·让用户能在 polygon 内部点 2 点画方向·算法自动延到边
@@ -721,12 +704,36 @@
     return mergeDivisions(ids);
   }
 
+  function cropSelectedToBounds(){
+    var sel = ME.getSelected();
+    if (!sel || !sel.length){ meAlert('请先选省·V 工具'); return false; }
+    var pu = ME.polyUtils;
+    if (!pu || !pu.cropDivisionGeometry){ meAlert('polyUtils 未加载'); return false; }
+    var map = ME.EDITOR.map;
+    var W = map.bitmapWidth || 0, H = map.bitmapHeight || 0;
+    if (!W || !H){ meAlert('无底图边界 (bitmapWidth/Height)·先载底图或设尺寸'); return false; }
+    var cropped = 0, emptied = 0;
+    ME.commitMutation('crop ' + sel.length + ' to bounds', function(){
+      sel.forEach(function(d){
+        var r = pu.cropDivisionGeometry(d, 0, 0, W, H);
+        if (r.empty){ emptied++; return; }
+        d.polygon = r.polygon;
+        d.extraPolygons = r.extraPolygons;
+        d.holes = r.holes;
+        cropped++;
+      });
+    });
+    if (global.meToast) meToast('裁剪 ' + cropped + ' 省到边界' + (emptied ? '·' + emptied + ' 省全出界已跳过' : ''), emptied ? 'warn' : 'success');
+    return true;
+  }
+
   // expose
   global.TM = global.TM || {};
   global.TM.MapEditor = global.TM.MapEditor || {};
   global.TM.MapEditor.mergeSplit = {
     mergeDivisions: mergeDivisions,
     mergeSelected: mergeSelected,
+    cropSelectedToBounds: cropSelectedToBounds,
     splitDivisionByLine: splitDivisionByLine,
     extendCut: _extendCut,
     polygonBbox: _polygonBbox,

@@ -1100,6 +1100,10 @@
       }
       if (TM.MapEditor.mergeSplit) TM.MapEditor.mergeSplit.mergeSelected();
     }
+    else if ((k === 'c' || k === 'C') && e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey){
+      // Shift+C·crop selected divisions to bitmap bounds (裁剪选省到底图边界)
+      if (TM.MapEditor.mergeSplit) TM.MapEditor.mergeSplit.cropSelectedToBounds();
+    }
     else if (k === 's' || k === 'S') ME.setTool('split');
     else if (k === 't' || k === 'T') ME.setTool('text');
     else if (k === '+' && e.shiftKey == false){
