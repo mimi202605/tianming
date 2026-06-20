@@ -511,6 +511,21 @@
     d.lastYearNet = net * 12;
   }
 
+  // S1-S4·人口自下而上 取叶(2026-06-20 真机修)：getLeafDivisions(ah) 默认只取 'player' faction
+  // (getTopLevelDivisions: ah[factionId||'player'])·须遍历所有 faction·否则 NPC 势力地块人口静止。
+  function _allLeafDivisions(G) {
+    var ah = G && G.adminHierarchy;
+    if (!ah) return [];
+    var IB = global.IntegrationBridge;
+    if (!IB || typeof IB.getLeafDivisions !== 'function') return [];
+    var leaves = [];
+    Object.keys(ah).forEach(function(facId) {
+      var fl = IB.getLeafDivisions(ah, facId) || [];
+      for (var i = 0; i < fl.length; i++) { if (leaves.indexOf(fl[i]) < 0) leaves.push(fl[i]); }
+    });
+    return leaves;
+  }
+
   // S1·人口自下而上：叶级增长(先只接本地民心)·写叶 populationDetail·national = Σ叶 增量同步。
   // 详设 docs/population-bottom-up-redesign-2026-06.md §2.1-2.2。S2 再接粮食供需/生活/赋役，S3 调粮。
   function _tickPopulationLeafGrowth(ctx, mr) {
@@ -530,10 +545,8 @@
     // 丁/户比例(叶级先共享全国比例·S2 视需叶级化)
     var dingRatio = P.national.ding / Math.max(1, P.national.mouths);
     var mphh = P.national.mouths / Math.max(1, P.national.households);
-    // 遍历叶·各叶按本地民心算生死·写叶 populationDetail
-    var IB = global.IntegrationBridge;
-    var leaves = (IB && typeof IB.getLeafDivisions === 'function' && G.adminHierarchy)
-      ? (IB.getLeafDivisions(G.adminHierarchy) || []) : [];
+    // 遍历叶(2026-06-20 真机修：遍历所有 faction·非仅 player)·各叶按本地民心算生死·写叶 populationDetail
+    var leaves = _allLeafDivisions(G);
     var totBirths = 0, totDeaths = 0, totNet = 0;
     leaves.forEach(function(leaf) {
       var pd = leaf && leaf.populationDetail;
@@ -898,9 +911,7 @@
   function _tickMigrationLeaf(ctx, mr, capital) {
     var G = global.GM;
     var P = G.population;
-    var IB = global.IntegrationBridge;
-    var leaves = (IB && typeof IB.getLeafDivisions === 'function' && G.adminHierarchy)
-      ? (IB.getLeafDivisions(G.adminHierarchy) || []) : [];
+    var leaves = _allLeafDivisions(G);  // (2026-06-20 真机修：遍历所有 faction)
     if (!leaves.length) return;
     var dingRatio = P.national.ding / Math.max(1, P.national.mouths);
     var mphh = P.national.mouths / Math.max(1, P.national.households);
