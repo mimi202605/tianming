@@ -406,6 +406,10 @@ async function _endTurnCore(){
     if (GM.turn % _monthTurns !== 0) return;
 
     var _mCfg = (P.mechanicsConfig && P.mechanicsConfig.chronicleConfig) || {};
+    // 【降本·2026-06-19】月度纪事为孤儿 LLM 调用——GM.monthlyChronicles 全代码库零消费端
+    // (仅本函数自读续连贯 + save-lifecycle 存档·无 UI/无记忆/无 prompt 注入)·默认停发省每月一次后台调用·
+    // 年度正史走 ChronicleSystem 独立链路(monthDrafts·非 LLM)不受影响·剧本可设 chronicleConfig.monthlyEnabled=true 显式恢复。
+    if (!_mCfg.monthlyEnabled) return;
     var _wordLimit = _mCfg.monthlyWordLimit || 200;
     var _narrator = _mCfg.narratorRole || '史官';
     var _style = (P.conf && P.conf.style) || '';
@@ -655,6 +659,13 @@ EndTurnHooks.register('after', function() {
       if (_eL.length) _edictText = _eL.join('\n  ');
     }
 
+    // 【史实顾问 agent·S2】开关开且未回落时·史实顾问 agent 接管(逼引证真实先例·替模型脑内臆测)·此写死 hist_check 跳；默认关/演义模式/连失回落 → 原 hist_check 原样跑零回归
+    try {
+      if (typeof window !== 'undefined' && window.TM && window.TM.HistoryAdvisor && window.TM.HistoryAdvisor.shouldHandle(GM)) {
+        await window.TM.HistoryAdvisor.run(GM, { edictText: _edictText, narrative: _histSnapshot, turn: _turnSnapshot, mode: mode, refText: (mode === 'strict_hist' ? (P.conf && P.conf.refText) : ''), era: (sc && sc.era) || '', role: (sc && sc.role) || '' });
+        return;
+      }
+    } catch (_haE) { try { console.warn('[史实顾问 agent] 失败·回落 hist_check:', _haE); } catch(_){} }
     var checkPrompt = '你是历史顾问 AI·剧本：' + (sc.era||'') + '·' + (sc.role||'') + '\n\n';
     checkPrompt += '【任务·识别玩家本回合诏令/行为里·与该时代历史逻辑相悖之处·并预测现实必然引起的反噬】\n';
     checkPrompt += '【铁律】\n';

@@ -88,6 +88,8 @@ web/vendor/models/Xenova/
 .env
 .env.*
 secrets.json
+**/.guoshi-live-config.json
+**/.guoshi-live*.json
 **/server-secret.key
 **/*.sqlite
 **/*.sqlite3

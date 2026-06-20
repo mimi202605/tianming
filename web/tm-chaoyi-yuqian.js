@@ -344,10 +344,29 @@ async function _yq2_doAskAdvisor(name, question) {
   prompt += '皇帝再深问：' + question + '\n';
   prompt += '坦白度:' + candor + '，' + (candor>80?'推心置腹':candor>50?'大致坦言':'揣摩圣意') + '\n';
   prompt += '请答，可比前言更直率（密谈氛围）。' + (typeof _aiDialogueWordHint === 'function' ? _aiDialogueWordHint() : '') + '\n返回纯文本。';
+  // 【降本2026-06-19·time】深问流式化——占位气泡 onChunk 渐显(对齐开场陈言 _yq2_oneAdvisorSpeak·玩家不再干等满)
+  var _dqDiv = addCYBubble(name, '…', false);
+  var _dqBubble = _dqDiv && _dqDiv.querySelector ? _dqDiv.querySelector('.cy-bubble') : null;
+  var _dqRaf = false;
+  var _dqCtrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   try {
-    var raw = await callAI(prompt, (typeof _aiDialogueTok==='function'?_aiDialogueTok("cy", 1):500));
-    var line = raw.trim();
-    addCYBubble(name, '〔深言〕' + escHtml(line), false, true);
+    var raw = await callAIMessagesStream(
+      [{role:'user', content: prompt}],
+      (typeof _aiDialogueTok==='function'?_aiDialogueTok("cy", 1):500),
+      { signal: _dqCtrl ? _dqCtrl.signal : undefined,
+        tier: (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined,  // M3·御前走次 API
+        onChunk: function(txt) {
+          if (!_dqBubble || _dqRaf) return;
+          _dqRaf = true;
+          requestAnimationFrame(function() {
+            _dqRaf = false;
+            _dqBubble.textContent = '〔深言〕' + (txt || '');
+          });
+        } }
+    );
+    var line = (raw || '').trim();
+    if (_dqBubble) _dqBubble.innerHTML = '〔深言〕' + escHtml(line);
+    else addCYBubble(name, '〔深言〕' + escHtml(line), false, true);
     if (CY._yq2.record !== 'secret') _cy_jishiAdd('yuqian', CY._yq2.topic, name, line, { deep: true });
   } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}
   _yq2_offerFollowUp();

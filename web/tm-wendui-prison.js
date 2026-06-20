@@ -514,7 +514,7 @@
     ];
 
     try {
-      var reply = await global.callAIMessagesStream(msgs, 200, { temperature: 0.8 });
+      var reply = await global.callAIMessagesStream(msgs, 200, { temperature: 0.8, tier: (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined });  // 【降本2026-06-19】狱中对话走次 API(对齐问对/廷议)
       if (typeof reply === 'string') reply = reply.trim();
       else if (reply && reply.text) reply = reply.text.trim();
       else reply = '(罪臣沉默良久·不应)';

@@ -537,7 +537,7 @@ async function _offMaterialize(deptName, posName) {
       + '优先用真实历史人物，找不到则虚构。\n'
       + '已有角色：' + _existNames.slice(0,15).join('、') + '\n'
       + '返回JSON：{"name":"人名","personality":"性格","intelligence":60,"administration":60,"military":40,"loyalty":60,"ambition":50}';
-    var c = await callAI(prompt, 500);
+    var c = await callAI(prompt, 500, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);  // 【降本2026-06-19】角色具象化(机械生成)走次 API
     var parsed = extractJSON(c);
     if (parsed && parsed.name) {
       if (!GM.chars) GM.chars = [];

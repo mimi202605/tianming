@@ -1007,7 +1007,7 @@ async function _wtSend() {
     + '\n\n返回 JSON：{"type":"rule|correction|content|directive","category":"narrative|setting|hardChange|edictSubstitute|absolute","structured":{"target":"","action":"","scope":"","forbidden":"","measurable":"","condition":""},"hardChange":{"path":"","op":"set|add|mul","value":null},"edictText":"","edictChannel":"","interpretation":"...","ambiguity":["..."],"plan":"..."}';
 
   try {
-    var resp = await callAI(prompt, 900);
+    var resp = await callAI(prompt, 900, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);  // 【降本2026-06-19】指令解析(机械抽取)走次 API
     var th = _$('wt-thinking'); if (th) th.remove();
     var parsed = (typeof extractJSON === 'function') ? extractJSON(resp) : null;
     if (!parsed) parsed = { interpretation: resp || content, type: type, structured: {}, ambiguity: [], plan: '将在下回合推演时参考此条指令' };

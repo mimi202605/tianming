@@ -735,6 +735,10 @@
         html += '<span style="color:var(--txt-d);">T' + esc(p.lastTurn) + ' · 应用 ' + esc(p.appliedActions) + ' 跳 ' + esc(p.skippedActions) + ' 合 ' + esc(p.mergedActions) + '</span>';
         html += '</div>';
         if (p.rationale) html += '<div style="font-size:0.71rem;color:var(--txt-d);padding-left:1.2rem;margin-bottom:0.15rem;">"' + esc(p.rationale) + '..."</div>';
+        if (p.goals && p.goals.active > 0) {
+          var _gtop = (p.goals.top || []).map(function(g){ return esc(g.desc) + '(' + esc(g.horizon === 'long' ? '长' : '短') + '·' + esc(g.step) + (g.note ? '·' + esc(g.note) : '') + ')'; }).join('，');
+          html += '<div style="font-size:0.71rem;color:var(--gold);padding-left:1.2rem;margin-bottom:0.2rem;">目标 ' + esc(p.goals.active) + ' 活跃' + (p.goals.achieved ? ' · 已达成 ' + esc(p.goals.achieved) : '') + (_gtop ? ' · ' + _gtop : '') + '</div>';
+        }
       });
       if (status.perFacStatus.length > 20) html += '<div style="color:var(--txt-d);margin-top:0.3rem;">... 还有 ' + (status.perFacStatus.length - 20) + ' 个势力未显示</div>';
     } else {

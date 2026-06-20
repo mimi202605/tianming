@@ -98,6 +98,28 @@
     return 0;
   }
 
+  function _factionStrength(f) {
+    if (f && f.derivedStrength && typeof f.derivedStrength.value === 'number') return f.derivedStrength.value;
+    if (f && typeof f.strength === 'number') return f.strength;
+    return 50;
+  }
+  // 非玩家最强 N 个势力名(排除已灭/0战力)·势力 agent 激活策略"3 固定最强"用
+  function _topNStrongest(facs, playerNames, n) {
+    if (!Array.isArray(facs)) return [];
+    return facs.filter(function(f){
+      if (!f || !f.name || _isPlayerFaction(f, playerNames)) return false;
+      if (/destroyed|defeated|absorbed|gone|eliminated/i.test(String(f.status||''))) return false;
+      return _factionStrength(f) > 0;
+    }).sort(function(a, b){ return _factionStrength(b) - _factionStrength(a); }).slice(0, n).map(function(f){ return f.name; });
+  }
+  // 观测/调试：本回合激活名册(3 固定最强 + 5 动态相关度)
+  function getActivationRoster(turn) {
+    if (!global.GM || !Array.isArray(global.GM.facs)) return { fixed: [], note: 'no facs' };
+    var pn = _resolvePlayerFactionNames();
+    return { turn: turn, fixed: _topNStrongest(global.GM.facs, pn, 3), dynamicSlots: 5, policy: '3-fixed-strongest + 5-relevance',
+      enabled: (typeof global.agentFlagOn === 'function') ? global.agentFlagOn('factionAgentEnabled') : false };
+  }
+
   // 选 1 个 NPC fac (按战略评分加权随机·已跑 fac 不重复)
   function _pickOneFac(turn) {
     if (!global.GM || !Array.isArray(global.GM.facs)) return null;
@@ -111,6 +133,18 @@
       return true;
     });
     if (npcs.length === 0) return null;
+    // 【势力 agent 激活策略·2026-06-19·3 固定最强 + 5 动态相关度】开关 factionAgentEnabled·
+    //   开时保证非玩家最强三个每回合优先思考(固定槽)·跑满后剩 5 槽落下方现有相关度评分(玩家互动/张力/危机/防饿死·纯运行时·自然随剧本变)。关时走原加权随机·零回归。
+    if (typeof global.agentFlagOn === 'function' ? global.agentFlagOn('factionAgentEnabled') : !!(global.P && ((global.P.ai && global.P.ai.factionAgentEnabled) || (global.P.conf && global.P.conf.factionAgentEnabled)))) {
+      var _top3 = _topNStrongest(global.GM.facs, playerFacNames, 3);
+      var _top3unrun = npcs.filter(function(f){ return _top3.indexOf(f.name) >= 0; });
+      if (_top3unrun.length) {
+        _top3unrun.sort(function(a, b){ return _factionStrength(b) - _factionStrength(a); });
+        _recordPickLog(turn, 'fixed-top3', _top3unrun.map(function(f){ return { fac: f, score: _factionStrength(f), reasons: ['fixed-top3-strongest'] }; }), _top3unrun[0]);
+        return _top3unrun[0];
+      }
+      // 3 固定槽已跑满 → 落到下方相关度选(填动态 5 槽)
+    }
     // 优先战争、财政危机、刚被玩家干预过的势力；没有 action engine 时退回强度权重。
     var engine = global.TM && global.TM.FactionActionEngine;
     var ranked = npcs.map(function(f){
@@ -268,6 +302,8 @@
     SPEED_PRESETS: SPEED_PRESETS,
     _runOneInTurn: _runOneInTurn,
     _pickOneFac: _pickOneFac,
+    _topNStrongest: _topNStrongest,
+    getActivationRoster: getActivationRoster,
     _resolvePlayerFactionNames: _resolvePlayerFactionNames,
     _isPlayerFaction: _isPlayerFaction,
     DEFAULTS: DEFAULTS

@@ -36,22 +36,27 @@
     tianfu:        { name: '田赋',         base: 'land',         rate: 0.05,  enabled: true,  dynasties: 'all' },
     dingshui:      { name: '丁税',         base: 'head',         rate: 0.01,  enabled: true,  dynasties: 'preQing' },
     caoliang:      { name: '漕粮',         base: 'land',         rate: 0.02,  enabled: true,  dynasties: 'MingQing' },
-    yanlizhuan:    { name: '盐利专',       base: 'consumption',  rate: 0.2,   enabled: true,  dynasties: 'HanTangMing' },
-    shipaiShui:    { name: '市舶税',       base: 'trade',        rate: 0.1,   enabled: false, dynasties: 'SongMingQing' },
+    yanlizhuan:    { name: '盐利专卖',     base: 'consumption',  rate: 0.2,   enabled: true,  dynasties: 'HanTangSongMing' },
+    shipaiShui:    { name: '市舶税',       base: 'trade',        rate: 0.1,   enabled: true,  dynasties: 'SongMingQing' },
     quanShui:      { name: '权税/关税',    base: 'trade',        rate: 0.05,  enabled: true,  dynasties: 'all' },
     juanNa:        { name: '捐纳',         base: 'custom',       rate: 0,     enabled: false, dynasties: 'MingQing' },
     qita:          { name: '其他杂税',     base: 'head',         rate: 0.005, enabled: true,  dynasties: 'all' },
     shangshui:     { name: '商税',         base: 'commerce',     rate: 0.03,  enabled: true,  dynasties: 'SongMingQing' },
     chashui:       { name: '茶税',         base: 'consumption',  rate: 0.1,   enabled: true,  dynasties: 'TangSong' },
     jiushui:       { name: '酒税',         base: 'consumption',  rate: 0.15,  enabled: true,  dynasties: 'all' },
-    tieshui:       { name: '铁税',         base: 'mining',       rate: 0.1,   enabled: false, dynasties: 'HanTang' },
-    tongshui:      { name: '铜税',         base: 'mining',       rate: 0.1,   enabled: false, dynasties: 'HanTang' },
+    tieshui:       { name: '坑冶税(铁)',   base: 'mining',       rate: 0.1,   enabled: true,  dynasties: 'HanTangSongMing' },
+    tongshui:      { name: '坑冶税(铜)',   base: 'mining',       rate: 0.08,  enabled: true,  dynasties: 'TangSong' },
     yongshou:      { name: '庸税（折绢）', base: 'corvee',       rate: 0.02,  enabled: true,  dynasties: 'Tang' },
     diaoshou:      { name: '调税（绢布）', base: 'household',    rate: 0.015, enabled: true,  dynasties: 'Tang' },
     suanmin:       { name: '算缗',         base: 'wealth',       rate: 0.08,  enabled: false, dynasties: 'Han' },
     imperialEstate:{ name: '皇庄租',       base: 'imperial',     rate: 0.15,  enabled: true,  dynasties: 'MingQing', destination: 'neitang' },
     shuimoShui:    { name: '税磨税',       base: 'commerce',     rate: 0.02,  enabled: false, dynasties: 'SongYuan' },
-    zajuan:        { name: '杂捐',         base: 'household',    rate: 0.01,  enabled: true,  dynasties: 'all' }
+    zajuan:        { name: '杂捐',         base: 'household',    rate: 0.01,  enabled: true,  dynasties: 'all' },
+    // 宋特色财源(通用层·dynasty 标签限宋·惠及所有宋系剧本·非绍宋硬编)
+    jingzongzhi:   { name: '经总制钱',     base: 'commerce',     rate: 0.04,  enabled: true,  dynasties: 'Song' },
+    yuezhuangqian: { name: '月桩钱',       base: 'commerce',     rate: 0.025, enabled: true,  dynasties: 'Song' },
+    mianyiqian:    { name: '免役钱',       base: 'household',    rate: 0.02,  enabled: true,  dynasties: 'Song' },
+    hemaizhebo:    { name: '和买折帛钱',   base: 'household',    rate: 0.015, enabled: true,  dynasties: 'Song' }
   };
 
   var EXPENDITURE_EFFECTS_14 = {
@@ -908,7 +913,12 @@
 
   function normalizeTaxListForCascade(G, fc) {
     var taxes = [];
-    if (Array.isArray(fc && fc.taxes) && fc.taxes.length) {
+    // 数据驱动税制根治(2026-06)：剧本工坊/国师 authored 的 fiscalConfig.taxList(数组)为权威·**支持架空朝代**
+    //   (税制是剧本内容非引擎常量·dynasty 硬编码遇架空即失效)。未 authored 则回落 DEFAULT_TAXES(零回归)。
+    //   fc.taxes 若已是数组(旧式/enableTaxesByDynasty 前)亦兼容。
+    if (Array.isArray(fc && fc.taxList) && fc.taxList.length) {
+      taxes = fc.taxList.map(function(t) { return clone(t); });
+    } else if (Array.isArray(fc && fc.taxes) && fc.taxes.length) {
       taxes = fc.taxes.map(function(t) { return clone(t); });
     } else {
       taxes = DEFAULT_TAXES.map(function(t) { return clone(t); });
@@ -1704,8 +1714,17 @@
     var turnFracMonth = turnDays / 30;
     var total = { money: 0, grain: 0, cloth: 0 };
     var byArmy = {};
+    // 根治(2026-06·绍宋财政):军饷只结算玩家势力自己的军·非本势力军不上玩家国库账。
+    //   旧 bug:此处遍历 getArmies(全势力 initialTroops) 一律从玩家国库发饷=玩家替金军/群盗买单。
+    //   修:按 army.faction 匹配玩家势力名(与 _playerFactionNameForArmy/_isPlayerOwnedArmy 同源)。
+    //   向后兼容——无 faction 标记的军(旧剧本如天启)仍计入·行为不变·不回归。
+    var _P0 = global.P || {};
+    var _pfn = String((_P0.playerInfo && _P0.playerInfo.factionName) || _P0.playerFaction
+      || (G && Array.isArray(G.chars) ? ((G.chars.find(function(x){ return x && x.isPlayer; }) || {}).faction || '') : '')).trim();
     getArmies(G).forEach(function(army) {
       if (!army || army.destroyed) return;
+      var _af = String(army.faction || army.owner || '').trim();
+      if (_pfn && _af && _af !== _pfn && !army._edictBuilt) return;   // 非玩家势力军·不上玩家国库账
       var soldiers = safeNumber(army.soldiers, safeNumber(army.strength, safeNumber(army.size, 0)));
       if (soldiers <= 0) return;
       var moneyPay = army.monthlyMoneyPayPerSoldier != null ? safeNumber(army.monthlyMoneyPayPerSoldier, pay.money) : pay.money;
@@ -1906,6 +1925,45 @@
     }
   }
 
+  // ── ③ 运行时·玩家在游戏中改税制(通用·惠及所有剧本) ──────────────────────
+  //   reform: {op:'rate'|'add'|'remove', taxId, rate?, tax?}
+  //   写回 GM.fiscalConfig.taxList(getFiscalConfig 合并时覆盖剧本原表)→CascadeTax 下回合用新表重算。
+  //   民心后果:加重民负→民心降·减负→升(税率变化×100·系数可调)。玩家诏令/税制面板调此。
+  function applyPlayerTaxReform(reform) {
+    var G = getGame();
+    if (!G || !reform || !reform.op) return { ok: false, reason: 'no_game_or_reform' };
+    var fc = getFiscalConfig(G);
+    var src = (Array.isArray(fc.taxList) && fc.taxList.length) ? fc.taxList
+            : ((Array.isArray(fc.taxes) && fc.taxes.length) ? fc.taxes : DEFAULT_TAXES);
+    var tl = src.map(function(t){ return clone(t); });
+    function findIdx(id){ var i; for (i = 0; i < tl.length; i++) if (tl[i].id === id) return i; for (i = 0; i < tl.length; i++) if (tl[i].sourceTag === id || tl[i].name === id) return i; return -1; }
+    var change = null, burdenDelta = 0;
+    if (reform.op === 'rate') {
+      var i = findIdx(reform.taxId); if (i < 0) return { ok: false, reason: 'tax_not_found' };
+      var oldR = safeNumber(tl[i].rate, 0), newR = Math.max(0, Math.min(1, safeNumber(reform.rate, oldR)));
+      burdenDelta = newR - oldR; tl[i].rate = newR;
+      change = { op: 'rate', id: tl[i].id, name: tl[i].name, oldRate: oldR, newRate: newR };
+    } else if (reform.op === 'remove') {
+      var ri = findIdx(reform.taxId); if (ri < 0) return { ok: false, reason: 'tax_not_found' };
+      burdenDelta = -safeNumber(tl[ri].rate, 0); change = { op: 'remove', id: tl[ri].id, name: tl[ri].name }; tl.splice(ri, 1);
+    } else if (reform.op === 'add') {
+      if (!reform.tax || !reform.tax.id) return { ok: false, reason: 'bad_tax' };
+      if (findIdx(reform.tax.id) >= 0) return { ok: false, reason: 'dup_id' };
+      tl.push(clone(reform.tax)); burdenDelta = safeNumber(reform.tax.rate, 0);
+      change = { op: 'add', id: reform.tax.id, name: reform.tax.name || reform.tax.id };
+    } else { return { ok: false, reason: 'unknown_op:' + reform.op }; }
+    if (!G.fiscalConfig) G.fiscalConfig = {};
+    G.fiscalConfig.taxList = tl;   // 运行时覆盖·CascadeTax 下回合用新表
+    var minxinDelta = -Math.round(burdenDelta * 100);
+    try { var mx = G.minxin; if (mx) {
+      if (typeof mx.trueIndex === 'number') mx.trueIndex = Math.max(0, Math.min(100, mx.trueIndex + minxinDelta));
+      if (typeof mx.index === 'number') mx.index = Math.max(0, Math.min(100, mx.index + minxinDelta));
+    } } catch (_) {}
+    G._fiscalDirty = true;
+    G._lastTaxReform = { turn: G.turn || 0, change: change, minxinDelta: minxinDelta };
+    return { ok: true, change: change, minxinDelta: minxinDelta, taxCount: tl.length };
+  }
+
   var api = {
     VERSION: 1,
     DEFAULT_TAXES: DEFAULT_TAXES,
@@ -1925,7 +1983,8 @@
     adjustPlayerDivisionCorruption: adjustPlayerDivisionCorruption,
     triggerPlayerSurvey: triggerPlayerSurvey,
     spendFromGuoku: spendFromGuoku,
-    addToGuoku: addToGuoku
+    addToGuoku: addToGuoku,
+    applyPlayerTaxReform: applyPlayerTaxReform
   };
 
   global.FiscalEngine = global.FiscalEngine || {};

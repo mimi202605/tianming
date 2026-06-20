@@ -928,6 +928,7 @@ function fullLoadGame(data){
     // 确保所有字段有默认值
     _ensureGMDefaults();
     _ensurePDefaults();
+    try { if (typeof TMArmyUnits !== 'undefined') TMArmyUnits.ensureAllArmies(GM); } catch (e) {}   // 御驾亲征接入 Phase0:army.composition→units[] 编制地基(载入一次性·幂等·永不崩·不改 composition)
     if (typeof buildCoreMetricLabels === 'function') buildCoreMetricLabels();
 
     // 角色完整字段补齐（兼容旧存档/手工导入的 JSON）

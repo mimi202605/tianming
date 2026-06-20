@@ -365,6 +365,13 @@
           // 闭合·新建 division
           var poly = EDITOR.penPoints.slice();
           if (_selfIntersects(poly) && global.meToast) meToast('新地块边界自相交·请检查顶点', 'warn', 2200);
+          // 子绘制模式：把所画多边形裁到父(省/路)内·建为下级(府/县)·挂 parentId·保持模式可连画·Esc 退出
+          if (EDITOR.childDrawParentId){
+            ME.createChildDivision(poly);
+            EDITOR.penPoints = [];
+            ME.requestRender();
+            return;
+          }
           var d = ME.createDivision({
             polygon: poly,
             name: '新省 ' + (EDITOR.map.divisions.length + 1)
@@ -1116,7 +1123,9 @@
     }
     else if (k === ' ') { EDITOR._spaceDown = true; EDITOR.canvas.style.cursor = 'grab'; }
     else if (k === 'Escape'){
-      if (EDITOR.activeTool === 'pen' && EDITOR.penPoints.length){
+      if (EDITOR.childDrawParentId){
+        ME.exitChildDraw();
+      } else if (EDITOR.activeTool === 'pen' && EDITOR.penPoints.length){
         EDITOR.penPoints = [];
         ME.requestRender();
       } else if (EDITOR.activeTool === 'split' && EDITOR.splitState){

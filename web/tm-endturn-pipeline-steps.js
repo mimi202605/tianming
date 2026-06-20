@@ -363,6 +363,22 @@
       writes: ['ctx.results.aiResult', 'GM._turnAiResults (兜底镜像)', 'GM._postTurnJobs', 'GM._aiMemory', 'GM._epitaphs', 'ctx.input._aiInferRan']
     },
     {
+      // 御驾亲征接入 Phase2·会战阶段(step 2.5):AI 推演已解算·涉玩家势力军的战斗被咽喉拦截入延后队列·此处亲征/委之
+      // ★flag GM._yujiaQinzheng 默认 OFF → pending 恒空 → runPending no-op → 零行为变更。失败 continue 不阻断回合。
+      name: 'goujia-qinzheng',
+      fn: async function(ctx) {
+        try {
+          if (typeof window !== 'undefined' && window.TMBattleTurn && typeof window.TMBattleTurn.runPending === 'function') {
+            await window.TMBattleTurn.runPending(typeof GM !== 'undefined' ? GM : null);
+          }
+        } catch (e) { try { console.warn('[pipeline.goujia-qinzheng]', e); } catch(_){} }
+        return ctx;
+      },
+      onError: 'continue',
+      reads: ['GM.armies', 'ctx.results.aiResult'],
+      writes: ['GM.armies (战术战果回填·走原 applyBattleResult)']
+    },
+    {
       name: 'post-ai-edict',
       // slice 4·2026-05-07·迁 Phase 2.5 (applyEdictActions) + Phase 2.6 (TyrantActivitySystem.applyEffects)
       // 不含 Phase 3.5 (aiEdictEfficacyAudit·已后台化·依赖 aiResult+edicts·留 slice 5/7 一并)
@@ -469,12 +485,18 @@
         // Phase 3.5·御批回听 enqueue 后台 job·依赖 aiResult+edicts·两者都已在 ctx
         try {
           if (typeof aiEdictEfficacyAudit === 'function' && typeof P !== 'undefined' && P.ai && P.ai.key) {
+            // 【诏令执行督查 agent·S2】开关开且未回落时·督查 agent 接管(追所有活诏令跨回合生命周期)·此写死审计跳；默认关/连失回落 → aiEdictEfficacyAudit 原样跑零回归
+            var _gmEO = (typeof GM !== 'undefined') ? GM : (typeof window !== 'undefined' ? window.GM : null);
+            var _runEdictAudit = function(){
+              try { if (typeof window !== 'undefined' && window.TM && window.TM.EdictOversight && _gmEO && window.TM.EdictOversight.shouldHandle(_gmEO)) return window.TM.EdictOversight.run(_gmEO); } catch(_eoE){}
+              return aiEdictEfficacyAudit(ar, ctx.input.edicts || []);
+            };
             if (typeof _enqueuePostTurnJob === 'function') {
               _enqueuePostTurnJob('edict_efficacy', function(){
-                return aiEdictEfficacyAudit(ar, ctx.input.edicts || []).catch(function(e){ try { console.warn('[pipeline.systems] 御批回听后台失败', e); } catch(_){} });
+                return Promise.resolve(_runEdictAudit()).catch(function(e){ try { console.warn('[pipeline.systems] 御批回听后台失败', e); } catch(_){} });
               });
             } else {
-              await aiEdictEfficacyAudit(ar, ctx.input.edicts || []);
+              await _runEdictAudit();
             }
           }
         } catch(_efE) { try { console.warn('[pipeline.systems] 御批回听失败', _efE); } catch(_){} }

@@ -714,10 +714,11 @@
             maxRetries: 1,
             priority: 'background',
             timeoutMs: 30000,
-            fetchMaxRetries: 1
+            fetchMaxRetries: 1,
+            tier: (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined   // 【降本2026-06-19】NPC行动池(后台批量)走次 API
           });
         } else if (typeof callAI === 'function') {
-          result = await callAI(prompt, 3000, null, undefined, {
+          result = await callAI(prompt, 3000, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined, {
             priority: 'background',
             timeoutMs: 30000,
             maxRetries: 1

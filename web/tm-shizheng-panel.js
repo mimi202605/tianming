@@ -862,8 +862,45 @@ function _mzShowSummary() {
     return { ch: c, replies: replies, containerId: containerId };
   }).filter(Boolean);
 
-  tasks.forEach(function(t){
-    _mzSummarizeOne(t.ch, t.replies, t.containerId, d.issue);
+  _mzSummarizeAll(tasks, d.issue);
+}
+
+// 【降本2026-06-19·count】N 臣建言归纳合并为单次 LLM 调用(原 _mzSummarizeOne 每臣一次·forEach 并发 N 次)·渲染块/按钮不变·合并失败/单臣/无key 自动退回逐个
+function _mzSummarizeAll(tasks, issue) {
+  var P = window.P || {};
+  if (!tasks || !tasks.length) return;
+  if (tasks.length === 1 || typeof callAI !== 'function' || !P.ai || !P.ai.key) {
+    tasks.forEach(function(t){ _mzSummarizeOne(t.ch, t.replies, t.containerId, issue); });
+    return;
+  }
+  var blocks = tasks.map(function(t, i){
+    return '【' + (i+1) + '·' + t.ch.name + '(' + (t.ch.officialTitle||t.ch.title||'') + ')】\n' + t.replies.join('\n');
+  }).join('\n\n');
+  var prompt = '以下为若干大臣在御前独召时就「' + (issue.title||'议题') + '」各自所进之奏对：\n\n' + blocks;
+  prompt += '\n\n【任务】对每位大臣·各以一段 60-120 字古典白话·精要归纳其立场·核心主张·建议策略(第三人称·如"该臣主张…"·不用"臣"字)。';
+  prompt += '\n返回纯 JSON：{"归纳":[{"name":"大臣名(须与上文完全一致)","summary":"归纳正文"}]}·无前言无解释。';
+  var _sumTier = (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined;
+  callAI(prompt, Math.min(2500, 400 + tasks.length * 320), null, _sumTier).then(function(reply){
+    var obj = (typeof extractJSON === 'function') ? extractJSON(reply) : null;
+    var arr = null;
+    if (obj) {
+      if (Array.isArray(obj['归纳'])) arr = obj['归纳'];
+      else if (Array.isArray(obj.summaries)) arr = obj.summaries;
+      else if (Array.isArray(obj.list)) arr = obj.list;
+      else if (Array.isArray(obj)) arr = obj;
+    }
+    if (!arr) throw new Error('解析失败');
+    var byName = {};
+    arr.forEach(function(o){ if (o && o.name) byName[String(o.name).trim()] = String(o.summary || '').trim(); });
+    tasks.forEach(function(t){
+      var target = document.getElementById(t.containerId);
+      var actBar = document.getElementById(t.containerId + '-act');
+      var txt = byName[t.ch.name] || (t.ch.name + '主张：' + (t.replies[0] || '').slice(0, 60));  // 该臣缺失→首言兜底
+      if (target) { target.textContent = txt; target.dataset.summary = txt; }
+      if (actBar) actBar.style.display = 'block';
+    });
+  }).catch(function(){
+    tasks.forEach(function(t){ _mzSummarizeOne(t.ch, t.replies, t.containerId, issue); });  // 合并失败→退回逐个(鲁棒)
   });
 }
 

@@ -1911,7 +1911,7 @@ function _renderUnifiedChanges(oldVars) {
       var annual = Number(r.annualAmount || 0);
       if ((status === 'scheduled' || status === 'updated' || r.recurring) && annual > 0) {
         var annualTip = escHtml((r.reason || '') + (r.name?'\u00B7'+r.name:'') + '\u00B7\u5E74\u4F8B ' + annual).slice(0, 100);
-        var annualWord = status === 'updated' ? '\u6539\u5E74\u4F8B' : '\u5E74\u4F8B';
+        var annualWord = status === 'updated' ? '\u6539\u5E74\u4F8B' : (status === 'scheduled' ? '\u5E74\u4F8B\u00B7\u4E0B\u56DE\u5408\u8D77' : '\u5E74\u4F8B');  // \u3010\u843D\u5730\u6838\u5BF9\u00B7Slice5\u00B72026-06\u3011\u65B0\u8BBE\u5E74\u4F8B\u5F53\u56DE\u5408\u4E0D\u62E8\u4F59\u989D(actualApplied=0)\u00B7\u6807"\u4E0B\u56DE\u5408\u8D77"\u514D\u73A9\u5BB6\u8BEF\u4EE5\u4E3A\u672C\u56DE\u5408\u5DF2\u5165/\u51FA\u5E93
         out.push('<span class="tr-reason-chip ' + signCls + '" title="' + annualTip + '">' + annualWord + '\u00B7' + label + '<span class="v">' + signChar + _rucFmtBig(annual) + '/\u5E74</span></span>');
       } else if (status === 'stopped' || status === 'removed') {
         var stopTip = escHtml((r.reason || '') + (r.name?'\u00B7'+r.name:'') + (annual ? '\u00B7\u539F\u5E74\u4F8B ' + annual : '')).slice(0, 100);
@@ -2301,13 +2301,14 @@ function _renderPersonnelChanges(personnelChanges) {
     var change = pc.change || pc.desc || '';
     var reason = pc.reason || '';
     var t = _pcType(change, reason);
-    html += '<div class="tr-person-row ' + t.cls + '">';
+    html += '<div class="tr-person-row ' + t.cls + (pc._applyFailed ? ' unapplied' : '') + '"' + (pc._applyFailed ? ' style="opacity:0.6;"' : '') + '>';
     html += '<span class="type">' + t.lbl + '</span>';
     html += '<span class="who">' + escHtml(pc.name) + '</span>';
     html += '<span class="from-to">';
     if (former) html += escHtml(former) + ' <span class="arrow">\u2192</span> ';
     html += escHtml(change);
     if (reason) html += ' \uFF08' + escHtml(reason) + '\uFF09';
+    if (pc._applyFailed) html += ' <span class="unapplied-badge" title="\u672A\u843D\u5730\u00B7\u8BE6\u89C1\u63A7\u5236\u53F0 GM._unappliedChanges" style="color:#c9534f;font-size:0.7rem;">\u26A0\u672A\u843D\u5730</span>';  // \u3010\u843D\u5730\u6838\u5BF9\u00B72026-06\u3011applier \u6807\u8BB0\u7684\u672A\u843D\u5730\u4EBA\u4E8B\u00B7\u6253\u6807\u800C\u975E\u5047\u663E
     html += '</span>';
     html += '</div>';
   });

@@ -658,13 +658,14 @@
           id: d.id,
           name: d.name,
           level: d.level,
-          parentId: d.dejureOwner || null,  // 暂用 dejureOwner·user 后期细化
+          parentId: d.parentId || d.dejureOwner || null,  // 优先用层级绘制设的真 parentId(子地块挂父)·回落 dejureOwner
           officialPosition: d.officialPosition,
           governor: d.governor,
           regionType: d.regionType,
           autonomy: d.autonomy,
           population: (d.populationDetail || {}).mouths || 0,
           populationDetail: d.populationDetail,
+          economyBase: d.economyBase,   // 田亩/商业/盐铁等·阶段1聚合(府县→省求和)需要
           prosperity: d.prosperity,
           taxLevel: d.taxLevel,
           terrain: d.terrain,
@@ -696,6 +697,8 @@
           return {
             id: d.id,
             name: d.name,
+            level: d.level,                  // 分级渲染：runtime 按 level 过滤(势力/省路/府县)
+            parentId: d.parentId || null,    // 层级：子地块(府县)挂父(省路)·聚合/分级用
             coords: flat,
             terrain: d.terrain,
             owner: d.dejureOwner || '',

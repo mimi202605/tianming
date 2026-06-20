@@ -132,6 +132,100 @@ function ok(cond, msg) {
     ok(resA.transcript.some(t => t.name === 'validateDraft'), 'transcript 含 validateDraft');
     ok(resA.finalValidation && typeof resA.finalValidation.ok === 'boolean', '返回 finalValidation');
 
+    console.log('— 刀1：remonstrate 进谏 → 停机等定夺·不施改 —');
+    const draftRem = AA.makeDraft({ name: '旧', factions: [{ name: '明' }] });
+    const callerRem = scriptedCaller([
+      { toolCalls: [{ name: 'remonstrate', input: { concern: '崇祯生于1611、万历1620年崩，让崇祯当万历之子辈分与生卒矛盾', severity: '史实', suggestion: '若要架空血缘，设为万历之孙更合史理' } }] }
+    ]);
+    const resRem = await AA.runAuthoringLoop(draftRem, '把崇祯设成万历的儿子', { caller: callerRem });
+    ok(resRem.stopReason === 'needsConfirmation', 'remonstrate 触发 stopReason=needsConfirmation');
+    ok(resRem.finished === true, 'remonstrate 视为本轮已收束(finished)');
+    ok(resRem.remonstrance && /崇祯/.test(resRem.remonstrance.concern), '返回 remonstrance.concern 异议内容');
+    ok(/万历之孙/.test(resRem.remonstrance.suggestion), '返回 remonstrance.suggestion 替代方案');
+    ok(resRem.remonstrance.severity === '史实', '返回 remonstrance.severity 硬伤类型');
+    ok(draftRem.name === '旧', '进谏时未对 draft 施改(停下来等定夺)');
+
+    console.log('— 刀1：玩家坚持后 priorConversation 续接 → 正常执行 —');
+    const callerRem2 = scriptedCaller([
+      { toolCalls: [{ name: 'applyEdit', input: { path: 'name', value: '崇祯·万历子' } }] },
+      { toolCalls: [{ name: 'finish', input: { summary: '已按玩家坚持执行' } }] }
+    ]);
+    const resRem2 = await AA.runAuthoringLoop(draftRem, '我坚持，就这么改', { caller: callerRem2, priorConversation: resRem.conversation });
+    ok(resRem2.finished && resRem2.stopReason === 'finish', '玩家坚持后续接·正常 finish');
+    ok(draftRem.name === '崇祯·万历子', '续接后按玩家坚持施改(进谏不阻断最终意志)');
+
+    console.log('— 刀2：checkHistory 自查证 + 低把握 flagUncertain + historyChecks 轨迹 —');
+    const draftHC = AA.makeDraft({ name: '万历中兴', factions: [{ name: '明' }], characters: [] });
+    const callerHC = scriptedCaller([
+      { toolCalls: [{ name: 'checkHistory', input: { facts: [
+        { claim: '张居正卒于1582年', verdict: '确信' },
+        { claim: '其门生某谋士的确切生卒', verdict: '不确定', note: '正史无载' }
+      ] } }] },
+      { toolCalls: [{ name: 'applyPush', input: { path: 'characters', value: { name: '张居正', faction: '明', bio: '万历首辅' } } }] },
+      { toolCalls: [{ name: 'flagUncertain', input: { path: 'characters.张居正.bio', reason: '生平细节部分靠推测' } }] },
+      { toolCalls: [{ name: 'finish', input: { summary: '加入张居正，存疑处已标注' } }] }
+    ]);
+    const resHC = await AA.runAuthoringLoop(draftHC, '加入张居正', { caller: callerHC });
+    ok(resHC.finished && resHC.stopReason === 'finish', 'checkHistory 流程正常 finish');
+    ok(resHC.transcript.some(t => t.name === 'checkHistory'), 'transcript 含 checkHistory 自核步骤');
+    const hcStep = resHC.transcript.find(t => t.name === 'checkHistory');
+    ok(hcStep.result.lowConfidence === 1, 'checkHistory 回喂识别 1 条低把握(驱动 flagUncertain)');
+    ok(Array.isArray(resHC.historyChecks) && resHC.historyChecks.length === 2, 'historyChecks 汇总 2 条自核声明');
+    ok(resHC.historyChecks.some(f => f.verdict === '不确定'), 'historyChecks 保留存疑判定');
+    ok(resHC.uncertainties.some(u => /bio/.test(u.path)), '低把握内容触发 flagUncertain·进 uncertainties');
+
+    console.log('— 刀3：对抗式三角色 runWithCritics（拟稿→史官+谏官→修订）—');
+    function criticsCaller() {
+      let draftTurns = 0, reviseTurns = 0;
+      return function (conversation, tools, opt) {
+        const toolNames = (tools || []).map(t => t.name);
+        const sys = (opt && opt.system) || '';
+        const isReview = toolNames.indexOf('submitReview') >= 0;
+        if (isReview && /史官/.test(sys)) {
+          return { text: '', toolCalls: [{ id: 'r1', name: 'submitReview', input: { summary: '有一处史实存疑', findings: [{ dimension: '史实合理性', severity: '中', location: 'characters·张三', issue: '生卒与年号矛盾', suggestion: '改保守纪年并标存疑' }] } }] };
+        }
+        if (isReview && /谏官/.test(sys)) {
+          return { text: '', toolCalls: [{ id: 'r2', name: 'submitReview', input: { summary: '平衡尚可', findings: [{ dimension: '平衡性', severity: '低', location: '势力·甲', issue: '甲略强', suggestion: '兵力微调' }] } }] };
+        }
+        let lastUser = '';
+        for (let i = conversation.length - 1; i >= 0; i--) { if (conversation[i].role === 'user') { lastUser = conversation[i].text || ''; break; } }
+        if (/三堂会审·修订/.test(lastUser)) {
+          reviseTurns++;
+          if (reviseTurns === 1) return { text: '采纳意见', toolCalls: [{ id: 'e1', name: 'applyEdit', input: { path: 'name', value: '会审定稿' } }] };
+          return { text: '修订完成', toolCalls: [{ id: 'f2', name: 'finish', input: { summary: '已据史官谏官意见修订' } }] };
+        }
+        draftTurns++;
+        if (draftTurns === 1) return { text: '先自核史实', toolCalls: [{ id: 'h1', name: 'checkHistory', input: { facts: [{ claim: '张三生于万历元年', verdict: '不确定', note: '正史无载' }] } }] };
+        return { text: '拟稿完成', toolCalls: [{ id: 'f1', name: 'finish', input: { summary: '初稿完成' } }] };
+      };
+    }
+    const draftCR = AA.makeDraft({ name: '初稿名', factions: [{ name: '甲' }], characters: [{ name: '张三', faction: '甲' }] });
+    const resCR = await AA.runWithCritics(draftCR, '设定一个甲势力开局', { caller: criticsCaller() });
+    ok(resCR.critiqued && resCR.steps.length === 4, '会审走完四阶段：拟稿+史官+谏官+修订');
+    ok(resCR.steps[0].role === '国师·拟稿' && resCR.steps[0].result.finished, '①国师拟稿 finish');
+    ok(resCR.steps[1].role === '史官·史实审' && !!resCR.steps[1].result.review, '②史官产出审阅报告');
+    ok(resCR.steps[2].role === '谏官·平衡审' && !!resCR.steps[2].result.review, '③谏官产出审阅报告');
+    ok(resCR.findings.length === 2, '史官+谏官共 2 条意见汇总');
+    ok(/张三生于/.test(JSON.stringify(resCR.steps[1].result.conversation)), '史官收到国师自核的低把握项(刀2 historyChecks 回灌史官)');
+    ok(resCR.revised && resCR.steps[3].role === '国师·修订', '④有意见→国师据谏修订');
+    ok(/三堂会审·修订/.test(JSON.stringify(resCR.steps[3].result.conversation)), '修订需求里回灌了史官谏官的审阅意见');
+    ok(draftCR.name === '会审定稿', '修订真正落到同一 draft（名字被改）');
+
+    console.log('— 刀3：会审无异议→拟稿即终稿（省修订调用）—');
+    function cleanCaller() {
+      return function (conversation, tools, opt) {
+        const sys = (opt && opt.system) || '';
+        if (((tools || []).map(t => t.name).indexOf('submitReview') >= 0)) {
+          return { text: '', toolCalls: [{ id: 'rc', name: 'submitReview', input: { summary: '没问题', findings: [] } }] };
+        }
+        return { text: '拟稿完成', toolCalls: [{ id: 'fc', name: 'finish', input: { summary: '初稿完成' } }] };
+      };
+    }
+    const draftCR2 = AA.makeDraft({ name: '干净稿', factions: [{ name: '甲' }], characters: [{ name: '张三', faction: '甲' }] });
+    const resCR2 = await AA.runWithCritics(draftCR2, '设定甲势力', { caller: cleanCaller() });
+    ok(resCR2.critiqued && resCR2.revised === false, '无意见时不触发修订');
+    ok(resCR2.steps.length === 3, '无意见时只跑三阶段（拟稿+史官+谏官，无修订）');
+
     console.log('— loop：maxIterations 闸 —');
     const draftB = AA.makeDraft({ name: 'x' });
     const neverFinish = function () { return Promise.resolve({ toolCalls: [{ name: 'applyEdit', input: { path: 'overview', value: '…' } }] }); };

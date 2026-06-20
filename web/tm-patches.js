@@ -390,6 +390,15 @@ openSettings=function(){
         '<div style="display:flex;gap:0.3rem;">' + pillFs(true, '全屏') + pillFs(false, '窗口') + '</div>';
       return h + '</div>';
     })()+
+    // 御驾亲征·战术战斗(接入 Phase2·开关 GM._yujiaQinzheng·本局存档生效)
+    (function(){
+      var on = false; try { on = !!(typeof GM!=='undefined' && GM && GM._yujiaQinzheng); } catch(_){}
+      function pill(want, label){ return '<button class="bt '+((on===want)?'bp':'bs')+' bsm" data-yjqz="'+(want?1:0)+'" onclick="_tmSetYujiaQinzheng('+want+',this)" style="flex:1;">'+label+'</button>'; }
+      return '<div class="settings-section"><h4>御驾亲征 · 战术战斗</h4>'
+        + '<div style="font-size:0.78rem;color:var(--txt-d);margin:-0.2rem 0 0.4rem;">开启后，直辖之师接敌可<b>御驾亲征·亲操此战</b>（实时战术战斗），战果回填庙堂；关闭则一律庙算决之。本局存档生效。</div>'
+        + '<div style="display:flex;gap:0.3rem;">' + pill(true,'开启 · 亲征') + pill(false,'关闭 · 庙算') + '</div>'
+        + '</div>';
+    })()+
     // API
     "<div class=\"settings-section\"><h4>API\u8FDE\u63A5</h4>"+
     "<div class=\"rw\"><div class=\"fd\"><label>\u670D\u52A1\u5546</label><select id=\"s-prov\"><option value=\"openai\">OpenAI</option><option value=\"deepseek\">DeepSeek</option><option value=\"anthropic\">Claude</option><option value=\"custom\">\u81EA\u5B9A\u4E49</option></select></div><div class=\"fd\"><label>Key</label><input type=\"password\" id=\"s-key\" value=\""+(P.ai.key||"")+"\"></div></div>"+
@@ -555,6 +564,40 @@ openSettings=function(){
             '</div>' +
           '</label>';
         })()+
+      '</div>';
+    })()+
+
+    // ── agent 升级（实验）·总闸·2026-06-19·一键启用至今所有 AI agent 化升级 ──
+    (function(){
+      var _on = !!((P.conf && P.conf.agentUpgradesEnabled) || (P.ai && P.ai.agentUpgradesEnabled));
+      var _ftc = !!((P.conf && P.conf.factionToolDecisionEnabled) || (P.ai && P.ai.factionToolDecisionEnabled));
+      var _evu = !!((P.conf && P.conf.eventUnificationEnabled) || (P.ai && P.ai.eventUnificationEnabled));
+      return '<div class="settings-section" style="border-left:3px solid #b98bff;background:rgba(185,139,255,0.04);">' +
+        '<h4 style="color:#c9a9ff;">🧪 实验玩法</h4>' +
+        '<div style="font-size:0.72rem;color:var(--txt-d);margin:-0.3rem 0 0.6rem;line-height:1.55;">实验性的 AI 升级与玩法机制（默认关）。多数会增加 API 调用·建议先小局试玩观察。</div>' +
+        '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;">' +
+          '<input type="checkbox" id="s-agent-upgrades" ' + (_on?'checked ':'') + 'onchange="_togglePConf(\'agentUpgradesEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🧪 启用全部 agent 升级（默认关·实验）</div>' +
+            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">一键开启 9 项 AI agent 化：按需取数召回、势力前瞻目标栈、主推演异常路由、朝堂博弈、记忆管家固化、自我反思偏差校正、诏令执行督查、史实顾问引证(仅史实模式)、势力自主当家(激活策略3固定最强+5动态·战略姿态自著)。各项原有独立开关仍可单独调试。需主 API key·会增加 API 调用。</div>' +
+          '</div>' +
+        '</label>' +
+        // 【A·S4】势力按需取数·单独 opt-in(总闸已含·此处供隔离试)·换深度非降本
+        '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+          '<input type="checkbox" id="s-faction-toolcall" ' + (_ftc?'checked ':'') + 'onchange="_togglePConf(\'factionToolDecisionEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🔧 势力按需取数（A·单独试·默认关）</div>' +
+            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">势力决策改 tool-calling：只给核心情报+工具，势力自己按需查对手/朝堂/往绩/世界/家底/历史先例(复用②检索)。<b>换决策深度，非降本</b>(2 轮·可能略增调用)。开后看控制台 <code>GM._factionToolStats</code> 观察查询行为。关 = 原单发不变。</div>' +
+          '</div>' +
+        '</label>' +
+        // 【事件系统统一·S1】统一事件总线开关·独立(不并 agent 总闸·同势力按需取数那样单独 opt-in)
+        '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+          '<input type="checkbox" id="s-event-unification" ' + (_evu?'checked ':'') + 'onchange="_togglePConf(\'eventUnificationEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🎭 事件系统统一（S1 骨架·默认关）</div>' +
+            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">把散落的事件机制统一为「活世界抛局面→玩家应对→AI 裁硬核后果」主线。<b>当前为 S1 骨架，拨开暂无可见变化</b>(仅打通事件总线管道+验证不破坏存档)；后续切片接通后，事件将由 AI 裁定连锁后果。现在开=仅供验证不炸。</div>' +
+          '</div>' +
+        '</label>' +
       '</div>';
     })()+
 

@@ -241,6 +241,28 @@ function _ty2_render() {
 function _ty2_makeDiv(html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild || d; }
 
 /** 阶段：初议 + 补议（每位与议者按品级依次陈述，默认 2 轮，玩家可插言/打断） */
+// 朝堂博弈 S2·从与议者里挑立场对立的核心代表(支持2+反对2+中立1)·让第2轮深辩集中·控延迟
+function _ty2_pickCoreDebaters(attendees, stances, maxN) {
+  var groups = { support: [], oppose: [], neutral: [] };
+  (attendees || []).forEach(function(nm) {
+    var st = stances && stances[nm];
+    var s = (st && st.current) || '';
+    var conf = (st && typeof st.confidence === 'number') ? st.confidence : 50;
+    var camp = /支持/.test(s) ? 'support' : /反对/.test(s) ? 'oppose' : 'neutral';
+    groups[camp].push({ nm: nm, conf: conf });
+  });
+  var core = [];
+  [['support', 2], ['oppose', 2], ['neutral', 1]].forEach(function(pair) {
+    groups[pair[0]].sort(function(a, b) { return b.conf - a.conf; });
+    groups[pair[0]].slice(0, pair[1]).forEach(function(x) { core.push(x.nm); });
+  });
+  // 立场一边倒(对立不足)时补全·至少 3 人交锋
+  if (core.length < 3) {
+    (attendees || []).forEach(function(nm) { if (core.indexOf(nm) < 0 && core.length < 3) core.push(nm); });
+  }
+  return core.slice(0, maxN || 5);
+}
+
 async function _ty2_phaseInitialRound() {
   if (!CY._ty2) return;
   CY._ty2.currentPhase = 'initial';
@@ -258,8 +280,11 @@ async function _ty2_phaseInitialRound() {
   for (var _rd = 1; _rd <= 2; _rd++) {
     CY._ty2.roundNum = _rd;
     _ty2_render();
-    if (_rd === 2) addCYBubble('内侍', '（再议一轮，诸卿可据他官之言修订立场。）', true);
-    for (var i = 0; i < CY._ty2.attendees.length; i++) {
+    // 朝堂博弈 S2·核心参与者收敛：第2轮起·开关开时只让立场对立的核心代表深辩(控延迟+集中交锋)·关时全员(现状)
+    var _roundList = ((typeof agentFlagOn==='function' ? agentFlagOn('courtDebateEnabled') : (P.conf && P.conf.courtDebateEnabled)) && _rd >= 2 && Array.isArray(CY._ty2._coreDebaters) && CY._ty2._coreDebaters.length)
+      ? CY._ty2._coreDebaters : CY._ty2.attendees;
+    if (_rd === 2) addCYBubble('内侍', (_roundList !== CY._ty2.attendees ? '（党争核心者再议·诸卿据他官之言交锋。）' : '（再议一轮，诸卿可据他官之言修订立场。）'), true);
+    for (var i = 0; i < _roundList.length; i++) {
       if (CY._abortChaoyi) { CY._abortChaoyi=false; break; }
       // 玩家中途插言
       if (CY._pendingPlayerLine) {
@@ -269,7 +294,7 @@ async function _ty2_phaseInitialRound() {
         CY._ty2._playerInterjects.push({ round: _rd, text: _pl });
         try { await _ty2_playerTriggeredResponse(_pl); } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}
       }
-      var nm = CY._ty2.attendees[i];
+      var nm = _roundList[i];
       var res = await _ty2_genOneSpeech(nm, _rd, _prevSpeeches);
       if (res) {
         // v2.6 Slice 7·confront mode auto trigger·若 NPC reason 含 "点名 X"·启 chain
@@ -306,6 +331,17 @@ async function _ty2_phaseInitialRound() {
         _prevSpeeches.push({ name: nm, stance: res.stance, line: res.line });
         // 镜像收集到 CY._ty2._allSpeeches·后续 phase14 取用
         CY._ty2._allSpeeches.push({ round: _rd, name: nm, stance: res.stance, line: (res.line || '').slice(0, 80) });
+        // 朝堂博弈 S3·辩论轨迹可观测：消费 S1 的 respondTo / stanceShiftReason（开关控制·关时 S1 不输出这俩字段·自然跳过）
+        if ((typeof agentFlagOn==='function' ? agentFlagOn('courtDebateEnabled') : (P.conf && P.conf.courtDebateEnabled)) && res) {
+          var _lastSp = CY._ty2._allSpeeches[CY._ty2._allSpeeches.length - 1];
+          if (res.respondTo && String(res.respondTo).trim()) _lastSp.respondTo = String(res.respondTo).slice(0, 20);
+          if (res.stanceShiftReason && String(res.stanceShiftReason).trim()) {
+            _lastSp.stanceShiftReason = String(res.stanceShiftReason).slice(0, 80);
+            if (!Array.isArray(CY._ty2.stanceHistory)) CY._ty2.stanceHistory = [];
+            CY._ty2.stanceHistory.push({ round: _rd, name: nm, to: res.stance, reason: String(res.stanceShiftReason).slice(0, 80), source: 'self-reported' });
+            addCYBubble('内侍', '（' + nm + ' 闻同僚之论·立场有动：' + String(res.stanceShiftReason).slice(0, 40) + '）', true);
+          }
+        }
         var _stEntry = CY._ty2.stances[nm] || (CY._ty2.stances[nm] = {});
         // v2.6 Slice 3·hybrid stance·initial 锁 (dims-initial 时不 overwrite)·current 可变
         var _hybridLocked = _stEntry.source === 'dims-initial';
@@ -320,6 +356,10 @@ async function _ty2_phaseInitialRound() {
         }
       }
       _ty2_render();
+    }
+    // 朝堂博弈 S2·第1轮后算核心代表(立场对立者)供第2轮收敛
+    if (_rd === 1 && (typeof agentFlagOn==='function' ? agentFlagOn('courtDebateEnabled') : (P.conf && P.conf.courtDebateEnabled)) && typeof _ty2_pickCoreDebaters === 'function') {
+      try { CY._ty2._coreDebaters = _ty2_pickCoreDebaters(CY._ty2.attendees, CY._ty2.stances, 5); } catch(_pcdE) { CY._ty2._coreDebaters = null; }
     }
     if (CY._abortChaoyi) { CY._abortChaoyi=false; break; }
   }
@@ -500,8 +540,17 @@ async function _ty2_genOneSpeech(name, roundNum, prevSpeeches) {
       }
     } catch (_modulateE) {}
   }
+  // 朝堂博弈 S1·真辩论：有他官已发言时·强制针对性回应而非各说各话（开关 P.conf.courtDebateEnabled·默认关·关=prompt 逐字节等同现状）
+  var _debateOn = !!((typeof agentFlagOn==='function' ? agentFlagOn('courtDebateEnabled') : (P.conf && P.conf.courtDebateEnabled)) && prevSpeeches && prevSpeeches.length);
+  if (_debateOn) {
+    prompt += '\n【廷议交锋·重要】本轮已有同僚发言(见上「本轮已发言」)。你不可自说自话——发言须针对性回应：\n'
+           + '  · 有人立场与你相左→点名反驳其具体论点(引其言而驳之·非泛泛而谈)；\n'
+           + '  · 有人立场与你相同→附议并补强或递进·勿简单重复；\n'
+           + '  · 你若被某人论点说服而改立场→reason 写明被谁何语打动。\n'
+           + '  发言要像真朝堂辩论·有来有往。';
+  }
   prompt += '\n请根据以上推断你对本议题的立场（不给预设选项，自行判断），写发言（文言/半文言，符合身份）。' + (typeof _aiDialogueWordHint === 'function' ? _aiDialogueWordHint() : '') + '\n';
-  prompt += '返回 JSON：{"stance":"极力支持/支持/倾向支持/中立/倾向反对/反对/极力反对/折中/另提议","confidence":0-100,"line":"发言内容","reason":"内在动机"}';
+  prompt += '返回 JSON：{"stance":"极力支持/支持/倾向支持/中立/倾向反对/反对/极力反对/折中/另提议","confidence":0-100,"line":"发言内容","reason":"内在动机"' + (_debateOn ? ',"respondTo":"你主要回应或反驳的同僚名(无则空字符串)","stanceShiftReason":"若因他人论点改立场·写明被谁何语打动(无则空)"' : '') + '}';
 
   // A1: 流式化——先建占位气泡·onChunk 用 regex 渐进显示 "line" 字段
   var _tyDiv = addCYBubble(name, '\u2026', false);
@@ -769,6 +818,35 @@ function _ty2_groupByStance() {
   return groups;
 }
 
+// B方案(真multi-agent)S1·从廷议结束态生成「博弈摘要」(含党派立场分布)·供势力决策跨场景感知
+function _ty2_buildDebateMemory(direction, counts) {
+  if (!CY._ty2) return null;
+  var partyTally = {};
+  (CY._ty2.attendees || []).forEach(function(nm) {
+    var ch = (typeof findCharByName === 'function') ? findCharByName(nm) : null;
+    var party = (ch && ch.party) || '无党';
+    var st = (CY._ty2.stances && CY._ty2.stances[nm] && CY._ty2.stances[nm].current) || '';
+    if (!partyTally[party]) partyTally[party] = { support: 0, oppose: 0, neutral: 0 };
+    if (/支持/.test(st)) partyTally[party].support++;
+    else if (/反对/.test(st)) partyTally[party].oppose++;
+    else partyTally[party].neutral++;
+  });
+  var partyAlignment = {};
+  Object.keys(partyTally).forEach(function(p) {
+    var t = partyTally[p];
+    partyAlignment[p] = (t.support > t.oppose) ? 'support' : (t.oppose > t.support) ? 'oppose' : 'neutral';
+  });
+  return {
+    turn: (typeof GM !== 'undefined' && GM.turn) || 0,
+    topic: CY._ty2.topic,
+    topicType: CY._ty2.topicType,
+    decision: direction,
+    counts: counts || {},
+    partyAlignment: partyAlignment,
+    coreDebaters: (CY._ty2._coreDebaters || []).slice(0, 5)
+  };
+}
+
 async function _ty2_decide(mode) {
   if (!CY._ty2) return;
   var counts = _ty2_countStances();
@@ -811,6 +889,17 @@ async function _ty2_decide(mode) {
     : (mode === 'defer') ? '廷议·延议，留待再议'
     : ('廷议：' + actualDirection);
   _cy_jishiAdd('tinyi', CY._ty2.topic, '皇帝', '裁决：' + actualDirection, { final: true, stances: counts, outcome: _tyOutcome });
+  // B方案 S1·廷议博弈摘要沉淀到跨场景记忆 GM._chaoyiMemory（开关控制·供 S2 势力决策读·保留最近 8 条）
+  if ((typeof agentFlagOn==='function' ? agentFlagOn('courtDebateEnabled') : (P.conf && P.conf.courtDebateEnabled)) && typeof _ty2_buildDebateMemory === 'function') {
+    try {
+      var _dm = _ty2_buildDebateMemory(actualDirection, counts);
+      if (_dm) {
+        if (!Array.isArray(GM._chaoyiMemory)) GM._chaoyiMemory = [];
+        GM._chaoyiMemory.push(_dm);
+        if (GM._chaoyiMemory.length > 8) GM._chaoyiMemory = GM._chaoyiMemory.slice(-8);
+      }
+    } catch (_dmE) {}
+  }
 
   // 经济改革廷议回调——若题目是经济改革（EconomyGapFill 提交的），根据皇帝裁决应用
   try {

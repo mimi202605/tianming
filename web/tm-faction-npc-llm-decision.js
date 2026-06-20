@@ -127,7 +127,11 @@
     return !!(f && (_isMarkedPlayerFaction(f) || _isPlayerFactionName(f.name, playerFactionNames)));
   }
 
+  // 【A·按需取数 S2】prompt 构建模式·默认 'full'(原路径字节不变·零回归)·仅 _buildPromptCore 临时设 'core' 时按核心段过滤(其余 18 段走工具按需取)
+  var _promptBuildMode = 'full';
+  var _CORE_SECTIONS = { OWN_STRATEGIC_MEMORY: 1, ACTIVE_GOALS: 1, ACTION_CANDIDATES: 1, ACTION_CONTRACT: 1, RELATIONS_AND_WARS: 1, FISCAL_CONTEXT: 1, RULER_PSYCHE: 1, WORLD_STATUS: 1, INCOMING_PROPOSALS: 1, PLAYER_PROPOSAL_OUTCOMES: 1 };
   function _pushSection(lines, title, bodyLines) {
+    if (_promptBuildMode === 'core' && !_CORE_SECTIONS[title]) return;  // core 模式只放核心段·full 模式(默认)恒不过滤=零回归
     bodyLines = _arr(bodyLines).filter(function(x){ return !!x; });
     if (bodyLines.length > 0) {
       lines.push('\n[' + title + ']');
@@ -909,6 +913,26 @@
   // G1·Tier 1 智力反喂·2026-05-22·把已存的 ledger 反喂 prompt·让 LLM 看见自己的过去
   // ──────────────────────────────────────────────────────────
 
+  // B方案 S2·跨场景：格式化近期廷议朝堂博弈摘要(GM._chaoyiMemory·廷议 S1 写入)·供势力决策感知朝堂权力消长
+  function _formatCourtDebateMemory() {
+    var mem = (typeof GM !== 'undefined' && Array.isArray(GM._chaoyiMemory)) ? GM._chaoyiMemory : [];
+    if (!mem.length) return [];
+    var turn = _currentTurn();
+    var lines = [];
+    mem.slice(-3).forEach(function(m) {
+      if (!m) return;
+      var staleness = turn - _safeNum(m.turn);
+      var pa = m.partyAlignment || {};
+      var paStr = Object.keys(pa).map(function(p) {
+        return p + ':' + ({ support: '主允', oppose: '主驳', neutral: '中立' }[pa[p]] || pa[p]);
+      }).slice(0, 6).join('·');
+      lines.push('  T' + _safeNum(m.turn) + (staleness > 0 ? '(' + staleness + '回合前)' : '') + '·廷议「' + _txt(m.topic, 30) + '」→裁决:' + _txt(m.decision, 20) + (paStr ? '·党派立场:' + paStr : ''));
+    });
+    if (!lines.length) return [];
+    lines.unshift('  近期朝堂廷议博弈(判断朝堂权力消长/党派动向·若与你的外交内政相关则纳入考量):');
+    return lines;
+  }
+
   // 段 1·自己的长期战略记忆·读 fac.aiStrategy (action-engine.ensureStrategyV2 写)
   function _formatOwnStrategicMemory(fac) {
     var s = fac && fac.aiStrategy;
@@ -1264,6 +1288,25 @@
     var extra = [];
     // G1·2026-05-22·智力反喂 3 段·必须在世界态势 / SC16 / 候选目标之前·让 LLM 先看见"自己的过去"再读"当前局面"
     _pushSection(extra, 'OWN_STRATEGIC_MEMORY', _formatOwnStrategicMemory(fac));
+    // ③-S2 前瞻式目标栈（开关 P.conf.factionGoalStackEnabled·默认关·关=本段不注入·prompt 等同现状）
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionGoalStackEnabled') : (P.conf && P.conf.factionGoalStackEnabled)) && global.TM && global.TM.FactionGoalStack && typeof global.TM.FactionGoalStack.formatForPrompt === 'function') {
+      try {
+        var _goalTxt = global.TM.FactionGoalStack.formatForPrompt(fac);
+        if (_goalTxt) _pushSection(extra, 'ACTIVE_GOALS', String(_goalTxt).split('\n').filter(function(x){ return x && x.trim(); }));
+      } catch(_goalE) {}
+    }
+    // B方案 S2·跨场景：注入近期廷议朝堂博弈·让势力决策感知朝堂权力消长(开关 courtDebateEnabled·默认关·打通"廷议博弈→势力决策"链路)
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('courtDebateEnabled') : (P.conf && P.conf.courtDebateEnabled)) && typeof _formatCourtDebateMemory === 'function') {
+      _pushSection(extra, 'COURT_DEBATE_RECENT', _formatCourtDebateMemory());
+    }
+    // 【势力 agent 社会·双向外交 S1】注入其他势力向本派提出的外交动议·让其按自己目标/宿怨/姿态回应(开关 factionAgentEnabled·默认关)
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionAgentEnabled') : (P.conf && P.conf.factionAgentEnabled)) && global.TM && global.TM.FactionDiplomacy) {
+      _pushSection(extra, 'INCOMING_PROPOSALS', global.TM.FactionDiplomacy.formatIncomingProposals(fac, _currentTurn()));
+      // 【S3】注入君上(玩家)对本派近期递交之议的答复(已纳/见拒)·让势力据真实结果调整对君策·非仅邦交 delta 间接推
+      if (typeof global.TM.FactionDiplomacy.formatPlayerProposalOutcomes === 'function') {
+        _pushSection(extra, 'PLAYER_PROPOSAL_OUTCOMES', global.TM.FactionDiplomacy.formatPlayerProposalOutcomes(fac, _currentTurn()));
+      }
+    }
     // G3-C·决策风格趋势·紧跟 strategic memory·一组成"自我感知"
     _pushSection(extra, 'DECISION_STYLE_TREND', _formatDecisionStyleTrend(fac));
     _pushSection(extra, 'LAST_TURN_FAILURES', _formatLastTurnFailures(fac));
@@ -1291,6 +1334,13 @@
     _pushSection(extra, 'MILITARY_CONTEXT', _formatMilitaryContext(fac));
     _pushSection(extra, 'CHAR_MEMORY', _formatCharacterMemory(alive));
     _pushSection(extra, 'WORLD_STATUS', _formatWorldStatus(fac));
+    // 官制活化 Slice①：职权舆图（势力决策侧感知·开 officePowerPerceptionEnabled 时注入·关则零回归·非核心段·core/工具模式走按需取）
+    try {
+      if (typeof officeFlagOn === 'function' && officeFlagOn('officePowerPerceptionEnabled') && typeof buildOfficePowerMap === 'function') {
+        var _opmFac = buildOfficePowerMap(global.GM, { cap: 10 });
+        if (_opmFac) _pushSection(extra, 'OFFICE_POWER_MAP', String(_opmFac).split('\n'));
+      }
+    } catch (_opmErr) {}
     if (extra.length > 0) {
       sys += '\n\nAI_DECISION_CONTEXT:';
       sys += extra.join('\n');
@@ -1304,8 +1354,16 @@
     // G3-A·2026-05-22·rationale 升级为 phase 计划结构·shopping list → 因果叙事
     user += '{\n';
     user += '  "rationale": "主君考量·80-250 字·须含因果链·格式·Phase 1·X (cause: 何故而做)。Phase 2·Y (因 X 后果·或对 X 失败的补救)。Phase 3·Z (后续预防 / 长期承接·可选)。每 phase 必明 action_type + target·若只有一 phase 则只写 Phase 1·不可省略 cause 描述。",\n';
-    user += '  "actions": [ ...本回合所有动作·0-8 条·每条按下表填字段 ]\n';
-    user += '}\n';
+    user += '  "actions": [ ...本回合所有动作·0-8 条·每条按下表填字段 ]';
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionGoalStackEnabled') : (P.conf && P.conf.factionGoalStackEnabled))) {
+      user += ',\n  "goalUpdates": { "advance":[{"id":"<ACTIVE_GOALS 中的目标 id>","stepDone":true,"note":"<本回合进展>"}], "resolve":[{"id":"<目标 id>","status":"achieved|failed|abandoned"}], "newGoals":[{"desc":"<新目标·勿与现有重复>","horizon":"long|short","steps":[{"desc":"<分步>"}],"priority":0}] }';
+    }
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionAgentEnabled') : (P.conf && P.conf.factionAgentEnabled))) {
+      user += ',\n  "posture": "本势力当前战略姿态(2-6字·如 扩张/守成/隐忍/结盟/孤立/复仇/观望/决战/称霸)·应随局势演进·若较上回合转变须在 rationale 说明因由"';
+      user += ',\n  "proposals": [ {"toFaction":"<目标势力名·可含玩家方>","type":"alliance|nonaggression|deal|joint_action|ultimatum|peace","terms":"<条款·40字>","rationale":"<为何向其提此议·30字>"} ]·0-3 条·仅当确有外交意图主动向他派(或玩家)提议·不必每回合都提';
+      user += ',\n  "proposalResponses": [ {"from":"<INCOMING_PROPOSALS 中提议来源势力名>","decision":"accept|reject|counter","reason":"<按你自己目标/宿怨/姿态权衡·30字>","counterTerms":"<若 counter 才填·还价条款·40字>"} ]·逐条回应 INCOMING_PROPOSALS 段中收到的提议·无收到则空数组';
+    }
+    user += '\n}\n';
     user += '\n动作字段速查 (10 种 type·完整 required/optional 见 ACTION_CONTRACT 段):';
     user += '\n  type ∈ {memorial|edict|court_alignment|office_change|fiscal_policy|military_order|diplomacy|province_policy|spy_or_intrigue|rebellion_policy}';
     user += '\n  memorial         {from, type:"军务|政务|民生|经济|人事|密奏", content(60-120 字古文), rulerDecision:"approved|rejected|annotated|referred", ruling(10-30 字), loyaltyDelta:-5至5}';
@@ -1321,6 +1379,9 @@
     user += '\n约束: 单轨 actions[]·不要再用 memorials/edict/chaoyi/office 顶层字段 (已废)·所有动作放 actions[]。type/enum 必须用给定值·content 必须中文古文风。';
     user += '\nTARGET RULE: char/army/province/faction names must come from ACTION_CANDIDATES or the visible context above. Prefer concrete actions[] that operationalize SC16_WORLD_DIRECTIVE; do not invent invisible characters or armies.';
     user += '\nLIMITS: actions[] 长度 0-8·宁少勿多·空数组也允许。';
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionGoalStackEnabled') : (P.conf && P.conf.factionGoalStackEnabled))) {
+      user += '\nGOALS: 见 ACTIVE_GOALS 段·连贯推进既有目标(每回合通常 advance 一步)·达成则 resolve·世界剧变才 newGoals(≤1/回合)·goalUpdates.id 必须用 ACTIVE_GOALS 中真实 id·与 actions/rationale 保持一致。';
+    }
 
     return { system: sys, user: user };
   }
@@ -1425,6 +1486,114 @@
       }
     }
     return { parsed:null, diagnostics:{ kind:failureKind, error:lastError, rawPreview:lastRawPreview, rawLength:lastRawLength, possibleTruncation:lastPossibleTruncation, attempts:attempts, maxTokens:maxTokens } };
+  }
+
+  // ─── 【A·按需取数 S2】tool-calling 决策路径(开关 factionToolDecisionEnabled·默认关·关时本段完全不执行) ───
+  // 核心 prompt(8 核心段+2 外交段)+ 6 工具 → 势力按需查 → 第二轮出决策·返回与 _callLLMDecision **同形** {parsed,diagnostics}(drop-in)·任何缺件/异常/解析失败一律回落原单发(保决策不丢)
+  function _buildPromptCore(fac) {
+    _promptBuildMode = 'core';
+    var p;
+    try { p = _buildPrompt(fac); } finally { _promptBuildMode = 'full'; }  // 同步无 await·set→build→reset 原子·并发安全
+    p.system += '\n\nTOOLS_USAGE: 上面 AI_DECISION_CONTEXT 只含核心情报(战略记忆/目标/可选行动/邦交战事/财政/君主/世界态势)。其余情报(对手心智·朝堂博弈·我方往绩·世界细况·我方家底·历史先例)未给·你可调用工具按需补取。先调你这回合真正需要的工具(最多 4 个·不需要则一个都不调·直接出决策)·拿到后再输出决策 JSON。勿重复查 AI_DECISION_CONTEXT 已有的。';
+    return p;
+  }
+
+  function _factionToolCtx(fac) {
+    var entry = (global.GM && global.GM._facIndex && global.GM._facIndex[fac.name]) || null;
+    var alive = (entry && entry.chars) ? entry.chars.filter(function (c) { return c.alive !== false; }) : [];
+    function _safe(fn) { return function () { try { return fn.apply(null, arguments); } catch (e) { return ''; } }; }
+    return {
+      fac: fac, alive: alive,
+      formatters: {
+        opponentMindModel: _safe(function (f) { return _formatOpponentMindModel(f); }),
+        allyMindModel: _safe(function (f) { return _formatAllyMindModel(f); }),
+        courtDebate: _safe(function () { return (typeof _formatCourtDebateMemory === 'function') ? _formatCourtDebateMemory() : ''; }),
+        worldDirective: _safe(function (f) { return _formatSc16DirectiveForFac(f); }),
+        lastTurnFailures: _safe(function (f) { return _formatLastTurnFailures(f); }),
+        lastTurnCompliance: _safe(function (f) { return _formatLastTurnCompliance(f); }),
+        decisionStyleTrend: _safe(function (f) { return _formatDecisionStyleTrend(f); }),
+        factionTrajectory: _safe(function (f) { return _formatFactionTrajectory(f); }),
+        recentWorld: _safe(function (f) { return _formatRecentWorld(f.name); }),
+        playerRecent: _safe(function () { return _formatPlayerRecent(); }),
+        worldStatus: _safe(function (f) { return _formatWorldStatus(f); }),
+        ownAdminHierarchy: _safe(function (f) { return _formatOwnAdminHierarchy(f); }),
+        militaryContext: _safe(function (f) { return _formatMilitaryContext(f); }),
+        fiscalContext: _safe(function (f) { return _formatFiscalContext(f); }),
+        // 【S3】query-aware·复用②(TM.MemoryAgentTools.exec 'recall_by_term')做真检索·无②/无命中/异常→回落人物记忆(返回 Promise·handle 已 await)
+        recall: function (query, c) {
+          var q = String(query || '').trim();
+          var mat = global.TM && global.TM.MemoryAgentTools;
+          var _fallback = function () { return (typeof _formatCharacterMemory === 'function') ? _formatCharacterMemory(c && c.alive) : ''; };
+          if (!q || !mat || typeof mat.exec !== 'function') return _fallback();
+          return Promise.resolve(mat.exec('recall_by_term', { terms: [q], limit: 6 }, global.GM)).then(function (r) {
+            if (r && r.ok && Array.isArray(r.hits) && r.hits.length) {
+              return r.hits.slice(0, 6).map(function (h) {
+                var t = (h && (h.text || h.summary || h.title || h.content || h.desc)) || '';
+                return '· ' + String(t).slice(0, 120) + (h && h.turn ? ' (T' + h.turn + ')' : '');
+              }).join('\n');
+            }
+            return _fallback();
+          }).catch(_fallback);
+        }
+      }
+    };
+  }
+
+  // 【S3·观测】滚动记录工具路径每次决策的轮数/查询数/工具名(供真机看 A 的实际行为与成本·cap 40)
+  function _recordFacToolStat(facName, rounds, toolCalls, toolNames) {
+    try {
+      var GM = global.GM; if (!GM) return;
+      if (!Array.isArray(GM._factionToolStats)) GM._factionToolStats = [];
+      GM._factionToolStats.push({ turn: _currentTurn(), fac: facName, rounds: rounds, toolCalls: toolCalls, tools: toolNames || [] });
+      if (GM._factionToolStats.length > 40) GM._factionToolStats = GM._factionToolStats.slice(-40);
+    } catch (e) {}
+  }
+
+  async function _decideViaTools(fac, opts) {
+    opts = opts || {};
+    // 缺件兜底：工具基础设施未就绪 → 回落原单发(不因缺件而崩)
+    if (typeof global.callAIWithTools !== 'function' || !(global.TM && global.TM.FactionDecisionTools)) {
+      return _callLLMDecision(_buildPrompt(fac), opts);
+    }
+    var maxTokens = _precisionMaxTokens(opts);
+    var timeoutMs = _safeNum(opts.timeoutMs || (global.P && P.conf && P.conf.npcAiPrecisionTimeoutMs)) || 0;
+    try {
+      var core = _buildPromptCore(fac);
+      var combined = core.system + '\n\n' + core.user;
+      var defs = global.TM.FactionDecisionTools.defs();
+      var ctx = _factionToolCtx(fac);
+      // 第一轮：核心 prompt + 工具(势力自取所需)·【S3】id 供 TokenUsageTracker 按 id 记账
+      var r1 = await _withTimeout(global.callAIWithTools(combined, defs, {
+        maxTok: maxTokens, tier: 'secondary', priority: 'background', maxRetries: 1, timeoutMs: timeoutMs || undefined, allowText: true, id: 'faction_tool:r1'
+      }), timeoutMs);
+      var toolCalls = (r1 && Array.isArray(r1.toolCalls)) ? r1.toolCalls.slice(0, 4) : [];  // 护栏 ≤4/势力
+      if (!toolCalls.length) {
+        // 未查工具 → r1.text 即决策 JSON(简单回合·1 轮即出·更省)
+        var p0 = _parseDecisionJson((r1 && r1.text) || '');
+        if (p0) { _recordFacToolStat(fac.name, 1, 0, []); return { parsed: p0, diagnostics: { kind: 'ok', via: 'tools', rounds: 1, toolCalls: 0, maxTokens: maxTokens } }; }
+        return _callLLMDecision(_buildPrompt(fac), opts);  // 既没查也没给 JSON → 回落原单发
+      }
+      // 执行工具·收集结果(handle 已 async·须 await·注入真 _format*/②recall)
+      var toolResultText = '', _toolNames = [];
+      for (var _ti = 0; _ti < toolCalls.length; _ti++) {
+        var _tc = toolCalls[_ti] || {};
+        if (!_tc.name) continue;
+        var _res = await global.TM.FactionDecisionTools.handle(_tc.name, _tc.input || {}, ctx);
+        toolResultText += '\n\n【工具·' + _tc.name + '】\n' + ((_res && _res.text) || '(无)');
+        _toolNames.push(_tc.name);
+      }
+      // 第二轮：核心 + 工具结果 → 出决策(单发·复用 callAI)·【S3】id 记账
+      var round2 = combined + '\n\n你已按需查得以下补充情报：' + toolResultText + '\n\n现综合全部情报·只返回决策 JSON(格式如上·不要 markdown 不要解释)。';
+      var raw2 = await _withTimeout(global.callAI(round2, maxTokens, null, 'secondary', {
+        priority: 'background', maxRetries: 1, timeoutMs: timeoutMs || undefined, id: 'faction_tool:r2'
+      }), timeoutMs);
+      var p2 = _parseDecisionJson(raw2);
+      if (p2) { _recordFacToolStat(fac.name, 2, _toolNames.length, _toolNames); return { parsed: p2, diagnostics: { kind: 'ok', via: 'tools', rounds: 2, toolCalls: _toolNames.length, maxTokens: maxTokens } }; }
+      return _callLLMDecision(_buildPrompt(fac), opts);  // 第二轮没解析出 → 回落原单发(保决策不丢)
+    } catch (e) {
+      try { console.warn('[npc-llm-decision·tools] fallback to single-shot:', (e && e.message) || e); } catch (_) {}
+      return _callLLMDecision(_buildPrompt(fac), opts);  // 任何异常 → 回落原单发
+    }
   }
 
   var VALID_MEM_TYPES = ['军务','政务','民生','经济','人事','密奏'];
@@ -2053,8 +2222,14 @@
     if (!ledgerRun.ok) return { skipped: true, reason: ledgerRun.reason, turn: ledgerRun.turn, currentTurn: ledgerRun.currentTurn };
     var ledgerToken = ledgerRun.token;
 
-    var prompts = _buildPrompt(fac);
-    var callResult = await _callLLMDecision(prompts, opts);
+    // 【A·按需取数 S2】开关开→工具路径(势力按需取数·2轮)·关→原单发(下两行字节不变·零回归)
+    var callResult;
+    if (global.P && (typeof agentFlagOn === 'function' ? agentFlagOn('factionToolDecisionEnabled') : (P.conf && P.conf.factionToolDecisionEnabled))) {
+      callResult = await _decideViaTools(fac, opts);
+    } else {
+      var prompts = _buildPrompt(fac);
+      callResult = await _callLLMDecision(prompts, opts);
+    }
     var raw = callResult && callResult.parsed;
     var callDiagnostics = (callResult && callResult.diagnostics) || null;
     if (_isLedgerTokenStale(ledgerToken)) {
@@ -2073,6 +2248,23 @@
       return { skipped: true, reason: 'decision invalid', fallbackToTemplate: true };
     }
     var summary = _applyDecision(fac, decision);
+    // ③-S3 闭环：消费 LLM 报告的 goalUpdates·更新前瞻式目标栈（开关 P.conf.factionGoalStackEnabled·默认关）
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionGoalStackEnabled') : (P.conf && P.conf.factionGoalStackEnabled)) && global.TM && global.TM.FactionGoalStack && decision && decision.goalUpdates) {
+      try {
+        var _gu = global.TM.FactionGoalStack.applyUpdates(fac, decision.goalUpdates, _currentTurn());
+        if (summary && typeof summary === 'object') summary.goalUpdates = _gu;
+      } catch (_guE) {}
+    }
+    // 【势力 agent 社会·双向外交 S1】先回应收到的提议(结盟/结怨/还价)·再发起本派新提议(存目标派·跨回合)·开关 factionAgentEnabled·默认关·零额外调用(骑本次决策)
+    if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionAgentEnabled') : (P.conf && P.conf.factionAgentEnabled)) && global.TM && global.TM.FactionDiplomacy && decision) {
+      try {
+        if (Array.isArray(decision.proposalResponses) && decision.proposalResponses.length) global.TM.FactionDiplomacy.applyResponses(fac, decision.proposalResponses, _currentTurn());
+        if (Array.isArray(decision.proposals) && decision.proposals.length) {
+          var _dp = global.TM.FactionDiplomacy.recordProposals(fac.name, decision.proposals, _currentTurn());
+          if (summary && typeof summary === 'object') summary.diplomacy = _dp;
+        }
+      } catch (_dpE) {}
+    }
     _finishLedgerRun(ledgerToken, 'applied');
     return { applied: true, summary: summary, rationale: decision.rationale };
   }
@@ -2271,6 +2463,7 @@
       dispatch: dispatch,
       turnLedger: turnLedger,
       actionLedger: _arr(fac && fac._npcLlmActionLedger).slice(),
+      goalStack: (fac && fac.aiStrategy && Array.isArray(fac.aiStrategy.goals)) ? fac.aiStrategy.goals.slice() : [],
       lastRationale: fac && fac._lastLlmRationale || null,
       lastApplySummary: fac && fac._lastLlmApplySummary || null,
       qijuWrites: qijuWrites.slice(-12)
@@ -2317,7 +2510,8 @@
         mergedActions: (f._lastLlmApplySummary && f._lastLlmApplySummary.mergedActions) || 0,
         sc16ComplianceScore: sc ? sc.complianceScore : null,  // F2·null = 无 directive·0 = 完全忽视
         sc16DirectiveCount: sc ? sc.directiveCount : 0,
-        rationale: (f._lastLlmRationale && f._lastLlmRationale.text) ? String(f._lastLlmRationale.text).slice(0, 60) : ''
+        rationale: (f._lastLlmRationale && f._lastLlmRationale.text) ? String(f._lastLlmRationale.text).slice(0, 60) : '',
+        goals: (global.TM && TM.FactionGoalStack && typeof TM.FactionGoalStack.summarize === 'function') ? TM.FactionGoalStack.summarize(f) : null
       });
     });
 
@@ -2395,6 +2589,8 @@
     decideAll: decideAll,
     getGlobalNpcLlmStatus: getGlobalNpcLlmStatus,
     _buildPrompt: _buildPrompt,
+    _buildPromptCore: _buildPromptCore,   // 【A·S2】测试/观测用·core 模式 prompt(只核心段+工具说明)
+    _decideViaTools: _decideViaTools,     // 【A·S2】测试用·工具决策路径
     buildRecentTrajectoryContextForSc16: buildRecentTrajectoryContextForSc16,
     buildFactionAdminSummaryForSc16: buildFactionAdminSummaryForSc16,
     _formatOwnAdminHierarchy: _formatOwnAdminHierarchy,

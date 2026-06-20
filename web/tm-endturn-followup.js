@@ -2465,6 +2465,15 @@
 
       // --- Sub-call 2.7: 叙事质量审查与增强 --- [standard+full]
       await _runSubcall('sc27', '叙事审查', 'standard', async function() {
+      // 【降本·2026-06-19·QC栈瘦身】sc27=纯叙事正文润色(查时代错/人名 + 追加 rewritten_passages/added_details 到 zhengwen)·
+      //   与 sc_audit(结构化数据一致性·承重·保留)职能不重叠不可合并·属 QC 栈最低承重项
+      //   (下方实为"追加重写版"而非替换最弱段·跳过后 zhengwen 仍是 sc2 产出的合法完整正文)·
+      //   默认关省每回合一次 standard 调用·剧本/玩家可设 P.ai.narrativeReviewEnabled=true 恢复。
+      if (!(P.ai && P.ai.narrativeReviewEnabled)) {
+        if (GM._turnAiResults) GM._turnAiResults.subcall27 = { _skipped: 'narrativeReviewDisabled' };
+        _dbg('[sc27] skip·叙事审查默认关(降本)·zhengwen 用 sc2 原文');
+        return;
+      }
       showLoading("\u53D9\u4E8B\u8D28\u91CF\u5BA1\u67E5",85);
       try {
         var _reviewText27 = String(zhengwen || '');
@@ -2721,7 +2730,7 @@
       }); }; // end Sub-call 0.7 (P8.2: 包成 _runSc07 函数·并行调度)
 
       // 2026-05-17 Codex: narrower foreground DAG.
-      // sc2 starts after sc15; sc27 waits for specialty/audit and can add late details.
+      // 2026-06 降本: sc2 now runs CONCURRENTLY with sc15 (decoupled·reads sc15 mirror via _buildLateSpecialtySummary opportunistically·null-safe); sc27 waits for specialty/audit and can add late details.
       try {
         var _branchASettledP = _branchA.then(function(){ return null; }, function(e){ return e; });
         var _branchBSettledP = _branchB.then(function(){ return null; }, function(e){ return e; });
@@ -2730,7 +2739,11 @@
           return _runConsistencyAudit().then(function(){ return null; }, function(e){ return e; });
         });
 
-        var _sc07P = _branchASettledP.then(function(){
+        var _sc07P = _branchASettledP.then(function(branchAError){
+          if (branchAError) {  // 【降本·time 2026-06】branchA 错误日志移此·因 sc2 已与 branchA 解依赖·原日志在 _branchCSc2ReadyP·此处仍链 branchA 故不丢
+            var _ctxA = 'post-sc1 branchA';
+            (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(branchAError, _ctxA) : console.warn('[' + _ctxA + ']', branchAError);
+          }
           return _runSc07().then(function(){ return null; }, function(e){ return e; });
         });
 
@@ -2743,13 +2756,8 @@
           return null;
         });
 
-        var _branchCSc2ReadyP = _branchASettledP.then(function(branchAError){
-          if (branchAError) {
-            var _ctx = 'post-sc1 branchA';
-            (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(branchAError, _ctx) : console.warn('[' + _ctx + ']', branchAError);
-          }
-          return _runBranchC().then(function(){ return null; }, function(e){ return e; });
-        });
+        // 【降本·time 2026-06】sc2 叙事与 branchA(sc15) 解依赖·并发起跑(三路本设计为"无交集字段"·见 L435 注释)·sc2 仅经 _buildLateSpecialtySummary 读 sc15 镜像·缺则 .filter(Boolean) 跳过=null-safe·前台墙钟省≈一个 sc15 时长·branchA 错误已移 _sc07P 捕获·branchA 仍由 _sc07P 链 await(完成早于 _finalSettled·下游 sc15 消费不受影响)
+        var _branchCSc2ReadyP = _runBranchC().then(function(){ return null; }, function(e){ return e; });
 
         var _finalSettled = await Promise.all([_auditP, _branchCSc2ReadyP, _sc07P]);
         _finalSettled.forEach(function(e, i) {
@@ -2761,6 +2769,18 @@
 
       // --- Sub-call 2.8: 世界状态深度快照 --- [full only]
       _queuePostTurnSubcall('sc28', function(){ return _runSubcall('sc28', '世界快照', 'full', async function() {
+      // 【降本·2026-06-19·记忆金字塔收敛】sc28(世界快照) 与 sc25c.strategic(跨回合综述) 重叠——
+      //   同~400字世界态摘要·同源输入(shizhengji/zhengwen/playerStatus)·且 sc25c.strategic 本就读 sc28 输出再综合(本文件 L2069)·
+      //   消费端 _sc28Inject【世界状态】与 _consolidated【整合摘要】在下回合 sc1 prompt 相邻双注入(tm-endturn-ai.js L2127/L2159)·实为重复。
+      //   sc25c 开启时(默认)将 sc28 折叠进 sc25c·世界态交接由更密的 _consolidated 承担·_foreshadows 由 sc25c.tactical(immediate_foreshadow) 喂·
+      //   _sc28Inject 因 _lastSc28Snapshot 不更新而自然空跳(stale 守卫·不崩)·省每回合一次 full 调用(回合末记忆固化 3→2)·铺路记忆管家 agent。
+      //   仅 sc25c 关闭(legacy sc25+sc_consolidate 路径·该路不产 world_snapshot)或 P.ai.sc28Enabled=true 时才独立跑 sc28。
+      var _sc28Folded = !(P.ai && P.ai.sc28Enabled === true) && !(P.ai && P.ai.sc25cEnabled === false);
+      if (_sc28Folded) {
+        _dbg('[sc28] skip·折叠进 sc25c.strategic(记忆金字塔收敛·降本)');
+        if (GM._turnAiResults) GM._turnAiResults.subcall28 = { _foldedIntoSc25c: true };
+        return;
+      }
       _dbg('[PostTurn] sc28 start');
       try {
         var _ptQueue28 = GM._postTurnJobs || null;
@@ -3045,11 +3065,22 @@
              'memThresh:', _memCompressThreshold, 'foreThresh:', _foreCompressThreshold,
              'convThresh:', _convCompressThreshold);
 
+        // 【记忆管家 agent·S2 接线·2026-06-19】P.ai.memoryStewardEnabled 开时·记忆管家单次结构化固化接管 compress×3 + L2/L3·
+        //   下方 3 个 compress 跳过(L2/L3 在 post-turn-jobs.js 跳)·queue 单次 run()·等 sc25/sc28/sc_consolidate 完再扫(sc28 会向 _aiMemory/_foreshadows 追加)。默认关=原 6 pass 跑·逐字节零回归。
+        var _stewardOn = !!(window.TM && window.TM.MemorySteward && window.TM.MemorySteward.shouldHandle(GM));
+        if (_stewardOn) {
+          _queuePostTurnSubcall('memory_steward', function(){ return _runSubcall('memory_steward', '记忆管家固化', 'lite', async function(){
+            await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc28', 'sc_consolidate']);
+            try { var _msr = await window.TM.MemorySteward.run(GM, {}); _dbg('[memory_steward] ' + JSON.stringify(_msr)); }
+            catch(_mse){ _dbg('[memory_steward] fail:', _mse); }
+          }); });
+        }
+
         var _needCompress = false;
         var _compressPrompt = '你是记忆压缩AI。请将以下旧记忆压缩为高密度摘要，保留所有关键信息（人物关系变化、重大事件、势力消长、伏笔线索、因果链），丢弃重复和琐碎内容。\n\n';
 
         // 压缩AI记忆
-        if (GM._aiMemory && GM._aiMemory.length > _memCompressThreshold) {
+        if (!_stewardOn && GM._aiMemory && GM._aiMemory.length > _memCompressThreshold) {
           _queuePostTurnSubcall('compress_ai_memory', function(){ return _runSubcall('compress_ai_memory', '压缩AI记忆', 'lite', async function() {
           await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc28', 'sc_consolidate']);
           if (!GM._aiMemory || GM._aiMemory.length <= _memCompressThreshold) return;
@@ -3087,7 +3118,7 @@
         }
 
         // 压缩伏笔
-        if (GM._foreshadows && GM._foreshadows.length > _foreCompressThreshold) {
+        if (!_stewardOn && GM._foreshadows && GM._foreshadows.length > _foreCompressThreshold) {
           _queuePostTurnSubcall('compress_foreshadows', function(){ return _runSubcall('compress_foreshadows', '整理伏笔', 'lite', async function() {
           await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc28', 'sc_consolidate']);
           if (!GM._foreshadows || GM._foreshadows.length <= _foreCompressThreshold) return;
@@ -3124,7 +3155,7 @@
 
         // 压缩对话历史
         var _maxConvForCompress = (P.conf && P.conf.convKeep) || ((P.ai.mem || 20) * 2);
-        if (GM.conv && GM.conv.length > _convCompressThreshold && GM.conv.length > _maxConvForCompress * 0.7) {
+        if (!_stewardOn && GM.conv && GM.conv.length > _convCompressThreshold && GM.conv.length > _maxConvForCompress * 0.7) {
           _queuePostTurnSubcall('compress_conversation', function(){ return _runSubcall('compress_conversation', '压缩对话', 'lite', async function() {
           if (!GM.conv || GM.conv.length <= _convCompressThreshold || GM.conv.length <= _maxConvForCompress * 0.7) return;
           var _halfConv = Math.floor(GM.conv.length / 2);

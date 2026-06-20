@@ -153,9 +153,9 @@
       var raw;
       try {
         if (typeof callAISmart === 'function') {
-          raw = await callAISmart(prompt, 2500, { maxRetries: 2 });
+          raw = await callAISmart(prompt, 2500, { maxRetries: 1, tier: (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined });  // 【降本2026-06-19】情节弧(后台叙事增强)走次 API + retry 2→1(无validator·仅异常重试)
         } else if (typeof callAI === 'function') {
-          raw = await callAI(prompt, 2500, signal);
+          raw = await callAI(prompt, 2500, signal, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);  // 【降本2026-06-19】走次 API(fallback 路径对齐)
         }
       } catch(e) {
         if (e && e.name === 'AbortError') { console.log('[情节弧] 已取消'); return; }

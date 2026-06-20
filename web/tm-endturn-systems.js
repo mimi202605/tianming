@@ -444,6 +444,27 @@ async function _endTurn_updateSystems(timeRatio, zhengwen) {
     (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'endTurn] 刚性触发器检查失败:') : console.error('[endTurn] 刚性触发器检查失败:', e);
   }
 
+  // 6.884 党争张力年度衰减(治"只升不降"·decay 自身年度幂等·换年才实降·防 tension 永久累积)
+  try {
+    if (typeof _kjDecayFactionTension === 'function') _kjDecayFactionTension();
+  } catch(e) {
+    (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'endTurn] 党争张力衰减失败:') : console.error('[endTurn] 党争张力衰减失败:', e);
+  }
+
+  // 6.885b 统一事件总线 drain(事件系统统一·S3 渲染器接入·开关 eventUnificationEnabled 默认关·零回归)
+  // cleanExpired 清超时 + 取一个待处理事件渲染模态(openGenericModal 自动后朝排队·一回合一个·_processing 单个语义·存档友好);玩家选→resolveChoice 出 S2 后果。来源(S4)未接前队列恒空·空转无副作用
+  try {
+    if (typeof eventUnificationOn === 'function' && eventUnificationOn()
+        && typeof StoryEventBus !== 'undefined' && StoryEventBus) {
+      StoryEventBus.cleanExpired();
+      var _se = (StoryEventBus.getCurrentEvent && StoryEventBus.getCurrentEvent()) || StoryEventBus.processNext();
+      if (_se && typeof renderStoryEventModal === 'function') renderStoryEventModal(_se);
+    }
+  } catch(e) {
+    (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'endTurn] 事件总线drain失败:') : console.error('[endTurn] 事件总线drain失败:', e);
+  }
+
+
   // 6.885 检查科举筹办完成
   if(GM.keju && GM.keju.preparingExam && zhengwen) {
     // 检查AI是否在正文中提到科举筹办完成、科举开考等关键词

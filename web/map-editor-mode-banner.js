@@ -96,6 +96,24 @@
       });
     }
 
+    // 子绘制（层级·在父地块内画下级·闭合自动裁到父内）
+    if (EDITOR.childDrawParentId){
+      var _cp = null, _cds = EDITOR.map.divisions;
+      for (var _ci = 0; _ci < _cds.length; _ci++){ if (_cds[_ci].id === EDITOR.childDrawParentId){ _cp = _cds[_ci]; break; } }
+      var _HG = TM.MapEditor.hierarchicalGen;
+      var _nl = (_cp && _HG) ? _HG.nextLevel(EDITOR.map.dynasty, _cp.level) : null;
+      var _dyn = TM.MapEditor.dynasty.get(EDITOR.map.dynasty);
+      var _nlObj = (_nl && _dyn) ? _dyn.levels.filter(function(L){ return L.key === _nl; })[0] : null;
+      modes.push({
+        id: 'child-draw',
+        label: '子绘制',
+        hint: '在【' + ((_cp && _cp.name) || '?') + '】内画' + ((_nlObj && _nlObj.label) || _nl || '下级') + '·闭合自动裁到父内',
+        color: '#d8b863',
+        bgColor: 'rgba(216,184,99,0.16)',
+        exitHint: 'Esc 退'
+      });
+    }
+
     return modes;
   }
 

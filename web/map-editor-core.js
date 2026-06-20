@@ -178,6 +178,7 @@
     // tools
     activeTool: 'select',  // V/P/E/M/S/T/H/Z/A
     penPoints: [],          // 当前 pen 在画的顶点
+    childDrawParentId: null, // 非空=子绘制模式·正在此父(省/路)地块内手动画下级(府/县)
     draggingVertex: null,   // { divId, vertexIdx } when E tool
     draggingMap: false,
     dragStart: null,        // { x, y, camX, camY }
@@ -977,6 +978,33 @@
       ctx.fill();
     }
 
+    // 子绘制模式·高亮父地块(金描边+发光+淡填充·提示在此父内画下级·配合 mode-banner)
+    if (EDITOR.childDrawParentId){
+      var _pd = null, _pds = EDITOR.map.divisions;
+      for (var _pi = 0; _pi < _pds.length; _pi++){ if (_pds[_pi].id === EDITOR.childDrawParentId){ _pd = _pds[_pi]; break; } }
+      if (_pd && _pd.polygon && _pd.polygon.length >= 3){
+        var _pz = EDITOR.camera.zoom;
+        var _prings = [_pd.polygon].concat(_pd.extraPolygons || []);
+        ctx.save();
+        _prings.forEach(function(_rg){
+          if (!_rg || _rg.length < 3) return;
+          ctx.beginPath();
+          ctx.moveTo(_rg[0][0], _rg[0][1]);
+          for (var _k = 1; _k < _rg.length; _k++){ ctx.lineTo(_rg[_k][0], _rg[_k][1]); }
+          ctx.closePath();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = 'rgba(255,215,0,0.07)';
+          ctx.fill();
+          ctx.lineWidth = 3 / _pz;
+          ctx.strokeStyle = 'rgba(255,215,0,0.95)';
+          ctx.shadowColor = 'rgba(255,215,0,0.85)';
+          ctx.shadowBlur = 12 / _pz;
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+    }
+
     // pen preview·支持 pen / addPoly / addHole·色码区分
     if ((EDITOR.activeTool === 'pen' || EDITOR.activeTool === 'addPoly' || EDITOR.activeTool === 'addHole')
         && EDITOR.penPoints.length){
@@ -1419,6 +1447,82 @@
     fire('tool-change', { tool: t });
   }
 
+  // ─── 子绘制模式（层级绘制）·在选中父地块(省/路)内手动画下级(府/县) ───────
+  //   复用 createDivision + hierarchicalGen.nextLevel(级别链) + polyUtils.polygonBoolean(robust 交集·裁到父内)。
+  //   跨朝代中立：级别名走 dynasty 级别链·不写死省/府。
+
+  function _polyArea(poly){
+    var s = 0;
+    for (var i = 0; i < poly.length; i++){ var a = poly[i], b = poly[(i + 1) % poly.length]; s += a[0] * b[1] - b[0] * a[1]; }
+    return Math.abs(s) / 2;
+  }
+
+  function _findDivisionById(id){
+    var ds = EDITOR.map.divisions;
+    for (var i = 0; i < ds.length; i++){ if (ds[i].id === id) return ds[i]; }
+    return null;
+  }
+
+  function enterChildDraw(parentId){
+    var p = _findDivisionById(parentId);
+    if (!p) return;
+    var HG = global.TM && TM.MapEditor.hierarchicalGen;
+    var nl = HG ? HG.nextLevel(EDITOR.map.dynasty, p.level) : null;
+    if (!nl){ if (global.meToast) meToast((p.name || p.level) + ' 已是最末级·无下级可画', 'warn', 2400); return; }
+    EDITOR.childDrawParentId = parentId;
+    EDITOR.penPoints = [];
+    setTool('pen');
+    if (global.meToast) meToast('在【' + (p.name || '?') + '】内画下级（' + nl + '）·闭合成块·自动裁到父内·Esc 退出', 'info', 3600);
+    requestRender();
+  }
+
+  function exitChildDraw(){
+    if (!EDITOR.childDrawParentId) return;
+    EDITOR.childDrawParentId = null;
+    EDITOR.penPoints = [];
+    if (global.meToast) meToast('已退出子绘制模式', 'info', 1500);
+    requestRender();
+  }
+
+  // pen 闭合时若处于子绘制模式则调用：把手画多边形裁到父内·建为下级 division。返回子 div 或 null。
+  function createChildDivision(poly){
+    var parent = EDITOR.childDrawParentId ? _findDivisionById(EDITOR.childDrawParentId) : null;
+    if (!parent || !parent.polygon || parent.polygon.length < 3){
+      if (global.meToast) meToast('父地块异常·已退出子绘制', 'error');
+      EDITOR.childDrawParentId = null;
+      return null;
+    }
+    var HG = global.TM && TM.MapEditor.hierarchicalGen;
+    var PU = global.TM && TM.MapEditor.polyUtils;
+    var nl = HG ? HG.nextLevel(EDITOR.map.dynasty, parent.level) : null;
+    if (!nl){ if (global.meToast) meToast(parent.level + ' 无下级·无法建子', 'warn'); return null; }
+    // robust 交集裁到父内（凹父也对）·余环作飞地（exclave）
+    var rings = (PU ? PU.polygonBoolean(poly, parent.polygon, 'int') : [])
+      .map(function(r){ return r && r.outer ? r.outer : r; })
+      .filter(function(r){ return r && r.length >= 3; });
+    if (!rings.length){
+      if (global.meToast) meToast('所画区域在【' + (parent.name || '父') + '】之外·请画在父地块范围内', 'warn', 2800);
+      return null;
+    }
+    rings.sort(function(a, b){ return _polyArea(b) - _polyArea(a); });
+    var siblings = EDITOR.map.divisions.filter(function(d){ return d.parentId === parent.id; }).length;
+    var child = createDivision({
+      name: (parent.name || '') + '·下辖' + (siblings + 1),
+      level: nl,
+      regionType: parent.regionType,
+      polygon: rings[0],
+      extraPolygons: rings.slice(1)
+    });
+    child.parentId = parent.id;
+    child.region = parent.region || parent.regionType;
+    if (parent.autonomy) child.autonomy = Object.assign({}, parent.autonomy);
+    if (parent.factionId) child.factionId = parent.factionId;
+    recomputeDerived(child);
+    addDivision(child);
+    selectOne(child.id);
+    return child;
+  }
+
   // ─── layer toggle ────────────────────────────────────────
 
   function toggleLayer(key){
@@ -1444,6 +1548,9 @@
     rotateBitmapBy: rotateBitmapBy,
     setBitmapRotation: setBitmapRotation,
     setTool: setTool,
+    enterChildDraw: enterChildDraw,
+    exitChildDraw: exitChildDraw,
+    createChildDivision: createChildDivision,
     toggleLayer: toggleLayer,
     requestRender: requestRender,
     resizeCanvas: resizeCanvas,

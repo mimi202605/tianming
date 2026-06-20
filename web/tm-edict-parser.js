@@ -1792,6 +1792,19 @@
       corruption: hq < 40 ? 40 : 15,
       history: []
     };
+    // 官制活化 Slice④d·双表示收口：开 officeReformAdjudicationEnabled 时·设衙门改走 officeTree 改制拟制态(过廷议裁定·归官制树)·早返回·不再另造 dynamicInstitution(防双表示)·关则原样零回归
+    var _viaReform = false;
+    try {
+      if (typeof global.officeFlagOn === 'function' && global.officeFlagOn('officeReformAdjudicationEnabled') && typeof global.enqueuePendingReform === 'function') {
+        global.enqueuePendingReform(G, { action: 'reform', reformDetail: '增设', dept: inst.name, reason: inst.duties || '设衙门', newRank: inst.rank }, G.turn || 0);
+        _viaReform = true; inst.stage = 'pendingReform'; inst._viaReform = true;
+      }
+    } catch (_grdE) {}
+    if (_viaReform) {
+      if (global.addEB) global.addEB('机构', '设 ' + inst.name + ' 之议入拟制·待廷议裁定（官制活化·改制归官制树·不另立机构）');
+      _recordInstitutionLifecycleEvent(inst, 'pending_reform', { source: inst.createdBy || 'edict' });
+      return inst;
+    }
     G.dynamicInstitutions.push(inst);
     if (hq > 75 && typeof G.huangquan === 'object') {
       if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangquan) {

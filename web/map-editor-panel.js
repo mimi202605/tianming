@@ -270,6 +270,26 @@
     var lvlOpts = dyn.levels.map(function(L){
       return '<option value="' + L.key + '"' + (L.key === d.level ? ' selected' : '') + '>' + esc(L.label) + '</option>';
     }).join('');
+    // 层级绘制入口：此地块若有下级（按朝代级别链）·给「在此区内画下级」按钮·名称走级别链不写死
+    var _HG = TM.MapEditor.hierarchicalGen;
+    var _childLvlKey = _HG ? _HG.nextLevel(dynastyId, d.level) : null;
+    var _childLvlObj = _childLvlKey ? dyn.levels.filter(function(L){ return L.key === _childLvlKey; })[0] : null;
+    var _childLabel = _childLvlObj ? _childLvlObj.label : (_childLvlKey || '');
+    var drawChildBtn = _childLvlKey ? '<button class="me-btn me-btn-child" data-act="draw-child" title="进入子绘制·在此地块内手动画' + esc(_childLabel) + '·闭合成块自动裁到父内·Esc 退出">▽ 在此画' + esc(_childLabel) + '</button>' : '';
+    // 层级关系（slice4·父子管理）：上级链接 + 下辖列表（可点跳转）
+    var _hierRows = '';
+    if (d.parentId){
+      var _par = ME.EDITOR.map.divisions.filter(function(x){ return x.id === d.parentId; })[0];
+      if (_par){
+        var _parLvlObj = dyn.levels.filter(function(L){ return L.key === _par.level; })[0];
+        _hierRows += '<div class="me-hier-row" style="font-size:11px;padding:3px 0;color:#b9b3a3;">▲ 上级 <a data-jump-hier="' + _par.id + '" style="color:#d8b863;cursor:pointer;text-decoration:underline;">' + esc(_par.name) + '</a>' + (_parLvlObj ? ' <span style="opacity:.6;">' + esc(_parLvlObj.label) + '</span>' : '') + '</div>';
+      }
+    }
+    var _kids = ME.EDITOR.map.divisions.filter(function(x){ return x.parentId === d.id; });
+    if (_kids.length){
+      var _kidLbl = (_childLvlObj && _childLvlObj.label) || _childLvlKey || '下级';
+      _hierRows += '<div class="me-hier-row" style="font-size:11px;padding:3px 0;color:#b9b3a3;">▼ 下辖 <b>' + _kids.length + '</b> ' + esc(_kidLbl) + '：' + _kids.slice(0, 40).map(function(k){ return '<a data-jump-hier="' + k.id + '" style="color:#d8b863;cursor:pointer;text-decoration:underline;">' + esc(k.name) + '</a>'; }).join('、') + (_kids.length > 40 ? ' …等 ' + _kids.length + ' 个' : '') + '</div>';
+    }
 
     var tabs = ['basic', 'pop', 'econ', 'gov', 'history', 'flags'];
     var tabLabels = { basic:'基本', pop:'人口', econ:'经济', gov:'治理', history:'史', flags:'标' };
@@ -306,10 +326,12 @@
       <div class="me-panel-hdr">\
         <input class="me-hdr-name" data-f="name" value="' + esc(d.name) + '" placeholder="省名" />\
         <div class="me-hdr-meta">id <code>' + d.id.slice(-8) + '</code> · 顶 <b>' + totalVerts + '</b> (主 ' + d.polygon.length + (nExtra > 0 ? ' + ' + nExtra + ' 飞 ' + extraVerts : '') + (nHoles > 0 ? ' + ' + nHoles + ' 圈 ' + holeVerts : '') + ') · 面 <b>' + Math.round(d.area) + '</b> · 邻 <b>' + (d.neighbors||[]).length + '</b></div>\
+        ' + _hierRows + '\
         ' + exclaveHtml + '\
         ' + holeHtml + '\
         <div class="me-actions">\
           <button class="me-btn" data-act="dup">复制</button>\
+          ' + drawChildBtn + '\
           <button class="me-btn" data-act="add-exclave">+ 飞地</button>\
           <button class="me-btn" data-act="add-hole">+ 圈</button>\
           <button class="me-btn" data-act="recompute">重算几何</button>\
@@ -803,6 +825,18 @@
         if (statusEl) statusEl.textContent = '加圈·' + d.name + '·圈应在主 polygon 内·点顶·近首点闭合';
       });
     }
+    if ((btn = _container.querySelector('[data-act="draw-child"]'))){
+      btn.addEventListener('click', function(){
+        ME.enterChildDraw(d.id);  // 进子绘制·在此地块内画下级·闭合自动裁到父内·Esc 退出
+      });
+    }
+    // 层级跳转（slice4）：点上级/下辖名字 → 选中该地块
+    _container.querySelectorAll('[data-jump-hier]').forEach(function(a){
+      a.addEventListener('click', function(){
+        var jid = a.getAttribute('data-jump-hier');
+        if (jid) ME.selectOne(jid);
+      });
+    });
     // 删某个飞地
     _container.querySelectorAll('[data-exclave-del]').forEach(function(b){
       b.addEventListener('click', function(){

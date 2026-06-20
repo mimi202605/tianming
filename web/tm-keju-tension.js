@@ -6,7 +6,7 @@
 //   * tension 全 0 起步·initFactionTension 调用点·initKejuSystem 或 endTurn 首次
 //   * update·{ party, delta, reason } 单条事件·上下钳·写 addEB
 //   * decay·endTurn 钩子·每年 -0.5 (向下取整)·防 tension 永久累积
-//   * 敌党表·历史 hardcode·东林/阉党/浙楚齐宣昆·北宋新旧·南宋主战主和·唐牛李
+//   * 敌党表·优先读剧本党派 conflictWith/enemies/rivals·缺则回落历史兜底表(东林/阉党·北宋新旧·南宋主战主和·唐牛李)
 //   * leaders·从 GM.chars 找该党 (intelligence+influence) top 3
 //
 // 浏览器 + Node 双兼容·纯函数无副作用 (除写 GM._factionTension + addEB)
@@ -88,6 +88,23 @@
    */
   function _kjGetEnemyParties(party) {
     if (!party || typeof party !== 'string') return [];
+    // 跨朝代·优先读剧本党派自带敌对关系(conflictWith/enemies/rivals·与 tm-class-engine:390 / phase8-formal-rightrail:2923 同约定)
+    var _gm = _kjGM();
+    if (_gm && Array.isArray(_gm.parties)) {
+      var _pObj = null;
+      for (var _i = 0; _i < _gm.parties.length; _i++) {
+        if (_gm.parties[_i] && _gm.parties[_i].name === party) { _pObj = _gm.parties[_i]; break; }
+      }
+      if (_pObj) {
+        var _declared = _pObj.conflictWith || _pObj.enemies || _pObj.rivals;
+        if (Array.isArray(_declared) && _declared.length) {
+          return _declared.map(function (x) {
+            return typeof x === 'string' ? x : String((x && (x.name || x.party)) || '');
+          }).filter(Boolean);
+        }
+      }
+    }
+    // 兜底·剧本未声明敌对关系时用历史 hardcode 表(向后兼容·不破坏现有剧本党争)
     var table = {
       // 明·东林周边
       '东林':   ['阉党', '浙党', '楚党', '齐党', '宣党', '昆党'],
@@ -145,6 +162,15 @@
     _kjInitFactionTension();
     var gm = _kjGM();
     if (!gm || !gm._factionTension) return;
+    // 年度幂等·每年只衰减一次(挂 endTurn 每回合调用·靠换年判定·防每回合降太快)·node/无年份时降级为每次调用衰减
+    try {
+      var _yr = (typeof getCurrentYear === 'function') ? getCurrentYear()
+              : (typeof window !== 'undefined' && typeof window.getCurrentYear === 'function') ? window.getCurrentYear() : null;
+      if (_yr !== null && _yr !== undefined) {
+        if (gm._ftLastDecayYear === _yr) return;
+        gm._ftLastDecayYear = _yr;
+      }
+    } catch (e) { /* 降级·无年份则每次调用衰减 */ }
     Object.keys(gm._factionTension).forEach(function (k) {
       gm._factionTension[k] = Math.max(0, Math.floor((gm._factionTension[k] || 0) - 0.5));
     });

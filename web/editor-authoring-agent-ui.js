@@ -133,7 +133,7 @@
     if (!sc) return null;
     var map = {};
     ['factions', 'characters'].forEach(function(field) {
-      (sc[field] || []).forEach(function(e) { var n = e && (e.name || e.title || e.id); n = n && String(n); if (n && n.length >= 2 && !map[n]) map[n] = field; });
+      (Array.isArray(sc[field]) ? sc[field] : []).forEach(function(e) { var n = e && (e.name || e.title || e.id); n = n && String(n); if (n && n.length >= 2 && !map[n]) map[n] = field; });
     });
     return Object.keys(map).length ? map : null;
   }
@@ -366,7 +366,15 @@
     if (ui._atWired) return; ui._atWired = true; ui._mentions = ui._mentions || [];
     var ta = ui.els && ui.els.req; if (!ta) return;
     ta.addEventListener('input', _showAtPop);
-    ta.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && ui._atActive) { ev.stopPropagation(); _hideAtPop(); } });
+    ta.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && ui._atActive) { ev.stopPropagation(); _hideAtPop(); return; }
+      // Enter 发送 · Shift+Enter 换行（输入法合成中 / @提及浮层激活时不触发；Ctrl/⌘+Enter 亦发送）
+      var _isEnter = (ev.key === 'Enter' || ev.keyCode === 13);
+      if (_isEnter && !ev.isComposing && !ui._atActive && (!ev.shiftKey || ev.metaKey || ev.ctrlKey)) {
+        ev.preventDefault();
+        if (!ui.running && typeof onGoClick === 'function') onGoClick();
+      }
+    });
     if (ui.els.atpop) ui.els.atpop.addEventListener('mousedown', function (ev) { var b = ev.target && ev.target.closest ? ev.target.closest('.tm-aa-atitem') : null; if (b) { ev.preventDefault(); _selectMention(b.getAttribute('data-label')); } });
     if (ui.els.mentions) ui.els.mentions.addEventListener('click', function (ev) { var x = ev.target && ev.target.closest ? ev.target.closest('.tm-aa-mx') : null; if (x) { var nm = x.getAttribute('data-m'); ui._mentions = (ui._mentions || []).filter(function (k) { return k !== nm; }); _renderMentionChips(); if (ui._ctx) ui._ctx._sig = null; _refreshCtxChip(); } });
     document.addEventListener('click', function (ev) { if (ui._atActive && ui.els.atpop && !ui.els.atpop.contains(ev.target) && ev.target !== ta) _hideAtPop(); });
@@ -404,36 +412,40 @@
   function injectStyles() {
     if (document.getElementById('tm-aa-style')) return;
     var css = [
-      '#tm-aa-fab{position:fixed;right:18px;bottom:18px;z-index:99998;background:#7a5cff;color:#fff;border:none;',
+      '#tm-aa-fab{position:fixed;right:18px;bottom:18px;z-index:99998;background:#d97757;color:#fff;border:none;',
       'border-radius:24px;padding:10px 16px;font-size:13px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);font-family:inherit}',
-      '#tm-aa-fab:hover{background:#8c72ff}',
+      '#tm-aa-fab:hover{background:#e08a6b}',
       '#' + PANEL_ID + '{position:fixed;right:18px;bottom:64px;z-index:99999;width:380px;max-width:calc(100vw - 36px);',
-      'max-height:78vh;display:none;flex-direction:column;background:#1d2030;color:#e8e8f0;border:1px solid #3a3f55;',
+      'height:78vh;display:none;flex-direction:column;background:#2a2926;color:#ecebe2;border:1px solid #3c3933;',
       'border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:inherit;font-size:13px;overflow:hidden}',
       '#' + PANEL_ID + '.open{display:flex}',
-      '#tm-aa-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#262a3d;border-bottom:1px solid #3a3f55}',
-      '.tm-aa-resize{position:absolute;left:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:5}.tm-aa-resize:hover{background:rgba(122,92,255,.3)}',
-      '.tm-aa-search{position:sticky;top:-10px;z-index:6;display:flex;align-items:center;gap:4px;margin:-4px -2px 2px;padding:4px 6px;background:#13151f;border:1px solid #3a3f55;border-radius:7px}',
+      '#tm-aa-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#34322d;border-bottom:1px solid #3c3933}',
+      '.tm-aa-resize{position:absolute;left:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:5}.tm-aa-resize:hover{background:rgba(217,119,87,.3)}',
+      '.tm-aa-search{position:sticky;top:-10px;z-index:6;display:flex;align-items:center;gap:4px;margin:-4px -2px 2px;padding:4px 6px;background:#1f1d1a;border:1px solid #3c3933;border-radius:7px}',
       '.tm-aa-search[hidden]{display:none}',
-      '.tm-aa-search input{flex:1;min-width:0;background:#0e1018;color:#e8e8f0;border:1px solid #2c3145;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit}',
-      '.tm-aa-search .tm-aa-search-n{color:#8b90a8;font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}',
-      '.tm-aa-search button{background:#2c3145;color:#b7bcd6;border:none;border-radius:5px;padding:2px 7px;font-size:11px;cursor:pointer;line-height:1.4}.tm-aa-search button:hover{background:#3a3f55;color:#e8e8f0}',
+      '.tm-aa-search input{flex:1;min-width:0;background:#181613;color:#ecebe2;border:1px solid #322f2a;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit}',
+      '.tm-aa-search .tm-aa-search-n{color:#8f8a7e;font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}',
+      '.tm-aa-search button{background:#322f2a;color:#b4afa2;border:none;border-radius:5px;padding:2px 7px;font-size:11px;cursor:pointer;line-height:1.4}.tm-aa-search button:hover{background:#3c3933;color:#ecebe2}',
       '.tm-aa-hl{background:rgba(232,200,106,.32);color:inherit;border-radius:2px}.tm-aa-hl.active{background:#e8c86a;color:#1a1206}',
-      '#tm-aa-fs{background:none;border:none;color:#8b90a8;font-size:13px;cursor:pointer;line-height:1;padding:0 3px}#tm-aa-fs:hover{color:#e8e8f0}',
+      '#tm-aa-fs{background:none;border:none;color:#8f8a7e;font-size:13px;cursor:pointer;line-height:1;padding:0 3px}#tm-aa-fs:hover{color:#ecebe2}',
       '#tm-aa-hd b{font-size:13px}',
-      '#tm-aa-hd .sub{font-size:11px;color:#8b90a8;margin-left:6px}',
-      '#tm-aa-x{background:none;border:none;color:#8b90a8;font-size:18px;cursor:pointer;line-height:1}',
-      '#tm-aa-body{padding:10px 12px;overflow:auto;display:flex;flex-direction:column;gap:8px;position:relative;flex:1 1 auto;min-height:0}',
-      '#tm-aa-composer{display:flex;flex-direction:column;gap:8px;order:80;margin-top:auto;position:sticky;bottom:0;z-index:7;background:#1d2030;margin-left:-12px;margin-right:-12px;padding:8px 12px 2px;border-top:1px solid #2c3145}',
-      '#tm-aa-req{width:100%;box-sizing:border-box;background:#13151f;color:#e8e8f0;border:1px solid #3a3f55;',
-      'border-radius:8px;padding:8px 8px 8px 8px;font-family:inherit;font-size:13px;resize:none;min-height:54px;max-height:180px;overflow:auto;display:block}',
-      '.tm-aa-charcount{position:absolute;right:18px;font-size:10px;color:#6b7088;pointer-events:none;background:rgba(19,21,31,.82);padding:0 4px;border-radius:4px;z-index:1}',
+      '.tm-aa-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#d97757,#bf5f3f);font-size:13px;margin-right:7px;vertical-align:middle;box-shadow:0 1px 4px rgba(217,119,87,.45)}',
+      '#tm-aa-hd .sub{font-size:11px;color:#8f8a7e;margin-left:6px}',
+      '#tm-aa-x{background:none;border:none;color:#8f8a7e;font-size:18px;cursor:pointer;line-height:1}',
+      '#tm-aa-body{padding:12px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;position:relative;flex:1 1 auto;min-height:0}',
+      '#tm-aa-composer{display:flex;flex-direction:column;gap:9px;order:80;flex:0 0 auto;z-index:7;background:#2a2926;margin-left:-14px;margin-right:-14px;padding:9px 14px 4px;border-top:1px solid #322f2a}',
+      '#tm-aa-req{width:100%;box-sizing:border-box;background:transparent;color:#ecebe2;border:none;',
+      'border-radius:14px;padding:10px 44px 10px 13px;font-family:inherit;font-size:13px;resize:none;min-height:56px;max-height:180px;overflow:auto;display:block;outline:none}',
+      '.tm-aa-charcount{position:absolute;top:6px;right:12px;font-size:10px;color:#726d62;pointer-events:none;background:rgba(31,29,26,.82);padding:0 4px;border-radius:4px;z-index:1}',
       '.tm-aa-charcount[hidden]{display:none}',
-      '#tm-aa-go{background:#7a5cff;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}',
+      '#tm-aa-field{position:relative;background:#1f1d1a;border:1px solid #3c3933;border-radius:14px;transition:border-color .12s,box-shadow .12s}',
+      '#tm-aa-field:focus-within{border-color:#d97757;box-shadow:0 0 0 3px rgba(217,119,87,.16)}',
+      '#tm-aa-go{position:absolute;right:7px;bottom:7px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:#d97757;color:#fff;border:none;border-radius:50%;padding:0;cursor:pointer;font-size:15px;line-height:1;transition:background .12s,transform .08s}',
+      '#tm-aa-go:hover{background:#e08a6b}#tm-aa-go:active{transform:scale(.92)}',
       '#tm-aa-go:disabled{opacity:.5;cursor:default}',
       '#tm-aa-go.stopbtn{background:#c0413b}#tm-aa-go.stopbtn:hover{background:#d2554f}',
-      '#tm-aa-status{font-size:12px;color:#9aa0bd;min-height:16px}',
-      '#tm-aa-ctx{display:flex;align-items:center;gap:6px;font-size:11px;color:#b9bed6;background:rgba(122,92,255,.10);border:1px solid rgba(122,92,255,.32);border-radius:6px;padding:3px 8px;margin-bottom:2px}',
+      '#tm-aa-status{font-size:12px;color:#9b968a;min-height:16px}',
+      '#tm-aa-ctx{display:flex;align-items:center;gap:6px;font-size:11px;color:#b4afa2;background:rgba(217,119,87,.10);border:1px solid rgba(217,119,87,.32);border-radius:6px;padding:3px 8px;margin-bottom:2px}',
       '#tm-aa-ctx[hidden]{display:none}',
       '.tm-aa-ctx-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.tm-aa-ctx-ico{flex:0 0 auto;opacity:.85}',
@@ -443,97 +455,118 @@
       '#tm-aa-mentions[hidden]{display:none}',
       '.tm-aa-mchip{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#cfe6dd;background:rgba(126,184,167,.14);border:1px solid rgba(126,184,167,.4);border-radius:10px;padding:1px 4px 1px 7px}',
       '.tm-aa-mx{background:none;border:none;color:#cfe6dd;cursor:pointer;font-size:13px;line-height:1;padding:0 2px;opacity:.7}.tm-aa-mx:hover{opacity:1}',
-      '#tm-aa-atpop{position:absolute;left:12px;right:12px;bottom:calc(100% + 4px);z-index:9;max-height:210px;overflow:auto;background:#13151f;border:1px solid #3a3f55;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:4px}',
+      '#tm-aa-atpop{position:absolute;left:12px;right:12px;bottom:calc(100% + 4px);z-index:9;max-height:210px;overflow:auto;background:#1f1d1a;border:1px solid #3c3933;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:4px}',
       '#tm-aa-atpop[hidden]{display:none}',
-      '.tm-aa-atitem{display:flex;align-items:center;gap:7px;width:100%;text-align:left;background:none;border:none;color:#e8e8f0;cursor:pointer;font-size:12px;padding:5px 8px;border-radius:6px;font-family:inherit}',
-      '.tm-aa-atitem:hover{background:rgba(122,92,255,.18)}',
-      '.tm-aa-atkind{flex:0 0 auto;font-size:10px;color:#9aa0bd;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px}',
+      '.tm-aa-atitem{display:flex;align-items:center;gap:7px;width:100%;text-align:left;background:none;border:none;color:#ecebe2;cursor:pointer;font-size:12px;padding:5px 8px;border-radius:6px;font-family:inherit}',
+      '.tm-aa-atitem:hover{background:rgba(217,119,87,.18)}',
+      '.tm-aa-atkind{flex:0 0 auto;font-size:10px;color:#9b968a;background:rgba(255,255,255,.06);border-radius:4px;padding:1px 5px}',
       '.tm-aa-diff-jump{cursor:pointer;border-bottom:1px dashed rgba(126,184,167,.5)}',
       '.tm-aa-diff-jump:hover{color:#a7e0cf}',
-      '#tm-aa-meter{font-size:11px;color:#bfa9ff;font-variant-numeric:tabular-nums;padding:2px 0}',
+      '#tm-aa-meter{font-size:11px;color:#e8a98c;font-variant-numeric:tabular-nums;padding:2px 0}',
       '.tm-aa-empty{order:4;margin:auto 0;background:none;border:none;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}',
       '.tm-aa-empty .emp-hi{font-size:30px;line-height:1.1}',
-      '.tm-aa-empty .emp-title{color:#cfd3ee;font-size:16px;font-weight:bold;line-height:1.2}',
-      '.tm-aa-empty .emp-sub{color:#8b90a8;font-size:11px;margin-bottom:9px;line-height:1.5}',
+      '.tm-aa-empty .emp-title{color:#cec9bb;font-size:16px;font-weight:bold;line-height:1.2}',
+      '.tm-aa-empty .emp-sub{color:#8f8a7e;font-size:11px;margin-bottom:9px;line-height:1.5}',
       '.tm-aa-empty .emp-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:300px}',
-      '.tm-aa-empty .emp-chip{background:#262a3d;color:#dfe3f5;border:1px solid #3a3f55;border-radius:13px;padding:4px 11px;font-size:11px;cursor:pointer;font-family:inherit}.tm-aa-empty .emp-chip:hover{background:#323750;border-color:#5a6080}',
-      '.tm-aa-logwrap{position:relative}',
-      '.tm-aa-log{background:#13151f;border:1px solid #2c3145;border-radius:8px;padding:6px 8px;max-height:150px;overflow:auto;font-size:11px;line-height:1.5}',
-      '.tm-aa-tobottom{position:absolute;right:9px;bottom:7px;background:#2c3145;color:#dfe3f5;border:1px solid #4a4f68;border-radius:11px;padding:2px 9px;font-size:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);z-index:2}.tm-aa-tobottom:hover{background:#3a4060}',
+      '.tm-aa-empty .emp-chip{background:#34322d;color:#dedacb;border:1px solid #3c3933;border-radius:13px;padding:4px 11px;font-size:11px;cursor:pointer;font-family:inherit}.tm-aa-empty .emp-chip:hover{background:#403d37;border-color:#56514a}',
+      '.tm-aa-logwrap{position:relative;flex:1 1 0;min-height:0;overflow-y:auto}',
+      '.tm-aa-log{padding:2px 0;font-size:11px;line-height:1.5}',
+      '.tm-aa-tobottom{position:absolute;right:9px;bottom:7px;background:#322f2a;color:#dedacb;border:1px solid #48443d;border-radius:11px;padding:2px 9px;font-size:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);z-index:2}.tm-aa-tobottom:hover{background:#423e37}',
       '.tm-aa-tobottom[hidden]{display:none}',
-      '.tm-aa-log .ln{color:#b7bcd6}.tm-aa-log .bad{color:#ff8f8f}.tm-aa-log .fin{color:#7fe0a0}',
+      '.tm-aa-log .ln{color:#b4afa2}.tm-aa-log .bad{color:#ff8f8f}.tm-aa-log .fin{color:#7fe0a0}',
       '.tm-aa-step{margin:1px 0}.tm-aa-step>summary{cursor:pointer;list-style:none;padding:1px 0;line-height:1.5;outline:none}',
-      '.tm-aa-step>summary::-webkit-details-marker{display:none}.tm-aa-step>summary::before{content:"▸ ";color:#8b90a8}.tm-aa-step[open]>summary::before{content:"▾ "}',
-      '.tm-aa-step.fin>summary{color:#7fe0a0}.tm-aa-step.ln>summary{color:#b7bcd6}.tm-aa-step.bad>summary{color:#ff8f8f}',
+      '.tm-aa-step>summary::-webkit-details-marker{display:none}.tm-aa-step>summary::before{content:"▸ ";color:#8f8a7e}.tm-aa-step[open]>summary::before{content:"▾ "}',
+      '.tm-aa-step.fin>summary{color:#7fe0a0}.tm-aa-step.ln>summary{color:#b4afa2}.tm-aa-step.bad>summary{color:#ff8f8f}',
       '.tm-aa-step:not([open])>.tm-aa-step-body{display:none}',
-      '.tm-aa-think{margin:2px 0}.tm-aa-think>summary{cursor:pointer;list-style:none;color:#9aa0bd;font-style:italic;font-size:11px;padding:1px 0;outline:none}',
-      '.tm-aa-think>summary::-webkit-details-marker{display:none}.tm-aa-think>summary::before{content:"▸ ";font-style:normal;color:#8b90a8}.tm-aa-think[open]>summary::before{content:"▾ "}',
+      '.tm-aa-think{margin:2px 0}.tm-aa-think>summary{cursor:pointer;list-style:none;color:#9b968a;font-style:italic;font-size:11px;padding:1px 0;outline:none}',
+      '.tm-aa-think>summary::-webkit-details-marker{display:none}.tm-aa-think>summary::before{content:"▸ ";font-style:normal;color:#8f8a7e}.tm-aa-think[open]>summary::before{content:"▾ "}',
       '.tm-aa-think:not([open])>.tm-aa-think-body{display:none}',
-      '.tm-aa-think-body{padding:2px 0 3px 14px;border-left:1px solid #2c3145;margin:2px 0 2px 3px}',
-      '.tm-aa-think-body .tk-line{color:#9aa0bd;font-style:italic;font-size:11px;line-height:1.5;margin:1px 0;white-space:pre-wrap;word-break:break-word}',
-      '.tm-aa-step-body{padding:2px 0 4px 12px;border-left:1px solid #2c3145;margin:2px 0 2px 3px}',
-      '.tm-aa-step-body .sb-row{margin:2px 0}.tm-aa-step-body .sb-k{display:inline-block;color:#8b90a8;font-size:10px;margin-right:4px}',
-      '.tm-aa-step-body pre{margin:1px 0;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,Consolas,monospace;font-size:10px;line-height:1.45;color:#9aa0bd;max-height:120px;overflow:auto}',
-      '.tm-aa-checklist{background:#191c2b;border:1px solid #3a3f55;border-radius:8px;padding:6px 8px;margin-bottom:6px}',
-      '.tm-aa-checklist .cl-head{font-size:11px;color:#bfa9ff;font-weight:bold;margin-bottom:3px}',
-      '.tm-aa-checklist .cl-item{font-size:11px;line-height:1.7;color:#9aa0bd;display:flex;gap:6px;align-items:baseline}',
+      '.tm-aa-think-body{padding:2px 0 3px 14px;border-left:1px solid #322f2a;margin:2px 0 2px 3px}',
+      '.tm-aa-think-body .tk-line{color:#9b968a;font-style:italic;font-size:11px;line-height:1.5;margin:1px 0;white-space:pre-wrap;word-break:break-word}',
+      '.tm-aa-step-body{padding:2px 0 4px 12px;border-left:1px solid #322f2a;margin:2px 0 2px 3px}',
+      '.tm-aa-step-body .sb-row{margin:2px 0}.tm-aa-step-body .sb-k{display:inline-block;color:#8f8a7e;font-size:10px;margin-right:4px}',
+      '.tm-aa-step-body pre{margin:1px 0;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,Consolas,monospace;font-size:10px;line-height:1.45;color:#9b968a;max-height:120px;overflow:auto}',
+      '.tm-aa-checklist{background:#23211e;border:1px solid #3c3933;border-radius:8px;padding:6px 8px;margin-bottom:6px}',
+      '.tm-aa-checklist .cl-head{font-size:11px;color:#e8a98c;font-weight:bold;margin-bottom:3px}',
+      '.tm-aa-checklist .cl-item{font-size:11px;line-height:1.7;color:#9b968a;display:flex;gap:6px;align-items:baseline}',
       '.tm-aa-checklist .cl-item .cl-ic{width:12px;text-align:center;flex:none}',
       '.tm-aa-checklist .cl-item.done{color:#7fe0a0}.tm-aa-checklist .cl-item.done .cl-ic{color:#7fe0a0}',
       '.tm-aa-checklist .cl-item.run{color:#e8c86a}.tm-aa-checklist .cl-item.run .cl-ic{color:#e8c86a}',
-      '.tm-aa-checklist .cl-item.pend{color:#6b7088}',
-      '.tm-aa-msg-user{position:relative;margin:8px 0 6px auto;max-width:88%;width:fit-content;padding:5px 9px;background:rgba(122,92,255,.16);border:1px solid rgba(122,92,255,.32);border-radius:9px 9px 3px 9px;font-size:11px;line-height:1.55;color:#e2def7}',
-      '.tm-aa-msg-user .mu-who{color:#bfa9ff;font-weight:bold;margin-right:6px;font-size:10px}',
-      '.tm-aa-msg-acts{position:absolute;top:-11px;right:6px;display:none;gap:1px;background:#262a3d;border:1px solid #3a3f55;border-radius:6px;padding:1px 2px;box-shadow:0 2px 6px rgba(0,0,0,.3)}',
+      '.tm-aa-checklist .cl-item.pend{color:#726d62}',
+      '.tm-aa-msg-user{position:relative;margin:8px 0 6px auto;max-width:88%;width:fit-content;padding:5px 9px;background:rgba(217,119,87,.16);border:1px solid rgba(217,119,87,.32);border-radius:9px 9px 3px 9px;font-size:11px;line-height:1.55;color:#ece4d8}',
+      '.tm-aa-msg-user .mu-who{color:#e8a98c;font-weight:bold;margin-right:6px;font-size:10px}',
+      '.tm-aa-msg-acts{position:absolute;top:-11px;right:6px;display:none;gap:1px;background:#34322d;border:1px solid #3c3933;border-radius:6px;padding:1px 2px;box-shadow:0 2px 6px rgba(0,0,0,.3)}',
       '.tm-aa-msg-user:hover .tm-aa-msg-acts{display:inline-flex}',
-      '.mu-act{background:none;border:none;color:#b7bcd6;cursor:pointer;font-size:11px;padding:1px 5px;border-radius:4px;line-height:1.5}.mu-act:hover{background:#3a3f55;color:#e8e8f0}',
-      '.tm-aa-sec{font-size:11px;color:#8b90a8;text-transform:none;margin-top:2px}',
-      '.tm-aa-diff{background:#13151f;border:1px solid #2c3145;border-radius:8px;padding:6px 8px;max-height:180px;overflow:auto;font-size:11px;line-height:1.5}',
+      '.tm-aa-msg-ai{position:relative;margin:8px auto 6px 0;max-width:90%;width:fit-content;padding:6px 10px;background:#23211e;border:1px solid #3c3933;border-radius:9px 9px 9px 3px;font-size:11px;line-height:1.6;color:#dbd8cb}',
+      '.tm-aa-msg-ai .ai-who{color:#e8a98c;font-weight:bold;font-size:10px;display:block;margin-bottom:3px}',
+      '.tm-aa-msg-ai .ai-sev{display:inline-block;background:rgba(232,200,106,.18);color:#e8c86a;border-radius:4px;padding:0 5px;font-size:10px;margin-right:5px}',
+      '.tm-aa-msg-ai .ai-sug{color:#a7e0cf;margin-top:4px}',
+      '.tm-aa-msg-ai .ai-qs{margin-top:3px}.tm-aa-msg-ai .ai-q{line-height:1.7}',
+      '.tm-aa-msg-ai .ai-hint{color:#8f8a7e;font-size:10px;margin-top:5px;border-top:1px solid #322f2a;padding-top:4px}',
+      '.tm-aa-reply{margin:6px 0;padding:8px 10px;background:#1c1a17;border:1px solid #322f2a;border-radius:9px 9px 9px 3px}',
+      '.tm-aa-reply .reply-who{display:flex;align-items:center;gap:5px;margin-bottom:4px}',
+      '.tm-aa-reply .reply-who .reply-ava{font-size:13px;line-height:1}',
+      '.tm-aa-reply .reply-who b{color:#e8a98c;font-size:11px;font-weight:bold}',
+      '.tm-aa-reply .tm-aa-summary{background:none;padding:0;border-radius:0}',
+      '.tm-aa-reply .tm-aa-summary::before{display:none}',
+      '.tm-aa-reply.frozen{opacity:.66}',
+      '.tm-aa-reply .reply-actions{display:flex;gap:6px;margin-top:8px}',
+      '.tm-aa-reply .reply-actions button{flex:1;font-size:11px;padding:5px 6px;border-radius:6px;cursor:pointer;border:1px solid #3c3933;background:#2a2824;color:#ece4d8}',
+      '.tm-aa-reply .reply-actions button:hover{background:#3c3933}',
+      '.tm-aa-reply .reply-actions button:first-child{flex:2;background:rgba(127,224,160,.16);border-color:rgba(127,224,160,.4);color:#bfe8cf}',
+      '.tm-aa-reply .reply-actions button:first-child.warn{background:rgba(232,200,106,.16);border-color:rgba(232,200,106,.4);color:#e8c86a}',
+      '.tm-aa-reply.applied{border-color:rgba(127,224,160,.35)}',
+      '.tm-aa-reply .reply-tag{font-size:10px;margin-top:6px;display:none}.tm-aa-reply.applied .reply-tag{display:block;color:#7fe0a0}.tm-aa-reply.discarded .reply-tag{display:block;color:#8f8a7e}',
+      '.mu-act{background:none;border:none;color:#b4afa2;cursor:pointer;font-size:11px;padding:1px 5px;border-radius:4px;line-height:1.5}.mu-act:hover{background:#3c3933;color:#ecebe2}',
+      '.tm-aa-sec{font-size:11px;color:#8f8a7e;text-transform:none;margin-top:2px}',
+      '.tm-aa-diff{background:#1f1d1a;border:1px solid #322f2a;border-radius:8px;padding:6px 8px;max-height:180px;overflow:auto;font-size:11px;line-height:1.5}',
       '.tm-aa-diff .add{color:#7fe0a0}.tm-aa-diff .rm{color:#ff8f8f}.tm-aa-diff .ch{color:#e8c86a}',
       '.tm-aa-diff .uncertain{background:rgba(232,200,106,.10);border-left:2px solid #e8c86a;padding-left:5px;margin-left:-7px}',
       '.tm-aa-diff .tm-aa-unc{display:block;color:#e8c86a;font-size:10px;margin-top:1px}',
-      '.tm-aa-summary{background:#191c2b;border:1px solid #3a3f55;border-left:3px solid #7a5cff;border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.55;color:#d8dcf0}',
-      '.tm-aa-summary b{color:#bfa9ff;font-size:11px;display:block;margin-bottom:3px}',
-      '.tm-aa-summary .note{color:#9aa0bd;font-size:11px;margin-top:3px}',
+      '.tm-aa-summary{background:#23211e;border:none;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.65;color:#dbd8cb}',
+      '.tm-aa-summary::before{content:"🧙 国师";display:block;font-size:10px;color:#9b968a;font-weight:bold;margin-bottom:4px;opacity:.85}',
+      '.tm-aa-summary b{color:#e8a98c;font-size:11px;display:block;margin-bottom:3px}',
+      '.tm-aa-summary .note{color:#9b968a;font-size:11px;margin-top:3px}',
       '.tm-aa-summary.tm-aa-clamped{max-height:var(--clamp-max,280px);overflow:hidden;position:relative;flex:0 0 auto}',
-      '.tm-aa-summary.tm-aa-clamped::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(rgba(25,28,43,0),#191c2b);pointer-events:none}',
+      '.tm-aa-summary.tm-aa-clamped::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(rgba(35,33,30,0),#23211e);pointer-events:none}',
       '.tm-aa-summary.tm-aa-clamp-open{max-height:none;overflow:visible}.tm-aa-summary.tm-aa-clamp-open::after{display:none}',
-      '.tm-aa-clamp-btn{align-self:flex-start;background:none;border:none;color:#bfa9ff;font-size:11px;cursor:pointer;padding:2px 0;margin-top:-4px}.tm-aa-clamp-btn:hover{text-decoration:underline}',
+      '.tm-aa-clamp-btn{align-self:flex-start;background:none;border:none;color:#e8a98c;font-size:11px;cursor:pointer;padding:2px 0;margin-top:-4px}.tm-aa-clamp-btn:hover{text-decoration:underline}',
       '.tm-aa-errcard{background:rgba(192,65,59,.10);border:1px solid #5d3a3a;border-left:3px solid #c0413b;border-radius:8px;padding:8px 10px}',
       '.tm-aa-errcard .ec-head{color:#ff8f8f;font-weight:bold;font-size:11px;margin-bottom:3px}',
       '.tm-aa-errcard .ec-msg{color:#e2c0c0;font-size:11px;line-height:1.55;white-space:pre-wrap;word-break:break-word}',
       '.tm-aa-errcard .ec-acts{display:flex;gap:6px;margin-top:7px}',
       '.tm-aa-errcard .ec-retry{background:#c0413b;color:#fff;border:none;border-radius:6px;padding:3px 12px;font-size:11px;cursor:pointer}.tm-aa-errcard .ec-retry:hover{background:#d2554f}',
-      '.tm-aa-errcard .ec-copy{background:#3a3f55;color:#dfe3f5;border:none;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer}.tm-aa-errcard .ec-copy:hover{background:#4a5068}',
-      '.md-p{margin:2px 0;line-height:1.6}.md-h{font-weight:bold;color:#cfd3ee;margin:4px 0 2px}.md-h1{font-size:13px}.md-h2,.md-h3,.md-h4{font-size:12px}',
+      '.tm-aa-errcard .ec-copy{background:#3c3933;color:#dedacb;border:none;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer}.tm-aa-errcard .ec-copy:hover{background:#48443d}',
+      '.md-p{margin:2px 0;line-height:1.6}.md-h{font-weight:bold;color:#cec9bb;margin:4px 0 2px}.md-h1{font-size:13px}.md-h2,.md-h3,.md-h4{font-size:12px}',
       '.md-list{margin:3px 0;padding-left:18px}.md-list li{margin:1px 0;line-height:1.6}',
       '.md-ic{background:rgba(184,154,83,.14);color:#e8c86a;padding:0 4px;border-radius:3px;font-family:ui-monospace,Consolas,monospace;font-size:11px}',
-      '.md-code{background:#0e1018;border:1px solid #2c3145;border-radius:0 0 6px 6px;border-top:none;padding:6px 8px;margin:0;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:11px;line-height:1.5;white-space:pre-wrap;color:#c8cce8}',
+      '.md-code{background:#181613;border:1px solid #322f2a;border-radius:0 0 6px 6px;border-top:none;padding:6px 8px;margin:0;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:11px;line-height:1.5;white-space:pre-wrap;color:#d2cdbd}',
       '.md-codewrap{margin:4px 0;position:relative}',
-      '.md-codebar{display:flex;align-items:center;justify-content:space-between;background:#13151f;border:1px solid #2c3145;border-radius:6px 6px 0 0;padding:2px 6px 2px 8px}',
-      '.md-codebar .md-lang{color:#8b90a8;font-size:10px;font-family:ui-monospace,Consolas,monospace;text-transform:lowercase}',
-      '.md-codebar .md-copy{background:none;border:none;color:#9aa0bd;cursor:pointer;font-size:10px;padding:1px 5px;border-radius:4px;opacity:0;transition:opacity .12s}',
-      '.md-codewrap:hover .md-copy{opacity:1}.md-codebar .md-copy:hover{background:#2c3145;color:#e8e8f0}',
-      '.md-code .tok-str{color:#9ad6a0}.md-code .tok-key{color:#7fb4e8}.md-code .tok-num{color:#e0b863}.md-code .tok-kw{color:#c98ad6}.md-code .tok-punct{color:#8b90a8}',
-      '.md-p strong{color:#e8e8f0}.md-p em{color:#cfd3ee}',
+      '.md-codebar{display:flex;align-items:center;justify-content:space-between;background:#1f1d1a;border:1px solid #322f2a;border-radius:6px 6px 0 0;padding:2px 6px 2px 8px}',
+      '.md-codebar .md-lang{color:#8f8a7e;font-size:10px;font-family:ui-monospace,Consolas,monospace;text-transform:lowercase}',
+      '.md-codebar .md-copy{background:none;border:none;color:#9b968a;cursor:pointer;font-size:10px;padding:1px 5px;border-radius:4px;opacity:0;transition:opacity .12s}',
+      '.md-codewrap:hover .md-copy{opacity:1}.md-codebar .md-copy:hover{background:#322f2a;color:#ecebe2}',
+      '.md-code .tok-str{color:#9ad6a0}.md-code .tok-key{color:#7fb4e8}.md-code .tok-num{color:#e0b863}.md-code .tok-kw{color:#c98ad6}.md-code .tok-punct{color:#8f8a7e}',
+      '.md-p strong{color:#ecebe2}.md-p em{color:#cec9bb}',
       '.md-table{border-collapse:collapse;margin:5px 0;font-size:11px;max-width:100%;display:block;overflow:auto}',
-      '.md-table th,.md-table td{border:1px solid #2c3145;padding:3px 7px;text-align:left;line-height:1.5}',
-      '.md-table th{background:#191c2b;color:#cfd3ee;font-weight:bold;white-space:nowrap}',
-      '.md-table td{color:#d8dcf0}.md-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.025)}',
+      '.md-table th,.md-table td{border:1px solid #322f2a;padding:3px 7px;text-align:left;line-height:1.5}',
+      '.md-table th{background:#23211e;color:#cec9bb;font-weight:bold;white-space:nowrap}',
+      '.md-table td{color:#dbd8cb}.md-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.025)}',
       '.tm-aa-stream{display:block}',
-      '.je-entity-ref{color:#bfa9ff;text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer}.je-entity-ref:hover{color:#d4c6ff;text-decoration-style:solid;background:rgba(122,92,255,.12);border-radius:3px}',
-      '.tm-aa-caret{display:inline-block;color:#bfa9ff;font-weight:400;margin-left:1px;animation:tm-aa-blink 1.05s step-end infinite}',
+      '.je-entity-ref{color:#e8a98c;text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer}.je-entity-ref:hover{color:#f0c4ad;text-decoration-style:solid;background:rgba(217,119,87,.12);border-radius:3px}',
+      '.tm-aa-caret{display:inline-block;color:#e8a98c;font-weight:400;margin-left:1px;animation:tm-aa-blink 1.05s step-end infinite}',
       '@keyframes tm-aa-blink{50%{opacity:0}}',
-      '.tm-aa-summary .tm-aa-cl-copy{margin-left:8px;background:#3a3f55;color:#e8e8f0;border:none;border-radius:6px;padding:1px 8px;font-size:10px;cursor:pointer}',
-      '.tm-aa-summary pre.tm-aa-cl{white-space:pre-wrap;margin:5px 0 0;font-family:inherit;font-size:11px;line-height:1.6;color:#d8dcf0;max-height:200px;overflow:auto}',
-      '.tm-aa-sug{margin-top:6px;padding-top:5px;border-top:1px solid #3a3f55}.tm-aa-sug b{color:#e8c86a}',
-      '.tm-aa-sug .sug-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:#d8dcf0}.tm-aa-sug .sug-row span{flex:1}',
-      '.tm-aa-sug .sug-keep{background:#3a3f55;color:#e8e8f0;border:none;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer}.tm-aa-sug .sug-keep:disabled{opacity:.6;cursor:default}',
-      '.tm-aa-finding{margin-bottom:6px;padding:5px 7px;background:#13151f;border:1px solid #2c3145;border-left:3px solid #3a3f55;border-radius:6px}',
+      '.tm-aa-summary .tm-aa-cl-copy{margin-left:8px;background:#3c3933;color:#ecebe2;border:none;border-radius:6px;padding:1px 8px;font-size:10px;cursor:pointer}',
+      '.tm-aa-summary pre.tm-aa-cl{white-space:pre-wrap;margin:5px 0 0;font-family:inherit;font-size:11px;line-height:1.6;color:#dbd8cb;max-height:200px;overflow:auto}',
+      '.tm-aa-sug{margin-top:6px;padding-top:5px;border-top:1px solid #3c3933}.tm-aa-sug b{color:#e8c86a}',
+      '.tm-aa-sug .sug-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:#dbd8cb}.tm-aa-sug .sug-row span{flex:1}',
+      '.tm-aa-sug .sug-keep{background:#3c3933;color:#ecebe2;border:none;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer}.tm-aa-sug .sug-keep:disabled{opacity:.6;cursor:default}',
+      '.tm-aa-finding{margin-bottom:6px;padding:5px 7px;background:#1f1d1a;border:1px solid #322f2a;border-left:3px solid #3c3933;border-radius:6px}',
       '.tm-aa-finding .sev{font-weight:bold;font-size:11px}.tm-aa-finding .sev.rm{color:#ff8f8f}.tm-aa-finding .sev.ch{color:#e8c86a}.tm-aa-finding .sev.add{color:#7fe0a0}',
-      '.tm-aa-finding b{color:#cfd3ee;font-size:12px}.tm-aa-finding .loc{color:#8b90a8;font-size:10px}',
-      '.tm-aa-finding .iss{color:#d8dcf0;font-size:11px;margin-top:2px;line-height:1.5}.tm-aa-finding .sug{color:#9aa0bd;font-size:11px;margin-top:2px;line-height:1.5}',
-      '.tm-aa-diff-group{margin-bottom:6px;border-bottom:1px solid #2c3145;padding-bottom:4px}.tm-aa-diff-head{display:flex;align-items:center;gap:6px;color:#e8e8f0;padding:2px 0;font-size:12px}',
-      '.tm-aa-diff-head .grp-tog{margin-left:auto;background:#2c3145;color:#b7bcd6;border:none;border-radius:5px;padding:1px 7px;font-size:10px;cursor:pointer}.tm-aa-diff-head .grp-tog:hover{background:#3a3f55}',
+      '.tm-aa-finding b{color:#cec9bb;font-size:12px}.tm-aa-finding .loc{color:#8f8a7e;font-size:10px}',
+      '.tm-aa-finding .iss{color:#dbd8cb;font-size:11px;margin-top:2px;line-height:1.5}.tm-aa-finding .sug{color:#9b968a;font-size:11px;margin-top:2px;line-height:1.5}',
+      '.tm-aa-diff-group{margin-bottom:6px;border-bottom:1px solid #322f2a;padding-bottom:4px}.tm-aa-diff-head{display:flex;align-items:center;gap:6px;color:#ecebe2;padding:2px 0;font-size:12px}',
+      '.tm-aa-diff-head .grp-tog{margin-left:auto;background:#322f2a;color:#b4afa2;border:none;border-radius:5px;padding:1px 7px;font-size:10px;cursor:pointer}.tm-aa-diff-head .grp-tog:hover{background:#3c3933}',
       '.tm-aa-hunk{display:flex;align-items:flex-start;gap:6px;margin:2px 0}',
       '.tm-aa-hunk .hunk-tog{flex:0 0 auto;width:18px;height:18px;line-height:16px;text-align:center;border-radius:5px;border:1px solid #3a4d3a;background:rgba(127,224,160,.14);color:#7fe0a0;cursor:pointer;font-size:11px;padding:0}',
       '.tm-aa-hunk .hunk-body{flex:1;min-width:0}',
@@ -543,7 +576,7 @@
       '#tm-aa-actions{display:flex;gap:8px}',
       '#tm-aa-apply{flex:1;background:#2e9e5b;color:#fff;border:none;border-radius:8px;padding:8px;cursor:pointer}',
       '#tm-aa-apply.warn{background:#b5872e}',
-      '#tm-aa-discard{flex:1;background:#3a3f55;color:#e8e8f0;border:none;border-radius:8px;padding:8px;cursor:pointer}'
+      '#tm-aa-discard{flex:1;background:#3c3933;color:#ecebe2;border:none;border-radius:8px;padding:8px;cursor:pointer}'
     ].join('');
     var st = document.createElement('style');
     st.id = 'tm-aa-style';
@@ -554,26 +587,30 @@
   function buildPanel() {
     var panel = document.createElement('div');
     panel.id = PANEL_ID;
+    panel.setAttribute('role', 'complementary');
+    panel.setAttribute('aria-label', '国师 · AI 剧本助手');
     panel.innerHTML = [
       '<div class="tm-aa-resize" id="tm-aa-resize" title="拖动调整宽度"></div>',   // UI·AI · 左缘拖拽调宽
-      '<div id="tm-aa-hd"><span><b>AI 剧本助手</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
-      '<button id="tm-aa-newchat" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">✎</button><button id="tm-aa-fs" title="全屏 / 还原">⛶</button><button id="tm-aa-x" title="关闭">×</button></div>',
+      '<div id="tm-aa-hd"><span><span class="tm-aa-ava">🧙</span><b>国师</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
+      '<button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">✎</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">⛶</button><button id="tm-aa-x" aria-label="关闭" title="关闭">×</button></div>',
       '<div id="tm-aa-body">',
       '<div class="tm-aa-search" id="tm-aa-search" hidden><input type="text" id="tm-aa-search-in" placeholder="在结果里查找…"><span class="tm-aa-search-n" id="tm-aa-search-n">0/0</span><button type="button" id="tm-aa-search-prev" title="上一个">↑</button><button type="button" id="tm-aa-search-next" title="下一个">↓</button><button type="button" id="tm-aa-search-x" title="关闭 (Esc)">×</button></div>',
       '<div id="tm-aa-composer">',   // UI iteration2 · 输入区聚成一块（docked 下 sticky 钉底）
       '<div id="tm-aa-ctx" hidden></div>',
       '<div id="tm-aa-mentions" hidden></div>',
       '<div id="tm-aa-atpop" hidden></div>',
-      '<div id="tm-aa-status"></div>',
+      '<div id="tm-aa-status" aria-live="polite"></div>',
+      '<div id="tm-aa-field">',
       '<textarea id="tm-aa-req" placeholder="描述你想要的修改，例如：把主角势力改名为「西凉军」并补两个文官"></textarea>',
       '<span class="tm-aa-charcount" id="tm-aa-charcount" hidden></span>',
-      '<button id="tm-aa-go">生成</button>',
+      '<button id="tm-aa-go" title="Enter 发送 · Shift+Enter 换行" aria-label="发送">↑</button>',
+      '</div>',
       '</div>',
       '<div id="tm-aa-meter" style="display:none"></div>',
       '<div class="tm-aa-empty" id="tm-aa-empty" style="display:none"></div>',
       '<div class="tm-aa-sec" data-sec="log" style="display:none">执行过程</div>',
       '<div class="tm-aa-logwrap" id="tm-aa-logwrap" style="display:none"><div class="tm-aa-log" id="tm-aa-loglist"></div><button type="button" class="tm-aa-tobottom" id="tm-aa-tobottom" hidden>↓ 最新</button></div>',
-      '<div class="tm-aa-summary" id="tm-aa-summary" style="display:none"></div>',
+      '<div class="tm-aa-summary" id="tm-aa-summary" role="region" aria-label="国师回复" style="display:none"></div>',
       '<div class="tm-aa-sec" data-sec="diff" style="display:none">改动预览</div>',
       '<div class="tm-aa-diff" id="tm-aa-difflist" style="display:none"></div>',
       '<div class="tm-aa-val" id="tm-aa-val" style="display:none"></div>',
@@ -655,7 +692,7 @@
     ui._stopping = false;
     if (on && ui.els && ui.els.empty) ui.els.empty.style.display = 'none';   // UI·AD · 一跑就隐欢迎态
     // UI·Q · 运行中「生成」键变形为「■ 停止」(不禁用·桌面端范式)；收尾恢复「生成」
-    if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■ 停止' : '生成'; ui.els.go.classList.toggle('stopbtn', on); }
+    if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■' : '↑'; ui.els.go.setAttribute('aria-label', on ? '停止' : '发送'); ui.els.go.classList.toggle('stopbtn', on); }
     if (on) {
       ui._runStart = Date.now(); ui._lastTokens = 0; ui._lastIter = 0;
       if (ui._meterTimer) clearInterval(ui._meterTimer);
@@ -674,6 +711,7 @@
   function _runSummaryOf(res) {
     if (!res) return '';
     if (res.clarification) return '需澄清：' + ((res.clarification.questions || []).slice(0, 2).join('；'));
+    if (res.remonstrance) return '进谏：' + String(res.remonstrance.concern || '').slice(0, 40);
     if (res.plan) return '出计划：' + (res.plan.summary || ((res.plan.steps || []).length + ' 步'));
     if (res.review) return '审阅：' + (res.review.summary || ((res.review.findings || []).length + ' 条问题'));
     if (res.answer) return '回答：' + String(res.answer.answer || '').slice(0, 100);
@@ -764,13 +802,51 @@
     ui._thinkEl = null; ui._thinkCount = 0;   // UI·Z · 新一轮起一个新的思考折叠块
     if (ui.els.empty) ui.els.empty.style.display = 'none';   // UI·AD · 一有动作就隐欢迎态（onDiscard 会再按需显）
     if (ui._searchMarks && ui._searchMarks.length) { ui._searchMarks = []; ui._searchIdx = -1; _searchCount(); }   // UI·AJ · 新一轮清掉旧高亮引用（innerHTML 已换）
-    if (!keepLog) { ui.els.log.innerHTML = ''; ui.els.logWrap.style.display = 'none'; ui.els.logSec.style.display = 'none'; ui._logPinned = true; if (ui.els.toBottom) ui.els.toBottom.hidden = true; }   // UI·B · 会话流：续接时保留线程
-    ui.els.diff.innerHTML = ''; ui.els.diff.style.display = 'none'; ui.els.diffSec.style.display = 'none';
-    if (ui.els.summary) { ui.els.summary.innerHTML = ''; ui.els.summary.style.display = 'none'; ui.els.summary.classList.remove('tm-aa-clamped', 'tm-aa-clamp-open'); }
-    if (ui._clampBtn) { if (ui._clampBtn.parentNode) ui._clampBtn.parentNode.removeChild(ui._clampBtn); ui._clampBtn = null; }   // UI·AK · 清折叠按钮
+    if (!keepLog) { ui.els.log.innerHTML = ''; ui.els.logWrap.style.display = 'none'; ui.els.logSec.style.display = 'none'; ui._logPinned = true; if (ui.els.toBottom) ui.els.toBottom.hidden = true; ui._reply = null; }   // 新对话才清流
+    ui._clampBtn = null;   // 折叠按钮归属各自的卡（新卡 _beginReplyCard 会重置）
     if (ui.els.meter) { ui.els.meter.style.display = 'none'; ui._runStart = null; }
-    ui.els.val.style.display = 'none';
-    ui.els.actions.style.display = 'none';
+    // 聊天化：summary/diff/val/actions 是「当前回应卡」的子元素，由 _beginReplyCard 每轮新建，旧卡留在流里——这里不再清固定区
+  }
+  // 聊天化：每轮国师「实质回应」在对话流里建一张回应卡，把结果元素引用重指到卡内子元素，
+  //   于是现有 render*（用 ui.els.summary/diff/val/actions）自动渲进当前卡。多轮 → 多卡，历史留在流里。
+  function _beginReplyCard() {
+    if (!ui.els || !ui.els.log) return;
+    _freezeLastReply();   // 上一张卡冻结为历史（只最新一轮可应用/放弃）
+    if (ui.els.logSec) ui.els.logSec.style.display = '';
+    if (ui.els.logWrap) ui.els.logWrap.style.display = '';
+    var card = document.createElement('div');
+    card.className = 'tm-aa-reply';
+    card.innerHTML = '<div class="reply-who"><span class="reply-ava">🧙</span><b>国师</b></div>'
+      + '<div class="tm-aa-summary" style="display:none"></div>'
+      + '<div class="tm-aa-sec" data-sec="diff" style="display:none">改动预览</div>'
+      + '<div class="tm-aa-diff" style="display:none"></div>'
+      + '<div class="tm-aa-val" style="display:none"></div>'
+      + '<div class="reply-actions" style="display:none"><button type="button" class="reply-apply">应用到剧本</button><button type="button" class="reply-discard">放弃</button></div>'
+      + '<div class="reply-tag"></div>';
+    ui.els.log.appendChild(card);
+    // 重指当前结果元素到本卡
+    ui.els.summary = card.querySelector('.tm-aa-summary');
+    ui.els.diffSec = card.querySelector('[data-sec="diff"]');
+    ui.els.diff = card.querySelector('.tm-aa-diff');
+    ui.els.val = card.querySelector('.tm-aa-val');
+    ui.els.actions = card.querySelector('.reply-actions');
+    ui.els.apply = card.querySelector('.reply-apply');
+    ui.els.discard = card.querySelector('.reply-discard');
+    ui.els.apply.addEventListener('click', onApply);
+    ui.els.discard.addEventListener('click', onDiscard);
+    ui._reply = card;
+    ui._clampBtn = null;   // 长总结折叠按钮归属新卡
+    _logScrollMaybe(true);   // 设 pinned·生成中跟随
+    // 聊天化：summary/diff 在本函数返回后才同步渲染，故用 rAF 在下一帧（渲染完）把新卡顶滚入视口，让玩家从回复开头读起
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function () { try { if (ui._reply && ui._reply.scrollIntoView) ui._reply.scrollIntoView({ block: 'start' }); } catch (e) {} });
+  }
+  // 冻结上一张回应卡：隐藏操作按钮（历史只读）。tag 由 onApply/onDiscard 设。
+  function _freezeLastReply() {
+    var c = ui._reply;
+    if (!c || !c.isConnected) { ui._reply = null; return; }
+    c.classList.add('frozen');
+    var act = c.querySelector('.reply-actions'); if (act) act.style.display = 'none';
+    ui._reply = null;
   }
   // UI·B · 会话流：把一条用户消息作为气泡追加进过程区（开启一轮对话）
   // UI·Y · 消息操作：每个气泡 hover 出 复制/编辑重发/重试（Claude Code/ChatGPT 招牌）。
@@ -822,21 +898,22 @@
         else if (kind === 'qa') runQaUI();
         else if (kind === 'explain') runExplainUI();
         else if (kind === 'orchestrate') runOrchestratedUI();
+        else if (kind === 'critics') runWithCriticsUI();
         else onGenerate();
       }
     });
   }
   // UI·AB · 滚动跟随 + 回到底部：跟随只在「贴底」时生效；用户上翻则暂停跟随并浮出「↓ 最新」。
   function _logScrollMaybe(force) {
-    var el = ui.els && ui.els.log; if (!el) return;
+    var el = ui.els && ui.els.logWrap; if (!el) return;   // 聊天化：logwrap 是对话流滚动容器
     if (force) ui._logPinned = true;
     if (ui._logPinned) { el.scrollTop = el.scrollHeight; if (ui.els.toBottom) ui.els.toBottom.hidden = true; }
   }
   function _ensureLogFollow() {
-    if (!ui.els || !ui.els.log || ui._logFollowBound) return;
+    if (!ui.els || !ui.els.logWrap || ui._logFollowBound) return;
     ui._logFollowBound = true;
     if (ui._logPinned == null) ui._logPinned = true;
-    var el = ui.els.log;
+    var el = ui.els.logWrap;
     el.addEventListener('scroll', function() {
       var nearBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 24;
       ui._logPinned = nearBottom;
@@ -965,13 +1042,14 @@
     { label: '校验并列问题', fill: '请用 validateDraft 全面校验本剧本，列出所有引用冲突、人口/区划不一致等问题（先只报告，不要改）。' },
     { label: '加 3 个人物', fill: '请新增 3 名贴合本剧本背景的人物：含姓名、势力归属、官职、性格与 AI 人格；势力名必须用剧本里已存在的势力。' },
     { label: '🔍 审阅出报告', act: 'review' },
-    { label: '📖 讲解剧本', act: 'explain' }
+    { label: '📖 讲解剧本', act: 'explain' },
+    { label: '🏛️ 三堂会审', act: 'critics' }
   ];
   function _renderEmpty() {
     if (!ui.els || !ui.els.empty || ui._emptyBuilt) return;
     ui._emptyBuilt = true;
     var chips = _EMPTY_CHIPS.map(function(c, i) { return '<button type="button" class="emp-chip" data-i="' + i + '">' + esc(c.label) + '</button>'; }).join('');
-    ui.els.empty.innerHTML = '<div class="emp-hi">👋</div><div class="emp-title">国师在此</div><div class="emp-sub">描述你想改什么，或试试：</div><div class="emp-chips">' + chips + '</div>';
+    ui.els.empty.innerHTML = '<div class="emp-hi">🧙</div><div class="emp-title">国师在此</div><div class="emp-sub">把想改什么告诉国师，或试试：</div><div class="emp-chips">' + chips + '</div>';
     ui.els.empty.addEventListener('click', function(ev) {
       var btn = ev.target && ev.target.closest ? ev.target.closest('.emp-chip') : null;
       if (!btn) return;
@@ -979,6 +1057,7 @@
       if (c.act === 'preflight') { runPreflightUI(); return; }
       if (c.act === 'review') { runReview(); return; }
       if (c.act === 'explain') { runExplainUI(); return; }
+      if (c.act === 'critics') { _armCritics(); return; }   // 刀3 · 武装会审：玩家输入需求后点发送即走三堂会审
       if (c.fill != null) {   // 回填 → 让玩家审阅后自己发（不自动跑·省 API）
         ui.els.req.value = c.fill; try { ui.els.req.dispatchEvent(new Event('input')); } catch (e) {}
         ui.els.req.focus(); _syncEmpty();
@@ -1190,7 +1269,7 @@
   function _paintDiff() {
     var diffs = ui._lastDiffs || [], unc = ui._lastUnc || [];
     ui.els.diffSec.textContent = _diffHeaderText();
-    if (!diffs.length) { ui.els.diff.innerHTML = '<div class="ln" style="color:#8b90a8">（无改动）</div>'; return; }
+    if (!diffs.length) { ui.els.diff.innerHTML = '<div class="ln" style="color:#8f8a7e">（无改动）</div>'; return; }
     var groups = {}, order = [];
     diffs.forEach(function(d) { var top = String(d.path || '').split(/[.\[]/)[0] || '(根)'; if (!groups[top]) { groups[top] = []; order.push(top); } groups[top].push(d); });
     ui.els.diff.innerHTML = order.map(function(field) {
@@ -1201,7 +1280,7 @@
       var idxs = es.slice(0, 40).map(function(d) { return d.__idx; });
       var allRej = idxs.every(function(i) { return ui._diffRejected.has(i); });
       var firstPath = (es[0] && es[0].path) || field;
-      return '<div class="tm-aa-diff-group" data-group="' + esc(field) + '"><div class="tm-aa-diff-head"><b class="tm-aa-diff-jump" data-reveal-field="' + esc(field) + '" data-first-path="' + esc(firstPath) + '" title="在折子里定位此字段（跳首处改动）">' + esc(_COLL_CN[field] || field) + ' \u2197</b> <span style="color:#8b90a8">(' + es.length + ' 处' + (gUnc ? ' · ⚠' + gUnc : '') + ')</span><button type="button" class="grp-tog" data-group-idxs="' + idxs.join(',') + '">' + (allRej ? '全收' : '全拒') + '</button></div>' + inner + '</div>';
+      return '<div class="tm-aa-diff-group" data-group="' + esc(field) + '"><div class="tm-aa-diff-head"><b class="tm-aa-diff-jump" data-reveal-field="' + esc(field) + '" data-first-path="' + esc(firstPath) + '" title="在折子里定位此字段（跳首处改动）">' + esc(_COLL_CN[field] || field) + ' \u2197</b> <span style="color:#8f8a7e">(' + es.length + ' 处' + (gUnc ? ' · ⚠' + gUnc : '') + ')</span><button type="button" class="grp-tog" data-group-idxs="' + idxs.join(',') + '">' + (allRej ? '全收' : '全拒') + '</button></div>' + inner + '</div>';
     }).join('');
   }
   function _toggleHunk(idx) {
@@ -1251,16 +1330,38 @@
     }).join('') + (findings.length > 40 ? '<div class="ln">… 还有 ' + (findings.length - 40) + ' 条</div>' : '');
   }
 
-  // 方向K · 交互式澄清：展示 agent 的澄清问题（玩家在输入框作答）
+  // 方向K · 交互式澄清：作为对话气泡展示问题（玩家在输入框作答后续接）—— 不碰 summary/diff
   function renderClarify(questions) {
     if (!ui.els) return;
     questions = questions || [];
-    if (ui.els.summary) { ui.els.summary.innerHTML = '<b>先回答几个问题</b>国师需要这些信息才能改得对——请在上方输入框作答后点「提交回答并继续」。'; ui.els.summary.style.display = ''; }
-    ui.els.diffSec.style.display = ''; ui.els.diff.style.display = '';
-    ui.els.diffSec.textContent = '国师的问题（' + questions.length + '）';
-    ui.els.diff.innerHTML = questions.map(function(q, i) {
-      return '<div class="tm-aa-finding"><span class="sev ch">Q' + (i + 1) + '</span> ' + esc(typeof q === 'string' ? q : JSON.stringify(q)) + '</div>';
-    }).join('') || '<div class="ln" style="color:#8b90a8">（无问题）</div>';
+    var qs = questions.map(function(q, i) {
+      return '<div class="ai-q">' + (i + 1) + '. ' + esc(typeof q === 'string' ? q : JSON.stringify(q)) + '</div>';
+    }).join('') || '<div class="ai-q">（未列出具体问题）</div>';
+    _appendGuoshiMsg('<span class="ai-who">🧙 国师 · 请教</span>要改得准，我需要先弄清几点：<div class="ai-qs">' + qs + '</div><div class="ai-hint">在下方输入框作答后发送即可继续</div>');
+  }
+
+  // 国师的对话消息气泡（进谏/澄清走它·像聊天而非塞进改动预览区）—— 追加到对话流，不碰 summary/diff
+  function _appendGuoshiMsg(innerHtml) {
+    if (!ui.els || !ui.els.log) return;
+    if (ui.els.logSec) ui.els.logSec.style.display = '';
+    if (ui.els.logWrap) ui.els.logWrap.style.display = '';
+    var b = document.createElement('div');
+    b.className = 'tm-aa-msg-ai';
+    b.innerHTML = innerHtml;
+    ui.els.log.appendChild(b);
+    _logScrollMaybe(true);
+  }
+  // 刀1 · 国师进谏：作为对话气泡展示异议 + 替代方案（玩家在输入框回应后走续接通道）
+  function renderRemonstrance(r) {
+    if (!ui.els) return;
+    r = r || {};
+    var sevMap = { '史实': '史实存疑', '平衡': '数值失衡', '机制': '跨朝代机制' };
+    var html = '<span class="ai-who">🧙 国师 · 进谏</span>'
+      + '<span class="ai-sev">' + esc(sevMap[r.severity] || r.severity || '谏') + '</span>'
+      + esc(r.concern || '（此举我以为不妥，恕未及细陈）')
+      + (r.suggestion ? '<div class="ai-sug">↳ 建议：' + esc(r.suggestion) + '</div>' : '')
+      + '<div class="ai-hint">在下方回应后发送即可继续：采纳建议 ／「我坚持，因为…」／ 换个需求</div>';
+    _appendGuoshiMsg(html);
   }
 
   // 计划模式 · 展示 agent 的编号计划
@@ -1279,7 +1380,7 @@
   // 计划模式 · 批准后按计划执行（续规划线程、全工具）
   function executePlan() {
     if (ui.running || !ui.draft) return;
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     setRunning(true);
     setStatus('正在按计划执行…');
     AA.runAuthoringLoop(ui.draft, '按上面的计划执行这些改动；改完用 validateDraft 自查后调用 finish。', {
@@ -1294,6 +1395,7 @@
       setRunning(false);
       ui.conversation = res.conversation;
       _logRun('计划执行', '(按计划执行)', res);   // 方向M
+      _beginReplyCard();
       renderSummary(res.summary, res.notes, res.suggestedConventions, true);   // UI·P · 流式
       renderDiff(AA.computeDiff(ui.adapter.getScenario(), ui.draft), res.uncertainties);   // 置信度标注
       renderValidation(res.finalValidation);
@@ -1309,7 +1411,7 @@
   function runReview() {
     if (ui.running) return;
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     var focus = (ui.els.req.value || '').trim();
     _appendUserMsg(focus || '🔍 审阅整个剧本', { kind: 'review', input: focus });   // UI·B 会话流 + UI·Y 重试派发
     ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照（审阅不改它）
@@ -1327,6 +1429,7 @@
       ui.els.req.value = ''; _autoGrowReq();
       ui.draft = null;   // 审阅不产生可应用改动
       if (res.review) {
+        _beginReplyCard();
         renderReview(res.review, true);   // UI·P · 流式
         setStatus('审阅完成（' + res.iterations + ' 轮·约 ' + res.tokensUsed + ' tokens）· 仅诊断，未改动剧本');
       } else {
@@ -1339,10 +1442,11 @@
   function runPreflightUI() {
     if (ui.running) return;
     if (!AA || typeof AA.preflight !== 'function') { setStatus('agent 核心未加载'); return; }
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     var pf;
     try { pf = AA.preflight(AA.makeDraft(ui.adapter.getScenario())); }
     catch (e) { setStatus('体检失败：' + (e && e.message || e)); return; }
+    _beginReplyCard();   // 聊天化：体检结果进对话流卡
     if (ui.els.summary) { ui.els.summary.innerHTML = '<b>运行时体检</b>' + esc(pf.summary); ui.els.summary.style.display = ''; }
     ui.els.diffSec.style.display = ''; ui.els.diff.style.display = '';
     ui.els.diffSec.textContent = '体检结果（' + pf.blockers.length + ' 阻塞 · ' + pf.warnings.length + ' 建议）';
@@ -1364,11 +1468,12 @@
     var cur = ui.adapter.getScenario();
     var res = AA.mergeEntityBundle(cur, bundle);
     if (res.error) { setStatus('导入失败：' + res.error); return false; }
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     ui.draft = res.scenario; ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
     var renamedN = res.renamed ? Object.keys(res.renamed).length : 0;
     var sm = '已合并捆绑包：势力 +' + res.added.factions + ' · 人物 +' + res.added.characters + ' · 关系 +' + res.added.relations + (renamedN ? ' · 重名已改 ' + renamedN + ' 个' : '');
     _logRun('导入捆绑', '捆绑包导入', { summary: sm, tokensUsed: 0, iterations: 0, stopReason: 'imported' });   // 方向M · 记历史 + 让 markLastApplied 生效
+    _beginReplyCard();
     renderSummary(sm, null, null);
     renderDiff(AA.computeDiff(cur, ui.draft));
     renderValidation(AA.validateDraft(ui.draft));
@@ -1381,7 +1486,7 @@
   // 方向O · 生成版本说明（确定性·无需 API）：汇总已应用改动 + 一键复制
   function runChangelogUI() {
     if (ui.running) { setStatus('请等当前运行结束'); return; }
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     var cl = buildChangelog();
     if (!cl.count) { setStatus('暂无已应用的改动可汇总（先应用一些 agent 改动，版本说明会自动累积）'); return; }
     if (ui.els.summary) {
@@ -1403,7 +1508,7 @@
     var question = (ui.els.req.value || '').trim();
     if (!question) { setStatus('请先在输入框输入你想问的问题'); return; }
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     _appendUserMsg(question, { kind: 'qa', input: question });   // UI·B 会话流 + UI·Y 重试派发
     ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照
     ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
@@ -1419,6 +1524,7 @@
       _logRun('问答', question, res);   // 方向M
       ui.draft = null; ui.els.req.value = ''; _autoGrowReq();
       if (res.answer) {
+        _beginReplyCard();
         renderAnswer(question, res.answer.answer, true);   // UI·P · 流式
         setStatus('回答完成（' + res.iterations + ' 轮·约 ' + res.tokensUsed + ' tokens）· 仅查询，未改动剧本');
       } else {
@@ -1438,7 +1544,7 @@
     if (ui.running) return;
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
     var focus = (ui.els.req.value || '').trim();
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     _appendUserMsg(focus || '📖 讲解剧本', { kind: 'explain', input: focus });   // UI·B 会话流 + UI·Y 重试派发
     ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照
     ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
@@ -1454,6 +1560,7 @@
       _logRun('讲解', focus || '(全面 onboarding)', res);
       ui.draft = null; ui.els.req.value = ''; _autoGrowReq();
       if (res.explanation) {
+        _beginReplyCard();
         renderExplanation(res.explanation, true);   // UI·P · 流式
         setStatus('讲解完成（' + res.iterations + ' 轮·约 ' + res.tokensUsed + ' tokens）· 仅讲解，未改动剧本');
       } else {
@@ -1470,7 +1577,7 @@
     ui.els.diffSec.style.display = ''; ui.els.diff.style.display = '';
     var points = (ex && ex.points) || [];
     ui.els.diffSec.textContent = '讲解（' + points.length + ' 个主题）';
-    if (!points.length) { ui.els.diff.innerHTML = '<div class="ln" style="color:#8b90a8">（无主题）</div>'; return; }
+    if (!points.length) { ui.els.diff.innerHTML = '<div class="ln" style="color:#8f8a7e">（无主题）</div>'; return; }
     ui.els.diff.innerHTML = points.slice(0, 20).map(function(p) {
       p = p || {};
       return '<div class="tm-aa-finding"><span class="sev ch">▸</span> <b>' + esc(p.topic || '') + '</b><div class="iss">' + _md(p.detail || '') + '</div></div>';
@@ -1482,7 +1589,9 @@
   function renderError(kind, request, err) {
     setRunning(false);
     ui._lastErr = { kind: kind, request: request || '', message: (err && err.message) || String(err || '未知错误') };
-    if (!ui.els || !ui.els.summary) { setStatus('失败：' + ui._lastErr.message); return; }
+    if (!ui.els) { setStatus('失败：' + ui._lastErr.message); return; }
+    _beginReplyCard();   // 聊天化：错误也作为对话流里一张卡
+    if (!ui.els.summary) { setStatus('失败：' + ui._lastErr.message); return; }
     ui.els.summary.innerHTML = '<div class="tm-aa-errcard">'
       + '<div class="ec-head">⚠ 运行失败</div>'
       + '<div class="ec-msg">' + esc(ui._lastErr.message) + '</div>'
@@ -1510,6 +1619,7 @@
     else if (e.kind === 'qa') runQaUI();
     else if (e.kind === 'explain') runExplainUI();
     else if (e.kind === 'orchestrate') runOrchestratedUI();
+    else if (e.kind === 'critics') runWithCriticsUI();
     else onGenerate();
   }
 
@@ -1519,7 +1629,7 @@
     var request = (ui.els.req.value || '').trim();
     if (!request) { setStatus('请先输入需求（大任务会被分解为多步执行）'); return; }
     if (!AA || typeof AA.runOrchestrated !== 'function') { setStatus('agent 核心未加载'); return; }
-    resetResults();
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     _appendUserMsg(request, { kind: 'orchestrate', input: request });   // UI·B 会话流 + UI·Y 重试派发
     ui.draft = AA.makeDraft(ui.adapter.getScenario());
     ui.conversation = null; ui._pendingPlan = false;
@@ -1559,6 +1669,7 @@
       if (_clSteps.length) _renderChecklist(_clSteps.length, true);   // 全部 ✓
       _logRun('分解执行', request, res);   // 方向M
       ui.els.req.value = ''; _autoGrowReq();
+      _beginReplyCard();
       renderSummary(res.summary, null, null, true);   // UI·P · 流式
       var diffs = AA.computeDiff(ui.adapter.getScenario(), ui.draft);
       renderDiff(diffs);
@@ -1572,6 +1683,110 @@
     }).catch(function(err) { renderError('orchestrate', request, err); });   // UI·AC · 错误卡+重试
   }
 
+  // ───────────────────────────────────────────────
+  //  刀3 · 对抗式三角色（三堂会审）：国师拟稿 → 史官查史+谏官批平衡 → 据谏修订 → 走 diff/应用审
+  //  入口走「武装」式：点 🏛️ chip 武装，玩家写需求后点发送即走会审（区别于普通生成）。引擎在 AA.runWithCritics。
+  // ───────────────────────────────────────────────
+  var _REQ_PLACEHOLDER = '描述你想要的修改，例如：把主角势力改名为「西凉军」并补两个文官';
+  function _armCritics() {
+    ui._criticsArmed = true;
+    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '🏛'; ui.els.go.title = '三堂会审：拟稿→史官查史+谏官批平衡→据谏修订'; }
+    if (ui.els && ui.els.req) { ui.els.req.placeholder = '【三堂会审】写下要新增/修改什么——国师拟稿，再由史官查史实、谏官批平衡，据谏修订后交你审'; ui.els.req.focus(); }
+    setStatus('已开启三堂会审 · 写下需求后点发送：拟稿 → 史官+谏官会审 → 据谏修订（比普通生成多 2~3 次调用）');
+  }
+  function _disarmCriticsVisual() {
+    ui._criticsArmed = false;
+    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '↑'; ui.els.go.title = 'Enter 发送 · Shift+Enter 换行'; }
+    if (ui.els && ui.els.req) ui.els.req.placeholder = _REQ_PLACEHOLDER;
+  }
+  function runWithCriticsUI() {
+    if (ui.running) return;
+    var request = (ui.els.req.value || '').trim();
+    if (!request) { _armCritics(); setStatus('三堂会审需要一个需求：先写下要新增/改什么，再点发送'); return; }
+    if (!AA || typeof AA.runWithCritics !== 'function') { setStatus('agent 核心未加载'); return; }
+    resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
+    _appendUserMsg(request, { kind: 'critics', input: request });
+    ui.draft = AA.makeDraft(ui.adapter.getScenario());
+    ui.conversation = null; ui._pendingPlan = false;
+    setRunning(true);
+    setStatus('三堂会审 · 国师拟稿中…');
+    _beginReplyCard();   // 聊天化打磨：会审开始就建卡，进度清单 + 两官报告 + 修订 diff 都进同一张卡
+    var _card = ui._reply;
+    var _phase = { draft: 'run', review: 'pend', revise: 'pend' }, _info = { hist: null, bal: null }, _el = null;
+    function _render(done) {
+      if (!ui.els) return;
+      if (!_el) { _el = document.createElement('div'); _el.className = 'tm-aa-checklist'; var _anchor = _card && _card.querySelector('.tm-aa-summary'); if (_card && _anchor) _card.insertBefore(_el, _anchor); else if (ui.els.log) ui.els.log.insertBefore(_el, ui.els.log.firstChild); }
+      function row(st, label) { var ic = st === 'done' ? '✓' : (st === 'run' ? '⟳' : '○'); return '<div class="cl-item ' + st + '"><span class="cl-ic">' + ic + '</span>' + label + '</div>'; }
+      var rv = (_info.hist != null) ? ('（史官 ' + _info.hist + ' 条 · 谏官 ' + _info.bal + ' 条）') : '';
+      _el.innerHTML = '<div class="cl-head">🏛 三堂会审' + (done ? '（已完成）' : '') + '</div>'
+        + row(_phase.draft, '① 国师拟稿') + row(_phase.review, '② 史官查史实 + 谏官批平衡' + rv) + row(_phase.revise, '③ 国师据谏修订');
+    }
+    _render(false);
+    AA.runWithCritics(ui.draft, request, {
+      editorContext: _editorContext(),
+      allowedCollections: ui.allowedCollections || null,
+      allowDestructive: ui.allowDestructive !== false,
+      exemplars: _exemplars(),
+      memory: _buildMemory(),
+      onStep: function(step) { appendLog(step); },
+      onText: function(text, iter) { appendText(text, iter); },
+      onCritique: function(p) {
+        if (p.phase === 'draft') { _phase.draft = 'run'; setStatus('三堂会审 · 国师拟稿中…'); }
+        else if (p.phase === 'review') { _phase.draft = 'done'; _phase.review = 'run'; setStatus('三堂会审 · 史官与谏官同时审阅中…'); }
+        else if (p.phase === 'revise') { _phase.review = 'done'; _phase.revise = 'run'; setStatus('三堂会审 · 国师据谏修订中…'); }
+        _render(false);
+      }
+    }).then(function(res) {
+      setRunning(false);
+      // 拟稿阶段被国师进谏/澄清打断 → 渲染对应卡片，提示玩家调整需求后重新发起（会审不做续接，避免与主流程纠缠）
+      if (res.stopReason === 'needsConfirmation' && res.remonstrance) { _logRun('三堂会审', request, res); renderRemonstrance(res.remonstrance); setStatus('国师对此需求有异议（见上）· 调整需求后可重新发起三堂会审'); return; }
+      if (res.stopReason === 'needsClarification' && res.clarification) { _logRun('三堂会审', request, res); renderClarify(res.clarification.questions); setStatus('国师拟稿前需澄清（见上）· 补充需求后可重新发起三堂会审'); return; }
+      _info.hist = ((res.critiques && res.critiques.history && res.critiques.history.findings) || []).length;
+      _info.bal = ((res.critiques && res.critiques.balance && res.critiques.balance.findings) || []).length;
+      _phase.draft = 'done'; _phase.review = 'done'; _phase.revise = 'done'; _render(true);
+      _logRun('三堂会审', request, res);
+      ui.els.req.value = ''; _autoGrowReq();
+      renderCriticsReport(res);
+      var diffs = AA.computeDiff(ui.adapter.getScenario(), ui.draft);
+      renderDiff(diffs);
+      var val = res.finalValidation || AA.validateDraft(ui.draft);
+      renderValidation(val);
+      if (diffs.length) {
+        ui.els.actions.style.display = '';
+        ui.els.apply.className = val.ok ? '' : 'warn';
+        ui.els.apply.textContent = val.ok ? '应用到剧本' : '仍有问题·确认应用';
+        ui.els.discard.textContent = '放弃';
+      }
+      setStatus('三堂会审完成 · ' + (res.revised ? '已据谏修订' : '两官无异议') + (diffs.length ? '：审阅 diff 后应用 / 放弃' : '：无改动'));
+      if (ui.autonomy === 'auto' && val.ok && diffs.length) { onApply(); }
+    }).catch(function(err) { renderError('critics', request, err); });
+  }
+  // 刀3 · 会审报告：史官 + 谏官两份意见并列展示（只读·让玩家看到博弈），修订后的 diff 在下方走应用审
+  function renderCriticsReport(res) {
+    if (!ui.els || !ui.els.summary) return;
+    function block(icon, title, rev) {
+      var fs = (rev && rev.findings) || [];
+      var head = '<div class="cl-head">' + icon + ' ' + title + '（' + fs.length + ' 条' + (rev && rev.summary ? '·' + esc(rev.summary) : '') + '）</div>';
+      if (!fs.length) return head + '<div class="ln" style="color:#7fe0a0">✓ 无异议</div>';
+      var sevRank = { '高': 0, '中': 1, '低': 2 };
+      fs = fs.slice().sort(function(a, b) { return (sevRank[a && a.severity] != null ? sevRank[a.severity] : 3) - (sevRank[b && b.severity] != null ? sevRank[b.severity] : 3); });
+      return head + fs.slice(0, 20).map(function(f) {
+        f = f || {}; var sev = f.severity || '?'; var sevCls = sev === '高' ? 'rm' : (sev === '中' ? 'ch' : 'add');
+        return '<div class="tm-aa-finding"><span class="sev ' + sevCls + '">[' + esc(sev) + ']</span> <b>' + esc(f.dimension || '') + '</b>'
+          + (f.location ? ' <span class="loc">' + esc(String(f.location).slice(0, 50)) + '</span>' : '')
+          + '<div class="iss">' + _mdLine(f.issue || '') + '</div>'
+          + (f.suggestion ? '<div class="sug">→ ' + _mdLine(f.suggestion) + '</div>' : '') + '</div>';
+      }).join('');
+    }
+    var hist = (res.critiques && res.critiques.history) || null;
+    var bal = (res.critiques && res.critiques.balance) || null;
+    ui.els.summary.innerHTML = '<b>🏛 三堂会审报告</b><span class="tm-aa-stream">' + esc(res.summary || '') + '</span>'
+      + block('📜', '史官·史实核查', hist) + block('⚖', '谏官·平衡可玩', bal)
+      + (res.revised ? '<div class="ln" style="color:#a7e0cf;margin-top:6px">下方 diff 是国师据两官意见修订后的终稿，审阅后决定应用。</div>'
+                     : '<div class="ln" style="color:#8f8a7e;margin-top:6px">两官未提需修订的问题，下方即拟稿终稿。</div>');
+    ui.els.summary.style.display = '';
+  }
+
   // UI·Q · 停止/中断生成：调 agent core 的 abort()（轮间干净收尾·不施未完成的改动）。
   // 适用于所有运行类型(普通编辑/计划执行/审阅/问答/讲解/分解执行)——abort() 终止当前 _activeRun。
   function onStop() {
@@ -1579,7 +1794,7 @@
     ui._stopping = true;
     var stopped = false;
     try { stopped = !!(AA && AA.abort && AA.abort()); } catch (e) {}
-    if (ui.els && ui.els.go) { ui.els.go.textContent = '停止中…'; ui.els.go.disabled = true; }
+    if (ui.els && ui.els.go) { ui.els.go.textContent = '…'; ui.els.go.disabled = true; }
     _cancelTypewriter();   // 打字机若在途也立即落定
     setStatus(stopped ? '正在停止…（本轮 API 返回后干净收尾，不施未完成的改动）' : '当前没有正在进行的运行');
   }
@@ -1588,9 +1803,11 @@
 
   function onGenerate() {
     if (ui.running) return;
+    if (ui._criticsArmed) { _disarmCriticsVisual(); runWithCriticsUI(); return; }   // 刀3 · 已武装会审 → 改走三堂会审
     var request = (ui.els.req.value || '').trim();
     if (!request) { setStatus('请先输入需求'); return; }
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
+    if (ui._pendingClarify) ui._pendingClarify = false;   // 聊天化：玩家发送即视为对上轮进谏/澄清的回应，走续接（无独立按钮）
     var planOnly = !!ui.planMode;   // 计划模式：先出计划，批准再执行
     // 真·连续会话：只要对话线程还在就续接（哪怕上一轮已应用·draft 已清）。计划模式总从当前剧本起新计划。
     //   ——治「每发一条指令都是新对话」：之前续接还要求 ui.draft，应用后 draft 没了就被迫重置；现在线程贯穿整个会话。
@@ -1624,18 +1841,19 @@
         return;
       }
       ui._autoCont = 0;
-      _logRun(res.clarification ? '澄清' : (res.plan ? '计划' : '编辑'), request, res);   // 方向M · 记一条历史
+      _logRun(res.remonstrance ? '进谏' : (res.clarification ? '澄清' : (res.plan ? '计划' : '编辑')), request, res);   // 方向M · 记一条历史
       ui.els.req.value = ''; _autoGrowReq();
-      var stopMap = { finish: '完成', maxIterations: '达迭代上限', tokenBudget: '达 token 上限', finishBlocked: '校验未过·已停', noToolCalls: 'agent 未再操作', aborted: '已停止', planned: '已出计划', needsClarification: '需澄清' };
-      if (res.clarification) {              // 方向K · 交互式澄清：展示问题，玩家在输入框作答后续接
+      var stopMap = { finish: '完成', maxIterations: '达迭代上限', tokenBudget: '达 token 上限', finishBlocked: '校验未过·已停', noToolCalls: 'agent 未再操作', aborted: '已停止', planned: '已出计划', needsClarification: '需澄清', needsConfirmation: '需定夺' };
+      if (res.clarification) {              // 方向K · 交互式澄清：气泡 + 输入框作答续接（聊天化·无独立按钮）
         ui._pendingPlan = false; ui._pendingClarify = true;
         renderClarify(res.clarification.questions);
-        ui.els.actions.style.display = '';
-        ui.els.apply.className = 'plan-approve';
-        ui.els.apply.textContent = '提交回答并继续';
-        ui.els.discard.textContent = '放弃';
-        setStatus('国师需要先澄清几点 · 请在输入框作答后点「提交回答并继续」');
-      } else if (res.plan) {                // 计划模式：展示计划 + 批准/重规划
+        setStatus('国师需要先澄清几点 · 在下方输入框作答后发送即可继续');
+      } else if (res.remonstrance) {        // 刀1 · 国师进谏：气泡 + 输入框回应续接（聊天化·无独立按钮）
+        ui._pendingPlan = false; ui._pendingClarify = true;
+        renderRemonstrance(res.remonstrance);
+        setStatus('国师进谏 · 在下方输入框回应（采纳／坚持／改需求）后发送即可继续');
+      } else if (res.plan) {                // 计划模式：展示计划 + 批准/重规划（进对话流回应卡）
+        _beginReplyCard();
         renderPlan(res.plan);
         ui.els.actions.style.display = '';
         ui.els.apply.className = 'plan-approve';
@@ -1643,7 +1861,8 @@
         ui.els.discard.textContent = '放弃计划';
         ui._pendingPlan = true;
         setStatus('已出计划（' + res.iterations + ' 轮）· 批准则按计划执行，或改需求重新规划');
-      } else {                              // 普通：diff + 应用
+      } else {                              // 普通：diff + 应用（进对话流回应卡）
+        _beginReplyCard();
         ui._pendingPlan = false;
         ui.els.discard.textContent = '放弃';
         setStatus('结束（' + (stopMap[res.stopReason] || res.stopReason) + '·' + res.iterations + ' 轮·约 ' + res.tokensUsed + ' tokens）· 可继续追加需求，或应用/放弃');
@@ -1679,12 +1898,26 @@
       return;
     }
     if (ui._pendingPlan) { ui._pendingPlan = false; executePlan(); return; }   // 计划模式：批准 → 执行
-    if (!ui.draft) return;
+    if (!ui.draft) {
+      try { console.warn('[国师 onApply] 无待应用 draft · pendingClarify=' + !!ui._pendingClarify + ' pendingPlan=' + !!ui._pendingPlan + ' lastDiffs=' + ((ui._lastDiffs || []).length) + ' reply=' + !!ui._reply); } catch (e) {}
+      setStatus('应用未生效：当前没有待应用的草稿（本轮可能没产出改动，或草稿已被清空）· 可重发需求');
+      return;
+    }
     try {
       var diffs = ui._lastDiffs || [], rej = ui._diffRejected || new Set();
       if (diffs.length && rej.size >= diffs.length) { setStatus('已拒绝全部改动，未应用'); return; }
       _pushCheckpoint('应用前 ' + _ckptTime());   // 方向G · 应用前自动存检查点（可多级回溯）
-      ui.adapter.commit(_applyScenario());
+      var _finalSc = _applyScenario();
+      ['characters', 'factions', 'parties', 'classes', 'items', 'events', 'families', 'relations', 'factionRelations', 'rigidHistoryEvents', 'timeline', 'openingLetters', 'goals'].forEach(function (f) {
+        if (!_finalSc || _finalSc[f] == null || Array.isArray(_finalSc[f])) return;
+        var _v = _finalSc[f];
+        if (typeof _v === 'object') {
+          var _ks = Object.keys(_v);
+          // 数字键对象→还原数组；命名对象（单条漏包数组）→包成 [实体]
+          _finalSc[f] = (_ks.length && _ks.every(function (k) { return /^\d+$/.test(k); })) ? _ks.map(function (k) { return _v[k]; }) : [_v];
+        } else { _finalSc[f] = [_v]; }
+      });
+      ui.adapter.commit(_finalSc);   // 应用前规范化：集合字段非数组→数组（修已生成草稿里 agent 误设成对象的集合，防下游遍历崩）
       var partial = rej.size > 0;
       markLastApplied();   // 方向M · 把最近一条历史标记为已应用
       try {   // N4 · 通知编辑器：在折子里高亮国师刚改的字段 + 精确跳到首处改动
@@ -1695,7 +1928,8 @@
         if (_firstPath && _app && typeof _app.revealPath === 'function') _app.revealPath(_firstPath);
       } catch (e) {}
       setStatus('已应用到剧本 ✓' + (partial ? '（仅接受的改动·拒绝了 ' + rej.size + ' 处）' : '') + '（可继续追问·同一会话）');
-      ui.els.actions.style.display = 'none';
+      if (ui._reply) { ui._reply.classList.add('applied'); var _atag = ui._reply.querySelector('.reply-tag'); if (_atag) _atag.textContent = '✓ 已应用到剧本' + (partial ? '（拒绝 ' + rej.size + ' 处）' : ''); }
+      _freezeLastReply();   // 聊天化：应用后冻结当前卡（按钮隐藏·成历史只读）
       ui.draft = null;
       // 真·连续会话：应用后【保留】对话线程，下条指令在同一会话里续接（draft 已清·续接时从当前剧本新建）。
       //   想另起新对话用「＋ 新对话」或「放弃」。线程上限交 runAuthoringLoop 的 token 预算自然收口。
@@ -1709,15 +1943,16 @@
     ui.conversation = null;   // 维度1 · 放弃后结束会话
     ui._pendingPlan = false;
     ui._pendingClarify = false;
-    if (ui.els && ui.els.discard) ui.els.discard.textContent = '放弃';
-    resetResults();
-    setStatus('已放弃本次改动');
+    if (ui._reply) { ui._reply.classList.add('discarded'); var _dtag = ui._reply.querySelector('.reply-tag'); if (_dtag) _dtag.textContent = '— 已放弃本轮改动'; }
+    _freezeLastReply();   // 聊天化：放弃后冻结当前卡（留在流里·只读）
+    setStatus('已放弃本次改动 · 可继续追加需求或开新对话');
     _syncEmpty();   // UI·AD · 回到干净状态则重现欢迎态
   }
   // 真·连续会话：另起新对话（清空当前线程+消息流；上一会话已存入历史·下次新对话会注入记忆延续）。
   function newConversation() {
     if (ui.running) { setStatus('运行中，请先停止再新开对话'); return; }
     ui.draft = null; ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
+    if (ui._criticsArmed) _disarmCriticsVisual();   // 刀3 · 新对话清掉未用的会审武装
     resetResults(false);
     _syncEmpty();
     setStatus('已开始新对话（上一会话已入历史/记忆，可被延续）');
@@ -1773,7 +2008,7 @@
     if (document.getElementById('tm-aa-fab')) return;
     var fab = document.createElement('button');
     fab.id = 'tm-aa-fab';
-    fab.textContent = 'AI 剧本助手';
+    fab.textContent = '🧙 国师';
     fab.addEventListener('click', function() {
       var p = ensurePanel();
       p.classList.toggle('open');

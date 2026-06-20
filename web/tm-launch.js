@@ -909,68 +909,78 @@ async function execFullGen(){
     if(chrs.length)ctxChrs="\u4E3B\u8981\u4EBA\u7269\uFF1A"+chrs.map(function(c){return c.name+"("+c.role+")";}).join("\u3001");
     done.push("\u5386\u53f2\u4eba\u7269("+chrs.length+")");
 
-    // Step 3
-    _fgShowProgress(3,TOTAL,"\u751f\u6210\u53d8\u91cf\u4e0e\u5173\u7cfb",done);
+    // \u2500\u2500\u2500 Step 3-10 \u5e76\u884c(\u5404\u4ec5\u4f9d\u8d56 ctxScn+ctxChrs\u00b7\u5199\u72ec\u7acb\u6570\u7ec4\u00b7\u4e92\u4e0d\u4f9d\u8d56 \u2192 \u5f00\u5c40\u5899\u949f\u4e32\u884c\u2192\u5e76\u53d1\u00b7\u964d\u672c2026-06-19) \u2500\u2500\u2500
+    // Step1\u21922 \u5fc5\u4e32\u884c(Step2 \u9700 ctxScn)\uff1b3-10 \u6b64\u523b ctxScn+ctxChrs \u5df2\u5c31\u7eea\u00b7prompt \u4e92\u4e0d\u5f15\u7528\u5f7c\u6b64\u7ed3\u679c\u00b7\u6545\u5e76\u53d1\u89e6\u53d1\u2192Promise.all\u2192\u987a\u5e8f\u89e3\u6790\u5165\u5e93
+    _fgShowProgress(3,TOTAL,"\u5e76\u53d1\u751f\u6210\u5236\u5ea6\u4f53\u7cfb(\u53d8\u91cf/\u5b98\u5236/\u79d1\u6280/\u5e02\u653f/\u519b\u4e8b/\u6d3e\u7cfb/\u4e8b\u4ef6/\u7269\u54c1)",done);
+    if(!P.military)P.military={troops:[],facilities:[],organization:[],campaigns:[],armies:[],systemDesc:"",supplyDesc:"",battleDesc:""};
     var prompt3="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u4e13\u5bb6\u3002"+histNote+
       ctxScn+" "+ctxChrs+
       "\n\u8bf7\u751f\u6210"+varCount+"\u4e2a\u5386\u53f2\u5168\u5c40\u53d8\u91cf\u548c"+relCount+"\u4e2a\u4eba\u7269\u5173\u7cfb\u3002\u5168\u5c40\u53d8\u91cf\u5e94\u53cd\u6620\u8be5\u65f6\u671f\u771f\u5b9e\u653f\u6cbb\u3001\u519b\u4e8b\u3001\u7ecf\u6d4e\u3001\u6c11\u5fc3\u72b6\u51b5\u3002\u4eba\u7269\u5173\u7cfb\u5e94\u57fa\u4e8e\u771f\u5b9e\u5386\u53f2\u3002"+
       "\n\u8fd4\u56deJSON: {\"variables\":[{\"name\":\"...\",\"value\":50,\"min\":0,\"max\":100,\"desc\":\"...\"},...],\"relations\":[{\"from\":\"...\",\"to\":\"...\",\"type\":\"...\",\"value\":50},...]}";
-    var r3=await callAISmart(prompt3,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return j.variables&&Array.isArray(j.variables)&&j.variables.length>=Math.min(varCount,3);}catch(e){return false;}}});
+    var prompt4="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u5b98\u5236\u4e13\u5bb6\u3002"+histNote+
+      ctxScn+" "+ctxChrs+
+      "\n\u8bf7\u751f\u6210"+deptCount+"\u4e2a\u5c5e\u4e8e\u8be5\u671d\u4ee3\u7684\u771f\u5b9e\u5c0f\u673a\u6784\u5b98\u5236\u90e8\u95e8\u3002\u5c3d\u91cf\u8fd8\u539f\u5386\u53f2\u771f\u5b9e\u5b98\u79f0\u3002"+
+      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"desc\":\"...\",\"headRole\":\"...\",\"slots\":3},...] \u5171"+deptCount+"\u4e2a\u3002";
+    var prompt5="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u79d1\u6280\u4e13\u5bb6\u3002"+histNote+
+      ctxScn+" "+ctxChrs+
+      "\n\u8bf7\u751f\u6210"+techCount+"\u4e2a\u5c5e\u4e8e\u8be5\u671d\u4ee3\u7684\u5386\u53f2\u79d1\u6280/\u53d1\u660e/\u5de5\u827a\u8282\u70b9\uff0c\u4f53\u73b0\u8be5\u65f6\u671f\u771f\u5b9e\u6280\u672f\u6c34\u5e73\u3002"+
+      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"desc\":\"...\",\"effect\":\"...\",\"era\":\"...\",\"prereqs\":[],\"costs\":{}},...] \u5171"+techCount+"\u4e2a\u3002";
+    var prompt6="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u653f\u6cbb\u5236\u5ea6\u4e13\u5bb6\u3002"+histNote+
+      ctxScn+" "+ctxChrs+
+      "\n\u8bf7\u751f\u6210"+civicCount+"\u4e2a\u5c5e\u4e8e\u8be5\u671d\u4ee3\u7684\u5386\u53f2\u653f\u7b56/\u5236\u5ea6/\u6cbb\u56fd\u7406\u5ff5\u8282\u70b9\uff0c\u4f53\u73b0\u8be5\u65f6\u671f\u771f\u5b9e\u6cbb\u56fd\u65b9\u7565\u3002"+
+      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"desc\":\"...\",\"effect\":\"...\",\"era\":\"...\",\"prereqs\":[],\"costs\":{}},...] \u5171"+civicCount+"\u4e2a\u3002";
+    var prompt7="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u519b\u4e8b\u4e13\u5bb6\u3002"+histNote+
+      ctxScn+" "+ctxChrs+
+      "\n\u8bf7\u751f\u6210\u8be5\u671d\u4ee3\u519b\u4e8b\u4f53\u7cfb\uff0c\u5305\u542b4\u4e2a\u5b50\u7c7b\u5404"+milCount+"\u4e2a\u6761\u76ee\uff1a\n"+
+      "troops(\u5175\u79cd/\u519b\u961f\u7c7b\u578b), facilities(\u519b\u4e8b\u8bbe\u65bd), organization(\u519b\u4e8b\u7f16\u5236/\u5236\u5ea6), campaigns(\u91cd\u8981\u6218\u5f79/\u519b\u4e8b\u884c\u52a8)\u3002"+
+      "\n\u8fd4\u56deJSON: {\"troops\":[{\"name\":\"...\",\"type\":\"...\",\"description\":\"...\"},...],\"facilities\":[...],\"organization\":[...],\"campaigns\":[...]}";
+    var prompt8="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u4e13\u5bb6\u3002"+histNote+
+      ctxScn+" "+ctxChrs+
+      "\n\u8bf7\u751f\u6210"+facCount+"\u4e2a\u8be5\u65f6\u671f\u771f\u5b9e\u5b58\u5728\u7684\u653f\u6cbb\u6d3e\u7cfb/\u52bf\u529b\u96c6\u56e2\u3002"+
+      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"leader\":\"...\",\"desc\":\"...\",\"ideology\":\"...\",\"strength\":60,\"courtInfluence\":50,\"popularInfluence\":40},...] \u5171"+facCount+"\u4e2a\u3002";
+    var prompt9="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u4e13\u5bb6\u3002"+histNote+
+      ctxScn+" "+ctxChrs+
+      "\n\u8bf7\u751f\u6210"+evtCount+"\u4e2a\u8be5\u65f6\u671f\u771f\u5b9e\u5386\u53f2\u4e8b\u4ef6\uff0c\u53ef\u4f5c\u4e3a\u6e38\u620f\u89e6\u53d1\u5668\u3002\u6bcf\u4e2a\u4e8b\u4ef6\u5305\u542b: name, trigger(\u89e6\u53d1\u6761\u4ef6\u63cf\u8ff0), effect(\u5386\u53f2\u5f71\u54cd), era\u3002"+
+      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"trigger\":\"...\",\"effect\":\"...\",\"era\":\"...\"},...] \u5171"+evtCount+"\u4e2a\u3002";
+    var prompt10="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u6587\u7269\u4e13\u5bb6\u3002"+histNote+
+      ctxScn+" "+ctxChrs+
+      "\n\u8bf7\u751f\u6210"+itemCount+"\u4e2a\u8be5\u65f6\u671f\u6709\u5386\u53f2\u8bb0\u8f7d\u7684\u91cd\u8981\u5668\u7269/\u5b9d\u7269/\u5178\u7c4d/\u5175\u5668\u3002\u6bcf\u4e2a\u5305\u542b: name, type(\u7c7b\u578b), desc(\u5386\u53f2\u63cf\u8ff0), effect(\u6e38\u620f\u6548\u679c), rarity(common/rare/epic/legendary)\u3002"+
+      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"type\":\"...\",\"desc\":\"...\",\"effect\":\"...\",\"rarity\":\"rare\"},...] \u5171"+itemCount+"\u4e2a\u3002";
+    // \u5e76\u53d1\u89e6\u53d1\u00b7\u5355\u6b65\u72ec\u7acb\u515c\u5e95\uff1aAbortError(\u73a9\u5bb6\u53d6\u6d88) \u900f\u4f20\u4e2d\u6b62\u6574\u4f53\uff1b\u5176\u4f59\u9519\u8bef\u2192''\u2192\u8d70\u5404\u81ea parse \u7684\u7a7a\u515c\u5e95(\u4e00\u6b65\u5931\u8d25\u4e0d\u62d6\u7d2f\u5176\u4f59\u00b7\u6bd4\u539f\u4e32\u884c\u66f4\u7a33)
+    function _fgFire(p,tok,o){return callAISmart(p,tok,o).then(function(r){return r;},function(e){if(e&&e.name==='AbortError')throw e;return '';});}
+    var _fgR=await Promise.all([
+      _fgFire(prompt3,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return j.variables&&Array.isArray(j.variables)&&j.variables.length>=Math.min(varCount,3);}catch(e){return false;}}}),
+      _fgFire(prompt4,1500,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(facCount,3);}catch(e){return false;}}}),
+      _fgFire(prompt5,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(evtCount,2);}catch(e){return false;}}}),
+      _fgFire(prompt6,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(itemCount,2);}catch(e){return false;}}}),
+      _fgFire(prompt7,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3}),
+      _fgFire(prompt8,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}}),
+      _fgFire(prompt9,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3}),
+      _fgFire(prompt10,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}})
+    ]);
+    var r3=_fgR[0],r4=_fgR[1],r5=_fgR[2],r6=_fgR[3],r7=_fgR[4],r8=_fgR[5],r9=_fgR[6],r10=_fgR[7];
+    // \u89e3\u6790\u5165\u5e93(\u987a\u5e8f\u00b7\u7eaf JSON \u65e0 AI\u00b7\u4e0e\u539f\u9010\u6b65\u7b49\u4ef7\u00b7\u5404\u81ea try/catch + done.push)
     try{
       var j3=JSON.parse(r3.replace(/```json|```/g,"").trim());
       if(j3.variables&&Array.isArray(j3.variables))j3.variables.forEach(function(v){P.variables.push({id:uid(),sid:sid,name:v.name||"",value:v.value!=null?v.value:50,min:v.min!=null?v.min:0,max:v.max!=null?v.max:100,desc:v.desc||""});});
       if(j3.relations&&Array.isArray(j3.relations))j3.relations.forEach(function(r){P.relations.push({id:uid(),sid:sid,from:r.from||"",to:r.to||"",type:r.type||"",value:r.value!=null?r.value:50});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 3 (variables/relations) parse failed:') : console.warn('Step 3 (variables/relations) parse failed:', e); }
     done.push("\u53d8\u91cf\u4e0e\u5173\u7cfb");
-
-    // Step 4
-    _fgShowProgress(4,TOTAL,"\u751f\u6210\u5b98\u5236\u6811",done);
-    var prompt4="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u5b98\u5236\u4e13\u5bb6\u3002"+histNote+
-      ctxScn+" "+ctxChrs+
-      "\n\u8bf7\u751f\u6210"+deptCount+"\u4e2a\u5c5e\u4e8e\u8be5\u671d\u4ee3\u7684\u771f\u5b9e\u5c0f\u673a\u6784\u5b98\u5236\u90e8\u95e8\u3002\u5c3d\u91cf\u8fd8\u539f\u5386\u53f2\u771f\u5b9e\u5b98\u79f0\u3002"+
-      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"desc\":\"...\",\"headRole\":\"...\",\"slots\":3},...] \u5171"+deptCount+"\u4e2a\u3002";
-    var r4=await callAISmart(prompt4,1500,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(facCount,3);}catch(e){return false;}}});
     try{
       var j4=JSON.parse(r4.replace(/```json|```/g,"").trim());
       if(Array.isArray(j4))j4.forEach(function(d){P.officeTree.push({id:uid(),sid:sid,name:d.name||"",desc:d.desc||"",headRole:d.headRole||"",slots:d.slots||3,members:[]});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 4 (officeTree) parse failed:') : console.warn('Step 4 (officeTree) parse failed:', e); }
     done.push("\u5b98\u5236\u6811");
-
-    // Step 5
-    _fgShowProgress(5,TOTAL,"\u751f\u6210\u79d1\u6280\u6811",done);
-    var prompt5="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u79d1\u6280\u4e13\u5bb6\u3002"+histNote+
-      ctxScn+" "+ctxChrs+
-      "\n\u8bf7\u751f\u6210"+techCount+"\u4e2a\u5c5e\u4e8e\u8be5\u671d\u4ee3\u7684\u5386\u53f2\u79d1\u6280/\u53d1\u660e/\u5de5\u827a\u8282\u70b9\uff0c\u4f53\u73b0\u8be5\u65f6\u671f\u771f\u5b9e\u6280\u672f\u6c34\u5e73\u3002"+
-      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"desc\":\"...\",\"effect\":\"...\",\"era\":\"...\",\"prereqs\":[],\"costs\":{}},...] \u5171"+techCount+"\u4e2a\u3002";
-    var r5=await callAISmart(prompt5,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(evtCount,2);}catch(e){return false;}}});
     try{
       var j5=JSON.parse(r5.replace(/```json|```/g,"").trim());
       if(Array.isArray(j5))j5.forEach(function(t){P.techTree.push({id:uid(),sid:sid,name:t.name||"",desc:t.desc||"",effect:t.effect||"",era:t.era||scn.era,prereqs:t.prereqs||[],costs:t.costs||{},unlocked:false});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 5 (techTree) parse failed:') : console.warn('Step 5 (techTree) parse failed:', e); }
     done.push("\u79d1\u6280\u6811");
-
-    // Step 6
-    _fgShowProgress(6,TOTAL,"\u751f\u6210\u5e02\u653f\u6811",done);
-    var prompt6="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u653f\u6cbb\u5236\u5ea6\u4e13\u5bb6\u3002"+histNote+
-      ctxScn+" "+ctxChrs+
-      "\n\u8bf7\u751f\u6210"+civicCount+"\u4e2a\u5c5e\u4e8e\u8be5\u671d\u4ee3\u7684\u5386\u53f2\u653f\u7b56/\u5236\u5ea6/\u6cbb\u56fd\u7406\u5ff5\u8282\u70b9\uff0c\u4f53\u73b0\u8be5\u65f6\u671f\u771f\u5b9e\u6cbb\u56fd\u65b9\u7565\u3002"+
-      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"desc\":\"...\",\"effect\":\"...\",\"era\":\"...\",\"prereqs\":[],\"costs\":{}},...] \u5171"+civicCount+"\u4e2a\u3002";
-    var r6=await callAISmart(prompt6,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(itemCount,2);}catch(e){return false;}}});
     try{
       var j6=JSON.parse(r6.replace(/```json|```/g,"").trim());
       if(Array.isArray(j6))j6.forEach(function(c){P.civicTree.push({id:uid(),sid:sid,name:c.name||"",desc:c.desc||"",effect:c.effect||"",era:c.era||scn.era,prereqs:c.prereqs||[],costs:c.costs||{},adopted:false});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 6 (civicTree) parse failed:') : console.warn('Step 6 (civicTree) parse failed:', e); }
     done.push("\u5e02\u653f\u6811");
-
-    // Step 7
-    _fgShowProgress(7,TOTAL,"\u751f\u6210\u519b\u4e8b\u4f53\u7cfb",done);
-    if(!P.military)P.military={troops:[],facilities:[],organization:[],campaigns:[],armies:[],systemDesc:"",supplyDesc:"",battleDesc:""};
-    var prompt7="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u519b\u4e8b\u4e13\u5bb6\u3002"+histNote+
-      ctxScn+" "+ctxChrs+
-      "\n\u8bf7\u751f\u6210\u8be5\u671d\u4ee3\u519b\u4e8b\u4f53\u7cfb\uff0c\u5305\u542b4\u4e2a\u5b50\u7c7b\u5404"+milCount+"\u4e2a\u6761\u76ee\uff1a\n"+
-      "troops(\u5175\u79cd/\u519b\u961f\u7c7b\u578b), facilities(\u519b\u4e8b\u8bbe\u65bd), organization(\u519b\u4e8b\u7f16\u5236/\u5236\u5ea6), campaigns(\u91cd\u8981\u6218\u5f79/\u519b\u4e8b\u884c\u52a8)\u3002"+
-      "\n\u8fd4\u56deJSON: {\"troops\":[{\"name\":\"...\",\"type\":\"...\",\"description\":\"...\"},...],\"facilities\":[...],\"organization\":[...],\"campaigns\":[...]}";
-    var r7=await callAISmart(prompt7,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3});
     try{
       var j7=JSON.parse(r7.replace(/```json|```/g,"").trim());
       ["troops","facilities","organization","campaigns"].forEach(function(k){
@@ -980,14 +990,6 @@ async function execFullGen(){
       });
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 7 (military) parse failed:') : console.warn('Step 7 (military) parse failed:', e); }
     done.push("\u519b\u4e8b\u4f53\u7cfb");
-
-    // Step 8
-    _fgShowProgress(8,TOTAL,"\u751f\u6210\u52bf\u529b\u6d3e\u7cfb",done);
-    var prompt8="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u4e13\u5bb6\u3002"+histNote+
-      ctxScn+" "+ctxChrs+
-      "\n\u8bf7\u751f\u6210"+facCount+"\u4e2a\u8be5\u65f6\u671f\u771f\u5b9e\u5b58\u5728\u7684\u653f\u6cbb\u6d3e\u7cfb/\u52bf\u529b\u96c6\u56e2\u3002"+
-      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"leader\":\"...\",\"desc\":\"...\",\"ideology\":\"...\",\"strength\":60,\"courtInfluence\":50,\"popularInfluence\":40},...] \u5171"+facCount+"\u4e2a\u3002";
-    var r8=await callAISmart(prompt8,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}});
     try{
       var j8=JSON.parse(r8.replace(/```json|```/g,"").trim());
       if(Array.isArray(j8))j8.forEach(function(fc){
@@ -995,14 +997,6 @@ async function execFullGen(){
       });
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 8 (factions) parse failed:') : console.warn('Step 8 (factions) parse failed:', e); }
     done.push("\u52bf\u529b\u6d3e\u7cfb");
-
-    // Step 9
-    _fgShowProgress(9,TOTAL,"\u751f\u6210\u5386\u53f2\u4e8b\u4ef6",done);
-    var prompt9="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u4e13\u5bb6\u3002"+histNote+
-      ctxScn+" "+ctxChrs+
-      "\n\u8bf7\u751f\u6210"+evtCount+"\u4e2a\u8be5\u65f6\u671f\u771f\u5b9e\u5386\u53f2\u4e8b\u4ef6\uff0c\u53ef\u4f5c\u4e3a\u6e38\u620f\u89e6\u53d1\u5668\u3002\u6bcf\u4e2a\u4e8b\u4ef6\u5305\u542b: name, trigger(\u89e6\u53d1\u6761\u4ef6\u63cf\u8ff0), effect(\u5386\u53f2\u5f71\u54cd), era\u3002"+
-      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"trigger\":\"...\",\"effect\":\"...\",\"era\":\"...\"},...] \u5171"+evtCount+"\u4e2a\u3002";
-    var r9=await callAISmart(prompt9,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3});
     try{
       var j9=JSON.parse(r9.replace(/```json|```/g,"").trim());
       if(Array.isArray(j9))j9.forEach(function(ev){
@@ -1010,14 +1004,6 @@ async function execFullGen(){
       });
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 9 (events) parse failed:') : console.warn('Step 9 (events) parse failed:', e); }
     done.push("\u5386\u53f2\u4e8b\u4ef6");
-
-    // Step 10
-    _fgShowProgress(10,TOTAL,"\u751f\u6210\u5386\u53f2\u7269\u54c1",done);
-    var prompt10="\u4f60\u662f\u4e2d\u56fd\u5386\u53f2\u6587\u7269\u4e13\u5bb6\u3002"+histNote+
-      ctxScn+" "+ctxChrs+
-      "\n\u8bf7\u751f\u6210"+itemCount+"\u4e2a\u8be5\u65f6\u671f\u6709\u5386\u53f2\u8bb0\u8f7d\u7684\u91cd\u8981\u5668\u7269/\u5b9d\u7269/\u5178\u7c4d/\u5175\u5668\u3002\u6bcf\u4e2a\u5305\u542b: name, type(\u7c7b\u578b), desc(\u5386\u53f2\u63cf\u8ff0), effect(\u6e38\u620f\u6548\u679c), rarity(common/rare/epic/legendary)\u3002"+
-      "\n\u8fd4\u56deJSON\u6570\u7ec4: [{\"name\":\"...\",\"type\":\"...\",\"desc\":\"...\",\"effect\":\"...\",\"rarity\":\"rare\"},...] \u5171"+itemCount+"\u4e2a\u3002";
-    var r10=await callAISmart(prompt10,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}});
     try{
       var j10=JSON.parse(r10.replace(/```json|```/g,"").trim());
       if(Array.isArray(j10))j10.forEach(function(it){
@@ -1026,6 +1012,7 @@ async function execFullGen(){
       });
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 10 (items) parse failed:') : console.warn('Step 10 (items) parse failed:', e); }
     done.push("\u5386\u53f2\u7269\u54c1");
+    _fgShowProgress(10,TOTAL,"\u5236\u5ea6\u4f53\u7cfb\u5df2\u751f\u6210",done);
 
     // ============ 第12步：交叉验证 + 自动修复 ============
     _fgShowProgress(11,TOTAL,'验证一致性',done);

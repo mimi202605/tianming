@@ -276,8 +276,25 @@
     var facById = {};
     (meData.factions || []).forEach(function(f){ if (f && f.id) facById[f.id] = f; });
 
+    // 先全转 admin 节点(divisionForAdmin 补 children:[])·按 id 索引·便于按 parentId 挂层级树
+    var nodeById = {};
+    var items = meData.divisions.map(function(d){
+      var node = divisionForAdmin(d);
+      if (d.id) nodeById[d.id] = node;
+      return { d: d, node: node };
+    });
+
     var byFac = {};
-    meData.divisions.forEach(function(d){
+    items.forEach(function(item){
+      var d = item.d, node = item.node;
+      // 子地块(府/县·parentId 指上级)→ 挂到父的 children·实现层级聚合(liveRegionVitals walk children
+      //   把府县数据加权汇到省)·而非与父并列。父不存在则回落顶层势力分组。
+      var par = d.parentId && nodeById[d.parentId];
+      if (par && par !== node){
+        par.children.push(node);
+        return;
+      }
+      // 顶层(省/路·无父)→ 按势力分组进 divisions
       var facName;
       if (d.factionId && facById[d.factionId]){
         facName = facById[d.factionId].name || d.factionId;
@@ -287,7 +304,7 @@
       if (!byFac[facName]){
         byFac[facName] = { name: facName, divisions: [] };
       }
-      byFac[facName].divisions.push(divisionForAdmin(d));
+      byFac[facName].divisions.push(node);
     });
     return byFac;
   }

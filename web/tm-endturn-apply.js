@@ -24,6 +24,23 @@
 // ============================================================
 (function(global) {
 
+  // 【落地核对·2026-06】applyAITurnChanges 返回 {applied:{failed:[]}}·原两调用点丢弃返回值→AI 声明应用失败 100% 静默(owner 痛点#1:摘要显示了却没改到状态)。此助手接住失败清单·记 GM._unappliedChanges + console.warn + addEB·让"显示了却没落地"从看不见变看得见(这是修#1的 keystone·后续按 GM._unappliedChanges 对症)。
+  function _surfaceUnappliedChanges(applyRes, source) {
+    try {
+      var failed = (applyRes && applyRes.applied && Array.isArray(applyRes.applied.failed)) ? applyRes.applied.failed : [];
+      if (!failed.length) return;
+      if (typeof GM === 'undefined' || !GM) return;
+      if (!Array.isArray(GM._unappliedChanges)) GM._unappliedChanges = [];
+      failed.forEach(function (f) { try { GM._unappliedChanges.push(Object.assign({ turn: GM.turn || 0, source: source }, f)); } catch (_) {} });
+      if (GM._unappliedChanges.length > 80) GM._unappliedChanges = GM._unappliedChanges.slice(-80);
+      var byReason = {};
+      failed.forEach(function (f) { var r = (f && f.reason) || 'unknown'; byReason[r] = (byReason[r] || 0) + 1; });
+      var summary = Object.keys(byReason).map(function (r) { return r + '×' + byReason[r]; }).join('·');
+      try { console.warn('[落地核对·' + source + '] ' + failed.length + ' 项 AI 声明未落地: ' + summary, failed); } catch (_) {}
+      if (typeof addEB === 'function') { try { addEB('⚠落地核对', source + '·' + failed.length + ' 项 AI 声明未能落地(' + summary + ')·详见控制台 GM._unappliedChanges'); } catch (_) {} }
+    } catch (e) { try { console.warn('[落地核对] surface failed', e); } catch (_) {} }
+  }
+
   // ── NPC 行为类型→中文动词(供记忆/事件文案·复用 prompt 既有标签·防英文 behaviorType 漏进中文叙事·2026-06-13) ──
   var _NPC_BEHAVIOR_CN = { appoint:'任用', dismiss:'罢黜', declare_war:'宣战', reward:'赏赐', punish:'惩处', request_loyalty:'拉拢', reform:'推行新政', betray:'背叛', conspire:'密谋串联', petition:'进谏', investigate:'查劾', impeach:'弹劾', obstruct:'阻挠', slander:'中伤', reconcile:'和解', mentor:'提携', train_troops:'操练', fortify:'整饬城防', patrol:'巡防', flee:'出逃', retire:'告老', travel:'游历', develop:'兴修', donate:'捐输', hoard:'囤积', smuggle:'走私', suppress:'镇压', petition_jointly:'联名上书', recruit:'招募', study:'查访', recommend:'举荐', confront:'对质', mediate:'调和', frame_up:'构陷', expose_secret:'揭发', share_intelligence:'通风报信', guarantee:'担保', gift_present:'馈赠', private_visit:'私访', invite_banquet:'宴请', correspond_secret:'通密信', form_clique:'结党', marriage_alliance:'联姻', master_disciple:'收徒', duel_poetry:'诗文唱和', mourn_together:'共哀', mourn:'致哀', rival_compete:'争胜', obey:'听命', desert:'哗变' };
   function _npcBehaviorVerbCN(bt) {
@@ -113,7 +130,7 @@
         // 方案融入：AI 产出的通用变化/任免/机构/区划/事件/NPC行动/关系 → 统一应用
         try {
           if (typeof applyAITurnChanges === 'function') {
-            applyAITurnChanges({
+            var _applyRes1 = applyAITurnChanges({
               narrative: p1.shizhengji || '',
               changes: Array.isArray(p1.changes) ? p1.changes : [],
               appointments: Array.isArray(p1.appointments) ? p1.appointments : [],
@@ -139,8 +156,20 @@
               directive_compliance: Array.isArray(p1.directive_compliance) ? p1.directive_compliance : [],
               regent_decisions: Array.isArray(p1.regent_decisions) ? p1.regent_decisions : []
             });
+            _surfaceUnappliedChanges(_applyRes1, 'sc1主应用');  // 【落地核对】接住失败清单·让静默 #1 可见
           }
         } catch(_applyErr) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_applyErr, 'endturn] applyAITurnChanges:') : console.warn('[endturn] applyAITurnChanges:', _applyErr); }
+
+        // 【落地核对·Slice3·2026-06】province_changes 是无 handler 的冗余自由字段(省级意图应走 population_adjustments/central_local_actions/localActions/fiscal 等有 handler 字段)·原本被收集喂下回合却从不 mutate state→纯静默落空。此处显式 surface·让真机从 GM._unappliedChanges 看到 AI 实际往里塞什么·据此再决定补 handler 还是删 schema(不盲改)。
+        try {
+          if (p1 && Array.isArray(p1.province_changes) && p1.province_changes.length && typeof GM !== 'undefined' && GM) {
+            if (!Array.isArray(GM._unappliedChanges)) GM._unappliedChanges = [];
+            GM._unappliedChanges.push({ turn: GM.turn || 0, source: 'province_changes', count: p1.province_changes.length, sample: p1.province_changes.slice(0, 3), reason: 'province_changes 无 apply handler(省级变化请走 population_adjustments/central_local_actions)' });
+            if (GM._unappliedChanges.length > 80) GM._unappliedChanges = GM._unappliedChanges.slice(-80);
+            try { console.warn('[落地核对·province_changes] ' + p1.province_changes.length + ' 项省级变化无 handler·未落地·样本:', p1.province_changes.slice(0, 3)); } catch (_) {}
+            if (typeof addEB === 'function') { try { addEB('⚠落地核对', 'province_changes·' + p1.province_changes.length + ' 项省级变化无 handler 未落地·详见 GM._unappliedChanges'); } catch (_) {} }
+          }
+        } catch (_pcSurfaceE) {}
 
         // ═══════════════════════════════════════════════════════════════════
         // 辅臣拟议·AI 生成 (Stage 2·2026-06-02)·御前待批奏疏的辅臣处理建议
@@ -223,6 +252,16 @@
               '请检查 narrative 中提到但未在结构化数据里体现的状态变化·只补遗漏的·不要重复已写过的。\n' +
               '使用提供的 5 个工具之一记录补录·若完全无需补录请调用 record_no_changes。\n' +
               '注意：每个工具可调用多次·按领域分别调用（人事/任命/财政/军事各自独立）。';
+
+            // 【落地核对·structured↔state 残差修复·搭车·2026-06】把主应用「已尝试应用但未落地」的结构化变化(applied.failed·多因目标名对不上)喂进**同一次**自审·让 LLM 解析正确目标后用上面**同一组工具**重记·随 _patch 经下方 L653 重应用·**零新增调用/零新工具**。只挑"目标对不上"类(排除 blocked 等故意拦截·不喂回去)·重应用若仍失败由 _applyRes2 的 surface 兜住(不静默)。
+            try {
+              var _failedForRepair = (typeof _applyRes1 !== 'undefined' && _applyRes1 && _applyRes1.applied && Array.isArray(_applyRes1.applied.failed))
+                ? _applyRes1.applied.failed.filter(function(f){ return f && f.reason && /not found|未找到|对不上|未落地|无法解析/i.test(String(f.reason)) && !/blocked|玩家保护/i.test(String(f.reason)); }).slice(0, 12)
+                : [];
+              if (_failedForRepair.length) {
+                _reconcilePrompt += '\n\n【另有结构化变化已尝试应用但未落地·多因目标名对不上】\n' + JSON.stringify(_failedForRepair) + '\n请把其中的目标(人名/势力/地区)解析为当前实际存在的对象后·用上面同一组工具按正确名字重新记录·解析不出的跳过·切勿凭空捏造对象。';
+              }
+            } catch (_repairPromptErr) {}
 
             // 取 reconcile 工具集
             var _reconcileTools = (window.TM_AI_SCHEMA && TM_AI_SCHEMA.reconcileTools) || [];
@@ -650,7 +689,7 @@ inst._imprisonedTurn = GM.turn||0;
 
             var _patched = _patch.personnel_changes.length + _patch.office_assignments.length + _patch.fiscal_adjustments.length + _patch.military_changes.length + _patch.sentiment_changes.length + _patch.population_changes.length + _patch.war_events.length + _patch.revolt_events.length + _patch.disaster_events.length + _patch.diplomacy_events.length + _patch.keju_events.length + _patch.party_events.length + _patch.edict_events.length + _patch.court_ceremony_events.length + _patch.construction_events.length + _patch.omen_events.length + _patch.marriage_birth_events.length + _patch.conspiracy_events.length + _patch.currency_events.length + _patch.religion_events.length;
             if ((_patch.personnel_changes.length + _patch.office_assignments.length + _patch.fiscal_adjustments.length + _patch.military_changes.length) > 0 && typeof applyAITurnChanges === 'function') {
-              applyAITurnChanges({
+              var _applyRes2 = applyAITurnChanges({
                 personnel_changes: _patch.personnel_changes,
                 office_assignments: _patch.office_assignments,
                 fiscal_adjustments: _patch.fiscal_adjustments,
@@ -659,6 +698,7 @@ inst._imprisonedTurn = GM.turn||0;
                 shilu_text: '',
                 shizhengji: ''
               });
+              _surfaceUnappliedChanges(_applyRes2, 'reconcile补录');  // 【落地核对】二审补录也接住失败清单
               if (!GM._reconcilePatchLog) GM._reconcilePatchLog = [];
               GM._reconcilePatchLog.push({ turn: GM.turn||0, patch: _patch, mode: _toolResp.fallback ? 'fallback' : 'tool_use', timestamp: Date.now() });
               if (GM._reconcilePatchLog.length > 10) GM._reconcilePatchLog = GM._reconcilePatchLog.slice(-10);
@@ -3019,8 +3059,16 @@ inst._imprisonedTurn = GM.turn||0;
           });
         }
 
+        // 官制活化 Slice④ 改制裁定 pass：拟制满一回合→裁定（开关 officeReformAdjudicationEnabled·默认关零回归）
+        if (typeof officeFlagOn === 'function' && officeFlagOn('officeReformAdjudicationEnabled') && typeof adjudicatePendingReforms === 'function') {
+          try { adjudicatePendingReforms(GM, { aiVerdicts: (p1 && p1.reform_verdicts) || null }); } catch (_arpE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_arpE, 'apply] reform adjudicate:') : console.warn('[apply] reform adjudicate:', _arpE); }
+        }
         // 处理官制变动（AI可任命/罢免官员）
         if (p1.office_changes && Array.isArray(p1.office_changes) && GM.officeTree) {
+          // 官制活化 Slice④ 拟制态捕获：adjudication 开时·reform oc 入队(拟制中)·不即落·关则原样(3340 即落·零回归)
+          if (typeof officeFlagOn === 'function' && officeFlagOn('officeReformAdjudicationEnabled') && typeof enqueuePendingReform === 'function') {
+            p1.office_changes = p1.office_changes.filter(function (oc) { if (oc && oc.action === 'reform' && oc.reformDetail) { enqueuePendingReform(GM, oc); return false; } return true; });
+          }
           var _officeMoveExitMap = _tmBuildOfficeMoveExitMap(GM, p1);
           p1.office_changes.forEach(function(oc) {
             if (!oc.dept || !oc.position || !oc.action) return;

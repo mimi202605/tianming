@@ -1539,7 +1539,7 @@ function _generateLetterReply(letter) {
     prompt += '\n7. 语气与当前境/情绪/好感一致·不割裂';
     prompt += '\n8. 不要提及未在当前游戏时间之前发生的未来史实';
     prompt += '\n\n直接输出回信正文·无前言无解释。';
-    callAI(prompt, 600).then(function(reply) {
+    callAI(prompt, 600, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined).then(function(reply) {  // 【降本2026-06-19】回信生成(机械对话)走次 API
       letter.reply = (reply || '').trim() || '臣叩首拜读·容臣三思后详禀。';
       letter.status = 'returned';
       letter._fallbackReply = false;
@@ -2554,7 +2554,7 @@ async function _polishEdicts() {
   prompt += '\u76F4\u63A5\u8F93\u51FA\u8BCF\u4E66\u5168\u6587\uFF0C\u4E0D\u8981\u52A0\u4EFB\u4F55\u89E3\u91CA\u3002';
 
   try {
-    var result = await callAI(prompt, 2000);
+    var result = await callAI(prompt, 2000, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);  // 【降本2026-06-19】诏书润色(机械文体)走次 API
     if (result) _renderPolishedEdict(panel, result);
     else panel.innerHTML = '<div style="color:var(--color-foreground-muted);text-align:center;">\u6DA6\u8272\u672A\u8FD4\u56DE\u5185\u5BB9</div>';
   } catch(e) {

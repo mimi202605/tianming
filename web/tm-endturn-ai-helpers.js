@@ -347,7 +347,8 @@ async function aiEdictEfficacyAudit(aiResult, edicts) {
     var raw = await callAISmart(prompt, 2000, {
       maxRetries: 2,
       timeoutMs: 60000,
-      fetchMaxRetries: 1
+      fetchMaxRetries: 1,
+      priority: 'background'   // 【降本2026-06-19】御批回听是上回合诏令复盘·下回合才用·移出回合关键路径(对齐兄弟后台调用)
     });
     if (!raw) return;
     var parsed;

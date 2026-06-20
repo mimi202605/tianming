@@ -1239,6 +1239,12 @@
         '  · 四个检索源：(1) NPC 个人记忆 (2) 长期事势(ChronicleTracker) (3) 史记本传(shijiHistory) (4) 已埋伏笔(_foreshadows)\n' +
         '  · 适合查询的场景：「此人是否真在那回合背叛过」「某改革当年具体推进到哪里」「玩家曾埋下何种伏笔」「某事件距今多少回合」\n' +
         '  · keywords 用具体名词(角色名/事件关键词/政策名)·turnRange 可选(若不填则全档案)·participant 仅 NPC 记忆源使用·minImportance 仅 NPC 记忆源使用';
+      // ①-S1 非常规举措识别（开关 P.conf.anomalyRoutingEnabled·默认关·关=sc0 prompt 逐字节等同现状）
+      if ((typeof agentFlagOn==='function' ? agentFlagOn('anomalyRoutingEnabled') : (P.conf && P.conf.anomalyRoutingEnabled))) {
+        tp0 += '\n【额外·非常规举措识别】在上述 JSON 中再补一个字段 "anomaly":{"detected":true/false,"moves":[{"what":"玩家本回合越出常规/罕见/可能引发非常规连锁的举措(如复活失传制度·罕见手段·越界操作)","why_uncommon":"为何罕见或越界","needs":"需深查的历史先例关键词·或需特别考量的连锁"}]}。仅当玩家确有非常规举措时 detected=true(moves 最多 3 项)·常规回合留 detected=false、moves=[]。';
+      }
+      // 【自我反思 agent·S2】sc0 预测阶段注入滚动偏差画像→让 AI 在预测时就校正自己的系统性盲点(agent 核心价值·而非 sc1 事后)。默认关=空串·逐字节零回归。
+      try { if ((typeof agentFlagOn==='function' ? agentFlagOn('reflectionAgentEnabled') : (P.ai && P.ai.reflectionAgentEnabled)) && window.TM && window.TM.ReflectionAgent) { var _biasInj = window.TM.ReflectionAgent.formatBiasForSc0(GM); if (_biasInj) tp0 += _biasInj; } } catch(_biasE){}
       var _sc0Body = {model:P.ai.model||"gpt-4o", messages:[{role:"system",content:_maybeCacheSys(sysPFor('sc0'))},{role:"user",content:tp0}], temperature:0.6, max_tokens:_tok(12000)};
       if (_modelFamily === 'openai') _sc0Body.response_format = { type: 'json_object' };
       var _sc0Call = await _callEndturnAI(_sc0Body, { id: 'sc0', label: '局势分析', priority: 'normal' });
@@ -1250,6 +1256,19 @@
           var _sc0Parsed = await _parseOrRepairJsonResult(aiThinking, data0, '局势分析', { url: url, key: P.ai.key, body: _sc0Body, expectedKeys: ['tensions', 'consequences', 'memoryQueries'], priority: 'normal' });
           if (_sc0Parsed && _sc0Parsed.repaired) aiThinking = _sc0Parsed.raw;
           GM._turnAiResults.thinking = aiThinking;
+          // ①-S1 读 anomaly 信号·存 GM._turnAiResults.anomaly 供后续响应（开关控制·S2 消费）
+          if ((typeof agentFlagOn==='function' ? agentFlagOn('anomalyRoutingEnabled') : (P.conf && P.conf.anomalyRoutingEnabled))) {
+            try {
+              var _think0 = extractJSON(aiThinking);
+              var _anom = _think0 && _think0.anomaly;
+              if (_anom && _anom.detected && Array.isArray(_anom.moves) && _anom.moves.length) {
+                GM._turnAiResults.anomaly = { detected: true, moves: _anom.moves.slice(0, 3), turn: GM.turn || 0 };
+                _dbg('[anomaly] 非常规举措 ' + _anom.moves.length + ' 项·' + _anom.moves.map(function(m){ return (m && m.what) || ''; }).join('; ').slice(0, 120));
+              } else {
+                GM._turnAiResults.anomaly = { detected: false, moves: [] };
+              }
+            } catch (_anomE) { GM._turnAiResults.anomaly = { detected: false, moves: [] }; }
+          }
           _dbg('[AI Think]', aiThinking.substring(0, 200));
         }
       }
@@ -1365,7 +1384,34 @@
         var _think = aiThinking || '';
         var _thinkJson = extractJSON(_think);
         var _baseMemoryQueries = (_thinkJson && Array.isArray(_thinkJson.memoryQueries)) ? _thinkJson.memoryQueries : [];
+        // ①-S2 anomaly 深查：把非常规举措的 needs 转成检索查询·进 _baseMemoryQueries → 复用②agent recall / 固定 SC_RECALL 查历史先例（开关控制）
+        if ((typeof agentFlagOn==='function' ? agentFlagOn('anomalyRoutingEnabled') : (P.conf && P.conf.anomalyRoutingEnabled)) && GM._turnAiResults && GM._turnAiResults.anomaly && GM._turnAiResults.anomaly.detected) {
+          (GM._turnAiResults.anomaly.moves || []).forEach(function(m) {
+            if (!m) return;
+            var _kw = String(m.needs || m.what || '').trim();
+            if (_kw) _baseMemoryQueries.push({ keywords: [_kw.slice(0, 40)], purpose: 'anomaly_precedent:' + String(m.what || '').slice(0, 30) });
+          });
+        }
         var _mqList = _baseMemoryQueries.slice(0, 4);
+        // ── S2 按需取数 agent 分支：开关 P.conf.agentRecallEnabled（默认关）。
+        //    成功 → 填 _recallResults 并置 _agentRecallDone，跳过下方固定检索 for-loop；
+        //    失败 / 无结果 / 开关关 → _agentRecallDone=false，固定检索照常跑（逐字节等同现状）。
+        //    packForInjection 与 MemoryTrace（下方 if(_recallResults>0) 段）对两条路径统一复用。──
+        var _agentRecallDone = false;
+        if (P && (typeof agentFlagOn==='function' ? agentFlagOn('agentRecallEnabled') : (P.conf && P.conf.agentRecallEnabled)) && global.TM && global.TM.MemoryAgentTools && typeof global.TM.MemoryAgentTools.runRecall === 'function') {
+          try {
+            var _agentRecall = await global.TM.MemoryAgentTools.runRecall(GM, { aiThinking: _think, baseQueries: _baseMemoryQueries, edicts: edicts, curT: (GM && GM.turn) || 1 });
+            if (_agentRecall && _agentRecall.results && _agentRecall.results.length) {
+              _recallResults = _agentRecall.results;
+              _agentRecallDone = true;
+              _dbg('[SC_RECALL/agent] ' + _agentRecall.toolCallCount + ' 工具·' + _agentRecall.totalHits + ' 命中·fallback=' + _agentRecall.fallback);
+            } else {
+              _dbg('[SC_RECALL/agent] 无结果·落回固定检索');
+            }
+          } catch (_agentRecallE) {
+            _dbg('[SC_RECALL/agent] 异常·落回固定检索:', (_agentRecallE && _agentRecallE.message) || _agentRecallE);
+          }
+        }
         if (global.TM && global.TM.MemoryRetrieval && typeof global.TM.MemoryRetrieval.buildRecallQueries === 'function') {
           try {
             _mqList = global.TM.MemoryRetrieval.buildRecallQueries(GM, _baseMemoryQueries, {
@@ -1378,6 +1424,8 @@
           }
         }
         if (_mqList.length > 0) {
+          // S2: agent 已取数则跳过固定检索 for-loop（内部逻辑整体不变·仅外套一层开关·未重排缩进以保最小 diff）
+          if (!_agentRecallDone) {
           for (var _mqI = 0; _mqI < _mqList.length; _mqI++) {
             var q = _mqList[_mqI];
             if (!q || typeof q !== 'object') continue;
@@ -1527,6 +1575,7 @@
               });
             }
           }
+          } // end if(!_agentRecallDone) — S2 固定检索 for-loop 开关包裹
 
           if (_recallResults.length > 0) {
             var _recallBudget = null;
@@ -1562,19 +1611,21 @@
                 global.TM.MemoryTrace.recordRetrieval(GM, {
                   id: 'SC_RECALL',
                   status: 'hit',
-                  query: _mqList,
+                  query: (_agentRecallDone && _agentRecall && _agentRecall.toolCalls && _agentRecall.toolCalls.length) ? _agentRecall.toolCalls : _mqList,
                   gate: _gateDecision,
                   sources: _bySrc,
                   hits: _traceHits,
                   suppressed: _traceSuppressed,
-                  budget: _recallBudget
+                  budget: _recallBudget,
+                  agent: (_agentRecallDone && _agentRecall) ? { toolCallCount: _agentRecall.toolCallCount, totalHits: _agentRecall.totalHits, fallback: _agentRecall.fallback, toolCalls: _agentRecall.toolCalls } : null,
+                  anomaly: ((typeof agentFlagOn==='function' ? agentFlagOn('anomalyRoutingEnabled') : (P.conf && P.conf.anomalyRoutingEnabled)) && GM._turnAiResults && GM._turnAiResults.anomaly && GM._turnAiResults.anomaly.detected) ? GM._turnAiResults.anomaly : null
                 });
               }
             } catch(_) {}
             try {
-              if (typeof recordMemoryDiagnostic === 'function') recordMemoryDiagnostic('recall', { status: 'hit', queries: _mqList.length, hits: _totalHits, bySource: _bySrc, gate: _gateDecision, snapshot: (typeof buildMemoryDiagnosticSnapshot === 'function' ? buildMemoryDiagnosticSnapshot(GM) : null) });
+              if (typeof recordMemoryDiagnostic === 'function') recordMemoryDiagnostic('recall', { status: 'hit', mode: _agentRecallDone ? 'agent' : 'fixed', queries: _mqList.length, hits: _totalHits, bySource: _bySrc, gate: _gateDecision, agent: (_agentRecallDone && _agentRecall) ? { toolCallCount: _agentRecall.toolCallCount, totalHits: _agentRecall.totalHits, fallback: _agentRecall.fallback } : null, snapshot: (typeof buildMemoryDiagnosticSnapshot === 'function' ? buildMemoryDiagnosticSnapshot(GM) : null) });
             } catch(_) {}
-            _dbg('[SC_RECALL] 4 源检索:', _mqList.length, '查询·总命中', _totalHits, '条·分布', _srcSummary);
+            _dbg('[SC_RECALL]', _agentRecallDone ? 'agent检索' : '固定4源检索', _agentRecallDone && _agentRecall ? (_agentRecall.toolCalls || []).map(function (c) { return c.name; }).join(',') : (_mqList.length + '查询'), '·总命中', _totalHits, '·分布', _srcSummary);
           }
         }
       } catch(_rcE) {
@@ -3464,6 +3515,18 @@
           });
         }
       } catch(_sc1qLsrE) {}
+      // ①-S2 anomaly 强化：玩家有非常规举措时·要求 sc1 特别推演（开关 + 检出·放在格式约束前·属内容指令）
+      if ((typeof agentFlagOn==='function' ? agentFlagOn('anomalyRoutingEnabled') : (P.conf && P.conf.anomalyRoutingEnabled)) && GM._turnAiResults && GM._turnAiResults.anomaly && GM._turnAiResults.anomaly.detected) {
+        try {
+          var _anomMv = GM._turnAiResults.anomaly.moves || [];
+          var _anomTxt = _anomMv.map(function(m){ return '「' + ((m && m.what) || '') + '」(' + ((m && m.why_uncommon) || '') + ')'; }).join('·');
+          if (_anomTxt) {
+            tp1 += '\n\n=== 非常规举措·特别推演要求 (玩家自由动作·须硬核可信) ===\n'
+                 + '玩家本回合有越出常规的举措：' + _anomTxt + '。\n'
+                 + '务必：(1) 严肃考量其历史先例与现实可行性·不可套路化或敷衍；(2) 推演其可能引发的非常规连锁反应(制度/人心/势力/财政)；(3) 若 SC_RECALL 注入了相关历史先例·参照其成败据实推演；(4) 不因其罕见而回避后果·也不夸大到失真。';
+          }
+        } catch(_anomInjE) {}
+      }
       // Phase 0 D-2·SC1 JSON-only 强约束 LSR·prompt 末尾压住 (大上下文衰减时模型最易丢 JSON 格式)
       tp1 += '\n\n=== 输出格式强约束 (FINAL RULE·不可违反) ===\n'
            + 'YOU MUST RETURN JSON ONLY. 不要包裹 markdown 代码块·不要前言·不要解释·不要附加任何 prose。\n'

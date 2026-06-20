@@ -710,6 +710,29 @@
     return value || '未录';
   }
 
+  // 御驾亲征接入 Phase0:右栏「编制（队）」按队展开。units[] 是派生视图·此处调 ensureArmyUnits 取最新
+  //   →玩家扩军裁军 / AI 高自由度推演改军后·渲染即得正确队列(源签名自愈·无须埋同步钩)。
+  function rightArmyTacCN(u){
+    var k = (u.arm || '') + '/' + (u.sub || '');
+    var M = { 'step/spear':'长枪', 'step/sword':'刀盾', 'step/halberd':'镋钯', 'bow/bow':'弓手', 'bow/crossbow':'弩手', 'bow/musket':'火铳', 'art/cannon':'火炮', 'cav/horse':'骑', 'cav/heavy':'重骑', 'cav/shock':'突骑', 'guard/guard':'亲军' };
+    return M[k] || '杂兵';
+  }
+  function rightArmyUnitsHtml(a){
+    var us = (typeof window !== 'undefined' && window.TMArmyUnits && a) ? window.TMArmyUnits.ensureArmyUnits(a) : (a && a.units) || [];
+    if (!us || !us.length) return '未录';
+    var groups = [], cur = null;
+    for (var i = 0; i < us.length; i++) {
+      var u = us[i], tac = rightArmyTacCN(u);
+      if (!cur || cur.name !== u['番号'] || cur.tac !== tac) { cur = { name: u['番号'], tac: tac, sizes: [], vet: u['历练'] }; groups.push(cur); }
+      cur.sizes.push(u.men);
+    }
+    return groups.map(function(g){
+      var full = g.sizes.filter(function(s){ return s >= 1000; }).length, part = g.sizes.length - full;
+      var tail = part ? ('·' + (g.sizes.length) + '队(' + g.sizes.join('/') + ')') : ('·' + g.sizes.length + '队×' + (g.sizes[0] || 0));
+      return '<b>' + esc(String(g.name)) + '</b>〔' + g.tac + '〕<span style="opacity:.72">' + tail + '·历练' + Math.round(g.vet || 0) + '</span>';
+    }).join('<br>');
+  }
+
   function rightArmyEquipmentText(a){
     var direct = rightArmyFirst(a, ['equipmentCondition','equipmentStatus','equipmentLevel'], '');
     if (direct) return direct;
@@ -795,6 +818,7 @@
       rightArmyBar('士气', morale) + rightArmyBar('训练', training) + rightArmyBar('忠诚', loyalty) + rightArmyBar('控制', control) +
       '<table class="tmrp-data-table"><thead><tr><th>项目</th><th>明细</th></tr></thead><tbody>' +
       '<tr><td>兵种构成</td><td>' + esc(rightArmyCompositionText(a.composition || a.unitsComposition || a.units)) + '</td></tr>' +
+      '<tr><td>编制（队）</td><td>' + rightArmyUnitsHtml(a) + '</td></tr>' +
       '<tr><td>岁饷</td><td>' + esc(rightArmyMoneyText(a)) + '</td></tr>' +
       '<tr><td>军需</td><td>' + esc(rightArmyFirst(a, ['logistics','supplyState','supplyDepotId'], '未录')) + '</td></tr>' +
       '</tbody></table>' +

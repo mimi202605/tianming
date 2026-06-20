@@ -248,6 +248,7 @@
     fd.claimedRevenue = Math.round(claimed);
     fd.actualRevenue = actual;
     fd.remittedToCenter = remitted;
+    fd.retainedBudget = Math.max(0, actual - remitted); // P0-1(2026-06-20): 留用地方=实征-起运·此前漏写致面板「留用地方」恒空
     fd.skimmingRate = round2(skimming);
     fd.compliance = round2(collection * 100);
     fd.minxinCollectionMultiplier = round2(collection);

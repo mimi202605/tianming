@@ -539,48 +539,43 @@ async function genMemorialsAI(count){
     var _dynamicMaxTok = Math.max(8000, Math.min(32000, count * _maxPerMem * 2 + 2000));
     // 完善·下限阈值用 memNormal 而非 memSecret(更严)·容差 0.7
     var _strictMin = Math.round(_normalRange[0] * 0.7);
+    // 【降本2026-06-19·部分接受】原 maxRetries:3 + 字数不达标整批重投(最坏 3×32000≈96000)·改为：宽松生成(只硬挡非法上奏人/数量不足·偏短不整批废) → 达标的留 → 只对缺口补写一次(小 prompt)·worst case ≈ 2×_dynamicMaxTok + 一次小补写
+    function _memPassesLength(m) {
+      if (!m || !m.content) return false;
+      var subt = m.subtype || '题本';
+      var minReq = (subt === '密折' || subt === '密揭' || subt === '密报' || subt === '表' || subt === '笺') ? Math.round(_secretRange[0] * 0.85) : Math.round(_normalRange[0] * 0.85);
+      return m.content.length >= minReq;
+    }
     var c = await callAISmart(prompt, _dynamicMaxTok, {
       minLength: count * _strictMin,
-      maxRetries: 3,
+      maxRetries: 2,
       validator: function(content) {
-        var parsed = extractJSON(content);
-        if (!Array.isArray(parsed) || parsed.length < Math.min(count, 2)) return { valid: false, reason: '奏疏数量不足' };
-        // 完善·按奏疏 subtype 分别检查字数
-        var failed = [];
+        var p = extractJSON(content);
+        if (!Array.isArray(p) || p.length < Math.min(count, 2)) return { valid: false, reason: '奏疏数量不足' };
         var illegal = [];
-        parsed.forEach(function(m, i) {
-          if (!m || !m.content) { failed.push((i+1) + '·空奏疏'); return; }
-          if (_memIsIllegalPresenterName(m.from)) {
-            illegal.push((i+1) + '·' + (m.from || '?'));
-            return;
-          }
-          var len = m.content.length;
-          // subtype 决定字数下限·密折/表 用 memSecret·题本/上疏 用 memNormal 或 memLoyal(若忠臣)
-          var subt = m.subtype || '题本';
-          var minRequired;
-          if (subt === '密折' || subt === '密揭' || subt === '密报') {
-            minRequired = Math.round(_secretRange[0] * 0.85);
-          } else if (subt === '表' || subt === '笺') {
-            minRequired = Math.round(_secretRange[0] * 0.85);
-          } else {
-            // 题本/上疏：取 memNormal 下限·容差 0.85
-            minRequired = Math.round(_normalRange[0] * 0.85);
-          }
-          if (len < minRequired) {
-            failed.push((i+1) + '·' + (m.from||'?') + '·' + len + '/' + minRequired + '字');
-          }
-        });
-        if (illegal.length > 0) {
-          return { valid: false, reason: '非法上奏人（玩家/皇帝本人不得给自己上奏）：' + illegal.join('；') };
-        }
-        // 容许少数(≤1/3) 偏短·超过则视为废稿
-        if (failed.length > Math.ceil(parsed.length / 3)) {
-          return { valid: false, reason: '奏疏字数不足·失败列：' + failed.join('；') + '·须达对应 subtype 字数下限·有论点+论据+对策' };
-        }
-        return true;
+        p.forEach(function(m, i) { if (m && _memIsIllegalPresenterName(m.from)) illegal.push((i + 1) + '·' + (m.from || '?')); });
+        if (illegal.length > 0) return { valid: false, reason: '非法上奏人（玩家/皇帝本人不得给自己上奏）：' + illegal.join('；') };
+        return true;  // 字数偏短不在此整批废·留给「部分接受」逐篇筛+补缺
       }
     });
-    var parsed = extractJSON(c);
+    var _memRaw = extractJSON(c) || [];
+    var _good = [], _shortN = 0;
+    _memRaw.forEach(function(m) { if (m && !_memIsIllegalPresenterName(m.from)) { if (_memPassesLength(m)) _good.push(m); else _shortN++; } });
+    // 只补不达标造成的缺口(一次·小 prompt·非整批重投)
+    if (_good.length < count && _shortN > 0) {
+      var _need = count - _good.length;
+      var _topupPrompt = prompt + '\n\n【补写】上批有 ' + _shortN + ' 篇字数不足已弃·请再补写 ' + _need + ' 篇·务必每篇达对应字数下限(论点+论据+对策)·上奏人/主题与已有不重复·仅返回这 ' + _need + ' 篇 JSON 数组。';
+      try {
+        var _c2 = await callAISmart(_topupPrompt, Math.max(4000, Math.min(16000, _need * _maxPerMem * 2 + 1000)), {
+          maxRetries: 1,
+          validator: function(content) { var p = extractJSON(content); return Array.isArray(p) && p.length >= 1; }
+        });
+        (extractJSON(_c2) || []).forEach(function(m) { if (_good.length < count && m && !_memIsIllegalPresenterName(m.from) && _memPassesLength(m)) _good.push(m); });
+      } catch (_topupE) { try { console.warn('[memorials·部分接受·补写失败]', _topupE); } catch (_) {} }
+    }
+    // 兜底：补写后仍太少 → 把原批偏短的也用上(总比缺斤少两强·保持原"少数偏短可接受"精神)
+    if (_good.length < Math.min(count, 2)) { _memRaw.forEach(function(m) { if (m && !_memIsIllegalPresenterName(m.from) && _good.indexOf(m) < 0) _good.push(m); }); }
+    var parsed = _good;
     if (Array.isArray(parsed)) {
       var capital = GM._capital || '京城';
       var localMems = [];

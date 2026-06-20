@@ -535,6 +535,13 @@ console.log('天命游戏脚本开始加载...');
 <!-- R128 (2026-04-25) tm-mechanics.js 拆分 → mechanics + mechanics-world -->
 <script src="tm-mechanics.js?v=2026050701"></script>
 <script src="tm-mechanics-world.js?v=2026042714"></script>
+<!-- S2 (2026-06-18) 按需取数 agent 工具层：包现有检索 API 为 LLM 可调用工具·供 SC_RECALL agent 分支（开关 P.conf.agentRecallEnabled 默认关） -->
+<script src="tm-agent-flags.js?v=20260619-agentflags4"></script>
+<script src="tm-memory-agent-tools.js?v=20260618-s2"></script>
+<script src="tm-memory-steward.js?v=20260619-steward-s5"></script>
+<script src="tm-reflection-agent.js?v=20260619-reflect-s2"></script>
+<script src="tm-edict-oversight.js?v=20260619-edictov-s1"></script>
+<script src="tm-history-advisor.js?v=20260619-histadv-s1"></script>
 <script src="tm-change-queue.js"></script>
 <!-- R123+R124 (2026-04-25) 拆分 tm-index-world.js → indices + world + memorials + office-panel -->
 <script src="tm-indices.js?v=2026042714"></script>
@@ -551,6 +558,12 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-office-fallback.js?v=20260618-officefb"></script>
 <script src="tm-office-runtime.js?v=2026050701"></script>
 <script src="tm-office-panel.js?v=2026050701"></script>
+<!-- 官制活化（实验）：开关组 + 职权舆图（Slice①·默认关·零回归） -->
+<script src="tm-office-flags.js?v=20260620-officeact"></script>
+<script src="tm-office-powermap.js?v=20260620-officeact"></script>
+<script src="tm-office-dutystate.js?v=20260620-officeact"></script>
+<script src="tm-office-authority.js?v=20260620-officeact"></script>
+<script src="tm-office-reform.js?v=20260620-officeact"></script>
 <!-- R133 (2026-04-25) tm-npc-engine 拆分 → engine + decision -->
 <script src="tm-npc-engine.js?v=2026050701"></script>
 <script src="tm-npc-action-ledger.js?v=2026051701"></script>
@@ -638,6 +651,12 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-world-view.js?v=2026042714"></script>
 <script src="editor-details.js?v=2026050301" defer></script>
 <script src="tm-three-systems-ext.js?v=2026042714"></script>
+<script src="tm-army-units.js?v=2026061900"></script><!-- 御驾亲征接入 Phase0·army.composition→units[] 编制地基 -->
+<script src="tm-armory.js?v=2026062000"></script><!-- 军备/武库库存·GM.guoku.armory 五类军备(甲胄/兵刃/弓弩/火器/战马)·募兵从武库支取 -->
+<script src="tm-battle-adapter.js?v=2026061901"></script><!-- 御驾亲征接入 Phase1·units[]→startBattle(config) 适配器 -->
+<script src="tm-battle-embed.js?v=2026062000"></script><!-- 御驾亲征接入 Phase1·iframe 嵌入战术战斗(web/battle/) -->
+<script src="tm-battle-resolve.js?v=2026062001"></script><!-- 御驾亲征接入 Phase2·抽象带预测器 + 战术result→battleResult 夹带/回填 -->
+<script src="tm-battle-turn.js?v=2026062002"></script><!-- 御驾亲征接入 Phase2·活线咽喉拦截+会战阶段(flag GM._yujiaQinzheng·默认OFF) -->
 <!-- 2026-05-10·Phase D1·势力 paradigm utility·必须在所有 faction 模块之前 -->
 <script src="tm-faction-paradigm.js?v=2026051001"></script>
 <!-- 2026-05-10·Phase F1·char personality hints·让 NPC 决策按人格调权 -->
@@ -648,12 +667,16 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-faction-npc-news-bridge.js?v=2026051001"></script>
 <!-- 2026-05-17·NPC 势力精细化推演统一 action engine -->
 <script src="tm-faction-action-engine.js?v=2026052202"></script>
+<!-- ③-S2 (2026-06-19) 势力前瞻式目标栈：带状态多步计划·供 NPC 决策连贯推进（开关 P.conf.factionGoalStackEnabled 默认关） -->
+<script src="tm-faction-goal-stack.js?v=20260619-s2"></script>
 <!-- 2026-05-10·Phase F2·player 干预 NPC 内政 -->
 <script src="tm-faction-npc-intervention.js?v=2026051001"></script>
 <!-- 2026-05-10·Phase F4·NPC 内政 LLM 润色·cosmetic·依赖 npc-settings (开关) + callAI -->
 <script src="tm-faction-npc-llm-enrich.js?v=2026051001"></script>
 <!-- 2026-05-10·Phase G·NPC LLM 决策接管·真改机制·替代模板 -->
 <script src="tm-faction-npc-llm-decision.js?v=2026052204"></script>
+<script src="tm-faction-diplomacy.js?v=20260619-diplomacy-s1"></script>
+<script src="tm-faction-decision-tools.js?v=20260619-fdtools-s1"></script>
 <!-- 2026-05-10 Phase H3: in-turn NPC background LLM driver -->
 <script src="tm-faction-npc-in-turn-driver.js?v=2026051001"></script>
 <!-- 2026-05-17: unified faction precision LLM scheduler + dispatch ledger -->

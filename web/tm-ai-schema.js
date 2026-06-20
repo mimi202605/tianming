@@ -164,6 +164,7 @@
     },
     office_assignments: { type: 'array', desc: '官职任命（旧格式兼容）', consumedBy: ['applier:1004'] },
     office_spawn:       { type: 'array', desc: '官制占位实体化（把 generated:false 的 holder 生成为真人）' },
+    reform_verdicts:    { type: 'array', desc: '官制活化Slice④·对【拟制中】改制的廷议裁定（[{dept,position?,verdict:"准|部分|拖|驳",reason}]）·可据权臣抵抗加重(更严)·但机械band是地板不可放水', consumedBy: ['endturn:reform-adjudicate'] },
     personnel_changes:  { type: 'array', desc: '人事变动（旧格式兼容）', consumedBy: ['applier:1079'] },
 
     admin_changes: {
@@ -240,7 +241,7 @@
     hidden_moves:       { type: 'array', desc: '暗流行动', consumedBy: ['endturn-ai-infer:sc1c'] },
     fengwen_snippets:   { type: 'array', desc: '风闻录事条目', consumedBy: ['endturn-ai-infer:sc1c'] },
     call_court_works:   { type: 'array', desc: '朝会/廷议衍生事项（兼容字段）', consumedBy: ['endturn-ai-infer'] },
-    events:             { type: 'array', desc: '本回合事件列表', consumedBy: ['ai-change-applier'] },
+    events:             { type: 'array', desc: '本回合事件列表·元素可标 critical:true+choices:[{text,aiHint}] 升格为君主决策事件(S4·关键关头强弹模态·节制·寻常事走叙事 surface)', consumedBy: ['ai-change-applier'] },
     changes:            { type: 'array', desc: '通用变化列表（旧格式）', consumedBy: ['ai-change-applier'] },
     appointments:       { type: 'array', desc: '任命列表（旧格式，官方用 office_changes）', consumedBy: ['ai-change-applier'] },
     institutions:       { type: 'array', desc: '制度（旧格式）', consumedBy: ['ai-change-applier'] },
@@ -250,8 +251,8 @@
     geoData:            { type: 'object', desc: '地理推算数据（行军/围城需要）' },
     memorials:          { type: 'array', desc: '奏疏文本' },
     letters:            { type: 'array', desc: 'NPC 主动传书' },
-    bigyear:            { type: 'object', desc: '大事年（年度事件）' },
-    bigYearEvent:       { type: 'object', desc: '大事年单事件（兼容命名）' },
+    bigyear:            { type: 'object', desc: '大事年（年度事件）·@死字段 零消费(2026-06审计)·待事件系统统一时收编或删，勿新接（见 docs/event-system-unification-design.md）' },
+    bigYearEvent:       { type: 'object', desc: '大事年单事件（兼容命名）·@死字段 零消费·同上' },
 
     // ──────────────────────────────────────────────
     // 已废弃字段（validator 打 warn 提示迁移）

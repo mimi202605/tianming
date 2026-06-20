@@ -795,7 +795,12 @@
     if (!Array.isArray(s.goals)) s.goals = [];
     if (!Array.isArray(s.grudges)) s.grudges = [];
     if (!Array.isArray(s.warAims)) s.warAims = [];
-    if (!s.posture) s.posture = (fac.aiProfile && fac.aiProfile.posture) || fac.posture || '观望';
+    // 【势力 agent·posture 自著·2026-06-19】开关开 + LLM 给了 posture → 用势力自己宣告的战略姿态(替冻结的启发式默认·随局势演进)·否则保留现有或启发式种子(零回归)
+    if (decision && decision.posture && (typeof agentFlagOn === 'function' ? agentFlagOn('factionAgentEnabled') : (global.P && global.P.conf && global.P.conf.factionAgentEnabled))) {
+      s.posture = String(decision.posture).slice(0, 16);
+    } else if (!s.posture) {
+      s.posture = (fac.aiProfile && fac.aiProfile.posture) || fac.posture || '观望';
+    }
     var turn = _turn();
     if (decision && decision.rationale) s.currentPlan = String(decision.rationale).slice(0, 160);
     _arr(actions).forEach(function(a) {

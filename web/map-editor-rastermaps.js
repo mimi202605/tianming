@@ -37,6 +37,12 @@
 
   // ─── runtime cache·non-persistent ───────────────────────
 
+  // 以 non-enumerable 定义运行时字段·使 JSON.stringify(map) 不把运行时缓存写进存档
+  // (修复·terrainMap/heightMap 的 _data 等被 exportJSON/exportGamePMap/scenario/localStorage 误存·存档膨胀 ~32x)
+  function defineRuntimeField(L, key, val){
+    Object.defineProperty(L, key, { value: val, writable: true, enumerable: false, configurable: true });
+  }
+
   function ensureLayer(layerName, opts){
     opts = opts || {};
     var map = ME.EDITOR.map;
@@ -50,7 +56,15 @@
     }
     var L = map[layerName];
 
-    // runtime cache·_canvas (off-screen)·_data (per-px byte)
+    // 历史存档可能把运行时字段(旧 bug)误存进 JSON·加载后 _canvas 是普通对象而非真 canvas·
+    // 须丢弃重建·否则渲染失败且再次存档继续膨胀(加载旧膨胀文件会被此处自愈)
+    if (L._canvas && typeof L._canvas.getContext !== 'function'){
+      ['_canvas','_ctx','_data','_dirty','_version','_coloredCanvas','_heatCanvas'].forEach(function(k){
+        try { delete L[k]; } catch(e){}
+      });
+    }
+
+    // runtime cache·_canvas (off-screen)·_data (per-px byte)·全部 non-enumerable·不进存档
     if (!L._canvas){
       var c = document.createElement('canvas');
       c.width = L.width; c.height = L.height;
@@ -68,10 +82,13 @@
         ctx.fillStyle = layerName === 'heightMap' ? '#000000' : 'rgba(0,0,0,0)';
         ctx.fillRect(0, 0, L.width, L.height);
       }
-      L._canvas = c;
-      L._ctx = ctx;
-      L._data = null; // lazy init when needed
-      L._dirty = false;
+      defineRuntimeField(L, '_canvas', c);
+      defineRuntimeField(L, '_ctx', ctx);
+      defineRuntimeField(L, '_data', null);   // lazy init when needed
+      defineRuntimeField(L, '_dirty', false);
+      defineRuntimeField(L, '_version', 0);
+      defineRuntimeField(L, '_coloredCanvas', null); // 预声明·后续赋值保持 non-enumerable
+      defineRuntimeField(L, '_heatCanvas', null);
     }
     return L;
   }

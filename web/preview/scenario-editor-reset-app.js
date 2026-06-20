@@ -10467,12 +10467,12 @@
     if (!Array.isArray(sc.factions) || sc.factions.length < 1) issues.push({ level: 'error', text: 'factions 不是有效势力数组' });
     var charNames = collectNames(sc.characters, ['name', 'id', 'sid']);
     var factionNames = collectNames(sc.factions, ['name', 'id', 'sid', 'key', 'ownerKey']);
-    (sc.characters || []).forEach(function(ch) {
+    (Array.isArray(sc.characters) ? sc.characters : []).forEach(function(ch) {
       if (ch && ch.faction && !factionNames.has(ch.faction)) issues.push({ level: 'warn', text: '人物势力未匹配：' + (ch.name || ch.id) + ' -> ' + ch.faction });
     });
     ['characters', 'factions', 'events'].forEach(function(field) {
       var seen = new Set();
-      (sc[field] || []).forEach(function(row) {
+      (Array.isArray(sc[field]) ? sc[field] : []).forEach(function(row) {
         var key = row && (row.id || row.sid || row.name || row.title);
         if (!key) return;
         if (seen.has(key)) issues.push({ level: 'warn', text: field + ' 存在重复标识：' + key });
@@ -10480,7 +10480,7 @@
       });
     });
     function validateRefs(rows, rowKind, refKey, known, targetKind) {
-      (rows || []).forEach(function(row) {
+      (Array.isArray(rows) ? rows : []).forEach(function(row) {
         splitList(row && row[refKey]).forEach(function(ref) {
           if (!known.has(ref)) issues.push({ level: 'warn', text: rowKind + '引用未知' + targetKind + '：' + (row.name || row.id || '未命名') + ' -> ' + ref });
         });

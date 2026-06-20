@@ -307,7 +307,9 @@ function _togglePConf(confKey, on) {
   var labels = {
     recallGateEnabled: { on: '已启用召回节流·常规回合跳过 SC_RECALL 节省 API', off: '已关闭召回节流·每回合都全跑 5 源召回' },
     consolidationEnabled: { on: '已启用后台记忆固化', off: '已关闭后台记忆固化·sc_consolidate 不再调用' },
-    semanticRecallAutoload: { on: '已启用语义检索自动加载', off: '已关闭语义检索自动加载·SC_RECALL 第 5 源失效' }
+    semanticRecallAutoload: { on: '已启用语义检索自动加载', off: '已关闭语义检索自动加载·SC_RECALL 第 5 源失效' },
+    agentUpgradesEnabled: { on: '已启用全部 agent 升级（实验）·6 项 AI agent 化全开', off: '已关闭全部 agent 升级·各 agent 回落写死路径（单独开关仍生效）' },
+    eventUnificationEnabled: { on: '已启用事件系统统一（S1 骨架·当前无可见效果·仅验证不破坏现状）', off: '已关闭事件系统统一·事件总线 drain 不跑' }
   };
   var l = labels[confKey] || { on: '已启用 ' + confKey, off: '已关闭 ' + confKey };
   if (typeof toast === 'function') toast('✅ ' + (on ? l.on : l.off));

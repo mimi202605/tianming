@@ -699,6 +699,10 @@ function _wdEnvoyDecision(kind) {
       if (_peaceWar) { CasusBelliSystem.endWar(_peaceWar.id); desc += '·罢兵息争'; }
     } catch (_) {}
   }
+  // 【S3·势力外交双向闭环】若为势力 agent 提议(_factionProposalId)·把玩家准奏/驳回显式回写发起势力持久记忆(aiStrategy.playerProposalOutcomes)·供其下回合 decideFor 感知(PLAYER_PROPOSAL_OUTCOMES 段)·非仅靠邦交 delta 间接推
+  if (ch._factionProposalId && typeof window !== 'undefined' && window.TM && window.TM.FactionDiplomacy && typeof window.TM.FactionDiplomacy.recordPlayerResponse === 'function') {
+    try { window.TM.FactionDiplomacy.recordPlayerResponse(fac, { id: ch._factionProposalId, type: ch._diplomacyType, terms: String(ch.envoyMission || '').replace(/^【[^】]*】/, ''), outcome: (kind === 'accept' ? 'accepted' : (kind === 'reject' ? 'rejected' : 'temporized')), turn: (typeof GM !== 'undefined' && GM) ? GM.turn : 0 }); } catch (_) {}
+  }
   ch._pendingEnvoyDisposition = kind;  // 供 closeWenduiModal 留痕带上处置
   if (typeof addEB === 'function') addEB('外交·' + L, fac + '使节之请——' + desc + '（邦交' + (relDelta >= 0 ? '+' : '') + relDelta + '）');
   var chatEl = _$('wd-modal-chat');
@@ -1196,6 +1200,7 @@ function _wdOpenAudienceQueue(qi) {
       faction: q.fromFaction || '',  // 关键：挂钩势力（标准字段）
       fromFaction: q.fromFaction,
       interactionType: q.interactionType,
+      _factionProposalId: q._factionProposalId, _diplomacyType: q._diplomacyType,  // 【S3】带提议 id·供准奏/驳回回写发起势力持久记忆
       envoyMission: q.reason || '',
       location: GM._capital || '京城',
       isTemp: true,
@@ -1229,6 +1234,7 @@ function _wdOpenAudienceQueue(qi) {
     }
     ch.fromFaction = q.fromFaction;
     ch.interactionType = q.interactionType;
+    ch._factionProposalId = q._factionProposalId; ch._diplomacyType = q._diplomacyType;  // 【S3】同步提议 id(重复求见也能回写)
     ch.envoyMission = q.reason || ch.envoyMission || '';
     ch.position = ch.position || '使节';
     ch.officialTitle = ch.officialTitle || '使节';

@@ -949,6 +949,23 @@
       G._turnReport.push({ type: 'narrative', text: aiOutput.narrative, turn: G.turn||0 });
     }
 
+    // 0.5 税制变更（玩家诏书/奏疏/朝议/问对 → AI 推演解读 → 落地改 fiscalConfig.taxList）
+    //   走治国闭环·非直改面板。AI 输出 tax_reforms:[{op:'rate'|'add'|'remove',taxId,rate?,tax?,reason}]·此处调引擎 applyPlayerTaxReform 落地（改即下回合 CascadeTax 重算 + 民心按民负响应）。
+    (aiOutput.tax_reforms || aiOutput.taxReforms || []).forEach(function(tr) {
+      try {
+        if (!tr || !tr.op) return;
+        var FE = global.FiscalEngine;
+        if (!FE || typeof FE.applyPlayerTaxReform !== 'function') { applied.failed.push({ taxReform: tr, reason: 'no_fiscal_engine' }); return; }
+        var rr = FE.applyPlayerTaxReform(tr);
+        if (rr && rr.ok) {
+          applied.changes++;
+          G._turnReport.push({ type: 'tax_reform', change: rr.change, minxinDelta: rr.minxinDelta, reason: tr.reason || '', turn: G.turn || 0 });
+        } else {
+          applied.failed.push({ taxReform: tr, reason: (rr && rr.reason) || 'reform_failed' });
+        }
+      } catch (e) { applied.failed.push({ taxReform: tr, reason: (e && e.message) || 'exception' }); }
+    });
+
     // 1. 数据变化
     (aiOutput.changes || []).forEach(function(ch) {
       if (_isPathBlocked(ch.path)) {
@@ -1051,6 +1068,41 @@
       if (global.addEB) global.addEB('地方', (div.name||la.region) + '·' + (div.governor||'地方官') + ' ' + ({disaster_relief:'赈灾',public_works_water:'修水利',public_works_road:'修路',education:'兴学',granary_stockpile:'平籴备荒',military_prep:'备边',charity_local:'恤民',illicit:'中饱私囊',supernatural_disaster_relief:'禳灾'}[la.type]||la.type) + ' ' + (la.amount||0) + (la.reason?' (' + la.reason + ')':''));
       G._turnReport.push({ type:'localAction', region:la.region, actionType:la.type, amount:la.amount, reason:la.reason, turn:G.turn||0 });
 
+      // ── S3·调粮救荒(2026-06)：赈灾/平籴/恤民 → 调粮入缺粮叶·写 _grainInflowThisTurn(tm-huji-engine S2 读它减 load 救荒)。
+      // 走地方官「主动行动」通道·零新 UI。粮源：先地方仓·不足走中央漕运 guoku.grain·供给数量封顶(调多少救多少)。
+      if (la.type === 'disaster_relief' || la.type === 'granary_stockpile' || la.type === 'charity_local') {
+        var _wantGrain = Math.max(0, Math.round(Number(la.grainAmount) || 0));
+        if (!_wantGrain && Number(la.amount) > 0) _wantGrain = Math.round(Number(la.amount) * 0.2); // 无显式调粮·按拨款 1/5 折粮
+        if (_wantGrain > 0) {
+          var _gotGrain = 0;
+          if (div.publicTreasury && div.publicTreasury.grain) {            // ①地方仓
+            var _fromLocal = Math.min(_wantGrain, Number(div.publicTreasury.grain.stock) || 0);
+            if (_fromLocal > 0) { div.publicTreasury.grain.stock -= _fromLocal; _gotGrain += _fromLocal; }
+          }
+          if (_gotGrain < _wantGrain && G.guoku) {                         // ②中央漕运·封顶(供给数量)
+            var _central = Number(G.guoku.grain) || 0;
+            var _fromCentral = Math.min(_wantGrain - _gotGrain, _central);
+            if (_fromCentral > 0) { G.guoku.grain = _central - _fromCentral; _gotGrain += _fromCentral; }
+          }
+          if (_gotGrain > 0) {                                             // 调入缺粮叶(按缺口分摊)
+            var _IBg = global.IntegrationBridge;
+            var _gleaves = (_IBg && typeof _IBg.getLeafDivisions === 'function') ? (_IBg.getLeafDivisions(div) || []) : [];
+            if (!_gleaves.length) _gleaves = [div];
+            var _needs = _gleaves.map(function(_l){
+              var _rid = String(_l.id || _l.name || '');
+              var _rg = (G.renli && G.renli.byRegion) ? (G.renli.byRegion[_rid] || (_l.name ? G.renli.byRegion[_l.name] : null)) : null;
+              return _rg ? Math.max(0, (Number(_rg.foodNeed) || 0) - (Number(_rg.grainOutput) || 0)) : 0;
+            });
+            var _totNeed = _needs.reduce(function(_a, _b){ return _a + _b; }, 0);
+            _gleaves.forEach(function(_l, _i){
+              var _share = _totNeed > 0 ? (_needs[_i] / _totNeed) : (1 / _gleaves.length);
+              _l._grainInflowThisTurn = (Number(_l._grainInflowThisTurn) || 0) + _gotGrain * _share;
+            });
+            if (global.addEB) global.addEB('地方', (div.name || la.region) + ' 调粮赈济 ' + Math.round(_gotGrain) + ' 石（救荒入缺粮地）');
+          }
+        }
+      }
+
       // ── 地方官治理 → 风闻录事 + 主官记忆 ───────────────────
       var _laTypeLbl = {
         disaster_relief:'赈灾', public_works_water:'修水利', public_works_road:'修路',
@@ -1110,6 +1162,24 @@
 
     // 5. 事件（风闻）
     (aiOutput.events || []).forEach(function(e) {
+      // S4·来源涌现：AI 标记 critical 的决策型事件(带 choices)+ 开关开 → 升格统一事件 enqueue(S3 模态强弹窗·关键才打断玩家)·
+      //   寻常事件保持播报/走 playerChoices 软 surface(寄生为主·抉择 C)。
+      if (e && e.critical && Array.isArray(e.choices) && e.choices.length
+          && typeof global.eventUnificationOn === 'function' && global.eventUnificationOn()
+          && global.StoryEventBus && typeof global.StoryEventBus.enqueue === 'function') {
+        try {
+          global.StoryEventBus.enqueue({
+            title: e.title || e.category || '事件',
+            description: e.text || '',
+            source: 'ai',
+            priority: (typeof e.priority === 'number') ? e.priority : 7,
+            choices: e.choices
+          });
+          applied.events++;
+          G._turnReport.push({ type:'event', category:e.category||'事件', text:e.text, critical:true, turn:G.turn||0 });
+          return; // 升格了不再 addEB(下回合 drain 弹模态呈现)
+        } catch(_seqE){ /* 升格失败·回落播报 */ }
+      }
       if (global.addEB) global.addEB(e.category || '事', e.text || '', { credibility: e.credibility || 'medium' });
       applied.events++;
       G._turnReport.push({ type:'event', category:e.category, text:e.text, turn:G.turn||0 });
@@ -1382,6 +1452,10 @@
         } else {
           G._turnReport.push({ type:'appointment', action: 'dismiss', charName: pc.name, source:'pc_fallback', turn:G.turn||0 });
         }
+      } else {
+        // 【落地核对·2026-06】人事兜底 onAppointment/onDismissal 失败原本**纯静默**(不记 failed·面板却照显原话)→标记同一 pc 对象供面板打"⚠未落地"·并入 applied.failed 供失败可见性 surface
+        pc._applyFailed = true;
+        if (applied && Array.isArray(applied.failed)) applied.failed.push({ personnel_change: { name: pc.name, change: pc.change }, reason: (r && r.reason) || 'appoint/dismiss 未落地(目标对不上)' });
       }
     });
     if (personnelFromPcCount > 0) applied.semantic.personnel_changes_fallback = personnelFromPcCount;
@@ -1431,6 +1505,7 @@
       if (action !== 'add' && action !== 'update' && action !== 'stop' && action !== 'remove') action = 'add';
       var amount = Math.abs(parseFloat(fa.amount) || 0);
       if (action === 'add' && amount <= 0) return;
+      amount = _applyTaxAuthorityGate(G, fa, amount);   // 官制活化 Slice③ 权限门：税类 income 按掌征税权者执行力打折
       var resource = (fa.resource === 'grain' || fa.resource === 'cloth') ? fa.resource : 'money';
       var entry = {
         id: 'fa_' + (G.turn||0) + '_' + Math.random().toString(36).slice(2,6),
@@ -1471,6 +1546,9 @@
           containerKey = (fa.kind === 'income') ? 'income' : 'expense';
           immediateTarget = div;
           fiscalStockTarget = _ensurePublicTreasuryResource(div, resource);
+        } else {
+          // 【落地核对·Slice4·2026-06】province 解析不到→原本 target 留 null→后续 if(target&&containerKey) 静默跳过=财政死账真凶。记 failed 可见(Slice1 surface)·不改控制流(仍照旧落空)
+          if (applied && Array.isArray(applied.failed)) applied.failed.push({ fiscal_adjustment: { target: fa.target, kind: fa.kind, name: fa.name || fa.category }, reason: 'province 未找到·财政未落地: ' + provName });
         }
       }
       if (target && containerKey && action !== 'add') {
@@ -1720,6 +1798,8 @@
     try { _reconcilePlayerMovements(G); } catch(_rmE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_rmE, 'applier] move reconcile:') : console.warn('[applier] move reconcile:', _rmE); }
     // ── 13.6 财政改革对账·P-VWF·确定性拨开关（肃贪升compliance/清丈triggerSurvey/盐法/开海/劝农）·根治"改革不进央地真账·月入死焊" ──
     try { _reconcilePlayerFiscalReforms(G, aiOutput); } catch(_frE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_frE, 'applier] fiscal reform reconcile:') : console.warn('[applier] fiscal reform reconcile:', _frE); }
+    // ── 13.7 官制履职 tick·官制活化 Slice②·确定性施加履职度→实征率/腐败（开关 officeDutyStateEnabled·默认关零回归）──
+    try { _applyOfficeDutyTick(G); } catch(_odE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_odE, 'applier] office duty tick:') : console.warn('[applier] office duty tick:', _odE); }
     try { _applyRegentDecisions(G, aiOutput); } catch(_rdE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_rdE, 'applier] regent decisions:') : console.warn('[applier] regent decisions:', _rdE); }
     try { _applyBattleResult(G, aiOutput, applied); } catch(_brE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_brE, 'applier] battle result:') : console.warn('[applier] battle result:', _brE); }
 
@@ -3137,6 +3217,69 @@
     });
   }
   global._reconcilePlayerFiscalReforms = _reconcilePlayerFiscalReforms;
+
+  // ── 官制活化 Slice②·履职 tick → 实征率/腐败（确定性·开关 officeDutyStateEnabled·默认关零回归）──
+  // 每回合调 tickOfficeDutyState：失职扣/称职奖·按抽象 power 映射既有 FE 杠杆（taxCollect→compliance·supervise/impeach→corruption）。
+  function _applyOfficeDutyTick(G) {
+    if (typeof officeFlagOn !== 'function' || !officeFlagOn('officeDutyStateEnabled')) return;
+    if (typeof tickOfficeDutyState !== 'function') return;
+    var agg = tickOfficeDutyState(G);
+    if (!agg || (!agg.compliance && !agg.corruption)) return;
+    var FE = (typeof window !== 'undefined' && window.FiscalEngine) || (typeof global !== 'undefined' && global.FiscalEngine) || null;
+    var _P = (typeof window !== 'undefined' && window.P) || (typeof global !== 'undefined' && global.P) || null;
+    var pFac = (_P && _P.playerInfo && _P.playerInfo.factionName) || '';
+    if (!FE) return;
+    if (agg.compliance && FE.adjustPlayerCompliance) {
+      var nc = FE.adjustPlayerCompliance(pFac, agg.compliance, 0.1, 1);
+      if (nc === 0) FE.adjustPlayerCompliance('', agg.compliance, 0.1, 1);   // 势力 key 对不上→不过滤兜底·保生效
+    }
+    if (agg.corruption && FE.adjustPlayerDivisionCorruption) {
+      var nk = FE.adjustPlayerDivisionCorruption(pFac, agg.corruption, 0, 100);
+      if (nk === 0) FE.adjustPlayerDivisionCorruption('', agg.corruption, 0, 100);
+    }
+    try {
+      if (typeof global.addEB === 'function' && agg.details && agg.details.length) {
+        var _low = agg.details.filter(function (x) { return x.band === 'low'; }).map(function (x) { return x.dept + (x.pos || ''); });
+        var _high = agg.details.filter(function (x) { return x.band === 'high'; }).map(function (x) { return x.dept + (x.pos || ''); });
+        var _seg = [];
+        if (_low.length) _seg.push('失职：' + _low.join('、'));
+        if (_high.length) _seg.push('称职：' + _high.join('、'));
+        if (_seg.length) global.addEB('官制', '履职结算·' + _seg.join('；') + '（实征率' + (agg.compliance >= 0 ? '+' : '') + agg.compliance.toFixed(3) + '·腐败' + (agg.corruption >= 0 ? '+' : '') + agg.corruption.toFixed(1) + '）');
+      }
+    } catch (_ebE) {}
+  }
+  global._applyOfficeDutyTick = _applyOfficeDutyTick;
+
+  // ── 官制活化 Slice③ 权限门·税类 income 执行力打折（颁布权≠执行力·开关 officeAuthorityGateEnabled·默认关零回归）──
+  function _isTaxIncome(fa) {
+    var s = String((fa.category || '') + '|' + (fa.name || '') + '|' + (fa.reason || ''));
+    if (/缴获|贡纳|进贡|赏赐|罚没|抄没|抄家|捐纳|卖官|借款|赎银|缴还/.test(s)) return false;
+    return /加赋|加派|加征|田赋|商税|盐课|盐税|关税|榷|赋税|税赋|征税|催征|追征|辽饷|练饷|剿饷|杂税|丁银|条鞭|火耗|正赋|钱粮|税银/.test(s);
+  }
+  function _applyTaxAuthorityGate(G, fa, amount) {
+    if (typeof officeFlagOn !== 'function' || !officeFlagOn('officeAuthorityGateEnabled')) return amount;
+    if (typeof resolveOfficeAuthority !== 'function') return amount;
+    if (!(amount > 0) || fa.kind !== 'income' || !_isTaxIncome(fa)) return amount;
+    var auth = resolveOfficeAuthority(G, 'taxCollect');
+    if (!auth || auth.effectiveness >= 1) return amount;             // 称职满效·不打折
+    var collected = Math.round(amount * auth.effectiveness);
+    var shortfall = amount - collected;
+    if (shortfall > 0) {
+      try {
+        var FE = (typeof window !== 'undefined' && window.FiscalEngine) || (typeof global !== 'undefined' && global.FiscalEngine) || null;
+        if (FE && FE.adjustPlayerDivisionCorruption) {
+          var _P = (typeof window !== 'undefined' && window.P) || (typeof global !== 'undefined' && global.P) || null;
+          var pFac = (_P && _P.playerInfo && _P.playerInfo.factionName) || '';
+          var corrBump = Math.min(8, (1 - auth.effectiveness) * 10);  // 漏额→中饱私囊·失效越狠涨越多·夹8
+          var nn = FE.adjustPlayerDivisionCorruption(pFac, corrBump, 0, 100);
+          if (nn === 0) FE.adjustPlayerDivisionCorruption('', corrBump, 0, 100);
+        }
+      } catch (_cgE) {}
+    }
+    try { if (typeof global.addEB === 'function') global.addEB('官制', '加赋失实·' + (fa.name || fa.category || '税入') + ' 原额' + amount + ' → 实收' + collected + '（×' + auth.effectiveness.toFixed(2) + '·' + auth.reason + '·漏额中饱）'); } catch (_egE) {}
+    return collected;
+  }
+  global._applyTaxAuthorityGate = _applyTaxAuthorityGate;
 
   function _applyDirectiveCompliance(G, aiOutput) {
     if (!G || !Array.isArray(G._playerDirectives) || G._playerDirectives.length === 0) return;

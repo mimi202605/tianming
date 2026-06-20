@@ -274,6 +274,25 @@
       } : null
     };
     if (data.status) item.status = String(data.status);
+    if (data.agent) {
+      item.agent = {
+        enabled: true,
+        toolCallCount: Number(data.agent.toolCallCount || 0),
+        totalHits: Number(data.agent.totalHits || 0),
+        fallback: !!data.agent.fallback,
+        toolCalls: Array.isArray(data.agent.toolCalls)
+          ? data.agent.toolCalls.slice(0, 6).map(function (c) { return { name: String((c && c.name) || ''), input: (c && c.input) || {} }; })
+          : []
+      };
+    }
+    if (data.anomaly) {
+      item.anomaly = {
+        detected: !!data.anomaly.detected,
+        moves: Array.isArray(data.anomaly.moves)
+          ? data.anomaly.moves.slice(0, 3).map(function (m) { return { what: String((m && m.what) || '').slice(0, 60), why: String((m && m.why_uncommon) || '').slice(0, 60) }; })
+          : []
+      };
+    }
     return pushBounded(trace.retrievals, item);
   }
 

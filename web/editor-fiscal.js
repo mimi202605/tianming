@@ -124,8 +124,15 @@ function openFiscalConfigEditor() {
   });
   body += '</div>';
 
-  // 自定义税种（JSON 数组）
-  body += '<div style="font-size:0.82rem;color:var(--gold);margin:0.8rem 0 0.4rem;display:flex;align-items:center;gap:8px;">自定义税种（JSON 数组）<button class="btn" style="font-size:0.7rem;padding:2px 8px;" onclick="if(typeof aiPolishCustomTaxes===\'function\')aiPolishCustomTaxes();">🪄 AI 润色</button></div>';
+  // 税制总表（taxList·全税制·单一真相源·剧本/国师 authored·CascadeTax 活算权威源·架空朝代亦适用）
+  body += '<div style="font-size:0.82rem;color:var(--gold);margin:0.8rem 0 0.4rem;display:flex;align-items:center;gap:8px;">税制总表（税种全表·taxList）<button class="btn" style="font-size:0.7rem;padding:2px 8px;" onclick="if(typeof aiGenTaxList===\'function\')aiGenTaxList();">🪄 国师生成税制</button></div>';
+  body += '<div style="font-size:0.7rem;color:var(--txt-d);margin-bottom:0.3rem;">'+
+    '本剧本完整税制（<b>架空朝代亦适用</b>·留空则按引擎默认税表）。引擎 CascadeTax 以此为活算权威源。<br>字段：id / name / base(arableLand田/commerceVolume商/consumption盐酒茶口/mouths丁/prosperity) / baseFactor / rate / storeAs(money/grain/cloth) / sourceTag</div>';
+  body += '<textarea id="fiscalEd-taxList" rows="8" style="width:100%;font-family:monospace;font-size:0.72rem;padding:6px;" placeholder=\'[{"id":"yanke","name":"盐课","base":"consumption","rate":0.06,"storeAs":"money","sourceTag":"yanke"}]\'>'+
+    JSON.stringify(fc.taxList || [], null, 2) + '</textarea>';
+
+  // 附加/特殊税（customTaxes·叠加于税制总表之上·运行时可加）
+  body += '<div style="font-size:0.82rem;color:var(--gold);margin:0.8rem 0 0.4rem;display:flex;align-items:center;gap:8px;">附加/特殊税（customTaxes·叠加于总表之上）<button class="btn" style="font-size:0.7rem;padding:2px 8px;" onclick="if(typeof aiPolishCustomTaxes===\'function\')aiPolishCustomTaxes();">🪄 AI 润色</button></div>';
   body += '<div style="font-size:0.7rem;color:var(--txt-d);margin-bottom:0.3rem;">'+
     '字段：id / name / formulaType(perCapita/flat/percent) / rate / base(population/land/commerce) / amount / description</div>';
   body += '<textarea id="fiscalEd-customTaxes" rows="6" style="width:100%;font-family:monospace;font-size:0.72rem;padding:6px;" placeholder=\'[{"id":"chaShui","name":"茶税","formulaType":"perCapita","rate":0.008,"description":"每人年 0.008 两"}]\'>'+
@@ -405,6 +412,18 @@ function openFiscalConfigEditor() {
     });
     if (anyTaxChanged) scriptData.fiscalConfig.taxesEnabled = taxesEn;
     else if (scriptData.fiscalConfig.taxesEnabled) delete scriptData.fiscalConfig.taxesEnabled;
+
+    // 税制总表 taxList（全税制·单一真相源·CascadeTax 活算权威源）
+    var tlEl = document.getElementById('fiscalEd-taxList');
+    if (tlEl && tlEl.value.trim()) {
+      try {
+        var parsedTL = JSON.parse(tlEl.value);
+        if (Array.isArray(parsedTL) && parsedTL.length > 0) scriptData.fiscalConfig.taxList = parsedTL;
+        else delete scriptData.fiscalConfig.taxList;
+      } catch(eTL) { if (typeof alert === 'function') alert('税制总表 JSON 格式有误，未保存：' + (eTL && eTL.message || eTL)); }
+    } else if (scriptData.fiscalConfig.taxList) {
+      delete scriptData.fiscalConfig.taxList;
+    }
 
     // 自定义税种 JSON
     var ctEl = document.getElementById('fiscalEd-customTaxes');

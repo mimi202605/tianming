@@ -113,6 +113,17 @@
     if (!path) return { ok: false, reason: 'empty path' };
     if (!opts.force && isBlocked(path)) return { ok: false, reason: 'blocked path: ' + path };
 
+    // 顶层数组集合被整个设成非数组（agent 偶把 relations/events 这类整集合设成对象/单条）→ 转数组，
+    //   否则应用/校验/渲染处的 forEach 会炸（applyPush 早有此保护，applyEdit 之前缺）。
+    var _ARR_COLLS = { characters: 1, factions: 1, parties: 1, classes: 1, items: 1, events: 1, families: 1, relations: 1, factionRelations: 1, rigidHistoryEvents: 1, timeline: 1, openingLetters: 1, goals: 1 };
+    if (_ARR_COLLS[String(path)] && value != null && !Array.isArray(value)) {
+      if (typeof value === 'object') {
+        var _ks = Object.keys(value);
+        // 数字键对象 {0:..,1:..}（JSON 化的伪数组）→ 还原数组；命名对象（单条实体漏包数组）→ 包成 [实体]
+        value = (_ks.length && _ks.every(function (k) { return /^\d+$/.test(k); })) ? _ks.map(function (k) { return value[k]; }) : [value];
+      } else { value = [value]; }
+    }
+
     var r = _resolvePath(draft, path);
     if (!r.parent) {
       // 创建缺失路径（仅纯对象路径；数组按名创建不支持）
@@ -1094,12 +1105,32 @@
       }, required: ['questions'] }
     },
     {
+      name: 'remonstrate',
+      description: '进谏：当玩家需求确有硬伤（明显违背史实／会致某势力开局即崩盘或数值严重失衡／把某朝专名当通用机制违反朝代中立）时，先说清利害＋给一个可一键采纳的替代方案，停下来等玩家定夺，别默默照做。只在确有硬伤时用，别动辄劝阻；玩家坚持的尊重其最终决定。',
+      parameters: { type: 'object', properties: {
+        concern: { type: 'string', description: '这个需求的硬伤是什么、会导致什么后果（一两句，具体到实体/字段）' },
+        severity: { type: 'string', enum: ['史实', '平衡', '机制'], description: '硬伤类型：史实存疑／数值平衡／跨朝代机制' },
+        suggestion: { type: 'string', description: '一个可行的替代方案（玩家可一键采纳）' }
+      }, required: ['concern', 'suggestion'] }
+    },
+    {
       name: 'flagUncertain',
       description: '当你某处改动没把握（史实存疑、玩家可能想要别的、靠推测填充的内容）时，标记该路径，提醒玩家重点复核。只标真没把握的，别滥用。',
       parameters: { type: 'object', properties: {
         path: { type: 'string', description: '没把握的改动路径，如 characters[3].bio 或 factions[1].leader' },
         reason: { type: 'string', description: '为什么没把握（一句话）' }
       }, required: ['path', 'reason'] }
+    },
+    {
+      name: 'checkHistory',
+      description: '自查证：在写入涉及具体史实的内容（年号纪年、人物生卒/年龄、职官名称品级、重大事件时间地点）前，先把你将依据的关键史实逐条列出并自评把握。把握高的照写；把握低/拿不准的，落字用保守措辞（约/相传/据载）并对该路径 flagUncertain，别编成确定口吻。无外部资料时这是自我审视，治"自信地编"，但变不出你本就不知道的事。',
+      parameters: { type: 'object', properties: {
+        facts: { type: 'array', description: '要核验的史实声明清单', items: { type: 'object', properties: {
+          claim: { type: 'string', description: '一条具体史实，如"张居正卒于1582年"' },
+          verdict: { type: 'string', enum: ['确信', '存疑', '不确定'], description: '你对这条的把握' },
+          note: { type: 'string', description: '依据或存疑点（可选）' }
+        }, required: ['claim', 'verdict'] } }
+      }, required: ['facts'] }
     },
     {
       name: 'recordConvention',
@@ -1424,7 +1455,9 @@
       }
       case 'note': return { ok: true, note: String(input.text || '').slice(0, 500) };
       case 'askClarification': return { ok: true, clarify: true, questions: (Array.isArray(input.questions) ? input.questions : []).filter(Boolean).slice(0, 3) };
+      case 'remonstrate': return { ok: true, remonstrate: true, concern: String(input.concern || ''), severity: String(input.severity || ''), suggestion: String(input.suggestion || '') };
       case 'flagUncertain': return { ok: true, flagged: String(input.path || ''), reason: String(input.reason || '') };
+      case 'checkHistory': { var _hf = Array.isArray(input.facts) ? input.facts : []; var _hlow = _hf.filter(function (f) { return f && f.verdict && f.verdict !== '确信'; }).length; return { ok: true, checked: _hf.length, lowConfidence: _hlow, note: _hf.length ? ('已自核 ' + _hf.length + ' 条史实' + (_hlow ? '；其中 ' + _hlow + ' 条把握不足，落字请用保守措辞并对该路径 flagUncertain' : '；均有把握，可照写')) : '未提供史实清单' }; }
       case 'recordConvention': return { ok: true, recorded: String(input.convention || '').slice(0, 200) };
       case 'proposePlan': return { ok: true, plan: true, steps: Array.isArray(input.steps) ? input.steps : [], summary: input.summary || '' };
       case 'submitReview': return { ok: true, review: true, findings: Array.isArray(input.findings) ? input.findings : [], summary: input.summary || '' };
@@ -1557,21 +1590,41 @@
     ].join('\n');
   }
 
-  function _buildReviewSystemPrompt(conventions) {
-    return [
-      '你是历史策略游戏「天命」的剧本审阅官，现在处于【审阅模式】：把剧本当作品做体检，只诊断、不修改。',
-      '用 getField/searchEntities/listGaps/listCollection/describeSchema/validateDraft 充分了解剧本后，从这些维度找问题：',
-      '· 平衡性：势力强弱/资源/兵力是否失衡，是否某方碾压或开局即崩；',
-      '· 史实合理性：人物/势力/时间/官职/地理是否与设定时代相符，有无硬伤；',
-      '· 可玩性：玩家开局目标是否清晰、是否有可操作的抓手、节奏是否合理；',
-      '· 死局风险：是否存在玩家无论如何都赢不了/活不过的结构性死局；',
-      '· 内容缺口：运行时必需但缺失的字段（listGaps）、缺关键人物/事件/关系；',
-      '· 叙事：动机是否成立、忠奸是否脸谱化、开场是否抓人。',
-      '逐条要可定位（指出具体实体/字段）、给可执行建议、按严重度（高/中/低）标注。充分查证后调用 submitReview 提交报告；绝不调用任何修改工具、绝不改剧本。',
-      _conventionsBlock(conventions),
-      '',
-      buildSchemaGuide()
-    ].join('\n');
+  // focus（刀3 · 对抗式三角色）：'history'=史官只查史实硬伤·'balance'=谏官只批平衡死局可玩性·空=通用六维审阅官
+  function _buildReviewSystemPrompt(conventions, focus) {
+    var head, dims;
+    if (focus === 'history') {
+      head = '你是历史策略游戏「天命」的【史官】，现在为剧本做史实核查：把涉及史实处逐一核对，只诊断硬伤、不修改。';
+      dims = [
+        '· 史实合理性（本职·重点）：人物生卒与年龄、年号与纪年、官职名称与品级、地理建置与地名、势力存废时间，是否与设定时代相符；有无张冠李戴、时代错置、把虚构当定论、把孤证当信史；',
+        '· 旁及：凡落了确定口吻的具体史实都该经得起推敲，拿不准的应改保守措辞或标存疑。'
+      ];
+    } else if (focus === 'balance') {
+      head = '你是历史策略游戏「天命」的【谏官】，现在为剧本批可玩性与平衡：只挑失衡、死局与无趣，不修改。';
+      dims = [
+        '· 平衡性（本职·重点）：势力强弱/资源/兵力是否失衡，是否某方碾压或开局即崩；',
+        '· 死局风险：是否存在玩家无论如何都赢不了/活不过的结构性死局；',
+        '· 可玩性：玩家开局目标是否清晰、有无可操作抓手、节奏是否合理、忠奸是否脸谱化。'
+      ];
+    } else {
+      head = '你是历史策略游戏「天命」的剧本审阅官，现在处于【审阅模式】：把剧本当作品做体检，只诊断、不修改。';
+      dims = [
+        '· 平衡性：势力强弱/资源/兵力是否失衡，是否某方碾压或开局即崩；',
+        '· 史实合理性：人物/势力/时间/官职/地理是否与设定时代相符，有无硬伤；',
+        '· 可玩性：玩家开局目标是否清晰、是否有可操作的抓手、节奏是否合理；',
+        '· 死局风险：是否存在玩家无论如何都赢不了/活不过的结构性死局；',
+        '· 内容缺口：运行时必需但缺失的字段（listGaps）、缺关键人物/事件/关系；',
+        '· 叙事：动机是否成立、忠奸是否脸谱化、开场是否抓人。'
+      ];
+    }
+    return [head, '用 getField/searchEntities/listGaps/listCollection/describeSchema/validateDraft 充分了解剧本后，从这些维度找问题：']
+      .concat(dims)
+      .concat([
+        '逐条要可定位（指出具体实体/字段）、给可执行建议、按严重度（高/中/低）标注；只报本职范围内最值得修的问题，别凑数。充分查证后调用 submitReview 提交报告；绝不调用任何修改工具、绝不改剧本。',
+        _conventionsBlock(conventions),
+        '',
+        buildSchemaGuide()
+      ]).join('\n');
   }
 
   function _buildQaSystemPrompt(conventions) {
@@ -1606,6 +1659,8 @@
       '⑥ 若发现该玩家/剧本有值得长期沿用的约定（命名规律、文风、设定惯例），可调 recordConvention 记一条（仅在确有发现时，别凑数）。⑦ 改名优先用 renameEntity（联动所有引用、不留死链）；删除实体前先 findReferences 查谁引用了它。⑧ 对没把握的改动（史实存疑、靠推测填充）调 flagUncertain 标一下路径，提醒玩家重点复核（只标真没把握的）。',
       '⑨【填实·禁空内容·铁律】新增或改写实体必须填到可直接用的质量，绝不留空：先用 listCollection / searchEntities 看一两个剧本里已有的同类实体（或 genReference 看生成范式），照着它们的字段集与丰满度，把新实体的所有相关字段都填上有意义的中文内容——身份/官衔/数值(能力/人口/兵力等)/背景小传/性格/目标/关系/履历等该有的都要有，数值要符合设定区间、彼此自洽。禁止留空字符串、0 占位（除非数值确为 0）、"待补/TODO/未知/暂无"之类占位词，也禁止只填 name 就交差。createEntity 模板只是最小骨架，拿到后必须逐字段补全。宁可少加一个实体，也要把加的每个都填实、达到与官方实体同等的完整度。',
       '⑩【高权限·可写任意字段】你对剧本草稿有完全的写入权限：applyEdit/applyPush 可以创建任意新字段、新嵌套结构，包括剧本编辑器当前没有专门面板/不在结构速查/fieldContract 查不到的"非标准/自定义"字段——编辑器会自动吸收并展示这些字段，不会丢。fieldContract 返回"不在游戏字段契约中"只表示它是扩展/自定义字段（正式游戏不直接读），并不代表禁止写；只要对实现用户需求有用就大胆写。唯一不可改的是：剧本唯一 id、下划线开头的内部字段、ai/conf/meta 等配置（改这些会损坏剧本）。其余一切随需求自由创建与修改。',
+      '⑪【遇硬伤先进谏·别默默照做】当玩家需求确有硬伤——明显违背史实（年号/生卒/职官/事件与正史冲突）、会致某势力开局即崩盘或数值严重失衡、或把某朝专名当通用机制（违反朝代中立）——先调 remonstrate 进谏：一句话说清利害＋给一个可一键采纳的替代方案，停下来等玩家定夺，别默默照做。这是「国师」的本分：给硬核可信的判断而非有求必应。但只在确有硬伤时进谏，别动辄劝阻、别为小事打断；玩家听谏后仍坚持的，尊重玩家最终决定、照办。',
+      '⑫【先核后写·自查证】新增/改写涉及具体史实的内容（年号纪年、人物生卒与年龄、职官名称品级、重大事件时间地点）前，先用 checkHistory 把你将依据的关键史实逐条列出并自评把握：把握高的照写；把握低/拿不准的，落字用保守措辞（约/相传/据载）并对该路径 flagUncertain，绝不把存疑当确定口吻硬写。这是「国师」对硬核可信的本分。注意：无外部资料时这是自我审视，治"自信地编"，但变不出你本就不知道的事——真拿不准就老实标出来交玩家定夺。',
       _conventionsBlock(conventions),
       '',
       buildSchemaGuide()
@@ -1792,7 +1847,7 @@
     var explainOnly = !!opts.explainOnly;   // 方向N · 讲解模式：只读 + submitExplanation，不动剧本
     var tools = explainOnly ? _explainTools() : (qaOnly ? _qaTools() : (reviewOnly ? _reviewTools() : (planOnly ? _planTools() : (opts.tools || AGENT_TOOLS))));
     var conventions = (opts.conventions != null ? opts.conventions : loadConventions()) || '';   // 方向B · 剧本约定（每次 run 注入·等价 CLAUDE.md）
-    var system = explainOnly ? _buildExplainSystemPrompt(conventions) : (qaOnly ? _buildQaSystemPrompt(conventions) : (reviewOnly ? _buildReviewSystemPrompt(conventions) : (planOnly ? _buildPlanSystemPrompt(conventions) : _buildSystemPrompt(conventions))));
+    var system = explainOnly ? _buildExplainSystemPrompt(conventions) : (qaOnly ? _buildQaSystemPrompt(conventions) : (reviewOnly ? _buildReviewSystemPrompt(conventions, opts.reviewFocus) : (planOnly ? _buildPlanSystemPrompt(conventions) : _buildSystemPrompt(conventions))));
     var surfaces = _getFieldSurfaces(opts);   // 刀A · 规格（游戏运行时要什么）
     var editorContext = opts.editorContext || '';   // 上下文感知：编辑器当前焦点（模块/集合/选中实体）
     var exemplars = opts.exemplars || '';   // 方向J · few-shot 范例（开关式·编辑官方剧本时即官方范例）
@@ -1813,6 +1868,7 @@
     var _qaResult = null;   // 方向L · 问答模式产出（submitAnswer 的回答）
     var _explainResult = null;   // 方向N · 讲解模式产出（submitExplanation）
     var _clarifyResult = null;   // 方向K · 交互式澄清产出（askClarification 的问题）
+    var _remonstrateResult = null;   // 刀1 · 国师进谏产出（remonstrate 的异议+替代方案）
     var _finishSummary = '';   // 改动说明：finish 时 agent 给的"做了什么+为什么"
     var control = { aborted: false };   // 刀E · 本次运行的中断句柄
     _activeRun = control;
@@ -1874,6 +1930,7 @@
               if (c.name === 'submitAnswer' && result && result.answered) { _qaResult = { answer: result.answer }; finishAccepted = true; }
               if (c.name === 'submitExplanation' && result && result.explained) { _explainResult = { summary: result.summary, points: result.points }; finishAccepted = true; }
               if (c.name === 'askClarification' && result && result.clarify) { _clarifyResult = { questions: result.questions }; finishAccepted = true; }
+              if (c.name === 'remonstrate' && result && result.remonstrate) { _remonstrateResult = { concern: result.concern, severity: result.severity, suggestion: result.suggestion }; finishAccepted = true; }
               record(c.name, c.input, result);
               toolResults.push({ id: c.id, name: c.name, content: _resultToText(result) });
               return _procCall();
@@ -1883,7 +1940,7 @@
             conversation.push({ role: 'assistant', text: text, toolCalls: calls });
             conversation.push({ role: 'tool', toolResults: toolResults });
             tokensUsed += _estimateTokens(JSON.stringify(toolResults));
-            if (finishAccepted) { finished = true; stopReason = _clarifyResult ? 'needsClarification' : (_explainResult ? 'explained' : (_qaResult ? 'answered' : (_reviewResult ? 'reviewed' : (_planResult ? 'planned' : 'finish')))); return; }
+            if (finishAccepted) { finished = true; stopReason = _clarifyResult ? 'needsClarification' : (_remonstrateResult ? 'needsConfirmation' : (_explainResult ? 'explained' : (_qaResult ? 'answered' : (_reviewResult ? 'reviewed' : (_planResult ? 'planned' : 'finish'))))); return; }
             if (finishAttempts >= maxFinishAttempts) { stopReason = 'finishBlocked'; return; }
             return step();
           });
@@ -1904,7 +1961,7 @@
       if (_activeRun === control) _activeRun = null;   // 刀E · 收尾清句柄
       return {
         draft: draft, transcript: transcript, conversation: conversation,
-        iterations: iterations, finished: finished, plan: _planResult, review: _reviewResult, answer: _qaResult, explanation: _explainResult, clarification: _clarifyResult,
+        iterations: iterations, finished: finished, plan: _planResult, review: _reviewResult, answer: _qaResult, explanation: _explainResult, clarification: _clarifyResult, remonstrance: _remonstrateResult,
         finalValidation: validateDraft(draft), stopReason: stopReason,
         tokensUsed: tokensUsed, finishAttempts: finishAttempts,
         summary: _finishSummary,   // 改动说明：做了什么+为什么
@@ -1912,7 +1969,9 @@
         // 方向B · agent 回写：发现的可长期沿用约定（交玩家「记住」）
         suggestedConventions: transcript.filter(function(t) { return t.name === 'recordConvention'; }).map(function(t) { return (t.input && t.input.convention) || ''; }).filter(Boolean),
         // 置信度标注：agent 没把握的改动（path + reason），UI 在 diff 里高亮
-        uncertainties: transcript.filter(function(t) { return t.name === 'flagUncertain' && t.input && t.input.path; }).map(function(t) { return { path: t.input.path, reason: t.input.reason || '' }; })
+        uncertainties: transcript.filter(function(t) { return t.name === 'flagUncertain' && t.input && t.input.path; }).map(function(t) { return { path: t.input.path, reason: t.input.reason || '' }; }),
+        // 刀2 · 自查证轨迹：国师写入前自核的史实声明（供玩家审 + 后续史官重点复核低把握项）
+        historyChecks: transcript.filter(function(t) { return t.name === 'checkHistory'; }).reduce(function(acc, t) { return acc.concat((t.input && t.input.facts) || []); }, [])
       };
     });
   }
@@ -1973,6 +2032,80 @@
           finalValidation: validateDraft(draft), summary: summary,
           stopReason: aborted ? 'aborted' : 'finish'
         };
+      });
+    });
+  }
+
+  // ───────────────────────────────────────────────
+  //  刀3 · 对抗式三角色：国师拟稿 → 史官查史 + 谏官批平衡 → 国师据谏修订
+  //  复用 reviewOnly 审阅模式（史官/谏官＝两种 reviewFocus 人格）+ 同一可变 draft。
+  //  可选编排·不默认；一次跑 = 拟稿+史官+谏官+(修订) ≥3~4 次调用，比单 agent 贵，UI 侧按需触发。
+  // ───────────────────────────────────────────────
+  function _formatCritiques(histReview, balReview) {
+    function fmt(title, rev) {
+      if (!rev || !rev.findings || !rev.findings.length) return title + '：未发现需修订的问题。';
+      var lines = rev.findings.map(function (f, i) {
+        return (i + 1) + '. [' + (f.severity || '?') + '·' + (f.dimension || '') + '] '
+          + (f.location ? ('〔' + f.location + '〕') : '') + (f.issue || '') + ' → 建议：' + (f.suggestion || '');
+      });
+      return title + (rev.summary ? ('（总评：' + rev.summary + '）') : '') + '\n' + lines.join('\n');
+    }
+    return fmt('◆ 史官·史实核查', histReview) + '\n\n' + fmt('◆ 谏官·平衡可玩', balReview);
+  }
+
+  function runWithCritics(draft, userRequest, opts) {
+    opts = opts || {};
+    var notify = function (p) { if (typeof opts.onCritique === 'function') { try { opts.onCritique(p); } catch (e) {} } };
+    var steps = [];
+    var baseClean = function (extra) {
+      return Object.assign({}, opts,
+        { reviewOnly: false, reviewFocus: null, planOnly: false, priorConversation: null, onCritique: undefined, onSubtask: undefined },
+        extra || {});
+    };
+    // 1 · 国师拟稿（作者模式）
+    notify({ phase: 'draft' });
+    return runAuthoringLoop(draft, userRequest, baseClean()).then(function (authorRes) {
+      steps.push({ role: '国师·拟稿', result: authorRes });
+      // 拟稿被进谏/澄清打断（需玩家先定夺）→ 不进会审，原样交回
+      if (authorRes.stopReason === 'needsConfirmation' || authorRes.stopReason === 'needsClarification') {
+        return { draft: draft, critiqued: false, revised: false, steps: steps, findings: [],
+          summary: '拟稿阶段国师有异议/待澄清，先交玩家定夺再会审', stopReason: authorRes.stopReason,
+          remonstrance: authorRes.remonstrance, clarification: authorRes.clarification, authorConversation: authorRes.conversation };
+      }
+      // 2+3 · 史官 + 谏官 并行审（对已改 draft 只读，互不影响）
+      notify({ phase: 'review' });
+      var lowConf = (authorRes.historyChecks || []).filter(function (f) { return f && f.verdict && f.verdict !== '确信'; });
+      var histReq = userRequest + (lowConf.length
+        ? '\n\n【国师自核时把握不足、请你重点查证的史实】：\n' + lowConf.map(function (f) { return '· ' + f.claim + (f.note ? '（' + f.note + '）' : ''); }).join('\n')
+        : '');
+      return Promise.all([
+        runAuthoringLoop(draft, histReq, baseClean({ reviewOnly: true, reviewFocus: 'history' })),
+        runAuthoringLoop(draft, userRequest, baseClean({ reviewOnly: true, reviewFocus: 'balance' }))
+      ]).then(function (revs) {
+        var histR = revs[0], balR = revs[1];
+        steps.push({ role: '史官·史实审', result: histR });
+        steps.push({ role: '谏官·平衡审', result: balR });
+        var hf = (histR.review && histR.review.findings) || [];
+        var bf = (balR.review && balR.review.findings) || [];
+        var findings = [].concat(hf, bf);
+        // 无问题 → 拟稿即终稿，省下修订那次调用
+        if (!findings.length) {
+          return { draft: draft, critiqued: true, revised: false, steps: steps, findings: findings,
+            critiques: { history: histR.review, balance: balR.review },
+            summary: '三堂会审：史官/谏官均未发现需修订的问题，拟稿即终稿', stopReason: 'finish' };
+        }
+        // 4 · 国师据谏修订（审阅意见回灌进需求，作者模式）
+        notify({ phase: 'revise', findings: findings });
+        var reviseReq = '【三堂会审·修订】史官与谏官对你的拟稿提了以下意见，请逐条复核并修订当前剧本：采纳合理的；某条你判断不该改可以保留，但要在 finish 说明里言之有据。\n\n'
+          + _formatCritiques(histR.review, balR.review)
+          + '\n\n（原始需求："' + userRequest + '"）';
+        return runAuthoringLoop(draft, reviseReq, baseClean()).then(function (revRes) {
+          steps.push({ role: '国师·修订', result: revRes });
+          return { draft: draft, critiqued: true, revised: true, steps: steps, findings: findings,
+            critiques: { history: histR.review, balance: balR.review },
+            summary: '三堂会审：拟稿 → 史官查史(' + hf.length + '条)+谏官批平衡(' + bf.length + '条) → 国师据谏修订',
+            stopReason: revRes.stopReason };
+        });
       });
     });
   }
@@ -2161,6 +2294,7 @@
     applySelectedDiffs: applySelectedDiffs,
     runAuthoringLoop: runAuthoringLoop,
     runOrchestrated: runOrchestrated,
+    runWithCritics: runWithCritics,   // 刀3 · 对抗式三角色：拟稿→史官+谏官→修订
     // S5
     ENTITY_TEMPLATES: ENTITY_TEMPLATES,
     buildSchemaGuide: buildSchemaGuide,

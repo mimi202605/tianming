@@ -452,6 +452,11 @@
     var P = global.GM.population;
     if (!P) return;
     _ensureDeepDemographics(P);
+    // S1·人口自下而上(P.conf.populationBottomUpEnabled·默认关)：增长发生在叶·按本地民心·写叶 populationDetail·
+    // national 增量同步、maintain(bridge:377) 之后从 Σ叶 精确重建。详设 docs/population-bottom-up-redesign-2026-06.md
+    if (global.P && global.P.conf && global.P.conf.populationBottomUpEnabled) {
+      return _tickPopulationLeafGrowth(ctx, mr);
+    }
     var d = P.dynamics;
     // 年景因子
     var G = global.GM;
@@ -504,6 +509,96 @@
       d._yearlyAccumDeaths = 0;
     }
     d.lastYearNet = net * 12;
+  }
+
+  // S1·人口自下而上：叶级增长(先只接本地民心)·写叶 populationDetail·national = Σ叶 增量同步。
+  // 详设 docs/population-bottom-up-redesign-2026-06.md §2.1-2.2。S2 再接粮食供需/生活/赋役，S3 调粮。
+  function _tickPopulationLeafGrowth(ctx, mr) {
+    var P = global.GM.population;
+    var G = global.GM;
+    var d = P.dynamics;
+    // 全国基准率(年景因子全国级·作各叶基准·与原逻辑同源)
+    var environmentLoad = (G.environment && G.environment.nationalLoad) || 0.5;
+    var disaster = (G.vars && G.vars.disasterLevel) || 0;
+    var war = (G.activeWars || []).length;
+    var baseBirth = d.birthRateBase + (d.prosperityBonus || 0) - Math.max(0, environmentLoad - 1) * 0.005;
+    if (disaster > 0.3) baseBirth -= 0.01;
+    var baseDeath = d.deathRateBase + (d.agingPenalty || 0) + (d.diseaseBoost || 0);
+    if (disaster > 0.3) baseDeath += disaster * 0.05;
+    if (war > 0) baseDeath += Math.min(0.03, war * 0.01);
+    if (environmentLoad > 1.2) baseDeath += (environmentLoad - 1.2) * 0.02;
+    // 丁/户比例(叶级先共享全国比例·S2 视需叶级化)
+    var dingRatio = P.national.ding / Math.max(1, P.national.mouths);
+    var mphh = P.national.mouths / Math.max(1, P.national.households);
+    // 遍历叶·各叶按本地民心算生死·写叶 populationDetail
+    var IB = global.IntegrationBridge;
+    var leaves = (IB && typeof IB.getLeafDivisions === 'function' && G.adminHierarchy)
+      ? (IB.getLeafDivisions(G.adminHierarchy) || []) : [];
+    var totBirths = 0, totDeaths = 0, totNet = 0;
+    leaves.forEach(function(leaf) {
+      var pd = leaf && leaf.populationDetail;
+      if (!pd) return;
+      var mouths = Number(pd.mouths) || 0;
+      if (mouths <= 0) return;
+      var minxin = Number(leaf.minxin);
+      if (!isFinite(minxin)) minxin = Number(leaf.minxinLocal);
+      if (!isFinite(minxin)) minxin = 50;
+      // S2·粮食供需(马尔萨斯核心·接 renli)：载力 load = 口粮需求/粮食供给(含调入)·>1 缺粮
+      var rid = String(leaf.id || leaf.name || '');
+      var rg = (G.renli && G.renli.byRegion) ? (G.renli.byRegion[rid] || (leaf.name ? G.renli.byRegion[leaf.name] : null)) : null;
+      var load = 1;  // 无 renli 账(未种子)→中性·走民心/生活驱动
+      if (rg) {
+        var grainSupply = (Number(rg.grainOutput) || 0) + (Number(leaf._grainInflowThisTurn) || 0);  // +调入(S3 填)
+        var grainDemand = Number(rg.foodNeed) || 0;  // renli:282 = mouths×SUBSIST·随人口(马尔萨斯闭环)
+        if (grainDemand > 0) load = grainSupply > 0 ? grainDemand / grainSupply : 2;
+      }
+      // S2·生活水平(prosperity→生育)·灾异(death↑)·赋役(corvee→少生)
+      var prosperity = Number(leaf.prosperity); if (!isFinite(prosperity)) prosperity = 50;
+      var lifeLv = (prosperity - 50) / 100;
+      var rd = leaf.recentDisasters;
+      var hasDis = Array.isArray(rd) ? rd.length > 0 : !!rd;
+      var corvee = rg ? Math.max(0, Math.min(1, Number(rg.corveeRate) || 0)) : 0;
+      var localBirth = baseBirth
+        * (1 + (minxin - 50) / 100 * 0.4)                  // 民心高→生育↑
+        * (1 + lifeLv * 0.3)                               // 生活好→生育↑
+        * Math.max(0.3, Math.min(1.1, 1.1 - load * 0.3))   // 粮紧(load高)→生育↓
+        * (1 - corvee * 0.2);                              // 役重→生育↓
+      var localDeath = baseDeath
+        * (1 - (minxin - 50) / 100 * 0.25)                 // 民心高→死亡↓
+        * (1 + (hasDis ? 0.5 : 0))                         // 灾异→死亡↑
+        * (1 + Math.max(0, load - 1) * 0.6);               // 缺粮(load>1)→饥荒死亡↑
+      var births = Math.round(mouths * localBirth * mr / 12);
+      var deaths = Math.round(mouths * localDeath * mr / 12);
+      var net = births - deaths;
+      pd.mouths = Math.max(0, mouths + net);                         // 写叶(增长落点)
+      pd.households = Math.round(pd.mouths / mphh);
+      pd.ding = Math.round(pd.mouths * dingRatio);
+      leaf.yearlyBirths = (leaf.yearlyBirths || 0) + births;
+      leaf.yearlyDeaths = (leaf.yearlyDeaths || 0) + deaths;
+      totBirths += births; totDeaths += deaths; totNet += net;
+      if (leaf._grainInflowThisTurn) leaf._grainInflowThisTurn = 0;  // S3·调粮用后清零(下回合 local action 重计)
+    });
+    // national 增量同步(maintain:377 之后从 Σ叶 精确重建·守恒 Σ叶 = national)
+    P.national.mouths = Math.max(100000, P.national.mouths + totNet);
+    P.national.ding = Math.round(P.national.mouths * dingRatio);
+    P.national.households = Math.round(P.national.mouths / mphh);
+    // 年度日志(复用原·全国口径)
+    if (!d._yearlyAccumBirths) d._yearlyAccumBirths = 0;
+    if (!d._yearlyAccumDeaths) d._yearlyAccumDeaths = 0;
+    d._yearlyAccumBirths += totBirths;
+    d._yearlyAccumDeaths += totDeaths;
+    if (!d._lastLogTurn) d._lastLogTurn = ctx.turn || 0;
+    var yearlyLogTurns = (typeof global.turnsForMonths === 'function') ? global.turnsForMonths(12) : 12;
+    if (((ctx.turn || 0) - d._lastLogTurn) >= yearlyLogTurns) {
+      var logYear = (typeof global.calcDateFromTurn === 'function') ? global.calcDateFromTurn(ctx.turn || 1).adYear
+        : ((G.year || ((global.P && global.P.time && global.P.time.year) || 0)) + Math.floor(Math.max(0, (ctx.turn || 1) - 1) * ((typeof global._getDaysPerTurn === 'function') ? global._getDaysPerTurn() : 30) / 365));
+      d.yearlyLog.push({ year: logYear, birth: d._yearlyAccumBirths, death: d._yearlyAccumDeaths, net: d._yearlyAccumBirths - d._yearlyAccumDeaths });
+      if (d.yearlyLog.length > 50) d.yearlyLog.splice(0, d.yearlyLog.length - 50);
+      d._lastLogTurn = ctx.turn || 0;
+      d._yearlyAccumBirths = 0;
+      d._yearlyAccumDeaths = 0;
+    }
+    d.lastYearNet = totNet * 12;
   }
 
   function _deepFieldDiversityPressure(r) {
@@ -768,9 +863,11 @@
   function _tickMigration(ctx, mr) {
     var P = global.GM.population;
     if (!P) return;
-    // 京畿虹吸（默认）
+    // 京畿虹吸（S4·人口自下而上：开关开走叶级 populationDetail·否则原 byRegion）
     var capital = global.GM._capital || '京城';
-    if (P.byRegion && P.byRegion[capital]) {
+    if (global.P && global.P.conf && global.P.conf.populationBottomUpEnabled) {
+      _tickMigrationLeaf(ctx, mr, capital);
+    } else if (P.byRegion && P.byRegion[capital]) {
       Object.keys(P.byRegion).forEach(function(rid) {
         if (rid === capital) return;
         var r = P.byRegion[rid];
@@ -795,6 +892,47 @@
         _executeMigrationEvent(e);
       }
     });
+  }
+
+  // S4·人口自下而上：京畿虹吸叶级化(非首都叶 → 首都叶·守恒叶间转移·写 populationDetail·与增长同源)
+  function _tickMigrationLeaf(ctx, mr, capital) {
+    var G = global.GM;
+    var P = G.population;
+    var IB = global.IntegrationBridge;
+    var leaves = (IB && typeof IB.getLeafDivisions === 'function' && G.adminHierarchy)
+      ? (IB.getLeafDivisions(G.adminHierarchy) || []) : [];
+    if (!leaves.length) return;
+    var dingRatio = P.national.ding / Math.max(1, P.national.mouths);
+    var mphh = P.national.mouths / Math.max(1, P.national.households);
+    var capLeaf = null;
+    for (var i = 0; i < leaves.length; i++) {
+      var lid = String(leaves[i].id || leaves[i].name || '');
+      if (lid === capital || leaves[i].name === capital) { capLeaf = leaves[i]; break; }
+    }
+    if (!capLeaf) return;  // 无首都叶→不虹吸(避免流出无接收·破坏守恒·对齐原 byRegion 的 if(P.byRegion[capital]) 守卫)
+    var pullRate = 0.0001 * mr;  // 月千分之一流入京畿(与原 byRegion 逻辑同率)
+    var totalFlow = 0;
+    leaves.forEach(function(l) {
+      if (l === capLeaf) return;
+      var pd = l.populationDetail; if (!pd) return;
+      var mouths = Number(pd.mouths) || 0;
+      if (mouths <= 10000) return;
+      var flow = Math.round(mouths * pullRate);
+      if (flow > 0) {
+        pd.mouths = mouths - flow;
+        pd.households = Math.round(pd.mouths / mphh);
+        pd.ding = Math.round(pd.mouths * dingRatio);
+        l.yearlyNetMigration = (l.yearlyNetMigration || 0) - flow;
+        totalFlow += flow;
+      }
+    });
+    if (capLeaf && capLeaf.populationDetail && totalFlow > 0) {
+      var cpd = capLeaf.populationDetail;
+      cpd.mouths = (Number(cpd.mouths) || 0) + totalFlow;
+      cpd.households = Math.round(cpd.mouths / mphh);
+      cpd.ding = Math.round(cpd.mouths * dingRatio);
+      capLeaf.yearlyNetMigration = (capLeaf.yearlyNetMigration || 0) + totalFlow;
+    }
   }
 
   function _executeMigrationEvent(e) {

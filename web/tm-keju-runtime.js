@@ -254,6 +254,18 @@ async function checkKejuTrigger() {
   // 如果当前有科举正在进行，不触发新的
   if (P.keju.currentExam) return;
 
+  // 【降本2026-06-19】已有待议头条 → 无需每回合重复问 LLM(礼部奏请已在·等陛下亲议)
+  if (P.keju._pendingAutoOpen) return;
+
+  // 【降本2026-06-19】廉价日期预判：固定间隔(≥2年/科)且距上次明显未到期 → 确定性跳过·免 LLM
+  // (科举间隔期内每回合本会问一次 high-priority LLM·绝大多数明显"未到期"·此预判省掉间隔期内几乎全部调用·
+  //  仅保留"临近/已过间隔"时让 LLM 做财政/时局微调判断·间隔 0/1(不定期/岁举)或从未办过则不预判·照旧问 LLM)
+  var _kjInterval = (typeof P.keju.examInterval === 'number' && P.keju.examInterval > 0) ? P.keju.examInterval : 0;
+  if (_kjInterval >= 2 && P.keju.lastExamDate && P.keju.lastExamDate.year) {
+    var _kjYearsSince = (GM.year || (P.time && P.time.year) || 0) - P.keju.lastExamDate.year;
+    if (_kjYearsSince >= 0 && _kjYearsSince < _kjInterval - 1) return;  // 离下次开科尚差≥2年·跳过
+  }
+
   try {
     var currentDate = {
       year: GM.year || P.time.year,
@@ -282,7 +294,7 @@ async function checkKejuTrigger() {
 
     var result = await callAISmart(prompt, 300, {
       maxRetries: 1,
-      priority: 'high',
+      priority: 'background',   // 【降本2026-06-19】开科判定非阻塞玩家操作(结果异步 spawn 头条)·无需 high 抢队列
       timeoutMs: 30000,
       fetchMaxRetries: 1
     });

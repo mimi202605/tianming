@@ -309,6 +309,36 @@ function _officePosMatchFilter(p, mode) {
   return true;
 }
 
+// 官制活化 Slice②c·履职徽标：读 position._dutyState 显示 称职/履职/失职 NN（无值则不显·缺省优雅降级）
+function _offDutyBadge(pos) {
+  var ds = pos && pos._dutyState;
+  if (!ds || typeof ds.fulfillment !== 'number') return '';
+  var f = Math.round(ds.fulfillment);
+  var c = f < 35 ? '#c0403a' : f > 70 ? '#2f8a4a' : '#8a7a4d';   // 失职赤·称职青·中性褐
+  var label = f < 35 ? '失职' : f > 70 ? '称职' : '履职';
+  var arrow = ds.trend === 'falling' ? '↓' : ds.trend === 'rising' ? '↑' : '';
+  return '<span class="og-duty-badge" title="履职度（官制活化·失职扣实征率·称职奖）" style="display:inline-block;margin-left:5px;padding:0 5px;border-radius:7px;font-size:11px;line-height:16px;color:#fff;background:' + c + ';vertical-align:middle;">' + label + f + arrow + '</span>';
+}
+
+// 官制活化 Slice④c·拟制态横幅：拟制中改制（含机械抵抗提示）·无拟制项则空（默认关时 _pendingReforms 恒空·零回归）
+function _offPendingReformsBanner() {
+  if (typeof GM === 'undefined' || !GM._pendingReforms || !GM._pendingReforms.length) return '';
+  var pend = GM._pendingReforms.filter(function (it) { return it.status === '拟制中'; });
+  if (!pend.length) return '';
+  var hw = (GM.huangwei && typeof GM.huangwei.index === 'number') ? GM.huangwei.index : 50;
+  var hq = (GM.huangquan && typeof GM.huangquan.index === 'number') ? GM.huangquan.index : 50;
+  var auth = (hw + hq) / 2;
+  var items = pend.slice(0, 6).map(function (it) {
+    var rTxt = '';
+    try { if (typeof computeReformResistance === 'function') { var r = computeReformResistance(GM, it, { authority: auth }); rTxt = '抵抗' + r.resistance + '·机械' + r.band; } } catch (e) {}
+    return '<span style="display:inline-block;margin:1px 6px 1px 0;padding:1px 7px;border-radius:6px;background:rgba(180,140,60,0.18);">' + escHtml((it.reformDetail || '') + ' ' + (it.dept || '') + (it.position ? ('·' + it.position) : '')) + (rTxt ? ' <i style="opacity:.8;font-style:normal;">(' + escHtml(rTxt) + ')</i>' : '') + '</span>';
+  }).join('');
+  return '<div class="og-pending-banner" style="margin:0 0 8px;padding:7px 10px;border-radius:8px;background:rgba(180,140,60,0.12);border:1px solid rgba(180,140,60,0.4);font-size:12px;line-height:1.8;color:var(--gold,#c9a84a);">'
+    + '<b>〔拟制中·待廷议裁定〕</b> ' + items
+    + (pend.length > 6 ? ' <span style="opacity:.7;">…另' + (pend.length - 6) + '项</span>' : '')
+    + '</div>';
+}
+
 // 预览样式·位置卡渲染（list 视图专用·与 _ogRenderPosCard 独立）
 function _ogpRenderPosCard(p, deptName, pathArr) {
   if (!p) return '';
@@ -332,6 +362,7 @@ function _ogpRenderPosCard(p, deptName, pathArr) {
   html += '<div class="ogp-pos-head"><div class="ogp-pos-title-group">';
   html += '<div class="ogp-pos-title">' + escHtml(p.name||'?');
   if (p.rank) html += '<span class="ogp-rank-seal' + _sealCls + '">' + escHtml(p.rank) + '</span>';
+  html += _offDutyBadge(p);
   html += '</div>';
   html += '<div class="ogp-pos-dept-sub">' + escHtml(deptName||'') + '</div>';
   html += '</div>' + mainBtn + '</div>';
@@ -568,6 +599,8 @@ function renderOfficeTree(force){
       el.innerHTML = '<div style="color:var(--vermillion-400);padding:1rem;">\u5B98\u5236\u6811\u6E32\u67D3\u5931\u8D25\uFF1A' + escHtml(e.message || String(e)) + '</div>';
     }
   }
+  // \u5B98\u5236\u6D3B\u5316 Slice\u2463c\u00B7\u62DF\u5236\u6001\u6A2A\u5E45 prepend \u5230\u9762\u677F\u9876\uFF08\u65E0\u62DF\u5236\u9879\u5219\u7A7A\u00B7\u96F6\u56DE\u5F52\uFF09
+  try { var _prbHtml = (typeof _offPendingReformsBanner === 'function') ? _offPendingReformsBanner() : ''; if (_prbHtml) el.insertAdjacentHTML('afterbegin', _prbHtml); } catch (_prbE) {}
 }
 
 /** v2 helper：每个节点的可视高度（部门 ~120，职位 ~196·有「待下诏书」条时 +34） */
@@ -740,6 +773,7 @@ function _ogRenderPosCard(fi, idx, NW, cardH) {
     _mainBtn = '<button class="og-pos-action-btn appoint" onclick="event.stopPropagation();_offOpenPicker(' + _safePath + ',\'' + _safeDept + '\',\'' + _safePos + '\',\'\')" title="\u4EFB\u547D">\u4EFB \u547D</button>';
   }
 
+  if (nd._aggregate) _mainBtn = '';   // 冗员聚合·群官·无单一任命
   // 在任者行 class
   var _holderCls = 'vacant';
   if (_holder) {
@@ -778,6 +812,7 @@ function _ogRenderPosCard(fi, idx, NW, cardH) {
   html += '<div class="og-pos-nm-wrap">';
   html += '<div class="og-pos-nm">' + escHtml(nd.name||'?');
   if (nd.rank) html += '<span class="og-rank-seal' + _sealCls + '">' + escHtml(nd.rank) + '</span>';
+  html += _offDutyBadge(nd);
   html += '</div>';
   var subParts = [];
   if (_deptName) subParts.push(escHtml(_deptName));
@@ -789,7 +824,16 @@ function _ogRenderPosCard(fi, idx, NW, cardH) {
 
   // 在任者行
   html += '<div class="og-pos-holder-row ' + _holderCls + '">';
-  if (_holder) {
+  if (nd._aggregate) {
+    // 冗官冗员聚合·群僚（添差/祠禄/选人/胥吏）·显编制实有岁俸·非单一在任者
+    html += '<div class="og-pos-portrait" style="background:var(--gold-d,#8a6d2f);color:#fff;font-weight:600;">群</div>';
+    html += '<div class="og-pos-holder-info">';
+    html += '<div class="og-pos-name-line"><span style="color:var(--gold);font-weight:600;">群僚·冗员</span>';
+    html += '<span class="og-hc-chip' + (_vacant<=0?' full':' part') + '">编' + _hc + '·实' + _ac + '</span>';
+    html += '</div>';
+    html += '<div class="og-pos-sub-line" style="color:var(--txt-d);">在职 ' + _ac + ' 员·缺 ' + Math.max(0,_vacant) + '·岁耗俸禄</div>';
+    html += '</div>';
+  } else if (_holder) {
     var _portrait = _holder.portrait ? '<img src="' + escHtml(_holder.portrait) + '">' : escHtml(String(_holder.name||'?').charAt(0));
     var _imperialCls = _rankLvl <= 4 ? ' og-portrait-imperial' : '';
     var _tenureHtml = (_tenureVal > 0) ? '<span class="og-tenure-ring">' + _tenureVal + '</span>' : '';
@@ -1351,7 +1395,7 @@ function _ogRenderPosCardV10(fi, courtKey) {
   // 头部
   html += '<div class="og-v10-pos-header">';
   html += '<div class="og-v10-pos-title-group">';
-  html += '<div class="og-v10-pos-title">' + escHtml(nd.name||'?') + ' <span class="og-v10-rank-seal ' + _sealCls + '">' + escHtml(nd.rank||'') + '</span></div>';
+  html += '<div class="og-v10-pos-title">' + escHtml(nd.name||'?') + ' <span class="og-v10-rank-seal ' + _sealCls + '">' + escHtml(nd.rank||'') + '</span>' + _offDutyBadge(nd) + '</div>';
   html += '<div class="og-v10-pos-sub">' + escHtml(_deptName) + (nd.duties ? ' \u00B7 ' + escHtml(String(nd.duties).slice(0, 24)) : '') + '</div>';
   html += '</div>';
   var btnLabel = '\u6539 \u6362', btnCls = '';

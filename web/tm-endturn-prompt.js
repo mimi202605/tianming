@@ -1022,6 +1022,7 @@
     tp += '※ 每条决策须在回合输出的各字段中体现——例如：\n';
     tp += '    · zhengwen（时政记·当月朝堂叙事）要有对应段落说明诏令颁行、朝议落实、奏疏批复执行情况\n';
     tp += '    · events（事件/实录）要记下引发的重大动作（如派员、起兵、征召、工程开工）\n';
+    tp += '    · 【需君主当机立断的重大关头】(大灾抉择/兵临城下/权臣发难/储位之争等)——在该 event 上标 critical:true 并给 choices:[{text:选项, aiHint:此选后果走向}]·让局面强弹到君主面前抉择。★节制使用·寻常事在叙事里 surface 即可·不可滥标 critical 打断玩家\n';
     tp += '    · npc_actions（后人戏说/个人行止）要让相关官员作出对应响应（推进/抵制/规避/上疏申辩）\n';
     tp += '    · edict_feedback（数值变化说明）要给出受挫/成功的原因与影响\n';
     tp += '※ 不必采用固定模板·分工呈现即可；但不得假装没发生·不得让玩家决策淹没在背景叙事中。\n\n';
@@ -1052,6 +1053,10 @@
     tp += '    ★ 常见映射：皇帝赐赏私人→target:neitang/kind:expense；诏令赈济地方→target:guoku/kind:expense；战争缴获→target:guoku/kind:income；地方贡物→target:guoku/kind:income（贵重珍宝则 neitang）；抄家罚没→guoku 或 neitang（视情）\n';
     tp += '    ★ recurring:true 只用于长期年例（如"岁赐辽东饷三十万"、开海榷税、盐引承包、皇庄岁入、常设军饷）；amount 填年度数额，系统会按本剧本每回合天数折算；一次性赏赐/赈济/缴获 recurring:false（立刻作用于余额，不续）\n';
     tp += '    ★ 玩家通过诏令/奏疏/问对/朝会新增长期收入或长期支出时，必须 action:"add"+recurring:true；若同时新增数项财源/开支，必须拆成多条 fiscal_adjustments，不能合并成叙事一句话\n';
+    tp += '  · 税制改革（玩家诏令/奏疏/朝议/问对议定"改税制本身"——增减某税税率、废某税、新设税种）→ tax_reforms:[{op:"rate|add|remove",taxId,rate,tax,reason}]\n';
+    tp += '    ★【税制结构 vs 钱粮流动·别混】tax_reforms 改的是"税制结构"(税率随税基增减·data-driven·长效)·区别于 fiscal_adjustments(固定额财源/一次性钱粮流动)。凡"兴榷货/增商税盐课/经界括田提田赋/罢和买免役/立月桩经制钱"等改税制本身 → 走 tax_reforms；凡"岁币/赏赐/赈济/缴获/固定贡纳"等定额钱粮 → 走 fiscal_adjustments。\n';
+    tp += '    ★ op 用法：op:"rate"调某税率(taxId=税种id如 shangshui/yanke/hemai·rate=新税率0~1)；op:"remove"废税(taxId)；op:"add"新设(tax:{id,name,base[商业commerceVolume/田亩arableLand/盐酒茶口consumption/丁口mouths/繁荣prosperity],rate,storeAs[money/grain/cloth],sourceTag})。改即下回合岁入按新税重算·民心按民负升降(加征伤民心·宽减惠民损库)。\n';
+    tp += '    ★ 例："增商税三分以充军饷"→tax_reforms:[{op:"rate",taxId:"shangshui",rate:0.06,reason:"充军饷"}]；"罢两浙和买宽民"→[{op:"remove",taxId:"hemai",reason:"宽东南民力"}]；"行经界、立月桩钱"→[{op:"add",tax:{id:"yuezhuang",name:"月桩钱",base:"commerceVolume",rate:0.025,storeAs:"money",sourceTag:"yuezhuang"},reason:"经界后新财源"}]\n';
     tp += '    ★ recurring:true 的 amount 是年度账目，不会当回合一次性入库/出库；若政策同时产生当场缴纳/拨付的一笔钱粮，另写一条 recurring:false 的 fiscal_adjustments\n';
     tp += '    ★ 玩家扩大/缩减既有长期项时，用 action:"update" 并保持同 name/id，amount 写新的年度数额；玩家裁撤/取消既有长期项时，用 action:"stop" 或 "remove"，amount 可省略或为 0，reason 说明终止依据\n';
     tp += '    ★ 玩家诏令文本若出现明确数额（赏/赐/拨/发/征/抄/没）X 两/石/匹——必须生成对应 fiscal_adjustments；若库不足则 kind:expense 只能到库余，并在 reason 里说明"库不足仅拨 N"\n';
@@ -1364,8 +1369,24 @@
     var policyCtx = getCustomPolicyContext();
     if (policyCtx) tp += '\n' + policyCtx;
 
-    // 官制摘要（让AI知道政府结构和空缺职位）
+    // 官制摘要（让AI知道政府结构和空缺职位）——官制活化 Slice①：开 officePowerPerceptionEnabled 时改喂「职权舆图」(掌权要职+衙门概览·相关度排序)，关则原【官制概要】原样跑(零回归)
     if (GM.officeTree && GM.officeTree.length > 0) {
+      var _opmMap = '';
+      if (typeof officeFlagOn === 'function' && officeFlagOn('officePowerPerceptionEnabled') && typeof buildOfficePowerMap === 'function') {
+        try {
+          // relevanceText：本回合圣旨原文(其字眼"兵部/调兵/御史"令相关官署上浮) + 危机信号→抽象 power 标签(跨朝代干净·不写专名)
+          var _opmRel = '';
+          try { if (typeof edicts !== 'undefined' && edicts) { _opmRel = [edicts.decree, edicts.political, edicts.military, edicts.diplomatic, edicts.economic, edicts.other].filter(Boolean).join(' '); } } catch (e0) {}
+          var _opmCrisis = [];
+          if (GM._bankruptcyTurns > 0) _opmCrisis.push('征税');                                                                                   // 财政危机→征税权官浮顶
+          if (Array.isArray(GM._turnRebellionResults) && GM._turnRebellionResults.length > 0) { _opmCrisis.push('调兵'); _opmCrisis.push('监察'); } // 叛乱→平乱+整肃致乱之吏
+          if (GM.eraState && typeof GM.eraState.socialStability === 'number' && GM.eraState.socialStability < 0.4) { _opmCrisis.push('调兵'); _opmCrisis.push('征税'); } // 社稷不稳→弹压+赈济安民
+          if (_opmCrisis.length) _opmRel += ' ' + _opmCrisis.join(' ');
+          _opmMap = buildOfficePowerMap(GM, { cap: 12, relevanceText: _opmRel });
+        } catch (e) { _opmMap = ''; }
+      }
+      if (_opmMap) { tp += '\n' + _opmMap + '\n'; }
+      else {
       var _govLines = ['【官制概要】'];
       var _vacantCount = 0, _filledCount = 0;
       (function _wGov(nodes, prefix) {
@@ -1382,11 +1403,38 @@
         _govLines.push('  （在任' + _filledCount + '人，空缺' + _vacantCount + '个——空缺影响行政效率）');
         tp += '\n' + _govLines.join('\n') + '\n';
       }
+      }
     }
 
     // 官制职能分工（让AI知道哪个部门管哪些事——推演中必须遵守）
     var _funcSummary = getOfficeFunctionSummary();
     if (_funcSummary) tp += '\n' + _funcSummary + '\n';
+
+    // 官制活化 Slice③ 权限门·执行力提示（开 officeAuthorityGateEnabled 时·让 AI 叙事/税额跟着"实征打折"走·关则无此句零回归·抽象词不写专名）
+    if (typeof officeFlagOn === 'function' && officeFlagOn('officeAuthorityGateEnabled')) {
+      tp += '\n※【权限门·执行力】凡加赋/征税之实征，系于掌“征税”之权的在任主官：其出缺或失职，则加派虽奉旨而颁、实征却大减，漏额多入私囊（吏治益坏）。fiscal_adjustments 中税类 income 的数额与叙事须体现此折扣，勿作“诏下即足额征齐”。\n';
+    }
+
+    // 官制活化 Slice④ 拟制中改制·待廷议裁定（开 officeReformAdjudicationEnabled·让 AI 在机械护栏内裁定 reform_verdicts·关则无此段零回归）
+    try {
+      if (typeof officeFlagOn === 'function' && officeFlagOn('officeReformAdjudicationEnabled') && GM._pendingReforms && GM._pendingReforms.length && typeof computeReformResistance === 'function') {
+        var _pendR = GM._pendingReforms.filter(function (it) { return it.status === '拟制中' && it.proposedTurn < (GM.turn || 0); });
+        if (_pendR.length) {
+          var _raHw = (GM.huangwei && typeof GM.huangwei.index === 'number') ? GM.huangwei.index : 50;
+          var _raHq = (GM.huangquan && typeof GM.huangquan.index === 'number') ? GM.huangquan.index : 50;
+          var _raAuth = (_raHw + _raHq) / 2;
+          var _raDiff = ({ narrative: 'narrative', standard: 'standard', hardcore: 'hardcore', '简单': 'narrative', '普通': 'standard', '中等': 'standard', '困难': 'hardcore', '地狱': 'hardcore' })[(P && P.conf && P.conf.difficulty) || ''] || 'standard';
+          tp += '\n【拟制中·待廷议裁定的官制改制】（须在 reform_verdicts 中逐项给 verdict：准/部分/拖/驳）\n';
+          tp += '  ※ 机械抵抗已按品级/权力/忠诚算出 band（地板）。你可据权臣串联、科道交章等加重(更严)；但【不得低于机械 band】——机械是防放水的地板。每项 verdict 须给 reason（谁、如何抵抗或顺从）。\n';
+          _pendR.slice(0, 8).forEach(function (it) {
+            var _rr = computeReformResistance(GM, it, { authority: _raAuth, difficulty: _raDiff });
+            var _rw = _rr.affected.map(function (a) { return a.holder; }).join('、');
+            tp += '  · ' + (it.reformDetail || '') + ' ' + it.dept + (it.position ? ('·' + it.position) : '') + '：机械抵抗' + _rr.resistance + '·威权' + Math.round(_raAuth) + ' → 机械band【' + _rr.band + '】' + (_rw ? ('·触动' + _rw) : '·无人失权') + '\n';
+          });
+          tp += '  格式：reform_verdicts:[{dept,position?,verdict,reason}]\n';
+        }
+      }
+    } catch (_raPE) {}
 
     // 行政区划摘要（让AI知道地方治理状况）——按中国式管辖层级分组
     if (P.adminHierarchy) {

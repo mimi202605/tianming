@@ -64,6 +64,8 @@ function _snapshotTurnAiResultsForPostTurn() {
 /** 方向 8：SC_L2_AI·每 5 回合 AI 语义化情景摘要 */
 async function _scL2AIGenerate(turnOverride) {
   if (!GM || !P || !P.ai || !P.ai.key) return;
+  // 【记忆管家 agent·S2/S4】开关开且未回落时 L2 rollup 由记忆管家接管·此 pass 跳过(shouldHandle 每回合缓存决策·与 followup 两处一致·模块缺失/连失回落则仍跑)
+  if (typeof TM !== 'undefined' && TM.MemorySteward && TM.MemorySteward.shouldHandle(GM)) return;
   function _memText(entry) {
     return (typeof memoryEntryText === 'function') ? memoryEntryText(entry) : String((entry && (entry.content || entry.text || entry.summary)) || '');
   }
@@ -166,6 +168,8 @@ async function _scL2AIGenerate(turnOverride) {
 /** 方向 9：SC_L3_CONDENSE·每 30 回合 AI 年代纲要 */
 async function _scL3Condense(turnOverride) {
   if (!GM || !P || !P.ai || !P.ai.key) return;
+  // 【记忆管家 agent·S2/S4】开关开且未回落时 L3 rollup 由记忆管家接管·此 pass 跳过(shouldHandle 每回合缓存决策·与 followup 两处一致·模块缺失/连失回落则仍跑)
+  if (typeof TM !== 'undefined' && TM.MemorySteward && TM.MemorySteward.shouldHandle(GM)) return;
   var jobTurn = turnOverride || (GM._postTurnJobs && GM._postTurnJobs.turn) || GM.turn || 0;
   if (jobTurn % 30 !== 0) return;
   if (!GM._memoryLayers) GM._memoryLayers = { L1: [], L2: [], L3: [] };
@@ -429,6 +433,8 @@ function _launchPostTurnJobs() {
   } });
   jobs.push({ id: 'reflect', fn: async function() {
     await _awaitPostTurnJobsById(['sc25']);
+    // 【自我反思 agent·S2】开关开且未回落时 agent 接管(比对 + 维护滚动偏差画像→sc0 注入)·此写死 pass 跳；默认关 / 连失回落 → _scReflect 原样跑零回归
+    if (typeof TM !== 'undefined' && TM.ReflectionAgent && TM.ReflectionAgent.shouldHandle(GM)) return TM.ReflectionAgent.run(GM);
     return _scReflect(jobTurn, turnResultsSnapshot);
   } });
   jobs.forEach(function(j) { _enqueuePostTurnJob(j.id, j.fn); });
