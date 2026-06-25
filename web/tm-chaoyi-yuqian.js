@@ -160,6 +160,9 @@ async function _yq2_startSession() {
   // 记录被排除感（立即触发，用自然逻辑）
   _yq2_triggerExcludedFeelings();
 
+  // 2026-06 faithful landing·重排为左烛火立绘 + 右心腹列版式（对齐预览）
+  try { _yq2_relayout(); _yq2_renderInner(); } catch(_yqLayoutErr) { try { window.TM && TM.errors && TM.errors.captureSilent(_yqLayoutErr, 'yuqian-relayout'); } catch(_) {} }
+
   // 帝出疑问——等玩家输入具体问题（可用议题作为默认）
   _yq2_phaseQuestion();
 }
@@ -184,7 +187,7 @@ function _yq2_triggerExcludedFeelings() {
 
 function _yq2_phaseQuestion() {
   CY._yq2.currentPhase = 'question';
-  addCYBubble('皇帝', '朕有一事难决，诸卿可直言——' + CY._yq2.topic, false);
+  _yq2_emp('朕有一事难决，诸卿可直言——' + CY._yq2.topic);
   var footer = _$('cy-footer');
   footer.innerHTML = '<div style="display:flex;gap:var(--space-1);justify-content:center;flex-wrap:wrap;">'
     + '<button class="bt bp bsm" onclick="_yq2_startRoundQuery()">📣 令众人直陈</button>'
@@ -206,7 +209,7 @@ async function _yq2_startRoundQuery() {
       // 玩家中途插言
       if (CY._pendingPlayerLine) {
         var _pl = CY._pendingPlayerLine; CY._pendingPlayerLine = null;
-        addCYBubble('皇帝', _pl, false);
+        _yq2_emp(_pl);
         if (CY._yq2.record !== 'secret') _cy_jishiAdd('yuqian', CY._yq2.topic, '皇帝', _pl, { playerInterject: true, round: _rd });
         CY._yq2._transcript += '\n皇帝：' + _pl;
       }
@@ -262,6 +265,8 @@ async function _yq2_oneAdvisorSpeak(name, roundNum) {
 
   // A2: 流式化——建占位气泡·onChunk 渐进显示 "line" 字段
   var _yqDiv = addCYBubble(name, '\u2026', false);
+  try { _yq2_setSpeaker(name); if (_yqDiv && CY._yq2 && CY._yq2.candorMap && CY._yq2.candorMap[name] && CY._yq2.candorMap[name].candor <= 50) _yqDiv.classList.add('yq-guard'); } catch(_yqSpErr) {}   // \u8c01\u6df1\u8a00\u5219\u8c01\u7acb\u7ed8 + \u5766\u767d\u5ea6\u6761
+  try { _yq2_tagBubbleCandor(_yqDiv, candorLevel); } catch(_yqCdErr) {}   // name 行坦白度标签（对齐预览 .cand）
   var _yqBubble = _yqDiv && _yqDiv.querySelector ? _yqDiv.querySelector('.cy-bubble') : null;
   var _yqRaf = false;
   var _yqRendered = false;  // 1.2.4.3·气泡已渲染则禁止 catch 覆写「未能陈词」
@@ -287,7 +292,7 @@ async function _yq2_oneAdvisorSpeak(name, roundNum) {
     );
     var obj = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (obj && obj.line) {
-      if (_yqBubble) { _yqBubble.innerHTML = '\u3014' + candorLevel + '\u00B7\u7B2C' + roundNum + '\u8F6E\u3015' + escHtml(obj.line); _yqRendered = true; }
+      if (_yqBubble) { _yqBubble.innerHTML = '\u3014\u7B2C' + roundNum + '\u8F6E\u3015' + escHtml(obj.line); _yqRendered = true; }
       try { CY._yq2.opinions[name] = { line: obj.line, candor: candor, stance: obj.stance, inward: obj.inwardThought, round: roundNum }; } catch(_oe){ try{window.TM&&TM.errors&&TM.errors.captureSilent(_oe,'yuqian-opinions');}catch(_){} }
       try { if (CY._yq2._transcript != null) CY._yq2._transcript += '\n' + name + '：' + obj.line; } catch(_te){ try{window.TM&&TM.errors&&TM.errors.captureSilent(_te,'yuqian-transcript');}catch(_){} }
       try { if (CY._yq2.record !== 'secret') { _cy_jishiAdd('yuqian', CY._yq2 && CY._yq2.topic, name, obj.line, { candor: candor, stance: obj.stance, round: roundNum }); } } catch(_je){ try{window.TM&&TM.errors&&TM.errors.captureSilent(_je,'yuqian-jishi');}catch(_){} }
@@ -334,7 +339,7 @@ function _yq2_askAdvisor(name) {
 }
 
 async function _yq2_doAskAdvisor(name, question) {
-  addCYBubble('皇帝', '问' + name + '：' + question, false);
+  _yq2_emp('问' + name + '：' + question);
   var ch = findCharByName(name);
   if (!ch) return;
   var candor = (CY._yq2.opinions[name] && CY._yq2.opinions[name].candor) || 70;
@@ -346,6 +351,8 @@ async function _yq2_doAskAdvisor(name, question) {
   prompt += '请答，可比前言更直率（密谈氛围）。' + (typeof _aiDialogueWordHint === 'function' ? _aiDialogueWordHint() : '') + '\n返回纯文本。';
   // 【降本2026-06-19·time】深问流式化——占位气泡 onChunk 渐显(对齐开场陈言 _yq2_oneAdvisorSpeak·玩家不再干等满)
   var _dqDiv = addCYBubble(name, '…', false);
+  try { _yq2_setSpeaker(name); } catch(_dqSpErr) {}   // 谁深言则谁立绘
+  try { _yq2_tagBubbleCandor(_dqDiv, candor > 80 ? '推心置腹' : candor > 50 ? '大致坦言' : '揣摩圣意'); } catch(_dqCdErr) {}
   var _dqBubble = _dqDiv && _dqDiv.querySelector ? _dqDiv.querySelector('.cy-bubble') : null;
   var _dqRaf = false;
   var _dqCtrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
@@ -375,7 +382,16 @@ async function _yq2_doAskAdvisor(name, question) {
 function _yq2_enterDecide() {
   CY._yq2.currentPhase = 'decide';
   var footer = _$('cy-footer');
-  footer.innerHTML = '<div style="display:flex;gap:var(--space-1);justify-content:center;flex-wrap:wrap;">'
+  // 决断区·起居注录否 + 泄密风险条（对齐预览 rec-row·record 已在筹备选定·此处只读展示）
+  var _rec = (CY._yq2.record === 'secret');
+  var _lkSum = 0; (CY._yq2.advisors || []).forEach(function(_n) { var _c = findCharByName(_n); if (_c) _lkSum += Math.max(0, 100 - (_c.loyalty || 50)); });
+  var _lkAvg = (CY._yq2.advisors && CY._yq2.advisors.length) ? Math.round(_lkSum / CY._yq2.advisors.length) : 0;
+  var _lkLvl = _lkAvg > 60 ? '高' : _lkAvg > 35 ? '中' : '低';
+  var _recRow = '<div class="yq-rec-row"><span class="yq-rec-lab">起居注</span>'
+    + '<span class="yq-rec-opt' + (_rec ? '' : ' sel keep') + '">📜 记</span>'
+    + '<span class="yq-rec-opt' + (_rec ? ' sel secret' : '') + '">🤐 不录</span>'
+    + '<span class="yq-leak2">泄密风险 <i class="yq-leak-bar"><em style="width:' + _lkAvg + '%"></em></i> <b>' + _lkLvl + '</b></span></div>';
+  footer.innerHTML = _recRow + '<div style="display:flex;gap:var(--space-1);justify-content:center;flex-wrap:wrap;">'
     + '<button class="bt bp bsm" onclick="_yq2_decide(\'approve\')">准行</button>'
     + '<button class="bt bsm" style="color:var(--vermillion-400);" onclick="_yq2_decide(\'reject\')">驳否</button>'
     + '<button class="bt bsm" onclick="_yq2_decide(\'defer\')">再议</button>'
@@ -391,7 +407,7 @@ function _yq2_decide(mode) {
     if (!customText) return;
   }
   var line = mode === 'approve' ? '准此事' : mode === 'reject' ? '此事勿议' : mode === 'defer' ? '再议' : customText;
-  addCYBubble('皇帝', '朕决：' + line, false);
+  _yq2_emp('朕决：' + line);
   CY._yq2.decision = { mode: mode, custom: customText };
 
   // 保密等级写入
@@ -531,3 +547,135 @@ function _yq2_globalFooter() {
     + _cy_suggestBtnHtml('御前会议')
     + '</div>';
 }
+
+// ════ 2026-06 faithful landing·御前密室版式（左烛火立绘+坦白度条 / 右心腹列+密谈+决断·对齐 preview/yuqian-preview.html） ════
+// 渲染后 DOM 重排（保留全部 id/handler）+ scoped CSS（styles.css #chaoyi-modal.cy-mode-yuqian）
+function _yq2_makeDiv(html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild || d; }
+
+// 皇帝气泡（右对齐·朱金·朕印·对齐预览 msg.emp）
+function _yq2_emp(text) {
+  var d = addCYBubble('皇帝', text, false);
+  if (d) {
+    d.classList.add('yq-emp');
+    var av = d.firstElementChild;
+    if (av && av.tagName !== 'IMG') av.textContent = '朕';
+  }
+  return d;
+}
+
+// 给臣气泡 name 行加坦白度标签（推心置腹青/大致坦言金/揣摩圣意灰·对齐预览 msg-name .cand）
+function _yq2_tagBubbleCandor(div, level) {
+  if (!div || !level) return;
+  var cls = level === '推心置腹' ? 'high' : level === '大致坦言' ? 'mid' : 'low';
+  try {
+    var nmDiv = div.querySelector('div:last-child > div:first-child');
+    if (nmDiv && !nmDiv.querySelector('.yq-cand-sp')) {
+      var sp = document.createElement('span');
+      sp.className = 'yq-cand-sp ' + cls;
+      sp.textContent = level;
+      nmDiv.appendChild(sp);
+    }
+  } catch (_e) {}
+}
+
+function _yq2_relayout() {
+  var modal = document.getElementById('chaoyi-modal');
+  if (!modal) return;
+  modal.classList.add('cy-mode-yuqian');
+  if (document.getElementById('yq-actor')) return;
+  var frame = modal.firstElementChild;
+  var body = document.getElementById('cy-body');
+  if (!frame || !body) return;
+  var topic = document.getElementById('cy-topic');
+  var inputRow = document.getElementById('cy-input-row');
+  var footer = document.getElementById('cy-footer');
+  var header = frame.firstElementChild;
+  // 左·当前深言者立绘（烛火密室）
+  var actor = document.createElement('div'); actor.id = 'yq-actor'; actor.className = 'yq-actor';
+  actor.innerHTML = '<div class="yq-actor-stage"><img class="yq-portrait" id="yq-portrait" alt="" style="display:none">'
+    + '<div class="yq-actor-vig"></div><span class="yq-candle"></span>'
+    + '<span class="yq-actor-tag" id="yq-actor-tag">屏退宫人</span></div>'
+    + '<div class="yq-actor-plate"><div><span class="yq-actor-nm" id="yq-actor-nm">御前会议</span><span class="yq-candor-pill" id="yq-candor-pill"></span></div>'
+    + '<div class="yq-actor-sub" id="yq-actor-sub">密召心腹 · 坦言直陈 · 可不录</div>'
+    + '<div class="yq-candor-meter" id="yq-candor-meter" style="display:none"><div class="yq-cm-l">坦白度 <b id="yq-cm-val"></b></div><div class="yq-cm-bar"><div class="yq-cm-fill" id="yq-cm-fill"></div></div></div>'
+    + '<div class="yq-acts">'
+    +   '<button class="yq-bt key" onclick="if(typeof _yq2_pickAdvisor===\'function\')_yq2_pickAdvisor()">单独深言</button>'
+    +   '<button class="yq-bt" onclick="if(typeof _yq2_startRoundQuery===\'function\')_yq2_startRoundQuery()">令众直陈</button>'
+    +   '<button class="yq-bt" onclick="var i=document.getElementById(\'cy-player-input\');if(i)i.focus()">屏退此人</button>'
+    +   '<button class="yq-bt key" onclick="if(typeof _yq2_enterDecide===\'function\')_yq2_enterDecide()">入决断 ▾</button>'
+    + '</div></div>';
+  var main = document.createElement('div'); main.className = 'yq-main';
+  var row = document.createElement('div'); row.className = 'yq-row';
+  [topic, body, inputRow, footer].forEach(function(el) { if (el) main.appendChild(el); });
+  row.appendChild(actor); row.appendChild(main);
+  if (header && header.nextSibling) frame.insertBefore(row, header.nextSibling);
+  else frame.appendChild(row);
+  // 顶栏：密印 + 御前会议
+  var label = document.getElementById('cy-mode-label');
+  if (label) label.innerHTML = '<span class="yq-seal">密</span><span class="yq-htitle">御前会议</span>';
+  var ttypeLbl = { execution:'🗡️ 诛戮',succession:'👑 托孤废立',military:'🎯 军机',removal:'🎭 罢相',palace:'🏯 宫禁',appointment:'💼 人事',plot:'🕵️ 密谋',other:'❓ 其他' }[CY._yq2 && CY._yq2.topicType] || '';
+  var rtag = document.getElementById('cy-round-tag');
+  if (rtag) { rtag.style.display = 'inline-block'; rtag.innerHTML = (ttypeLbl ? '<span class="yq-ttype">' + ttypeLbl + '</span>' : '') + (CY._yq2 && CY._yq2.record === 'secret' ? '<span class="yq-norec">🤐 不录</span>' : ''); }
+  if (topic && CY._yq2 && CY._yq2.topic) topic.innerHTML = '<span class="yq-topic-lab">机密</span> · <b>' + escHtml(CY._yq2.topic) + '</b>';
+}
+
+// 心腹列（真头像 + 坦白度档 + 忠值 + 排斥重臣 + 泄密风险估算）
+function _yq2_renderInner() {
+  var body = _$('cy-body');
+  if (!body || !CY._yq2) return;
+  var old = document.getElementById('yq2-inner-board'); if (old) old.remove();
+  var advisors = CY._yq2.advisors || [];
+  var cmap = CY._yq2.candorMap || {};
+  var html = '<div id="yq2-inner-board" class="yq-inner">';
+  html += '<div class="yq-inner-h"><span class="yq-it">召入心腹</span><span class="yq-isub">' + advisors.length + ' 员 · 忠诚+品级择 · 至多 8</span>';
+  html += '<span class="yq-rec ' + (CY._yq2.record === 'secret' ? 'secret' : 'keep') + '">' + (CY._yq2.record === 'secret' ? '🤐 密议不录' : '📜 记起居注') + '</span></div>';
+  html += '<div class="yq-confidants">';
+  advisors.forEach(function(nm) {
+    var ch = (typeof findCharByName === 'function' ? findCharByName(nm) : null) || {};
+    var cd = (cmap[nm] && cmap[nm].candor != null) ? cmap[nm].candor : 60;
+    var lvl = (cmap[nm] && cmap[nm].level) || '';
+    var cls = cd > 80 ? 'high' : cd > 50 ? 'mid' : 'low';
+    var pic = ch.portrait
+      ? '<img src="' + escHtml(ch.portrait) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+      : '<span class="yq-cf-ph">' + escHtml(String(nm).charAt(0)) + '</span>';
+    html += '<div class="yq-cf ' + cls + '" data-name="' + escHtml(nm) + '" onclick="_yq2_setSpeaker(\'' + escHtml(nm).replace(/'/g, "\\'") + '\')">'
+      + '<div class="yq-cff">' + pic + '</div><div class="yq-cfn">' + escHtml(nm) + '</div>'
+      + '<div class="yq-cfc">' + escHtml(lvl) + ' · 忠' + Math.round(ch.loyalty || 50) + '</div></div>';
+  });
+  html += '</div>';
+  var excl = CY._yq2.excluded || [];
+  var leakSum = 0; advisors.forEach(function(nm) { var ch = findCharByName(nm); if (ch) leakSum += Math.max(0, 100 - (ch.loyalty || 50)); });
+  var leakAvg = advisors.length ? Math.round(leakSum / advisors.length) : 0;
+  var leakLvl = leakAvg > 60 ? '高' : leakAvg > 35 ? '中' : '低';
+  html += '<div class="yq-excluded">';
+  if (excl.length) html += '屏退在外 · 未召之重臣：' + excl.slice(0, 6).map(function(n) { return '<b>' + escHtml(n) + '</b>'; }).join('、') + ' <span class="pen">（心有芥蒂 · 忠 -3）</span>';
+  else html += '<span class="yq-ex-none">（无够格而未召之重臣）</span>';
+  html += '<span class="yq-leak">泄密风险 <i class="yq-leak-bar"><em style="width:' + leakAvg + '%"></em></i> <b>' + leakLvl + '</b></span>';
+  html += '</div></div>';
+  if (body.firstChild) body.insertBefore(_yq2_makeDiv(html), body.firstChild);
+  else body.innerHTML = html;
+}
+
+// 当前深言者立绘随发言切换（谁深言则谁立绘 + 坦白度条联动 + 心腹卡高亮）
+function _yq2_setSpeaker(name) {
+  if (!name || !CY._yq2) return;
+  var ch = (typeof findCharByName === 'function' ? findCharByName(name) : null) || {};
+  var cm = (CY._yq2.candorMap && CY._yq2.candorMap[name]) || {};
+  var cd = cm.candor != null ? Math.round(cm.candor) : 60;
+  var lvl = cm.level || (cd > 80 ? '推心置腹' : cd > 50 ? '大致坦言' : '揣摩圣意');
+  var cls = cd > 80 ? 'high' : cd > 50 ? 'mid' : 'low';
+  var img = document.getElementById('yq-portrait');
+  if (img) { if (ch.portrait) { img.src = ch.portrait; img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; } img.alt = name; }
+  var tag = document.getElementById('yq-actor-tag'); if (tag) tag.textContent = '深言 · ' + name;
+  var nm = document.getElementById('yq-actor-nm'); if (nm) nm.textContent = name;
+  var sub = document.getElementById('yq-actor-sub');
+  if (sub) sub.textContent = (ch.officialTitle || ch.title || '心腹') + (ch.party ? ' · ' + ch.party : '') + ' · 忠' + Math.round(ch.loyalty || 50);
+  var pill = document.getElementById('yq-candor-pill'); if (pill) { pill.textContent = lvl; pill.className = 'yq-candor-pill ' + cls; }
+  var meter = document.getElementById('yq-candor-meter'); if (meter) meter.style.display = '';
+  var val = document.getElementById('yq-cm-val'); if (val) val.textContent = cd + ' · ' + lvl;
+  var fill = document.getElementById('yq-cm-fill'); if (fill) { fill.style.width = cd + '%'; fill.className = 'yq-cm-fill ' + cls; }
+  Array.prototype.forEach.call(document.querySelectorAll('#chaoyi-modal .yq-cf'), function(el) {
+    el.classList.toggle('on', el.getAttribute('data-name') === name);
+  });
+}
+if (typeof window !== 'undefined') { window._yq2_setSpeaker = _yq2_setSpeaker; window._yq2_relayout = _yq2_relayout; window._yq2_renderInner = _yq2_renderInner; window._yq2_emp = _yq2_emp; window._yq2_tagBubbleCandor = _yq2_tagBubbleCandor; }

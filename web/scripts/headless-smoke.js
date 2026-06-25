@@ -84,6 +84,8 @@ function makeStubs() {
       tagName: (tag || '').toUpperCase(),
       nodeType: 1,
       children: [],
+      get firstChild() { return this.children[0] || null; },   // 必需:removeChild(firstChild) 修剪循环(如 tm-endturn-loading syncAnnals)·缺则 removeChild(undefined) 删不掉→死循环
+      get lastChild() { return this.children[this.children.length - 1] || null; },
       attributes: {},
       style: {},
       dataset: {},
@@ -94,6 +96,7 @@ function makeStubs() {
       appendChild(c) { this.children.push(c); return c; },
       removeChild(c) { this.children = this.children.filter(x => x !== c); return c; },
       insertBefore(c) { this.children.unshift(c); return c; },
+      insertAdjacentHTML(pos, html) { html = html || ''; if (pos === 'afterbegin') this.innerHTML = html + this.innerHTML; else this.innerHTML += html; },  // 渐进渲染(如 tm-renwu-ui pump)需要·忠实追加到 innerHTML(beforeend 默认)
       setAttribute(k, v) { this.attributes[k] = v; },
       getAttribute(k) { return this.attributes[k] || null; },
       removeAttribute(k) { delete this.attributes[k]; },

@@ -417,6 +417,17 @@ if (typeof globalThis !== 'undefined') globalThis.TMMapRuntime = TMMapRuntime;
 /**
  * 自动为势力分配颜色
  */
+// 以 factor>1 朝白混合(提亮)·factor<1 朝黑缩放(压暗)·派生剧本主色的高亮/暗色。
+function _tmAdjustBrightness(hex, factor) {
+  var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || '');
+  if (!m) return hex;
+  var r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+  if (factor >= 1) { var tt = factor - 1; r += (255 - r) * tt; g += (255 - g) * tt; b += (255 - b) * tt; }
+  else { r *= factor; g *= factor; b *= factor; }
+  function cl(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+  return '#' + cl(r).toString(16).padStart(2, '0') + cl(g).toString(16).padStart(2, '0') + cl(b).toString(16).padStart(2, '0');
+}
+
 function assignFactionColors() {
   if (!GM.facs || GM.facs.length === 0) return;
   if (!GM.mapData) return;
@@ -427,14 +438,21 @@ function assignFactionColors() {
     var faction = GM.facs[i];
     var hue = i * hueStep;
 
-    // 生成主颜色
-    var mainColor = hslToRgb(hue, 70, 60);
+    // 剧本权威配色:优先用剧本地图所定义的势力色(map.factions[id|name].color)·缺则按序号自动生成。
+    // 跨朝代根治:此前 GM.facs 永无 color → 自动 HSL 总覆盖 → 剧本在 map.factions 配的势力色形同死字段(地块填色 line 708 首选 faction.color)。
+    // 现以剧本色为准(任何剧本受益)·自动 HSL 仅作未配色势力的兜底。
+    var scColor = null;
+    if (GM.mapData.factions) {
+      var _fm = GM.mapData.factions[faction.id] || GM.mapData.factions[faction.name];
+      if (_fm && typeof _fm.color === 'string' && /^#?[0-9a-fA-F]{6}$/.test(_fm.color)) {
+        scColor = (_fm.color[0] === '#') ? _fm.color : ('#' + _fm.color);
+      }
+    }
 
-    // 生成高亮颜色（更亮）
-    var highlightColor = hslToRgb(hue, 70, 75);
-
-    // 生成暗色（用于边界）
-    var darkColor = hslToRgb(hue, 70, 40);
+    // 生成主/高亮/暗色:有剧本色则由其派生·否则按序号 HSL
+    var mainColor = scColor || hslToRgb(hue, 70, 60);
+    var highlightColor = scColor ? _tmAdjustBrightness(scColor, 1.28) : hslToRgb(hue, 70, 75);
+    var darkColor = scColor ? _tmAdjustBrightness(scColor, 0.62) : hslToRgb(hue, 70, 40);
 
     GM.mapData.factionColors[faction.name] = {
       main: mainColor,
@@ -443,7 +461,7 @@ function assignFactionColors() {
       alpha: 'rgba(' + hexToRgb(mainColor) + ', 0.7)'
     };
 
-    // 同时更新势力对象的颜色（向后兼容）
+    // 势力对象主色(地块填色首选源)·剧本/自动色写入·已有则不覆盖(s.factions 若自带 color 最权威)。
     if (!faction.color) {
       faction.color = mainColor;
     }

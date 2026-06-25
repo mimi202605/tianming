@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 御前会议（密议）真立绘版</title>
+<!--
+  preview / mockup，非运行时代码。御前会议·密召心腹·坦言直陈·可不录。沿真机 tm-chaoyi-yuqian.js (_yq2)：
+    · 屏退宫人(内侍宫娥尽皆屏退) → 帝出疑问 → 逐人问对 → 单独深言 → 决断与保密
+    · 心腹：忠≥50·按机密适合度(忠+品)排·预选4·至多8；坦白度 candor=忠×.5+(100-诈)×.3+20 → 推心置腹>80 / 大致坦言>50 / 揣摩圣意
+    · 排斥：有资格未被召的重臣 忠-3(心有芥蒂)
+    · 记录：📜记起居注 / 🤐不录(密议·泄密则成大丑闻)
+    · 8类议题：🗡️诛戮/👑托孤废立/🎯军机/🎭罢相/🏯宫禁/💼人事/🕵️密谋/❓其他；决断：准行/驳否/再议/自定
+    · 区别于常朝(全体公开)/廷议(精英公辩)/问对(1人)——此为密室小范围·坦言·保密
+  · 真立绘。气质=烛火密室·暗调。样例：崇祯密议诛魏忠贤(诛戮·不录·史实题材演示)。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cdab63; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#4e4329;
+  --ivory:#efe6d4; --ink:#ccc1ad;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --vermillion:#cf5042;
+  --celadon:#a9d18e; --celadon-dim:#6f9a5f; --candle:#e8a850; --guard:#8f8676;
+  --hair:rgba(207,173,101,.17); --hair-br:rgba(240,213,151,.26);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 14px 40px;
+  background:radial-gradient(1000px 480px at 50% -8%,rgba(180,120,50,.05),transparent 60%),linear-gradient(180deg,#0f0c08,#0a0805 60%,#070504);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.intro{font-size:12px;color:var(--gold-dim);letter-spacing:.04em;text-align:center;line-height:1.8;max-width:1120px}.intro b{color:var(--gold-br);font-weight:400}
+
+.stage{width:1280px;max-width:97vw;height:744px;display:flex;flex-direction:column;overflow:hidden;border-radius:5px;border:1px solid rgba(207,173,101,.26);
+  background:linear-gradient(180deg,rgba(180,120,50,.04),transparent 8%),linear-gradient(178deg,#16110a,#100b07 55%,#080604);box-shadow:inset 0 1px 0 var(--hair-br),0 30px 80px rgba(0,0,0,.8);}
+
+.dlg-head{display:flex;align-items:center;gap:13px;padding:11px 18px;border-bottom:1px solid var(--hair);background:linear-gradient(180deg,rgba(120,40,20,.1),transparent)}
+.dlg-seal{width:40px;height:40px;flex:none;border-radius:4px;display:grid;place-items:center;font-size:22px;font-family:"Ma Shan Zheng",serif;color:#fdf3da;border:1.4px solid var(--gold-br);background:radial-gradient(125% 125% at 30% 22%,#2a2018,#160f08);box-shadow:inset 0 0 0 1px rgba(247,228,180,.22),0 0 12px rgba(232,168,80,.25)}
+.dlg-title{font-size:23px;letter-spacing:.12em;background:linear-gradient(120deg,#f6eccf,#e0bf7a 50%,#b08840);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dlg-topic{font-size:12.5px;color:var(--gold-mid);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.05em;padding:3px 10px;border:1px solid var(--gold-faint);border-radius:2px;background:linear-gradient(180deg,#1c150d,#120c07)}
+.dlg-topic b{color:var(--gold-br);font-weight:400}
+.ttype{font-size:12px;font-family:"ZCOOL XiaoWei",serif;color:#e08a6a;padding:3px 9px;border:1px solid rgba(193,64,52,.4);border-radius:2px;background:rgba(118,25,15,.18)}
+.norec{margin-left:auto;font-size:12px;font-family:"ZCOOL XiaoWei",serif;color:var(--vermillion);letter-spacing:.06em;padding:3px 11px;border:1px solid rgba(207,80,66,.45);border-radius:2px;background:rgba(118,25,15,.2)}
+.dlg-close{flex:none;width:30px;height:30px;border-radius:2px;border:1px solid var(--hair);background:none;color:var(--gold-mid);font-size:16px;cursor:pointer}
+
+.yq-body{flex:1;display:flex;min-height:0}
+/* 左·当前心腹立绘（烛火密室） */
+.actor{flex:0 0 29%;position:relative;display:flex;flex-direction:column;border-right:1px solid var(--hair);
+  background:radial-gradient(70% 44% at 50% 30%,rgba(200,130,50,.16),transparent 60%),linear-gradient(180deg,#140d07,#0a0704)}
+.actor-stage{flex:1;position:relative;overflow:hidden}
+.actor-portrait{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 14%;filter:saturate(.92) contrast(1.05) brightness(.84);
+  -webkit-mask:linear-gradient(180deg,#000 0,#000 55%,rgba(0,0,0,.45) 84%,transparent 100%);mask:linear-gradient(180deg,#000 0,#000 55%,rgba(0,0,0,.45) 84%,transparent 100%);animation:enterStage 1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes enterStage{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+.actor-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(110% 75% at 50% 24%,transparent 42%,rgba(8,5,3,.7) 100%)}
+.candle{position:absolute;top:14px;right:16px;z-index:3;width:8px;height:8px;border-radius:50%;background:#ffd98a;box-shadow:0 0 14px 5px rgba(232,168,80,.6),0 0 30px 10px rgba(232,140,40,.28);animation:flick 2.6s ease-in-out infinite}
+@keyframes flick{0%,100%{opacity:.85;transform:scale(1)}45%{opacity:1;transform:scale(1.12)}70%{opacity:.78;transform:scale(.95)}}
+.actor-tag{position:absolute;top:11px;left:12px;z-index:3;font-size:10px;color:var(--candle);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.06em;padding:3px 8px;border:1px solid var(--gold-faint);border-radius:2px;background:rgba(10,7,4,.74)}
+.actor-plate{position:relative;z-index:3;padding:11px 14px 13px;border-top:1px solid var(--hair);background:linear-gradient(180deg,rgba(5,3,2,.45),rgba(5,3,2,.78))}
+.actor-name{font-size:22px;letter-spacing:.08em;background:linear-gradient(120deg,#f6eccf,#e0bf7a 50%,#b08840);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+.candor-pill{font-size:11px;font-family:"ZCOOL XiaoWei",serif;letter-spacing:.04em;padding:2px 8px;border-radius:2px;margin-left:8px;vertical-align:middle}
+.candor-pill.high{color:var(--celadon);border:1px solid rgba(169,209,142,.5);background:rgba(111,154,95,.14)}
+.candor-pill.mid{color:var(--gold-br);border:1px solid rgba(207,173,101,.45);background:rgba(207,173,101,.1)}
+.candor-pill.low{color:var(--guard);border:1px solid rgba(143,134,118,.4);background:rgba(80,74,64,.14)}
+.actor-sub{font-size:12px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;margin-top:5px;letter-spacing:.04em}
+.candor-meter{margin-top:8px}
+.candor-meter .cl{font-size:10px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;display:flex;justify-content:space-between;margin-bottom:3px}
+.candor-meter .cl b{color:var(--celadon);font-weight:400}
+.candor-meter .bar{height:5px;border-radius:3px;background:#1c140b;box-shadow:inset 0 0 0 .6px var(--gold-faint);overflow:hidden}
+.candor-meter .fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#6f9a5f,var(--celadon))}
+.actor-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.bt{font-family:"ZCOOL XiaoWei",serif;font-size:11.5px;letter-spacing:.03em;padding:5px 10px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#211a0f,#120c07);color:var(--gold-mid);transition:all .15s;white-space:nowrap}
+.bt:hover{border-color:var(--gold);color:var(--gold-br)}.bt.key{color:var(--candle);border-color:rgba(232,168,80,.45)}
+
+/* 右·密议 */
+.yq-main{flex:1;display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,#0f0a06,#0a0705)}
+/* 心腹列 */
+.inner{padding:10px 15px;border-bottom:1px solid var(--hair);background:linear-gradient(180deg,rgba(120,40,20,.06),transparent)}
+.inner-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.inner-h .t{font-family:"Ma Shan Zheng",serif;font-size:14px;letter-spacing:.1em;color:var(--gold-br)}
+.inner-h .sub{font-family:"ZCOOL XiaoWei",serif;font-size:10.5px;color:var(--gold-dim)}
+.confidants{display:flex;gap:9px;flex-wrap:wrap}
+.cf{display:flex;flex-direction:column;align-items:center;gap:3px;width:58px;position:relative}
+.cf .cff{width:46px;height:56px;border-radius:2px;overflow:hidden;border:1px solid var(--gold-faint);background:#0d0905}
+.cf .cff img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;filter:saturate(.85) brightness(.8)}
+.cf .cfn{font-family:"Ma Shan Zheng",serif;font-size:11px;color:var(--ink);letter-spacing:.04em}
+.cf .cfc{font-family:"ZCOOL XiaoWei",serif;font-size:8.5px;white-space:nowrap}
+.cf.high .cfc{color:var(--celadon)}.cf.mid .cfc{color:var(--gold-mid)}.cf.low .cfc{color:var(--guard)}
+.cf.on .cff{border-color:var(--candle);box-shadow:0 0 0 1px var(--candle),0 0 11px rgba(232,168,80,.45)}
+.cf.on .cff img{filter:saturate(1) brightness(1)}
+.cf.on:after{content:"深言";position:absolute;top:-7px;right:-2px;font-size:8px;color:#1c1408;background:var(--candle);font-family:"ZCOOL XiaoWei",serif;padding:0 4px;border-radius:1px}
+.excluded{margin-top:9px;font-family:"ZCOOL XiaoWei",serif;font-size:10.5px;color:var(--guard);letter-spacing:.02em;border-top:1px dashed var(--gold-faint);padding-top:7px}
+.excluded b{color:#b98b6a;font-weight:400}.excluded .pen{color:var(--vermillion)}
+
+/* 密谈流 */
+.flow{flex:1;overflow-y:auto;padding:13px 16px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 6px 14px rgba(0,0,0,.4)}
+.flow::-webkit-scrollbar{width:6px}.flow::-webkit-scrollbar-thumb{background:rgba(207,173,101,.18)}
+.sysline{align-self:center;font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);letter-spacing:.14em;text-align:center;font-style:italic}
+.msg{display:flex;gap:10px;max-width:90%}
+.msg.adv{align-self:flex-start}.msg.emp{align-self:flex-end;flex-direction:row-reverse}
+.msg-av{flex:none;width:36px;height:44px;border-radius:2px;overflow:hidden;background:#0d0905;margin-top:22px;border:1px solid var(--gold-faint)}
+.msg-av img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;filter:brightness(.85)}
+.msg-av.emp-av{display:grid;place-items:center;font-family:"Ma Shan Zheng",serif;color:#fdf3da;font-size:17px;border-color:var(--gold-br);background:radial-gradient(120% 120% at 30% 22%,#2a2018,#140d07)}
+.msg-col{display:flex;flex-direction:column;min-width:0}
+.msg-name{font-size:12.5px;font-family:"Ma Shan Zheng",serif;letter-spacing:.05em;margin-bottom:4px;display:flex;align-items:baseline;gap:7px;color:var(--gold)}
+.msg.emp .msg-name{justify-content:flex-end;color:var(--gold-br)}
+.msg-name .cand{font-size:9px;font-family:"ZCOOL XiaoWei",serif;padding:0 5px;border-radius:2px}
+.cand.high{color:var(--celadon);border:1px solid rgba(169,209,142,.4)}.cand.mid{color:var(--gold-mid);border:1px solid var(--gold-faint)}.cand.low{color:var(--guard);border:1px solid rgba(143,134,118,.4)}
+.bubble{padding:10px 14px;font-size:14px;line-height:1.82;color:var(--ink);border-radius:3px 11px 11px 11px;border:1px solid rgba(207,173,101,.18);background:linear-gradient(180deg,#1c1610,#15100a)}
+.msg.emp .bubble{border-radius:11px 3px 11px 11px;color:#fdf1da;border-color:rgba(240,213,151,.34);background:linear-gradient(178deg,#33200f,#23130a)}
+.msg.adv.guard .bubble{border-color:rgba(143,134,118,.26);font-style:italic;color:var(--guard)}
+
+/* 决断 footer */
+.decide{border-top:1px solid var(--hair);padding:11px 16px 13px;background:linear-gradient(180deg,rgba(120,40,20,.06),transparent)}
+.rec-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.rec-lab{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim)}
+.rec-opt{font-family:"ZCOOL XiaoWei",serif;font-size:12px;padding:4px 11px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1a140c,#100b07);color:var(--gold-dim)}
+.rec-opt.sel.keep{color:var(--gold-br);border-color:rgba(207,173,101,.5);background:rgba(207,173,101,.1)}
+.rec-opt.sel.secret{color:var(--vermillion);border-color:rgba(207,80,66,.5);background:rgba(118,25,15,.2)}
+.leak{margin-left:auto;display:flex;align-items:center;gap:7px;font-family:"ZCOOL XiaoWei",serif;font-size:10.5px;color:var(--gold-dim)}
+.leak .bar{width:84px;height:5px;border-radius:3px;background:#1c140b;box-shadow:inset 0 0 0 .6px var(--gold-faint);overflow:hidden}
+.leak .fill{height:100%;background:linear-gradient(90deg,#7e6d45,var(--vermillion))}
+.leak b{color:var(--vermillion);font-weight:400}
+.dec-btns{display:flex;gap:8px;flex-wrap:wrap}
+.dec-btn{font-family:"Ma Shan Zheng",serif;font-size:15px;letter-spacing:.08em;padding:8px 17px;border-radius:3px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#211a0f,#120c07);color:var(--gold);transition:all .15s}
+.dec-btn:hover{border-color:var(--gold-br);color:var(--gold-br)}
+.dec-btn.xing{color:#1c1408;border-color:var(--gold-br);background:linear-gradient(180deg,#f0d597,#caa258)}
+.dec-btn .h{font-family:"ZCOOL XiaoWei",serif;font-size:9px;opacity:.7;margin-left:3px}
+/* 深言者立绘随发言切换 */
+.actor-portrait{transition:opacity .3s ease}
+.cf{cursor:pointer}
+.msg[data-i]{cursor:pointer}
+.msg[data-i] .bubble{transition:all .15s}
+.msg[data-i].active .bubble{box-shadow:0 0 0 1px var(--candle);border-color:var(--candle)!important}
+.msg[data-i].active .msg-av{border-color:var(--candle)}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1180px;text-align:center;line-height:1.9}.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="intro fang">御前会议 ——「灵魂」=<b>烛火密室</b>·屏退宫人·密召心腹。每人<b>坦白度</b>(推心置腹/大致坦言/揣摩圣意·忠越高越敢直言);<b>录📜/不录🤐</b>(不录则泄密成大丑闻);未被召的重臣<b>心有芥蒂</b>(忠-3)。区别于常朝(全体公开)/廷议(精英公辩)/问对(1人)。</div>
+
+  <div class="stage">
+    <div class="dlg-head">
+      <div class="dlg-seal brush">密</div>
+      <div class="dlg-title brush">御前会议</div>
+      <div class="dlg-topic fang">机密 · <b>诛魏忠贤</b></div>
+      <div class="ttype fang">🗡️ 诛戮</div>
+      <div class="norec fang">🤐 密议不录</div>
+      <button class="dlg-close">✕</button>
+    </div>
+
+    <div class="yq-body">
+      <!-- 左·当前心腹 -->
+      <div class="actor">
+        <div class="actor-stage">
+          <img class="actor-portrait" id="yq-portrait" src="../assets/portraits/tianqi7/钱龙锡.png" alt="钱龙锡">
+          <div class="actor-vig"></div>
+          <span class="candle"></span>
+          <span class="actor-tag fang" id="yq-tag">深言 · 钱龙锡</span>
+        </div>
+        <div class="actor-plate">
+          <div><span class="actor-name brush" id="yq-name">钱龙锡</span><span class="candor-pill high fang" id="yq-pill">推心置腹</span></div>
+          <div class="actor-sub fang" id="yq-sub">礼部尚书 · 东林 · 忠 92 · 野 28</div>
+          <div class="candor-meter">
+            <div class="cl fang">坦白度 <b id="yq-cl">92 · 推心置腹</b></div>
+            <div class="bar"><div class="fill" id="yq-fill" style="width:92%"></div></div>
+          </div>
+          <div class="actor-acts">
+            <button class="bt key">单独深言</button>
+            <button class="bt">令其直陈</button>
+            <button class="bt">屏退此人</button>
+            <button class="bt">入决断 ▾</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右·密议 -->
+      <div class="yq-main">
+        <div class="inner">
+          <div class="inner-h"><span class="t brush">召入心腹</span><span class="sub fang">5 员 · 忠诚+品级择 · 至多 8</span></div>
+          <div class="confidants" id="confidants"></div>
+          <div class="excluded fang" id="excluded"></div>
+        </div>
+
+        <div class="flow" id="flow">
+          <div class="sysline">（陛下入御书房。内侍、宫娥尽皆屏退。）</div>
+          <div class="msg emp"><div class="msg-av emp-av brush">朕</div><div class="msg-col"><div class="msg-name">今上</div><div class="bubble">魏阉势倾中外，党羽遍布六部台省。朕欲除之，又恐其狗急反噬、激成大变。卿等以为——可乎？当如何措置？</div></div></div>
+          <div class="msg adv" data-i="0" onclick="yqSpeaker(0)"><div class="msg-av"><img src="../assets/portraits/tianqi7/钱龙锡.png"></div><div class="msg-col"><div class="msg-name">钱龙锡 <span class="cand high">推心置腹</span></div><div class="bubble">陛下既屏退左右，臣便剖肝沥胆——魏阉之横，根在司礼监批红之权。今陛下已收其柄，彼已成强弩之末。当先散其党、孤其势，徐徐图之，一击可缚。臣愿以死任之！</div></div></div>
+          <div class="msg adv" data-i="1" onclick="yqSpeaker(1)"><div class="msg-av"><img src="../assets/portraits/tianqi7/成基命.png"></div><div class="msg-col"><div class="msg-name">成基命 <span class="cand high">推心置腹</span></div><div class="bubble">钱公所言极是。然崔呈秀握兵部、田尔耕掌锦衣卫，此二爪牙不去，恐生肘腋之变。宜先以恩调其要害，夺其兵权，而后动魏。</div></div></div>
+          <div class="msg adv" data-i="2" onclick="yqSpeaker(2)"><div class="msg-av"><img src="../assets/portraits/tianqi7/李标.png"></div><div class="msg-col"><div class="msg-name">李标 <span class="cand mid">大致坦言</span></div><div class="bubble">臣附二公之议。惟事关重大，乞陛下密之又密——今日御书房之言，断不可泄于外廷。一字漏出，则前功尽弃，反受其噬。</div></div></div>
+          <div class="msg adv guard" data-i="3" onclick="yqSpeaker(3)"><div class="msg-av"><img src="../assets/portraits/tianqi7/王在晋.png"></div><div class="msg-col"><div class="msg-name">王在晋 <span class="cand low">揣摩圣意</span></div><div class="bubble">（似有顾虑，言辞含糊）此……全凭陛下圣裁。臣愚钝，不敢妄议中官之事……</div></div></div>
+          <div class="sysline">（可单独深言以探其真章 · 待陛下决断）</div>
+        </div>
+
+        <div class="decide">
+          <div class="rec-row">
+            <span class="rec-lab fang">起居注</span>
+            <span class="rec-opt keep fang">📜 记起居注</span>
+            <span class="rec-opt sel secret fang">🤐 不录（密议）</span>
+            <span class="leak fang">泄密风险 <div class="bar"><div class="fill" style="width:22%"></div></div> <b>低</b> · 王在晋存疑</span>
+          </div>
+          <div class="dec-btns">
+            <button class="dec-btn xing brush">准行<span class="h fang">依议·缚魏</span></button>
+            <button class="dec-btn brush">驳否<span class="h fang">罢此议</span></button>
+            <button class="dec-btn brush">再议<span class="h fang">留待</span></button>
+            <button class="dec-btn brush">自定<span class="h fang">另降密旨</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap fang">御前会议（沿 tm-chaoyi-yuqian.js _yq2）。<b>烛火密室</b>·屏退宫人。<b>心腹列</b>:真头像 + 坦白度(推心置腹青/大致坦言金/揣摩圣意灰·忠越高越敢直言)·当前深言者高亮;<b>排斥</b>未召重臣标「心有芥蒂 忠-3」。<b>密谈流</b>:帝出疑问→逐人问对(坦白度前缀·王在晋揣摩圣意言辞含糊)。<b>决断</b>:📜记/🤐不录(泄密风险条)+ 准行/驳否/再议/自定。落地仍只动样式与渲染。</div>
+
+  <script>
+  (function(){
+    var P = '../assets/portraits/tianqi7/';
+    function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    // 心腹（忠+品排·坦白度档）
+    var conf = [
+      {n:'钱龙锡', lv:'high', c:'推心置腹', loy:92, on:true},
+      {n:'成基命', lv:'high', c:'推心置腹', loy:88},
+      {n:'李标',   lv:'mid',  c:'大致坦言', loy:78},
+      {n:'韩爌',   lv:'mid',  c:'大致坦言', loy:75},
+      {n:'王在晋', lv:'low',  c:'揣摩圣意', loy:62}
+    ];
+    document.getElementById('confidants').innerHTML = conf.map(function(p){
+      return '<div class="cf '+p.lv+(p.on?' on':'')+'" data-name="'+esc(p.n)+'" onclick="yqPick(\''+esc(p.n)+'\')"><div class="cff"><img src="'+P+esc(p.n)+'.png" loading="lazy" onerror="this.style.display=\'none\'"></div>'
+        + '<div class="cfn brush">'+esc(p.n)+'</div><div class="cfc">'+p.c+'·忠'+p.loy+'</div></div>';
+    }).join('');
+    // 排斥（有资格未被召）
+    document.getElementById('excluded').innerHTML = '屏退在外 · 未召之重臣：<b>温体仁</b>、<b>周延儒</b> <span class="pen">（心有芥蒂 · 忠 -3）</span>';
+
+    // ── 深言者立绘随发言切换（谁发言则谁立绘·坦白度联动） ──
+    var advisors = [
+      { name:'钱龙锡', cls:'high', lvl:'推心置腹', cand:92, sub:'礼部尚书 · 东林 · 忠 92 · 野 28' },
+      { name:'成基命', cls:'high', lvl:'推心置腹', cand:88, sub:'礼部右侍郎 · 东林 · 忠 88 · 野 30' },
+      { name:'李标',   cls:'mid',  lvl:'大致坦言', cand:74, sub:'吏部左侍郎 · 东林 · 忠 78 · 野 26' },
+      { name:'王在晋', cls:'low',  lvl:'揣摩圣意', cand:48, sub:'兵部尚书 · 忠 62 · 野 55' }
+    ];
+    var _auto = true;
+    function _hiCf(name){ Array.prototype.forEach.call(document.querySelectorAll('.cf'), function(el){ el.classList.toggle('on', el.getAttribute('data-name')===name); }); }
+    function _setAdv(name, cls, lvl, cand, sub){
+      var img=document.getElementById('yq-portrait'); if(img){ img.src=P+esc(name)+'.png'; img.alt=name; }
+      var tag=document.getElementById('yq-tag'); if(tag) tag.textContent='深言 · '+name;
+      var nm=document.getElementById('yq-name'); if(nm) nm.textContent=name;
+      var pl=document.getElementById('yq-pill'); if(pl){ pl.textContent=lvl; pl.className='candor-pill '+cls+' fang'; }
+      var sb=document.getElementById('yq-sub'); if(sb) sb.textContent=sub;
+      var cl=document.getElementById('yq-cl'); if(cl) cl.textContent=cand+' · '+lvl;
+      var fl=document.getElementById('yq-fill'); if(fl) fl.style.width=cand+'%';
+      _hiCf(name);
+    }
+    window.yqSpeaker = function(i){
+      var a=advisors[i]; if(!a) return; _setAdv(a.name,a.cls,a.lvl,a.cand,a.sub);
+      Array.prototype.forEach.call(document.querySelectorAll('.msg[data-i]'), function(el){ el.classList.toggle('active', +el.getAttribute('data-i')===i); });
+    };
+    window.yqPick = function(name){
+      _auto = false;
+      for(var i=0;i<advisors.length;i++){ if(advisors[i].name===name){ window.yqSpeaker(i); return; } }
+      var c=null; conf.forEach(function(p){ if(p.n===name) c=p; }); if(!c) return;
+      var cand = c.lv==='high'?90:c.lv==='mid'?72:48;
+      _setAdv(name, c.lv, c.c, cand, '心腹 · 忠 '+c.loy+' · '+c.c);
+      Array.prototype.forEach.call(document.querySelectorAll('.msg[data-i]'), function(el){ el.classList.remove('active'); });
+    };
+    window.yqStopAuto = function(){ _auto = false; };
+    window.yqSpeaker(0);
+    var _yi=0, _yt=setInterval(function(){ if(!_auto){clearInterval(_yt);return;} _yi++; if(_yi>=advisors.length){clearInterval(_yt);return;} window.yqSpeaker(_yi); }, 1700);
+  })();
+  </script>
+</body>
+</html>

@@ -1625,6 +1625,7 @@
     it('PipelineSteps 注册 6 个 step', function(){
       expect(TM.Endturn.PipelineSteps).toBeDefined();
       expect(Array.isArray(TM.Endturn.PipelineSteps.list)).toBeTruthy();
+      // audit §4 六段规范·子系统(军工/御驾亲征等)折进对应 step 内·不另起顶层 step·见 docs/endturn-data-flow.md §4
       expect(TM.Endturn.PipelineSteps.list.length).toBe(6);
     });
     it('6 step name 与 audit §4 切分一致', function(){

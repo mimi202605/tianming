@@ -324,6 +324,8 @@ function _prepareGMForSave() {
   if (GM._varFormulas && GM._varFormulas.length > 0) GM._savedVarFormulas = _safeClone(GM._varFormulas);
   if (GM._foreshadows) GM._savedForeshadows = _safeClone(GM._foreshadows);
   if (GM._aiMemory) GM._savedAiMemory = _safeClone(GM._aiMemory);
+  if (GM._sagaMemory) GM._savedSagaMemory = _safeClone(GM._sagaMemory);  // agent 多回合综合脉络·跨会话持久
+  if (GM._agentRecentDirectives) GM._savedAgentRecentDirectives = _safeClone(GM._agentRecentDirectives);  // agent 近回合诏书/行止·多回合读·持久(与 LLM 规则库 _playerDirectives 分开·避免冲突)
   // R103·对话完整归档（被截断/压缩的老对话原文）
   if (GM._convArchive && GM._convArchive.length > 0) GM._savedConvArchive = _safeClone(GM._convArchive);
   // 矛盾演化系统
@@ -604,6 +606,8 @@ function _restoreSavedFields() {
   if (GM._savedVarFormulas) { GM._varFormulas = GM._savedVarFormulas; delete GM._savedVarFormulas; }
   if (GM._savedForeshadows) { GM._foreshadows = GM._savedForeshadows; delete GM._savedForeshadows; }
   if (GM._savedAiMemory) { GM._aiMemory = GM._savedAiMemory; delete GM._savedAiMemory; }
+  if (GM._savedSagaMemory) { GM._sagaMemory = GM._savedSagaMemory; delete GM._savedSagaMemory; }  // agent 多回合综合脉络
+  if (GM._savedAgentRecentDirectives) { GM._agentRecentDirectives = GM._savedAgentRecentDirectives; delete GM._savedAgentRecentDirectives; }  // agent 近回合诏书/行止(与 LLM 规则库 _playerDirectives 分开)
   // R103·对话完整归档恢复
   if (GM._savedConvArchive) { GM._convArchive = GM._savedConvArchive; delete GM._savedConvArchive; }
   if (GM._savedTrend) { GM._currentTrend = GM._savedTrend; delete GM._savedTrend; }

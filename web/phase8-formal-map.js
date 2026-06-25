@@ -2410,6 +2410,8 @@
       fiscal.retainedBudget = vitals.fiscal.retainedBudget;
       data.taxRevenue = vitals.fiscal.actualRevenue;
     }
+    // P1-B3b·省级耕地=子府和(farmland 父覆盖·vitals 已 Σ叶·像 P0-2 fiscal·父节点用聚合值·叶级保持自身)·economy 是 :2291 clone·:2446 赋 data.economyBase
+    if (_isFiscalParent && vitals.farmland > 0) economy.farmland = vitals.farmland;
     var minxin = firstValue(
       vitals.minxin,
       liveStats && liveStats.minxin, liveStats && liveStats.mood, liveStats && liveStats.stability,
@@ -2969,15 +2971,20 @@
     var labels = bw ? bw.fxLabels(bld, typeDef) : [];
     var doing = bld.status === 'building';
     var neglected = bld.status === 'neglected';
+    var damaged = bld.status === 'damaged';   // S6·半损态
+    var ledger = (bw && bw.buildingLedger && !doing && !bld._proposal) ? bw.buildingLedger(bld, typeDef) : null;   // S7·实入账(完工/半损卡显真贡献)
     var total = Number(bld.timeActual) || Number(typeDef && typeDef.buildTime) || Math.max(1, Number(bld.remainingTurns) || 1);
     var prog = doing ? Math.round(Math.max(0, Math.min(1, (total - (Number(bld.remainingTurns) || 0)) / total)) * 100) : 100;
-    var stCls = doing ? 'doing' : (neglected ? 'ni' : 'done');
-    var stTxt = doing ? '工 役 中' : (neglected ? '失 修' : '完 好');
+    var stCls = doing ? 'doing' : (neglected ? 'ni' : (damaged ? 'ni' : 'done'));
+    var stTxt = doing ? '工 役 中' : (neglected ? '失 修' : (damaged ? '半 损' : '完 好'));
     return '<div class="bk-ye' + (bld._proposal ? ' nijian' : '') + '">' +
       '<div class="ye-hd"><b>' + esc(bld.name) + '</b><span class="lv">' + (bld._proposal ? '候 诏' : esc((bld.isCustom ? '自拟 · ' : '') + (bld.level || 1) + ' 级')) + '</span><span class="st ' + stCls + '">' + (bld._proposal ? '候 诏' : stTxt) + '</span></div>' +
       (hasDisplayValue(bld.description) ? '<p>' + esc(compactText ? compactText(bld.description, 90) : String(bld.description).slice(0, 90)) + '</p>' : '') +
       (hasDisplayValue(bld.judgedEffects) && !labels.length ? '<p>' + esc(String(bld.judgedEffects).slice(0, 90)) + '</p>' : '') +
       (labels.length ? '<div class="fx">' + labels.map(function(x, i){ return '<em class="' + (i === labels.length - 1 && /维护/.test(x) ? 'cost' : '') + '">' + esc(x) + '</em>'; }).join('') + '</div>' : '') +
+      // S7·营造可观测账：完工/半损卡显「实入账」(真为本地所添·非 per-level 规则) + 工成之利岁入
+      (ledger && ledger.applied && ledger.applied.length ? '<div style="margin-top:4px;font-size:12px;color:#5a4a32;">实入账：' + esc(ledger.applied.join(' · ')) + (ledger.flowPct > 0 ? ' · 岁入 +' + ledger.flowPct + '%/回合' : '') + '</div>' : '') +
+      (damaged ? '<div style="margin-top:3px;font-size:12px;color:#9a3a2a;">半损 · 效用减半 · 库银可支半费则葺治复完</div>' : '') +
       (doing ? '<div class="gq"><div class="gq-bar"><i style="width:' + prog + '%"></i></div><em>余 ' + esc(bld.remainingTurns) + ' 回合</em></div>' : '') +
       '</div>';
   }
@@ -3048,8 +3055,8 @@
       bkRow('承载上限', data.carryingCapacity),
       bkRow('保甲', data.baojia),
       bkRow('繁荣', firstValue(data.prosperity, r && r.prosperity), null, 'prosperity'),
-      bkRow('财富', data.wealth),
-      bkRow('发展', data.development),
+      (hasDisplayValue(data.wealth) && String(data.wealth) !== String(firstValue(data.prosperity, r && r.prosperity)) ? bkRow('财富', data.wealth) : ''),            // P2-2·异于繁荣才显(去重同值·保留异值·不盲删)
+      (hasDisplayValue(data.development) && String(data.development) !== String(firstValue(data.prosperity, r && r.prosperity)) ? bkRow('发展', data.development) : ''),  // P2-2·同上
       bkRow('不稳', data.unrest, 'zhu')
     ]) + bkChips([
       ['性别', data.byGender], ['年龄', data.byAge], ['族群', data.byEthnicity],
@@ -3090,6 +3097,8 @@
       liveArmyHtml ? bkRow('在驻之师', b.army.liveArmyCount + ' 支（驻军数即其合计）') : '',
       bkRow('可募兵源', firstValue(data.militaryRecruits, b.army.recruits), null, 'recruits'),
       bkRow('军压', firstValue(data.armyPressure, r && r.armyPressure), 'zhu'),
+      bkRow('月军费', data.localMilitaryCost, null, 'army'),                                       // P1-A2b·本地养兵月耗(armyPressureEnabled 关→叶无值·自动不渲染)
+      bkRow('净留用', data.retainedNet, (Number(data.retainedNet) < 0 ? 'zhu' : null), 'army'),    // P1-A2b·养兵后净留用·赤字(军费吃穿地方留用)标红
       fortRow ? bkRow('城防', [(b.liveDivision && Number(b.liveDivision.fortLevel) > 0) ? b.liveDivision.fortLevel + ' 档' : '', b.army.fortification].filter(hasDisplayValue).map(ppValue).join(' · '), 'jin', 'fort') : '',  // P0-5: fortLevel 活档优先·删 data.fortification 死重复
       bkRow('主将', firstValue(b.army.liveArmies && b.army.liveArmies[0] && b.army.liveArmies[0].commander, data.commander, b.army.commander)),
       bkRow('边警', firstValue(data.borderRisk, data.warRisk), 'zhu'),

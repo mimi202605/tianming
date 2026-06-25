@@ -16,21 +16,21 @@ function inferDims(text) {
   if (!text || typeof text !== 'string') return null;
   const dims = { boldness:0, compassion:0, rationality:0, greed:0, honor:0, sociability:0, vengefulness:0, energy:0 };
   let hits = 0;
-  if (/勇敢|勇猛|刚直|刚毅|敢言|不畏|无畏|刚强|果敢|敢于|豪侠|忠勇|沉勇|武人/.test(text))     { dims.boldness += 0.4; hits++; }
+  if (/勇敢|勇猛|刚直|刚毅|敢言|不畏|无畏|刚强|果敢|敢于|豪侠|忠勇|沉勇|武人|武勇|善战|骁勇|勇略|勇而|跋扈|彪悍/.test(text))     { dims.boldness += 0.4; hits++; }
   if (/怯懦|畏缩|胆小|怕事|避祸|懦弱|畏怯|软弱|优柔|柔弱/.test(text))                          { dims.boldness -= 0.4; hits++; }
   if (/仁善|仁厚|宽仁|爱民|怜悯|不忍|心慈|恻隐|温顺|温和|和善/.test(text))                     { dims.compassion += 0.4; hits++; }
-  if (/冷酷|冷漠|残忍|严苛|凉薄|薄情|狠辣|刻薄|无情/.test(text))                              { dims.compassion -= 0.4; hits++; }
-  if (/理性|务实|深思|审慎|稳重|冷静|权衡|计虑|计谋|沉稳|老成持重|机变|机敏|有谋|善守|城府|谨慎|识大体|识进退|不喜形色|节俭|聪慧/.test(text)) { dims.rationality += 0.4; hits++; }
-  if (/冲动|偏激|急躁|莽撞|意气|轻率|昏聩|任性/.test(text))                                   { dims.rationality -= 0.4; hits++; }
+  if (/冷酷|冷漠|残忍|严苛|凉薄|薄情|狠辣|刻薄|无情|严酷|冷峻/.test(text))                              { dims.compassion -= 0.4; hits++; }
+  if (/理性|务实|深思|审慎|稳重|冷静|权衡|计虑|计谋|沉稳|老成持重|机变|机敏|有谋|善守|城府|谨慎|识大体|识进退|不喜形色|节俭|聪慧|持重|聪明|精明|深沉|多谋|权术|老成/.test(text)) { dims.rationality += 0.4; hits++; }
+  if (/冲动|偏激|急躁|莽撞|意气|轻率|昏聩|任性|暴躁|脾气暴/.test(text))                                   { dims.rationality -= 0.4; hits++; }
   if (/贪|聚敛|好利|敛财|爱财|图利|逐利|风流/.test(text))                                     { dims.greed += 0.4; hits++; }
-  if (/清廉|淡泊|寡欲|不贪|不慕|安贫|节俭/.test(text))                                        { dims.greed -= 0.4; hits++; }
-  if (/名节|气节|清议|清流|耿介|忠直|刚正|节操|大义|守节|贞节|贞烈|贞静|重然诺|忠诚|忠悃/.test(text)) { dims.honor += 0.5; hits++; }
+  if (/清廉|淡泊|寡欲|不贪|不慕|安贫|节俭|澹泊/.test(text))                                        { dims.greed -= 0.4; hits++; }
+  if (/名节|气节|清议|清流|耿介|忠直|刚正|节操|大义|守节|贞节|贞烈|贞静|重然诺|忠诚|忠悃|清介|义气|有义|忠义|清雅|诚厚|本分|清正/.test(text)) { dims.honor += 0.5; hits++; }
   if (/失节|无耻|附阉|逢迎|苟合|圆滑/.test(text))                                             { dims.honor -= 0.4; hits++; }
   if (/善交|结好|合群|和气|圆通|长袖善舞|好好先生/.test(text))                                { dims.sociability += 0.4; hits++; }
-  if (/孤僻|寡言|不群|独行|孤介|闷葫芦/.test(text))                                           { dims.sociability -= 0.4; hits++; }
-  if (/睚眦必报|记仇|复仇|怀怨|心狭|心狠/.test(text))                                          { dims.vengefulness += 0.5; hits++; }
+  if (/孤僻|寡言|不群|独行|孤介|闷葫芦|傲慢|骄横|孤高/.test(text))                                           { dims.sociability -= 0.4; hits++; }
+  if (/睚眦必报|记仇|复仇|怀怨|心狭|心狠|险毒|阴狠|阴险|不择手段/.test(text))                                          { dims.vengefulness += 0.5; hits++; }
   if (/宽厚|能容|不计前嫌|大度|隐忍|坚韧/.test(text))                                          { dims.vengefulness -= 0.4; hits++; }
-  if (/勤勉|精干|干练|励精|尽心|勤政|敏锐|急切/.test(text))                                    { dims.energy += 0.4; hits++; }
+  if (/勤勉|精干|干练|励精|尽心|勤政|敏锐|急切|任事|事功|激切|激烈|极烈|锐意|性烈/.test(text))                                    { dims.energy += 0.4; hits++; }
   if (/懒散|怠政|拖沓|疏懒|脾性软弱/.test(text))                                              { dims.energy -= 0.4; hits++; }
   return hits > 0 ? dims : null;
 }

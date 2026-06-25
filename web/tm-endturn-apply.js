@@ -784,6 +784,14 @@ inst._imprisonedTurn = GM.turn||0;
 
             if (!_tmNpcLedgerPreflight({ source: 'main_ai:npc_actions', kind: 'npc_action', actor: act.name, behaviorType: act.behaviorType || act.type || 'unknown', type: act.type || act.behaviorType || 'unknown', target: act.target || '', action: act.action || '' }, 'AI NPC行动已阻止')) return;
 
+            // 官制活化 ④B·npc_action → 履职反哺（开 officeDutyStateEnabled·官的本回合行止定性回调其履职度·与才五常基线漂移叠加·关则零回归）
+            try {
+              if (typeof officeFlagOn === 'function' && officeFlagOn('officeDutyStateEnabled') && typeof applyNpcActionToDuty === 'function') {
+                var _dutyBack = applyNpcActionToDuty(GM, act);
+                if (_dutyBack && typeof addEB === 'function') addEB('官制', '履职随行·' + _dutyBack.dept + _dutyBack.pos + '(' + _dutyBack.holder + ')因本回合行止·履职' + (_dutyBack.delta > 0 ? '+' : '') + _dutyBack.delta + '→' + _dutyBack.fulfillment);
+              }
+            } catch (_dutyBackE) {}
+
             // 尝试机械执行（让 AI 的决策产生真实游戏效果）
             var mechanicallyExecuted = false;
 
@@ -1124,6 +1132,10 @@ inst._imprisonedTurn = GM.turn||0;
             if (_isSameLocation(_nlCh.location, _cap)) {
               // 在京 NPC 不应走鸿雁——但 AI 已生成内容·改投奏疏避免内容浪费
               _nlSkipCapital++;
+              // 势力守卫(owner 2026-06)：奏疏=臣→君·仅本朝臣子可转奏疏。敌方/异势力角色(纵在京·如质子/降人/使节)不上奏疏给玩家。
+              if (typeof _memSameFactionAsPlayer === 'function' && !_memSameFactionAsPlayer(_nlCh)) {
+                _dbg('[npc_letters] 在京NPC ' + nl.from + ' 非本朝(' + (_nlCh.faction||'?') + ')·不转奏疏'); return;
+              }
               _dbg('[npc_letters] 在京NPC ' + nl.from + ' 写信·改投奏疏');
               if (!GM.memorials) GM.memorials = [];
               GM.memorials.push({
@@ -5018,9 +5030,14 @@ inst._imprisonedTurn = GM.turn||0;
           var actor = it.actor, desc = it.description || typeInfo;
           var turn = GM.turn;
           var date = typeof getTSText==='function'?getTSText(turn):'';
+          // 势力守卫(owner 2026-06)：弹章/荐表=臣→君奏疏·须本朝臣子。异势力角色不上奏疏给玩家(其私信/通报仍可走鸿雁·见下分支)。
+          // actor 解析为真实角色且非本朝→视为「非本朝臣」;无名职衔(解析为 null)属本朝官·放行。
+          var _actorChDp = (typeof findCharByName==='function') ? findCharByName(actor) : null;
+          var _actorNonCourt = !!(_actorChDp && typeof _memSameFactionAsPlayer === 'function' && !_memSameFactionAsPlayer(_actorChDp));
           // 按 type 分发
           if (it.type === 'impeach' || it.type === 'slander' || it.type === 'expose_secret') {
             // 弹劾/诽谤/揭发 → 奏疏（弹章）
+            if (_actorNonCourt) return; // 异势力不上弹章
             if (!GM.memorials) GM.memorials = [];
             GM.memorials.push({
               id: 'mem_auto_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
@@ -5030,6 +5047,7 @@ inst._imprisonedTurn = GM.turn||0;
             });
           } else if (it.type === 'recommend' || it.type === 'guarantee' || it.type === 'petition_jointly') {
             // 举荐/担保/联名 → 奏疏
+            if (_actorNonCourt) return; // 异势力不上荐表
             if (!GM.memorials) GM.memorials = [];
             GM.memorials.push({
               id: 'mem_auto_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
@@ -5409,7 +5427,34 @@ inst._imprisonedTurn = GM.turn||0;
                 gmEvt.triggered = true;
                 gmEvt.triggeredTurn = GM.turn;
                 gmEvt.triggeredResult = tt.result || '';
-                addEB('\u4E8B\u4EF6', gmEvt.name + '\u5DF2\u89E6\u53D1' + (tt.result ? '\uFF1A' + tt.result : ''));
+                // v0.2\u00B7\u4E8B\u4EF6\u5E76\u5165\u5FA1\u6848\u65F6\u653F:\u88AB AI \u89E6\u53D1\u7684\u7F16\u8F91\u5668\u4E8B\u4EF6\u82E5\u5E26 choices(\u5F85\u73A9\u5BB6\u51B3\u65AD)\u2192 \u8FDB currentIssues \u5FA1\u6848\u65F6\u653F\u00B7\u8BA9\u73A9\u5BB6\u5728\u90A3\u91CC\u6289\u62E9(\u5F00\u5173\u5F00\u00B7\u590D\u7528\u5F00\u5C40\u4E8B\u4EF6 issue \u7ED3\u6784)\u3002
+                //   \u65E0 choices(\u7EAF\u53D9\u4E8B/\u7EAF effect \u4E8B\u4EF6)\u2192 \u8D70\u539F addEB \u4E8B\u4EF6\u680F\u64AD\u62A5(\u8FD1\u4E8B\u901A\u77E5)\u3002\u5F00\u5173\u5173 \u2192 \u5168\u8D70\u539F addEB(\u96F6\u56DE\u5F52)\u3002
+                // 选项来源:choices(开局/史实式·tianqi7 用此)优先·playerChoices(剧本作者玩家选项·{label,consequence})兜底映射→choice 结构。
+                var _evChoices = (Array.isArray(gmEvt.choices) && gmEvt.choices.length) ? gmEvt.choices
+                  : (Array.isArray(gmEvt.playerChoices) && gmEvt.playerChoices.length)
+                    ? gmEvt.playerChoices.map(function(_pc){ return { text: _pc.label || _pc.text || '应对', desc: _pc.consequence || _pc.desc || '', aiHint: _pc.consequence || _pc.aiHint || '' }; })
+                    : null;
+                var _evToIssue = (typeof _eventAdjudicationOn === 'function' && _eventAdjudicationOn() && _evChoices && _evChoices.length);
+                if (_evToIssue) {
+                  if (!Array.isArray(GM.currentIssues)) GM.currentIssues = [];
+                  var _evIid = 'issue_' + (gmEvt.id || gmEvt.name || 'evt');
+                  var _evDup = GM.currentIssues.some(function(i){ return (gmEvt.id && i.sourceEventId === gmEvt.id) || i.id === _evIid; });
+                  if (!_evDup) {
+                    GM.currentIssues.push({
+                      id: _evIid, sourceEventId: gmEvt.id || '',
+                      title: gmEvt.name || '\u4E8B\u4EF6', description: gmEvt.narrative || gmEvt.description || '',
+                      category: gmEvt.importance === '\u5173\u952E' ? '\u5173\u952E\u51B3\u7B56' : '\u8981\u4E8B',
+                      status: 'pending', raisedTurn: GM.turn, raisedDate: GM._gameDate || '',
+                      choices: _evChoices.slice(),
+                      linkedChars: gmEvt.linkedChars || [], linkedFactions: gmEvt.linkedFactions || [],
+                      longTermConsequences: gmEvt.longTermConsequences || null,
+                      historicalNote: gmEvt.historicalNote || ''
+                    });
+                    addEB('\u8981\u52A1', '\u4E8B\u4EF6\u4E34\u5FA1\u6848\uFF1A' + (gmEvt.name || ''));
+                  }
+                } else {
+                  addEB('\u4E8B\u4EF6', gmEvt.name + '\u5DF2\u89E6\u53D1' + (tt.result ? '\uFF1A' + tt.result : ''));
+                }
                 _dbg('[EventTrigger] ' + gmEvt.name);
                 // 连锁事件：如果有chainNext，提示AI关注
                 if (gmEvt.chainNext) {

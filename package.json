@@ -1,6 +1,6 @@
 {
   "name": "tianming",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "天命 AI历史模拟推演",
   "main": "main.js",
   "scripts": {
@@ -21,10 +21,10 @@
   "build": {
     "appId": "com.tianming.history",
     "productName": "天命",
-    "buildVersion": "1.3.3.9",
-    "artifactName": "天命-1.3.3.9-${arch}.${ext}",
+    "buildVersion": "1.3.4.1",
+    "artifactName": "天命-1.3.4.1-${arch}.${ext}",
     "directories": {
-      "output": "E:\\版本\\测试版1.3.3.9"
+      "output": "E:\\版本\\测试版1.3.4.1"
     },
     "publish": [
       {
@@ -49,8 +49,13 @@
       "!web/**/*.bak*",
       "!web/**/*.log",
       "!web/**/*.yml",
-      "!web/preview/**/*verify.png",
       "!web/preview/shots/**/*",
+      "!web/preview/*verify*.png",
+      "!web/.git-defunct-*/**/*",
+      "!web/.git/**/*",
+      "!web/_archive/**/*",
+      "!web/_pw-scratch/**/*",
+      "!web/generated_images/**/*",
       "scenarios/天启七年·九月（官方）.json",
       "scenarios/绍宋·建炎元年八月（官方）.json"
     ],

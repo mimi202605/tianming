@@ -384,6 +384,7 @@ function openWenduiModal(name, mode, prefillMsg) {
   // N4: 问对消耗精力
   if (typeof _spendEnergy === 'function' && !_spendEnergy(5, '问对·' + name)) return;
   _wenduiMode = mode || 'formal';
+  try { _wdSessionShichenBase = Math.floor(Math.random() * 9); } catch(_) { _wdSessionShichenBase = 0; }
   GM.wenduiTarget = name;
   if (!GM.wenduiHistory) GM.wenduiHistory = {};
   if (!GM.wenduiHistory[name]) GM.wenduiHistory[name] = [];
@@ -432,9 +433,16 @@ function openWenduiModal(name, mode, prefillMsg) {
     + '</div>'
     + '<button class="bt bsm wd-modal-close" onclick="closeWenduiModal()">✕</button>'
     + '</div>'
+    // 立绘对话两栏：左立绘舞台 + 右(原 hint/topics/chat/footer)·2026-06 landing
+    + '<div class="wd-modal-body">'
+    + '<div class="wd-actor">'
+    +   '<div class="wd-actor-stage">' + (ch && ch.portrait ? '<img class="wd-actor-img" src="' + escHtml(ch.portrait) + '" alt="">' : '<div class="wd-actor-ph">' + escHtml(String(name||'?').charAt(0)) + '</div>') + '<div class="wd-actor-vig"></div></div>'
+    +   '<div class="wd-actor-plate"><div class="wd-actor-nm">' + escHtml(name) + '</div><div class="wd-actor-rl">' + escHtml(ch ? (ch.officialTitle || ch.title || '') : '') + ' · ' + modeLabel + '</div></div>'
+    + '</div>'
+    + '<div class="wd-main">'
     // 提示 + 情绪指示条
     + '<div class="wd-modal-hint"><span>\u5212\u51FA\u5927\u81E3\u8BF4\u7684\u8BDD\u52A0\u5165\u5EFA\u8BAE\u5E93</span>'
-    + '<span id="wd-emotion-bar" style="margin-left:var(--space-3);font-size:0.7rem;"><span style="color:var(--celadon-400);">\u955C\u5B9A</span> <span id="wd-emotion-dots">\u25CF\u25CF\u25CF\u25CB\u25CB</span> <span style="color:var(--vermillion-400);">\u7D27\u5F20</span></span>'
+    + '<span id="wd-emotion-bar" style="margin-left:var(--space-3);font-size:0.7rem;"><span style="color:var(--celadon-400);">\u955C\u5B9A</span> <span id="wd-emotion-dots" class="wd-emo-track"><i class="wd-emo-mark"></i></span><span style="color:var(--vermillion-400);">\u7D27\u5F20</span></span>'
     + '</div>'
     // 推荐话题
     + '<div id="wd-topics" style="display:flex;gap:4px;flex-wrap:wrap;padding:2px 8px;"></div>'
@@ -456,8 +464,65 @@ function openWenduiModal(name, mode, prefillMsg) {
     + '</div></div>'
     + '<div id="wd-char-counter" style="text-align:right;font-size:var(--text-xs);color:var(--color-foreground-muted);margin-top:2px;">0/5000</div>'
     + '</div>'
+    + '</div>'
+    + '</div>'
     + '</div>';
   document.body.appendChild(modal);
+
+  // 2026-06 faithful landing·重排为预览版式（动作钮入立绘名牌·顶栏=印+朝堂问对+情绪条·保留全部 onclick/id）
+  try {
+    var _hl = modal.querySelector('.wd-modal-header-left');
+    var _ap = modal.querySelector('.wd-actor-plate');
+    if (_hl && _ap) {
+      var _acts = document.createElement('div'); _acts.className = 'wd-actor-acts';
+      while (_hl.firstChild) _acts.appendChild(_hl.firstChild);
+      _ap.appendChild(_acts);
+    }
+    var _hc = modal.querySelector('.wd-modal-header-center');
+    if (_hc) _hc.innerHTML = '<div class="wd-modal-title">' + escHtml(modeLabel) + '</div>';
+    var _hdr = modal.querySelector('.wd-modal-header');
+    if (_hdr && !_hdr.querySelector('.wd-modal-seal')) {
+      var _sd = document.createElement('div'); _sd.className = 'wd-modal-seal';
+      _sd.textContent = (_wenduiMode === 'private') ? '密' : (_wenduiMode === 'cedui') ? '策' : '对';
+      _hdr.insertBefore(_sd, _hdr.firstChild);
+    }
+    var _emo = modal.querySelector('#wd-emotion-bar');
+    if (_emo && _hdr) { _emo.classList.add('wd-modal-emo'); _hdr.insertBefore(_emo, _hdr.querySelector('.wd-modal-close')); }
+    var _hint = modal.querySelector('.wd-modal-hint'); if (_hint) _hint.style.display = 'none';
+    // 话题行移到聊天区下方·footer 之上（对齐预览）
+    var _tp = modal.querySelector('#wd-topics'); var _ft = modal.querySelector('.wd-modal-footer');
+    if (_tp && _ft && _ft.parentNode) _ft.parentNode.insertBefore(_tp, _ft);
+    var _rl = modal.querySelector('.wd-actor-rl');
+    if (_rl && ch && !modal.querySelector('#wd-char-loyalty')) {
+      _rl.innerHTML += ' · <span id="wd-char-loyalty" style="color:' + (ch.loyalty > 70 ? 'var(--green)' : ch.loyalty < 30 ? 'var(--red)' : 'var(--txt-s)') + ';">忠' + (typeof _fmtNum1 === 'function' ? _fmtNum1(ch.loyalty) : ch.loyalty) + '</span>';
+    }
+    // 朝议在列·在朝可召之臣（当前高亮·点击换召）
+    var _actor = modal.querySelector('.wd-actor');
+    if (_actor && typeof GM !== 'undefined' && GM.chars && !_actor.querySelector('.wd-court')) {
+      var _ploc = (typeof _getPlayerLocation === 'function') ? _getPlayerLocation() : '';
+      var _peers = [];
+      for (var _pi = 0; _pi < GM.chars.length && _peers.length < 7; _pi++) {
+        var _c = GM.chars[_pi];
+        if (!_c || _c.name === name || _c.isPlayer || _c.alive === false) continue;
+        if (_c._envoy || _c._imprisoned || _c.imprisoned || _c._exiled || _c._mourning || _c._retired || _c._fled) continue;
+        if (typeof _wdIsPlayerSideChar === 'function' && !_wdIsPlayerSideChar(_c)) continue;
+        var _loc = _c.location || '';
+        var _atCap = !_loc || (typeof _isSameLocation === 'function' && _isSameLocation(_loc, _ploc)) || _loc.indexOf('京师') >= 0;
+        if (!_atCap) continue;
+        _peers.push(_c);
+      }
+      if (_peers.length) {
+        var _figs = '<div class="wd-court-fig on" title="' + escHtml(name) + '">' + (ch && ch.portrait ? '<img src="' + escHtml(ch.portrait) + '">' : '<span style="color:#a98f55">' + escHtml(String(name||'?').charAt(0)) + '</span>') + '<span class="wd-court-nm">' + escHtml(name) + '</span></div>';
+        _peers.forEach(function(_c) {
+          var _pic = _c.portrait ? '<img src="' + escHtml(_c.portrait) + '">' : '<span style="color:#a98f55">' + escHtml(String(_c.name).charAt(0)) + '</span>';
+          _figs += '<div class="wd-court-fig" title="' + escHtml(_c.name) + '" onclick="closeWenduiModal();openWenduiPick(\'' + String(_c.name).replace(/'/g, '') + '\')">' + _pic + '<span class="wd-court-nm">' + escHtml(_c.name) + '</span></div>';
+        });
+        var _strip = document.createElement('div'); _strip.className = 'wd-court';
+        _strip.innerHTML = '<span class="wd-court-lab">在朝</span><div class="wd-court-list">' + _figs + '</div>';
+        _actor.appendChild(_strip);
+      }
+    }
+  } catch(_wdRelayoutErr) { try { window.TM && TM.errors && TM.errors.captureSilent(_wdRelayoutErr, 'wendui-faithful-relayout'); } catch(_) {} }
 
   // 渲染聊天记录
   _wdRenderHistory(name, ch);
@@ -480,7 +545,8 @@ function openWenduiModal(name, mode, prefillMsg) {
     if (GM.activeWars && GM.activeWars.length > 0) _topics.push('\u6218\u4E8B\u8FDB\u5C55');
     // 通用
     if (_topics.length === 0) _topics.push('\u8FD1\u6765\u53EF\u6709\u4EC0\u4E48\u8981\u4E8B');
-    _topicsEl.innerHTML = _topics.slice(0, 5).map(function(t) {
+    ['边境军情如何', '官员考课情况', '对当前局势有何看法', '近来朝中可有要事'].forEach(function(_t) { if (_topics.indexOf(_t) < 0 && _topics.length < 4) _topics.push(_t); });
+    _topicsEl.innerHTML = _topics.slice(0, 4).map(function(t) {
       return '<button class="bt bsm" style="font-size:0.7rem;padding:1px 6px;color:var(--gold-400);border-color:var(--gold-500);" onclick="var i=_$(\'wd-modal-input\');if(i){i.value=\'' + t.replace(/'/g, '') + '\';i.focus();_wdUpdateCounter();}">' + t + '</button>';
     }).join('');
   }
@@ -1023,6 +1089,7 @@ async function _wdNpcInitiateSpeak(name) {
   try {
     // 构建NPC主动开场的prompt
     var sysP = _wdBuildPrompt(ch, name);
+    if (!ch._envoy && typeof _sovereignLanguagePromptLine === 'function') sysP = _sovereignLanguagePromptLine(typeof GM !== 'undefined' ? GM : null) + sysP;
     if (ch._envoy) {
       // 外藩使节：不走本朝官员的情绪分支，而是以外交使命为主
       sysP += '\n\n【特殊：外藩使节入朝陈事】';
@@ -1515,12 +1582,16 @@ function _wdUpdateEmotionBar(name) {
   var dots = _$('wd-emotion-dots');
   if (!dots) return;
   var e = Math.max(1, Math.min(5, state.emotion));
-  var filled = '', empty = '';
-  for (var i = 0; i < e; i++) filled += '\u25CF';
-  for (var j = e; j < 5; j++) empty += '\u25CB';
-  dots.innerHTML = '<span style="color:var(--celadon-400);">' + filled.slice(0, Math.max(0, 3-e+1)) + '</span>'
-    + '<span style="color:var(--color-foreground-muted);">' + filled.slice(Math.max(0, 3-e+1)) + empty.slice(0, Math.max(0, 3-e)) + '</span>'
-    + '<span style="color:var(--vermillion-400);">' + empty.slice(Math.max(0, 3-e)) + '</span>';
+  var mark = dots.querySelector ? dots.querySelector('.wd-emo-mark') : null;
+  if (mark) {
+    // \u60C5\u7EEA 1(\u955C\u5B9A)\u21925(\u7D27\u5F20)\u00B7\u6ED1\u5757\u6CBF\u9752\u2194\u6731\u8F68\u79FB\u52A8
+    mark.style.left = Math.round((e - 1) / 4 * 100) + '%';
+  } else {
+    var filled = '', empty = '';
+    for (var i = 0; i < e; i++) filled += '\u25CF';
+    for (var j = e; j < 5; j++) empty += '\u25CB';
+    dots.textContent = filled + empty;
+  }
 }
 
 function closeWenduiModal() {
@@ -1747,6 +1818,13 @@ function _wdRenderHistory(name, ch) {
   chat.scrollTop = chat.scrollHeight;
 }
 
+// 时辰戳·每次问对随机起始时辰（会话内固定推进·会话间不同）
+var _wdSessionShichenBase = 0;
+function _wdShichen(i) {
+  var t = ['辰初', '辰初一刻', '辰初二刻', '辰初三刻', '辰正', '辰正一刻', '辰正二刻', '巳初', '巳初一刻', '巳初二刻', '巳正', '巳正二刻', '午初', '午正', '未初', '未正'];
+  var idx = _wdSessionShichenBase + (i | 0);
+  return t[Math.min(Math.max(0, idx), t.length - 1)];
+}
 function _wdAppendNpcBubble(chat, name, ch, text, loyaltyDelta) {
   var div = document.createElement('div');
   div.className = 'wendui-msg wendui-npc';
@@ -1755,15 +1833,17 @@ function _wdAppendNpcBubble(chat, name, ch, text, loyaltyDelta) {
   if (loyaltyDelta && loyaltyDelta > 0) deltaTag = ' <span style="color:var(--green);font-size:0.7rem;">忠+' + _lF(loyaltyDelta) + '</span>';
   else if (loyaltyDelta && loyaltyDelta < 0) deltaTag = ' <span style="color:var(--red);font-size:0.7rem;">忠' + _lF(loyaltyDelta) + '</span>';
   var _portrait = ch && ch.portrait ? '<img src="'+escHtml(ch.portrait)+'" loading="lazy" decoding="async" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0;">' : '';
+  var _ts = (typeof _wdShichen === 'function') ? _wdShichen(chat.children.length) : '';
   div.innerHTML = _portrait + '<div style="flex:1;min-width:0;"><div class="wendui-npc-name">' + escHtml(name) + deltaTag + '</div>'
-    + '<div class="wendui-npc-bubble wd-selectable">' + escHtml(text) + '</div></div>';
+    + '<div class="wendui-npc-bubble wd-selectable">' + escHtml(text) + '<span class="wd-ts">' + _ts + '</span></div></div>';
   chat.appendChild(div);
 }
 
 function _wdAppendPlayerBubble(chat, text) {
   var div = document.createElement('div');
   div.className = 'wendui-msg wendui-player';
-  div.innerHTML = '<div class="wendui-player-bubble">' + escHtml(text) + '</div>';
+  var _ts = (typeof _wdShichen === 'function') ? _wdShichen(chat.children.length) : '';
+  div.innerHTML = '<div class="wendui-player-col"><div class="wendui-emp-name">御笔</div><div class="wendui-player-bubble">' + escHtml(text) + '<span class="wd-ts">' + _ts + '</span></div></div><div class="wd-emp-av">御</div>';
   chat.appendChild(div);
 }
 
@@ -1920,6 +2000,7 @@ async function sendWendui(){
 
     try{
       var sysP = _wdBuildPrompt(ch, name);
+      if (!ch._envoy && typeof _sovereignLanguagePromptLine === 'function') sysP = _sovereignLanguagePromptLine(typeof GM !== 'undefined' ? GM : null) + sysP;
       // L4·a·若 mode === 'cedui'·prompt 顶段注入 archetype voice + paradigm context
       if (_wenduiMode === 'cedui' && typeof _kjpBuildCeduiPromptContext === 'function') {
         try {

@@ -637,6 +637,10 @@ function extractEdictMovements(edictText) {
   if (!knownChars.length) return [];
   var nameAlt = knownChars.map(function(n){return n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|');
 
+  // 即时抵达识别(玩家口谕本回合即抵)：整诏文含"即刻/瞬间/即时/星夜…" + 移动/抵达类词 → 本回合捕获的移动压成即抵·
+  //   供 reconcile honor(mc.instant)·治"挪了也多回合不即到"(与持久规则 _hasInstantArrivalRule 互为兜底·诏文里直说也认)。
+  var _instWhole = /(?:即刻|即时|瞬间|立即|星夜|疾驰|急递|即日|限本回合|限即日|无在途|不在途)/.test(text) && /(?:人事|调动|移动|移驻|抵达|到任|赴任|赴|召|迁|走位|所在地)/.test(text);
+
   var out = [];
   var seen = {};
   function _push(name, to, raw) {
@@ -646,7 +650,8 @@ function extractEdictMovements(edictText) {
     var key = canon + '→' + to;
     if (seen[key]) return;
     seen[key] = 1;
-    out.push({ char: canon, to: to, reason: '诏令移动·' + (raw||'').slice(0,24), raw: raw||'' });
+    var inst = _instWhole || /(?:即刻|即时|瞬间|立即|星夜|疾驰|急递|即日|限本回合)/.test(raw||'');
+    out.push({ char: canon, to: to, reason: '诏令移动·' + (raw||'').slice(0,24), raw: raw||'', instant: inst });
   }
   // 入朝/召见类目的地归一到都城
   function _toCapitalIfCourt(loc) {
@@ -668,6 +673,15 @@ function extractEdictMovements(edictText) {
   while ((m = moveRx.exec(text)) !== null) {
     if (!knownMap[m[1]]) continue;
     _push(m[1], _toCapitalIfCourt(String(m[2]).replace(/[，。、；：].*$/,'')), m[0]);
+  }
+
+  // C·所在地/位置移动(玩家口语:"将X、Y所在地移动到Z" / "把X移到Z")·补 B 漏的"移动"类动词 + 姓名与动词间的"所在地"中插
+  //   (历代顽疾根因之一:moveVerb 无"移动"·且玩家爱用"所在地移动到"这种口语·两条 regex 全 miss → 移动令静默丢失)
+  var relocVerb = '(?:移动|移到|移往|移至|移去|移驻|移居|挪到|挪往|挪移|迁到|迁往|迁至|迁移|调到|调遣|安置|改驻|徙置|搬到|搬往|搬至|遣往|遣去)';  // 显式复合词·不用裸"移/迁"(避免误中 移交/转移/迁安 等)
+  var relocRx = new RegExp('(?:将|把|令|命|着|使|遣|令其|命其)?((?:'+nameAlt+')(?:[、，和及与](?:'+nameAlt+')){0,5})(?:[的之]?(?:所在地|位置|驻地|治所|居所|现居|驻所))?'+relocVerb+'(?:到|至|往|去|入|赴|于)?([一-龥]{2,8})', 'g');
+  while ((m = relocRx.exec(text)) !== null) {
+    var rnames = m[1].split(/[、，和及与]/).filter(Boolean);
+    rnames.forEach(function(nm){ if (knownMap[nm]) _push(nm, _toCapitalIfCourt(String(m[2]).replace(/[，。、；：].*$/,'')), m[0]); });
   }
 
   return out;

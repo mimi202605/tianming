@@ -46,6 +46,15 @@
         properties: { query: { type: 'string', description: '检索的关键词或人物/势力名' } },
         required: ['query']
       }
+    },
+    {
+      name: 'query_office',
+      description: '按官署名/官职/在任者/所掌权力查某衙门详情：在任者(才/德/履职)、所掌权力、职责(duties)、公库。当你的决策涉及具体衙门、要借重/任免/弹劾某官、或评估对手掌权之臣时调用。',
+      parameters: {
+        type: 'object',
+        properties: { query: { type: 'string', description: '官署名/官职/在任者/权力(如"户部""征税""郭某")' } },
+        required: ['query']
+      }
     }
   ];
 
@@ -56,7 +65,8 @@
     review_my_record:  ['lastTurnFailures', 'lastTurnCompliance', 'decisionStyleTrend', 'factionTrajectory'],
     scan_world:        ['recentWorld', 'playerRecent', 'worldStatus'],
     inspect_my_assets: ['ownAdminHierarchy', 'militaryContext', 'fiscalContext'],
-    recall_history:    ['recall']  // 特殊：带 query 参数
+    recall_history:    ['recall'],  // 特殊：带 query 参数
+    query_office:      ['officeQuery']  // 特殊：带 query 参数·官制 agent 化按需取数(queryOfficeDetail·返 duties)
   };
 
   // 调一个注入进来的 formatter·统一兜底(返回字符串·数组→join·异常/缺失→'')
@@ -66,7 +76,7 @@
       var fn = formatters && formatters[key];
       if (typeof fn !== 'function') return '';
       // recall 特殊签名(query, ctx)·其余统一 (fac, ctx)
-      var out = (key === 'recall') ? await fn((input && input.query) || '', ctx) : await fn(ctx.fac, ctx);
+      var out = (key === 'recall' || key === 'officeQuery') ? await fn((input && input.query) || '', ctx) : await fn(ctx.fac, ctx);
       if (out == null) return '';
       return Array.isArray(out) ? out.join('\n') : String(out);
     } catch (e) { return ''; }

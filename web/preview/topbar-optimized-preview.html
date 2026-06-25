@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 顶栏纯美化稿（忠于真·运行时 · 御宝鎏金·素雅 · 全面打磨）</title>
+<!--
+  preview / mockup，非运行时代码。基准=真实游戏 #topbar（旧预览血脉已删，不参与判断）。
+  · 结构/数据逐字对齐运行时：
+      .tb-left  : 红方印「明」(印=问天·无独立问天) + 大明 + 崇祯帝 朱由检 + 时历main「天启七年秋八月壬午日」+ sub「季夏 · 公元 1627 年」
+      .tb-vars  : 帑廪[银50万 -28万 / 粮1263万 -21万 / 布60万 +4万]  内帑[229万 -6万 / 8万 / 27万]  户口[9415万]  吏渐弊(紫) 民48 权75 威70
+      .tb-right : 全部变量
+    （真机时历右侧圆金徽是另一处独立浮层·另有用途·本稿不含。）
+  · 纯 UI 美化：不增信息、不加元素、不改结构。被否的装饰（角花/噪底/量表/月相）不用。
+  · 全面打磨（御宝鎏金·素雅）：细劲宋体数字 × 毛笔中文 ｜ 朱泥浮雕印 ｜ 漆面顶缘金光边+顶光泽 ｜ 暖金色阶 ｜ 内描金官印 ｜ 发丝分隔 ｜ 淡舆图经纬陆块底 ｜ 克制 hover ｜ 载入错峰淡入。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cfad65; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#564a2e;
+  --ivory:#f4eddf; --ivory-2:#e7dcc5;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --crimson:#e6584b;
+  --purple:#bda0e6; --purple-dim:#6e52a4;
+  --amber:#e4a945; --jade:#a9d18e;
+  --hair:rgba(207,173,101,.24); --hair-br:rgba(240,213,151,.34);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);
+  font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:20px;padding:48px 18px 64px;
+  background:
+    radial-gradient(1200px 480px at 50% -10%,rgba(207,173,101,.075),transparent 60%),
+    linear-gradient(180deg,#13100c,#0d0a07 62%,#0a0807);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif;font-weight:400}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.num{font-family:"Songti SC","STSong","SimSun",serif;font-variant-numeric:tabular-nums;letter-spacing:.012em}
+
+.intro{font-size:12.5px;color:var(--gold-dim);letter-spacing:.05em;text-align:center;line-height:1.85}
+.intro b{color:var(--gold-br);font-weight:400}
+
+/* ── 舞台：淡舆图（经纬+陆块）底，三面板浮于其上 ── */
+.stage{width:100%;max-width:1480px;position:relative;padding:17px 22px;border-radius:5px;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 46px,rgba(214,182,108,.032) 46px 47px),
+    repeating-linear-gradient(90deg,transparent 0 46px,rgba(214,182,108,.032) 46px 47px),
+    radial-gradient(44% 96% at 15% 62%,rgba(98,74,44,.44),transparent 66%),
+    radial-gradient(36% 84% at 43% 38%,rgba(84,64,40,.4),transparent 70%),
+    radial-gradient(33% 92% at 71% 66%,rgba(102,76,46,.42),transparent 66%),
+    radial-gradient(26% 76% at 90% 35%,rgba(88,66,42,.34),transparent 70%),
+    radial-gradient(84% 130% at 50% -6%,rgba(152,102,54,.16),transparent 60%),
+    linear-gradient(180deg,#1b140b,#150f08 55%,#100b06);
+  box-shadow:
+    inset 0 0 0 1px rgba(214,182,108,.26),
+    inset 0 0 0 3px rgba(8,6,4,.6),
+    inset 0 0 0 4px rgba(214,182,108,.11),
+    inset 0 0 140px rgba(0,0,0,.5),
+    inset 0 0 46px rgba(120,80,40,.08),
+    0 14px 46px rgba(0,0,0,.5);}
+.map-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:12px;color:#7a6a44;letter-spacing:.6em;text-indent:.6em;opacity:.5;pointer-events:none}
+/* 外框四角描金角隅（舆图框） */
+.scorner{position:absolute;width:22px;height:22px;line-height:0;opacity:.85;pointer-events:none;z-index:3}
+.scorner svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+.scorner.tl{top:7px;left:9px}
+.scorner.tr{top:7px;right:9px;transform:scaleX(-1)}
+.scorner.bl{bottom:7px;left:9px;transform:scaleY(-1)}
+.scorner.br{bottom:7px;right:9px;transform:scale(-1,-1)}
+
+#topbar{position:relative;display:flex;align-items:center;gap:11px;z-index:2}
+
+/* ── 漆器面板：顶部微光泽 + 顶缘金光边 + 柔浮影 ── */
+.panel{position:relative;display:flex;align-items:center;height:58px;border-radius:3px;
+  border:1px solid rgba(207,173,101,.34);
+  background:
+    linear-gradient(180deg,rgba(255,238,205,.07),transparent 20%),
+    linear-gradient(178deg,#241c12 0%,#1a120b 52%,#0e0a06 100%);
+  box-shadow:inset 0 1px 0 rgba(244,219,158,.42),inset 0 -12px 26px rgba(0,0,0,.30),inset 0 0 0 1px rgba(0,0,0,.30),0 10px 30px rgba(0,0,0,.55),0 2px 12px rgba(120,70,30,.13);
+  opacity:0;transform:translateY(7px);animation:rise .52s cubic-bezier(.2,.7,.2,1) forwards;}
+.tb-left{animation-delay:.04s;padding:0 16px;gap:13px}
+.tb-vars{margin-left:auto;animation-delay:.14s;padding:0 5px;gap:0}
+.tb-chip{animation-delay:.2s}
+@keyframes rise{to{opacity:1;transform:none}}
+
+.sep{align-self:center;width:1px;height:58%;margin:0 3px;background:linear-gradient(180deg,transparent,var(--hair) 16%,var(--hair) 84%,transparent)}
+/* 构图优化：右簇按义分组（财赋｜民数｜治理）·组内去线靠留白成一体·组间金线分明 */
+.vgrp{display:flex;align-items:center;height:100%}
+.vgrp .tb-var{padding:0 14px}
+.vgrp .tb-var + .tb-var:before{display:none}   /* 组内不画线（帑廪·内帑 靠名+留白成一体） */
+.gsep{align-self:center;width:1px;height:64%;margin:0 13px;background:linear-gradient(180deg,transparent,rgba(214,182,108,.52) 14%,rgba(214,182,108,.52) 86%,transparent)}
+/* 装饰：四角回纹角花（古典描金角隅纹·精细双钩）—— 框的优化与点缀 */
+.finner{position:absolute;inset:3.5px;border:1px solid rgba(207,173,101,.15);border-radius:2px;pointer-events:none;z-index:1}
+.fdeco{position:absolute;width:12px;height:12px;line-height:0;opacity:.92;pointer-events:none;z-index:3}
+.fdeco svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 1.6px rgba(214,182,108,.4))}
+.fdeco.tl{top:3.5px;left:3.5px}
+.fdeco.tr{top:3.5px;right:3.5px;transform:scaleX(-1)}
+.fdeco.bl{bottom:3.5px;left:3.5px;transform:scaleY(-1)}
+.fdeco.br{bottom:3.5px;right:3.5px;transform:scale(-1,-1)}
+.tb-chip .fdeco{width:10px;height:10px}
+.tb-chip .finner{inset:3px}
+/* 装饰：顶心如意云头描金冠（牌匾题额冠·点破长框单调） */
+.crest{position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:32px;height:12px;line-height:0;opacity:.92;pointer-events:none;z-index:4}
+.crest svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5)) drop-shadow(0 0 1.5px rgba(216,184,106,.4))}
+
+/* ── 左：朱泥浮雕印（=问天）+ 身份 + 时历 ── */
+.tb-seal{position:relative;width:47px;height:47px;flex:none;border-radius:4px;display:grid;place-items:center;cursor:pointer;border:1.5px solid var(--gold-br);
+  background:radial-gradient(38% 30% at 30% 22%,rgba(255,184,152,.5),transparent 62%),radial-gradient(128% 128% at 32% 24%,#c64a3c,#a8312a 44%,#6e1810 100%);
+  box-shadow:inset 0 0 0 1px rgba(247,228,180,.42),inset 0 3px 6px rgba(255,212,172,.28),inset 0 -6px 11px rgba(48,8,6,.6),0 3px 12px rgba(110,28,20,.5);
+  transition:transform .15s ease,box-shadow .2s ease}
+.tb-seal .ch{font-size:30px;color:#fdf3da;line-height:1;text-shadow:0 1px 1px rgba(60,10,6,.7),0 0 2px rgba(255,220,180,.25)}
+.tb-seal:hover{transform:translateY(-1px);box-shadow:inset 0 0 0 1px rgba(247,228,180,.46),inset 0 2px 5px rgba(255,206,160,.28),inset 0 -5px 9px rgba(60,10,8,.5),0 0 0 1px rgba(240,213,151,.42),0 6px 16px rgba(110,28,20,.5)}
+.tb-idtext{display:flex;flex-direction:column;gap:3px}
+.tb-dyn{font-size:23px;line-height:1;letter-spacing:.04em;
+  background:linear-gradient(120deg,#fdf6dd 2%,#f0d597 48%,#c49b4e 96%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.tb-ruler{font-size:11px;color:var(--gold-mid);letter-spacing:.06em;white-space:nowrap}
+.tb-time{display:flex;flex-direction:column;justify-content:center;gap:2px;padding-left:13px;margin-left:2px;border-left:1px solid rgba(94,77,42,.55)}
+.tb-time-main{font-size:18px;color:var(--ivory);line-height:1.12;letter-spacing:.025em;white-space:nowrap}
+.tb-time-main .era{font-size:1.05em;color:#f4d78f;letter-spacing:.05em}
+.tb-time-main .era::after{content:" · ";color:var(--gold-dim);font-weight:400;font-size:.78em}
+.tb-time-sub{font-size:11px;color:var(--gold-dim);letter-spacing:.06em;white-space:nowrap}
+
+/* ── 变量项 ── */
+.tb-var{position:relative;display:flex;flex-direction:column;justify-content:center;height:58px;padding:0 14px;cursor:pointer;white-space:nowrap;transition:background .18s ease}
+.tb-var:hover{background:radial-gradient(135% 90% at 50% 0%,rgba(207,173,101,.10),transparent 76%)}
+.tb-var + .tb-var:before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:1px;background:linear-gradient(180deg,transparent,var(--hair),transparent)}
+.tb-vn{font-size:14px;color:var(--gold);letter-spacing:.13em;margin-bottom:6px;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+
+.accts{display:flex;gap:17px}
+.acct{display:flex;flex-direction:column;gap:2.5px}
+.acct .top{display:flex;align-items:baseline;gap:6px}
+.acct .ico{width:14.5px;height:14.5px;align-self:center;flex:none}
+.acct .val{font-size:15.5px;color:var(--ivory);line-height:1}
+.accts .acct:first-child .val{color:#f9f2e4}        /* 钱为财首·最亮 */
+.accts .acct:not(:first-child) .val{color:#d8cdb6}  /* 粮/布 微敛 */
+.acct .delta{font-size:10px;line-height:1;padding-left:20.5px;letter-spacing:.01em}
+.up{color:var(--jade)}.dn{color:var(--crimson)}.flat{color:var(--gold-dim)}
+
+.hk{align-items:center}
+.hk .val{display:flex;align-items:baseline;gap:3px}
+.hk .v{font-size:19px;color:var(--ivory);line-height:1}
+.hk .ding{font-size:11px;margin-top:4px;letter-spacing:.04em;color:var(--gold-dim)}
+.hk .ding .k{color:var(--gold-mid);margin-right:3px}
+.hk .ding b{color:#dccfb6;font-weight:400}
+.hk .u{font-size:10.5px;color:var(--gold-mid)}
+
+/* ── 四官印（内描金框 + 真伪条）── */
+.seals{display:flex;align-items:center;gap:8px;padding:0 7px}
+.seal-idx{position:relative;width:46px;height:50px;border-radius:2px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1e160a,#100b05);
+  box-shadow:inset 0 1px 0 rgba(240,213,151,.15),inset 0 -2px 4px rgba(0,0,0,.45);
+  transition:transform .14s ease,box-shadow .18s ease,border-color .18s ease}
+.seal-idx::after{content:"";position:absolute;inset:2px;border:.5px solid rgba(207,173,101,.16);border-radius:1px;pointer-events:none}
+.seal-idx:hover{transform:translateY(-1px);border-color:var(--gold-mid);box-shadow:inset 0 1px 0 rgba(240,213,151,.22),0 0 0 1px rgba(240,213,151,.26),0 6px 13px rgba(0,0,0,.42)}
+.seal-idx .pc{font-size:18px;line-height:1;color:var(--gold-br);text-shadow:0 1px 1px rgba(0,0,0,.4)}
+.seal-idx .pv{font-size:11px;line-height:1;color:var(--gold-mid)}
+.pbar{position:relative;width:29px;height:3.5px;margin-top:1.5px;border-radius:2px;background:#241a0d;box-shadow:inset 0 0 0 .6px rgba(86,73,45,.85);overflow:visible}
+.ptrue{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:linear-gradient(90deg,#7c6c3c,#cfad65)}
+.pseen{position:absolute;top:-1.5px;bottom:-1.5px;width:1.5px;border-radius:1px;background:#eaf0f6;box-shadow:0 0 3px rgba(234,240,246,.9)}
+.seal-idx.t-purple{background:linear-gradient(180deg,#241636,#130c20);border-color:var(--purple-dim)}
+.seal-idx.t-purple .pc{color:var(--purple)}
+.seal-idx.t-purple .ptrue{background:linear-gradient(90deg,#5d4396,#bda0e6)}
+.seal-idx.t-amber{background:linear-gradient(180deg,#2b1e08,#170f04);border-color:var(--amber)}
+.seal-idx.t-amber .pc{color:#f3cf7e}
+.seal-idx.t-amber .ptrue{background:linear-gradient(90deg,#8d5d13,#e4a945)}
+.seal-idx.t-red{background:linear-gradient(180deg,#2b100c,#170706);border-color:var(--crimson)}
+.seal-idx.t-red .pc{color:#f48b80}
+.seal-idx.t-red .ptrue{background:linear-gradient(90deg,#7e1f18,#e6584b)}
+
+/* ── 全部变量 chip（加顶部微光泽·hover 金辉浮起）── */
+.tb-chip{align-self:center;height:58px;padding:0 16px;cursor:pointer;border-radius:3px;display:flex;align-items:center;gap:8px;
+  border:1px solid rgba(207,173,101,.32);color:var(--gold);font-size:13px;letter-spacing:.13em;font-family:"ZCOOL XiaoWei",serif;
+  background:linear-gradient(180deg,rgba(255,236,200,.05),transparent 26%),linear-gradient(178deg,#201810,#0d0906);transition:border-color .18s,color .18s,box-shadow .18s}
+.tb-chip .grid{width:15px;height:15px;flex:none;opacity:.85;transition:opacity .18s}
+.tb-chip:hover{border-color:var(--gold-br);color:var(--gold-br);box-shadow:inset 0 1px 0 rgba(240,213,151,.22),0 0 0 1px rgba(240,213,151,.22),0 6px 18px rgba(0,0,0,.45)}
+.tb-chip:hover .grid{opacity:1}
+
+/* ── 细节态①：点击 pinned 高亮（钉住信息栏时·该变量金线/金环常亮）── */
+.tb-var.pinned{background:radial-gradient(135% 95% at 50% 0%,rgba(207,173,101,.13),transparent 78%)}
+.tb-var.pinned::after{content:"";position:absolute;left:12px;right:12px;top:7px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--gold-br) 28%,var(--gold-br) 72%,transparent)}
+.seal-idx.pinned{border-color:var(--gold-br)!important;box-shadow:inset 0 0 0 1px rgba(240,213,151,.3),0 0 0 1px var(--gold-br),0 0 13px rgba(207,173,101,.4)}
+.tb-seal.pinned{box-shadow:inset 0 0 0 1px rgba(247,228,180,.5),0 0 0 1px var(--gold-br),0 0 15px rgba(207,173,101,.45)}
+
+/* ── 细节态②：问天 hover 提示（印玺即问天·悬停浮「叩問天意」签）── */
+.tb-seal::after{content:"叩問天意";position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%) translateY(-4px);
+  font:10px/1 "ZCOOL XiaoWei",serif;letter-spacing:.2em;text-indent:.2em;color:var(--gold-br);white-space:nowrap;
+  padding:4px 9px;border-radius:2px;border:1px solid rgba(207,173,101,.42);background:linear-gradient(178deg,#1e160d,#0e0a06);
+  box-shadow:0 8px 18px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .16s ease,transform .16s ease;z-index:40}
+.tb-seal:hover::after,.tb-seal.pinned::after{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── hover 信息栏（精炼至面板品质：朱泥徽 / 毛笔题 / 细宋体值 / 发丝分行 / 顶缘金光边）── */
+.tip{position:fixed;z-index:50;min-width:240px;max-width:346px;pointer-events:none;opacity:0;
+  border-radius:3px;border:1px solid rgba(207,173,101,.46);
+  background:linear-gradient(180deg,rgba(255,236,200,.05),transparent 14%),linear-gradient(178deg,#1d150d,#0e0a06);
+  box-shadow:inset 0 1px 0 var(--hair-br),0 20px 48px rgba(0,0,0,.66);padding:13px 15px 12px;transition:opacity .14s,transform .14s;transform:translateY(5px)}
+.tip.on{opacity:1;transform:none}
+.tip-h{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.tip-g{width:30px;height:30px;flex:none;border-radius:3px;display:grid;place-items:center;font-size:17px;font-family:"Ma Shan Zheng","STKaiti",serif;color:#fdf3da;
+  background:radial-gradient(125% 125% at 30% 22%,var(--red-hi),var(--red-1) 44%,var(--red-2));border:1.2px solid var(--gold-br);
+  box-shadow:inset 0 0 0 1px rgba(247,228,180,.3),inset 0 -3px 6px rgba(60,10,8,.5)}
+.tip-t{font-size:17px;color:var(--gold-br);line-height:1.08}
+.tip-s{font-size:10.5px;color:var(--gold-dim);margin-top:3px}
+.tip-st{margin-left:auto;align-self:flex-start;font-size:10.5px;padding:2.5px 9px;border-radius:2px;border:.9px solid var(--amber);background:rgba(228,169,69,.1);color:#e8b663}
+.tip-div{height:1px;margin-bottom:4px;background:linear-gradient(90deg,transparent,var(--hair),transparent)}
+.tip-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;font-size:13px;line-height:1;padding:6.5px 1px}
+.tip-row + .tip-row{border-top:1px dashed rgba(207,173,101,.13)}
+.tip-row .k{color:var(--gold-mid);flex:none;letter-spacing:.03em}
+.tip-row .v{color:var(--ivory);text-align:right}
+.tip-note{font-size:11px;color:var(--gold-dim);margin-top:10px;padding-top:8px;border-top:1px solid var(--hair);text-align:right}
+
+/* ── 切换 + 说明 ── */
+.switch{display:flex;gap:8px;align-items:center}
+.switch .l{font-size:12px;color:var(--gold-dim);margin-right:5px}
+.switch button{font-size:18px;width:42px;height:42px;cursor:pointer;border-radius:2px;border:1px solid rgba(207,173,101,.28);background:linear-gradient(180deg,#211a10,#0e0a06);color:var(--gold-mid);transition:all .16s}
+.switch button:hover{border-color:var(--gold)}
+.switch button.on{border-color:var(--gold-br);color:#fdf3da;box-shadow:0 0 0 1px rgba(240,213,151,.3);background:radial-gradient(120% 120% at 30% 22%,#c14034,#76190f)}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1060px;text-align:center;line-height:1.9}
+.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="intro fang">忠于<b>真·运行时</b>（印=问天·无独立问天·真数据）· 纯美化无新增 ——「<b>御宝鎏金·素雅</b>」全面打磨：朱泥浮雕印 · 漆面金光边 · 细宋体数字 · 内描金官印 · 淡舆图底</div>
+  <div class="stage">
+    <i class="scorner tl"><svg viewBox="0 0 26 26" fill="none" stroke="#d8b86a" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 24 V9 Q3 4 8 4 H24"/><path d="M8 24 V13 Q8 10.5 11 10.5 H20"/><circle cx="3" cy="24" r="1.25" fill="#d8b86a" stroke="none"/><circle cx="24" cy="4" r="1.25" fill="#d8b86a" stroke="none"/></svg></i><i class="scorner tr"><svg viewBox="0 0 26 26" fill="none" stroke="#d8b86a" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 24 V9 Q3 4 8 4 H24"/><path d="M8 24 V13 Q8 10.5 11 10.5 H20"/><circle cx="3" cy="24" r="1.25" fill="#d8b86a" stroke="none"/><circle cx="24" cy="4" r="1.25" fill="#d8b86a" stroke="none"/></svg></i><i class="scorner bl"><svg viewBox="0 0 26 26" fill="none" stroke="#d8b86a" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 24 V9 Q3 4 8 4 H24"/><path d="M8 24 V13 Q8 10.5 11 10.5 H20"/><circle cx="3" cy="24" r="1.25" fill="#d8b86a" stroke="none"/><circle cx="24" cy="4" r="1.25" fill="#d8b86a" stroke="none"/></svg></i><i class="scorner br"><svg viewBox="0 0 26 26" fill="none" stroke="#d8b86a" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 24 V9 Q3 4 8 4 H24"/><path d="M8 24 V13 Q8 10.5 11 10.5 H20"/><circle cx="3" cy="24" r="1.25" fill="#d8b86a" stroke="none"/><circle cx="24" cy="4" r="1.25" fill="#d8b86a" stroke="none"/></svg></i>
+    <div class="map-hint fang">中 段 留 空 · 透 出 舆 图</div>
+    <div id="topbar"></div>
+  </div>
+  <div class="switch" id="switch"><span class="l fang">朝代样例</span></div>
+  <div class="cap fang">无新增字段 · 仅精炼视觉。明样例取 <b>天启七年（tianqi7）</b>真实数值。固定文案朝代中立；印玺字 / 年号 / 君主 / 货币单位（明以前 <code>贯</code> · 明及以后 <code>两</code>）/ 历日为数据驱动。</div>
+
+  <div id="tip" class="tip"></div>
+
+<script>
+var ICON={
+  coin:'<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="#dcbb6c" stroke-width="1.4"><circle cx="8" cy="8" r="6.5"/><rect x="5.3" y="5.3" width="5.4" height="5.4" rx="0.5" stroke-width="1.15"/></svg>',
+  grain:'<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="#a9d18e" stroke-width="1.3" stroke-linecap="round"><path d="M8 14.6 V3.5"/><path d="M8 5.7 L4.8 4 M8 5.7 L11.2 4 M8 8.5 L5 6.9 M8 8.5 L11 6.9 M8 11.3 L5.4 9.8 M8 11.3 L10.6 9.8"/><path d="M8 3.5 q1.6 -.2 2.2 -1.5 q-1.6 .1 -2.2 1.5z" fill="#a9d18e" stroke="none"/></svg>',
+  cloth:'<svg class="ico" viewBox="0 0 16 16" fill="none" stroke="#e4a945" stroke-width="1.25"><path d="M2.9 4.2 h10.2 v6.5 q-2.55 2.15 -5.1 0 q-2.55 -2.15 -5.1 0 z"/><path d="M8 4.2 V9.4 M5.4 4.2 V8.2 M10.6 4.2 V8.2" stroke-width="0.75"/></svg>'
+};
+var GRID='<svg class="grid" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.15"><rect x="2.2" y="2.2" width="4.8" height="4.8" rx="0.6"/><rect x="9" y="2.2" width="4.8" height="4.8" rx="0.6"/><rect x="2.2" y="9" width="4.8" height="4.8" rx="0.6"/><rect x="9" y="9" width="4.8" height="4.8" rx="0.6"/></svg>';
+
+var DYN={
+  '明':{seal:'明',dyn:'大明',ruler:'崇祯帝 朱由检',mNoun:'银',unit:'两',era:'天启七年',rest:'秋八月壬午日',tSub:'季夏 · 公元 1627 年'},
+  '宋':{seal:'宋',dyn:'大宋',ruler:'高宗 赵构',mNoun:'钱',unit:'贯',era:'建炎元年',rest:'秋八月初九',tSub:'仲秋 · 公元 1127 年'},
+  '唐':{seal:'唐',dyn:'大唐',ruler:'太宗 李世民',mNoun:'钱',unit:'贯',era:'贞观三年',rest:'春三月初八',tSub:'季春 · 公元 629 年'},
+  '汉':{seal:'汉',dyn:'大汉',ruler:'武帝 刘彻',mNoun:'铜',unit:'钱',era:'元狩四年',rest:'夏五月丁卯',tSub:'仲夏 · 公元前 119 年'},
+  '秦':{seal:'秦',dyn:'大秦',ruler:'始皇 嬴政',mNoun:'铜',unit:'半两',era:'始皇廿六年',rest:'冬十月',tSub:'孟冬 · 公元前 221 年'}
+};
+var cur='明';
+
+function vitals(){
+  return {
+    guoku:{name:'帑廪',glyph:'帑',accts:[{ico:'coin',v:'50万',d:'-28万',dc:'dn'},{ico:'grain',v:'1,263万',d:'-21万',dc:'dn'},{ico:'cloth',v:'60万',d:'+4万',dc:'up'}],
+      tip:{title:'帑廪',sub:'国库 · 三账',glyph:'帑',state:'紧 · 不足两成',rows:[['银','50万'],['粮','1,263万'],['布','60万'],['月入','142万'],['月支','180万']],note:'点击 / 右键 → 帑廪详情'}},
+    neitang:{name:'内帑',glyph:'内',accts:[{ico:'coin',v:'229万',d:'-6万',dc:'dn'},{ico:'grain',v:'8万',d:'±0',dc:'flat'},{ico:'cloth',v:'27万',d:'±0',dc:'flat'}],
+      tip:{title:'内帑',sub:'皇室私库 · 三账',glyph:'内',state:'充裕',rows:[['银','229万'],['粮','8万'],['布','27万'],['月入','22万'],['月支','18万']],note:'点击 / 右键 → 内帑详情'}},
+    hukou:{name:'户口',glyph:'户',v:'9,415',u:'万口',ding:'2,447万',
+      tip:{title:'在籍户口',sub:'户 · 口 · 丁',glyph:'户',state:'常态',rows:[['口','9,415万'],['户','1,810万'],['丁','2,447万'],['隐户率','约 9%']],note:'点击 / 右键 → 户口详情'}},
+    lizhi:{name:'吏治',ch:'吏',tone:'t-purple',val:'渐弊',trueV:39,seenV:48,
+      tip:{title:'吏治',sub:'清明真伪',glyph:'吏',state:'渐弊 · 真 39 / 见 48',rows:[['真实清明','39 / 100'],['朝廷所见','48'],['监察力度','40 / 100']],note:'点击 / 右键 → 详情'}},
+    minxin:{name:'民心',ch:'民',tone:'t-amber',val:'48',trueV:48,seenV:54,
+      tip:{title:'民心',sub:'真伪 · 民变',glyph:'民',state:'告急 · 真 48 / 见 54',rows:[['真实民心','48 / 100'],['朝廷所见','54'],['段位','忍耐']],note:'点击 / 右键 → 详情'}},
+    huangquan:{name:'皇权',ch:'权',tone:'',val:'75',trueV:75,seenV:75,
+      tip:{title:'皇权',sub:'奏疏 · 权臣',glyph:'权',state:'制衡（最佳）',rows:[['皇权指数','75 / 100'],['中央','72'],['地方','68']],note:'点击 / 右键 → 详情'}},
+    huangwei:{name:'皇威',ch:'威',tone:'',val:'70',trueV:70,seenV:70,
+      tip:{title:'皇威',sub:'威仪 · 失威',glyph:'威',state:'威严（最佳）',rows:[['皇威真值','70 / 100'],['朝廷','71'],['军中','69']],note:'点击 / 右键 → 详情'}}
+  };
+}
+
+function acctHtml(a){return '<div class="acct"><div class="top">'+ICON[a.ico]+'<span class="val num">'+a.v+'</span></div><div class="delta num '+a.dc+'">'+a.d+'</div></div>';}
+function treHtml(key,o){return '<div class="tb-var" data-key="'+key+'"><div class="tb-vn brush">'+o.name+'</div><div class="accts">'+o.accts.map(acctHtml).join('')+'</div></div>';}
+function hkHtml(o){return '<div class="tb-var hk" data-key="hukou"><div class="tb-vn brush">'+o.name+'</div><div class="val"><span class="v num">'+o.v+'</span><span class="u fang">'+o.u+'</span></div><div class="ding fang"><span class="k">丁</span><b class="num">'+o.ding+'</b></div></div>';}
+function sealHtml(key,o){var tp=Math.max(5,Math.min(100,o.trueV)),sp=Math.max(2,Math.min(98,o.seenV));
+  return '<div class="seal-idx '+o.tone+'" data-key="'+key+'" title="'+o.name+'"><span class="pc brush">'+o.ch+'</span><span class="pv num">'+o.val+'</span><span class="pbar"><i class="ptrue" style="width:'+tp+'%"></i><i class="pseen" style="left:'+sp+'%"></i></span></div>';}
+
+var FCORNER='<svg viewBox="0 0 18 18" fill="none" stroke="#d6b66c" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16 V5 Q2 2 5 2 H16"/><path d="M6 16 V9 Q6 8 7 8 H12"/><circle cx="2" cy="16" r="1.05" fill="#d6b66c" stroke="none"/><circle cx="16" cy="2" r="1.05" fill="#d6b66c" stroke="none"/></svg>';
+var DECO='<i class="finner"></i><i class="fdeco tl">'+FCORNER+'</i><i class="fdeco tr">'+FCORNER+'</i><i class="fdeco bl">'+FCORNER+'</i><i class="fdeco br">'+FCORNER+'</i>';
+var CREST='<i class="crest"><svg viewBox="0 0 30 11" fill="none" stroke="#d8b86a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8.6 C11.7 8.6 10 6.4 10 4.6 C10 3 11.8 1.9 15 1.9 C18.2 1.9 20 3 20 4.6 C20 6.4 18.3 8.6 15 8.6Z"/><path d="M10 5 C6.3 5 4.4 6.6 1 6.1"/><path d="M20 5 C23.7 5 25.6 6.6 29 6.1"/><circle cx="1" cy="6.1" r="1" fill="#d8b86a" stroke="none"/><circle cx="29" cy="6.1" r="1" fill="#d8b86a" stroke="none"/></svg></i>';
+function render(){
+  var d=DYN[cur], V=vitals();
+  var h='';
+  h+='<div class="panel tb-left">'+DECO+CREST;
+  h+='<button class="tb-seal" data-wt="1" title="问天 · 叩问天意"><span class="ch brush">'+d.seal+'</span></button>';
+  h+='<div class="tb-idtext"><div class="tb-dyn brush">'+d.dyn+'</div><div class="tb-ruler fang">'+d.ruler+'</div></div>';
+  h+='<div class="tb-time"><div class="tb-time-main brush"><span class="era">'+d.era+'</span>'+d.rest+'</div><div class="tb-time-sub fang">'+d.tSub+'</div></div>';
+  h+='</div>';
+  h+='<div class="panel tb-vars">'+DECO+CREST;
+  h+='<div class="vgrp">'+treHtml('guoku',V.guoku)+treHtml('neitang',V.neitang)+'</div>';   // 财赋组
+  h+='<div class="gsep"></div>';
+  h+='<div class="vgrp">'+hkHtml(V.hukou)+'</div>';                                          // 民数组
+  h+='<div class="gsep"></div>';
+  h+='<div class="vgrp"><div class="seals">';                                               // 治理组
+  ['lizhi','minxin','huangquan','huangwei'].forEach(function(k){h+=sealHtml(k,V[k]);});
+  h+='</div></div>';
+  h+='</div>';
+  h+='<button class="panel tb-chip" data-all="1">'+DECO+GRID+'<span>全部变量</span></button>';
+  document.getElementById('topbar').innerHTML=h;
+  bind(V);
+}
+
+function clearPins(){Array.prototype.forEach.call(document.querySelectorAll('#topbar .pinned'),function(x){x.classList.remove('pinned');});}
+function anyPinned(){return !!document.querySelector('#topbar .pinned');}
+function pinTipBelow(el){var r=el.getBoundingClientRect(),t=document.getElementById('tip');var tw=t.getBoundingClientRect().width||250;t.style.left=Math.min(innerWidth-tw-12,Math.max(12,r.left-30))+'px';t.style.top=(r.bottom+12)+'px';}
+function bind(V){
+  document.querySelectorAll('#topbar [data-key]').forEach(function(el){
+    var o=V[el.getAttribute('data-key')];
+    el.addEventListener('mouseenter',function(){if(!anyPinned())showTip(o.tip);});
+    el.addEventListener('mousemove',function(e){if(!anyPinned())moveTip(e);});
+    el.addEventListener('mouseleave',function(){if(!anyPinned())hideTip();});
+    el.addEventListener('click',function(e){e.stopPropagation();var was=el.classList.contains('pinned');clearPins();if(was){hideTip();}else{el.classList.add('pinned');showTip(o.tip);pinTipBelow(el);}});
+  });
+  var wt=document.querySelector('[data-wt]');
+  if(wt)wt.addEventListener('click',function(e){e.stopPropagation();var s=document.querySelector('.tb-seal');var was=s.classList.contains('pinned');clearPins();if(was){hideTip();}else{s.classList.add('pinned');showTip({title:'问天 · 叩问天意',sub:'印玺即元通信入口',glyph:'印',state:'神谕',rows:[['性质','直陈天意'],['可为','直改字段 / 等同诏令'],['约束','非天意者 AI 可推辞']],note:'运行时点印 → openWentian'});pinTipBelow(s);}});
+}
+function showTip(t){
+  var el=document.getElementById('tip');
+  var rows=t.rows.map(function(r){return '<div class="tip-row"><span class="k fang">'+r[0]+'</span><span class="v num">'+r[1]+'</span></div>';}).join('');
+  el.innerHTML='<div class="tip-h"><span class="tip-g brush">'+t.glyph+'</span><div><div class="tip-t brush">'+t.title+'</div><div class="tip-s fang">'+t.sub+'</div></div><span class="tip-st fang">'+t.state+'</span></div><div class="tip-div"></div>'+rows+'<div class="tip-note fang">'+t.note+'</div>';
+  el.classList.add('on');
+}
+function moveTip(e){var el=document.getElementById('tip'),pad=16,r=el.getBoundingClientRect();var x=e.clientX+pad,y=e.clientY+pad;if(x+r.width>innerWidth-8)x=e.clientX-r.width-pad;if(y+r.height>innerHeight-8)y=e.clientY-r.height-pad;el.style.left=x+'px';el.style.top=y+'px';}
+function hideTip(){document.getElementById('tip').classList.remove('on');}
+
+var sw=document.getElementById('switch');
+Object.keys(DYN).forEach(function(k){
+  var b=document.createElement('button');b.className='brush'+(k===cur?' on':'');b.textContent=DYN[k].seal;
+  b.onclick=function(){cur=k;Array.prototype.forEach.call(sw.querySelectorAll('button'),function(x){x.classList.remove('on');});b.classList.add('on');render();};
+  sw.appendChild(b);
+});
+document.addEventListener('click',function(){clearPins();hideTip();});
+render();
+</script>
+</body>
+</html>

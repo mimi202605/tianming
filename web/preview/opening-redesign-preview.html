@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 开场白重制（入世仪典）</title>
+<!--
+  preview / mockup·非运行时。重做游戏「开场白」UI。
+  现状(tm-patches.js:2107-2174)：overlay 居中堆叠 剧本名+年代+单文本框(逐字50ms)+跳过·朴素无层次。
+  重做方向：玄金印鉴·入世仪典感——题署印鉴 / 玩家身份立绘 / 开场叙事卷(逐字浮现) / 三大开局戏眼签牌 / 鎏金入局。
+  样例：天启七年·九月(1627)·明思宗朱由检·处置魏阉/辽东经略/陕北赈饥。叙事取剧本 openingText 前段。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f3da97; --gold:#cdab63; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#4e4329;
+  --ivory:#f4eddf; --ink:#d8cdba; --ink-dim:#a99c84;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#6e1810; --vermil:#cf5042;
+  --celadon:#a9d18e; --jade:#6f9a5f; --amber:#e0a850; --indigo:#8e9ac4;
+  --hair:rgba(207,173,101,.2); --hair-br:rgba(243,218,151,.32);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px 14px 44px;
+  background:#080604;}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi",serif}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong",serif}
+.intro{font-size:12px;color:var(--gold-dim);letter-spacing:.04em;text-align:center;line-height:1.8;max-width:1180px}
+.intro b{color:var(--gold-br);font-weight:400}
+
+/* ══ 入世舞台 ══ */
+.stage{width:1280px;max-width:97vw;height:760px;position:relative;overflow:hidden;border-radius:6px;
+  border:1px solid rgba(207,173,101,.28);
+  background:
+    radial-gradient(1100px 520px at 50% -6%,rgba(207,173,101,.10),transparent 58%),
+    radial-gradient(900px 700px at 50% 120%,rgba(120,40,16,.10),transparent 60%),
+    linear-gradient(178deg,#161009,#100b07 56%,#080503);
+  box-shadow:inset 0 1px 0 var(--hair-br),0 34px 90px rgba(0,0,0,.75);}
+/* 紫禁城夜色剪影（纯 CSS 远景城阙） */
+.stage::before{content:"";position:absolute;left:0;right:0;bottom:0;height:40%;pointer-events:none;opacity:.5;
+  background:
+    linear-gradient(180deg,transparent,rgba(0,0,0,.5)),
+    repeating-linear-gradient(90deg,transparent 0 60px,rgba(20,14,8,.6) 60px 64px),
+    radial-gradient(60% 120% at 20% 100%,rgba(40,28,14,.7),transparent 60%),
+    radial-gradient(60% 120% at 80% 100%,rgba(40,28,14,.7),transparent 60%);
+  -webkit-mask:linear-gradient(180deg,transparent,#000 70%);mask:linear-gradient(180deg,transparent,#000 70%);}
+/* 飘落的微光尘（氛围） */
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:radial-gradient(1.5px 1.5px at 18% 24%,rgba(243,218,151,.5),transparent),
+            radial-gradient(1.5px 1.5px at 72% 16%,rgba(243,218,151,.35),transparent),
+            radial-gradient(1px 1px at 44% 60%,rgba(243,218,151,.4),transparent),
+            radial-gradient(1.5px 1.5px at 88% 72%,rgba(243,218,151,.3),transparent),
+            radial-gradient(1px 1px at 30% 82%,rgba(243,218,151,.4),transparent);}
+
+.world{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;padding:24px 30px 18px;}
+
+/* ── 题署条 ── */
+.titlebar{display:flex;align-items:center;justify-content:center;gap:18px;padding-bottom:16px;
+  border-bottom:1px solid var(--hair);position:relative;animation:rise .9s ease both;}
+.titlebar::after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-1px;width:120px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.seal{width:62px;height:62px;flex:none;border-radius:6px;display:grid;place-items:center;line-height:1;
+  font-family:"Ma Shan Zheng",serif;font-size:34px;color:#fdf3da;
+  border:1.5px solid var(--gold-br);
+  background:radial-gradient(130% 130% at 30% 22%,var(--red-hi),var(--red-1) 46%,var(--red-2));
+  box-shadow:inset 0 0 0 1px rgba(247,228,180,.32),inset 0 -4px 8px rgba(50,8,6,.55),0 6px 18px rgba(110,24,16,.4);}
+.title-col{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.scn-name{font-family:"Ma Shan Zheng",serif;font-size:34px;letter-spacing:.14em;line-height:1.05;
+  background:linear-gradient(120deg,#fbf2d4,#ecce85 48%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.scn-sub{font-family:"ZCOOL XiaoWei",serif;font-size:12.5px;color:var(--gold-mid);letter-spacing:.22em;}
+.scn-sub b{color:var(--gold-br);font-weight:400}
+
+/* ── 主体：左身份 + 右叙事 ── */
+.body{flex:1;display:flex;gap:24px;min-height:0;padding-top:18px;}
+
+/* 左·玩家身份 + 戏眼 */
+.aside{flex:0 0 290px;display:flex;flex-direction:column;gap:14px;min-height:0;animation:rise .9s .15s ease both;}
+.figure{position:relative;height:300px;border-radius:4px;overflow:hidden;border:1px solid var(--hair);
+  background:linear-gradient(180deg,#1a130b,#0d0906);flex:none;}
+.figure img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;
+  filter:saturate(.96) contrast(1.04) brightness(.96);
+  -webkit-mask:linear-gradient(180deg,#000 0,#000 62%,rgba(0,0,0,.45) 88%,transparent);mask:linear-gradient(180deg,#000 0,#000 62%,rgba(0,0,0,.45) 88%,transparent);}
+.figure .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 80% at 50% 20%,transparent 52%,rgba(8,5,3,.6))}
+.figure .frame{position:absolute;inset:8px;border:1px solid rgba(207,173,101,.3);border-radius:2px;pointer-events:none}
+.figure .frame::before,.figure .frame::after{content:"";position:absolute;width:13px;height:13px;border:1.5px solid var(--gold);}
+.figure .frame::before{top:-1px;left:-1px;border-width:1.5px 0 0 1.5px}
+.figure .frame::after{bottom:-1px;right:-1px;border-width:0 1.5px 1.5px 0}
+.figure .role-tag{position:absolute;top:12px;left:12px;z-index:2;font-family:"ZCOOL XiaoWei",serif;font-size:10.5px;
+  letter-spacing:.1em;color:var(--gold-br);padding:3px 9px;border:1px solid var(--gold-faint);border-radius:2px;background:rgba(8,5,3,.72)}
+.ident{padding:2px 2px 0}
+.ident .who{font-family:"Ma Shan Zheng",serif;font-size:26px;letter-spacing:.06em;
+  background:linear-gradient(120deg,#fbf2d4,#ecce85 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.ident .who small{font-size:13px;color:var(--gold-mid);-webkit-text-fill-color:var(--gold-mid);margin-left:8px;letter-spacing:.04em}
+.ident .plight{font-family:"ZCOOL XiaoWei",serif;font-size:12px;color:var(--ink-dim);line-height:1.7;margin-top:6px;letter-spacing:.02em}
+
+/* 三戏眼签牌 */
+.eyes{margin-top:2px}
+.eyes-h{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);letter-spacing:.2em;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+.eyes-h::before,.eyes-h::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold-faint),transparent)}
+.eye{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:3px;margin-bottom:7px;
+  border:1px solid var(--gold-faint);background:linear-gradient(110deg,rgba(36,26,14,.7),rgba(16,11,6,.7));
+  transition:.18s;cursor:default;animation:rise .8s ease both}
+.eye:nth-child(2){animation-delay:.35s}.eye:nth-child(3){animation-delay:.5s}.eye:nth-child(4){animation-delay:.65s}
+.eye:hover{border-color:var(--gold);transform:translateX(2px)}
+.eye .ic{width:30px;height:30px;flex:none;border-radius:3px;display:grid;place-items:center;font-size:15px;
+  border:1px solid var(--gold-faint);background:radial-gradient(120% 120% at 30% 20%,#2a1d0e,#140d06)}
+.eye .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.eye .tx b{font-family:"ZCOOL XiaoWei",serif;font-weight:400;font-size:13px;color:var(--gold-br);letter-spacing:.04em}
+.eye .tx span{font-size:10.5px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eye.danger .ic{border-color:rgba(207,80,66,.5);color:#e8a08a}
+.eye.danger .tx b{color:#e6a07a}
+
+/* 右·开场叙事卷 */
+.scroll{flex:1;position:relative;display:flex;flex-direction:column;min-width:0;animation:rise .9s .25s ease both;}
+.scroll-h{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.scroll-h .lbl{font-family:"Ma Shan Zheng",serif;font-size:17px;letter-spacing:.3em;color:var(--gold-br)}
+.scroll-h .hint{margin-left:auto;font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);letter-spacing:.06em}
+.paper{flex:1;overflow-y:auto;padding:24px 30px;border:1px solid var(--gold-faint);border-radius:3px;position:relative;
+  background:
+    linear-gradient(180deg,rgba(244,237,223,.035),transparent 12%),
+    repeating-linear-gradient(0deg,transparent 0 37px,rgba(207,173,101,.05) 37px 38px),
+    linear-gradient(160deg,#1a140d,#120c07);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(243,218,151,.08);}
+.paper::-webkit-scrollbar{width:7px}.paper::-webkit-scrollbar-thumb{background:rgba(207,173,101,.22);border-radius:4px}
+/* 卷轴左右描金轴边 */
+.paper::before,.paper::after{content:"";position:absolute;top:0;bottom:0;width:3px;pointer-events:none}
+.paper::before{left:0;background:linear-gradient(180deg,transparent,var(--gold-dim),transparent)}
+.paper::after{right:0;background:linear-gradient(180deg,transparent,var(--gold-dim),transparent)}
+.narr{font-size:15.5px;line-height:2.15;color:var(--ink);letter-spacing:.01em;white-space:pre-wrap;}
+.narr .lead{display:block;color:var(--gold-br);font-family:"ZCOOL XiaoWei",serif;font-size:14px;letter-spacing:.08em;margin-bottom:14px}
+.narr p{margin:0 0 13px;text-indent:2em}
+.narr .em{color:var(--gold-br)}
+.narr .red{color:#e6a07a}
+/* 逐字浮现：每字 span·延迟铺开 */
+.ch{opacity:0;animation:chIn .5s ease forwards}
+
+/* ── 入局条 ── */
+.footer{display:flex;align-items:center;gap:14px;padding-top:16px;margin-top:14px;border-top:1px solid var(--hair);animation:rise .9s .4s ease both}
+.foot-note{font-family:"ZCOOL XiaoWei",serif;font-size:11.5px;color:var(--gold-dim);letter-spacing:.04em}
+.foot-note b{color:var(--gold-mid);font-weight:400}
+.btns{margin-left:auto;display:flex;align-items:center;gap:12px}
+.bt-skip{font-family:"ZCOOL XiaoWei",serif;font-size:13px;letter-spacing:.06em;padding:9px 18px;border-radius:4px;cursor:pointer;
+  color:var(--gold-mid);border:1px solid var(--gold-faint);background:rgba(8,5,3,.5);transition:.18s}
+.bt-skip:hover{color:var(--gold-br);border-color:var(--gold)}
+.bt-enter{position:relative;overflow:hidden;font-family:"Ma Shan Zheng",serif;font-size:19px;letter-spacing:.24em;
+  padding:11px 34px 11px 38px;border-radius:4px;cursor:pointer;color:#241608;
+  border:1px solid var(--gold-br);background:linear-gradient(180deg,#f6e3a0,#d8b566 56%,#b88f38);
+  box-shadow:0 6px 20px -6px rgba(207,173,101,.6),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -2px 6px rgba(120,90,40,.4);}
+.bt-enter::after{content:"";position:absolute;top:0;left:-60%;width:42%;height:100%;transform:skewX(-18deg);
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);animation:sheen 3s ease-in-out infinite}
+.bt-enter:hover{filter:brightness(1.05)}
+
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes chIn{from{opacity:0}to{opacity:1}}
+@keyframes sheen{0%{left:-60%}45%{left:130%}100%{left:130%}}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1180px;text-align:center;line-height:1.9}.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="intro fang">游戏「开场白」重制 ——「入世仪典」。现状只是<b>剧本名+年代+一段逐字文本框</b>；重做后给开局一份分量：<b>题署印鉴</b> · <b>玩家身份立绘</b> · <b>开场叙事卷</b>(逐字浮现) · <b>三大开局戏眼</b> · <b>鎏金入世</b>。</div>
+
+  <div class="stage">
+    <div class="world">
+      <!-- 题署 -->
+      <div class="titlebar">
+        <div class="seal brush">明</div>
+        <div class="title-col">
+          <div class="scn-name brush">天启七年 · 九月</div>
+          <div class="scn-sub fang">公元 一六二七 · 秋 　|　 新 帝 登 基 · 甫 一 月</div>
+        </div>
+      </div>
+
+      <div class="body">
+        <!-- 左·身份 + 戏眼 -->
+        <div class="aside">
+          <div class="figure">
+            <img src="../assets/portraits/tianqi7/朱由检.png" alt="朱由检" onerror="this.style.display='none'">
+            <div class="vig"></div><div class="frame"></div>
+            <span class="role-tag fang">尔 之 所 履</span>
+          </div>
+          <div class="ident">
+            <div class="who brush">朱由检<small>明思宗</small></div>
+            <div class="plight fang">年十七，即位甫一月，朝中大半非尔旧识。九千岁魏忠贤仍据司礼监、东厂——君心之初试，国运之大考。</div>
+          </div>
+          <div class="eyes">
+            <div class="eyes-h fang">开 局 戏 眼</div>
+            <div class="eye danger">
+              <span class="ic">🗡</span>
+              <span class="tx"><b>处置魏阉</b><span>诛之之时机与手段</span></span>
+            </div>
+            <div class="eye">
+              <span class="ic">⚔️</span>
+              <span class="tx"><b>辽东经略</b><span>锦州欠饷·人选难择</span></span>
+            </div>
+            <div class="eye">
+              <span class="ic">🌾</span>
+              <span class="tx"><b>陕北赈饥</b><span>饥民啸聚·财源何出</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右·开场叙事 -->
+        <div class="scroll">
+          <div class="scroll-h">
+            <span class="lbl brush">开 卷</span>
+            <span class="hint fang">按 空格 略过逐字 · 史册自此而起</span>
+          </div>
+          <div class="paper">
+            <div class="narr" id="narr"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 入局 -->
+      <div class="footer">
+        <div class="foot-note fang">此局为<b>平行时空</b>·一经入世，史册由尔亲手改写。</div>
+        <div class="btns">
+          <button class="bt-skip fang" onclick="window._otShowAll&&window._otShowAll()">▶ 略过逐字</button>
+          <button class="bt-enter brush">提 笔 临 朝</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap fang">重制要点：<b>题署</b>朱印+碑刻金字剧本名/年代；<b>身份</b>玩家立绘描金框+称谓+处境一句；<b>叙事卷</b>纸笺纹+描金轴+逐字浮现(保留现有 50ms 沉浸感·空格略过)；<b>三戏眼</b>把开局核心抉择前置给玩家(诛魏阉/辽饷/陕饥)；<b>入世</b>鎏金大钮替代朴素「跳过」。落地仅重写 <code>tm-patches.js:2107-2174</code> 的 overlay·数据沿用 sc.name/era/opening + 玩家角色 + 开局戏眼。</div>
+
+  <script>
+  (function(){
+    // 开场叙事样例（取剧本 openingText 前段·精简）
+    var paras = [
+      { lead: true, t: '——天启七年九月初一，乾清宫。' },
+      { t: '秋风透过紫禁城的红墙，吹得御案上未干的墨汁微微荡漾。<span class="em">朕——朱由检</span>，即位刚一月，朝中大半非朕旧识。' },
+      { t: '内阁首辅黄立极票拟如流，每字每句皆像九千岁口授。司礼监掌印王体乾听命魏忠贤，批红如儿戏。东厂缇骑络绎出入禁城——凡朕所召见之臣，<span class="red">魏忠贤先一刻知之</span>；朕所拟之旨，魏忠贤先一刻阅之。' },
+      { t: '辽东经略阎鸣泰告急疏至——锦州前线将士月粮已欠三月，祖大寿请饷二十万，满桂请饷十五万。户部尚书郭允厚泣奏：「太仓仅存银八十万，辽饷岁需五百万。」' },
+      { t: '陕西三边总督武之望暗奏——延安榆林饥民啸聚，<span class="red">食树皮观音土，道殣相望，白骨塞川</span>。' },
+      { t: '而司礼监偏于此时，为朕呈上厚厚一函：「魏忠贤生辰将至，请加上公之号，敕令天下直省增立生祠。」' }
+    ];
+    var host = document.getElementById('narr');
+    // 逐字浮现：拆字加 .ch span·按序延迟
+    var DELAY = 26, idx = 0;
+    paras.forEach(function(p){
+      var el = document.createElement(p.lead ? 'span' : 'p');
+      if (p.lead) el.className = 'lead';
+      // 用临时容器解析含标签的文本·对纯文本节点逐字包 span
+      var tmp = document.createElement('div'); tmp.innerHTML = p.t;
+      (function walk(src, dst){
+        Array.prototype.forEach.call(src.childNodes, function(n){
+          if (n.nodeType === 3){ // 文本
+            n.nodeValue.split('').forEach(function(c){
+              var s = document.createElement('span'); s.className='ch'; s.textContent=c;
+              s.style.animationDelay = (idx++ * DELAY) + 'ms'; dst.appendChild(s);
+            });
+          } else if (n.nodeType === 1){
+            var clone = document.createElement(n.tagName); clone.className = n.className;
+            walk(n, clone); dst.appendChild(clone);
+          }
+        });
+      })(tmp, el);
+      host.appendChild(el);
+    });
+    // 略过逐字：全部立即显示
+    window._otShowAll = function(){
+      Array.prototype.forEach.call(host.querySelectorAll('.ch'), function(s){ s.style.animation='none'; s.style.opacity='1'; });
+    };
+  })();
+  </script>
+</body>
+</html>

@@ -1943,8 +1943,12 @@ function _renderUnifiedChanges(oldVars) {
     var _imp = _fExp.imperial && _fExp.imperial.money || 0;
     var turnIn = ng.turnIncome || 0;
     var turnOut = ng.turnExpense || 0;
+    // ★对齐顶栏权威取数(治"史记弹窗与顶部栏帑廪数值不一致"):史记原裸读 ng.money/.grain/.cloth·顶栏走 _barAccountStock(优先 .money·否则回落 .balance/账本 stock)·二者在 .money 缺失或与账本不同步时分歧。
+    //   此处统一改走 _barAccountStock(与顶栏 _renderGuoku 同源)·_barAccountStock 不可用时降级到 .money/.balance。
+    var _gkS = function (a, r) { return (typeof _barAccountStock === 'function') ? _barAccountStock(a, r) : (a && typeof a[r] === 'number' ? a[r] : (r === 'money' && a && typeof a.balance === 'number' ? a.balance : 0)); };
+    var _gkHas = function (r) { return !!(ng && (typeof ng[r] === 'number' || (r === 'money' && typeof ng.balance === 'number') || (ng.ledgers && ng.ledgers[r]))); };
     // 钱
-    if (typeof ng.money === 'number') {
+    if (_gkHas('money')) {
       var moneyReasons = [];
       if (turnIn > 0) moneyReasons.push('<span class="tr-reason-chip pos">\u5C81\u5165<span class="v">+' + _rucFmtBig(turnIn) + '</span></span>');
       if (_sal > 0) moneyReasons.push('<span class="tr-reason-chip neg">\u4FF8\u7984<span class="v">\u2212' + _rucFmtBig(_sal) + '</span></span>');
@@ -1952,21 +1956,21 @@ function _renderUnifiedChanges(oldVars) {
       if (_imp > 0) moneyReasons.push('<span class="tr-reason-chip neg">\u5BAB\u5EF7<span class="v">\u2212' + _rucFmtBig(_imp) + '</span></span>');
       // ★ 追加 AI/玩家触发的一次性调整
       Array.prototype.push.apply(moneyReasons, _collectFiscalAdjChips('guoku', 'money'));
-      gItems.push({ic:'\u94B1', name:'\u94F6\u4E24', unit:'\u4E24', ov:og.money, nv:ng.money, reasonsHtml: moneyReasons.join('')});
+      gItems.push({ic:'\u94B1', name:'\u94F6\u4E24', unit:'\u4E24', ov:_gkS(og,'money'), nv:_gkS(ng,'money'), reasonsHtml: moneyReasons.join('')});
     }
-    if (typeof ng.grain === 'number') {
+    if (_gkHas('grain')) {
       var grainR = [];
       var turnGIn = ng.turnGrainIncome || 0;
       var turnGOut = ng.turnGrainExpense || 0;
       if (turnGIn > 0) grainR.push('<span class="tr-reason-chip pos">\u6F15\u7CAE<span class="v">+' + _rucFmtBig(turnGIn) + '</span></span>');
       if (turnGOut > 0) grainR.push('<span class="tr-reason-chip neg">\u652F\u7528<span class="v">\u2212' + _rucFmtBig(turnGOut) + '</span></span>');
       Array.prototype.push.apply(grainR, _collectFiscalAdjChips('guoku', 'grain'));
-      gItems.push({ic:'\u7CAE', name:'\u7CAE\u7C73', unit:'\u77F3', ov:og.grain, nv:ng.grain, reasonsHtml: grainR.join('')});
+      gItems.push({ic:'\u7CAE', name:'\u7CAE\u7C73', unit:'\u77F3', ov:_gkS(og,'grain'), nv:_gkS(ng,'grain'), reasonsHtml: grainR.join('')});
     }
-    if (typeof ng.cloth === 'number') {
+    if (_gkHas('cloth')) {
       var clothR = _collectFiscalAdjChips('guoku', 'cloth');
       if (clothR.length === 0) clothR.push('<span class="tr-reason-txt">\u7EC7\u67D3\u4E0A\u89E3\u00B7\u8D4F\u8D50\u6263\u51CF</span>');
-      gItems.push({ic:'\u5E03', name:'\u5E03\u5339', unit:'\u5339', ov:og.cloth, nv:ng.cloth, reasonsHtml: clothR.join('')});
+      gItems.push({ic:'\u5E03', name:'\u5E03\u5339', unit:'\u5339', ov:_gkS(og,'cloth'), nv:_gkS(ng,'cloth'), reasonsHtml: clothR.join('')});
     }
     if (typeof ng.monthlyIncome === 'number') {
       gItems.push({ic:'\u6708', name:'\u6708\u5165', sub:'\u4E24/\u6708', ov:og.monthlyIncome, nv:ng.monthlyIncome, reasonsHtml: '<span class="tr-reason-txt">\u7A0E\u6536\u7EA7\u8054\u4E0A\u89E3\u4E2D\u592E</span>'});
@@ -2011,20 +2015,23 @@ function _renderUnifiedChanges(oldVars) {
     var on = GM._prevNeitang || {};
     var nn = GM.neitang;
     var nItems = [];
-    if (typeof nn.money === 'number') {
+    // 同帑廪:对齐顶栏权威取数 _barAccountStock(内帑亦有 .money 与 .balance/账本 stock 不同步之虞)·自包含不依赖帑廪块助手。
+    var _ntS = function (a, r) { return (typeof _barAccountStock === 'function') ? _barAccountStock(a, r) : (a && typeof a[r] === 'number' ? a[r] : (r === 'money' && a && typeof a.balance === 'number' ? a.balance : 0)); };
+    var _ntHas = function (r) { return !!(nn && (typeof nn[r] === 'number' || (r === 'money' && typeof nn.balance === 'number') || (nn.ledgers && nn.ledgers[r]))); };
+    if (_ntHas('money')) {
       var nMoneyR = _collectFiscalAdjChips('neitang', 'money');
       if (nMoneyR.length === 0) nMoneyR.push('<span class="tr-reason-txt">\u5185\u5EF7\u6536\u652F\u00B7\u5F92\u5FA1\u8D4F\u8D50</span>');
-      nItems.push({ic:'\u94B1', name:'\u94F6\u4E24', unit:'\u4E24', ov:on.money, nv:nn.money, reasonsHtml: nMoneyR.join('')});
+      nItems.push({ic:'\u94B1', name:'\u94F6\u4E24', unit:'\u4E24', ov:_ntS(on,'money'), nv:_ntS(nn,'money'), reasonsHtml: nMoneyR.join('')});
     }
-    if (typeof nn.grain === 'number') {
+    if (_ntHas('grain')) {
       var nGrainR = _collectFiscalAdjChips('neitang', 'grain');
       if (nGrainR.length === 0) nGrainR.push('<span class="tr-reason-txt">\u5F9D\u8180\u00B7\u5BAB\u7528\u6D88\u8017</span>');
-      nItems.push({ic:'\u7CAE', name:'\u7CAE\u7C73', unit:'\u77F3', ov:on.grain, nv:nn.grain, reasonsHtml: nGrainR.join('')});
+      nItems.push({ic:'\u7CAE', name:'\u7CAE\u7C73', unit:'\u77F3', ov:_ntS(on,'grain'), nv:_ntS(nn,'grain'), reasonsHtml: nGrainR.join('')});
     }
-    if (typeof nn.cloth === 'number') {
+    if (_ntHas('cloth')) {
       var nClothR = _collectFiscalAdjChips('neitang', 'cloth');
       if (nClothR.length === 0) nClothR.push('<span class="tr-reason-txt">\u5BAB\u4E2D\u8D50\u8D21</span>');
-      nItems.push({ic:'\u5E03', name:'\u5E03\u5339', unit:'\u5339', ov:on.cloth, nv:nn.cloth, reasonsHtml: nClothR.join('')});
+      nItems.push({ic:'\u5E03', name:'\u5E03\u5339', unit:'\u5339', ov:_ntS(on,'cloth'), nv:_ntS(nn,'cloth'), reasonsHtml: nClothR.join('')});
     }
     if (typeof nn.huangzhuangAcres === 'number') nItems.push({ic:'\u5E84', name:'\u7687\u5E84', unit:'\u4EA9', ov:on.huangzhuangAcres, nv:nn.huangzhuangAcres, reasonsHtml: '<span class="tr-reason-txt">\u4ECA\u5C81\u65B0\u8F9F/\u5931\u7BA1</span>'});
     if (nItems.length > 0) {

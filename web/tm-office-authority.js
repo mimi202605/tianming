@@ -38,7 +38,12 @@
     (function walk(ns) { (ns || []).forEach(function (n) { if (found) return; (n.positions || []).forEach(function (p) { if (p && p.powers && p.powers[power]) found = true; }); if (n.subs) walk(n.subs); }); })(GM && GM.officeTree);
     return found;
   }
-  function _capacity(ch, power) { var k = POWER_DOMAIN_ATTR[power] || 'administration'; var dv = (ch[k] != null) ? ch[k] : 50; var lv = (ch.loyalty != null) ? ch.loyalty : 50; return dv * 0.6 + lv * 0.4; }
+  // 五常评分(0-100)·履职看德性非忠君(owner 2026-06-20)：义.28信.28礼.20仁.16智.08·镜像 tmfRenwuWuchangValue 兜底读法
+  var _WC_ALIAS = { ren: ['仁', 'ren', 'benevolence'], yi: ['义', 'yi', 'righteousness'], li: ['礼', 'li', 'propriety'], zhi: ['智', 'zhi', 'wisdom'], xin: ['信', 'xin', 'honesty', 'trust'] };
+  function _wcVal(ch, k) { var src = (ch && (ch.wuchang || ch.wuchangOverride || ch.fiveConstants || ch.morals)) || {}; var al = _WC_ALIAS[k]; for (var i = 0; i < al.length; i++) { var v = src[al[i]]; if (v != null && !isNaN(Number(v))) return Number(v); } return 50; }
+  function _wuchangScore(ch) { return _wcVal(ch, 'yi') * 0.28 + _wcVal(ch, 'xin') * 0.28 + _wcVal(ch, 'li') * 0.20 + _wcVal(ch, 'ren') * 0.16 + _wcVal(ch, 'zhi') * 0.08; }
+  // 履职=域才0.6 + 五常0.4（德性·非忠君·owner 2026-06-20）
+  function _capacity(ch, power) { var k = POWER_DOMAIN_ATTR[power] || 'administration'; var dv = (ch[k] != null) ? ch[k] : 50; return dv * 0.6 + _wuchangScore(ch) * 0.4; }
 
   /**
    * 解析某 power 的执行力。
@@ -58,12 +63,11 @@
     var f = (ds && typeof ds.fulfillment === 'number') ? ds.fulfillment : (ch ? _capacity(ch, power) : 50);
     var band = f < F.loBand ? 'low' : f > F.hiBand ? 'high' : 'mid';
     var base = band === 'low' ? F.low : band === 'high' ? F.high : F.mid;
-    var disloyal = !!(ch && ch.loyalty != null && ch.loyalty < F.disloyalBelow);
-    if (disloyal) base *= F.disloyalMul;
+    // 忠退出官制机制(owner 2026-06-20)：执行不可靠经 信→五常→履职 自然兜住·不再单设忠×0.7
     return {
       effectiveness: _clamp(base, F.min, F.max), band: band, holder: hit.holder, dept: hit.dept, pos: hit.pos.name,
-      fulfillment: Math.round(f), disloyal: disloyal,
-      reason: hit.dept + '·' + hit.pos.name + '(' + hit.holder + ')·履职' + Math.round(f) + (disloyal ? '·忠寡阳奉阴违' : '')
+      fulfillment: Math.round(f),
+      reason: hit.dept + '·' + hit.pos.name + '(' + hit.holder + ')·履职' + Math.round(f)
     };
   }
 

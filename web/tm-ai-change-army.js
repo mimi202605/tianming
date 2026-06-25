@@ -145,8 +145,27 @@
         army.morale = _clampNum(army.morale - 12, 0, 100);
         army._recruitArrears = (G.turn || 0);
       }
-      if (G._turnReport) G._turnReport.push({ type:'military', armyName: army.name || '', field:'recruitCost', silver: silver, grain: grain, deficit: def.join('/') || '', reason:'募兵开销', source: source || '', turn: G.turn || 0 });
-      if (typeof global.addEB === 'function') global.addEB('财政', '募' + (army.name || '') + '·' + addedTroops + '兵·开销银' + silver + (grain ? '·粮' + grain : '') + (def.length ? '（国库不继，欠' + def.join('/') + '·新军士气挫）' : ''));
+      // ── 募兵从武库支取装备（装备不凭空·缺装备则新军简陋·士气挫）──
+      var AR = (typeof window !== 'undefined' && window.TMArmory) || (typeof global !== 'undefined' && global.TMArmory);
+      var eqStr = '';
+      try {
+        if (AR && typeof AR.consumeForRecruit === 'function') {
+          var eq = AR.consumeForRecruit(G, army, addedTroops);
+          if (eq) {
+            if (eq.condition) {                                     // 武库不继→新军装备简陋
+              army.equipmentCondition = eq.condition;
+              if (typeof army.morale === 'number') army.morale = _clampNum(army.morale - eq.moralePenalty, 0, 100);
+              army._underEquipped = G.turn || 0;
+              var shArr = []; for (var sk in eq.shortfall) shArr.push(sk + Math.round(eq.shortfall[sk]));
+              eqStr = '（武库不继·缺' + shArr.join('/') + '·' + eq.condition + '·士气挫）';
+            } else {
+              eqStr = '·械齐';
+            }
+          }
+        }
+      } catch (_eqe) {}
+      if (G._turnReport) G._turnReport.push({ type:'military', armyName: army.name || '', field:'recruitCost', silver: silver, grain: grain, deficit: def.join('/') || '', equip: eqStr, reason:'募兵开销', source: source || '', turn: G.turn || 0 });
+      if (typeof global.addEB === 'function') global.addEB('财政', '募' + (army.name || '') + '·' + addedTroops + '兵·开销银' + silver + (grain ? '·粮' + grain : '') + (def.length ? '（国库不继，欠' + def.join('/') + '·新军士气挫）' : '') + eqStr);
       return spend;
     } catch (_) { return null; }
   }

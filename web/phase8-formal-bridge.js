@@ -1242,6 +1242,17 @@
     var pop = ensureTopbarPopover('tmf-timepop', 'tmf-topbar-pop tmf-timepop');
     pop.innerHTML = topbarApi().renderTimePopoverHtml();
     pop.classList.add('show');
+    // 时历移到左身份簇后·悬停框贴着时间元素弹出(非固定屏幕最右)
+    try {
+      var t = document.querySelector('#topbar .tb-time');
+      if (t) {
+        var r = t.getBoundingClientRect();
+        pop.style.setProperty('position', 'fixed', 'important');
+        pop.style.setProperty('left', Math.round(r.left) + 'px', 'important');
+        pop.style.setProperty('right', 'auto', 'important');
+        pop.style.setProperty('top', Math.round(r.bottom + 8) + 'px', 'important');
+      }
+    } catch(_tp) {}
   }
 
   function scheduleTopbarTimeHide(){
@@ -1340,18 +1351,143 @@
     });
   }
 
+  // 2026-06·顶栏纯 CSS 玄金重设计·override 旧图片底版(#topbar 提权+!important·旧 .tb-* 图片规则失活)
+  var TOPBAR_REDESIGN_CSS = [
+    'body.tm-phase8-formal #topbar{height:66px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;padding:0 14px!important;background:none!important;border:0!important;box-shadow:none!important;pointer-events:none!important;z-index:300!important;}',
+    'body.tm-phase8-formal #topbar:before,body.tm-phase8-formal #topbar:after{display:none!important;}',
+    'body.tm-phase8-formal.tm-phase8-ingame{overflow:hidden!important;}',
+    'body.tm-phase8-formal #tmf-map-hint{display:none!important;}',
+    'body.tm-phase8-formal #G{margin-top:48px!important;height:calc(100vh - 48px)!important;}',
+    'body.tm-phase8-formal #topbar .tb-left{flex:0 0 auto!important;width:auto!important;height:58px!important;display:flex!important;align-items:center!important;gap:11px!important;margin:0!important;padding:4px 15px!important;border:1px solid rgba(201,168,95,.32)!important;border-radius:3px!important;background:linear-gradient(180deg,rgba(27,22,16,.95),rgba(10,8,6,.96))!important;box-shadow:0 4px 14px rgba(0,0,0,.45)!important;pointer-events:auto!important;}',
+    'body.tm-phase8-formal #topbar .tb-left:before,body.tm-phase8-formal #topbar .tb-left:after{display:none!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal{width:48px!important;height:48px!important;padding:0!important;cursor:pointer!important;display:grid!important;place-items:center!important;border-radius:4px!important;border:1.6px solid #e7c97c!important;background:linear-gradient(180deg,#b3342b,#7e1f18)!important;color:#fbf0d6!important;font:33px/1 "Ma Shan Zheng","STKaiti","KaiTi",serif!important;box-shadow:inset 0 0 0 3px rgba(246,227,176,.16)!important;transition:box-shadow .15s,border-color .15s,transform .12s!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal:hover{border-color:#fbf0d6!important;box-shadow:inset 0 0 0 3px rgba(246,227,176,.28),0 0 14px rgba(231,201,124,.45)!important;transform:translateY(-1px)!important;}',
+    'body.tm-phase8-formal #topbar .tb-idtext{display:flex!important;flex-direction:column!important;gap:2px!important;}',
+    'body.tm-phase8-formal #topbar .tb-dyn{font:23px/1.05 "Ma Shan Zheng","STKaiti","KaiTi",serif!important;background:linear-gradient(135deg,#f6eccf,#e7c97c 50%,#b8924e)!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;}',
+    'body.tm-phase8-formal #topbar .tb-ruler{font:11px/1.2 "ZCOOL XiaoWei","STKaiti",serif!important;color:#8f8568!important;letter-spacing:.05em!important;max-width:128px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}',
+    'body.tm-phase8-formal #topbar .tb-left .tb-time{flex:0 0 auto!important;width:auto!important;min-width:0!important;height:auto!important;margin:0 0 0 2px!important;padding:0 0 0 10px!important;border:0!important;border-left:1px solid rgba(90,74,40,.55)!important;border-radius:0!important;background:none!important;text-align:left!important;display:flex!important;flex-direction:column!important;justify-content:center!important;}',
+    'body.tm-phase8-formal #topbar .tb-time-main{max-width:none!important;font:19px/1.15 "Ma Shan Zheng","STKaiti","KaiTi",serif!important;color:#f0ead8!important;letter-spacing:.02em!important;white-space:nowrap!important;}',
+    'body.tm-phase8-formal #topbar .tb-time-sub{max-width:none!important;margin-top:2px!important;font:11px/1.2 "ZCOOL XiaoWei",serif!important;color:#9a9072!important;letter-spacing:.03em!important;}',
+    'body.tm-phase8-formal #topbar .tb-vars{flex:0 0 auto!important;width:auto!important;max-width:none!important;height:58px!important;display:flex!important;align-items:center!important;gap:0!important;margin:0 0 0 auto!important;padding:0 5px!important;border:1px solid rgba(201,168,95,.32)!important;border-radius:3px!important;background:linear-gradient(180deg,rgba(27,22,16,.95),rgba(10,8,6,.96))!important;box-shadow:0 4px 14px rgba(0,0,0,.45)!important;overflow:visible!important;pointer-events:auto!important;}',
+    'body.tm-phase8-formal #topbar .tb-vars:before,body.tm-phase8-formal #topbar .tb-vars:after{display:none!important;}',
+    'body.tm-phase8-formal #topbar .tb-var{height:52px!important;width:auto!important;min-width:0!important;max-width:none!important;flex:0 0 auto!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;cursor:pointer!important;padding:0 10px!important;position:relative!important;}',
+    'body.tm-phase8-formal #topbar .tb-var + .tb-var:before{content:""!important;display:block!important;position:absolute!important;left:0!important;top:8px!important;bottom:8px!important;width:1px!important;background:linear-gradient(180deg,transparent,rgba(201,168,95,.22),transparent)!important;}',
+    'body.tm-phase8-formal #topbar .tb-var:hover{background:rgba(213,176,95,.10)!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide{display:flex!important;flex-direction:column!important;justify-content:center!important;gap:3px!important;padding:5px 11px!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .tb-vn{display:block!important;flex:none!important;max-width:none!important;padding:0!important;font:11px/1 "ZCOOL XiaoWei",serif!important;color:#c2a463!important;letter-spacing:.1em!important;text-align:left!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .tb-vsubs{display:flex!important;grid-template-columns:none!important;gap:11px!important;align-items:center!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .tb-vs{display:flex!important;align-items:center!important;gap:4px!important;background:none!important;padding:0!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .icn{width:15px!important;height:15px!important;border:0!important;background:none!important;box-shadow:none!important;}',
+    'body.tm-phase8-formal #topbar .tb-stk-svg{width:15px!important;height:15px!important;display:block!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .sv{display:flex!important;flex-direction:column!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .sv b{display:block!important;font:600 14px/1.15 "Ma Shan Zheng","STSong","SimSun",serif!important;color:#f4ede0!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .sv .sd{display:block!important;font:10px/1 "ZCOOL XiaoWei",serif!important;margin-top:1px!important;}',
+    'body.tm-phase8-formal #topbar .tb-var:not(.wide){display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;min-width:56px!important;padding:4px 8px!important;}',
+    'body.tm-phase8-formal #topbar .tb-var:not(.wide) .tb-vbody{display:flex!important;flex-direction:column!important;align-items:center!important;gap:0!important;}',
+    'body.tm-phase8-formal #topbar .tb-var:not(.wide) .tb-vn{display:block!important;font:11px/1.2 "ZCOOL XiaoWei",serif!important;color:#7d6c49!important;letter-spacing:.06em!important;}',
+    'body.tm-phase8-formal #topbar .tb-var:not(.wide) .tb-vv{font:13px/1.15 "Ma Shan Zheng","STSong",serif!important;color:#cdb06a!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.warn .tb-vv{color:#e8554a!important;}',
+    /* 四官印·方印 + 真伪双值条（吏紫/民权威告警色）·只作用于四个权力变量 */
+    'body.tm-phase8-formal #topbar .tb-var.tb-seal-idx{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:1px!important;min-width:46px!important;width:auto!important;height:48px!important;margin:0 2px!important;padding:0 6px!important;border:1.1px solid #8a6d34!important;border-radius:2px!important;background:linear-gradient(180deg,#1c1408,#100a04)!important;box-shadow:inset 0 0 0 .6px rgba(201,168,95,.16)!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.tb-seal-idx:before{display:none!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx .tsi-ch{font:18px/1 "Ma Shan Zheng","STSong","SimSun",serif!important;color:#d8bd78!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx .tsi-val{font:10px/1 "ZCOOL XiaoWei",serif!important;color:#b6a06a!important;letter-spacing:.02em!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx .tsi-bar{position:relative!important;display:block!important;width:28px!important;height:4px!important;margin-top:2px!important;border-radius:2px!important;background:#241a0e!important;border:.6px solid #463718!important;overflow:visible!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx .tsi-true{position:absolute!important;left:0!important;top:0!important;bottom:0!important;border-radius:2px!important;background:linear-gradient(90deg,#7a6a3a,#caa85f)!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx .tsi-seen{position:absolute!important;top:-1.5px!important;bottom:-1.5px!important;width:1.6px!important;background:#d7e6f0!important;box-shadow:0 0 2px rgba(215,230,240,.85)!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-purple{background:linear-gradient(180deg,#241634,#140c20)!important;border-color:#9b7bc4!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-purple .tsi-ch{color:#cbb3e8!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-purple .tsi-true{background:linear-gradient(90deg,#5a3f86,#a987d8)!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-amber{background:linear-gradient(180deg,#2a1d08,#160f04)!important;border-color:#e0a23f!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-amber .tsi-ch{color:#f0c97a!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-amber .tsi-true{background:linear-gradient(90deg,#8a5a12,#e0a23f)!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-red{background:linear-gradient(180deg,#2a0f0c,#160706)!important;border-color:#e8554a!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-red .tsi-ch{color:#f0867c!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.tone-red .tsi-true{background:linear-gradient(90deg,#7e1f18,#e8554a)!important;}',
+    'body.tm-phase8-formal #topbar .tb-right{flex:0 0 auto!important;width:auto!important;height:auto!important;display:flex!important;align-items:center!important;gap:8px!important;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;pointer-events:auto!important;}',
+    'body.tm-phase8-formal #topbar .tb-right:before,body.tm-phase8-formal #topbar .tb-right:after{display:none!important;}',
+    'body.tm-phase8-formal #topbar .tb-chip{display:flex!important;align-items:center!important;width:auto!important;height:58px!important;min-width:48px!important;padding:0 13px!important;border:1px solid rgba(201,168,95,.32)!important;border-radius:3px!important;background:linear-gradient(180deg,rgba(27,22,16,.95),rgba(10,8,6,.96))!important;color:#cdb06a!important;font:12.5px/1.2 "ZCOOL XiaoWei",serif!important;letter-spacing:.12em!important;box-shadow:0 4px 14px rgba(0,0,0,.45)!important;}',
+    'body.tm-phase8-formal #topbar .tb-chip:hover{border-color:#e7c97c!important;color:#f0d98c!important;}',
+    'body.tm-phase8-formal #topbar .tb-wentian{display:flex!important;align-items:center!important;justify-content:center!important;width:auto!important;min-width:78px!important;height:44px!important;padding:0 16px!important;border:1.2px solid rgba(201,168,95,.6)!important;border-radius:3px!important;background:linear-gradient(180deg,rgba(44,34,22,.96),rgba(13,10,8,.97))!important;color:#f0d98c!important;font:20px/1 "Ma Shan Zheng","STKaiti",serif!important;letter-spacing:.34em!important;box-shadow:0 4px 14px rgba(0,0,0,.45)!important;}',
+    'body.tm-phase8-formal #topbar .tb-wentian:hover{border-color:#e7c97c!important;box-shadow:0 0 12px rgba(201,168,95,.22)!important;}',
+    'body.tm-phase8-formal #topbar .tb-wentian .tb-wentian-label{padding-left:.34em!important;}',
+    /* ═══ 顶栏精炼·御宝鎏金·素雅（落运行时·只动样式·加性 override）═══ */
+    'body.tm-phase8-formal #topbar .tb-left,body.tm-phase8-formal #topbar .tb-vars{background:linear-gradient(180deg,rgba(255,236,200,.05),transparent 22%),linear-gradient(178deg,#211910,#160f09 56%,#0d0905)!important;box-shadow:inset 0 1px 0 rgba(240,213,151,.32),inset 0 -10px 22px rgba(0,0,0,.26),0 8px 26px rgba(0,0,0,.5)!important;}',
+    'body.tm-phase8-formal #topbar .tb-chip{background:linear-gradient(180deg,rgba(255,236,200,.05),transparent 26%),linear-gradient(178deg,rgba(31,24,16,.96),rgba(10,8,6,.97))!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .sv b{font-family:"Songti SC","STSong","SimSun",serif!important;font-variant-numeric:tabular-nums!important;color:#f4eddf!important;}',
+    'body.tm-phase8-formal #topbar .tb-var:not(.wide) .tb-vv{font-family:"Songti SC","STSong","SimSun",serif!important;font-variant-numeric:tabular-nums!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx .tsi-val{font-family:"Songti SC","STSong","SimSun",serif!important;font-variant-numeric:tabular-nums!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal{position:relative!important;background:radial-gradient(125% 125% at 30% 22%,#c14034,#a8312a 44%,#76190f)!important;box-shadow:inset 0 0 0 1px rgba(247,228,180,.34),inset 0 2px 5px rgba(255,206,160,.22),inset 0 -5px 9px rgba(60,10,8,.55),0 3px 10px rgba(110,28,20,.42)!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal::after{content:"\\53E9\\554F\\5929\\610F";position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%) translateY(-4px);font:10px/1 "ZCOOL XiaoWei",serif;letter-spacing:.2em;text-indent:.2em;color:#f0d597;white-space:nowrap;padding:4px 9px;border-radius:2px;border:1px solid rgba(207,173,101,.42);background:linear-gradient(178deg,#1e160d,#0e0a06);box-shadow:0 8px 18px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .16s ease,transform .16s ease;z-index:40;}',
+    'body.tm-phase8-formal #topbar .tb-seal:hover::after,body.tm-phase8-formal #topbar .tb-seal.pinned::after{opacity:1!important;transform:translateX(-50%) translateY(0)!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.pinned{background:radial-gradient(135% 95% at 50% 0%,rgba(207,173,101,.13),transparent 78%)!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide.pinned::after,body.tm-phase8-formal #topbar .tb-var:not(.wide):not(.tb-seal-idx).pinned::after{content:"";position:absolute;left:12px;right:12px;top:6px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#f0d597 28%,#f0d597 72%,transparent);}',
+    'body.tm-phase8-formal #topbar .tb-seal-idx.pinned{border-color:#f0d597!important;box-shadow:inset 0 0 0 1px rgba(240,213,151,.3),0 0 0 1px #f0d597,0 0 13px rgba(207,173,101,.4)!important;}',
+    /* ═══ 优化版落地·分组 / 户口丁 / 钱为财首 / 材质升级（2026-06-21）═══ */
+    'body.tm-phase8-formal #topbar .tb-vars .tb-vgrp{display:flex!important;align-items:center!important;height:100%!important;}',
+    'body.tm-phase8-formal #topbar .tb-vars .tb-vgrp .tb-var + .tb-var:before{display:none!important;}',
+    'body.tm-phase8-formal #topbar .tb-vars .tb-gsep{align-self:center!important;display:block!important;flex:none!important;width:1px!important;height:62%!important;margin:0 11px!important;background:linear-gradient(180deg,transparent,rgba(214,182,108,.5) 15%,rgba(214,182,108,.5) 85%,transparent)!important;}',
+    'body.tm-phase8-formal #topbar .tb-vding{font:11px/1 "Songti SC","STSong","SimSun",serif!important;color:#9a8a66!important;margin-top:3px!important;font-variant-numeric:tabular-nums!important;}',
+    'body.tm-phase8-formal #topbar .tb-vding .k{color:#a98f55!important;margin-right:3px!important;font-family:"ZCOOL XiaoWei",serif!important;}',
+    /* 户口卡显示不全修复：隐藏与名重复的 icn「户」字（腾出 body 高度）+ 口值/丁数横排一行（名独占上行）·避免四行竖排把名/值压扁截断 */
+    'body.tm-phase8-formal #topbar .tb-var[data-key="hukou"] .icn{display:none!important;}',
+    'body.tm-phase8-formal #topbar .tb-var[data-key="hukou"] .tb-vbody{display:block!important;text-align:center!important;white-space:nowrap!important;}',
+    'body.tm-phase8-formal #topbar .tb-var[data-key="hukou"] .tb-vn{display:block!important;margin-bottom:1px!important;}',
+    'body.tm-phase8-formal #topbar .tb-var[data-key="hukou"] .tb-vv{display:inline-block!important;vertical-align:middle!important;}',
+    'body.tm-phase8-formal #topbar .tb-var[data-key="hukou"] .tb-vding{display:inline-block!important;vertical-align:middle!important;margin-top:0!important;margin-left:6px!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .tb-vs:first-child .sv b{color:#f9f2e4!important;}',
+    'body.tm-phase8-formal #topbar .tb-var.wide .tb-vs:not(:first-child) .sv b{color:#dacfb8!important;}',
+    'body.tm-phase8-formal #topbar .tb-seal{background:radial-gradient(38% 30% at 30% 22%,rgba(255,184,152,.5),transparent 62%),radial-gradient(128% 128% at 32% 24%,#c64a3c,#a8312a 44%,#6e1810 100%)!important;box-shadow:inset 0 0 0 1px rgba(247,228,180,.42),inset 0 3px 6px rgba(255,212,172,.28),inset 0 -6px 11px rgba(48,8,6,.6),0 3px 12px rgba(110,28,20,.5)!important;}',
+    'body.tm-phase8-formal #topbar .tb-left,body.tm-phase8-formal #topbar .tb-vars{background:linear-gradient(180deg,rgba(255,238,205,.07),transparent 20%),linear-gradient(178deg,#241c12 0%,#1a120b 52%,#0e0a06 100%)!important;box-shadow:inset 0 1px 0 rgba(244,219,158,.42),inset 0 -12px 26px rgba(0,0,0,.30),inset 0 0 0 1px rgba(0,0,0,.30),0 10px 30px rgba(0,0,0,.55),0 2px 12px rgba(120,70,30,.13)!important;}',
+    /* ═══ 牌匾装饰落地：四角回纹角花 + 描金双线内框 + 顶心云头冠 ═══ */
+    'body.tm-phase8-formal #topbar .tb-left,body.tm-phase8-formal #topbar .tb-vars,body.tm-phase8-formal #topbar .tb-chip{position:relative!important;}',
+    'body.tm-phase8-formal #topbar .tb-finner{position:absolute!important;inset:3.5px!important;border:1px solid rgba(207,173,101,.15)!important;border-radius:2px!important;pointer-events:none!important;z-index:1!important;}',
+    'body.tm-phase8-formal #topbar .tb-fdeco{position:absolute!important;width:12px!important;height:12px!important;line-height:0!important;opacity:.9!important;pointer-events:none!important;z-index:3!important;}',
+    'body.tm-phase8-formal #topbar .tb-fdeco svg{width:100%!important;height:100%!important;display:block!important;}',
+    'body.tm-phase8-formal #topbar .tb-fdeco.tb-tl{top:3.5px!important;left:3.5px!important;}',
+    'body.tm-phase8-formal #topbar .tb-fdeco.tb-tr{top:3.5px!important;right:3.5px!important;transform:scaleX(-1)!important;}',
+    'body.tm-phase8-formal #topbar .tb-fdeco.tb-bl{bottom:3.5px!important;left:3.5px!important;transform:scaleY(-1)!important;}',
+    'body.tm-phase8-formal #topbar .tb-fdeco.tb-br{bottom:3.5px!important;right:3.5px!important;transform:scale(-1,-1)!important;}',
+    'body.tm-phase8-formal #topbar .tb-crest{position:absolute!important;top:-3px!important;left:50%!important;transform:translateX(-50%)!important;width:32px!important;height:12px!important;line-height:0!important;opacity:.9!important;pointer-events:none!important;z-index:4!important;}',
+    'body.tm-phase8-formal #topbar .tb-crest svg{width:100%!important;height:100%!important;display:block!important;}',
+    'body.tm-phase8-formal #topbar .tb-chip .tb-fdeco{width:10px!important;height:10px!important;}'
+  ];
+  function installTopbarRedesignStyle(){
+    if (document.getElementById('tm-topbar-redesign')) return;
+    ['ma-shan-zheng','zcool-xiaowei'].forEach(function(f){
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'https://cdn.jsdelivr.net/npm/@fontsource/' + f + '/index.css';
+      document.head.appendChild(l);
+    });
+    var st = document.createElement('style');
+    st.id = 'tm-topbar-redesign';
+    st.textContent = TOPBAR_REDESIGN_CSS.join('\n');
+    document.head.appendChild(st);
+  }
+  function _tbPanelDeco(withCrest){
+    var corner = '<svg viewBox="0 0 16 16" fill="none" stroke="#d6b66c" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 V5 Q2 2 5 2 H14"/><path d="M6 14 V9 Q6 8 7 8 H11"/><circle cx="2" cy="14" r="1" fill="#d6b66c" stroke="none"/><circle cx="14" cy="2" r="1" fill="#d6b66c" stroke="none"/></svg>';
+    var crest = withCrest ? '<i class="tb-crest" aria-hidden="true"><svg viewBox="0 0 30 11" fill="none" stroke="#d8b86a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8.6 C11.7 8.6 10 6.4 10 4.6 C10 3 11.8 1.9 15 1.9 C18.2 1.9 20 3 20 4.6 C20 6.4 18.3 8.6 15 8.6Z"/><path d="M10 5 C6.3 5 4.4 6.6 1 6.1"/><path d="M20 5 C23.7 5 25.6 6.6 29 6.1"/><circle cx="1" cy="6.1" r="1" fill="#d8b86a" stroke="none"/><circle cx="29" cy="6.1" r="1" fill="#d8b86a" stroke="none"/></svg></i>' : '';
+    return '<i class="tb-finner" aria-hidden="true"></i><i class="tb-fdeco tb-tl" aria-hidden="true">' + corner + '</i><i class="tb-fdeco tb-tr" aria-hidden="true">' + corner + '</i><i class="tb-fdeco tb-bl" aria-hidden="true">' + corner + '</i><i class="tb-fdeco tb-br" aria-hidden="true">' + corner + '</i>' + crest;
+  }
   function ensurePreviewTopbar(){
     if (!syncFormalShellVisibility()) return null;
+    installTopbarRedesignStyle();
     var top = document.getElementById('topbar');
     if (!top) {
       top = document.createElement('div');
       top.id = 'topbar';
       top.innerHTML =
-        '<div class="tb-left"><button type="button" class="tb-wentian" title="问天"><span class="tb-wentian-label">问天</span></button><div class="tb-weather"><div class="tb-w-seal" id="tmf-tb-weather-seal">时</div><div class="tb-w-info"><div class="tb-w-name" id="tmf-tb-weather-name">节候</div><div class="tb-w-desc" id="tmf-tb-weather-desc">物候未记</div></div></div></div>' +
+        '<div class="tb-left">' + _tbPanelDeco(true) +
+          '<button type="button" class="tb-seal" id="tmf-tb-seal" title="问天 · 叩问天意">—</button>' +
+          '<div class="tb-idtext"><div class="tb-dyn" id="tmf-tb-dyn"></div><div class="tb-ruler" id="tmf-tb-ruler"></div></div>' +
+          '<div class="tb-time" id="tmf-tb-time"><div class="tb-time-main" id="tmf-tb-time-main"></div><div class="tb-time-sub" id="tmf-tb-time-sub"></div></div>' +
+        '</div>' +
         '<div class="tb-vars" id="tmf-tb-vars"></div>' +
-        '<div class="tb-right"><button type="button" class="tb-chip" title="全部变量">全部变量</button><div class="tb-time" id="tmf-tb-time"><div class="tb-time-main" id="tmf-tb-time-main"></div><div class="tb-time-sub" id="tmf-tb-time-sub"></div></div></div>';
+        '<div class="tb-right"><button type="button" class="tb-chip" title="全部变量">' + _tbPanelDeco(false) + '<span class="tb-chip-label">全部变量</span></button></div>';
       document.body.insertBefore(top, document.body.firstChild);
-      top.querySelector('.tb-wentian').onclick = function(){
+      var sealBtn = top.querySelector('.tb-seal');
+      if (sealBtn) sealBtn.onclick = function(){
         if (typeof window.openWentian === 'function') window.openWentian();
       };
       top.querySelector('.tb-chip').onclick = function(){
@@ -1416,16 +1552,24 @@
         if (pinned) pinned.classList.add('pinned');
       }
     }
-    var name = document.getElementById('tmf-tb-weather-name');
-    var desc = document.getElementById('tmf-tb-weather-desc');
-    var seal = document.getElementById('tmf-tb-weather-seal');
-    if (name) name.textContent = textById('bar-weather-name', '节候');
-    if (desc) desc.textContent = textById('bar-weather-desc', '物候未记');
-    if (seal) seal.textContent = textById('bar-weather-seal', '时').slice(0, 1);
+    // 身份簇：朝代印 + 大+朝代 + 君主（数据驱动·非死字段；findScenarioById(GM.sid) → sc.dynasty/sc.emperor，P.dynasty 兜底）
+    var _sc = null;
+    try { if (typeof findScenarioById === 'function' && window.GM && GM.sid) _sc = findScenarioById(GM.sid); } catch(_e0) {}
+    var _dyn = (_sc && _sc.dynasty) || (window.P && P.dynasty) || '';
+    var _ruler = (_sc && _sc.emperor) || '';
+    var sealEl = document.getElementById('tmf-tb-seal');
+    var dynEl = document.getElementById('tmf-tb-dyn');
+    var rulerEl = document.getElementById('tmf-tb-ruler');
+    if (sealEl) sealEl.textContent = _dyn ? String(_dyn).slice(0, 1) : '—';
+    if (dynEl) dynEl.textContent = _dyn ? ('大' + String(_dyn).replace(/^大/, '')) : '本朝';
+    if (rulerEl) rulerEl.textContent = _ruler || '';
+    // 合一时历：主历串（已含年号·季·月·干支日）+ 节气并入 sub（撤掉独立节候）
     var main = document.getElementById('tmf-tb-time-main');
     var sub = document.getElementById('tmf-tb-time-sub');
+    var _jieqi = textById('bar-weather-name', '');
+    var _sub0 = textById('bar-time-sub', textById('bar-turn-text', ''));
     if (main) main.textContent = textById('bar-time-main', textById('bar-date', ''));
-    if (sub) sub.textContent = textById('bar-time-sub', textById('bar-turn-text', ''));
+    if (sub) sub.textContent = [((_jieqi && _jieqi !== '节候') ? _jieqi : ''), _sub0].filter(Boolean).join(' · ');
     ensureTopbarBanner();
   }
 

@@ -18,6 +18,9 @@ function openShizhengTasks() {
                    .sort(function(a,b){ return (b.raisedTurn||0) - (a.raisedTurn||0); });
   var resolved = all.filter(function(i){ return i.status === 'resolved'; })
                     .sort(function(a,b){ return (b.resolvedTurn||b.raisedTurn||0) - (a.resolvedTurn||a.raisedTurn||0); });
+  // 信息卡(_info·天机/军情/朝局等省览类·无须拍板)不计入「待决」数·单列「览」。跨朝代。
+  var pendingDecide = pending.filter(function(i){ return !i._info; });
+  var pendingInfo = pending.filter(function(i){ return i._info; });
 
   var exist = document.getElementById('shizheng-tasks-overlay');
   if (exist) exist.remove();
@@ -34,7 +37,7 @@ function openShizhengTasks() {
   html += '<div style="padding:0.9rem 1.4rem;display:flex;align-items:center;gap:1rem;border-bottom:1px solid rgba(201,168,76,0.2);background:linear-gradient(180deg,rgba(201,168,76,0.06),transparent);">';
   html += '<button onclick="closeShizhengTasks()" style="background:transparent;border:1px solid var(--gold-d);color:var(--gold);padding:0.35rem 0.9rem;cursor:pointer;font-size:0.88rem;border-radius:3px;letter-spacing:0.15em;font-family:\'STKaiti\',\'KaiTi\',serif;">‹ 返 回</button>';
   html += '<div style="flex:1;text-align:center;font-size:1.25rem;letter-spacing:0.7rem;color:var(--gold);font-family:\'STKaiti\',\'KaiTi\',serif;text-shadow:0 2px 8px rgba(201,168,76,0.2);">御 案 时 政</div>';
-  html += '<div style="width:5rem;text-align:right;"><span style="color:var(--txt-d);font-size:0.72rem;">'+pending.length+' 待 / '+resolved.length+' 决</span></div>';
+  html += '<div style="min-width:5rem;text-align:right;"><span style="color:var(--txt-d);font-size:0.72rem;">'+pendingDecide.length+' 待 / '+resolved.length+' 决'+(pendingInfo.length?(' / '+pendingInfo.length+' 览'):'')+'</span></div>';
   html += '</div>';
 
   html += '<div style="flex:1;overflow-y:auto;padding:1.1rem 1.4rem;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.4) transparent;">';
@@ -86,10 +89,13 @@ function _renderShizhengCard(issue, _esc) {
   var cardBorder = isPending ? '#c9a85f' : '#a39373';
   var titleColor = isPending ? '#3d2f1a' : '#6b5d47';
   var descColor = isPending ? '#5a4a32' : '#8b7d68';
-  var badgeStyle = isPending
+  var _isInfo = !!issue._info;   // 信息卡(天机/军情/朝局)盖青色「省览」章·非朱「待解决」
+  var badgeStyle = _isInfo
+    ? 'background:rgba(58,125,103,0.10);border:1px solid rgba(58,125,103,0.5);color:#3a7d67;'
+    : (isPending
     ? 'background:rgba(192,64,48,0.08);border:1px solid rgba(192,64,48,0.45);color:#a13c2e;'
-    : 'background:rgba(90,90,90,0.08);border:1px solid rgba(90,90,90,0.45);color:#6b6b6b;';
-  var badgeText = isPending ? '待解决' : '已解决';
+    : 'background:rgba(90,90,90,0.08);border:1px solid rgba(90,90,90,0.45);color:#6b6b6b;');
+  var badgeText = _isInfo ? '省览' : (isPending ? '待解决' : '已解决');
 
   var h = '<div class="shizheng-card" data-issue-id="'+_esc(safeId)+'" ';
   h += 'style="background:'+cardBg+';border:1px solid '+cardBorder+';border-radius:4px;padding:0.9rem 1.1rem 0.95rem;cursor:pointer;position:relative;min-height:116px;transition:transform 0.15s ease-out,box-shadow 0.15s ease-out;'+(isPending?'':'opacity:0.78;')+'" ';
@@ -123,10 +129,13 @@ function _openShizhengDetail(issueId) {
   panel.style.cssText = 'width:min(90vw,760px);max-height:82vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#1e1610,#14100a);border:1px solid var(--gold-d);border-radius:6px;box-shadow:0 10px 48px rgba(0,0,0,0.75);overflow:hidden;';
 
   var isPending = issue.status !== 'resolved';
-  var badgeStyle = isPending
+  var _isInfo = !!issue._info;   // 信息卡盖青色「省览」章
+  var badgeStyle = _isInfo
+    ? 'background:rgba(58,125,103,0.14);border:1px solid rgba(58,125,103,0.55);color:#4a9c80;'
+    : (isPending
     ? 'background:rgba(192,64,48,0.12);border:1px solid rgba(192,64,48,0.5);color:#c05030;'
-    : 'background:rgba(120,120,120,0.12);border:1px solid rgba(120,120,120,0.5);color:#888;';
-  var badgeText = isPending ? '待解决' : '已解决';
+    : 'background:rgba(120,120,120,0.12);border:1px solid rgba(120,120,120,0.5);color:#888;');
+  var badgeText = _isInfo ? '省览' : (isPending ? '待解决' : '已解决');
 
   var h = '';
   h += '<div style="padding:0.85rem 1.3rem;display:flex;align-items:center;border-bottom:1px solid rgba(201,168,76,0.2);background:linear-gradient(180deg,rgba(201,168,76,0.05),transparent);">';

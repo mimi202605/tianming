@@ -1,0 +1,97 @@
+'use strict';
+// tm-endturn-record-specs.js — 共享 record-prompt builder(DA-Q2·零 drift 唯一权威源)
+//   命门:回合推演"史记"创作字段(实录/时政记副标题/时政记正文/时政记总结/玩家状态等)的提示词·
+//   过去在 sc1(tm-endturn-ai.js)内联·agent 模式 deepen_narrative 曾各自 paraphrase 导致漂移。
+//   此模块为唯一权威源·两端共用:
+//     ① LLM 管线 sc1(tm-endturn-ai.js)  ② agent 深化工具 deepen_narrative(tm-endturn-agent-depth-tools.js)
+//   字数与 _getCharRange 同源:ctx.prompt._xxxMin/Max 优先(管线已算好·保证 sc1 字节级一致)·
+//   回落裸调全局 _getCharRange(agent 由此得到与管线相同字数)·再回落默认。
+//   ⚠改这里 = 改两端。sc1 侧的输出文本须保持字节级不变·改后必跑 scripts/verify-recordspecs-byte-identical.js。
+(function (root) {
+  root.TM = root.TM || {};
+  TM.Endturn = TM.Endturn || {};
+  TM.Endturn.AI = TM.Endturn.AI || {};
+  TM.Endturn.AI.prompt = TM.Endturn.AI.prompt || {};
+
+  // 字数区间:ctx.prompt 优先(管线侧·保证字节级一致)→ 全局 _getCharRange(与管线同源)→ 默认。
+  function _range(ctx, cat, defMin, defMax) {
+    var p = ctx && ctx.prompt;
+    if (p) {
+      if (cat === 'shilu' && p._shiluMin != null) return [p._shiluMin, p._shiluMax];
+      if (cat === 'szj' && p._szjMin != null) return [p._szjMin, p._szjMax];
+      if (cat === 'houren' && p._hourenMin != null) return [p._hourenMin, p._hourenMax];
+    }
+    try { if (typeof _getCharRange === 'function') { var r = _getCharRange(cat); if (r && r.length === 2 && r[0] != null) return r; } } catch (e) {}
+    return [defMin, defMax];
+  }
+
+  // 唯一权威·史记创作字段提示词片段(纯内层指令文本·不含 JSON key 包裹)。
+  // 各消费端自行包 "key":"<片段>" 或塞入自己的 schema。sc1 片段须与 tm-endturn-ai.js 原内联逐字一致。
+  function recordSpecs(ctx) {
+    var sh = _range(ctx, 'shilu', 150, 300);
+    var sz = _range(ctx, 'szj', 200, 400);
+    var ho = _range(ctx, 'houren', 200, 400);
+    return {
+      // —— 字数区间(供消费端组 houren 等自有字段·deepen_narrative 用之替写死的 ≤50)——
+      shiluMin: sh[0], shiluMax: sh[1], szjMin: sz[0], szjMax: sz[1], hourenMin: ho[0], hourenMax: ho[1],
+      // —— 以下为 sc1 verbatim 片段(任何改动须同步更新 verify-recordspecs-byte-identical.js 的 EXPECTED)——
+      turnSummary: "一句话概括本回合最重要的变化(30-50字，如:北境叛乱平定，国库因军费骤降三成)",
+      shilu: "实录" + sh[0] + "-" + sh[1] + "字——正史实录体·纯文言(仿历代实录与《资治通鉴》)。以干支系日、'朔'纪月首(如'某月庚辰朔…壬午…甲申')依时序排比；纪事以君为纲:君称'上'，叙其视朝('上御殿')、诏谕('上诏''上谕曰''敕曰')、裁断('从之''不从''留中''下有司议')；臣下称官衔加名，奏对作'某官疏言……''得旨……'；动词用诏/谕/敕/命/召/赐/擢/罢/黜/调/夺/赠/恤等实录套语，数目用汉字(如一百六十万)，以'是月''是日''先是''初'缀连成纪。铁律:只记可验证之事(诏令/任免/战事/灾异/人事大变)，记事不评论、不抒情、不议得失(评断归政文)，禁白话与现代语、禁口语虚词。",
+      szjTitle: "时政记副标题——七字对仗两句，概括本回合主题(如'雷霆除藩安豫地，断禄激变祸萧墙'；两句用'，'分隔)",
+      shizhengji: "时政记正文" + sz[0] + "-" + sz[1] + "字——仿崇祯朝政纪要体：\\n  1.开篇总括：'陛下本回合……颁布数道谕旨：其一……；其二……'，逐条复述玩家诏令/私人行动\\n  2.按领域分段(3-5段)——军事与边防/内政与民生/吏治与人事/宗室与外戚/关外局势等，每段开头用【军事】【朝政】【经济】【外交】【民生】【宫廷】等方括号标签\\n  3.每段必须完整因果链：诏令→执行者→执行过程→阻力/意外→实际效果→遗留隐患。不要只写结果，要写过程和阻碍\\n  4.跨回合延续：用'此前''原本''延续'衔接往期决策的后续影响\\n  5.自然融入信息源：据XX奏报/有司呈报/密探来报/坊间传言/边军塘报\\n  段间用\\n\\n分隔。",
+      szjSummary: "时政记总结一句话——四字对仗成语风格(如'内帑充盈，边军暂安，然宗室怨气冲天，局势如履薄冰')",
+      playerStatus: "政治处境(1句话——朝局格局、权力态势、外部威胁)",
+      playerInner: "主角内心独白(1-2句，第一人称，私人情感、矛盾挣扎——此字段仅供NPC记忆，不会直接展示)"
+    };
+  }
+
+  // —— 后人戏说(sc2)完整风格块·DA-Q2b·唯一权威源(verbatim from tm-endturn-followup.js sc2)——
+  //   两端共用:① 管线 sc2(followup·context 注入后接此静态块) ② agent deepen_narrative 专用 houren pass。
+  //   须与 followup sc2 静态块逐字一致(见 scripts/verify-recordspecs-byte-identical.js)。字数随 _getCharRange('houren')。
+  function hourenSpec(ctx) {
+    var ho = _range(ctx, 'houren', 200, 400);
+    return "\n基于上述全部资料，撰写《后人戏说》——这是玩家角色本回合的完整生活进程，核心目的是**完整、立体地呈现玩家角色的日常生活**，让玩家看见自己的角色如何度过这一段时光。\n"
+      + "【核心要义——叙事性第一】\n"
+      + "  这不是战报、不是史书、不是摘要，而是一段可读的故事。让玩家'跟着角色过完这段日子'。\n"
+      + "  要有人物的具体动作、神态、对话、内心活动；要有场景的具体环境、时间、氛围。\n"
+      + "  玩家角色不是一个抽象的决策符号，是一个有血有肉的人——他吃饭、他疲倦、他忧虑、他动怒、他思念、他沉默。\n"
+      + "【结构骨架——按时辰顺序自然展开】\n"
+      + "  晨(卯时)：主角起身——批阅奏折/晨起盥洗/与近侍对话/晨食\n"
+      + "  上午(辰时-巳时)：正式政务——朝会/殿见大臣/军务讨论/外交接见\n"
+      + "  午后(未时-申时)：续政务/接见/巡视/或私事(若本回合有帝王私行/内眷互动)\n"
+      + "  傍晚(酉时-戌时)：私人时间——家人/帝后对话/内省/私下思考；也可继续政务\n"
+      + "  深夜/就寝：只在本回合有特别事件时写\n"
+      + "  日与日之间用空行或'……'切换；若本回合跨多日请分日叙述\n"
+      + "  注：时辰只是顺序参考，具体节奏看本回合实际内容——不必强行每个时段都写\n"
+      + "【文风——重在叙事，而非特定标点】\n"
+      + "  · **标点自由**：可用句号/逗号/冒号/引号正常组织句子；破折号可用可不用，不强制；顿号、分号也可用\n"
+      + "  · 以叙事流畅为首要目标——避免电报体、避免列清单、避免句句破折\n"
+      + "  · 对话自然融入场景；可带'说道''答道''低声道'等叙事动词，也可不带(上下文能识别即可)\n"
+      + "  · 每个人物说话方式要贴合其性格(忠臣的直/佞臣的滑/老臣的稳/年少者的急/亲眷的柔)\n"
+      + "  · 数据融入场景——不要列'国库-20万'，而写成对话或动作(如'户部侍郎垂首奏报：库银减了二十万两，赈灾拨了十五……')\n"
+      + "  · 穿插生活碎片：饮食、天气、季节、家人互动(子女成长、帝后闲谈、妃嫔往来)\n"
+      + "  · 内心独白可直接写角色所想，不必隐藏——如'他想，今日这事，父皇当年怕是也难办吧。'\n"
+      + "  · 幽默感来自人物智慧与情境，不来自吐槽\n"
+      + "【着重呈现(推演依据必须场景化)】\n"
+      + "  · 玩家诏令：至少一条要在具体场景中被某个大臣收到/讨论/执行——让玩家看见令下之后谁去做、怎么做\n"
+      + "  · 玩家行止：作为主角的日常生活片段自然出现\n"
+      + "  · 本回合批复的奏疏：至少一份在场景中展开(谁呈上、何时、皇帝的反应)\n"
+      + "  · 问对/朝议结果：作为对话场景再现(若本回合有)\n"
+      + "  · NPC自主行动：至少出现2-3个NPC的日常片段或私下对话\n"
+      + "  · 势力/阴谋伏笔：暗线自然融入\n"
+      + "  · 本回合最戏剧性的一幕必须展开写足\n"
+      + "【禁止】\n"
+      + "  · 不用emoji\n"
+      + "  · 不用日式轻小说元素(不出现'诶''嘛''啦'等语气词)\n"
+      + "  · 不用全知叙述者评论('这一天注定不平凡'之类)\n"
+      + "  · 不是时政记的复述——时政记是摘要报告，后人戏说是把同一事件还原为可感知的生活\n"
+      + "  · 少用'陛下圣明''微臣该死'之类套话，让对话贴近真实人际交流\n"
+      + "【字数】" + ho[0] + "-" + ho[1] + "字。字数应花在场景细节和人物互动上，不要注水。\n"
+      + "【情绪基调】若主角勤政——写出'做好事真难'(阻力、孤独、疲惫)；若主角享乐——写出'享乐真好'(感官、轻快、奉承)，但不说教。\n"
+      + "\n返回纯JSON：\n"
+      + "{\"houren_xishuo\":\"...(场景叙事正文)\",\"new_activities\":[{\"name\":\"...\",\"duration\":3,\"desc\":\"...\",\"effect\":{}}]}";
+  }
+
+  TM.Endturn.AI.prompt.recordSpecs = recordSpecs;
+  TM.Endturn.AI.prompt.hourenSpec = hourenSpec;
+})(typeof window !== 'undefined' ? window : globalThis);

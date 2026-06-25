@@ -11,9 +11,9 @@ global.findCharByName = function (n) { return (GM.chars || []).find(function (c)
 global.getRankLevel = function (r) { return ({ '正一品': 1, '正二品': 2, '从二品': 3, '正五品': 9 })[r] || 10; };
 
 var GM = { turn: 5, chars: [
-  { name: '赵某', administration: 85, loyalty: 80 },  // 称职忠厚
-  { name: '钱某', administration: 30, loyalty: 70 },  // 庸才
-  { name: '孙某', administration: 80, loyalty: 30 }   // 干才但异己
+  { name: '赵某', administration: 85, loyalty: 20, wuchang: { ren: 85, yi: 85, li: 85, zhi: 85, xin: 85 } },  // 忠仅20·五常85→承载85(证履职看德非忠)
+  { name: '钱某', administration: 30, loyalty: 70, wuchang: { ren: 40, yi: 40, li: 40, zhi: 40, xin: 40 } },  // 庸才
+  { name: '孙某', administration: 80, loyalty: 30, wuchang: { ren: 70, yi: 70, li: 70, zhi: 70, xin: 70 } }   // 异己(忠30)·执行力不再因忠打折
 ], officeTree: [] };
 
 // 设户部尚书(掌 taxCollect)·可调 holder 与 _dutyState
@@ -39,11 +39,11 @@ ok(near(r3.effectiveness, 0.25) && r3.band === 'vacant' && r3.reason.indexOf('�
 
 setHubu('孙某', { fulfillment: 80 });
 var r4 = resolve(GM, 'taxCollect'); console.log('异己:', JSON.stringify(r4));
-ok(near(r4.effectiveness, 0.7) && r4.disloyal, '④异己(履职80·忠30)→1.0×0.7=0.7·阳奉阴违');
+ok(near(r4.effectiveness, 1.0), '④忠退出：异己(履职80·忠30)→执行力1.0(不再因忠×0.7阳奉阴违·忠不管衙门)');
 
-setHubu('赵某', null);  // 无 _dutyState → 退回才忠 capacity = 85*.6+80*.4 = 83 → high
-var r5 = resolve(GM, 'taxCollect'); console.log('无履职退才忠:', JSON.stringify(r5));
-ok(near(r5.effectiveness, 1.0) && r5.fulfillment === 83, '⑤无_dutyState→退才忠capacity83→×1.0(不硬依赖Slice②)');
+setHubu('赵某', null);  // 无 _dutyState → 退五常 capacity = 85*.6 + 五常85*.4 = 85 → high (忠仅20·证看德非忠)
+var r5 = resolve(GM, 'taxCollect'); console.log('无履职退五常:', JSON.stringify(r5));
+ok(near(r5.effectiveness, 1.0) && r5.fulfillment === 85, '⑤无_dutyState→退五常capacity85(赵某忠20但五常85)→×1.0·证履职看德非忠');
 
 GM.officeTree = [{ name: '兵部', positions: [{ name: '尚书', rank: '正二品', holder: '赵某', powers: { militaryCommand: true } }] }]; // 无掌 taxCollect 之职
 var r6 = resolve(GM, 'taxCollect'); console.log('无此职:', JSON.stringify(r6));

@@ -846,6 +846,28 @@
     return '<section class="tmrp-card hot"><div class="tmrp-card-title"><span>流寇警报</span><small>民变啸聚成军·剿耗军饷战损/抚开赦贼恶例</small></div>' + rows + '</section>';
   }
 
+  // 武库卡:国家军备库存(5类)+ 原料库(4类)+ 本回合产/耗(接军工供应链 S6)
+  function rightArmoryCard(){
+    var AR = (typeof window !== 'undefined' && window.TMArmory);
+    if (!AR || typeof GM === 'undefined' || !GM || !GM.guoku) return '';
+    try {
+      if (typeof AR.ensure === 'function') { AR.ensure(GM); AR.ensureMaterials(GM); }
+      var arm = AR.allStock(GM), mat = AR.matAllStock(GM);
+      var armoryL = GM.guoku.armory || {}, matL = GM.guoku.materials || {};
+      function cell(k, val, led){
+        var f = '';
+        if (led) { var i = Math.round(led.lastTurnIn || 0), o = Math.round(led.lastTurnOut || 0); if (i || o) f = '<span style="color:var(--txt-d);font-size:0.68rem;margin-left:4px;">' + (i ? '+' + rightArmyFmtNum(i) : '') + (o ? (' −' + rightArmyFmtNum(o)) : '') + '</span>'; }
+        return '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:2px 7px;background:rgba(0,0,0,.13);border-radius:4px;"><span style="color:var(--txt-s);font-size:0.78rem;">' + esc(k) + '</span><span><b>' + esc(rightArmyFmtNum(val)) + '</b>' + f + '</span></div>';
+      }
+      var aH = AR.CAT_KEYS.map(function(k){ return cell(k, arm[k], armoryL[k]); }).join('');
+      var mH = AR.MAT_KEYS.map(function(k){ return cell(k, mat[k], matL[k]); }).join('');
+      return '<section class="tmrp-card"><div class="tmrp-card-title"><span>武库</span><small>军备 · 造械之料（本回合 +产/−耗）</small></div>' +
+        '<div class="tmrp-meta">军备库存（募兵支取）</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:3px 0 7px;">' + aH + '</div>' +
+        '<div class="tmrp-meta">造械之料（军工建筑耗）</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:3px;">' + mH + '</div>' +
+        '</section>';
+    } catch (e) { return ''; }
+  }
+
   function renderArmy(){
     var armies = rightArmyList();
     var rows = rightArmyRowsForRender(armies);
@@ -881,6 +903,7 @@
     return '<div class="tmrp-army-shell">' +
       '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(armies.length) + '</b><span>军队</span></div><div class="tmrp-stat"><b>' + esc(rightArmyFmtNum(total)) + '</b><span>总兵力</span></div><div class="tmrp-stat"><b>' + esc(avgMorale + '/' + avgTraining) + '</b><span>士气/训练</span></div></div>' +
       armyOverviewCard +
+      rightArmoryCard() +
       rightRovingCard() +
       '<section class="tmrp-card"><div class="tmrp-card-title"><span>部队名册</span><small>点部队·左侧展开军情</small></div>' +
       (rows.length ? '<div class="tmrp-scroll compact tmrp-army-list" data-army-list-token="' + attr(listToken) + '">' + rightArmyGroupsHtml(syncGroups, selectedKey) + (deferredList ? '<div class="tmrp-meta">余下部队正在载入...</div>' : '') + '</div>' : '<div class="tmrp-empty">麾下暂无军队。</div>') +

@@ -308,9 +308,9 @@ function getFamilyOf(charName) {
 /** 获取角色所在家支 */
 function getFamilyBranch(charName) {
   var fam = getFamilyOf(charName);
-  if (!fam) return null;
+  if (!fam || !Array.isArray(fam.branches)) return null;   // 分发(renown 兜底)创建的家族可能无 branches
   for (var i = 0; i < fam.branches.length; i++) {
-    if (fam.branches[i].members.indexOf(charName) >= 0) return fam.branches[i];
+    if (fam.branches[i] && (fam.branches[i].members || []).indexOf(charName) >= 0) return fam.branches[i];
   }
   return fam.branches[0] || null;
 }
@@ -374,7 +374,7 @@ function inferBloodRelations(familyName) {
   var fam = GM.families[familyName];
   if (!fam || !GM.chars) return;
   var allMembers = [];
-  fam.branches.forEach(function(b) { allMembers = allMembers.concat(b.members); });
+  (fam.branches || []).forEach(function(b) { allMembers = allMembers.concat((b && b.members) || []); });   // 分发家族可能无 branches
 
   // 构建亲子图
   var parentMap = {}; // child -> parent
@@ -418,7 +418,7 @@ function inferBloodRelations(familyName) {
   });
 
   // 推断叔侄（A的兄弟B的孩子C → A是C的叔父）
-  Object.keys(fam.relations).forEach(function(key) {
+  Object.keys(fam.relations || {}).forEach(function(key) {
     if (fam.relations[key] !== '\u5144\u5F1F' && fam.relations[key] !== '\u5144\u59B9') return;
     var parts = key.split('|');
     [0, 1].forEach(function(idx) {
@@ -434,11 +434,12 @@ function inferBloodRelations(familyName) {
 function createBranch(familyName, branchName, headName, memberNames) {
   var fam = GM.families[familyName];
   if (!fam) return;
+  if (!Array.isArray(fam.branches)) fam.branches = [];   // 分发家族可能无 branches·下方 forEach/push 需数组
   var newBranch = { id: 'branch_' + uid(), name: branchName, head: headName, members: [] };
   memberNames.forEach(function(name) {
     // 从旧分支中移除
     fam.branches.forEach(function(b) {
-      var idx = b.members.indexOf(name);
+      var idx = (b && b.members) ? b.members.indexOf(name) : -1;
       if (idx >= 0) b.members.splice(idx, 1);
     });
     newBranch.members.push(name);
@@ -466,7 +467,8 @@ function settleRenown() {
     // 统计在职官员数
     var officialCount = 0;
     var allMembers = [];
-    fam.branches.forEach(function(b) { allMembers = allMembers.concat(b.members); });
+    // 守卫:经 doActualStart 的 sc.families 分发(renown 兜底)创建的家族可能无 branches/members → 原 forEach 崩·被 SettlementPipeline 接住致家族声望结算每月静默失效(跨剧本)
+    (fam.branches || []).forEach(function(b) { allMembers = allMembers.concat((b && b.members) || []); });
     allMembers.forEach(function(name) {
       var ch = findCharByName(name);
       if (!ch || ch.alive === false) return;

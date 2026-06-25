@@ -47,7 +47,9 @@ ok(render({}) === '', '无 rovingRebels 字段→返空(回归安全)');
 ok(render({ rovingRebels: [{ strength: 0, disbanded: true }] }) === '', '仅已散流寇→返空');
 
 // 4. 源契约：注入 renderArmy 军情面板
-ok(/function rightRovingCard\(/.test(src) && /armyOverviewCard \+\s*\n\s*rightRovingCard\(\) \+/.test(src), '源契约·rightRovingCard 注入 renderArmy(军情预警后/部队名册前)');
+//   2026-06-20 军备卷在 armyOverviewCard 与 rightRovingCard() 之间插了 rightArmoryCard()(武库卡·合理)·
+//   放宽正则允许中间夹其它卡·仍校验 rightRovingCard() 接在军情预警(armyOverviewCard)之后、部队名册之前。
+ok(/function rightRovingCard\(/.test(src) && /armyOverviewCard \+[\s\S]*?rightRovingCard\(\) \+/.test(src), '源契约·rightRovingCard 注入 renderArmy(军情预警后/部队名册前·中间可夹武库卡)');
 
 console.log('\n[smoke-c4-roving-ui] ' + (F ? 'FAIL' : 'PASS') + ' — ' + A + ' 通过 / ' + F + ' 失败');
 process.exit(F ? 1 : 0);

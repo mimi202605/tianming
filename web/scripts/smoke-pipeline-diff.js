@@ -26,7 +26,7 @@ function fakeEl() {
     style: {}, children: [], childNodes: [],
     innerHTML: '', textContent: '', value: '',
     appendChild(c){ this.children.push(c); return c; },
-    removeChild(c){ return c; },
+    removeChild(c){ const i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); return c; },  // 必须真删:syncAnnals 修剪循环 while(children>CAP) removeChild(firstChild)·空操作会死循环
     insertAdjacentHTML(pos, html){ this.innerHTML += String(html || ''); },
     remove(){},
     setAttribute(){}, getAttribute(){ return null; }, removeAttribute(){},
@@ -37,7 +37,7 @@ function fakeEl() {
     insertBefore(c){ return c; }, cloneNode(){ return fakeEl(); },
     contains(){ return false; },
     parentNode: null, parentElement: null,
-    firstChild: null, lastChild: null,
+    get firstChild(){ return this.children[0] || null; }, get lastChild(){ return this.children[this.children.length - 1] || null; },
     nextSibling: null, previousSibling: null, dataset: {},
     offsetWidth:0, offsetHeight:0, clientWidth:0, clientHeight:0,
     scrollTop:0, scrollLeft:0, scrollWidth:0, scrollHeight:0,

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 问对立绘对话 · 真实立绘版（接 assets/portraits）</title>
+<!--
+  preview / mockup，非运行时代码。把问对立绘对话框架接上【真实人物立绘】(assets/portraits/tianqi7/*.png·480x640 工笔半身像)：
+    · 左立绘舞台：真画像 cover 填充·底部渐隐融入名牌·描金边框·入殿动效
+    · 底部朝议检列：真头像缩略(温体仁/毕自严/王在晋/黄立极/魏忠贤/孙承宗·皆有专属立绘)·发言者高亮
+    · 右聊天框/顶栏/footer 同前
+  · 真机经 _resolveTianqi7Portrait：specific→generic 原型兜底→空(回退名字首字)。样例毕自严(户部尚书·案前算盘)。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cdab63; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#564a2e;
+  --ivory:#f4eddf; --ink:#d8cdba;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --vermillion:#cf5042;
+  --jade:#a9d18e; --celadon:#9fc2a0;
+  --hair:rgba(207,173,101,.2); --hair-br:rgba(240,213,151,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 14px 40px;
+  background:radial-gradient(1200px 560px at 50% -8%,rgba(207,173,101,.06),transparent 60%),linear-gradient(180deg,#13100c,#0d0a07 60%,#0a0807);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.intro{font-size:12px;color:var(--gold-dim);letter-spacing:.04em;text-align:center;line-height:1.8}
+.intro b{color:var(--gold-br);font-weight:400}
+
+.stage{width:1280px;max-width:97vw;height:740px;display:flex;flex-direction:column;overflow:hidden;border-radius:5px;
+  border:1px solid rgba(207,173,101,.34);
+  background:linear-gradient(180deg,rgba(255,236,200,.04),transparent 8%),linear-gradient(178deg,#1d160e,#140e08 60%,#0b0805);
+  box-shadow:inset 0 1px 0 var(--hair-br),0 30px 80px rgba(0,0,0,.7);}
+
+/* 顶栏 */
+.dlg-head{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--hair);background:linear-gradient(180deg,rgba(207,173,101,.07),transparent)}
+.dlg-seal{width:42px;height:42px;flex:none;border-radius:4px;display:grid;place-items:center;font-size:25px;font-family:"Ma Shan Zheng",serif;color:#fdf3da;
+  border:1.4px solid var(--gold-br);background:radial-gradient(125% 125% at 30% 22%,var(--red-hi),var(--red-1) 46%,var(--red-2));box-shadow:inset 0 0 0 1px rgba(247,228,180,.3),inset 0 -3px 6px rgba(60,10,8,.5)}
+.dlg-title{font-size:24px;letter-spacing:.12em;background:linear-gradient(120deg,#fbf2d4,#e9cd84 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dlg-topic{font-size:13px;color:var(--gold-mid);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.06em;padding:3px 11px;border:1px solid var(--gold-faint);border-radius:2px;background:linear-gradient(180deg,#211810,#140d07)}
+.dlg-topic b{color:var(--gold-br);font-weight:400}
+.dlg-emotion{display:flex;align-items:center;gap:8px;margin-left:auto}
+.dlg-emotion .lab{font-size:11px;font-family:"ZCOOL XiaoWei",serif}.dlg-emotion .calm{color:var(--celadon)}.dlg-emotion .tense{color:var(--vermillion)}
+.emo-track{position:relative;width:90px;height:5px;border-radius:3px;background:linear-gradient(90deg,rgba(159,194,160,.4),rgba(207,80,66,.45));box-shadow:inset 0 0 0 .6px rgba(86,73,45,.7)}
+.emo-mark{position:absolute;top:-2px;bottom:-2px;width:2px;border-radius:1px;background:#f4eddf;box-shadow:0 0 3px rgba(244,237,223,.85)}
+.dlg-close{flex:none;width:30px;height:30px;border-radius:2px;border:1px solid var(--hair);background:none;color:var(--gold-mid);font-size:16px;cursor:pointer}
+
+.dlg-body{flex:1;display:flex;min-height:0}
+
+/* 左·立绘舞台（真画像） */
+.actor{flex:0 0 38%;position:relative;display:flex;flex-direction:column;border-right:1px solid var(--hair);background:linear-gradient(180deg,#16100a,#0e0a06)}
+.actor-stage{flex:1;position:relative;overflow:hidden}
+.actor-portrait{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 16%;
+  filter:saturate(.97) contrast(1.03) brightness(.98);
+  -webkit-mask:linear-gradient(180deg,#000 0,#000 58%,rgba(0,0,0,.5) 86%,transparent 100%);mask:linear-gradient(180deg,#000 0,#000 58%,rgba(0,0,0,.5) 86%,transparent 100%);
+  animation:enterStage 1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes enterStage{0%{opacity:0;transform:scale(1.04) translateY(10px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.actor-vig{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 80% at 50% 22%,transparent 52%,rgba(11,8,5,.5) 100%),linear-gradient(180deg,rgba(20,14,8,.34),transparent 26%)}
+.actor-frame{position:absolute;inset:9px;border:1px solid rgba(207,173,101,.26);border-radius:2px;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),inset 0 0 40px rgba(0,0,0,.35)}
+.actor-frame:before,.actor-frame:after{content:"";position:absolute;width:13px;height:13px;border-color:var(--gold);border-style:solid;opacity:.6}
+.actor-frame:before{top:-1px;left:-1px;border-width:1px 0 0 1px}.actor-frame:after{bottom:-1px;right:-1px;border-width:0 1px 1px 0}
+.actor-tag{position:absolute;top:12px;left:14px;z-index:3;font-size:10px;color:var(--gold-br);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.08em;padding:3px 8px;border:1px solid var(--gold-faint);border-radius:2px;background:rgba(15,10,6,.7)}
+.actor-plate{position:relative;z-index:3;padding:11px 16px 13px;border-top:1px solid var(--hair);background:linear-gradient(180deg,rgba(8,6,3,.4),rgba(8,6,3,.7))}
+.actor-name{font-size:24px;letter-spacing:.1em;line-height:1.1;background:linear-gradient(120deg,#fbf2d4,#e9cd84 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.actor-sub{font-size:12px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;margin-top:4px;letter-spacing:.05em}.actor-sub .loy{color:var(--jade)}
+.actor-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.bt{font-family:"ZCOOL XiaoWei",serif;font-size:12px;letter-spacing:.04em;padding:5px 11px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#241c11,#130d07);color:var(--gold-mid);transition:all .16s;white-space:nowrap}
+.bt:hover{border-color:var(--gold);color:var(--gold-br)}
+.bt.zhu{color:#e6a07a;border-color:rgba(207,80,66,.45)}.bt.shang{color:var(--celadon);border-color:rgba(159,194,160,.4)}.bt.na{color:var(--gold-br);border-color:rgba(207,173,101,.45)}
+.loy-float{position:absolute;left:50%;bottom:108px;z-index:4;white-space:nowrap;font-family:"ZCOOL XiaoWei",serif;font-size:12px;color:var(--jade);
+  padding:6px 14px;border:1px solid rgba(169,209,142,.5);border-radius:3px;background:linear-gradient(180deg,rgba(26,40,18,.95),rgba(15,25,10,.95));box-shadow:0 5px 18px rgba(0,0,0,.6);animation:loyIn .6s cubic-bezier(.2,.8,.2,1) both}
+.loy-float b{color:#c6e8a8;font-size:13px;margin-left:3px}.loy-float:before{content:"✦";color:var(--jade);margin-right:6px;opacity:.85}
+@keyframes loyIn{0%{opacity:0;transform:translate(-50%,12px)}100%{opacity:1;transform:translate(-50%,0)}}
+/* 朝议检列·真头像缩略 */
+.court{display:flex;align-items:center;gap:8px;padding:9px 16px 12px;border-top:1px solid var(--hair);background:rgba(0,0,0,.22);position:relative;z-index:3}
+.court-lab{font-size:10.5px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.06em;flex:none;writing-mode:vertical-rl;text-orientation:upright;line-height:1.1;margin-right:2px}
+.court-fig{flex:none;width:40px;height:50px;border-radius:2px;overflow:hidden;border:1px solid var(--gold-faint);background:#100b06;position:relative;cursor:pointer;transition:all .15s}
+.court-fig img{width:100%;height:100%;object-fit:cover;object-position:50% 14%;filter:saturate(.9) brightness(.82)}
+.court-fig .nm{position:absolute;left:0;right:0;bottom:0;font-size:9px;text-align:center;color:var(--gold-mid);font-family:"ZCOOL XiaoWei",serif;background:linear-gradient(0deg,rgba(8,6,3,.92),transparent);padding:5px 0 1px}
+.court-fig:hover{border-color:var(--gold)}
+.court-fig.on{border-color:var(--gold-br);box-shadow:0 0 0 1px var(--gold-br),0 0 11px rgba(207,173,101,.45)}
+.court-fig.on img{filter:saturate(1.02) brightness(1)}
+.court-fig.on .nm{color:#fdf3da}
+.court-fig.on:after{content:"发言";position:absolute;top:2px;right:2px;font-size:8px;color:#1c1408;font-family:"ZCOOL XiaoWei",serif;background:var(--gold-br);padding:0 3px;border-radius:1px}
+
+/* 右·聊天框 */
+.dlg-chat-wrap{flex:1;display:flex;flex-direction:column;min-width:0}
+.dlg-chat{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px;background:radial-gradient(120% 50% at 50% 0%,rgba(0,0,0,.22),transparent 60%),linear-gradient(180deg,#120d07,#0d0905);box-shadow:inset 0 8px 16px rgba(0,0,0,.4)}
+.dlg-chat::-webkit-scrollbar{width:7px}.dlg-chat::-webkit-scrollbar-thumb{background:rgba(207,173,101,.22);border-radius:4px}
+.msg{display:flex;max-width:84%;gap:10px}
+.msg.npc{align-self:flex-start}.msg.emp{align-self:flex-end;flex-direction:row-reverse}
+.msg-av{flex:none;width:38px;height:46px;border-radius:2px;overflow:hidden;border:1px solid var(--gold-faint);background:#100b06;margin-top:22px}
+.msg-av img{width:100%;height:100%;object-fit:cover;object-position:50% 13%}
+.msg-av.emp-av{display:grid;place-items:center;font-family:"Ma Shan Zheng",serif;color:#fdf3da;font-size:18px;border-color:var(--gold-br);background:linear-gradient(180deg,var(--red-1),var(--red-2))}
+.msg-col{display:flex;flex-direction:column;min-width:0}
+.msg-name{font-size:13px;color:var(--gold);font-family:"Ma Shan Zheng",serif;letter-spacing:.08em;margin-bottom:5px;display:flex;align-items:baseline;gap:7px}
+.msg.emp .msg-name{justify-content:flex-end;color:var(--gold-br)}
+.msg-name .loy-up{font-size:10px;color:var(--jade);font-family:"ZCOOL XiaoWei",serif}
+.in-ts{display:block;text-align:right;font-size:9px;font-family:"ZCOOL XiaoWei",serif;opacity:.6;margin-top:7px;letter-spacing:.14em;color:var(--gold-dim)}
+.npc-bubble{position:relative;padding:12px 15px;border-radius:3px 12px 12px 12px;font-size:15px;line-height:1.9;color:var(--ink);border:1px solid rgba(207,173,101,.2);background:linear-gradient(180deg,#221a10,#1a130b);box-shadow:inset 0 1px 0 rgba(240,213,151,.1),0 3px 10px rgba(0,0,0,.35)}
+.npc-bubble:before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:2px;border-radius:2px;background:linear-gradient(180deg,var(--gold-mid),var(--gold-faint))}
+.emp-bubble{position:relative;padding:12px 16px;border-radius:12px 3px 12px 12px;font-size:15.5px;line-height:1.82;color:#fdf1da;border:1px solid rgba(240,213,151,.4);background:linear-gradient(178deg,#3a2114,#2a1109);box-shadow:inset 0 1px 0 rgba(255,212,160,.18),0 3px 12px rgba(110,28,20,.3)}
+.emp-bubble .in-ts{color:rgba(240,213,151,.5)}
+
+.dlg-topics{display:flex;gap:7px;flex-wrap:wrap;padding:9px 18px;border-top:1px solid rgba(207,173,101,.1)}
+.topic{font-family:"ZCOOL XiaoWei",serif;font-size:11.5px;color:var(--gold-mid);padding:4px 11px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1f1810,#140d07);transition:all .16s}
+.topic:hover{border-color:var(--gold);color:var(--gold-br)}.topic:before{content:"问 ";color:var(--gold-dim);font-size:10px}
+.dlg-foot{padding:12px 18px 15px;border-top:1px solid var(--hair);background:linear-gradient(180deg,rgba(207,173,101,.04),transparent)}
+.foot-row{display:flex;align-items:flex-end;gap:11px}
+.tone-wrap{display:flex;flex-direction:column;gap:5px;flex:none}
+.tone-lab{font-size:11px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;padding-left:2px}
+.tone{font-family:"ZCOOL XiaoWei",serif;font-size:13px;color:var(--gold);padding:8px 11px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#241c11,#130d07);min-width:104px}
+.dlg-input{flex:1;resize:none;height:66px;padding:11px 14px;font-size:15px;line-height:1.6;font-family:"Songti SC","STSong",serif;color:var(--ivory);border:1px solid rgba(207,173,101,.28);border-radius:3px;background:linear-gradient(180deg,#140e08,#0e0a06);box-shadow:inset 0 1px 4px rgba(0,0,0,.45)}
+.dlg-input:focus{outline:none;border-color:var(--gold);box-shadow:inset 0 1px 4px rgba(0,0,0,.45),0 0 0 2px rgba(207,173,101,.16)}
+.dlg-input::placeholder{color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif}
+.send-col{display:flex;flex-direction:column;gap:6px;flex:none}
+.btn-send{font-family:"Ma Shan Zheng",serif;font-size:19px;letter-spacing:.18em;text-indent:.18em;color:#fdebcf;padding:0 20px;height:40px;border-radius:3px;cursor:pointer;border:1.1px solid rgba(240,213,151,.5);background:linear-gradient(178deg,#9a2a22,#5e140e);box-shadow:inset 0 1px 0 rgba(255,220,180,.22),0 3px 10px rgba(120,20,14,.35)}
+.btn-send:hover{border-color:var(--gold-br)}
+.btn-back{font-family:"ZCOOL XiaoWei",serif;font-size:13px;letter-spacing:.1em;color:var(--gold-mid);height:30px;border-radius:3px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1f1810,#130d07)}
+.counter{text-align:right;font-size:10.5px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;margin-top:6px}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1180px;text-align:center;line-height:1.9}.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="intro fang">真实立绘版 —— 左舞台铺<b>真画像</b>(assets/portraits/tianqi7/毕自严.png·工笔半身·案前算盘) · 底部检列换<b>真头像</b>(六人皆有专属立绘) · 右聊天<b>头像气泡</b>。真机经 <b>_resolveTianqi7Portrait</b>:专属→generic 原型兜底。</div>
+
+  <div class="stage">
+    <div class="dlg-head">
+      <div class="dlg-seal brush">对</div>
+      <div class="dlg-title brush">朝堂问对</div>
+      <div class="dlg-topic fang">议题 · <b>国库财政</b></div>
+      <div class="dlg-emotion"><span class="lab calm">镜定</span><div class="emo-track"><i class="emo-mark" style="left:34%"></i></div><span class="lab tense">紧张</span></div>
+      <button class="dlg-close">✕</button>
+    </div>
+
+    <div class="dlg-body">
+      <!-- 左·真立绘舞台 -->
+      <div class="actor">
+        <div class="actor-stage">
+          <img class="actor-portrait" src="../assets/portraits/tianqi7/毕自严.png" alt="毕自严立绘">
+          <div class="actor-vig"></div>
+          <div class="actor-frame"></div>
+          <span class="actor-tag fang">真实立绘 · assets/portraits/tianqi7/毕自严.png</span>
+          <div class="loy-float fang">纳谏采纳 · 忠 72 → 74 <b>+2</b></div>
+        </div>
+        <div class="actor-plate">
+          <div class="actor-name brush">毕自严</div>
+          <div class="actor-sub fang">户部尚书 · 朝堂问对 · <span class="loy">忠 74</span></div>
+          <div class="actor-acts">
+            <button class="bt">屏退</button><button class="bt">差遣</button><button class="bt">摘入建议库</button>
+            <button class="bt">召人对质</button><button class="bt shang">赏</button><button class="bt zhu">罚</button><button class="bt na">纳谏</button>
+          </div>
+        </div>
+        <div class="court">
+          <span class="court-lab">朝议在列</span>
+          <div class="court-fig"><img src="../assets/portraits/tianqi7/温体仁.png"><span class="nm">温体仁</span></div>
+          <div class="court-fig on"><img src="../assets/portraits/tianqi7/毕自严.png"><span class="nm">毕自严</span></div>
+          <div class="court-fig"><img src="../assets/portraits/tianqi7/王在晋.png"><span class="nm">王在晋</span></div>
+          <div class="court-fig"><img src="../assets/portraits/tianqi7/黄立极.png"><span class="nm">黄立极</span></div>
+          <div class="court-fig"><img src="../assets/portraits/tianqi7/魏忠贤.png"><span class="nm">魏忠贤</span></div>
+          <div class="court-fig"><img src="../assets/portraits/tianqi7/孙承宗.png"><span class="nm">孙承宗</span></div>
+        </div>
+      </div>
+
+      <!-- 右·头像聊天 -->
+      <div class="dlg-chat-wrap">
+        <div class="dlg-chat">
+          <div class="msg npc"><div class="msg-av"><img src="../assets/portraits/tianqi7/毕自严.png"></div><div class="msg-col"><div class="msg-name">毕自严</div><div class="npc-bubble">（趋步入殿，俯首长揖）臣户部尚书毕自严，参见陛下。陛下万安。<span class="in-ts">辰时</span></div></div></div>
+          <div class="msg emp"><div class="msg-av emp-av brush">谕</div><div class="msg-col"><div class="msg-name">御笔</div><div class="emp-bubble">免礼。太仓存银几何？辽饷缺口，卿据实奏来，勿得粉饰。<span class="in-ts">辰时</span></div></div></div>
+          <div class="msg npc"><div class="msg-av"><img src="../assets/portraits/tianqi7/毕自严.png"></div><div class="msg-col"><div class="msg-name">毕自严 <span class="loy-up">忠 +1</span></div><div class="npc-bubble">回陛下——太仓见存银四十七万两，而辽饷一项，今岁已支五百三十万。九边欠饷已逾三月，臣恐生哗变。开源节流，迫在眉睫，臣夙夜忧之，不敢有隐。<span class="in-ts">辰时一刻</span></div></div></div>
+          <div class="msg emp"><div class="msg-av emp-av brush">谕</div><div class="msg-col"><div class="msg-name">御笔</div><div class="emp-bubble">既如此，加派辽饷之议，卿以为可行否？若行，民力能堪几何？<span class="in-ts">辰时二刻</span></div></div></div>
+          <div class="msg npc"><div class="msg-av"><img src="../assets/portraits/tianqi7/毕自严.png"></div><div class="msg-col"><div class="msg-name">毕自严</div><div class="npc-bubble">陛下明鉴。加派固可解一时之急，然民力已竭，恐生流寇。臣愚见——莫若先清核屯田、追比积逋，辅以盐法之利，庶几可纾。<span class="in-ts">辰时三刻</span></div></div></div>
+        </div>
+        <div class="dlg-topics">
+          <button class="topic fang">国库财政现状</button><button class="topic fang">边境军情如何</button><button class="topic fang">官员考课情况</button><button class="topic fang">对当前局势有何看法</button>
+        </div>
+        <div class="dlg-foot">
+          <div class="foot-row">
+            <div class="tone-wrap"><span class="tone-lab fang">语气</span><div class="tone fang">直问 ▾</div></div>
+            <textarea class="dlg-input" placeholder="请输入……">清核屯田一事，着卿会同兵部详议，限一月覆奏。至于盐法，</textarea>
+            <div class="send-col"><button class="btn-send brush">奉旨</button><button class="btn-back">退下</button></div>
+          </div>
+          <div class="counter">27 / 5000</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap fang">接上<b>真实立绘</b>(非剪影占位)。<b>左舞台</b>:毕自严真画像 cover 填充·底部渐隐融入名牌·描金角框·入殿微缩放。<b>检列</b>:温体仁/毕自严/王在晋/黄立极/魏忠贤/孙承宗六真头像·发言者高亮「发言」角标。<b>聊天</b>:大臣真头像气泡·皇帝朱金「谕」字头像。真机经 <code>_resolveTianqi7Portrait</code>(专属→generic 原型→回退首字)。落地仍只动样式与渲染:把官服剪影 SVG 换成 <code>&lt;img src=ch.portrait&gt;</code>。</div>
+</body>
+</html>

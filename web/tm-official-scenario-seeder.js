@@ -8,7 +8,7 @@
     { filename: '天启七年·九月（官方）' },
     { filename: '绍宋·建炎元年八月（官方）' }
   ];
-  var BUNDLE_URL = 'tm-official-scenario-bundle.js?v=20260520-official-scenarios';
+  var BUNDLE_URL = 'tm-official-scenario-bundle.js?v=20260620-armory-materials';
   var ensurePromise = null;
   var bundlePromise = null;
 

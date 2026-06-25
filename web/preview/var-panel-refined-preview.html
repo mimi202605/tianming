@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 变量详情面板纯美化稿（以帑廪为范 · 御宝鎏金·素雅）</title>
+<!--
+  preview / mockup，非运行时代码。基准=真实运行时变量抽屉（openGuokuPanel 等·七变量面板共用 .var-drawer + .tr-* class 体系）。
+  · 任务：纯 UI 美化，不增信息、不改结构/字段。以帑廪面板为范，覆盖整族共用组件：
+      .var-drawer / -header / -title / -subtitle / -close / -body
+      .tr-hero(-glyph/-amount/-unit/-mini/-tags) · .tr-pill(bad/warn/gold/ok)
+      .tr-section(-head/-name/-badge) · .tr-quickstats/.tr-qs · .tr-3led/.tr-led · 进度条 · 诏付有司钮
+  · 美化（御宝鎏金·素雅）：细劲宋体数字 × 毛笔标题 ｜ 漆面卡片+顶缘金光边 ｜ 暖金色阶 ｜ 朱泥徽 ｜ 发丝分隔 ｜ 留白节奏 ｜ 克制 hover。
+  · 数据取 tianqi7 真实样例。落地时只需把这套 class CSS 精炼版覆到运行时即可惠及全部七面板。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cfad65; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#564a2e;
+  --ivory:#f4eddf; --ivory-2:#e7dcc5;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --crimson:#e6584b;
+  --amber:#e4a945; --jade:#a9d18e; --celadon:#9fc2a0;
+  --hair:rgba(207,173,101,.22); --hair-br:rgba(240,213,151,.32);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:14px;padding:34px 18px 50px;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 40px,rgba(207,173,101,.018) 40px 41px),
+    repeating-linear-gradient(90deg,transparent 0 40px,rgba(207,173,101,.018) 40px 41px),
+    radial-gradient(40% 80% at 24% 50%,rgba(56,62,46,.5),transparent 70%),
+    radial-gradient(34% 70% at 70% 44%,rgba(62,54,38,.45),transparent 72%),
+    linear-gradient(180deg,#11100c,#0c0a07 60%,#0a0807);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif;font-weight:400}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.num{font-family:"Songti SC","STSong","SimSun",serif;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.intro{font-size:12.5px;color:var(--gold-dim);letter-spacing:.05em;text-align:center;line-height:1.8}
+.intro b{color:var(--gold-br);font-weight:400}
+
+/* ── 抽屉 ── */
+.var-drawer{width:434px;height:728px;display:flex;flex-direction:column;border-radius:4px;overflow:hidden;
+  border:1px solid rgba(207,173,101,.32);border-left:2px solid rgba(207,173,101,.4);
+  background:linear-gradient(180deg,rgba(255,236,200,.04),transparent 12%),linear-gradient(178deg,#1d160e,#140e08 60%,#0c0805);
+  box-shadow:inset 0 1px 0 var(--hair-br),0 18px 50px rgba(0,0,0,.62);}
+.var-drawer-header{display:flex;align-items:flex-start;justify-content:space-between;padding:15px 18px 13px;
+  border-bottom:1px solid var(--hair);background:linear-gradient(180deg,rgba(207,173,101,.06),transparent)}
+.var-drawer-title{font-size:18px;color:var(--gold-br);letter-spacing:.06em;line-height:1.1}
+.var-drawer-subtitle{font-size:11px;color:var(--gold-dim);margin-top:4px;letter-spacing:.04em}
+.var-drawer-close{width:28px;height:28px;flex:none;border-radius:3px;border:1px solid var(--hair);background:none;color:var(--gold-mid);font-size:17px;cursor:pointer;transition:all .16s}
+.var-drawer-close:hover{color:var(--gold-br);border-color:var(--gold)}
+.var-drawer-body{flex:1;overflow-y:auto;padding:14px 16px 18px}
+.var-drawer-body::-webkit-scrollbar{width:7px}
+.var-drawer-body::-webkit-scrollbar-thumb{background:rgba(207,173,101,.22);border-radius:4px}
+
+/* ── Hero ── */
+.tr-hero{position:relative;border-radius:4px;padding:14px 15px;margin-bottom:14px;
+  border:1px solid rgba(207,173,101,.28);
+  background:linear-gradient(180deg,rgba(255,236,200,.05),transparent 24%),linear-gradient(178deg,#241a10,#160f08 70%);
+  box-shadow:inset 0 1px 0 var(--hair-br),0 6px 18px rgba(0,0,0,.4)}
+.tr-hero-row{display:flex;align-items:center;gap:14px}
+.tr-hero-glyph{width:46px;height:46px;flex:none;border-radius:4px;display:grid;place-items:center;font-size:27px;
+  font-family:"Ma Shan Zheng",serif;color:#fdf3da;border:1.4px solid var(--gold-br);
+  background:radial-gradient(125% 125% at 30% 22%,var(--red-hi),var(--red-1) 44%,var(--red-2));
+  box-shadow:inset 0 0 0 1px rgba(247,228,180,.3),inset 0 -4px 8px rgba(60,10,8,.5),0 2px 8px rgba(110,28,20,.4)}
+.tr-hero-main{flex:1;min-width:0}
+.tr-hero-stock-row{display:flex;align-items:baseline;gap:8px}
+.tr-hero-amount{font-size:31px;color:var(--ivory);line-height:1;font-family:"Songti SC","STSong",serif;font-variant-numeric:tabular-nums}
+.tr-hero-amount.warn{color:#f0c97a}.tr-hero-amount.bad{color:var(--crimson)}
+.tr-hero-unit{font-size:13px;color:var(--gold-mid)}
+.tr-hero-mini{display:flex;flex-wrap:wrap;gap:13px;margin-top:9px;font-size:12px;color:var(--gold-dim)}
+.tr-hero-mini b{color:var(--gold);font-weight:400;margin-right:4px;letter-spacing:.04em}
+.tr-hero-mini .num{color:var(--ivory-2)}
+.tr-hero-mini .mu{color:var(--gold-dim);font-size:10px;margin-left:2px}
+.tr-hero-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+
+/* 状态 pill */
+.tr-pill{font-size:11px;padding:2.5px 9px;border-radius:2px;letter-spacing:.03em;font-family:"ZCOOL XiaoWei",serif;border:.9px solid}
+.tr-pill.ok{color:var(--jade);border-color:rgba(169,209,142,.5);background:rgba(108,138,74,.12)}
+.tr-pill.gold{color:var(--gold-br);border-color:rgba(207,173,101,.5);background:rgba(207,173,101,.1)}
+.tr-pill.warn{color:#f0c074;border-color:rgba(228,169,69,.5);background:rgba(228,169,69,.1)}
+.tr-pill.bad{color:#f0938a;border-color:rgba(230,88,75,.5);background:rgba(230,88,75,.1)}
+
+/* ── 分段 ── */
+.tr-section{margin-bottom:15px}
+.tr-section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--hair)}
+.tr-section-name{font-size:15px;color:var(--gold-br);letter-spacing:.1em;font-family:"Ma Shan Zheng",serif;position:relative;padding-left:13px}
+.tr-section-name:before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:4px;height:14px;border-radius:1px;background:linear-gradient(180deg,var(--gold-br),var(--red-1))}
+.tr-section-badge{font-size:10.5px;color:var(--gold-dim);letter-spacing:.03em;font-family:"ZCOOL XiaoWei",serif}
+
+/* 速览格 */
+.tr-quickstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tr-qs{border-radius:3px;padding:9px 10px;border:1px solid rgba(207,173,101,.18);
+  background:linear-gradient(178deg,#1c150d,#110c07);box-shadow:inset 0 1px 0 rgba(240,213,151,.08)}
+.tr-qs-label{font-size:10.5px;color:var(--gold-dim);letter-spacing:.04em;font-family:"ZCOOL XiaoWei",serif}
+.tr-qs-val{font-size:18px;color:var(--ivory);margin-top:3px;line-height:1;font-family:"Songti SC","STSong",serif;font-variant-numeric:tabular-nums}
+.tr-qs-val.up{color:var(--jade)}.tr-qs-val.down{color:var(--crimson)}.tr-qs-val.warn{color:#f0c074}
+.tr-qs-sub{font-size:10px;color:var(--gold-dim);margin-top:3px;font-family:"ZCOOL XiaoWei",serif}
+
+/* 三账卡 */
+.tr-3led{display:flex;gap:9px}
+.tr-led{flex:1;border-radius:3px;padding:11px 10px 9px;text-align:center;position:relative;
+  border:1px solid rgba(207,173,101,.22);background:linear-gradient(178deg,#201810,#120d07);box-shadow:inset 0 1px 0 rgba(240,213,151,.1)}
+.tr-led:before{content:"";position:absolute;left:0;right:0;top:0;height:2px;border-radius:3px 3px 0 0}
+.tr-led.money:before{background:linear-gradient(90deg,#7c6c3c,var(--gold))}
+.tr-led.grain:before{background:linear-gradient(90deg,#5f7a4a,var(--jade))}
+.tr-led.cloth:before{background:linear-gradient(90deg,#8c5d13,var(--amber))}
+.tr-led-name{font-size:13px;color:var(--gold);font-family:"Ma Shan Zheng",serif;letter-spacing:.1em}
+.tr-led-stock{font-size:19px;color:var(--ivory);margin-top:5px;line-height:1;font-family:"Songti SC","STSong",serif;font-variant-numeric:tabular-nums}
+.tr-led-unit{font-size:10px;color:var(--gold-mid);margin-top:2px}
+.tr-led-flow{display:flex;justify-content:space-between;font-size:10px;color:var(--gold-dim);margin-top:7px;padding-top:6px;border-top:1px dashed rgba(207,173,101,.16)}
+.delta-up{color:var(--jade)}.delta-down{color:var(--crimson)}
+
+/* 分项行 + 进度条 */
+.tr-rows{display:flex;flex-direction:column;gap:2px}
+.tr-row{display:flex;align-items:center;gap:10px;padding:7px 2px}
+.tr-row + .tr-row{border-top:1px dashed rgba(207,173,101,.12)}
+.tr-row .rk{font-size:12.5px;color:var(--gold-mid);width:74px;flex:none;font-family:"ZCOOL XiaoWei",serif}
+.tr-row .rbar{flex:1;height:5px;border-radius:3px;background:#241a0d;box-shadow:inset 0 0 0 .6px rgba(86,73,45,.8);overflow:hidden}
+.tr-row .rbar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#7c6c3c,var(--gold))}
+.tr-row .rv{font-size:14px;color:var(--ivory-2);width:78px;text-align:right;flex:none;font-family:"Songti SC","STSong",serif;font-variant-numeric:tabular-nums}
+.tr-row .rv .ru{font-size:10px;color:var(--gold-dim);margin-left:3px}
+
+/* 诏付有司 钮 */
+.zfys{margin-top:6px;width:100%;height:46px;cursor:pointer;border-radius:3px;letter-spacing:.3em;text-indent:.3em;
+  font-size:18px;color:#fdebcf;font-family:"Ma Shan Zheng",serif;
+  border:1.2px solid rgba(240,213,151,.5);background:linear-gradient(178deg,#9a2a22,#5e140e);
+  box-shadow:inset 0 1px 0 rgba(255,220,180,.25),0 5px 16px rgba(120,20,14,.4);transition:box-shadow .18s,border-color .18s}
+.zfys:hover{border-color:var(--gold-br);box-shadow:inset 0 1px 0 rgba(255,220,180,.35),0 0 16px rgba(207,173,101,.3)}
+
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:680px;text-align:center;line-height:1.85}
+.cap b{color:var(--gold-br);font-weight:400}
+</style>
+</head>
+<body>
+  <div class="intro fang">变量详情面板纯美化（以<b>帑廪</b>为范·七面板共用 <b>.var-drawer + .tr-*</b> 组件）—— 细宋体数字 · 漆面金光边 · 朱泥徽 · 暖金色阶 · 发丝分隔，不增信息、不改结构</div>
+
+  <div class="var-drawer">
+    <div class="var-drawer-header">
+      <div>
+        <div class="var-drawer-title brush">帑廪之察 · 岁入岁出</div>
+        <div class="var-drawer-subtitle fang">月入 142万 / 月支 180万</div>
+      </div>
+      <button class="var-drawer-close">×</button>
+    </div>
+    <div class="var-drawer-body">
+
+      <!-- Hero -->
+      <div class="tr-hero">
+        <div class="tr-hero-row">
+          <div class="tr-hero-glyph">帑</div>
+          <div class="tr-hero-main">
+            <div class="tr-hero-stock-row">
+              <span class="tr-hero-amount warn num">50万</span>
+              <span class="tr-hero-unit">两</span>
+              <span class="tr-pill warn">紧 · 不足年入两成</span>
+            </div>
+            <div class="tr-hero-mini">
+              <span><b>粮</b><span class="num">1,263万</span><span class="mu">石</span></span>
+              <span><b>布</b><span class="num">60万</span><span class="mu">匹</span></span>
+              <span><b>本回合</b><span class="num">-28万</span></span>
+              <span><b>中央年入</b><span class="num">175万</span></span>
+            </div>
+            <div class="tr-hero-tags">
+              <span class="tr-pill bad">通胀压力 0.34</span>
+              <span class="tr-pill warn">借贷在册 · 余 4 月</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 回合速察 -->
+      <section class="tr-section">
+        <div class="tr-section-head"><span class="tr-section-name brush">回合速察</span><span class="tr-section-badge fang">钱 · 中央实入</span></div>
+        <div class="tr-quickstats">
+          <div class="tr-qs"><div class="tr-qs-label">中央月入</div><div class="tr-qs-val up num">142万</div><div class="tr-qs-sub">两 · 地留 96万</div></div>
+          <div class="tr-qs"><div class="tr-qs-label">月支</div><div class="tr-qs-val down num">180万</div><div class="tr-qs-sub">两</div></div>
+          <div class="tr-qs"><div class="tr-qs-label">回合增减</div><div class="tr-qs-val down num">-28万</div><div class="tr-qs-sub">连续赤字 2 月</div></div>
+          <div class="tr-qs"><div class="tr-qs-label">实征率</div><div class="tr-qs-val warn num">65%</div><div class="tr-qs-sub">漏损 35%</div></div>
+          <div class="tr-qs"><div class="tr-qs-label">民心顺从</div><div class="tr-qs-val num">79%</div><div class="tr-qs-sub">民心 48</div></div>
+          <div class="tr-qs"><div class="tr-qs-label">皇权可调</div><div class="tr-qs-val" style="font-size:15px">制衡段</div><div class="tr-qs-sub">可支配 85%</div></div>
+        </div>
+      </section>
+
+      <!-- 三账库存 -->
+      <section class="tr-section">
+        <div class="tr-section-head"><span class="tr-section-name brush">三账库存</span><span class="tr-section-badge fang">钱 · 粮 · 布</span></div>
+        <div class="tr-3led">
+          <div class="tr-led money"><div class="tr-led-name">钱</div><div class="tr-led-stock num">50万</div><div class="tr-led-unit">两</div><div class="tr-led-flow"><span>入 30万</span><span class="delta-down num">Δ-28万</span></div></div>
+          <div class="tr-led grain"><div class="tr-led-name">粮</div><div class="tr-led-stock num">1,263万</div><div class="tr-led-unit">石</div><div class="tr-led-flow"><span>入 18万</span><span class="delta-down num">Δ-21万</span></div></div>
+          <div class="tr-led cloth"><div class="tr-led-name">布</div><div class="tr-led-stock num">60万</div><div class="tr-led-unit">匹</div><div class="tr-led-flow"><span>入 9万</span><span class="delta-up num">Δ+4万</span></div></div>
+        </div>
+      </section>
+
+      <!-- 岁入分项 -->
+      <section class="tr-section">
+        <div class="tr-section-head"><span class="tr-section-name brush">岁入分项</span><span class="tr-section-badge fang">钱账 · 本月</span></div>
+        <div class="tr-rows">
+          <div class="tr-row"><span class="rk">田赋</span><span class="rbar"><i style="width:62%"></i></span><span class="rv num">88万<span class="ru">两</span></span></div>
+          <div class="tr-row"><span class="rk">丁税</span><span class="rbar"><i style="width:22%"></i></span><span class="rv num">31万<span class="ru">两</span></span></div>
+          <div class="tr-row"><span class="rk">商税</span><span class="rbar"><i style="width:14%"></i></span><span class="rv num">20万<span class="ru">两</span></span></div>
+          <div class="tr-row"><span class="rk">盐铁专卖</span><span class="rbar"><i style="width:10%"></i></span><span class="rv num">14万<span class="ru">两</span></span></div>
+          <div class="tr-row"><span class="rk">辽饷加派</span><span class="rbar"><i style="width:8%"></i></span><span class="rv num">11万<span class="ru">两</span></span></div>
+        </div>
+      </section>
+
+      <button class="zfys brush">诏付有司</button>
+
+    </div>
+  </div>
+
+  <div class="cap fang">同一套 <b>.var-drawer + .tr-*</b> class 精炼后，<b>户口 / 吏治 / 民心 / 皇权 / 皇威 / 内帑</b> 六面板一并惠及（监察条/部门浊度/户政清册等沿用同组件）。落地只动样式，不增信息、不改结构。</div>
+
+</body>
+</html>

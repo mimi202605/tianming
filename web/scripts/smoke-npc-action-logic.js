@@ -233,10 +233,11 @@ async function main() {
   assert(ctx.TM.NPC.ActionLedger.diagnose().byKind.npc_interaction >= 1,
     'NPC action diagnostics should count recorded interaction entries');
 
-  assert(typeof ctx.NpcEngine.hasExecutableBehaviors === 'function',
-    'NpcEngine should expose hasExecutableBehaviors() for end-turn guard');
-  assert(ctx.NpcEngine.hasExecutableBehaviors() === false,
-    'data-only npcEngine behavior templates should be detected as non-executable');
+  // 旧 NpcEngine 决策驱动引擎(全局)已切除·行为执行改由 NpcBehaviorRegistry 承载。
+  // 回归守卫:断言已删引擎确实不在 + 替代物(行为执行注册表)在位且注册了可执行行为(测当前正确契约·非删覆盖)。
+  assert(typeof ctx.NpcEngine === 'undefined', '已删的全局 NpcEngine 决策驱动不再存在(回归守卫·死引擎不回潮)');
+  assert(ctx.NpcBehaviorRegistry && typeof ctx.NpcBehaviorRegistry.register === 'function' && typeof ctx.NpcBehaviorRegistry.list === 'function', 'NPC 行为执行注册表 NpcBehaviorRegistry 在位(替代引擎承载行为执行)');
+  assert(ctx.NpcBehaviorRegistry.list().indexOf('appoint') >= 0 && ctx.NpcBehaviorRegistry.list().indexOf('dismiss') >= 0, 'NpcBehaviorRegistry 注册了可执行行为(appoint/dismiss 等·非空壳)');
 
   assert(typeof ctx._buildNpcActionCandidates === 'function',
     'NPC decision layer should expose candidate action builder');

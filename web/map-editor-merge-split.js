@@ -12,12 +12,42 @@
   if (!ME){ console.error('[merge-split] core not loaded'); return; }
 
   var EPS = 0.5;
+  // 合并顶点焊接容差(px)·闭合「肉眼无缝隙但差几像素」的近邻缝→共享边精确反向匹配→不再误落飞地·owner 可调
+  var MERGE_WELD_EPS = 4;
 
   // ─── geometry helpers ────────────────────────────────────
 
   function distSq(a, b){
     var dx = a[0] - b[0], dy = a[1] - b[1];
     return dx*dx + dy*dy;
+  }
+
+  // ─── 顶点焊接·治「肉眼无缝隙却合出飞地」 ──────────────────
+  // 把各 polygon 之间(及内部)距离 < tol 的近邻顶点吸附到同一代表点：
+  //   相邻省的共享边本应顶点重合·但独立描边常差几像素→tryAdjacentMerge 的精确反向匹配失败
+  //   →落 multi-polygon 兜底→小块变飞地。焊接后近邻顶点变成同一点·缝隙闭合·共享边精确匹配·正常合为一体。
+  //   真正相距远的省在 tol 内无近邻顶点→不受影响→仍按"不相邻"兜底·无误合回归。
+  function weldNearbyVertices(polys, tol){
+    var t2 = tol * tol;
+    var reps = []; // 代表点池(首见者为代表)
+    function repFor(v){
+      for (var i = 0; i < reps.length; i++){
+        var dx = reps[i][0] - v[0], dy = reps[i][1] - v[1];
+        if (dx*dx + dy*dy <= t2) return reps[i];
+      }
+      var r = [v[0], v[1]]; reps.push(r); return r;
+    }
+    return polys.map(function(poly){
+      var out = [];
+      for (var i = 0; i < poly.length; i++){
+        var r = repFor(poly[i]);
+        var last = out.length ? out[out.length - 1] : null;
+        if (!last || last[0] !== r[0] || last[1] !== r[1]) out.push([r[0], r[1]]); // 去相邻重复
+      }
+      // 去首尾重复(焊后可能首尾同点)
+      while (out.length > 1 && out[0][0] === out[out.length - 1][0] && out[0][1] === out[out.length - 1][1]) out.pop();
+      return out;
+    });
   }
 
   // ─── convex hull (Andrew monotone chain) ─────────────────
@@ -153,6 +183,11 @@
       meAlert('参与合并的 polygon 不足·检查后再试');
       return false;
     }
+
+    // ★ 顶点焊接·闭合"肉眼无缝隙但差几像素"的近邻缝→共享边精确匹配·治合并误出飞地。
+    //   相距远的省 tol 内无近邻顶点·不受影响(仍按不相邻兜底)。
+    var weldedPolys = weldNearbyVertices(allPolys, MERGE_WELD_EPS).filter(function(p){ return p && p.length >= 3; });
+    if (weldedPolys.length >= 2) allPolys = weldedPolys;
 
     // 试 shared-edge walk·合所有 polygons
     var mergedPoly = tryAdjacentMerge(allPolys);
@@ -755,6 +790,7 @@
     polygonBbox: _polygonBbox,
     convexHull: convexHull,
     tryAdjacentMerge: tryAdjacentMerge,
+    weldNearbyVertices: weldNearbyVertices,
     segmentIntersect: segmentIntersect
   };
 

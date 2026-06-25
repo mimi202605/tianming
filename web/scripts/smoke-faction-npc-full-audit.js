@@ -104,8 +104,8 @@ function main() {
   hj.npcEdicts.slice(-3).forEach(function(e){
     console.log('    第' + e.turn + '·[' + e.type + '·' + e.trigger + '] "' + e.content.slice(0, 40) + '..."');
   });
-  console.log('  chaoyi: ' + hj.npcChaoyi.length + ' 次·样例:');
-  hj.npcChaoyi.slice(-2).forEach(function(c){
+  console.log('  chaoyi: ' + (hj.npcChaoyi||[]).length + ' 次·样例:');
+  (hj.npcChaoyi||[]).slice(-2).forEach(function(c){
     console.log('    第' + c.turn + '·[' + c.type + '] "' + c.summary + '"');
   });
   console.log('  office: ' + hj.npcOfficeActions.length + ' 项·样例:');
@@ -183,7 +183,7 @@ function main() {
     }
     var hj3 = ctx3.GM.facs.find(function(f){ return f.name === '后金'; });
     console.log('开关 OFF 跑 3 回合后·后金 trajectory:');
-    console.log('  mem=' + hj3.npcMemorials.length + ' ed=' + hj3.npcEdicts.length + ' cy=' + hj3.npcChaoyi.length);
+    console.log('  mem=' + hj3.npcMemorials.length + ' ed=' + hj3.npcEdicts.length + ' cy=' + (hj3.npcChaoyi||[]).length);
     if (hj3.npcMemorials.length > 0 && hj3.npcEdicts.length > 0) console.log('  ✓ 开关 OFF·NPC 模块仍跑·走模板');
     // _generatedByLlm 应该 false (没设)
     var anyLlm = hj3.npcMemorials.some(function(m){ return m._generatedByLlm; });

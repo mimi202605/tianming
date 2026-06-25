@@ -83,7 +83,12 @@
     return '权' + pairs.map(function (pr) { return '[' + pr.label + (pr.auth ? '·' + pr.auth : '') + ']'; }).join('');
   }
 
-  // 单官一行：· 兵部·尚书 王某(军45 政40 忠88) 权[调兵·执行] 履职71
+  // 五常评分(0-100)·履职/料理看德性非忠君(owner 2026-06-20)：义.28信.28礼.20仁.16智.08·镜像 tmfRenwuWuchangValue 兜底读法
+  var _WC_ALIAS = { ren: ['仁', 'ren', 'benevolence'], yi: ['义', 'yi', 'righteousness'], li: ['礼', 'li', 'propriety'], zhi: ['智', 'zhi', 'wisdom'], xin: ['信', 'xin', 'honesty', 'trust'] };
+  function _wcVal(ch, k) { var src = (ch && (ch.wuchang || ch.wuchangOverride || ch.fiveConstants || ch.morals)) || {}; var al = _WC_ALIAS[k]; for (var i = 0; i < al.length; i++) { var v = src[al[i]]; if (v != null && !isNaN(Number(v))) return Number(v); } return 50; }
+  function _wuchangScore(ch) { return _wcVal(ch, 'yi') * 0.28 + _wcVal(ch, 'xin') * 0.28 + _wcVal(ch, 'li') * 0.20 + _wcVal(ch, 'ren') * 0.16 + _wcVal(ch, 'zhi') * 0.08; }
+
+  // 单官一行：· 兵部·尚书 王某(军45 政40 德72) 权[调兵·执行] 履职71
   function _fmtPos(GM, deptName, p) {
     var ch = _holderChar(GM, p), pwKeys = _powersOf(p);
     var domainKey = DOMAIN_ATTR[pwKeys[0]] || 'administration';
@@ -91,15 +96,14 @@
     if (!ch) {
       who = '出缺';
     } else {
-      var zhong = (ch.loyalty != null) ? (' 忠' + ch.loyalty) : '';
-      who = (ch.name || '') + '(' + _topTalents(ch, domainKey, 3, TALENT_FLOOR) + zhong + ')';
+      var dexing = ' 德' + Math.round(_wuchangScore(ch));
+      who = (ch.name || '') + '(' + _topTalents(ch, domainKey, 3, TALENT_FLOOR) + dexing + ')';
       var ds = p._dutyState;
       if (ds && typeof ds.fulfillment === 'number') {
         duty = (ds.fulfillment < 35 ? '失职' : '履职') + ds.fulfillment + (ds.trend === 'falling' ? '↓' : ds.trend === 'rising' ? '↑' : '');
       } else {
         var dv = (ch[domainKey] != null) ? ch[domainKey] : 50;
-        var lv = (ch.loyalty != null) ? ch.loyalty : 50;
-        var est = dv * 0.6 + lv * 0.4;
+        var est = dv * 0.6 + _wuchangScore(ch) * 0.4;
         duty = '料理' + (est >= 70 ? '称职' : est >= 45 ? '勉强' : '堪虞');
       }
     }
@@ -171,9 +175,52 @@
     var detail = rows.slice(0, cap).map(function (r) { return r.text; }).join('\n');
     var more = rows.length > cap ? ('\n（另 ' + (rows.length - cap) + ' 掌权要职未列·可按需取数）') : '';
 
-    return '【职权舆图】(才/忠百分制)\n〔衙门概览〕' + overview + '\n〔掌权要职〕\n' + detail + more;
+    return '【职权舆图】(才/德百分制)\n〔衙门概览〕' + overview + '\n〔掌权要职〕\n' + detail + more;
+  }
+
+  // ── 官制 agent 化·按需取数：queryOfficeDetail（query_office 工具本体 / office-recall 子调用用·query-aware·返 duties 职责描述激活惰性字段）──
+  function _matchOffice(query, deptName, p) {
+    if (!query) return true;
+    var q = String(query), pwKeys = _powersOf(p);
+    if (deptName && deptName.indexOf(q) >= 0) return true;
+    if (p.name && p.name.indexOf(q) >= 0) return true;
+    if (p.holder && p.holder.indexOf(q) >= 0) return true;
+    if (pwKeys.some(function (k) { return (POWER_LABEL[k] && POWER_LABEL[k].indexOf(q) >= 0) || k.indexOf(q) >= 0; })) return true;
+    return false;
+  }
+  function _fmtOfficeDetail(GM, deptName, p) {
+    var ch = _holderChar(GM, p), pwKeys = _powersOf(p), domainKey = DOMAIN_ATTR[pwKeys[0]] || 'administration', who;
+    if (!ch) who = '出缺';
+    else {
+      var ds = p._dutyState, lv = (ds && typeof ds.fulfillment === 'number') ? ('·履职' + Math.round(ds.fulfillment)) : '';
+      who = (ch.name || '') + '(' + _topTalents(ch, domainKey, 3, 0) + ' 德' + Math.round(_wuchangScore(ch)) + lv + ')';
+    }
+    var pwStr = _fmtPowers(pwKeys, p.authority);
+    var duties = p.duties ? ('·职责:' + String(p.duties).replace(/\s+/g, '').slice(0, 50)) : (p.desc ? ('·' + String(p.desc).replace(/\s+/g, '').slice(0, 40)) : '');
+    var treasury = (p.publicTreasuryInit || p.bindingHint) ? ('·公库[' + (p.bindingHint || '辖库') + ']') : '';
+    return ('· ' + deptName + '·' + (p.name || '') + ' ' + who + (pwStr ? ' ' + pwStr : '') + duties + treasury).replace(/\s+$/, '');
+  }
+  /**
+   * 按需取数·查某官署详情（势力 query_office 工具 / 主推演 office-recall 子调用复用）。
+   * @param {string} query 官署名/官职/在任者/权力(中文或key)·空=全部(由 cap 控)
+   * @param {object} [opts] { cap?:number=15 }
+   */
+  function queryOfficeDetail(GM, query, opts) {
+    opts = opts || {};
+    var cap = opts.cap || 15;
+    if (!GM || !GM.officeTree || !GM.officeTree.length) return '（官制未配置）';
+    var rows = [];
+    _walk(GM.officeTree, '', function (p, deptName) {
+      if (!_powersOf(p).length && !_isHead(p)) return;          // 只查掌权/主官·同舆图口径
+      if (!_matchOffice(query, deptName, p)) return;
+      rows.push(_fmtOfficeDetail(GM, deptName, p));
+    });
+    if (!rows.length) return '〔官署详查·"' + (query || '') + '"〕未匹配掌权要职（试官署名/官职/在任者/权力如"征税""调兵"）。';
+    var more = rows.length > cap ? ('\n（共' + rows.length + '·只列前' + cap + '·可缩小 query）') : ('\n（共' + rows.length + '署）');
+    return '〔官署详查·"' + (query || '全部') + '"〕\n' + rows.slice(0, cap).join('\n') + more;
   }
 
   global.buildOfficePowerMap = buildOfficePowerMap;
-  if (typeof module !== 'undefined' && module.exports) module.exports = { buildOfficePowerMap: buildOfficePowerMap };
+  global.queryOfficeDetail = queryOfficeDetail;
+  if (typeof module !== 'undefined' && module.exports) module.exports = { buildOfficePowerMap: buildOfficePowerMap, queryOfficeDetail: queryOfficeDetail };
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

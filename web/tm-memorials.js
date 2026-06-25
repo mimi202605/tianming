@@ -73,9 +73,28 @@ function _memIsIllegalPresenterName(name){
   return false;
 }
 
+// 玩家势力(君上本朝)·奏疏是臣→君·只有本朝臣子能上奏。返回 {name,id} 或 null(判不出→兜底不限)。
+function _memPlayerFaction(){
+  try {
+    var pc = (GM.chars||[]).find(function(x){ return x && (x.isPlayer || (GM.playerCharacterId && (x.id===GM.playerCharacterId || x.name===GM.playerCharacterId))); });
+    if (pc && (pc.faction || pc.factionId)) return { name: pc.faction || pc.factionName || '', id: pc.factionId || '' };
+    if (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.factionName) return { name: P.playerInfo.factionName, id: '' };
+  } catch(_) {}
+  return null;
+}
+// 该人物是否本朝(玩家势力)·容忍子势力前缀(「宋朝廷·内廷」属「宋朝廷」)·factionId 优先。
+function _memSameFactionAsPlayer(c){
+  var pf = _memPlayerFaction();
+  if (!pf || (!pf.name && !pf.id)) return true; // 判不出玩家势力→不限(兜底·旧行为)
+  if (pf.id && c.factionId) return c.factionId === pf.id;
+  var cf = c.faction || c.factionName || '';
+  if (!cf) return false;
+  return cf === pf.name || cf.indexOf(pf.name) === 0 || (pf.name && pf.name.indexOf(cf) === 0);
+}
 function _memCanPresent(c){
-  // 防御:死者(alive===false 或 dead===true)不得上奏·兼容只设 dead 不设 alive 的半死路径
-  return !!(c && c.alive !== false && !c.dead && !_memIsPlayerChar(c));
+  // 防御:死者(alive===false 或 dead===true)不得上奏·兼容只设 dead 不设 alive 的半死路径。
+  // 势力根治(owner 2026-06)：奏疏=臣→君·只本朝臣子能上奏·非玩家势力(尤其敌对)首脑不该给玩家上「为你着想、损己利你」的奏疏。
+  return !!(c && c.alive !== false && !c.dead && !_memIsPlayerChar(c) && _memSameFactionAsPlayer(c));
 }
 
 function _memSafePresenterName(name){
@@ -588,6 +607,12 @@ async function genMemorialsAI(count){
         var mem = { id: uid(), from: safeFrom, title: m.title || '', type: m.type || '\u653F\u52A1', subtype: m.subtype || '\u9898\u672C', content: m.content || '', status: 'pending', turn: GM.turn, reply: '', reliability: m.reliability || 'medium', bias: m.bias || 'none', relatedTo: m.relatedTo || '', priority: m.priority || 'normal' };
         // 检查上奏者是否在京城
         var ch = findCharByName(mem.from);
+        // 势力守卫(owner 2026-06)：奏疏=臣→君·上奏者须本朝臣子。防 AI 无视 HARD RULE 选出真实的非玩家势力(尤其敌对)角色给玩家上「损己利君」的奏疏。
+        // 仅当 from 解析为「真实角色」且非本朝时丢弃；匿名职衔(ch=null·如「户部主事」)属本朝无名官·放行。
+        if (ch && !_memSameFactionAsPlayer(ch)) {
+          try { console.warn('[memorials] drop non-player-faction presenter:', mem.from, '(' + (ch.faction || ch.factionName || '?') + ')'); } catch(_) {}
+          return;
+        }
         var isRemote = ch && ch.alive !== false && ch.location && !_isSameLocation(ch.location, capital);
         if (isRemote) {
           // 远方NPC奏疏——进入驿递队列
@@ -687,6 +712,10 @@ function renderMemorials(force){
   // 渲染单张卡片
   function _renderCard(m) {
     var idx = GM.memorials.indexOf(m);
+    // 稳定键: 按 id 而非数组下标·防 GM.memorials 被 genMemorialsAI 异步整组替换后·按钮里旧下标错位→点批复无反应(GM.memorials[idx]=undefined 静默 return)
+    if (!m.id) m.id = (typeof uid === 'function') ? uid() : ('mem_' + idx);
+    var key = m.id;
+    var kq = "'" + String(key).replace(/'/g, '') + "'";
     var isHeld = m.status === 'pending_review';
     var isSystem = !m.from || m.from === '\u6709\u53F8';
     var _sender = isSystem ? null : findCharByName(m.from);
@@ -743,7 +772,7 @@ function renderMemorials(force){
     var _contentText = m.content || '';
     var _contentHtml;
     if (_contentText.length > 180) {
-      var memBodyId = 'mem-body-' + idx;
+      var memBodyId = 'mem-body-' + key;
       _contentHtml = '<div class="mem-body collapsed wd-selectable" id="' + memBodyId + '">' + escHtml(_contentText) + '</div>'
         + '<button class="mem-toggle" onclick="var b=document.getElementById(\''+memBodyId+'\');var col=b.classList.toggle(\'collapsed\');this.textContent=col?\'\u25BC \u5C55\u5F00\u5168\u6587\':\'\u25B2 \u6536\u8D77\';">\u25BC \u5C55\u5F00\u5168\u6587</button>';
     } else {
@@ -758,19 +787,19 @@ function renderMemorials(force){
     // 朱笔批注
     var _reply = '<div class="mem-reply-wrap">'
       + '<div class="mem-reply-label">\u6731 \u7B14 \u6279 \u6CE8</div>'
-      + '<textarea id="mem-reply-'+idx+'" class="mem-reply-input" rows="2" placeholder="\u5FA1\u7B14\u6731\u6279\uFF0C\u53EF\u76F4\u63A5\u4E0B\u8BCF\u6216\u9644\u8BED\u2026\u2026">'+escHtml(m.reply||'')+'</textarea>'
+      + '<textarea id="mem-reply-'+key+'" class="mem-reply-input" rows="2" placeholder="\u5FA1\u7B14\u6731\u6279\uFF0C\u53EF\u76F4\u63A5\u4E0B\u8BCF\u6216\u9644\u8BED\u2026\u2026">'+escHtml(m.reply||'')+'</textarea>'
       + '</div>';
 
     // 操作按钮
     var _acts = '<div class="mem-actions">'
-      + '<button class="mem-btn approve" onclick="_approveMemorial('+idx+')"><span class="ic">\u2713</span> \u51C6\u3000\u594F</button>'
-      + '<button class="mem-btn reject" onclick="_rejectMemorial('+idx+')"><span class="ic">\u2717</span> \u9A73\u3000\u56DE</button>'
-      + '<button class="mem-btn annotate" onclick="_annotateMemorial('+idx+')"><span class="ic">\u270E</span> \u6279\u793A\u610F\u89C1</button>'
-      + '<button class="mem-btn refer" onclick="_referMemorial('+idx+')"><span class="ic">\u2192</span> \u8F6C\u4EA4\u6709\u53F8</button>'
-      + '<button class="mem-btn court" onclick="_courtDebateMemorial('+idx+')"><span class="ic">\u2696</span> \u53D1\u5EF7\u8BAE</button>'
-      + (isHeld?'':'<button class="mem-btn hold" onclick="_holdMemorial('+idx+')"><span class="ic">\u23F8</span> \u7559\u3000\u4E2D</button>')
-      + '<button class="mem-btn excerpt" onclick="_memExcerptToEdict('+idx+')" title="\u5212\u9009\u594F\u758F\u6587\u5B57\u6458\u5165\u5EFA\u8BAE\u5E93"><span class="ic">\u2398</span> \u6458\u3000\u5165</button>'
-      + (isSystem?'':'<button class="mem-btn summon" onclick="_summonForMemorial('+idx+')"><span class="ic">\u2604</span> \u4F20\u53EC\u95EE\u8BAF</button>')
+      + '<button class="mem-btn approve" onclick="_approveMemorial('+kq+')"><span class="ic">\u2713</span> \u51C6\u3000\u594F</button>'
+      + '<button class="mem-btn reject" onclick="_rejectMemorial('+kq+')"><span class="ic">\u2717</span> \u9A73\u3000\u56DE</button>'
+      + '<button class="mem-btn annotate" onclick="_annotateMemorial('+kq+')"><span class="ic">\u270E</span> \u6279\u793A\u610F\u89C1</button>'
+      + '<button class="mem-btn refer" onclick="_referMemorial('+kq+')"><span class="ic">\u2192</span> \u8F6C\u4EA4\u6709\u53F8</button>'
+      + '<button class="mem-btn court" onclick="_courtDebateMemorial('+kq+')"><span class="ic">\u2696</span> \u53D1\u5EF7\u8BAE</button>'
+      + (isHeld?'':'<button class="mem-btn hold" onclick="_holdMemorial('+kq+')"><span class="ic">\u23F8</span> \u7559\u3000\u4E2D</button>')
+      + '<button class="mem-btn excerpt" onclick="_memExcerptToEdict('+kq+')" title="\u5212\u9009\u594F\u758F\u6587\u5B57\u6458\u5165\u5EFA\u8BAE\u5E93"><span class="ic">\u2398</span> \u6458\u3000\u5165</button>'
+      + (isSystem?'':'<button class="mem-btn summon" onclick="_summonForMemorial('+kq+')"><span class="ic">\u2604</span> \u4F20\u53EC\u95EE\u8BAF</button>')
       + '</div>';
 
     return '<div class="mem-card ' + _mcCls + '"' + (isHeld?' style="opacity:0.82;"':'') + '>'
@@ -820,12 +849,23 @@ function renderMemorials(force){
   el.innerHTML = html;
 }
 
+// 按稳定 id 解析奏疏(防 GM.memorials 被 genMemorialsAI 异步整组替换后·按钮里旧下标错位→批复失灵)。
+// ref 优先当 id 匹配·回退数字下标(兼容无 id 的旧调用)。
+function _memResolve(ref) {
+  var list = GM.memorials || [];
+  if (ref == null) return null;
+  for (var i = 0; i < list.length; i++) { if (list[i] && list[i].id === ref) return list[i]; }
+  var n = Number(ref);
+  if (!isNaN(n) && n >= 0 && list[n]) return list[n];
+  return null;
+}
+
 /** 奏疏划选摘入建议库（同问对流程） */
 function _memExcerptToEdict(idx) {
   var sel = window.getSelection();
   var text = sel ? sel.toString().trim() : '';
   if (!text) { toast('请先在奏疏中划选要摘录的文字'); return; }
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   var from = m ? (m.from || '?') : '?';
   if (!GM._edictSuggestions) GM._edictSuggestions = [];
   GM._edictSuggestions.push({ source: '奏疏', from: from, content: text, turn: GM.turn, used: false });
@@ -899,7 +939,7 @@ function _stageMemorialDecision(m, action, reply, extra) {
 }
 
 function _approveMemorial(idx) {
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   if (!m) return;
   var reply = (_$('mem-reply-' + idx) || {}).value || '';
   _stageMemorialDecision(m, 'approved', reply);
@@ -908,7 +948,7 @@ function _approveMemorial(idx) {
 }
 
 function _rejectMemorial(idx) {
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   if (!m) return;
   var reply = (_$('mem-reply-' + idx) || {}).value || '';
   _stageMemorialDecision(m, 'rejected', reply);
@@ -918,7 +958,7 @@ function _rejectMemorial(idx) {
 
 // 批示意见——准其部分驳其部分，朱笔批注为核心
 function _annotateMemorial(idx) {
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   if (!m) return;
   var reply = (_$('mem-reply-' + idx) || {}).value || '';
   if (!reply) { toast('\u8BF7\u5148\u5728\u6731\u7B14\u6279\u6CE8\u4E2D\u5199\u660E\u5177\u4F53\u610F\u89C1'); return; }
@@ -929,7 +969,7 @@ function _annotateMemorial(idx) {
 
 // 转交有司——着该部议处
 function _referMemorial(idx) {
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   if (!m) return;
   // 弹窗选择批转对象
   var _playerLoc = (typeof _getPlayerLocation === 'function') ? _getPlayerLocation() : (GM._capital||'京城');
@@ -947,7 +987,7 @@ function _referMemorial(idx) {
   var html = '<div style="background:var(--color-surface);border:1px solid var(--gold-500);border-radius:var(--radius-lg);padding:1rem 1.5rem;max-width:400px;max-height:70vh;overflow-y:auto;">';
   html += '<div style="font-size:var(--text-sm);color:var(--color-primary);margin-bottom:var(--space-2);">批转此折给——</div>';
   _candidates.slice(0, 15).forEach(function(c) {
-    html += '<div style="padding:var(--space-1) var(--space-2);background:var(--color-elevated);border:1px solid var(--color-border-subtle);border-radius:var(--radius-sm);margin-bottom:var(--space-1);cursor:pointer;font-size:var(--text-xs);" onclick="_doReferMemorial(' + idx + ',\'' + escHtml(c.name).replace(/'/g,"\\'") + '\');this.closest(\'div[style*=fixed]\').remove();">'
+    html += '<div style="padding:var(--space-1) var(--space-2);background:var(--color-elevated);border:1px solid var(--color-border-subtle);border-radius:var(--radius-sm);margin-bottom:var(--space-1);cursor:pointer;font-size:var(--text-xs);" onclick="_doReferMemorial(\'' + String(idx).replace(/'/g,'') + '\',\'' + escHtml(c.name).replace(/'/g,"\\'") + '\');this.closest(\'div[style*=fixed]\').remove();">'
       + '<span style="font-weight:var(--weight-bold);">' + escHtml(c.name) + '</span>'
       + '<span style="color:var(--ink-300);margin-left:4px;">' + escHtml(c.officialTitle||c.title||'') + '</span>'
       + '</div>';
@@ -959,7 +999,7 @@ function _referMemorial(idx) {
 }
 
 function _doReferMemorial(idx, referTo) {
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   if (!m) return;
   var reply = (_$('mem-reply-' + idx) || {}).value || '着' + referTo + '议处';
   _stageMemorialDecision(m, 'referred', reply, { _referredTo: referTo });
@@ -969,7 +1009,7 @@ function _doReferMemorial(idx, referTo) {
 
 // 发廷议——交群臣公议，触发朝议
 function _courtDebateMemorial(idx) {
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   if (!m) return;
   var reply = (_$('mem-reply-' + idx) || {}).value || '着廷议';
   _stageMemorialDecision(m, 'court_debate', reply);
@@ -997,7 +1037,7 @@ function _courtDebateMemorial(idx) {
 }
 
 function _holdMemorial(idx) {
-  var m = GM.memorials[idx];
+  var m = _memResolve(idx);
   if (!m) return;
   var reply = (_$('mem-reply-' + idx) || {}).value || '\u518D\u8BAE';
   m.status = 'pending_review';
@@ -1057,7 +1097,7 @@ function _commitMemorialDecisions() {
 
 // 传召问询——从奏疏直接召唤上奏者对话（远方NPC改为遣使问询）
 function _summonForMemorial(memIdx){
-  var m=GM.memorials[memIdx];
+  var m=_memResolve(memIdx);
   if(!m||!m.from)return;
   if (_memMarkIllegalPresenter(m, 'summon')) { renderMemorials(); return; }
   var ch=findCharByName(m.from);

@@ -199,11 +199,13 @@ async function _ty2_startSession() {
 
   // 渲染立场板 + footer
   _ty2_render();
+  // 2026-06 faithful landing·重排为左立绘 + 右立场板版式（对齐预览）
+  try { _ty2_relayout(); } catch(_tyLayoutErr) { try { window.TM && TM.errors && TM.errors.captureSilent(_tyLayoutErr, 'tinyi-relayout'); } catch(_) {} }
   // 进入初议
   _ty2_phaseInitialRound();
 }
 
-/** 渲染立场板（可视化百官立场） */
+/** 渲染立场板（七档光谱·真立绘缩略·立场迁移↗↘·魂）—— 2026-06 faithful landing 对齐 preview/tingyi-preview.html */
 function _ty2_render() {
   var body = _$('cy-body');
   // 清除旧立场板
@@ -211,34 +213,158 @@ function _ty2_render() {
   if (old) old.remove();
   if (!CY._ty2) return;
   var stances = CY._ty2.stances || {};
-  var html = '<div id="ty2-stance-board" style="position:sticky;top:0;z-index:10;background:var(--color-elevated);border:1px solid var(--color-border-subtle);border-radius:var(--radius-sm);padding:6px 10px;margin-bottom:6px;font-size:0.71rem;">';
-  html += '<div style="color:var(--gold-400);margin-bottom:3px;">〔 立 场 板 〕 第 ' + (CY._ty2.roundNum||0) + ' 轮</div>';
-  // 聚合
-  var counts = {};
-  Object.keys(stances).forEach(function(n) {
-    var s = stances[n].current;
-    counts[s] = (counts[s]||0) + 1;
+  // 七档光谱（青·灰·朱）
+  var cols = [
+    { key:'极力支持', zone:'sup' }, { key:'支持', zone:'sup' }, { key:'倾向支持', zone:'sup' },
+    { key:'中立', zone:'neu' },
+    { key:'倾向反对', zone:'opp' }, { key:'反对', zone:'opp' }, { key:'极力反对', zone:'opp' }
+  ];
+  var order = { '极力支持':0,'支持':1,'倾向支持':2,'中立':3,'待定':3,'倾向反对':4,'反对':5,'极力反对':6 };
+  var counts = _ty2_countStances();   // {support, oppose, neutral, mediate}
+  // 立场迁移：本人 initial→current 跨档位（↗趋支持 / ↘趋反对）
+  function _mv(n) {
+    var st = stances[n] || {};
+    var ci = order[st.current], ii = order[st.initial];
+    if (st.initial && st.initial !== '待定' && typeof ci === 'number' && typeof ii === 'number' && ci !== ii) {
+      return ci < ii ? 'up' : 'down';
+    }
+    return '';
+  }
+  function _chip(n, zone) {
+    var ch = (typeof findCharByName === 'function' ? findCharByName(n) : null) || {};
+    var mv = _mv(n);
+    var mvHtml = mv ? '<span class="ty-mv ' + mv + '">' + (mv === 'up' ? '↗' : '↘') + '</span>' : '';
+    var pic = ch.portrait
+      ? '<img src="' + escHtml(ch.portrait) + '" loading="lazy" onerror="this.style.display=\'none\'">'
+      : '<span class="ty-sf-ph">' + escHtml(String(n).charAt(0)) + '</span>';
+    return '<div class="ty-schip z-' + zone + (mv ? ' moved' : '') + '" data-name="' + escHtml(n) + '" '
+      + 'onclick="_ty2_setSpeaker(\'' + escHtml(n).replace(/'/g, "\\'") + '\')">'
+      + mvHtml + '<div class="ty-sf">' + pic + '</div><div class="ty-sn">' + escHtml(n) + '</div></div>';
+  }
+  // 按 current 立场归档（待定并入中立列）
+  var byStance = {};
+  (CY._ty2.attendees || []).forEach(function(n) {
+    var s = (stances[n] || {}).current || '待定';
+    if (s === '待定') s = '中立';
+    (byStance[s] = byStance[s] || []).push(n);
   });
-  var colors = { '极力支持':'var(--celadon-400)','支持':'var(--celadon-400)','倾向支持':'var(--celadon-400)','中立':'var(--ink-300)','待定':'var(--ink-300)','倾向反对':'var(--vermillion-400)','反对':'var(--vermillion-400)','极力反对':'var(--vermillion-400)','折中':'var(--amber-400)','另提议':'var(--indigo-400)' };
-  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">';
-  Object.keys(counts).forEach(function(s) {
-    html += '<span style="color:' + (colors[s]||'') + ';">' + s + ' ' + counts[s] + '</span>';
+  var html = '<div id="ty2-stance-board" class="ty-board">';
+  html += '<div class="ty-board-h"><span class="ty-bt">〔 立 场 板 〕</span>'
+    + '<span class="ty-rd">第 ' + (CY._ty2.roundNum||0) + ' 轮 · ' + (CY._ty2.attendees||[]).length + ' 员与议</span>'
+    + '<span class="ty-tally"><span class="sup">支持 ' + counts.support + '</span><span class="neu">中立 ' + counts.neutral + '</span>'
+    + '<span class="opp">反对 ' + counts.oppose + '</span>' + (counts.mediate ? '<span class="med">折中 ' + counts.mediate + '</span>' : '') + '</span></div>';
+  html += '<div class="ty-spectrum">';
+  cols.forEach(function(c) {
+    var chips = (byStance[c.key] || []).map(function(n) { return _chip(n, c.zone); }).join('');
+    html += '<div class="ty-spec-col z-' + c.zone + '"><div class="ty-cl">' + c.key + '</div><div class="ty-spec-chips">' + chips + '</div></div>';
   });
   html += '</div>';
-  // 每人简列
-  html += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
-  CY._ty2.attendees.forEach(function(n) {
-    var st = stances[n] || {current:'待定'};
-    var c = colors[st.current] || 'var(--ink-300)';
-    html += '<span style="padding:1px 5px;background:rgba(255,255,255,0.04);border-left:2px solid ' + c + ';font-size:0.68rem;">' + escHtml(n) + '<span style="color:' + c + ';"> ' + st.current + '</span></span>';
-  });
-  html += '</div>';
+  // 折中 / 另提议（侧栏）
+  var med = byStance['折中'] || [], alt = byStance['另提议'] || [];
+  if (med.length || alt.length) {
+    html += '<div class="ty-aux-row">';
+    if (med.length) html += '<div class="ty-aux-col med"><span class="ty-al">折中</span><div class="ty-achips">' + med.map(function(n){return _chip(n,'med');}).join('') + '</div></div>';
+    if (alt.length) html += '<div class="ty-aux-col alt"><span class="ty-al">另提议</span><div class="ty-achips">' + alt.map(function(n){return _chip(n,'alt');}).join('') + '</div></div>';
+    html += '</div>';
+  }
   html += '</div>';
   if (body && body.firstChild) body.insertBefore(_ty2_makeDiv(html), body.firstChild);
   else if (body) body.innerHTML = html + body.innerHTML;
 }
 
 function _ty2_makeDiv(html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild || d; }
+
+// 2026-06 faithful landing·廷议版式重排（左陈词者立绘 + 右立场板/辩论/裁决·对齐 preview/tingyi-preview.html）
+// 渲染后 DOM 重排（保留全部 id/onclick/handler·只搬位置）+ scoped CSS（styles.css #chaoyi-modal.cy-mode-tinyi）
+function _ty2_relayout() {
+  var modal = document.getElementById('chaoyi-modal');
+  if (!modal) return;
+  modal.classList.add('cy-mode-tinyi');
+  if (document.getElementById('ty-actor')) return;   // 已重排过
+  var frame = modal.firstElementChild;
+  var body = document.getElementById('cy-body');
+  if (!frame || !body) return;
+  var topic = document.getElementById('cy-topic');
+  var inputRow = document.getElementById('cy-input-row');
+  var footer = document.getElementById('cy-footer');
+  var header = frame.firstElementChild;   // 顶栏（cy-mode-label + cy-round-tag + 退朝）
+  // 左·当前陈词者立绘
+  var actor = document.createElement('div'); actor.id = 'ty-actor'; actor.className = 'ty-actor';
+  actor.innerHTML = '<div class="ty-actor-stage"><img class="ty-portrait" id="ty-portrait" alt="" style="display:none">'
+    + '<div class="ty-actor-vig"></div><div class="ty-actor-frame"></div>'
+    + '<span class="ty-actor-tag" id="ty-actor-tag">待陈词</span></div>'
+    + '<div class="ty-actor-plate"><div><span class="ty-actor-nm" id="ty-actor-nm">廷议</span>'
+    + '<span class="ty-stance-pill" id="ty-actor-pill"></span></div>'
+    + '<div class="ty-actor-sub" id="ty-actor-sub">精英集议 · 三品以上 · 一议多轮辩难</div>'
+    + '<div class="ty-acts">'
+    +   '<button class="ty-bt key" onclick="if(typeof _ty2_enterDecide===\'function\')_ty2_enterDecide()">进入裁决 ▾</button>'
+    +   '<button class="ty-bt" onclick="if(typeof _ty2_startDebate===\'function\')_ty2_startDebate()">展开辩论</button>'
+    +   '<button class="ty-bt" onclick="if(typeof _ty2_offerMediation===\'function\')_ty2_offerMediation()">召折中</button>'
+    +   '<button class="ty-bt" onclick="var i=document.getElementById(\'cy-player-input\');if(i)i.focus()">指名诘问</button>'
+    +   '<button class="ty-bt" onclick="var i=document.getElementById(\'cy-player-input\');if(i)i.focus()">插言</button>'
+    + '</div></div>';
+  // 右·主体（议题 + 立场板/辩论流body + 输入 + 裁决footer 全部移入）
+  var main = document.createElement('div'); main.className = 'ty-main';
+  var row = document.createElement('div'); row.className = 'ty-row';
+  [topic, body, inputRow, footer].forEach(function(el) { if (el) main.appendChild(el); });
+  row.appendChild(actor); row.appendChild(main);
+  if (header && header.nextSibling) frame.insertBefore(row, header.nextSibling);
+  else frame.appendChild(row);
+  // 顶栏：议印 + 廷议 + 议题 + 类型 chip（内联一行·对齐预览）
+  var ttypeLbl = { war:'⚔️ 战和',succession:'👑 立储',reform:'📜 变法',judgment:'⚖️ 重案',finance:'💰 财赋',relief:'🌾 灾赈',appointment:'👔 廷推',other:'❓ 其他' }[CY._ty2 && CY._ty2.topicType] || '';
+  var label = document.getElementById('cy-mode-label');
+  if (label) label.innerHTML = '<span class="ty-seal">议</span><span class="ty-htitle">廷议</span>'
+    + '<span class="ty-dlg-topic"><span class="ty-topic-lab">议题</span> · <b>' + escHtml((CY._ty2 && CY._ty2.topic) || '') + '</b></span>'
+    + (ttypeLbl ? '<span class="ty-ttype">' + ttypeLbl + '</span>' : '');
+  // 轮次入右侧（退朝按钮左）
+  var rtag = document.getElementById('cy-round-tag');
+  if (rtag) { rtag.style.display = 'inline-block'; rtag.className = 'ty-round-tag'; rtag.innerHTML = '第 <b>' + ((CY._ty2 && CY._ty2.roundNum) || 1) + '</b> 轮 · 辩论'; }
+  // 独立议题行隐藏（已内联顶栏）
+  if (topic) topic.style.display = 'none';
+}
+
+// 当前陈词者立绘随发言切换（谁陈词则谁立绘 + 立场板 chip 高亮）
+function _ty2_setSpeaker(name) {
+  if (!name || !CY._ty2) return;
+  var ch = (typeof findCharByName === 'function' ? findCharByName(name) : null) || {};
+  var st = (CY._ty2.stances && CY._ty2.stances[name]) || {};
+  var stance = st.current || '待定';
+  var img = document.getElementById('ty-portrait');
+  if (img) {
+    if (ch.portrait) { img.src = ch.portrait; img.style.display = ''; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; }
+    img.alt = name;
+  }
+  var tag = document.getElementById('ty-actor-tag'); if (tag) tag.textContent = '当前陈词 · ' + name;
+  var nm = document.getElementById('ty-actor-nm'); if (nm) nm.textContent = name;
+  var sub = document.getElementById('ty-actor-sub');
+  if (sub) sub.textContent = (ch.officialTitle || ch.title || '与议') + (ch.party ? ' · ' + ch.party : '');
+  var pill = document.getElementById('ty-actor-pill');
+  if (pill) {
+    var z = /支持/.test(stance) ? 'high' : /反对/.test(stance) ? 'opp' : (stance === '折中' ? 'med' : 'neu');
+    pill.textContent = stance; pill.className = 'ty-stance-pill ' + z;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#chaoyi-modal .ty-schip'), function(el) {
+    el.classList.toggle('speaking', el.getAttribute('data-name') === name);
+  });
+}
+
+// 给辩论气泡标注立场（彩色左边框 data-stance + name 行立场标签·对齐预览 fb sup/opp/med）
+function _ty2_tagBubbleStance(div, stance) {
+  if (!div || !stance) return;
+  var zone = /支持/.test(stance) ? 'sup' : /反对/.test(stance) ? 'opp' : (stance === '折中' ? 'med' : stance === '另提议' ? 'alt' : 'neu');
+  try {
+    div.setAttribute('data-stance', zone);
+    var nmDiv = div.querySelector('div:last-child > div:first-child');
+    if (nmDiv && !nmDiv.querySelector('.ty-fb-sp')) {
+      var sp = document.createElement('span');
+      sp.className = 'ty-fb-sp ' + zone;
+      sp.textContent = stance;
+      nmDiv.appendChild(sp);
+    }
+  } catch (_e) {}
+}
+if (typeof window !== 'undefined') { window._ty2_setSpeaker = _ty2_setSpeaker; window._ty2_relayout = _ty2_relayout; window._ty2_tagBubbleStance = _ty2_tagBubbleStance; }
 
 /** 阶段：初议 + 补议（每位与议者按品级依次陈述，默认 2 轮，玩家可插言/打断） */
 // 朝堂博弈 S2·从与议者里挑立场对立的核心代表(支持2+反对2+中立1)·让第2轮深辩集中·控延迟
@@ -378,6 +504,7 @@ async function _ty2_genOneSpeech(name, roundNum, prevSpeeches) {
   var ch = findCharByName(name);
   var ttypeLbl = { war:'战和',succession:'立储',reform:'变法',judgment:'重案',finance:'财赋',relief:'灾赈',appointment:'廷推',other:'其他' }[CY._ty2.topicType] || '';
   var prompt = '廷议·第 ' + roundNum + ' 轮。议题类型：' + ttypeLbl + '\n';
+  if (typeof _sovereignLanguagePromptLine === 'function') prompt += _sovereignLanguagePromptLine(typeof GM !== 'undefined' ? GM : null);
   prompt += '议题：' + CY._ty2.topic + '\n';
   if (CY._ty2.topicCustom) prompt += '说明：' + CY._ty2.topicCustom + '\n';
   prompt += '你扮演' + name + '（' + (ch && ch.officialTitle || '') + '，' + (ch && _cyGetRank(ch) || '') + '）：\n';
@@ -554,6 +681,7 @@ async function _ty2_genOneSpeech(name, roundNum, prevSpeeches) {
 
   // A1: 流式化——先建占位气泡·onChunk 用 regex 渐进显示 "line" 字段
   var _tyDiv = addCYBubble(name, '\u2026', false);
+  try { _ty2_setSpeaker(name); } catch(_tySpErr) {}   // \u8c01\u9648\u8bcd\u5219\u8c01\u7acb\u7ed8
   var _tyBubble = _tyDiv && _tyDiv.querySelector ? _tyDiv.querySelector('.cy-bubble') : null;
   var _tyRaf = false;
   var _tyRendered = false;  // 1.2.4.3·气泡已成功渲染则禁止 catch 覆写「未能陈词」
@@ -581,7 +709,7 @@ async function _ty2_genOneSpeech(name, roundNum, prevSpeeches) {
     if (obj && obj.line) {
       var colors = { '极力支持':'var(--celadon-400)','支持':'var(--celadon-400)','倾向支持':'var(--celadon-400)','中立':'var(--ink-300)','倾向反对':'var(--vermillion-400)','反对':'var(--vermillion-400)','极力反对':'var(--vermillion-400)','折中':'var(--amber-400)','另提议':'var(--indigo-400)' };
       var c = colors[obj.stance] || '';
-      if (_tyBubble) { _tyBubble.innerHTML = '\u3014' + (obj.stance||'\u4E2D\u7ACB') + '\u3015<span style="color:' + c + ';">' + escHtml(obj.line) + '</span>'; _tyRendered = true; }
+      if (_tyBubble) { _tyBubble.innerHTML = '\u3014' + (obj.stance||'\u4E2D\u7ACB') + '\u3015<span style="color:' + c + ';">' + escHtml(obj.line) + '</span>'; _tyRendered = true; try { _ty2_tagBubbleStance(_tyDiv, obj.stance); } catch(_tg) {} }
       try { _cy_jishiAdd('tinyi', CY._ty2 && CY._ty2.topic, name, obj.line, { round: roundNum, stance: obj.stance }); } catch(_je){ try{window.TM&&TM.errors&&TM.errors.captureSilent(_je,'tinyi-jishi');}catch(_){} }
       try { if (typeof NpcMemorySystem !== 'undefined') NpcMemorySystem.remember(name, '廷议「' + (CY._ty2 && CY._ty2.topic ? String(CY._ty2.topic).slice(0,20) : '') + '」持' + (obj.stance||'中立') + '：' + String(obj.line).slice(0,40), '平', 5); } catch(_me){ try{window.TM&&TM.errors&&TM.errors.captureSilent(_me,'tinyi-mem');}catch(_){} }
       return obj;
@@ -601,6 +729,7 @@ async function _ty2_genOneSpeech(name, roundNum, prevSpeeches) {
         var _c2 = { '极力支持':'var(--celadon-400)','支持':'var(--celadon-400)','倾向支持':'var(--celadon-400)','中立':'var(--ink-300)','倾向反对':'var(--vermillion-400)','反对':'var(--vermillion-400)','极力反对':'var(--vermillion-400)','折中':'var(--amber-400)','另提议':'var(--indigo-400)' }[_rescuedStance] || '';
         _tyBubble.innerHTML = '\u3014' + (_rescuedStance||'\u4E2D\u7ACB') + '\u3015<span style="color:' + _c2 + ';">' + escHtml(_rescuedLine) + '</span>';
         _tyRendered = true;
+        try { _ty2_tagBubbleStance(_tyDiv, _rescuedStance); } catch(_tg2) {}
         try { _cy_jishiAdd('tinyi', CY._ty2 && CY._ty2.topic, name, _rescuedLine, { round: roundNum, stance: _rescuedStance, rescued: true }); } catch(_je2){ try{window.TM&&TM.errors&&TM.errors.captureSilent(_je2,'tinyi-jishi-rescue');}catch(_){} }
         return { stance: _rescuedStance || '中立', line: _rescuedLine, confidence: 50, _rescued: true };
       }

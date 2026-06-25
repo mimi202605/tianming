@@ -602,7 +602,7 @@
         // tier 1·必含·任何 model cap 都包含·核心账本与叙事 (10 字段)
         core: ['turn_summary', 'shizhengji_basis', 'shilu_text', 'szj_title', 'shizhengji', 'szj_summary', 'player_status', 'events', 'char_updates', 'edict_feedback'],
         // tier 2·高频·standard+·常用业务字段 (10 字段)
-        common: ['fiscal_adjustments', 'currency_adjustments', 'population_adjustments', 'central_local_actions', 'environment_actions', 'institution_changes', 'personnel_changes', 'office_changes', 'faction_relation_changes', 'faction_relation_shift', 'army_changes', 'province_changes', 'character_deaths', 'npc_actions', 'edict_lifecycle_update', 'character_memory_updates'],
+        common: ['fiscal_adjustments', 'currency_adjustments', 'population_adjustments', 'central_local_actions', 'environment_actions', 'institution_changes', 'personnel_changes', 'office_changes', 'faction_relation_changes', 'faction_relation_shift', 'army_changes', 'armory_procurement', 'province_changes', 'character_deaths', 'npc_actions', 'edict_lifecycle_update', 'character_memory_updates'],
         // tier 3·可选·full·高级业务 (5 字段)
         extended: ['party_changes', 'class_changes', 'class_alert_responses', 'economic_advice', 'table_updates']
       };
@@ -665,6 +665,7 @@
               faction_relation_shift: { type: 'array', items: { type: 'object', additionalProperties: true } },
               party_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
               army_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+              armory_procurement: { type: 'array', items: { type: 'object', additionalProperties: true } },
               province_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
               economic_advice: { type: 'string' },
               table_updates: { type: 'array', items: { type: 'object', additionalProperties: true } },
@@ -1649,6 +1650,19 @@
         }
       }
 
+      // --- 官制活化 #1·office-recall 子调用（按需取数·走次要 API·gated officeRecallAgentEnabled·关则 GM._officeRecallResult=null·主推演落回静态职权舆图·零回归）---
+      // 不脱节：此处在玩家本回合操作落 GM 之后跑·查当前 officeTree(含玩家任免/_pendingReforms)·输出经 GM._officeRecallResult 喂进主推演 prompt 职权舆图槽。
+      try {
+        if (typeof officeFlagOn === 'function' && officeFlagOn('officeRecallAgentEnabled') && global.TM && global.TM.OfficeRecallAgent && typeof global.TM.OfficeRecallAgent.runOfficeRecall === 'function') {
+          var _ofFocus = (typeof _think !== 'undefined' && _think) ? String(_think).replace(/\s+/g, ' ').slice(0, 300) : '';
+          var _ofRes = await global.TM.OfficeRecallAgent.runOfficeRecall(GM, { focus: _ofFocus });
+          GM._officeRecallResult = (_ofRes && _ofRes.text) ? { text: _ofRes.text, turn: GM.turn, toolCallCount: _ofRes.toolCallCount, fallback: _ofRes.fallback } : null;
+          _dbg('[SC_OFFICE_RECALL]', GM._officeRecallResult ? (_ofRes.toolCallCount + ' 官署细查·fallback=' + _ofRes.fallback) : '无结果·落回静态舆图');
+        } else {
+          GM._officeRecallResult = null;
+        }
+      } catch (_ofE) { GM._officeRecallResult = null; _dbg('[SC_OFFICE_RECALL] 异常·落回静态舆图:', (_ofE && _ofE.message) || _ofE); }
+
       // --- Sub-call 0.5: 深度记忆回顾 ---
       await _runSubcall('sc05', '记忆回顾', 'standard', async function() {
       showLoading("\u6DF1\u5EA6\u56DE\u987E",48);
@@ -2245,16 +2259,19 @@
           if (TM.ContextZones.recordZoneInjection) TM.ContextZones.recordZoneInjection(GM, _sc1ZonePacked, { stage:'sc1-prefix' });
         }
       } catch(_czE) { _dbg('[ContextZones sc1-prefix] fail:', _czE); }
+      // DA-Q2·史记创作字段(总括/实录/时政记副标题正文总结/玩家状态)提示词改由共享 recordSpecs(ctx) 出·
+      // 与 agent deepen_narrative 同源零 drift·输出须字节级不变(见 scripts/verify-recordspecs-byte-identical.js)
+      var _rsSpec = TM.Endturn.AI.prompt.recordSpecs(ctx);
       var tp1 = _sc1Prefix + tp + _preAnalysis + _hardConstraints + "\n请仅返回绝JSON，包含:\n"+
-        "{\"turn_summary\":\"一句话概括本回合最重要的变化(30-50字，如:北境叛乱平定，国库因军费骤降三成)\","+
+        "{\"turn_summary\":\""+_rsSpec.turnSummary+"\","+
         // 实录：纯文言史官体，仿资治通鉴/历代实录
-        "\"shilu_text\":\"实录"+_shiluMin+"-"+_shiluMax+"字——纯文言文(仿《资治通鉴》《明实录》)，以干支月份/日为单位，记事不评论。只记可验证事实：诏令、任免、战事、灾异、人事大变。句式仿实录：'某月某日，上诏……'/'是月，某地……'/'上命某官……'。禁止白话词汇，禁止主观评论。\","+
+        "\"shilu_text\":\""+_rsSpec.shilu+"\","+
         // 时政记：朝政纪要体（副标题+总括+分领域因果链+总结）
-        "\"szj_title\":\"时政记副标题——七字对仗两句，概括本回合主题(如'雷霆除藩安豫地，断禄激变祸萧墙'；两句用'，'分隔)\","+
-        "\"shizhengji\":\"时政记正文"+_szjMin+"-"+_szjMax+"字——仿崇祯朝政纪要体：\\n  1.开篇总括：'陛下本回合……颁布数道谕旨：其一……；其二……'，逐条复述玩家诏令/私人行动\\n  2.按领域分段(3-5段)——军事与边防/内政与民生/吏治与人事/宗室与外戚/关外局势等，每段开头用【军事】【朝政】【经济】【外交】【民生】【宫廷】等方括号标签\\n  3.每段必须完整因果链：诏令→执行者→执行过程→阻力/意外→实际效果→遗留隐患。不要只写结果，要写过程和阻碍\\n  4.跨回合延续：用'此前''原本''延续'衔接往期决策的后续影响\\n  5.自然融入信息源：据XX奏报/有司呈报/密探来报/坊间传言/边军塘报\\n  段间用\\n\\n分隔。\","+
-        "\"szj_summary\":\"时政记总结一句话——四字对仗成语风格(如'内帑充盈，边军暂安，然宗室怨气冲天，局势如履薄冰')\","+
+        "\"szj_title\":\""+_rsSpec.szjTitle+"\","+
+        "\"shizhengji\":\""+_rsSpec.shizhengji+"\","+
+        "\"szj_summary\":\""+_rsSpec.szjSummary+"\","+
         // 玩家角色状态——保留(供NPC记忆系统与昏君叙事基调使用；同时会在后人戏说中自然展现)
-        "\"player_status\":\"政治处境(1句话——朝局格局、权力态势、外部威胁)\",\"player_inner\":\"主角内心独白(1-2句，第一人称，私人情感、矛盾挣扎——此字段仅供NPC记忆，不会直接展示)\","+
+        "\"player_status\":\""+_rsSpec.playerStatus+"\",\"player_inner\":\""+_rsSpec.playerInner+"\","+
         // 人事变动：从office_changes/title_changes/character_deaths聚合后的可读列表
         "\"personnel_changes\":[{\"name\":\"姓名\",\"former\":\"原职或原身份\",\"change\":\"变动描述\",\"reason\":\"原因(可选)\"}],"+
         "\"resource_changes\":{\"\u8D44\u6E90\u540D\":\u53D8\u5316\u91CF},\"relation_changes\":{\"\u5173\u7CFB\u540D\":\u53D8\u5316\u91CF},"+
@@ -3367,7 +3384,9 @@
               { rx: /\n  地方贡献占比·主税种：[\s\S]*?(?=\n  户口|\n  民心|\n\n【|$)/, label: '地方贡献' },
               { rx: /\n  民心·主要驱动：[\s\S]*?(?=\n\n【|$)/, label: '民心 14 源' },
               { rx: /\n  腐败·6部门：[\s\S]*?(?=\n  民心·|\n  14|\n\n【|$)/, label: '腐败 6 部门' },
-              { rx: /\n  民心·分阶层：[\s\S]*?(?=\n  腐败·|\n\n【|$)/, label: '民心分阶层' }
+              { rx: /\n  民心·分阶层：[\s\S]*?(?=\n  腐败·|\n\n【|$)/, label: '民心分阶层' },
+              { rx: /【门阀家族】[\s\S]*?(?=\n【|\n\n【|$)/, label: '门阀家族' },
+              { rx: /【近期NPC动向】[\s\S]*?(?=\n【|\n\n【|$)/, label: '近期NPC动向' }
             ];
             var _extracted = '';
             var _extractedLabels = [];
@@ -3431,6 +3450,30 @@
               // 抽取到内容但太少·或 callAIMessages 不可用·贴回去
               tp1 += _extracted;
             }
+            // ★ 硬截兜底(2026-06-21)：Call A 压缩后(或不可用时)仍超预算 → 按比例截 tp1 中段·
+            //   保头(玩家圣旨/早期指令)保尾(输出约束/JSON 说明)·确保落入上下文窗口·免被服务端截断或报错。
+            //   结构化输出由 API schema 参数强制·不依赖此文本·故截中段不破坏 JSON 结构。
+            try {
+              var _ht = checkPromptTokenBudget((sysP || '') + '\n' + tp1);
+              var _htTarget = (_ht.budget && _ht.budget.warn80) ? _ht.budget.warn80 : Math.floor(((_ht.budget && _ht.budget.budget) || _ht.tokens) * 0.8);
+              if (_ht.status === 'critical' && _ht.tokens > _htTarget && tp1.length > 4000) {
+                var _htKeepRatio = Math.max(0.2, Math.min(0.95, _htTarget / _ht.tokens));
+                var _htKeep = Math.floor(tp1.length * _htKeepRatio);
+                var _htHead = Math.floor(_htKeep * 0.5);
+                var _htTail = _htKeep - _htHead;
+                if (_htHead > 300 && _htTail > 300 && (_htHead + _htTail) < tp1.length) {
+                  var _htOmit = tp1.length - _htHead - _htTail;
+                  tp1 = tp1.slice(0, _htHead)
+                    + '\n\n【⚠ 上下文窗口不足·已硬截中段约 ' + _htOmit + ' 字以保关键首尾(玩家诏令/输出约束)·请据现有信息推演·缺失处勿臆造】\n\n'
+                    + tp1.slice(tp1.length - _htTail);
+                  if (typeof toast === 'function') toast('[SC1] 仍超预算·硬截中段 ' + _htOmit + ' 字保窗口');
+                  if (window.TM && window.TM.lastPromptTokens && window.TM.lastPromptTokens.sc1) {
+                    var _htAfter = checkPromptTokenBudget((sysP || '') + '\n' + tp1);
+                    window.TM.lastPromptTokens.sc1.hardTrimmed = { omittedChars: _htOmit, tokensAfter: _htAfter.tokens, statusAfter: _htAfter.status };
+                  }
+                }
+              }
+            } catch (_htErr) {}
           }
         }
       } catch(_tokE) {}

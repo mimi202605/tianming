@@ -452,8 +452,10 @@ openSettings=function(){
     (function(){
       try { console.log('[P15 settings] 性能·成本控制 段渲染中·v=2026050104'); } catch(_){}
       var _gateOn = !!(P.conf && P.conf.recallGateEnabled === true);
-      var _consolOn = !(P.conf && P.conf.consolidationEnabled === false);
+      // 修复失效:消费端读 memorySynthesisEnabled(旧键 consolidationEnabled 被迁移框架删)·UI 读/写都对齐新键(兼容旧键回落)
+      var _consolOn = !(P.conf && (P.conf.memorySynthesisEnabled === false || (P.conf.memorySynthesisEnabled === undefined && P.conf.consolidationEnabled === false)));
       var _semOn = !(P.conf && P.conf.semanticRecallAutoload === false);
+      // 注:agent-only 调参(记忆深度/自适应深化/工作上下文窗口)已移至「🧪实验模式→🤖Agent 模式」块(仅该模式生效·归位)
       return '<div class="settings-section" style="border-left:3px solid #6b9eff;background:rgba(107,158,255,0.03);">' +
         '<h4 style="color:#9bbfff;">⚡ 性能·成本控制</h4>' +
         '<div style="font-size:0.72rem;color:var(--txt-d);margin:-0.3rem 0 0.6rem;line-height:1.55;">这些开关控制 AI 调用频率与本地资源使用·默认设置面向"质量优先"。</div>' +
@@ -465,12 +467,13 @@ openSettings=function(){
           '</div>' +
         '</label>' +
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
-          '<input type="checkbox" id="s-consol" ' + (_consolOn?'checked ':'') + 'onchange="_togglePConf(\'consolidationEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+          '<input type="checkbox" id="s-consol" ' + (_consolOn?'checked ':'') + 'onchange="_togglePConf(\'memorySynthesisEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
           '<div style="flex:1;">' +
-            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">后台记忆固化 sc_consolidate（默认启用）</div>' +
+            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">后台记忆固化 / 综合（默认启用）</div>' +
             '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">每回合后台追加一次记忆整合调用（优先走次要 API）·不阻塞玩家·增加约 20% API 成本。关闭后 AI 记忆连贯性会减低。</div>' +
           '</div>' +
         '</label>' +
+        // (agent-only 调参:记忆深度/自适应深化/工作上下文窗口 已移至「🧪实验模式→🤖Agent 模式」块)
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
           '<input type="checkbox" id="s-sem" ' + (_semOn?'checked ':'') + 'onchange="_togglePConf(\'semanticRecallAutoload\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
           '<div style="flex:1;">' +
@@ -567,38 +570,164 @@ openSettings=function(){
       '</div>';
     })()+
 
-    // ── agent 升级（实验）·总闸·2026-06-19·一键启用至今所有 AI agent 化升级 ──
+    // ── 🧪 实验模式·2026-06-20·先「开启实验模式」→ 选「LLM 模式」(原"实验玩法"·LLM 升级) 或「Agent 模式」(回合推演 agent化·模式 b) ──
     (function(){
+      var _expOn = !!((P.conf && P.conf.experimentalEnabled) || (P.ai && P.ai.experimentalEnabled));
+      var _mode = ((P.conf && P.conf.experimentalMode) || (P.ai && P.ai.experimentalMode) || 'llm');
+      var _isAgent = (_mode === 'agent');
       var _on = !!((P.conf && P.conf.agentUpgradesEnabled) || (P.ai && P.ai.agentUpgradesEnabled));
       var _ftc = !!((P.conf && P.conf.factionToolDecisionEnabled) || (P.ai && P.ai.factionToolDecisionEnabled));
       var _evu = !!((P.conf && P.conf.eventUnificationEnabled) || (P.ai && P.ai.eventUnificationEnabled));
-      return '<div class="settings-section" style="border-left:3px solid #b98bff;background:rgba(185,139,255,0.04);">' +
-        '<h4 style="color:#c9a9ff;">🧪 实验玩法</h4>' +
-        '<div style="font-size:0.72rem;color:var(--txt-d);margin:-0.3rem 0 0.6rem;line-height:1.55;">实验性的 AI 升级与玩法机制（默认关）。多数会增加 API 调用·建议先小局试玩观察。</div>' +
+      var _ofa = !!((P.conf && P.conf.officeActivationEnabled) || (P.ai && P.ai.officeActivationEnabled));
+      var h = '<div class="settings-section" style="border-left:3px solid #b98bff;background:rgba(185,139,255,0.04);">' +
+        '<h4 style="color:#c9a9ff;">🧪 实验模式</h4>' +
+        '<div style="font-size:0.72rem;color:var(--txt-d);margin:-0.3rem 0 0.6rem;line-height:1.55;">实验性玩法（默认关）。先<b>开启实验模式</b>·再二选一：<b>LLM 模式</b>(对现回合管线的增量增强)或 <b>Agent 模式</b>(全新·AI 主动改世界·替换管线)。会增加 API 调用·建议先小局试。</div>' +
+        // 总闸
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;">' +
-          '<input type="checkbox" id="s-agent-upgrades" ' + (_on?'checked ':'') + 'onchange="_togglePConf(\'agentUpgradesEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+          '<input type="checkbox" id="s-exp-enabled" ' + (_expOn?'checked ':'') + 'onchange="_toggleExperimentalEnabled(this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
           '<div style="flex:1;">' +
-            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🧪 启用全部 agent 升级（默认关·实验）</div>' +
-            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">一键开启 9 项 AI agent 化：按需取数召回、势力前瞻目标栈、主推演异常路由、朝堂博弈、记忆管家固化、自我反思偏差校正、诏令执行督查、史实顾问引证(仅史实模式)、势力自主当家(激活策略3固定最强+5动态·战略姿态自著)。各项原有独立开关仍可单独调试。需主 API key·会增加 API 调用。</div>' +
+            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🧪 开启实验模式</div>' +
+            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">总闸。关闭则下方一切实验内容不生效（零回归）。</div>' +
           '</div>' +
-        '</label>' +
-        // 【A·S4】势力按需取数·单独 opt-in(总闸已含·此处供隔离试)·换深度非降本
-        '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
-          '<input type="checkbox" id="s-faction-toolcall" ' + (_ftc?'checked ':'') + 'onchange="_togglePConf(\'factionToolDecisionEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
-          '<div style="flex:1;">' +
-            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🔧 势力按需取数（A·单独试·默认关）</div>' +
-            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">势力决策改 tool-calling：只给核心情报+工具，势力自己按需查对手/朝堂/往绩/世界/家底/历史先例(复用②检索)。<b>换决策深度，非降本</b>(2 轮·可能略增调用)。开后看控制台 <code>GM._factionToolStats</code> 观察查询行为。关 = 原单发不变。</div>' +
-          '</div>' +
-        '</label>' +
-        // 【事件系统统一·S1】统一事件总线开关·独立(不并 agent 总闸·同势力按需取数那样单独 opt-in)
-        '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
-          '<input type="checkbox" id="s-event-unification" ' + (_evu?'checked ':'') + 'onchange="_togglePConf(\'eventUnificationEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
-          '<div style="flex:1;">' +
-            '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🎭 事件系统统一（S1 骨架·默认关）</div>' +
-            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">把散落的事件机制统一为「活世界抛局面→玩家应对→AI 裁硬核后果」主线。<b>当前为 S1 骨架，拨开暂无可见变化</b>(仅打通事件总线管道+验证不破坏存档)；后续切片接通后，事件将由 AI 裁定连锁后果。现在开=仅供验证不炸。</div>' +
-          '</div>' +
-        '</label>' +
-      '</div>';
+        '</label>';
+      if (_expOn) {
+        // 模式选择（二选一·互斥）
+        h += '<div style="margin:0.4rem 0;padding:0.45rem 0.55rem;background:rgba(185,139,255,0.07);border-radius:4px;">' +
+          '<div style="font-size:0.74rem;color:var(--txt-d);margin-bottom:0.35rem;">选择模式（二选一·互斥）：</div>' +
+          '<label style="display:inline-flex;align-items:center;gap:0.3rem;margin-right:1.2rem;cursor:pointer;font-size:0.84rem;font-weight:600;color:' + (!_isAgent?'var(--gold)':'var(--txt-d)') + ';">' +
+            '<input type="radio" name="exp-mode" ' + (!_isAgent?'checked ':'') + 'onchange="_setExperimentalMode(\'llm\')"> 🧠 LLM 模式</label>' +
+          '<label style="display:inline-flex;align-items:center;gap:0.3rem;cursor:pointer;font-size:0.84rem;font-weight:600;color:' + (_isAgent?'var(--gold)':'var(--txt-d)') + ';">' +
+            '<input type="radio" name="exp-mode" ' + (_isAgent?'checked ':'') + 'onchange="_setExperimentalMode(\'agent\')"> 🤖 Agent 模式</label>' +
+        '</div>';
+        if (_isAgent) {
+          // ── Agent 模式（模式 b·回合推演 agent化·选中即启用）──
+          h += '<div style="padding:0.5rem 0.6rem;background:rgba(120,180,255,0.06);border-left:2px solid #6b9eff;border-radius:3px;">' +
+            '<div style="font-size:0.82rem;color:#9bbfff;font-weight:600;">🤖 回合推演 agent 化（模式 b·已启用）</div>' +
+            '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.6;margin-top:0.25rem;">选中即启用。回合推演<b>不再走 LLM 管线(sc0-sc28)</b>·改由 AI agent 像「局内 Claude Code」一样运作：引擎先算硬核基线 → agent 看真数 → 主动读写存档任意内容直接落地（想怎么改怎么改）→ 状态自检·崩则回滚降级。产出与应用焊死（报告=实际改动）·根治「推演说改了却没改」。<b>需主 API key·比 LLM 模式更慢更费（实验）</b>·崩溃自动回落 LLM。</div>' +
+            '<div style="font-size:0.68rem;color:var(--txt-d);opacity:0.85;margin-top:0.3rem;">目前覆盖：回合推演。后续更多环节将按此 agent 化。</div>' +
+          '</div>';
+          // ── Agent 调参(仅 Agent 模式生效·从性能段归位·按模型能力调省调用/上下文) ──
+          var _memDepth = Math.max(2, Math.round((P.conf && P.conf.agentMemoryDepth) || 6));
+          var _adaptiveOn = !(P.conf && P.conf.agentAdaptiveDeepen === false);
+          var _transRounds = Math.max(1, Math.round((P.conf && P.conf.agentTranscriptRecentRounds) || 2));
+          h += '<div style="margin-top:0.45rem;padding:0.5rem 0.6rem;background:rgba(120,180,255,0.045);border-radius:3px;">' +
+            '<div style="font-size:0.8rem;color:#9bbfff;font-weight:600;margin-bottom:0.15rem;">⚙️ Agent 调参（按模型能力 · 省调用/上下文）</div>' +
+            // 记忆深度(agent 长记忆窗口)
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(120,180,255,0.2);">' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.8rem;color:var(--gold);font-weight:600;">记忆深度（回合）</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">近 N 回合喂"细节"·更早的自动压缩为综合脉络（压缩≠删·agent 仍可主动调取查全）。模型上下文越大可设越高（更全·更耗上下文）。' +
+                  '<select onchange="if(window._setAgentMemoryDepth)_setAgentMemoryDepth(this.value)" style="margin-top:0.3rem;background:var(--bg-d,#1a1a1a);color:var(--txt);border:1px solid var(--bdr);border-radius:4px;padding:0.2rem 0.4rem;">' +
+                    '<option value="4"' + (_memDepth===4?' selected':'') + '>4 · 精简(省上下文/弱模型)</option>' +
+                    '<option value="6"' + (_memDepth===6?' selected':'') + '>6 · 标准(默认)</option>' +
+                    '<option value="10"' + (_memDepth===10?' selected':'') + '>10 · 丰富(强模型)</option>' +
+                    '<option value="15"' + (_memDepth===15?' selected':'') + '>15 · 极致(长上下文模型)</option>' +
+                  '</select>' +
+                '</div>' +
+              '</div>' +
+            '</label>' +
+            // 刀1·自适应深化
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(120,180,255,0.2);cursor:pointer;">' +
+              '<input type="checkbox" id="s-adaptive-deepen" ' + (_adaptiveOn?'checked ':'') + 'onchange="_togglePConf(\'agentAdaptiveDeepen\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.8rem;color:var(--gold);font-weight:600;">自适应深化（默认启用 · 省调用）</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">收尾时只深化本回合真有动静的维度（如本回合无战事·则跳过军事深化·省一次调用、去掉对空维度的填充）·地板维度（记忆/人物/世界/史记）始终深化。关闭则每维度都深化（深度纯粹优先·更耗调用）。</div>' +
+              '</div>' +
+            '</label>' +
+            // 刀2·工作上下文窗口
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(120,180,255,0.2);">' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.8rem;color:var(--gold);font-weight:600;">工作上下文窗口（轮 · 省 token）</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">多轮推演时·上下文保留最近 N 轮的工具明细全文·更早的折叠为一行摘要（token 不随轮数膨胀）。越大越连贯·越耗 token。' +
+                  '<select onchange="if(window._setAgentTranscriptRounds)_setAgentTranscriptRounds(this.value)" style="margin-top:0.3rem;background:var(--bg-d,#1a1a1a);color:var(--txt);border:1px solid var(--bdr);border-radius:4px;padding:0.2rem 0.4rem;">' +
+                    '<option value="1"' + (_transRounds===1?' selected':'') + '>1 · 极省</option>' +
+                    '<option value="2"' + (_transRounds===2?' selected':'') + '>2 · 标准(默认)</option>' +
+                    '<option value="3"' + (_transRounds===3?' selected':'') + '>3 · 宽</option>' +
+                    '<option value="4"' + (_transRounds===4?' selected':'') + '>4 · 最宽(长上下文)</option>' +
+                  '</select>' +
+                '</div>' +
+              '</div>' +
+            '</label>' +
+          '</div>';
+          // ── Agent 元认知增强（实验·各加 AI 调用·默认全关·按需逐个开 A/B 验·命门:硬核可信）──
+          var _reflectOn = !!(P.conf && P.conf.agentSelfReflectEnabled);
+          var _qualityOn = !!(P.conf && P.conf.agentQualityGateEnabled);
+          var _edictOvOn = !!(P.conf && P.conf.agentEdictOversightEnabled);
+          var _anomalyOn = !!(P.conf && P.conf.agentAnomalyEnabled);
+          h += '<div style="margin-top:0.45rem;padding:0.5rem 0.6rem;background:rgba(180,140,255,0.05);border-radius:3px;">' +
+            '<div style="font-size:0.8rem;color:#c4a3ff;font-weight:600;margin-bottom:0.15rem;">🧠 Agent 元认知增强（实验 · 各加 AI 调用 · 默认关）</div>' +
+            '<div style="font-size:0.66rem;color:var(--txt-d);opacity:0.85;line-height:1.5;margin-bottom:0.1rem;">让 agent 学会自省/审稿/不失忆/深查——服务「硬核可信」命门。各项独立·按需开·每项每回合多一次 AI 调用。</div>' +
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(180,140,255,0.2);cursor:pointer;">' +
+              '<input type="checkbox" ' + (_reflectOn?'checked ':'') + 'onchange="_togglePConf(\'agentSelfReflectEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+              '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">自我反思 · 校准</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">每回合比对「上回合推演 vs 实际」→维护滚动偏差画像→下回合推演前注入校正（如「你倾向高估军力」），越玩越准。</div></div>' +
+            '</label>' +
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(180,140,255,0.2);cursor:pointer;">' +
+              '<input type="checkbox" ' + (_qualityOn?'checked ':'') + 'onchange="_togglePConf(\'agentQualityGateEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+              '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">内容质量闸</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">成文后、提交前审查史记（因果是否合理/有无时代错乱/是否与既定事实矛盾），不过则自动修订一轮再提交。</div></div>' +
+            '</label>' +
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(180,140,255,0.2);cursor:pointer;">' +
+              '<input type="checkbox" ' + (_edictOvOn?'checked ':'') + 'onchange="_togglePConf(\'agentEdictOversightEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+              '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">跨回合一致 · 诏令督查</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">把往回合在办的诏令（带进度/被架空）+近期已故名单注入推演（颁布≠见效·不失忆/不令已故者复活），并每回合真评估活诏令实效。</div></div>' +
+            '</label>' +
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(180,140,255,0.2);cursor:pointer;">' +
+              '<input type="checkbox" ' + (_anomalyOn?'checked ':'') + 'onchange="_togglePConf(\'agentAnomalyEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+              '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">冷门动作深查</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">玩家做出格/创造性举措时，agent 先深查真实史例先例再推演其可信后果（硬核×自由的命门交点·让天马行空也有史可依）。</div></div>' +
+            '</label>' +
+          '</div>';
+          // ── 活世界·势力自主（实验·命门「活世界」·后台 agent 调用·默认关·扩展①）──
+          //   agent 模式默认势力不决策(endturn-systems 不跑 NPC + factionAgentEnabled 被互斥关)→世界静止。此开关经"活世界例外"放行势力 agent③ 满血。
+          var _liveWorldOn = !!(P.conf && P.conf.agentLiveWorldEnabled);
+          h += '<div style="margin-top:0.45rem;padding:0.5rem 0.6rem;background:rgba(120,200,160,0.06);border-radius:3px;">' +
+            '<div style="font-size:0.8rem;color:#9fe0c0;font-weight:600;margin-bottom:0.15rem;">🌍 活世界 · 势力自主决策（实验 · 默认关）</div>' +
+            '<div style="font-size:0.66rem;color:var(--txt-d);opacity:0.85;line-height:1.5;margin-bottom:0.1rem;">agent 模式默认只推演「你的朝廷」·列国/各方势力静止。开启后每回合后台让最强及与你相关的数派势力自主决策（外交/备战/结盟/背叛）·世界不再围你转——服务「活世界」命门。复用已验证的势力 agent（含战略姿态/双向外交）·每派每回合多一次 AI 调用（封顶）。</div>' +
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(120,200,160,0.25);cursor:pointer;">' +
+              '<input type="checkbox" id="s-agent-liveworld" ' + (_liveWorldOn?'checked ':'') + 'onchange="_togglePConf(\'agentLiveWorldEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+              '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">势力自主当家</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.55;margin-top:0.12rem;">每回合后台跑数派非玩家势力的自主推演（激活：最强三派固定 + 与你相关者动态入选）·各派按自己的目标/宿怨/姿态行动并回写世界。需主 API key。</div></div>' +
+            '</label>' +
+          '</div>';
+        } else {
+          // ── LLM 模式（原"实验玩法"·对现管线的增量增强·各项独立开关）──
+          h += '<div style="font-size:0.7rem;color:var(--txt-d);margin:0.25rem 0 0.2rem;line-height:1.5;">LLM 模式：在现有回合管线上叠加的 AI 增强（各项独立·可单独调试）。</div>' +
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;">' +
+            '<input type="checkbox" id="s-agent-upgrades" ' + (_on?'checked ':'') + 'onchange="_togglePConf(\'agentUpgradesEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🧠 启用全部 LLM 升级（默认关·实验）</div>' +
+              '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">一键开启 9 项对 LLM 管线的增强：按需取数召回、势力前瞻目标栈、主推演异常路由、朝堂博弈、记忆管家固化、自我反思偏差校正、诏令执行督查、史实顾问引证(仅史实模式)、势力自主当家(激活策略3固定最强+5动态·战略姿态自著)。各项原有独立开关仍可单独调试。需主 API key·会增加 API 调用。</div>' +
+            '</div>' +
+          '</label>' +
+          // ── 官制活化（实验）·总闸·2026-06-20·一键启用官职履职/权限门/改制裁定/agent 按需取数 ──
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+            '<input type="checkbox" id="s-office-activation" ' + (_ofa?'checked ':'') + 'onchange="_togglePConf(\'officeActivationEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🏛️ 启用官制活化（默认关·实验）</div>' +
+              '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">让死的官制活起来：①职权舆图喂推演 ②官员履职度(才+五常·失职衰减·与主动行动耦合) ③权限门(掌“征税”之权出缺/失职→实征打折·腐败涨) ④AI 裁定式改制(玩家自由改官制·官僚抵抗·拟制两回合) ⑤官署按需细查(agent 走次要 API·返职责描述)。各刀另有独立开关可单独调试·会增加 API 调用。</div>' +
+            '</div>' +
+          '</label>' +
+          // 【A·S4】势力按需取数·单独 opt-in(总闸已含·此处供隔离试)·换深度非降本
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+            '<input type="checkbox" id="s-faction-toolcall" ' + (_ftc?'checked ':'') + 'onchange="_togglePConf(\'factionToolDecisionEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🔧 势力按需取数（A·单独试·默认关）</div>' +
+              '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">势力决策改 tool-calling：只给核心情报+工具，势力自己按需查对手/朝堂/往绩/世界/家底/历史先例(复用②检索)。<b>换决策深度，非降本</b>(2 轮·可能略增调用)。开后看控制台 <code>GM._factionToolStats</code> 观察查询行为。关 = 原单发不变。</div>' +
+            '</div>' +
+          '</label>' +
+          // 【事件系统统一·S1】统一事件总线开关·独立(不并 LLM 升级总闸·同势力按需取数那样单独 opt-in)
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+            '<input type="checkbox" id="s-event-unification" ' + (_evu?'checked ':'') + 'onchange="_togglePConf(\'eventUnificationEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🎭 事件系统统一（S1 骨架·默认关）</div>' +
+              '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">把散落的事件机制统一为「活世界抛局面→玩家应对→AI 裁硬核后果」主线。<b>当前为 S1 骨架，拨开暂无可见变化</b>(仅打通事件总线管道+验证不破坏存档)；后续切片接通后，事件将由 AI 裁定连锁后果。现在开=仅供验证不炸。</div>' +
+            '</div>' +
+          '</label>';
+        }
+      }
+      h += '</div>';
+      return h;
     })()+
 
     // ── 战斗规则·确定性战果 (opt-in·默认关·2026-06-15) ──
@@ -1643,6 +1772,25 @@ function _tmStartPrimeFormalRuntime(sid, sc, reason) {
     }
   } catch(e) { try { if (window.TM && TM.errors && TM.errors.captureSilent) TM.errors.captureSilent(e, 'start-prime-guoku'); } catch(_) {} }
 
+  // 开局即真活算财政收入（根治「绍宋月入显估算 20万/旧兜底 7万·实应 ~70万」）。
+  // 此处在 GuokuEngine 加载静态估算之后、enterGame 之前·adminHierarchy 与各区 economyBase 均已就绪——
+  // 跑一次 cascadeCollect(turnDays:30=月入口径) 用真活算值覆盖静态估算。settle 幂等·首回合会重算。
+  try {
+    if (typeof CascadeTax !== 'undefined' && CascadeTax && typeof CascadeTax.collect === 'function'
+        && GM && GM.adminHierarchy && (GM.adminHierarchy.player || Object.keys(GM.adminHierarchy).length)) {
+      CascadeTax.collect({ faction: 'player', turnDays: 30 });
+    }
+  } catch(e) { try { if (window.TM && TM.errors && TM.errors.captureSilent) TM.errors.captureSilent(e, 'start-prime-fiscal'); } catch(_) {} }
+
+  // 役政/人力开局种子（根治「役负舆图开局灰·GM.renli.byRegion 空」）：同收入·开局即种 renli 账，
+  // 让役负视图(yizheng 层·读 GM.renli.byRegion)开局有真值，而非等第一回合 endturnTick 才有。幂等·首回合会重算。
+  try {
+    if (typeof TM !== 'undefined' && TM.Renli) {
+      if (typeof TM.Renli.ensurePilotSeeds === 'function') TM.Renli.ensurePilotSeeds(GM);
+      if (typeof TM.Renli.endturnTick === 'function') TM.Renli.endturnTick(GM, typeof P !== 'undefined' ? P : null);
+    }
+  } catch(e) { try { if (window.TM && TM.errors && TM.errors.captureSilent) TM.errors.captureSilent(e, 'start-prime-renli'); } catch(_) {} }
+
   try {
     if (GM.turn === 1 && !GM._neitangPresetDone && typeof NeitangEngine !== 'undefined' && typeof NeitangEngine.initFromDynasty === 'function') {
       NeitangEngine.initFromDynasty(ctx.dynasty, ctx.phase, sc || {});
@@ -1964,66 +2112,102 @@ startGame=async function(sid){
     }
   }
   if(sc.opening&&sc.opening.length>20){
-    var overlay=document.createElement("div");
-    overlay.style.cssText="position:fixed;inset:0;z-index:995;background:radial-gradient(ellipse at 50% 30%,rgba(138,109,27,0.06),transparent 60%),var(--bg-0);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;";
-    overlay.innerHTML="<div style=\"font-size:2.2rem;font-weight:900;letter-spacing:0.2em;background:linear-gradient(135deg,var(--gold-d),var(--gold),var(--gold-l));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.8rem;opacity:0;animation:fi 1.5s ease forwards;\">"+sc.name+"</div>"
-      +"<div style=\"font-size:0.88rem;color:var(--txt-d);margin-bottom:0.5rem;letter-spacing:0.4em;opacity:0;animation:fi 1.5s 0.3s ease forwards;\">"+sc.era+"</div>"
-      +"<div style=\"width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-d),var(--gold),var(--gold-d),transparent);margin-bottom:1.5rem;opacity:0;animation:fi 1s 0.8s ease forwards;\"></div>"
-      +"<div style=\"max-width:650px;max-height:65vh;overflow-y:auto;padding:1.5rem 2rem;border:1px solid var(--gold-d);border-radius:2px;background:linear-gradient(160deg,var(--bg-1),var(--bg-0));box-shadow:0 0 40px rgba(138,109,27,0.08),inset 0 0 30px rgba(0,0,0,0.3);position:relative;\">"
-      +"<div style=\"position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid var(--gold);border-left:2px solid var(--gold);\"></div>"
-      +"<div style=\"position:absolute;top:-1px;right:-1px;width:14px;height:14px;border-top:2px solid var(--gold);border-right:2px solid var(--gold);\"></div>"
-      +"<div style=\"position:absolute;bottom:-1px;left:-1px;width:14px;height:14px;border-bottom:2px solid var(--gold);border-left:2px solid var(--gold);\"></div>"
-      +"<div style=\"position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid var(--gold);border-right:2px solid var(--gold);\"></div>"
-      +"<div id=\"opening-text\" style=\"font-size:1.05rem;line-height:2.2;color:var(--txt);white-space:pre-wrap;text-indent:2em;\"></div>"
-      +"</div>"
-      +"<button onclick=\"this.parentElement.remove();doActualStart('"+sid+"');\" style=\"position:fixed;bottom:2rem;right:2rem;padding:0.6rem 1.5rem;border:1px solid var(--gold-d);background:rgba(0,0,0,0.6);color:var(--gold);border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.9rem;z-index:996;backdrop-filter:blur(4px);\">\u25B6 \u8DF3\u8FC7</button>";
-    document.body.appendChild(overlay);
-
-    // 逐字显示——先将所有字符作为不可见span预渲染（锁定layout），再逐个切换为可见
-    // 这样避免逐字添加导致的行重排抖动
-    var textEl=overlay.querySelector("#opening-text");
-    var fullText=sc.opening;
-    // 预渲染：每个字符一个span，初始不可见（保留空间）
-    var _html = '';
-    for (var _ci = 0; _ci < fullText.length; _ci++) {
-      var _ch = fullText.charAt(_ci);
-      if (_ch === '\n') { _html += '<br>'; continue; }
-      // 用 visibility:hidden 保留布局空间但不显示
-      _html += '<span class="_ot-ch" style="visibility:hidden;">' + (_ch === ' ' ? '&nbsp;' : (_ch === '<' ? '&lt;' : _ch === '>' ? '&gt;' : _ch === '&' ? '&amp;' : _ch)) + '</span>';
-    }
-    textEl.innerHTML = _html;
-    var _spans = textEl.querySelectorAll('._ot-ch');
-    var charIdx=0;
-    var timer=setInterval(function(){
-      if(charIdx>=_spans.length||!overlay.parentElement){clearInterval(timer);
-        if(overlay.parentElement){setTimeout(function(){if(overlay.parentElement){overlay.remove();doActualStart(sid);}},2000);}return;}
-      // 批量显示（每次显示1个字符即可，layout已锁定不再抖动）
-      if (_spans[charIdx]) _spans[charIdx].style.visibility = 'visible';
-      charIdx++;
-    },50);
-
-    // Enter跳过——先显示全部，再等再按一次跳过
-    var _allShown = false;
-    var skipHandler=function(e){
-      if(e.key==="Enter"||e.key===" "){
-        e.preventDefault();
-        if (!_allShown) {
-          // 第一次按：显示全部字符
-          clearInterval(timer);
-          for (var _si = 0; _si < _spans.length; _si++) _spans[_si].style.visibility = 'visible';
-          _allShown = true;
-        } else {
-          // 第二次按：跳过整个开场
-          if(overlay.parentElement){overlay.remove();doActualStart(sid);}
-          document.removeEventListener("keydown",skipHandler);
-        }
-      }
-    };
-    document.addEventListener("keydown",skipHandler);
+    // 2026-06 重制·入世仪典（跨剧本通用·数据全取 sc·缺则兜底）
+    _tmShowOpeningCeremony(sc, sid);
   }else{
     doActualStart(sid);
   }
 };
+
+// ════ 开场白·入世仪典 overlay（2026-06 重制·跨剧本通用）════
+// 时机：在 doActualStart 之前展示·此刻 P/GM 尚未初始化·所有数据均从 sc（剧本对象）取，缺则兜底。
+// 数据：题署=sc.name/sc.era；身份=sc.playerInfo.characterName(去注解)→sc.characters 找立绘/称谓/bio；
+//       戏眼=sc.events 里 isOpeningEvent/triggerTurn:1 的前 3 条（每剧本皆有·绝不写死单朝专名）。
+function _tmShowOpeningCeremony(sc, sid) {
+  var _esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // 玩家角色（容错去注解·跨剧本：绍宋 characterName 形如「赵构(穿越者赵玖)」）
+  var _pi = sc.playerInfo || {};
+  var _pName = _pi.characterName || '';
+  var _pClean = (_pName.replace(/[（(].*$/, '').trim()) || _pName;
+  var _pChar = null;
+  (sc.characters || []).some(function (c) { if (c && (c.name === _pClean || c.name === _pName)) { _pChar = c; return true; } return false; });
+  var _pTitle = _pi.characterTitle || (_pChar && (_pChar.officialTitle || _pChar.title)) || '';
+  var _pPortrait = (_pChar && _pChar.portrait) || '';
+  var _pBio = _pi.characterBio || (_pChar && _pChar.bio) || '';
+  if (_pBio) _pBio = String(_pBio).replace(/\s+/g, ' ').trim().slice(0, 64);
+  // 开局戏眼（开局事件前 3·跨剧本通用）
+  var _eyes = [];
+  (sc.events || []).forEach(function (e) {
+    if (_eyes.length >= 3 || !e) return;
+    if (!(e.isOpeningEvent === true || e.triggerTurn === 1)) return;
+    _eyes.push({ ti: e.name || '开局要务', ds: String(e.description || e.narrative || '').replace(/\s+/g, ' ').trim().slice(0, 16), key: (e.importance === '关键') });
+  });
+  // 题署印字：剧本朝代字 > 剧本名首字
+  var _sealCh = ((sc.dynastyChar || sc.dynasty || '').toString().charAt(0)) || ((sc.name || '天').toString().charAt(0));
+
+  var ov = document.createElement('div');
+  ov.id = 'tm-opening'; ov.className = 'tm-op';
+  var h = '<div class="tm-op-world">';
+  h += '<div class="tm-op-title"><div class="tm-op-seal">' + _esc(_sealCh) + '</div>'
+    + '<div class="tm-op-tcol"><div class="tm-op-name">' + _esc(sc.name || '') + '</div>'
+    + (sc.era ? '<div class="tm-op-sub">' + _esc(sc.era) + '</div>' : '') + '</div></div>';
+  h += '<div class="tm-op-body">';
+  if (_pName) {
+    h += '<div class="tm-op-aside">';
+    var _figInner = (_pPortrait
+      ? '<img src="' + _esc(_pPortrait) + '" alt="" onerror="var f=this.closest(\'.tm-op-fig\');if(f)f.classList.add(\'no-img\');this.remove();">'
+      : '')
+      + '<span class="tm-op-figseal">' + _esc(_pClean.charAt(0) || '帝') + '</span>'
+      + '<div class="tm-op-vig"></div><div class="tm-op-frame"></div><span class="tm-op-rtag">尔之所履</span>';
+    h += '<div class="tm-op-fig' + (_pPortrait ? '' : ' no-img') + '">' + _figInner + '</div>';
+    h += '<div class="tm-op-ident"><div class="tm-op-who">' + _esc(_pClean) + (_pTitle ? '<small>' + _esc(_pTitle) + '</small>' : '') + '</div>'
+      + (_pBio ? '<div class="tm-op-plight">' + _esc(_pBio) + '</div>' : '') + '</div>';
+    if (_eyes.length) {
+      h += '<div class="tm-op-eyes"><div class="tm-op-eyes-h">开 局 戏 眼</div>';
+      _eyes.forEach(function (ey) {
+        h += '<div class="tm-op-eye' + (ey.key ? ' key' : '') + '"><span class="tm-op-eye-dot"></span><span class="tm-op-eye-tx"><b>' + _esc(ey.ti) + '</b>' + (ey.ds ? '<span>' + _esc(ey.ds) + '</span>' : '') + '</span></div>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  h += '<div class="tm-op-scroll' + (_pName ? '' : ' solo') + '"><div class="tm-op-scroll-h"><span class="tm-op-lbl">开 卷</span><span class="tm-op-hint">按 空格 略过逐字</span></div>'
+    + '<div class="tm-op-paper"><div class="tm-op-narr" id="opening-text"></div></div></div>';
+  h += '</div>';
+  h += '<div class="tm-op-foot"><div class="tm-op-fnote">此局为<b>平行时空</b> · 史册由尔亲手改写。</div>'
+    + '<div class="tm-op-btns"><button class="tm-op-skip" id="tm-op-skip">▶ 略过逐字</button>'
+    + '<button class="tm-op-enter" id="tm-op-enter">提 笔 临 朝</button></div></div>';
+  h += '</div>';
+  ov.innerHTML = h;
+  document.body.appendChild(ov);
+
+  // 逐字浮现（沿用现有 50ms·预渲染 visibility 防重排抖动）
+  var textEl = ov.querySelector('#opening-text');
+  var full = sc.opening || '';
+  var _hh = '';
+  for (var i = 0; i < full.length; i++) {
+    var ch = full.charAt(i);
+    if (ch === '\n') { _hh += '<br>'; continue; }
+    _hh += '<span class="_ot-ch" style="opacity:0;">' + (ch === ' ' ? '&nbsp;' : (ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch === '&' ? '&amp;' : ch)) + '</span>';
+  }
+  textEl.innerHTML = _hh;
+  var spans = textEl.querySelectorAll('._ot-ch');
+  var idx = 0, allShown = false;
+  var timer = setInterval(function () {
+    if (idx >= spans.length || !ov.parentElement) { clearInterval(timer); allShown = true; return; }
+    if (spans[idx]) spans[idx].style.opacity = '1';
+    idx++;
+  }, 50);
+  function showAll() { clearInterval(timer); for (var k = 0; k < spans.length; k++) spans[k].style.opacity = '1'; allShown = true; }
+  function enter() { clearInterval(timer); document.removeEventListener('keydown', onKey); if (ov.parentElement) ov.remove(); doActualStart(sid); }
+  var skipBtn = ov.querySelector('#tm-op-skip'); if (skipBtn) skipBtn.addEventListener('click', function () { if (!allShown) showAll(); });
+  var entBtn = ov.querySelector('#tm-op-enter'); if (entBtn) entBtn.addEventListener('click', enter);
+  var onKey = function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!allShown) showAll(); else enter(); }
+    else if (e.key === 'Escape') { e.preventDefault(); enter(); }
+  };
+  document.addEventListener('keydown', onKey);
+}
 
 function doActualStart(sid){
   showLoading('\u52A0\u8F7D\u5267\u672C\u914D\u7F6E...', 5);
@@ -2204,6 +2388,9 @@ function doActualStart(sid){
   if(sc.worldSettings) P.worldSettings = deepClone(sc.worldSettings);
   if(sc.government) P.government = deepClone(sc.government);
   if(sc.adminHierarchy) P.adminHierarchy = deepClone(sc.adminHierarchy);
+  // 根治(跨剧本)：GM.adminHierarchy 此前只在 fullLoadGame(存档加载)恢复·doActualStart(新开局)从不设→
+  // 新开局 GM.adminHierarchy=undefined → 财政引擎 cascadeCollect 经 getGame().adminHierarchy 找不到任何区 → 落 fixedCollect 兜底 → 收入畸低(绍宋开局显七万·实应数百万/月)。开局即同步。
+  if(P.adminHierarchy && typeof GM !== 'undefined' && GM && (!GM.adminHierarchy || Object.keys(GM.adminHierarchy).length === 0)) GM.adminHierarchy = deepClone(P.adminHierarchy);
   if(sc.officeTree) P.officeTree = deepClone(sc.officeTree);
   if(sc.officeConfig) P.officeConfig = deepClone(sc.officeConfig);
   // 官制数据源优先级：government.nodes（编辑器主数据，含holder）> officeTree（旧兜底）
@@ -2315,6 +2502,38 @@ function doActualStart(sid){
     P.events = P.events.concat(allEvents);
   }
 
+  // 刚性史事 sc.rigidHistoryEvents → P.rigidHistoryEvents（打 sid·与 characters/events 同构）。
+  // 根治：此前缺这一步，编辑器/草案剧本写的 rigidHistoryEvents 从不进 P，下方 GM 副本 filter(sid) 恒空，
+  // 史实进程提示(喂AI预知)+定时触发(checkHistoryEvents)全失效；仅官方 bundle 剧本靠自身预 load 生效。
+  // 补齐后所有剧本一致。幂等：同 sid 旧条目先 filter 掉再 concat，重复 doActualStart 不累积。
+  if(Array.isArray(sc.rigidHistoryEvents)) {
+    P.rigidHistoryEvents = (P.rigidHistoryEvents||[]).filter(function(e){return e && e.sid!==sid;});
+    P.rigidHistoryEvents = P.rigidHistoryEvents.concat(sc.rigidHistoryEvents.map(function(e){e.sid=sid;return e;}));
+  }
+
+  // 开局内容（御案时政 currentIssues / 奏疏 memorials / 开场书信 openingLetters→鸿雁 letters）→ GM。
+  // 根治：此前缺这一步，剧本写的这三类从不进 GM，渲染器(御案时政/奏疏/鸿雁视图)读 GM.* 恒空。跨剧本通用·幂等(同 sid 先清再加)。
+  if(typeof GM !== 'undefined' && GM){
+    if(Array.isArray(sc.currentIssues)){
+      GM.currentIssues = (GM.currentIssues||[]).filter(function(x){return x && x._sid!==sid;});
+      sc.currentIssues.forEach(function(x){var c=deepClone(x); c._sid=sid; if(c.raisedTurn==null)c.raisedTurn=GM.turn||1; if(!c.status)c.status='pending'; GM.currentIssues.push(c);});
+    }
+    if(Array.isArray(sc.memorials)){
+      GM.memorials = (GM.memorials||[]).filter(function(x){return x && x._sid!==sid;});
+      sc.memorials.forEach(function(x){var c=deepClone(x); c._sid=sid; GM.memorials.push(c);});
+    }
+    if(Array.isArray(sc.openingLetters)){
+      // 鸿雁运行时读 GM.letters；开场书信 openingLetters 是其开局来源。打 sid·幂等。
+      GM.letters = (GM.letters||[]).filter(function(x){return x && x._sid!==sid;});
+      sc.openingLetters.forEach(function(x){var c=deepClone(x); c._sid=sid; if(c.isOpening==null)c.isOpening=true; GM.letters.push(c);});
+    }
+    if(Array.isArray(sc.openingAudiences)){
+      // 问对「阶下待见」运行时读 GM._pendingAudiences；开局远来求见(使节·告急·特请·非在京者动态浮现不了)由 openingAudiences 预置·打 sid·幂等。
+      GM._pendingAudiences = (GM._pendingAudiences||[]).filter(function(x){return x && x._sid!==sid;});
+      sc.openingAudiences.forEach(function(x){var c=deepClone(x); c._sid=sid; if(c._opening==null)c._opening=true; GM._pendingAudiences.push(c);});
+    }
+  }
+
   // 加载变量到GM.vars——保留编辑者写的所有字段，不假设任何固定格式
   (P.variables||[]).forEach(function(v){
     if(v.sid && v.sid!==sid) return;
@@ -2352,6 +2571,55 @@ function doActualStart(sid){
     if (!faction.territories) faction.territories = [];
     return faction;
   });
+  // 人物 factionId ↔ faction 名串 双向同步根治（跨剧本通用）。
+  // 此前人物只有 faction 中文名串、无 factionId，引擎各处用 c.faction===f.name 关联→势力一改名/编辑器细化命名，
+  // 人物名串就对不上、沦为孤儿（如"大越·李朝"vs"大越李朝"差一个中点）。根治：factionId 为稳定真相源——
+  // 有 factionId 则用它校正 c.faction 名串（势力改名后人物名串自动跟新、永不孤儿）；无 factionId 的旧档/其他剧本，
+  // 反向用名串回填 factionId。引擎其余各处仍读 c.faction 名串、零改动，但名串自此由 factionId 保证与 factions 一致。
+  (function _syncCharFactionId(){
+    if (!GM.chars || !GM.facs || !GM.facs.length) return;
+    var byId = {}, byName = {};
+    GM.facs.forEach(function(f){ if (f && f.id) byId[f.id] = f; if (f && f.name) byName[f.name] = f; });
+    var corrected = 0, backfilled = 0;
+    GM.chars.forEach(function(c){
+      if (!c) return;
+      if (c.factionId && byId[c.factionId]) {
+        if (c.faction !== byId[c.factionId].name) corrected++;
+        c.faction = byId[c.factionId].name;            // 有 id → 校正名串
+      } else if (c.faction && byName[c.faction]) {
+        c.factionId = byName[c.faction].id;             // 有名 → 回填 id（兼容旧档/中立桶名匹配）
+        backfilled++;
+      }
+    });
+    if (typeof _dbg === 'function') _dbg('[factionId同步] 校正名串' + corrected + ' 回填id' + backfilled);
+  })();
+  // 被俘态初始化（跨朝代通用·非绍宋专属）：剧本数据 stance/presenceState/status 标为被俘类状态 → 运行时 _captured 标记。
+  // _captured 者身份仍属本势力(factionId 不变)，但人在敌境、排出本势力日常班底：廷议不召、不得任官、NPC 决策不选、官缺不计为在任。
+  // 字段名不含朝代词——靖康「北狩」、土木堡「被俘」等皆由剧本数据驱动，引擎只认 _captured boolean，迎回/获释时可清。
+  (function _initCapturedState(){
+    if (!GM.chars) return;
+    var CAPTURED_MARK = { '北狩': 1, '被俘': 1, '被掳': 1, '陷虏': 1, '没蕃': 1 };
+    var PRESENT_MARK = { 'present': 1, '在场': 1, '在朝': 1, '随驾': 1, '在位': 1 };
+    function _isCapturedTag(v){
+      if (!v || typeof v !== 'string') return false;
+      if (CAPTURED_MARK[v]) return true;
+      for (var k in CAPTURED_MARK) { if (v.indexOf(k) === 0) return true; }  // "北狩·法理皇帝"等变体取主词
+      return false;
+    }
+    var n = 0;
+    GM.chars.forEach(function(c){
+      if (!c) return;
+      // 在场/在位/随驾/逃归者(presenceState 明示)绝不算被俘——即便别字段提及被俘字样(如柔福帝姬 present、邢焕随驾、金方北狩管理官)
+      if (PRESENT_MARK[c.presenceState]) return;
+      if (_isCapturedTag(c.presenceState) || _isCapturedTag(c.status) || _isCapturedTag(c.stance)) {
+        c._captured = true;
+        c._capturedLocation = c.location || c.currentLocation || '';
+        if (c._capturedTurn == null) c._capturedTurn = 0;
+        n++;
+      }
+    });
+    if (typeof _dbg === 'function') _dbg('[被俘态] 标记 _captured ' + n + ' 人');
+  })();
   GM.items=(P.items||[]).filter(function(t){return t.sid===sid;}).map(function(t){var c=deepClone(t);c.acquired=false;return c;});
   // 军队加载：优先 initialTroops（编辑器新 schema 完整部队表），armies 仅作兜底（旧字段通常只有少量代表部队）
   var _initTroops = (P.military && P.military.initialTroops) || [];
@@ -2423,6 +2691,16 @@ function doActualStart(sid){
   // GM 没有对应数组→处理器/AI 被迫读 P 库→玩绍宋时会看到/触发天启的「魏忠贤自缢」等剧本事件。此处给当前局
   // 建一份只含本剧本的干净副本·让 gameplay 只读 GM(单剧本世界)·不再伸手进多剧本的 P 库。
   GM.rigidHistoryEvents=(P.rigidHistoryEvents||[]).filter(function(e){return e&&e.sid===sid;}).map(function(e){return deepClone(e);});
+  // 天机·改命(穿越/上帝视角剧本)：开局建天机录(预知未来刚性史事)+注入御案时政。gated sc.tianjiEnabled(默认关·绍宋赵玖穿越开)·跨朝代。
+  GM._tianjiEnabled = !!(sc && sc.tianjiEnabled);
+  if (GM._tianjiEnabled && typeof TMTianji !== 'undefined') { try { TMTianji.build(GM); } catch(_tjE){} }
+  // 边报·天下军情：从活势力关系算敌我大势·注入御案。gated sc.junqingBriefEnabled(默认关·绍宋开)·跨朝代。
+  GM._junqingBriefEnabled = !!(sc && sc.junqingBriefEnabled);
+  if (GM._junqingBriefEnabled && typeof TMJunqing !== 'undefined') { try { TMJunqing.build(GM); } catch(_jqE){} }
+  // 新君观政·百日：即位之初的观政期(百官观望/政令初行阻/根基法理未固)·相位+AI framing。gated sc.xinjunObserveEnabled(默认关·绍宋开)·跨朝代。
+  GM._xinjunObserveEnabled = !!(sc && sc.xinjunObserveEnabled);
+  GM._xinjunObserveTurns = (sc && sc.xinjunObserveTurns) || 6;
+  if (GM._xinjunObserveEnabled && typeof TMXinjun !== 'undefined') { try { TMXinjun.build(GM); } catch(_xjE){} }
   _tmStartRepairRuntimeData(sid, sc, 'after-runtime-load');
   GM.allCharacters=GM.chars.map(function(c){return{name:c.name,title:c.title,age:c.age||"?",gender:c.gender||"\u7537",personality:c.personality,appearance:c.appearance,desc:c.desc,loyalty:c.loyalty,relationValue:c.loyalty,faction:c.faction,recruited:true,recruitTurn:0,source:"\u521D\u59CB",avatarUrl:""};});
 
@@ -2496,9 +2774,12 @@ function doActualStart(sid){
     // 1) 在 GM.chars 中找到玩家角色并标记 isPlayer
     if (pName && GM.chars) {
       var found = false;
+      // 容错(跨剧本根治)：playerInfo.characterName 可能带注解(如绍宋"赵构(穿越者赵玖)")·与人物名"赵构"对不上→
+      // 否则 2696 会误建一个空壳重复玩家角色(真角色的家谱/关系/记忆全废)+ 玩家势力派生失效(officeTree/阶层党派过滤不跑→显全势力)。剥括注重匹配。
+      var pNameAlt = pName.replace(/[（(].*$/, '').trim();
       GM.chars.forEach(function(c) { c.isPlayer = false; }); // 先清除旧标记
       for (var _pi = 0; _pi < GM.chars.length; _pi++) {
-        if (GM.chars[_pi].name === pName) {
+        if (GM.chars[_pi].name === pName || (pNameAlt && pNameAlt !== pName && GM.chars[_pi].name === pNameAlt)) {
           GM.chars[_pi].isPlayer = true;
           // 同步 playerInfo 的详细字段到角色对象（角色对象优先，playerInfo补缺）
           if (!GM.chars[_pi].age && pi.characterAge) GM.chars[_pi].age = pi.characterAge;
@@ -2551,15 +2832,130 @@ function doActualStart(sid){
       }
     }
 
+    // 人物势力绑定根治（通用·跨剧本）：把每个人物的 factionId 与 faction 名串补齐、双向对齐。
+    // 此前人物多只靠 faction 名串关联（天启仅 48% 有 factionId）→名串是唯一锚、脆弱：势力改名/改换门庭即断。
+    // 开局锚定 id+名，后续改换门庭(allegiance)、roster 归属、关系分发都有稳固双锚。
+    (function _bindCharFactions(){
+      if (!GM.chars || !GM.facs) return;
+      var byName = {}, byId = {};
+      GM.facs.forEach(function(f){ if (f) { if (f.name) byName[f.name] = f; if (f.id) byId[f.id] = f; } });
+      var fixed = 0;
+      GM.chars.forEach(function(ch){
+        if (!ch) return;
+        var fname = ch.faction || ch.factionName;
+        if (fname && !ch.factionId) { var f = byName[fname] || byId[fname]; if (f && f.id) { ch.factionId = f.id; fixed++; } }
+        if (ch.factionId && !ch.faction) { var f2 = byId[ch.factionId]; if (f2 && f2.name) { ch.faction = f2.name; fixed++; } }
+        if (ch.factionId && ch.faction && byId[ch.factionId] && byId[ch.factionId].name !== ch.faction) { ch.faction = byId[ch.factionId].name; fixed++; }
+      });
+      if (fixed && typeof _dbg === 'function') _dbg('[绑定] 人物势力 factionId↔名 补齐对齐 ' + fixed + ' 处');
+    })();
+
+    // 2.5) 同好之谊·开局亲疏种子(owner 2026-06)：同势力且共享≥3雅好者=知音·开局即有亲疏。
+    //   喂运行时 AffinityMap(GM.affinityMap)·被主推演 npc-hearts 盟友列表(top3·|值|≥20可见)+endturn-ai决策(_favA)+常朝/廷议消费——
+    //   故为活字段·非孤立。与静态 894 关系互补(此为动态亲疏层)。仅同势力(相识 proxy)·门槛≥3共好(知音级·实测约389对·不撑爆affinityMap)·跨朝代任何剧本受益。
+    (function _seedHobbyAffinity(){
+      if (typeof AffinityMap === 'undefined' || !AffinityMap.add || !GM.chars) return;
+      function hset(x){
+        var h = x && x.hobbies; if (!h) return null;
+        var arr = Array.isArray(h) ? h : (typeof h === 'string' ? h.split(/[、,，·\/;；]/) : []);
+        var s = {}, n = 0;
+        arr.forEach(function(v){ v = ('' + v).trim(); if (v && !s[v]) { s[v] = 1; n++; } });
+        return n ? s : null;
+      }
+      var byFac = {};
+      GM.chars.forEach(function(ch){ if (!ch || ch.alive === false || ch.dead) return; var f = ch.faction || ch.factionId || ch.factionName; if (!f) return; (byFac[f] = byFac[f] || []).push(ch); });
+      var seeded = 0;
+      Object.keys(byFac).forEach(function(fk){
+        var arr = byFac[fk], sets = arr.map(hset);
+        for (var i = 0; i < arr.length; i++) {
+          if (!sets[i]) continue;
+          for (var j = i + 1; j < arr.length; j++) {
+            if (!sets[j]) continue;
+            var sh = 0; for (var k in sets[i]) { if (sets[j][k]) sh++; }
+            if (sh >= 3) { AffinityMap.add(arr[i].name, arr[j].name, Math.min(sh, 4) * 7, '同好之谊'); seeded++; }
+          }
+        }
+      });
+      if (seeded && typeof _dbg === 'function') _dbg('[同好] 开局共好亲疏种子 ' + seeded + ' 对(同势力·≥3雅好)');
+    })();
+
     // 3) 设置 GM.playerCharacterId
     if (pName && GM.chars) {
-      var pc = GM.chars.find(function(c) { return c.name === pName; });
-      if (pc) GM.playerCharacterId = pc.id || pName;
+      var pc = GM.chars.find(function(c) { return c.name === pName; }) || GM.chars.find(function(c) { return c.isPlayer; });
+      if (pc) GM.playerCharacterId = pc.id || pc.name || pName;
+      // 官制按玩家势力归属（根治：GM.officeTree 原为整个 scenario.officeTree·多势力剧本会串其他势力官职）
+      var _pf = pc ? (pc.faction || pc.factionName) : null;
+      if (_pf && GM.officeTree && GM.officeTree.length) {
+        var _fac = (GM.facs || []).find(function(f) { return f.name === _pf || f.id === _pf; });
+        if (_fac && Array.isArray(_fac.officeTree) && _fac.officeTree.length) {
+          // 方案C 主路径：每势力官制分存于 faction.officeTree（天启格式·无 faction 字段）
+          GM.officeTree = deepClone(_fac.officeTree);
+        } else if (GM.officeTree.some(function(o) { return o.faction; })) {
+          // 过渡兼容：顶层 officeTree 带 faction 字段→只留玩家势力的
+          var _own = GM.officeTree.filter(function(o) { return o.faction === _pf; });
+          if (_own.length) GM.officeTree = _own;
+        }
+        // 顶层 officeTree 无 faction（天启单势力）→ 保持全部·不变
+      }
+      // 阶层/党派按玩家势力归属（根治：GM.classes/parties 原为整个 scenario 全势力混渲·多势力剧本开局显 250 阶层/150 党派=灾难·同 officeTree 病）
+      if (_pf) {
+        if (Array.isArray(GM.classes) && GM.classes.length) {
+          var _ownCls = GM.classes.filter(function(c) { return c && (c.faction === _pf || c.factionId === _pf); });
+          if (_ownCls.length) GM.classes = _ownCls; // 守卫：过滤后非空才替换·天启单势力(无faction或全匹配)不受影响
+        }
+        if (Array.isArray(GM.parties) && GM.parties.length) {
+          var _ownPty = GM.parties.filter(function(p) { return p && (p.faction === _pf || p.factionId === _pf || p.crossFaction); });
+          if (_ownPty.length) GM.parties = _ownPty;
+        }
+      }
     }
   })();
 
-  // 初始化家族注册表
+  // 初始化家族注册表 + 从剧本加载 sc.families（根治）。
+  // 此前仅初始化空对象·剧本定义的 families 数组从不加载→updateFamilyRenown/GM.families[name] 消费恒空。
+  // 补后所有剧本一致·向后兼容：无 sc.families 则不变；已存在的 name 不覆盖。
   if (!GM.families) GM.families = {};
+  if (Array.isArray(sc.families)) {
+    sc.families.forEach(function(f) {
+      if (f && f.name && !GM.families[f.name]) {
+        var fam = deepClone(f);
+        if (typeof fam.renown !== 'number') fam.renown = (typeof fam.prestige === 'number') ? fam.prestige : 50;
+        GM.families[f.name] = fam;
+      }
+    });
+  }
+
+  // 剧本 relations 数组（from/to）分发到人物 ch.relations（根治）。
+  // 此前剧本 relations 只进坏的 GM.rels[r.name]（relations 无 name 字段→key undefined·63条全覆盖成1条），
+  // 而 getTopRelations/summarizeRelation 读的是人物自带 ch.relations·二者脱节→剧本人际关系在 AI 推演中恒空。
+  // 双向分发·字段映射(value→hostility/conflictLevel·type→labels)·向后兼容：人物已有 ch.relations[other] 不覆盖。
+  (function _dispatchScenarioRelations(){
+    var _scRels = (sc.relations || []);
+    if (!_scRels.length || !GM.chars) return;
+    var _byName = {};
+    GM.chars.forEach(function(c){ if (c && c.name) _byName[c.name] = c; });
+    var _put = function(owner, other, r, hostility, conflictLevel){
+      var c = _byName[owner]; if (!c) return;
+      if (!c.relations) c.relations = {};
+      if (c.relations[other]) return; // 不覆盖人物自带关系
+      c.relations[other] = {
+        affinity: (typeof r.affinity === 'number') ? r.affinity : 50,
+        trust: (typeof r.trust === 'number') ? r.trust : 50,
+        respect: (typeof r.respect === 'number') ? r.respect : 50,
+        fear: (typeof r.fear === 'number') ? r.fear : 0,
+        hostility: hostility, conflictLevel: conflictLevel,
+        labels: r.type ? [r.type] : [], desc: r.desc || '',
+        history: [], _fromScenario: true
+      };
+    };
+    _scRels.forEach(function(r){
+      if (!r || !r.from || !r.to) return;
+      var hostility = (typeof r.value === 'number' && r.value < 0) ? Math.min(100, -r.value) : 0;
+      var conflictLevel = (r.value <= -40) ? 2 : (r.value < -15 ? 1 : 0);
+      _put(r.from, r.to, r, hostility, conflictLevel);
+      _put(r.to, r.from, r, hostility, conflictLevel);
+    });
+  })();
 
   // 初始化后宫/继承系统数据
   if (!GM.harem) GM.harem = { heirs: [], succession: 'eldest_legitimate', pregnancies: [] };

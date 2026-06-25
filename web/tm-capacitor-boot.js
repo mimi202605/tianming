@@ -28,6 +28,30 @@
     catch (_) { return Date.now(); }
   }
 
+  // ── 版本比较（与桌面端 tm-online-update.js 同算法）──────────────────────────
+  // 本地有效版本：优先「当前运行 web」的 <meta name="tm-version">（热更替换整包时会随之更新·即正在运行的版本），
+  // 兜底 footer #tm-foot-ver 文本。用它和服务器 latest.version 做 semver 比较，只在服务器「严格更高」时才更新。
+  function _localVersion() {
+    try {
+      var meta = document.querySelector('meta[name="tm-version"]');
+      var v = meta && meta.getAttribute('content');
+      if (v && /^\d+(\.\d+){1,3}$/.test(String(v).trim())) return String(v).trim();
+    } catch (_) {}
+    try {
+      var el = document.getElementById('tm-foot-ver') || document.querySelector('.f-ver');
+      var m = el && String(el.textContent || '').match(/\d+(\.\d+){1,3}/);
+      if (m) return m[0];
+    } catch (_) {}
+    return '';
+  }
+  function _compareVer(a, b) {   // a>b → 1 · a<b → -1 · 相等 → 0
+    var aa = String(a || '0').split(/[.+-]/).map(function (n) { var v = parseInt(n, 10); return isFinite(v) ? v : 0; });
+    var bb = String(b || '0').split(/[.+-]/).map(function (n) { var v = parseInt(n, 10); return isFinite(v) ? v : 0; });
+    var n = Math.max(aa.length, bb.length, 4);
+    for (var i = 0; i < n; i++) { var av = aa[i] || 0, bv = bb[i] || 0; if (av > bv) return 1; if (av < bv) return -1; }
+    return 0;
+  }
+
   function notifyReady() {
     var U = updater();
     if (U && typeof U.notifyAppReady === 'function') {
@@ -295,11 +319,17 @@
         }
         return Promise.resolve(U.current ? U.current() : null).then(function (cur) {
           var curVer = (cur && cur.bundle && cur.bundle.version) || '';
-          if (latest.version === curVer) {           // 已是最新
-            if (verbose) ui.toast('已是最新版', latest.version, 3200);
+          // 本地有效版本：当前运行 web 的 meta 版本（权威）优先，兜底 Capgo 当前 bundle 版本。
+          var localVer = _localVersion() || curVer;
+          // ★只有服务器版本「严格高于」本地才更新。
+          //   原逻辑 `latest.version !== curVer` 的坑：① 玩家装了比服务器更新的 APK（本地版本更高）→ 不等 → 被强制下载（降级）；
+          //   ② 全新装时 Capgo current 是 "builtin" 而非语义版本 → 永远 !== latest → 即使内容一致也强制下载。
+          //   改用 semver 比较根治：localVer ≥ latest 一律不更新。
+          if (_compareVer(latest.version, localVer) <= 0) {
+            if (verbose) ui.toast('已是最新版', localVer || latest.version, 3200);
             return;
           }
-          try { console.log('[tm-capacitor-boot] 发现热更 ' + latest.version + (latest.manifest ? '·差量' : '·全包') + '·下载中…'); } catch (_) {}
+          try { console.log('[tm-capacitor-boot] 发现热更 ' + latest.version + '（本地 ' + (localVer || '?') + '）' + (latest.manifest ? '·差量' : '·全包') + '·下载中…'); } catch (_) {}
           return startDownload(U, latest);
         });
       })

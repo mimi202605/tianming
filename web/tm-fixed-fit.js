@@ -40,13 +40,29 @@
     try {
       if (location.search.indexOf('fit=1') >= 0) return true;            // 测试强制
       if (window.TM && window.TM.platform && window.TM.platform.kind === 'capacitor') return true; // APK
+      if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) return true; // APK·直接探测回退（与 tm-editor-fit 一致·防 TM.platform 未就绪时静默不适配→安卓只占一小块）
       // 桌面/网页:玩家显式选定了固定分辨率 → 进 fit 舞台
       var r = localStorage.getItem('tm.fitResolution');
       if (r && /^\d{3,4}x\d{3,4}$/.test(r)) return true;
     } catch (_) {}
     return false;
   }
-  if (!shouldFit()) return;
+  function boot() {
+
+  // ── 响应式铺满（owner 选「重构御案响应式」·2026-06）────────────────────────
+  // 痛点：固定 16:9 舞台（1477×831）在宽屏手机上左右各 ~18% letterbox 黑边（「四周空白」）。
+  // 解：APK/fit 端把舞台「宽度」按设备宽高比扩展（高度 VH 为基准不变）→ contain 缩放后宽高都铺满、零黑边。
+  //   body 内大量 width:100%/flex 的 UI（home-stage、顶栏、抽屉…）会自动跟着铺满更宽的舞台。
+  //   玩家若在设置里显式选了固定渲染分辨率（tm.fitResolution）→ 尊重其选择、不动态扩展。
+  try {
+    var _sw0 = window.innerWidth, _sh0 = window.innerHeight;
+    var _hasFixedRes = false;
+    try { var _r0 = localStorage.getItem('tm.fitResolution'); _hasFixedRes = !!(_r0 && /^\d{3,4}x\d{3,4}$/.test(_r0)); } catch (_) {}
+    if (_sw0 > 0 && _sh0 > 0 && !_hasFixedRes) {
+      var _dynW = Math.round(VH * _sw0 / _sh0);   // 舞台宽 = 高度基准 VH × 设备宽高比
+      if (_dynW > VW) VW = _dynW;                 // 只向更宽扩展（竖向 UI 设计基准 VH 不变）
+    }
+  } catch (_) {}
 
   // device-width：layout viewport 钉在真设备宽 → 不 pan、不滚动、innerWidth 报真值、transform 真 contain。
   // maximum-scale=1 + user-scalable=no 防「body 1920 宽撑大 layout viewport」并锁掉双指缩放。
@@ -60,7 +76,12 @@
   style.id = 'tm-fixed-fit-style';
   style.textContent =
     'html.tm-fixed-fit,html.tm-fixed-fit body{margin:0!important;padding:0!important;}' +
-    'html.tm-fixed-fit{width:100%!important;height:100%!important;overflow:hidden!important;background:#120e0a;}' +
+    // letterbox 留边（舞台外·body 之外的区域）：从刺眼纯黑换成玄金暗纹（深漆 + 暖金晕影 + 斜向绢纹），
+    // 让固定 16:9 舞台在宽屏手机上的两侧留边融进游戏质感、不再像"没全屏的黑框"。UI 舞台居中不动·零风险。
+    'html.tm-fixed-fit{width:100%!important;height:100%!important;overflow:hidden!important;' +
+      'background:radial-gradient(ellipse 72% 92% at 50% 46%,rgba(48,36,20,0.5),rgba(0,0,0,0) 70%),' +
+      'repeating-linear-gradient(135deg,rgba(214,181,102,0.018) 0 2px,rgba(0,0,0,0) 2px 8px),' +
+      'linear-gradient(162deg,#1b150d 0%,#120e0a 58%,#0b0806 100%)!important;}' +
     'html.tm-fixed-fit body{width:' + VW + 'px!important;height:' + VH + 'px!important;' +
       'min-height:0!important;max-width:none!important;position:absolute!important;left:0!important;top:0!important;' +
       'transform-origin:0 0;overflow:hidden!important;}' +
@@ -197,4 +218,16 @@
 
   window.TM = window.TM || {};
   window.TM.fixedFit = { refit: fit, normalize: normalizeSoon, VW: VW, VH: VH };
+  } // ── end boot ──
+
+  // 现在或延迟启动：Capacitor 原生桥可能晚于本脚本就绪 → 不立刻放弃·延迟重判·真后补挂适配。
+  // 修「安卓已横屏但游戏只占屏幕一小块·四周黑边」= shouldFit 初判 false（platform/Capacitor 未就绪）→ 永久不适配。
+  var _ffBooted = false;
+  function _armFit(){ if (_ffBooted) return; if (shouldFit()) { _ffBooted = true; try { boot(); } catch (e) { try { console.error('[fixed-fit] boot', e); } catch (_) {} } } }
+  _armFit();
+  if (!_ffBooted) {
+    document.addEventListener('DOMContentLoaded', _armFit);
+    window.addEventListener('load', _armFit);
+    [120, 350, 700, 1200, 2000, 3500].forEach(function (t) { setTimeout(_armFit, t); });
+  }
 })();

@@ -92,6 +92,34 @@ function loadGame() {
   return sandbox;
 }
 
+// 天启官方地图(43 陆地块)在独立 scenario JSON 内·官方 bundle 为省体积剥离了地图·真游戏运行时另行 fetch 加载。
+//   headless 测试 fetch 被桩(不真拉)·故须显式从磁盘读入地图并挂到已注册剧本上——否则地图数据根本不在 sandbox·
+//   doActualStart 无图可绑·mapRegions 必 0(那是 harness 缺数据·非开局绑图逻辑之过)。读入后即可真正验证"开局是否正确绑图"。
+const TIANQI_MAP_SOURCE = (function () {
+  try {
+    const p = path.join(ROOT, '..', 'scenarios', '天启七年·九月（官方）.json');
+    if (!fs.existsSync(p)) return null;
+    const sc = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const hasRegions = (m) => m && Array.isArray(m.regions) && m.regions.length >= 40;
+    return { map: hasRegions(sc.map) ? sc.map : null, mapData: hasRegions(sc.mapData) ? sc.mapData : null };
+  } catch (e) { return null; }
+})();
+
+function attachTianqiMap(sandbox) {
+  if (!TIANQI_MAP_SOURCE || !TIANQI_MAP_SOURCE.map) return false;
+  sandbox.__tianqiMapJSON = JSON.stringify(TIANQI_MAP_SOURCE.map);
+  sandbox.__tianqiMapDataJSON = TIANQI_MAP_SOURCE.mapData ? JSON.stringify(TIANQI_MAP_SOURCE.mapData) : sandbox.__tianqiMapJSON;
+  return vm.runInContext(`(function(){
+    if (typeof findScenarioById !== 'function') return false;
+    var sc = findScenarioById('${SID}');
+    if (!sc) return false;
+    var need = function(m){ return !m || !Array.isArray(m.regions) || m.regions.length < 40; };
+    if (need(sc.map)) sc.map = JSON.parse(__tianqiMapJSON);
+    if (need(sc.mapData)) sc.mapData = JSON.parse(__tianqiMapDataJSON);
+    return Array.isArray(sc.map.regions) && sc.map.regions.length >= 40;
+  })()`, sandbox);
+}
+
 function countState(sandbox) {
   const gm = sandbox.GM || {};
   const vars = gm.vars && typeof gm.vars === 'object' ? Object.keys(gm.vars).length : 0;
@@ -156,6 +184,7 @@ function delay(ms) {
 async function runCase(label, setup, expect) {
   const sandbox = loadGame();
   setup(sandbox);
+  attachTianqiMap(sandbox);   // 显式挂入天启地图(bundle 剥离·真游戏 fetch·headless 须补)·方能验开局绑图
   vm.runInContext(`doActualStart('${SID}')`, sandbox, { timeout: START_VM_TIMEOUT_MS });
   await delay(120);
   const state = countState(sandbox);

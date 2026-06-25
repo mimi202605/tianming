@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 问对 / 朝议 立绘对话界面（近整页 · 统一框架）美化稿</title>
+<!--
+  preview / mockup，非运行时代码。在真实「问对」聊天结构(tm-wendui.js·.wd-modal-*)基础上做三项升级：
+    ① 近整页沉浸式（非小弹窗）   ② 统一框架（问对 + 几种朝议[廷议/策对…]共用此聊天框）   ③ 人物立绘大幅利用（左侧立绘舞台·真机接 ch.portrait/立绘）
+  · 结构沿真实字段：动作钮(屏退/差遣/摘入建议库/召人对质/赏/罚/纳谏) · 名衔忠 · 情绪条 · 话题 · 语气 · 奉旨/退下 · 计数 · 气泡(大臣 wendui-npc / 皇帝 wendui-player)
+  · 统一：左立绘舞台——问对=1人；朝议=列群臣立绘·当前发言者居中放大（底部检列）。右=聊天框不变。
+  · 立绘为官服剪影占位（真机用角色肖像/立绘）。样例为户部尚书奏国库（虚构演示）。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cdab63; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#564a2e;
+  --ivory:#f4eddf; --ivory-2:#e7dcc5; --ink:#d8cdba;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --crimson:#e6584b; --vermillion:#cf5042;
+  --jade:#a9d18e; --celadon:#9fc2a0;
+  --hair:rgba(207,173,101,.2); --hair-br:rgba(240,213,151,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 14px 40px;
+  background:radial-gradient(1200px 560px at 50% -8%,rgba(207,173,101,.06),transparent 60%),linear-gradient(180deg,#13100c,#0d0a07 60%,#0a0807);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.num{font-family:"Songti SC","STSong","SimSun",serif;font-variant-numeric:tabular-nums}
+.intro{font-size:12px;color:var(--gold-dim);letter-spacing:.04em;text-align:center;line-height:1.8}
+.intro b{color:var(--gold-br);font-weight:400}
+
+/* ── 近整页舞台 ── */
+.stage{width:1280px;max-width:97vw;height:740px;display:flex;flex-direction:column;overflow:hidden;border-radius:5px;
+  border:1px solid rgba(207,173,101,.34);
+  background:linear-gradient(180deg,rgba(255,236,200,.04),transparent 8%),linear-gradient(178deg,#1d160e,#140e08 60%,#0b0805);
+  box-shadow:inset 0 1px 0 var(--hair-br),0 30px 80px rgba(0,0,0,.7);}
+
+/* ── 顶栏 ── */
+.dlg-head{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--hair);
+  background:linear-gradient(180deg,rgba(207,173,101,.07),transparent)}
+.dlg-seal{width:42px;height:42px;flex:none;border-radius:4px;display:grid;place-items:center;font-size:25px;font-family:"Ma Shan Zheng",serif;color:#fdf3da;
+  border:1.4px solid var(--gold-br);background:radial-gradient(125% 125% at 30% 22%,var(--red-hi),var(--red-1) 46%,var(--red-2));
+  box-shadow:inset 0 0 0 1px rgba(247,228,180,.3),inset 0 -3px 6px rgba(60,10,8,.5)}
+.dlg-title{font-size:24px;letter-spacing:.12em;background:linear-gradient(120deg,#fbf2d4,#e9cd84 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dlg-topic{font-size:13px;color:var(--gold-mid);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.06em;padding:3px 11px;border:1px solid var(--gold-faint);border-radius:2px;background:linear-gradient(180deg,#211810,#140d07)}
+.dlg-topic b{color:var(--gold-br);font-weight:400}
+.dlg-emotion{display:flex;align-items:center;gap:8px;margin-left:auto}
+.dlg-emotion .lab{font-size:11px;font-family:"ZCOOL XiaoWei",serif}.dlg-emotion .calm{color:var(--celadon)}.dlg-emotion .tense{color:var(--vermillion)}
+.emo-track{position:relative;width:90px;height:5px;border-radius:3px;background:linear-gradient(90deg,rgba(159,194,160,.4),rgba(207,80,66,.45));box-shadow:inset 0 0 0 .6px rgba(86,73,45,.7)}
+.emo-mark{position:absolute;top:-2px;bottom:-2px;width:2px;border-radius:1px;background:#f4eddf;box-shadow:0 0 3px rgba(244,237,223,.85)}
+.dlg-close{flex:none;width:30px;height:30px;border-radius:2px;border:1px solid var(--hair);background:none;color:var(--gold-mid);font-size:16px;cursor:pointer}
+.dlg-close:hover{color:var(--gold-br);border-color:var(--gold)}
+
+/* ── 主体：左立绘舞台 + 右聊天框 ── */
+.dlg-body{flex:1;display:flex;min-height:0}
+
+/* 左·立绘舞台 */
+.actor{flex:0 0 38%;position:relative;display:flex;flex-direction:column;border-right:1px solid var(--hair);
+  background:
+    radial-gradient(70% 50% at 50% 30%,rgba(180,120,60,.12),transparent 62%),
+    repeating-linear-gradient(92deg,transparent 0 8px,rgba(255,255,255,.008) 8px 9px),
+    linear-gradient(180deg,#16100a,#0e0a06)}
+.actor-stage{flex:1;position:relative;display:grid;place-items:end center;overflow:hidden}
+.actor-glow{position:absolute;left:50%;top:14%;width:74%;height:74%;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(circle,rgba(207,150,80,.16),transparent 66%);pointer-events:none}
+.actor-svg{position:relative;height:90%;width:auto;filter:drop-shadow(0 8px 24px rgba(0,0,0,.6))}
+.actor-tag{position:absolute;top:10px;left:12px;font-size:10px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.1em;opacity:.7}
+/* 名牌 */
+.actor-plate{padding:11px 16px;border-top:1px solid var(--hair);background:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.45))}
+.actor-name{font-size:24px;letter-spacing:.1em;line-height:1.1;background:linear-gradient(120deg,#fbf2d4,#e9cd84 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.actor-sub{font-size:12px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;margin-top:4px;letter-spacing:.05em}
+.actor-sub .loy{color:var(--jade)}
+/* 动作钮（作用于眼前之人） */
+.actor-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.bt{font-family:"ZCOOL XiaoWei",serif;font-size:12px;letter-spacing:.04em;padding:5px 11px;border-radius:2px;cursor:pointer;
+  border:1px solid var(--gold-faint);background:linear-gradient(180deg,#241c11,#130d07);color:var(--gold-mid);transition:all .16s;white-space:nowrap}
+.bt:hover{border-color:var(--gold);color:var(--gold-br)}
+.bt.zhu{color:#e6a07a;border-color:rgba(207,80,66,.45)}.bt.shang{color:var(--celadon);border-color:rgba(159,194,160,.4)}.bt.na{color:var(--gold-br);border-color:rgba(207,173,101,.45)}
+/* 朝议·检列群臣（统一框架·当前发言者居中放大） */
+.court{display:flex;align-items:center;gap:7px;padding:9px 16px 12px;border-top:1px solid var(--hair);overflow-x:auto}
+.court-lab{font-size:10.5px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.06em;flex:none;writing-mode:vertical-rl;text-orientation:upright;line-height:1.1;margin-right:2px}
+.court-fig{flex:none;width:38px;height:48px;border-radius:2px;display:grid;place-items:center;font-size:18px;font-family:"Ma Shan Zheng",serif;color:var(--gold-mid);
+  border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1d160d,#100b06);position:relative}
+.court-fig.on{color:#fdf3da;border-color:var(--gold-br);box-shadow:0 0 0 1px var(--gold-br),0 0 11px rgba(207,173,101,.4);background:radial-gradient(120% 120% at 30% 22%,#a8312a,#5e140e)}
+.court-fig.on:after{content:"发言";position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:8.5px;color:var(--gold-br);font-family:"ZCOOL XiaoWei",serif;white-space:nowrap}
+
+/* 右·聊天框 */
+.dlg-chat-wrap{flex:1;display:flex;flex-direction:column;min-width:0}
+.dlg-chat{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px;
+  background:radial-gradient(120% 50% at 50% 0%,rgba(0,0,0,.22),transparent 60%),linear-gradient(180deg,#120d07,#0d0905);
+  box-shadow:inset 0 8px 16px rgba(0,0,0,.4)}
+.dlg-chat::-webkit-scrollbar{width:7px}.dlg-chat::-webkit-scrollbar-thumb{background:rgba(207,173,101,.22);border-radius:4px}
+.msg{display:flex;flex-direction:column;max-width:82%}
+.msg.npc{align-self:flex-start}.msg.emp{align-self:flex-end}
+.msg-name{font-size:13px;color:var(--gold);font-family:"Ma Shan Zheng",serif;letter-spacing:.08em;margin-bottom:5px;display:flex;align-items:baseline;gap:7px}
+.msg-name .loy-up{font-size:10px;color:var(--jade);font-family:"ZCOOL XiaoWei",serif}
+.npc-bubble{position:relative;padding:12px 15px;border-radius:3px 12px 12px 12px;font-size:15px;line-height:1.9;color:var(--ink);
+  border:1px solid rgba(207,173,101,.2);background:linear-gradient(180deg,#221a10,#1a130b);box-shadow:inset 0 1px 0 rgba(240,213,151,.1),0 3px 10px rgba(0,0,0,.35)}
+.npc-bubble:before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:2px;border-radius:2px;background:linear-gradient(180deg,var(--gold-mid),var(--gold-faint))}
+.emp-bubble{position:relative;padding:12px 16px;border-radius:12px 3px 12px 12px;font-size:15.5px;line-height:1.82;color:#fdf1da;
+  border:1px solid rgba(240,213,151,.4);background:linear-gradient(178deg,#3a2114,#2a1109);box-shadow:inset 0 1px 0 rgba(255,212,160,.18),0 3px 12px rgba(110,28,20,.3)}
+.emp-bubble:after{content:"谕";position:absolute;right:-7px;top:-7px;width:20px;height:20px;border-radius:2px;display:grid;place-items:center;font-size:11px;font-family:"Ma Shan Zheng",serif;color:#fdf3da;background:linear-gradient(180deg,var(--red-1),var(--red-2));border:1px solid var(--gold-br);transform:rotate(5deg)}
+
+/* 话题 + footer */
+.dlg-topics{display:flex;gap:7px;flex-wrap:wrap;padding:9px 18px;border-top:1px solid rgba(207,173,101,.1)}
+.topic{font-family:"ZCOOL XiaoWei",serif;font-size:11.5px;color:var(--gold-mid);padding:4px 11px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1f1810,#140d07);transition:all .16s}
+.topic:hover{border-color:var(--gold);color:var(--gold-br)}.topic:before{content:"问 ";color:var(--gold-dim);font-size:10px}
+.dlg-foot{padding:12px 18px 15px;border-top:1px solid var(--hair);background:linear-gradient(180deg,rgba(207,173,101,.04),transparent)}
+.foot-row{display:flex;align-items:flex-end;gap:11px}
+.tone-wrap{display:flex;flex-direction:column;gap:5px;flex:none}
+.tone-lab{font-size:11px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;padding-left:2px}
+.tone{font-family:"ZCOOL XiaoWei",serif;font-size:13px;color:var(--gold);padding:8px 11px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#241c11,#130d07);min-width:104px}
+.dlg-input{flex:1;resize:none;height:66px;padding:11px 14px;font-size:15px;line-height:1.6;font-family:"Songti SC","STSong",serif;color:var(--ivory);
+  border:1px solid rgba(207,173,101,.28);border-radius:3px;background:linear-gradient(180deg,#140e08,#0e0a06);box-shadow:inset 0 1px 4px rgba(0,0,0,.45)}
+.dlg-input:focus{outline:none;border-color:var(--gold);box-shadow:inset 0 1px 4px rgba(0,0,0,.45),0 0 0 2px rgba(207,173,101,.16)}
+.dlg-input::placeholder{color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif}
+.send-col{display:flex;flex-direction:column;gap:6px;flex:none}
+.btn-send{font-family:"Ma Shan Zheng",serif;font-size:19px;letter-spacing:.18em;text-indent:.18em;color:#fdebcf;padding:0 20px;height:40px;border-radius:3px;cursor:pointer;
+  border:1.1px solid rgba(240,213,151,.5);background:linear-gradient(178deg,#9a2a22,#5e140e);box-shadow:inset 0 1px 0 rgba(255,220,180,.22),0 3px 10px rgba(120,20,14,.35)}
+.btn-send:hover{border-color:var(--gold-br);box-shadow:inset 0 1px 0 rgba(255,220,180,.3),0 0 13px rgba(207,173,101,.26)}
+.btn-back{font-family:"ZCOOL XiaoWei",serif;font-size:13px;letter-spacing:.1em;color:var(--gold-mid);height:30px;border-radius:3px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1f1810,#130d07)}
+.btn-back:hover{border-color:var(--gold);color:var(--gold-br)}
+.counter{text-align:right;font-size:10.5px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;margin-top:6px}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1180px;text-align:center;line-height:1.9}.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+
+/* ── 细节打磨：时辰戳 / 语气展开 / 忠诚浮动 / 入场动效 ── */
+.in-ts{display:block;text-align:right;font-size:9px;font-family:"ZCOOL XiaoWei",serif;opacity:.6;margin-top:7px;letter-spacing:.14em;color:var(--gold-dim)}
+.msg.emp .in-ts{color:rgba(240,213,151,.5)}
+/* 语气选择器·展开态 */
+.tone-wrap{position:relative}
+.tone.open{color:var(--gold-br);border-color:var(--gold)}
+.tone-pop{position:absolute;left:0;bottom:calc(100% + 8px);width:180px;padding:5px;border:1px solid var(--gold);border-radius:3px;z-index:30;
+  background:linear-gradient(180deg,#241c11,#140d07);box-shadow:0 -10px 28px rgba(0,0,0,.62),inset 0 1px 0 var(--hair-br)}
+.tone-pop:after{content:"";position:absolute;left:30px;bottom:-6px;width:10px;height:10px;transform:rotate(45deg);background:#170f08;border-right:1px solid var(--gold);border-bottom:1px solid var(--gold)}
+.tone-opt{display:flex;align-items:baseline;gap:8px;padding:6px 9px;border-radius:2px;cursor:pointer;font-family:"ZCOOL XiaoWei",serif;font-size:13px;color:var(--gold-mid)}
+.tone-opt:hover{background:rgba(207,173,101,.1);color:var(--gold-br)}
+.tone-opt.sel{color:var(--gold-br);background:rgba(207,173,101,.14)}
+.tone-opt .th{font-size:9.5px;color:var(--gold-dim);letter-spacing:.02em;margin-left:auto}
+.tone-opt.sel .th{color:var(--celadon)}
+/* 动作后·忠诚浮动反馈 */
+.loy-float{position:absolute;left:50%;bottom:30px;z-index:5;white-space:nowrap;font-family:"ZCOOL XiaoWei",serif;font-size:12px;color:var(--jade);
+  padding:6px 14px;border:1px solid rgba(169,209,142,.5);border-radius:3px;background:linear-gradient(180deg,rgba(26,40,18,.95),rgba(15,25,10,.95));
+  box-shadow:0 5px 18px rgba(0,0,0,.55);animation:loyIn .6s cubic-bezier(.2,.8,.2,1) both}
+.loy-float b{color:#c6e8a8;font-size:13px;margin-left:3px}
+.loy-float:before{content:"✦";color:var(--jade);margin-right:6px;opacity:.85}
+@keyframes loyIn{0%{opacity:0;transform:translate(-50%,12px)}100%{opacity:1;transform:translate(-50%,0)}}
+/* 入场动效（运行时载入演出·截图为定格态） */
+.actor-svg{animation:actorIn .85s cubic-bezier(.2,.8,.2,1) both}
+@keyframes actorIn{0%{opacity:0;transform:translateY(26px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.dlg-chat .msg{animation:msgIn .55s ease-out both}
+.dlg-chat .msg:nth-child(1){animation-delay:.12s}
+.dlg-chat .msg:nth-child(2){animation-delay:.26s}
+.dlg-chat .msg:nth-child(3){animation-delay:.4s}
+.dlg-chat .msg:nth-child(4){animation-delay:.54s}
+.dlg-chat .msg:nth-child(5){animation-delay:.68s}
+@keyframes msgIn{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+  <div class="intro fang">三项升级 ——「<b>近整页</b>」沉浸 · 「<b>统一框架</b>」(问对+朝议[廷议/策对…]共用) · 「<b>人物立绘</b>」大幅利用。左立绘舞台(问对1人/朝议列群臣·发言者居中放大) + 右聊天框,同结构同字段、纯美化。</div>
+
+  <div class="stage">
+    <!-- 顶栏 -->
+    <div class="dlg-head">
+      <div class="dlg-seal brush">对</div>
+      <div class="dlg-title brush">朝堂问对</div>
+      <div class="dlg-topic fang">议题 · <b>国库财政</b></div>
+      <div class="dlg-emotion">
+        <span class="lab calm">镜定</span>
+        <div class="emo-track"><i class="emo-mark" style="left:34%"></i></div>
+        <span class="lab tense">紧张</span>
+      </div>
+      <button class="dlg-close">✕</button>
+    </div>
+
+    <!-- 主体 -->
+    <div class="dlg-body">
+      <!-- 左·立绘舞台 -->
+      <div class="actor">
+        <div class="actor-stage">
+          <span class="actor-tag fang">人物立绘 · 真机接 ch.portrait</span>
+          <div class="actor-glow"></div>
+          <svg class="actor-svg" viewBox="0 0 260 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2c18"/><stop offset="1" stop-color="#16100a"/></linearGradient></defs>
+            <path d="M84 152 Q130 128 176 152 L208 512 L52 512 Z" fill="url(#rg)" stroke="#8a6d34" stroke-width="1.3"/>
+            <path d="M86 162 Q58 178 46 330 L78 342 Q92 206 102 178 Z" fill="url(#rg)" stroke="#8a6d34" stroke-width="1.1"/>
+            <path d="M174 162 Q202 178 214 330 L182 342 Q168 206 158 178 Z" fill="url(#rg)" stroke="#8a6d34" stroke-width="1.1"/>
+            <rect x="78" y="300" width="104" height="12" rx="2" fill="#2a2012" stroke="#a8833a" stroke-width="1"/>
+            <rect x="104" y="206" width="52" height="52" rx="2" fill="#241a0e" stroke="#a8833a" stroke-width="1.3"/>
+            <path d="M130 214 q16 7 16 20 q0 15 -16 20 q-16 -5 -16 -20 q0 -13 16 -20z" fill="none" stroke="#c9a85f" stroke-width="1.1"/>
+            <path d="M130 222 l3 9 l9 0 l-7 6 l3 9 l-8 -6 l-8 6 l3 -9 l-7 -6 l9 0z" fill="#a8833a"/>
+            <rect x="118" y="120" width="24" height="24" fill="url(#rg)"/>
+            <ellipse cx="130" cy="98" rx="27" ry="31" fill="url(#rg)" stroke="#8a6d34" stroke-width="1.3"/>
+            <path d="M101 80 Q130 56 159 80 L159 90 Q130 76 101 90 Z" fill="#15100a" stroke="#8a6d34" stroke-width="1.3"/>
+            <rect x="60" y="76" width="44" height="6" rx="3" fill="#15100a" stroke="#8a6d34" stroke-width="1"/>
+            <rect x="156" y="76" width="44" height="6" rx="3" fill="#15100a" stroke="#8a6d34" stroke-width="1"/>
+          </svg>
+          <div class="loy-float fang">纳谏采纳 · 忠 72 → 74 <b>+2</b></div>
+        </div>
+        <div class="actor-plate">
+          <div class="actor-name brush">毕自严</div>
+          <div class="actor-sub fang">户部尚书 · 朝堂问对 · <span class="loy">忠 74</span></div>
+          <div class="actor-acts">
+            <button class="bt">屏退</button>
+            <button class="bt">差遣</button>
+            <button class="bt">摘入建议库</button>
+            <button class="bt">召人对质</button>
+            <button class="bt shang">赏</button>
+            <button class="bt zhu">罚</button>
+            <button class="bt na">纳谏</button>
+          </div>
+        </div>
+        <div class="court">
+          <span class="court-lab">朝议在列</span>
+          <div class="court-fig">温</div>
+          <div class="court-fig on">毕</div>
+          <div class="court-fig">王</div>
+          <div class="court-fig">黄</div>
+          <div class="court-fig">魏</div>
+          <div class="court-fig">孙</div>
+        </div>
+      </div>
+
+      <!-- 右·聊天框 -->
+      <div class="dlg-chat-wrap">
+        <div class="dlg-chat">
+          <div class="msg npc"><div class="msg-name">毕自严</div><div class="npc-bubble">（趋步入殿，俯首长揖）臣户部尚书毕自严，参见陛下。陛下万安。<span class="in-ts">辰时</span></div></div>
+          <div class="msg emp"><div class="emp-bubble">免礼。太仓存银几何？辽饷缺口，卿据实奏来，勿得粉饰。<span class="in-ts">辰时</span></div></div>
+          <div class="msg npc"><div class="msg-name">毕自严 <span class="loy-up">忠 +1</span></div><div class="npc-bubble">回陛下——太仓见存银四十七万两，而辽饷一项，今岁已支五百三十万。九边欠饷已逾三月，臣恐生哗变。开源节流，迫在眉睫，臣夙夜忧之，不敢有隐。<span class="in-ts">辰时一刻</span></div></div>
+          <div class="msg emp"><div class="emp-bubble">既如此，加派辽饷之议，卿以为可行否？若行，民力能堪几何？<span class="in-ts">辰时二刻</span></div></div>
+          <div class="msg npc"><div class="msg-name">毕自严</div><div class="npc-bubble">陛下明鉴。加派固可解一时之急，然民力已竭，恐生流寇。臣愚见——莫若先清核屯田、追比积逋，辅以盐法之利，庶几可纾。<span class="in-ts">辰时三刻</span></div></div>
+        </div>
+        <div class="dlg-topics">
+          <button class="topic fang">国库财政现状</button>
+          <button class="topic fang">边境军情如何</button>
+          <button class="topic fang">官员考课情况</button>
+          <button class="topic fang">对当前局势有何看法</button>
+        </div>
+        <div class="dlg-foot">
+          <div class="foot-row">
+            <div class="tone-wrap"><span class="tone-lab fang">语气</span><div class="tone open fang">直问 ▴</div>
+              <div class="tone-pop">
+                <div class="tone-opt">温言<span class="th">悦下·忠易升</span></div>
+                <div class="tone-opt sel">直问<span class="th">中性·求实</span></div>
+                <div class="tone-opt">诘问<span class="th">施压·难掩饰</span></div>
+                <div class="tone-opt">严斥<span class="th">威慑·易离心</span></div>
+                <div class="tone-opt">慰勉<span class="th">抚之·士气振</span></div>
+              </div>
+            </div>
+            <textarea class="dlg-input" placeholder="请输入……">清核屯田一事，着卿会同兵部详议，限一月覆奏。至于盐法，</textarea>
+            <div class="send-col"><button class="btn-send brush">奉旨</button><button class="btn-back">退下</button></div>
+          </div>
+          <div class="counter">27 / 5000</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap fang">同结构同字段、纯美化。<b>左立绘舞台</b>:问对=1人立绘+名牌+动作钮(作用于眼前之人);<b>朝议</b>=底部检列群臣立绘·发言者居中放大(同框复用)。<b>右聊天框</b>:大臣纸笺气泡 / 皇帝朱金「谕」气泡 + 话题/语气/奉旨。立绘为官服剪影占位,真机接 <code>ch.portrait</code>/立绘。<br><b>本轮细节态</b>:气泡时辰戳 · 语气选择器展开(温言/直问/诘问/严斥/慰勉+效果提示) · 动作后忠诚浮动反馈 · 立绘入殿与气泡入场动效(运行时演出)。</div>
+</body>
+</html>

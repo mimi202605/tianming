@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
-const SKIP_DIRS = new Set(['.bak-r103', '.bak-r106', '.git', 'node_modules', 'scripts', 'docs', 'vendor', '_archive', 'backups', 'godot', '.playwright-cli', '_screenshots', 'dev-tools']);
+const SKIP_DIRS = new Set(['.bak-r103', '.bak-r106', '.git', 'node_modules', 'scripts', 'docs', 'vendor', '_archive', 'backups', 'godot', '.playwright-cli', '_pw-scratch', '_screenshots', 'dev-tools']);
 const SKIP_PATTERNS = [/\.backup/, /\.bak(-r\d+)?/, /_rebuilt/];
 function shouldSkip(file, name) {
   if (SKIP_PATTERNS.some(re => re.test(name))) return true;

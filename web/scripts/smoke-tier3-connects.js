@@ -32,7 +32,7 @@ ok(runCtx({turn:1, activeWars:[]}).indexOf('【当前战事】') < 0, '无战事
 const mil = read('tm-military.js');
 ok(/var _cmLoss = \(outcome === 'killed'[\s\S]{0,80}\? 18 : 10;/.test(mil), '★主帅折损军心剧挫(killed/captured -18·余 -10)');
 ok(/army\.mutinyRisk = Math\.min\(100, \(army\.mutinyRisk \|\| 0\) \+ 10\)/.test(mil), '主帅折损 mutinyRisk +10');
-ok(/var fortMod = 1\.0;/.test(mil) && /unitMod \* fortMod;/.test(mil), '★fortification 接入战力(守城加成·完成 Tier-1 fortify)');
+ok(/var fortMod = 1\.0;/.test(mil) && /unitMod \* fortMod\b/.test(mil), '★fortification 接入战力(守城加成·完成 Tier-1 fortify·fortMod 乘入战力公式·后追加 equipMod 故不锁尾分号)');
 // fortification 行为验证
 const cas = sliceFn(mil, 'function calculateArmyStrength(');
 function strength(army, ctxArg){

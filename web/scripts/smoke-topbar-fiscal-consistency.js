@@ -104,4 +104,16 @@ assert(neitang.subItems[1].d === sandbox.GM.neitang.grain - sandbox.GM._prevNeit
 assert(neitang.subItems[2].v === sandbox._barFmtNum(sandbox.GM.neitang.cloth), 'neitang cloth stock must match scalar used by end-turn modal');
 assert(neitang.subItems[2].d === sandbox.GM.neitang.cloth - sandbox.GM._prevNeitang.cloth, 'neitang cloth delta must match modal old-to-new delta');
 
+// ── 回归·治"史记弹窗(_renderUnifiedChanges)与顶栏帑廪数值不一致" ──
+//   病灶:弹窗原裸读 GM.guoku.money(且 typeof==='number' 守卫·money 缺失时整行跳过)·
+//         顶栏走 _barAccountStock(.money 缺失→回落 .balance→回落账本 stock)→ 二者分歧。
+//   修复:弹窗已改走同一 _barAccountStock(tm-endturn-render.js)。此处锚定该取数器的回落语义·
+//         弹窗与顶栏从此同源同函数·缺失时不再跳过/分歧。
+assert(typeof sandbox._barAccountStock === 'function', '_barAccountStock 取数器存在(弹窗与顶栏共用)');
+assert(sandbox._barAccountStock({ money: 315000, balance: 999 }, 'money') === 315000, 'money 有值 → 优先 .money(与弹窗旧裸读同值·零回归)');
+assert(sandbox._barAccountStock({ balance: 850000 }, 'money') === 850000, 'money 缺失 → 回落 .balance(顶栏/弹窗同源·开局 money 未定义时不再跳过银两行)');
+assert(sandbox._barAccountStock({ ledgers: { money: { stock: 720000 } } }, 'money') === 720000, 'money+balance 缺失 → 回落账本 stock');
+assert(sandbox._barAccountStock({ grain: 13000000 }, 'grain') === 13000000, 'grain 标量取数一致');
+assert(sandbox._barAccountStock({}, 'money') === 0, '三源皆缺 → 0(不抛/不 NaN)');
+
 console.log(`[smoke-topbar-fiscal-consistency] PASS ${passed} assertions`);

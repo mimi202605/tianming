@@ -52,12 +52,15 @@
     });
   }
 
-  // 在任者对该职位的"承载力"(0-100)：域才0.6+忠0.4（同舆图料理估计口径）
+  // 五常评分(0-100)·履职看德性非忠君(owner 2026-06-20修正)：义.28信.28礼.20仁.16智.08(智已被才覆盖故低)。镜像 tmfRenwuWuchangValue 兜底读法·不依赖UI层
+  var _WC_ALIAS = { ren: ['仁', 'ren', 'benevolence'], yi: ['义', 'yi', 'righteousness'], li: ['礼', 'li', 'propriety'], zhi: ['智', 'zhi', 'wisdom'], xin: ['信', 'xin', 'honesty', 'trust'] };
+  function _wcVal(ch, k) { var src = (ch && (ch.wuchang || ch.wuchangOverride || ch.fiveConstants || ch.morals)) || {}; var al = _WC_ALIAS[k]; for (var i = 0; i < al.length; i++) { var v = src[al[i]]; if (v != null && !isNaN(Number(v))) return Number(v); } return 50; }
+  function _wuchangScore(ch) { return _wcVal(ch, 'yi') * 0.28 + _wcVal(ch, 'xin') * 0.28 + _wcVal(ch, 'li') * 0.20 + _wcVal(ch, 'ren') * 0.16 + _wcVal(ch, 'zhi') * 0.08; }
+  // 在任者对该职位的"承载力"(0-100)：域才0.6 + 五常德性0.4（履职=能不能干×愿不愿尽职·不看忠君）
   function _capacity(ch, pwKeys) {
     var domainKey = DOMAIN_ATTR[pwKeys[0]] || 'administration';
     var dv = (ch[domainKey] != null) ? ch[domainKey] : 50;
-    var lv = (ch.loyalty != null) ? ch.loyalty : 50;
-    return dv * 0.6 + lv * 0.4;
+    return dv * 0.6 + _wuchangScore(ch) * 0.4;
   }
 
   /**
@@ -113,6 +116,33 @@
     return agg;
   }
 
+  // ── ④B·npc_action → 履职反哺：官本回合主动行动定性 → 调其履职度（履职活在人物 agency 里·非脱钩公式·与 tick 的才五常漂移叠加=基线+行动）──
+  var _DUTY_DILIGENT = /勤政|治事|整顿|赈|巡按|巡查|巡视|革弊|清理|清丈|督办|督饷|兴修|缮城|修边|平乱|平叛|讨平|安抚|招抚|言事|上疏|进谏|纠劾|弹劾墨|考课|稽查|筹饷|理财|劝农|肃贪|查办/;
+  var _DUTY_DERELICT = /谋身|钻营|党争|结党|营私|缺席|不朝|旷|告病|称疾|避事|推诿|敛财|贪墨|纳贿|受贿|中饱|懈怠|怠政|尸位|嬉游|宴饮|挂冠|乞归/;
+  var _DUTY_ACT_FORCE = { diligent: 5, derelict: 6 };  // 每回合·行动定性的履职 delta（owner 可调）
+  function _npcActionDutyDelta(act) {
+    var s = String((act && act.action) || '') + '|' + String((act && act.behaviorType) || '') + '|' + String((act && act.type) || '') + '|' + String((act && act.reason) || '');
+    if (_DUTY_DERELICT.test(s)) return -_DUTY_ACT_FORCE.derelict;
+    if (_DUTY_DILIGENT.test(s)) return _DUTY_ACT_FORCE.diligent;
+    if (/develop|donate|relief|govern|reform/.test((act && act.behaviorType) || '')) return _DUTY_ACT_FORCE.diligent; // behaviorType 兜底·治事类
+    return 0;
+  }
+  // 把某官本回合行动的履职 delta 落到其在职位的 _dutyState（非在职官/中性行动则不动）
+  function applyNpcActionToDuty(GM, act) {
+    if (!GM || !GM.officeTree || !act || !act.name) return null;
+    var delta = _npcActionDutyDelta(act);
+    if (!delta) return null;
+    var hit = null;
+    _walk(GM.officeTree, function (p, deptName) { if (!hit && p.holder === act.name) hit = { p: p, dept: deptName }; });
+    if (!hit) return null;  // 该人物非在职官·不影响履职
+    var ds = hit.p._dutyState || (hit.p._dutyState = { fulfillment: 50, trend: 'stable', lastTurn: null });
+    var prev = (typeof ds.fulfillment === 'number') ? ds.fulfillment : 50;
+    ds.fulfillment = _clamp(prev + delta, 0, 100);
+    ds.trend = delta > 0 ? 'rising' : 'falling';
+    return { holder: act.name, dept: hit.dept, pos: hit.p.name, delta: delta, fulfillment: Math.round(ds.fulfillment) };
+  }
+
   global.tickOfficeDutyState = tickOfficeDutyState;
-  if (typeof module !== 'undefined' && module.exports) module.exports = { tickOfficeDutyState: tickOfficeDutyState, DEFAULT_FORCE: DEFAULT_FORCE };
+  global.applyNpcActionToDuty = applyNpcActionToDuty;
+  if (typeof module !== 'undefined' && module.exports) module.exports = { tickOfficeDutyState: tickOfficeDutyState, applyNpcActionToDuty: applyNpcActionToDuty, DEFAULT_FORCE: DEFAULT_FORCE };
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

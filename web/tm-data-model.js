@@ -370,10 +370,10 @@ var P={
   naturalDeath:{ // 自然死亡系统配置
     enabled:true,
     ageThresholds:[ // 年龄阈值（由剧本编辑器配置）
-      { age:60, deathRate:0.02 }, // 60岁，2%死亡率
-      { age:70, deathRate:0.05 }, // 70岁，5%死亡率
-      { age:80, deathRate:0.15 }, // 80岁，15%死亡率
-      { age:90, deathRate:0.30 }  // 90岁，30%死亡率
+      { age:60, deathRate:0.01 }, // 60岁，1%死亡率
+      { age:70, deathRate:0.02 },  // 70岁，2%死亡率
+      { age:80, deathRate:0.07 },  // 80岁，7%死亡率
+      { age:90, deathRate:0.15 }   // 90岁，15%死亡率
     ],
     healthModifier:{ // 健康状况修正
       excellent:-0.5, // 健康极佳，死亡率减半
@@ -756,6 +756,57 @@ huangquan:{index:55,phase:'balance',subDims:{central:{value:60},provincial:{valu
 // 7. 皇威
 huangwei:{index:65,perceivedIndex:68,phase:'normal',subDims:{court:{value:70},provincial:{value:60},military:{value:65},foreign:{value:55}},tyrantSyndrome:{active:false,hiddenDamage:{unreportedMinxinDrop:0,concealedCorruption:0,wrongfulDeaths:0}},lostAuthorityCrisis:{active:false}}
 };
+
+// ── 君上称谓·语言习惯「感知机制」(系统级·跨朝代·无硬编码称谓表) ─────────────────────────
+// owner 拍板：引擎只「组装本剧本语境」(朝代/年号/国家/君主称号·全来自剧本数据)，由 AI 据此「感知」本朝特有的
+// 君臣称谓与语言习惯(如宋→官家·明→陛下/皇上·清→皇上/万岁)，全 prompt 共用、全程一致。支持架空朝代(AI 据其设定自判)。
+// 不写死任何朝代→称谓映射：称谓由 AI 从语境感知，引擎只负责把语境喂全、喂准。
+function _sovereignLanguageContext(G) {
+  G = G || (typeof GM !== 'undefined' ? GM : null);
+  var P_ = (typeof P !== 'undefined') ? P : null;
+  function pick() { for (var i = 0; i < arguments.length; i++) { var v = arguments[i]; if (v != null && v !== false && v !== true && ('' + v).trim()) return ('' + v).trim(); } return ''; }
+  var es = (G && G.eraState) || {};
+  var ec = (G && G.engineConstants) || (P_ && P_.engineConstants) || {};
+  var pi = (P_ && P_.playerInfo) || {};
+  // ── 时代/纪元：动态优先（受推演影响·改元/改朝/纪年推进全反映；剧本静态 label 仅兜底）──
+  var dynEra      = pick(G && G.eraName, es.eraName);                                            // 动态年号（改元写 GM.eraName）
+  var staticLabel = pick(ec.label, G && G.label, es.label, P_ && P_.label, G && G.dynastyName);  // 剧本静态时代描述（兜底）
+  var dynKey      = pick(G && G.dynastyKey, es.dynastyKey, ec.dynastyKey, P_ && P_.dynastyKey);
+  var dynastyNm   = pick(G && G.dynasty, G && G.dynastyName, pi.dynasty, P_ && P_.dynasty);       // 朝代名（可读·动态优先·改朝随之）
+  if (!dynastyNm && staticLabel) dynastyNm = ('' + staticLabel).split(/[·:：\/\s（(]/)[0];        // 从剧本 label 派生朝代名（南宋·建炎初→南宋·非硬编码）
+  // 当前年（动态·随回合推进；改元/改朝后亦实时）
+  var curYear = '';
+  try { if (typeof turnToDate === 'function' && G && G.turn) curYear = turnToDate(G.turn).year; } catch (e) {}
+  if (!curYear) curYear = pick(G && G.year, G && G.currentYear, pi.startYear, ec.startYear);
+  // 「时代」描述：有动态年号 → 「朝代·年号·年」(改元/改朝全反映)；否则回落剧本静态 label（仍带动态年）
+  var eraDesc;
+  if (dynEra) eraDesc = (dynastyNm ? dynastyNm + '·' : '') + dynEra + (curYear ? '·' + curYear + '年' : '');
+  else if (staticLabel) eraDesc = staticLabel + (curYear ? '（' + curYear + '年）' : '');
+  else eraDesc = (dynastyNm || dynKey || '') + (curYear ? '·' + curYear + '年' : '');
+  // 国家(玩家势力名) + 君主(玩家角色名/称号)·均动态（随禅位/易主/改国号实时）
+  var pc = (G && Array.isArray(G.chars)) ? G.chars.find(function (c) { return c && c.isPlayer; }) : null;
+  var country  = pick(pi.factionName, pc && (pc.faction || pc.factionName), G && G.playerFaction);
+  var sovName  = pick(pc && pc.name, pi.factionLeader, pi.characterName);
+  var sovTitle = pick(pc && (pc.title || pc.officialTitle), pi.factionLeaderTitle, pi.characterTitle);
+  return { eraDesc: eraDesc, dynEra: dynEra, dynKey: dynKey, country: country, sovName: sovName, sovTitle: sovTitle };
+}
+// 注入所有 AI prompt 的「称谓感知」段(单一真相源)。无语境则返回空串(不注入)。
+function _sovereignLanguagePromptLine(G) {
+  var c;
+  try { c = _sovereignLanguageContext(G); } catch (e) { return ''; }
+  if (!c || (!c.eraDesc && !c.dynKey && !c.country && !c.sovName)) return '';
+  var bits = [];
+  if (c.eraDesc) bits.push('时代：' + c.eraDesc);
+  else if (c.dynKey) bits.push('朝代：' + c.dynKey);
+  if (c.country) bits.push('国家：' + c.country);
+  if (c.sovName || c.sovTitle) bits.push('君主：' + (c.sovName || '') + (c.sovTitle ? '·' + c.sovTitle : ''));
+  var line = '【称谓感知·本剧本语境——AI 据此感知本朝君臣称谓与语言习惯·全程一致·勿串他朝/现代】\n';
+  line += '  · ' + bits.join('  ') + '\n';
+  line += '  · 据上述朝代、国家、君主身份，感知并一致使用本朝特有的「君上称谓」「臣下自称」「奏对/书信/口语」习惯（各朝迥异，如宋称官家、明清称皇上/万岁、汉唐称陛下/圣上），切勿混入他朝或现代用语；架空设定则据其自洽逻辑自判。\n';
+  return line;
+}
+if (typeof window !== 'undefined') { window._sovereignLanguageContext = _sovereignLanguageContext; window._sovereignLanguagePromptLine = _sovereignLanguagePromptLine; }
+if (typeof global !== 'undefined') { try { global._sovereignLanguageContext = _sovereignLanguageContext; global._sovereignLanguagePromptLine = _sovereignLanguagePromptLine; } catch (e) {} }
 
 // ── 跨剧本数据隔离（防串台）─────────────────────────────────────────────
 // P.characters/factions/parties/classes/events 等是「跨剧本累积」的全局表：官方天启运行时快照

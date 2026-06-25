@@ -419,11 +419,21 @@ function _offPickerConfirm(charName, deptName, posName, oldHolder, mode) {
     var _capitalTravel = GM._capital || '京师';
     // 推断目的地：地方职位如 XX巡抚·XX总兵·XX总督·使用职名中的地名；中央职位用首都
     var _travelDestination = _capitalTravel;
-    var _regionalMatch = (deptName + posName).match(/([\u4e00-\u9fa5]{2,4})(?:巡抚|总兵|总督|提督|布政使|按察使|经略|节度|镇守|戍守|宣慰|宣抚|安抚|知府|知州|知县|道员|同知|通判|推官|提刑|学政|提学|盐运|参政|参议|府尹|州牧|刺史|太守|节使|总管|都指挥|副将|参将|游击|守备|千总|把总|卫所)/);
+    // 职名优先取地名·"\n" 隔断防贪婪正则跨字段把部名也吞进去(都察院陕西巡抚→误吞"察院陕西"·赴错地·等同不赴任)·职名无地名时自然回退到部名
+    var _regionalMatch = (posName + '\n' + deptName).match(/([\u4e00-\u9fa5]{2,4})(?:巡抚|总兵|总督|提督|布政使|按察使|经略|节度|镇守|戍守|宣慰|宣抚|安抚|知府|知州|知县|道员|同知|通判|推官|提刑|学政|提学|盐运|参政|参议|府尹|州牧|刺史|太守|节使|总管|都指挥|副将|参将|游击|守备|千总|把总|卫所)/);
     if (_regionalMatch && _regionalMatch[1]) {
       _travelDestination = _regionalMatch[1];
     }
     if (newChar.location && !_isSameLocation(newChar.location, _travelDestination)) {
+      // 即时抵达规则在线(玩家"人事调动即刻瞬间抵达")→ 当回合即抵·复用规范抵达 _arriveCharNow(applier 已全局导出):
+      //   内部自带 G.chars/allCharacters 双表镜像同步 + 自动就任 + 仕途 + 编年/起居注/报话筒 + 清走位字段·与多回合抵达同一口径(零漂移)·治"官制任命后长期不赴任"。
+      if ((typeof _hasInstantArrivalRule === 'function') && _hasInstantArrivalRule(GM) && typeof _arriveCharNow === 'function') {
+        newChar._travelFrom = newChar.location;
+        newChar._travelTo = _travelDestination;
+        newChar._travelReason = '奉诏赴任 ' + deptName + posName;
+        newChar._travelAssignPost = deptName + '/' + posName;
+        _arriveCharNow(GM, newChar, GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''));
+      } else {
       var _trvDays = 20;
       try {
         if (typeof calcLetterDays === 'function') {
@@ -464,6 +474,7 @@ function _offPickerConfirm(charName, deptName, posName, oldHolder, mode) {
       if (typeof addEB === 'function') {
         try { addEB('人事', charName + ' 奉诏赴' + _travelDestination + '·预计 ' + _trvDays + ' 日抵任'); } catch(_){}
       }
+      }  // ← 闭合「即时抵达 else(多回合行程)」分支
     }
   }
 

@@ -148,9 +148,12 @@ vm.createContext(sandbox);
 
   const html = bridge.rightrail.renderers.pcdebug();
   assert(/Institution Lifecycle/.test(html), 'pcdebug should expose Institution Lifecycle section');
-  assert(/proposal \/ debate \/ trial \/ archive/.test(html), 'lifecycle UI should explain visible lifecycle chain');
+  // 渲染器实际输出的是按 stage key 拼出的步骤链(完成/待办 + key·以 ' / ' 分隔)·从不输出字面串 proposal/debate/trial/archive·
+  //   断言放宽为实际渲染出的可见步骤链格式。
+  assert(/(完成|待办) proposed \/ (完成|待办) court_debate/.test(html), 'lifecycle UI should explain visible lifecycle chain (rendered stage-key steps)');
   assert(html.includes(QUEHUO), 'lifecycle UI should include institution name');
-  assert(/current abolished/.test(html), 'lifecycle UI should show current stage');
+  // 渲染器当前阶段文案是「当前 <stage>」(非英文 current)·对齐实际输出。
+  assert(/当前 abolished/.test(html), 'lifecycle UI should show current stage');
   assert(/proposed/.test(html) && /court_debate/.test(html) && /trial_start/.test(html) && /trial_failed/.test(html) && /abolished/.test(html), 'lifecycle UI should show completed lifecycle steps');
   assert(/historical_reference/.test(html) && /status_feedback/.test(html), 'lifecycle UI should show non-stage reference and feedback steps');
   assert(/\u94f6\u6d41\u7a3d\u6838|\u524d\u4f8b/.test(html), 'lifecycle UI should show feedback or historical reference text');

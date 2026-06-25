@@ -1662,8 +1662,10 @@ if (fs.existsSync(shaosongScenarioPath)) {
   const ss = JSON.parse(fs.readFileSync(shaosongScenarioPath, 'utf8'));
   assert(typeof tqAdmin === 'object' && !Array.isArray(tqAdmin) && Object.keys(tqAdmin).length > 5,
     '天启 adminHierarchy should be a flat-by-faction object with many faction containers');
-  assert(typeof ss.adminHierarchy === 'object' && !Array.isArray(ss.adminHierarchy) && Object.keys(ss.adminHierarchy).length === 1,
-    '绍宋 adminHierarchy should be a single-faction container');
+  // 绍宋剧本已扩充为多势力 adminHierarchy(player + 金/西夏/大理/吐蕃/河北义军/外蕃诸势力·见剧本外蕃territories 扩充·设计演进非数据污染)·
+  //   原"单一容器(===1)"假设过时→改验多势力容器(此断言本就是金丝雀:剧本换 paradigm 即触发·此处确认是有意演进)。
+  assert(typeof ss.adminHierarchy === 'object' && !Array.isArray(ss.adminHierarchy) && Object.keys(ss.adminHierarchy).length > 5,
+    '绍宋 adminHierarchy should now be a multi-faction container (剧本外蕃扩充·原 single-faction 假设过时)');
 }
 
 // Slice 18: specialist schemas enriched with cross-scenario fields. Without
@@ -1917,7 +1919,7 @@ assert(appJs.includes("pushStatusLog('校验错误：'"),
 assert(appJs.includes("pushStatusLog('校验警告：'"),
   'import validation warnings should land in the status log');
 // Validation should sanity-check the polymorphic shapes we've been guarding.
-['characters 不是数组', 'factions 不是数组', 'events 不是数组',
+['characters 不是数组', 'factions 不是数组', 'events 既不是数组也不是对象',
  'variables 既不是数组也不是对象', 'globalRules 既不是字符串也不是数组',
  'adminHierarchy 既不是对象也不是数组'].forEach((needle) => {
   assert(appJs.includes(needle),

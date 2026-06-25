@@ -1,0 +1,2265 @@
+{
+ "fac_china": {
+  "divisions": [
+   {
+    "name": "天下",
+    "type": "kingdom",
+    "children": [
+     {
+      "name": "东川",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "武信",
+        "type": "府",
+        "children": [
+         {
+          "name": "戎州",
+          "type": "县"
+         },
+         {
+          "name": "昌州",
+          "type": "县"
+         },
+         {
+          "name": "泸州",
+          "type": "县"
+         },
+         {
+          "name": "渝州",
+          "type": "县"
+         },
+         {
+          "name": "荣州",
+          "type": "县"
+         },
+         {
+          "name": "遂州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "东川",
+        "type": "府",
+        "children": [
+         {
+          "name": "剑州",
+          "type": "县"
+         },
+         {
+          "name": "潼川",
+          "type": "县"
+         },
+         {
+          "name": "绵州",
+          "type": "县"
+         },
+         {
+          "name": "蒲州",
+          "type": "县"
+         },
+         {
+          "name": "资州",
+          "type": "县"
+         },
+         {
+          "name": "陇州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "两浙",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "浙东",
+        "type": "府",
+        "children": [
+         {
+          "name": "台州",
+          "type": "县"
+         },
+         {
+          "name": "处州",
+          "type": "县"
+         },
+         {
+          "name": "婺州",
+          "type": "县"
+         },
+         {
+          "name": "明州",
+          "type": "县"
+         },
+         {
+          "name": "温州",
+          "type": "县"
+         },
+         {
+          "name": "衢州",
+          "type": "县"
+         },
+         {
+          "name": "越州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "浙西",
+        "type": "府",
+        "children": [
+         {
+          "name": "杭州",
+          "type": "县"
+         },
+         {
+          "name": "湖州",
+          "type": "县"
+         },
+         {
+          "name": "睦州",
+          "type": "县"
+         },
+         {
+          "name": "秀州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "代北",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "云朔",
+        "type": "府",
+        "children": [
+         {
+          "name": "大同",
+          "type": "县"
+         },
+         {
+          "name": "应州",
+          "type": "县"
+         },
+         {
+          "name": "弘州",
+          "type": "县"
+         },
+         {
+          "name": "朔州",
+          "type": "县"
+         },
+         {
+          "name": "蔚州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "振武",
+        "type": "府",
+        "children": [
+         {
+          "name": "云内州",
+          "type": "县"
+         },
+         {
+          "name": "府州",
+          "type": "县"
+         },
+         {
+          "name": "武川",
+          "type": "县"
+         },
+         {
+          "name": "胜州",
+          "type": "县"
+         },
+         {
+          "name": "麟州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "威塞",
+        "type": "府",
+        "children": [
+         {
+          "name": "怀安",
+          "type": "县"
+         },
+         {
+          "name": "抚冥",
+          "type": "县"
+         },
+         {
+          "name": "柔玄",
+          "type": "县"
+         },
+         {
+          "name": "永兴",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "关内",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "邠宁",
+        "type": "府",
+        "children": [
+         {
+          "name": "宁州",
+          "type": "县"
+         },
+         {
+          "name": "庆州",
+          "type": "县"
+         },
+         {
+          "name": "环州",
+          "type": "县"
+         },
+         {
+          "name": "邠州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "秦成",
+        "type": "府",
+        "children": [
+         {
+          "name": "岷州",
+          "type": "县"
+         },
+         {
+          "name": "成州",
+          "type": "县"
+         },
+         {
+          "name": "渭州",
+          "type": "县"
+         },
+         {
+          "name": "秦州",
+          "type": "县"
+         },
+         {
+          "name": "阶州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "鄜延",
+        "type": "府",
+        "children": [
+         {
+          "name": "丹州",
+          "type": "县"
+         },
+         {
+          "name": "坊州",
+          "type": "县"
+         },
+         {
+          "name": "延州",
+          "type": "县"
+         },
+         {
+          "name": "鄜州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "凤翔",
+        "type": "府",
+        "children": [
+         {
+          "name": "凤翔",
+          "type": "县"
+         },
+         {
+          "name": "陇州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "兴凤",
+        "type": "府",
+        "children": [
+         {
+          "name": "兴庆",
+          "type": "县"
+         },
+         {
+          "name": "凤州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "永兴",
+        "type": "府",
+        "children": [
+         {
+          "name": "京兆",
+          "type": "县"
+         },
+         {
+          "name": "华州",
+          "type": "县"
+         },
+         {
+          "name": "同州",
+          "type": "县"
+         },
+         {
+          "name": "耀州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "泾原",
+        "type": "府",
+        "children": [
+         {
+          "name": "原州",
+          "type": "县"
+         },
+         {
+          "name": "泾州",
+          "type": "县"
+         },
+         {
+          "name": "萧关",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "金商",
+        "type": "府",
+        "children": [
+         {
+          "name": "商州",
+          "type": "县"
+         },
+         {
+          "name": "金州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "兴元",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "巴渠",
+        "type": "府",
+        "children": [
+         {
+          "name": "巴州",
+          "type": "县"
+         },
+         {
+          "name": "开州",
+          "type": "县"
+         },
+         {
+          "name": "衢州",
+          "type": "县"
+         },
+         {
+          "name": "通州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "兴元",
+        "type": "府",
+        "children": [
+         {
+          "name": "南郑",
+          "type": "县"
+         },
+         {
+          "name": "壁州",
+          "type": "县"
+         },
+         {
+          "name": "洋州",
+          "type": "县"
+         },
+         {
+          "name": "集州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "利阆",
+        "type": "府",
+        "children": [
+         {
+          "name": "利州",
+          "type": "县"
+         },
+         {
+          "name": "文州",
+          "type": "县"
+         },
+         {
+          "name": "果州",
+          "type": "县"
+         },
+         {
+          "name": "蓬州",
+          "type": "县"
+         },
+         {
+          "name": "阆州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "凉",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "河西",
+        "type": "府",
+        "children": [
+         {
+          "name": "凉州",
+          "type": "县"
+         },
+         {
+          "name": "广武",
+          "type": "县"
+         },
+         {
+          "name": "番禾",
+          "type": "县"
+         },
+         {
+          "name": "白山",
+          "type": "县"
+         },
+         {
+          "name": "鹯阴",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "甘肃",
+        "type": "府",
+        "children": [
+         {
+          "name": "建康",
+          "type": "县"
+         },
+         {
+          "name": "玉门",
+          "type": "县"
+         },
+         {
+          "name": "甘州",
+          "type": "县"
+         },
+         {
+          "name": "肃州",
+          "type": "县"
+         },
+         {
+          "name": "蓼泉",
+          "type": "县"
+         },
+         {
+          "name": "表氏",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "瓜沙",
+        "type": "府",
+        "children": [
+         {
+          "name": "合河",
+          "type": "县"
+         },
+         {
+          "name": "子亭",
+          "type": "县"
+         },
+         {
+          "name": "寿昌",
+          "type": "县"
+         },
+         {
+          "name": "新城",
+          "type": "县"
+         },
+         {
+          "name": "沙州",
+          "type": "县"
+         },
+         {
+          "name": "瓜州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "鄯州",
+        "type": "府",
+        "children": [
+         {
+          "name": "兰州",
+          "type": "县"
+         },
+         {
+          "name": "廓州",
+          "type": "县"
+         },
+         {
+          "name": "河州",
+          "type": "县"
+         },
+         {
+          "name": "鄯州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "祁连",
+        "type": "府",
+        "children": [
+         {
+          "name": "祁连",
+          "type": "县"
+         },
+         {
+          "name": "羌谷",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "夏",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "休屠",
+        "type": "府",
+        "children": [
+         {
+          "name": "休屠",
+          "type": "县"
+         },
+         {
+          "name": "腾格里",
+          "type": "县"
+         },
+         {
+          "name": "阿剌筛",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "居延",
+        "type": "府",
+        "children": [
+         {
+          "name": "乖咱河",
+          "type": "县"
+         },
+         {
+          "name": "弱水",
+          "type": "县"
+         },
+         {
+          "name": "桐城",
+          "type": "县"
+         },
+         {
+          "name": "豹文山",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "狼山",
+        "type": "府",
+        "children": [
+         {
+          "name": "c_langshan",
+          "type": "县"
+         },
+         {
+          "name": "娄博贝",
+          "type": "县"
+         },
+         {
+          "name": "河曲",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "朔方",
+        "type": "府",
+        "children": [
+         {
+          "name": "乌兰",
+          "type": "县"
+         },
+         {
+          "name": "会州",
+          "type": "县"
+         },
+         {
+          "name": "威州",
+          "type": "县"
+         },
+         {
+          "name": "怀远",
+          "type": "县"
+         },
+         {
+          "name": "灵州",
+          "type": "县"
+         },
+         {
+          "name": "雄州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "天德",
+        "type": "府",
+        "children": [
+         {
+          "name": "丰州",
+          "type": "县"
+         },
+         {
+          "name": "天德",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "夏绥",
+        "type": "府",
+        "children": [
+         {
+          "name": "夏州",
+          "type": "县"
+         },
+         {
+          "name": "宥州",
+          "type": "县"
+         },
+         {
+          "name": "屈野",
+          "type": "县"
+         },
+         {
+          "name": "盐州",
+          "type": "县"
+         },
+         {
+          "name": "银州",
+          "type": "县"
+         },
+         {
+          "name": "随州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "大理",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "银生",
+        "type": "府",
+        "children": [
+         {
+          "name": "威远",
+          "type": "县"
+         },
+         {
+          "name": "步日",
+          "type": "县"
+         },
+         {
+          "name": "银生",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "剑川",
+        "type": "府",
+        "children": [
+         {
+          "name": "剑川",
+          "type": "县"
+         },
+         {
+          "name": "成偈",
+          "type": "县"
+         },
+         {
+          "name": "香城",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "大理",
+        "type": "府",
+        "children": [
+         {
+          "name": "大理",
+          "type": "县"
+         },
+         {
+          "name": "威楚",
+          "type": "县"
+         },
+         {
+          "name": "弄栋",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "拓东",
+        "type": "府",
+        "children": [
+         {
+          "name": "东川",
+          "type": "县"
+         },
+         {
+          "name": "石城",
+          "type": "县"
+         },
+         {
+          "name": "鄯阐",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "越嶲",
+        "type": "府",
+        "children": [
+         {
+          "name": "会川",
+          "type": "县"
+         },
+         {
+          "name": "建昌",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "通海",
+        "type": "府",
+        "children": [
+         {
+          "name": "最宁",
+          "type": "县"
+         },
+         {
+          "name": "目则",
+          "type": "县"
+         },
+         {
+          "name": "通海",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "山南",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "鄂岳",
+        "type": "府",
+        "children": [
+         {
+          "name": "安州",
+          "type": "县"
+         },
+         {
+          "name": "岳州",
+          "type": "县"
+         },
+         {
+          "name": "蕲州",
+          "type": "县"
+         },
+         {
+          "name": "鄂州",
+          "type": "县"
+         },
+         {
+          "name": "黄州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "襄邓",
+        "type": "府",
+        "children": [
+         {
+          "name": "唐州",
+          "type": "县"
+         },
+         {
+          "name": "均州",
+          "type": "县"
+         },
+         {
+          "name": "房州",
+          "type": "县"
+         },
+         {
+          "name": "襄阳",
+          "type": "县"
+         },
+         {
+          "name": "邓州",
+          "type": "县"
+         },
+         {
+          "name": "郢州",
+          "type": "县"
+         },
+         {
+          "name": "隋州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "荆南",
+        "type": "府",
+        "children": [
+         {
+          "name": "复州",
+          "type": "县"
+         },
+         {
+          "name": "峡州",
+          "type": "县"
+         },
+         {
+          "name": "归州",
+          "type": "县"
+         },
+         {
+          "name": "朗州",
+          "type": "县"
+         },
+         {
+          "name": "汉阳",
+          "type": "县"
+         },
+         {
+          "name": "江陵",
+          "type": "县"
+         },
+         {
+          "name": "醴州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "岭南",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "惠循",
+        "type": "府",
+        "children": [
+         {
+          "name": "东莞",
+          "type": "县"
+         },
+         {
+          "name": "循州",
+          "type": "县"
+         },
+         {
+          "name": "惠州",
+          "type": "县"
+         },
+         {
+          "name": "梅州",
+          "type": "县"
+         },
+         {
+          "name": "潮州",
+          "type": "县"
+         },
+         {
+          "name": "韶州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "岭南",
+        "type": "府",
+        "children": [
+         {
+          "name": "广州",
+          "type": "县"
+         },
+         {
+          "name": "康州",
+          "type": "县"
+         },
+         {
+          "name": "恩州",
+          "type": "县"
+         },
+         {
+          "name": "新州",
+          "type": "县"
+         },
+         {
+          "name": "春州",
+          "type": "县"
+         },
+         {
+          "name": "泷州",
+          "type": "县"
+         },
+         {
+          "name": "端州",
+          "type": "县"
+         },
+         {
+          "name": "英州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "琼管",
+        "type": "府",
+        "children": [
+         {
+          "name": "万安",
+          "type": "县"
+         },
+         {
+          "name": "儋州",
+          "type": "县"
+         },
+         {
+          "name": "崖州",
+          "type": "县"
+         },
+         {
+          "name": "雅州",
+          "type": "县"
+         },
+         {
+          "name": "黎峒",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "高凉",
+        "type": "府",
+        "children": [
+         {
+          "name": "罗州",
+          "type": "县"
+         },
+         {
+          "name": "雷州",
+          "type": "县"
+         },
+         {
+          "name": "高州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "岭西",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "容管",
+        "type": "府",
+        "children": [
+         {
+          "name": "容州",
+          "type": "县"
+         },
+         {
+          "name": "廉州",
+          "type": "县"
+         },
+         {
+          "name": "白州",
+          "type": "县"
+         },
+         {
+          "name": "藤州",
+          "type": "县"
+         },
+         {
+          "name": "郁林",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "邕管",
+        "type": "府",
+        "children": [
+         {
+          "name": "宾州",
+          "type": "县"
+         },
+         {
+          "name": "横州",
+          "type": "县"
+         },
+         {
+          "name": "浔州",
+          "type": "县"
+         },
+         {
+          "name": "瀼州",
+          "type": "县"
+         },
+         {
+          "name": "田州",
+          "type": "县"
+         },
+         {
+          "name": "述昆",
+          "type": "县"
+         },
+         {
+          "name": "邕州",
+          "type": "县"
+         },
+         {
+          "name": "钦州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "静江",
+        "type": "府",
+        "children": [
+         {
+          "name": "功州",
+          "type": "县"
+         },
+         {
+          "name": "昭州",
+          "type": "县"
+         },
+         {
+          "name": "梧州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "桂管",
+        "type": "府",
+        "children": [
+         {
+          "name": "宜州",
+          "type": "县"
+         },
+         {
+          "name": "柳州",
+          "type": "县"
+         },
+         {
+          "name": "桂州",
+          "type": "县"
+         },
+         {
+          "name": "融州",
+          "type": "县"
+         },
+         {
+          "name": "象州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "幽州",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "易定",
+        "type": "府",
+        "children": [
+         {
+          "name": "定州",
+          "type": "县"
+         },
+         {
+          "name": "易州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "幽州",
+        "type": "府",
+        "children": [
+         {
+          "name": "妫州",
+          "type": "县"
+         },
+         {
+          "name": "平州",
+          "type": "县"
+         },
+         {
+          "name": "幽州",
+          "type": "县"
+         },
+         {
+          "name": "檀州",
+          "type": "县"
+         },
+         {
+          "name": "涿州",
+          "type": "县"
+         },
+         {
+          "name": "蓟州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "瀛莫",
+        "type": "府",
+        "children": [
+         {
+          "name": "瀛州",
+          "type": "县"
+         },
+         {
+          "name": "莫州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "昆明",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "西原",
+        "type": "府",
+        "children": [
+         {
+          "name": "归乐",
+          "type": "县"
+         },
+         {
+          "name": "武龙",
+          "type": "县"
+         },
+         {
+          "name": "西原",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "牂牁",
+        "type": "府",
+        "children": [
+         {
+          "name": "南平",
+          "type": "县"
+         },
+         {
+          "name": "古州",
+          "type": "县"
+         },
+         {
+          "name": "应州",
+          "type": "县"
+         },
+         {
+          "name": "晃州",
+          "type": "县"
+         },
+         {
+          "name": "矩州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "朱提",
+        "type": "府",
+        "children": [
+         {
+          "name": "协州",
+          "type": "县"
+         },
+         {
+          "name": "曲州",
+          "type": "县"
+         },
+         {
+          "name": "殷州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "罗殿",
+        "type": "府",
+        "children": [
+         {
+          "name": "琰川",
+          "type": "县"
+         },
+         {
+          "name": "琰州",
+          "type": "县"
+         },
+         {
+          "name": "罗殿",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "罗氏",
+        "type": "府",
+        "children": [
+         {
+          "name": "思峨",
+          "type": "县"
+         },
+         {
+          "name": "总州",
+          "type": "县"
+         },
+         {
+          "name": "淅州",
+          "type": "县"
+         },
+         {
+          "name": "羲州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "江东",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "江东",
+        "type": "府",
+        "children": [
+         {
+          "name": "常州",
+          "type": "县"
+         },
+         {
+          "name": "江宁",
+          "type": "县"
+         },
+         {
+          "name": "润州",
+          "type": "县"
+         },
+         {
+          "name": "苏州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "宣歙",
+        "type": "府",
+        "children": [
+         {
+          "name": "宣州",
+          "type": "县"
+         },
+         {
+          "name": "广德",
+          "type": "县"
+         },
+         {
+          "name": "歙州",
+          "type": "县"
+         },
+         {
+          "name": "池州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "江西",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "江西",
+        "type": "府",
+        "children": [
+         {
+          "name": "临江",
+          "type": "县"
+         },
+         {
+          "name": "原州",
+          "type": "县"
+         },
+         {
+          "name": "吉州",
+          "type": "县"
+         },
+         {
+          "name": "建昌",
+          "type": "县"
+         },
+         {
+          "name": "抚州",
+          "type": "县"
+         },
+         {
+          "name": "洪州",
+          "type": "县"
+         },
+         {
+          "name": "筠州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "昭信",
+        "type": "府",
+        "children": [
+         {
+          "name": "南安",
+          "type": "县"
+         },
+         {
+          "name": "宁都州",
+          "type": "县"
+         },
+         {
+          "name": "虔州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "定江",
+        "type": "府",
+        "children": [
+         {
+          "name": "信州",
+          "type": "县"
+         },
+         {
+          "name": "南康",
+          "type": "县"
+         },
+         {
+          "name": "江州",
+          "type": "县"
+         },
+         {
+          "name": "饶州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "河东",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "河中",
+        "type": "府",
+        "children": [
+         {
+          "name": "晋州",
+          "type": "县"
+         },
+         {
+          "name": "河中",
+          "type": "县"
+         },
+         {
+          "name": "磁州",
+          "type": "县"
+         },
+         {
+          "name": "绛州",
+          "type": "县"
+         },
+         {
+          "name": "隰州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "雁门",
+        "type": "府",
+        "children": [
+         {
+          "name": "代州",
+          "type": "县"
+         },
+         {
+          "name": "忻州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "河东",
+        "type": "府",
+        "children": [
+         {
+          "name": "仪州",
+          "type": "县"
+         },
+         {
+          "name": "太原",
+          "type": "县"
+         },
+         {
+          "name": "岚州",
+          "type": "县"
+         },
+         {
+          "name": "汾州",
+          "type": "县"
+         },
+         {
+          "name": "石州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "泽潞",
+        "type": "府",
+        "children": [
+         {
+          "name": "沁州",
+          "type": "县"
+         },
+         {
+          "name": "泽州",
+          "type": "县"
+         },
+         {
+          "name": "潞州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "河北",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "魏博",
+        "type": "府",
+        "children": [
+         {
+          "name": "博州",
+          "type": "县"
+         },
+         {
+          "name": "贝州",
+          "type": "县"
+         },
+         {
+          "name": "魏州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "沧景",
+        "type": "府",
+        "children": [
+         {
+          "name": "德州",
+          "type": "县"
+         },
+         {
+          "name": "棣州",
+          "type": "县"
+         },
+         {
+          "name": "沧州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "河阳",
+        "type": "府",
+        "children": [
+         {
+          "name": "卫州",
+          "type": "县"
+         },
+         {
+          "name": "怀州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "成德",
+        "type": "府",
+        "children": [
+         {
+          "name": "冀州",
+          "type": "县"
+         },
+         {
+          "name": "深州",
+          "type": "县"
+         },
+         {
+          "name": "赵州",
+          "type": "县"
+         },
+         {
+          "name": "镇州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "邢洺",
+        "type": "府",
+        "children": [
+         {
+          "name": "明州",
+          "type": "县"
+         },
+         {
+          "name": "相州",
+          "type": "县"
+         },
+         {
+          "name": "邢州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "河南",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "汴宋",
+        "type": "府",
+        "children": [
+         {
+          "name": "c_shanzhou",
+          "type": "县"
+         },
+         {
+          "name": "亳州",
+          "type": "县"
+         },
+         {
+          "name": "宋州",
+          "type": "县"
+         },
+         {
+          "name": "开封",
+          "type": "县"
+         },
+         {
+          "name": "颍州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "陈许",
+        "type": "府",
+        "children": [
+         {
+          "name": "申州",
+          "type": "县"
+         },
+         {
+          "name": "蔡州",
+          "type": "县"
+         },
+         {
+          "name": "许州",
+          "type": "县"
+         },
+         {
+          "name": "陈州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "陕虢",
+        "type": "府",
+        "children": [
+         {
+          "name": "虢州",
+          "type": "县"
+         },
+         {
+          "name": "陕州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "东畿",
+        "type": "府",
+        "children": [
+         {
+          "name": "汝州",
+          "type": "县"
+         },
+         {
+          "name": "河南",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "郑滑",
+        "type": "府",
+        "children": [
+         {
+          "name": "滑州",
+          "type": "县"
+         },
+         {
+          "name": "郑州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "淮南",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "淮南",
+        "type": "府",
+        "children": [
+         {
+          "name": "扬州",
+          "type": "县"
+         },
+         {
+          "name": "楚州",
+          "type": "县"
+         },
+         {
+          "name": "泰州",
+          "type": "县"
+         },
+         {
+          "name": "滁州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "淮西",
+        "type": "府",
+        "children": [
+         {
+          "name": "光州",
+          "type": "县"
+         },
+         {
+          "name": "历阳",
+          "type": "县"
+         },
+         {
+          "name": "寿州",
+          "type": "县"
+         },
+         {
+          "name": "庐州",
+          "type": "县"
+         },
+         {
+          "name": "濠州",
+          "type": "县"
+         },
+         {
+          "name": "舒州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "湖南",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "湖南",
+        "type": "府",
+        "children": [
+         {
+          "name": "恒州",
+          "type": "县"
+         },
+         {
+          "name": "桂阳",
+          "type": "县"
+         },
+         {
+          "name": "潭州",
+          "type": "县"
+         },
+         {
+          "name": "连州",
+          "type": "县"
+         },
+         {
+          "name": "郴州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "零陵",
+        "type": "府",
+        "children": [
+         {
+          "name": "全州",
+          "type": "县"
+         },
+         {
+          "name": "永州",
+          "type": "县"
+         },
+         {
+          "name": "道州",
+          "type": "县"
+         },
+         {
+          "name": "邵州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "福建",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "威武",
+        "type": "府",
+        "children": [
+         {
+          "name": "宁州",
+          "type": "县"
+         },
+         {
+          "name": "福州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "建宁",
+        "type": "府",
+        "children": [
+         {
+          "name": "南剑",
+          "type": "县"
+         },
+         {
+          "name": "建州",
+          "type": "县"
+         },
+         {
+          "name": "汀州",
+          "type": "县"
+         },
+         {
+          "name": "邵武",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "平海",
+        "type": "府",
+        "children": [
+         {
+          "name": "兴化",
+          "type": "县"
+         },
+         {
+          "name": "泉州",
+          "type": "县"
+         },
+         {
+          "name": "漳州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "西川",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "西川",
+        "type": "府",
+        "children": [
+         {
+          "name": "彭州",
+          "type": "县"
+         },
+         {
+          "name": "成都",
+          "type": "县"
+         },
+         {
+          "name": "汉州",
+          "type": "县"
+         },
+         {
+          "name": "简州",
+          "type": "县"
+         },
+         {
+          "name": "茂州",
+          "type": "县"
+         },
+         {
+          "name": "陵州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "邛南",
+        "type": "府",
+        "children": [
+         {
+          "name": "c_yazhou_2",
+          "type": "县"
+         },
+         {
+          "name": "嘉州",
+          "type": "县"
+         },
+         {
+          "name": "眉州",
+          "type": "县"
+         },
+         {
+          "name": "蓬鲁",
+          "type": "县"
+         },
+         {
+          "name": "邛州",
+          "type": "县"
+         },
+         {
+          "name": "黎州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "越",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "广源",
+        "type": "府",
+        "children": [
+         {
+          "name": "原平",
+          "type": "县"
+         },
+         {
+          "name": "武安",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "麋水",
+        "type": "府",
+        "children": [
+         {
+          "name": "国威",
+          "type": "县"
+         },
+         {
+          "name": "林西",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "升龙",
+        "type": "府",
+        "children": [
+         {
+          "name": "升龙",
+          "type": "县"
+         },
+         {
+          "name": "隆兴",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "乂安",
+        "type": "府",
+        "children": [
+         {
+          "name": "乂安",
+          "type": "县"
+         },
+         {
+          "name": "南定",
+          "type": "县"
+         },
+         {
+          "name": "桑怒",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "青徐",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "郓曹",
+        "type": "府",
+        "children": [
+         {
+          "name": "云州",
+          "type": "县"
+         },
+         {
+          "name": "曹州",
+          "type": "县"
+         },
+         {
+          "name": "濮州",
+          "type": "县"
+         },
+         {
+          "name": "齐州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "淄青",
+        "type": "府",
+        "children": [
+         {
+          "name": "庆州",
+          "type": "县"
+         },
+         {
+          "name": "淄州",
+          "type": "县"
+         },
+         {
+          "name": "潍州",
+          "type": "县"
+         },
+         {
+          "name": "登州",
+          "type": "县"
+         },
+         {
+          "name": "莱州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "兖海",
+        "type": "府",
+        "children": [
+         {
+          "name": "兖州",
+          "type": "县"
+         },
+         {
+          "name": "密州",
+          "type": "县"
+         },
+         {
+          "name": "沂州",
+          "type": "县"
+         },
+         {
+          "name": "海州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "徐泗",
+        "type": "府",
+        "children": [
+         {
+          "name": "宿州",
+          "type": "县"
+         },
+         {
+          "name": "徐州",
+          "type": "县"
+         },
+         {
+          "name": "泗州",
+          "type": "县"
+         },
+         {
+          "name": "淮阳",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "name": "黔夔",
+      "type": "省",
+      "controlLevel": "实控",
+      "children": [
+       {
+        "name": "黔中",
+        "type": "府",
+        "children": [
+         {
+          "name": "南州",
+          "type": "县"
+         },
+         {
+          "name": "夷州",
+          "type": "县"
+         },
+         {
+          "name": "思州",
+          "type": "县"
+         },
+         {
+          "name": "播州",
+          "type": "县"
+         },
+         {
+          "name": "施州",
+          "type": "县"
+         },
+         {
+          "name": "溱州",
+          "type": "县"
+         },
+         {
+          "name": "黔州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "夔忠",
+        "type": "府",
+        "children": [
+         {
+          "name": "万州",
+          "type": "县"
+         },
+         {
+          "name": "夔州",
+          "type": "县"
+         },
+         {
+          "name": "忠州",
+          "type": "县"
+         },
+         {
+          "name": "涪州",
+          "type": "县"
+         }
+        ]
+       },
+       {
+        "name": "五溪",
+        "type": "府",
+        "children": [
+         {
+          "name": "上溪",
+          "type": "县"
+         },
+         {
+          "name": "叙州",
+          "type": "县"
+         },
+         {
+          "name": "奖州",
+          "type": "县"
+         },
+         {
+          "name": "溪州",
+          "type": "县"
+         },
+         {
+          "name": "辰州",
+          "type": "县"
+         },
+         {
+          "name": "锦州",
+          "type": "县"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

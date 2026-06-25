@@ -1057,4 +1057,17 @@ context.AIChangeApplier.applyAITurnChanges({
 });
 check(!context.GM._militaryValidatorLog, 'battleResult casualties should satisfy military consistency validator');
 
+// 装备态→战力 equipMod(S6·武库供械不足则战力降·接军工供应链)
+if (typeof context.calculateArmyStrength === 'function') {
+  const _baseArmy = { soldiers: 10000, morale: 70, training: 60, quality: '普通' };
+  const _s0 = context.calculateArmyStrength(Object.assign({}, _baseArmy), {});
+  const _sBad = context.calculateArmyStrength(Object.assign({}, _baseArmy, { equipmentCondition: '简陋' }), {});
+  const _sWorst = context.calculateArmyStrength(Object.assign({}, _baseArmy, { equipmentCondition: '严重不足' }), {});
+  const _sGood = context.calculateArmyStrength(Object.assign({}, _baseArmy, { equipmentCondition: '优良' }), {});
+  check(_sBad < _s0, 'equipMod: 简陋装备应降战力 (<一般)');
+  check(_sWorst < _sBad, 'equipMod: 严重不足 < 简陋 (越缺越弱)');
+  check(_sGood > _s0, 'equipMod: 优良装备应增战力 (>一般)');
+  check(Math.abs(_sWorst / _s0 - 0.68) < 0.001, 'equipMod: 严重不足=0.68×');
+}
+
 console.log('[smoke-military-systems] pass assertions=' + assertions);

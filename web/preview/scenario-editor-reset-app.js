@@ -20626,8 +20626,9 @@
     if (parsed.factions != null && !Array.isArray(parsed.factions)) {
       errors.push('factions 不是数组（' + typeof parsed.factions + '）');
     }
-    if (parsed.events != null && !Array.isArray(parsed.events)) {
-      errors.push('events 不是数组（' + typeof parsed.events + '）');
+    // events 支持两种形态:扁平数组·或按类目分组的对象(官方剧本 buildCategorizedEvents 返回 {historical:[...],upcoming:[...]} 等)·二者皆游戏可载·勿误判为错。
+    if (parsed.events != null && !Array.isArray(parsed.events) && !isObject(parsed.events)) {
+      errors.push('events 既不是数组也不是对象（' + typeof parsed.events + '）');
     }
     // Polymorphic-shape fields: warn (not error) if the shape is unusual.
     if (parsed.variables != null && !Array.isArray(parsed.variables) && !isObject(parsed.variables)) {

@@ -80,5 +80,14 @@ const sel = ADP.selectOnField(toks, 35);
 ok(sel.field.length === 35 && sel.field.some(t => t.emperor), '⑩ selectOnField:御营队强制上场(不沉预备队)');
 ok(ADP.selectOnField(toks, 60).reserve.length === 0, '⑩ selectOnField:总数≤cap→全上场无预备');
 
+/* ⑪ 装备态→品质降级(S6·武库供械不足→战术品质降) */
+ok(ADP.degradeQualityByEquip('精锐', '简陋') === '精兵', '⑪ 简陋→降1档(精锐→精兵)');
+ok(ADP.degradeQualityByEquip('精锐', '严重不足') === '普通', '⑪ 严重不足→降2档(精锐→普通)');
+ok(ADP.degradeQualityByEquip('精锐', '优良') === '精锐' && ADP.degradeQualityByEquip('精锐', '') === '精锐', '⑪ 优良/空→不降');
+ok(ADP.degradeQualityByEquip('新募', '严重不足') === '新募', '⑪ 已最低→不再降(地板)');
+const eqArmy = [{ id: 'eq', name: '简陋军', faction: '宋', commander: '某', morale: 70, training: 60, quality: '精锐', equipmentCondition: '简陋', composition: [{ type: '长枪兵', count: 2000 }] }];
+const eqCfg = ADP.buildBattleConfig(eqArmy, enemy, { GM: GM });
+ok(eqCfg.armies.ming[0].quality === '精兵', '⑪ unitToToken 按 equipmentCondition 降兵牌品质(简陋·精锐→精兵)');
+
 console.log('\n结果: ' + A + ' 通过 / ' + F + ' 失败');
 process.exit(F ? 1 : 0);

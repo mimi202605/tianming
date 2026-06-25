@@ -1455,14 +1455,22 @@ function _renderIssueCard(issue) {
 }
 
 // 玩家点击议题选项·应用 effect + 标记 resolved + 写编年
-function _chooseIssueOption(issueId, choiceIdx) {
+async function _chooseIssueOption(issueId, choiceIdx) {
   if (!GM.currentIssues) return;
   var issue = GM.currentIssues.find(function(i) { return i.id === issueId; });
   if (!issue || !Array.isArray(issue.choices)) return;
   var ch = issue.choices[choiceIdx];
   if (!ch) return;
-  // 应用 effect
-  if (ch.effect && typeof ch.effect === 'object') {
+  // 命门(v0.2·事件并入御案时政):开关开 → AI 据当前国势裁即时硬核连锁后果(applyAITurnChanges);固定 effect 降兜底。
+  //   edictTracker 长期追踪不变(见下)。开关关 = 原固定 effect 查表(零回归)。
+  var _adj = false;
+  if (typeof _eventAdjudicationOn === 'function' && _eventAdjudicationOn()
+      && typeof callAIWithTools === 'function' && typeof applyAITurnChanges === 'function') {
+    try { _adj = await _adjudicateIssueOutcomeViaAI(issue, ch); }
+    catch (e) { try { console.warn('[要务·裁定] AI 失败·回落固定 effect:', (e && e.message) || e); } catch(_){} }
+  }
+  // 应用 effect（兜底:AI 未裁定时·原固定查表）
+  if (!_adj && ch.effect && typeof ch.effect === 'object') {
     Object.keys(ch.effect).forEach(function(k) {
       var v = ch.effect[k];
       if (typeof v !== 'number') return;
@@ -1527,6 +1535,83 @@ function _chooseIssueOption(issueId, choiceIdx) {
   setTimeout(function(){ if (typeof openQuarterlyAgenda === 'function') openQuarterlyAgenda(); }, 100);
 }
 if (typeof window !== 'undefined') window._chooseIssueOption = _chooseIssueOption;
+
+// ── 要务决断·AI 裁定(v0.2·命门接入御案时政本体·复用回退掉的 S2 _adjudicateOutcomeViaAI 内核) ──
+// 开关:P.conf.eventUnificationEnabled(设置面板「实验玩法」toggle)·默认关→零回归(走原固定 effect)
+function _eventAdjudicationOn() {
+  try {
+    var _P = (typeof P !== 'undefined' && P) ? P : (typeof window !== 'undefined' && window.P) ? window.P : {};
+    return !!((_P.conf && _P.conf.eventUnificationEnabled) || (_P.ai && _P.ai.eventUnificationEnabled));
+  } catch (e) { return false; }
+}
+
+function _issueCoreStateSnapshot() {
+  try {
+    var G = (typeof GM !== 'undefined') ? GM : (typeof window !== 'undefined' ? window.GM : null);
+    if (!G) return '';
+    var parts = [];
+    if (G.minxin && G.minxin.trueIndex != null) parts.push('民心' + Math.round(G.minxin.trueIndex));
+    if (G.huangwei && G.huangwei.index != null) parts.push('皇威' + Math.round(G.huangwei.index));
+    if (G.huangquan && G.huangquan.index != null) parts.push('皇权' + Math.round(G.huangquan.index));
+    if (G.corruption && G.corruption.trueIndex != null) parts.push('吏治' + Math.round(G.corruption.trueIndex));
+    if (G.guoku && G.guoku.money != null) parts.push('国库' + Math.round(G.guoku.money));
+    return parts.join('·');
+  } catch (e) { return ''; }
+}
+
+// 要务决断 → AI 据局面裁即时硬核后果 → applyAITurnChanges 落地 + 叙事进事件簿。返回是否成功裁定。
+async function _adjudicateIssueOutcomeViaAI(issue, ch) {
+  var L = [];
+  L.push('你是历史推演的后果裁定者。御前一桩时局要务,君主已作出决断,请裁定这个决断引发的【硬核可信的即时连锁后果】。');
+  L.push('');
+  L.push('【要务】' + (issue.title || '') + (issue.description ? '：' + issue.description : ''));
+  if (issue.category) L.push('【类别】' + issue.category);
+  if (issue.affectedRegion) L.push('【涉及】' + issue.affectedRegion);
+  L.push('【陛下决断】' + (ch.text || '') + (ch.desc ? '·' + ch.desc : ''));
+  if (ch.aiHint) L.push('【裁定要点】' + ch.aiHint);
+  var snap = _issueCoreStateSnapshot();
+  if (snap) L.push('【当前国势】' + snap);
+  L.push('');
+  L.push('裁定原则:①后果须符合局面逻辑、有代价、有连锁;②不夸张不离谱,半文言;③changes 幅度与要务轻重相称(通常 ±2~±12)。');
+  L.push('调用 adjudicate_issue_outcome 输出后果。');
+  var tool = {
+    name: 'adjudicate_issue_outcome',
+    description: '据当前局面与君主决断,裁定该决断的硬核即时后果:一段叙事 + 国势/人物的数值变化',
+    parameters: {
+      type: 'object',
+      properties: {
+        narrative: { type: 'string', description: '后果叙事,半文言 60-160 字' },
+        changes: {
+          type: 'array',
+          description: '硬核后果:调整国势或人物。可空(纯叙事性后果)',
+          items: { type: 'object', properties: {
+            path: { type: 'string', description: 'core 变量:民心|皇威|皇权|吏治|国库|内帑;或 chars.<人名>.<属性>' },
+            delta: { type: 'number', description: '增量(正负)·幅度与要务轻重相称' },
+            reason: { type: 'string', description: '简短原因' }
+          }, required: ['path', 'delta'] }
+        }
+      },
+      required: ['narrative']
+    }
+  };
+  var resp = await callAIWithTools(L.join('\n'), [tool], { tier: 'secondary', maxTok: 900, id: 'issue:adjudicate' });
+  var call = resp && resp.toolCalls && resp.toolCalls[0];
+  var out = (call && call.input) || null;
+  if (!out && resp && resp.text) { try { out = JSON.parse(resp.text); } catch (_) { out = null; } }
+  if (!out) return false;
+  var changes = Array.isArray(out.changes) ? out.changes : [];
+  var narrative = out.narrative || '';
+  if (changes.length && typeof applyAITurnChanges === 'function') {
+    try { applyAITurnChanges({ narrative: narrative, changes: changes }); }
+    catch (e) { try { console.warn('[要务·裁定] applyAITurnChanges:', (e && e.message) || e); } catch(_){} }
+  }
+  if (narrative && typeof addEB === 'function') { try { addEB('要务·裁定', String(narrative).slice(0, 240)); } catch (_) {} }
+  return !!(narrative || changes.length);
+}
+if (typeof window !== 'undefined') {
+  window._eventAdjudicationOn = _eventAdjudicationOn;
+  window._adjudicateIssueOutcomeViaAI = _adjudicateIssueOutcomeViaAI;
+}
 
 // ============================================================
 // 5.1: 贸易路线结算

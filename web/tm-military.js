@@ -144,7 +144,12 @@ function calculateArmyStrength(army, context) {
 
   var fortMod = 1.0;
   if (ctx.isDefender && army.fortification) fortMod = 1 + Math.min(0.3, (Number(army.fortification) || 0) / 100 * 0.3); // fortify accumulates; rewards defending
-  return baseStrength * moraleMod * trainingMod * qualityMod * commanderMod * supplyMod * terrainMod * unitMod * fortMod;
+
+  // 装备加成（武库供械·军备简陋则战力降·接军工供应链 S6·equipmentCondition 由募兵从武库支取时定）
+  var _eqc = String(army.equipmentCondition || army.equipmentStatus || army.equipmentLevel || '');
+  var equipMod = /精良|优良|齐整|精整/.test(_eqc) ? 1.06 : /严重不足|匮乏|奇缺/.test(_eqc) ? 0.68 : /简陋|破败|朽钝/.test(_eqc) ? 0.82 : /不足|短缺/.test(_eqc) ? 0.9 : 1.0;
+
+  return baseStrength * moraleMod * trainingMod * qualityMod * commanderMod * supplyMod * terrainMod * unitMod * fortMod * equipMod;
 }
 
 // 推荐战术

@@ -36,6 +36,15 @@
     return { n: '裨将', valor: Math.max(38, (gen.valor || 60) - 18), mil: Math.max(38, (gen.mil || 62) - 14), int: Math.max(38, (gen.int || 55) - 8) };
   }
 
+  /* 装备态→品质降级(武库供械不足→战术战斗品质降·与 calculateArmyStrength equipMod 呼应) */
+  var _QTIERS = ['新募', '普通', '精兵', '精锐'];
+  function degradeQualityByEquip(q, condition) {
+    var c = String(condition || '');
+    var drop = /严重不足|匮乏|奇缺/.test(c) ? 2 : /简陋|破败|朽钝|不足|短缺/.test(c) ? 1 : 0;
+    if (!drop) return q;
+    var i = _QTIERS.indexOf(q); if (i < 0) i = 1;
+    return _QTIERS[Math.max(0, i - drop)];
+  }
   /* 队 → 兵牌(原型 roster 单位形状:type/sub/name/soldiers/mor/training/quality/supply/gen/id/parentArmyId) */
   function unitToToken(u, army, gen) {
     return {
@@ -45,7 +54,7 @@
       soldiers: Math.max(1, Math.round(u.men || 0)),
       mor: Math.round((army && army.morale) || 60),
       training: Math.round((army && army.training) || 50),
-      quality: qualityFromVet(u['历练']),
+      quality: degradeQualityByEquip(qualityFromVet(u['历练']), army && army.equipmentCondition),
       supply: Math.round((army && army.supply) || 80),
       gen: gen
     };
@@ -139,7 +148,7 @@
   }
 
   var API = {
-    buildBattleConfig: buildBattleConfig, sideTokens: sideTokens, unitToToken: unitToToken, selectOnField: selectOnField,
+    buildBattleConfig: buildBattleConfig, sideTokens: sideTokens, unitToToken: unitToToken, selectOnField: selectOnField, degradeQualityByEquip: degradeQualityByEquip,
     genFor: genFor, qualityFromVet: qualityFromVet, provinceSeed: provinceSeed, terrainProfile: terrainProfile,
     ONFIELD_CAP: ONFIELD_CAP
   };

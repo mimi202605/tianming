@@ -106,3 +106,5 @@ Thumbs.db
 desktop.ini
 *.swp
 *~
+.claude/
+_capsync_hold/

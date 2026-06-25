@@ -186,6 +186,7 @@ function _cc3_buildCharsFromGM() {
       stanceText: ch.stance || '',
       class: cls,
       initial: ch.name.charAt(0),
+      portrait: ch.portrait || '',
       absent: _cc3_classifyAbsent(ch)
     };
   });
@@ -1364,7 +1365,38 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 function avatarHtml(name, opts = {}) {
   const ch = CHARS[name] || { initial: name.slice(0, 1), class: 'east' };
   const cls = ch.class === 'wu' ? 'wu' : ch.class === 'kdao' ? 'koudao' : '';
-  return `<div class="cy-bubble-avatar ${cls}">${escHtml(ch.initial || name.slice(0, 1))}</div>`;
+  return `<div class="cy-bubble-avatar ${cls}${ch.portrait ? ' has-img' : ''}">${ch.portrait ? '<img class="cy-bubble-avatar-img" src="'+escHtml(ch.portrait)+'" loading="lazy" decoding="async">' : escHtml(ch.initial || name.slice(0, 1))}</div>`;
+}
+
+// 2026-06·出班者立绘放大焦点（左殿堂·随发言切换·谁奏对则谁立绘）
+function _cc3_setPresenter(name) {
+  var el = document.getElementById('cc-presenter');
+  if (!el || !name) return;
+  var ch = CHARS[name] || {};
+  var pic = ch.portrait
+    ? '<img class="cc-pres-img" src="' + escHtml(ch.portrait) + '" loading="lazy">'
+    : '<div class="cc-pres-ph">' + escHtml(String(name).charAt(0)) + '</div>';
+  el.innerHTML = '<div class="cc-pres-pic">' + pic + '</div><div class="cc-pres-info"><div class="cc-pres-nm">' + escHtml(name) + '</div><div class="cc-pres-rl">' + escHtml(ch.title || '') + ' · 出班奏对</div></div>';
+  el.classList.add('active');
+}
+
+// 2026-06·本日议程列表（右栏顶·AGENDA × currentIdx → ✓已决 / ●当前 / ○待奏 + 标签）
+function _cc3_renderAgendaList() {
+  var el = document.getElementById('cc-agenda'); if (!el) return;
+  if (typeof AGENDA === 'undefined' || !AGENDA || !AGENDA.length) { el.innerHTML = ''; return; }
+  var cur = (typeof state !== 'undefined' && typeof state.currentIdx === 'number') ? state.currentIdx : 0;
+  var done = (typeof state !== 'undefined' && state.decisions) ? state.decisions.length : 0;
+  var h = '<div class="cc-ag-h">本日议程 · 已决 <b>' + done + '</b> / 共 <b>' + AGENDA.length + '</b> 事</div><div class="cc-ag-list">';
+  for (var i = 0; i < AGENDA.length; i++) {
+    var it = AGENDA[i] || {};
+    var stt = i < cur ? 'done' : (i === cur ? 'cur' : 'wait');
+    var icon = stt === 'done' ? '✓' : (stt === 'cur' ? '●' : '○');
+    var tags = '';
+    if (it.tags && it.tags.length) { for (var t = 0; t < Math.min(2, it.tags.length); t++) tags += '<span class="cc-ag-tag">' + escHtml(it.tags[t]) + '</span>'; }
+    h += '<div class="cc-ag-item ' + stt + '"><span class="cc-ag-st">' + icon + '</span><span class="cc-ag-ti">' + escHtml(it.title || it.presenter || '议题') + '</span><span class="cc-ag-tags">' + tags + '</span></div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
 }
 
 function addBubble(opts) {
@@ -1394,6 +1426,7 @@ function addBubble(opts) {
   // 记录最后说话者·"你说/其他人" 代词识别用
   if (!opts.kind && opts.name) {
     state._lastNpcSpeaker = opts.name;
+    try { _cc3_setPresenter(opts.name); } catch(_) {}
   }
   // ─── 收集对话到 transcript·朝议结束写入 _courtRecords·供 AI 推演读取 ───
   try {
@@ -1656,28 +1689,28 @@ function _cc3_inferDimsFromPersonalityText(text) {
   const dims = { boldness:0, compassion:0, rationality:0, greed:0, honor:0, sociability:0, vengefulness:0, energy:0 };
   let hits = 0;
   // boldness·勇敢度
-  if (/勇敢|勇猛|刚直|刚毅|敢言|不畏|无畏|刚强|果敢|敢于|豪侠|忠勇|沉勇|武人/.test(text))     { dims.boldness += 0.4; hits++; }
+  if (/勇敢|勇猛|刚直|刚毅|敢言|不畏|无畏|刚强|果敢|敢于|豪侠|忠勇|沉勇|武人|武勇|善战|骁勇|勇略|勇而|跋扈|彪悍/.test(text))     { dims.boldness += 0.4; hits++; }
   if (/怯懦|畏缩|胆小|怕事|避祸|懦弱|畏怯|软弱|优柔|柔弱/.test(text))                          { dims.boldness -= 0.4; hits++; }
   // compassion·仁善度
   if (/仁善|仁厚|宽仁|爱民|怜悯|不忍|心慈|恻隐|温顺|温和|和善/.test(text))                     { dims.compassion += 0.4; hits++; }
-  if (/冷酷|冷漠|残忍|严苛|凉薄|薄情|狠辣|刻薄|无情/.test(text))                              { dims.compassion -= 0.4; hits++; }
+  if (/冷酷|冷漠|残忍|严苛|凉薄|薄情|狠辣|刻薄|无情|严酷|冷峻/.test(text))                              { dims.compassion -= 0.4; hits++; }
   // rationality·理性度
-  if (/理性|务实|深思|审慎|稳重|冷静|权衡|计虑|计谋|沉稳|老成持重|机变|机敏|有谋|善守|城府|谨慎|识大体|识进退|不喜形色|节俭|聪慧/.test(text)) { dims.rationality += 0.4; hits++; }
-  if (/冲动|偏激|急躁|莽撞|意气|轻率|昏聩|任性/.test(text))                                   { dims.rationality -= 0.4; hits++; }
+  if (/理性|务实|深思|审慎|稳重|冷静|权衡|计虑|计谋|沉稳|老成持重|机变|机敏|有谋|善守|城府|谨慎|识大体|识进退|不喜形色|节俭|聪慧|持重|聪明|精明|深沉|多谋|权术|老成/.test(text)) { dims.rationality += 0.4; hits++; }
+  if (/冲动|偏激|急躁|莽撞|意气|轻率|昏聩|任性|暴躁|脾气暴/.test(text))                                   { dims.rationality -= 0.4; hits++; }
   // greed·贪心
   if (/贪|聚敛|好利|敛财|爱财|图利|逐利|风流/.test(text))                                     { dims.greed += 0.4; hits++; }
-  if (/清廉|淡泊|寡欲|不贪|不慕|安贫|节俭/.test(text))                                        { dims.greed -= 0.4; hits++; }
+  if (/清廉|淡泊|寡欲|不贪|不慕|安贫|节俭|澹泊/.test(text))                                        { dims.greed -= 0.4; hits++; }
   // honor·名节
-  if (/名节|气节|清议|清流|耿介|忠直|刚正|节操|大义|守节|贞节|贞烈|贞静|重然诺|忠诚|忠悃/.test(text)) { dims.honor += 0.5; hits++; }
+  if (/名节|气节|清议|清流|耿介|忠直|刚正|节操|大义|守节|贞节|贞烈|贞静|重然诺|忠诚|忠悃|清介|义气|有义|忠义|清雅|诚厚|本分|清正/.test(text)) { dims.honor += 0.5; hits++; }
   if (/失节|无耻|附阉|逢迎|苟合|圆滑/.test(text))                                             { dims.honor -= 0.4; hits++; }
   // sociability·社交
   if (/善交|结好|合群|和气|圆通|长袖善舞|好好先生/.test(text))                                { dims.sociability += 0.4; hits++; }
-  if (/孤僻|寡言|不群|独行|孤介|闷葫芦/.test(text))                                           { dims.sociability -= 0.4; hits++; }
+  if (/孤僻|寡言|不群|独行|孤介|闷葫芦|傲慢|骄横|孤高/.test(text))                                           { dims.sociability -= 0.4; hits++; }
   // vengefulness·复仇
-  if (/睚眦必报|记仇|复仇|怀怨|心狭|心狠/.test(text))                                          { dims.vengefulness += 0.5; hits++; }
+  if (/睚眦必报|记仇|复仇|怀怨|心狭|心狠|险毒|阴狠|阴险|不择手段/.test(text))                                          { dims.vengefulness += 0.5; hits++; }
   if (/宽厚|能容|不计前嫌|大度|隐忍|坚韧/.test(text))                                          { dims.vengefulness -= 0.4; hits++; }
   // energy·精干
-  if (/勤勉|精干|干练|励精|尽心|勤政|敏锐|急切/.test(text))                                    { dims.energy += 0.4; hits++; }
+  if (/勤勉|精干|干练|励精|尽心|勤政|敏锐|急切|任事|事功|激切|激烈|极烈|锐意|性烈/.test(text))                                    { dims.energy += 0.4; hits++; }
   if (/懒散|怠政|拖沓|疏懒|脾性软弱/.test(text))                                              { dims.energy -= 0.4; hits++; }
   return hits > 0 ? dims : null;
 }
@@ -2988,6 +3021,7 @@ function setPhase(label, hint) {
 }
 
 function updateProgress() {
+  try { _cc3_renderAgendaList(); } catch(_) {}
   var tg = $('cy-progress-tag'); if (!tg) return;
   tg.textContent = '已议 ' + state.decisions.length;
 }
@@ -3045,7 +3079,7 @@ function renderBench() {
   const east = [], west = [], kdao = [];
   Object.entries(CHARS).forEach(([name, ch]) => {
     const html = `<div class="bench-avatar${ch.absent ? ' absent' : ''}" title="${escHtml(name)}·${escHtml(ch.title)}${ch.absent ? ' ('+escHtml(ch.absent)+')' : ''}" data-name="${escHtml(name)}">
-      <div class="bench-avatar-circle ${ch.class === 'wu' ? 'wu' : ch.class === 'kdao' ? 'koudao' : ''}${ch.absent ? ' absent' : ''}">${escHtml(ch.initial)}</div>
+      <div class="bench-avatar-circle ${ch.class === 'wu' ? 'wu' : ch.class === 'kdao' ? 'koudao' : ''}${ch.absent ? ' absent' : ''}${ch.portrait ? ' has-img' : ''}">${ch.portrait ? '<img class="bench-avatar-img" src="'+escHtml(ch.portrait)+'" loading="lazy" decoding="async">' : escHtml(ch.initial)}</div>
       <div class="bench-avatar-name">${escHtml(name)}</div>
     </div>`;
     if (ch.class === 'kdao') kdao.push(html);
@@ -3143,6 +3177,7 @@ async function runOpening() {
 }
 
 async function runNextItem() {
+  try { _cc3_renderAgendaList(); } catch(_) {}
   console.log('[cc3] runNextItem·idx=' + state.currentIdx + '·AGENDA.length=' + AGENDA.length);
   if (state.currentIdx >= AGENDA.length) {
     console.log('[cc3] 议程已尽·进入 runClosing');
@@ -5030,6 +5065,42 @@ function _cc3_createModal() {
   `;
   document.body.appendChild(stage);
 
+  // 2026-06 faithful landing·常朝并排版式（左殿堂班次 + 右议程/流程/裁决·对齐预览·保留全部元素/id/handler）
+  try {
+    var _ccBench = document.getElementById('cy-bench');
+    var _ccPhase = document.getElementById('cy-phase-tag');
+    var _ccMain = document.getElementById('cy-stage-main');
+    var _ccAct = document.getElementById('cy-action-bar');
+    var _ccInput = stage.querySelector('.cy-input-row');
+    var _ccTitle = stage.querySelector('.cy-titlebar');
+    if (_ccBench && _ccMain && _ccTitle && !document.getElementById('cc-body-row')) {
+      var _row = document.createElement('div'); _row.id = 'cc-body-row'; _row.className = 'cc-body-row';
+      var _hall = document.createElement('div'); _hall.className = 'cc-hall';
+      var _rail = document.createElement('div'); _rail.className = 'cc-rail';
+      _hall.appendChild(_ccBench);
+      // 出班者立绘焦点·移入中央御座（御道·对齐预览）
+      var _pres = document.createElement('div'); _pres.id = 'cc-presenter'; _pres.className = 'cc-presenter';
+      _pres.innerHTML = '<div class="cc-pres-wait">待奏</div>';
+      var _throne = _ccBench.querySelector('.cy-bench-col-throne');
+      if (_throne) { _throne.classList.add('has-pres'); _throne.appendChild(_pres); } else { _hall.appendChild(_pres); }
+      [_ccPhase, _ccMain, _ccAct, _ccInput].forEach(function(el) { if (el) _rail.appendChild(el); });
+      _row.appendChild(_hall); _row.appendChild(_rail);
+      _ccTitle.parentNode.insertBefore(_row, _ccTitle.nextSibling);
+      _ccBench.classList.add('expanded', 'cc-hall-bench');
+      // 皇威/皇权 入顶栏（对齐预览）
+      try {
+        var _meta = _ccTitle.querySelector('.meta');
+        if (_meta && !document.getElementById('cc-authority')) {
+          var _prV = (typeof state !== 'undefined' && typeof state.prestige === 'number') ? Math.round(state.prestige) : 55;
+          var _pwV = (typeof state !== 'undefined' && typeof state.power === 'number') ? Math.round(state.power) : 60;
+          var _au = document.createElement('span'); _au.id = 'cc-authority'; _au.className = 'cc-authority';
+          _au.innerHTML = '<span class="cca-item">皇威 <b>' + _prV + '</b><i class="cca-bar"><em style="width:' + _prV + '%"></em></i></span><span class="cca-item">皇权 <b>' + _pwV + '</b><i class="cca-bar"><em style="width:' + _pwV + '%"></em></i></span>';
+          _meta.insertBefore(_au, _meta.firstChild);
+        }
+      } catch(_) {}
+    }
+  } catch(_ccLayoutErr) { try { window.TM && TM.errors && TM.errors.captureSilent(_ccLayoutErr, 'changchao-sidebyside'); } catch(_) {} }
+
   // 绑定输入和按钮
   const inp = document.getElementById('cy-player-input');
   if (inp) {
@@ -5062,6 +5133,13 @@ function _cc3_createModal() {
     state.benchExpanded = !state.benchExpanded;
     document.getElementById('cy-bench').classList.toggle('expanded', state.benchExpanded);
   };
+  // 2026-06·常朝班次默认展开（百官真脸全景为主·非折叠薄条·可点表头收起）
+  if (typeof state !== 'undefined' && !state._benchAutoExpanded) {
+    state._benchAutoExpanded = true;
+    state.benchExpanded = true;
+    var _cbEl = document.getElementById('cy-bench');
+    if (_cbEl) _cbEl.classList.add('expanded');
+  }
 }
 
 /** 关闭 v3 modal */

@@ -5,7 +5,9 @@
 
 'use strict';
 
-const { readSource, makeAssert, findLines } = require('./smoke-endturn-baseline-helpers');
+const fs = require('fs');
+const path = require('path');
+const { ROOT, readSource, makeAssert, findLines } = require('./smoke-endturn-baseline-helpers');
 
 const passed = { value: 0 };
 const assert = makeAssert(passed);
@@ -65,8 +67,11 @@ assert(returnRe.test(src),
 });
 
 // ─── 时政记 体例·朝政纪要 ───
+//   体例 spec 已抽取到 tm-endturn-record-specs.js(recordSpecs.shizhengji 的"仿崇祯朝政纪要体"范例)·
+//   readSource 的 ENDTURN_FAMILY 不含该文件·故此块单独读 record-specs 核体例。
+const recordSpecsSrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-record-specs.js'), 'utf8');
 [
-  '崇祯朝政纪要',  // 范例朝代
+  '崇祯朝政纪要',  // 范例朝代(record-specs 的"仿崇祯朝政纪要体"风格范例)
   '【军事】',
   '【朝政】',
   '【经济】',
@@ -74,7 +79,7 @@ assert(returnRe.test(src),
   '【民生】',
   '【宫廷】'
 ].forEach(function(tag) {
-  assert(src.indexOf(tag) >= 0, 'szj 体例 tag·"' + tag + '"');
+  assert(recordSpecsSrc.indexOf(tag) >= 0, 'szj 体例 tag·"' + tag + '"(record-specs)');
 });
 
 // ─── 实录 shilu (历史层)·与时政记体例同源 ───

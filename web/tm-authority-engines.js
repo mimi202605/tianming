@@ -1193,6 +1193,34 @@
     return _setPopulationHiddenCount(G, _populationHiddenCount(G) + (Number(delta) || 0));
   }
 
+  // ★变量联动 → 财政:走账本流水(ledger.stock ± + thisTurnIn/Out + source/sink 明细 + 同步 balance/money 镜像)。
+  //   替代原"裸改 .money 标量"——裸改破坏「ledger.stock 真权威·balance/money 皆其镜像」不变量(见 tm-economy-engine.js _mintCycle 注释)·
+  //   且联动改的 money 下回合被结算基线(读 balance/ledger.stock)覆盖而蒸发:既污染显示(money≠账本)又无真实效果。改走账本后真实入账、帑廪/内帑明细可见。
+  function _linkageFiscalFlow(container, delta, tag) {
+    if (!container || !delta || !isFinite(delta)) return 0;
+    if (!container.ledgers) container.ledgers = {};
+    var led = container.ledgers.money;
+    if (!led || typeof led !== 'object') {
+      led = container.ledgers.money = { stock: Number(container.money) || Number(container.balance) || 0, sources: {}, sinks: {}, thisTurnIn: 0, thisTurnOut: 0, history: [] };
+    }
+    var before = Number(led.stock) || 0;
+    var after = Math.max(0, before + delta);
+    var applied = after - before;
+    led.stock = after;
+    if (applied >= 0) {
+      led.thisTurnIn = (Number(led.thisTurnIn) || 0) + applied;
+      if (!led.sources) led.sources = {};
+      led.sources[tag] = (Number(led.sources[tag]) || 0) + applied;
+    } else {
+      led.thisTurnOut = (Number(led.thisTurnOut) || 0) - applied;
+      if (!led.sinks) led.sinks = {};
+      led.sinks[tag] = (Number(led.sinks[tag]) || 0) - applied;
+    }
+    container.balance = led.stock;
+    container.money = led.stock;
+    return applied;
+  }
+
   function _tickVarLinkage(ctx, mr) {
     var G = global.GM;
     if (!G) return;
@@ -1202,8 +1230,8 @@
     // 帑廪 → 内帑（帑廪满时可转入内帑）
     if (guokuMoney > 5000000 && G.neitang) {
       var transfer = guokuMoney * 0.002 * mr;
-      G.guoku.money -= transfer;
-      G.neitang.money = (G.neitang.money || 0) + transfer;
+      _linkageFiscalFlow(G.guoku, -transfer, '转输内帑');
+      _linkageFiscalFlow(G.neitang, transfer, '帑廪拨入');
     }
     // 帑廪 → 户口（帑廪困则徭役重）
     if (guokuMoney < 100000 && G.population && G.population.corvee) {
@@ -1227,8 +1255,8 @@
     // 内帑 → 帑廪（危机时皇帝出内帑助国）
     if (guokuMoney < 100000 && neitangMoney > 500000) {
       var aid = Math.min(neitangMoney * 0.1, 500000) * mr / 12;
-      G.neitang.money -= aid;
-      if (G.guoku) G.guoku.money = (G.guoku.money || 0) + aid;
+      _linkageFiscalFlow(G.neitang, -aid, '助拨国库');
+      if (G.guoku) _linkageFiscalFlow(G.guoku, aid, '内帑助国');
       if (global.addEB && aid > 10000) global.addEB('内帑', '内帑助国 ' + Math.round(aid));
     }
     // 内帑 → 皇威（丰厚时皇威增）
@@ -1247,7 +1275,7 @@
       var fugRatio = _populationFugitives(G) / popMouths;
       if (fugRatio > 0.05 && G.guoku) {
         // 税收损失
-        G.guoku.money = Math.max(0, G.guoku.money - popDing * fugRatio * 2 * mr / 12);
+        _linkageFiscalFlow(G.guoku, -(popDing * fugRatio * 2 * mr / 12), '逃户失征');
       }
       // 户口 → 腐败（逃户/隐户越多，胥吏上下其手空间越大）
       var disorderRatio = (_populationFugitives(G) + _populationHiddenCount(G)) / popMouths;
@@ -1265,11 +1293,12 @@
     // 腐败 → 帑廪（税收漏损）
     if (corruptOverall > 40 && G.guoku) {
       var loss = Math.max(0, (corruptOverall - 40)) * 1000 * mr / 12;
-      G.guoku.money = Math.max(0, G.guoku.money - loss);
+      // 注:腐败漏损或与税收源头 actualTaxRate(computeTaxFlow leakageRate)重叠·真机验金额合理性
+      _linkageFiscalFlow(G.guoku, -loss, '贪腐漏损');
     }
     // 腐败 → 内帑（宫内也被侵蚀）
     if (corruptOverall > 60 && G.neitang) {
-      G.neitang.money = Math.max(0, (G.neitang.money || 0) - corruptOverall * 100 * mr / 12);
+      _linkageFiscalFlow(G.neitang, -(corruptOverall * 100 * mr / 12), '贪腐侵蚀');
     }
     // 腐败 → 民心（直接）
     if (corruptOverall > 50) adjustMinxin('localOfficial', -(corruptOverall - 50) * 0.005 * mr, '贪腐横行');
@@ -1315,7 +1344,7 @@
         var authorityTaxEff = _clampNumber(1 + ((Number(hq.index) || 50) - 55) / 250, 0.75, 1.18);
         G._authorityTaxEfficiencyMult = authorityTaxEff;
         var authorityTaxDelta = Math.round(_populationDing(G) * (authorityTaxEff - 1) * 0.25 * mr);
-        G.guoku.money = Math.max(0, (G.guoku.money || 0) + authorityTaxDelta);
+        _linkageFiscalFlow(G.guoku, authorityTaxDelta, '皇权·征收效率');
       }
       // 皇权 → 户口（强则编审有力，弱则逃亡隐匿增加）
       if (G.population) {

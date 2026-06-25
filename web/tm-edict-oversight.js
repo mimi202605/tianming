@@ -73,7 +73,7 @@
     return { factions: lines, corruption: corr };
   }
 
-  function buildRequest(GM, active) {
+  function buildRequest(GM, active, opts) {
     var turn = (GM && GM.turn) || 0;
     var p1 = (GM._turnAiResults && GM._turnAiResults.subcall1) || {};
     var fc = _frictionContext(GM);
@@ -84,6 +84,7 @@
     if (Array.isArray(p1.faction_events) && p1.faction_events.length) ev += '势力动作：' + p1.faction_events.slice(0, 8).map(function (e) { return (e.actor || '') + (e.action || '') + (e.result ? '→' + e.result : ''); }).join('；') + '\n';
     if (Array.isArray(p1.var_changes) && p1.var_changes.length) ev += '数值变动：' + p1.var_changes.slice(0, 15).map(function (v) { return (v.name || v.path || '?') + (v.delta != null ? (v.delta > 0 ? '+' : '') + v.delta : ''); }).join('·') + '\n';
     if (Array.isArray(p1.personnel_changes || p1.personnelChanges)) { var pc = p1.personnel_changes || p1.personnelChanges; if (pc.length) ev += '人事：' + pc.slice(0, 10).map(function (p) { return (p.name || p.char || '?') + (p.action || p.change || ''); }).join('；') + '\n'; }
+    if (!ev && opts && opts.evidence) ev = String(opts.evidence).slice(0, 1200);  // agent 模式无 subcall1·用本回合推演实绩(史记/守护写流水)作执行证据(LLM 模式有 p1·此回落不触发·零影响)
 
     var sys = '你是御前督查·代陛下核查诏令的**跨回合执行**。不只看本回合新诏·更要盯**往回合下达、仍在执行中的旧诏**是否在推进、还是被悄悄架空/拖延。'
       + '据「结构化势力态」(势力强度/对君关系/贪腐)判断真实摩擦·而非只凭叙事。诚实·政令本就有阻力·"颁布≠见效"。仅返回 JSON。';
@@ -165,7 +166,7 @@
     var active = activeEdicts(GM);
     if (!active.length) { GM._edictEfficacyReport = { turn: GM.turn || 0, total: 0, skipped: true }; return { skipped: 'noActiveEdicts', turn: GM.turn || 0 }; }
     if (typeof global.callAIMessages !== 'function') return { skipped: 'noCaller' };
-    var req = buildRequest(GM, active);
+    var req = buildRequest(GM, active, opts);
     _dbg('[EdictOversight] run T' + req.turn + ' active=' + active.length);
     var raw;
     try {

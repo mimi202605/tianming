@@ -62,4 +62,25 @@ assert(r.length === 0, '⑤无移动令不误抓 ' + JSON.stringify(r));
 r = f('令张三返回京师。');
 assert(r.length === 0, '⑥非在册人物不抓 ' + JSON.stringify(r));
 
+// 7·P-YW7 bug 原话(图一)："将徐光启、李若琏所在地移动到京师"——历代漏抓(moveVerb 无"移动"+"所在地"中插)·本刀根治
+r = f('将徐光启、李若琏所在地移动到京师，以备咨询。');
+assert(r.some(m => m.char === '徐光启' && m.to === '京师'), '⑦所在地移动到 → 徐光启→京师 ' + JSON.stringify(r));
+assert(r.some(m => m.char === '李若琏' && m.to === '京师'), '⑦所在地移动到 → 李若琏→京师 ' + JSON.stringify(r));
+
+// 8·即时抵达:诏文含"即刻/瞬间抵达"→捕获的移动标 instant(供 reconcile 当回合即抵·治"挪了也多回合不到")
+r = f('将徐光启所在地移动到京师。玩家要求的一切人事调动必须即刻瞬间抵达。');
+assert(r.some(m => m.char === '徐光启' && m.to === '京师' && m.instant === true), '⑧即刻瞬间抵达 → 标 instant ' + JSON.stringify(r));
+
+// 9·无即时词→instant=false(默认多回合行程)
+r = f('将徐光启所在地移动到南京。');
+assert(r.some(m => m.char === '徐光启' && m.to === '南京' && !m.instant), '⑨无即时词 → instant=false(多回合) ' + JSON.stringify(r));
+
+// 10·"移往"复式 + 字号锚定
+r = f('把元素移往山海关。');
+assert(r.some(m => m.char === '袁崇焕' && /山海关/.test(m.to)), '⑩移往+字号 元素→袁崇焕→山海关 ' + JSON.stringify(r));
+
+// 11·"移交账册"不误抓(移交≠移动·relocVerb 用显式复合词避免误中)
+r = f('着徐光启移交账册于户部。');
+assert(r.length === 0, '⑪移交账册不误抓(移交非移动) ' + JSON.stringify(r));
+
 console.log('[smoke-edict-movement-reconcile] PASS assertions=' + passed);

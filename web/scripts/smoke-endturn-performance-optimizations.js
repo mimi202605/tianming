@@ -127,8 +127,8 @@ assert((postTurnSrc.match(/priority:\s*'background'/g) || []).length >= 4, 'post
 assert(/callAI\(prompt,\s*1500,\s*null,\s*'primary',\s*\{\s*priority:\s*'background'/.test(chronicleSrc), 'chronicle year generation uses background queue priority');
 assert(/callAI\(prompt,\s*1500,\s*null,\s*'primary',[\s\S]*timeoutMs:\s*60000[\s\S]*maxRetries:\s*1/.test(chronicleSrc), 'chronicle year generation is bounded with one retry');
 assert(/global\.callAI\(combined,\s*200,\s*null,\s*'secondary',\s*\{\s*priority:\s*'background'/.test(factionEnrichSrc), 'NPC faction enrichment uses background queue priority');
-assert(/callAISmart\(prompt,\s*300,[\s\S]*priority:\s*'high'/.test(kejuRuntimeSrc), 'foreground keju trigger check uses high priority');
-assert(/callAISmart\(prompt,\s*300,[\s\S]*timeoutMs:\s*30000[\s\S]*fetchMaxRetries:\s*1/.test(kejuRuntimeSrc), 'foreground keju trigger check has one bounded fetch retry');
+assert(/callAISmart\(prompt,\s*300,[\s\S]*priority:\s*'background'/.test(kejuRuntimeSrc), 'keju trigger check uses background priority (2026-06-19 降本·开科判定非阻塞玩家操作·异步 spawn 头条)');
+assert(/callAISmart\(prompt,\s*300,[\s\S]*maxRetries:\s*1[\s\S]*timeoutMs:\s*30000/.test(kejuRuntimeSrc), 'keju trigger check bounded: one retry + 30s timeout');
 assert((aiHelpersSrc.match(/timeoutMs:\s*60000/g) || []).length >= 3, 'end-turn AI helper tail calls have explicit 60s timeout budgets');
 assert((aiHelpersSrc.match(/fetchMaxRetries:\s*1/g) || []).length >= 3, 'end-turn AI helper tail calls retry once at fetch layer');
 assert(/callAI\(prompt,\s*600,\s*null,\s*'primary',[\s\S]*timeoutMs:\s*45000[\s\S]*maxRetries:\s*1/.test(endturnHelpersSrc), 'post-result taishigong generation is bounded with one retry');

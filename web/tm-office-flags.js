@@ -8,6 +8,7 @@
 //   officeDutyStateEnabled          Slice② 履职度 + 失职衰减
 //   officeAuthorityGateEnabled      Slice③ 权限门控（接活 canPerformAction）
 //   officeReformAdjudicationEnabled Slice④ AI 裁定式改制闭环
+//   officeRecallAgentEnabled        #1 主推演 office-recall 子调用（按需取数·走次要 API）
 //
 // 语义：组闸 || 各独立开关。
 //   · P.conf.officeActivationEnabled = true → 四刀全启用（实验）
@@ -30,7 +31,7 @@
   var TM = global.TM = global.TM || {};
   TM.OfficeFlags = {
     MASTER: 'officeActivationEnabled',
-    LIST: ['officePowerPerceptionEnabled', 'officeDutyStateEnabled', 'officeAuthorityGateEnabled', 'officeReformAdjudicationEnabled'],
+    LIST: ['officePowerPerceptionEnabled', 'officeDutyStateEnabled', 'officeAuthorityGateEnabled', 'officeReformAdjudicationEnabled', 'officeRecallAgentEnabled'],
     on: officeFlagOn,
     setMaster: function (v) { var P = global.P; if (P) { P.conf = P.conf || {}; P.conf.officeActivationEnabled = !!v; } return !!v; },
     masterOn: function () { var P = global.P || {}; return !!((P.ai && P.ai.officeActivationEnabled) || (P.conf && P.conf.officeActivationEnabled)); },

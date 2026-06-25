@@ -73,7 +73,12 @@
     'sys-listeners':  { name: '处理监听队列',   line: '监听余波，关系自衰。' },
     'sys-cache':      { name: '清理回合缓存',   line: '故纸归匣，明日再启。' },
     'step-6':         { name: '生成史记',       line: '史官缀词，卷轴将开。' },
-    'render-shiji':   { name: '生成史记弹窗',   line: '万事归卷，一笔定章。' }
+    'render-shiji':   { name: '生成史记弹窗',   line: '万事归卷，一笔定章。' },
+    // ── 模式 b · agent 模式拍（复用动画·换拍内容）──
+    'agent-engine':   { name: '引擎结算',       line: '硬核先定，钱粮兵甲入账。' },
+    'agent-perceive': { name: '亲览局面',       line: '御目所及，天下尽收。' },
+    'agent-loop':     { name: '亲裁推演',       line: '乾纲独断，逐事落子。' },
+    'agent-narrate':  { name: '撰史定章',       line: '御笔亲裁，史册自成。' }
   };
 
   var GROUP_TITLES = {
@@ -289,6 +294,7 @@
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var built = false;
+  var builtLen = 0;            // 【模式 b】DOM 当前按几拍建的(切 LLM/agent 拍表时据此判重建)
   var root = null;
   var els = {};
   var deck = [];
@@ -325,10 +331,14 @@
   function build() {
     if (built) return;
     built = true;
-    var style = document.createElement('style');
-    style.id = 'tm-etl-style';
-    style.textContent = CSS;
-    document.head.appendChild(style);
+    builtLen = BEATS.length;
+    groupKeys.length = 0;   // 【模式 b】重建时清零(切拍表后 start 先 teardown 再 build·防 group 累积)
+    if (!document.getElementById('tm-etl-style')) {   // 样式只注一次(重建复用)
+      var style = document.createElement('style');
+      style.id = 'tm-etl-style';
+      style.textContent = CSS;
+      document.head.appendChild(style);
+    }
 
     // 组序（拍表出现顺序）+ 呈览收尾签
     var seen = {};
@@ -546,7 +556,17 @@
     window.clearTimeout(titleTimer);
   }
 
-  function start() {
+  function start(payload) {
+    // 【模式 b】按生效拍表(payload.beats)重建:LLM 路径 payload.beats===BEATS 同引用→不重建(零回归);
+    //   agent 拍表不同引用/不同长度→teardown 重建(复用全部动画/视觉·只换拍内容)。
+    var nb = (payload && payload.beats) || BEATS;
+    if (nb !== BEATS || (built && builtLen !== nb.length)) {
+      BEATS = nb;
+      if (built) {
+        try { if (root && root.parentNode) root.parentNode.removeChild(root); } catch (_) {}
+        built = false; root = null; els = {};
+      }
+    }
     build();
     window.clearTimeout(finishTimer);
     window.clearTimeout(titleTimer);
@@ -664,7 +684,7 @@
 
   TM.Endturn.Progress.on(function(type, payload) {
     try {
-      if (type === 'start') start();
+      if (type === 'start') start(payload);
       else if (type === 'beat') onBeat(payload);
       else if (type === 'label') onLabel(payload);
       else if (type === 'done') finish();

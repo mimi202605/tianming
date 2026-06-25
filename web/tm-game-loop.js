@@ -74,6 +74,14 @@ function enterGame(){
     }
   } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'enterGame] 帑廪朝代预设失败:') : console.error('[enterGame] 帑廪朝代预设失败:', e); }
 
+  // 武库/原料库朝代预设(军备/原料·从剧本 guoku.armory/materials 装初值·一次性·_armorySeeded 守·亦补老存档:不限 turn1·载入即 seed 一次)
+  try {
+    if (typeof window !== 'undefined' && window.TMArmory && !(GM.guoku && GM.guoku._armorySeeded)) {
+      var scA = (typeof findScenarioById === 'function' && findScenarioById(GM.sid)) || null;
+      window.TMArmory.seedFromScenario(GM, (scA && scA.guoku) || {});
+    }
+  } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'enterGame] 武库预设失败:') : console.error('[enterGame] 武库预设失败:', e); }
+
   // 内帑朝代预设（依赖帑廪先完成）
   try {
     if (GM.turn === 1 && !GM._neitangPresetDone && typeof NeitangEngine !== 'undefined') {
@@ -993,7 +1001,7 @@ async function _wtSend() {
     + '   · setting — 世界背景/设定注入：补充剧本的背景信息/状态/历史（例："此时倭寇已平"、"北方去年大旱未记入"）\n'
     + '   · hardChange — 直接修改数值或字段：要求直接改具体数值/字段（例："帑廪+1000万两"、"某NPC忠诚设为100"、"袁崇焕所在地改为京师"、"皇威+10"）\n'
     + '       ★【识别规则】只要指令提到：具体金额(万两/石/匹)、具体数值(+N/-N/设为N)、具体字段(国库/帑廪/内帑/忠诚/所在地/位置/皇威/皇权/民心/阶层满意度/阶层影响力等)——必须归入 hardChange。不要误判为 narrative/directive。\n'
-    + '       ★【常见路径】白银=guoku.money·粮=guoku.grain·布=guoku.cloth·内帑银=neitang.money·皇威=huangwei.index·皇权=huangquan.index·腐败/吏治=corruption.trueIndex·民心=minxin.trueIndex·人物忠诚=chars[人物名].loyalty·人物所在地=chars[人物名].location·军队兵力=armies[军名].soldiers·军队主帅=armies[军名].commander·军队士气=armies[军名].morale·军队忠诚=armies[军名].loyalty·军队欠饷月数=armies[军名].payArrearsMonths·阶层满意度=classes[阶层名].satisfaction·阶层影响力=classes[阶层名].influence·阶层人口=classes[阶层名].population·势力实力=facs[势力名].strength·势力经济=facs[势力名].economy·势力对玩家关系=facs[势力名].playerRelation·党派影响力=parties[党派名].influence·党派凝聚力=parties[党派名].cohesion\n'
+    + '       ★【常见路径】白银=guoku.money·粮=guoku.grain·布=guoku.cloth·军备库甲胄=guoku.armory.甲胄.stock(兵刃/弓弩/火器/战马同式)·原料库铁=guoku.materials.铁.stock(硝石/皮革/木同式)·内帑银=neitang.money·皇威=huangwei.index·皇权=huangquan.index·腐败/吏治=corruption.trueIndex·民心=minxin.trueIndex·人物忠诚=chars[人物名].loyalty·人物所在地=chars[人物名].location·军队兵力=armies[军名].soldiers·军队主帅=armies[军名].commander·军队士气=armies[军名].morale·军队忠诚=armies[军名].loyalty·军队欠饷月数=armies[军名].payArrearsMonths·阶层满意度=classes[阶层名].satisfaction·阶层影响力=classes[阶层名].influence·阶层人口=classes[阶层名].population·势力实力=facs[势力名].strength·势力经济=facs[势力名].economy·势力对玩家关系=facs[势力名].playerRelation·党派影响力=parties[党派名].influence·党派凝聚力=parties[党派名].cohesion\n'
     + '       ★【操作符】"加/增/+"→op:add · "减/扣/-"→op:add(负数) · "设为/改为/="→op:set · "翻倍/x2"→op:mul\n'
     + '       ★【单位换算】1 万两=10000·50 万两=500000·100 万石=1000000·玩家说"100 万"一律写成 1000000 数字不要保留"万"字\n'
     + '   · edictSubstitute — 等同诏令：玩家实际想下诏令的事（例："拨银赈灾"、"罢某某官"、"遣使某国"——这些本该走诏令而非问天）\n'
@@ -1221,6 +1229,18 @@ function _wtNormalizeHardChangePath(path) {
     '粮食': 'guoku.grain',
     '布': 'guoku.cloth',
     '布匹': 'guoku.cloth',
+    '甲胄': 'guoku.armory.甲胄.stock',
+    '兵刃': 'guoku.armory.兵刃.stock',
+    '弓弩': 'guoku.armory.弓弩.stock',
+    '火器': 'guoku.armory.火器.stock',
+    '战马': 'guoku.armory.战马.stock',
+    '戰馬': 'guoku.armory.战马.stock',
+    '铁': 'guoku.materials.铁.stock',
+    '鐵': 'guoku.materials.铁.stock',
+    '硝石': 'guoku.materials.硝石.stock',
+    '皮革': 'guoku.materials.皮革.stock',
+    '木料': 'guoku.materials.木.stock',
+    '木材': 'guoku.materials.木.stock',
     '内帑': 'neitang.money',
     '内帑.value': 'neitang.money',
     '内帑.money': 'neitang.money',

@@ -73,10 +73,15 @@
     }
   }
 
+  // agent 模式活世界:绕过"势力精算"开关·改由 agentLiveWorldOn 门控(仍需 P.ai.key·decideFor 走 LLM)。LLM 模式 agentModeOn=false → 此项 false → 原逻辑零回归。
+  function _agentLiveWorldActive() {
+    return typeof global.agentLiveWorldOn === 'function' && global.agentLiveWorldOn()
+      && !!(global.P && global.P.ai && global.P.ai.key);
+  }
   function _isEnabled() {
     if (typeof global.window === 'undefined' && typeof global.GM === 'undefined') return false;
     if (!global.TM || !global.TM.FactionNpcSettings) return false;
-    if (!global.TM.FactionNpcSettings.isAiPrecisionEnabled()) return false;
+    if (!global.TM.FactionNpcSettings.isAiPrecisionEnabled() && !_agentLiveWorldActive()) return false;
     if (!global.TM.FactionNpcLlmDecision) return false;
     return true;
   }

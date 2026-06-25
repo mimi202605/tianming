@@ -35,7 +35,9 @@ const ALLOW_FILES = new Set([
   'map-editor-factions.js',
   // powerMinister.faction 是 string[] 数组·跟 char.faction string ref 完全不同·语义不同
   'tm-authority-complete.js',
-  'tm-prophecy.js'
+  'tm-prophecy.js',
+  // 地图编辑器·division(地图区划多边形)的 factionId 是地图归属元数据·子继承父·非 char/army 势力绑定·语义不同
+  'map-editor-core.js'
 ]);
 
 // 白名单·特定行·legacy fallback 在 if (window.TM && TM.FactionMembership) else 分支
@@ -74,6 +76,14 @@ const ALLOW_LINES = [
   // map-editor-to-game.js: division.factionId is scenario map ownership metadata inherited from autonomyHierarchy,
   // not character/army/province membership mutation.
   { file: 'map-editor-to-game.js', match: /nd\.factionId\s*=\s*facId/ },
+  // tm-endturn-agent-mode.js·d 是维度标志对象(_activeDims)·d.faction=1 是「势力维度有活动」的开关位·非势力归属绑定
+  { file: 'tm-endturn-agent-mode.js', match: /d\.faction\s*=\s*1/ },
+  // tm-endturn-agent-write-tools.js·change 是工具 schema 透传对象·change.faction 传给 applyAIArmyChange·
+  //   下游 tm-ai-change-army.js 已走 TM.FactionMembership.assignArmy(已在本白名单)·此为 schema 透传非直接 mutate
+  { file: 'tm-endturn-agent-write-tools.js', match: /change\.faction\s*=\s*input\.faction/ },
+  // tm-patches.js·_syncCharFactionId 名↔id 一致性同步(势力改名后人物名串跟新/旧档回填 id)·非归属变更
+  { file: 'tm-patches.js', match: /c\.faction\s*=\s*byId\[c\.factionId\]\.name/ },
+  { file: 'tm-patches.js', match: /c\.factionId\s*=\s*byName\[c\.faction\]\.id/ },
 ];
 
 function scanFile(filePath, source, results) {

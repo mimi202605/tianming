@@ -19,12 +19,21 @@ ok(code.indexOf('cy-topic-input') < 0, '★不再写错误 DOM id cy-topic-input
 ok(code.indexOf('_pendingTinyiTopics') >= 0, '改用 _pendingTinyiTopics 队列');
 
 function run(GM, idx){
-  const ctx = { GM:GM, Array:Array, String:String, console:console };
+  const ctx = { GM:GM, Array:Array, String:String, Number:Number, isNaN:isNaN, console:console };
   ctx._$ = function(){ return { value:'' }; };
   ctx.toast = function(){};
   ctx.renderMemorials = function(){};
   ctx.staged = [];
   ctx._stageMemorialDecision = function(m,d,r){ ctx.staged.push({m:m,d:d,r:r}); };
+  // _courtDebateMemorial 现依赖共享 helper _memResolve(@tm-memorials.js)·照其真实签名补桩(按 id 解析·回退数字下标)
+  ctx._memResolve = function(ref){
+    var list = GM.memorials || [];
+    if (ref == null) return null;
+    for (var i = 0; i < list.length; i++) { if (list[i] && list[i].id === ref) return list[i]; }
+    var n = Number(ref);
+    if (!isNaN(n) && n >= 0 && list[n]) return list[n];
+    return null;
+  };
   vm.createContext(ctx);
   vm.runInContext(fnSrc + '\nthis.go=_courtDebateMemorial;', ctx);
   ctx.go(idx);

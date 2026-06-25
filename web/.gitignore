@@ -15,6 +15,8 @@ dist/
 build/
 .cache/
 .playwright-cli/
+# playwright scratch 临时补丁（非生产）·只忽略 patch·保留 _pw-scratch/savedT37 等 fixture
+_pw-scratch/patch-*.js
 _screenshots/
 dev-tools/
 backups/
@@ -62,6 +64,8 @@ tools/fill-shaosong-traits.js
 tools/add-dingyou-field.js
 tools/fill-tianqi-mentors.js
 tools/add-tinyi-convening-config.js
+tools/test-safeeval.js
+tools/test-save-redact.js
 
 # 一次性 asset 处理工具 (alpha 处理图片等·非生产)
 preview/img/_remove-white-bg.js

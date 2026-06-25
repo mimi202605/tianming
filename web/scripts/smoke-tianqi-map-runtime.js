@@ -119,7 +119,8 @@ function main() {
   const changed = ctx.TMMapRuntime.findRegion('ming-28');
   assert(changed.owner === laterJin.id, `owner did not change to Later Jin id: ${changed.owner}`);
   assert(changed.currentOwner === laterJin.id, 'currentOwner did not mirror owner');
-  assert(changed.ownerKey === 'fac-later-jin', `ownerKey did not become fac-later-jin: ${changed.ownerKey}`);
+  // ownerKey 取新主的稳定 key(tm-map-system.js: region.ownerKey = resolved.key)。后金 faction 的 key 现为生成 id(原语义键 fac-later-jin 已随 faction id 重生成)·改用动态 laterJin.key 而非钉死旧串。
+  assert(changed.ownerKey === (laterJin.key || laterJin.id), `ownerKey did not mirror Later Jin key: ${changed.ownerKey} (expect ${laterJin.key || laterJin.id})`);
   assert(changed.development === Math.min(100, oldDevelopment + 7), `development did not change: ${changed.development}`);
   assert(changed.troops === oldTroops + 1200, `troops did not change: ${changed.troops}`);
   assert(ctx.GM.turnChanges.map.length >= 3, 'map changes were not recorded in GM.turnChanges.map');

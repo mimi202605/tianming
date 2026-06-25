@@ -3295,9 +3295,18 @@ async function listAvailableModels(opts) {
  * @returns {number} K tokens
  */
 function getModelContextSizeK() {
-  if (P.conf.contextSizeK && P.conf.contextSizeK > 0) return P.conf.contextSizeK;
-  if (P.conf._detectedContextK) return P.conf._detectedContextK;
-  return 32; // 未探测时的保守默认值
+  if (P.conf.contextSizeK && P.conf.contextSizeK > 0) return P.conf.contextSizeK; // 手动覆写最高
+  // 自动路径:取「探测值」与「按当前模型名查白名单」的较大值——
+  //   不同玩家用不同模型·各取其真实窗口;无须先跑探测即可享受模型真实窗口;
+  //   取较大值防探测自报层偏低(如模型谎报 64K 而实为 128K)。手动覆写仍可强制压低(应对受限代理)。
+  var k = (P.conf._detectedContextK && P.conf._detectedContextK > 0) ? P.conf._detectedContextK : 0;
+  try {
+    if (typeof _matchModelCtx === 'function') {
+      var _mk = _matchModelCtx((P.ai && P.ai.model) || '');
+      if (_mk && _mk > k) k = _mk;
+    }
+  } catch (_mkE) {}
+  return k > 0 ? k : 32; // 全未知模型的保守默认
 }
 
 /**

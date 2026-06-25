@@ -1123,14 +1123,17 @@ function buildAIContext(deepMode) {
       ctx += '\u3010\u95E8\u9600\u5BB6\u65CF\u3011\n';
       _famKeys.slice(0, 8).forEach(function(fn) {
         var fam = GM.families[fn];
+        if (!fam) return;
         var livingCount = 0;
-        fam.branches.forEach(function(b) {
-          b.members.forEach(function(m) { var c = findCharByName(m); if (c && c.alive !== false) livingCount++; });
+        // \u5B88\u536B:\u7ECF doActualStart \u7684 sc.families \u5206\u53D1(renown \u515C\u5E95)\u521B\u5EFA\u7684\u5BB6\u65CF\u53EF\u80FD\u65E0 branches/members \u2192 \u539F forEach \u5D29\u00B7
+        //   \u4E14\u6B64\u5904\u5728 LLM prompt.build \u5185\u00B7\u672A\u88AB\u6355\u83B7 \u2192 \u76F4\u63A5\u5D29\u6389\u6574\u4E2A mode A \u56DE\u5408(\u8DE8\u5267\u672C\u00B7\u51E1\u6709\u65E0\u5206\u652F\u5BB6\u65CF\u5373\u89E6\u53D1)\u3002
+        (fam.branches || []).forEach(function(b) {
+          ((b && b.members) || []).forEach(function(m) { var c = findCharByName(m); if (c && c.alive !== false) livingCount++; });
         });
         if (livingCount === 0) return;
         ctx += '  ' + fn + '(' + (_tierNames[fam.tier] || '\u5BD2\u95E8') + ',\u58F0\u671B' + Math.round(fam.renown || 0) + ',' + livingCount + '\u4EBA)';
-        if (fam.branches.length > 1) {
-          ctx += ' \u5206\u652F:' + fam.branches.map(function(b) { return b.name; }).join('/');
+        if ((fam.branches || []).length > 1) {
+          ctx += ' \u5206\u652F:' + fam.branches.map(function(b) { return b && b.name; }).filter(Boolean).join('/');
         }
         ctx += '\n';
       });
@@ -1138,9 +1141,10 @@ function buildAIContext(deepMode) {
       if (typeof AffinityMap !== 'undefined') {
         _famKeys.slice(0, 5).forEach(function(fn) {
           var fam = GM.families[fn];
+          if (!fam) return;
           var conflicts = [];
           var allMem = [];
-          fam.branches.forEach(function(b) { allMem = allMem.concat(b.members); });
+          (fam.branches || []).forEach(function(b) { allMem = allMem.concat((b && b.members) || []); });
           for (var _i = 0; _i < allMem.length && conflicts.length < 2; _i++) {
             for (var _j = _i + 1; _j < allMem.length && conflicts.length < 2; _j++) {
               var _av = AffinityMap.get(allMem[_i], allMem[_j]) || 0;
@@ -1165,6 +1169,13 @@ function buildAIContext(deepMode) {
     });
     GM._deathRiskChars = []; // 清空，避免重复
   }
+
+  // 阴谋暗流（多回合阴谋弧·确定性引擎推演中·不清空·将发者交 AI 决成败）
+  try {
+    if (typeof ConspiracyEngine !== 'undefined' && ConspiracyEngine && typeof ConspiracyEngine.aiContextBlock === 'function') {
+      ctx += ConspiracyEngine.aiContextBlock(GM);
+    }
+  } catch (_cspE) {}
 
   // 近期NPC自主行动（从事件日志中提取）
   if (GM.evtLog) {

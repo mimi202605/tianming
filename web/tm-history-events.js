@@ -76,11 +76,47 @@ function checkHistoryEvents() {
         month: currentMonth
       };
 
-      // 显示事件选择界面
-      showHistoryEventModal(event);
+      // 显示事件选择界面（v0.2·事件并入御案时政:开关开 → 收编进 currentIssues·关 → 原独立事件框·零回归）
+      if (typeof _eventAdjudicationOn === 'function' && _eventAdjudicationOn() && typeof _pushHistoryEventToIssues === 'function') {
+        _pushHistoryEventToIssues(event);
+      } else {
+        showHistoryEventModal(event);
+      }
     }
   });
 }
+
+/**
+ * v0.2·史实事件收编御案时政:rigidHistoryEvent → currentIssues 的 issue
+ * branch{name,description,impact} → choice{text,desc,effect,aiHint}·effect=impact(固定·_chooseIssueOption 兜底)·开关开则 AI 据局面裁
+ */
+function _historyEventToIssue(event) {
+  return {
+    id: 'hist_' + (event.id || 'x'),
+    title: event.name || '历史事件',
+    description: event.narrative || event.description || '',
+    category: '史实',
+    status: 'pending',
+    raisedTurn: (typeof GM !== 'undefined' && GM.turn) || 1,
+    raisedDate: (typeof GM !== 'undefined' && GM._gameDate) || '',
+    historicalNote: event.historicalNote || '',
+    choices: (event.branches || []).map(function (b) {
+      return { text: b.name || '应对', desc: b.description || '', effect: b.impact || null, aiHint: b.aiHint || '' };
+    })
+  };
+}
+function _pushHistoryEventToIssues(event) {
+  try {
+    if (typeof GM === 'undefined' || !GM) return;
+    if (!Array.isArray(GM.currentIssues)) GM.currentIssues = [];
+    var issue = _historyEventToIssue(event);
+    if (!GM.currentIssues.some(function (i) { return i && i.id === issue.id; })) {
+      GM.currentIssues.push(issue);
+      if (typeof addEB === 'function') { try { addEB('要务', '史事临御案：' + issue.title); } catch (_) {} }
+    }
+  } catch (e) { try { console.warn('[史实收编] push currentIssues 失败:', (e && e.message) || e); } catch (_) {} }
+}
+if (typeof window !== 'undefined') { window._pushHistoryEventToIssues = _pushHistoryEventToIssues; }
 
 /**
  * 显示历史事件选择模态框
@@ -346,7 +382,15 @@ function triggerRigidEvent(id, config, currentValue) {
     });
   }
 
-  openGenericModal('系统事件', html, null);
+  // v0.2·事件并入御案时政:阈值刚性事件无决断分支·属"近事警讯"(按正式面板架构「近事归事件栏·御案时政只承接待裁议题」·故不进 currentIssues 待决)。
+  //   开关开 → 走事件栏 addEB 统一播报(消灭独立"系统事件"modal·应 owner「不要独立事件框 ui」)·关 → 原 openGenericModal(零回归)。
+  //   上方 impact / 编年已照常落地(刚性阈值后果·与开关无关)。
+  if (typeof _eventAdjudicationOn === 'function' && _eventAdjudicationOn() && typeof addEB === 'function') {
+    var _ebMsg = (config.name || '刚性触发') + (config.description ? ('·' + config.description) : '');
+    try { addEB(config.ebCategory || '警讯', _ebMsg); } catch (_) { openGenericModal('系统事件', html, null); }
+  } else {
+    openGenericModal('系统事件', html, null);
+  }
 }
 
 /**

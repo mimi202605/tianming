@@ -80,8 +80,8 @@ assert(followupSrc.indexOf('var _sc07P = _branchASettledP.then', finalDag) > fin
   'sc07 waits only for sc15 branch');
 assert(followupSrc.indexOf('var _branchCSc27ReadyP = Promise.all([_branchBSettledP, _auditP])', finalDag) > finalDag,
   'sc27 waits for specialty branch and audit before final review');
-assert(followupSrc.indexOf('var _branchCSc2ReadyP = _branchASettledP.then', finalDag) > finalDag,
-  'sc2 starts after sc15 branch without waiting for specialty branch');
+assert(followupSrc.indexOf('var _branchCSc2ReadyP = _runBranchC().then', finalDag) > finalDag,
+  'sc2 runs via _runBranchC, decoupled from branchA/specialty (2026-06 降本解依赖·sc2 不再等 sc15 branch)');
 const finalParallel = followupSrc.indexOf('var _finalSettled = await Promise.all([_auditP, _branchCSc2ReadyP, _sc07P])');
 assert(finalParallel >= 0, 'final wait joins audit + branchC + sc07 DAG promises');
 assert(followupSrc.indexOf('var _specialtySummary = { sc15: "", sc16: "", sc17: "", sc18: "" }') >= 0,

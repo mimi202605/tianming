@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 四套议政界面 · 一览对比</title>
+<!--
+  preview / mockup 总览页·非运行时代码。把四套议政界面(问对/常朝/廷议/御前)缩略并排 + 各自火点标注 + 维度对照,
+  供评审/决策一眼看清四者区别与关系。缩略图用各自定格截图(_wendui-realportrait / _changchao / _tingyi / _yuqian .png)。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cdab63; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#564a2e;
+  --ivory:#f4eddf; --ink:#d8cdba;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --vermillion:#cf5042;
+  --celadon:#a9d18e; --candle:#e8a850; --indigo:#8e9ac4;
+  --hair:rgba(207,173,101,.2); --hair-br:rgba(240,213,151,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:16px;padding:26px 16px 50px;
+  background:radial-gradient(1300px 600px at 50% -6%,rgba(207,173,101,.07),transparent 60%),linear-gradient(180deg,#13100c,#0d0a07 60%,#0a0807);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.page-title{text-align:center}
+.page-title .t{font-family:"Ma Shan Zheng",serif;font-size:34px;letter-spacing:.22em;text-indent:.22em;background:linear-gradient(120deg,#fbf2d4,#e9cd84 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.page-title .s{font-family:"ZCOOL XiaoWei",serif;font-size:13px;color:var(--gold-dim);letter-spacing:.1em;margin-top:6px}
+
+/* 关系轴 */
+.axis{width:1200px;max-width:97vw;border:1px solid var(--hair);border-radius:5px;padding:14px 22px 18px;background:linear-gradient(178deg,#1a130c,#100b06);box-shadow:inset 0 1px 0 var(--hair-br)}
+.axis-h{font-family:"ZCOOL XiaoWei",serif;font-size:11.5px;color:var(--gold-dim);letter-spacing:.08em;margin-bottom:12px;display:flex;justify-content:space-between}
+.axis-h b{color:var(--gold-br);font-weight:400}
+.axis-track{position:relative;height:64px;border-radius:4px;background:linear-gradient(90deg,rgba(142,154,196,.16),rgba(207,173,101,.06) 40%,rgba(207,80,66,.14));border:1px solid var(--gold-faint)}
+.axis-track:before{content:"密 议";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-family:"Ma Shan Zheng",serif;font-size:13px;color:var(--indigo);opacity:.8}
+.axis-track:after{content:"公 朝";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:"Ma Shan Zheng",serif;font-size:13px;color:var(--vermillion);opacity:.8}
+.axis-node{position:absolute;top:50%;transform:translate(-50%,-50%);text-align:center}
+.axis-node .dot{width:13px;height:13px;border-radius:50%;margin:0 auto 4px;border:1.4px solid var(--gold-br);background:radial-gradient(circle at 30% 25%,#fff3d6,#caa258)}
+.axis-node .nm{font-family:"Ma Shan Zheng",serif;font-size:13px;color:var(--gold-br);letter-spacing:.06em;white-space:nowrap}
+.axis-node .nn{font-family:"ZCOOL XiaoWei",serif;font-size:9.5px;color:var(--gold-dim);white-space:nowrap}
+
+/* 四卡 */
+.grid{width:1200px;max-width:97vw;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mode-card{border:1px solid rgba(207,173,101,.3);border-radius:6px;overflow:hidden;background:linear-gradient(178deg,#1c150d,#100b06);box-shadow:inset 0 1px 0 var(--hair-br),0 14px 40px rgba(0,0,0,.5);display:flex;flex-direction:column}
+.mode-card.yq{border-color:rgba(232,168,80,.3)}
+.mc-thumb{position:relative;aspect-ratio:1280/740;overflow:hidden;border-bottom:1px solid var(--hair);background:#0a0705}
+.mc-thumb img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
+.mc-thumb .badge{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:8px}
+.mc-seal{width:34px;height:34px;border-radius:4px;display:grid;place-items:center;font-family:"Ma Shan Zheng",serif;font-size:19px;color:#fdf3da;border:1.3px solid var(--gold-br);background:radial-gradient(125% 125% at 30% 22%,var(--red-hi),var(--red-2));box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.mode-card.yq .mc-seal{background:radial-gradient(125% 125% at 30% 22%,#2a2018,#140d07);box-shadow:0 0 10px rgba(232,168,80,.3),0 2px 8px rgba(0,0,0,.5)}
+.mc-ttl{padding:4px 11px;border-radius:3px;background:rgba(10,7,4,.7);backdrop-filter:blur(2px)}
+.mc-ttl .n{font-family:"Ma Shan Zheng",serif;font-size:19px;letter-spacing:.1em;color:var(--gold-br)}
+.mc-ttl .tag{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--ivory);margin-left:7px}
+.mc-num{position:absolute;top:10px;right:10px;font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-br);padding:3px 10px;border:1px solid var(--gold-faint);border-radius:2px;background:rgba(10,7,4,.7)}
+.mc-body{padding:13px 16px 15px}
+.mc-fire-h{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);letter-spacing:.1em;margin-bottom:8px}
+.mc-fire-h b{color:var(--candle);font-weight:400}
+.mc-fire{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.fire{display:flex;gap:8px;font-family:"ZCOOL XiaoWei",serif;font-size:12.5px;color:var(--ink);line-height:1.5}
+.fire:before{content:"✦";color:var(--candle);flex:none;font-size:11px;margin-top:1px}
+.fire b{color:var(--gold-br);font-weight:400}
+.mc-dims{display:flex;flex-wrap:wrap;gap:7px;border-top:1px solid var(--hair);padding-top:11px}
+.dim{font-family:"ZCOOL XiaoWei",serif;font-size:10.5px;color:var(--gold-mid);padding:3px 9px;border:1px solid var(--gold-faint);border-radius:2px;background:linear-gradient(180deg,#1f1810,#140d07)}
+.dim b{color:var(--gold-br);font-weight:400}
+.dim.warn{color:#e6a07a;border-color:rgba(207,80,66,.35)}
+
+/* 对照表 */
+.cmp{width:1200px;max-width:97vw;border:1px solid var(--hair);border-radius:6px;overflow:hidden;background:linear-gradient(178deg,#1a130c,#100b06)}
+.cmp-h{font-family:"Ma Shan Zheng",serif;font-size:16px;letter-spacing:.12em;color:var(--gold-br);padding:11px 16px;border-bottom:1px solid var(--hair);text-align:center}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid rgba(207,173,101,.1);border-right:1px solid rgba(207,173,101,.08);vertical-align:top;line-height:1.5}
+th{font-family:"Ma Shan Zheng",serif;font-size:14px;letter-spacing:.06em;background:linear-gradient(180deg,rgba(207,173,101,.08),transparent);color:var(--gold-br)}
+th:first-child,td:first-child{color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;width:84px;background:rgba(207,173,101,.03)}
+td{color:var(--ink);font-family:"ZCOOL XiaoWei",serif}
+th.yq{color:var(--candle)}
+td .hl{color:var(--gold-br)}
+td.warn{color:#e6a07a}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1180px;text-align:center;line-height:1.9}.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="page-title">
+    <div class="t brush">四 套 议 政</div>
+    <div class="s fang">问对 · 常朝 · 廷议 · 御前会议 —— 框架近似，各有其魂（preview 总览·真立绘·未落运行时）</div>
+  </div>
+
+  <!-- 关系轴：人数 + 公开↔机密 -->
+  <div class="axis">
+    <div class="axis-h fang"><span>← <b>密</b>（小范围·私）</span><span>人数 / 公开度 谱系</span><span><b>公</b>（大范围·朝堂）→</span></div>
+    <div class="axis-track">
+      <div class="axis-node" style="left:16%"><div class="dot"></div><div class="nm brush">御前会议</div><div class="nn fang">3-8 心腹·密议</div></div>
+      <div class="axis-node" style="left:38%"><div class="dot"></div><div class="nm brush">问对</div><div class="nn fang">1 人·可私可朝</div></div>
+      <div class="axis-node" style="left:64%"><div class="dot"></div><div class="nm brush">廷议</div><div class="nn fang">15-30 精英·公辩</div></div>
+      <div class="axis-node" style="left:87%"><div class="dot"></div><div class="nm brush">常朝</div><div class="nn fang">全体百官·公朝</div></div>
+    </div>
+  </div>
+
+  <!-- 四卡 -->
+  <div class="grid">
+    <!-- 问对 -->
+    <div class="mode-card">
+      <div class="mc-thumb"><img src="_wendui-realportrait.png" alt="问对">
+        <div class="badge"><div class="mc-seal brush">对</div><div class="mc-ttl"><span class="n brush">问对</span><span class="tag fang">一对一·密询</span></div></div>
+        <div class="mc-num fang">1 + 1</div>
+      </div>
+      <div class="mc-body">
+        <div class="mc-fire-h fang">火 点 · <b>即时一对一</b></div>
+        <div class="mc-fire">
+          <div class="fire"><span><b>召见模式</b>:朝堂问对(起居注·正式) / 私下叙谈(屏退·坦诚)</span></div>
+          <div class="fire"><span><b>求见队列</b>:阶下待见(使节外藩) + 有臣求见(派生缘由)</span></div>
+          <div class="fire"><span><b>情绪条</b> + 即时<b>赏/罚/纳谏/差遣</b>当场生效</span></div>
+        </div>
+        <div class="mc-dims"><span class="dim">自由对话·无议题</span><span class="dim">情报/个人处置</span><span class="dim">即点即开·精力5</span></div>
+      </div>
+    </div>
+
+    <!-- 常朝 -->
+    <div class="mode-card">
+      <div class="mc-thumb"><img src="_changchao.png" alt="常朝">
+        <div class="badge"><div class="mc-seal brush">朝</div><div class="mc-ttl"><span class="n brush">常朝</span><span class="tag fang">全体·例行</span></div></div>
+        <div class="mc-num fang">30-50 全体</div>
+      </div>
+      <div class="mc-body">
+        <div class="mc-fire-h fang">火 点 · <b>百官班次全景</b></div>
+        <div class="mc-fire">
+          <div class="fire"><span><b>班次三列</b>:文班东 / 武班西 / 科道·按品·缺朝置灰</span></div>
+          <div class="fire"><span><b>议程逐条</b>throughput:多事并奏·8类标签·已决/议中/待奏</span></div>
+          <div class="fire"><span>鸣鞭三响→山呼→缺朝;启奏→群议→裁决·<b>皇威皇权</b>gate</span></div>
+        </div>
+        <div class="mc-dims"><span class="dim">系统生成议程</span><span class="dim">自动流水·少互动</span><span class="dim">公开·入起居注</span></div>
+      </div>
+    </div>
+
+    <!-- 廷议 -->
+    <div class="mode-card">
+      <div class="mc-thumb"><img src="_tingyi.png" alt="廷议">
+        <div class="badge"><div class="mc-seal brush">议</div><div class="mc-ttl"><span class="n brush">廷议</span><span class="tag fang">精英·辩难</span></div></div>
+        <div class="mc-num fang">15-30 三品+</div>
+      </div>
+      <div class="mc-body">
+        <div class="mc-fire-h fang">火 点 · <b>立场板</b></div>
+        <div class="mc-fire">
+          <div class="fire"><span><b>七档光谱</b>:极力支持↔极力反对(青/灰/朱) + 折中/另提议</span></div>
+          <div class="fire"><span><b>立场迁移</b>:多轮辩难·被说服↗↘·「闻同僚之论立场有动」</span></div>
+          <div class="fire"><span>折中调和;裁决<b>从众/乾纲独断/采折中/再议</b></span></div>
+        </div>
+        <div class="mc-dims"><span class="dim">玩家指定单一大政</span><span class="dim">一议多轮收敛</span><span class="dim warn">独断激帮会冲突</span></div>
+      </div>
+    </div>
+
+    <!-- 御前会议 -->
+    <div class="mode-card yq">
+      <div class="mc-thumb"><img src="_yuqian.png" alt="御前会议">
+        <div class="badge"><div class="mc-seal brush">密</div><div class="mc-ttl"><span class="n brush">御前会议</span><span class="tag fang">心腹·密议</span></div></div>
+        <div class="mc-num fang">3-8 心腹</div>
+      </div>
+      <div class="mc-body">
+        <div class="mc-fire-h fang">火 点 · <b>烛火密室</b></div>
+        <div class="mc-fire">
+          <div class="fire"><span>屏退宫人;<b>坦白度</b>:推心置腹/大致坦言/揣摩圣意(忠越高越敢直言)</span></div>
+          <div class="fire"><span><b>录📜 / 不录🤐</b>:不录则泄密成大丑闻(泄密风险条)</span></div>
+          <div class="fire"><span><b>排斥</b>:未召的重臣心有芥蒂(忠-3);轮询+单独深言</span></div>
+        </div>
+        <div class="mc-dims"><span class="dim">玩家指定机密事</span><span class="dim">忠≥50 心腹</span><span class="dim warn">泄密破局·排斥伤人</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 对照表 -->
+  <div class="cmp">
+    <div class="cmp-h brush">维 度 对 照</div>
+    <table>
+      <tr><th>维度</th><th>问对</th><th>常朝</th><th>廷议</th><th class="yq">御前会议</th></tr>
+      <tr><td>人数</td><td><span class="hl">1 + 1</span></td><td>30-50 全体</td><td>15-30 三品以上</td><td>3-8 心腹(忠≥50)</td></tr>
+      <tr><td>性质</td><td>密询·自由对话</td><td>例行·逐条裁决</td><td>大政·多轮辩难</td><td>机密·坦言决断</td></tr>
+      <tr><td>议题</td><td>无·闲谈情报</td><td>系统多事并奏</td><td>玩家指定单一大政</td><td>玩家指定机密</td></tr>
+      <tr><td>流程</td><td>逐轮自由对话</td><td>自动流水(少互动)</td><td>多轮收敛+折中+裁决</td><td>屏退→轮询→单独深言→决断</td></tr>
+      <tr><td>公开性</td><td>可屏退(私)</td><td>公开朝堂</td><td>公开朝堂</td><td>密议·可不录</td></tr>
+      <tr><td>灵魂元素</td><td><span class="hl">情绪条+即时赏罚</span></td><td><span class="hl">百官班次+议程逐条</span></td><td><span class="hl">立场板+迁移</span></td><td><span class="hl">坦白度+录不录</span></td></tr>
+      <tr><td>特有后果</td><td>—</td><td>—</td><td class="warn">独断激帮会</td><td class="warn">排斥伤心腹·泄密破局</td></tr>
+      <tr><td>真机文件</td><td>tm-wendui.js</td><td>tm-chaoyi-changchao.js</td><td>tm-chaoyi-tinyi.js</td><td>tm-chaoyi-yuqian.js</td></tr>
+    </table>
+  </div>
+
+  <div class="cap fang">四套议政界面一览·缩略图为各自定格截图。<b>关系</b>:沿"密议↔公朝 / 人数少↔多"谱系——御前(密·少)→问对(中)→廷议(公·精英)→常朝(公·全体)。<b>各有其魂</b>不可混:问对即时一对一 · 常朝百官班次throughput · 廷议立场板辩难 · 御前烛火密室密议。全沿运行时·全接真立绘·preview 未落运行时。</div>
+</body>
+</html>

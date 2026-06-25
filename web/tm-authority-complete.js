@@ -1258,13 +1258,39 @@
     return !!(G && G.settings && G.settings.passiveAuthorityLinkage === true);
   }
 
+  // ★变量联动 → 财政:走账本流水(同 tm-authority-engines.js _linkageFiscalFlow·治"裸改 .money 破坏 ledger.stock 镜像+下回合蒸发")。
+  function _linkageFiscalFlow(container, delta, tag) {
+    if (!container || !delta || !isFinite(delta)) return 0;
+    if (!container.ledgers) container.ledgers = {};
+    var led = container.ledgers.money;
+    if (!led || typeof led !== 'object') {
+      led = container.ledgers.money = { stock: Number(container.money) || Number(container.balance) || 0, sources: {}, sinks: {}, thisTurnIn: 0, thisTurnOut: 0, history: [] };
+    }
+    var before = Number(led.stock) || 0;
+    var after = Math.max(0, before + delta);
+    var applied = after - before;
+    led.stock = after;
+    if (applied >= 0) {
+      led.thisTurnIn = (Number(led.thisTurnIn) || 0) + applied;
+      if (!led.sources) led.sources = {};
+      led.sources[tag] = (Number(led.sources[tag]) || 0) + applied;
+    } else {
+      led.thisTurnOut = (Number(led.thisTurnOut) || 0) - applied;
+      if (!led.sinks) led.sinks = {};
+      led.sinks[tag] = (Number(led.sinks[tag]) || 0) - applied;
+    }
+    container.balance = led.stock;
+    container.money = led.stock;
+    return applied;
+  }
+
   function _tickFullLinkage(ctx, mr) {
     var G = global.GM;
 
     // 内帑 → 户口（内帑充盈可赐廪，户增）
     if (G.neitang && G.neitang.money > 3000000 && G.population && G.population.national) {
       var benefit = G.neitang.money * 0.001 * mr / 12;
-      G.neitang.money -= benefit;
+      _linkageFiscalFlow(G.neitang, -benefit, '赐廪养民');
       G.population.national.mouths = Math.min(500000000, G.population.national.mouths + benefit * 0.1);
     }
     // 内帑 → 皇权（丰厚时内帑支持宦官）
@@ -1279,7 +1305,7 @@
     // 户口 → 内帑（皇庄进项）
     if (G.population && G.population.byCategory && G.population.byCategory.huangzhuang && G.neitang) {
       var huangzhuangMouths = G.population.byCategory.huangzhuang.mouths || 0;
-      G.neitang.money = (G.neitang.money || 0) + huangzhuangMouths * 0.3 * mr / 12;
+      _linkageFiscalFlow(G.neitang, huangzhuangMouths * 0.3 * mr / 12, '皇庄进项');
     }
     // 户口 → 腐败（冗员多则腐败增）
     if (G.population && G.population.byCategory && G.population.byCategory.ruhu && G.corruption && typeof G.corruption === 'object') {
@@ -1308,11 +1334,11 @@
 
     // 皇权 → 帑廪（强皇权 → 税收效率高）
     if (G.huangquan && G.huangquan.index > 70 && G.guoku) {
-      G.guoku.money = (G.guoku.money || 0) + Math.max(0, (G.huangquan.index - 70)) * 100 * mr / 12;
+      _linkageFiscalFlow(G.guoku, Math.max(0, (G.huangquan.index - 70)) * 100 * mr / 12, '皇权·征收效率');
     }
     // 皇权 → 内帑（强皇权 → 内帑富实）
     if (G.huangquan && G.huangquan.index > 70 && G.neitang) {
-      G.neitang.money = (G.neitang.money || 0) + Math.max(0, (G.huangquan.index - 70)) * 50 * mr / 12;
+      _linkageFiscalFlow(G.neitang, Math.max(0, (G.huangquan.index - 70)) * 50 * mr / 12, '皇权·内帑充实');
     }
     // 皇权 → 户口（弱皇权 → 户口失控）
     if (G.huangquan && G.huangquan.index < 40 && G.population) {
@@ -1321,11 +1347,11 @@
 
     // 皇威 → 帑廪（威远 → 朝贡增）
     if (G.huangwei && G.huangwei.index > 85 && G.guoku && G.month === 1) {
-      G.guoku.money = (G.guoku.money || 0) + 50000;
+      _linkageFiscalFlow(G.guoku, 50000, '万邦朝贡');
     }
     // 皇威 → 内帑（暴君段 → 内帑挥霍）
     if (G.huangwei && G.huangwei.phase === 'tyrant' && G.neitang) {
-      G.neitang.money = Math.max(0, (G.neitang.money || 0) - 10000 * mr);
+      _linkageFiscalFlow(G.neitang, -(10000 * mr), '暴君挥霍');
     }
     // 皇威 → 户口（威严 → 民附）
     if (G.huangwei && G.huangwei.index > 80 && G.population) {

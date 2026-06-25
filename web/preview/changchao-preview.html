@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 常朝（百官班次）真立绘版</title>
+<!--
+  preview / mockup，非运行时代码。常朝（regular court assembly）·区别于问对/廷议/御前的"灵魂"=百官班次全景 + 议程逐条throughput。
+  沿真机 tm-chaoyi-changchao.js：
+    · 班次三列 renderBench：文班(东)/武班(西)/科道(言官)·按品排·到/缺(absent 暗)·殿中N到M缺
+    · 仪式 runOpening：鸣鞭三响(铮铮铮)→山呼万岁→缺朝名册
+    · 流程：启奏→详陈→群议(自发1-3)→辩论(高争议4-6)→裁决·逐条
+    · 裁决按皇威/皇权 gate(肃朝 vs 众言)·📜当庭口述诏令效果不同
+    · 议程项 tags 8类：涉外/刑罚/赏赐/违礼/祭祀/先例/执行/人事
+  · 班次头像用真立绘缩略(JS 数组渲染)。当前奏事者出班放大。样例：六月朔朝(虚构演示)。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cdab63; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#564a2e;
+  --ivory:#f4eddf; --ink:#d8cdba;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --vermillion:#cf5042;
+  --jade:#a9d18e; --celadon:#9fc2a0; --indigo:#8e9ac4; --wu:#d98a6a; --kdao:#a585bd;
+  --hair:rgba(207,173,101,.2); --hair-br:rgba(240,213,151,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 14px 40px;
+  background:radial-gradient(1200px 560px at 50% -8%,rgba(207,173,101,.06),transparent 60%),linear-gradient(180deg,#13100c,#0d0a07 60%,#0a0807);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.intro{font-size:12px;color:var(--gold-dim);letter-spacing:.04em;text-align:center;line-height:1.8;max-width:1100px}.intro b{color:var(--gold-br);font-weight:400}
+
+.stage{width:1280px;max-width:97vw;height:744px;display:flex;flex-direction:column;overflow:hidden;border-radius:5px;border:1px solid rgba(207,173,101,.34);
+  background:linear-gradient(180deg,rgba(255,236,200,.04),transparent 8%),linear-gradient(178deg,#1d160e,#140e08 60%,#0b0805);box-shadow:inset 0 1px 0 var(--hair-br),0 30px 80px rgba(0,0,0,.7);}
+
+/* 顶栏 + 皇威皇权 */
+.dlg-head{display:flex;align-items:center;gap:13px;padding:11px 18px;border-bottom:1px solid var(--hair);background:linear-gradient(180deg,rgba(207,173,101,.07),transparent)}
+.dlg-seal{width:40px;height:40px;flex:none;border-radius:4px;display:grid;place-items:center;font-size:23px;font-family:"Ma Shan Zheng",serif;color:#fdf3da;border:1.4px solid var(--gold-br);background:radial-gradient(125% 125% at 30% 22%,var(--red-hi),var(--red-1) 46%,var(--red-2));box-shadow:inset 0 0 0 1px rgba(247,228,180,.3),inset 0 -3px 6px rgba(60,10,8,.5)}
+.dlg-title{font-size:23px;letter-spacing:.12em;background:linear-gradient(120deg,#fbf2d4,#e9cd84 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.dlg-topic{font-size:12.5px;color:var(--gold-mid);font-family:"ZCOOL XiaoWei",serif;letter-spacing:.06em;padding:3px 10px;border:1px solid var(--gold-faint);border-radius:2px;background:linear-gradient(180deg,#211810,#140d07)}
+.dlg-topic b{color:var(--gold-br);font-weight:400}
+.authority{display:flex;gap:14px;margin-left:auto;align-items:center}
+.auth{display:flex;flex-direction:column;gap:3px;min-width:96px}
+.auth .lab{font-size:10px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;display:flex;justify-content:space-between}
+.auth .lab b{color:var(--gold-br);font-weight:400}
+.auth .bar{height:5px;border-radius:3px;background:#241a0e;box-shadow:inset 0 0 0 .6px var(--gold-faint);overflow:hidden}
+.auth .fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#9a7a3a,var(--gold-br))}
+.strict-tag{font-size:11px;font-family:"ZCOOL XiaoWei",serif;color:var(--celadon);padding:2px 9px;border:1px solid rgba(159,194,160,.4);border-radius:2px;background:rgba(60,90,60,.16)}
+.dlg-close{flex:none;width:30px;height:30px;border-radius:2px;border:1px solid var(--hair);background:none;color:var(--gold-mid);font-size:16px;cursor:pointer}
+
+.cc-body{flex:1;display:flex;min-height:0}
+
+/* 朝堂全景（主场·hall） */
+.hall{flex:1;display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--hair);position:relative;
+  background:radial-gradient(120% 70% at 50% 0%,rgba(120,40,28,.12),transparent 55%),repeating-linear-gradient(90deg,transparent 0 56px,rgba(207,173,101,.03) 56px 57px),linear-gradient(180deg,#15100a,#0d0a06)}
+.hall-top{position:relative;padding:12px 0 8px;text-align:center;border-bottom:1px solid rgba(207,173,101,.12)}
+.phase-banner{display:inline-flex;align-items:center;gap:10px;font-family:"ZCOOL XiaoWei",serif;font-size:12px;color:var(--gold-dim)}
+.phase-banner .ph{font-family:"Ma Shan Zheng",serif;font-size:17px;letter-spacing:.22em;text-indent:.22em;color:var(--gold-br);padding:2px 12px;border:1px solid var(--gold-faint);border-radius:2px;background:linear-gradient(180deg,#241808,#140d06)}
+.throne{margin:10px auto 0;width:96px;height:60px;position:relative;display:grid;place-items:center}
+.throne .seat{width:74px;height:48px;border:1.4px solid var(--gold-br);border-radius:4px 4px 2px 2px;background:radial-gradient(120% 120% at 50% 20%,#3a1410,#1c0a07);box-shadow:0 0 18px rgba(207,173,101,.25),inset 0 2px 6px rgba(0,0,0,.5)}
+.throne .glyph{position:absolute;font-family:"Ma Shan Zheng",serif;font-size:26px;color:#fdf3da;text-shadow:0 0 8px rgba(207,80,66,.6)}
+.throne-lab{font-family:"ZCOOL XiaoWei",serif;font-size:10px;color:var(--gold-dim);letter-spacing:.16em;margin-top:3px}
+
+.hall-mid{flex:1;display:flex;gap:8px;padding:10px 12px;min-height:0;overflow:hidden}
+.bench-box{flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid var(--hair);border-radius:3px;background:linear-gradient(180deg,rgba(0,0,0,.16),transparent)}
+.bench-box .bb-lab{font-family:"Ma Shan Zheng",serif;font-size:13px;letter-spacing:.12em;text-align:center;padding:5px 0;border-bottom:1px solid var(--hair)}
+.bench-box.east .bb-lab{color:var(--gold)}.bench-box.west .bb-lab{color:var(--wu)}
+.bench-grid{flex:1;display:flex;flex-wrap:wrap;align-content:flex-start;gap:7px 6px;padding:9px 8px;overflow-y:auto;justify-content:center}
+.bench-grid::-webkit-scrollbar{width:5px}.bench-grid::-webkit-scrollbar-thumb{background:rgba(207,173,101,.2)}
+.bench-avatar{width:42px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ba-face{width:38px;height:46px;border-radius:2px;overflow:hidden;border:1px solid var(--gold-faint);background:#100b06;position:relative}
+.ba-face img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;filter:saturate(.86) brightness(.82)}
+.bench-avatar .nm{font-size:9px;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;white-space:nowrap;max-width:46px;overflow:hidden;text-overflow:ellipsis}
+.bench-box.east .ba-face{border-color:rgba(205,171,99,.4)}.bench-box.west .ba-face{border-color:rgba(217,138,106,.4)}
+.bench-avatar.absent .ba-face{filter:grayscale(1)}.bench-avatar.absent .ba-face img{opacity:.3;filter:grayscale(1) brightness(.6)}
+.bench-avatar.absent .nm{color:#5a4e34;text-decoration:line-through}
+.bench-avatar.absent .ba-face:after{content:"缺";position:absolute;inset:0;display:grid;place-items:center;font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:#8a7340}
+
+/* 中央御道·当前奏事者出班 */
+.aisle{flex:0 0 168px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;position:relative}
+.aisle:before{content:"";position:absolute;top:0;bottom:30px;left:50%;width:2px;transform:translateX(-50%);background:linear-gradient(180deg,rgba(207,173,101,.3),transparent)}
+.presenter{position:relative;text-align:center;animation:stepOut .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes stepOut{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+.presenter .pf{width:104px;height:132px;border-radius:3px;overflow:hidden;border:1.4px solid var(--gold-br);box-shadow:0 0 22px rgba(207,173,101,.35),0 10px 26px rgba(0,0,0,.55);position:relative}
+.presenter .pf img{width:100%;height:100%;object-fit:cover;object-position:50% 13%}
+.presenter .pf:after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 22px rgba(0,0,0,.4)}
+.presenter .pnm{font-family:"Ma Shan Zheng",serif;font-size:16px;letter-spacing:.08em;color:#fdf3da;margin-top:7px}
+.presenter .prole{font-family:"ZCOOL XiaoWei",serif;font-size:10.5px;color:var(--gold);margin-top:2px}
+.presenter .pcue{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-family:"ZCOOL XiaoWei",serif;font-size:10px;color:#1c1408;background:var(--gold-br);padding:1px 8px;border-radius:2px;white-space:nowrap}
+
+/* 科道言官 strip */
+.bench-kdao{border-top:1px solid var(--hair);padding:7px 12px;display:flex;align-items:center;gap:9px;background:rgba(0,0,0,.18)}
+.bench-kdao .kd-lab{font-family:"Ma Shan Zheng",serif;font-size:12px;color:var(--kdao);letter-spacing:.1em;writing-mode:vertical-rl;text-orientation:upright;line-height:1.05;flex:none}
+.bench-kdao .kd-list{display:flex;gap:8px;overflow-x:auto;flex:1}
+.bench-kdao .ba-face{border-color:rgba(165,133,189,.4)}
+
+/* 右栏：议程 + 流程 + 裁决 */
+.cc-rail{flex:0 0 396px;display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,#120d07,#0d0905)}
+.rail-h{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;border-bottom:1px solid var(--hair)}
+.rail-h .t{font-family:"Ma Shan Zheng",serif;font-size:16px;letter-spacing:.08em;color:var(--gold-br)}
+.rail-h .prog{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim)}
+.rail-h .prog b{color:var(--gold-br);font-weight:400}
+.agenda{max-height:178px;overflow-y:auto;padding:8px 12px;border-bottom:1px solid var(--hair);display:flex;flex-direction:column;gap:5px}
+.agenda::-webkit-scrollbar{width:6px}.agenda::-webkit-scrollbar-thumb{background:rgba(207,173,101,.2)}
+.ag-item{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:3px;border:1px solid transparent;font-family:"ZCOOL XiaoWei",serif}
+.ag-item .st{flex:none;width:15px;text-align:center;font-size:12px}
+.ag-item.done .st{color:var(--jade)}.ag-item.cur .st{color:var(--gold-br)}.ag-item.wait .st{color:var(--gold-dim)}
+.ag-item .ti{flex:1;font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-item.done .ti{color:var(--gold-dim)}.ag-item.cur .ti{color:#fdf3da}
+.ag-item .tags{flex:none;display:flex;gap:3px}
+.ag-tag{font-size:9px;padding:1px 5px;border-radius:2px;color:var(--gold-mid);border:1px solid var(--gold-faint)}
+.ag-item.cur{background:linear-gradient(180deg,rgba(207,173,101,.12),transparent);border-color:rgba(207,173,101,.4)}
+.ag-item.done{opacity:.7}
+
+.flow{flex:1;overflow-y:auto;padding:13px 14px;display:flex;flex-direction:column;gap:11px;box-shadow:inset 0 6px 12px rgba(0,0,0,.34)}
+.flow::-webkit-scrollbar{width:6px}.flow::-webkit-scrollbar-thumb{background:rgba(207,173,101,.2)}
+.cur-topic{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);text-align:center;letter-spacing:.04em}
+.cur-topic b{color:var(--gold-br);font-weight:400}
+.fb{font-size:13px;line-height:1.75;padding:8px 12px;border-radius:3px 10px 10px 10px;border:1px solid rgba(207,173,101,.18);background:linear-gradient(180deg,#201810,#181109);color:var(--ink);max-width:94%}
+.fb .who{display:block;font-family:"Ma Shan Zheng",serif;font-size:11px;color:var(--gold-mid);margin-bottom:3px;letter-spacing:.05em}
+.fb.sys{align-self:center;max-width:100%;text-align:center;border:none;background:none;color:var(--gold-dim);font-family:"ZCOOL XiaoWei",serif;font-size:11px;letter-spacing:.1em;padding:2px}
+.fb.oppose{border-color:rgba(207,80,66,.26)}.fb.oppose .who{color:#e6a07a}
+.fb.support{border-color:rgba(159,194,160,.26)}.fb.support .who{color:var(--celadon)}
+.fb .stance{font-size:9px;font-family:"ZCOOL XiaoWei",serif;padding:0 5px;border-radius:2px;margin-left:5px}
+.fb.oppose .stance{color:#e6a07a;border:1px solid rgba(207,80,66,.4)}.fb.support .stance{color:var(--celadon);border:1px solid rgba(159,194,160,.4)}
+
+.cc-actions{border-top:1px solid var(--hair);padding:11px 14px;background:linear-gradient(180deg,rgba(207,173,101,.04),transparent)}
+.cc-actions .lab{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);margin-bottom:8px;display:flex;justify-content:space-between}
+.cc-actions .lab .gate{color:var(--celadon)}
+.cc-btns{display:flex;flex-wrap:wrap;gap:7px}
+.cc-btn{font-family:"ZCOOL XiaoWei",serif;font-size:12.5px;letter-spacing:.04em;padding:7px 13px;border-radius:2px;cursor:pointer;border:1px solid var(--gold-faint);background:linear-gradient(180deg,#241c11,#130d07);color:var(--gold-mid);transition:all .15s}
+.cc-btn:hover{border-color:var(--gold);color:var(--gold-br)}
+.cc-btn.zhun{color:var(--gold-br);border-color:rgba(207,173,101,.5)}
+.cc-btn.bo{color:#e6a07a;border-color:rgba(207,80,66,.4)}
+.cc-btn.decree{color:#1c1408;border-color:var(--gold-br);background:linear-gradient(180deg,#f0d597,#caa258)}
+.cc-btn .hint{font-size:9px;opacity:.7;margin-left:3px}
+/* 出班者立绘·随发言切换 */
+.bench-avatar{cursor:pointer;transition:transform .2s}
+.bench-avatar.speaking{transform:translateY(-3px)}
+.bench-avatar.speaking .ba-face{border-color:var(--gold-br)!important;box-shadow:0 0 0 1px var(--gold-br),0 0 11px rgba(207,173,101,.5)}
+.bench-avatar.speaking .ba-face img{filter:saturate(1.02) brightness(1)!important}
+.bench-avatar.speaking .nm{color:#fdf3da}
+.bench-avatar.speaking .ba-face:before{content:"奏";position:absolute;top:-1px;right:-1px;z-index:2;font-family:"Ma Shan Zheng",serif;font-size:9px;color:#1c1408;background:var(--gold-br);padding:0 3px;border-radius:0 0 0 2px}
+.presenter .pf img{transition:opacity .3s ease}
+.fb[data-i]{cursor:pointer;transition:all .15s;position:relative}
+.fb[data-i]:hover{border-color:rgba(207,173,101,.45)}
+.fb[data-i].active{border-color:var(--gold-br);background:linear-gradient(180deg,#2a2012,#1a1209);box-shadow:0 0 0 1px rgba(207,173,101,.3)}
+.fb[data-i].active:before{content:"▶";position:absolute;left:-3px;top:50%;transform:translateY(-50%);color:var(--gold-br);font-size:9px}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1180px;text-align:center;line-height:1.9}.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="intro fang">常朝 ——「灵魂」=<b>百官班次全景</b>(文东/武西/科道·按品排·到缺) + <b>议程逐条throughput</b>。鸣鞭三响→山呼→缺朝名册;启奏→详陈→群议→辩论→裁决·逐条;裁决按<b>皇威/皇权</b>gate。中央<b>出班者立绘随发言切换</b>(谁发言则谁立绘·点右栏发言条/点班位即切·载入自动轮播一遍)。区别于问对(1人)/廷议(精英集议)/御前(密召)。</div>
+
+  <div class="stage">
+    <div class="dlg-head">
+      <div class="dlg-seal brush">朝</div>
+      <div class="dlg-title brush">常朝</div>
+      <div class="dlg-topic fang">天启七年 · 六月 · <b>朔朝</b></div>
+      <div class="authority">
+        <div class="auth"><div class="lab fang">皇威 <b id="pres-v">55</b></div><div class="bar"><div class="fill" style="width:55%"></div></div></div>
+        <div class="auth"><div class="lab fang">皇权 <b id="powr-v">60</b></div><div class="bar"><div class="fill" style="width:60%"></div></div></div>
+        <span class="strict-tag fang">众言（百官较活跃）</span>
+      </div>
+      <button class="dlg-close">✕</button>
+    </div>
+
+    <div class="cc-body">
+      <!-- 朝堂全景 -->
+      <div class="hall">
+        <div class="hall-top">
+          <div class="phase-banner fang"><span class="ph brush">群议</span><span>殿中 <b id="att-n" style="color:var(--gold-br)">38</b> 员到 · <span id="abs-n">6</span> 缺</span></div>
+          <div class="throne"><div class="seat"></div><div class="glyph brush">御</div></div>
+          <div class="throne-lab fang">丹 陛 · 御 座</div>
+        </div>
+        <div class="hall-mid">
+          <div class="bench-box east"><div class="bb-lab brush">文班 · 东</div><div class="bench-grid" id="bench-east"></div></div>
+          <div class="aisle">
+            <div class="presenter" id="presenter"></div>
+          </div>
+          <div class="bench-box west"><div class="bb-lab brush">武班 · 西</div><div class="bench-grid" id="bench-west"></div></div>
+        </div>
+        <div class="bench-kdao"><span class="kd-lab brush">科道</span><div class="kd-list" id="bench-kdao"></div></div>
+      </div>
+
+      <!-- 右栏 -->
+      <div class="cc-rail">
+        <div class="rail-h"><span class="t brush">本日议程</span><span class="prog fang">已决 <b>2</b> / 共 <b>7</b> 事</span></div>
+        <div class="agenda" id="agenda"></div>
+        <div class="flow" id="flow">
+          <div class="cur-topic fang">当前 · 第三事 <b>加派辽饷</b> 〔财赋·涉外〕</div>
+          <div class="fb sys">〔 启 奏 〕</div>
+          <div class="fb" data-i="0" onclick="ccSpeaker(0)"><span class="who">毕自严 · 户部尚书</span>臣有本启奏：辽饷缺口五百三十万，太仓见存仅四十七万。九边欠饷逾三月，乞圣裁加派与否。</div>
+          <div class="fb sys">〔 群 议 〕</div>
+          <div class="fb support" data-i="1" onclick="ccSpeaker(1)"><span class="who">孙承宗<span class="stance">附议</span></span>辽事危急，非加派难充军饷，臣附户部之请。</div>
+          <div class="fb oppose" data-i="2" onclick="ccSpeaker(2)"><span class="who">钱龙锡<span class="stance">异议</span></span>民力已竭，加派恐激民变，臣恐辽未纾而中原先溃，宜慎。</div>
+          <div class="fb sys">〔 待 陛 下 裁 决 · 点发言条可切发言者 〕</div>
+        </div>
+        <div class="cc-actions">
+          <div class="lab fang"><span>裁决 · 加派辽饷</span><span class="gate">众言朝 · 百官敢谏</span></div>
+          <div class="cc-btns">
+            <button class="cc-btn zhun fang">准奏</button>
+            <button class="cc-btn bo fang">驳回</button>
+            <button class="cc-btn fang">留中再议</button>
+            <button class="cc-btn fang">着部覆议</button>
+            <button class="cc-btn decree fang">📜 当庭口述诏令<span class="hint">按皇威皇权效果不同</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap fang">常朝（沿 tm-chaoyi-changchao.js）。<b>百官班次</b>:文班东(文官)/武班西(武将)/科道(言官)三列·真立绘缩略·按品排·缺朝置灰打「缺」。<b>出班者立绘随发言切换</b>(谁发言则谁立绘·御道前放大·班位「奏」高亮·点发言条/班位可切·自动轮播)。<b>右栏</b>:本日议程逐条(已决✓/议中●/待奏○ + 8类标签) → 当前事流程(启奏→群议→裁决) → 裁决钮(准奏/驳回/留中/覆议/📜口述诏令·按皇威皇权)。落地仍只动样式与渲染。</div>
+
+  <script>
+  (function(){
+    var P = '../assets/portraits/tianqi7/';
+    // 文班(东·文官·按品) / 武班(西·武将) / 科道(言官)
+    var east = ['黄立极','施凤来','张瑞图','李国普','来宗道','毕自严','温体仁','周延儒','钱龙锡','成基命','郭允厚','李标','韩爌','刘鸿训'];
+    var west = ['满桂','赵率教','祖大寿','侯世禄','杜文焕','毛文龙','秦良玉'];
+    var kdao = ['杨所修','李养正','薛凤翔','阎鸣泰','潘汝桢'];
+    var absent = { '周延儒':1, '毛文龙':1, '韩爌':1, '刘鸿训':1, '李标':1, '阎鸣泰':1 }; // 缺朝者(丁忧/在镇/告病等)
+    function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    function av(name){
+      var ab = absent[name] ? ' absent' : '';
+      return '<div class="bench-avatar'+ab+'" data-name="'+esc(name)+'" onclick="ccPick(\''+esc(name)+'\')"><div class="ba-face"><img src="'+P+esc(name)+'.png" loading="lazy" onerror="this.style.display=\'none\'"></div><div class="nm">'+esc(name)+'</div></div>';
+    }
+    document.getElementById('bench-east').innerHTML = east.map(av).join('');
+    document.getElementById('bench-west').innerHTML = west.map(av).join('');
+    document.getElementById('bench-kdao').innerHTML = kdao.map(av).join('');
+    // ── 出班者立绘·随发言切换（谁发言则谁立绘） ──
+    var speakers = [
+      { name:'毕自严', role:'户部尚书 · 启奏', cue:'出班启奏' },
+      { name:'孙承宗', role:'蓟辽督师 · 附议', cue:'出班附议' },
+      { name:'钱龙锡', role:'礼部尚书 · 异议', cue:'出班异议' }
+    ];
+    var _auto = true;
+    function _hiBench(name){ Array.prototype.forEach.call(document.querySelectorAll('.bench-avatar'), function(el){ el.classList.toggle('speaking', el.getAttribute('data-name')===name); }); }
+    window.ccSpeaker = function(i){
+      var sp = speakers[i]; if(!sp) return;
+      document.getElementById('presenter').innerHTML =
+        '<div class="pcue fang">'+esc(sp.cue)+'</div>'
+        + '<div class="pf"><img src="'+P+esc(sp.name)+'.png" onerror="this.style.display=\'none\'"></div>'
+        + '<div class="pnm brush">'+esc(sp.name)+'</div><div class="prole fang">'+esc(sp.role)+'</div>';
+      _hiBench(sp.name);
+      Array.prototype.forEach.call(document.querySelectorAll('.fb[data-i]'), function(el){ el.classList.toggle('active', +el.getAttribute('data-i')===i); });
+    };
+    window.ccPick = function(name){
+      _auto = false;
+      for(var i=0;i<speakers.length;i++){ if(speakers[i].name===name){ window.ccSpeaker(i); return; } }
+      // 非发言序列班员：仍出班看其立绘（演示"点谁看谁"）
+      document.getElementById('presenter').innerHTML =
+        '<div class="pcue fang">在班听议</div><div class="pf"><img src="'+P+esc(name)+'.png" onerror="this.style.display=\'none\'"></div>'
+        + '<div class="pnm brush">'+esc(name)+'</div><div class="prole fang">听议</div>';
+      _hiBench(name);
+      Array.prototype.forEach.call(document.querySelectorAll('.fb[data-i]'), function(el){ el.classList.remove('active'); });
+    };
+    window.ccStopAuto = function(){ _auto = false; };
+    window.ccSpeaker(0);
+    var _ai = 0;
+    var _t = setInterval(function(){ if(!_auto){ clearInterval(_t); return; } _ai++; if(_ai>=speakers.length){ clearInterval(_t); return; } window.ccSpeaker(_ai); }, 1600);
+    // 议程
+    var agenda = [
+      { st:'done', s:'✓', t:'蓟镇墩台失守劾奏', tags:['刑罚'] },
+      { st:'done', s:'✓', t:'顺天乡试磨勘', tags:['先例'] },
+      { st:'cur',  s:'●', t:'加派辽饷', tags:['财赋','涉外'] },
+      { st:'wait', s:'○', t:'河南旱蝗赈济', tags:['灾赈'] },
+      { st:'wait', s:'○', t:'南京守备人选', tags:['人事'] },
+      { st:'wait', s:'○', t:'孔庙春祭仪注', tags:['祭祀'] },
+      { st:'wait', s:'○', t:'漕粮改折之议', tags:['执行'] }
+    ];
+    document.getElementById('agenda').innerHTML = agenda.map(function(a){
+      var tg = a.tags.map(function(x){return '<span class="ag-tag">'+x+'</span>';}).join('');
+      return '<div class="ag-item '+a.st+'"><span class="st">'+a.s+'</span><span class="ti">'+esc(a.t)+'</span><span class="tags">'+tg+'</span></div>';
+    }).join('');
+  })();
+  </script>
+</body>
+</html>

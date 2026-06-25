@@ -327,6 +327,26 @@
       // 同时 await plan-prefetch 启动的两个 promise·确保 AI 推演前数据齐全
       // failure 抛出·executor 按 onError='abort' 处理·legacy 兜底重跑(2x token·rare)
       fn: async function(ctx) {
+        // 【模式 b · agent 模式 · S1 骨架 · 2026-06-20】分叉点(详设 docs/agent-mode-design.md)
+        //   开关 agentModeEnabled 开 → 走 agent 循环(局内 Claude Code · 主动改存档+UI · 平行引擎)。
+        //   S1:AgentMode.run 仅占位·返回 {fallback:true} → 此处继续走下方原 sc0-sc28·保回合完整。
+        //   S4+ run 接管时返回 {ok:true,fallback:false} → 提前 return ctx·不走原管线。
+        //   关(默认):整段 if 跳过 → 与原管线**字节级等同**(零回归)。
+        if (typeof agentModeOn === 'function' && agentModeOn()
+            && TM.Endturn && TM.Endturn.AgentMode && typeof TM.Endturn.AgentMode.run === 'function') {
+          try {
+            var _agentRes = await TM.Endturn.AgentMode.run(ctx);
+            if (_agentRes && _agentRes.ok && !_agentRes.fallback) {
+              if (_agentRes.aiResult !== undefined) ctx.results.aiResult = _agentRes.aiResult;
+              ctx.input._aiInferRan = true;
+              ctx.input._agentModeRan = true;
+              return ctx;  // agent 模式接管本回合·不走原 LLM 管线
+            }
+            // fallback:true → 落到下方原管线(S1 恒如此)
+          } catch (_agentErr) {
+            try { console.warn('[pipeline.ai] agent-mode 异常·回落 LLM 管线', _agentErr); } catch (_) {}
+          }
+        }
         if (typeof _endTurn_aiInfer !== 'function') return ctx;
         // await plan-prefetch 启动的 promise·legacy Phase 2 同样 await·此处仅确保 ai 调用前数据齐
         // plan-prefetch is intentionally not awaited here. If it finishes before prompt
@@ -363,27 +383,19 @@
       writes: ['ctx.results.aiResult', 'GM._turnAiResults (兜底镜像)', 'GM._postTurnJobs', 'GM._aiMemory', 'GM._epitaphs', 'ctx.input._aiInferRan']
     },
     {
-      // 御驾亲征接入 Phase2·会战阶段(step 2.5):AI 推演已解算·涉玩家势力军的战斗被咽喉拦截入延后队列·此处亲征/委之
-      // ★flag GM._yujiaQinzheng 默认 OFF → pending 恒空 → runPending no-op → 零行为变更。失败 continue 不阻断回合。
-      name: 'goujia-qinzheng',
+      name: 'post-ai-edict',
+      // slice 4·2026-05-07·迁 Phase 2.5 (applyEdictActions) + Phase 2.6 (TyrantActivitySystem.applyEffects)
+      // 不含 Phase 3.5 (aiEdictEfficacyAudit·已后台化·依赖 aiResult+edicts·留 slice 5/7 一并)
+      // tyrantResult 存 ctx.results.tyrantResult·legacy render 通过 ctx 读
+      // ★御驾亲征(原 goujia-qinzheng 顶层 step·2026-06 折回本 step 头部·守 audit §4 六段规范)·
+      //   会战阶段:AI 推演已解算·涉玩家势力军的战斗被咽喉拦截入延后队列·此处亲征/委之·严格保位(先于诏令应用)·
+      //   flag GM._yujiaQinzheng 默认 OFF → pending 恒空 → runPending no-op → 零行为变更·自带 try/catch 不外抛
       fn: async function(ctx) {
         try {
           if (typeof window !== 'undefined' && window.TMBattleTurn && typeof window.TMBattleTurn.runPending === 'function') {
             await window.TMBattleTurn.runPending(typeof GM !== 'undefined' ? GM : null);
           }
-        } catch (e) { try { console.warn('[pipeline.goujia-qinzheng]', e); } catch(_){} }
-        return ctx;
-      },
-      onError: 'continue',
-      reads: ['GM.armies', 'ctx.results.aiResult'],
-      writes: ['GM.armies (战术战果回填·走原 applyBattleResult)']
-    },
-    {
-      name: 'post-ai-edict',
-      // slice 4·2026-05-07·迁 Phase 2.5 (applyEdictActions) + Phase 2.6 (TyrantActivitySystem.applyEffects)
-      // 不含 Phase 3.5 (aiEdictEfficacyAudit·已后台化·依赖 aiResult+edicts·留 slice 5/7 一并)
-      // tyrantResult 存 ctx.results.tyrantResult·legacy render 通过 ctx 读
-      fn: async function(ctx) {
+        } catch (e) { try { console.warn('[pipeline.post-ai-edict·yujia-qinzheng]', e); } catch(_){} }
         if (typeof applyEdictActions === 'function') {
           try {
             var ea = ctx.input.edictActions;
@@ -468,8 +480,8 @@
         return ctx;
       },
       onError: 'continue',
-      reads: ['ctx.input.edictActions', 'ctx.input.tyrantActivities', 'GM.officeTree'],
-      writes: ['GM.officeTree', 'GM._tyrantHistory', 'GM._tyrantDecadence', 'ctx.results.tyrantResult', 'ctx.input._postAiEdictRan']
+      reads: ['ctx.input.edictActions', 'ctx.input.tyrantActivities', 'GM.officeTree', 'GM.armies', 'ctx.results.aiResult'],
+      writes: ['GM.officeTree', 'GM._tyrantHistory', 'GM._tyrantDecadence', 'ctx.results.tyrantResult', 'ctx.input._postAiEdictRan', 'GM.armies (御驾亲征战果回填)']
     },
     {
       name: 'systems',
@@ -479,7 +491,10 @@
         var ar = ctx.results.aiResult || {};
         var timeRatio = (ar.timeRatio != null) ? ar.timeRatio : (typeof getTimeRatio === 'function' ? getTimeRatio() : 0);
         var zhengwen = ar.zhengwen || '';
-        if (typeof _endTurn_updateSystems === 'function') {
+        // 【模式 b · S5 甲案 engine-first】agent 分支可能已在 agent 之前提前跑过引擎(给硬核基线)并置 ctx.input._systemsRan·
+        //   此处**幂等跳过引擎 tick**(防 _endTurn_updateSystems 的 GM.turn++ 与 50 tick 双跑)。
+        //   mode a:_systemsRan 恒 undefined → 正常跑引擎(零回归)。下方御批回听审计照常(不受幂等影响)。
+        if (!ctx.input._systemsRan && typeof _endTurn_updateSystems === 'function') {
           ctx.results.queueResult = await _endTurn_updateSystems(timeRatio, zhengwen);
         }
         // Phase 3.5·御批回听 enqueue 后台 job·依赖 aiResult+edicts·两者都已在 ctx
@@ -500,12 +515,20 @@
             }
           }
         } catch(_efE) { try { console.warn('[pipeline.systems] 御批回听失败', _efE); } catch(_){} }
+        // ★军工供应链(原 armory-production 顶层 step·2026-06 折回 systems 尾部·守 audit §4 六段规范:
+        //   systems 含全部子系统 tick·军工亦是其一·不另起顶层 step)·地块矿冶产原料→军工建筑耗料产军备 + 战马走马政·
+        //   纯增量·只加 GM.guoku.armory/materials·自带 try/catch 失败不阻断过回合
+        try {
+          if (typeof window !== 'undefined' && window.TMArmory && typeof window.TMArmory.runTurn === 'function' && typeof GM !== 'undefined' && GM) {
+            window.TMArmory.runTurn(GM, {});
+          }
+        } catch (e) { try { console.warn('[pipeline.systems·armory-production]', e); } catch(_){} }
         ctx.input._systemsRan = true;
         return ctx;
       },
       onError: 'abort',  // 子系统推进失败防 GM 写半截
-      reads: ['GM.turn', 'GM.chars', 'GM.culturalWorks', 'GM._energy', 'GM.facs', 'ctx.results.aiResult', 'ctx.input.edicts'],
-      writes: ['GM.turn (++)', 'GM.guoku', 'GM.neitang', 'GM.huji', 'GM.environment', 'GM._forgottenWorks', 'GM._postTurnJobs', 'ctx.results.queueResult', 'ctx.input._systemsRan']
+      reads: ['GM.turn', 'GM.chars', 'GM.culturalWorks', 'GM._energy', 'GM.facs', 'ctx.results.aiResult', 'ctx.input.edicts', 'GM.adminHierarchy'],
+      writes: ['GM.turn (++)', 'GM.guoku', 'GM.neitang', 'GM.huji', 'GM.environment', 'GM._forgottenWorks', 'GM._postTurnJobs', 'ctx.results.queueResult', 'ctx.input._systemsRan', 'GM.guoku.armory', 'GM.guoku.materials']
     },
     {
       name: 'render-and-finalize',

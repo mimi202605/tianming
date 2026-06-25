@@ -10,7 +10,39 @@
 
 ---
 
-## 1. 诊断（grep 核对版）
+## ⚠️ v0.2 重大修正（2026-06-20 · owner 纠偏 · 本体选错了）
+
+v0.1（下方 §1 起）把"统一"建在 **StoryEventBus（死旁支）+ 独立模态渲染** 上——**方向错了**。owner 一句"渠道错了·应并入御案时政"点破根因：
+
+- **真正的事件本体 = 御案时政 / `GM.currentIssues`**（现役·玩家天天在用），已有完整闭环：AI 推演 `current_issues_update`(add/resolve/update) → 收录进 `currentIssues`（[apply:1393](../web/tm-endturn-apply.js)）→ 御案时政面板 `openShizhengTasks`（[tm-shizheng-panel.js](../web/tm-shizheng-panel.js)）呈现卡片（含 `choices`〔陛下决断〕/`longTermConsequences`/`historicalNote`/`isOpening`）→ 玩家卡片决断 `_chooseIssueOption`（[helpers:1458](../web/tm-endturn-helpers.js)）或下诏/问对/朝议应对 → resolve。
+- **根因**：v0.1 的 5 路审计把 `currentIssues` 当成"decideFor 读的一个字段"，**没认出它就是现役事件系统本体**，于是 S1-S4 全建在死旁支 StoryEventBus 上 + owner 明确反对的模态渠道（[prompt:2283](../web/tm-endturn-prompt.js)"非 modal click·玩家诏令应对"）。
+
+### 正确统一（v0.2）
+**所有事件来源收编进 `currentIssues`，呈现走御案时政，"事件框"降为御案时政的一个出口（非独立 UI）：**
+
+| 来源 | 收编 |
+|---|---|
+| 剧本 `rigidHistoryEvents`（史实·原 `showHistoryEventModal` 独立框） | push `currentIssues`（带 choices/historicalNote/isOpening），不再弹独立框 |
+| 剧本 `events`（playerChoices） | push `currentIssues` |
+| `checkRigidTriggers`（阈值） | push `currentIssues` |
+| AI 主推演 `events` 中 critical | push `currentIssues`（S4 的 critical 判断改投这里） |
+| AI 涌现矛盾 `current_issues_update` | 已在·本体 |
+
+**命门接入点**：`_chooseIssueOption`（helpers:1458）现为**固定 effect 查表**（`ch.effect` 预设数值·与当初骂 history-events「固定 impact」同病）→ 升级为 **AI 据当前国势裁硬核连锁后果**（固定 effect 降兜底）。**S2 的 `_adjudicateOutcomeViaAI` 逻辑迁移于此——内核没白写，只是接错了地方。**
+
+**"事件框" = 御案时政出口**：关键 issue（史实/critical/isOpening）可自动弹框提示，但框内复用 issue 的 `choices`、点击走 `_chooseIssueOption`/currentIssues——同一套数据与逻辑，弹框只是御案时政的一种呈现，非独立系统。
+
+### S1-S4 处置
+- StoryEventBus 队列 / S3 模态 / drain / S4 critical 升格 → **回退**（建错本体）。
+- 硬伤 ①④⑤（敌党表下沉 / bigyear 死字段 / decay 修复）→ **保留**（与本线无关，独立有效）。
+- S2 的 AI 裁定后果逻辑 → **迁移**到 `_chooseIssueOption`（命门内核，换本体复用）。
+- 设置面板「实验玩法」`eventUnificationEnabled` toggle → 留作"要务决断 AI 裁定"的开关。
+
+> **以下 §1 起为 v0.1 原文，基于错误本体（StoryEventBus），仅留作记录与教训。实施以本 v0.2 为准。**
+
+---
+
+## 1. 诊断（grep 核对版 · v0.1 · ⚠️ 本体选错·见上方 v0.2）
 
 事件系统**不缺功能，缺「统一」**。它不是"一套有缺陷的系统"，是 **7 套各管一段、哲学冲突、互不汇流的"事件"机制**叠在一起；没有统一 schema、统一入口、统一感知表、统一落账。而**"对的范式"早已在危机引擎里写出来了**，只是没被当成事件系统的统一答案推广。
 

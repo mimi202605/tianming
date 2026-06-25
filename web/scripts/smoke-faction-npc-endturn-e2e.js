@@ -170,9 +170,9 @@ function main() {
   // F4 是 async·default off·我们只验 settings + structure·不真调 LLM
   var settings = ctx.TM.FactionNpcSettings.getStatus();
   console.log('  默认 settings:', JSON.stringify(settings));
-  assert(settings.enabled === false, '默认 npcAiPrecision 应 false');
+  assert(settings.enabled === true, '默认 npcAiPrecision 已故意翻为 true(主开关默认开)');
   assert(settings.maxPerTurn === 2, '过回合精细化批量默认应降为 2');
-  assert(settings.effectivelyOn === false, '默认 effectivelyOn 应 false (无 key)');
+  assert(settings.effectivelyOn === false, '默认 effectivelyOn 应 false (无 key·靠 key 门控)');
   assert(settings.reason === 'switch off' || settings.reason === 'no API key', 'reason 应解释');
   // 模拟开启
   ctx.P.conf.npcAiPrecision = true;

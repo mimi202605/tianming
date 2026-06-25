@@ -154,7 +154,8 @@ function loadIntoVm(context, file) {
 
 function assertSourceContracts() {
   const editorText = fs.readFileSync(path.join(ROOT, 'editor-fullgen.js'), 'utf8');
-  assert(editorText.indexOf('JSON.stringify(scriptData, null, 2)') >= 0, 'editor export should serialize full scriptData');
+  // 导出已重构:inline JSON.stringify(scriptData) → SchemaAdapter.exportScenario(scriptData)(全量 clone+schema适配·见 editor-schema-adapter.js exportScenario·不丢顶层键)·再 stringify。验当前导出机制序列化全量 scriptData。
+  assert(editorText.indexOf('SchemaAdapter.exportScenario(scriptData)') >= 0, 'editor export should serialize full scriptData (via SchemaAdapter.exportScenario)');
   assert(editorText.indexOf('scriptData[key] = d[key]') >= 0, 'editor import should merge all own top-level keys');
 
   const patchesText = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');

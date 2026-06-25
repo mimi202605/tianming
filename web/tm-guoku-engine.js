@@ -1331,8 +1331,10 @@
       if (go.quotaMoney !== undefined) GM.guoku.ledgers.money.quota = go.quotaMoney;
       if (go.quotaGrain !== undefined) GM.guoku.ledgers.grain.quota = go.quotaGrain;
       if (go.quotaCloth !== undefined) GM.guoku.ledgers.cloth.quota = go.quotaCloth;
-      // 月均估计
-      if (go.monthlyIncomeEstimate) {
+      // 月均估计（仅占位：剧本 monthlyIncomeEstimate 是静态估算·真值由 cascadeCollect 活算）。
+      // 守卫 _lastCascadeSummary：若已跑过真财政征收(开局/回合)则不让静态估算覆盖真活算值——
+      //   根治「绍宋开局月入显估算 20万/旧兜底 7万·实应 ~70万」。无真 settle 时仍用估算占位。
+      if (go.monthlyIncomeEstimate && !(typeof GM !== 'undefined' && GM && GM._lastCascadeSummary)) {
         if (go.monthlyIncomeEstimate.money != null) GM.guoku.monthlyIncome = go.monthlyIncomeEstimate.money;
         if (go.monthlyIncomeEstimate.grain != null) GM.guoku.monthlyGrainIncome = go.monthlyIncomeEstimate.grain;
         if (go.monthlyIncomeEstimate.cloth != null) GM.guoku.monthlyClothIncome = go.monthlyIncomeEstimate.cloth;

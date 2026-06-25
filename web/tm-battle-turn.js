@@ -44,10 +44,15 @@
     try { var arr = GM && GM._pendingAbstractBattles; if (Array.isArray(arr) && arr.length) { arr.splice(0).forEach(function (br) { try { applyReal(br, GM); } catch (e) {} }); } } catch (e) {}
   }
 
+  /* 会战缴获:战果应用后一次(防双扣 _spoilsDone)·胜方从败方参战部队装备缴获入武库(玩家败则己方折损) */
+  function _spoils(br, GM) {
+    try { if (!br || br._spoilsDone) return; br._spoilsDone = true; var w = W(), AR = w && w.TMArmory; if (AR && typeof AR.battleSpoils === 'function') AR.battleSpoils(GM || (w && w.GM), br); } catch (e) {}
+  }
   function applyReal(br, GM) {
     var w = W(), MS = w && w.MilitarySystems;
     var fn = MS && (MS._origApplyBattleResult || MS.applyBattleResult);
     if (typeof fn === 'function') { try { fn.call(MS, br, GM); } catch (e) {} }
+    _spoils(br, GM);
   }
   function emperorName(GM) {   /* 皇帝角色(朝代中立:role/officialTitle==='皇帝'·不锁单朝) */
     if (!GM || !Array.isArray(GM.chars)) return null;
@@ -166,7 +171,9 @@
         var GM = root || (W() && W().GM) || null;
         if (maybeDefer(br, GM)) return undefined;                   // 涉玩家+开启→延后·跳过立即抽象结算
       } catch (e) { /* 拦截出错→退回原咽喉·绝不弄坏战斗 */ }
-      return orig.call(this, br, root);
+      var _r = orig.call(this, br, root);
+      _spoils(br, root || (W() && W().GM));                         // 透传战(flag关/非玩家)→战果应用后缴获
+      return _r;
     };
     MS._battleHookInstalled = true;
     return true;

@@ -92,6 +92,11 @@
       desc: '势力属性变化（strength/economy/playerRelation delta）',
       requiredSubFields: ['name']
     },
+    allegiance_changes: {
+      type: 'array',
+      desc: '改换门庭——人物叛降/归附/反正/被俘/拥立而改投他势力。**仅当本回合叙事 justify 时用**（兵败出降、principled 归正、城破被俘、获救反正、胁从等），不可无缘无故。元素 {character:人名, newFaction:目标势力名或id, reason:缘由, type:defect(主动叛投)/surrender(兵败降)/return(反正归正)/capture(被俘)/rescue(获救)/coerced(胁从)}',
+      consumedBy: ['applier:applyAllegianceChange']
+    },
     faction_updates:          { type: 'array', desc: '势力增量更新', consumedBy: ['applier:1263'] },
     faction_events:           { type: 'array', desc: '势力间自主事件（战争/联盟/政变/行军/围城）', consumedBy: ['endturn-ai-infer:sc1c', 'tm-endturn-apply.js:1302'] },
     faction_relation_changes: { type: 'array', desc: '势力间关系变化（旧模型·扁平 GM.factionRelations 写）' },
@@ -241,7 +246,7 @@
     hidden_moves:       { type: 'array', desc: '暗流行动', consumedBy: ['endturn-ai-infer:sc1c'] },
     fengwen_snippets:   { type: 'array', desc: '风闻录事条目', consumedBy: ['endturn-ai-infer:sc1c'] },
     call_court_works:   { type: 'array', desc: '朝会/廷议衍生事项（兼容字段）', consumedBy: ['endturn-ai-infer'] },
-    events:             { type: 'array', desc: '本回合事件列表·元素可标 critical:true+choices:[{text,aiHint}] 升格为君主决策事件(S4·关键关头强弹模态·节制·寻常事走叙事 surface)', consumedBy: ['ai-change-applier'] },
+    events:             { type: 'array', desc: '本回合事件列表·元素可标 critical:true+choices:[{text,aiHint}] → 收编进御案时政 currentIssues 成待决要务(玩家在御案时政抉择·AI 据局面裁·节制)', consumedBy: ['ai-change-applier'] },
     changes:            { type: 'array', desc: '通用变化列表（旧格式）', consumedBy: ['ai-change-applier'] },
     appointments:       { type: 'array', desc: '任命列表（旧格式，官方用 office_changes）', consumedBy: ['ai-change-applier'] },
     institutions:       { type: 'array', desc: '制度（旧格式）', consumedBy: ['ai-change-applier'] },
@@ -769,7 +774,7 @@
     },
     {
       name: 'record_conspiracy_events',
-      description: '记录谋反/政变/弑君事件（谋反/兵变/篡位/逼宫/弑君）。仅当 narrative 提到但 personnel_changes/character_deaths 漏录时调用。',
+      description: '记录谋反/政变/弑君事件（谋反/兵变/篡位/逼宫/弑君）。仅当 narrative 提到但 personnel_changes/character_deaths 漏录时调用；或【密谋·暗流】中标「将发」的阴谋你已在叙事中决其成败时，用本工具坐实（成功/事败/未遂）。',
       parameters: {
         type: 'object',
         properties: {

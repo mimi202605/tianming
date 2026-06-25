@@ -227,4 +227,40 @@ assert(context.findCharByName('中立同僚').loyalty === 60, 'neutral same-fact
 assert(context.findCharByName('政敌同僚').loyalty === 57, 'same-faction political enemy may resent promotion');
 assert(context.findCharByName('善妒同僚').loyalty === 57, 'jealous colleague may resent promotion');
 
+// ── 官制任命赴任·即时抵达(治"官制任命后官员长期不赴任":即时规则在线→当回合即抵·不留原地) ──
+context._hasInstantArrivalRule = function () { return true; };  // 模拟玩家"人事调动即刻瞬间抵达"规则在线
+// 本测试不加载 applier·stub 规范抵达 _arriveCharNow(真身在 tm-ai-change-applier.js·内部同步双表镜像+就任+清字段)
+context._arriveCharNow = function (G, ch) {
+  if (!ch || !ch._travelTo) return;
+  ch.location = ch._travelTo;
+  ['_travelTo', '_travelFrom', '_travelStartTurn', '_travelRemainingDays', '_travelArrival', '_travelReason', '_travelAssignPost'].forEach(function (k) { delete ch[k]; });
+};
+context.GM._capital = '京师';
+context.GM.turn = 12;
+context.GM._chronicle = [];
+context.GM.qijuHistory = [];
+context.GM.chars = [{ name: '远officer', officialTitle: '', position: '', alive: true, location: '辽东' }];
+context.GM.officeTree = [{ name: 'CentralDept', positions: [{ name: 'CentralPost', holder: '', establishedCount: 1, vacancyCount: 0, actualHolders: [] }], subs: [] }];
+context._offPickerConfirm('远officer', 'CentralDept', 'CentralPost', '', 'resign');
+var _remoteCh = context.findCharByName('远officer');
+assert(_remoteCh.location === '京师', '即时规则:官制任命远地官员当回合即抵京师(不留原地·治长期不赴任)');
+assert(!_remoteCh._travelTo, '即时:无在途残留(_travelTo 已清)');
+assert(context.GM.officeTree[0].positions[0].holder === '远officer', '即抵任命仍正常就任(holder 设上)');
+
+// ── 对照:无即时规则→走多回合行程(_travelTo 在途·不即抵·保留原默认) ──
+context._hasInstantArrivalRule = function () { return false; };
+context.GM.chars = [{ name: '慢officer', officialTitle: '', position: '', alive: true, location: '辽东' }];
+context.GM.officeTree = [{ name: 'CentralDept2', positions: [{ name: 'CentralPost2', holder: '', establishedCount: 1, vacancyCount: 0, actualHolders: [] }], subs: [] }];
+context._offPickerConfirm('慢officer', 'CentralDept2', 'CentralPost2', '', 'resign');
+var _slowCh = context.findCharByName('慢officer');
+assert(_slowCh._travelTo === '京师' && _slowCh.location === '辽东', '无即时规则:启多回合行程(_travelTo 在途·location 仍原地·待 tick 抵达)');
+
+// ── 地方任命目的地正确性(贪婪正则修复:部名不得污染地名·都察院+陕西巡抚→陕西·非"察院陕西"赴错地) ──
+context._hasInstantArrivalRule = function () { return false; };
+context.GM.chars = [{ name: '巡抚者', officialTitle: '', position: '', alive: true, location: '辽东' }];
+context.GM.officeTree = [{ name: '都察院', positions: [{ name: '陕西巡抚', holder: '', establishedCount: 1, vacancyCount: 0, actualHolders: [] }], subs: [] }];
+context._offPickerConfirm('巡抚者', '都察院', '陕西巡抚', '', 'resign');
+var _xfCh = context.findCharByName('巡抚者');
+assert(_xfCh._travelTo === '陕西', '地方任命目的地取职名地名(陕西)·部名(都察院)不污染·非"察院陕西"');
+
 console.log('[smoke-office-appointment-sync] pass assertions=' + assertions);

@@ -116,11 +116,12 @@ assert(TM.Char && typeof TM.Char === 'object', 'TM.Char should exist');
 assert(TM.namespaces.NPC === TM.NPC, 'TM.namespaces.NPC should point at TM.NPC');
 assert(TM.namespaces.Char === TM.Char, 'TM.namespaces.Char should point at TM.Char');
 
-assert(TM.NPC.engine === ctx.NpcEngine, 'TM.NPC.engine should alias NpcEngine');
-assert(TM.NPC.interactions === ctx.InteractionSystem, 'TM.NPC.interactions should alias InteractionSystem');
+// 旧 NpcEngine 决策驱动 / InteractionSystem 已切除·TM.NPC.engine / interactions 别名随之移除。
+// 回归守卫:断言死别名确实不再暴露(防回潮)·而非仅删断言;behaviors(NpcBehaviorRegistry)仍存活·照常验。
+assert(!Object.prototype.hasOwnProperty.call(TM.NPC, 'engine') && TM.NPC.engine === undefined, 'TM.NPC.engine 别名已随死引擎驱动切除(回归守卫·不得回潮)');
+assert(!Object.prototype.hasOwnProperty.call(TM.NPC, 'interactions') && TM.NPC.interactions === undefined, 'TM.NPC.interactions 别名已随死交互系统切除(回归守卫)');
+// behaviors(NpcBehaviorRegistry)仍存活·保留其断言
 assert(TM.NPC.behaviors === ctx.NpcBehaviorRegistry, 'TM.NPC.behaviors should alias NpcBehaviorRegistry');
-assert(TM.NPC.engine.runEngine === ctx.NpcEngine.runEngine, 'NPC engine method should be same reference');
-assert(TM.NPC.interactions.executeInteraction === ctx.InteractionSystem.executeInteraction, 'interaction method should be same reference');
 assert(TM.NPC.behaviors.register === ctx.NpcBehaviorRegistry.register, 'behavior registry method should be same reference');
 
 [
@@ -139,15 +140,9 @@ assert(TM.NPC.decision.listMissing().length === 0, 'TM.NPC.decision should have 
   assert(TM.NPC.personality[name] === ctx[name], 'TM.NPC.personality.' + name + ' should alias legacy global');
 });
 
-[
-  'buildNpcContext', 'getCharacterFromContext', 'getFactionFromContext',
-  'getVariableFromContext', 'getRelationFromContext', 'getOpinionFromContext',
-  'getMilitaryStrengthFromContext', 'getEconomicLevelFromContext',
-  'calculateDecisionWeight', 'evaluateCondition', 'generateDecisionsForActor',
-  'executeNpcDecisions'
-].forEach(function(name) {
-  assert(TM.NPC.legacy[name] === ctx[name], 'TM.NPC.legacy.' + name + ' should alias legacy global');
-});
+// 旧 NpcEngine 数据驱动决策引擎(buildNpcContext/generateDecisionsForActor/executeNpcDecisions 等)已切除·
+// TM.NPC.legacy 门面随引擎一并移除。回归守卫:断言 legacy 门面确实不再暴露(防回潮)·而非仅删断言。
+assert(!Object.prototype.hasOwnProperty.call(TM.NPC, 'legacy') && TM.NPC.legacy === undefined, 'TM.NPC.legacy 门面已随死引擎切除(回归守卫·不得回潮)');
 
 assert(!Object.prototype.hasOwnProperty.call(TM.NPC, 'CentralizationSystem'),
   'TM.NPC must not expose CentralizationSystem');

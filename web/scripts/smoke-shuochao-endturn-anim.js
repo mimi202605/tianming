@@ -24,7 +24,8 @@ const mbSeg = PROG.slice(mbStart, mbEnd);
 
 const ctx = {};
 vm.createContext(ctx);
-vm.runInContext(beatsSeg + '\n' + aliasSeg + '\n' + mbSeg + '\nthis.matchBeat = matchBeat; this.BEATS = BEATS;', ctx, { filename: 'beats.js' });
+// matchBeat 内部引用模块级 activeBeats(progress.js:84·agent 模式 beat 切换后引入)·抽取片段未含其声明→补上(非 agent 路径 activeBeats=BEATS)
+vm.runInContext(beatsSeg + '\n' + aliasSeg + '\nvar activeBeats = BEATS;\n' + mbSeg + '\nthis.matchBeat = matchBeat; this.BEATS = BEATS;', ctx, { filename: 'beats.js' });
 ok(typeof ctx.matchBeat === 'function' && Array.isArray(ctx.BEATS), '抽到真 BEATS + matchBeat');
 
 const HORIZ = '…'; // 横排省略号(……)

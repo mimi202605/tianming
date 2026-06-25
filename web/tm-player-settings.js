@@ -307,12 +307,55 @@ function _togglePConf(confKey, on) {
   var labels = {
     recallGateEnabled: { on: '已启用召回节流·常规回合跳过 SC_RECALL 节省 API', off: '已关闭召回节流·每回合都全跑 5 源召回' },
     consolidationEnabled: { on: '已启用后台记忆固化', off: '已关闭后台记忆固化·sc_consolidate 不再调用' },
+    memorySynthesisEnabled: { on: '已启用后台记忆固化/综合', off: '已关闭后台记忆固化·记忆连贯性减低' },
     semanticRecallAutoload: { on: '已启用语义检索自动加载', off: '已关闭语义检索自动加载·SC_RECALL 第 5 源失效' },
     agentUpgradesEnabled: { on: '已启用全部 agent 升级（实验）·6 项 AI agent 化全开', off: '已关闭全部 agent 升级·各 agent 回落写死路径（单独开关仍生效）' },
-    eventUnificationEnabled: { on: '已启用事件系统统一（S1 骨架·当前无可见效果·仅验证不破坏现状）', off: '已关闭事件系统统一·事件总线 drain 不跑' }
+    eventUnificationEnabled: { on: '已启用事件系统统一（S1 骨架·当前无可见效果·仅验证不破坏现状）', off: '已关闭事件系统统一·事件总线 drain 不跑' },
+    officeActivationEnabled: { on: '已启用官制活化（实验）·5 刀全开：职权舆图/履职度/权限门/改制裁定/按需细查', off: '已关闭官制活化·官制回落写死路径（各刀独立开关仍生效）' },
+    agentAdaptiveDeepen: { on: '已启用自适应深化·收尾只深化本回合有动静的维度（省调用·去填充·地板维度始终深化）', off: '已关闭自适应深化·每维度都深化（深度纯粹优先·更耗调用）' }
   };
   var l = labels[confKey] || { on: '已启用 ' + confKey, off: '已关闭 ' + confKey };
   if (typeof toast === 'function') toast('✅ ' + (on ? l.on : l.off));
+}
+
+// 记忆深度(agent 长记忆窗口·回合·按模型能力)·近 N 回合喂细·更早压缩为脉络(仍可调取)·#4+#5
+function _setAgentMemoryDepth(v) {
+  if (!P.conf) P.conf = {};
+  var n = Math.max(2, Math.min(parseInt(v, 10) || 6, 40));
+  P.conf.agentMemoryDepth = n;
+  if (typeof saveP === 'function') saveP();
+  if (typeof toast === 'function') toast('✅ 记忆深度设为 ' + n + ' 回合(近 ' + n + ' 回合喂细·更早自动压缩为脉络·agent 仍可主动查全)');
+}
+
+// 工作上下文窗口(agent 多轮推演保留最近 N 轮工具明细全文·更早折叠为一行摘要·省 token·刀2)·仅 Agent 模式生效
+function _setAgentTranscriptRounds(v) {
+  if (!P.conf) P.conf = {};
+  var n = Math.max(1, Math.min(parseInt(v, 10) || 2, 6));
+  P.conf.agentTranscriptRecentRounds = n;
+  if (typeof saveP === 'function') saveP();
+  if (typeof toast === 'function') toast('✅ 工作上下文窗口设为最近 ' + n + ' 轮(更早折叠为摘要·省 token)');
+}
+
+// 【S6·实验模式】总闸 + 模式选择(LLM / Agent·互斥)·切换即时生效·重渲设置面板
+//   关=零回归;LLM 模式=对现回合管线的增量增强(原"实验玩法");Agent 模式=模式 b 平行引擎(替换管线)。
+function _toggleExperimentalEnabled(on) {
+  if (!P.conf) P.conf = {};
+  P.conf.experimentalEnabled = !!on;
+  if (!P.conf.experimentalMode) P.conf.experimentalMode = 'llm'; // 默认 LLM 模式
+  if (typeof saveP === 'function') saveP();
+  if (typeof toast === 'function') toast(on ? '✅ 已开启实验模式·请在下方选择 LLM / Agent 模式' : '✅ 已关闭实验模式·一切实验内容回落');
+  try { closeSettings(); openSettings(); } catch (_) {}
+}
+function _setExperimentalMode(mode) {
+  if (!P.conf) P.conf = {};
+  P.conf.experimentalMode = (mode === 'agent') ? 'agent' : 'llm';
+  if (typeof saveP === 'function') saveP();
+  if (typeof toast === 'function') {
+    toast(P.conf.experimentalMode === 'agent'
+      ? '🤖 已切到 Agent 模式·回合推演由 AI agent 主动改世界(实验·替换 LLM 管线)'
+      : '🧠 已切到 LLM 模式·对现管线的增量增强(②③①/朝堂/记忆管家…)');
+  }
+  try { closeSettings(); openSettings(); } catch (_) {}
 }
 
 

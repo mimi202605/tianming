@@ -489,7 +489,7 @@ function adaptRels(c){
 }
 function adaptImpr(c){var out=[];if(c._impressions){Object.keys(c._impressions).forEach(function(on){var iv=c._impressions[on]||{};if(Math.abs(iv.favor||0)>=2)out.push({name:on,favor:Math.round(iv.favor),label:imprWord(iv.favor)});});}return out.sort(function(a,b){return Math.abs(b.favor)-Math.abs(a.favor);}).slice(0,12);}
 function adaptMemory(c){var GM=_g(),full=[];if(Array.isArray(GM._memoryArchiveFull))full=GM._memoryArchiveFull.filter(function(m){return m&&m.char===c.name;});if(!full.length&&Array.isArray(c._memory))full=c._memory.slice();return full.map(function(m){return {turn:m.turn,emotion:m.emotion||'平',event:m.event||m.summary||'',who:m.who||''};});}
-/* 角色弧线 type 英文枚举→中文显示(原 dismissal/betrayal/arc_archive 等英文直显于人物图志/本纪卷·display-only 不改原始 type) */
+/* 角色弧线 type 英文枚举→中文显示(原 dismissal/betrayal/arc_archive 等英文直显于人物图志/纪传卷·display-only 不改原始 type) */
 var ARC_TYPE_CN={appointment:'就任',dismissal:'罢免',death:'身故',inheritance:'承袭',promotion:'擢升',demotion:'降黜',transfer:'调任',retirement:'致仕',autonomous:'自主行止',title_grant:'册封',title_revoke:'褫夺',title_promote:'加衔',reward:'受赏',achievement:'功绩',event:'纪事',arc_archive:'早年事迹',war:'兵事',betrayal:'背弃',alliance:'结盟',marriage:'联姻'};
 function _arcTypeCN(t){return (t&&ARC_TYPE_CN[t])||t||'纪事';}
 function adaptArcs(c){var GM=_g(),a=(GM.characterArcs&&GM.characterArcs[c.name])||[];return a.map(function(x){return {turn:x.turn,type:x.type||'事',desc:x.desc||''};});}
@@ -654,7 +654,7 @@ function renderStatbar(){var st=computeStat(),cells=[['all',st.all,'在朝'],['c
 function renderFacOptions(){var facs=[];PEOPLE().forEach(function(p){if(facs.indexOf(p.faction)<0)facs.push(p.faction);});var s=q('#tm-zhi-ffac');if(s)s.innerHTML='<option value="all">全部党派</option>'+facs.map(function(f){return '<option value="'+esc(f)+'"'+(state.fac===f?' selected':'')+'>'+esc(f)+'</option>';}).join('');}
 
 /* ===================== 列传·头屏 + 页签 ===================== */
-var TABS=[['overview','总览'],['identity','身份'],['mind','心绪'],['relations','关系'],['benji','本纪'],['family','家族'],['memory','记忆'],['works','文事'],['pov','视角']];
+var TABS=[['overview','总览'],['identity','身份'],['mind','心绪'],['relations','关系'],['benji','纪传'],['family','家族'],['memory','记忆'],['works','文事'],['pov','视角']];
 function dossierHead(p){
   var hearts=[['忠诚',p.loyalty,false],['野心',p.ambition,p.ambition>=75],['压力',p.stress,p.stress>=65],['康健',p.health,p.health<40]];
   var colophon=esc((p.personality||p.stance||'').slice(0,20));
@@ -781,7 +781,7 @@ function tabBenji(p){
   var ribbon=nodes.length?('<div style="overflow-x:auto;padding:30px 6px 14px"><div style="position:relative;display:inline-flex;align-items:flex-start;min-width:100%">'+nodes.map(function(nd){return '<div class="tlrow" style="flex:0 0 auto;width:150px;padding:0 10px;border:none"><div class="ti">'+esc(nd.when||'')+'</div><div class="sec" style="margin:6px 0 0;padding:8px 10px"><span style="font-size:10px;color:var(--ink-faint);border:1px solid rgba(168,131,58,0.3);border-radius:7px;padding:0 6px">'+esc(nd.tag)+'</span><div style="font-size:12.5px;color:'+(nd.key?'var(--cinnabar-d)':'var(--ink)')+';margin:3px 0">'+esc(nd.ti||'')+'</div><div class="ds">'+esc(nd.ds||'')+'</div></div></div>';}).join('')+'</div></div>'):'<div class="stub">暂无编年事迹。</div>';
   var dl={};(p.lifeExp||[]).forEach(function(e){dl[e.domain]=(dl[e.domain]||0)+1;});
   var domHtml=Object.keys(dl).map(function(d){return '<span class="dom">'+esc(d)+' <b>×'+dl[d]+'</b></span>';}).join('');
-  return '<section class="sec full"><div class="sec-t">本 纪 长 卷 <small>履历·近事 编年 · 横向可滚</small></div>'+ribbon+'</section>'
+  return '<section class="sec full"><div class="sec-t">纪 传 长 卷 <small>履历·近事 编年 · 横向可滚</small></div>'+ribbon+'</section>'
     +'<section class="sec full"><div class="sec-t">官 制 与 任 事</div><div class="rows"><div class="row"><span class="k">现职</span><span class="v">'+esc(p.officialTitle||p.title||'未仕')+'</span></div><div class="row"><span class="k">品秩</span><span class="v">'+esc(p.rank||'未记')+'</span></div><div class="row"><span class="k">出身</span><span class="v">'+esc(p.learning||'未记')+'</span></div><div class="row"><span class="k">任所</span><span class="v">'+esc(p.location||'未记')+(p._travelTo?' → '+esc((p._travelTo.toLocation||p._travelTo)):'')+'</span></div></div></section>'
     +(domHtml?'<section class="sec full"><div class="sec-t">人 生 历 练 <small>按领域</small></div><div class="domains">'+domHtml+'</div>'+(p.lifeExp||[]).map(function(e){return '<div class="tlrow" style="padding-left:0"><div class="ds"><span style="color:var(--gold-d)">〔'+esc(e.domain)+'〕</span> '+esc(e.desc)+'</div></div>';}).join('')+'</section>':'');
 }

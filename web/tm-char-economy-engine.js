@@ -1138,6 +1138,14 @@
     if (ch.health < 50) stressDelta += 0.5;
     // 自然衰减
     stressDelta -= 0.4;
+    // 爱好解压(owner 2026-06)：有闲暇做雅好者借此排遣·压力缓降——闭合面板「释压之法」的承诺(此前 hobbies 仅展示不生效)。
+    //   在押/流放/逃亡/失踪/守丧者无闲情·不享此减。兼容数组与「、,·/」分隔串两种 hobbies 写法。跨朝代:任何剧本有爱好的角色受益。
+    if (!(ch._imprisoned || ch.imprisoned || ch._exiled || ch.exiled || ch._fled || ch._missing || ch._mourning)) {
+      var _hob = ch.hobbies;
+      var _hobN = Array.isArray(_hob) ? _hob.length
+                : (typeof _hob === 'string' && _hob.trim() ? _hob.split(/[、,，·\/;；]/).filter(function (x) { return x && x.trim(); }).length : 0);
+      if (_hobN > 0) stressDelta -= Math.min(_hobN, 3) * 0.3;   // 每项 -0.3·至多三项(-0.9/月)·与自然衰减(-0.4)同量级·不喧宾夺主
+    }
     // traits（压力特质 hooks）
     ch.stress = clamp((ch.stress || 20) + stressDelta * mr, 0, 100);
 

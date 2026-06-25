@@ -121,7 +121,7 @@ const RESET_BLUEPRINT_MODULES = [
     title: '剧本总览与玩家开局',
     currentPanels: ['scriptInfo', 'playerOverview'],
     topLevelKeys: [
-      '_version', 'id', 'name', 'dynasty', 'dynastyPhaseHint', 'era',
+      '_version', 'id', 'name', 'desc', 'dynasty', 'dynastyPhaseHint', 'era',
       'emperor', 'role', 'background', 'overview', 'openingText', 'opening',
       'openingLetters', 'playerInfo', 'gameSettings', 'startYear', 'active',
       'startMonth', 'startLocation', 'openingHook', 'tags', 'scnStyle',

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命 · 问对收尾 · 召见模式 + 求见队列 + 模式对照（真立绘）</title>
+<!--
+  preview / mockup，非运行时代码。补齐问对的两个入口面（对话弹窗已另有真立绘版）：
+    ① 召见模式选择(wd-pick-modal)：朝堂问对(formal·起居注在场·正式) / 私下叙谈(private·屏退·坦诚)——沿真机 _wdPickMode/_wdConfirmPick
+    ② 求见队列：【阶下待见】(GM._pendingAudiences·使节/外藩·接见/暂却) + 【有臣求见】(派生缘由·接见/不见)——沿真机 renderWenduiChars
+    ③ 模式对照：朝堂(言录在案) vs 私下(此谈不录)——说明 mode 如何改变记录与言辞
+  · 真立绘 assets/portraits/tianqi7。缘由文案取自真机派生串。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/ma-shan-zheng/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/zcool-xiaowei/index.css">
+<style>
+:root{
+  --gold-br:#f0d597; --gold:#cdab63; --gold-mid:#a98f55; --gold-dim:#7e6d45; --gold-faint:#564a2e;
+  --ivory:#f4eddf; --ink:#d8cdba;
+  --red-hi:#c14034; --red-1:#a8312a; --red-2:#76190f; --vermillion:#cf5042;
+  --jade:#a9d18e; --celadon:#9fc2a0; --indigo:#8e9ac4; --purple:#a585bd;
+  --hair:rgba(207,173,101,.2); --hair-br:rgba(240,213,151,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;color:var(--ivory);font-family:"Songti SC","STSong","SimSun","宋体",serif;
+  display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px 14px 46px;
+  background:radial-gradient(1200px 560px at 50% -8%,rgba(207,173,101,.06),transparent 60%),linear-gradient(180deg,#13100c,#0d0a07 60%,#0a0807);}
+.brush{font-family:"Ma Shan Zheng","STKaiti","KaiTi","楷体",serif}
+.fang{font-family:"ZCOOL XiaoWei","STFangsong","FangSong","仿宋",serif}
+.intro{font-size:12px;color:var(--gold-dim);letter-spacing:.04em;text-align:center;line-height:1.8;max-width:1100px}.intro b{color:var(--gold-br);font-weight:400}
+.sec-lab{align-self:flex-start;margin:8px 0 -4px;max-width:1180px;width:97vw;font-family:"ZCOOL XiaoWei",serif;font-size:13px;color:var(--gold);letter-spacing:.1em;display:flex;align-items:center;gap:10px}
+.sec-lab:before{content:"";width:18px;height:18px;border:1px solid var(--gold);border-radius:3px;display:inline-block;background:radial-gradient(120% 120% at 30% 22%,var(--red-hi),var(--red-2));box-shadow:inset 0 0 0 1px rgba(247,228,180,.3)}
+.sec-lab i{font-style:normal;color:var(--gold-dim);font-size:11px;letter-spacing:.02em}
+.panel{width:1180px;max-width:97vw;border:1px solid rgba(207,173,101,.3);border-radius:5px;background:linear-gradient(180deg,rgba(255,236,200,.03),transparent 22%),linear-gradient(178deg,#1b140d,#100b06);box-shadow:inset 0 1px 0 var(--hair-br),0 18px 50px rgba(0,0,0,.5)}
+
+/* ① 召见模式选择 */
+.pick{display:flex;gap:26px;padding:24px 28px;align-items:center}
+.pick-portrait{flex:none;width:150px;height:200px;border-radius:3px;overflow:hidden;border:1px solid rgba(207,173,101,.4);position:relative;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+.pick-portrait img{width:100%;height:100%;object-fit:cover;object-position:50% 14%}
+.pick-portrait:after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 26px rgba(0,0,0,.45);pointer-events:none}
+.pick-portrait .corner{position:absolute;width:13px;height:13px;border-color:var(--gold-br);border-style:solid;opacity:.7}
+.pick-portrait .c1{top:5px;left:5px;border-width:1px 0 0 1px}.pick-portrait .c2{bottom:5px;right:5px;border-width:0 1px 1px 0}
+.pick-main{flex:1;min-width:0}
+.pick-name{font-family:"Ma Shan Zheng",serif;font-size:27px;letter-spacing:.14em;background:linear-gradient(120deg,#fbf2d4,#e9cd84 50%,#bd964c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.pick-title{font-family:"ZCOOL XiaoWei",serif;font-size:13px;color:var(--gold-mid);margin-top:5px;letter-spacing:.06em}
+.pick-hist{font-family:"ZCOOL XiaoWei",serif;font-size:11.5px;color:var(--gold-dim);margin-top:7px;display:inline-flex;align-items:center;gap:5px}
+.pick-hist:before{content:"卷";font-family:"Ma Shan Zheng",serif;color:var(--gold-mid);border:1px solid var(--gold-faint);border-radius:2px;padding:0 4px;font-size:10px}
+.pick-modes{display:flex;gap:14px;margin-top:16px}
+.mode-card{flex:1;padding:15px 16px;border:1px solid var(--gold-faint);border-radius:4px;background:linear-gradient(180deg,#1f1810,#130d07);cursor:pointer;transition:all .16s;position:relative}
+.mode-card .icon{width:34px;height:34px;border-radius:3px;display:grid;place-items:center;font-family:"Ma Shan Zheng",serif;font-size:20px;color:#fdf3da;border:1px solid var(--gold-faint);background:radial-gradient(120% 120% at 30% 22%,#3a2614,#1a1009);margin-bottom:10px}
+.mode-card .name{font-family:"Ma Shan Zheng",serif;font-size:18px;letter-spacing:.1em;color:var(--gold)}
+.mode-card .desc{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);margin-top:6px;line-height:1.7;letter-spacing:.02em}
+.mode-card.sel{border-color:var(--gold-br);background:linear-gradient(180deg,#2c2113,#1a1109);box-shadow:0 0 0 1px var(--gold-br),0 0 16px rgba(207,173,101,.22)}
+.mode-card.sel .icon{background:radial-gradient(120% 120% at 30% 22%,var(--red-hi),var(--red-2));border-color:var(--gold-br)}
+.mode-card.sel .name{color:var(--gold-br)}
+.mode-card.sel:after{content:"已择";position:absolute;top:10px;right:10px;font-family:"ZCOOL XiaoWei",serif;font-size:10px;color:#1c1408;background:var(--gold-br);padding:1px 6px;border-radius:2px}
+.pick-actions{display:flex;gap:11px;margin-top:18px}
+.pick-btn{font-family:"Ma Shan Zheng",serif;font-size:16px;letter-spacing:.16em;text-indent:.16em;padding:9px 26px;border-radius:3px;cursor:pointer}
+.pick-btn.primary{color:#fdebcf;border:1.1px solid rgba(240,213,151,.5);background:linear-gradient(178deg,#9a2a22,#5e140e);box-shadow:inset 0 1px 0 rgba(255,220,180,.22),0 3px 10px rgba(120,20,14,.35)}
+.pick-btn.secondary{color:var(--gold-mid);border:1px solid var(--gold-faint);background:linear-gradient(180deg,#1f1810,#130d07)}
+
+/* ② 求见队列 */
+.queue{padding:16px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.wdp-group{border:1px solid var(--gold-faint);border-radius:4px;overflow:hidden}
+.wdp-g-envoy{border-color:rgba(142,154,196,.32)}.wdp-g-seeking{border-color:rgba(193,64,52,.34)}
+.wdp-group-title{display:flex;align-items:center;gap:12px;padding:9px 14px;background:linear-gradient(180deg,rgba(207,173,101,.06),transparent)}
+.wdp-group-title .tag{font-family:"Ma Shan Zheng",serif;font-size:15px;letter-spacing:.18em;text-indent:.18em;padding:2px 10px;border-radius:2px}
+.wdp-g-envoy .tag{color:var(--indigo);border:1px solid rgba(142,154,196,.4);background:rgba(60,70,110,.18)}
+.wdp-g-seeking .tag{color:var(--vermillion);border:1px solid rgba(207,80,66,.4);background:rgba(118,25,15,.18)}
+.wdp-group-title .desc{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);letter-spacing:.03em}
+.wdp-group-title .count{margin-left:auto;font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-mid)}
+.wdp-req-list{display:flex;flex-direction:column}
+.wdp-req-item{display:flex;align-items:center;gap:13px;padding:11px 14px;border-top:1px solid rgba(207,173,101,.1)}
+.wdp-req-item:first-child{border-top:none}
+.wdp-req-portrait{flex:none;width:46px;height:56px;border-radius:2px;overflow:hidden;border:1px solid var(--gold-faint);background:#100b06;position:relative;display:grid;place-items:center;font-family:"Ma Shan Zheng",serif;font-size:22px;color:var(--gold-mid)}
+.wdp-req-portrait img{width:100%;height:100%;object-fit:cover;object-position:50% 13%}
+.wdp-envoy-badge{position:absolute;left:0;right:0;bottom:0;font-family:"ZCOOL XiaoWei",serif;font-size:8.5px;text-align:center;color:#fdf3da;background:linear-gradient(0deg,rgba(60,70,110,.96),transparent);padding:4px 0 1px;letter-spacing:.05em}
+.wdp-req-info{flex:1;min-width:0}
+.wdp-req-name{font-family:"Ma Shan Zheng",serif;font-size:17px;letter-spacing:.06em;color:var(--ivory);display:flex;align-items:baseline;gap:8px}
+.wdp-tag{font-family:"ZCOOL XiaoWei",serif;font-size:10px;padding:1px 6px;border:1px solid currentColor;border-radius:2px;opacity:.85}
+.wdp-req-reason{font-family:"ZCOOL XiaoWei",serif;font-size:12px;color:var(--gold-dim);margin-top:4px;letter-spacing:.02em}
+.wdp-req-actions{flex:none;display:flex;gap:8px}
+.wdp-req-btn{font-family:"ZCOOL XiaoWei",serif;font-size:13px;letter-spacing:.06em;padding:6px 15px;border-radius:2px;cursor:pointer;color:var(--gold-br);border:1px solid rgba(207,173,101,.45);background:linear-gradient(180deg,#2a2013,#170f08);transition:all .15s}
+.wdp-req-btn:hover{border-color:var(--gold-br);box-shadow:0 0 10px rgba(207,173,101,.25)}
+.wdp-req-btn.dismiss{color:var(--gold-dim);border-color:var(--gold-faint);background:linear-gradient(180deg,#1a140c,#100b06)}
+
+/* ③ 模式对照 */
+.contrast{display:flex;gap:18px;padding:18px 20px 22px}
+.cmode{flex:1;border:1px solid var(--gold-faint);border-radius:4px;overflow:hidden;background:linear-gradient(178deg,#181109,#0f0a06)}
+.cmode.formal{border-color:rgba(207,173,101,.34)}.cmode.private{border-color:rgba(142,154,196,.3)}
+.cmode-h{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--hair)}
+.cmode-h .ic{width:30px;height:30px;flex:none;border-radius:3px;display:grid;place-items:center;font-family:"Ma Shan Zheng",serif;font-size:17px;color:#fdf3da;border:1px solid var(--gold-faint)}
+.cmode.formal .ic{background:radial-gradient(120% 120% at 30% 22%,var(--red-hi),var(--red-2));border-color:var(--gold-br)}
+.cmode.private .ic{background:radial-gradient(120% 120% at 30% 22%,#3a4060,#161a2a);border-color:rgba(142,154,196,.5);color:#dde3f2}
+.cmode-h .nm{font-family:"Ma Shan Zheng",serif;font-size:18px;letter-spacing:.1em;color:var(--gold)}
+.cmode.private .nm{color:var(--indigo)}
+.cmode-h .rec{margin-left:auto;font-family:"ZCOOL XiaoWei",serif;font-size:10.5px;padding:2px 8px;border-radius:2px;letter-spacing:.04em}
+.cmode.formal .rec{color:var(--gold-br);border:1px solid rgba(207,173,101,.4);background:rgba(207,173,101,.1)}
+.cmode.private .rec{color:var(--indigo);border:1px solid rgba(142,154,196,.4);background:rgba(60,70,110,.16)}
+.cmode-body{padding:14px;display:flex;flex-direction:column;gap:11px;min-height:150px}
+.cmode-note{font-family:"ZCOOL XiaoWei",serif;font-size:11px;color:var(--gold-dim);line-height:1.7;letter-spacing:.02em;border-left:2px solid var(--gold-faint);padding-left:9px}
+.cb{font-size:13.5px;line-height:1.8;padding:9px 13px;border-radius:3px 10px 10px 10px;max-width:90%;color:var(--ink);border:1px solid rgba(207,173,101,.2);background:linear-gradient(180deg,#221a10,#1a130b)}
+.cb.emp{align-self:flex-end;border-radius:10px 3px 10px 10px;color:#fdf1da;border-color:rgba(240,213,151,.36);background:linear-gradient(178deg,#3a2114,#2a1109)}
+.cb .who{display:block;font-family:"Ma Shan Zheng",serif;font-size:11px;color:var(--gold-mid);margin-bottom:3px;letter-spacing:.06em}
+.cb.priv{border-color:rgba(142,154,196,.26);background:linear-gradient(180deg,#1a1c26,#13141c)}
+.cap{font-size:11.5px;color:var(--gold-dim);max-width:1180px;text-align:center;line-height:1.9;margin-top:4px}.cap b{color:var(--gold-br);font-weight:400}.cap code{color:var(--gold);font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="intro fang">问对收尾 —— 补齐两个入口面（对话弹窗已另有真立绘版）：<b>① 召见模式选择</b>（朝堂问对 / 私下叙谈）·<b>② 求见队列</b>（阶下待见 + 有臣求见）·<b>③ 模式对照</b>（言录在案 vs 此谈不录）。沿真机 <b>_wdPickMode</b> / <b>renderWenduiChars</b> 结构，接真立绘。</div>
+
+  <!-- ① 召见模式选择 -->
+  <div class="sec-lab fang">① 召见 · 模式选择 <i>—— 点官员→择「朝堂问对」严肃正式·起居注在场 / 「私下叙谈」屏退坦诚</i></div>
+  <div class="panel">
+    <div class="pick">
+      <div class="pick-portrait"><img src="../assets/portraits/tianqi7/毕自严.png"><span class="corner c1"></span><span class="corner c2"></span></div>
+      <div class="pick-main">
+        <div class="pick-name brush">召见 · 毕自严</div>
+        <div class="pick-title fang">户部尚书 · 东林 · 忠 74</div>
+        <div class="pick-hist fang">此前有 5 条对话记录</div>
+        <div class="pick-modes">
+          <div class="mode-card sel">
+            <div class="icon brush">殿</div>
+            <div class="name brush">朝堂问对</div>
+            <div class="desc">起居注官在场 · 严肃正式 · 言辞有度</div>
+          </div>
+          <div class="mode-card">
+            <div class="icon brush">密</div>
+            <div class="name brush">私下叙谈</div>
+            <div class="desc">屏退左右 · 更坦诚亦更絮叨</div>
+          </div>
+        </div>
+        <div class="pick-actions">
+          <button class="pick-btn primary brush">召见</button>
+          <button class="pick-btn secondary fang">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 求见队列 -->
+  <div class="sec-lab fang">② 求见队列 <i>—— 非玩家发起：使节/外藩【阶下待见】+ 忠极高或心有忧事者【有臣求见】，缘由系真机派生</i></div>
+  <div class="panel">
+    <div class="queue">
+      <!-- 阶下待见 -->
+      <div class="wdp-group wdp-g-envoy">
+        <div class="wdp-group-title"><span class="tag brush">阶下待见</span><span class="desc fang">使节 · 外藩 · 特请 · 等待阙下决断</span><span class="count fang">2 人</span></div>
+        <div class="wdp-req-list">
+          <div class="wdp-req-item">
+            <div class="wdp-req-portrait"><img src="../assets/portraits/tianqi7/generic/generic-joseon-court-01.png"><span class="wdp-envoy-badge">使节</span></div>
+            <div class="wdp-req-info"><div class="wdp-req-name brush">朝鲜使臣 <span class="wdp-tag" style="color:var(--indigo)">外藩</span></div><div class="wdp-req-reason fang">奉国王咨文，为椵岛毛文龙索饷扰民事，乞陛下裁断。</div></div>
+            <div class="wdp-req-actions"><button class="wdp-req-btn fang">接见</button><button class="wdp-req-btn dismiss fang">暂却</button></div>
+          </div>
+          <div class="wdp-req-item">
+            <div class="wdp-req-portrait"><img src="../assets/portraits/tianqi7/generic/generic-steppe-khan-noble-01.png"><span class="wdp-envoy-badge">使节</span></div>
+            <div class="wdp-req-info"><div class="wdp-req-name brush">喀喇沁使者 <span class="wdp-tag" style="color:var(--indigo)">外藩</span></div><div class="wdp-req-reason fang">为市赏互市事请命，愿助朝廷牵制建虏，求岁赐。</div></div>
+            <div class="wdp-req-actions"><button class="wdp-req-btn fang">接见</button><button class="wdp-req-btn dismiss fang">暂却</button></div>
+          </div>
+        </div>
+      </div>
+      <!-- 有臣求见 -->
+      <div class="wdp-group wdp-g-seeking">
+        <div class="wdp-group-title"><span class="tag brush">有臣求见</span><span class="desc fang">忠极高或心有忧事者 · 可速见以安其心</span><span class="count fang">3 人</span></div>
+        <div class="wdp-req-list">
+          <div class="wdp-req-item">
+            <div class="wdp-req-portrait"><img src="../assets/portraits/tianqi7/袁崇焕.png"></div>
+            <div class="wdp-req-info"><div class="wdp-req-name brush">袁崇焕 <span class="wdp-tag" style="color:var(--vermillion)">武将</span></div><div class="wdp-req-reason fang">面带忧色，似有为难之事。</div></div>
+            <div class="wdp-req-actions"><button class="wdp-req-btn fang">接见</button><button class="wdp-req-btn dismiss fang">不见</button></div>
+          </div>
+          <div class="wdp-req-item">
+            <div class="wdp-req-portrait"><img src="../assets/portraits/tianqi7/孙承宗.png"></div>
+            <div class="wdp-req-info"><div class="wdp-req-name brush">孙承宗 <span class="wdp-tag" style="color:var(--celadon)">东林</span></div><div class="wdp-req-reason fang">神色凝重，欲进忠言。</div></div>
+            <div class="wdp-req-actions"><button class="wdp-req-btn fang">接见</button><button class="wdp-req-btn dismiss fang">不见</button></div>
+          </div>
+          <div class="wdp-req-item">
+            <div class="wdp-req-portrait"><img src="../assets/portraits/tianqi7/温体仁.png"></div>
+            <div class="wdp-req-info"><div class="wdp-req-name brush">温体仁 <span class="wdp-tag" style="color:var(--gold-mid)">浙党</span></div><div class="wdp-req-reason fang">前日来函未获回复，亲至求见。</div></div>
+            <div class="wdp-req-actions"><button class="wdp-req-btn fang">接见</button><button class="wdp-req-btn dismiss fang">不见</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 模式对照 -->
+  <div class="sec-lab fang">③ 模式对照 <i>—— 同一人，朝堂问对 vs 私下叙谈：记录与言辞之别</i></div>
+  <div class="panel">
+    <div class="contrast">
+      <div class="cmode formal">
+        <div class="cmode-h"><span class="ic brush">殿</span><span class="nm brush">朝堂问对</span><span class="rec fang">起居注 · 言录在案</span></div>
+        <div class="cmode-body">
+          <div class="cmode-note fang">起居注官在场，奏对入录。臣下言辞有度、引经据典、不轻吐真章。</div>
+          <div class="cb"><span class="who">毕自严</span>臣谨奏：太仓见存银四十七万两，加派之议关乎民命，臣不敢擅断，伏乞圣裁。</div>
+          <div class="cb emp"><span class="who">御笔</span>卿之奏对，朕已悉。着户部详议覆奏。</div>
+        </div>
+      </div>
+      <div class="cmode private">
+        <div class="cmode-h"><span class="ic brush">密</span><span class="nm brush">私下叙谈</span><span class="rec fang">屏退左右 · 此谈不录</span></div>
+        <div class="cmode-body">
+          <div class="cmode-note fang">屏退左右，不入起居注。臣下更坦诚——敢吐真言、亦多絮叨牢骚，可探深隐。</div>
+          <div class="cb priv"><span class="who">毕自严</span>陛下既屏退左右，臣便直言了——加派断不可行！户部账上那点家底，臣夜里都睡不着。魏党还在户科插手……</div>
+          <div class="cb emp priv"><span class="who">御笔</span>但说无妨。此间唯你我二人。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap fang">问对完整流程补齐：<b>召见模式</b>(朝堂/私下·沿 _wdPickMode·真立绘+对话记录数) · <b>求见队列</b>(阶下待见 GM._pendingAudiences 使节外藩 / 有臣求见派生缘由·接见/暂却/不见) · <b>模式对照</b>(朝堂入起居注·言辞有度 / 私下不录·更坦诚)。加上已有的对话弹窗(真立绘版)，问对四面齐全。落地仍只动样式与渲染。</div>
+</body>
+</html>

@@ -29,8 +29,8 @@ assert(/_settingsMediaThemeInit/.test(patches), 'settings media/theme init hook 
 assert(/_settingsBuildTabs/.test(patches), 'settings tab builder missing');
 assert(/_settingsSwitchTab/.test(patches), 'settings tab switcher missing');
 assert(/settings-tab-shell/.test(styles) && /settings-pane\.active/.test(styles), 'settings tab CSS missing');
-assert(/styles\.css\?v=20260520-launch-official-theme-font-scopes/.test(index), 'index.html should bust settings CSS cache');
-assert(/tm-theme-font\.js\?v=20260520-theme-font-scopes/.test(index), 'index.html should load theme/font module');
+assert(/styles\.css\?v=[^"'<\s]+/.test(index), 'index.html should bust settings CSS cache');  // 验有 cache-bust(?v=)·不钉死具体版本串(随 styles.css 改动 bump·原钉 20260520 已过时)
+assert(/tm-theme-font\.js\?v=[^"'<\s]+/.test(index), 'index.html should load theme/font module (cache-busted)');  // 同上·验加载+有 ?v=·不钉死版本
 assert(/tm-patches\.js\?v=[^"'<\s]+/.test(index), 'index.html should bust settings JS cache');
 assert(/REMOTE_CHANGELOG_URL/.test(fs.readFileSync(path.join(ROOT, 'tm-changelog.js'), 'utf8')), 'remote changelog source missing');
 assert(/tm-changelog\.js\?v=20260519-remote-changelog/.test(index), 'index.html should bust changelog JS cache');

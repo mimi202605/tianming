@@ -1198,11 +1198,15 @@ function _dfBuildModal(divName) {
   html += '</select></div>';
   html += '<div class="tmjz-field"><label>规 制 与 所 求（告示有司：欲修何物、预期何效）</label><textarea id="_bmCustDesc" rows="4" placeholder="例：修文馆以藏书刀版，供士子入内议事，以兴文风、安士心。"></textarea></div>';
   html += '<div class="tmjz-rule"><b>有司核定之制：</b>自拟工役颁行后，由有司核其<b>合理性三档</b>（合理／勉强／不合理），定实际费用与工期；其效用只许落在<b>白名单账目</b>（田亩、商贸、盐铁、城防、驿路、解额、募兵、民心、吏治等），且以费用为度——小费小效，大费大效，断无十两银修出雄关之理。</div>';
+  html += '<div id="_bmAppraiseResult" style="display:none;margin-top:10px;"></div>';  // A1·有司核议结果区
   html += '</div>';
 
   html += '</div>';
-  html += '<div class="tmjz-foot"><div class="tmjz-note">营造不直改账面——经诏令颁行后，由有司核其合理、费用、工期与实效。</div>';
+  // A1·自拟营建 agent：开关开 + 有 API key 时，自拟页提供「请有司核议」即时核定（玩家点按钮才调·无则回落原录入路径）
+  var _agentOn = !!(window.TM && TM.CustomBuildAgent && typeof TM.CustomBuildAgent.enabled === 'function' && TM.CustomBuildAgent.enabled() && P.ai && P.ai.key);
+  html += '<div class="tmjz-foot"><div class="tmjz-note">营造不直改账面——' + (_agentOn ? '可先「请有司核议」即时核定，再' : '经诏令颁行后，') + '由有司核其合理、费用、工期与实效。</div>';
   html += '<button type="button" class="tmjz-bt" onclick="var m=document.getElementById(\'_dfBuildModal\');if(m)m.remove();">撤 案</button>';
+  if (_agentOn) html += '<button type="button" class="tmjz-bt" id="_bmAppraise" style="display:none;" onclick="_dfAppraiseCustomBuild(&quot;' + enc + '&quot;)">请 有 司 核 议</button>';
   html += '<button type="button" class="tmjz-bt zhu" id="_bmSubmit" style="display:none;" onclick="_dfSubmitBuild(&quot;' + enc + '&quot;,-1,true)">录 入 诏 令</button>';
   html += '</div></div></div>';
 
@@ -1216,6 +1220,7 @@ function _dfBuildTab(which) {
   var tp = document.getElementById('_bmTabPre');
   var tc = document.getElementById('_bmTabCustom');
   var sb = document.getElementById('_bmSubmit');
+  var ab = document.getElementById('_bmAppraise');  // A1·有司核议按钮（自拟页才显）
   if (!pre || !cus) return;
   var isPre = which === 'pre';
   pre.style.display = isPre ? 'block' : 'none';
@@ -1223,6 +1228,7 @@ function _dfBuildTab(which) {
   if (tp) tp.classList.toggle('active', isPre);
   if (tc) tc.classList.toggle('active', !isPre);
   if (sb) sb.style.display = isPre ? 'none' : '';
+  if (ab) ab.style.display = isPre ? 'none' : '';
 }
 
 /** 提交修建请求到诏令建议库 */
@@ -1248,6 +1254,83 @@ function _dfSubmitBuild(divNameEnc, typeIdx, isCustom) {
   if (typeof _renderEdictSuggestions === 'function') _renderEdictSuggestions();
   var m = document.getElementById('_dfBuildModal'); if (m) m.remove();
   try { document.dispatchEvent(new CustomEvent('tm-yingzao-submitted', { detail: { divName: divName } })); } catch (_e) {}
+}
+
+/** A1·自拟营建 agent 即时核议（请有司核议）——当场核定可行性/造价/工期/效果并展示。
+ *  A1 仅展示供参考；准奏开工 + 注入回合推演在 A3，effectsStructured 硬门在 A2。
+ *  失败/未启用/无 key → 提示玩家走原「录入诏令」路径，不阻断。 */
+async function _dfAppraiseCustomBuild(divNameEnc) {
+  var divName = decodeURIComponent(divNameEnc);
+  var name = (document.getElementById('_bmCustName') || {}).value || '';
+  var cat = (document.getElementById('_bmCustCat') || {}).value || 'economic';
+  var desc = (document.getElementById('_bmCustDesc') || {}).value || '';
+  if (!name.trim() || !desc.trim()) { toast('请先填写工役名目与规制'); return; }
+  var box = document.getElementById('_bmAppraiseResult');
+  var btn = document.getElementById('_bmAppraise');
+  if (box) { box.style.display = 'block'; box.innerHTML = '<div style="padding:8px;color:#7a6a52;font-size:13px;">有司勘议中……</div>'; }
+  if (btn) btn.disabled = true;
+  var CBA = (window.TM && TM.CustomBuildAgent) || null;
+  try {
+    var r = CBA ? await CBA.appraise(divName, { name: name, category: cat, description: desc }, { P: P }) : null;
+    if (!r || !r.ok) {
+      var why = (r && r.reason) || '未配置或未启用';
+      if (box) box.innerHTML = '<div style="padding:8px;color:#8a4a3a;font-size:13px;">有司未能核议（' + escHtml(why) + '）——可直接「录入诏令」，由回合推演核定。</div>';
+    } else {
+      var a = r.appraisal;
+      var fc = a.feasibility === '不合理' ? '#9a3a2a' : (a.feasibility === '勉强' ? '#9a7a2a' : '#3a6a3a');
+      var h = '<div style="padding:10px;border:1px solid #d8c9a8;border-radius:6px;background:#fbf6ea;font-size:13px;line-height:1.7;">';
+      h += '<div style="font-weight:700;color:' + fc + ';">有司核议：' + escHtml(a.feasibility) + '　·　估造价 ' + a.costActual + ' 两　·　工期 ' + a.timeActual + ' 回合</div>';
+      // 效果徽签——已过白名单 + 费效封顶硬门·与真实建筑册页同源
+      var labs = (a.effectLabels && a.effectLabels.length) ? a.effectLabels : [];
+      if (labs.length) {
+        h += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">';
+        labs.forEach(function (x) { h += '<span style="background:#efe4c8;border:1px solid #d8c9a8;border-radius:3px;padding:1px 6px;color:#6a5638;font-size:12px;">' + escHtml(x) + '</span>'; });
+        h += '</div>';
+      } else if (a.effectsRaw && !a.effectsStructured) {
+        h += '<div style="margin-top:6px;color:#9a3a2a;font-size:12px;">（所拟效用越白名单·已削为纯叙事工役）</div>';
+      }
+      if (a.judgedEffects) h += '<div style="margin-top:6px;color:#5a4a32;">' + escHtml(a.judgedEffects) + '</div>';
+      if (a.reason) h += '<div style="margin-top:4px;color:#7a6a52;font-style:italic;">判语：' + escHtml(a.reason) + '</div>';
+      h += '<div style="margin-top:6px;color:#9a8a72;font-size:12px;">效用已按白名单与费效之度核削。</div>';
+      // A3·准奏开工：存此次核议供准奏取用；据可行性给准奏钮（不合理不予兴造）
+      window._dfPendingAppraisal = { divName: divName, req: { name: name, category: cat, description: desc }, appraisal: a };
+      if (a.feasibility !== '不合理') {
+        h += '<div style="margin-top:8px;text-align:right;"><button type="button" class="tmjz-bt zhu" onclick="_dfApproveBuild()">准 奏 开 工</button></div>';
+      } else {
+        h += '<div style="margin-top:8px;color:#9a3a2a;font-size:12px;text-align:right;">有司核为不合理——不予兴造（可改规制后重核）</div>';
+      }
+      h += '</div>';
+      if (box) box.innerHTML = h;
+    }
+  } catch (e) {
+    if (box) box.innerHTML = '<div style="padding:8px;color:#8a4a3a;font-size:13px;">核议异常：' + escHtml(String((e && e.message) || e)) + '</div>';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+/** A3·准奏开工——玩家准奏即扣银(国库) + 落库(过既有工期 tick 完工入账) + 注入回合推演(不隔绝)。 */
+function _dfApproveBuild() {
+  var pend = window._dfPendingAppraisal;
+  if (!pend || !pend.appraisal) { toast('请先「请有司核议」'); return; }
+  if (pend.appraisal.feasibility === '不合理') { toast('有司核为不合理·不予兴造'); return; }
+  var CBA = (window.TM && TM.CustomBuildAgent) || null;
+  if (!CBA || typeof CBA.approveBuild !== 'function') { toast('准奏功能未就绪'); return; }
+  var r;
+  try { r = CBA.approveBuild(pend.divName, pend.appraisal, pend.req, { P: P, GM: GM }); }
+  catch (e) { toast('开工失败：' + ((e && e.message) || e)); return; }
+  if (!r || !r.ok) { toast('开工失败：' + ((r && r.reason) || '未知')); return; }
+  // 注入推演信号（party/class calibrator·与 GM._pendingCustomBuilds 推演段双通道·不隔绝）
+  try {
+    _recordPlayerActionSignal('construction',
+      '准奏兴造「' + pend.req.name + '」于' + pend.divName + '（有司核' + pend.appraisal.feasibility + '·造价' + pend.appraisal.costActual + '两·工期' + pend.appraisal.timeActual + '回合）',
+      { source: 'custom-build-agent-approve', target: pend.divName });
+  } catch (_e) {}
+  var def = (r.spent && r.spent.deficit > 0) ? ('·国库不继欠 ' + r.spent.deficit + ' 两') : '';
+  toast('已准奏兴造「' + pend.req.name + '」·出帑 ' + ((r.spent && r.spent.money) || 0) + ' 两' + def + '·' + (r.building && r.building.remainingTurns) + ' 回合工成');
+  window._dfPendingAppraisal = null;
+  var m = document.getElementById('_dfBuildModal'); if (m) m.remove();
+  try { document.dispatchEvent(new CustomEvent('tm-yingzao-submitted', { detail: { divName: pend.divName } })); } catch (_e2) {}
 }
 
 /** 非直辖区划——中国化操作路径弹窗 */

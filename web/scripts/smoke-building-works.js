@@ -54,9 +54,9 @@ const moneyBefore = div.publicTreasury.money.stock;
 GM.turn = 12;
 st = BW.tick(GM, P);
 const upkeep = BW.upkeepFor(div.buildings[0], BW.typeDefFor('城墙', P));
-ok(upkeep === 600, '城墙维护费 = 基费 2% = 600 两/回合');
-ok(div.publicTreasury.money.stock === moneyBefore - 600, '维护费已扣地方库银');
-ok(st.upkeepPaid === 600, 'tick 统计 upkeepPaid');
+ok(upkeep === 900, '城墙维护费 = 军工/城防分档 3% = 900 两/回合（S6 维护费分档·原一刀切 2%=600）');
+ok(div.publicTreasury.money.stock === moneyBefore - 900, '维护费已扣地方库银');
+ok(st.upkeepPaid === 900, 'tick 统计 upkeepPaid');
 
 // ── 3. pct 起步量（现值不足时按 base 起步）──
 const div2 = leafDiv('山东');

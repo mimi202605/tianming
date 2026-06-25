@@ -334,6 +334,12 @@ body {
 }
 .cy-bubble-avatar.koudao { background: linear-gradient(135deg, var(--celadon-400), var(--celadon-600, #4a7a5f)); }
 .cy-bubble-avatar.wu { background: linear-gradient(135deg, var(--indigo-400), var(--indigo-600, #3e4e80)); }
+/* 真立绘缩略（2026-06 landing·班次+气泡头像用 ch.portrait·矩形展工笔半身/气泡圆裁） */
+.bench-avatar-circle.has-img { width: 34px; height: 42px; border-radius: 3px; padding: 0; background: #100b06; overflow: hidden; }
+.bench-avatar-circle.has-img img.bench-avatar-img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 9%; display: block; }
+.bench-avatar.has-img, .bench-avatar:has(.has-img) { width: 46px; }
+.cy-bubble-avatar.has-img { padding: 0; overflow: hidden; background: #100b06; }
+.cy-bubble-avatar.has-img img.cy-bubble-avatar-img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; border-radius: 50%; display: block; }
 .cy-bubble-content {
   flex: 1;
   min-width: 0;
@@ -738,6 +744,88 @@ body {
   transform: translateY(-1px) scale(1.08);
   box-shadow: 0 2px 8px rgba(184,154,83,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
 }
+/* 2026-06·常朝班次全景做大（百官真脸为主·avatars/throne/展开高度·压在前述规则后必胜） */
+.cy-bench.expanded { max-height: min(62vh, 500px); }
+.cy-bench-body { gap: 16px; padding: 12px 18px 16px; }
+.bench-avatar-circle.has-img { width: 48px; height: 60px; border-radius: 3px; box-shadow: 0 2px 7px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(207,173,101,0.28); }
+.bench-avatar.has-img, .bench-avatar:has(.has-img) { width: 58px; }
+.cy-bench-officials { gap: 8px 8px; }
+.cy-bench.expanded .bench-avatar-name { font-size: 10px; color: var(--ink-500); }
+.cy-bench-col-title { font-size: 13px; }
+.cy-bench-col-throne { font-size: 19px; padding: 12px 16px; letter-spacing: 0.32em; color: #fdf3da; text-shadow: 0 0 10px rgba(184,71,56,0.5); }
+/* 2026-06·常朝并排版式：左殿堂(班次) + 右议程/流程/裁决（对齐预览） */
+.cc-body-row { display: flex; flex: 1 1 auto; min-height: 0; align-items: stretch; }
+.cc-hall { flex: 0 0 53%; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--gold-d); overflow: hidden; background: radial-gradient(120% 70% at 50% 0%, rgba(120,40,28,0.1), transparent 55%); }
+.cc-rail { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.cc-hall .cc-hall-bench, .cc-hall-bench { flex: 1 1 auto !important; max-height: none !important; border-bottom: none !important; }
+.cc-hall-bench .cy-bench-body { max-height: none; overflow-y: auto; }
+.cc-hall-bench .cy-bench-header { display: none; }   /* 殿堂常驻展开·不需折叠表头 */
+.cc-rail #cy-stage-main { flex: 1 1 auto; min-height: 0; }
+.cc-rail .cy-phase-tag { flex-shrink: 0; }
+.cc-rail .cy-action-bar, .cc-rail .cy-input-row { flex-shrink: 0; }
+/* 出班者立绘放大焦点（左殿堂底·随发言切换） */
+.cc-presenter { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--gold-d); background: linear-gradient(180deg, rgba(0,0,0,0.32), rgba(8,5,3,0.55)); min-height: 96px; }
+.cc-pres-wait { font-family: var(--font-serif); font-size: 12px; color: var(--ink-500); letter-spacing: 0.12em; margin: auto; }
+.cc-pres-pic { flex: none; width: 68px; height: 86px; border-radius: 3px; overflow: hidden; border: 1.4px solid var(--gold-400); background: #100b06; box-shadow: 0 4px 16px rgba(0,0,0,0.55); animation: cc-pres-in 0.5s cubic-bezier(.2,.8,.2,1); }
+@keyframes cc-pres-in { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+.cc-pres-img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 9%; display: block; }
+.cc-pres-ph { width: 100%; height: 100%; display: grid; place-items: center; font-family: var(--font-serif); font-size: 32px; color: rgba(240,213,151,0.3); }
+.cc-pres-nm { font-family: var(--font-serif); font-size: 18px; color: #eccf87; letter-spacing: 0.08em; }
+.cc-pres-rl { font-size: 11.5px; color: var(--ink-500); margin-top: 5px; }
+/* 本日议程列表（右栏顶·X/Y 进度 + 逐条状态） */
+.cc-agenda { flex: 0 0 auto; max-height: 190px; overflow-y: auto; padding: 10px 14px; border-bottom: 1px solid var(--gold-d); background: rgba(15,13,10,0.35); }
+.cc-ag-h { font-family: var(--font-serif); font-size: 13px; color: var(--gold-400); letter-spacing: 0.06em; margin-bottom: 7px; }
+.cc-ag-h b { color: #eccf87; font-weight: normal; }
+.cc-ag-list { display: flex; flex-direction: column; gap: 3px; }
+.cc-ag-item { display: flex; align-items: center; gap: 8px; padding: 4px 7px; border-radius: 3px; font-size: 12.5px; }
+.cc-ag-st { flex: none; width: 14px; text-align: center; font-size: 11px; }
+.cc-ag-item.done .cc-ag-st { color: var(--celadon-400); }
+.cc-ag-item.cur .cc-ag-st { color: var(--gold-400); }
+.cc-ag-item.wait .cc-ag-st { color: var(--ink-300); }
+.cc-ag-ti { flex: 1; color: #d8cdba; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-ag-item.done .cc-ag-ti { color: var(--ink-400); }
+.cc-ag-item.cur { background: linear-gradient(90deg, rgba(184,154,83,0.14), transparent); }
+.cc-ag-item.cur .cc-ag-ti { color: #fdf3da; }
+.cc-ag-tags { flex: none; display: flex; gap: 3px; }
+.cc-ag-tag { font-size: 9px; padding: 1px 5px; border-radius: 2px; color: #a98f55; border: 1px solid var(--gold-d); }
+/* ══ 常朝 faithful v2·本地书法字（TM-MaShanZheng 楷 / TM-ZCOOL-XiaoWei 仿宋·补气质） ══ */
+.cy-titlebar .ttl { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; letter-spacing: 0.14em; }
+.cy-bench-col-title { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; }
+.cy-bench-col-throne { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; }
+.bench-avatar-name { font-family: "TM-ZCOOL-XiaoWei","STFangsong",serif; }
+.cy-phase-label { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; }
+.cy-bubble-meta { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; }
+.cc-pres-nm { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; }
+.cc-pres-rl, .cc-pres-wait { font-family: "TM-ZCOOL-XiaoWei","STFangsong",serif; }
+.cc-ag-h { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; }
+.cc-ag-h b, .cc-ag-ti, .cc-ag-tag { font-family: "TM-ZCOOL-XiaoWei","STFangsong",serif; }
+/* 出班者焦点入中央御座（御道·对齐预览）+ 皇威皇权入顶栏 */
+.cy-bench-col-throne.has-pres { writing-mode: horizontal-tb; flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px; min-width: 118px; padding: 10px 8px 14px; }
+.cy-bench-col-throne.has-pres .cc-presenter { border-top: none; background: none; padding: 0; min-height: 0; flex-direction: column; align-items: center; gap: 0; }
+.cy-bench-col-throne.has-pres .cc-pres-wait { margin: 8px 0 0; font-size: 10px; }
+.cy-bench-col-throne.has-pres .cc-pres-pic { width: 80px; height: 100px; }
+.cy-bench-col-throne.has-pres .cc-pres-info { text-align: center; margin-top: 7px; }
+.cy-bench-col-throne.has-pres .cc-pres-nm { font-size: 16px; }
+.cy-bench-col-throne.has-pres .cc-pres-rl { font-size: 10px; }
+.cc-authority { display: inline-flex; align-items: center; gap: 12px; font-family: "TM-ZCOOL-XiaoWei","STFangsong",serif; font-size: 12px; color: var(--gold-400); margin-right: 8px; letter-spacing: 0.04em; }
+.cc-authority b { color: #eccf87; font-weight: normal; }
+.cca-item { display: inline-flex; align-items: center; gap: 5px; }
+.cca-bar { display: inline-block; width: 44px; height: 5px; border-radius: 3px; background: #241a0e; box-shadow: inset 0 0 0 0.6px var(--gold-d); overflow: hidden; }
+.cca-bar em { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #9a7a3a, #f0d597); }
+/* 发言框·深漆描金（对齐预览·替浅纸色输入框） */
+.cc-rail .cy-input-row { background: linear-gradient(180deg, rgba(207,173,101,0.04), transparent); }
+.cy-input { background: linear-gradient(180deg, #140e08, #0e0a06); border: 1px solid rgba(207,173,101,0.28); color: #f4eddf; font-family: "Songti SC","STSong","SimSun",serif; box-shadow: inset 0 1px 4px rgba(0,0,0,0.45); }
+.cy-input:focus { border-color: #cdab63; box-shadow: inset 0 1px 4px rgba(0,0,0,0.45), 0 0 0 2px rgba(207,173,101,0.16); }
+.cy-input::placeholder { color: #7e6d45; font-family: "TM-ZCOOL-XiaoWei","STFangsong",serif; }
+/* 裁决钮·鎏金（对齐预览·替游戏默认灰钮） */
+.cc-rail .cy-action-bar { background: linear-gradient(180deg, rgba(207,173,101,0.04), transparent); border-top: 1px solid var(--gold-d); }
+.cc-rail .cy-action-bar .cy-btn { font-family: "TM-MaShanZheng","STKaiti","KaiTi",serif; background: linear-gradient(180deg, #241c11, #130d07); border: 1px solid #564a2e; color: #cdab63; letter-spacing: 0.12em; }
+.cc-rail .cy-action-bar .cy-btn:hover { border-color: #f0d597; color: #f0d597; box-shadow: 0 0 9px rgba(207,173,101,0.25); }
+.cc-rail .cy-action-bar .cy-btn.primary { background: linear-gradient(180deg, #f0d597, #caa258); color: #1c1408; border-color: #f0d597; }
+.cc-rail .cy-action-bar .cy-btn.danger { color: #e6a07a; border-color: rgba(207,80,66,0.45); background: linear-gradient(180deg, #2a160e, #170f08); }
+/* 缺朝名册·更紧凑淡雅（仪式产物·免密集文字压场） */
+.absent-roster { font-size: 11px; color: var(--ink-400); line-height: 1.7; opacity: 0.7; }
+.absent-roster .lbl { color: var(--gold-400); font-family: "TM-MaShanZheng","STKaiti",serif; }
 
 /* 阶段标签·肃朝时换青色 */
 .cy-phase-tag {

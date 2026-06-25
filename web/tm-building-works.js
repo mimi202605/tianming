@@ -37,7 +37,10 @@
     'economyBase.roadQuality': 1,
     'economyBase.kejuQuota': 1,
     'fortLevel': 1,
-    'militaryRecruits': 1
+    'coastalDefense': 1,
+    'militaryRecruits': 1,
+    'defenseBonus': 1,
+    'officialSupply': 1
   };
 
   // 名称关键词 → 默认效果（pct=按现值比例·base=现值为零时的起步量·abs=绝对增量·均为「每级」）
@@ -52,11 +55,12 @@
     [/织造|工坊|窑|作坊/, { pct: { 'economyBase.commerceVolume': 0.05 }, base: { 'economyBase.commerceVolume': 15000 }, label: '商贸 +5%/级' }],
     [/驿/, { abs: { 'economyBase.postRelays': 5, 'economyBase.roadQuality': 3 }, label: '驿站 +5 道路 +3/级' }],
     [/道路|官道|驰道|桥/, { abs: { 'economyBase.roadQuality': 6 }, label: '道路 +6/级' }],
+    [/水寨|船坞|水城|海防|靖海|海塘|水军|战船|舰队/, { abs: { coastalDefense: 1 }, label: '海防 +1 档/级' }],  // P1-A3·海防建筑放城防前·「水寨」先匹配海防不被「寨」截胡
     [/城|墙|关隘|堡|寨|垒|敌台|炮台/, { abs: { fortLevel: 1 }, label: '城防 +1 档/级' }],
     [/卫所|军府|营房|武库|校场/, { abs: { militaryRecruits: 3000 }, label: '募兵上限 +3000/级' }],
-    [/书院|文庙|学宫|庠|县学|府学|国子|贡院/, { abs: { 'economyBase.kejuQuota': 2 }, minxin: 1, label: '解额 +2/级 · 士民心悦' }],
+    [/书院|文庙|学宫|庠|县学|府学|国子|贡院/, { abs: { 'economyBase.kejuQuota': 2, officialSupply: 1 }, minxin: 1, label: '解额 +2/级 · 育官 +1/级 · 士民心悦' }],  // A4·书院育官→officialSupply 补地方官缺
     [/仓|廪|常平/, { minxin: 1, label: '赈备安民 · 民心 +1' }],
-    [/烽|燧|哨/, { label: '边警瞭望（推演叙事）' }]
+    [/烽|燧|哨|墩|戍|巡检/, { abs: { defenseBonus: 1 }, label: '边防戍守 +1 档/级' }]  // A4·烽燧/巡检→defenseBonus 降边警(原纯叙事·现真入账)
   ];
 
   // 类别兜底（名称无一命中时按 category）
@@ -127,6 +131,8 @@
         else if (k === 'economyBase.roadQuality' || k === 'economyBase.postRelays') cap = Math.max(1, Math.min(10, Math.round(cost / 1500)));
         else if (k === 'economyBase.commerceCoefficient') cap = 0.05;
         else if (k === 'economyBase.horseProduction') cap = Math.max(50, Math.round(cost / 20));
+        else if (k === 'defenseBonus') cap = Math.max(1, Math.min(6, Math.round(cost / 3000)));        // A4·边防工事档·小费小防(每档≈2000驻军之防·tickBorderRisk 消费)
+        else if (k === 'officialSupply') { if (caps.keju <= 0) { dropped.push(k + '(费不及育官之度)'); return; } cap = caps.keju; }  // A4·育官同学额之度·tickOfficeVacancy 消费
         else cap = Math.max(100, Math.round(cost * 8)); // 大数账目（田亩/商贸/盐矿渔）兜底：费效挂钩
         if (!out.abs) out.abs = {};
         out.abs[k] = Math.max(-cap, Math.min(cap, v));
@@ -162,7 +168,7 @@
     var out = [];
     if (fx && fx.label) out.push(fx.label);
     else if (fx) {
-      var NAMES = { 'economyBase.farmland': '田亩', 'economyBase.commerceVolume': '商贸', 'economyBase.commerceCoefficient': '商系数', 'economyBase.maritimeTradeVolume': '海贸', 'economyBase.saltProduction': '盐课', 'economyBase.mineralProduction': '矿课', 'economyBase.fishingProduction': '渔课', 'economyBase.horseProduction': '马政', 'economyBase.postRelays': '驿站', 'economyBase.roadQuality': '道路', 'economyBase.kejuQuota': '解额', fortLevel: '城防档', militaryRecruits: '募兵上限' };
+      var NAMES = { 'economyBase.farmland': '田亩', 'economyBase.commerceVolume': '商贸', 'economyBase.commerceCoefficient': '商系数', 'economyBase.maritimeTradeVolume': '海贸', 'economyBase.saltProduction': '盐课', 'economyBase.mineralProduction': '矿课', 'economyBase.fishingProduction': '渔课', 'economyBase.horseProduction': '马政', 'economyBase.postRelays': '驿站', 'economyBase.roadQuality': '道路', 'economyBase.kejuQuota': '解额', fortLevel: '城防档', coastalDefense: '海防档', militaryRecruits: '募兵上限', defenseBonus: '边防档', officialSupply: '育官' };
       Object.keys(fx.pct || {}).forEach(function (k) { out.push((NAMES[k] || k) + ' +' + Math.round(fx.pct[k] * 100) + '%/级'); });
       Object.keys(fx.abs || {}).forEach(function (k) { out.push((NAMES[k] || k) + ' +' + fx.abs[k] + '/级'); });
       if (fx.minxin) out.push('民心 +' + fx.minxin);
@@ -173,12 +179,52 @@
     return out;
   }
 
+  // S6·维护费分档：军工/城防/水利贵养(3%)·文教/仓廪/宗教廉养(1.2%)·余 2%。跨朝代通用词(军/城/水利/书院/仓·非朝代专名)。
+  function _upkeepRateFor(bld, typeDef) {
+    var cat = (typeDef && typeDef.category) || (bld && bld.category) || '';
+    var name = String((bld && bld.name) || (typeDef && typeDef.name) || '');
+    if (cat === 'military' || /军|武|火药|甲坊|弩|战船|水寨|城|墙|关|隘|堡|垒|敌台|炮台|船坞/.test(name)) return 0.03;  // 军工/城防贵养
+    if (/水利|河渠|渠|堰|陂|圩|闸|港|码头|漕/.test(name)) return 0.03;                                                  // 水利贵养
+    if (cat === 'cultural' || cat === 'religious' || /书院|学宫|文庙|府学|县学|国子|贡院|仓|廪|常平|义仓|庙|祠/.test(name)) return 0.012;  // 文教/仓廪/宗教廉养
+    return 0.02;
+  }
+
   function upkeepFor(bld, typeDef) {
     var fx = resolveEffects(bld, typeDef);
     if (fx && fx.upkeepPerTurn != null) return Math.max(0, Math.round(num(fx.upkeepPerTurn)));
     var cost = num(bld && bld.costActual, num(typeDef && typeDef.baseCost, 0));
     if (cost <= 0) return 0;
-    return Math.max(10, Math.round(cost * 0.02)); // 兜底：基费 2%/回合
+    return Math.max(10, Math.round(cost * _upkeepRateFor(bld, typeDef))); // S6·按类分档(原一刀切 2%)
+  }
+
+  // S7·营造可观测账：一座建筑的「真贡献」（实入账 appliedDelta·非 per-level 规则）+ 维护 + 工成之利 + 半损态。
+  //   实入账=完工真写进叶子的增量(经费效封顶/造价放大后的实值)·让玩家看见每座建筑究竟为本地添了什么。
+  var _LEDGER_NAMES = {
+    'economyBase.farmland': '田亩', 'economyBase.commerceVolume': '商贸', 'economyBase.commerceCoefficient': '商系数',
+    'economyBase.maritimeTradeVolume': '海贸', 'economyBase.saltProduction': '盐课', 'economyBase.mineralProduction': '矿课',
+    'economyBase.fishingProduction': '渔课', 'economyBase.horseProduction': '马政', 'economyBase.postRelays': '驿站',
+    'economyBase.roadQuality': '道路', 'economyBase.kejuQuota': '解额', fortLevel: '城防档', coastalDefense: '海防档',
+    militaryRecruits: '募兵上限', defenseBonus: '边防档', officialSupply: '育官'
+  };
+  function _fmtLedgerAmt(v) { return (Math.abs(v) >= 10000) ? (Math.round(v / 1000) / 10 + '万') : String(v); }
+  function buildingLedger(bld, typeDef) {
+    var applied = (bld && bld.appliedDelta) || {};
+    var lines = [];
+    Object.keys(applied).forEach(function (k) {
+      if (k === '_minxin') { if (num(applied[k])) lines.push('民心 ' + (applied[k] > 0 ? '+' : '') + num(applied[k])); return; }
+      if (k === '_corruption') { if (num(applied[k])) lines.push('吏治 ' + (applied[k] > 0 ? '+' : '') + num(applied[k])); return; }
+      var v = num(applied[k]); if (!v) return;
+      lines.push((_LEDGER_NAMES[k] || k) + ' ' + (v > 0 ? '+' : '') + _fmtLedgerAmt(v));
+    });
+    var cost = num(bld && bld.costActual, num(typeDef && typeDef.baseCost, 0));
+    var flow = Math.round(buildingFlowPct(cost) * Math.max(1, num(bld && bld.level, 1)) * 1000) / 10;  // 工成之利 岁入 %/回合(1 位小数)
+    return {
+      applied: lines,                                   // 实入账(真为本地所添·已入账)
+      upkeep: upkeepFor(bld, typeDef),                  // 养护 两/回合(S6 分档)
+      flowPct: flow > 0 ? flow : 0,                     // 工成之利·岁入 +X%/回合
+      damaged: !!(bld && (bld.status === 'damaged' || bld._damageReverted)),
+      status: (bld && bld.status) || 'completed'
+    };
   }
 
   function getPath(obj, path) {
@@ -301,6 +347,59 @@
     return true;
   }
 
+  // ── S6·生命周期深化：灾损（半损·效用减半）+ 修缮（半费复完）。──
+  //   半损：按 appliedDelta 逐路径 revert 一半（民心/吏治不半损·一次性摊不好半 revert）·存 _damageReverted·
+  //         appliedDelta 同步减为当前实应用值（故 destroy 的 revertBuilding 仍正确）。修缮：re-apply 那一半。
+  function damageBuilding(div, bld) {
+    if (!div || !bld || bld._damageReverted) return false;          // 已损·不重复
+    var applied = bld.appliedDelta;
+    if (!applied) { bld.status = 'damaged'; return true; }          // 纯叙事建筑·无存量·仅改态
+    var reverted = {};
+    Object.keys(applied).forEach(function (k) {
+      if (k === '_minxin' || k === '_corruption') return;          // 一次性摊·跳过半损
+      var half = Math.round(num(applied[k]) / 2);
+      if (!half) return;
+      addPath(div, k, -half);                                       // 叶上撤一半
+      reverted[k] = half;
+      applied[k] = num(applied[k]) - half;                          // appliedDelta 反映当前实应用
+    });
+    bld._damageReverted = reverted;
+    bld.status = 'damaged';
+    return true;
+  }
+  function repairBuilding(div, bld) {
+    if (!div || !bld || !bld._damageReverted) { if (bld && bld.status === 'damaged') bld.status = 'completed'; return false; }
+    var rev = bld._damageReverted;
+    Object.keys(rev).forEach(function (k) {
+      addPath(div, k, rev[k]);                                      // 叶上复那一半
+      if (bld.appliedDelta) bld.appliedDelta[k] = num(bld.appliedDelta[k]) + rev[k];
+    });
+    delete bld._damageReverted;
+    bld.status = 'completed';
+    return true;
+  }
+  // 本回合该叶是否遭灾（读 B4 写的 economyBase.disasterRecord·返回最重档 0/1/2/3）
+  function _freshDisasterSeverity(div, turn) {
+    var eb0 = div && div.economyBase;
+    var dr = eb0 && eb0.disasterRecord;
+    if (!Array.isArray(dr) || !dr.length) return 0;
+    var sev = 0;
+    for (var i = 0; i < dr.length; i++) {
+      var r = dr[i];
+      if (!r || num(r.startTurn) !== num(turn)) continue;
+      var s = (r.severity === '重' || r.severity === 'severe' || r.severity === 3) ? 3
+            : (r.severity === '中' || r.severity === 'moderate' || r.severity === 2) ? 2 : 1;
+      if (s > sev) sev = s;
+    }
+    return sev;
+  }
+  function _disasterDamageRoll(sev) {
+    var p = sev >= 3 ? 0.4 : sev >= 2 ? 0.18 : 0.05;               // 重 40%·中 18%·轻 5%
+    var rnd;
+    try { rnd = Math.random(); } catch (_) { rnd = 1; }
+    return rnd < p;
+  }
+
   function eb(cat, text) {
     try { if (typeof window !== 'undefined' && typeof window.addEB === 'function') window.addEB(cat, text); } catch (_) {}
   }
@@ -338,8 +437,9 @@
   // 每回合确定性步（挂 endTurn 收尾、final aggregate 之前·恰一次）：
   // 在建递减→完工入账；完好扣维护；连欠 3 回合失修（效果存量不动·由叙事与玩家整修接手）。
   function tick(GM, P) {
-    if (!GM || !P || !P.adminHierarchy) return { completed: 0, building: 0, neglected: 0, upkeepPaid: 0 };
-    var stat = { completed: 0, building: 0, neglected: 0, upkeepPaid: 0 };
+    if (!GM || !P || !P.adminHierarchy) return { completed: 0, building: 0, neglected: 0, upkeepPaid: 0, damaged: 0, repaired: 0 };
+    var stat = { completed: 0, building: 0, neglected: 0, upkeepPaid: 0, damaged: 0, repaired: 0 };
+    var _hazardOn = !(P.conf && P.conf.buildingHazardEnabled === false);   // S6·灾损·默认开·显式 false 可关
     Object.keys(P.adminHierarchy).forEach(function (fk) {
       var fh = P.adminHierarchy[fk];
       if (!fh || !fh.divisions) return;
@@ -348,6 +448,7 @@
           if (!div) return;
           if (Array.isArray(div.buildings) && div.buildings.length) {
             var money = div.publicTreasury && div.publicTreasury.money;
+            var _freshSev = _hazardOn ? _freshDisasterSeverity(div, GM && GM.turn) : 0;   // S6·本回合该叶灾情(0/1/2/3·读 disasterRecord)
             div.buildings.forEach(function (bld) {
               if (!bld) return;
               if (bld.status === 'building') {
@@ -364,6 +465,28 @@
                   stat.building += 1;
                 }
                 return;
+              }
+              // S6·灾损：完工建筑遇本回合灾异·按烈度概率半损（效用减半·待修缮）
+              if (bld.status === 'completed' && _freshSev > 0 && _disasterDamageRoll(_freshSev)) {
+                damageBuilding(div, bld);
+                revokeBuildingStatus(div, bld, GM);                 // 半损 → 工成之利撤
+                stat.damaged += 1;
+                eb('建设', div.name + '的「' + bld.name + '」遭' + (_freshSev >= 3 ? '大灾' : '灾') + '·半损（效用减半，待修缮）');
+                return;                                            // 本回合不再走常维护
+              }
+              // S6·修缮：半损建筑·地方库银可支半费(造价 30%)则葺治复完
+              if (bld.status === 'damaged') {
+                var _rcost = Math.max(20, Math.round(num(bld.costActual, num((typeDefFor(bld.name, P) || {}).baseCost, 0)) * 0.3));
+                if (money && num(money.stock) >= _rcost) {
+                  money.stock = num(money.stock) - _rcost;
+                  if (money.available != null) money.available = Math.max(0, num(money.available) - _rcost);
+                  stat.upkeepPaid += _rcost;
+                  repairBuilding(div, bld);
+                  grantBuildingStatus(div, bld, P, GM);            // 复完 → 之利复挂
+                  stat.repaired += 1;
+                  eb('建设', div.name + '的「' + bld.name + '」葺治复完（费 ' + _rcost + ' 两）');
+                }
+                return;                                            // 半损态不走常维护(库银不继则续损待修)
               }
               if (bld.status === 'completed' || bld.status === 'neglected') {
                 var up = upkeepFor(bld, typeDefFor(bld.name, P));
@@ -407,6 +530,9 @@
     upkeepFor: upkeepFor,
     applyCompletion: applyCompletion,
     revertBuilding: revertBuilding,
+    damageBuilding: damageBuilding,            // S6·灾损(半损·效用减半)
+    repairBuilding: repairBuilding,            // S6·修缮(复完)
+    buildingLedger: buildingLedger,            // S7·营造可观测账(实入账+维护+工成之利)
     tick: tick
   };
 

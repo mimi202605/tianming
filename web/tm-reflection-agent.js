@@ -65,6 +65,15 @@
       var cur = GM.turn || 0;
       GM._edictTracker.filter(function (e) { return e && e.turn === cur; }).slice(0, 5).forEach(function (e) { lines.push('玩家诏:' + (e.category || '') + ':' + String(e.content || '').slice(0, 40)); });
     }
+    // agent 模式无 subcall1·补读 _turnReport(agent 守护写的实际改动流水)作结构化 ground truth(LLM 模式有 subcall1·此块仅 agent 触发·零影响)
+    if (!(GM._turnAiResults && GM._turnAiResults.subcall1) && Array.isArray(GM._turnReport)) {
+      GM._turnReport.forEach(function (e) {
+        if (!e || e.type === 'narrative' || e.type === 'summary') return;
+        var s = e._op ? (e._op + '·' + String(e.path || '').replace(/^chars[\/.]/, '')) : (e.path ? (String(e.path) + (e.new !== undefined ? ('→' + String(e.new).slice(0, 24)) : '')) : '');
+        if (s) lines.push(s + (e.reason ? '(' + String(e.reason).slice(0, 28) + ')' : ''));
+      });
+      if (lines.length > 22) lines = lines.slice(0, 22);
+    }
     return lines.join('\n');
   }
 
@@ -152,7 +161,7 @@
     if (!GM) return { skipped: 'noGM' };
     var P = global.P || {};
     if (!P.ai || !P.ai.key) return { skipped: 'noKey' };
-    var thinking = (GM._turnAiResults && GM._turnAiResults.thinking) || '';
+    var thinking = opts.thinking || (GM._turnAiResults && GM._turnAiResults.thinking) || '';  // opts.thinking:agent 模式传本回合推演叙事作"预测"基线(LLM 模式不传·读 subcall0 thinking)
     if (!thinking) return { skipped: 'noThinking' };
     // 首回合(无上回合预测)：存基线·不反思
     if (!GM._lastTurnPredictions) {

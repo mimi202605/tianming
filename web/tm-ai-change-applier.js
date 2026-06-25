@@ -240,6 +240,20 @@
     return found;
   }
 
+  // 判定 position 是否为「既有职种」(officeTree 无此座时·区分"合法地方/未列职"[保留衔] vs "AI 杜撰穿越职"[回滚幽灵衔])。
+  //   ① 跨朝代通用职种后缀(尚书/巡抚/总督等历代常见官职**类型**·非内阁/票拟/司礼监类单朝特例·与赴任正则同源·兜稀疏剧本)
+  //   ② 数据驱动:职种后缀与本剧本既有角色官衔/officeTree 节点同种(剧本自有词汇·朝代中立)。任一命中即视为真职种。
+  function _isKnownOfficeType(G, position) {
+    var p = String(position || '');
+    if (p.length < 2) return false;
+    if (/(尚书|侍郎|郎中|主事|员外郎|巡抚|巡按|总督|督师|经略|总兵|提督|镇守|总镇|参将|游击|守备|布政使|按察使|都指挥|知府|知州|知县|同知|通判|刺史|太守|节度|观察使|防御使|团练使|学士|大学士|御史|给事中|寺卿|少卿|詹事|府尹|州牧|总理|总管|留守|宣慰使|宣抚使|安抚使|招讨使|经历司)$/.test(p)) return true;
+    var sufs = [p.slice(-2)]; if (p.length >= 3) sufs.push(p.slice(-3));
+    var pool = [];
+    try { ((G && G.chars) || []).forEach(function (c) { if (!c) return; if (c.officialTitle) pool.push(String(c.officialTitle)); if (Array.isArray(c.officialTitles)) c.officialTitles.forEach(function (t) { if (t) pool.push(String(t)); }); }); } catch (_e1) {}
+    try { (function walk(nodes) { (nodes || []).forEach(function (n) { if (!n) return; if (n.name) pool.push(String(n.name)); if (Array.isArray(n.positions)) n.positions.forEach(function (pp) { if (pp && pp.name) pool.push(String(pp.name)); }); if (Array.isArray(n.subs)) walk(n.subs); }); })((G && G.officeTree) || []); } catch (_e2) {}
+    return pool.some(function (t) { return t && t !== p && sufs.some(function (s) { return s.length >= 2 && t.indexOf(s) >= 0; }); });
+  }
+
   function onAppointment(charName, position, binding) {
     var G = global.GM;
     var ch = _findChar(charName);
@@ -392,13 +406,17 @@
         if (!binding && pos.bindingHint) {
           ch.resources.publicTreasury.binding = { dept: hit.node.name, position: pos.name, hint: pos.bindingHint };
         }
+      } else if (_isKnownOfficeType(G, position)) {
+        // office tree \u65E0\u6B64\u5EA7\u00B7\u4F46\u300C\u804C\u79CD\u300D\u5267\u672C\u65E2\u6709(\u5E38\u89C1\u5730\u65B9\u804C:\u7763\u5E08/\u603B\u7763/\u5DE1\u629A\u7B49\u00B7\u53EA\u662F\u4E0D\u5728\u672C\u5267\u672C\u4E2D\u592E officeTree \u8282\u70B9\u91CC)\u3002
+        //   \u5B98\u8854\u5DF2\u5728\u4E0A\u65B9 _offAddCharOfficeTitle \u8BB0\u4E8E\u89D2\u8272\u8868 officialTitle\u00B7\u6B64\u5904**\u4FDD\u7559**(\u6811\u65E0\u5EA7\u4F46\u4EBA\u6709\u8854)\u2014\u2014\u6CBB\u771F\u673A\u902E\u7684"\u5730\u65B9\u804C\u4EFB\u547D\u540E\u5B98\u8854\u7A7A/\u88AB\u5F53\u5E7D\u7075\u56DE\u6EDA"\u3002
+        if (ch.currentPosition && !isConcurrent && ch.currentPosition.title !== position) ch.currentPosition.title = position;
+        if (global.addEB) global.addEB('\u4EFB\u514D', '\u5B98\u5236\u6811\u65E0\u300C' + position + '\u300D\u8282\u70B9\uFF08\u5730\u65B9/\u672A\u5217\u804C\u00B7\u804C\u79CD\u5DF2\u6709\uFF09\u00B7\u8854\u8BB0\u4E8E\u89D2\u8272\u8868 officialTitle');
       } else {
-        // office tree has no such seat: the AI invented a non-existent office (often an anachronistic post);
-        // roll back the ghost title instead of leaving it stuck on a real person
+        // office tree \u65E0\u6B64\u5EA7 \u4E14 \u804C\u79CD\u5267\u672C\u67E5\u65E0 \u2192 \u7591 AI \u675C\u64B0/\u7A7F\u8D8A\u804C(\u5982"\u5B87\u5B99\u8230\u961F\u53F8\u4EE4"):\u56DE\u6EDA\u5E7D\u7075\u8854(\u53CD\u7A7F\u8D8A\u5B88\u536B)\u00B7\u52FF\u7559\u5728\u771F\u4EBA\u8EAB\u4E0A\u3002
         if (typeof global._offRemoveCharOfficeTitle === 'function') { try { global._offRemoveCharOfficeTitle(ch, position); } catch (_gh) {} }
         if (ch.officialTitle === position) ch.officialTitle = _preApptTitle;
         if (ch.currentPosition && ch.currentPosition.title === position) ch.currentPosition.title = _preApptTitle;
-        if (global.addEB) global.addEB('\u4EFB\u514D\u203B', '\u5B98\u5236\u65E0 \u300C' + position + '\u300D\u4E00\u804C\uFF0C\u4EC5\u8BB0\u5728\u89D2\u8272\u8868 officialTitle');
+        if (global.addEB) global.addEB('\u4EFB\u514D\u203B', '\u5B98\u5236\u65E0\u300C' + position + '\u300D\u4E00\u804C\uFF08\u804C\u79CD\u5267\u672C\u67E5\u65E0\u00B7\u7591\u675C\u64B0\uFF09\u00B7\u56DE\u6EDA\u5E7D\u7075\u8854');
       }
     }
 
@@ -423,7 +441,7 @@
       if (_TPp && _newLv != null && !isConcurrent) {
         var _pen = _TPp.penaltyForGap(_TPp.meritFloor(_newLv) - ((ch.resources && ch.resources.virtueMerit) || 0));
         if (_pen.severity >= 2) {
-          var _hwDelta = (_pen.severity === 3 ? -8 : -4) - (_TPp.isPoliticalZone(_newLv) ? 3 : 0);
+          var _hwDelta = (_pen.severity === 3 ? -3 : -2) - (_TPp.isPoliticalZone(_newLv) ? 3 : 0);
           if (global.AuthorityEngines && typeof global.AuthorityEngines.adjustHuangwei === 'function') global.AuthorityEngines.adjustHuangwei('promotion_unqualified', _hwDelta, charName + ' 功名浅而骤擢·' + _pen.label);
           if (global.addEB) global.addEB('清议', '言官论 ' + charName + ' ' + _pen.label + '·功名未孚而骤膺重任·物议沸然');
         }
@@ -440,6 +458,37 @@
     } catch (_penE) {}
     // 身份转换：入仕/受封升阶（捐纳/科举→官身·世袭→勋贵）
     try { if (global.CharEconEngine && typeof global.CharEconEngine.reconcileSocialClassOnAppointment === 'function') global.CharEconEngine.reconcileSocialClassOnAppointment(ch); } catch (_scE) {}
+    // ★ 赴任行程:官制/AI/agent 任命与诏书任命一致——远地受任者启动赴任(否则"官制任命后官员长期不赴任"·留原地有衔无人)。
+    //   镜像 edict.js 诏书任命的赴任逻辑(目的地=职名含地名[巡抚/总兵/总督/督师/经略/节度/布政使/按察使/提督/镇守]取该地·否则京师);
+    //   即时抵达规则在线(玩家"人事调动即刻抵达")或 0 日 → 当回合即抵(复用 _arriveCharNow·与移动 bug 修复同口径)·否则启多回合行程。
+    try {
+      if (position && !isConcurrent && ch.location && !ch._travelTo && typeof _sameTravelLocation === 'function') {
+        var _apCap = (G && (G._capital || G.capital)) || '京师';
+        var _apDest = _apCap;
+        var _apRe = /([一-龥]{2,4})(?:巡抚|总兵|总督|督师|经略|节度|布政使|按察使|提督|镇守)/;
+        var _apReg = String(position || '').match(_apRe);   // 先从职名取地名(陕西巡抚→陕西)·不拼 deptHint·防贪婪正则把部名也吞进去(吏部陕西巡抚→误吞"吏部陕西")
+        if (!(_apReg && _apReg[1]) && deptHint) _apReg = String(deptHint).match(_apRe);   // 职名无地名·再独立查部名兜底
+        if (_apReg && _apReg[1]) _apDest = _apReg[1];
+        if (!_sameTravelLocation(ch.location, _apDest)) {
+          var _apDays = (typeof _estimateTravelDays === 'function') ? _estimateTravelDays(ch.location, _apDest) : 20;
+          var _apInstant = (typeof _hasInstantArrivalRule === 'function' && _hasInstantArrivalRule(G)) || !(_apDays > 0);
+          ch._travelFrom = ch.location;
+          ch._travelTo = _apDest;
+          ch._travelReason = '奉诏赴任 ' + position;
+          // ★ 不设 _travelAssignPost:onAppointment 已在上方完成完整就任(绑定/库银/官衔/officeTree holder)·
+          //   此赴任仅为"纯迁地"·抵达时 _arriveCharNow 不应再调 onAppointment 重复就任(否则双重绑定/库银交接)。
+          //   (对比 _offPickerConfirm/edict:它们只设 officeTree holder·完整就任本就靠抵达时 _arriveCharNow→onAppointment·故那两路需要 assignPost。)
+          if (_apInstant && typeof _arriveCharNow === 'function') {
+            _arriveCharNow(G, ch, (typeof global.getTSText === 'function') ? global.getTSText(G.turn || 0) : ('T' + (G.turn || 0)));  // 即抵·到任
+          } else {
+            ch._travelStartTurn = G.turn || 0;
+            ch._travelRemainingDays = _apDays;
+            try { if (typeof _syncCharacterLocationMirrors === 'function') _syncCharacterLocationMirrors(G, ch, _travelMirrorFields(ch), []); } catch (_smE) {}
+            if (global.addEB) global.addEB('人事', charName + ' 奉诏赴 ' + _apDest + ' 就任 ' + position + '（预计 ' + _apDays + ' 日抵任）');
+          }
+        }
+      }
+    } catch (_apptTravelE) { try { console.warn('[onAppointment] 赴任行程启动失败(不阻断任命)', _apptTravelE); } catch (_) {} }
     return { ok: true, treeUpdated: treeUpdated, evicted: evicted };
   }
 
@@ -918,6 +967,53 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  //  改换门庭（通用·跨朝代）：推演叙事 justify 时把人物从一势力改到另一势力。
+  //  叛降 / 归附 / 反正 / 俘获 / 拥立——只由推演驱动（显式 allegiance_changes 或叙事动词检测），非随机。
+  //  强绑定：factionId + faction 名串双锚同改，roster 关系随之；忠诚按改换类型重置（初投待考）。
+  // ═══════════════════════════════════════════════════════════════════
+  function applyAllegianceChange(G, charRef, newFacRef, opts) {
+    opts = opts || {};
+    if (!G || !Array.isArray(G.chars) || !Array.isArray(G.facs)) return { ok: false, reason: 'no_game' };
+    var ch = (charRef && typeof charRef === 'object') ? charRef
+      : G.chars.find(function (c) { return c && (c.name === charRef || c.id === charRef); });
+    if (!ch) return { ok: false, reason: 'char_not_found:' + charRef };
+    var nf = G.facs.find(function (f) { return f && (f.id === newFacRef || f.name === newFacRef); });
+    // 名不精确容错（AI/叙事常给简称「金国」而剧本作「金国（大金）」）：前缀/包含匹配·唯一命中才采·
+    // 否则 newName 是死名串→assignChar 的 _findFac 找不到→factionId 漂离老势力(绑定散)。
+    if (!nf && typeof newFacRef === 'string' && newFacRef.length >= 2) {
+      var _cands = G.facs.filter(function (f) { return f && f.name && (f.name.indexOf(newFacRef) === 0 || newFacRef.indexOf(f.name) === 0 || f.name.indexOf(newFacRef) >= 0); });
+      if (_cands.length === 1) nf = _cands[0];
+    }
+    var newName = nf ? nf.name : (typeof newFacRef === 'string' ? newFacRef : '');   // 中立桶/无对象势力名亦可（如「群盗」）
+    var newId = nf ? nf.id : '';
+    if (!newName) return { ok: false, reason: 'faction_unresolved:' + newFacRef };
+    var oldName = ch.faction || ch.factionName || '';
+    if (oldName === newName) return { ok: false, reason: 'same_faction' };
+    // 改归属·走 canonical 单一 mutator FactionMembership.assignChar：同步 char.faction+factionId
+    // + FactionIndex roster 重建 + memberLeft/memberJoined 事件 + _factionHistory（绑定根治：不再绕过直接写）。
+    var _fm = (typeof TM !== 'undefined' && TM && TM.FactionMembership) || (typeof window !== 'undefined' && window.TM && window.TM.FactionMembership) || null;
+    if (_fm && typeof _fm.assignChar === 'function') {
+      _fm.assignChar(ch, newName, { reason: opts.reason || ('改换门庭' + (opts.type ? '·' + opts.type : '')), byTurn: G.turn });
+    } else {
+      // 兜底（membership 模块缺位）：直接写双锚
+      ch.faction = newName;
+      if (newId) ch.factionId = newId; else delete ch.factionId;
+    }
+    if ('factionName' in ch) ch.factionName = newName;
+    // 忠诚按改换性质重置：反正/获救对新主忠诚较高，俘降较低，主动叛投居中——皆「初投待考」非满忠
+    var type = opts.type || '';
+    ch.loyalty = (type === 'return' || type === 'rescue' || type === 'reinstate') ? 62
+      : (type === 'surrender' || type === 'capture' || type === 'coerced') ? 30 : 42;
+    ch._allegianceHistory = Array.isArray(ch._allegianceHistory) ? ch._allegianceHistory : [];
+    ch._allegianceHistory.push({ from: oldName, to: newName, turn: G.turn || 0, type: type, reason: opts.reason || '' });
+    try { if (typeof addEB === 'function') addEB('改换门庭', ch.name + '：' + (oldName || '无属') + ' → ' + newName + (opts.reason ? '（' + opts.reason + '）' : '')); } catch (_eb) {}
+    try { if (G._turnReport) G._turnReport.push({ type: 'allegiance', from: oldName, to: newName, char: ch.name, reason: opts.reason || '', turn: G.turn || 0 }); } catch (_tr) {}
+    return { ok: true, from: oldName, to: newName, char: ch.name };
+  }
+  if (typeof global !== 'undefined') { try { global.applyAllegianceChange = applyAllegianceChange; } catch (_g) {} }
+  if (typeof window !== 'undefined') { window.applyAllegianceChange = applyAllegianceChange; }
+
+  // ═══════════════════════════════════════════════════════════════════
   //  主应用函数：applyAITurnChanges
   // ═══════════════════════════════════════════════════════════════════
 
@@ -994,6 +1090,18 @@
       } else {
         applied.failed.push({ path: ch.path, reason: result.reason });
       }
+    });
+
+    // 1.5 改换门庭（推演驱动·叛降/归附/反正/俘获/拥立）：显式列表 [{character,newFaction,reason,type}]。
+    //     兼容多种字段名；解析失败入 failed 可见。narrative 动词检测在叙事扫描段补漏（见下）。
+    (aiOutput.allegiance_changes || aiOutput.allegianceChanges || aiOutput.defections || []).forEach(function(a) {
+      if (!a || typeof a !== 'object') return;
+      var charRef = a.character || a.char || a.name || a.who || a.subject;
+      var newFac = a.newFaction || a.toFaction || a.to_faction || a.faction || a.to || a.newAllegiance;
+      if (!charRef || !newFac) return;
+      var r = applyAllegianceChange(G, charRef, newFac, { reason: a.reason || a.cause || '', type: a.type || a.kind || a.mode || '' });
+      if (r.ok) { applied.changes++; }
+      else applied.failed.push({ field: 'allegiance_changes', text: charRef + ' → ' + newFac, reason: r.reason });
     });
 
     // 2. 任免
@@ -1085,8 +1193,9 @@
             if (_fromCentral > 0) { G.guoku.grain = _central - _fromCentral; _gotGrain += _fromCentral; }
           }
           if (_gotGrain > 0) {                                             // 调入缺粮叶(按缺口分摊)
-            var _IBg = global.IntegrationBridge;
-            var _gleaves = (_IBg && typeof _IBg.getLeafDivisions === 'function') ? (_IBg.getLeafDivisions(div) || []) : [];
+            // (2026-06-20 真机修)：div 是区划节点非 adminHierarchy·递归 divisions/children 取其下叶(原 getLeafDivisions(div) 取不到)
+            var _gleaves = [];
+            (function _wl(_n){ if(!_n) return; var _ks=_n.divisions||_n.children; if(_ks&&_ks.length){for(var _j=0;_j<_ks.length;_j++)_wl(_ks[_j]);} else _gleaves.push(_n); })(div);
             if (!_gleaves.length) _gleaves = [div];
             var _needs = _gleaves.map(function(_l){
               var _rid = String(_l.id || _l.name || '');
@@ -1162,23 +1271,32 @@
 
     // 5. 事件（风闻）
     (aiOutput.events || []).forEach(function(e) {
-      // S4·来源涌现：AI 标记 critical 的决策型事件(带 choices)+ 开关开 → 升格统一事件 enqueue(S3 模态强弹窗·关键才打断玩家)·
-      //   寻常事件保持播报/走 playerChoices 软 surface(寄生为主·抉择 C)。
+      // v0.2·来源涌现：AI 标记 critical 的决策型事件(带 choices)+ 开关开 → 收编进御案时政 currentIssues
+      //   (玩家在御案时政「陛下决断」·_chooseIssueOption 开关开走 AI 据局面裁后果)。寻常事件保持播报/走 playerChoices 软 surface(寄生为主·抉择 C)。
       if (e && e.critical && Array.isArray(e.choices) && e.choices.length
-          && typeof global.eventUnificationOn === 'function' && global.eventUnificationOn()
-          && global.StoryEventBus && typeof global.StoryEventBus.enqueue === 'function') {
+          && typeof global._eventAdjudicationOn === 'function' && global._eventAdjudicationOn()) {
         try {
-          global.StoryEventBus.enqueue({
-            title: e.title || e.category || '事件',
-            description: e.text || '',
-            source: 'ai',
-            priority: (typeof e.priority === 'number') ? e.priority : 7,
-            choices: e.choices
-          });
-          applied.events++;
-          G._turnReport.push({ type:'event', category:e.category||'事件', text:e.text, critical:true, turn:G.turn||0 });
-          return; // 升格了不再 addEB(下回合 drain 弹模态呈现)
-        } catch(_seqE){ /* 升格失败·回落播报 */ }
+          var _G2 = global.GM;
+          if (_G2) {
+            if (!Array.isArray(_G2.currentIssues)) _G2.currentIssues = [];
+            var _iid = 'aiev_' + (e.id || ((_G2.turn || 0) + '_' + _G2.currentIssues.length));
+            if (!_G2.currentIssues.some(function(i){ return i && i.id === _iid; })) {
+              _G2.currentIssues.push({
+                id: _iid,
+                title: e.title || e.category || '时局要务',
+                description: e.text || '',
+                category: e.category || '要务',
+                status: 'pending',
+                raisedTurn: _G2.turn || 1,
+                raisedDate: _G2._gameDate || '',
+                choices: e.choices.map(function(c){ return { text: c.text || '应对', desc: c.desc || '', aiHint: c.aiHint || '', effect: c.effect || null }; })
+              });
+              if (global.addEB) global.addEB(e.category || '要务', '临御案：' + (e.title || e.text || ''), { credibility: e.credibility || 'medium' });
+              applied.events++;
+              return; // 收编进御案时政·不再走风闻播报
+            }
+          }
+        } catch(_seqE){ /* 收编失败·回落播报 */ }
       }
       if (global.addEB) global.addEB(e.category || '事', e.text || '', { credibility: e.credibility || 'medium' });
       applied.events++;
@@ -1212,6 +1330,25 @@
       militaryChangeCount += _applyAIArmyChangeList(aiOutput.army_changes, 'army_changes');
     }
     if (militaryChangeCount > 0) applied.semantic.military_changes = militaryChangeCount;
+    // 7.6. 采买：银→军备(治理·应急外购·尤火器外购/茶马市马·渠道由AI核定·玩家国库扣银)
+    var procureCount = 0;
+    if (Array.isArray(aiOutput.armory_procurement)) {
+      var AR_proc = (typeof window !== 'undefined' && window.TMArmory) || (typeof global !== 'undefined' && global.TMArmory);
+      if (AR_proc && typeof AR_proc.procure === 'function') {
+        aiOutput.armory_procurement.forEach(function(p){
+          if (!p || !p.category) return;
+          try {
+            var r = AR_proc.procure(G, p.category, (p.quantity != null ? p.quantity : p.amount), { unitPrice: p.unitPrice });
+            if (r && r.realQty > 0) {
+              procureCount++;
+              if (typeof addEB === 'function') addEB('军备', '采买' + p.category + r.realQty + '·费银' + r.cost + (p.channel ? ('·' + p.channel) : '') + (r.afford < 1 ? '（国库不继·减采）' : ''));
+              if (G._turnReport) G._turnReport.push({ type:'military', field:'armory_procurement', category: p.category, qty: r.realQty, cost: r.cost, channel: p.channel || '', reason: p.reason || '采买', turn: G.turn || 0 });
+            }
+          } catch (_pe) {}
+        });
+      }
+    }
+    if (procureCount > 0) applied.semantic.armory_procurement = procureCount;
     var armyCommanderFallbackCount = _applyNarrativeArmyCommanderFallback(G, aiOutput);
     if (armyCommanderFallbackCount > 0) applied.semantic.army_commander_fallback = armyCommanderFallbackCount;
     var armyFieldFallbackCount = _applyNarrativeArmyFieldFallback(G, aiOutput);
@@ -1507,6 +1644,19 @@
       if (action === 'add' && amount <= 0) return;
       amount = _applyTaxAuthorityGate(G, fa, amount);   // 官制活化 Slice③ 权限门：税类 income 按掌征税权者执行力打折
       var resource = (fa.resource === 'grain' || fa.resource === 'cloth') ? fa.resource : 'money';
+      // ★ 一次性误判护栏(2026-06-21)：LLM 偶把突发赏赐/赈济/抄没/缴获等「一次性」收支误标 recurring:true·
+      //   被当长期年例逐回合重复结算(虚增岁入岁出·且因 scheduled 分支当回合反而不入账)。
+      //   据名目/缘由关键字保守纠偏：含明确一次性词且无长期年例词 → 强制 recurring:false。
+      //   有长期信号(岁/年例/月饷/盐课/加派/皇庄/俸禄…)则不动·避免误伤辽饷加派、盐课等真年例。
+      if (fa.recurring) {
+        var _faText = String((fa.name || '') + ' ' + (fa.reason || '') + ' ' + (fa.category || ''));
+        var _oneTimeRe = /赏|赐|犒|赉|恤|赈|振济|抚恤|抄没|抄家|籍没|罚没|没入|查抄|缴获|赔款|赔偿|报效|进献|捐输|搜括|一次|临时|特支|特拨|特赐|赎银|犒军|犒赏/;
+        var _recurRe = /岁|年例|年额|月饷|月粮|月例|常额|常例|常税|经制|经常|盐课|盐引|榷|关税|商税|田赋|加派|皇庄|俸|禄|每年|每岁|逐年|年度/;
+        if (_oneTimeRe.test(_faText) && !_recurRe.test(_faText)) {
+          fa.recurring = false;
+          fa._coercedOneTime = true;
+        }
+      }
       var entry = {
         id: 'fa_' + (G.turn||0) + '_' + Math.random().toString(36).slice(2,6),
         name: fa.name || '',
@@ -1515,6 +1665,7 @@
         amount: amount,
         reason: fa.reason || '',
         recurring: !!fa.recurring,
+        _coercedOneTime: !!fa._coercedOneTime,
         addedTurn: G.turn || 0,
         stopAfterTurn: fa.stopAfterTurn || null,
         action: action
@@ -1642,7 +1793,7 @@
         entry.shortfall = shortfall;
         entry.executionStatus = executionStatus;
         // turnReport：记 actual + shortfall + status（渲染器区别对待）
-        G._turnReport.push({ type:'fiscal_adj', action: action, target: fa.target, kind: fa.kind, resource: resource, name: entry.name, amount: actualApplied, requested: amount, annualAmount: entry.recurring ? amount : 0, recurring: !!entry.recurring, shortfall: shortfall, executionStatus: executionStatus, reason: entry.reason, turn: G.turn||0 });
+        G._turnReport.push({ type:'fiscal_adj', action: action, target: fa.target, kind: fa.kind, resource: resource, name: entry.name, amount: actualApplied, requested: amount, annualAmount: entry.recurring ? amount : 0, recurring: !!entry.recurring, coercedOneTime: !!entry._coercedOneTime, shortfall: shortfall, executionStatus: executionStatus, reason: entry.reason, turn: G.turn||0 });
         // 亏欠单独登记——供下回合 AI 推演、史记、风闻录事参考
         if (shortfall > 0) {
           if (!G._fiscalShortfalls) G._fiscalShortfalls = [];
@@ -3117,9 +3268,10 @@
       if (ch.alive === false) return;                                  // 已故不动
       if (_sameTravelLocation(ch.location || '', mc.to)) return;        // 已在目标地·达成
       var heading = ch._travelTo && _sameTravelLocation(ch._travelTo, mc.to);  // AI 已为此目标启程在途
-      if (heading && !instant) return;                                 // 已在途·又无即时规则→尊重 AI 行程·不重复兜底
+      var cmdInstant = instant || !!mc.instant;                        // 即时=持久规则在线 或 本条移动令诏文直言即刻/瞬间(extractEdictMovements 标 mc.instant)
+      if (heading && !cmdInstant) return;                              // 已在途·又无即时要求→尊重 AI 行程·不重复兜底
       if (typeof ch._travelAssignPost !== 'string') ch._travelAssignPost = '';
-      if (instant) {
+      if (cmdInstant) {
         // 即时抵达规则在线→当回合直接到位（AI 漏吐 或 只启了慢程·都压成即抵·满足"不存在在途"）+ 决策1后果
         if (!heading) ch._travelFrom = ch.location || '';
         ch._travelTo = mc.to;
@@ -4042,7 +4194,9 @@
           monthlyExpense: G.guoku.monthlyExpense,
           turnIncome: G.guoku.turnIncome,
           turnExpense: G.guoku.turnExpense,
-          turnDays: G.guoku.turnDays
+          turnDays: G.guoku.turnDays,
+          armory: (typeof window !== 'undefined' && window.TMArmory) ? window.TMArmory.allStock(G) : undefined,      // 军备库(甲胄/兵刃/弓弩/火器/战马)·供AI推演军务可读
+          materials: (typeof window !== 'undefined' && window.TMArmory) ? window.TMArmory.matAllStock(G) : undefined  // 原料库(铁/硝石/皮革/木)
         } : null,
         neitang: G.neitang ? {
           money: G.neitang.money !== undefined ? G.neitang.money : G.neitang.balance,
@@ -4412,6 +4566,7 @@
       G._turnReport.push({ type:'travel_arrived', char: ch.name, to: toLoc, assignPost: assignPost, turn: G.turn || 0 });
   }
   global._arriveCharNow = _arriveCharNow;
+  global._hasInstantArrivalRule = _hasInstantArrivalRule;   // 导出·供官制面板 _offPickerConfirm 认"瞬间抵达"规则即抵(治"官制任命后长期不赴任")
 
   // ═══════════════════════════════════════════════════════════════════
   //  导出

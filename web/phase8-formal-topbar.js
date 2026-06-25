@@ -115,6 +115,14 @@
     return raw ? raw.replace(/\s+/g, '').slice(0, 8) : 'misc';
   }
 
+  // 钱/粮/布 线描印章图标（对齐 preview·治本换旧字符徽；stroke=currentColor 承 icn-* 配色）
+  function stockIconSvg(stock){
+    if (stock === 'qian') return '<svg class="tb-stk-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor"><circle cx="8" cy="8" r="6.6" stroke-width="1.5"/><rect x="5.2" y="5.2" width="5.6" height="5.6" rx="0.5" stroke-width="1.2"/></svg>';
+    if (stock === 'liang') return '<svg class="tb-stk-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M8 15 L8 3" stroke-width="1.4"/><path d="M8 6 L4 4 M8 6 L12 4 M8 9 L4.5 7 M8 9 L11.5 7 M8 12 L5 10 M8 12 L11 10" stroke-width="1.1"/></svg>';
+    if (stock === 'bu') return '<svg class="tb-stk-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor"><path d="M3 4 h10 v7 q-2.5 2.2 -5 0 q-2.5 -2.2 -5 0 z" stroke-width="1.3"/><path d="M8 4 L8 9" stroke-width="0.9"/></svg>';
+    return null;
+  }
+
   function iconClassFor(key, name){
     var raw = String(key || name || '');
     if (/huangwei|wei|皇威|威/.test(raw)) return 'icn-wei';
@@ -152,22 +160,103 @@
     return idx >= 0 ? idx : fallback;
   }
 
+  // 四官印·真伪双值（读 GM 同源；吏固定紫，民/权/威按段位告警色；真伪条 fill=真实值·白标=朝廷所见）
+  // 与 tm-topbar-vars.js 的 _renderLizhi/_renderMinxin/_renderHuangquan/_renderHuangwei 读同一字段
+  function powerSealData(key){
+    try {
+      var G = window.GM || {};
+      if (key === 'lizhi') {
+        var c = G.corruption || {};
+        var t = typeof c.trueIndex === 'number' ? c.trueIndex : (typeof c.overall === 'number' ? c.overall : 0);
+        var p = c.perceivedIndex !== undefined ? c.perceivedIndex : t;
+        var lab = t < 25 ? '清明' : t < 50 ? '尚可' : t < 70 ? '渐弊' : t < 85 ? '颓靡' : '积重';
+        // 浊度→清明度(100-浊)，使与民/权/威同向(越高越好)
+        return { ch:'吏', label:lab, trueV:Math.round(100 - t), seenV:Math.round(100 - p), tone:'purple' };
+      }
+      if (key === 'minxin') {
+        var m = G.minxin || {};
+        var mt = typeof m.trueIndex === 'number' ? m.trueIndex : (typeof m.index === 'number' ? m.index : (typeof m.value === 'number' ? m.value : 0));
+        var mp = m.perceivedIndex !== undefined ? m.perceivedIndex : mt;
+        return { ch:'民', label:String(Math.round(mt)), trueV:Math.round(mt), seenV:Math.round(mp), tone:(mt < 40 ? 'red' : mt < 55 ? 'amber' : '') };
+      }
+      if (key === 'huangquan') {
+        var h = G.huangquan || {};
+        var hi = h.index || 0;
+        var hp = h.perceivedIndex !== undefined ? h.perceivedIndex : hi;   // 皇权多无 perceived，退化为单值
+        return { ch:'权', label:String(Math.round(hi)), trueV:Math.round(hi), seenV:Math.round(hp), tone:(hi < 35 ? 'red' : hi < 50 ? 'amber' : '') };
+      }
+      if (key === 'huangwei') {
+        var w = G.huangwei || {};
+        var wi = w.index || 0;
+        var wp = w.perceivedIndex !== undefined ? w.perceivedIndex : wi;
+        return { ch:'威', label:String(Math.round(wi)), trueV:Math.round(wi), seenV:Math.round(wp), tone:(wi < 30 ? 'red' : wi < 50 ? 'amber' : (wi >= 90 ? 'red' : '')) };
+      }
+    } catch(_) {}
+    return null;
+  }
+
+  // 户口丁数（读 GM 同源·_renderHukou 用 GM.population.national.ding）
+  function _hukouDingHtml(){
+    try {
+      var p = (window.GM && GM.population && GM.population.national) || {};
+      if (typeof p.ding === 'number' && p.ding > 0) {
+        var f = (typeof window._barFmtNum === 'function') ? window._barFmtNum(p.ding) : String(p.ding);
+        return '<div class="tb-vding"><span class="k">丁</span>' + esc(f) + '</div>';
+      }
+    } catch(_e) {}
+    return '';
+  }
+  // 牌匾装饰：四角回纹角花 + 描金双线内框 + 顶心云头冠（前置于变量输出·随渲染重建）
+  var _TB_CORNER = '<svg viewBox="0 0 16 16" fill="none" stroke="#d6b66c" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14 V5 Q2 2 5 2 H14"/><path d="M6 14 V9 Q6 8 7 8 H11"/><circle cx="2" cy="14" r="1" fill="#d6b66c" stroke="none"/><circle cx="14" cy="2" r="1" fill="#d6b66c" stroke="none"/></svg>';
+  var _TB_CREST = '<svg viewBox="0 0 30 11" fill="none" stroke="#d8b86a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8.6 C11.7 8.6 10 6.4 10 4.6 C10 3 11.8 1.9 15 1.9 C18.2 1.9 20 3 20 4.6 C20 6.4 18.3 8.6 15 8.6Z"/><path d="M10 5 C6.3 5 4.4 6.6 1 6.1"/><path d="M20 5 C23.7 5 25.6 6.6 29 6.1"/><circle cx="1" cy="6.1" r="1" fill="#d8b86a" stroke="none"/><circle cx="29" cy="6.1" r="1" fill="#d8b86a" stroke="none"/></svg>';
+  var _TB_DECO = '<i class="tb-finner" aria-hidden="true"></i><i class="tb-fdeco tb-tl" aria-hidden="true">' + _TB_CORNER + '</i><i class="tb-fdeco tb-tr" aria-hidden="true">' + _TB_CORNER + '</i><i class="tb-fdeco tb-bl" aria-hidden="true">' + _TB_CORNER + '</i><i class="tb-fdeco tb-br" aria-hidden="true">' + _TB_CORNER + '</i><i class="tb-crest" aria-hidden="true">' + _TB_CREST + '</i>';
   function renderPreviewTopbarVars(){
-    return readOldVarCards().map(function(v, idx){
+    var cards = readOldVarCards();
+    var H = {};
+    cards.forEach(function(v, idx){
       var tipIdx = topbarTipIndex(v.key, idx);
       var tipAttr = tipIdx >= 0 ? ' data-tip-idx="' + attr(tipIdx) + '"' : '';
       if (v.wide) {
         var subs = (v.subs && v.subs.length ? v.subs : [['值', v.value || '--', '']]).slice(0, 3);
-        return '<div class="tb-var wide' + topbarVarTone(v) + '" data-key="' + attr(v.key) + '"' + tipAttr + '><div class="tb-vn">' + esc(v.name) + '</div><div class="tb-vsubs">' +
+        H[v.key] = '<div class="tb-var wide' + topbarVarTone(v) + '" data-key="' + attr(v.key) + '"' + tipAttr + '><div class="tb-vn">' + esc(v.name) + '</div><div class="tb-vsubs">' +
           subs.map(function(s){
             var stock = stockKey(s[0]);
             var cls = iconClassFor(stock, s[0]);
             var tr = trendClass(s[2]);
-            return '<span class="tb-vs" data-stock="' + attr(stock) + '"><span class="icn ' + esc(cls) + '">' + esc(iconForVar(s[0], s[0])) + '</span><span class="sv"><b>' + esc(s[1] || '--') + '</b><span class="sd ' + tr + '">' + esc(s[2] || '±0') + '</span></span></span>';
+            var icnInner = stockIconSvg(stock) || esc(iconForVar(s[0], s[0]));
+            return '<span class="tb-vs" data-stock="' + attr(stock) + '"><span class="icn ' + esc(cls) + '">' + icnInner + '</span><span class="sv"><b>' + esc(s[1] || '--') + '</b><span class="sd ' + tr + '">' + esc(s[2] || '±0') + '</span></span></span>';
           }).join('') + '</div></div>';
+        return;
       }
-      return '<div class="tb-var' + topbarVarTone(v) + '" data-key="' + attr(v.key) + '"' + tipAttr + '><span class="icn ' + esc(iconClassFor(v.key, v.name)) + '">' + esc(iconForVar(v.key, v.name)) + '</span><div class="tb-vbody"><div class="tb-vn">' + esc(v.name) + '</div><div class="tb-vv">' + esc(v.value || '--') + '</div></div></div>';
-    }).join('');
+      // 四官印（吏/民/权/威）→ 方印 + 真伪双值条
+      var _seal = powerSealData(v.key);
+      if (_seal) {
+        var _bar = '';
+        if (typeof _seal.trueV === 'number') {
+          var _tp = Math.max(4, Math.min(100, _seal.trueV));
+          var _sp = Math.max(2, Math.min(98, typeof _seal.seenV === 'number' ? _seal.seenV : _seal.trueV));
+          _bar = '<span class="tsi-bar"><i class="tsi-true" style="width:' + _tp + '%"></i><i class="tsi-seen" style="left:' + _sp + '%"></i></span>';
+        }
+        H[v.key] = '<div class="tb-var tb-seal-idx tone-' + (_seal.tone || 'none') + '" data-key="' + attr(v.key) + '"' + tipAttr + '><span class="tsi-ch">' + esc(_seal.ch) + '</span><span class="tsi-val">' + esc(_seal.label) + '</span>' + _bar + '</div>';
+        return;
+      }
+      // 户口（非宽·非印）：名 + 口值 + 丁数
+      var _ding = (v.key === 'hukou') ? _hukouDingHtml() : '';
+      H[v.key] = '<div class="tb-var' + topbarVarTone(v) + '" data-key="' + attr(v.key) + '"' + tipAttr + '><span class="icn ' + esc(iconClassFor(v.key, v.name)) + '">' + esc(iconForVar(v.key, v.name)) + '</span><div class="tb-vbody"><div class="tb-vn">' + esc(v.name) + '</div><div class="tb-vv">' + esc(v.value || '--') + '</div>' + _ding + '</div></div>';
+    });
+    // 按义分组：财赋(帑廪·内帑) ｜ 民数(户口) ｜ 治理(吏民权威)·组间金线 tb-gsep
+    var GS = '<span class="tb-gsep" aria-hidden="true"></span>';
+    var caifu = (H.guoku || '') + (H.neitang || '');
+    var minshu = (H.hukou || '');
+    var zhili = ['lizhi', 'minxin', 'huangquan', 'huangwei'].map(function(k){ return H[k] || ''; }).join('');
+    var groups = [];
+    if (caifu)  groups.push('<span class="tb-vgrp tb-grp-caifu">' + caifu + '</span>');
+    if (minshu) groups.push('<span class="tb-vgrp tb-grp-minshu">' + minshu + '</span>');
+    if (zhili)  groups.push('<span class="tb-vgrp tb-grp-seals">' + zhili + '</span>');
+    if (!groups.length) {  // 兜底：分组为空则按固定顺序平铺（防 key 缺失）
+      return _TB_DECO + ['guoku','neitang','hukou','lizhi','minxin','huangquan','huangwei'].map(function(k){ return H[k] || ''; }).join('');
+    }
+    return _TB_DECO + groups.join(GS);
   }
 
   function renderTimePopoverHtml(){

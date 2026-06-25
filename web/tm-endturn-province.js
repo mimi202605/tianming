@@ -282,6 +282,11 @@ function updateProvinceEconomy() {
       var _gRatio = _matchRegion.grainRatio || 7;
       province.moneyOutput = Math.floor(_totalOutput * _mRatio / (_mRatio + _gRatio));
       province.grainOutput = _totalOutput - province.moneyOutput;
+    } else if (province.taxRevenue > 0 && (province.moneyOutput == null || province.grainOutput == null)) {
+      // P1-C3·无 moneyRatio/grainRatio 区域兜底默认比例拆(折银化默认 银 60%/粮 40%)·治「产税区银/粮产空」·== null 守卫不覆盖已有
+      var _toC3 = province.taxRevenue;
+      province.moneyOutput = Math.floor(_toC3 * 0.6);
+      province.grainOutput = _toC3 - province.moneyOutput;
     }
   });
 
@@ -1510,6 +1515,11 @@ function _peRenderDisasters(div) {
     if (rec.note) html += '<span class="tm-div-disaster-note">' + escHtml(String(rec.note)) + '</span>';
     html += '</div>';
   });
+  // P1-B4·折损可见(本回合活跃天灾对税基折减·_disasterEconomyReduce·applyDisasterEconomyReduction 每回合写)
+  var _der = div._disasterEconomyReduce;
+  if (_der && ((_der.farmland || 0) > 0 || (_der.commerceVolume || 0) > 0)) {
+    html += '<div class="tm-div-disaster-row" style="border-left-color:var(--vermillion-400);"><span class="tm-div-disaster-note" style="color:var(--vermillion-400);">本回合税基折损：田 -' + Math.round((_der.farmland || 0) * 100) + '% 商 -' + Math.round((_der.commerceVolume || 0) * 100) + '%</span></div>';
+  }
   html += '</div>';
   return html;
 }

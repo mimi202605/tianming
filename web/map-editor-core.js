@@ -375,6 +375,9 @@
 
   // 点是否在 division 领土内·主 polygon 内 AND 不在任 hole 内·或在飞地内
   function pointInDivision(d, wx, wy){
+    // bbox 预筛·点在包围盒外直接跳过 pointInPolygon(大地图 hover/拾取提速·bbox 由 recomputeDerived 算·含飞地)
+    var _bb = d.bbox;
+    if (_bb && (wx < _bb.x || wy < _bb.y || wx > _bb.x + _bb.w || wy > _bb.y + _bb.h)) return false;
     if (d.polygon && pointInPolygon(wx, wy, d.polygon)){
       // 检查 hole·若在 hole 内·不算领土
       if (d.holes && d.holes.length){
@@ -1063,11 +1066,17 @@
         ctx.font = (12 / EDITOR.camera.zoom) + 'px "Noto Serif SC", "STKaiti", serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        var _z = EDITOR.camera.zoom;
+        var _off = 1 / _z;
+        // LOD·屏幕尺寸过小的地块跳过标签(大地图全图视角性能·缩放后自动显现)·可调 EDITOR.labelMinScreenPx·0=全画
+        var _lblMin = (EDITOR.labelMinScreenPx != null) ? EDITOR.labelMinScreenPx : 26;
         visible.forEach(function(v){
           if (!v.centroid) return;
+          var _bb = v.base.bbox;
+          if (_lblMin > 0 && _bb && Math.max(_bb.w, _bb.h) * _z < _lblMin) return;
           var name = v.state.name || v.base.name;
           ctx.fillStyle = 'rgba(20,15,10,0.85)';
-          ctx.fillText(name, v.centroid[0] + 1 / EDITOR.camera.zoom, v.centroid[1] + 1 / EDITOR.camera.zoom);
+          ctx.fillText(name, v.centroid[0] + _off, v.centroid[1] + _off);
           ctx.fillStyle = '#f5e8c8';
           ctx.fillText(name, v.centroid[0], v.centroid[1]);
         });

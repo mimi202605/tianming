@@ -60,16 +60,35 @@
   // 双段式提示词模式的「AI推演 (1/2)」「AI推演 (2/2)」并入流式拍位
   var ALIAS_TO_STREAM = 'AI推演 (';
 
+  // ── 模式 b · agent 模式拍表（复用现有 group → 同款电影化视觉·只换标签/进度）──
+  //   prep(step-1/2)/edict(step-4)/systems(step-5)/render(step-6+) 与 LLM 共享(两模式都跑这些步)。
+  //   ai/deepsim 中段替换为 agent 阶段:引擎先算 → 察看局面 → 亲裁推演(流式拍·轮数自适应) → 撰史。
+  //   engine-first 提前跑 systems 的子拍(更新数据/财政结算…)不在本表 → 走未知标签直通(夹在 agent 段·不乱跳)。
+  var AGENT_BEATS = [
+    { id: 'core-start',     pct: 10,   group: 'entry',    match: '时移事去' },
+    { id: 'step-1',         pct: 18,   group: 'prep',     match: '回合阶段 1/', prefix: true },
+    { id: 'step-2',         pct: 30,   group: 'prefetch', match: '回合阶段 2/', prefix: true },
+    { id: 'agent-engine',   pct: 40,   group: 'ai',       match: '⟨执政⟩引擎结算', prefix: true },   // ⟨执政⟩引擎结算
+    { id: 'agent-perceive', pct: 47,   group: 'ai',       match: '⟨执政⟩察看局面', prefix: true },   // ⟨执政⟩察看局面
+    { id: 'agent-loop',     pct: 54,   group: 'deepsim',  match: '⟨执政⟩亲裁', prefix: true, stream: true, bandMax: 84 }, // ⟨执政⟩亲裁(流式拍·轮数)
+    { id: 'agent-narrate',  pct: 86,   group: 'deepsim',  match: '⟨执政⟩撰史', prefix: true },               // ⟨执政⟩撰史
+    { id: 'step-4',         pct: 91,   group: 'edict',    match: '回合阶段 4/', prefix: true },
+    { id: 'step-5',         pct: 92,   group: 'systems',  match: '回合阶段 5/', prefix: true },
+    { id: 'step-6',         pct: 95.2, group: 'render',   match: '回合阶段 6/', prefix: true },
+    { id: 'render-shiji',   pct: 97,   group: 'render',   match: '生成史记弹窗' }
+  ];
+
   var active = false;
   var beatIdx = -1;
   var listeners = [];
+  var activeBeats = BEATS;   // 当前生效拍表(core-start 时按 agentModeOn 切换)
 
   function matchBeat(msg) {
     var label = String(msg == null ? '' : msg);
     if (!label) return null;
     if (label.indexOf(ALIAS_TO_STREAM) === 0) label = 'AI推演中';
-    for (var i = 0; i < BEATS.length; i++) {
-      var b = BEATS[i];
+    for (var i = 0; i < activeBeats.length; i++) {
+      var b = activeBeats[i];
       if (b.prefix ? label.indexOf(b.match) === 0 : label === b.match) {
         return { beat: b, index: i };
       }
@@ -78,8 +97,8 @@
   }
 
   function ceilingFor(index) {
-    var next = BEATS[index + 1];
-    return next ? Math.max(next.pct - 0.1, BEATS[index].pct) : 98.5;
+    var next = activeBeats[index + 1];
+    return next ? Math.max(next.pct - 0.1, activeBeats[index].pct) : 98.5;
   }
 
   function emit(type, payload) {
@@ -103,23 +122,26 @@
       if (m && m.beat.id === 'core-start') {
         active = true;
         beatIdx = -1;
+        // 【模式 b】按 agent 模式切换生效拍表(core-start 在两表均为 index 0·切后重 match 保险)
+        activeBeats = (typeof agentModeOn === 'function' && agentModeOn()) ? AGENT_BEATS : BEATS;
+        m = matchBeat(msg);
         // 上回合若异常未走 hideLoading，钳制残值会卡住新回合——开闸时清零
         if (typeof window._loadingMaxPct === 'number') window._loadingMaxPct = 0;
-        emit('start', { beats: BEATS });
+        emit('start', { beats: activeBeats });
       }
 
       if (active && m) {
         if (m.index > beatIdx) beatIdx = m.index;     // 拍只进不退；倒序标签不回拨
-        var beat = BEATS[beatIdx];
+        var beat = activeBeats[beatIdx];
         var shown = beat.pct;
         if (beat.stream && typeof pct === 'number' && isFinite(pct)) {
-          // 流式拍：尊重调用方实算值（50+min(15,字数/1500)），夹进拍带
+          // 流式拍：尊重调用方实算值（夹进拍带）——agent 模式下即各轮 round/maxRounds 映射的带内 pct
           shown = Math.min(Math.max(pct, beat.pct), beat.bandMax || beat.pct);
         }
         if (typeof window.setLoadingCrawlCeil === 'function') {
           window.setLoadingCrawlCeil(beat.stream ? (beat.bandMax || ceilingFor(beatIdx)) : ceilingFor(beatIdx));
         }
-        emit('beat', { index: beatIdx, beat: beat, label: String(msg), pct: shown, total: BEATS.length });
+        emit('beat', { index: beatIdx, beat: beat, label: String(msg), pct: shown, total: activeBeats.length });
         return origShow(msg, shown);
       }
 
@@ -141,7 +163,7 @@
         // 朝会 deferred 路 steps:568、错误兜底 core:514）——不能一律当收尾。
         // 双信号区分：到达末拍=正常落幕 done；未到末拍且回合已不忙=中止 abort；
         // 未到末拍且回合仍忙=暂避 pause（朝会等横插，引擎保持开闸等下一拍复出）。
-        var atEnd = beatIdx === BEATS.length - 1;
+        var atEnd = beatIdx === activeBeats.length - 1;
         var busy = typeof GM !== 'undefined' && GM
           && (GM._endTurnBusy === true || GM.busy === true);
         if (atEnd || !busy) {
@@ -161,11 +183,13 @@
   window.TM = window.TM || {};
   TM.Endturn = TM.Endturn || {};
   TM.Endturn.Progress = {
-    BEATS: BEATS,
+    BEATS: BEATS,                 // LLM 拍表(消费端初始默认·实际生效见 'start' 事件 payload.beats)
+    AGENT_BEATS: AGENT_BEATS,     // 模式 b 拍表
+    activeBeats: function() { return activeBeats; },
     isActive: function() { return active; },
     current: function() {
       return active && beatIdx >= 0
-        ? { index: beatIdx, beat: BEATS[beatIdx], total: BEATS.length }
+        ? { index: beatIdx, beat: activeBeats[beatIdx], total: activeBeats.length }
         : null;
     },
     on: function(cb) { if (typeof cb === 'function' && listeners.indexOf(cb) < 0) listeners.push(cb); },

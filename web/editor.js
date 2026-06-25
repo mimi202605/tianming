@@ -2058,8 +2058,10 @@
     document.getElementById('buildingTypeName').value = '';
     document.getElementById('buildingTypeCategory').value = 'military';
     document.getElementById('buildingTypeDescription').value = '';
-    document.getElementById('buildingTypeEffects').value = '';
-    document.getElementById('buildingTypeRequirements').value = '';
+    // S4·修孤儿抛错：buildingTypeEffects/Requirements 元素已随「效果由 AI 判定」改版从 HTML 删除，
+    //   原无守卫的 getElementById(...).value 在此抛 TypeError → openAdd 崩、「添加建筑类型」打不开。守卫之(同下方各字段)。
+    var _bteEff = document.getElementById('buildingTypeEffects'); if (_bteEff) _bteEff.value = '';
+    var _bteReq = document.getElementById('buildingTypeRequirements'); if (_bteReq) _bteReq.value = '';
     var ml = document.getElementById('buildingTypeMaxLevel'); if (ml) ml.value = 5;
     var bc = document.getElementById('buildingTypeBaseCost'); if (bc) bc.value = 1000;
     var bt = document.getElementById('buildingTypeBuildTime'); if (bt) bt.value = 3;
