@@ -599,6 +599,71 @@ function _settleOfficeMourning() {
   }
 }
 
+// ============================================================
+// S1d·才不配位反哺：能臣不得其位(大材小用·才高位卑) → 怨望离心 + 累积求去信号。flag 默认关。
+//   注：旧 calcOfficialSatisfaction(L502) 的「满意度」实为「能力-品级匹配度」·语义与标签倒置
+//   (大材小用→高分/志得意满)·且仅供面板/runtime 展示零机制后果。此处不动其展示·按正确语义
+//   (才高位卑→真不满)自建机械反哺：忠诚渐降(渐进可预见)·久郁萌求去(交 AI/S4 致仕·绝不自动罢官)。
+//   启用：P.conf.officeSatisfactionFeedbackEnabled = true（或 P.ai.同名）。关 → 字节级零回归。
+// ============================================================
+function _officeSatisfactionFeedbackOn() {
+  try {
+    var ai = (typeof P !== 'undefined' && P && P.ai) || {}, conf = (typeof P !== 'undefined' && P && P.conf) || {};
+    return !!(ai.officeSatisfactionFeedbackEnabled || conf.officeSatisfactionFeedbackEnabled);
+  } catch (e) { return false; }
+}
+function _offMonthRatio() {
+  try {
+    if (typeof GuokuEngine !== 'undefined' && GuokuEngine.getMonthRatio) return GuokuEngine.getMonthRatio() || 1;
+    if (typeof CorruptionEngine !== 'undefined' && CorruptionEngine.getMonthRatio) return CorruptionEngine.getMonthRatio() || 1;
+    if (typeof turnsForMonths === 'function') { var t = turnsForMonths(1); return (t > 0) ? 1 / t : 1; }
+  } catch (e) {}
+  return 1;
+}
+function _tickOfficialDisaffection() {
+  if (!_officeSatisfactionFeedbackOn()) return;
+  if (typeof GM === 'undefined' || !GM || !Array.isArray(GM.officeTree) || !Array.isArray(GM.chars)) return;
+  var mr = _offMonthRatio();
+  var seen = {};
+  (function walk(nodes) {
+    (nodes || []).forEach(function (n) {
+      (n.positions || []).forEach(function (p) {
+        var holder = p && p.holder;
+        if (!holder || holder === '空缺' || holder === '(空缺)' || seen[holder]) return;
+        var c = findCharByName(holder);
+        if (!c || c.isPlayer || c.alive === false) return;
+        seen[holder] = true;
+        var ability = ((c.intelligence || 50) + (c.administration || 50) + (c.military || 50)) / 3;
+        var lv = (typeof getRankLevel === 'function' ? getRankLevel(p.rank) : 0) || 9;
+        var expected = Math.max(30, 90 - lv * 3.5);
+        var gap = ability - expected;            // 大材小用(才高位卑) → gap 大正
+        var amb = c.ambition || 50;
+        if (gap >= 18 && amb >= 45) {
+          // 怀才不遇·能臣不得其位 → 怨望离心(量随才位落差 × 野心·渐进)
+          var intensity = Math.min(1, (gap - 18) / 40) * Math.min(1.4, amb / 60);
+          var drop = (0.6 + intensity * 1.6) * mr;
+          if (typeof adjustCharacterLoyalty === 'function') adjustCharacterLoyalty(c, -drop, '怀才不遇·大材小用', { source: 'official-disaffection' });
+          else c.loyalty = Math.max(0, (c.loyalty || 50) - drop);
+          c.stress = Math.min(100, (c.stress || 0) + drop * 0.4);
+          c._disaffectTurns = (c._disaffectTurns || 0) + 1;
+          if (c._disaffectTurns >= 3 && !c._seeksRemoval) {
+            c._seeksRemoval = { since: GM.turn || 0, reason: '怀才不遇' };
+            if (typeof addEB === 'function') addEB('人事', holder + ' 才高位卑·久郁不得志·萌生求去之意');
+          }
+        } else if (gap <= 12 && gap >= -12) {
+          // 位得其人 → 微增忠诚·渐消郁结
+          if (typeof adjustCharacterLoyalty === 'function') adjustCharacterLoyalty(c, Math.min(1, 0.4 * mr), '位得其人', { source: 'official-content' });
+          c._disaffectTurns = 0;
+          if (c._seeksRemoval) c._seeksRemoval = null;
+        } else if (c._disaffectTurns) {
+          c._disaffectTurns = Math.max(0, c._disaffectTurns - 1);
+        }
+      });
+      if (n.subs) walk(n.subs);
+    });
+  })(GM.officeTree);
+}
+
 // 按品级推算官职 publicTreasuryInit 默认值（当 scenario 未提供时）
 // 设计原则：中央高位官库厚·州县中等·杂职寡薄·虚衔/无品级近零
 // 史实基准：户部/内阁年支度银百万级·六部尚书署衙银十万级·州县几千两·七品以下千两以下
@@ -1333,9 +1398,58 @@ if (typeof window !== 'undefined') {
 }
 
 // ============================================================
+// S4·人事新陈代谢 Slice1·致仕（年迈乞骸骨 signal → 耄耋准致仕硬底·可诏起复·flag 默认关）
+//   原致仕全靠 AI·引擎无主动新陈代谢。按年(年终察老)：高龄官先乞致仕(可预见警示·可规避·君上可慰留)，
+//   逾硬龄则引擎准其致仕(vacate 座·标 _retired + officialTitle 致仕·_OFF_RETIRE_RE 排出树)。
+//   可规避：召回/起复(ai-change-applier 既有路径清 _retired)复出。surfaces addEB + World Reaction Bus digest 联动。
+//   启用：P.conf.officePersonnelTurnoverEnabled = true（或 P.ai.同名）。关 → 字节级零回归。
+// ============================================================
+var _OFFICE_RETIRE_CFG = { softAge: 66, hardAge: 74 };
+function _officePersonnelTurnoverOn() {
+  try {
+    var ai = (typeof P !== 'undefined' && P && P.ai) || {}, conf = (typeof P !== 'undefined' && P && P.conf) || {};
+    return !!(ai.officePersonnelTurnoverEnabled || conf.officePersonnelTurnoverEnabled);
+  } catch (e) { return false; }
+}
+function _officeChronLink(type, text) {
+  try { if (!Array.isArray(GM._chronicle)) GM._chronicle = []; GM._chronicle.push({ turn: GM.turn || 0, date: GM._gameDate || '', type: type, text: text, tags: ['联动', '官制'] }); } catch (e) {}
+}
+function _engineRetireOfficial(c, reason) {
+  if (!c) return;
+  c._preRetireTitle = c._preRetireTitle || c.officialTitle || '';
+  c._retired = true; c.retired = true; c._retireTurn = (GM.turn || 0); c._seeksRetirement = null;
+  if (c.officialTitle && !_OFF_RETIRE_RE.test(c.officialTitle)) c.officialTitle = c.officialTitle + '·致仕';
+  if (typeof _offVacateByCharName === 'function') { try { _offVacateByCharName(c.name, reason); } catch (e) {} }
+  if (typeof addEB === 'function') addEB('人事', c.name + ' ' + reason + '·致仕去位（官缺待补·可诏起复）');
+  _officeChronLink('官制↔人事', c.name + ' ' + reason + '·准致仕去位（新陈代谢·官缺待补）');
+}
+// 年终察老：高龄官乞骸骨(soft·signal·可慰留) / 耄耋准致仕(hard·去位·可起复)。idempotent(已致仕者 _OFF_RETIRE_RE/_retired 跳过)。
+function _tickOfficePersonnelTurnover() {
+  if (!_officePersonnelTurnoverOn()) return;
+  if (typeof GM === 'undefined' || !GM || !Array.isArray(GM.chars)) return;
+  var yr = (typeof turnsForDuration === 'function') ? (turnsForDuration('year') || 12) : 12;
+  if (!GM.turn || GM.turn % yr !== 0) return;     // 年终触发
+  var soft = _OFFICE_RETIRE_CFG.softAge, hard = _OFFICE_RETIRE_CFG.hardAge;
+  GM.chars.forEach(function (c) {
+    if (!c || c.isPlayer || c.alive === false || c._retired) return;
+    if (!c.officialTitle || _OFF_RETIRE_RE.test(c.officialTitle)) return;   // 非在任/已离职
+    var age = (typeof c.age === 'number') ? c.age : null;
+    if (age == null) return;
+    if (age >= hard) {
+      _engineRetireOfficial(c, '年逾' + age + '·耄耋');
+    } else if (age >= soft && !c._seeksRetirement) {
+      c._seeksRetirement = { since: GM.turn || 0, age: age };
+      if (typeof addEB === 'function') addEB('人事', c.name + ' 年' + age + '·上疏乞骸骨（君上可慰留或准其致仕）');
+    }
+  });
+}
+
+// ============================================================
 // 注册结算步骤 — 丁忧/考课结算 (perturn priority 45)
 // 历史问题同 letters：放在 startGame 内会漏掉 loadFromSlot/fullLoadGame
 // ============================================================
 if (typeof SettlementPipeline !== 'undefined') {
   SettlementPipeline.register('office_mourning', '丁忧/考课结算', function() { _settleOfficeMourning(); }, 45, 'perturn');
+  SettlementPipeline.register('officeDisaffection', '才不配位反哺', function() { _tickOfficialDisaffection(); }, 46, 'perturn');
+  SettlementPipeline.register('officePersonnelTurnover', '人事新陈代谢·致仕', function() { _tickOfficePersonnelTurnover(); }, 47, 'perturn');
 }
