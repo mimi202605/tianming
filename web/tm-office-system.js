@@ -632,6 +632,7 @@ function _tickOfficialDisaffection() {
         if (!holder || holder === '空缺' || holder === '(空缺)' || seen[holder]) return;
         var c = findCharByName(holder);
         if (!c || c.isPlayer || c.alive === false) return;
+        if (_OFF_HAREM_RE.test(c.officialTitle || '')) return;   // 后宫封号不入才不配位反哺
         seen[holder] = true;
         var ability = ((c.intelligence || 50) + (c.administration || 50) + (c.military || 50)) / 3;
         var lv = (typeof getRankLevel === 'function' ? getRankLevel(p.rank) : 0) || 9;
@@ -1432,7 +1433,7 @@ function _tickOfficePersonnelTurnover() {
   var soft = _OFFICE_RETIRE_CFG.softAge, hard = _OFFICE_RETIRE_CFG.hardAge;
   GM.chars.forEach(function (c) {
     if (!c || c.isPlayer || c.alive === false || c._retired) return;
-    if (!c.officialTitle || _OFF_RETIRE_RE.test(c.officialTitle)) return;   // 非在任/已离职
+    if (!c.officialTitle || _OFF_RETIRE_RE.test(c.officialTitle) || _OFF_HAREM_RE.test(c.officialTitle)) return;   // 非在任/已离职/后宫(后宫封号不入官制代谢)
     var age = (typeof c.age === 'number') ? c.age : null;
     if (age == null) return;
     if (age >= hard) {
@@ -1445,6 +1446,56 @@ function _tickOfficePersonnelTurnover() {
 }
 
 // ============================================================
+// S4-2·京察/大计（周期黜陟·flag 默认关）。消费 S1b 考课连劣 _reviewPoorStreak + S1d 才不配位 _seeksRemoval：
+//   每 cycleYears 年一察 —— 黜：沉沦庸劣(连劣≥demoteStreak·已经考课屡警)→ 功名罚(driving rankLevel↓·非硬罢)，
+//   陟：才高位卑之能臣(怀才不遇)→ 功名擢(人尽其才·留贤·消其求去)。皆走既有功名→runAutoPromotion 引擎(可逆·人不去职)。
+//   ★保守裁示(owner 授权我定·2026-06-30)：engine 只「降/擢」(功名·可逆·角色仍在)·不擅自革职去职(硬罢仍交 AI/玩家)。
+//   surfaces GM._jingchaResult + addEB + World Reaction Bus digest 联动。依赖 S1b/S1d 开(才有连劣/求去信号可消费)。
+//   启用：P.conf.officeJingchaEnabled = true（或 P.ai.同名）。关 → 字节级零回归。
+// ============================================================
+var _JINGCHA_CFG = { cycleYears: 3, demoteStreak: 2 };
+function _officeJingchaOn() {
+  try {
+    var ai = (typeof P !== 'undefined' && P && P.ai) || {}, conf = (typeof P !== 'undefined' && P && P.conf) || {};
+    return !!(ai.officeJingchaEnabled || conf.officeJingchaEnabled);
+  } catch (e) { return false; }
+}
+function _tickJingcha() {
+  if (!_officeJingchaOn()) return;
+  if (typeof GM === 'undefined' || !GM || !Array.isArray(GM.chars)) return;
+  var yr = (typeof turnsForDuration === 'function') ? (turnsForDuration('year') || 12) : 12;
+  var cyc = Math.max(1, Math.round(yr * _JINGCHA_CFG.cycleYears));
+  if (!GM.turn || GM.turn % cyc !== 0) return;     // 京察周期(每 cycleYears 年)
+  var SCALE = (typeof TMPromotion !== 'undefined' && TMPromotion.SCALE) || 15;
+  var CE = (typeof CharEconEngine !== 'undefined' && CharEconEngine.adjustVirtueMerit) ? CharEconEngine : null;
+  var demoted = [], promoted = [];
+  GM.chars.forEach(function (c) {
+    if (!c || c.isPlayer || c.alive === false || c._retired) return;
+    if (!c.officialTitle || _OFF_RETIRE_RE.test(c.officialTitle) || _OFF_HAREM_RE.test(c.officialTitle)) return;   // 非在任/已离职/后宫
+    var streak = c._reviewPoorStreak || 0;
+    if (streak >= _JINGCHA_CFG.demoteStreak) {
+      // 黜·沉沦庸劣（屡考劣等）→ 功名罚（rankLevel↓·可逆非硬罢），罚后清连劣计数重新起算
+      if (CE) CE.adjustVirtueMerit(c, -Math.round((6 + streak * 3) * SCALE), '京察黜降·屡考劣等');
+      c._reviewPoorStreak = 0; c._jingchaDemotedTurn = GM.turn || 0;
+      demoted.push(c.name);
+    } else if (c._seeksRemoval) {
+      // 陟·才高位卑能臣（怀才不遇·S1d）→ 功名擢（人尽其才·留贤），消其求去与积郁
+      if (CE) CE.adjustVirtueMerit(c, Math.round(10 * SCALE), '京察拔擢·沉才得伸');
+      c._seeksRemoval = null; c._disaffectTurns = 0; c._jingchaPromotedTurn = GM.turn || 0;
+      promoted.push(c.name);
+    }
+  });
+  if (demoted.length || promoted.length) {
+    GM._jingchaResult = { turn: GM.turn || 0, demoted: demoted, promoted: promoted };
+    var _seg = [];
+    if (demoted.length) _seg.push('黜降庸劣：' + demoted.slice(0, 8).join('、'));
+    if (promoted.length) _seg.push('拔擢沉才：' + promoted.slice(0, 8).join('、'));
+    if (typeof addEB === 'function') addEB('官制', '京察大计·' + _seg.join('；'));
+    _officeChronLink('官制↔人事', '京察大计·' + _seg.join('；') + '（汰庸进贤·新陈代谢）');
+  }
+}
+
+// ============================================================
 // 注册结算步骤 — 丁忧/考课结算 (perturn priority 45)
 // 历史问题同 letters：放在 startGame 内会漏掉 loadFromSlot/fullLoadGame
 // ============================================================
@@ -1452,4 +1503,5 @@ if (typeof SettlementPipeline !== 'undefined') {
   SettlementPipeline.register('office_mourning', '丁忧/考课结算', function() { _settleOfficeMourning(); }, 45, 'perturn');
   SettlementPipeline.register('officeDisaffection', '才不配位反哺', function() { _tickOfficialDisaffection(); }, 46, 'perturn');
   SettlementPipeline.register('officePersonnelTurnover', '人事新陈代谢·致仕', function() { _tickOfficePersonnelTurnover(); }, 47, 'perturn');
+  SettlementPipeline.register('officeJingcha', '京察大计·黜陟', function() { _tickJingcha(); }, 48, 'perturn');
 }
