@@ -108,8 +108,11 @@ function ok(cond, msg) {
     const rAll = AA.validateDraft(dF);
     // _defaultChecks 已从 3 组增至 5 组(2026-06 绍宋教训新增 timeline-compliance + char-completeness)·按命名组断言(鲁棒·免再被新增打破)
     ok(['admin-population', 'faction-refs', 'region-coverage', 'timeline-compliance', 'char-completeness'].every(function (g) { return rAll.results[g]; }), 'validateDraft 默认跑全部 5 组结构检查(含 timeline-compliance/char-completeness)');
-    // 此最小 draft(张仅 name/faction)faction-refs 与 char-completeness 双失败·按具体组断言而非脆弱的 failed 计数
-    ok(rAll.ok === false && rAll.results['faction-refs'] && !rAll.results['faction-refs'].ok, '聚合报告反映 faction-refs 失败(残桩人物亦触发 char-completeness)');
+    // 此最小 draft(张仅 name/faction)faction-refs 与 char-completeness 双失败·两组都断言(锁全失败行为·非脆弱的 failed 计数)
+    ok(rAll.ok === false
+      && rAll.results['faction-refs'] && !rAll.results['faction-refs'].ok
+      && rAll.results['char-completeness'] && !rAll.results['char-completeness'].ok,
+      '聚合报告反映 faction-refs + char-completeness 双失败(残桩人物)');
 
     // ───────────────────────── S2 ─────────────────────────
     console.log('— loop：注入 caller 驱动 NL→toolcall→改draft→finish —');
