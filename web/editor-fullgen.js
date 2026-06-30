@@ -2048,34 +2048,24 @@
   }
 
   function renderAll() {
-    renderPlayerOverview();
-    renderCharacters();
-    renderFactions();
-    renderParties();
-    renderClasses();
-    renderItems();
-    renderMilitaryNew();
-    renderTechTree();
-    renderCivicTree();
-    renderVariables();
-    renderRules();
-    renderEvents();
-    renderTimeline();
-    renderMap();
-    renderWorldSettings();
-    renderEraState();
-    renderEconomyConfig();
-    renderPostSystem();
-    renderBuildingSystem();
-    renderVassalSystem();
-    renderTitleSystem();
-    renderMapSystem();
-    renderTerrainConfig();
-    renderGovernment();
-    renderOfficeTree();
-    if (typeof renderGoalsList === 'function') renderGoalsList();
-    if (typeof renderInfluenceGroupsList === 'function') renderInfluenceGroupsList();
-    if (typeof renderOffendGroupsList === 'function') renderOffendGroupsList();
+    // 逐个渲染·任一渲染器未定义(脚本加载竞态/模块局部非全局·如 renderMapSystem/renderTerrainConfig 仅 TM.Editor.map.*)
+    // 或运行时抛错·都只跳过它·不中断其余面板。
+    // 原为 25 个无守卫裸调:实测 renderMapSystem 在 editor.html 上下文非全局→每次加载 renderAll 必 ReferenceError 中断
+    // →其后 government/officeTree/goals/influenceGroups/offendGroups 初始批量渲染全漏(虽点侧栏可补渲)+每次报错。
+    // 与 editor-core.js 的 _panelRenderers(早已 if(typeof renderMapSystem)守卫)对齐。
+    ['renderPlayerOverview', 'renderCharacters', 'renderFactions', 'renderParties', 'renderClasses', 'renderItems',
+      'renderMilitaryNew', 'renderTechTree', 'renderCivicTree', 'renderVariables', 'renderRules', 'renderEvents',
+      'renderTimeline', 'renderMap', 'renderWorldSettings', 'renderEraState', 'renderEconomyConfig', 'renderPostSystem',
+      'renderBuildingSystem', 'renderVassalSystem', 'renderTitleSystem', 'renderMapSystem', 'renderTerrainConfig',
+      'renderGovernment', 'renderOfficeTree', 'renderGoalsList', 'renderInfluenceGroupsList', 'renderOffendGroupsList']
+      .forEach(function (name) {
+        try {
+          var f = (typeof window !== 'undefined') ? window[name] : null;
+          if (typeof f === 'function') f();
+        } catch (e) {
+          (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'renderAll:' + name) : console.warn('[editor] renderAll ' + name + ' 失败(已跳过·不阻断其余):', e);
+        }
+      });
   }
 
   function renderPlayerOverview() {
