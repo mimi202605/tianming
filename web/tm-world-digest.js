@@ -76,9 +76,11 @@
         .concat((sig.affectedParties || []).map(function (x) { return x && x.name; }))
         .filter(Boolean);
       var whoStr = who.slice(0, 4).join('、');
-      var cause = sig.reason ? _compact(sig.reason, 90) : String(sig.kind || '');
-      if (!cause && !whoStr) continue;
-      var line = cause + (whoStr ? ' → 牵动 ' + whoStr : '');
+      var effect = sig.reason ? _compact(sig.reason, 90) : String(sig.kind || '');   // 此信号本身（果）
+      if (!effect && !whoStr) continue;
+      // W1c·真因果链：信号带上游因（cause）则前置成「因 →致 果」，再「→ 牵动谁」，串成 A→B→C 而非孤立一果
+      var head = sig.cause ? (_compact(sig.cause, 60) + ' →致 ' + effect) : effect;
+      var line = head + (whoStr ? ' → 牵动 ' + whoStr : '');
       out.push({ turn: sig.turn, domain: _domainOf(sig.sourceSystem), line: line, weight: Math.min(2, 1 + Math.abs(sig.intensity || 0)) });
     }
 
@@ -118,7 +120,56 @@
     return s;
   }
 
-  var api = { collect: collect, promptBlock: promptBlock, _domainOf: _domainOf };
+  // ── W4·趋势预演（前瞻·"若不干预将如何牵动"·逆天改命主轴的轻量闭环）──
+  // promptBlock 回望（上回合已牵动）；本块前瞻——扫当前各 metric「濒临阈值」态，把"君上本回合若不出手、
+  //   势将如此牵动"的默认命运轨迹摆给 AI（与玩家），让玩家「逆之即改命」。**不翻管线时序**（仍只是 prompt
+  //   前置的一块·读现有 GM 态/phase·确定性无 random），只在真·危机边缘触发，否则返空不污染。
+  function _num(v) { return (typeof v === 'number' && isFinite(v)) ? v : null; }
+  function previewBlock(GM, opts) {
+    GM = GM || _gm(); if (!GM) return '';
+    opts = opts || {};
+    var warns = [];   // {sev, domain, line}
+
+    // 1·阶层濒危（满意度低→离心/事变）
+    var classes = Array.isArray(GM.classes) ? GM.classes : (Array.isArray(GM.socialClasses) ? GM.socialClasses : []);
+    classes.forEach(function (c) {
+      var sat = c && _num(c.satisfaction);
+      if (sat != null && sat <= 22) warns.push({ sev: 100 - sat, domain: '阶层', line: (c.name || '某阶层') + ' 满意 ' + Math.round(sat) + '·已濒离心，再受激恐生事变' });
+    });
+
+    // 2·民心濒沸（trueIndex 低=不稳）
+    var mx = GM.minxin && _num(GM.minxin.trueIndex);
+    if (mx != null && mx <= 30) warns.push({ sev: 90 + (30 - mx), domain: '民心', line: '民心 ' + Math.round(mx) + '·已近沸点，若无安抚恐燃民变' });
+
+    // 3·国库将竭（破产态/赤字下行）
+    var gk = GM.guoku || {};
+    if (gk.bankruptcy && gk.bankruptcy.active) warns.push({ sev: 96, domain: '财政', line: '帑廪已破产，再不开源节流，欠饷赈断、连锁难止' });
+    else if (_num(gk.balance) != null && gk.balance < 0 && gk.trend === 'down') warns.push({ sev: 72, domain: '财政', line: '国库赤字且仍在下行，照此势恐旬月内告罄' });
+
+    // 4·吏治痼疾（trueIndex 高=污浊）
+    var corr = GM.corruption && _num(GM.corruption.trueIndex);
+    if (corr != null && corr >= 72) warns.push({ sev: corr, domain: '吏治', line: '吏治污浊 ' + Math.round(corr) + '·已成蔓延之势，若不澄汰恐积重难返' });
+
+    // 5·君威衰/权臣坐大
+    var hw = GM.huangwei && _num(GM.huangwei.index);
+    if (hw != null && hw <= 30) warns.push({ sev: 80 + (30 - hw), domain: '皇权', line: '君威 ' + Math.round(hw) + '·已衰，号令恐难行，权臣阴谋易乘隙' });
+    var pm = GM.huangquan && GM.huangquan.powerMinister;
+    var pmName = pm && (typeof pm === 'string' ? pm : pm.name);
+    if (pmName) warns.push({ sev: 78, domain: '皇权', line: '权臣 ' + pmName + ' 坐大，若不制衡恐架空君权' });
+
+    // 6·阴谋将发（ripe·与 aiContextBlock 互见·此处纳入统一威胁前瞻）
+    var plots = Array.isArray(GM._activePlots) ? GM._activePlots.filter(function (p) { return p && p.stage === 'ripe'; }) : [];
+    plots.slice(0, 2).forEach(function (p) { warns.push({ sev: 88, domain: '阴谋', line: (p.ringleader || '某人') + ' 之谋将发，若不查办，本回合恐酿大变' }); });
+
+    if (!warns.length) return '';
+    warns.sort(function (a, b) { return b.sev - a.sev; });
+    var top = warns.slice(0, (opts.limit != null ? opts.limit : 4));
+    var s = '\n【天下气运·若不干预之趋势】（按当前态势前瞻：君上本回合若不出手，势将如此牵动；逆之即「改命」。仅前瞻参考·实际由本回合作为与推演定）\n';
+    top.forEach(function (w) { s += '· [' + w.domain + '] ' + w.line + '\n'; });
+    return s;
+  }
+
+  var api = { collect: collect, promptBlock: promptBlock, previewBlock: previewBlock, _domainOf: _domainOf };
   if (typeof window !== 'undefined') window.WorldDigest = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();

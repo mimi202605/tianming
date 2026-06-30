@@ -76,5 +76,39 @@ ok(b8.indexOf('天下牵动') >= 0 && b8.indexOf('钱荒→建议commerce-1') >=
 global.GM = { turn: 5, _chronicle: [], _socialPoliticalSignals: { items: [] } };
 ok(WD.promptBlock(GM, { turnsBack: 1 }) === '', '无 coupling 且无 items 返空');
 
+// 10·W1c·真因果链：信号带 cause → 渲成「因 →致 果 → 牵动谁」三环链
+global.GM = { turn: 8, _chronicle: [], _socialPoliticalSignals: { items: [
+  { turn: 8, sourceSystem: 'fiscal', kind: 'levy', cause: '边镇军费缺口', reason: '加派辽饷', intensity: 7, affectedClasses: [{ name: '农户' }, { name: '流民' }], affectedParties: [] },
+  { turn: 8, sourceSystem: 'minxin', kind: 'unrest', reason: '无上游因·只渲果', intensity: 5, affectedClasses: [{ name: '士绅' }], affectedParties: [] }
+] } };
+var c10 = WD.collect(GM, { turnsBack: 1 });
+var chain = c10.filter(function (it) { return /加派辽饷/.test(it.line); })[0];
+ok(chain && /边镇军费缺口 →致 加派辽饷 → 牵动 农户、流民/.test(chain.line), '带 cause → 因→致→果→牵动 三环链');
+var plain = c10.filter(function (it) { return /无上游因/.test(it.line); })[0];
+ok(plain && plain.line.indexOf('→致') < 0 && /无上游因·只渲果 → 牵动 士绅/.test(plain.line), '无 cause → 仍渲果→牵动（不强插→致）');
+
+// 11·W4·趋势预演 previewBlock：扫濒危态前瞻「若不干预将如何牵动」
+global.GM = {
+  turn: 20,
+  classes: [{ name: '流民', satisfaction: 14 }, { name: '士绅', satisfaction: 70 }],
+  minxin: { trueIndex: 24 },
+  guoku: { balance: -50000, trend: 'down', bankruptcy: { active: false } },
+  corruption: { trueIndex: 78 },
+  huangwei: { index: 26 },
+  huangquan: { powerMinister: { name: '魏忠贤' } },
+  _activePlots: [{ ringleader: '温体仁', stage: 'ripe' }]
+};
+var pv = WD.previewBlock(GM, { limit: 4 });
+ok(/天下气运·若不干预之趋势/.test(pv) && /逆之即「改命」/.test(pv), 'previewBlock 头部·逆天改命主轴');
+ok(/\[阶层\] 流民 满意 14·已濒离心/.test(pv), '阶层濒危（流民 14）入预演');
+ok(/\[民心\]/.test(pv) && /\[财政\]|\[吏治\]|\[皇权\]|\[阴谋\]/.test(pv), '多域濒危态被收');
+ok(pv.split('\n').filter(function (l) { return /^· \[/.test(l); }).length <= 4, 'limit=4·至多4条（不过载）');
+ok(pv.indexOf('士绅') < 0, '健康项（士绅 70）不入预演');
+// 严重度排序：流民满意14(sev86) 应在前；powerMinister 取 .name 不报错
+ok(/魏忠贤/.test(WD.previewBlock(GM, { limit: 8 })), '权臣 powerMinister.name（对象形）正确解析');
+// 全健康 → 返空不污染
+global.GM = { turn: 20, classes: [{ name: '农户', satisfaction: 60 }], minxin: { trueIndex: 65 }, guoku: { balance: 90000, trend: 'up' }, corruption: { trueIndex: 28 }, huangwei: { index: 66 }, huangquan: {} };
+ok(WD.previewBlock(GM) === '', '太平无濒危 → 返空（不污染 prompt）');
+
 console.log('\nsmoke-world-digest: PASS ' + pass + '/' + (pass + fail));
 if (fail > 0) process.exit(1);

@@ -17,6 +17,8 @@
   function _gm() { return (typeof GM !== 'undefined' && GM) ? GM : null; }
   function _conf() { return (typeof P !== 'undefined' && P && P.conf) ? P.conf : {}; }
   function _battleOn() { return _conf().worldReactorBattleEnabled === true; }   // 默认 false·安全
+  // 注：财政→民心/阶层 reactor（W2b）不在本模块——它走已活的 scanRuntimePressures（tm-social-political-signals.js）
+  //   新增 treasury-strain emitter，复用其去重/applyPending/inferClassImpacts 通路。军事→势力走本模块因其无活路径。
 
   function _findFac(G, name) {
     if (!G || !Array.isArray(G.facs) || !name) return null;
@@ -65,7 +67,8 @@
         _chron(G, '军事↔势力',
           loser + ' 战败于 ' + winner + '·' + loser + ' 实力' + MIL.LOSER.strength + '·合法性' + MIL.LOSER.legitimacy + '·士气' + MIL.LOSER.morale +
           '（军务已结算·叙事勿重复扣实力）', ['联动', '军事', '势力']);
-        // 双算护栏标记：供推演 prompt 据此告知 AI「战败实力已结算，勿再 strength_delta 重扣」
+        // 双算护栏标记：①软防—chronicle 进 digest 告知 AI「已结算·勿重复扣」②硬防—tm-endturn-apply.js
+        //   faction_changes applier 读本表，对本回合已结算 loser 的负向 strength_delta 硬置 0（W2a 硬护栏）
         if (!Array.isArray(G._battleSettledFactions)) G._battleSettledFactions = [];
         G._battleSettledFactions.push({ faction: loser, turn: G.turn || 0, strengthDelta: MIL.LOSER.strength });
         if (G._battleSettledFactions.length > 20) G._battleSettledFactions = G._battleSettledFactions.slice(-20);

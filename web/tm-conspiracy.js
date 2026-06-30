@@ -368,21 +368,31 @@
     return '初萌';
   }
   // AI 叙事上下文块(喂进 endturn prompt·让叙事者知道谁在密谋·将发者交其决成败)
+  // W3·补盲区：除定性热度桶外，附原始运行态数值（密谋值/败露度/同谋数/酝酿回合），让叙事者据真值把握火候，
+  //   而非只见「酝酿已深」这类粗桶（此前 momentum/exposure 数值对 AI 不可见，是世界反应总线 W3 盲区之一）。
+  function _plotRuntime(G, p, rosterWord) {
+    var nowT = (G && G.turn) || 0;
+    var aged = Math.max(0, nowT - (p.startTurn || 0));
+    var roster = (p.conspirators && p.conspirators.length)
+      ? ('·' + (rosterWord || '同谋') + p.conspirators.length + '人（' + p.conspirators.slice(0, 3).join('、') + (p.conspirators.length > 3 ? '等' : '') + '）')
+      : '';
+    return '·密谋' + Math.round(p.momentum || 0) + '·败露' + Math.round(p.exposure || 0) + roster + (aged ? ('·已酿' + aged + '回合') : '');
+  }
   function aiContextBlock(G) {
     G = G || _G();
     var plots = activePlots(G);
     if (!plots.length) return '';
     var brew = plots.filter(function (p) { return p.stage !== 'ripe'; });
     var ripe = plots.filter(function (p) { return p.stage === 'ripe'; });
-    var s = '【密谋·暗流】朝中暗流涌动（机械引擎逐回合推演·请在叙事中呼应·勿凭空另起重复阴谋）：\n';
+    var s = '【密谋·暗流】朝中暗流涌动（机械引擎逐回合推演·密谋值满100将发、败露满100则事泄就擒·请据火候在叙事中呼应·勿凭空另起重复阴谋）：\n';
     brew.forEach(function (p) {
       s += '  ' + p.ringleader + ' 暗中' + _kindCN(p.kind) + (p.target ? ('（指 ' + p.target + '）') : '') + '·' + _heatCN(p)
-        + ((p.conspirators && p.conspirators.length) ? ('·同谋 ' + p.conspirators.slice(0, 3).join('、')) : '')
+        + _plotRuntime(G, p, '同谋')
         + (p._knownToPlayer ? '·已露端倪' : '·尚隐秘') + '\n';
     });
     ripe.forEach(function (p) {
       s += '  ★将发：' + p.ringleader + ' ' + _kindCN(p.kind) + (p.target ? ('（指 ' + p.target + '）') : '')
-        + ((p.conspirators && p.conspirators.length) ? ('·党羽 ' + p.conspirators.slice(0, 3).join('、')) : '')
+        + _plotRuntime(G, p, '党羽')
         + ' — 君威已衰·蓄势待发；你可据剧情决其成败，若坐实务必 record_conspiracy_events 记录。\n';
     });
     s += '  ※ 已了结者(下狱/伏诛)勿重复另立；引擎会自行酝酿与败露。\n';

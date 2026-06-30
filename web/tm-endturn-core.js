@@ -812,6 +812,11 @@ EndTurnHooks.registerFragment('party-class-calibration', function(ctx) {
       var _wdBlock = WorldDigest.promptBlock(GM, { turnsBack: 1 });
       if (_wdBlock) lines.push(_wdBlock);
     }
+    // W4·趋势预演（前瞻·「若不干预将如何牵动」）：紧随回望综述之后，给 AI/玩家默认命运轨迹，立逆天改命之势
+    if (typeof WorldDigest !== 'undefined' && typeof WorldDigest.previewBlock === 'function') {
+      var _wpBlock = WorldDigest.previewBlock(GM, { limit: 4 });
+      if (_wpBlock) lines.push(_wpBlock);
+    }
   } catch (_wdE) {}
   try {
     if (typeof TM !== 'undefined' && TM.PlayerActionSignals && typeof TM.PlayerActionSignals.formatForPrompt === 'function') {

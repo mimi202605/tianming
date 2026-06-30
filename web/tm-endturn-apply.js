@@ -106,6 +106,14 @@
     }
     return "";
   }
+  // W2a 双算硬护栏谓词（抽出·可单测真代码）：会战 reactor 本回合(容 1 拍·覆盖 GM.turn++ 在 ai/post-turn 之间
+  //   的边界)已负扣的 loser，AI 再负扣 strength_delta 即双算 → 返 0 拦截；正向/未结算/超 1 拍 原样返回。
+  function _tmGuardBattleStrengthDelta(G, facName, sd) {
+    if (!(sd < 0) || !G || !Array.isArray(G._battleSettledFactions) || !facName) return sd;
+    var hit = G._battleSettledFactions.some(function(b){ var _dt = (G.turn||0) - (b && b.turn || 0); return b && b.faction === facName && _dt >= 0 && _dt <= 1 && (b.strengthDelta||0) < 0; });
+    return hit ? 0 : sd;
+  }
+  ns.guardBattleStrengthDelta = _tmGuardBattleStrengthDelta;   // 暴露供单测真代码（smoke-w2a-doublecount-guard）
   ns.writeBack = async function(ctx) {
     ensureGroups(ctx);
     var _applyStart = Date.now();
@@ -1623,8 +1631,18 @@ inst._imprisonedTurn = GM.turn||0;
             if (fc.strength_delta) {
               var oldS = fac.strength || 50;
               var _strClamp = (typeof _getModeParams === 'function') ? _getModeParams().strengthClamp * 2 : 20;
-              fac.strength = clamp(oldS + clamp(parseInt(fc.strength_delta)||0, -_strClamp, _strClamp), 0, 100);
-              recordChange('factions', fc.name, 'strength', oldS, fac.strength, fc.reason || 'AI\u63A8\u6F14');
+              var _sd = clamp(parseInt(fc.strength_delta)||0, -_strClamp, _strClamp);
+              // W2a \u786C\u62A4\u680F\uFF1A\u672C\u56DE\u5408\u8BE5\u52BF\u529B\u5B9E\u529B\u5DF2\u7531\u4F1A\u6218 reactor \u7ED3\u7B97\uFF08_battleSettledFactions\u00B7prompt \u5DF2\u544A\u77E5\u300C\u519B\u52A1\u5DF2\u7ED3\u7B97\u00B7\u52FF\u91CD\u590D\u6263\u300D\uFF09\uFF0C
+              //   AI \u82E5\u4ECD\u8D1F\u6263\u5176\u5B9E\u529B\u5373\u53CC\u7B97 \u2192 \u786C\u7F6E 0 \u62E6\u622A\u3002\u8F6F\u9632(prompt)+\u786C\u9632(\u6B64\u5904)\u53CC\u4FDD\u9669\u3002\u8C13\u8BCD\u62BD _tmGuardBattleStrengthDelta \u53EF\u5355\u6D4B\u3002
+              var _sdG = _tmGuardBattleStrengthDelta(GM, fc.name, _sd);
+              if (_sdG === 0 && _sd < 0) {
+                try { addEB('\u52BF\u529B\u52A8\u6001', fc.name + '\u00B7\u672C\u56DE\u5408\u5B9E\u529B\u5DF2\u7531\u519B\u52A1\u7ED3\u7B97\u00B7\u62E6\u622A AI \u91CD\u590D\u6263' + _sd + '\uFF08\u9632\u53CC\u7B97\uFF09'); } catch(_wgd){}
+              }
+              _sd = _sdG;
+              if (_sd !== 0) {
+                fac.strength = clamp(oldS + _sd, 0, 100);
+                recordChange('factions', fc.name, 'strength', oldS, fac.strength, fc.reason || 'AI\u63A8\u6F14');
+              }
             }
             if (fc.economy_delta) {
               fac.economy = clamp((fac.economy || 50) + clamp(parseInt(fc.economy_delta)||0, -20, 20), 0, 100);

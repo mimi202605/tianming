@@ -3171,6 +3171,19 @@
               if (dp) tp1 += '\n  吏治·6部门：' + dp;
             }
           } catch(_e){}
+          // ── 腐败九源 breakdown（因何而腐·W3 补盲区）──
+          //   此前 GM.corruption.sources 只喂 UI 抽屉，prompt 仅给标量+6部门→AI 盲于「成因」；
+          //   与民心 sources（下方）对称补上，让推演知道腐败由俸薄/急征/鬻官/宠信…何源而起。
+          try {
+            if (GM.corruption && GM.corruption.sources) {
+              var _corrSrcCN = { lowSalary:'俸薄', laxSupervision:'监弛', emergencyLevy:'急征', officeSelling:'鬻官', nepotism:'荐幸', innerCircle:'宠信', redundancy:'冗员', institutional:'制弊', lumpSumSpending:'巨支' };
+              var _cs = GM.corruption.sources;
+              var corrSrc = Object.keys(_cs).filter(function(k){ return Math.abs(_cs[k]) > 0.5; })
+                .sort(function(a,b){ return Math.abs(_cs[b]) - Math.abs(_cs[a]); })
+                .slice(0,6).map(function(k){ var v=_cs[k]; return (_corrSrcCN[k]||k) + (v>=0?'+':'') + (Math.round(v*10)/10); }).join(' ');
+              if (corrSrc) tp1 += '\n  吏治·九源（因何而腐）：' + corrSrc;
+            }
+          } catch(_e){}
           // ── 14源累积（民心驱动因素）──
           try {
             if (GM.minxin && GM.minxin.sources) {

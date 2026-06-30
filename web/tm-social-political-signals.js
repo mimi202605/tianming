@@ -245,6 +245,8 @@
       confidence: clamp(raw.confidence != null ? raw.confidence : 0.7, 0, 1),
       linkedIssue: compact(raw.linkedIssue || raw.issueId || raw.topicId || raw.chaoyiTrackId || '', 100),
       reason: reason,
+      // W2c·上游因（此信号「由什么引发」）——供 WorldDigest 串成「因→果→牵动谁」因果链；缺省空串不改既有行为
+      cause: compact(raw.cause || raw.causedBy || raw.upstream || raw.trigger || '', 160),
       characterName: compact(raw.characterName || raw.character || raw.executorName || raw.delegateCharacter || raw.sourceCharacter || raw.actorName || '', 80),
       characterId: compact(raw.characterId || raw.charId || raw.executorId || raw.delegateCharacterId || raw.sourceCharacterId || '', 80),
       executorName: compact(raw.executorName || raw.executor || '', 80),
@@ -1397,6 +1399,29 @@
     return vals.reduce(function(a, b) { return a + b; }, 0) / vals.length;
   }
 
+  // W2b·国库紧张（破产/赤字）→ 牵动流民·农户（赈济救荒无力、欠饷积压）。读 GM.guoku 确定性态，
+  //   与既有 fiscal-peasant-burden（民负/加派→农户）互补：那条管「负担重」，这条管「国库空·赈不起」。
+  function readTreasuryStrain(root) {
+    var gk = root && root.guoku;
+    if (!gk || typeof gk !== 'object') return null;
+    var bk = gk.bankruptcy;
+    if (bk && bk.active) {                                  // 破产态最重（与 guoku-engine.checkBankruptcy 同源）
+      var sev = Number(bk.severity);
+      sev = isFinite(sev) && sev > 0 ? (sev > 1 ? sev / 100 : sev) : 0.85;   // severity 容 0-1 或 0-100 两种口径
+      return { severity: clamp(sev, 0.5, 1), cause: '帑廪告罄·国库破产', trigger: 'bankruptcy' };
+    }
+    var bal = Number(gk.balance);
+    var annual = Number(gk.annualIncome) || (Number(gk.monthlyIncome) || 0) * 12 || 0;
+    if (isFinite(bal) && bal < 0 && annual > 0) {
+      var deficitRatio = -bal / annual;                    // = 赤字/年入·与 guoku-engine:835 同口径
+      var thr = tuneNumber(root, 'socialSignals.thresholds.treasuryDeficit', 0.15);
+      if (deficitRatio >= thr) {
+        return { severity: clamp(deficitRatio / 0.5, 0, 1), cause: '国库赤字·岁入不抵岁出', trigger: 'deficit' };  // 国库赤字·岁入不抵岁出
+      }
+    }
+    return null;
+  }
+
   function scanKey(root, source, kind, turn) {
     return [turn || 0, source || 'runtime-pressure', kind || 'signal'].join(':');
   }
@@ -1467,6 +1492,29 @@
             unrestDelta: { grievance: -Math.round(2 + tSeverity * 4), petition: -Math.round(1 + tSeverity * 3) },
             demand: 'reduce tax and levy pressure',
             reason: 'tax pressure'
+          };
+        })
+      });
+    }
+
+    // W2b·国库紧张（破产/赤字）→ 牵动流民·农户。带 cause 上游因 → WorldDigest 串「因→致→果→牵动」因果链（W2c）。
+    var strain = readTreasuryStrain(root);
+    if (strain) {
+      var sSeverity = strain.severity;
+      emit('treasury-strain', {
+        tags: ['fiscal', 'treasury', 'deficit', 'relief', 'refugee'],
+        intensity: sSeverity,
+        confidence: 0.86,
+        cause: strain.cause,
+        // reason=下游后果（不复述 cause 里的「国库赤字/告罄」，避免链条重复）
+        reason: strain.trigger === 'bankruptcy' ? '府库一空，赈济停摆、边饷断绝、民生失养' : '赈济救荒无力、欠饷积压，民生渐困',
+        affectedClasses: inferClassImpacts(root, ['refugee', 'famine', 'relief', 'displaced', 'poor', 'peasant', 'rural', 'household', '流民', '灾民', '赈', '农', '民', '贫'], function() {
+          return {
+            satisfactionDelta: -Math.max(3, Math.round(3 + sSeverity * 6)),
+            influenceDelta: 0,
+            unrestDelta: { grievance: -Math.round(3 + sSeverity * 5), petition: -Math.round(2 + sSeverity * 3) },
+            demand: 'state relief and back-pay',
+            reason: 'treasury strain cuts relief capacity'
           };
         })
       });
