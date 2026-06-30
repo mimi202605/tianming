@@ -143,14 +143,57 @@
   function mkBtn(t, c) { var b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.style.cssText = 'font:14px serif;color:#fff;background:' + c + ';border:1px solid rgba(255,255,255,.18);border-radius:5px;padding:9px 14px;cursor:pointer;'; return b; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
 
+  /* 收一场战的玩家军战报(整编归伍·informational):战损=战前快照-现兵·历练=effectiveVet·主将命运取该战 commanderFate(挂首军) */
+  function _collectReport(reports, item, preS, GM) {
+    try {
+      var w = W(), AU = w && w.TMArmyUnits;
+      var fate = item && item.battleResult && item.battleResult.commanderFate;
+      var first = true;
+      (item && item.playerArmies || []).forEach(function (a) {
+        if (!a) return;
+        var pre = (preS && preS[a.id]) || 0;
+        var now = Math.max(0, +(a.soldiers || a.strength || 0) || 0);
+        var vet = (AU && AU.effectiveVet) ? Math.round(AU.effectiveVet(a)) : Math.round(a.veterancy || 0);
+        reports.push({ name: a.name || '某军', loss: Math.max(0, pre - now), soldiers: now, vet: vet, destroyed: now <= 0, fate: first ? (fate || null) : null });
+        first = false;
+      });
+    } catch (e) {}
+  }
+  /* 会战阶段收尾:弹战报小结(整编归伍)·无 DOM(headless)→resolve 跳过·无战报→跳过 */
+  function showBattleReport(reports) {
+    return new Promise(function (resolve) {
+      var w = W();
+      if (!w || typeof document === 'undefined' || !document.body || typeof document.createElement !== 'function' || !reports || !reports.length) { resolve(); return; }
+      var FATE_CN = { survived: '全身而退', safe: '全身而退', wounded: '负伤', captured: '被俘', killed: '阵殁', routed: '溃走', fled: '溃走' };
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:2147483500;background:rgba(8,6,4,.78);display:flex;align-items:center;justify-content:center;';
+      var box = document.createElement('div');
+      box.style.cssText = 'max-width:460px;max-height:80vh;overflow:auto;background:linear-gradient(#1c140c,#241a10);border:1px solid #8a6a2a;border-radius:8px;padding:22px 26px;color:#ecdcc4;font-family:serif;box-shadow:0 12px 40px rgba(0,0,0,.6);';
+      var html = '<div style="font:18px serif;color:#e8c87a;text-align:center;margin-bottom:14px;border-bottom:1px solid #5a4420;padding-bottom:10px;">⚔ 会战战报 · 整编归伍</div>';
+      reports.forEach(function (r) {
+        var body = r.destroyed ? '<span style="color:#c0563a;">全军覆没</span>'
+          : ('损 <b style="color:#d8956a;">' + r.loss + '</b> 人 · 余 ' + r.soldiers + ' · 历练 <b style="color:#7fb46a;">' + r.vet + '</b>');
+        html += '<div style="margin:7px 0;font-size:14px;line-height:1.5;"><b>' + esc(r.name) + '</b>：' + body;
+        if (r.fate && r.fate.name) { html += '<br><span style="opacity:.8;font-size:13px;">　主将 ' + esc(r.fate.name) + '：' + esc(FATE_CN[r.fate.outcome] || r.fate.outcome || '') + '</span>'; }
+        html += '</div>';
+      });
+      box.innerHTML = html;
+      var b = mkBtn('整编归伍 · 继续', '#6a4424'); b.style.width = '100%'; b.style.marginTop = '14px';
+      b.onclick = function () { try { ov.remove(); } catch (e) {} resolve(); };
+      box.appendChild(b); ov.appendChild(box); document.body.appendChild(ov);
+    });
+  }
+
   /* 会战阶段:逐场处理延后队列(管线 step 调·flag 关时 pending 恒空=no-op) */
   function runPending(GM) {
     GM = GM || (W() && W().GM);
     if (!pending.length) { recoverPending(GM); return Promise.resolve(); }   // 无新战仍排空持久化残留(上回合中断+存档遗留)→抽象兜底
     var queue = pending.splice(0);
     var w = W();
+    var reports = [];   // 会战战报小结(整编归伍·informational)累计
     return queue.reduce(function (chain, item) {
       return chain.then(function () {
+        var preS = {}; (item.playerArmies || []).forEach(function (a) { if (a) preS[a.id] = Math.max(0, +(a.soldiers || a.strength || 0) || 0); });   // 战前兵力快照→算战损
         return Promise.resolve().then(function () {
           var pf = playerFaction(GM), ef = (item.enemyArmies[0] && item.enemyArmies[0].faction) || '敌军';
           var band = (w.TMBattleResolve) ? w.TMBattleResolve.predictBattleBand(item.playerArmies, item.enemyArmies, { GM: GM }) : null;
@@ -175,9 +218,9 @@
           });
         }).catch(function (e) {
           try { applyDelegate(item, null, GM); } catch (_) {}            // ★单场出错→抽象兜底落地·该战绝不丢
-        }).then(function () { dropPersisted(GM, item.battleResult); });  // 结算完→撤持久化镜像
+        }).then(function () { dropPersisted(GM, item.battleResult); _collectReport(reports, item, preS, GM); });  // 结算完→撤持久化镜像 + 收战报
       });
-    }, Promise.resolve()).then(function () { recoverPending(GM); });     // ★末了排空残留(上回合中断遗留)→抽象兜底
+    }, Promise.resolve()).then(function () { return showBattleReport(reports); }).then(function () { recoverPending(GM); });     // ★战报小结(整编归伍) + 末了排空残留→抽象兜底
   }
 
   /* 包裹单一咽喉 MilitarySystems.applyBattleResult(bulletproof·幂等) */
@@ -202,7 +245,7 @@
   var API = {
     runPending: runPending, installHook: installHook, maybeDefer: maybeDefer, applyDelegate: applyDelegate,
     recoverPending: recoverPending, emperorArmyId: emperorArmyId, emperorName: emperorName,
-    involvesPlayer: involvesPlayer, _gainPostBattleVeterancy: _gainPostBattleVeterancy, _pending: function () { return pending; }, _clear: function () { pending.length = 0; }
+    involvesPlayer: involvesPlayer, _gainPostBattleVeterancy: _gainPostBattleVeterancy, _collectReport: _collectReport, _pending: function () { return pending; }, _clear: function () { pending.length = 0; }
   };
   /* 设置面板「御驾亲征·战术战斗」开关处理器(tm-patches.js 设置渲染调·切 GM._yujiaQinzheng·本局存档生效) */
   function setYujiaQinzheng(on, btn) {
