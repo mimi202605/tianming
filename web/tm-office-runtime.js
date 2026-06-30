@@ -367,7 +367,25 @@ function _ogpRenderPosCard(p, deptName, pathArr) {
   html += _offDutyBadge(p);
   html += '</div>';
   html += '<div class="ogp-pos-dept-sub">' + escHtml(deptName||'') + '</div>';
-  html += '</div>' + mainBtn + '</div>';
+  // S5·荫子按钮：本朝高官(非异党·达三品 level≤6·未荫过) → 门荫一子入仕(候选)
+  var yinBtn = '';
+  if (!isVacant && holder && !holder.isPlayer && !holder._menyinGranted) {
+    var _ylv = (typeof TMPromotion !== 'undefined' && TMPromotion.resolveRankLevel) ? TMPromotion.resolveRankLevel(holder, GM) : 99;
+    var _hpf = ''; var _hpfFac = (GM.facs || []).find(function (f) { return f.isPlayer; }); if (_hpfFac) _hpf = _hpfFac.name; if (!_hpf) _hpf = (P.playerInfo && P.playerInfo.factionName) || '';
+    if (!(_hpf && holder.faction && holder.faction !== _hpf) && _ylv > 0 && _ylv <= 6) {
+      yinBtn = '<button class="ogp-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offMenyin(\'' + safeHolder + '\')" title="门荫·荫一子入仕(候选)">荫 子</button>';
+    }
+  }
+  // S5·荐贤按钮：本朝官(非异党·达五品 level≤8·未荐过) → 荐辟布衣入仕(候选)
+  var jianBtn = '';
+  if (!isVacant && holder && !holder.isPlayer && !holder._jianbiGranted) {
+    var _jlv = (typeof TMPromotion !== 'undefined' && TMPromotion.resolveRankLevel) ? TMPromotion.resolveRankLevel(holder, GM) : 99;
+    var _jpf = ''; var _jpfFac = (GM.facs || []).find(function (f) { return f.isPlayer; }); if (_jpfFac) _jpf = _jpfFac.name; if (!_jpf) _jpf = (P.playerInfo && P.playerInfo.factionName) || '';
+    if (!(_jpf && holder.faction && holder.faction !== _jpf) && _jlv > 0 && _jlv <= 8) {
+      jianBtn = '<button class="ogp-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offJianbi(\'' + safeHolder + '\')" title="荐辟·荐布衣贤才入仕(候选)">荐 贤</button>';
+    }
+  }
+  html += '</div>' + mainBtn + yinBtn + jianBtn + '</div>';
 
   if (isVacant) {
     html += '<div class="ogp-pos-holder"></div>';
@@ -1415,6 +1433,16 @@ function _ogRenderPosCardV10(fi, courtKey) {
     var _isHostile = _holder.loyalty != null && _holder.loyalty < 40;
     if (_isForeign || _isHostile) {
       html += '<button class="og-v10-pos-btn impeach" style="background:rgba(192,64,48,0.14);border-color:rgba(192,64,48,0.5);color:var(--vermillion-300,#d97b6b);margin-left:4px;" onclick="event.stopPropagation();_offImpeach(\'' + _safeHolder + '\',\'' + _safeDept + '\',\'' + _safePos + '\')" title="\u5F39\u52BE">\u5F39 \u52BE</button>';
+    }
+    // S5\u00B7\u836B\u5B50\u6309\u94AE\uFF1A\u672C\u671D\u9AD8\u5B98(\u975E\u5F02\u515A\u00B7\u8FBE\u4E09\u54C1 level\u22646\u00B7\u672A\u836B\u8FC7) \u2192 \u95E8\u836B\u4E00\u5B50\u5165\u4ED5(\u5019\u9009)
+    var _menyinLv = (!_isForeign && !_holder.isPlayer && !_holder._menyinGranted && typeof TMPromotion !== 'undefined' && TMPromotion.resolveRankLevel) ? TMPromotion.resolveRankLevel(_holder, GM) : 0;
+    if (_menyinLv > 0 && _menyinLv <= 6) {
+      html += '<button class="og-v10-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offMenyin(\'' + _safeHolder + '\')" title="\u95E8\u836B\u00B7\u836B\u4E00\u5B50\u5165\u4ED5(\u5019\u9009\u5F85\u4EFB\u547D)">\u836B \u5B50</button>';
+    }
+    // S5\u00B7\u8350\u8D24\u6309\u94AE\uFF1A\u672C\u671D\u5B98(\u975E\u5F02\u515A\u00B7\u8FBE\u4E94\u54C1 level\u22648\u00B7\u672A\u8350\u8FC7) \u2192 \u8350\u8F9F\u5E03\u8863\u5165\u4ED5(\u5019\u9009)
+    var _jianbiLv = (!_isForeign && !_holder.isPlayer && !_holder._jianbiGranted && typeof TMPromotion !== 'undefined' && TMPromotion.resolveRankLevel) ? TMPromotion.resolveRankLevel(_holder, GM) : 0;
+    if (_jianbiLv > 0 && _jianbiLv <= 8) {
+      html += '<button class="og-v10-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offJianbi(\'' + _safeHolder + '\')" title="\u8350\u8F9F\u00B7\u8350\u5E03\u8863\u8D24\u624D\u5165\u4ED5(\u5019\u9009)">\u8350 \u8D24</button>';
     }
   }
   html += '</div>';
