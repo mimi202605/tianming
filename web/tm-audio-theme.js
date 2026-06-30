@@ -114,6 +114,8 @@ var AudioSystem = {
 
     this.loadMenuTrack();
     this.loadPlaylist();
+    // 恢复用户导入的 BGM(IndexedDB·异步·就绪后刷新音声面板)
+    try { this.loadUserTracks(function() { if (window.TM && TM.UI && TM.UI.shell && typeof TM.UI.shell.refreshLeft === 'function') TM.UI.shell.refreshLeft(); }); } catch (_) {}
     // 创建音效（使用 Web Audio API 生成简单音效）
     this.generateSounds();
   },
@@ -378,6 +380,91 @@ var AudioSystem = {
     this.saveSettings();
   },
 
+  // ══ 导入音乐（用户自备 BGM）══
+  // 音乐文件大(MB 级)·不入 localStorage·存 IndexedDB(blob)跨会话持久;每次加载用 object URL 接入 playlist。
+  _openUserBgmDB: function() {
+    var self = this;
+    if (self._userBgmDBPromise) return self._userBgmDBPromise;
+    self._userBgmDBPromise = new Promise(function(resolve, reject) {
+      if (typeof indexedDB === 'undefined') { reject(new Error('indexedDB 不可用')); return; }
+      var req = indexedDB.open('tmUserBgm', 1);
+      req.onupgradeneeded = function(e) { var db = e.target.result; if (!db.objectStoreNames.contains('tracks')) db.createObjectStore('tracks', { keyPath: 'id' }); };
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror = function() { reject(req.error || new Error('open failed')); };
+    });
+    return self._userBgmDBPromise;
+  },
+  // 弹文件选择(audio/*·多选)→导入
+  _pickMusicFiles: function() {
+    var self = this;
+    try {
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'audio/*'; inp.multiple = true; inp.style.display = 'none';
+      inp.onchange = function() {
+        self.importUserMusic(inp.files, function() { if (window.TM && TM.UI && TM.UI.shell && typeof TM.UI.shell.refreshLeft === 'function') TM.UI.shell.refreshLeft(); });
+        try { inp.remove(); } catch (_) {}
+      };
+      (document.body || document.documentElement).appendChild(inp);
+      inp.click();
+    } catch (e) { if (typeof toast === 'function') toast('无法打开文件选择'); }
+  },
+  // 导入文件列表:本会话即时接入 playlist(object URL) + 持久化到 IndexedDB
+  importUserMusic: function(fileList, onDone) {
+    var self = this;
+    if (!self.playlist) self.loadPlaylist();
+    var files = Array.prototype.slice.call(fileList || []).filter(function(f) {
+      return f && (/^audio\//.test(f.type || '') || /\.(mp3|ogg|wav|flac|m4a|aac|opus|weba)$/i.test(f.name || ''));
+    });
+    if (!files.length) { if (typeof toast === 'function') toast('未选择音频文件'); if (onDone) onDone(); return; }
+    var stamp = Date.now().toString(36);
+    var made = files.map(function(file, i) {
+      var title = String(file.name || '导入曲').replace(/\.[^.]+$/, '').replace(/[<>"]/g, '').slice(0, 60) || '导入曲';
+      return { id: 'user_' + stamp + '_' + i + '_' + (self.playlist.length + i), title: title, file: file };
+    });
+    made.forEach(function(m) { try { self.playlist.push({ id: m.id, title: m.title, meta: '导入', src: URL.createObjectURL(m.file), user: true }); } catch (_) {} });
+    self._openUserBgmDB().then(function(db) {
+      var tx = db.transaction('tracks', 'readwrite');
+      var store = tx.objectStore('tracks');
+      made.forEach(function(m) { try { store.put({ id: m.id, title: m.title, blob: m.file, addedAt: Date.now() }); } catch (_) {} });
+      tx.oncomplete = function() { if (typeof toast === 'function') toast('已导入 ' + made.length + ' 首乐曲'); if (onDone) onDone(); };
+      tx.onerror = function() { if (typeof toast === 'function') toast('已导入(本会话·持久化失败)'); if (onDone) onDone(); };
+    }).catch(function() {
+      if (typeof toast === 'function') toast('已导入 ' + made.length + ' 首(本会话·存储不可用)');
+      if (onDone) onDone();
+    });
+  },
+  // 开局/init 时从 IndexedDB 恢复用户导入曲目(异步·就绪后刷新面板)
+  loadUserTracks: function(onDone) {
+    var self = this;
+    if (!self.playlist) self.loadPlaylist();
+    self._openUserBgmDB().then(function(db) {
+      var tx = db.transaction('tracks', 'readonly');
+      var req = tx.objectStore('tracks').getAll();
+      req.onsuccess = function() {
+        (req.result || []).forEach(function(rec) {
+          if (!rec || !rec.blob || !rec.id) return;
+          if (self.playlist.some(function(t) { return t.id === rec.id; })) return;
+          try { self.playlist.push({ id: rec.id, title: rec.title || '导入曲', meta: '导入', src: URL.createObjectURL(rec.blob), user: true }); } catch (_) {}
+        });
+        if (onDone) onDone();
+      };
+      req.onerror = function() { if (onDone) onDone(); };
+    }).catch(function() { if (onDone) onDone(); });
+  },
+  // 移除一首导入曲目(仅 user 轨)：撤 object URL + 删 IndexedDB + 出 playlist
+  removeUserTrack: function(id) {
+    var self = this;
+    var t = (self.playlist || []).find(function(x) { return x.id === id; });
+    if (!t || !t.user) return false;
+    if (self.bgm && self.bgmUrl === t.src) self.stopBgm();
+    try { if (t.src) URL.revokeObjectURL(t.src); } catch (_) {}
+    self.playlist = (self.playlist || []).filter(function(x) { return x.id !== id; });
+    if (self.currentTrackId === id) { self.currentTrackId = (self.playlist[0] && self.playlist[0].id) || ''; self.saveSettings(); }
+    self._openUserBgmDB().then(function(db) { try { db.transaction('tracks', 'readwrite').objectStore('tracks').delete(id); } catch (_) {} }).catch(function() {});
+    if (typeof toast === 'function') toast('已移除导入乐曲');
+    return true;
+  },
+
   renderShellPanelHtml: function() {
     if (!this.playlist || !this.playlist.length) this.loadPlaylist();
     var current = this.getCurrentTrack();
@@ -390,12 +477,14 @@ var AudioSystem = {
     html += '<div class="gs-audio-now">正 奏：<span class="h">' + (current ? current.title : '未配置曲目') + '</span>' + (current && current.meta ? '·' + current.meta : '') + '</div>';
     html += '<div class="gs-audio-custom">';
     html += '<button class="gs-audio-import" onclick="AudioSystem.toggleBgm();if(window.TM&&TM.UI&&TM.UI.shell&&typeof TM.UI.shell.refreshLeft===\'function\')TM.UI.shell.refreshLeft();">音 乐 开 关</button>';
+    html += '<button class="gs-audio-import" onclick="AudioSystem._pickMusicFiles();">导 入 音 乐</button>';
     html += '<div class="gs-audio-lib">';
     if (this.playlist.length) {
       this.playlist.forEach(function(track) {
         var cls = current && current.id === track.id ? 'playing' : 'paused';
         var safeId = track.id.replace(/'/g, "\\'");
-        html += '<div class="gs-audio-song ' + cls + '" data-track-id="' + track.id + '" onclick="AudioSystem.playTrack(\'' + safeId + '\');if(window.TM&&TM.UI&&TM.UI.shell&&typeof TM.UI.shell.refreshLeft===\'function\')TM.UI.shell.refreshLeft();"><span class="title">' + track.title + '</span><span class="meta">' + (track.meta || '') + '</span></div>';
+        var delBtn = track.user ? '<button class="gs-audio-del" title="移除导入乐曲" style="margin-left:auto;background:none;border:none;color:var(--vermillion-400,#c0563a);cursor:pointer;font-size:0.85em;line-height:1;padding:0 4px;flex:0 0 auto;" onclick="event.stopPropagation();AudioSystem.removeUserTrack(\'' + safeId + '\');if(window.TM&&TM.UI&&TM.UI.shell&&typeof TM.UI.shell.refreshLeft===\'function\')TM.UI.shell.refreshLeft();">✕</button>' : '';
+        html += '<div class="gs-audio-song ' + cls + '" data-track-id="' + track.id + '" onclick="AudioSystem.playTrack(\'' + safeId + '\');if(window.TM&&TM.UI&&TM.UI.shell&&typeof TM.UI.shell.refreshLeft===\'function\')TM.UI.shell.refreshLeft();"><span class="title">' + track.title + '</span><span class="meta">' + (track.meta || '') + '</span>' + delBtn + '</div>';
       });
     } else {
       html += '<div class="gs-audio-song paused"><span class="title">请在 tm-bgm-config.js 配置曲目</span><span class="meta">BGM</span></div>';
