@@ -152,10 +152,19 @@
           var _chipColor = _isOurs ? 'rgba(184,154,83,0.25);color:#e8d49a' : 'rgba(184,71,56,0.25);color:#e8b8a8';
           _facChip = '<span style="background:'+_chipColor+';padding:0 5px;border-radius:3px;font-size:0.72rem;margin-left:4px;">'+esc(_fac)+(_isOurs?'·我':'·外')+'</span>';
         }
+        // 主帅在世校验·侧栏反映空缺/阵殁(findCharByName 全局·死亡过回合自动卸职后即显空缺)
+        var _cn = a.commander || '';
+        var _cc = (_cn && typeof findCharByName === 'function') ? findCharByName(_cn) : null;
+        var _cDead = !!_cn && (_cc ? (_cc.alive === false || _cc.dead === true) : true);
+        var _cmHtml = !_cn ? '<span style="color:var(--vermillion-400,#c0563a);">帅缺</span>'
+                    : _cDead ? '<span style="color:var(--vermillion-400,#c0563a);">'+esc(_cn)+'(殁)</span>'
+                    : esc(_cn);
+        var _locBase = a.location || a.stationed || '';
+        var _locLine = (_locBase ? esc(_locBase)+' · ' : '') + _cmHtml;
         _mHtml += '<div class="gs-army-row" onclick="if(typeof openMilitaryDetailPanel===\'function\')openMilitaryDetailPanel();">'
           + '<span class="gs-army-icon">⚔</span>'
           + '<div class="gs-army-info"><div class="gs-army-name">'+esc(a.name||'军')+_facChip+'</div>'
-          + '<div class="gs-army-loc">'+esc((a.location||a.stationed||'')+(a.commander?' · '+a.commander:''))+'</div></div>'
+          + '<div class="gs-army-loc">'+_locLine+'</div></div>'
           + '<div style="text-align:right;"><div class="gs-army-size">'+num(size)+'</div>'
           + '<div class="gs-army-morale"><div class="gs-army-morale-fill" style="width:'+Math.min(100,morale)+'%;background:'+mColor+';"></div></div></div></div>';
       });

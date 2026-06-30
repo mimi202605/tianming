@@ -174,9 +174,20 @@
         html += '<div><span style="color:var(--txt-d);">欠饷</span> '+(a.payArrearsMonths||0)+'月</div>';
         html += '<div><span style="color:var(--txt-d);">兵变</span> <span style="color:'+(a.mutinyRisk>=60?'var(--red)':'var(--txt-s)')+';">'+(a.mutinyRisk||0)+'</span></div>';
         html += '</div>';
-        // 信息
+        // 主帅(在世校验·空缺/阵殁红标)
+        var cmName = a.commander || '';
+        var cmCh = (cmName && typeof findCharByName === 'function') ? findCharByName(cmName) : null;
+        var cmDead = cmName && (cmCh ? (cmCh.alive === false || cmCh.dead === true) : true);
+        if (!cmName) {
+          html += '<div style="font-size:0.72rem;color:var(--red,#c0563a);margin-bottom:0.3rem;">⚠ 主帅空缺</div>';
+        } else if (cmDead) {
+          html += '<div style="font-size:0.72rem;color:var(--red,#c0563a);margin-bottom:0.3rem;">⚠ 主帅 ' + esc(cmName) + ' 阵殁/失联·待补</div>';
+        } else {
+          var _cm = cmCh ? (cmCh.military || cmCh.valor || 50) : 50, _ci = cmCh ? (cmCh.intelligence || 50) : 50;
+          html += '<div class="tm-army-full tm-fulltext-source"' + fullTextAttr('主帅 ' + cmName + (cmCh ? ' · 武' + _cm + ' 智' + _ci : '')) + ' style="font-size:0.72rem;color:var(--txt-s);margin-bottom:0.3rem;">主帅 <b style="color:var(--txt,#ecdcc4);">' + esc(cmName) + '</b>' + (cmCh ? ' · 武' + _cm + ' 智' + _ci : '') + '</div>';
+        }
+        // 其它信息(驻/赴/私兵度)
         var info = [];
-        if (a.commander) info.push('统帅: '+a.commander);
         if (a.garrison || a.location) info.push('驻: '+(a.garrison||a.location));
         if (a.destination) info.push('赴: '+a.destination);
         if (a.controlLevel >= 60) info.push('私兵度 '+a.controlLevel);
@@ -184,13 +195,27 @@
           var infoText = info.join(' · ');
           html += '<div class="tm-army-full tm-fulltext-source"'+fullTextAttr(infoText)+' style="font-size:0.72rem;color:var(--txt-s);margin-bottom:0.3rem;">'+esc(infoText)+'</div>';
         }
+        // 编制·兵种构成(派生模型下 composition 为兵种真相)
+        if (Array.isArray(a.composition) && a.composition.length) {
+          var compTotal = a.composition.reduce(function(s,c){return s + ((c && c.count) || 0);}, 0) || 1;
+          html += '<div style="margin-bottom:0.3rem;">';
+          html += '<div style="font-size:0.66rem;color:var(--txt-d);margin-bottom:0.2rem;">编制 · 兵种构成</div>';
+          html += '<div style="display:flex;flex-wrap:wrap;gap:0.25rem;">';
+          a.composition.forEach(function(c) {
+            if (!c || !c.type) return;
+            var pct = Math.round(((c.count||0) / compTotal) * 100);
+            html += '<span style="font-size:0.68rem;background:var(--bg-3,rgba(255,255,255,0.06));border-radius:3px;padding:1px 6px;color:var(--txt-s);">' + esc(c.type) + ' <b style="color:var(--txt,#ecdcc4);">' + ((c.count||0).toLocaleString()) + '</b><span style="color:var(--txt-d);"> ' + pct + '%</span></span>';
+          });
+          html += '</div></div>';
+        }
         // 动作按钮(仅玩家势力军队)
         if (isPlayer) {
-          html += '<div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-top:0.3rem;">';
-          html += '<button class="bt bs" onclick="_tsTransferArmy(\''+jsEsc(a.name)+'\')" style="font-size:0.71rem;padding:0.2rem 0.6rem;">调兵</button>';
-          html += '<button class="bt bs" onclick="_tsBoostMorale(\''+jsEsc(a.name)+'\')" style="font-size:0.71rem;padding:0.2rem 0.6rem;">犒军鼓舞</button>';
-          html += '<button class="bt bs" onclick="_tsSettleArrears(\''+jsEsc(a.name)+'\')" style="font-size:0.71rem;padding:0.2rem 0.6rem;">发饷清欠</button>';
-          html += '<button class="bt bs" onclick="_tsAppointGeneral(\''+jsEsc(a.name)+'\')" style="font-size:0.71rem;padding:0.2rem 0.6rem;">易将</button>';
+          html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.45rem;">';
+          var _abtn = 'display:inline-flex;align-items:center;justify-content:center;font-size:0.8rem;min-height:44px;padding:0.5rem 0.9rem;touch-action:manipulation;';   // 触控目标≥44px·间距8px·inline-flex 保 min-height 落实
+          html += '<button class="bt bs" onclick="_tsTransferArmy(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">调兵</button>';
+          html += '<button class="bt bs" onclick="_tsBoostMorale(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">犒军鼓舞</button>';
+          html += '<button class="bt bs" onclick="_tsSettleArrears(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">发饷清欠</button>';
+          html += '<button class="bt bs" onclick="_tsAppointGeneral(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">易将</button>';
           html += '</div>';
         }
         html += '</div>';
@@ -315,13 +340,85 @@
       _toast('饷已清·兵变险大减');
     }
   }
+  // 活人将才候选(同势力优先·按武略降序·剔现任·只列在世)→易将下拉
+  function _tsLivingCommanderCandidates(army) {
+    var chars = (global.GM && Array.isArray(GM.chars)) ? GM.chars : [];
+    var fac = army && army.faction;
+    var cur = (army && army.commander) || '';
+    var out = [];
+    chars.forEach(function(c) {
+      if (!c || !c.name) return;
+      if (c.alive === false || c.dead === true) return;   // ★只列在世·死者不入候选
+      if (c.name === cur) return;
+      out.push({
+        name: c.name,
+        mil: c.military || c.valor || 50,
+        intel: c.intelligence || 50,
+        faction: c.faction || '',
+        title: c.title || c.officialTitle || '',
+        sameFac: fac ? (c.faction === fac) : false
+      });
+    });
+    out.sort(function(x, y) {
+      if (x.sameFac !== y.sameFac) return x.sameFac ? -1 : 1;     // 同朝优先
+      return (y.mil + y.intel * 0.3) - (x.mil + x.intel * 0.3);   // 武略综合降序
+    });
+    return out;
+  }
   function _tsAppointGeneral(aname) {
-    var target = prompt('易将·新统帅姓名?', '');
-    if (!target) return;
-    _pushEdict('谕：擢 '+target+' 为 '+aname+' 新统帅·原统帅另有任用。', '易将');
     var a = (global.GM && GM.armies || []).find(function(x){return x.name === aname;});
-    if (a) { a.commander = target; a.loyalty = Math.max(30, (a.loyalty||60) - 10); }
-    _toast('已易将');
+    if (!a) { _toast('未找到部队·' + aname); return; }
+    var curName = a.commander || '';
+    var curCh = (curName && typeof findCharByName === 'function') ? findCharByName(curName) : null;
+    var curDead = curCh ? (curCh.alive === false || curCh.dead === true) : (!!curName);
+    var cands = _tsLivingCommanderCandidates(a);
+    var CAP = 60, shown = cands.slice(0, CAP);
+    var html = '<div style="padding:0.9rem;">';
+    html += '<div style="font-size:0.82rem;color:var(--txt-s);margin-bottom:0.7rem;">为 <b style="color:var(--gold);">' + esc(aname) + '</b> 拜将易帅 · 仅在世将才可受命</div>';
+    if (!curName) {
+      html += '<div style="font-size:0.78rem;color:var(--red,#c0563a);background:rgba(200,50,50,0.1);border-radius:5px;padding:0.45rem 0.6rem;margin-bottom:0.7rem;">⚠ 现主帅空缺·此部无人统御</div>';
+    } else if (curDead) {
+      html += '<div style="font-size:0.78rem;color:var(--red,#c0563a);background:rgba(200,50,50,0.1);border-radius:5px;padding:0.45rem 0.6rem;margin-bottom:0.7rem;">⚠ 现主帅 ' + esc(curName) + ' 已殁/失联·亟待补任</div>';
+    } else {
+      var cm = curCh.military || curCh.valor || 50, ci = curCh.intelligence || 50;
+      html += '<div style="font-size:0.78rem;color:var(--txt-s);margin-bottom:0.7rem;">现主帅：<b>' + esc(curName) + '</b> · 武 ' + cm + ' · 智 ' + ci + '</div>';
+    }
+    if (!shown.length) {
+      html += '<div style="font-size:0.78rem;color:var(--txt-d);">朝中暂无可调遣之在世将才。</div>';
+    } else {
+      html += '<select id="ts_appoint_sel" style="width:100%;padding:0.5rem;border-radius:5px;background:var(--bg-3,#1c140c);color:var(--txt,#ecdcc4);border:1px solid var(--bd,rgba(255,255,255,0.15));font-size:0.82rem;margin-bottom:0.7rem;">';
+      shown.forEach(function(c) {
+        var label = c.name + ' · 武' + c.mil + ' 智' + c.intel + (c.sameFac ? '' : ' · ' + (c.faction || '无属')) + (c.title ? ' · ' + c.title : '');
+        html += '<option value="' + esc(c.name) + '">' + esc(label) + '</option>';
+      });
+      html += '</select>';
+      if (cands.length > CAP) html += '<div style="font-size:0.66rem;color:var(--txt-d);margin-bottom:0.5rem;">（在世将才众·仅列前 ' + CAP + ' 名·按武略与本朝优先）</div>';
+      html += '<div style="display:flex;gap:0.6rem;justify-content:flex-end;">';
+      html += '<button class="bt bs" onclick="closeGenericModal()" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0.55rem 1.1rem;touch-action:manipulation;">取消</button>';
+      html += '<button class="bt bp" onclick="_tsConfirmAppoint(\'' + jsEsc(aname) + '\')" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0.55rem 1.1rem;touch-action:manipulation;">确认拜将</button>';
+      html += '</div>';
+    }
+    html += '<div style="font-size:0.66rem;color:var(--txt-d);margin-top:0.6rem;line-height:1.5;">※ 拜将后忠诚略降；主帅若阵殁/赐死，过回合自动出缺。</div>';
+    html += '</div>';
+    _openModal('易将 · 拜帅', html, null);
+  }
+  function _tsConfirmAppoint(aname) {
+    var sel = (typeof document !== 'undefined' && document.getElementById) ? document.getElementById('ts_appoint_sel') : null;
+    var name = sel ? String(sel.value || '').trim() : '';
+    if (!name) { _toast('请择一将才'); return; }
+    var ch = (typeof findCharByName === 'function') ? findCharByName(name) : null;
+    if (!ch || ch.alive === false || ch.dead === true) { _toast('此人已殁或查无此人·不可拜将'); return; }   // ★死人/幽灵守卫
+    var a = (global.GM && GM.armies || []).find(function(x){return x.name === aname;});
+    if (!a) { _toast('未找到部队'); return; }
+    // 直写主字段 + 4 读取别名(与引擎 _armyCurrentCommander 读取集一致)·清死亡卸职标记
+    a.commander = name; a.commanderName = name; a.general = name; a.leader = name;
+    a.commanderAlive = true; a._commanderLost = false;
+    var t = ch.title || ch.officialTitle; if (t) a.commanderTitle = t;
+    a.loyalty = Math.max(30, (a.loyalty || 60) - 10);
+    _pushEdict('谕：擢 ' + name + ' 为 ' + aname + ' 新统帅·原统帅另有任用。', '易将');
+    try { if (typeof closeGenericModal === 'function') closeGenericModal(); } catch (e) {}
+    _toast('已拜 ' + name + ' 为 ' + aname + ' 主帅');
+    try { if (typeof openMilitaryDetailPanel === 'function') openMilitaryDetailPanel(); } catch (e) {}
   }
 
   // ─── 暴露 ───
@@ -337,6 +434,8 @@
   global._tsBoostMorale = _tsBoostMorale;
   global._tsSettleArrears = _tsSettleArrears;
   global._tsAppointGeneral = _tsAppointGeneral;
+  global._tsConfirmAppoint = _tsConfirmAppoint;
+  global._tsLivingCommanderCandidates = _tsLivingCommanderCandidates;
 
   // ────────── Phase C6·NPC 内政查阅 (read-only) ──────────
   function _tsInspectNpcInternal(facName) {
