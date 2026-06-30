@@ -4196,7 +4196,8 @@
           turnExpense: G.guoku.turnExpense,
           turnDays: G.guoku.turnDays,
           armory: (typeof window !== 'undefined' && window.TMArmory) ? window.TMArmory.allStock(G) : undefined,      // 军备库(甲胄/兵刃/弓弩/火器/战马)·供AI推演军务可读
-          materials: (typeof window !== 'undefined' && window.TMArmory) ? window.TMArmory.matAllStock(G) : undefined  // 原料库(铁/硝石/皮革/木)
+          materials: (typeof window !== 'undefined' && window.TMArmory) ? window.TMArmory.matAllStock(G) : undefined,  // 原料库(铁/硝石/皮革/木)
+          armoryReadiness: (typeof window !== 'undefined' && window.TMArmory && window.TMArmory.readinessForAI) ? window.TMArmory.readinessForAI(G) : undefined  // 军备研判(储备vs全军需求·充盈/够用/偏紧/紧缺)·供AI推演判军事虚实(火器紧缺→不宜倚火器决胜)
         } : null,
         neitang: G.neitang ? {
           money: G.neitang.money !== undefined ? G.neitang.money : G.neitang.balance,

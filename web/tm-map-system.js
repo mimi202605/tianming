@@ -835,7 +835,8 @@ function renderMap() {
   if (!GM.mapData) return;
 
   var canvas = initMapCanvas();
-  if (!canvas) return;
+  // 无头/测试环境无真 canvas(getContext 缺失)时跳过渲染·不影响真浏览器(getContext 恒在)·并保结算管线确定性
+  if (!canvas || typeof canvas.getContext !== 'function') return;
 
   var ctx = canvas.getContext('2d');
 
