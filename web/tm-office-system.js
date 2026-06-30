@@ -480,20 +480,34 @@ var RANK_HIERARCHY = [
   {id:'c9',label:'从九品',level:18,salary:8,color:'var(--ink-300)'}
 ];
 
-/** 根据品级文本获取level（数字越小品级越高） */
+// S6·品级表剧本可 override（跨朝代）：剧本可经 GM.rankHierarchy / P.engineConstants.rankHierarchy 提供本朝品阶
+//   （如秦汉秩禄「万石/二千石/比二千石」·宋寄禄官阶），各项需含 {label, level}（level 越小越高）。
+//   无 override（或无效）→ 返明清九品十八级默认 RANK_HIERARCHY ＝ 字节级零回归。
+function _activeRankHierarchy() {
+  try {
+    var ov = (typeof GM !== 'undefined' && GM && GM.rankHierarchy)
+      || (typeof P !== 'undefined' && P && P.engineConstants && P.engineConstants.rankHierarchy) || null;
+    if (Array.isArray(ov) && ov.length && ov[0] && ov[0].label != null && ov[0].level != null) return ov;
+  } catch (e) {}
+  return RANK_HIERARCHY;
+}
+
+/** 根据品级文本获取level（数字越小品级越高）·走 _activeRankHierarchy（剧本可 override·跨朝代） */
 function getRankLevel(rankStr) {
   if (!rankStr) return 99;
-  for (var i = 0; i < RANK_HIERARCHY.length; i++) {
-    if (rankStr.indexOf(RANK_HIERARCHY[i].label) >= 0) return RANK_HIERARCHY[i].level;
+  var H = _activeRankHierarchy();
+  for (var i = 0; i < H.length; i++) {
+    if (rankStr.indexOf(H[i].label) >= 0) return H[i].level;
   }
   return 99;
 }
 
-/** 获取品级信息 */
+/** 获取品级信息·走 _activeRankHierarchy（剧本可 override·跨朝代） */
 function getRankInfo(rankStr) {
   if (!rankStr) return null;
-  for (var i = 0; i < RANK_HIERARCHY.length; i++) {
-    if (rankStr.indexOf(RANK_HIERARCHY[i].label) >= 0) return RANK_HIERARCHY[i];
+  var H = _activeRankHierarchy();
+  for (var i = 0; i < H.length; i++) {
+    if (rankStr.indexOf(H[i].label) >= 0) return H[i];
   }
   return null;
 }
