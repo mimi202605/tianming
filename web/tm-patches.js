@@ -708,6 +708,30 @@ openSettings=function(){
               '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">让死的官制活起来：①职权舆图喂推演 ②官员履职度(才+五常·失职衰减·与主动行动耦合) ③权限门(掌“征税”之权出缺/失职→实征打折·腐败涨) ④AI 裁定式改制(玩家自由改官制·官僚抵抗·拟制两回合) ⑤官署按需细查(agent 走次要 API·返职责描述)。各刀另有独立开关可单独调试·会增加 API 调用。</div>' +
             '</div>' +
           '</label>' +
+          // ── 官制·机制深化（S1/S4·各独立开关·与上「官制活化」并行·默认关·2026-06-30）──
+          '<div style="font-size:0.74rem;color:var(--gold-d);margin:0.45rem 0 0.15rem;padding-top:0.35rem;border-top:1px dashed rgba(185,139,255,0.22);">🏛️ 官制·机制深化（独立开关·默认关·开后官制真撬动财政/吏治/阴谋/人才/皇权）</div>' +
+          (function(){
+            var _items = [
+              ['powerMinisterEnabled','权臣坐大','久居要位(宰相/首辅等)+高野心者坐大：截留奏疏·自拟诏命·皇权极弱时篡位终局。'],
+              ['officeReviewLandingEnabled','考课落地','年度考课优劣真升降功名(驱动 rankLevel)：优等擢·劣等黜失职·连劣记数。'],
+              ['officeConspiracyEnabled','官位入阴谋','官位品级喂阴谋：高官谋逆酝酿更快更隐秘·门生故吏更易拉拢。'],
+              ['officeSatisfactionFeedbackEnabled','才不配位反哺','能臣才高位卑(怀才不遇)→忠诚渐降·久郁萌求去。'],
+              ['officeSalaryHeadcountEnabled','俸禄认人','冗官超编→国库俸禄开支真增(冗官有财政代价·非凭空养)。'],
+              ['officePersonnelTurnoverEnabled','致仕新陈代谢','年终察老：高龄官乞骸骨(可慰留)·耄耋准致仕去位(可诏起复)。'],
+              ['officeJingchaEnabled','京察大计','每三年黜庸劣(屡考连劣)+拔沉才(怀才不遇)·只降擢功名(可逆)·不擅自革职。']
+            ];
+            var _hh = '';
+            for (var _i = 0; _i < _items.length; _i++) {
+              var _it = _items[_i];
+              var _on = !!(typeof P !== 'undefined' && P && P.conf && P.conf[_it[0]]);
+              _hh += '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.3rem 0;cursor:pointer;border-top:1px dotted rgba(185,139,255,0.12);">' +
+                '<input type="checkbox" ' + (_on ? 'checked ' : '') + 'onchange="_togglePConf(\'' + _it[0] + '\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+                '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">' + _it[1] + '</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.5;margin-top:0.1rem;">' + _it[2] + '</div></div>' +
+                '</label>';
+            }
+            return _hh;
+          })() +
           // 【A·S4】势力按需取数·单独 opt-in(总闸已含·此处供隔离试)·换深度非降本
           '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
             '<input type="checkbox" id="s-faction-toolcall" ' + (_ftc?'checked ':'') + 'onchange="_togglePConf(\'factionToolDecisionEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
