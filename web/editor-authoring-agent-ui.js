@@ -428,6 +428,7 @@
       '.tm-aa-search button{background:#322f2a;color:#b4afa2;border:none;border-radius:5px;padding:2px 7px;font-size:11px;cursor:pointer;line-height:1.4}.tm-aa-search button:hover{background:#3c3933;color:#ecebe2}',
       '.tm-aa-hl{background:rgba(232,200,106,.32);color:inherit;border-radius:2px}.tm-aa-hl.active{background:#e8c86a;color:#1a1206}',
       '#tm-aa-fs{background:none;border:none;color:#8f8a7e;font-size:13px;cursor:pointer;line-height:1;padding:0 3px}#tm-aa-fs:hover{color:#ecebe2}',
+      '#tm-aa-preflight{background:none;border:none;color:#8f8a7e;font-size:13px;cursor:pointer;line-height:1;padding:0 3px}#tm-aa-preflight:hover{color:#7fe0a0}',
       '#tm-aa-hd b{font-size:13px}',
       '.tm-aa-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#d97757,#bf5f3f);font-size:13px;margin-right:7px;vertical-align:middle;box-shadow:0 1px 4px rgba(217,119,87,.45)}',
       '#tm-aa-hd .sub{font-size:11px;color:#8f8a7e;margin-left:6px}',
@@ -592,7 +593,7 @@
     panel.innerHTML = [
       '<div class="tm-aa-resize" id="tm-aa-resize" title="拖动调整宽度"></div>',   // UI·AI · 左缘拖拽调宽
       '<div id="tm-aa-hd"><span><span class="tm-aa-ava">🧙</span><b>国师</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
-      '<button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">✎</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">⛶</button><button id="tm-aa-x" aria-label="关闭" title="关闭">×</button></div>',
+      '<button id="tm-aa-preflight" aria-label="运行时体检" title="运行时体检（确定性·免 API）：检查会影响加载的阻塞问题，随时可重跑">🩺</button><button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">✎</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">⛶</button><button id="tm-aa-x" aria-label="关闭" title="关闭">×</button></div>',
       '<div id="tm-aa-body">',
       '<div class="tm-aa-search" id="tm-aa-search" hidden><input type="text" id="tm-aa-search-in" placeholder="在结果里查找…"><span class="tm-aa-search-n" id="tm-aa-search-n">0/0</span><button type="button" id="tm-aa-search-prev" title="上一个">↑</button><button type="button" id="tm-aa-search-next" title="下一个">↓</button><button type="button" id="tm-aa-search-x" title="关闭 (Esc)">×</button></div>',
       '<div id="tm-aa-composer">',   // UI iteration2 · 输入区聚成一块（docked 下 sticky 钉底）
@@ -652,6 +653,7 @@
     };
     panel.querySelector('#tm-aa-x').addEventListener('click', function() { if (panel._fs) _toggleFullscreen(); panel.classList.remove('open'); });
     var _nc = panel.querySelector('#tm-aa-newchat'); if (_nc) _nc.addEventListener('click', newConversation);   // 真·连续会话：另起新对话
+    var _pf = panel.querySelector('#tm-aa-preflight'); if (_pf) _pf.addEventListener('click', function () { runPreflightUI(); });   // 常驻·运行时体检(确定性免API·随时重跑·不止空状态)
     if (ui.els.fs) ui.els.fs.addEventListener('click', _toggleFullscreen);   // UI·AI · 全屏切换
     _ensurePanelResize();   // UI·AI · 左缘拖拽调宽 + 载入持久宽度
     _ensureSearch();   // UI·AJ · 过程区内搜索（⌘F）

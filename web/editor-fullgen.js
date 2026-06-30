@@ -1414,6 +1414,15 @@
     if (noFacChars.length > 0) issues.push(noFacChars.length + '个角色未分配势力');
     // 空官制
     if (!scriptData.government || !scriptData.government.nodes || scriptData.government.nodes.length === 0) issues.push('未设置官制体系');
+    // 接入确定性 preflight(运行时体检·免 API)·补 ad-hoc 检查的运行时盲区(runtime-boot/faction-refs/runtime-office/runtime-chars 等会影响加载的阻塞)。
+    // 传深克隆(preflight 经 ensureCharFactionId/ensureTimeFields 会改 draft)·不污染 live scriptData。
+    try {
+      var _AA = (typeof window !== 'undefined' && window.TM && window.TM.AuthoringAgent) || (typeof TM !== 'undefined' && TM.AuthoringAgent);
+      if (_AA && typeof _AA.preflight === 'function') {
+        var _pf = _AA.preflight(JSON.parse(JSON.stringify(scriptData)));
+        (_pf && _pf.blockers || []).forEach(function (b) { issues.push('运行时体检 · ' + b); });
+      }
+    } catch (_pfe) {}
 
     if (issues.length > 0) {
       html += '<div style="margin-bottom:1rem;padding:0.8rem;background:rgba(231,76,60,0.1);border-radius:8px;border-left:3px solid #e74c3c;">';
