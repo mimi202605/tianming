@@ -48,11 +48,31 @@
   function _spoils(br, GM) {
     try { if (!br || br._spoilsDone) return; br._spoilsDone = true; var w = W(), AR = w && w.TMArmory; if (AR && typeof AR.battleSpoils === 'function') AR.battleSpoils(GM || (w && w.GM), br); } catch (e) {}
   }
+  /* 战后历练增长(§12.3·整编屏地基刀1的活线接入):玩家军按本战减员率获历练(走 TMArmyUnits.gainBattleVeterancy)。
+   * 仅御驾亲征流程(runPending/recoverPending→applyReal)调→天然 flag-gated·不泄漏全局战斗·永不崩。NPC 军不动(v1 无整编屏)。 */
+  function _gainPostBattleVeterancy(br, GM) {
+    try {
+      if (!br || !GM) return;
+      var w = W(), AU = w && w.TMArmyUnits;
+      if (!AU || typeof AU.gainBattleVeterancy !== 'function') return;
+      var pf = playerFaction(GM);
+      (br.affectedArmies || []).forEach(function (aa) {
+        if (!aa) return;
+        var a = findArmy(GM, aa.armyId);
+        if (!a || (pf && a.faction !== pf)) return;             // 仅玩家军
+        var loss = Math.max(0, +aa.loss || 0);
+        var nowS = Math.max(0, +(a.soldiers || a.strength || 0));
+        var pre = nowS + loss;                                   // 战前 = 战后 + 本战损
+        AU.gainBattleVeterancy(a, pre > 0 ? loss / pre : 0);     // 标脏→下次 ensure 重派 units[] 历练
+      });
+    } catch (e) {}
+  }
   function applyReal(br, GM) {
     var w = W(), MS = w && w.MilitarySystems;
     var fn = MS && (MS._origApplyBattleResult || MS.applyBattleResult);
     if (typeof fn === 'function') { try { fn.call(MS, br, GM); } catch (e) {} }
     _spoils(br, GM);
+    _gainPostBattleVeterancy(br, GM);   // 战后历练(玩家军·按减员率·仅御驾亲征流程→flag-gated)
   }
   function emperorName(GM) {   /* 皇帝角色(朝代中立:role/officialTitle==='皇帝'·不锁单朝) */
     if (!GM || !Array.isArray(GM.chars)) return null;
@@ -182,7 +202,7 @@
   var API = {
     runPending: runPending, installHook: installHook, maybeDefer: maybeDefer, applyDelegate: applyDelegate,
     recoverPending: recoverPending, emperorArmyId: emperorArmyId, emperorName: emperorName,
-    involvesPlayer: involvesPlayer, _pending: function () { return pending; }, _clear: function () { pending.length = 0; }
+    involvesPlayer: involvesPlayer, _gainPostBattleVeterancy: _gainPostBattleVeterancy, _pending: function () { return pending; }, _clear: function () { pending.length = 0; }
   };
   /* 设置面板「御驾亲征·战术战斗」开关处理器(tm-patches.js 设置渲染调·切 GM._yujiaQinzheng·本局存档生效) */
   function setYujiaQinzheng(on, btn) {

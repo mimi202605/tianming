@@ -141,6 +141,42 @@
     return 20;
   }
 
+  /* ═══════════ 历练(veterancy)持久化 + 战后增长/稀释(§12.3·御驾亲征 Phase3 整编屏地基) ═══════════
+   * 模型:units[] 历练 = vetFromQuality(quality) 基线 + army.veterancy(战后累计·数值·持久)·army 级统一(units[] 是派生视图)。
+   * army.veterancy 纳入 compSig→变则重派(签名自愈)·effective 历练封顶 90。本组纯逻辑·活线接入(flag-gated 会战阶段)属后续刀。
+   * 注:veterancy 默认 0/未设→effectiveVet = 基线·与改动前完全一致(零行为变更·须 gain 后才升)。 */
+  function _vnum(x) { x = +x; return isFinite(x) ? x : 0; }
+  function clampVet(v) { return Math.max(0, Math.min(90, Math.round(_vnum(v)))); }
+  /* 一军当前有效历练 = 品质基线 + 累计 veterancy(封顶90) */
+  function effectiveVet(army) { return clampVet(vetFromQuality(army && army.quality) + _vnum(army && army.veterancy)); }
+  /* 战后历练增长(§12.3):烈度=该军减员率·Δ=4+6×烈度+血战加成(减员率>0.4 加4)·递减×(1−当前历练/100)·封顶90。返实得Δ。 */
+  function gainBattleVeterancy(army, lossRatio) {
+    if (!army) return 0;
+    var lr = Math.max(0, Math.min(1, _vnum(lossRatio)));
+    var cur = effectiveVet(army);
+    var raw = 4 + 6 * lr + (lr > 0.4 ? 4 : 0);          // 轻松≈4 / 苦战≈10 / 血战≈14
+    var delta = Math.round(raw * (1 - cur / 100));       // 递减:精锐稀有(70→85 远慢于 10→50)
+    if (delta <= 0) return 0;
+    var base = vetFromQuality(army.quality);
+    var maxBonus = Math.max(0, 90 - base);               // effective 封顶90
+    var before = _vnum(army.veterancy);
+    army.veterancy = Math.min(maxBonus, before + delta);
+    army._unitsStale = true;                              // 标脏→下次 ensure 重派(units[] 历练随之更新)
+    return Math.round(army.veterancy - before);
+  }
+  /* 新兵稀释老兵(§12.3):oldCount 老兵(当前有效历练)+ newCount 新募(历练15)→加权平均·写回 veterancy 持久。返稀释后有效历练。 */
+  function diluteVeterancy(army, oldCount, newCount) {
+    if (!army) return 0;
+    oldCount = Math.max(0, _vnum(oldCount)); newCount = Math.max(0, _vnum(newCount));
+    if (newCount <= 0) return effectiveVet(army);
+    var oldEff = effectiveVet(army), recruitVet = 15;    // §12.3 新募初值
+    var blended = (oldCount * oldEff + newCount * recruitVet) / Math.max(1, oldCount + newCount);
+    var base = vetFromQuality(army.quality);
+    army.veterancy = Math.max(0, Math.round(blended - base));
+    army._unitsStale = true;
+    return clampVet(blended);
+  }
+
   /* composition → units[]:混编拆分(§12.2)→每兵种"填满+余数"切队(≤1000)+防碎牌(§12.1)·总人数守恒 */
   function deriveArmyUnits(army) {
     if (!army) return [];
@@ -151,7 +187,7 @@
       if (!tot0) return [];
       comp = [{ type: army.quality || '杂兵', count: tot0 }];
     }
-    var units = [], uid = 0, vet = vetFromQuality(army.quality), aid = army.id || army.name || 'army';
+    var units = [], uid = 0, vet = effectiveVet(army), aid = army.id || army.name || 'army';   // 历练=品质基线+累计veterancy(veterancy=0时=基线·不变)
     comp.forEach(function (c) {
       var type = (c && (c.type || c.unitTypeId)) || '杂兵';
       var count = Math.max(0, Math.round((c && c.count) || 0));
@@ -186,7 +222,7 @@
     var base = (Array.isArray(c) && c.length)
       ? c.map(function (x) { return (x && (x.type || x.unitTypeId) || '') + ':' + Math.round((x && x.count) || 0); }).join('|')
       : 'S';
-    return base + '#' + Math.round((army && (army.soldiers || army.strength || army.size)) || 0) + '@' + String((army && army.quality) || '');
+    return base + '#' + Math.round((army && (army.soldiers || army.strength || army.size)) || 0) + '@' + String((army && army.quality) || '') + '^' + clampVet(army && army.veterancy);   // ^veterancy 纳入签名→战后历练增长触发重派
   }
   /* 幂等 + 自愈:无 units[] / 源签名变 / 标脏 → 重派;否则原样返回(渲染热路径可放心每帧调) */
   function ensureArmyUnits(army) {
@@ -220,6 +256,9 @@
     ensureAllArmies: ensureAllArmies,
     classifyUnitType: classifyUnitType,
     vetFromQuality: vetFromQuality,
+    effectiveVet: effectiveVet,
+    gainBattleVeterancy: gainBattleVeterancy,
+    diluteVeterancy: diluteVeterancy,
     compSig: compSig
   };
   if (typeof window !== 'undefined') window.TMArmyUnits = API;
