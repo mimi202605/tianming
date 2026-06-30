@@ -116,5 +116,20 @@ sandbox.P = { conf: {}, playerInfo: { factionName: '明' } };
 const jHtml = vm.runInContext('String(_ogpRenderPosCard(GM.officeTree[0].positions[0], "太常寺", [0]) || "")', sandbox);
 ok(/荐\s*贤/.test(jHtml) && /_offJianbi/.test(jHtml), '列表卡：eligible 官 → 渲染荐贤按钮(接 _offJianbi)');
 
+// ════════ 四·独立罢免(S1d-UI) ════════
+ok(/_offDismissToEdict\(/.test(runtime) && /罢\s*免/.test(runtime), '罢免按钮接 _offDismissToEdict + 文案「罢免」');
+vm.runInContext('if(typeof _renderEdictSuggestions!=="function")_renderEdictSuggestions=function(){};', sandbox);
+sandbox.GM = { turn: 5, chars: [mkHuzhu('某官', '侍郎', 7, '明')], facs: [{ name: '明', isPlayer: true }], officeTree: [{ name: '某部', positions: [{ name: '侍郎', rank: '正三品', holder: '某官' }] }], _edictSuggestions: [], _capital: '京师' };
+sandbox.P = { conf: {}, playerInfo: { factionName: '明' } };
+const dHtml = vm.runInContext('String(_ogpRenderPosCard(GM.officeTree[0].positions[0], "某部", [0]) || "")', sandbox);
+ok(/罢\s*免/.test(dHtml) && /_offDismissToEdict/.test(dHtml), '列表卡：本朝自家官 → 渲染罢免按钮');
+vm.runInContext('_offDismissToEdict("某官","某部","侍郎")', sandbox);
+ok(vm.runInContext('(GM._edictSuggestions||[]).length', sandbox) >= 1, '真码：_offDismissToEdict → 录入诏书建议库(免职·待下旨)');
+ok(/免去|免职|某官/.test(vm.runInContext('JSON.stringify((GM._edictSuggestions||[]).slice(-1)[0]||{})', sandbox)), '真码：诏书建议含免职某官');
+sandbox.GM.chars.push({ name: '敌官', officialTitle: '侍郎', faction: '后金', alive: true });
+sandbox.GM.officeTree[0].positions[0].holder = '敌官';
+const fHtml = vm.runInContext('String(_ogpRenderPosCard(GM.officeTree[0].positions[0], "某部", [0]) || "")', sandbox);
+ok(!/罢\s*免/.test(fHtml), '列表卡：异党官 → 无罢免按钮(走弹劾问罪·不走罢免)');
+
 console.log('\nsmoke-s5-menyin: ' + (fail === 0 ? 'PASS' : 'FAIL') + ' ' + pass + '/' + (pass + fail));
 process.exit(fail > 0 ? 1 : 0);

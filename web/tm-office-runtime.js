@@ -385,7 +385,15 @@ function _ogpRenderPosCard(p, deptName, pathArr) {
       jianBtn = '<button class="ogp-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offJianbi(\'' + safeHolder + '\')" title="荐辟·荐布衣贤才入仕(候选)">荐 贤</button>';
     }
   }
-  html += '</div>' + mainBtn + yinBtn + jianBtn + '</div>';
+  // S1d·罢免按钮：本朝自家官(非异党·非君主) → 免职诏书建议(独立罢免动作·区别于弹劾[问罪]/改换[顶替])
+  var dismBtn = '';
+  if (!isVacant && holder && !holder.isPlayer) {
+    var _dpf = ''; var _dpfFac = (GM.facs || []).find(function (f) { return f.isPlayer; }); if (_dpfFac) _dpf = _dpfFac.name; if (!_dpf) _dpf = (P.playerInfo && P.playerInfo.factionName) || '';
+    if (!(_dpf && holder.faction && holder.faction !== _dpf)) {
+      dismBtn = '<button class="ogp-pos-btn" style="margin-left:4px;opacity:0.82;" onclick="event.stopPropagation();_offDismissToEdict(\'' + safeHolder + '\',\'' + safeDept + '\',\'' + safePos + '\')" title="罢免·免去其职(录诏书建议·下旨生效)">罢 免</button>';
+    }
+  }
+  html += '</div>' + mainBtn + yinBtn + jianBtn + dismBtn + '</div>';
 
   if (isVacant) {
     html += '<div class="ogp-pos-holder"></div>';
@@ -1443,6 +1451,10 @@ function _ogRenderPosCardV10(fi, courtKey) {
     var _jianbiLv = (!_isForeign && !_holder.isPlayer && !_holder._jianbiGranted && typeof TMPromotion !== 'undefined' && TMPromotion.resolveRankLevel) ? TMPromotion.resolveRankLevel(_holder, GM) : 0;
     if (_jianbiLv > 0 && _jianbiLv <= 8) {
       html += '<button class="og-v10-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offJianbi(\'' + _safeHolder + '\')" title="\u8350\u8F9F\u00B7\u8350\u5E03\u8863\u8D24\u624D\u5165\u4ED5(\u5019\u9009)">\u8350 \u8D24</button>';
+    }
+    // S1d\u00B7\u7F62\u514D\u6309\u94AE\uFF1A\u672C\u671D\u81EA\u5BB6\u5B98(\u975E\u5F02\u515A\u00B7\u975E\u541B\u4E3B) \u2192 \u514D\u804C\u8BCF\u4E66\u5EFA\u8BAE(\u72EC\u7ACB\u7F62\u514D\u52A8\u4F5C)
+    if (!_isForeign && !_holder.isPlayer) {
+      html += '<button class="og-v10-pos-btn" style="margin-left:4px;opacity:0.82;" onclick="event.stopPropagation();_offDismissToEdict(\'' + _safeHolder + '\',\'' + _safeDept + '\',\'' + _safePos + '\')" title="\u7F62\u514D\u00B7\u514D\u53BB\u5176\u804C(\u5F55\u8BCF\u4E66\u5EFA\u8BAE\u00B7\u4E0B\u65E8\u751F\u6548)">\u7F62 \u514D</button>';
     }
   }
   html += '</div>';
