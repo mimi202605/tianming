@@ -187,10 +187,18 @@
       if (!tot0) return [];
       comp = [{ type: army.quality || '杂兵', count: tot0 }];
     }
+    // ★units 反映真实兵力(整编屏刀4):战损/募兵后 army.soldiers 变而 composition 未同步→按比例缩放·避免 units[] 陈旧(整编随之自动·填满+余数自然合并残队)
+    var _compSum = 0; comp.forEach(function (c) { _compSum += Math.max(0, Math.round((c && c.count) || 0)); });
+    var _total;
+    if (typeof army.soldiers === 'number' && isFinite(army.soldiers)) _total = Math.max(0, Math.round(army.soldiers));        // soldiers 为数(含0)→权威总兵力·0则全歼→units空
+    else if (typeof army.strength === 'number' && isFinite(army.strength)) _total = Math.max(0, Math.round(army.strength));
+    else if (typeof army.size === 'number' && isFinite(army.size)) _total = Math.max(0, Math.round(army.size));
+    else _total = _compSum;                                  // 兵力字段都未设→用 composition 和(向后兼容)
+    var _scale = (_compSum > 0) ? (_total / _compSum) : 1;   // 真实兵力 ÷ 编制和·=1 无变化(新军/已同步=零行为变更)
     var units = [], uid = 0, vet = effectiveVet(army), aid = army.id || army.name || 'army';   // 历练=品质基线+累计veterancy(veterancy=0时=基线·不变)
     comp.forEach(function (c) {
       var type = (c && (c.type || c.unitTypeId)) || '杂兵';
-      var count = Math.max(0, Math.round((c && c.count) || 0));
+      var count = Math.max(0, Math.round(((c && c.count) || 0) * _scale));   // ★按真实兵力缩放(战损/募兵反映·_scale=1时不变)
       if (!count) return;
       var parts = splitTypeMix(type, army);          // 混编→多兵种(单一则1个)
       var wsum = 0; parts.forEach(function (p) { wsum += p.weight; });
