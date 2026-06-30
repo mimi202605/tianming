@@ -1155,6 +1155,42 @@ function _edictLiveForecast(textareaId) {
   }, 500); // 500ms 防抖
 }
 
+/** 国是·风气（全局持续之制）一览·内联样式不碰 styles.css·B4 */
+var _GR_STATUS_TONE = { nascent: '#9a7b3f', established: '#7a5a2a', entrenched: '#5a7a3a', suppressed: '#9a9a9a' };
+function _dfGlobalRulesHtml() {
+  var GRapi = window.GlobalRules;
+  if (!GRapi || typeof GRapi.cards !== 'function') return '';
+  var cards = [];
+  try { cards = GRapi.cards() || []; } catch (_e) { return ''; }
+  if (!cards.length) return '';
+  var s = '<div style="margin-top:12px;padding:10px 12px;border:1px solid #d8c79b;border-radius:6px;background:rgba(248,242,224,.6);">';
+  s += '<div style="font-weight:700;color:#5a4326;margin-bottom:6px;">国 是 · 风 气 <span style="font-weight:400;font-size:12px;color:#8a754a;">（已立之制 · 持续生效 · 由营建确立）</span></div>';
+  cards.forEach(function (c) {
+    var tone = _GR_STATUS_TONE[c.status] || '#7a5a2a';
+    var barW = Math.max(2, Math.min(100, c.strength));
+    s += '<div style="padding:6px 0;border-top:1px solid #e7dcc0;">';
+    s += '<div style="display:flex;align-items:center;gap:6px;">';
+    s += '<b style="color:#4a3820;">' + escHtml(c.name) + '</b>';
+    s += '<span style="font-size:11px;padding:1px 6px;border-radius:8px;background:' + tone + ';color:#fff;">' + escHtml(c.statusLabel) + '</span>';
+    s += '<span style="margin-left:auto;font-size:11px;color:#8a754a;">扎根 ' + c.strength + '</span>';
+    s += '</div>';
+    s += '<div style="height:4px;border-radius:2px;background:#e7dcc0;margin:3px 0;"><div style="height:100%;width:' + barW + '%;border-radius:2px;background:' + tone + ';"></div></div>';
+    if (c.tends && c.tends.length) {
+      s += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">';
+      c.tends.forEach(function (t) {
+        s += '<em style="font-style:normal;font-size:11px;padding:1px 6px;border-radius:4px;background:#ede2c4;color:#5a4326;">' + escHtml(t.label) + '·' + escHtml(t.magLabel) + '</em>';
+      });
+      s += '</div>';
+    }
+    if (c.resist && c.resist.from && c.resist.from.length) {
+      s += '<div style="font-size:11px;color:#9a4a3a;margin-top:3px;">阻力：' + escHtml(c.resist.from.join('、')) + ' ' + escHtml(c.resist.intensityLabel) + '议' + (c.resist.label ? '（' + escHtml(c.resist.label) + '）' : '') + '</div>';
+    }
+    s += '</div>';
+  });
+  s += '</div>';
+  return s;
+}
+
 /** 修建建筑弹窗——御案宣纸皮·剧本工籍 + 自拟营造（推诏令建议库·不直改账面） */
 var _DF_BUILD_CAT_CN = { economic: '经济', military: '军事', cultural: '文化', administrative: '行政', religious: '宗教', infrastructure: '基础设施' };
 function _dfBuildModal(divName) {
@@ -1197,9 +1233,12 @@ function _dfBuildModal(divName) {
   Object.keys(_DF_BUILD_CAT_CN).forEach(function(k) { html += '<option value="' + k + '">' + _DF_BUILD_CAT_CN[k] + '</option>'; });
   html += '</select></div>';
   html += '<div class="tmjz-field"><label>规 制 与 所 求（告示有司：欲修何物、预期何效）</label><textarea id="_bmCustDesc" rows="4" placeholder="例：修文馆以藏书刀版，供士子入内议事，以兴文风、安士心。"></textarea></div>';
-  html += '<div class="tmjz-rule"><b>有司核定之制：</b>自拟工役颁行后，由有司核其<b>合理性三档</b>（合理／勉强／不合理），定实际费用与工期；其效用只许落在<b>白名单账目</b>（田亩、商贸、盐铁、城防、驿路、解额、募兵、民心、吏治等），且以费用为度——小费小效，大费大效，断无十两银修出雄关之理。</div>';
+  html += '<div class="tmjz-rule"><b>有司核定之制：</b>自拟工役颁行后，由有司核其<b>合理性三档</b>（合理／勉强／不合理），定实际费用与工期；其效用只许落在<b>白名单账目</b>（田亩、商贸、盐铁、城防、驿路、解额、募兵、民心、吏治等），且以费用为度——小费小效，大费大效，断无十两银修出雄关之理。凡变更制度、风气、学统者（如实学馆、译书馆），更可立<b>「国是·风气」</b>之持续全局之制，潜移国是、育才兴业，然必招既得群体之阻力。</div>';
   html += '<div id="_bmAppraiseResult" style="display:none;margin-top:10px;"></div>';  // A1·有司核议结果区
   html += '</div>';
+
+  // B4·国是·风气（已立全局之制）一览——置于 body 末·两页签共见
+  html += _dfGlobalRulesHtml();
 
   html += '</div>';
   // A1·自拟营建 agent：开关开 + 有 API key 时，自拟页提供「请有司核议」即时核定（玩家点按钮才调·无则回落原录入路径）

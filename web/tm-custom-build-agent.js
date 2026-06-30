@@ -153,6 +153,31 @@
           type: 'object',
           description: '结构化效果账·完工照此入账（judgedEffects 叙述不入账）。pct{白名单路径:小数}、abs{白名单路径:整数}、minxin(±2内)、corruption(±3内)、upkeepPerTurn(约造价2%/回合)。白名单：economyBase.{farmland,commerceVolume,commerceCoefficient,maritimeTradeVolume,saltProduction,mineralProduction,fishingProduction,horseProduction,postRelays,roadQuality,kejuQuota}、fortLevel、coastalDefense(海防档)、militaryRecruits、defenseBonus(边防工事档·降本地边警)、officialSupply(育才储官·补地方官缺)。名单外引擎丢弃。十两银修不出雄关——费效为度。'
         },
+        globalRule: {
+          type: 'object',
+          description: '【全局之制·选填】仅当此工役非寻常钱粮工役，而在变更制度/风气/学统/社会结构时填（如实学馆/译书馆/算学馆/通商局/医学馆——为国持续输送某类人才、确立某种风气）。寻常仓/田/城/坊留空。此为持续生效之全局规则，不入钱粮账，潜移默化国是民风，且必招既得群体之阻力。',
+          properties: {
+            name: { type: 'string', description: '制名·中立古词（如「实学之制」「通商之制」「译书之制」），勿用朝代专名。' },
+            tendencies: {
+              type: 'array',
+              description: '此制确立的持续倾向（1-4 条）。key 取通用义：reform_success(改革推行)/tech_promotion(实学技艺推广)/shixue_recognition(实学为世所重)/commerce_open(通商开放)/talent_supply(才俊辈出)/orthodoxy(正统维护) 等，亦可据实另拟。一制至多 1 条 major。',
+              items: { type: 'object', properties: {
+                key: { type: 'string' },
+                label: { type: 'string', description: '人话(如「改革推行」)' },
+                mag: { type: 'string', description: '档：minor(渐)/moderate(颇)/major(大)', enum: ['minor', 'moderate', 'major'] }
+              }, required: ['key', 'label', 'mag'] }
+            },
+            resistance: {
+              type: 'object',
+              description: '此制招致之既得群体阻力（立新制几乎必有·勿讳言勿低估）。',
+              properties: {
+                from: { type: 'array', items: { type: 'string' }, description: '抵制群体（如「士绅」「旧学官」「海禁旧党」「勋贵」）' },
+                intensity: { type: 'string', description: 'simmering(私议·微)/active(清议上疏·炽)/fierce(结党请罢·沸)——越动摇正统、越夺多数士绅之利则愈烈', enum: ['simmering', 'active', 'fierce'] },
+                label: { type: 'string', description: '阻力情状一句（如「科举正途外别立旁门，物议沸然」）' }
+              }
+            }
+          }
+        },
         judgedEffects: { type: 'string', description: '效果叙述(人话·给玩家读)。' },
         reason: { type: 'string', description: '判语：为何此可行性/造价/工期——须扣此地真实条件（勘报所见）。' }
       },
@@ -181,6 +206,8 @@
     L.push('· 大额营造（数万两以上）应给相称的**绝对值**经济产出（abs:economyBase.commerceVolume/mineralProduction/saltProduction/farmland 等直接增量），勿只给小比例。经济类年回报约造价 8%~15%。');
     L.push('· 活字段（拨动世界·须经源头叶）：边防工事(巡检/烽燧/堡台)给 defenseBonus 降本地边警；书院/学宫给 officialSupply 补地方官缺；军屯/养兵庄增 economyBase 田粮→地方留用增→军费负担间接降。勿直给 borderRisk/officeVacancy/armyPressure——那是派生值，引擎每回合重算，须经上述源头叶。');
     L.push('· 维护费 upkeepPerTurn 约为造价 2%/回合。');
+    L.push('· **全局之制（间接·持续·选填 globalRule）**：若此工役非寻常钱粮工役，而在变更制度/风气/学统/社会结构（实学馆/译书馆/算学馆/通商局/医学馆/女学…）——其真效不在钱粮账目，而在为国持续输送某类人才、确立某种风气（如「改革更易行」「实学渐为世重」「才俊辈出」）。此当填 globalRule（倾向 tendencies + 阻力 resistance），不必强塞进 effectsStructured 数字；寻常仓/田/城/坊则不填。');
+    L.push('· **凡立新制必招阻力**：动摇正统、夺既得之利者，士绅旧党必清议、上疏、乃至结党请罢。据其触动之深核定 resistance.intensity——此为实情，须如实，勿讳言、勿低估。逾分之制纵一时兴造，亦终为物议所夺。');
     L.push('');
     L.push('请调用 submit_appraisal 提交核议（必须调用一次）。');
     return L.join('\n');
@@ -367,6 +394,21 @@
       try { if (typeof BW.fxLabels === 'function') labels = BW.fxLabels(_bld, null) || []; } catch (e2) {}
       try { if (typeof BW.upkeepFor === 'function') upkeep = BW.upkeepFor(_bld, null); } catch (e3) {}
     }
+    // 全局之制预览（B2·不写 GM·只供核议帖显示；倾向配额裁档后即「准奏将立之制」）。
+    //   真正登记在 approveBuild → GlobalRules.register。preview 传定 id 以免触 _uid 改 GM。
+    var grPreview = null;
+    try {
+      if (root.GlobalRules && ap.globalRule && typeof ap.globalRule === 'object' &&
+          typeof root.GlobalRules._normalizeRule === 'function') {
+        grPreview = root.GlobalRules._normalizeRule({
+          id: 'preview', source: 'building',
+          name: ap.globalRule.name || ((req.name || '此') + '之制'),
+          tendencies: ap.globalRule.tendencies,
+          resistance: ap.globalRule.resistance
+        });
+      }
+    } catch (eGR) {}
+
     out.ok = true;
     out.appraisal = {
       feasibility: ap.feasibility || '合理',
@@ -376,6 +418,8 @@
       effectsRaw: rawFx,                      // AI 原拟（可观测·对照硬门削了什么）
       effectLabels: labels,                   // 人话徽签（核议帖显示·含维护·与真实建筑册页同源）
       upkeep: _num(upkeep),                   // 维护费 两/回合
+      globalRule: grPreview,                  // 全局之制（裁档后·null=寻常工役无此）·准奏据此 register
+      globalRuleRaw: (ap.globalRule && typeof ap.globalRule === 'object') ? ap.globalRule : null,  // AI 原拟（可观测）
       judgedEffects: ap.judgedEffects || '',
       reason: ap.reason || ''
     };
@@ -428,6 +472,23 @@
     div.buildings.push(building);
     out.building = building;
 
+    // 全局之制登记（B2·如实学馆→「改革推行/实学推广」之持续全局规则·配套阻力）。
+    //   判断在核议自由，落账走硬门：register 内倾向配额裁档 + 阻力规整。建筑挂名以备溯源。
+    try {
+      var GR = root.GlobalRules;
+      var grIn = appraisal.globalRule || appraisal.globalRuleRaw;
+      if (GR && typeof GR.register === 'function' && grIn && typeof grIn === 'object' && grIn.tendencies) {
+        var enacted = GR.register({
+          name: grIn.name || ((req.name || '此') + '之制'),
+          source: 'building',
+          sourceRef: { div: divName, bld: building.name },
+          tendencies: grIn.tendencies,
+          resistance: grIn.resistance
+        });
+        if (enacted) building._globalRule = enacted.name;
+      }
+    } catch (eReg) {}
+
     // 注入回合推演（不隔绝）：记本回合玩家新营建 + 有司核议·推演 prompt 段消费
     if (!Array.isArray(GM._pendingCustomBuilds)) GM._pendingCustomBuilds = [];
     GM._pendingCustomBuilds.push({
@@ -452,7 +513,7 @@
     APPRAISAL_TOOL: APPRAISAL_TOOL,
     _findDivByName: _findDivByName,
     _buildAppraisePrompt: _buildAppraisePrompt,
-    version: '0.1.0-A1'
+    version: '0.2.0-B2-globalrule'
   };
   root.CustomBuildAgent = TM.CustomBuildAgent;
   if (typeof module !== 'undefined' && module.exports) module.exports = TM.CustomBuildAgent;

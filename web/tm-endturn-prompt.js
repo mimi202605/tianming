@@ -2135,6 +2135,9 @@
       }
     } catch(_sppInjE) { try { console.warn('[prompt.build] sharedPromptPrefix inject failed', _sppInjE); } catch(_){} }
 
+    // ★ 全局持续规则（国是·风气）注入推演：让倾向所及之事更易推行、新群体渐出，阻力如实体现
+    try { if (window.GlobalRules && typeof GlobalRules.promptContext === 'function') sysP += GlobalRules.promptContext(); } catch(_grCtxE){}
+
     // ★ 三系统运行时状态（势力 lifePhase·党派 influence/officeCount·军队 mutinyRisk）
     if (TM && TM.EndTurnAIContext && typeof TM.EndTurnAIContext.appendPromptPolicyContext === 'function') {
       sysP = TM.EndTurnAIContext.appendPromptPolicyContext(sysP, {
