@@ -113,6 +113,8 @@ var AudioSystem = {
     }
 
     this.loadMenuTrack();
+    // ★重入 init 前撤旧导入轨 object URL(Codex P2:loadPlaylist 会重置 playlist→旧 user URL 泄漏堆积)
+    try { (this.playlist || []).forEach(function(t) { if (t && t.user && t.src) { try { URL.revokeObjectURL(t.src); } catch (_) {} } }); } catch (_) {}
     this.loadPlaylist();
     // 恢复用户导入的 BGM(IndexedDB·异步·就绪后刷新音声面板)
     try { this.loadUserTracks(function() { if (window.TM && TM.UI && TM.UI.shell && typeof TM.UI.shell.refreshLeft === 'function') TM.UI.shell.refreshLeft(); }); } catch (_) {}
@@ -277,6 +279,12 @@ var AudioSystem = {
 
   playTrack: function(trackId) {
     if (!this.playlist || !this.playlist.length) this.loadPlaylist();
+    var self = this;
+    // ★守(Codex P1):默认播放(无 trackId)时若当前选中是尚未从 IndexedDB 载入的导入轨(user_)·勿用兜底覆盖其 currentTrackId(跨会话保选择·待 loadUserTracks 完成后自然播)
+    if (!trackId && this.currentTrackId && this.currentTrackId.indexOf('user_') === 0 &&
+        !(this.playlist || []).some(function(t) { return t.id === self.currentTrackId; })) {
+      return false;
+    }
     var track = (this.playlist || []).find(function(item) { return item.id === trackId; }) || this.getCurrentTrack();
     if (!track) return false;
     this.currentTrackId = track.id;
@@ -385,14 +393,17 @@ var AudioSystem = {
   _openUserBgmDB: function() {
     var self = this;
     if (self._userBgmDBPromise) return self._userBgmDBPromise;
-    self._userBgmDBPromise = new Promise(function(resolve, reject) {
+    var p = new Promise(function(resolve, reject) {
       if (typeof indexedDB === 'undefined') { reject(new Error('indexedDB 不可用')); return; }
       var req = indexedDB.open('tmUserBgm', 1);
       req.onupgradeneeded = function(e) { var db = e.target.result; if (!db.objectStoreNames.contains('tracks')) db.createObjectStore('tracks', { keyPath: 'id' }); };
       req.onsuccess = function(e) { resolve(e.target.result); };
       req.onerror = function() { reject(req.error || new Error('open failed')); };
     });
-    return self._userBgmDBPromise;
+    // ★失败不永久缓存(Codex P1):rejected 则清空·下次调用重开(隐私模式恢复/瞬时失败后仍可持久化)
+    p.catch(function() { if (self._userBgmDBPromise === p) self._userBgmDBPromise = null; });
+    self._userBgmDBPromise = p;
+    return p;
   },
   // 弹文件选择(audio/*·多选)→导入
   _pickMusicFiles: function() {
@@ -418,8 +429,11 @@ var AudioSystem = {
     if (!files.length) { if (typeof toast === 'function') toast('未选择音频文件'); if (onDone) onDone(); return; }
     var stamp = Date.now().toString(36);
     var made = files.map(function(file, i) {
-      var title = String(file.name || '导入曲').replace(/\.[^.]+$/, '').replace(/[<>"]/g, '').slice(0, 60) || '导入曲';
-      return { id: 'user_' + stamp + '_' + i + '_' + (self.playlist.length + i), title: title, file: file };
+      // 标题剥 < > " &(Codex P2:& 未转义会令 innerHTML 显示失真)·截60
+      var title = String(file.name || '导入曲').replace(/\.[^.]+$/, '').replace(/[<>"&]/g, '').slice(0, 60) || '导入曲';
+      // id 加随机段(Codex P1:防跨调用/跨tab 同毫秒同序号碰撞·put 会静默覆盖已有轨)
+      var rand = Math.random().toString(36).slice(2, 8);
+      return { id: 'user_' + stamp + '_' + rand + '_' + i, title: title, file: file };
     });
     made.forEach(function(m) { try { self.playlist.push({ id: m.id, title: m.title, meta: '导入', src: URL.createObjectURL(m.file), user: true }); } catch (_) {} });
     self._openUserBgmDB().then(function(db) {
@@ -460,7 +474,15 @@ var AudioSystem = {
     try { if (t.src) URL.revokeObjectURL(t.src); } catch (_) {}
     self.playlist = (self.playlist || []).filter(function(x) { return x.id !== id; });
     if (self.currentTrackId === id) { self.currentTrackId = (self.playlist[0] && self.playlist[0].id) || ''; self.saveSettings(); }
-    self._openUserBgmDB().then(function(db) { try { db.transaction('tracks', 'readwrite').objectStore('tracks').delete(id); } catch (_) {} }).catch(function() {});
+    self._openUserBgmDB().then(function(db) {
+      // ★删除事务带回调(Codex P1:原无 onerror→失败静默→下次会话复活已删轨)
+      try {
+        var tx = db.transaction('tracks', 'readwrite');
+        var rq = tx.objectStore('tracks').delete(id);
+        rq.onerror = function() { try { console.warn('[BGM] 删除导入曲失败:', id, rq.error); } catch (_) {} };
+        tx.onerror = function() { try { console.warn('[BGM] 删除导入曲事务失败:', id, tx.error); } catch (_) {} };
+      } catch (e) { try { console.warn('[BGM] 删除导入曲异常:', e); } catch (_) {} }
+    }).catch(function() {});
     if (typeof toast === 'function') toast('已移除导入乐曲');
     return true;
   },

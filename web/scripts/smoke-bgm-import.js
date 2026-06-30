@@ -19,7 +19,13 @@ ok(/createObjectStore\('tracks', \{ keyPath: 'id' \}\)/.test(src), 'objectStore 
 // 导入:过滤音频 + 即时 object URL + 持久 blob
 ok(/\/\^audio\\\//.test(src) && /mp3\|ogg\|wav/.test(src), 'importUserMusic 过滤 audio/* 或扩展名');
 ok(/URL\.createObjectURL\(m\.file\)/.test(src) && /store\.put\(\{ id: m\.id[^}]*blob: m\.file/.test(src), '导入:object URL 即时接入 + IndexedDB 存 blob');
-ok(/replace\(\/\[<>"\]\/g/.test(src), '导入标题 sanitize(剥 <>")防 HTML 注入');
+ok(/replace\(\/\[<>"&\]\/g/.test(src), '导入标题 sanitize(剥 <>"& )防注入+显示失真·Codex P2');
+// ── Codex 复核修复(gpt-5.5/xhigh) ──
+ok(/_userBgmDBPromise === p\) self\._userBgmDBPromise = null/.test(src), 'Codex P1: _openUserBgmDB 失败不永久缓存(rejected→清空·下次重开)');
+ok(/Math\.random\(\)\.toString\(36\)\.slice\(2, 8\)/.test(src), 'Codex P1: 导入 id 加随机段(防同毫秒/跨tab 碰撞致 put 覆盖)');
+ok(/rq\.onerror = function\(\)[\s\S]*?删除导入曲失败/.test(src) && /tx\.onerror[\s\S]*?事务失败/.test(src), 'Codex P1: 删除事务带 onerror(不静默→不复活已删轨)');
+ok(/!trackId && this\.currentTrackId && this\.currentTrackId\.indexOf\('user_'\) === 0/.test(src), 'Codex P1: playTrack 守 pending 导入轨(不兜底覆盖 currentTrackId·跨会话保选择)');
+ok(/重入 init 前撤旧导入轨 object URL/.test(src), 'Codex P2: init 重入前撤旧导入轨 URL(防泄漏堆积)');
 // 恢复:init 调 loadUserTracks·从 getAll 重建 object URL
 ok(/this\.loadUserTracks\(/.test(src) && /this\.loadPlaylist\(\);/.test(src), 'init 在 loadPlaylist 后调 loadUserTracks');
 ok(/getAll\(\)/.test(src) && /URL\.createObjectURL\(rec\.blob\)/.test(src), 'loadUserTracks 从 IndexedDB getAll 重建 object URL');
