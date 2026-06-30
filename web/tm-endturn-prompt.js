@@ -3182,9 +3182,7 @@
 
     _mark('npcDeep');
     // 2.1: 注入状态耦合参考（非机械执行，AI自行决定实际变化）
-    if (GM._couplingReport) {
-      sysP += '\n\n' + GM._couplingReport;
-    }
+    // coupling report folded into WorldDigest (W1b); sysP injection removed
     // 注入时代进度参考（非机械执行，AI自行决定朝代阶段变化）
     if (GM._eraProgressReport) {
       sysP += '\n\n\u3010\u671D\u4EE3\u8D8B\u52BF\u53C2\u8003\u3011' + GM._eraProgressReport + '\u3002AI\u53EF\u901A\u8FC7era_state_delta\u81EA\u884C\u51B3\u5B9A\u662F\u5426\u8C03\u6574\u671D\u4EE3\u9636\u6BB5\u3002';

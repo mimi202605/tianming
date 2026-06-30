@@ -807,6 +807,13 @@ EndTurnHooks.registerFragment('party-class-calibration', function(ctx) {
     }
   } catch (_) {}
   try {
+    // W1a·天下牵动因果综述：置于细节信号块之前，作 AI 的「因果导读」（把各系统反应连成一脉）
+    if (typeof WorldDigest !== 'undefined' && typeof WorldDigest.promptBlock === 'function') {
+      var _wdBlock = WorldDigest.promptBlock(GM, { turnsBack: 1 });
+      if (_wdBlock) lines.push(_wdBlock);
+    }
+  } catch (_wdE) {}
+  try {
     if (typeof TM !== 'undefined' && TM.PlayerActionSignals && typeof TM.PlayerActionSignals.formatForPrompt === 'function') {
       var signals = TM.PlayerActionSignals.formatForPrompt(GM, { limit: 8 });
       if (signals) lines.push(signals);
