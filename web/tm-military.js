@@ -662,6 +662,8 @@ var MilitarySystems = (function(global) {
     var loser = br.loserFactionId || br.loserFaction || br.loser || '';
     if (!winner || !loser) return { ok: false, reason: 'missing-winner-loser' };
     try { _ty_updateWarFromBattle(winner, loser, br, G); } catch (_wuw) {}   // #26·战争闭环:战果推进 warScore
+    // W2a·军事→势力 reactor（flag-gated·worldReactorBattleEnabled 默认关 → no-op）：战败方确定性实力损 + 写联动 chronicle → 进 W1 因果综述
+    try { if (typeof WorldReactors !== 'undefined' && WorldReactors.Military) WorldReactors.Military.onBattleResolved(G, { winner: winner, loser: loser }); } catch (_wr2) {}
     function _armyNameOf(army) {
       return army ? String(army.name || army.id || army.armyId || '') : '';
     }
