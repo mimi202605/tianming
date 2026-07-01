@@ -153,69 +153,58 @@
       byOwner[owner].push(a);
     });
 
+    // 指标状态色(好绿/中黄/差红·rev=越低越好如兵变欠饷)
+    function _milClr(v, good, mid, rev){ if(rev){ return v<mid?'#7bbd8f':(v<good?'#e0a040':'#d9694a'); } return v>=good?'#7bbd8f':(v>=mid?'#e0a040':'#d9694a'); }
     Object.keys(byOwner).forEach(function(owner) {
       var isPlayer = owner === playerFac;
       html += '<div style="margin-bottom:1rem;">';
       html += '<div class="tm-army-full tm-fulltext-source"'+fullTextAttr(owner+(isPlayer?' (本朝)':'')+' · '+byOwner[owner].length+' 支')+' style="font-size:0.85rem;font-weight:600;color:'+(isPlayer?'var(--gold)':'var(--txt-s)')+';margin-bottom:0.4rem;border-bottom:1px dashed var(--bd,rgba(255,255,255,0.1));padding-bottom:0.3rem;">'+esc(owner)+(isPlayer?' (本朝)':'')+' · '+byOwner[owner].length+' 支</div>';
       byOwner[owner].forEach(function(a) {
-        var bgColor = (a.mutinyRisk||0) >= 60 ? 'rgba(200,50,50,0.08)' : 'var(--bg-2)';
-        html += '<div style="background:'+bgColor+';border-radius:6px;padding:0.6rem;margin-bottom:0.5rem;border-left:3px solid '+(a.mutinyRisk>=60?'var(--red)':(a.morale>=60?'var(--green)':'var(--amber, #e0a040)'))+';">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">';
-        html += '<div><span class="tm-army-full tm-fulltext-source"'+fullTextAttr(a.name)+' style="font-weight:600;display:inline-block;max-width:240px;vertical-align:bottom;">'+esc(a.name)+'</span>';
-        if (a.state && a.state !== 'garrison') html += ' <span style="font-size:0.7rem;color:var(--amber, #e0a040);background:rgba(224,160,64,0.1);padding:1px 5px;border-radius:3px;">'+esc({marching:'行军中',sieging:'围城中',routed:'溃散',disbanded:'解散'}[a.state]||a.state)+'</span>';
+        var _sup=a.supply||0,_mor=a.morale||0,_trn=a.training||50,_arr=a.payArrearsMonths||0,_mut=a.mutinyRisk||0;
+        var _crisis=_mut>=60||_arr>=3||_sup<30||_mor<30;
+        var _edge=_mut>=60?'#d9694a':(_crisis?'#e0a040':(_mor>=60?'#7bbd8f':'rgba(255,255,255,0.14)'));
+        html += '<div style="background:'+(_crisis?'rgba(200,60,50,0.06)':'var(--bg-2)')+';border-radius:8px;padding:0.65rem 0.75rem;margin-bottom:0.6rem;border-left:3px solid '+_edge+';">';
+        // 头部:军名 + 状态徽 + 兵数
+        html += '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;margin-bottom:0.55rem;">';
+        html += '<div style="min-width:0;overflow:hidden;"><span class="tm-army-full tm-fulltext-source"'+fullTextAttr(a.name)+' style="font-weight:700;font-size:0.92rem;color:var(--txt,#ecdcc4);">'+esc(a.name)+'</span>';
+        if (a.state && a.state !== 'garrison') html += ' <span style="font-size:0.64rem;color:var(--amber,#e0a040);background:rgba(224,160,64,0.12);padding:1px 6px;border-radius:3px;vertical-align:middle;white-space:nowrap;">'+esc({marching:'\u884c\u519b',sieging:'\u56f4\u57ce',routed:'\u6e83\u6563',disbanded:'\u89e3\u6563'}[a.state]||a.state)+'</span>';
         html += '</div>';
-        html += '<span style="font-size:0.75rem;color:var(--txt-d);">'+(a.soldiers||a.size||0)+' 兵</span>';
+        html += '<div style="white-space:nowrap;font-weight:700;font-size:0.9rem;color:var(--gold,#c9a85f);">'+((a.soldiers||a.size||0).toLocaleString())+'<span style="font-size:0.64rem;color:var(--txt-d);font-weight:400;"> \u5175</span></div>';
         html += '</div>';
-        // 数值
-        html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.4rem;font-size:0.7rem;margin-bottom:0.3rem;">';
-        html += '<div><span style="color:var(--txt-d);">粮</span> '+(a.supply||0)+'</div>';
-        html += '<div><span style="color:var(--txt-d);">气</span> '+(a.morale||0)+'</div>';
-        html += '<div><span style="color:var(--txt-d);">训</span> '+(a.training||50)+'</div>';
-        html += '<div><span style="color:var(--txt-d);">欠饷</span> '+(a.payArrearsMonths||0)+'月</div>';
-        html += '<div><span style="color:var(--txt-d);">兵变</span> <span style="color:'+(a.mutinyRisk>=60?'var(--red)':'var(--txt-s)')+';">'+(a.mutinyRisk||0)+'</span></div>';
+        // 指标网格:粮/气/训/欠饷/兵变(状态色+大值+迷你条·一眼见军情)
+        var _cells=[['\u7cae',_sup,_milClr(_sup,60,30,false),_sup],['\u6c14',_mor,_milClr(_mor,60,40,false),_mor],['\u8bad',_trn,_milClr(_trn,60,40,false),_trn],['\u6b20\u997a',_arr+'\u6708',_arr>=3?'#d9694a':(_arr>0?'#e0a040':'#7bbd8f'),Math.min(100,_arr*25)],['\u5175\u53d8',_mut,_milClr(_mut,60,30,true),_mut]];
+        html += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.35rem;margin-bottom:0.5rem;">';
+        _cells.forEach(function(c){ html += '<div style="text-align:center;"><div style="font-size:0.6rem;color:var(--txt-d);letter-spacing:0.04em;margin-bottom:1px;">'+c[0]+'</div><div style="font-size:0.98rem;font-weight:700;line-height:1;color:'+c[2]+';font-variant-numeric:tabular-nums;">'+c[1]+'</div><div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:'+Math.max(0,Math.min(100,c[3]))+'%;background:'+c[2]+';"></div></div></div>'; });
         html += '</div>';
-        // 主帅(在世校验·空缺/阵殁红标)
-        var cmName = a.commander || '';
-        var cmCh = (cmName && typeof findCharByName === 'function') ? findCharByName(cmName) : null;
-        var cmDead = cmName && (cmCh ? (cmCh.alive === false || cmCh.dead === true) : true);
-        if (!cmName) {
-          html += '<div style="font-size:0.72rem;color:var(--red,#c0563a);margin-bottom:0.3rem;">⚠ 主帅空缺</div>';
-        } else if (cmDead) {
-          html += '<div style="font-size:0.72rem;color:var(--red,#c0563a);margin-bottom:0.3rem;">⚠ 主帅 ' + esc(cmName) + ' 阵殁/失联·待补</div>';
-        } else {
-          var _cm = cmCh ? (cmCh.military || cmCh.valor || 50) : 50, _ci = cmCh ? (cmCh.intelligence || 50) : 50;
-          html += '<div class="tm-army-full tm-fulltext-source"' + fullTextAttr('主帅 ' + cmName + (cmCh ? ' · 武' + _cm + ' 智' + _ci : '')) + ' style="font-size:0.72rem;color:var(--txt-s);margin-bottom:0.3rem;">主帅 <b style="color:var(--txt,#ecdcc4);">' + esc(cmName) + '</b>' + (cmCh ? ' · 武' + _cm + ' 智' + _ci : '') + '</div>';
+        // 主帅行(头像徽+武智·空缺/阵殁红标) + 驻赴靠右
+        var _cmName=a.commander||'',_cmCh=(_cmName&&typeof findCharByName==='function')?findCharByName(_cmName):null,_cmDead=_cmName&&(_cmCh?(_cmCh.alive===false||_cmCh.dead===true):true);
+        html += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.45rem;row-gap:0.25rem;padding:0.45rem 0 0.1rem;border-top:1px solid rgba(255,255,255,0.05);font-size:0.74rem;">';
+        if(!_cmName){ html += '<span style="color:var(--red,#c0563a);">\u26a0 \u4e3b\u5e05\u7a7a\u7f3a\u00b7\u5f85\u8865</span>'; }
+        else if(_cmDead){ html += '<span style="color:var(--red,#c0563a);">\u26a0 \u4e3b\u5e05 '+esc(_cmName)+' \u9635\u6b81/\u5931\u8054\u00b7\u5f85\u8865</span>'; }
+        else { var _cmM=_cmCh?(_cmCh.military||_cmCh.valor||50):50,_cmI=_cmCh?(_cmCh.intelligence||50):50;
+          html += '<span style="width:26px;height:26px;flex:none;border-radius:4px;background:linear-gradient(135deg,#4a3e2e,#2e261d);display:inline-flex;align-items:center;justify-content:center;color:var(--gold,#c9a85f);font-weight:700;font-size:0.82rem;border:1px solid rgba(184,154,83,0.25);">'+esc(_cmName.slice(0,1))+'</span>';
+          html += '<span class="tm-army-full tm-fulltext-source"'+fullTextAttr('\u4e3b\u5e05 '+_cmName+' \u00b7 \u6b66'+_cmM+' \u667a'+_cmI)+'><b style="color:var(--txt,#ecdcc4);">'+esc(_cmName)+'</b> <span style="color:var(--txt-d);">\u6b66</span><b>'+_cmM+'</b> <span style="color:var(--txt-d);">\u667a</span><b>'+_cmI+'</b></span>';
         }
-        // 其它信息(驻/赴/私兵度)
-        var info = [];
-        if (a.garrison || a.location) info.push('驻: '+(a.garrison||a.location));
-        if (a.destination) info.push('赴: '+a.destination);
-        if (a.controlLevel >= 60) info.push('私兵度 '+a.controlLevel);
-        if (info.length) {
-          var infoText = info.join(' · ');
-          html += '<div class="tm-army-full tm-fulltext-source"'+fullTextAttr(infoText)+' style="font-size:0.72rem;color:var(--txt-s);margin-bottom:0.3rem;">'+esc(infoText)+'</div>';
-        }
-        // 编制·兵种构成(派生模型下 composition 为兵种真相)
+        var _loc=a.garrison||a.location||'',_dest=a.destination||'';
+        if(_loc||_dest){ html += '<span class="tm-army-full tm-fulltext-source"'+fullTextAttr((_loc?'\u9a7b '+_loc:'')+(_dest?' \u8d74 '+_dest:''))+' style="margin-left:auto;color:var(--txt-s);white-space:nowrap;">'+(_loc?'\u9a7b '+esc(_loc):'')+(_dest?' \u2192 '+esc(_dest):'')+'</span>'; }
+        html += '</div>';
+        // 编制·兵种构成 chips
         if (Array.isArray(a.composition) && a.composition.length) {
-          var compTotal = a.composition.reduce(function(s,c){return s + ((c && c.count) || 0);}, 0) || 1;
-          html += '<div style="margin-bottom:0.3rem;">';
-          html += '<div style="font-size:0.66rem;color:var(--txt-d);margin-bottom:0.2rem;">编制 · 兵种构成</div>';
-          html += '<div style="display:flex;flex-wrap:wrap;gap:0.25rem;">';
-          a.composition.forEach(function(c) {
-            if (!c || !c.type) return;
-            var pct = Math.round(((c.count||0) / compTotal) * 100);
-            html += '<span style="font-size:0.68rem;background:var(--bg-3,rgba(255,255,255,0.06));border-radius:3px;padding:1px 6px;color:var(--txt-s);">' + esc(c.type) + ' <b style="color:var(--txt,#ecdcc4);">' + ((c.count||0).toLocaleString()) + '</b><span style="color:var(--txt-d);"> ' + pct + '%</span></span>';
-          });
-          html += '</div></div>';
+          var _ct=a.composition.reduce(function(s,c){return s+((c&&c.count)||0);},0)||1;
+          html += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;padding-top:0.4rem;">';
+          a.composition.forEach(function(c){ if(!c||!c.type)return; var _pc=Math.round(((c.count||0)/_ct)*100);
+            html += '<span style="font-size:0.66rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);border-radius:4px;padding:2px 7px;color:var(--txt-s);">'+esc(c.type)+' <b style="color:var(--txt,#ecdcc4);">'+((c.count||0).toLocaleString())+'</b> <span style="color:var(--txt-d);">'+_pc+'%</span></span>'; });
+          html += '</div>';
         }
-        // 动作按钮(仅玩家势力军队)
+        if (a.controlLevel>=60) html += '<div style="font-size:0.68rem;color:var(--amber,#e0a040);margin-top:0.4rem;">\u2691 \u79c1\u5175\u5ea6 '+a.controlLevel+'\u00b7\u5c3e\u5927\u4e0d\u6389\u4e4b\u865e</div>';
+        // 操作按钮(仅玩家·紧凑 4 列均分)
         if (isPlayer) {
-          html += '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.45rem;">';
-          var _abtn = 'display:inline-flex;align-items:center;justify-content:center;font-size:0.8rem;min-height:44px;padding:0.5rem 0.9rem;touch-action:manipulation;';   // 触控目标≥44px·间距8px·inline-flex 保 min-height 落实
-          html += '<button class="bt bs" onclick="_tsTransferArmy(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">调兵</button>';
-          html += '<button class="bt bs" onclick="_tsBoostMorale(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">犒军鼓舞</button>';
-          html += '<button class="bt bs" onclick="_tsSettleArrears(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">发饷清欠</button>';
-          html += '<button class="bt bs" onclick="_tsAppointGeneral(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">易将</button>';
+          html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem;margin-top:0.55rem;">';
+          var _abtn='display:flex;align-items:center;justify-content:center;font-size:0.76rem;min-height:44px;padding:0.4rem 0.2rem;touch-action:manipulation;';
+          html += '<button class="bt bs" onclick="_tsTransferArmy(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">\u8c03\u5175</button>';
+          html += '<button class="bt bs" onclick="_tsBoostMorale(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">\u72a9\u519b</button>';
+          html += '<button class="bt bs" onclick="_tsSettleArrears(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">\u53d1\u997a</button>';
+          html += '<button class="bt bs" onclick="_tsAppointGeneral(\''+jsEsc(a.name)+'\')" style="'+_abtn+'">\u6613\u5c06</button>';
           html += '</div>';
         }
         html += '</div>';
