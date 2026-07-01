@@ -213,7 +213,8 @@
               if (!tac) { applyDelegate(item, null, GM); return; }        // 放弃→委之(原结果)
               var br = w.TMBattleResolve.tacticalToBattleResult(tac, {
                 playerArmies: item.playerArmies, enemyArmies: item.enemyArmies, band: band,
-                playerFactionName: pf, enemyFactionName: ef
+                playerFactionName: pf, enemyFactionName: ef,
+                abstractBr: item.battleResult              // 抽象原产战果→战略字段透传(占城翻省/战后效应·胜负一致才承接·翻盘剥除)
               });
               (br.affectedArmies || []).forEach(function (aa) { var a = findArmy(GM, aa.armyId); if (a) a._battleResultTurn = undefined; });   // 清防双扣标→强制应用战术战果
               applyReal(br, GM);

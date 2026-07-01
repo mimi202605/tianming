@@ -56,8 +56,46 @@ ok(ewL.loss === 3200 && ewL.state === 'destroyed', '② swing翻盘:敌损用战
 ok(brF.flipped === true, '② flipped 标记');
 ok(brF.commanderFate.outcome === 'killed', '② 敌帅战死');
 
+/* ③ flipped 自主判定(原型恒回 flipped:false·须由 band 预测胜方自判) */
+const tacF2 = { outcome: 'win', flipped: false, units: [{ parentArmyId: 'pw', survivors: 2400 }, { parentArmyId: 'ew', survivors: 0 }], commanders: [], emperorSafe: true };
+const brF2 = R.tacticalToBattleResult(tacF2, { playerArmies: pW, enemyArmies: eW, band: bandSw, playerFactionName: '宋', enemyFactionName: '金' });
+ok(bandSw.winner === 'enemy', '③ 前提:带预测敌胜(3200>3000)');
+ok(brF2.flipped === true, '③ 原型 flipped:false 仍自判翻盘(战术胜≠预测胜)');
+ok(brF2.affectedArmies.find(x => x.armyId === 'ew').loss === 3200, '③ 自判翻盘→损用战术实况不夹');
+
+/* ③ 决定性不可翻(§6):预测敌碾压·战术侥幸胜→胜负方仍按预测·tacticalOutcome 留痕 */
+const pWeak = [{ id: 'pk', soldiers: 1200, commander: '孤将' }];
+const eStrong = [{ id: 'es', soldiers: 6000, commander: '强敌' }];
+const bandD = R.predictBattleBand(pWeak, eStrong, {});
+ok(bandD.decisive && bandD.winner === 'enemy', '③ 前提:弱vs强=decisive·敌胜预定');
+const tacUpset = { outcome: 'win', units: [{ parentArmyId: 'pk', survivors: 900 }, { parentArmyId: 'es', survivors: 100 }], commanders: [], emperorSafe: true };
+const brD = R.tacticalToBattleResult(tacUpset, { playerArmies: pWeak, enemyArmies: eStrong, band: bandD, playerFactionName: '宋', enemyFactionName: '金' });
+ok(brD.winnerFactionId === '金' && brD.loserFactionId === '宋', '③ 决定性不可翻:胜负方=预测(金)非战术');
+ok(brD.tacticalOutcome === 'win' && brD.flipped === false, '③ tacticalOutcome=win 留痕·不标 flipped');
+
+/* ④ 抽象 br 战略字段透传:胜负一致→承接 occupiedCityIds/postBattleEffects/warScoreDelta+casualties 映射 */
+const abWin = { winnerFactionId: '宋', loserFactionId: '金', occupiedCityIds: ['c1', 'c2'], postBattleEffects: [{ type: 'morale', target: '金' }], warScoreDelta: 22, battleId: 'b-77', attackerArmyId: 'pa' };
+const brC = R.tacticalToBattleResult(tac, { playerArmies: pA, enemyArmies: eA, band: band, playerFactionName: '宋', enemyFactionName: '金', abstractBr: abWin });
+ok(Array.isArray(brC.occupiedCityIds) && brC.occupiedCityIds.join() === 'c1,c2', '④ 胜负一致→occupiedCityIds 承接(翻省接线)');
+ok(Array.isArray(brC.postBattleEffects) && brC.postBattleEffects.length === 1, '④ postBattleEffects 承接');
+ok(brC.warScoreDelta === 22 && brC.battleId === 'b-77' && brC.attackerArmyId === 'pa', '④ warScoreDelta/battleId/attackerArmyId 承接');
+ok(brC.casualties && brC.casualties.attacker > 0 && brC.casualties.defender > 0, '④ casualties 按攻方边映射(atk=玩家pa)');
+
+/* ④ 翻盘→胜负相关字段剥除(原胜方占领不再发生·O1 下回合传导)·身份字段仍承接 */
+const abEnemyWin = { winnerFactionId: '金', loserFactionId: '宋', occupiedCityIds: ['c9'], postBattleEffects: [{ type: 'x' }], warScoreDelta: 30, battleId: 'b-88', attackerArmyId: 'ew' };
+const brX = R.tacticalToBattleResult(tacF2, { playerArmies: pW, enemyArmies: eW, band: bandSw, playerFactionName: '宋', enemyFactionName: '金', abstractBr: abEnemyWin });
+ok(brX.occupiedCityIds === undefined && brX.postBattleEffects === undefined && brX.warScoreDelta === undefined, '④ 翻盘→occupiedCityIds/postBattleEffects/warScoreDelta 剥除');
+ok(brX.battleId === 'b-88' && brX.attackerArmyId === 'ew', '④ 翻盘仍承接身份字段 battleId/attackerArmyId');
+ok(brX.winnerFactionId === '宋', '④ 翻盘胜负方=战术(宋)');
+
+/* ④ 抽象胜负方判不出(faction 名对不上)→保守剥除胜负相关字段 */
+const abOdd = { winnerFactionId: '未知势力', occupiedCityIds: ['c3'], battleId: 'b-99' };
+const brO = R.tacticalToBattleResult(tac, { playerArmies: pA, enemyArmies: eA, band: band, playerFactionName: '宋', enemyFactionName: '金', abstractBr: abOdd });
+ok(brO.occupiedCityIds === undefined && brO.battleId === 'b-99', '④ 胜负方判不出→剥胜负字段·留身份字段');
+
 /* ② 永不崩 */
 ok(Array.isArray(R.tacticalToBattleResult({}, {}).affectedArmies), '② 空输入→不崩');
+ok(Array.isArray(R.tacticalToBattleResult({ outcome: 'win' }, { abstractBr: { winner: 5 } }).affectedArmies), '④ 畸形 abstractBr→不崩');
 
 console.log('\n结果: ' + A + ' 通过 / ' + F + ' 失败');
 process.exit(F ? 1 : 0);
