@@ -493,7 +493,8 @@ function _offPickerConfirm(charName, deptName, posName, oldHolder, mode) {
       turn: GM.turn, status: 'pending',
       assignee: charName, feedback: '',
       progressPercent: 0,
-      _appointmentAction: { character: charName, position: posName, dept: deptName, oldHolder: oldHolder },
+      _appointmentAction: { character: charName, position: posName, dept: deptName, oldHolder: oldHolder, mode: mode },
+      _offTreeAppoint: true,  // 官制树 UI 确定性任命·过回合直接权威落地(tm-endturn-apply)·不交 AI 识别(tm-endturn-ai L2568 排除)·2026-07-01
       _chainEffects: []  // 后续回合连带效应记录
     });
   }

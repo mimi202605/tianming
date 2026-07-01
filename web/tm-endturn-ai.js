@@ -2561,7 +2561,7 @@
             });
           }
         } catch(_sc1qInjE) { _dbg('[sc1q inject] fail', _sc1qInjE); }
-        var _pendingEdicts = GM._edictTracker.filter(function(e) { return e.turn === GM.turn && e.status === 'pending'; });
+        var _pendingEdicts = GM._edictTracker.filter(function(e) { return e.turn === GM.turn && e.status === 'pending' && !e._offTreeAppoint; });   // 官制树 UI 任命不交 AI 识别(确定性落地·见 tm-endturn-apply)·仅手打诏令走 AI·2026-07-01
         if (_pendingEdicts.length > 0) {
           // 按内政/外交分类注入
           var _domesticEdicts = _pendingEdicts.filter(function(e){ return !e._crossFaction; });

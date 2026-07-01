@@ -3559,6 +3559,35 @@ inst._imprisonedTurn = GM.turn||0;
           });
         }
 
+        // ── 官制树确定性任命·过回合权威落地（斩断“UI 任命还要过 AI 识别”依赖·根治反复掉职 bug·2026-07-01）──
+        // 玩家在官制树上任命的官员(_offPickerConfirm·带 _offTreeAppoint 标记)是确定性事实·此处在下面 sync 前
+        // 权威重申 char.officialTitle(压过 AI 识别链的漏识别/误覆盖)·再交 sync 从正确 char 重建 holder。
+        // 手打诏令任命(无 _offTreeAppoint·未进此支)不受影响·仍走 AI 识别。
+        try {
+          var _oteFind = (typeof findCharByName === 'function') ? findCharByName : function (nm) { return (GM.chars || []).find(function (c) { return c && c.name === nm; }); };
+          (GM._edictTracker || []).forEach(function (_ote) {
+            if (!_ote || !_ote._offTreeAppoint || _ote._offApplied) return;
+            var _oaa = _ote._appointmentAction;
+            if (!_oaa || !_oaa.character || !_oaa.position) return;
+            var _oteNew = _oteFind(_oaa.character);
+            if (_oteNew) {
+              if (_oaa.mode === 'concurrent') {
+                if (!Array.isArray(_oteNew.concurrentTitles)) _oteNew.concurrentTitles = [];
+                if (_oteNew.concurrentTitles.indexOf(_oaa.position) < 0) _oteNew.concurrentTitles.push(_oaa.position);
+              } else {
+                _oteNew.officialTitle = _oaa.position;   // 权威重申·压过 AI 识别链
+                if (!_oteNew.title) _oteNew.title = _oaa.position;
+                if (_oaa.oldHolder && _oaa.oldHolder !== _oaa.character) {   // 辞旧就新·旧任离座(若 AI 未处理)
+                  var _oteOld = _oteFind(_oaa.oldHolder);
+                  if (_oteOld && _oteOld.officialTitle === _oaa.position) { _oteOld.officialTitle = ''; _oteOld.title = ''; }
+                }
+              }
+            }
+            _ote._offApplied = true;    // 防重复落地
+            _ote.status = 'executed';   // 确定性完成·不再交 AI/督察
+          });
+        } catch (_oteErr) {}
+
         // 单一真相源:office_changes 处理后从人物 officialTitle 重建官制树任职者
         try { if (typeof _offSyncHoldersFromChars === 'function') _offSyncHoldersFromChars({ force: true }); } catch (_e) {}
 
