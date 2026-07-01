@@ -1031,6 +1031,37 @@
       }
     }
 
+    // ── S7·官制新机制 AI 喂料补盲（权臣坐大/京察黜陟/怀才不遇·纯 prompt 注入·flag 关时数据恒空天然门控零回归·2026-07-01）──
+    // S7-1: 权臣坐大——引擎已判定的权臣喂 AI（powerMinisterEnabled 关时 GM.huangquan.powerMinister 恒 null·不注入）
+    if (GM.huangquan && GM.huangquan.powerMinister && GM.huangquan.powerMinister.name) {
+      var _s7pm = GM.huangquan.powerMinister;
+      var _s7pmc = GM.chars && GM.chars.find(function (c) { return c && c.name === _s7pm.name; });
+      tp += '\n【权臣坐大·皇权旁落警讯（叙事须体现）】\n';
+      tp += '  ' + _s7pm.name + (_s7pmc && _s7pmc.officialTitle ? '（' + _s7pmc.officialTitle + '）' : '') + ' 久居枢要、权倾朝野，已成坐大之权臣（坐大程度约' + Math.round((_s7pm.controlLevel || 0) * 100) + '%，皇权' + (GM.huangquan.index != null ? Math.round(GM.huangquan.index) : '?') + '）。\n';
+      var _s7pmActs = [];
+      if (_s7pm.interceptions > 0) _s7pmActs.push('截留奏疏' + _s7pm.interceptions + '次');
+      if (_s7pm.counterEdicts > 0) _s7pmActs.push('假拟诏命' + _s7pm.counterEdicts + '次');
+      if (_s7pm.faction && _s7pm.faction.length) _s7pmActs.push('党羽：' + _s7pm.faction.slice(0, 6).join('、'));
+      if (_s7pmActs.length) tp += '  劣迹：' + _s7pmActs.join('；') + '。\n';
+      tp += '  推演中其 npc_actions 应现专权跋扈、结党营私、架空君上；正直科道当有弹劾之举，君主当现猜忌之心，皇权愈弱其势愈张。\n';
+    }
+    // S7-2: 京察大计——本届黜陟喂 AI（officeJingchaEnabled 关时 GM._jingchaResult 不产生·不注入）
+    if (GM._jingchaResult && (GM.turn - (GM._jingchaResult.turn || 0)) <= 1) {
+      var _s7jr = GM._jingchaResult;
+      if ((_s7jr.demoted && _s7jr.demoted.length) || (_s7jr.promoted && _s7jr.promoted.length)) {
+        tp += '\n【京察大计·黜陟（本届考察·叙事应体现震动）】\n';
+        if (_s7jr.demoted && _s7jr.demoted.length) tp += '  黜降庸劣：' + _s7jr.demoted.slice(0, 8).join('、') + '（屡考劣等·当有怨望攀援或求免）\n';
+        if (_s7jr.promoted && _s7jr.promoted.length) tp += '  拔擢沉才：' + _s7jr.promoted.slice(0, 8).join('、') + '（怀才得伸·当有感奋图报）\n';
+      }
+    }
+    // S7-3: 才高位卑·怀才不遇能臣喂 AI（officeSatisfactionFeedbackEnabled 关时无 _seeksRemoval·不注入）
+    var _s7disaff = (GM.chars || []).filter(function (c) { return c && c.alive !== false && c._seeksRemoval; });
+    if (_s7disaff.length) {
+      tp += '\n【才高位卑·怀才不遇（能臣萌去意·叙事可体现）】\n';
+      tp += '  ' + _s7disaff.slice(0, 8).map(function (c) { return c.name + (c.officialTitle ? '（' + c.officialTitle + '）' : ''); }).join('、') + ' 才略高而位卑久郁，忠诚渐衰、萌生去意。\n';
+      tp += '  推演中他们可能消极避事、另择明主、上疏乞归；明君贤相当加拔擢留贤，否则恐致人才流失。\n';
+    }
+
     // N4: 主角精力注入（全范围——精力影响叙事基调）
     if (GM._energy !== undefined) {
       var _enRatio = GM._energy / (GM._energyMax || 100);
