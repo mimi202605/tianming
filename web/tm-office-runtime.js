@@ -2004,6 +2004,13 @@ function _renderOfficeSummary() {
       alerts.push({type:'danger', ic:'\u8B66', lbl:'\u6743\u81E3\u9884\u8B66\uFF1A', txt:escHtml(ph.name) + '\u00B7' + escHtml(ph.pos) + '\u00B7\u6240\u5C5E\u6D3E\u7CFB\u5C45<strong>' + ph.partyCnt + '</strong>\u804C\u00B7\u5B9E\u6743\u6307\u6570<strong>' + ph.power + '</strong>\u00B7\u6050\u6709\u4E13\u6743\u4E4B\u865E'});
     }
 
+    // 人才流失预警：才高位卑萌去意的能臣（_seeksRemoval·S1d 才不配位反哺产出·officeSatisfactionFeedbackEnabled 关时恒空不预警·2026-07-01）
+    var _disaffElite = (GM.chars || []).filter(function (c) { return c && c.alive !== false && c._seeksRemoval; });
+    if (_disaffElite.length > 0) {
+      var _deNames = _disaffElite.slice(0, 5).map(function (c) { return escHtml(c.name) + (c.officialTitle ? '·' + escHtml(c.officialTitle) : ''); });
+      alerts.push({ type: 'warn', ic: '才', lbl: '人才流失预警：', txt: _deNames.join('、') + (_disaffElite.length > 5 ? '等' : '') + '·才高位卑久郁·忠诚渐衰萌去意·<strong>' + _disaffElite.length + '</strong> 员待拔擢留贤，否则恐挂冠而去' });
+    }
+
     // 职位空缺
     if (vacantPos > 0) {
       var _vacNames = [];
