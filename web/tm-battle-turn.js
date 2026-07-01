@@ -191,6 +191,9 @@
     var queue = pending.splice(0);
     var w = W();
     var reports = [];   // 会战战报小结(整编归伍·informational)累计
+    var _learn = (w && w.TMArmyUnits && typeof w.TMArmyUnits.learnUnknownTypes === 'function')
+      ? Promise.resolve().then(function () { return w.TMArmyUnits.learnUnknownTypes(GM); }).catch(function () {})   // ★第4层:会战前补学生僻兵种(次级LLM记忆化·flag-gated·无key/无生僻则no-op)→兵牌tacClass精确
+      : Promise.resolve();
     return queue.reduce(function (chain, item) {
       return chain.then(function () {
         var preS = {}; (item.playerArmies || []).forEach(function (a) { if (a) preS[a.id] = Math.max(0, +(a.soldiers || a.strength || 0) || 0); });   // 战前兵力快照→算战损
@@ -220,7 +223,7 @@
           try { applyDelegate(item, null, GM); } catch (_) {}            // ★单场出错→抽象兜底落地·该战绝不丢
         }).then(function () { dropPersisted(GM, item.battleResult); _collectReport(reports, item, preS, GM); });  // 结算完→撤持久化镜像 + 收战报
       });
-    }, Promise.resolve()).then(function () { return showBattleReport(reports); }).then(function () { recoverPending(GM); });     // ★战报小结(整编归伍) + 末了排空残留→抽象兜底
+    }, _learn).then(function () { return showBattleReport(reports); }).then(function () { recoverPending(GM); });     // ★seed=_learn(会战前补学生僻兵种·完成后逐场打) + 战报小结(整编归伍) + 末了排空残留→抽象兜底
   }
 
   /* 包裹单一咽喉 MilitarySystems.applyBattleResult(bulletproof·幂等) */
