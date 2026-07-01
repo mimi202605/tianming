@@ -20,6 +20,13 @@ FLAGS.forEach(function (f) {
 });
 ok(/_togglePConf\(\\?'\\?'\s*\+\s*_it\[0\]/.test(src) || /onchange="_togglePConf\(\\'' \+ _it\[0\]/.test(src) || /_togglePConf\('"\s*\+\s*_it\[0\]/.test(src) || /_togglePConf\(\\'/.test(src), '开关走 _togglePConf(写 P.conf 持久化)');
 ok(/officeActivationEnabled/.test(src), '组闸 officeActivationEnabled 在设置面板(活化四刀)');
+// ── 官制活化·细粒度 6 独立开关（cp9·补齐 activation 四刀/recall/vacancy 的设置开关）──
+ok(/官制活化·细粒度/.test(src), '设置含「官制活化·细粒度」段（活化四刀独立开关）');
+['officePowerPerceptionEnabled', 'officeDutyStateEnabled', 'officeAuthorityGateEnabled', 'officeReformAdjudicationEnabled', 'officeRecallAgentEnabled', 'officeVacancyEnabled'].forEach(function (f) {
+  ok(src.indexOf("'" + f + "'") >= 0, '细粒度开关含 flag ' + f);
+});
+ok(/P\.conf\[_ac\[0\]\] === false/.test(src), '默认开 flag(职权舆图/出缺补员)用 !==false 语义(勾选态反映默认开·可主动关)');
+ok(/onchange="_togglePConf\(\\'' \+ _ac\[0\]/.test(src), '细粒度开关走 _togglePConf(写 P.conf 持久化)');
 // _togglePConf 持久化（tm-player-settings.js / tm-patches.js）
 const ps = fs.existsSync(path.join(ROOT, 'tm-player-settings.js')) ? fs.readFileSync(path.join(ROOT, 'tm-player-settings.js'), 'utf8') : '';
 ok(/P\.conf\[confKey\] = !!on/.test(ps) && /saveP\(\)/.test(ps), '_togglePConf 写 P.conf[key] + saveP() 持久化');

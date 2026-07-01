@@ -708,6 +708,31 @@ openSettings=function(){
               '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">让死的官制活起来：①职权舆图喂推演 ②官员履职度(才+五常·失职衰减·与主动行动耦合) ③权限门(掌“征税”之权出缺/失职→实征打折·腐败涨) ④AI 裁定式改制(玩家自由改官制·官僚抵抗·拟制两回合) ⑤官署按需细查(agent 走次要 API·返职责描述)。各刀另有独立开关可单独调试·会增加 API 调用。</div>' +
             '</div>' +
           '</label>' +
+          // ── 官制活化·细粒度（活化四刀/recall/出缺补员各独立开关·总闸开则全覆盖·此处供总闸关时单独调；默认开者可在此关·2026-07-01）──
+          '<div style="font-size:0.74rem;color:var(--gold-d);margin:0.45rem 0 0.15rem;padding-top:0.35rem;border-top:1px dashed rgba(185,139,255,0.22);">🏛️ 官制活化·细粒度（总闸开则四刀全启；下列供总闸关时单独调·默认开者可在此关）</div>' +
+          (function(){
+            var _acts = [
+              ['officePowerPerceptionEnabled','职权舆图（默认开）','把官制结构(谁掌何权/才德/履职/出缺)喂进 AI 推演·纯增益无 balance 后果。',true],
+              ['officeDutyStateEnabled','官员履职度','官员履职度(才+五常)·失职衰减·与主动行动耦合(影响 balance)。',false],
+              ['officeAuthorityGateEnabled','权限门控','掌“征税”等权者出缺/失职→实征打折·腐败涨(影响 balance)。',false],
+              ['officeReformAdjudicationEnabled','改制裁定','玩家自由改官制→官僚抵抗·拟制两回合·AI 裁定准驳。',false],
+              ['officeRecallAgentEnabled','官署按需细查','主推演对焦点衙门发 agent 子调用取职责细节(走次要 API·增调用)。',false],
+              ['officeVacancyEnabled','出缺补员（默认开）','官员亡故/致仕留缺→按建制走出缺·可被补员(关则不自动出缺)。',true]
+            ];
+            var _ah = '';
+            for (var _ai2 = 0; _ai2 < _acts.length; _ai2++) {
+              var _ac = _acts[_ai2];
+              var _acOn = _ac[3]
+                ? !((P && P.conf && P.conf[_ac[0]] === false) || (P && P.ai && P.ai[_ac[0]] === false))
+                : !!((P && P.conf && P.conf[_ac[0]]) || (P && P.ai && P.ai[_ac[0]]));
+              _ah += '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.3rem 0;cursor:pointer;border-top:1px dotted rgba(185,139,255,0.12);">' +
+                '<input type="checkbox" ' + (_acOn ? 'checked ' : '') + 'onchange="_togglePConf(\'' + _ac[0] + '\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+                '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">' + _ac[1] + '</div>' +
+                '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.5;margin-top:0.1rem;">' + _ac[2] + '</div></div>' +
+                '</label>';
+            }
+            return _ah;
+          })() +
           // ── 官制·机制深化（S1/S4·各独立开关·与上「官制活化」并行·默认关·2026-06-30）──
           '<div style="font-size:0.74rem;color:var(--gold-d);margin:0.45rem 0 0.15rem;padding-top:0.35rem;border-top:1px dashed rgba(185,139,255,0.22);">🏛️ 官制·机制深化（独立开关·默认关·开后官制真撬动财政/吏治/阴谋/人才/皇权）</div>' +
           (function(){
