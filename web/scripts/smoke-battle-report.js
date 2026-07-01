@@ -33,7 +33,7 @@ ok(!threw, '④ null item / 空军 不崩');
 
 const src = fs.readFileSync(path.resolve(__dirname, '..', 'tm-battle-turn.js'), 'utf8');
 ok(/_collectReport\(reports, item, preS, GM\)/.test(src), '⑤ runPending 收尾调 _collectReport');
-ok(/showBattleReport\(reports\)/.test(src), '⑤ runPending 末弹 showBattleReport(战报模态)');
+ok(/showBattleReport\(reports, GM\)/.test(src), '⑤ runPending 末弹 showBattleReport(战报模态·带 GM 供补员双源交互)');
 
 console.log('\nsmoke-battle-report ' + (F === 0 ? 'PASS' : 'FAIL') + ' ' + A + '/' + (A + F));
 process.exit(F === 0 ? 0 : 1);

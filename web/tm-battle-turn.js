@@ -143,7 +143,72 @@
   function mkBtn(t, c) { var b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.style.cssText = 'font:14px serif;color:#fff;background:' + c + ';border:1px solid rgba(255,255,255,.18);border-radius:5px;padding:9px 14px;cursor:pointer;'; return b; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
 
-  /* 收一场战的玩家军战报(整编归伍·informational):战损=战前快照-现兵·历练=effectiveVet·主将命运取该战 commanderFate(挂首军) */
+  /* ── 战后补员双源(§7/§12.4/O7·整编屏交互) ──
+   * 丁口征募(免费):走 TM.FieldPipes.capRecruitDelta(现成征兵池·封顶/扣池/同回合共享记账)·报价先按 effCap 夹想募数,避免强征过池扣民心。
+   * 花钱募兵(即时):走 TM.AIChange.Army.chargeRecruitment(单一扣费点·银粮/防双扣/武库支取)·报价先按国库夹可负担数,避免欠饷士气挫。
+   * 落地:soldiers/size/strength 三标量 += n(composition 由派生视图签名自愈按比例放大重切)·新兵历练15稀释走 diluteVeterancy。 */
+  function _pipes() { var w = W(); return (w && w.TM && w.TM.FieldPipes) || null; }
+  function _armyChargeApi() { var w = W(); return (w && w.TM && w.TM.AIChange && w.TM.AIChange.Army) || null; }
+  function _guokuStock(GM, key) {
+    var g = (GM && GM.guoku) || {};
+    var led = g.ledgers && g.ledgers[key];
+    var v = (led && led.stock != null) ? led.stock : g[key];
+    return Math.max(0, Math.round(+v || 0));
+  }
+  /* 补员报价:gap=缺员数 → {ding:{n}, recruit:{n,silver,grain}}(n=0=该源当下不可用·纯读不落账) */
+  function replenishQuote(GM, army, gap) {
+    gap = Math.max(0, Math.round(+gap || 0));
+    var q = { ding: { n: 0 }, recruit: { n: 0, silver: 0, grain: 0 } };
+    if (!army || gap <= 0) return q;
+    try {
+      var FP = _pipes(), w = W(), P = w && w.P;
+      var div = (FP && P) ? FP.findDivisionByName(P, army.garrison || army.location || '') : null;
+      var cap = div ? FP.recruitCap(div) : null;
+      if (cap != null) {
+        var eff = (GM && typeof GM._conscriptEffMult === 'number' && isFinite(GM._conscriptEffMult)) ? Math.max(0.3, Math.min(1.3, GM._conscriptEffMult)) : 1;   // 与 capRecruitDelta 同口径(征兵效率)
+        q.ding.n = Math.min(gap, Math.max(0, Math.round(cap * eff)));
+      }
+    } catch (e) {}
+    try {
+      var AC = _armyChargeApi();
+      var unit = (AC && typeof AC.recruitUnitCost === 'function') ? AC.recruitUnitCost(army, null) : { money: 2, grain: 1 };
+      var afford = Math.min(
+        unit.money > 0 ? Math.floor(_guokuStock(GM, 'money') / unit.money) : gap,
+        unit.grain > 0 ? Math.floor(_guokuStock(GM, 'grain') / unit.grain) : gap
+      );
+      var n = Math.max(0, Math.min(gap, afford));
+      q.recruit = { n: n, silver: Math.round(n * unit.money), grain: Math.round(n * unit.grain) };
+    } catch (e) {}
+    return q;
+  }
+  /* 落地一笔补员(source='ding'|'recruit')·返 {added, vet}·永不崩 */
+  function applyReplenish(GM, army, want, source) {
+    try {
+      want = Math.max(0, Math.round(+want || 0));
+      if (!army || want <= 0) return { added: 0 };
+      var w = W(), AU = w && w.TMArmyUnits;
+      var n = 0;
+      if (source === 'ding') {
+        var FP = _pipes(), P = w && w.P;
+        var r = (FP && P) ? FP.capRecruitDelta(GM, P, army.garrison || army.location || '', want) : null;
+        n = r ? Math.max(0, Math.round(r.approved || 0)) : 0;
+      } else {
+        var AC = _armyChargeApi();
+        if (!AC || typeof AC.chargeRecruitment !== 'function') return { added: 0 };
+        AC.chargeRecruitment(GM, army, want, null, '战后补员', 'battle-replenish');
+        n = want;
+      }
+      if (n <= 0) return { added: 0 };
+      var old = Math.max(0, Math.round(+(army.soldiers != null ? army.soldiers : (army.strength != null ? army.strength : army.size)) || 0));
+      army.soldiers = army.size = army.strength = old + n;   // 三标量同步(同 tm-ai-change-army 增兵写法)·composition 派生自愈放大
+      var vet = null;
+      if (AU && typeof AU.diluteVeterancy === 'function') vet = AU.diluteVeterancy(army, old, n);   // 新兵历练15稀释·标 _unitsStale
+      try { var eb = (w && w.addEB) || (typeof addEB !== 'undefined' ? addEB : null); if (typeof eb === 'function') eb('军事', (army.name || '某军') + '·战后补员 ' + n + ' 人（' + (source === 'ding' ? '丁口征募' : '花钱募兵') + '）'); } catch (e2) {}
+      return { added: n, vet: vet };
+    } catch (e) { return { added: 0 }; }
+  }
+
+  /* 收一场战的玩家军战报(整编归伍):战损=战前快照-现兵·历练=effectiveVet·主将命运取该战 commanderFate(挂首军)·armyId 供补员交互 */
   function _collectReport(reports, item, preS, GM) {
     try {
       var w = W(), AU = w && w.TMArmyUnits;
@@ -154,13 +219,13 @@
         var pre = (preS && preS[a.id]) || 0;
         var now = Math.max(0, +(a.soldiers || a.strength || 0) || 0);
         var vet = (AU && AU.effectiveVet) ? Math.round(AU.effectiveVet(a)) : Math.round(a.veterancy || 0);
-        reports.push({ name: a.name || '某军', loss: Math.max(0, pre - now), soldiers: now, vet: vet, destroyed: now <= 0, fate: first ? (fate || null) : null });
+        reports.push({ armyId: a.id, name: a.name || '某军', loss: Math.max(0, pre - now), soldiers: now, vet: vet, destroyed: now <= 0, fate: first ? (fate || null) : null });
         first = false;
       });
     } catch (e) {}
   }
-  /* 会战阶段收尾:弹战报小结(整编归伍)·无 DOM(headless)→resolve 跳过·无战报→跳过 */
-  function showBattleReport(reports) {
+  /* 会战阶段收尾:弹战报小结(整编归伍·含补员双源交互)·无 DOM(headless)→resolve 跳过·无战报→跳过 */
+  function showBattleReport(reports, GM) {
     return new Promise(function (resolve) {
       var w = W();
       if (!w || typeof document === 'undefined' || !document.body || typeof document.createElement !== 'function' || !reports || !reports.length) { resolve(); return; }
@@ -168,20 +233,65 @@
       var ov = document.createElement('div');
       ov.style.cssText = 'position:fixed;inset:0;z-index:2147483500;background:rgba(8,6,4,.78);display:flex;align-items:center;justify-content:center;';
       var box = document.createElement('div');
-      box.style.cssText = 'max-width:460px;max-height:80vh;overflow:auto;background:linear-gradient(#1c140c,#241a10);border:1px solid #8a6a2a;border-radius:8px;padding:22px 26px;color:#ecdcc4;font-family:serif;box-shadow:0 12px 40px rgba(0,0,0,.6);';
-      var html = '<div style="font:18px serif;color:#e8c87a;text-align:center;margin-bottom:14px;border-bottom:1px solid #5a4420;padding-bottom:10px;">⚔ 会战战报 · 整编归伍</div>';
-      reports.forEach(function (r) {
-        var body = r.destroyed ? '<span style="color:#c0563a;">全军覆没</span>'
+      box.style.cssText = 'max-width:490px;max-height:80vh;overflow:auto;background:linear-gradient(#1c140c,#241a10);border:1px solid #8a6a2a;border-radius:8px;padding:22px 26px;color:#ecdcc4;font-family:serif;box-shadow:0 12px 40px rgba(0,0,0,.6);';
+      box.innerHTML = '<div style="font:18px serif;color:#e8c87a;text-align:center;margin-bottom:14px;border-bottom:1px solid #5a4420;padding-bottom:10px;">⚔ 会战战报 · 整编归伍</div>';
+      function rowBody(r) {
+        return r.destroyed ? '<span style="color:#c0563a;">全军覆没</span>'
           : ('损 <b style="color:#d8956a;">' + r.loss + '</b> 人 · 余 ' + r.soldiers + ' · 历练 <b style="color:#7fb46a;">' + r.vet + '</b>');
-        html += '<div style="margin:7px 0;font-size:14px;line-height:1.5;"><b>' + esc(r.name) + '</b>：' + body;
+      }
+      reports.forEach(function (r) {
+        var row = document.createElement('div');
+        row.style.cssText = 'margin:7px 0;font-size:14px;line-height:1.5;';
+        var html = '<b>' + esc(r.name) + '</b>：<span data-rb>' + rowBody(r) + '</span>';
         if (r.fate && r.fate.name) { html += '<br><span style="opacity:.8;font-size:13px;">　主将 ' + esc(r.fate.name) + '：' + esc(FATE_CN[r.fate.outcome] || r.fate.outcome || '') + '</span>'; }
-        html += '</div>';
+        row.innerHTML = html;
+        box.appendChild(row);
+        if (!r.destroyed && r.loss > 0 && r.armyId != null && GM) _attachReplenish(row, r, GM);
       });
-      box.innerHTML = html;
       var b = mkBtn('整编归伍 · 继续', '#6a4424'); b.style.width = '100%'; b.style.marginTop = '14px';
       b.onclick = function () { try { ov.remove(); } catch (e) {} resolve(); };
       box.appendChild(b); ov.appendChild(box); document.body.appendChild(ov);
     });
+  }
+  /* 战报行下挂补员交互条(丁口免费/募兵花钱·两键各自报价·点击落地并刷新·缺口清零即收) */
+  function _attachReplenish(row, r, GM) {
+    try {
+      var w = W(), AU = w && w.TMArmyUnits;
+      var army = findArmy(GM, r.armyId); if (!army) return;
+      var left = r.loss;                                    // 剩余缺口=本战战损(§12.4 补员对账本战减员)
+      var bar = document.createElement('div');
+      bar.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0 2px;';
+      var bd = mkBtn('', '#3f5a3a'), bm = mkBtn('', '#6a4424');
+      [bd, bm].forEach(function (btn) { btn.style.fontSize = '12px'; btn.style.padding = '5px 9px'; });
+      var info = document.createElement('span'); info.style.cssText = 'font-size:12px;opacity:.82;';
+      function refresh() {
+        var q = replenishQuote(GM, army, left);
+        bd.textContent = '丁口补员 +' + q.ding.n + '（免费）';
+        bm.textContent = '募兵补员 +' + q.recruit.n + '（银' + q.recruit.silver + (q.recruit.grain ? '·粮' + q.recruit.grain : '') + '）';
+        bd.disabled = q.ding.n <= 0; bm.disabled = q.recruit.n <= 0;
+        bd.style.opacity = bd.disabled ? '.45' : '1'; bm.style.opacity = bm.disabled ? '.45' : '1';
+        info.textContent = left > 0 ? '缺员 ' + left : '已补齐 ✓';
+        if (left <= 0) { bd.style.display = 'none'; bm.style.display = 'none'; }
+        var rb = row.querySelector('[data-rb]');
+        if (rb) {
+          var now = Math.max(0, Math.round(+(army.soldiers || army.strength || 0) || 0));
+          var vet = (AU && AU.effectiveVet) ? Math.round(AU.effectiveVet(army)) : Math.round(army.veterancy || 0);
+          rb.innerHTML = '损 <b style="color:#d8956a;">' + r.loss + '</b> 人 · 余 ' + now + ' · 历练 <b style="color:#7fb46a;">' + vet + '</b>';
+        }
+      }
+      function doFill(src) {
+        var q = replenishQuote(GM, army, left);
+        var want = src === 'ding' ? q.ding.n : q.recruit.n;
+        var res = applyReplenish(GM, army, want, src);
+        left = Math.max(0, left - ((res && res.added) || 0));
+        refresh();
+      }
+      bd.onclick = function () { doFill('ding'); };
+      bm.onclick = function () { doFill('recruit'); };
+      refresh();
+      bar.appendChild(bd); bar.appendChild(bm); bar.appendChild(info);
+      row.appendChild(bar);
+    } catch (e) {}
   }
 
   /* 会战阶段:逐场处理延后队列(管线 step 调·flag 关时 pending 恒空=no-op) */
@@ -224,7 +334,7 @@
           try { applyDelegate(item, null, GM); } catch (_) {}            // ★单场出错→抽象兜底落地·该战绝不丢
         }).then(function () { dropPersisted(GM, item.battleResult); _collectReport(reports, item, preS, GM); });  // 结算完→撤持久化镜像 + 收战报
       });
-    }, _learn).then(function () { return showBattleReport(reports); }).then(function () { recoverPending(GM); });     // ★seed=_learn(会战前补学生僻兵种·完成后逐场打) + 战报小结(整编归伍) + 末了排空残留→抽象兜底
+    }, _learn).then(function () { return showBattleReport(reports, GM); }).then(function () { recoverPending(GM); });     // ★seed=_learn(会战前补学生僻兵种·完成后逐场打) + 战报小结(整编归伍·补员双源交互) + 末了排空残留→抽象兜底
   }
 
   /* 包裹单一咽喉 MilitarySystems.applyBattleResult(bulletproof·幂等) */
@@ -249,6 +359,7 @@
   var API = {
     runPending: runPending, installHook: installHook, maybeDefer: maybeDefer, applyDelegate: applyDelegate,
     recoverPending: recoverPending, emperorArmyId: emperorArmyId, emperorName: emperorName,
+    replenishQuote: replenishQuote, applyReplenish: applyReplenish,
     involvesPlayer: involvesPlayer, _gainPostBattleVeterancy: _gainPostBattleVeterancy, _collectReport: _collectReport, _pending: function () { return pending; }, _clear: function () { pending.length = 0; }
   };
   /* 设置面板「御驾亲征·战术战斗」开关处理器(tm-patches.js 设置渲染调·切 GM._yujiaQinzheng·本局存档生效) */
