@@ -2530,14 +2530,14 @@ input,textarea,select{pointer-events:auto!important;position:relative;z-index:10
 .og-v10-dept-collapse:hover{color:var(--gold-300,#c9a85f);border-color:var(--gold-400);background:rgba(0,0,0,0.5);}
 
 /* 职位卡·通用 */
-.og-v10-pos{position:absolute;background:linear-gradient(to bottom,var(--color-surface,#241e18),#2e261d);border:1px solid var(--color-border-subtle);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.5);cursor:pointer;overflow:hidden;box-sizing:border-box;transition:all 0.22s var(--ease-out,cubic-bezier(0.2,0.8,0.2,1));}
+.og-v10-pos{position:absolute;background:linear-gradient(to bottom,var(--color-surface,#241e18),#2e261d);border:1px solid var(--color-border-subtle);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.5);cursor:pointer;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;transition:all 0.22s var(--ease-out,cubic-bezier(0.2,0.8,0.2,1));}
 .og-v10-pos:hover{border-color:var(--gold-400);transform:translateY(-1px);box-shadow:0 6px 20px rgba(184,154,83,0.2);}
 .og-v10-pos::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;pointer-events:none;}
 .og-v10-pos.rank-top::before{background:linear-gradient(to bottom,#c04030,#8b2a1f);}
 .og-v10-pos.rank-high::before{background:linear-gradient(to bottom,#c9a045,#9a7632);}
 .og-v10-pos.rank-mid::before{background:linear-gradient(to bottom,#6ba97f,#4a7658);}
 .og-v10-pos.rank-low::before{background:linear-gradient(to bottom,#5a6fa8,#3e4e77);}
-.og-v10-rank-seal{display:inline-block;padding:2px 7px 2px 6px;background:linear-gradient(135deg,rgba(192,64,48,0.8),rgba(140,40,30,0.9));color:#fce8e1;font-size:10px;letter-spacing:0.08em;border-radius:2px;font-weight:600;position:relative;vertical-align:middle;font-family:var(--font-serif);}
+.og-v10-rank-seal{display:inline-block;padding:2px 7px 2px 6px;background:linear-gradient(135deg,rgba(192,64,48,0.8),rgba(140,40,30,0.9));color:#fce8e1;font-size:10px;letter-spacing:0.08em;border-radius:2px;font-weight:600;position:relative;vertical-align:middle;font-family:var(--font-serif);flex-shrink:0;align-self:center;}
 .og-v10-rank-seal::before{content:"";position:absolute;left:-2px;top:50%;width:4px;height:4px;background:rgba(192,64,48,0.5);border-radius:50%;transform:translateY(-50%);}
 .og-v10-rank-seal.mid-lvl{background:linear-gradient(135deg,rgba(184,154,83,0.85),rgba(140,120,65,0.9));color:#fff7e0;}
 .og-v10-rank-seal.mid-lvl::before{background:rgba(184,154,83,0.5);}
@@ -2554,16 +2554,19 @@ input,textarea,select{pointer-events:auto!important;position:relative;z-index:10
 .og-v10-party-ribbon-label{position:absolute;top:4px;right:3px;font-size:11px;color:#1a1510;z-index:3;transform:rotate(45deg);transform-origin:right top;translate:-2px 7px;pointer-events:none;font-weight:700;}
 
 /* 头部 */
-.og-v10-pos-header{padding:9px 12px 5px 14px;border-bottom:1px solid rgba(107,93,71,0.15);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.og-v10-pos-header{padding:9px 12px 6px 14px;border-bottom:1px solid rgba(107,93,71,0.15);}
 .og-v10-pos-title-group{min-width:0;flex:1;}
-.og-v10-pos-title{font-size:13px;font-weight:700;letter-spacing:0.08em;color:var(--color-foreground,#e8dcc4);margin-bottom:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
-.og-v10-pos-sub{font-size:10px;color:var(--ink-300,#7a6e54);letter-spacing:0.08em;line-height:1.3;}
+.og-v10-pos-title{font-size:13px;font-weight:700;letter-spacing:0.05em;color:var(--color-foreground,#e8dcc4);margin-bottom:3px;display:flex;align-items:baseline;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;}
+.og-v10-pos-sub{font-size:10px;color:var(--ink-300,#7a6e54);letter-spacing:0.05em;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .og-v10-pos-btn{padding:3px 10px;font-size:11px;background:linear-gradient(135deg,#c9a85f,#b89a53);color:#1a1510;border:none;border-radius:2px;cursor:pointer;font-weight:700;letter-spacing:0.15em;font-family:var(--font-serif);box-shadow:0 1px 3px rgba(0,0,0,0.3);white-space:nowrap;}
 .og-v10-pos-btn:hover{background:linear-gradient(135deg,#d4b870,#c9a85f);box-shadow:0 2px 6px rgba(201,168,95,0.3);}
 .og-v10-pos-btn.appoint{background:linear-gradient(135deg,#6ba97f,#5a8f6e);color:#0f0b07;}
 .og-v10-pos-btn.appoint:hover{background:linear-gradient(135deg,#7ebd92,#6ba97f);}
 .og-v10-pos-btn.impeach{background:linear-gradient(135deg,rgba(192,64,48,0.2),rgba(140,40,30,0.15))!important;border:1px solid rgba(192,64,48,0.55)!important;color:#d97b6b!important;padding:3px 8px;font-size:10.5px;}
 .og-v10-pos-btn.impeach:hover{background:linear-gradient(135deg,rgba(217,123,107,0.3),rgba(192,64,48,0.2))!important;box-shadow:0 2px 6px rgba(192,64,48,0.3);}
+/* 操作按钮·卡片底部独立行(解放标题·不再被挤成竖排·2026-07-01) */
+.og-v10-pos-actions{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px 8px;border-top:1px solid rgba(107,93,71,0.15);margin-top:auto;}
+.og-v10-pos-actions>button{flex:1 1 auto;min-width:0;margin-left:0 !important;padding:4px 6px;font-size:10.5px;letter-spacing:0.06em;text-align:center;}
 
 /* 在任者行 */
 .og-v10-pos-holder{padding:7px 10px;display:flex;gap:8px;align-items:center;}
@@ -2608,7 +2611,7 @@ input,textarea,select{pointer-events:auto!important;position:relative;z-index:10
 .og-v10-pos.state-vacant{background:repeating-linear-gradient(45deg,var(--color-surface,#241e18) 0,var(--color-surface,#241e18) 10px,rgba(107,93,71,0.05) 10px,rgba(107,93,71,0.05) 20px);border-style:dashed;border-color:rgba(107,93,71,0.35);}
 .og-v10-pos.state-vacant .og-v10-pos-title{color:var(--txt-d,#b0a285);}
 .og-v10-pos.state-vacant .og-v10-pos-holder{padding:20px 10px;justify-content:center;color:var(--ink-300,#7a6e54);font-style:italic;font-size:12px;letter-spacing:0.3em;}
-.og-v10-pos.state-vacant .og-v10-pos-holder::before{content:"\u3014 \u7A7A \u7F3A \u00B7 \u5F85 \u8865 \u3015";opacity:0.7;}
+.og-v10-pos.state-vacant .og-v10-pos-holder::before{content:"〔 空 缺 · 待 补 〕";opacity:0.7;}
 .og-v10-vacant-dot{position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--vermillion-400,#c04030);box-shadow:0 0 8px rgba(192,64,48,0.6);animation:og-vacant-pulse 1.6s ease-in-out infinite;z-index:1;}
 
 /* 态·丁忧 */
@@ -2621,7 +2624,7 @@ input,textarea,select{pointer-events:auto!important;position:relative;z-index:10
 /* 态·兼任 */
 .og-v10-concurrent-stack{position:absolute;top:-3px;right:-3px;padding:2px 6px;background:linear-gradient(135deg,rgba(184,154,83,0.85),rgba(140,120,65,0.9));color:#1a1510;font-size:9px;font-weight:700;letter-spacing:0.15em;border-radius:2px;box-shadow:0 2px 4px rgba(0,0,0,0.3);z-index:3;transform:rotate(5deg);}
 .og-v10-concurrent-second{padding:3px 10px 6px;font-size:10px;color:var(--amber-400,#c9a045);display:flex;align-items:center;gap:6px;border-top:1px dashed rgba(201,168,95,0.25);background:rgba(201,168,95,0.04);}
-.og-v10-concurrent-second::before{content:"\u2699";color:var(--amber-400,#c9a045);font-size:11px;}
+.og-v10-concurrent-second::before{content:"⚙";color:var(--amber-400,#c9a045);font-size:11px;}
 .og-v10-concurrent-second .lbl{color:var(--amber-400,#c9a045);font-weight:700;letter-spacing:0.2em;}
 
 /* 态·告病 */
@@ -2637,7 +2640,7 @@ input,textarea,select{pointer-events:auto!important;position:relative;z-index:10
 
 /* 态·赴任 */
 .og-v10-transit-note{padding:4px 10px 7px;font-size:10px;color:var(--amber-400,#c9a045);display:flex;align-items:center;gap:5px;border-top:1px dashed rgba(201,168,95,0.2);background:rgba(201,168,95,0.03);}
-.og-v10-transit-note::before{content:"\u21AA";color:var(--amber-300,#e0b560);font-size:12px;}
+.og-v10-transit-note::before{content:"↪";color:var(--amber-300,#e0b560);font-size:12px;}
 .og-v10-transit-note b{color:var(--vermillion-300,#d97b6b);font-weight:700;}
 
 /* 态·贬谪 */
@@ -2650,7 +2653,7 @@ input,textarea,select{pointer-events:auto!important;position:relative;z-index:10
 .og-v10-pos.state-retire{background:linear-gradient(to bottom,rgba(201,160,69,0.06),var(--color-surface,#241e18) 60%);border-color:rgba(201,160,69,0.25);}
 .og-v10-pos.state-retire .og-v10-pos-portrait{filter:sepia(0.4);}
 .og-v10-retire-note{padding:3px 10px 7px;font-size:10px;color:var(--amber-400,#c9a045);border-top:1px dashed rgba(201,160,69,0.2);display:flex;align-items:center;gap:5px;}
-.og-v10-retire-note::before{content:"\u2698";color:var(--amber-300,#e0b560);font-size:12px;}
+.og-v10-retire-note::before{content:"⚘";color:var(--amber-300,#e0b560);font-size:12px;}
 
 /* 待下诏书条 */
 .og-v10-pos.has-pending{border-color:rgba(201,168,95,0.7)!important;box-shadow:0 0 0 1px rgba(201,168,95,0.35),0 2px 12px rgba(201,168,95,0.25)!important;animation:og-v10-draft-pulse 2.4s ease-in-out infinite;}

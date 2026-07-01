@@ -1426,11 +1426,12 @@ function _ogRenderPosCardV10(fi, courtKey) {
   html += '<div class="og-v10-pos-title">' + escHtml(nd.name||'?') + ' <span class="og-v10-rank-seal ' + _sealCls + '">' + escHtml(nd.rank||'') + '</span>' + _offDutyBadge(nd) + '</div>';
   html += '<div class="og-v10-pos-sub">' + escHtml(_deptName) + (nd.duties ? ' \u00B7 ' + escHtml(String(nd.duties).slice(0, 24)) : '') + '</div>';
   html += '</div>';
+  var _actionsHtml = '';   // \u64cd\u4f5c\u6309\u94ae\u79fb\u5230\u5361\u7247\u5e95\u90e8\u72ec\u7acb\u884c\u00b7\u89e3\u653e\u6807\u9898(\u4e0d\u518d\u88ab\u6324\u6210\u7ad6\u6392)\u00b72026-07-01
   var btnLabel = '\u6539 \u6362', btnCls = '';
   if (_isVacant) { btnLabel = '\u4EFB \u547D'; btnCls = ' appoint'; }
   else if (_state === 'acting') btnLabel = '\u6B63 \u6388';
   else if (_state === 'mourning') { btnLabel = '\u6743 \u7F72'; btnCls = ' appoint'; }
-  html += '<button class="og-v10-pos-btn' + btnCls + '" onclick="event.stopPropagation();_offOpenPicker(' + _safePath + ',\'' + _safeDept + '\',\'' + _safePos + '\',\'' + _safeHolder + '\')">' + btnLabel + '</button>';
+  _actionsHtml += '<button class="og-v10-pos-btn' + btnCls + '" onclick="event.stopPropagation();_offOpenPicker(' + _safePath + ',\'' + _safeDept + '\',\'' + _safePos + '\',\'' + _safeHolder + '\')">' + btnLabel + '</button>';
   // 弹劾按钮：仅针对 NPC 派系 + 非玩家角色（异己党派或异势力高官）
   if (!_isVacant && _holder) {
     var _playerFacN = '';
@@ -1440,21 +1441,21 @@ function _ogRenderPosCardV10(fi, courtKey) {
     var _isForeign = _playerFacN && _holder.faction && _holder.faction !== _playerFacN;
     var _isHostile = _holder.loyalty != null && _holder.loyalty < 40;
     if (_isForeign || _isHostile) {
-      html += '<button class="og-v10-pos-btn impeach" style="background:rgba(192,64,48,0.14);border-color:rgba(192,64,48,0.5);color:var(--vermillion-300,#d97b6b);margin-left:4px;" onclick="event.stopPropagation();_offImpeach(\'' + _safeHolder + '\',\'' + _safeDept + '\',\'' + _safePos + '\')" title="\u5F39\u52BE">\u5F39 \u52BE</button>';
+      _actionsHtml += '<button class="og-v10-pos-btn impeach" style="background:rgba(192,64,48,0.14);border-color:rgba(192,64,48,0.5);color:var(--vermillion-300,#d97b6b);margin-left:4px;" onclick="event.stopPropagation();_offImpeach(\'' + _safeHolder + '\',\'' + _safeDept + '\',\'' + _safePos + '\')" title="\u5F39\u52BE">\u5F39 \u52BE</button>';
     }
     // S5\u00B7\u836B\u5B50\u6309\u94AE\uFF1A\u672C\u671D\u9AD8\u5B98(\u975E\u5F02\u515A\u00B7\u8FBE\u4E09\u54C1 level\u22646\u00B7\u672A\u836B\u8FC7) \u2192 \u95E8\u836B\u4E00\u5B50\u5165\u4ED5(\u5019\u9009)
     var _menyinLv = (!_isForeign && !_holder.isPlayer && !_holder._menyinGranted && typeof TMPromotion !== 'undefined' && TMPromotion.resolveRankLevel) ? TMPromotion.resolveRankLevel(_holder, GM) : 0;
     if (_menyinLv > 0 && _menyinLv <= 6) {
-      html += '<button class="og-v10-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offMenyin(\'' + _safeHolder + '\')" title="\u95E8\u836B\u00B7\u836B\u4E00\u5B50\u5165\u4ED5(\u5019\u9009\u5F85\u4EFB\u547D)">\u836B \u5B50</button>';
+      _actionsHtml += '<button class="og-v10-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offMenyin(\'' + _safeHolder + '\')" title="\u95E8\u836B\u00B7\u836B\u4E00\u5B50\u5165\u4ED5(\u5019\u9009\u5F85\u4EFB\u547D)">\u836B \u5B50</button>';
     }
     // S5\u00B7\u8350\u8D24\u6309\u94AE\uFF1A\u672C\u671D\u5B98(\u975E\u5F02\u515A\u00B7\u8FBE\u4E94\u54C1 level\u22648\u00B7\u672A\u8350\u8FC7) \u2192 \u8350\u8F9F\u5E03\u8863\u5165\u4ED5(\u5019\u9009)
     var _jianbiLv = (!_isForeign && !_holder.isPlayer && !_holder._jianbiGranted && typeof TMPromotion !== 'undefined' && TMPromotion.resolveRankLevel) ? TMPromotion.resolveRankLevel(_holder, GM) : 0;
     if (_jianbiLv > 0 && _jianbiLv <= 8) {
-      html += '<button class="og-v10-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offJianbi(\'' + _safeHolder + '\')" title="\u8350\u8F9F\u00B7\u8350\u5E03\u8863\u8D24\u624D\u5165\u4ED5(\u5019\u9009)">\u8350 \u8D24</button>';
+      _actionsHtml += '<button class="og-v10-pos-btn" style="margin-left:4px;" onclick="event.stopPropagation();_offJianbi(\'' + _safeHolder + '\')" title="\u8350\u8F9F\u00B7\u8350\u5E03\u8863\u8D24\u624D\u5165\u4ED5(\u5019\u9009)">\u8350 \u8D24</button>';
     }
     // S1d\u00B7\u7F62\u514D\u6309\u94AE\uFF1A\u672C\u671D\u81EA\u5BB6\u5B98(\u975E\u5F02\u515A\u00B7\u975E\u541B\u4E3B) \u2192 \u514D\u804C\u8BCF\u4E66\u5EFA\u8BAE(\u72EC\u7ACB\u7F62\u514D\u52A8\u4F5C)
     if (!_isForeign && !_holder.isPlayer) {
-      html += '<button class="og-v10-pos-btn" style="margin-left:4px;opacity:0.82;" onclick="event.stopPropagation();_offDismissToEdict(\'' + _safeHolder + '\',\'' + _safeDept + '\',\'' + _safePos + '\')" title="\u7F62\u514D\u00B7\u514D\u53BB\u5176\u804C(\u5F55\u8BCF\u4E66\u5EFA\u8BAE\u00B7\u4E0B\u65E8\u751F\u6548)">\u7F62 \u514D</button>';
+      _actionsHtml += '<button class="og-v10-pos-btn" style="margin-left:4px;opacity:0.82;" onclick="event.stopPropagation();_offDismissToEdict(\'' + _safeHolder + '\',\'' + _safeDept + '\',\'' + _safePos + '\')" title="\u7F62\u514D\u00B7\u514D\u53BB\u5176\u804C(\u5F55\u8BCF\u4E66\u5EFA\u8BAE\u00B7\u4E0B\u65E8\u751F\u6548)">\u7F62 \u514D</button>';
     }
   }
   html += '</div>';
@@ -1557,6 +1558,7 @@ function _ogRenderPosCardV10(fi, courtKey) {
     }
   }
 
+  if (_actionsHtml) html += '<div class="og-v10-pos-actions">' + _actionsHtml + '</div>';   // 操作按钮独立底行
   html += '</div>';
   return html;
 }
