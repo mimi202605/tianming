@@ -110,5 +110,33 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   });
   ok(!r5.conversation.some(function (m) { return m.role === 'user' && /纯勘察/.test(m.text || ''); }), 'G3 只读(审阅)模式纯勘察是本分 → 豁免');
 
+  // ───────── G5 · todoWrite 任务表(C刀) ─────────
+  console.log('— G5 todoWrite —');
+  ok(AA.AGENT_TOOLS.some(function (t) { return t.name === 'todoWrite'; }), 'G5 todoWrite 已注册进工具清单');
+  var dT = AA.makeDraft({ name: '甲' });
+  var rT1 = AA.dispatchTool(dT, 'todoWrite', { todos: [{ content: '补势力', status: 'in_progress' }, { content: '补人物', status: 'pending' }] });
+  ok(rT1.ok && rT1.todos === 2 && /恰保持一项 in_progress/.test(rT1.message), 'G5 合法整表 → 成功消息自带用法再教育');
+  var rT2 = AA.dispatchTool(dT, 'todoWrite', { todos: [{ content: 'a', status: 'in_progress' }, { content: 'b', status: 'in_progress' }] });
+  ok(rT2.ok && /收敛为一项/.test(rT2.message), 'G5 两项同时 in_progress → 警示收敛');
+  var rT3 = AA.dispatchTool(dT, 'todoWrite', { todos: [{ content: 'a', status: '做完了' }] });
+  ok(rT3.ok === false && /status 非法/.test(rT3.reason), 'G5 非法 status → 报错教学(枚举值)');
+  var rT4 = AA.dispatchTool(dT, 'todoWrite', { todos: [{ content: 'a', status: 'completed' }, { content: 'b', status: 'completed' }] });
+  ok(rT4.ok && rT4.todos === 0 && /已自动清空/.test(rT4.message), 'G5 全部 completed → 表自动清空');
+
+  // 经 loop:任务表 3 轮未更新 → 节流提醒折叠进工具结果(不伪造独立轮)
+  var tq = 0;
+  var rT5 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '多步任务', {
+    caller: function () {
+      tq++;
+      if (tq === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'td1', name: 'todoWrite', input: { todos: [{ content: '补齐三将属性', status: 'in_progress' }, { content: '补齐势力资料', status: 'pending' }] } }] });
+      if (tq <= 5) return Promise.resolve({ text: '', toolCalls: [{ id: 'rq' + tq, name: 'searchEntities', input: { query: '将' + tq } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'f3', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var _allToolText = rT5.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat((m.toolResults || []).map(function (t) { return t.content; })); }, []).join('\n');
+  ok(_allToolText.indexOf('<系统提醒>任务表已') >= 0 && _allToolText.indexOf('补齐三将属性') >= 0, 'G5 ≥3轮未更新+有未完项 → 提醒折叠进工具结果');
+  ok(!rT5.conversation.some(function (m) { return m.role === 'user' && /任务表已/.test(m.text || ''); }), 'G5 提醒不独立成 user 消息(不伪造轮边界)');
+  ok(Array.isArray(rT5.todos) && rT5.todos.length === 2, 'G5 收尾 result.todos 面向 UI 暴露(2 项未完)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

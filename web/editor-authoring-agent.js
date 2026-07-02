@@ -1195,8 +1195,19 @@
     },
     {
       name: 'note',
-      description: '记录一条计划/进度备注（不改剧本，只写进过程记录，便于多步任务自我规划、也让用户看到思路）。',
+      description: '记录一条计划/进度备注（不改剧本，只写进过程记录，便于多步任务自我规划、也让用户看到思路）。单条杂感用这个；≥3 步的任务改用 todoWrite。',
       parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] }
+    },
+    {
+      name: 'todoWrite',
+      description: '结构化任务表（整表替换·不改剧本）。≥3 步的任务先用它列计划，每完成一步立即把该项标 completed（勿囤到最后一起标），恰保持一项 in_progress。全部 completed 时表自动清空。计划有变直接重写整表。单步小事别用。',
+      parameters: { type: 'object', properties: {
+        todos: { type: 'array', description: '整张任务表(替换式)', items: { type: 'object', properties: {
+          content: { type: 'string', description: '祈使句·做什么(如「补齐辽东三将的属性」)' },
+          status: { type: 'string', enum: ['pending', 'in_progress', 'completed'] },
+          activeForm: { type: 'string', description: '进行时短语(如「正在补齐辽东三将」)·选填' }
+        }, required: ['content', 'status'] } }
+      }, required: ['todos'] }
     },
     {
       name: 'askClarification',
@@ -1664,6 +1675,25 @@
         return { ok: fails.length === 0, applied: done, failures: fails.slice(0, 5) };
       }
       case 'note': return { ok: true, note: String(input.text || '').slice(0, 500) };
+      case 'todoWrite': {   // 刀G5(2026-07-02·CC TodoWrite 对照) · 结构化任务表:整表替换·全完成自动清·成功消息自带用法再教育
+        var _tds = Array.isArray(input.todos) ? input.todos : null;
+        if (!_tds) return { ok: false, reason: 'todos 必须是数组(整表替换)·每项 {content, status, activeForm?}' };
+        var _norm = [], _inProg = 0;
+        for (var _ti = 0; _ti < _tds.length && _ti < 20; _ti++) {
+          var _td = _tds[_ti];
+          if (!_td || !_td.content || !_td.status) return { ok: false, reason: '第 ' + (_ti + 1) + ' 项缺 content/status·status 只能是 pending/in_progress/completed' };
+          if (['pending', 'in_progress', 'completed'].indexOf(_td.status) < 0) return { ok: false, reason: '第 ' + (_ti + 1) + ' 项 status 非法「' + _td.status + '」·只能是 pending/in_progress/completed' };
+          if (_td.status === 'in_progress') _inProg++;
+          _norm.push({ content: String(_td.content).slice(0, 120), status: _td.status, activeForm: _td.activeForm ? String(_td.activeForm).slice(0, 60) : '' });
+        }
+        var _allDone = _norm.length > 0 && _norm.every(function (t) { return t.status === 'completed'; });
+        _todoState.list = _allDone ? [] : _norm;
+        var _tdMsg = _allDone
+          ? '任务表全部完成·已自动清空。'
+          : ('任务表已更新(' + _norm.length + ' 项·' + _inProg + ' 项进行中)。继续用它跟踪进度：每完成一步立即标 completed(勿囤批)·恰保持一项 in_progress。'
+            + (_inProg > 1 ? '⚠ 当前 ' + _inProg + ' 项同时 in_progress·请收敛为一项。' : (_inProg === 0 ? '⚠ 没有 in_progress 项·请把正在做的那项标上。' : '')));
+        return { ok: true, todos: _todoState.list.length, message: _tdMsg };
+      }
       case 'askClarification': return { ok: true, clarify: true, questions: (Array.isArray(input.questions) ? input.questions : []).filter(Boolean).slice(0, 3) };
       case 'remonstrate': return { ok: true, remonstrate: true, concern: String(input.concern || ''), severity: String(input.severity || ''), suggestion: String(input.suggestion || '') };
       case 'flagUncertain': return { ok: true, flagged: String(input.path || ''), reason: String(input.reason || '') };
@@ -1890,7 +1920,7 @@
       : '⑫【先核后写·自查证】新增/改写涉及具体史实的内容（年号纪年、人物生卒与年龄、职官名称品级、重大事件时间地点）前，先用 checkHistory 把你将依据的关键史实逐条列出并自评把握：把握高的照写；把握低/拿不准的，落字用保守措辞（约/相传/据载）并对该路径 flagUncertain，绝不把存疑当确定口吻硬写。这是「国师」对硬核可信的本分。注意：无外部资料时这是自我审视，治"自信地编"，但变不出你本就不知道的事——真拿不准就老实标出来交玩家定夺。';
     return [
       head,
-      '⓪ 多步/复杂任务先用 note 记一句计划（1. 2. 3.）再动手；用 listCollection/describeSchema 看清现状与字段、bulkAdd/multiEdit 一次多改提效。若需求含糊到无法动手（缺关键信息），先用 askClarification 问 1-3 个具体问题再继续；需求清楚就直接做。',
+      '⓪ ≥3 步的任务先用 todoWrite 列任务表再动手（每完成一步立即标 completed·恰保持一项 in_progress·计划变了重写整表）；单条杂感用 note。用 listCollection/describeSchema 看清现状与字段、bulkAdd/multiEdit 一次多改提效。若需求含糊到无法动手（缺关键信息），先用 askClarification 问 1-3 个具体问题再继续；需求清楚就直接做。',
       '规则：① 只用工具修改/查询，不要直接输出 JSON 剧本正文。② 中文显示名（人物/势力/地名）保持中文，禁止英译。',
       '③ 先用 getField（单路径）/getFields（批量·一次读多个路径，省往返，需同时核对多处状态时优先用它，别一个个 getField）/searchEntities/listGaps 查看现状与规格缺口再改；不确定东西在哪个集合时用 globalSearch 全局检索定位。想确认正式游戏怎么读某字段、读不读它，用 fieldContract 查契约（按需查，别凭印象）。想看游戏 UI/逻辑的源码实现，用 listSource 找文件、readSource 读、grepSource 全局搜——可直接读整个代码库。生成或大改某部分(人物/势力/经济/官制/封臣…)前，先 genReference 看老编辑器对该部分的生成范式(设定深度/字段形状/朝代逻辑/参数区间)，借鉴后再动手。改地图归属（把某地块划给某势力、调整疆域归属）时，先 mapOverview 看清现有地块/归属/势力，再 mapAssignOwner 按地块名+势力名改（自动上色、同步 map/mapData）。与用户需求相关的必需缺口顺手补齐，让剧本完整可玩。④ 每改完一批用 validateDraft 自查，有违规继续修（写类工具 applyEdit/applyPush/multiEdit/bulkAdd 的返回已回挂变更后的当前值 nowValue/nowValues/collectionLength，据此确认改动已落地，无需再 getField 重读确认）。⑤ 改好后用 preflight 跑运行时体检（确保游戏能正常加载），有 blockers 继续修到 bootable，再调用 finish——summary 要向玩家说清「改了什么、为什么这么改」（具体到关键实体/字段，2-4 句中文），不要只写"完成"。',
       '⑥ 若发现该玩家/剧本有值得长期沿用的约定（命名规律、文风、设定惯例），可调 recordConvention 记一条（仅在确有发现时，别凑数）。⑦ 改名优先用 renameEntity（联动所有引用、不留死链）；删除实体前先 findReferences 查谁引用了它。⑧ 对没把握的改动（史实存疑、靠推测填充）调 flagUncertain 标一下路径，提醒玩家重点复核（只标真没把握的）。',
@@ -2069,6 +2099,8 @@
   // 刀E · 可中断：模块级当前运行句柄 + abort()。Claude code 式"随时停"（轮间中断，干净收尾）。
   var _activeRun = null;
   function abort() { if (_activeRun) _activeRun.aborted = true; return !!_activeRun; }
+  // 刀G5 · todoWrite 任务表(模块级·每次 runAuthoringLoop 起跑重置·dispatch 写入·loop 读它做节流提醒)
+  var _todoState = { list: [] };
 
   function runAuthoringLoop(draft, userRequest, opts) {
     opts = opts || {};
@@ -2131,6 +2163,9 @@
     var _writeCount = 0;        // 累计成功写入笔数·任何写入即令全部旧读记录过期
     var _readOnlyStreak = 0, _spinWarned = 0;
     var _editingMode = !planOnly && !reviewOnly && !qaOnly && !explainOnly;   // 只读模式纯勘察是本分·豁免
+    // 刀G5(CC TodoWrite 对照) · 任务表:起跑重置·节流提醒(≥3轮未更新且有未完项·折叠进工具结果不伪造独立轮)
+    _todoState.list = [];
+    var _todoLastRound = 0, _todoRemindedAt = 0;
 
     function record(name, input, result) {
       transcript.push({ name: name, input: input, result: result });
@@ -2222,12 +2257,23 @@
             }
             // 刀G3 · 防打转:编辑模式连续纯勘察(无写/无澄清/无计划) → 3/6 轮两级催动手(只读模式豁免)
             if (!finishAccepted && !control.aborted && _editingMode) {
-              var _hadProgress = calls.some(function (cc) { return cc && (_MUT_TOOLS[cc.name] || cc.name === 'note' || cc.name === 'askClarification' || cc.name === 'remonstrate' || cc.name === 'flagUncertain' || cc.name === 'recordConvention'); });
+              var _hadProgress = calls.some(function (cc) { return cc && (_MUT_TOOLS[cc.name] || cc.name === 'note' || cc.name === 'todoWrite' || cc.name === 'askClarification' || cc.name === 'remonstrate' || cc.name === 'flagUncertain' || cc.name === 'recordConvention'); });
               if (_hadProgress) { _readOnlyStreak = 0; _spinWarned = 0; }
               else {
                 _readOnlyStreak++;
                 if (_readOnlyStreak >= 6 && _spinWarned < 2) { _spinWarned = 2; conversation.push({ role: 'user', text: '⚠ 已连续 ' + _readOnlyStreak + ' 轮纯勘察·零改动。立即停止检索：要么用 applyEdit/multiEdit/bulkAdd 落实修改·要么 askClarification 说明卡在哪·要么 finish。' }); }
                 else if (_readOnlyStreak >= 3 && _spinWarned < 1) { _spinWarned = 1; conversation.push({ role: 'user', text: '（你已连续 ' + _readOnlyStreak + ' 轮纯勘察未动手。信息应已足够——请开始落实修改；确有疑问用 askClarification·认为不该改用 remonstrate·勿再重复检索。）' }); }
+              }
+            }
+            // 刀G5 · todo 节流提醒:任务表有未完项且 ≥3 轮没更新 → 折叠进本轮末条工具结果(CC 对照:不独立成消息·不伪造轮边界)
+            if (!finishAccepted && !control.aborted) {
+              if (calls.some(function (cc) { return cc && cc.name === 'todoWrite'; })) { _todoLastRound = iterations; }
+              else {
+                var _pendTd = _todoState.list.filter(function (t) { return t.status !== 'completed'; });
+                if (_pendTd.length && toolResults.length && iterations - _todoLastRound >= 3 && iterations - _todoRemindedAt >= 3) {
+                  _todoRemindedAt = iterations;
+                  toolResults[toolResults.length - 1].content += '\n<系统提醒>任务表已 ' + (iterations - _todoLastRound) + ' 轮未更新·尚有 ' + _pendTd.length + ' 项未完(如「' + _pendTd[0].content + '」)。完成即标 completed·计划变了就重写整表·此提醒勿向用户提及。</系统提醒>';
+                }
               }
             }
             if (finishAccepted) { finished = true; stopReason = _clarifyResult ? 'needsClarification' : (_remonstrateResult ? 'needsConfirmation' : (_explainResult ? 'explained' : (_qaResult ? 'answered' : (_reviewResult ? 'reviewed' : (_planResult ? 'planned' : 'finish'))))); return; }
@@ -2255,6 +2301,7 @@
         finalValidation: validateDraft(draft), stopReason: stopReason,
         tokensUsed: tokensUsed, finishAttempts: finishAttempts,
         tokensBreakdown: { system: _sysTok, tools: _toolsTok, conversation: _convTok },   // 刀G1 · 真口径构成(UI/诊断用)
+        todos: _todoState.list.slice(),   // 刀G5 · 收尾时的任务表(全完成则已自动清空·UI 可渲染)
         summary: _finishSummary,   // 改动说明：做了什么+为什么
         notes: transcript.filter(function(t) { return t.name === 'note'; }).map(function(t) { return (t.input && t.input.text) || ''; }).filter(Boolean),
         // 方向B · agent 回写：发现的可长期沿用约定（交玩家「记住」）
