@@ -338,5 +338,39 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/ui\.running && typeof onSteer === 'function'\) onSteer\(\)/.test(uiSrc) && /function onSteer\(\)/.test(uiSrc), 'G9 UI 接线:运行中回车路由到 onSteer');
   ok(uiSrc.indexOf('回车可随时插话') >= 0 && /AA\.steer\(t\)/.test(uiSrc), 'G9 UI 接线:运行态占位提示+steer 调用');
 
+  // ───────── H1 · 输出截断自愈(CC max_tokens 动态调整对照) ─────────
+  console.log('— H1 输出截断自愈 —');
+  // 1: parse 层 surfacing(三 provider)·斩断的 toolCall 不再吞成空入参执行
+  var pT = AA._parseOpenAI({ choices: [{ finish_reason: 'length', message: { content: '写到一半', tool_calls: [{ id: 't1', function: { name: 'applyEdit', arguments: '{"path":"na' } }] } }] });
+  ok(pT.truncated === true && pT.badToolJson === true && pT.toolCalls.length === 0, 'H1 OpenAI 截断+斩断JSON → truncated/badToolJson·坏调用不执行(旧行为:空入参静默跑)');
+  var pC = AA._parseOpenAI({ choices: [{ finish_reason: 'stop', message: { content: '', tool_calls: [{ id: 't2', function: { name: 'applyEdit', arguments: '{"path":"name","value":"乙"}' } }] } }] });
+  ok(pC.truncated === false && !pC.badToolJson && pC.toolCalls[0].input.value === '乙', 'H1 正常响应不受影响');
+  ok(AA._parseAnthropic({ stop_reason: 'max_tokens', content: [{ type: 'text', text: 'x' }] }).truncated === true, 'H1 Anthropic stop_reason=max_tokens → truncated');
+  ok(AA._parseGemini({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: 'x' }] } }] }).truncated === true, 'H1 Gemini MAX_TOKENS → truncated');
+  // 2: 循环自愈——截断 → maxTok ×2 重试本轮·斩断响应整体弃置·bump 后全程沿用·不计迭代
+  var hq = 0, seenTok = [];
+  var rH = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '大改动', {
+    caller: function (conv, tools2, cOpts) {
+      hq++; seenTok.push(cOpts && cOpts.maxTok);
+      if (hq === 1) return Promise.resolve({ text: '写到一半被截', toolCalls: [], truncated: true });
+      if (hq === 2) return Promise.resolve({ text: '又截', toolCalls: [{ id: 'h2', name: 'applyEdit', input: { path: 'name', value: '坏' } }], truncated: true, badToolJson: true });
+      if (hq === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'h3', name: 'applyEdit', input: { path: 'name', value: '乙' } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'hf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(seenTok[1] === 6000 && seenTok[2] === 12000 && seenTok[3] === 12000, 'H1 截断 → 输出上限 6000→12000 且 bump 后全程沿用(实测 ' + seenTok.slice(1).join('/') + ')');
+  ok(rH.finished && rH.draft.name === '乙', 'H1 斩断响应整体弃置(「坏」未落地)·重试后正常改动落地');
+  ok(rH.iterations === 2, 'H1 截断重试不计迭代(实 2 轮:改动+finish)');
+  // 3: bump 耗尽(2次)后不再无限重试·走正常 noToolCalls 路径收场
+  var hx = 0;
+  var rH2 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '永远截断', {
+    caller: function () {
+      hx++;
+      if (hx <= 3) return Promise.resolve({ text: '截', toolCalls: [], truncated: true });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'hxf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000, maxNoToolNudges: 1
+  });
+  ok(rH2.finished && hx === 4, 'H1 bump 耗尽后第3次截断按 noToolCalls 处理(nudge→finish)·不无限重试');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

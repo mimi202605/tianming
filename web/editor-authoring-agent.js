@@ -796,6 +796,9 @@
     };
   }
 
+  // 刀H1(CC max_tokens 动态调整对照) · 三 provider parse 层 surfacing 输出截断:
+  //   truncated=输出被 maxTok 腰斩(finish_reason)·badToolJson=toolCall 入参 JSON 被斩断解析失败
+  //   (此前 catch{} 吞成空入参静默执行——比"没调工具"更糟)。loop 据此提升输出上限重试本轮。
   function _parseAnthropic(data) {
     var text = '', toolCalls = [];
     if (Array.isArray(data.content)) {
@@ -804,22 +807,23 @@
         else if (b.type === 'tool_use' && b.name) toolCalls.push({ id: b.id || _genId(i), name: b.name, input: b.input || {} });
       });
     }
-    return { text: text, toolCalls: toolCalls };
+    return { text: text, toolCalls: toolCalls, truncated: data.stop_reason === 'max_tokens' };
   }
 
   function _parseOpenAI(data) {
-    var text = '', toolCalls = [];
+    var text = '', toolCalls = [], badToolJson = false;
     if (data.choices && data.choices[0] && data.choices[0].message) {
       var msg = data.choices[0].message;
       if (msg.content) text = msg.content;
       (msg.tool_calls || []).forEach(function(tc, i) {
-        var fn = tc.function || {}, input = {};
-        try { input = JSON.parse(fn.arguments || '{}'); } catch (e) {}
-        if (fn.name) toolCalls.push({ id: tc.id || _genId(i), name: fn.name, input: input });
+        var fn = tc.function || {}, input = {}, parsedOk = true;
+        try { input = JSON.parse(fn.arguments || '{}'); } catch (e) { parsedOk = false; badToolJson = true; }
+        if (fn.name && parsedOk) toolCalls.push({ id: tc.id || _genId(i), name: fn.name, input: input });   // 斩断的调用不执行(勿以空入参乱跑)
       });
     }
-    if (!toolCalls.length && Array.isArray(data.content)) return _parseAnthropic(data); // 代理直吐 anthropic content[]
-    return { text: text, toolCalls: toolCalls };
+    if (!toolCalls.length && !badToolJson && Array.isArray(data.content)) return _parseAnthropic(data); // 代理直吐 anthropic content[]
+    var fr = data.choices && data.choices[0] && (data.choices[0].finish_reason || data.choices[0].stop_reason);
+    return { text: text, toolCalls: toolCalls, truncated: fr === 'length' || fr === 'max_tokens', badToolJson: badToolJson };
   }
 
   // ── 刀C · gemini 原生 provider（对标游戏 tm-ai-infra·第三方中转走 openai-compat 不受影响） ──
@@ -860,7 +864,7 @@
         if (p.functionCall && p.functionCall.name) toolCalls.push({ id: _genId(i), name: p.functionCall.name, input: p.functionCall.args || {} });
       });
     }
-    return { text: text, toolCalls: toolCalls };
+    return { text: text, toolCalls: toolCalls, truncated: !!(cand && cand.finishReason === 'MAX_TOKENS') };   // 刀H1 · 截断 surfacing
   }
 
   // 抠掉 ```json``` 围栏 / <json> 标签，便于从被包裹文本里解析工具调用（中转/模型常这么吐）。
@@ -2257,6 +2261,7 @@
     var noToolNudges = 0, maxNoToolNudges = (opts.maxNoToolNudges != null ? opts.maxNoToolNudges : 2);
     var stepRetries = 0, maxStepRetries = (opts.maxStepRetries != null ? opts.maxStepRetries : 2);
     var retryBaseMs = opts.retryBaseMs || 800;
+    var _curMaxTok = 0, _tokBumps = 0;   // 刀H1 · 输出截断自愈:检测到腰斩则输出上限×2重试(≤2次·bump后全程沿用)
     var _budgetWarned = 0;   // 工具D · 预算反馈：分级提醒收尾(70%/90%)·避免硬撞 tokenBudget 半途而废
     // 刀G3(CC「File unchanged since last read」对照) · 重复读去重 + 纯勘察防打转
     var _seenReads = {};        // key=name|JSON(input) → {iter, writes}(写世代号=新鲜度)
@@ -2305,7 +2310,7 @@
         + '①用户各轮请求与意图(逐条·含意图变化与纠偏) ②已完成的改动(实体/字段级·关键新值) ③任务表现状(未完项) ④已查明的关键事实(字段结构/约定/引用关系) ⑤遇到的错误与修正 ⑥正在进行的工作 ⑦下一步(必须与用户最近请求直接一致·勿开新任务)\n'
         + '要具体：实体名/字段路径/关键值逐一点名，宁详勿略。调用 submitSummary 提交；若无法调用工具，直接以纯文本输出摘要正文。\n\n【对话记录】\n' + flat;
       if (typeof opts.onText === 'function') { try { opts.onText('（上下文过长，正在压缩前情摘要…）', iterations); } catch (eOt) {} }
-      return Promise.resolve(caller([{ role: 'user', text: ask }], sumTools, { maxTok: Math.max(4000, opts.maxTok || 0), cfg: opts.cfg, system: '你是对话压缩器：只输出忠实、具体、结构化的前情摘要，不评论不建议。' }))
+      return Promise.resolve(caller([{ role: 'user', text: ask }], sumTools, { maxTok: Math.max(4000, opts.maxTok || 0), maxRetries: 1, cfg: opts.cfg, system: '你是对话压缩器：只输出忠实、具体、结构化的前情摘要，不评论不建议。' }))   // 刀H1 · 后台请求不放大重试(CC 对照)
         .then(function (r) {
           var s = '';
           try { var tc0 = ((r && r.toolCalls) || []).filter(function (t) { return t && t.name === 'submitSummary'; })[0]; s = String((tc0 && tc0.input && tc0.input.summary) || (r && r.text) || ''); } catch (eS) { s = String((r && r.text) || ''); }
@@ -2345,11 +2350,20 @@
       }
       if (tokensUsed >= maxTokens) { stopReason = 'tokenBudget'; return Promise.resolve(); }   // 刀G8 · 硬停挪到压缩之后(先自救再认命)
       iterations++;
-      return Promise.resolve(caller(conversation, tools, { maxTok: opts.maxTok, cfg: opts.cfg, system: system }))
+      return Promise.resolve(caller(conversation, tools, { maxTok: _curMaxTok || opts.maxTok, cfg: opts.cfg, system: system }))
         .then(function(resp) {
           stepRetries = 0;   // 成功一轮即重置：每个停顿点各容忍 maxStepRetries 次抖动
           var text = (resp && resp.text) || '';
           var calls = (resp && resp.toolCalls) || [];
+          // 刀H1(CC max_tokens 动态调整对照) · 输出截断自愈:被 maxTok 腰斩(没调成工具/入参 JSON 斩断)
+          //   → 输出上限×2重试本轮。斩断的响应整体弃置(完好的调用也未执行·重试无双跑)。
+          if (resp && resp.truncated && (!calls.length || resp.badToolJson) && _tokBumps < 2 && !control.aborted) {
+            _tokBumps++;
+            _curMaxTok = Math.min(16000, (_curMaxTok || opts.maxTok || 3000) * 2);
+            if (typeof opts.onText === 'function') { try { opts.onText('（输出被截断·提升输出上限至 ' + _curMaxTok + ' 重试本轮…）', iterations); } catch (eB) {} }
+            iterations--;
+            return step();
+          }
           // 刀G1 · 不再零星累加(响应文本随消息入对话后由 _reqTokens 全量重估)
           if (text && typeof opts.onText === 'function') { try { opts.onText(text, iterations); } catch (e) {} }
           if (control.aborted) { conversation.push({ role: 'assistant', text: text, toolCalls: [] }); stopReason = 'aborted'; return; }   // 刀E · API 返回后即停，不再施改
@@ -2837,6 +2851,7 @@
     _compactTailSlice: _compactTailSlice,   // 刀G8 · 宏压缩尾部切片(smoke)
     _flattenForSummary: _flattenForSummary,   // 刀G8 · 摘要请求拍平(smoke)
     _OVERFLOW_RE: _OVERFLOW_RE,   // 刀G8 · 超限文案识别(smoke)
+    _parseOpenAI: _parseOpenAI, _parseAnthropic: _parseAnthropic, _parseGemini: _parseGemini,   // 刀H1 · 截断 surfacing(smoke)
     computeGaps: _computeGaps,
     preflight: preflight,
     ensureCharFactionId: ensureCharFactionId,
