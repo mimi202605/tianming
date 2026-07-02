@@ -39,9 +39,9 @@ const fnBody = extractBraced(promptSrc, fnAnchor);
 ok(!!fnBody, 'sysPFor 闭包提取');
 const mkSysPFor = new Function('ctx', 'global', 'return function(scId)' + fnBody + ';');
 
-// 假 _segs(与 build 的 12 段名对齐·按代码序)
-const SEGS = ['base', 'worldState', 'events', 'digest', 'context', 'player', 'npcDeep', 'letters', 'personnel', 'socialRules', 'roster', 'tail'];
-const MARK = { base: '[B]', worldState: '[W]', events: '[E]', digest: '[D]', context: '[C]', player: '[PL]', npcDeep: '[N]', letters: '[L]', personnel: '[PE]', socialRules: '[S]', roster: '[R]', tail: '[T]' };
+// 假 _segs(与 build 的段名对齐·按代码序·二批起 worldState 拆四子段)
+const SEGS = ['base', 'worldPlan', 'events', 'digest', 'context', 'player', 'npcDeep', 'worldSocial', 'letters', 'worldGov', 'personnel', 'worldLifecycle', 'socialRules', 'roster', 'tail'];
+const MARK = { base: '[B]', worldPlan: '[WP]', events: '[E]', digest: '[D]', context: '[C]', player: '[PL]', npcDeep: '[N]', worldSocial: '[WS]', letters: '[L]', worldGov: '[WG]', personnel: '[PE]', worldLifecycle: '[WL]', socialRules: '[S]', roster: '[R]', tail: '[T]' };
 function mkCtx() {
   const segs = SEGS.map((n) => ({ name: n, text: MARK[n] }));
   return { prompt: { sysP: segs.map((s) => s.text).join(''), _segs: segs } };
@@ -58,12 +58,13 @@ ok(fn('sc17') === ctx.prompt.sysP && fn('sc27') === ctx.prompt.sysP && fn('sc1')
 // ② 开闸 → 各档裁剪正确
 ctx = mkCtx();
 fn = mkSysPFor(ctx, mkGlobal(true));
-ok(fn('sc17') === '[B][W][C][R][T]', '② sc17→LITE = base+worldState+context+roster+tail');
-ok(fn('sc16') === '[B][W][E][C][R][T]' && fn('sc18') === '[B][W][E][C][R][T]', '② sc16/sc18→FAC 含 events');
-ok(fn('sc27') === '[B][W][C][PE][R][T]', '② sc27→EDICT 含 personnel(current_issues/字段目录·修正原LITE坑)');
+ok(fn('sc17') === '[B][C][WG][R][T]', '② sc17→LITE = base+context+worldGov(营造经济/国策/区划)+roster+tail');
+ok(fn('sc16') === '[B][WP][E][C][WS][R][T]' && fn('sc18') === '[B][WP][E][C][WS][R][T]', '② sc16/sc18→FAC = Plan(关系矩阵)+Social(势力规则/矛盾)+events·不带Gov细账');
+ok(fn('sc27') === '[B][C][WG][PE][R][T]', '② sc27→EDICT 含 worldGov(诏令执行环境)+personnel(current_issues/字段目录)');
 ok(fn('sc27').indexOf('[PE]') >= 0, '② sc27 保住 personnel 桶');
-ok(fn('sc07') === '[B][W][D][C][PL][N][R][T]', '② sc07→COG 含 npcDeep+player+digest(修正原LITE坑)');
-ok(fn('sc28') === '[B][W][D][C][R][T]', '② sc28→SNAP 含 digest(称谓/关系网)');
+ok(fn('sc07') === '[B][WP][D][C][PL][N][WS][R][T]', '② sc07→COG 含 Plan(隐藏议程)+Social(党派)+npcDeep+player+digest');
+ok(fn('sc28') === '[B][D][C][WS][WG][R][T]', '② sc28→SNAP 含 Social+Gov 当前态+digest·不带 Plan 规划meta');
+ok(['sc17', 'sc16', 'sc18', 'sc27', 'sc28', 'sc07'].every(function (id) { return fn(id).indexOf('[WL]') < 0; }), '② worldLifecycle(生灭schema)仅 FULL/NPC 带·分级档全不带');
 
 // ③ 主线与谨慎区不在表 → 恒 FULL
 ['sc0', 'sc1', 'sc1q', 'sc1b', 'sc1c', 'sc1d', 'sc2', 'sc05', 'sc15', 'sc15n', 'memwrite', 'sc19', 'sc25', 'scOl', 'scR', 'scP', 'scTac', 'scStr'].forEach(function (id) {

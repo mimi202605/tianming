@@ -68,14 +68,18 @@
   //   下次开游戏的会话据「各 profile 实际字数 log」逐个启用：sc17/27/28/25/07→LITE、sc16/18→FAC，
   //   跑一回合冒烟看无幻觉告警后再扩。改这张表即调，不动 build()/调用点。
   global.TM.Endturn.AI.prompt.SYS_PROFILES = {
-    NPC:  { base:1, worldState:1, events:1, context:1, player:1, npcDeep:1, letters:1, socialRules:1, roster:1, digest:1, tail:1 },
-    FAC:  { base:1, worldState:1, events:1, context:1, roster:1, tail:1 },
-    LITE: { base:1, worldState:1, context:1, roster:1, tail:1 },
+    NPC:  { base:1, worldPlan:1, worldSocial:1, worldGov:1, worldLifecycle:1, events:1, context:1, player:1, npcDeep:1, letters:1, socialRules:1, roster:1, digest:1, tail:1 },
+    FAC:  { base:1, worldPlan:1, worldSocial:1, events:1, context:1, roster:1, tail:1 },
+    LITE: { base:1, worldGov:1, context:1, roster:1, tail:1 },
     // [sysP分级·2026-07-02] 定制档——测绘修正原计划两处坑：sc27 用 LITE 会丢 personnel 桶(current_issues/输出字段目录·
     //   诏令推进靠它)；sc07 用 LITE 会丢 npcDeep(性格/弧线/记忆一致性规则)与 digest(称谓系统/人物关系网)。
-    EDICT: { base:1, worldState:1, context:1, personnel:1, roster:1, tail:1 },
-    SNAP:  { base:1, worldState:1, digest:1, context:1, roster:1, tail:1 },
-    COG:   { base:1, worldState:1, player:1, npcDeep:1, digest:1, context:1, roster:1, tail:1 }
+    // [二批·拆worldState四子段] worldPlan(预演规划/关系矩阵·半静态)+worldSocial(势力自治规则/党派阶层/矛盾/历史地理)+
+    //   worldGov(诏令执行环境/营造经济/国策/区划/提案预警)+worldLifecycle(社会生灭schema·产生灭字段者才需·实际仅sc1=FULL带)。
+    //   分配原则=该调用产什么字段/读什么域：FAC(战略军事)要Plan+Social不要Gov细账；LITE/EDICT(财政/诏令)要Gov不要Plan/Social；
+    //   SNAP(快照)要Social+Gov当前态不要Plan规划meta；COG(认知)要Plan(隐藏议程)+Social(党派)不要Gov。
+    EDICT: { base:1, worldGov:1, context:1, personnel:1, roster:1, tail:1 },
+    SNAP:  { base:1, worldSocial:1, worldGov:1, digest:1, context:1, roster:1, tail:1 },
+    COG:   { base:1, worldPlan:1, worldSocial:1, player:1, npcDeep:1, digest:1, context:1, roster:1, tail:1 }
   };
   global.TM.Endturn.AI.prompt.SYS_PROFILE_OF = {
     // [sysP分级·2026-07-02] 首批启用——受总闸 P.conf.sysPTieringEnabled 门控(默认关=全FULL=零行为变更·
@@ -2412,7 +2416,8 @@
     // 注入·首回合候选事件（仅 Turn 1-3 时·未触发的）
     }
 
-    _mark('worldState');
+    // [sysP分级二批·2026-07-02] worldState 拆四子段：worldPlan(预演规划/关系矩阵·半静态)
+    _mark('worldPlan');
     if (GM.turn <= 3 && Array.isArray(GM._candidateEvents) && GM._candidateEvents.length > 0) {
       var _unfired = GM._candidateEvents.filter(function(e) { return e && !e._fired; });
       if (_unfired.length > 0) {
@@ -3106,7 +3111,8 @@
       }
     }
     sysP += '\n- 物品可被获取/失去：通过战争缴获、外交赠送、盗窃等方式。在叙事中适时让角色获取或丢失物品。';
-    _mark('worldState');
+    // [sysP分级二批] worldSocial(势力自治规则/党派阶层/矛盾/历史地理/跨系统)
+    _mark('worldSocial');
     sysP += '\n\n【你的全部权力——可在JSON中修改的内容】';
     sysP += '\n你可以通过返回JSON中的对应字段修改游戏中的一切：';
     sysP += '\n- resource_changes: 修改任何资源变量';
@@ -3431,7 +3437,8 @@
       });
     }
 
-    _mark('worldState');
+    // [sysP分级二批] worldGov(诏令执行环境/营造经济/国策/区划/NPC提案/健康预警)
+    _mark('worldGov');
     sysP += '\n\n【官制职能——推演原则】';
     sysP += '\n本朝官制中每个部门有职能分工（见tp中【官制职能分工】）。推演时注意：';
     sysP += '\n  · 事务应优先由对口部门处理——但"对口"看职能内容，不看部门名称';
@@ -3536,7 +3543,8 @@
     sysP += '\n    · 势力覆灭必须与战争/bigyear 事件呼应，不得凭空消失';
     sysP += '\n    · 阶层兴替跨度长——通常数十回合渐变，非一日之功；除非诏令明确废止（如"永禁贱籍"）才立即生效';
     sysP += '\n    · 新建时 leader/首脑须指向现有角色；不得在回合推演中自动创建新角色';
-    _mark('worldState');
+    // [sysP分级二批] worldLifecycle(社会生灭周期 schema·产 party/faction/class 生灭字段者才需)
+    _mark('worldLifecycle');
     sysP += '\n【官制人事·扩展动作】';
     sysP += '\n  promote: 晋升——填newRank(新品级)，可选newDept+newPosition(升任新职)';
     sysP += '\n  demote: 降级——填newRank';
@@ -3884,8 +3892,8 @@
     // 安全检查（2026-07-02 重做·分段感知）：旧实现是「笨尾切」——注释说"截断低优先级段落"·代码却 substring 砍尾。
     //   真 sysP 已 >65K 字：contextK≤128 的模型(64K/128K 窗口)尾部被静默砍——被砍的恰是 roster 幻觉防火墙名单
     //   (全调用实体对齐锚)与输出字段目录·且分块 recon 必失配(sysPFor 分级永退化)。
-    //   现改为：分块一致时按低优先级整段省略(events→letters→digest→socialRules→npcDeep→player→personnel·
-    //   绝不丢 base/worldState/context/roster/tail)·仍超则对 worldState/base 中段截除保头尾；分块失配时才退旧式尾切兜底。
+    //   现改为：分块一致时按低优先级整段省略(events→letters→digest→socialRules→npcDeep→player→worldLifecycle→personnel·
+    //   绝不整丢 base/worldPlan/worldSocial/worldGov/context/roster/tail)·仍超则对 world 子段/base 中段截除保头尾；分块失配时才退旧式尾切兜底。
     var _sysPMaxChars = _tokCp.contextK * 512;
 
     // ===== 写入 ctx.prompt =====
@@ -3895,7 +3903,7 @@
     var _recon = _segs.map(function(_s){ return _s.text; }).join('');
     if (_recon === sysP) {
       if (sysP.length > _sysPMaxChars) {
-        var _ovDropOrder = ['events', 'letters', 'digest', 'socialRules', 'npcDeep', 'player', 'personnel'];
+        var _ovDropOrder = ['events', 'letters', 'digest', 'socialRules', 'npcDeep', 'player', 'worldLifecycle', 'personnel'];
         for (var _ovI = 0; _ovI < _ovDropOrder.length && sysP.length > _sysPMaxChars; _ovI++) {
           var _ovN = _ovDropOrder[_ovI], _ovLen = 0;
           _segs.forEach(function(_s){ if (_s.name === _ovN) { _ovLen += _s.text.length; _s.text = ''; } });
@@ -3904,8 +3912,8 @@
             _dbg('[Prompt] sysP超预算·省略段 ' + _ovN + '(' + _ovLen + '字) → ' + sysP.length);
           }
         }
-        // 仍超（极小窗口模型）→ 对 worldState/base 中段截除·保段首尾（roster 幻觉防火墙全程不动）
-        var _ovMidCut = ['worldState', 'base'];
+        // 仍超（极小窗口模型）→ 对 world 子段/base 中段截除·保段首尾（roster 幻觉防火墙全程不动）
+        var _ovMidCut = ['worldSocial', 'worldGov', 'worldPlan', 'base'];
         for (var _ovJ = 0; _ovJ < _ovMidCut.length && sysP.length > _sysPMaxChars; _ovJ++) {
           for (var _ovK = 0; _ovK < _segs.length && sysP.length > _sysPMaxChars; _ovK++) {
             var _sg = _segs[_ovK];
