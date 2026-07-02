@@ -70,16 +70,25 @@
   global.TM.Endturn.AI.prompt.SYS_PROFILES = {
     NPC:  { base:1, worldState:1, events:1, context:1, player:1, npcDeep:1, letters:1, socialRules:1, roster:1, digest:1, tail:1 },
     FAC:  { base:1, worldState:1, events:1, context:1, roster:1, tail:1 },
-    LITE: { base:1, worldState:1, context:1, roster:1, tail:1 }
+    LITE: { base:1, worldState:1, context:1, roster:1, tail:1 },
+    // [sysP分级·2026-07-02] 定制档——测绘修正原计划两处坑：sc27 用 LITE 会丢 personnel 桶(current_issues/输出字段目录·
+    //   诏令推进靠它)；sc07 用 LITE 会丢 npcDeep(性格/弧线/记忆一致性规则)与 digest(称谓系统/人物关系网)。
+    EDICT: { base:1, worldState:1, context:1, personnel:1, roster:1, tail:1 },
+    SNAP:  { base:1, worldState:1, digest:1, context:1, roster:1, tail:1 },
+    COG:   { base:1, worldState:1, player:1, npcDeep:1, digest:1, context:1, roster:1, tail:1 }
   };
   global.TM.Endturn.AI.prompt.SYS_PROFILE_OF = {
-    // ★ 当前全注释 = 全 FULL = 零行为变更。下次开游戏：先看 DebugLog 各 profile 实际字数，
-    //   再逐批去掉 // 启用，每启用一批跑一回合冒烟（无幻觉人名地名告警 / 无 [sysBlocks] RECON MISMATCH）后再扩。
-    // —— LITE（财政/诏令/快照/体检·不产新人名地名；仅保 base+worldState+context+roster+tail）——
-    // sc17:'LITE', sc27:'LITE', sc28:'LITE', sc07:'LITE', sc25:'LITE',
-    // —— FAC（势力/军事·保 worldState+roster+events；丢 digest/npcDeep/letters/personnel/socialRules/player）——
-    // sc16:'FAC', sc16L:'FAC', sc18:'FAC', sc18L:'FAC',
-    // —— 谨慎区（语义未定·先 FULL，验过再降）：scOl/scR/scP/scTac/scStr/memwrite/sc15/sc15n/sc0/sc05 ——
+    // [sysP分级·2026-07-02] 首批启用——受总闸 P.conf.sysPTieringEnabled 门控(默认关=全FULL=零行为变更·
+    //   设置「玩法机制·深化」有开关)。依据:2026-05-29 全回合实测(docs/ai-relay-fullturn-analysis.md·
+    //   18调用×54.8K sysP=全回合69%输入)+测绘逐调用必需段表。
+    //   保守原则:主线(sc0/sc1/sc1q/sc1b/sc1c/sc1d/sc2/sc05)全FULL不动;
+    //   谨慎区(scOl/scR/scP/scTac/scStr/memwrite/sc15/sc15n/sc19/sc25)留FULL待第二批验后再降。
+    sc17: 'LITE',                 // 财政:账目全在tp17·不产新人名(roster仍在)
+    sc28: 'SNAP',                 // 世界快照:需digest(称谓/关系网基线)
+    sc27: 'EDICT',                // 诏令生命周期:需personnel桶(current_issues/字段目录)
+    sc07: 'COG',                  // NPC认知:需npcDeep+player+digest
+    sc16: 'FAC', sc16L: 'FAC',    // 势力战略:动态关系矩阵在worldState·静态factionBalance可舍
+    sc18: 'FAC', sc18L: 'FAC'     // 军事:军情明细在tp18·worldState有势力态
   };
 
   /**
@@ -3872,19 +3881,47 @@
       GM._lastSysPHash = _fixedHash;
     }
 
-    // 安全检查：sysP长度过大时截断低优先级段落（每字符约0.5 token，sysP超过contextK*512字符则需截断）
+    // 安全检查（2026-07-02 重做·分段感知）：旧实现是「笨尾切」——注释说"截断低优先级段落"·代码却 substring 砍尾。
+    //   真 sysP 已 >65K 字：contextK≤128 的模型(64K/128K 窗口)尾部被静默砍——被砍的恰是 roster 幻觉防火墙名单
+    //   (全调用实体对齐锚)与输出字段目录·且分块 recon 必失配(sysPFor 分级永退化)。
+    //   现改为：分块一致时按低优先级整段省略(events→letters→digest→socialRules→npcDeep→player→personnel·
+    //   绝不丢 base/worldState/context/roster/tail)·仍超则对 worldState/base 中段截除保头尾；分块失配时才退旧式尾切兜底。
     var _sysPMaxChars = _tokCp.contextK * 512;
-    if (sysP.length > _sysPMaxChars) {
-      _dbg('[Prompt] sysP过长(' + sysP.length + '字符)，截断到' + _sysPMaxChars);
-      sysP = sysP.substring(0, _sysPMaxChars) + '\n...(系统提示过长，部分参考信息已截断)';
-    }
 
     // ===== 写入 ctx.prompt =====
     // [1A·sysBlocks·2026-06-02] 收尾：闭合最后一段 + 组装 sysBlocks + 运行时 diff=0 自检。
-    // 截断分支(L~3391 sysP 整体重赋值)或任何失配 → 放弃分块、回退整条 sysP(1B/1C 见 _segs=null 即用全量·不省字但安全)。
+    // 任何失配 → 放弃分块、回退整条 sysP(1B/1C 见 _segs=null 即用全量·不省字但安全)。
     _mark('tail');
     var _recon = _segs.map(function(_s){ return _s.text; }).join('');
     if (_recon === sysP) {
+      if (sysP.length > _sysPMaxChars) {
+        var _ovDropOrder = ['events', 'letters', 'digest', 'socialRules', 'npcDeep', 'player', 'personnel'];
+        for (var _ovI = 0; _ovI < _ovDropOrder.length && sysP.length > _sysPMaxChars; _ovI++) {
+          var _ovN = _ovDropOrder[_ovI], _ovLen = 0;
+          _segs.forEach(function(_s){ if (_s.name === _ovN) { _ovLen += _s.text.length; _s.text = ''; } });
+          if (_ovLen) {
+            sysP = _segs.map(function(_s){ return _s.text; }).join('');
+            _dbg('[Prompt] sysP超预算·省略段 ' + _ovN + '(' + _ovLen + '字) → ' + sysP.length);
+          }
+        }
+        // 仍超（极小窗口模型）→ 对 worldState/base 中段截除·保段首尾（roster 幻觉防火墙全程不动）
+        var _ovMidCut = ['worldState', 'base'];
+        for (var _ovJ = 0; _ovJ < _ovMidCut.length && sysP.length > _sysPMaxChars; _ovJ++) {
+          for (var _ovK = 0; _ovK < _segs.length && sysP.length > _sysPMaxChars; _ovK++) {
+            var _sg = _segs[_ovK];
+            if (_sg.name !== _ovMidCut[_ovJ] || _sg.text.length < 1200) continue;
+            var _ovNeed = sysP.length - _sysPMaxChars;
+            var _cut = Math.min(_ovNeed, _sg.text.length - 800);
+            var _keepHead = Math.ceil((_sg.text.length - _cut) * 0.6);
+            var _keepTail = (_sg.text.length - _cut) - _keepHead;
+            _sg.text = _sg.text.slice(0, _keepHead) + '\n…(此段中部因超预算省略)…\n' + (_keepTail > 0 ? _sg.text.slice(-_keepTail) : '');
+            sysP = _segs.map(function(_s2){ return _s2.text; }).join('');
+          }
+        }
+        _segs[_segs.length - 1].text += '\n...(系统提示超预算·低优先级段落已省略)';
+        sysP = _segs.map(function(_s){ return _s.text; }).join('');
+        _dbg('[Prompt] sysP分段感知收束 → ' + sysP.length + '/' + _sysPMaxChars);
+      }
       var sysBlocks = {};
       _segs.forEach(function(_s){ sysBlocks[_s.name] = (sysBlocks[_s.name] || '') + _s.text; });
       ctx.prompt.sysBlocks = sysBlocks;
@@ -3907,12 +3944,21 @@
     } else {
       ctx.prompt.sysBlocks = null;
       ctx.prompt._segs = null;
-      if (typeof DebugLog !== 'undefined') DebugLog.log('ai', '[sysBlocks] 分块回退(截断/失配) recon=' + _recon.length + ' sysP=' + sysP.length);
+      // 分块失配 → 无法分段省略·退旧式尾切兜底(行为同 2026-07-02 前)
+      if (sysP.length > _sysPMaxChars) {
+        _dbg('[Prompt] sysP过长(' + sysP.length + '字符)·分块失配·旧式截断到' + _sysPMaxChars);
+        sysP = sysP.substring(0, _sysPMaxChars) + '\n...(系统提示过长，部分参考信息已截断)';
+      }
+      if (typeof DebugLog !== 'undefined') DebugLog.log('ai', '[sysBlocks] 分块回退(失配) recon=' + _recon.length + ' sysP=' + sysP.length);
     }
     // [1B·sysBlocks·2026-06-02] sysPFor(scId)：按 profile 选段拼接(代码序)。FULL/缺省/无分块/未知 → 整条 sysP(安全)。
+    // [sysP分级·2026-07-02] 总闸 sysPTieringEnabled(默认关=恒返整条=零行为变更)·开后按 SYS_PROFILE_OF 分级省流。
     ctx.prompt.sysPFor = function(scId){
       var _segsL = ctx.prompt._segs;
       if (!_segsL) return ctx.prompt.sysP;
+      var _tierOn = false;
+      try { var _Pf = global.P || {}; _tierOn = !!((_Pf.conf && _Pf.conf.sysPTieringEnabled) || (_Pf.ai && _Pf.ai.sysPTieringEnabled)); } catch (_te) {}
+      if (!_tierOn) return ctx.prompt.sysP;
       var _prof = (global.TM.Endturn.AI.prompt.SYS_PROFILE_OF || {})[scId] || 'FULL';
       if (_prof === 'FULL') return ctx.prompt.sysP;
       var _keep = (global.TM.Endturn.AI.prompt.SYS_PROFILES || {})[_prof];

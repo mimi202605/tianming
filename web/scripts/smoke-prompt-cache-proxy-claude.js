@@ -73,8 +73,8 @@ assert(aiSrc.indexOf("_provider === 'anthropic' && _len > 1500 && !_ccDisabled")
   '[B] _maybeCacheSys 新门控：provider anthropic + len>1500 + 未停用（不再卡 _native）');
 assert(aiSrc.indexOf("_provider === 'anthropic' && _native && _len > 1500") < 0,
   '[B] 旧的 _native 死域名门控已移除');
-assert(aiSrc.indexOf("var _sc1bMsgs = [{role:'system',content:_maybeCacheSys(sysP)}") >= 0,
-  '[B] sc1b 统一走 _maybeCacheSys');
+assert(aiSrc.indexOf("var _sc1bMsgs = [{role:'system',content:_maybeCacheSys(_sc1bSys)}") >= 0,
+  '[B] sc1b 统一走 _maybeCacheSys（2026-07-02 起经 sysPFor 分级·仍同一缓存闸）');
 assert(aiSrc.indexOf('_isNativeAnth1b') < 0, '[B] sc1b 旧内联 _isNativeAnth1b 已删');
 
 console.log(`smoke-prompt-cache-proxy-claude: ${pass} assertions PASS`);
