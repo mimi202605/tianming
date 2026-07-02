@@ -524,6 +524,21 @@
     var intensity = Math.min(CFG.agencyCap, Math.round(CFG.agencyBase * eff));
     if (intensity <= 0) return 0;
     activePlots(G).forEach(function (p) { p.exposure = clamp(p.exposure + intensity, 0, 130); });
+    // S2·密探回禀：衙门既已在职常侦·凡露端倪(_knownToPlayer·过55亮牌线或经查办)之在酿阴谋·
+    //   递密报入御案时政(每谋一报·plot._agencyReported 防重)·玩家可循报下诏查办(走既有反制扫描)。
+    //   措辞留白(渐炽/将发)不给真值——密探只报行迹·真相要玩家自己穷治。
+    activePlots(G).forEach(function (p) {
+      if (!p || !p._knownToPlayer || p._agencyReported) return;
+      p._agencyReported = true;
+      if (!Array.isArray(G.currentIssues)) return;
+      var vague = p.momentum >= 70 ? '事似将发·不可不察' : (p.momentum >= 35 ? '其谋渐炽' : '尚在酝酿');
+      G.currentIssues.push({
+        id: 'iss_spy_' + (p.id || p.ringleader),
+        title: '密探回禀 · ' + p.ringleader + ' 行迹诡秘',
+        description: '密探侦得：' + p.ringleader + ((p.conspirators && p.conspirators.length) ? ' 与 ' + p.conspirators.length + ' 人过从诡秘' : ' 近来行迹诡秘') + '，' + vague + '。若欲穷治，可下诏命有司查办其人。',
+        category: '朝局', status: 'pending', raisedTurn: G.turn || 0, _info: true, _spyReport: true
+      });
+    });
     return intensity;
   }
 

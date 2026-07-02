@@ -64,6 +64,24 @@ ok(CE._agencyWatch(G) === 0, '⑥ 无机构 → 0');
 G = { turn: 10, _activePlots: [] };
 ok(CE._agencyWatch(G) === 0, '⑥ 无 corruption 结构 → 0 安全');
 
+// ⑥b S2·密探回禀：露端倪之谋 → 御案递密报(每谋一报)
+G = mkG([FULL]);
+G.currentIssues = [];
+G._activePlots[0]._knownToPlayer = true;
+G._activePlots[0].momentum = 80;
+CE._agencyWatch(G);
+ok(G.currentIssues.length === 1 && /密探回禀/.test(G.currentIssues[0].title), '⑥b 露端倪之谋 → 御案密报');
+ok(/事似将发/.test(G.currentIssues[0].description) && /查办/.test(G.currentIssues[0].description), '⑥b 措辞留白+查办指引');
+CE._agencyWatch(G);
+ok(G.currentIssues.length === 1, '⑥b 每谋一报·不重复');
+G = mkG([FULL]);
+G.currentIssues = [];
+CE._agencyWatch(G);
+ok(G.currentIssues.length === 0, '⑥b 未露端倪(静默常侦中) → 不回禀');
+G = mkG([FULL]);
+G._activePlots[0]._knownToPlayer = true;
+ok(CE._agencyWatch(G) > 0, '⑥b 无 currentIssues 数组 → 安全跳过不炸');
+
 // ⑦ CFG 可调项就位
 ok(CE.CFG.agencyBase === 6 && CE.CFG.agencyCap === 16 && CE.CFG.agencyIndepMax === 30, '⑦ CFG agency* 三项可调');
 
