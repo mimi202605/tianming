@@ -1497,6 +1497,10 @@
 
   // 工具B · 写后回读：写类工具结果回挂"变更后当前值"·agent 不必再 getField 确认·减重复读
   var _WRITE_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1 };
+  // 刀G3(2026-07-02·CC 对照) · 只读/致变工具表：重复读去重与"纯勘察打转"检测共用。
+  //   validateDraft/preflight 亦只读——结果随草稿变·但去重有"期间零写入"守卫·天然安全。
+  var _READ_TOOLS = { getField: 1, getFields: 1, searchEntities: 1, globalSearch: 1, findReferences: 1, listCollection: 1, describeSchema: 1, listGaps: 1, fieldContract: 1, genReference: 1, readSource: 1, listSource: 1, grepSource: 1, mapOverview: 1, checkHistory: 1, validateDraft: 1, preflight: 1 };
+  var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1 };
   function _attachWriteVerify(draft, name, input, result) {
     if (!result || result.ok === false || !_WRITE_TOOLS[name]) return result;
     try {
@@ -2122,6 +2126,11 @@
     var stepRetries = 0, maxStepRetries = (opts.maxStepRetries != null ? opts.maxStepRetries : 2);
     var retryBaseMs = opts.retryBaseMs || 800;
     var _budgetWarned = 0;   // 工具D · 预算反馈：分级提醒收尾(70%/90%)·避免硬撞 tokenBudget 半途而废
+    // 刀G3(CC「File unchanged since last read」对照) · 重复读去重 + 纯勘察防打转
+    var _seenReads = {};        // key=name|JSON(input) → {iter, writes}(写世代号=新鲜度)
+    var _writeCount = 0;        // 累计成功写入笔数·任何写入即令全部旧读记录过期
+    var _readOnlyStreak = 0, _spinWarned = 0;
+    var _editingMode = !planOnly && !reviewOnly && !qaOnly && !explainOnly;   // 只读模式纯勘察是本分·豁免
 
     function record(name, input, result) {
       transcript.push({ name: name, input: input, result: result });
@@ -2173,8 +2182,22 @@
               }
               var deny = _permCheck(c.name, c.input, perms);
               if (deny) return { ok: false, reason: deny };
+              // \u5200G3 \u00b7 \u91cd\u590d\u8bfb\u53bb\u91cd:\u540c\u540d\u540c\u53c2\u4e14\u671f\u95f4\u96f6\u5199\u5165 \u2192 \u77ed\u5b58\u6839(\u7701\u4e0a\u4e0b\u6587\u00b7\u9632\u539f\u5730\u6253\u8f6c\u00b7\u4e0d\u91cd\u8dd1)
+              if (_READ_TOOLS[c.name]) {
+                var _rk = c.name + '|' + (function () { try { return JSON.stringify(c.input || {}); } catch (eRk) { return String(c.input); } })();
+                var _prevRead = _seenReads[_rk];
+                if (_prevRead && _prevRead.writes === _writeCount) {
+                  return { ok: true, unchanged: true, seenAtIteration: _prevRead.iter, reason: '\u7ed3\u679c\u4e0e\u7b2c ' + _prevRead.iter + ' \u8f6e\u5b8c\u5168\u76f8\u540c(\u671f\u95f4\u65e0\u4efb\u4f55\u5199\u5165)\u00b7\u8bf7\u76f4\u63a5\u5f15\u7528\u5148\u524d\u7ed3\u679c\u00b7\u52ff\u91cd\u590d\u67e5\u8be2' };
+                }
+                c._readKey = _rk;
+              }
               return Promise.resolve().then(function () { return dispatchTool(draft, c.name, c.input, surfaces); }).catch(function (te) { return { ok: false, reason: '\u5de5\u5177\u6267\u884c\u51fa\u9519\uff1a' + ((te && te.message) || te) + '\uff08\u8bf7\u68c0\u67e5\u53c2\u6570\u540e\u91cd\u8bd5\uff0c\u6216\u6362\u4e2a\u5de5\u5177/\u65b9\u5f0f\uff09' }; });
             }).then(function (result) {
+              // \u5200G3 \u00b7 \u8bfb/\u5199\u8bb0\u8d26:\u6210\u529f\u8bfb\u8bb0\u5165 _seenReads(\u5e26\u5f53\u524d\u5199\u4e16\u4ee3)\u00b7\u6210\u529f\u5199\u63a8\u8fdb\u4e16\u4ee3\u53f7(\u5176\u540e\u540c\u53c2\u8bfb\u653e\u884c)
+              if (result && result.ok !== false) {
+                if (c._readKey && !result.unchanged) _seenReads[c._readKey] = { iter: iterations, writes: _writeCount };
+                if (_MUT_TOOLS[c.name]) _writeCount++;
+              }
               if (c.name === 'proposePlan' && result && result.plan) { _planResult = { steps: result.steps, summary: result.summary }; finishAccepted = true; }
               if (c.name === 'submitReview' && result && result.review) { _reviewResult = { findings: result.findings, summary: result.summary }; finishAccepted = true; }
               if (c.name === 'submitAnswer' && result && result.answered) { _qaResult = { answer: result.answer }; finishAccepted = true; }
@@ -2196,6 +2219,16 @@
               var _frac = tokensUsed / maxTokens;
               if (_frac >= 0.9 && _budgetWarned < 2) { _budgetWarned = 2; conversation.push({ role: 'user', text: '⚠ 预算已用约 ' + Math.round(_frac * 100) + '%·即将耗尽。请立刻完成最关键的改动并调用 finish·停止一切非必要的检索/校验。' }); }
               else if (_frac >= 0.7 && _budgetWarned < 1) { _budgetWarned = 1; conversation.push({ role: 'user', text: '（预算提示：已用约 ' + Math.round(_frac * 100) + '%·剩余有限。请优先收尾核心改动·非必要的 globalSearch/preflight 可省·尽快 finish。）' }); }
+            }
+            // 刀G3 · 防打转:编辑模式连续纯勘察(无写/无澄清/无计划) → 3/6 轮两级催动手(只读模式豁免)
+            if (!finishAccepted && !control.aborted && _editingMode) {
+              var _hadProgress = calls.some(function (cc) { return cc && (_MUT_TOOLS[cc.name] || cc.name === 'note' || cc.name === 'askClarification' || cc.name === 'remonstrate' || cc.name === 'flagUncertain' || cc.name === 'recordConvention'); });
+              if (_hadProgress) { _readOnlyStreak = 0; _spinWarned = 0; }
+              else {
+                _readOnlyStreak++;
+                if (_readOnlyStreak >= 6 && _spinWarned < 2) { _spinWarned = 2; conversation.push({ role: 'user', text: '⚠ 已连续 ' + _readOnlyStreak + ' 轮纯勘察·零改动。立即停止检索：要么用 applyEdit/multiEdit/bulkAdd 落实修改·要么 askClarification 说明卡在哪·要么 finish。' }); }
+                else if (_readOnlyStreak >= 3 && _spinWarned < 1) { _spinWarned = 1; conversation.push({ role: 'user', text: '（你已连续 ' + _readOnlyStreak + ' 轮纯勘察未动手。信息应已足够——请开始落实修改；确有疑问用 askClarification·认为不该改用 remonstrate·勿再重复检索。）' }); }
+              }
             }
             if (finishAccepted) { finished = true; stopReason = _clarifyResult ? 'needsClarification' : (_remonstrateResult ? 'needsConfirmation' : (_explainResult ? 'explained' : (_qaResult ? 'answered' : (_reviewResult ? 'reviewed' : (_planResult ? 'planned' : 'finish'))))); return; }
             if (finishAttempts >= maxFinishAttempts) { stopReason = 'finishBlocked'; return; }

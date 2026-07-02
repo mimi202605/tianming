@@ -66,5 +66,49 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   AA._compactOldToolResults(conv2, 6);
   ok(!conv2[1].toolCalls[0].input._compacted && conv2[1].toolCalls[0].input.path === 'name', 'G2 小入参(≤200字)原样不动');
 
+  // ───────── G3 · 重复读去重(B刀) ─────────
+  console.log('— G3 重复读去重 —');
+  var seq = 0;
+  var d3 = AA.makeDraft({ name: '甲', factions: [{ name: '明' }] });
+  var r3 = await AA.runAuthoringLoop(d3, '测试去重', {
+    caller: function () {
+      seq++;
+      if (seq === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'a1', name: 'getFields', input: { paths: ['name'] } }] });
+      if (seq === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'a2', name: 'getFields', input: { paths: ['name'] } }] });   // 同参重复
+      if (seq === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'w1', name: 'applyEdit', input: { path: 'name', value: '乙' } }] });
+      if (seq === 4) return Promise.resolve({ text: '', toolCalls: [{ id: 'a3', name: 'getFields', input: { paths: ['name'] } }] });   // 写后再读→放行
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'f1', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var tr3 = r3.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat(m.toolResults || []); }, []);
+  var g3reads = tr3.filter(function (tr) { return tr.name === 'getFields'; });
+  ok(g3reads.length === 3, 'G3 三次 getFields 都有结果条目(结构不缺)');
+  ok(g3reads[0].content.indexOf('完全相同') < 0, 'G3 首读正常返回');
+  ok(g3reads[1].content.indexOf('完全相同') >= 0 && g3reads[1].content.indexOf('勿重复查询') >= 0, 'G3 同参重复读 → 存根(引用先前结果)');
+  ok(g3reads[2].content.indexOf('完全相同') < 0 && g3reads[2].content.indexOf('乙') >= 0, 'G3 写入后同参读放行(拿到新鲜值)');
+
+  // ───────── G3 · 纯勘察防打转(B刀) ─────────
+  console.log('— G3 防打转 —');
+  var sq = 0;
+  var r4 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '测试防打转', {
+    caller: function () {
+      sq++;
+      if (sq <= 4) return Promise.resolve({ text: '', toolCalls: [{ id: 'q' + sq, name: 'searchEntities', input: { query: '查' + sq } }] });   // 各轮不同参·避开去重
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'f2', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(r4.conversation.some(function (m) { return m.role === 'user' && /纯勘察/.test(m.text || ''); }), 'G3 连续3轮纯勘察 → 催动手 nudge');
+  ok(r4.finished, 'G3 nudge 后正常收尾(不误伤流程)');
+  var sq2 = 0;
+  var r5 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '审阅一下', {
+    reviewOnly: true,
+    caller: function () {
+      sq2++;
+      if (sq2 <= 4) return Promise.resolve({ text: '', toolCalls: [{ id: 'p' + sq2, name: 'searchEntities', input: { query: '查' + sq2 } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'sr', name: 'submitReview', input: { findings: [], summary: '无碍' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(!r5.conversation.some(function (m) { return m.role === 'user' && /纯勘察/.test(m.text || ''); }), 'G3 只读(审阅)模式纯勘察是本分 → 豁免');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
