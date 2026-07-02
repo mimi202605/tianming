@@ -573,5 +573,28 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/k: 'initconv', t: '初始化约定'/.test(uiSrcD) && /_renderConvSuggest\(res\.suggestedConventions\)/.test(uiSrcD), 'H13 /初始化约定(Codex /init 对照)+审阅尾记住签');
   ok(/k: 'notify', t: '完成通知'/.test(uiSrcD) && /document\.hidden/.test(uiSrcD) && /dur < 12/.test(uiSrcD), 'H13 完成通知(切后台才弹·快跑不扰)');
 
+  // ───────── H14 · 压缩保用户原话(Codex COMPACT_USER_MESSAGE 对照) ─────────
+  console.log('— H14 压缩保用户原话 —');
+  global.fetch = function () { return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve({ choices: [{ finish_reason: 'stop', message: { content: '', tool_calls: [{ id: 't1', function: { name: 'submitSummary', arguments: JSON.stringify({ summary: _sumTxt }) } }] } }] }); }, text: function () { return Promise.resolve(''); } }); };
+  var conv14 = [
+    { role: 'user', text: '【用户需求】\n给东林补两个能干的文官\n\n【草稿现状】\n（很长的构建附文·不该进原话）\n\n开始：先按需 getField 查看。' },
+    { role: 'assistant', text: '好', toolCalls: [] },
+    { role: 'user', text: '【前情摘要·上下文已压缩】旧摘要头·非玩家原话' },
+    { role: 'user', text: '【追加需求】\n毕自严补一段小传\n（在上面已改的草稿基础上继续；需要时可复查。）' },
+    { role: 'assistant', text: '好', toolCalls: [] },
+    { role: 'user', text: '（预算提示：已用约 72%·剩余有限。）' },
+    { role: 'user', text: '再把势力名规范为全称' },
+    { role: 'assistant', text: '好', toolCalls: [] },
+    { role: 'assistant', text: '尾1', toolCalls: [] },
+    { role: 'assistant', text: '尾2', toolCalls: [] }
+  ];
+  var rc14 = await AA.compactConversation(conv14, AA.makeDraft({ name: '甲' }), { cfg: { url: 'https://api.x.com', key: 'k', model: 'm' }, keepTail: 2 });
+  var head14 = rc14 && rc14.ok ? rc14.conversation[0].text : '';
+  ok(/【用户各轮原话·逐字保留/.test(head14), 'H14 压缩头带「用户各轮原话」段');
+  ok(/给东林补两个能干的文官/.test(head14) && /毕自严补一段小传/.test(head14) && /再把势力名规范为全称/.test(head14), 'H14 三轮玩家原话逐字保留(时间序)');
+  ok(head14.indexOf('很长的构建附文') < 0 && head14.indexOf('在上面已改的草稿基础上') < 0, 'H14 构建附文(草稿现状/续接指令)被剥·只留原话');
+  ok(head14.indexOf('旧摘要头') < 0 && head14.indexOf('预算提示：已用约') < 0, 'H14 注入类 user 消息(旧摘要头/预算提示)不当原话');
+  global.fetch = _oldFetch13;
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

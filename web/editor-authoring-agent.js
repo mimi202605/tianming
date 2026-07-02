@@ -2066,9 +2066,33 @@
       + '①用户各轮请求与意图(逐条·含意图变化与纠偏) ②已完成的改动(实体/字段级·关键新值) ③任务表现状(未完项) ④已查明的关键事实(字段结构/约定/引用关系) ⑤遇到的错误与修正 ⑥正在进行的工作 ⑦下一步(必须与用户最近请求直接一致·勿开新任务)\n'
       + '要具体：实体名/字段路径/关键值逐一点名，宁详勿略。调用 submitSummary 提交；若无法调用工具，直接以纯文本输出摘要正文。\n\n【对话记录】\n' + flat;
   }
-  function _macroHead(summary, draft, surfaces, tailLen) {
+  // U1(Codex COMPACT_USER_MESSAGE_MAX_TOKENS 对照) · 压缩时逐字保留用户各轮原话：摘要难免失真·
+  //   玩家的具体指令/设定是续作的地面真值。从后往前收(最新优先·tail 已保留的不重复)·剥构建附文
+  //   (【用户需求】标记头/草稿现状等)只留原话·每条截 600 字·总额 userKeep(默认 6000)字。
+  function _macroUserLines(conv, tailLen, userKeep) {
+    userKeep = userKeep || 6000;
+    var upto = Math.max(0, (conv || []).length - (tailLen || 0));
+    var out = [], used = 0;
+    for (var i = upto - 1; i >= 0; i--) {
+      var m = conv[i]; if (!m || m.role !== 'user') continue;
+      var t = String(m.text || '').replace(/^【曾附图 \d+ 张】/, '').trim();
+      if (!t || /^【前情摘要/.test(t) || /^（预算提示/.test(t) || /^⚠ 已连续/.test(t)) continue;   // 注入类消息非玩家原话
+      var mm = t.match(/^【[^】]{1,14}】\n?([\s\S]*)$/);
+      var body = mm ? mm[1] : t;
+      var cut = body.search(/\n【|\n（在上面已改|\n（当前编辑上下文|\n（提示：/);
+      if (cut > 0) body = body.slice(0, cut);
+      body = body.trim().slice(0, 600);
+      if (!body) continue;
+      if (used + body.length > userKeep) break;
+      used += body.length;
+      out.push(body);
+    }
+    return out.reverse();
+  }
+  function _macroHead(summary, draft, surfaces, tailLen, userLines) {
     var gaps = null; try { gaps = _computeGaps(draft, surfaces || []); } catch (eG) {}
     return '【前情摘要·上下文已压缩】此前对话过长已压缩为以下摘要（覆盖此前全部工作）：\n\n' + summary
+      + ((userLines && userLines.length) ? '\n\n【用户各轮原话·逐字保留（时间序·地面真值·摘要与此冲突以此为准）】\n' + userLines.map(function (u, i) { return (i + 1) + '. ' + u; }).join('\n') : '')
       + '\n\n【当前草稿最新状态·压缩后重读】\n' + _draftSummary(draft)
       + ((gaps && gaps.requiredMissing.length) ? '\n（仍有必需缺口 ' + gaps.requiredMissing.length + ' 项：' + gaps.requiredMissing.slice(0, 12).join('、') + '）' : '')
       + '\n\n请从中断处直接继续当前任务：不要复述摘要、不要重新确认、不要说「我继续」——当中断从未发生。任务表(todoWrite)与已落地的草稿改动均仍有效'
@@ -2091,7 +2115,7 @@
         var s = _macroPickSummary(r);
         if (s.length < 200) return { ok: false, reason: 'thin' };
         var tail = _compactTailSlice(conversation, opts.keepTail != null ? opts.keepTail : 6);
-        var out = [{ role: 'user', text: _macroHead(s, draft, opts.surfaces || [], tail.length) }].concat(tail);
+        var out = [{ role: 'user', text: _macroHead(s, draft, opts.surfaces || [], tail.length, _macroUserLines(conversation, tail.length, opts.userKeep)) }].concat(tail);
         return { ok: true, conversation: out, before: beforeN, after: out.length, summaryChars: s.length };
       });
   }
@@ -2400,7 +2424,7 @@
     var _macroKeepTail = (opts.macroKeepTail != null ? opts.macroKeepTail : 6);  // 压缩后保留的近尾原文条数
     function _applyMacroResult(summary, reasonTag) {
       var tail = _compactTailSlice(conversation, _macroKeepTail);
-      var head = _macroHead(summary, draft, surfaces, tail.length);
+      var head = _macroHead(summary, draft, surfaces, tail.length, _macroUserLines(conversation, tail.length, opts.macroUserKeep));
       conversation.length = 0;
       conversation.push({ role: 'user', text: head });
       for (var ti = 0; ti < tail.length; ti++) conversation.push(tail[ti]);
