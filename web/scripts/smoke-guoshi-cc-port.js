@@ -393,7 +393,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   // 2: UI 源契约(存/取/清/回灌四处接线·jsdom 行为由真机验)
   var uiSrc3 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
   ok(/ui\.conversation = res\.conversation;[^\n]*\n\s*_saveThread\(res\);/.test(uiSrc3.replace(/\r/g, '')), 'H3 UI:跑完即存线程(_saveThread 紧随 conversation 赋值)');
-  ok(/_maybeRestoreThread\(\); \}/.test(uiSrc3) && /48 \* 3600 \* 1000/.test(uiSrc3), 'H3 UI:开面板自动恢复(48h 新鲜度守卫)');
+  ok(/_maybeRestoreThread\(\); _autoWinMode\(\); \}/.test(uiSrc3) && /48 \* 3600 \* 1000/.test(uiSrc3), 'H3 UI:开面板自动恢复(48h 新鲜度守卫)+首开默认全屏窗');
   ok(/pack\.sid !== _scenKey\(\)/.test(uiSrc3), 'H3 UI:剧本 id 对不上不恢复(跨剧本不串线程)');
   ok(/900000/.test(uiSrc3) && /_compactOldToolResults\(copy, 4\)/.test(uiSrc3), 'H3 UI:存前压缩副本+体量上限护 quota');
   var _clrN = (uiSrc3.match(/_clearThread\(\);/g) || []).length;

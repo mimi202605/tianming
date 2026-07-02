@@ -443,11 +443,20 @@
   function injectStyles() {
     if (document.getElementById('tm-aa-style')) return;
     var css = [
+      // ── 自带美术字体（editor.html 未链主 styles.css·面板自声明 @font-face·同名文件随游戏分发）──
+      //    站酷小薇=文艺宋体风(显示+回复正文·SIL OFL)·马善政=毛笔楷(朱印「师」)。Windows 无思源宋时不再砸到 SimSun 锯齿。
+      '@font-face{font-family:"GS-XiaoWei";src:url("assets/fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}',
+      '@font-face{font-family:"GS-MaShanZheng";src:url("assets/fonts/MaShanZheng-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}',
+      // 面板域内钉死盒模型与表单字体继承（宿主 editor.html 有 *{box-sizing:border-box}·此处显式声明保证任何宿主下渲染一致）
+      '#' + PANEL_ID + ',#' + PANEL_ID + ' *,#' + PANEL_ID + ' *::before,#' + PANEL_ID + ' *::after{box-sizing:border-box}',
+      '#' + PANEL_ID + ' button,#' + PANEL_ID + ' input,#' + PANEL_ID + ' textarea{font-family:inherit;font-size:inherit;line-height:inherit}',
+      '#tm-aa-fab,#tm-aa-fab *{box-sizing:border-box}',
       // ── 主题变量（调研自 claude.ai 真 token：珊瑚 #cc785c/激活 #a9583e·画布 #faf9f5·暗面 #181715/#1f1e1b·发丝线 #e6dfd8·墨 #141413）──
       '#' + PANEL_ID + '{--bg:#262624;--surface:#30302e;--sunken:#1f1e1b;--code:#181715;--bubble:#3a3833;',
       '--bd:rgba(250,249,245,.08);--bd2:rgba(250,249,245,.16);--ink:#faf9f5;--tx:#f0eee6;--tx2:#a09d96;--tx3:#807d75;',
       '--ac:#cc785c;--ac-hi:#dd8a6e;--ok:#72c88a;--warn:#d9ad4b;--bad:#e07a72;--danger:#c64545;',
-      '--serif:Georgia,"Times New Roman","Noto Serif SC","Source Han Serif SC","Songti SC",SimSun,serif;',
+      '--serif:"GS-XiaoWei","TM-ZCOOL-XiaoWei","Noto Serif SC","Source Han Serif SC","KaiTi","楷体",Georgia,serif;',   // 自带小薇打头·思源宋次之·再退楷体(CN Windows 预装·远优于 SimSun)
+      '--seal:"GS-MaShanZheng","TM-MaShanZheng","KaiTi","楷体",var(--serif);',   // 朱印「师」=毛笔楷
       '--mono:"JetBrains Mono",ui-monospace,Consolas,"Courier New",monospace;',
       '--shadow:0 18px 60px rgba(0,0,0,.5),0 2px 10px rgba(0,0,0,.35)}',
       '#' + PANEL_ID + '[data-theme="light"]{--bg:#faf9f5;--surface:#fdfdfb;--sunken:#f5f0e8;--code:#f5f0e8;--bubble:#efe9de;',
@@ -464,7 +473,7 @@
       '#tm-aa-fab{position:fixed;right:18px;bottom:18px;z-index:99998;display:inline-flex;align-items:center;gap:8px;background:#2f2d2a;color:#f0eee6;border:1px solid rgba(255,255,255,.14);',
       'border-radius:999px;padding:8px 16px 8px 9px;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);font-family:inherit;letter-spacing:.06em;transition:transform .12s,box-shadow .12s,background .12s,border-color .12s}',
       '#tm-aa-fab:hover{background:#3a3833;border-color:rgba(217,119,87,.6);transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.4)}',
-      '#tm-aa-fab .fab-seal{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:Georgia,"Noto Serif SC","Songti SC",SimSun,serif;font-weight:600;font-size:12.5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}',
+      '#tm-aa-fab .fab-seal{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#cc785c,#a9583e);color:#fff;font-family:"GS-MaShanZheng","TM-MaShanZheng","KaiTi","楷体",serif;font-weight:400;font-size:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}',
       // 面板窗体（应用级窗口感·开场淡入）
       '#' + PANEL_ID + '{position:fixed;right:18px;bottom:64px;z-index:99999;width:560px;max-width:calc(100vw - 36px);',
       'height:86vh;display:none;flex-direction:column;background:var(--bg);color:var(--tx);border:1px solid var(--bd2);',
@@ -489,7 +498,7 @@
       '#tm-aa-hd button svg{display:block}',
       '#tm-aa-hd b{font-size:15px;font-family:var(--serif);font-weight:600;letter-spacing:-0.2px;color:var(--ink)}',   // 显示衬线负字距（Copernicus 规范）
       // 朱印徽记「师」：方印形制（印章为方·非圆）·衬线白文·随处替代 emoji 头像
-      '.tm-aa-ava{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:14px;margin-right:9px;vertical-align:middle;box-shadow:0 1px 5px rgba(217,119,87,.4),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
+      '.tm-aa-ava{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:linear-gradient(140deg,#cc785c,#a9583e);color:#fff;font-family:var(--seal);font-weight:400;font-size:16px;margin-right:9px;vertical-align:middle;box-shadow:0 1px 5px rgba(204,120,92,.4),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
       '#tm-aa-hd .sub{font-size:11.5px;color:var(--tx3);margin-left:8px;font-family:inherit;letter-spacing:0}',
       // 侧栏（Claude 桌面端式·全屏下的会话历史栏）
       '#tm-aa-rail{position:absolute;left:0;top:45px;bottom:0;width:236px;display:none;flex-direction:column;gap:4px;background:var(--sunken);border-right:1px solid var(--bd);padding:10px 9px;box-sizing:border-box;z-index:6}',
@@ -568,7 +577,7 @@
       '.tm-aa-empty{order:4;margin:auto 0;background:none;border:none;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}',
       '.tm-aa-empty>*{animation:tm-aa-rise .34s ease-out both}',
       '.tm-aa-empty .emp-title{animation-delay:.05s}.tm-aa-empty .emp-sub{animation-delay:.11s}.tm-aa-empty .emp-chips{animation-delay:.17s}',
-      '.tm-aa-empty .emp-seal{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:30px;box-shadow:0 6px 24px rgba(217,119,87,.35),inset 0 0 0 1.5px rgba(255,255,255,.16);text-shadow:0 1px 2px rgba(0,0,0,.25);margin-bottom:4px}',
+      '.tm-aa-empty .emp-seal{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:linear-gradient(140deg,#cc785c,#a9583e);color:#fff;font-family:var(--seal);font-weight:400;font-size:34px;box-shadow:0 6px 24px rgba(217,119,87,.35),inset 0 0 0 1.5px rgba(255,255,255,.16);text-shadow:0 1px 2px rgba(0,0,0,.25);margin-bottom:4px}',
       '.tm-aa-empty .emp-title{color:var(--ink);font-size:28px;font-family:var(--serif);font-weight:500;letter-spacing:-0.5px;line-height:1.3}',   // display-sm 负字距
       '.tm-aa-empty .emp-sub{color:var(--tx3);font-size:13px;margin-bottom:10px;line-height:1.6}',
       '.tm-aa-empty .emp-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px}',
@@ -633,7 +642,7 @@
       '.tm-aa-msg-ai .ai-hint{color:var(--tx3);font-size:11px;margin-top:6px;border-top:1px solid var(--bd);padding-top:5px}',
       '.tm-aa-reply{margin:14px 0 12px;padding:0 2px;background:none;border:none;border-radius:0}',
       '.tm-aa-reply .reply-who{display:flex;align-items:center;gap:7px;margin-bottom:7px}',
-      '.tm-aa-reply .reply-who .reply-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:12px;line-height:1;box-shadow:0 1px 4px rgba(217,119,87,.35),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
+      '.tm-aa-reply .reply-who .reply-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#cc785c,#a9583e);color:#fff;font-family:var(--seal);font-weight:400;font-size:14px;line-height:1;box-shadow:0 1px 4px rgba(217,119,87,.35),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
       '.tm-aa-reply .reply-who b{color:var(--ac);font-size:12px;font-weight:600;font-family:var(--serif);letter-spacing:0}',
       '.tm-aa-reply .tm-aa-summary{background:none;padding:0;border-radius:0}',
       '.tm-aa-reply .tm-aa-summary::before{display:none}',
@@ -811,7 +820,7 @@
     panel.querySelector('#tm-aa-x').addEventListener('click', function() { if (panel._fs) _toggleFullscreen(); panel.classList.remove('open'); });
     var _nc = panel.querySelector('#tm-aa-newchat'); if (_nc) _nc.addEventListener('click', newConversation);   // 真·连续会话：另起新对话
     var _pf = panel.querySelector('#tm-aa-preflight'); if (_pf) _pf.addEventListener('click', function () { runPreflightUI(); });   // 常驻·运行时体检(确定性免API·随时重跑·不止空状态)
-    if (ui.els.fs) ui.els.fs.addEventListener('click', _toggleFullscreen);   // UI·AI · 全屏切换
+    if (ui.els.fs) ui.els.fs.addEventListener('click', function () { _toggleFullscreen('user'); });   // UI·AI · 全屏切换
     _ensurePanelResize();   // UI·AI · 左缘拖拽调宽 + 载入持久宽度
     _ensureSearch();   // UI·AJ · 过程区内搜索（⌘F）
     _ensureCtxChip();   // N1 焦点上下文 chip
@@ -966,7 +975,7 @@
     ui._railBound = true;
     ui.els.railTg.addEventListener('click', function () {
       var p = ui.els.panel;
-      if (!p.classList.contains('railon') && !p._fs) _toggleFullscreen();   // 侧栏是全屏版式的一部分：未全屏先进全屏
+      if (!p.classList.contains('railon') && !p._fs) _toggleFullscreen('user');   // 侧栏是全屏版式的一部分：未全屏先进全屏
       p.classList.toggle('railon');
       if (p.classList.contains('railon')) _renderRail(ui._railQ || '');
     });
@@ -1313,13 +1322,14 @@
     document.addEventListener('mousemove', function(e) { if (!dragging) return; _applyPanelWidth(Math.round(ui.els.panel.getBoundingClientRect().right - e.clientX)); });
     document.addEventListener('mouseup', function() { if (dragging) { dragging = false; document.body.style.userSelect = ''; } });
   }
-  function _toggleFullscreen() {
+  function _toggleFullscreen(origin) {
     var p = ui.els && ui.els.panel; if (!p) return;
     if (p._fs) {
       p.style.cssText = p._fsPrev || ''; p._fs = false;
       p.classList.remove('railon');   // 侧栏是全屏版式的一部分·退全屏一并收起
       if (ui.els.resize) ui.els.resize.style.display = '';
       if (ui.els.fs) ui.els.fs.innerHTML = _icon('expand');
+      if (origin === 'user') { try { localStorage.setItem('tm_aa_winmode', 'dock'); } catch (e) {} }   // 只记用户亲手的选择（关闭面板等内部退全屏不算）
     } else {
       p._fsPrev = p.style.cssText;
       p.style.position = 'fixed'; p.style.left = '14px'; p.style.top = '14px'; p.style.right = '14px'; p.style.bottom = '14px';
@@ -1327,7 +1337,15 @@
       p._fs = true;
       if (ui.els.resize) ui.els.resize.style.display = 'none';
       if (ui.els.fs) ui.els.fs.innerHTML = _icon('restore');
+      if (origin === 'user') { try { localStorage.setItem('tm_aa_winmode', 'fs'); } catch (e) {} }
     }
+  }
+  // 首开默认全屏窗（应用感·Claude 桌面端即窗口）·此后尊重用户上次亲手选择的窗态
+  function _autoWinMode() {
+    try {
+      var m = localStorage.getItem('tm_aa_winmode');
+      if ((m === 'fs' || !m) && ui.els && ui.els.panel && !ui.els.panel._fs) _toggleFullscreen();
+    } catch (e) {}
   }
 
   // UI·AJ · 过程区内搜索（⌘F）：在结果/过程区里查关键词，高亮 + 上下跳（浏览器 find 的面板版）。
@@ -2432,7 +2450,7 @@
     fab.addEventListener('click', function() {
       var p = ensurePanel();
       p.classList.toggle('open');
-      if (p.classList.contains('open')) { _syncEmpty(); _reflectWorldKind(); _maybeRestoreThread(); }   // UI·AD · 开面板时按需显欢迎态 + 反映当前世界类型；刀H3 · 同剧本自动恢复上次线程
+      if (p.classList.contains('open')) { _syncEmpty(); _reflectWorldKind(); _maybeRestoreThread(); _autoWinMode(); }   // UI·AD · 开面板时按需显欢迎态 + 反映当前世界类型；刀H3 · 同剧本自动恢复上次线程
     });
     document.body.appendChild(fab);
   }
