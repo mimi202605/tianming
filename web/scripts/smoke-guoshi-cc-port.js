@@ -218,5 +218,76 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(nNudge.length === 1 && nNudge[0].text.indexOf('补齐某将') >= 0, 'G7 noToolCalls nudge 点名未完 todo(有的放矢)');
   ok(rN.finished, 'G7 nudge 后正常收尾');
 
+  // ───────── G8 · 宏压缩 + 超限自愈(CC autocompact 对照) ─────────
+  console.log('— G8 宏压缩/超限自愈 —');
+  // 8a: 超限文案识别(四 provider + 阴性)
+  ok(AA._OVERFLOW_RE.test("This model's maximum context length is 65536 tokens. However, your messages resulted in 80000 tokens"), 'G8 识别 OpenAI/DeepSeek 超限文案');
+  ok(AA._OVERFLOW_RE.test('prompt is too long: 210942 tokens > 200000 maximum'), 'G8 识别 Anthropic 超限文案');
+  ok(AA._OVERFLOW_RE.test('The input token count (1189256) exceeds the maximum number of tokens allowed (1048576)'), 'G8 识别 Gemini 超限文案');
+  ok(AA._OVERFLOW_RE.test('input length and max_tokens exceed context limit: 195000 + 8000 > 200000'), 'G8 识别 Anthropic 新式超限文案');
+  ok(!AA._OVERFLOW_RE.test('Invalid request: model `gpt-99` not found') && !AA._OVERFLOW_RE.test('invalid tool schema at tools[3]'), 'G8 普通 400 不误判为超限');
+  // 8b: 尾部切片轮界对齐(落在 tool 上前挪含配对 assistant·短对话整段保留)
+  var cv8 = [{ role: 'user', text: 'u' }, { role: 'assistant', text: '', toolCalls: [{ id: 'a', name: 'x', input: {} }] }, { role: 'tool', toolResults: [] }, { role: 'assistant', text: '', toolCalls: [{ id: 'b', name: 'y', input: {} }] }, { role: 'tool', toolResults: [] }];
+  var t8 = AA._compactTailSlice(cv8, 3);
+  ok(t8.length === 4 && t8[0].role === 'assistant' && t8[0].toolCalls[0].id === 'a', 'G8 切片起点落 tool → 前挪对齐配对 assistant(不孤儿化)');
+  ok(AA._compactTailSlice(cv8, 9).length === 5 && AA._compactTailSlice(cv8, 0).length === 0, 'G8 短对话整段保留·keep=0 全压');
+  // 8c: 主动宏压缩经 loop——对话吃到高水位 → 摘要请求 → 替换旧对话 → 继续收尾
+  var big8 = '事'.repeat(30000);
+  var mq = 0, sumReqs = 0;
+  var r8 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '压缩演练', {
+    macroCompactAt: 0.2, macroKeepTail: 0,
+    caller: function (conv, tools2) {
+      if (tools2 && tools2.length === 1 && tools2[0].name === 'submitSummary') {
+        sumReqs++;
+        ok(String(conv[0].text).indexOf('七段') >= 0 && String(conv[0].text).indexOf('压缩演练') >= 0, 'G8 摘要请求带七段要求+拍平的对话记录');
+        return Promise.resolve({ text: '', toolCalls: [{ id: 'sm', name: 'submitSummary', input: { summary: '①用户要求压缩演练 ②已改 name 字段并写入长注 ③任务表无未完项 ④草稿结构完好 ⑤无错误 ⑥正准备收尾 ⑦下一步:finish。' + '摘'.repeat(200) } }] });
+      }
+      mq++;
+      if (mq === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'm1', name: 'applyEdit', input: { path: 'name', value: big8 } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'mf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 200000
+  });
+  ok(sumReqs === 1 && r8.macroCompactions === 1, 'G8 高水位触发宏压缩恰一次');
+  ok(r8.finished && r8.conversation[0].text.indexOf('【前情摘要·上下文已压缩】') === 0, 'G8 压缩后对话以前情摘要开头·任务照常收尾');
+  ok(r8.conversation[0].text.indexOf('当前草稿最新状态') >= 0 && r8.conversation[0].text.indexOf('当中断从未发生') >= 0, 'G8 摘要头带草稿重读+续作指令(不复述不寒暄)');
+  ok(JSON.stringify(r8.conversation).length < big8.length, 'G8 旧巨型内容真被压掉(对话体量骤减)');
+  ok(r8.transcript.some(function (t) { return t.name === 'macroCompact' && t.result && t.result.ok; }), 'G8 宏压缩留 transcript 记录(UI 可见)');
+  // 8d: 超限被动自愈——真实请求抛 overflow → 压缩 → 重试本轮成功
+  var oq = 0, oSum = 0;
+  var fatReq = '需求很长' + '求'.repeat(28000);
+  var r9 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), fatReq, {
+    macroKeepTail: 0,
+    caller: function (conv, tools2) {
+      if (tools2 && tools2.length === 1 && tools2[0].name === 'submitSummary') { oSum++; return Promise.resolve({ text: '①用户给了超长需求 ②尚未改动 ③无任务表 ④草稿完好 ⑤首轮请求超窗 ⑥压缩自救 ⑦下一步:直接完成需求并 finish。' + '摘'.repeat(200), toolCalls: [] }); }
+      oq++;
+      if (oq === 1) { var eo = new Error('上下文超限（对话+工具已超过模型窗口）：prompt is too long'); eo.status = 400; eo.overflow = true; return Promise.reject(eo); }
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'of', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(oSum === 1 && r9.finished && r9.macroCompactions === 1, 'G8 超限 → 宏压缩 → 重试本轮成功(纯文本摘要兜底也认)');
+  ok(r9.iterations <= 2, 'G8 超限重试不计入迭代预算');
+  // 8e: 对话太小压了也救不了 → 不浪费摘要调用·失败原样抛·partial 挂已完成工作
+  var pq = 0;
+  var e8 = null;
+  try {
+    await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '小对话', {
+      caller: function () {
+        pq++;
+        var eo = new Error('上下文超限（对话+工具已超过模型窗口）：prompt is too long'); eo.status = 400; eo.overflow = true; return Promise.reject(eo);
+      }, conventions: '', blockingChecks: [], maxTokens: 5000000
+    });
+  } catch (ex) { e8 = ex; }
+  ok(e8 && pq === 1, 'G8 小对话超限不尝试压缩(不多打一次摘要调用)·原样失败');
+  ok(e8 && e8.partial && Array.isArray(e8.partial.transcript) && Array.isArray(e8.partial.todos) && e8.partial.conversation, 'G8 终局失败 err.partial 保留已完成工作(调用方可续)');
+  // 8f: 非瞬态 API 错误(鉴权等)也挂 partial
+  var e9 = null;
+  try {
+    await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '鉴权炸', {
+      caller: function () { var ea = new Error('API Key 无效（HTTP 401）'); ea.status = 401; return Promise.reject(ea); },
+      conventions: '', blockingChecks: [], maxTokens: 5000000
+    });
+  } catch (ex2) { e9 = ex2; }
+  ok(e9 && e9.partial && e9.partial.draft, 'G8 非瞬态错误同样挂 partial(草稿引用在内·改动不丢)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

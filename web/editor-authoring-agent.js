@@ -942,6 +942,9 @@
     return attempt(0);
   }
 
+  // 刀G8(CC context-overflow 对照) · 超限识别:各 provider 的"上下文超窗"400 文案(OpenAI兼容/DeepSeek/Anthropic/Gemini)
+  var _OVERFLOW_RE = /context[_\s-]?length|maximum context|context limit|context window|prompt is too long|input (length|token count)|exceeds? the maximum number of tokens|too many total tokens|max.?input.?tokens/i;
+
   /**
    * 自包含 tool-calling 调用（多轮 conversation·retry·无-tool 端点 JSON 兜底·system 缓存）。
    * @param {string|Array} conversation - 字符串(单轮)或抽象消息数组
@@ -1000,9 +1003,19 @@
       if (fromText.length) return { text: parsed.text, toolCalls: fromText, fallback: true };
       return parsed; // 纯文本无工具 → 交给 loop 判 noToolCalls
     }).catch(function(e) {
-      if (e && e.status === 400) return fallbackTextCall(); // 端点多半拒绝 tools 参数 → 文本兜底
-      var err = new Error(_classifyApiError(e));            // 网络/CORS/鉴权/路径 → 可操作中文提示
+      // 刀G8 · 超限识别:400+超窗文案 → 不做注定失败的文本兜底(更长)·标 overflow 供 loop 压缩自救
+      var _msg0 = String((e && e.message) || '');
+      var _ovf0 = !!(e && e.status === 400 && _OVERFLOW_RE.test(_msg0));
+      if (e && e.status === 400 && !_ovf0) {
+        return fallbackTextCall().catch(function (e2) {   // 兜底自身撞超限(拍平后更长)也标 overflow
+          var _m2 = String((e2 && e2.message) || '');
+          if (e2 && e2.status === 400 && _OVERFLOW_RE.test(_m2)) { var ef = new Error('上下文超限（对话+工具已超过模型窗口）：' + _m2.slice(0, 160)); ef.status = 400; ef.overflow = true; ef.cause = e2; throw ef; }
+          throw e2;
+        });
+      }
+      var err = new Error(_ovf0 ? ('上下文超限（对话+工具已超过模型窗口）：' + _msg0.slice(0, 160)) : _classifyApiError(e));   // 网络/CORS/鉴权/路径 → 可操作中文提示
       err.status = e && e.status; err.cause = e;
+      err.overflow = _ovf0;
       // 韧性：标记可重试的瞬态错误（429/5xx/网络/超时）；鉴权(401/403)/路径(404)等非瞬态不重试
       var s = err.status;
       var networkish = !s && e && (e.name === 'TypeError' || /failed to fetch|networkerror|err_|load failed|aborted|timeout/i.test(String(e.message || '')));
@@ -1504,6 +1517,38 @@
         } catch (eIn) {}
       }
     }
+  }
+
+  // 刀G8(CC autocompact 对照) · 宏压缩两助手（微压缩不够/上下文超窗时·把旧对话换成结构化前情摘要）
+  // 尾部保留切片：从末尾保 keepMsgs 条·起点对齐轮边界(落在 tool 消息上就前挪含入其配对 assistant·不孤儿化)
+  function _compactTailSlice(conv, keepMsgs) {
+    if (!Array.isArray(conv)) return [];
+    if (keepMsgs <= 0) return [];
+    if (conv.length <= keepMsgs) return conv.slice();
+    var start = conv.length - keepMsgs;
+    while (start > 0 && conv[start] && conv[start].role === 'tool') start--;
+    return conv.slice(start);
+  }
+  // 拍平对话供摘要请求：逐条限长(防单条巨型)·超预算时保头 25% + 尾 75%(近事优先)·frac=相对当前体量的目标比例
+  function _flattenForSummary(conv, frac) {
+    var lines = [];
+    for (var i = 0; i < (conv || []).length; i++) {
+      var m = conv[i]; if (!m) continue;
+      if (m.role === 'user') lines.push('[用户] ' + String(m.text || '').slice(0, 1500));
+      else if (m.role === 'assistant') {
+        var cs = (m.toolCalls || []).map(function (c) { var inp = ''; try { inp = JSON.stringify(c.input).slice(0, 280); } catch (e2) {} return c.name + inp; }).join(' · ');
+        lines.push('[助手] ' + String(m.text || '').slice(0, 1200) + (cs ? ' 【调用】' + cs : ''));
+      } else if (m.role === 'tool') {
+        lines.push('[工具结果] ' + (m.toolResults || []).map(function (tr) { return String((tr && tr.content) || '').slice(0, 500); }).join(' | '));
+      }
+    }
+    var s = lines.join('\n');
+    var budget = Math.max(20000, Math.floor(s.length * (frac || 0.45)));
+    if (s.length > budget) {
+      var headKeep = Math.floor(budget * 0.25), tailKeep = budget - headKeep;
+      s = s.slice(0, headKeep) + '\n……【中段 ' + (s.length - budget) + ' 字已略·以头尾与摘要要求为准】……\n' + s.slice(s.length - tailKeep);
+    }
+    return s;
   }
 
   // 工具B · 写后回读：写类工具结果回挂"变更后当前值"·agent 不必再 getField 确认·减重复读
@@ -2211,6 +2256,55 @@
       if (!roots) { try { Object.keys(draft || {}).forEach(function (rk2) { _extSnap[rk2] = _fpOf(draft[rk2]); }); } catch (eR) {} return; }
       roots.forEach(function (r0) { if (r0) { try { _extSnap[r0] = _fpOf(draft[r0]); } catch (eR2) {} } });
     }
+    // 刀G8(CC autocompact 对照) · 宏压缩:微压缩不够(预算高水位)或上下文超窗时·让模型把旧对话写成
+    //   七段结构化前情摘要·替换旧对话(保留近尾原文)·续跑对话(priorConversation 无限增长)与小窗口模型最受益。
+    //   熔断:每次运行最多 2 次尝试·失败不重试不阻断(继续不压)。对话太小(压了也救不了)不尝试。
+    var _macroTries = 0, _macroDone = 0;
+    var _macroAt = (opts.macroCompactAt != null ? opts.macroCompactAt : 0.85);   // 主动触发水位(×maxTokens)
+    var _macroKeepTail = (opts.macroKeepTail != null ? opts.macroKeepTail : 6);  // 压缩后保留的近尾原文条数
+    function _applyMacroResult(summary, reasonTag) {
+      var tail = _compactTailSlice(conversation, _macroKeepTail);
+      var gaps = null; try { gaps = _computeGaps(draft, surfaces || []); } catch (eG) {}
+      var head = '【前情摘要·上下文已压缩】此前对话过长已压缩为以下摘要（覆盖此前全部工作）：\n\n' + summary
+        + '\n\n【当前草稿最新状态·压缩后重读】\n' + _draftSummary(draft)
+        + ((gaps && gaps.requiredMissing.length) ? '\n（仍有必需缺口 ' + gaps.requiredMissing.length + ' 项：' + gaps.requiredMissing.slice(0, 12).join('、') + '）' : '')
+        + '\n\n请从中断处直接继续当前任务：不要复述摘要、不要重新确认、不要说「我继续」——当中断从未发生。任务表(todoWrite)与已落地的草稿改动均仍有效'
+        + (tail.length ? '；最近 ' + tail.length + ' 条原始消息保留在后。' : '。');
+      conversation.length = 0;
+      conversation.push({ role: 'user', text: head });
+      for (var ti = 0; ti < tail.length; ti++) conversation.push(tail[ti]);
+      _seenReads = {};   // "与第N轮相同"的轮次引用随压缩失效·全部作废
+      _convRecount(); tokensUsed = _reqTokens();
+      _macroDone++;
+      record('macroCompact', { trigger: reasonTag, attempt: _macroTries }, { ok: true, summaryChars: summary.length, keptTail: tail.length, tokensAfter: tokensUsed });
+    }
+    function _macroCompact(reasonTag) {
+      if (_macroTries >= 2 || _convTok < 6000) return Promise.resolve(false);   // 熔断 + 对话太小不救
+      _macroTries++;
+      var flat = _flattenForSummary(conversation, _macroTries === 1 ? 0.45 : 0.2);   // 二次尝试再砍半(摘要请求自身超限的退路)
+      var sumTools = [{ name: 'submitSummary', description: '提交结构化前情摘要', parameters: { type: 'object', properties: { summary: { type: 'string', description: '按七段结构写全的摘要正文' } }, required: ['summary'] } }];
+      var ask = '以下是一段「剧本编辑 agent」与用户/工具的工作对话记录。请把它压缩成结构化前情摘要，供同一 agent 在新上下文里无缝续作。必须涵盖七段：\n'
+        + '①用户各轮请求与意图(逐条·含意图变化与纠偏) ②已完成的改动(实体/字段级·关键新值) ③任务表现状(未完项) ④已查明的关键事实(字段结构/约定/引用关系) ⑤遇到的错误与修正 ⑥正在进行的工作 ⑦下一步(必须与用户最近请求直接一致·勿开新任务)\n'
+        + '要具体：实体名/字段路径/关键值逐一点名，宁详勿略。调用 submitSummary 提交；若无法调用工具，直接以纯文本输出摘要正文。\n\n【对话记录】\n' + flat;
+      if (typeof opts.onText === 'function') { try { opts.onText('（上下文过长，正在压缩前情摘要…）', iterations); } catch (eOt) {} }
+      return Promise.resolve(caller([{ role: 'user', text: ask }], sumTools, { maxTok: Math.max(4000, opts.maxTok || 0), cfg: opts.cfg, system: '你是对话压缩器：只输出忠实、具体、结构化的前情摘要，不评论不建议。' }))
+        .then(function (r) {
+          var s = '';
+          try { var tc0 = ((r && r.toolCalls) || []).filter(function (t) { return t && t.name === 'submitSummary'; })[0]; s = String((tc0 && tc0.input && tc0.input.summary) || (r && r.text) || ''); } catch (eS) { s = String((r && r.text) || ''); }
+          if (s.length < 200) return false;   // 摘要太薄不可信·按失败处理(不替换对话)
+          _applyMacroResult(s, reasonTag);
+          return true;
+        })
+        .catch(function (eM) {
+          try { console.warn('[authoring-agent] 宏压缩失败(继续不压)', eM); } catch (eW) {}
+          return false;
+        });
+    }
+    // 刀G8 · 终局失败保留已完成工作(CC「错误不炸掉会话」对照):reject 前把过程状态挂上错误对象·调用方可续
+    function _fail(e) {
+      try { e.partial = { conversation: conversation, transcript: transcript, todos: _todoState.list.slice(), draft: draft, tokensUsed: tokensUsed, iterations: iterations }; } catch (eP) {}
+      throw e;
+    }
 
     function record(name, input, result) {
       transcript.push({ name: name, input: input, result: result });
@@ -2223,10 +2317,15 @@
       if (control.aborted) { stopReason = 'aborted'; return Promise.resolve(); }   // 刀E · 轮间中断
       if (iterations >= maxIterations) { stopReason = 'maxIterations'; return Promise.resolve(); }
       _convRecount(); tokensUsed = _reqTokens();   // 刀G1 · 每轮真算(体量小·全量重估防漂移)
-      if (tokensUsed >= maxTokens) { stopReason = 'tokenBudget'; return Promise.resolve(); }
       if (tokensUsed > maxTokens * 0.5) {   // 工具D · 半程后压旧工具结果+旧入参·控窗口(压后重算)
         try { _compactOldToolResults(conversation, 6); _convRecount(); tokensUsed = _reqTokens(); } catch (e) {}
       }
+      // 刀G8 · 预算高水位主动宏压缩:微压缩后仍超水位 → 压成前情摘要后重入本轮(硬撞 tokenBudget 前自救)。
+      //   条件与 _macroCompact 内部守卫严格一致(压必推进 _macroTries)·不会无限重入。
+      if (tokensUsed >= maxTokens * _macroAt && _macroTries < 2 && _convTok >= 6000) {
+        return _macroCompact('budget-high').then(step);
+      }
+      if (tokensUsed >= maxTokens) { stopReason = 'tokenBudget'; return Promise.resolve(); }   // 刀G8 · 硬停挪到压缩之后(先自救再认命)
       iterations++;
       return Promise.resolve(caller(conversation, tools, { maxTok: opts.maxTok, cfg: opts.cfg, system: system }))
         .then(function(resp) {
@@ -2352,13 +2451,21 @@
         })
         .catch(function(e) {
           if (control.aborted) { stopReason = 'aborted'; return; }
+          if (e && e.overflow) {   // 刀G8 · 超限自愈(CC 两层恢复的层二):压缩前情后重试本轮·不计迭代
+            iterations--;
+            return _macroCompact('overflow').then(function (did) {
+              if (did) return step();
+              iterations++;   // 压不成(熔断/对话太小/摘要失败) → 恢复计数走原失败路径
+              return _fail(e);
+            });
+          }
           if (e && e.transient && stepRetries < maxStepRetries) {   // 韧性：瞬态错误（429/5xx/网络）退避重试本轮
             stepRetries++;
             if (typeof opts.onText === 'function') { try { opts.onText('（网络/服务抖动，正在重试 ' + stepRetries + '/' + maxStepRetries + '…）', iterations); } catch (er) {} }
             iterations--;   // 重试不计入迭代预算
             return _delay(retryBaseMs * Math.pow(2, stepRetries - 1)).then(step);
           }
-          throw e;   // 非瞬态 / 重试耗尽 → 维持原 reject 语义（UI 显示失败）
+          return _fail(e);   // 非瞬态 / 重试耗尽 → 维持 reject 语义(UI 显示失败)·刀G8:partial 挂已完成工作供调用方续
         });
     }
 
@@ -2370,6 +2477,7 @@
         finalValidation: validateDraft(draft), stopReason: stopReason,
         tokensUsed: tokensUsed, finishAttempts: finishAttempts,
         tokensBreakdown: { system: _sysTok, tools: _toolsTok, conversation: _convTok },   // 刀G1 · 真口径构成(UI/诊断用)
+        macroCompactions: _macroDone,   // 刀G8 · 本次运行发生的宏压缩次数(诊断/UI 可提示"前情已压缩")
         todos: _todoState.list.slice(),   // 刀G5 · 收尾时的任务表(全完成则已自动清空·UI 可渲染)
         summary: _finishSummary,   // 改动说明：做了什么+为什么
         notes: transcript.filter(function(t) { return t.name === 'note'; }).map(function(t) { return (t.input && t.input.text) || ''; }).filter(Boolean),
@@ -2694,6 +2802,9 @@
     AGENT_TOOLS: AGENT_TOOLS,
     dispatchTool: dispatchTool,
     _compactOldToolResults: _compactOldToolResults,
+    _compactTailSlice: _compactTailSlice,   // 刀G8 · 宏压缩尾部切片(smoke)
+    _flattenForSummary: _flattenForSummary,   // 刀G8 · 摘要请求拍平(smoke)
+    _OVERFLOW_RE: _OVERFLOW_RE,   // 刀G8 · 超限文案识别(smoke)
     computeGaps: _computeGaps,
     preflight: preflight,
     ensureCharFactionId: ensureCharFactionId,
