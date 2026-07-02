@@ -441,6 +441,147 @@
       // ── Branch A · NPC 深度推演 ──（P8.1: sc_memwrite 已移到 post-turn）
       var _branchA = (async function() {
       // --- Sub-call 1.5: NPC全面深度推演 --- [standard+full]
+      // ★2026-07-02 sc15/sc15n 应用同源:此前 sc15n(3-tier 合并版)只存结果不应用——开着 sc15n 时
+      //   NPC 心态/忠诚/压力/关系网/暗流事件簿/级联/省份/阶层/党争/阴谋台账全部静默停摆(半成品替代)。
+      //   自 sc15 内联逐字抽出共享·字段缺省自然跳过·语义与原 sc15 内联一致。
+      var _applyNpcDeepResult = function(pND) {
+        if (!pND) return;
+        // 应用心态变化
+        if (pND.mood_shifts && Array.isArray(pND.mood_shifts)) {
+          pND.mood_shifts.forEach(function(ms) {
+            if (!ms.name) return;
+            var msCh = findCharByName(ms.name);
+            if (!msCh) return;
+            if (ms.loyalty_delta) {
+              var _msLoyaltyDelta = clamp(parseInt(ms.loyalty_delta) || 0, -10, 10);
+              if (typeof adjustCharacterLoyalty === 'function') {
+                adjustCharacterLoyalty(msCh, _msLoyaltyDelta, ms.reason || '', { source:'npc-deep-mood-shift', ai:true, defaultReason:'AI推演' });
+              } else {
+                var _msOldL = (typeof msCh.loyalty === 'number' && isFinite(msCh.loyalty)) ? msCh.loyalty : 50;
+                if (ms.reason) msCh.loyalty = clamp(_msOldL + _msLoyaltyDelta, 0, 100);
+              }
+            }
+            if (ms.stress_delta) msCh.stress = clamp((msCh.stress || 0) + clamp(parseInt(ms.stress_delta) || 0, -10, 10), 0, 100);
+            if (typeof ms.mood === "string" && ms.mood.trim()) {
+              var _oldMood = msCh._mood || "平";
+              msCh._mood = ms.mood.trim().slice(0, 20);
+              if (_oldMood !== msCh._mood && typeof recordChange === "function") {
+                recordChange("characters", msCh.name || ms.name, "mood", _oldMood, msCh._mood, ms.reason || "AI推演");
+              }
+            }
+          });
+        }
+        // 应用隐藏关系变化
+        if (pND.relationship_changes && Array.isArray(pND.relationship_changes)) {
+          pND.relationship_changes.forEach(function(rc) {
+            if (!rc.a || !rc.b || !rc.delta) return;
+            if (typeof AffinityMap !== 'undefined') AffinityMap.add(rc.a, rc.b, clamp(parseInt(rc.delta) || 0, -15, 15), rc.reason || '暗流');
+          });
+        }
+        // 隐藏行动记入事件日志
+        if (pND.hidden_moves && Array.isArray(pND.hidden_moves)) {
+          pND.hidden_moves.forEach(function(hm) { addEB('暗流', hm); });
+        }
+        // 应用级联变量效果（AI补充的连锁影响）
+        if (pND.cascade_effects && typeof pND.cascade_effects === 'object') {
+          Object.entries(pND.cascade_effects).forEach(function(ce) {
+            var varName = ce[0], delta = parseFloat(ce[1]);
+            if (isNaN(delta) || !GM.vars[varName]) return;
+            // 级联变化幅度限制（防止AI过度调整）
+            delta = clamp(delta, -GM.vars[varName].max * 0.05, GM.vars[varName].max * 0.05);
+            if (Math.abs(delta) >= 0.1) {
+              GM.vars[varName].value = clamp(GM.vars[varName].value + delta, GM.vars[varName].min, GM.vars[varName].max);
+              _dbg('[Cascade] ' + varName + ': ' + (delta > 0 ? '+' : '') + delta.toFixed(1));
+            }
+          });
+        }
+        // 应用省份影响
+        if (pND.province_impacts && Array.isArray(pND.province_impacts)) {
+          pND.province_impacts.forEach(function(pi) {
+            if (!pi.name || !GM.provinceStats || !GM.provinceStats[pi.name]) return;
+            var ps = GM.provinceStats[pi.name];
+            if (pi.unrest_delta) ps.unrest = clamp((ps.unrest||10) + clamp(parseInt(pi.unrest_delta)||0, -10, 10), 0, 100);
+            if (pi.prosperity_delta) ps.wealth = clamp((ps.wealth||50) + clamp(parseInt(pi.prosperity_delta)||0, -8, 8), 0, 100);
+          });
+        }
+        // 应用阶层反应
+        if (pND.class_reactions && Array.isArray(pND.class_reactions) && GM.classes) {
+          pND.class_reactions.forEach(function(cr) {
+            if (!cr.class) return;
+            var cls = GM.classes.find(function(c){return c.name===cr.class;});
+            if (cls && cr.satisfaction_delta) {
+              var _classReactionOldSat = parseInt(cls.satisfaction||50) || 50;
+              cls.satisfaction = clamp(_classReactionOldSat + clamp(parseInt(cr.satisfaction_delta)||0, -8, 8), 0, 100);
+              if (TM && TM.ClassEngine && typeof TM.ClassEngine.applyClassPartyCoupling === 'function') {
+                try {
+                  TM.ClassEngine.applyClassPartyCoupling(GM, cls, cls.satisfaction - _classReactionOldSat, { turn: GM.turn, source: 'endturn-ai-infer', reason: cr.reason || '' });
+                } catch(_classCoupleReactionE) {
+                  (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_classCoupleReactionE, 'endturn] class reaction coupling:') : console.warn('[endturn] class reaction coupling:', _classCoupleReactionE);
+                }
+              }
+            }
+          });
+        }
+        // 应用党派动作到事件日志
+        if (pND.party_maneuvers && Array.isArray(pND.party_maneuvers)) {
+          pND.party_maneuvers.forEach(function(pm) { if (pm.party && pm.action) addEB('党争', pm.party + '：' + pm.action + (pm.target ? '(针对' + pm.target + ')' : '')); });
+        }
+        // 矛盾演化记入事件
+        if (pND.contradiction_shift) addEB('矛盾', pND.contradiction_shift);
+        // 流言用于Sub-call 2叙事
+        if (pND.rumors) _specialtySummary.sc15 = '【流言】' + pND.rumors + '\n';
+
+        // 势力内部暗流——保留历史（最近3回合的暗流，供AI看到趋势演变）
+        if (pND.faction_undercurrents && Array.isArray(pND.faction_undercurrents)) {
+          if (!GM._factionUndercurrents) GM._factionUndercurrents = [];
+          if (!GM._factionUndercurrentsHistory) GM._factionUndercurrentsHistory = [];
+          // 存档当前轮暗流到历史
+          if (GM._factionUndercurrents.length > 0) {
+            GM._factionUndercurrentsHistory.push({ turn: GM.turn, data: GM._factionUndercurrents });
+            if (GM._factionUndercurrentsHistory.length > 3) GM._factionUndercurrentsHistory.shift();
+          }
+          GM._factionUndercurrents = pND.faction_undercurrents;
+          pND.faction_undercurrents.forEach(function(fu) {
+            if (fu.faction && fu.situation) {
+              addEB('势力·内幕', fu.faction + '：' + fu.situation + (fu.trend ? '（' + fu.trend + '）' : ''));
+              // 动荡/衰落的势力扣strength
+              if (fu.trend === '动荡' || fu.trend === '衰落') {
+                var _uFac = findFacByName(fu.faction);
+                if (_uFac) _uFac.strength = Math.max(1, (_uFac.strength||50) - (fu.trend === '衰落' ? 2 : 1));
+              }
+            }
+          });
+        }
+
+        // NPC阴谋——存入GM，跨回合持续推进
+        if (pND.npc_schemes && Array.isArray(pND.npc_schemes)) {
+          if (!GM.activeSchemes) GM.activeSchemes = [];
+          pND.npc_schemes.forEach(function(sc2) {
+            if (!sc2.schemer || !sc2.plan) return;
+            // 查找是否有已存在的同一阴谋
+            var existing = GM.activeSchemes.find(function(s) { return s.schemer === sc2.schemer && s.target === sc2.target; });
+            if (existing) {
+              // 更新进度
+              existing.plan = sc2.plan;
+              existing.progress = sc2.progress || existing.progress;
+              existing.allies = sc2.allies || existing.allies;
+              existing.lastTurn = GM.turn;
+            } else {
+              GM.activeSchemes.push({ schemer: sc2.schemer, target: sc2.target || '', plan: sc2.plan, progress: sc2.progress || '酝酿中', allies: sc2.allies || '', startTurn: GM.turn, lastTurn: GM.turn });
+            }
+            // 记入阴谋者记忆
+            if (typeof NpcMemorySystem !== 'undefined') {
+              NpcMemorySystem.remember(sc2.schemer, '暗中谋划：' + sc2.plan, '平', 4, sc2.target || '');
+            }
+            addEB('暗流', sc2.schemer + '密谋' + (sc2.target ? '针对' + sc2.target : '') + '（' + (sc2.progress || '') + '）');
+          });
+          // 清理过期阴谋（超过5回合未更新的视为放弃）
+          GM.activeSchemes = GM.activeSchemes.filter(function(s) {
+            var keepTurns = (typeof turnsForMonths === 'function') ? turnsForMonths(5) : 5;
+            return GM.turn - s.lastTurn < keepTurns;
+          });
+        }
+      };
       // Phase 4 A6·sc15n 3-tier 合一·当 P.ai.sc15nEnabled=true 跳 sc15·走新合并版本
       var _sc15nEnabled = !!(P.ai && P.ai.sc15nEnabled === true);
       if (_sc15nEnabled) {
@@ -467,6 +608,13 @@
                 tp15n += '  · ' + di.npc + '·[' + (di.mood||'?') + '] 潜台词：' + String(di.subtext||'').slice(0, 40) + '·下一步：' + String(di.next_likely_move||'').slice(0, 40) + '\n';
               });
             }
+            // ★2026-07-02 阴谋引擎知情:机械引擎(GM._activePlots)与本调用的叙事暗流是两本台账·不喂必矛盾/重复
+            try {
+              if (typeof ConspiracyEngine !== 'undefined' && ConspiracyEngine.aiContextBlock) {
+                var _cb15n = ConspiracyEngine.aiContextBlock(GM);
+                if (_cb15n) tp15n += '\n' + String(_cb15n).slice(0, 900) + '\n';
+              }
+            } catch(_cb15nE) {}
             tp15n += '\n请返回 JSON·按 tier 输出·\n{\n';
             if (_wantCore) {
               tp15n += '  "mood_shifts":[{"name":"","loyalty_delta":0,"stress_delta":0,"mood":"新情绪","reason":"30字"}],\n';
@@ -492,13 +640,10 @@
               // mirror·_specialtySummary.sc15 (sc2 narrative reads)·_factionUndercurrents (sc16/sc28 prompt reads)·_npcCognition (sc07 compat)·subcall15 (legacy alias)·subcall15n (canonical)
               GM._turnAiResults.subcall15n = Object.assign({ tier: _tier, _dualSucceeded: true }, p15n);
               GM._turnAiResults.subcall15 = p15n;  // legacy alias·下游 consumer 仍读 subcall15
-              if (Array.isArray(p15n.faction_undercurrents)) {
-                if (!Array.isArray(GM._factionUndercurrents)) GM._factionUndercurrents = [];
-                p15n.faction_undercurrents.forEach(function(fu) {
-                  if (fu && fu.faction) GM._factionUndercurrents.push(Object.assign({ turn: GM.turn||1, _fromSc15n: true }, fu));
-                });
-                if (GM._factionUndercurrents.length > 100) GM._factionUndercurrents = GM._factionUndercurrents.slice(-100);
-              }
+              // ★2026-07-02 应用同源:走与 sc15 相同的 _applyNpcDeepResult——此前 sc15n 只存结果不应用·
+              //   开着 sc15n 时 mood/忠诚/压力/关系网/暗流事件簿/阴谋台账全部静默停摆(半成品替代)。
+              //   faction_undercurrents 亦由共享函数接管(历史归档+势力strength+事件簿·比原 append 版语义全)。
+              _applyNpcDeepResult(p15n);
               if (Array.isArray(p15n.npc_cognition)) {
                 if (!GM._npcCognition || typeof GM._npcCognition !== 'object') GM._npcCognition = {};
                 p15n.npc_cognition.forEach(function(nc) {
@@ -507,7 +652,6 @@
                   }
                 });
               }
-              if (p15n.rumors) _specialtySummary.sc15 = '【流言】' + String(p15n.rumors).slice(0, 100) + '\n';
               _dbg('[sc15n] tier=' + _tier + ' mood=' + (p15n.mood_shifts||[]).length + ' relations=' + (p15n.relationship_changes||[]).length + ' undercurrents=' + (p15n.faction_undercurrents||[]).length + ' cognition=' + (p15n.npc_cognition||[]).length);
             }
           } catch(_15nErr) { _dbg('[sc15n] fail:', _15nErr); if (typeof recordSubcallError === 'function') recordSubcallError('sc15n', 'execute', _15nErr); }
@@ -589,6 +733,14 @@
           Object.entries(p1.resource_changes).forEach(function(e) { tp15 += e[0] + (parseFloat(e[1]) > 0 ? '+' : '') + e[1] + ' '; });
           tp15 += '\n';
         }
+        // ★2026-07-02 阴谋引擎知情:机械引擎(GM._activePlots)与 sc15 的 npc_schemes/hidden_moves 是两本台账·
+        //   不喂就会凭空另立重复阴谋或与引擎火候矛盾·aiContextBlock 自带「勿另起重复」指令
+        try {
+          if (typeof ConspiracyEngine !== 'undefined' && ConspiracyEngine.aiContextBlock) {
+            var _cb15 = ConspiracyEngine.aiContextBlock(GM);
+            if (_cb15) tp15 += '\n' + String(_cb15).slice(0, 900) + '\n';
+          }
+        } catch(_cb15E) {}
         tp15 += '\n请返回JSON。这是"水面下的冰山"——玩家看不到这些，但它们决定了未来走向：\n';
         tp15 += '{\n';
         tp15 += '  "hidden_moves":["某角色：因为什么→暗中做了什么→目的是什么(40字每条，至少7条)"],\n';
@@ -635,141 +787,8 @@
           if (_p15Parse && _p15Parse.raw) c15 = _p15Parse.raw;
           var p15 = _p15Parse ? _p15Parse.parsed : null;
           if (p15) {
-            // 应用心态变化
-            if (p15.mood_shifts && Array.isArray(p15.mood_shifts)) {
-              p15.mood_shifts.forEach(function(ms) {
-                if (!ms.name) return;
-                var msCh = findCharByName(ms.name);
-                if (!msCh) return;
-                if (ms.loyalty_delta) {
-                  var _msLoyaltyDelta = clamp(parseInt(ms.loyalty_delta) || 0, -10, 10);
-                  if (typeof adjustCharacterLoyalty === 'function') {
-                    adjustCharacterLoyalty(msCh, _msLoyaltyDelta, ms.reason || '', { source:'npc-deep-mood-shift', ai:true, defaultReason:'AI\u63A8\u6F14' });
-                  } else {
-                    var _msOldL = (typeof msCh.loyalty === 'number' && isFinite(msCh.loyalty)) ? msCh.loyalty : 50;
-                    if (ms.reason) msCh.loyalty = clamp(_msOldL + _msLoyaltyDelta, 0, 100);
-                  }
-                }
-                if (ms.stress_delta) msCh.stress = clamp((msCh.stress || 0) + clamp(parseInt(ms.stress_delta) || 0, -10, 10), 0, 100);
-                if (typeof ms.mood === "string" && ms.mood.trim()) {
-                  var _oldMood = msCh._mood || "平";
-                  msCh._mood = ms.mood.trim().slice(0, 20);
-                  if (_oldMood !== msCh._mood && typeof recordChange === "function") {
-                    recordChange("characters", msCh.name || ms.name, "mood", _oldMood, msCh._mood, ms.reason || "AI推演");
-                  }
-                }
-              });
-            }
-            // 应用隐藏关系变化
-            if (p15.relationship_changes && Array.isArray(p15.relationship_changes)) {
-              p15.relationship_changes.forEach(function(rc) {
-                if (!rc.a || !rc.b || !rc.delta) return;
-                if (typeof AffinityMap !== 'undefined') AffinityMap.add(rc.a, rc.b, clamp(parseInt(rc.delta) || 0, -15, 15), rc.reason || '\u6697\u6D41');
-              });
-            }
-            // 隐藏行动记入事件日志
-            if (p15.hidden_moves && Array.isArray(p15.hidden_moves)) {
-              p15.hidden_moves.forEach(function(hm) { addEB('\u6697\u6D41', hm); });
-            }
-            // 应用级联变量效果（AI补充的连锁影响）
-            if (p15.cascade_effects && typeof p15.cascade_effects === 'object') {
-              Object.entries(p15.cascade_effects).forEach(function(ce) {
-                var varName = ce[0], delta = parseFloat(ce[1]);
-                if (isNaN(delta) || !GM.vars[varName]) return;
-                // 级联变化幅度限制（防止AI过度调整）
-                delta = clamp(delta, -GM.vars[varName].max * 0.05, GM.vars[varName].max * 0.05);
-                if (Math.abs(delta) >= 0.1) {
-                  GM.vars[varName].value = clamp(GM.vars[varName].value + delta, GM.vars[varName].min, GM.vars[varName].max);
-                  _dbg('[Cascade] ' + varName + ': ' + (delta > 0 ? '+' : '') + delta.toFixed(1));
-                }
-              });
-            }
-            // 应用省份影响
-            if (p15.province_impacts && Array.isArray(p15.province_impacts)) {
-              p15.province_impacts.forEach(function(pi) {
-                if (!pi.name || !GM.provinceStats || !GM.provinceStats[pi.name]) return;
-                var ps = GM.provinceStats[pi.name];
-                if (pi.unrest_delta) ps.unrest = clamp((ps.unrest||10) + clamp(parseInt(pi.unrest_delta)||0, -10, 10), 0, 100);
-                if (pi.prosperity_delta) ps.wealth = clamp((ps.wealth||50) + clamp(parseInt(pi.prosperity_delta)||0, -8, 8), 0, 100);
-              });
-            }
-            // 应用阶层反应
-            if (p15.class_reactions && Array.isArray(p15.class_reactions) && GM.classes) {
-              p15.class_reactions.forEach(function(cr) {
-                if (!cr.class) return;
-                var cls = GM.classes.find(function(c){return c.name===cr.class;});
-                if (cls && cr.satisfaction_delta) {
-                  var _classReactionOldSat = parseInt(cls.satisfaction||50) || 50;
-                  cls.satisfaction = clamp(_classReactionOldSat + clamp(parseInt(cr.satisfaction_delta)||0, -8, 8), 0, 100);
-                  if (TM && TM.ClassEngine && typeof TM.ClassEngine.applyClassPartyCoupling === 'function') {
-                    try {
-                      TM.ClassEngine.applyClassPartyCoupling(GM, cls, cls.satisfaction - _classReactionOldSat, { turn: GM.turn, source: 'endturn-ai-infer', reason: cr.reason || '' });
-                    } catch(_classCoupleReactionE) {
-                      (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_classCoupleReactionE, 'endturn] class reaction coupling:') : console.warn('[endturn] class reaction coupling:', _classCoupleReactionE);
-                    }
-                  }
-                }
-              });
-            }
-            // 应用党派动作到事件日志
-            if (p15.party_maneuvers && Array.isArray(p15.party_maneuvers)) {
-              p15.party_maneuvers.forEach(function(pm) { if (pm.party && pm.action) addEB('\u515A\u4E89', pm.party + '：' + pm.action + (pm.target ? '(\u9488\u5BF9' + pm.target + ')' : '')); });
-            }
-            // 矛盾演化记入事件
-            if (p15.contradiction_shift) addEB('\u77DB\u76FE', p15.contradiction_shift);
-            // 流言用于Sub-call 2叙事
-            if (p15.rumors) _specialtySummary.sc15 = '\u3010\u6D41\u8A00\u3011' + p15.rumors + '\n';
-
-            // 势力内部暗流——保留历史（最近3回合的暗流，供AI看到趋势演变）
-            if (p15.faction_undercurrents && Array.isArray(p15.faction_undercurrents)) {
-              if (!GM._factionUndercurrents) GM._factionUndercurrents = [];
-              if (!GM._factionUndercurrentsHistory) GM._factionUndercurrentsHistory = [];
-              // 存档当前轮暗流到历史
-              if (GM._factionUndercurrents.length > 0) {
-                GM._factionUndercurrentsHistory.push({ turn: GM.turn, data: GM._factionUndercurrents });
-                if (GM._factionUndercurrentsHistory.length > 3) GM._factionUndercurrentsHistory.shift();
-              }
-              GM._factionUndercurrents = p15.faction_undercurrents;
-              p15.faction_undercurrents.forEach(function(fu) {
-                if (fu.faction && fu.situation) {
-                  addEB('势力·内幕', fu.faction + '：' + fu.situation + (fu.trend ? '（' + fu.trend + '）' : ''));
-                  // 动荡/衰落的势力扣strength
-                  if (fu.trend === '动荡' || fu.trend === '衰落') {
-                    var _uFac = findFacByName(fu.faction);
-                    if (_uFac) _uFac.strength = Math.max(1, (_uFac.strength||50) - (fu.trend === '衰落' ? 2 : 1));
-                  }
-                }
-              });
-            }
-
-            // NPC阴谋——存入GM，跨回合持续推进
-            if (p15.npc_schemes && Array.isArray(p15.npc_schemes)) {
-              if (!GM.activeSchemes) GM.activeSchemes = [];
-              p15.npc_schemes.forEach(function(sc2) {
-                if (!sc2.schemer || !sc2.plan) return;
-                // 查找是否有已存在的同一阴谋
-                var existing = GM.activeSchemes.find(function(s) { return s.schemer === sc2.schemer && s.target === sc2.target; });
-                if (existing) {
-                  // 更新进度
-                  existing.plan = sc2.plan;
-                  existing.progress = sc2.progress || existing.progress;
-                  existing.allies = sc2.allies || existing.allies;
-                  existing.lastTurn = GM.turn;
-                } else {
-                  GM.activeSchemes.push({ schemer: sc2.schemer, target: sc2.target || '', plan: sc2.plan, progress: sc2.progress || '酝酿中', allies: sc2.allies || '', startTurn: GM.turn, lastTurn: GM.turn });
-                }
-                // 记入阴谋者记忆
-                if (typeof NpcMemorySystem !== 'undefined') {
-                  NpcMemorySystem.remember(sc2.schemer, '\u6697\u4E2D\u8C0B\u5212\uFF1A' + sc2.plan, '\u5E73', 4, sc2.target || '');
-                }
-                addEB('暗流', sc2.schemer + '密谋' + (sc2.target ? '针对' + sc2.target : '') + '（' + (sc2.progress || '') + '）');
-              });
-              // 清理过期阴谋（超过5回合未更新的视为放弃）
-              GM.activeSchemes = GM.activeSchemes.filter(function(s) {
-                var keepTurns = (typeof turnsForMonths === 'function') ? turnsForMonths(5) : 5;
-                return GM.turn - s.lastTurn < keepTurns;
-              });
-            }
+            // ★2026-07-02 应用逻辑抽出 _applyNpcDeepResult(见 Branch A 顶部)与 sc15n 共享·内容与原内联一致
+            _applyNpcDeepResult(p15);
 
             GM._turnAiResults.subcall15 = p15;
             // Phase 4·sc15n API surface mirror (Slice 3 scaffold)·下游可读 subcall15n 而非分散 subcall15/subcall07
@@ -892,7 +911,7 @@
           var dataMW = _mwCall.data;
           _checkTruncated(dataMW, 'NPC记忆回写');
           var cMW = _mwCall.raw || '';
-          var _pMWParse = await _parseOrRepairJsonResult(cMW, dataMW, 'NPC记忆回写', { url: url, key: P.ai.key, body: _mwBody, expectedKeys: ['memory_writes', 'arc_updates', 'relationship_notes'], priority: 'low' });
+          var _pMWParse = await _parseOrRepairJsonResult(cMW, dataMW, 'NPC记忆回写', { url: url, key: P.ai.key, body: _mwBody, expectedKeys: ['memory_writes', 'arc_updates', 'causal_edges'], priority: 'low' });   // ★2026-07-02 修:原钉 schema 里不存在的 relationship_notes·漏钉真产出 causal_edges
           if (_pMWParse && _pMWParse.raw) cMW = _pMWParse.raw;
           var pMW = _pMWParse ? _pMWParse.parsed : null;
           if (pMW) {
@@ -2037,15 +2056,19 @@
               _olCtx += _tmLimitPromptSection('本回合依据', _fOl.basisBrief, 3500);
             } catch(_fOlE) { _dbg('[sc2_outline] facts fail:', _fOlE); if (shizhengji) _olCtx += '时政记：' + String(shizhengji).slice(0, 800) + '\n'; }
             // 接 sc15n / sc15 的 NPC 暗流(3stage 特有输入)
+            // ★2026-07-02 bug修:sc15 默认路径把 subcall15n 镜像成 {core,common,extended} 嵌套形状·
+            //   原平铺读 hidden_moves 恒 undefined → 大纲的暗流输入一直是空的·兼容两种形状
             var _p15ol = (GM._turnAiResults && (GM._turnAiResults.subcall15n || GM._turnAiResults.subcall15)) || null;
-            if (_p15ol && Array.isArray(_p15ol.hidden_moves)) _olCtx += '暗流：' + _p15ol.hidden_moves.slice(0, 5).join('；').slice(0, 400) + '\n';
+            var _hmOl = _p15ol && (Array.isArray(_p15ol.hidden_moves) ? _p15ol.hidden_moves
+              : (_p15ol.common && Array.isArray(_p15ol.common.hidden_moves) ? _p15ol.common.hidden_moves : null));
+            if (_hmOl && _hmOl.length) _olCtx += '暗流：' + _hmOl.slice(0, 5).join('；').slice(0, 400) + '\n';
             // O2·时代用语开卷(原让模型闭卷发明 time_period_markers·而权威表只给了下游 scR 审查——等于闭卷考试开卷改卷)
             try { if (GM._aiScenarioDigest && GM._aiScenarioDigest.periodVocabulary) _olCtx += '时代用语（场景细节与 time_period_markers 优先从中选用·可少量补充同时代词）：' + String(GM._aiScenarioDigest.periodVocabulary).slice(0, 250) + '\n'; } catch(_pvE) {}
             // O4·场景数随事实量伸缩(平淡回合不注水·大战回合不压扁)
             var _factN = ((p1 && p1.npc_actions) ? Math.min(p1.npc_actions.length, 8) : 0)
               + ((p1 && p1.character_deaths) ? p1.character_deaths.length : 0)
               + ((edicts && (edicts.decree || edicts.political || edicts.military || edicts.economic)) ? 2 : 0)
-              + ((_p15ol && Array.isArray(_p15ol.hidden_moves)) ? Math.min(_p15ol.hidden_moves.length, 3) : 0);
+              + ((_hmOl && _hmOl.length) ? Math.min(_hmOl.length, 3) : 0);
             var _sceneCap = _factN >= 10 ? 8 : (_factN >= 5 ? 6 : 4);
             var tpOl = '【sc2_outline·叙事大纲】T' + (GM.turn||1) + '·把以下事实结构化为 ≤ ' + _sceneCap + ' 个场景的大纲 (后续 sc2_prose 据此写正文)·\n' + _olCtx + '\n返回严格 JSON·\n'
               + '{"scenes":[{"id":1,"location":"地点","time":"时辰","characters":["主要人物"],"event_seed":"40字事件种子","outline_lines":["≤5 条要点·每条 30 字内"],"mood":"氛围"}],'
