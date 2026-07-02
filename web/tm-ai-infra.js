@@ -969,7 +969,15 @@ async function callAIWithTools(prompt, tools, opts) {
       }
     } catch(_textParseE) {}
   }
-  return { text: text, toolCalls: toolCalls };
+  // 刀H2(2026-07-02·CC max_tokens 动态调整对照) · 纯增量字段:输出是否被 maxTok 截断(finish_reason)。
+  //   调用方(如回合推演 agent)可据此提升输出上限重试;不读该字段的调用方一切如旧。
+  var _truncH2 = false;
+  try {
+    _truncH2 = !!((data.choices && data.choices[0] && (data.choices[0].finish_reason === 'length' || data.choices[0].stop_reason === 'length' || data.choices[0].finish_reason === 'max_tokens'))
+      || data.stop_reason === 'max_tokens'
+      || (data.candidates && data.candidates[0] && data.candidates[0].finishReason === 'MAX_TOKENS'));
+  } catch (_tH2E) {}
+  return { text: text, toolCalls: toolCalls, truncated: _truncH2 };
 }
 
 /**

@@ -796,6 +796,8 @@
     var baseTranscript = _buildSystemPrompt() + (_biasInject ? '\n' + _biasInject : '') + (_timeCtx ? '\n' + _timeCtx : '') + '\n\n' + (gm._turnPlayerOps ? gm._turnPlayerOps + '\n\n' : '') + (_anomalyN ? _anomalyN + '\n\n' : '') + (_memDossier ? _memDossier + '\n\n' : '') + (_edictDossier ? _edictDossier + '\n\n' : '') + basis; // 常量基线(系统词+偏差校正+本回合时间+玩家操作+冷门深查+跨回合记忆+在办诏令+依据)·不随轮数膨胀
     var state = { finalized: false, summary: '', narrative: '', writeAttempts: 0, writeOk: 0, rounds: 0, depthTools: {}, depthFailed: [], finalizeRejects: 0, engineDims: engineDims };
     var _stall = 0;  // 连续"只察看不动手"轮数·防空转(真机逮弱模型重复 get_overview 原地打转)
+    var _mtBase = (P.conf && P.conf.agentModeMaxTok) || 2400;  // 刀H2 · 输出上限基数
+    var _tokBump = 0;  // 刀H2 · 输出截断自愈:被腰斩且没调成工具 → 上限×2重试本轮(≤2次·封顶9600)
     var roundLog = [];  // 上下文瘦身:滚动存每轮工具结果·call 时只带最近 2 轮全文 + 更早轮 1 行摘要(token 不随轮数膨胀)
     var _kRecent = (P.conf && P.conf.agentTranscriptRecentRounds) || 2;  // 带全文的近轮数(可配)
 
@@ -826,7 +828,7 @@
         var resp;
         try {
           resp = await cawt(callTranscript, tools, {
-            maxTok: (P.conf && P.conf.agentModeMaxTok) || 2400,
+            maxTok: Math.min(9600, _mtBase * Math.pow(2, _tokBump)),   // 刀H2 · 截断后已提升的上限
             tier: 'primary', priority: 'normal', timeoutMs: 180000, maxRetries: 1, id: 'agent_turn:r' + round
           });
         } catch (e) {
@@ -834,6 +836,13 @@
           break;
         }
         if (!resp) { if (round === 1) return bail('agent 无响应(首轮)·回落 LLM'); break; }
+        // 刀H2(CC max_tokens 动态调整对照) · 输出截断自愈:被输出上限腰斩且没调成任何工具 → 上限×2
+        //   重试本轮(≤2次·infra 纯增量 truncated 字段)·置于 narrative 赋值前(截断的叙事不污染产出)
+        if (resp.truncated && !(Array.isArray(resp.toolCalls) && resp.toolCalls.length) && _tokBump < 2) {
+          _tokBump++;
+          try { console.warn('[agent-mode] 第' + round + '轮输出被截断·提升输出上限至 ' + Math.min(9600, _mtBase * Math.pow(2, _tokBump)) + ' 重试'); } catch (_) {}
+          round--; continue;
+        }
         if (resp.text && !state.narrative) state.narrative = resp.text;
         var calls = Array.isArray(resp.toolCalls) ? resp.toolCalls.slice(0, perRoundCap) : [];
         if (!calls.length) break;
