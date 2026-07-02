@@ -434,16 +434,17 @@
   function injectStyles() {
     if (document.getElementById('tm-aa-style')) return;
     var css = [
-      // ── 主题变量（参照 Claude 桌面端·暖炭黑默认 / 象牙白可切）──
-      '#' + PANEL_ID + '{--bg:#262624;--surface:#30302e;--sunken:#1f1e1c;--code:#1d1c1a;--bubble:#3b3937;',
-      '--bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.15);--tx:#f0eee6;--tx2:#b8b4a6;--tx3:#8b877b;',
-      '--ac:#d97757;--ac-hi:#e08a6b;--ok:#84d8a5;--warn:#e5c07b;--bad:#ef8f8f;--danger:#c0413b;',
+      // ── 主题变量（调研自 claude.ai 真 token：珊瑚 #cc785c/激活 #a9583e·画布 #faf9f5·暗面 #181715/#1f1e1b·发丝线 #e6dfd8·墨 #141413）──
+      '#' + PANEL_ID + '{--bg:#262624;--surface:#30302e;--sunken:#1f1e1b;--code:#181715;--bubble:#3a3833;',
+      '--bd:rgba(250,249,245,.08);--bd2:rgba(250,249,245,.16);--ink:#faf9f5;--tx:#f0eee6;--tx2:#a09d96;--tx3:#807d75;',
+      '--ac:#cc785c;--ac-hi:#dd8a6e;--ok:#72c88a;--warn:#d9ad4b;--bad:#e07a72;--danger:#c64545;',
       '--serif:Georgia,"Times New Roman","Noto Serif SC","Source Han Serif SC","Songti SC",SimSun,serif;',
+      '--mono:"JetBrains Mono",ui-monospace,Consolas,"Courier New",monospace;',
       '--shadow:0 18px 60px rgba(0,0,0,.5),0 2px 10px rgba(0,0,0,.35)}',
-      '#' + PANEL_ID + '[data-theme="light"]{--bg:#f5f4ef;--surface:#fdfcf8;--sunken:#ecebe4;--code:#f0efe8;--bubble:#e8e6dd;',
-      '--bd:rgba(60,55,45,.10);--bd2:rgba(60,55,45,.20);--tx:#3d3a34;--tx2:#6e6a60;--tx3:#9a958a;',
-      '--ac:#c96442;--ac-hi:#d97757;--ok:#2e8b57;--warn:#9a7b1f;--bad:#c0413b;--danger:#c0413b;',
-      '--shadow:0 18px 60px rgba(60,50,35,.22),0 2px 10px rgba(60,50,35,.12)}',
+      '#' + PANEL_ID + '[data-theme="light"]{--bg:#faf9f5;--surface:#fdfdfb;--sunken:#f5f0e8;--code:#f5f0e8;--bubble:#efe9de;',
+      '--bd:#ebe6df;--bd2:#e6dfd8;--ink:#141413;--tx:#3d3d3a;--tx2:#6c6a64;--tx3:#8e8b82;',
+      '--ac:#cc785c;--ac-hi:#a9583e;--ok:#3f9e58;--warn:#a67c12;--bad:#c64545;--danger:#c64545;',
+      '--shadow:0 18px 60px rgba(60,50,35,.18),0 2px 10px rgba(60,50,35,.10)}',
       // 世界类型选择器（史实/虚构·标签隐于气泡提示·药丸自明）
       '#tm-aa-worldkind{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx3)}',
       '#tm-aa-worldkind .tm-aa-wk-lab{display:none}',
@@ -477,7 +478,7 @@
       '#tm-aa-hd button{display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--tx3);cursor:pointer;line-height:1;padding:6px;border-radius:8px;transition:background .12s,color .12s}',
       '#tm-aa-hd button:hover{background:var(--surface);color:var(--tx)}',
       '#tm-aa-hd button svg{display:block}',
-      '#tm-aa-hd b{font-size:15px;font-family:var(--serif);font-weight:600;letter-spacing:.08em}',
+      '#tm-aa-hd b{font-size:15px;font-family:var(--serif);font-weight:600;letter-spacing:-0.2px;color:var(--ink)}',   // 显示衬线负字距（Copernicus 规范）
       // 朱印徽记「师」：方印形制（印章为方·非圆）·衬线白文·随处替代 emoji 头像
       '.tm-aa-ava{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:14px;margin-right:9px;vertical-align:middle;box-shadow:0 1px 5px rgba(217,119,87,.4),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
       '#tm-aa-hd .sub{font-size:11.5px;color:var(--tx3);margin-left:8px;font-family:inherit;letter-spacing:0}',
@@ -511,8 +512,8 @@
       '#tm-aa-req::placeholder{color:var(--tx3)}',
       '.tm-aa-charcount{position:absolute;top:6px;right:12px;font-size:10px;color:var(--tx3);pointer-events:none;background:var(--surface);padding:0 5px;border-radius:5px;z-index:1;opacity:.9}',
       '.tm-aa-charcount[hidden]{display:none}',
-      '#tm-aa-field{position:relative;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box;background:var(--surface);border:1px solid var(--bd2);border-radius:18px;transition:border-color .15s,box-shadow .15s;box-shadow:0 2px 12px rgba(0,0,0,.12)}',
-      '#tm-aa-field:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px rgba(217,119,87,.15),0 2px 14px rgba(0,0,0,.14)}',
+      '#tm-aa-field{position:relative;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box;background:var(--surface);border:1px solid var(--bd2);border-radius:16px;transition:border-color .15s,box-shadow .15s;box-shadow:0 2px 12px rgba(0,0,0,.10)}',
+      '#tm-aa-field:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px rgba(204,120,92,.15),0 2px 14px rgba(0,0,0,.12)}',
       // 输入卡内嵌底行：＋能力菜单 · 世界类型 · 发送
       '.tm-aa-fieldbar{display:flex;align-items:center;gap:7px;padding:5px 7px 7px 8px}',
       '.tm-aa-flex{flex:1 1 auto}',
@@ -528,7 +529,7 @@
       '.tm-aa-mi .mi-ic svg{display:block}',
       '.tm-aa-mi .mi-d{display:block;font-size:10.5px;color:var(--tx3);margin-top:1px}',
       '.tm-aa-mi-sep{height:1px;background:var(--bd);margin:4px 8px}',
-      '#tm-aa-go{flex:0 0 auto;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--ac);color:#fff;border:none;border-radius:50%;padding:0;cursor:pointer;font-size:15px;line-height:1;transition:background .12s,transform .08s}',
+      '#tm-aa-go{flex:0 0 auto;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--ac);color:#fff;border:none;border-radius:10px;padding:0;cursor:pointer;font-size:15px;line-height:1;transition:background .12s,transform .08s}',   // 圆角方（claude.ai 发送钮形制·非正圆）
       '#tm-aa-go:hover{background:var(--ac-hi)}#tm-aa-go:active{transform:scale(.92)}',
       '#tm-aa-go:disabled{opacity:.5;cursor:default}',
       '#tm-aa-go.stopbtn{background:var(--danger)}#tm-aa-go.stopbtn:hover{background:#d2554f}',
@@ -559,7 +560,7 @@
       '.tm-aa-empty>*{animation:tm-aa-rise .34s ease-out both}',
       '.tm-aa-empty .emp-title{animation-delay:.05s}.tm-aa-empty .emp-sub{animation-delay:.11s}.tm-aa-empty .emp-chips{animation-delay:.17s}',
       '.tm-aa-empty .emp-seal{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:30px;box-shadow:0 6px 24px rgba(217,119,87,.35),inset 0 0 0 1.5px rgba(255,255,255,.16);text-shadow:0 1px 2px rgba(0,0,0,.25);margin-bottom:4px}',
-      '.tm-aa-empty .emp-title{color:var(--tx);font-size:27px;font-family:var(--serif);font-weight:600;letter-spacing:.06em;line-height:1.35}',
+      '.tm-aa-empty .emp-title{color:var(--ink);font-size:28px;font-family:var(--serif);font-weight:500;letter-spacing:-0.5px;line-height:1.3}',   // display-sm 负字距
       '.tm-aa-empty .emp-sub{color:var(--tx3);font-size:13px;margin-bottom:10px;line-height:1.6}',
       '.tm-aa-empty .emp-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px}',
       '.tm-aa-empty .emp-chip{background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:6px 15px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s,transform .12s}.tm-aa-empty .emp-chip:hover{background:var(--surface);color:var(--tx);border-color:var(--ac);transform:translateY(-1px)}',
@@ -588,7 +589,7 @@
       '.tm-aa-think-body .tk-line{color:var(--tx3);font-style:italic;font-size:11.5px;line-height:1.6;margin:2px 0;white-space:pre-wrap;word-break:break-word}',
       '.tm-aa-step-body{padding:2px 0 5px 12px;border-left:2px solid var(--bd);margin:2px 0 2px 4px}',
       '.tm-aa-step-body .sb-row{margin:2px 0}.tm-aa-step-body .sb-k{display:inline-block;color:var(--tx3);font-size:10px;margin-right:4px}',
-      '.tm-aa-step-body pre{margin:1px 0;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,Consolas,monospace;font-size:10px;line-height:1.5;color:var(--tx3);max-height:120px;overflow:auto;background:var(--code);border-radius:6px;padding:4px 6px}',
+      '.tm-aa-step-body pre{margin:1px 0;white-space:pre-wrap;word-break:break-all;font-family:var(--mono);font-size:10px;line-height:1.5;color:var(--tx3);max-height:120px;overflow:auto;background:var(--code);border-radius:6px;padding:4px 6px}',
       '.tm-aa-checklist{background:var(--surface);border:1px solid var(--bd);border-radius:10px;padding:7px 10px;margin-bottom:6px}',
       '.tm-aa-checklist .cl-head{font-size:11px;color:var(--tx2);font-weight:bold;margin-bottom:3px}',
       '.tm-aa-checklist .cl-item{font-size:11.5px;line-height:1.75;color:var(--tx3);display:flex;gap:6px;align-items:baseline}',
@@ -601,8 +602,8 @@
       '.tm-aa-msg-user .mu-who{display:none}',
       '.tm-aa-msg-acts{position:absolute;top:-13px;right:6px;display:none;gap:1px;background:var(--surface);border:1px solid var(--bd2);border-radius:8px;padding:1px 2px;box-shadow:0 4px 12px rgba(0,0,0,.3)}',
       '.tm-aa-msg-user:hover .tm-aa-msg-acts{display:inline-flex}',
-      '.tm-aa-msg-ai{position:relative;margin:14px auto 12px 0;max-width:96%;width:fit-content;padding:2px 2px 2px 0;background:none;border:none;font-size:14px;line-height:1.8;color:var(--tx)}',
-      '.tm-aa-msg-ai .ai-who{color:var(--ac);font-weight:600;font-size:11.5px;display:block;margin-bottom:4px;font-family:var(--serif);letter-spacing:.1em}',
+      '.tm-aa-msg-ai{position:relative;margin:14px auto 12px 0;max-width:96%;width:fit-content;padding:2px 2px 2px 0;background:none;border:none;font-size:15px;line-height:1.85;color:var(--tx);font-family:var(--serif)}',   // 回复正文=衬线（Tiempos 语义·Claude 签名）
+      '.tm-aa-msg-ai .ai-who{color:var(--ac);font-weight:600;font-size:11.5px;display:block;margin-bottom:4px;font-family:var(--serif);letter-spacing:0}',
       '.tm-aa-msg-ai .ai-sev{display:inline-block;background:rgba(229,192,123,.16);color:var(--warn);border-radius:5px;padding:0 6px;font-size:10.5px;margin-right:5px}',
       '.tm-aa-msg-ai .ai-sug{color:var(--ok);margin-top:4px}',
       '.tm-aa-msg-ai .ai-qs{margin-top:3px}.tm-aa-msg-ai .ai-q{line-height:1.8}',
@@ -610,12 +611,12 @@
       '.tm-aa-reply{margin:14px 0 12px;padding:0 2px;background:none;border:none;border-radius:0}',
       '.tm-aa-reply .reply-who{display:flex;align-items:center;gap:7px;margin-bottom:7px}',
       '.tm-aa-reply .reply-who .reply-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:12px;line-height:1;box-shadow:0 1px 4px rgba(217,119,87,.35),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
-      '.tm-aa-reply .reply-who b{color:var(--ac);font-size:12px;font-weight:600;font-family:var(--serif);letter-spacing:.1em}',
+      '.tm-aa-reply .reply-who b{color:var(--ac);font-size:12px;font-weight:600;font-family:var(--serif);letter-spacing:0}',
       '.tm-aa-reply .tm-aa-summary{background:none;padding:0;border-radius:0}',
       '.tm-aa-reply .tm-aa-summary::before{display:none}',
       '.tm-aa-reply.frozen{opacity:.62}',
       '.tm-aa-reply .reply-actions{display:flex;gap:7px;margin-top:10px}',
-      '.tm-aa-reply .reply-actions button{flex:1;font-size:12px;padding:7px 8px;border-radius:999px;cursor:pointer;border:1px solid var(--bd2);background:transparent;color:var(--tx2);font-family:inherit;transition:background .12s,color .12s,border-color .12s}',
+      '.tm-aa-reply .reply-actions button{flex:1;font-size:12px;padding:7px 8px;border-radius:9px;cursor:pointer;border:1px solid var(--bd2);background:transparent;color:var(--tx2);font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;transition:background .12s,color .12s,border-color .12s}',
       '.tm-aa-reply .reply-actions button:hover{background:var(--surface);color:var(--tx)}',
       '.tm-aa-reply .reply-actions button:first-child{flex:2;background:var(--ac);border-color:var(--ac);color:#fff}',
       '.tm-aa-reply .reply-actions button:first-child:hover{background:var(--ac-hi)}',
@@ -630,9 +631,9 @@
       '.tm-aa-diff .add{color:var(--ok)}.tm-aa-diff .rm{color:var(--bad)}.tm-aa-diff .ch{color:var(--warn)}',
       '.tm-aa-diff .uncertain{background:rgba(229,192,123,.08);border-left:2px solid var(--warn);padding-left:5px;margin-left:-7px}',
       '.tm-aa-diff .tm-aa-unc{display:block;color:var(--warn);font-size:10px;margin-top:1px}',
-      '.tm-aa-summary{background:none;border:none;border-radius:0;padding:1px 2px;font-size:14px;line-height:1.8;color:var(--tx);width:100%;max-width:760px;margin:0 auto;box-sizing:border-box}',
-      '.tm-aa-summary::before{content:"国师";display:block;font-size:11px;color:var(--ac);font-weight:600;margin-bottom:5px;font-family:var(--serif);letter-spacing:.1em}',
-      '.tm-aa-summary b{color:var(--tx3);font-size:11px;display:block;margin-bottom:4px;font-weight:600;letter-spacing:.06em}',
+      '.tm-aa-summary{background:none;border:none;border-radius:0;padding:1px 2px;font-size:15px;line-height:1.85;color:var(--tx);width:100%;max-width:760px;margin:0 auto;box-sizing:border-box;font-family:var(--serif)}',   // 回复正文=衬线（Tiempos 语义）
+      '.tm-aa-summary::before{content:"国师";display:block;font-size:11px;color:var(--ac);font-weight:600;margin-bottom:5px;font-family:var(--serif);letter-spacing:0}',
+      '.tm-aa-summary b{color:var(--tx3);font-size:11px;display:block;margin-bottom:4px;font-weight:600;letter-spacing:.5px;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}',   // caption 小标回归 sans（正文衬线的对照层）
       '.tm-aa-summary .note{color:var(--tx3);font-size:12px;margin-top:5px}',
       '.tm-aa-summary.tm-aa-clamped{max-height:var(--clamp-max,280px);overflow:hidden;position:relative;flex:0 0 auto}',
       '.tm-aa-summary.tm-aa-clamped::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(transparent,var(--bg));pointer-events:none}',
@@ -647,11 +648,11 @@
       // markdown 渲染
       '.md-p{margin:3px 0;line-height:1.75}.md-h{font-weight:600;color:var(--tx);margin:7px 0 3px;font-family:var(--serif);letter-spacing:.03em}.md-h1{font-size:15px}.md-h2{font-size:14px}.md-h3,.md-h4{font-size:13px}',
       '.md-list{margin:3px 0;padding-left:19px}.md-list li{margin:2px 0;line-height:1.7}',
-      '.md-ic{background:rgba(229,192,123,.13);color:var(--warn);padding:0 5px;border-radius:4px;font-family:ui-monospace,Consolas,monospace;font-size:11px}',
-      '.md-code{background:var(--code);border:1px solid var(--bd);border-radius:0 0 8px 8px;border-top:none;padding:7px 9px;margin:0;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:11px;line-height:1.55;white-space:pre-wrap;color:var(--tx2)}',
+      '.md-ic{background:rgba(229,192,123,.13);color:var(--warn);padding:0 5px;border-radius:4px;font-family:var(--mono);font-size:11px}',
+      '.md-code{background:var(--code);border:1px solid var(--bd);border-radius:0 0 8px 8px;border-top:none;padding:7px 9px;margin:0;overflow:auto;font-family:var(--mono);font-size:11px;line-height:1.55;white-space:pre-wrap;color:var(--tx2)}',
       '.md-codewrap{margin:5px 0;position:relative}',
       '.md-codebar{display:flex;align-items:center;justify-content:space-between;background:var(--sunken);border:1px solid var(--bd);border-radius:8px 8px 0 0;padding:2px 6px 2px 9px}',
-      '.md-codebar .md-lang{color:var(--tx3);font-size:10px;font-family:ui-monospace,Consolas,monospace;text-transform:lowercase}',
+      '.md-codebar .md-lang{color:var(--tx3);font-size:10px;font-family:var(--mono);text-transform:lowercase}',
       '.md-codebar .md-copy{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:10px;padding:1px 6px;border-radius:5px;opacity:0;transition:opacity .12s}',
       '.md-codewrap:hover .md-copy{opacity:1}.md-codebar .md-copy:hover{background:var(--surface);color:var(--tx)}',
       '.md-code .tok-str{color:#9ad6a0}.md-code .tok-key{color:#7fb4e8}.md-code .tok-num{color:#e0b863}.md-code .tok-kw{color:#c98ad6}.md-code .tok-punct{color:var(--tx3)}',
@@ -668,7 +669,7 @@
       '.tm-aa-summary pre.tm-aa-cl{white-space:pre-wrap;margin:5px 0 0;font-family:inherit;font-size:11.5px;line-height:1.65;color:var(--tx2);max-height:200px;overflow:auto}',
       '.tm-aa-sug{margin-top:7px;padding-top:6px;border-top:1px solid var(--bd)}.tm-aa-sug b{color:var(--warn)}',
       '.tm-aa-sug .sug-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11.5px;color:var(--tx2)}.tm-aa-sug .sug-row span{flex:1}',
-      '.tm-aa-sug .sug-keep{background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:2px 10px;font-size:11px;cursor:pointer}.tm-aa-sug .sug-keep:hover{color:var(--tx)}.tm-aa-sug .sug-keep:disabled{opacity:.6;cursor:default}',
+      '.tm-aa-sug .sug-keep{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:2px 10px;font-size:11px;cursor:pointer}.tm-aa-sug .sug-keep:hover{color:var(--tx)}.tm-aa-sug .sug-keep:disabled{opacity:.6;cursor:default}',
       '.tm-aa-finding{margin-bottom:7px;padding:6px 9px;background:var(--surface);border:1px solid var(--bd);border-left:3px solid var(--bd2);border-radius:8px}',
       '.tm-aa-finding .sev{font-weight:bold;font-size:11px}.tm-aa-finding .sev.rm{color:var(--bad)}.tm-aa-finding .sev.ch{color:var(--warn)}.tm-aa-finding .sev.add{color:var(--ok)}',
       '.tm-aa-finding b{color:var(--tx);font-size:12px}.tm-aa-finding .loc{color:var(--tx3);font-size:10px}',
@@ -683,11 +684,18 @@
       '.tm-aa-val{width:100%;max-width:760px;margin:0 auto;box-sizing:border-box;font-size:12px}',
       '.tm-aa-val.ok{color:var(--ok)}.tm-aa-val.bad{color:var(--bad)}',
       '#tm-aa-actions{display:flex;gap:8px;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box}',
-      '#tm-aa-apply{flex:1;background:var(--ac);color:#fff;border:none;border-radius:999px;padding:8px;cursor:pointer;font-family:inherit;font-size:12.5px;transition:background .12s}',
+      '#tm-aa-apply{flex:1;background:var(--ac);color:#fff;border:none;border-radius:10px;padding:9px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;transition:background .12s}',   // 主按钮=圆角方（claude.ai 按钮 8-10px 形制·非药丸）
       '#tm-aa-apply:hover{background:var(--ac-hi)}',
       '#tm-aa-apply.warn{background:transparent;border:1px solid var(--warn);color:var(--warn)}',
-      '#tm-aa-discard{flex:1;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:8px;cursor:pointer;font-family:inherit;font-size:12.5px}',
-      '#tm-aa-discard:hover{color:var(--tx);background:var(--surface)}'
+      '#tm-aa-discard{flex:1;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:10px;padding:9px;cursor:pointer;font-family:inherit;font-size:13px}',
+      '#tm-aa-discard:hover{color:var(--tx);background:var(--surface)}',
+      // composer 模型徽（claude.ai：模型指示在输入卡内右下·此处只读·设置面板可改）
+      '#tm-aa-model{flex:0 0 auto;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--tx3);border:1px solid var(--bd);border-radius:7px;padding:3px 8px;line-height:1.4}',
+      '#tm-aa-model:empty{display:none}',
+      // 侧栏搜索与日期分组
+      '#tm-aa-railq{width:100%;box-sizing:border-box;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:9px;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;margin-top:2px}',
+      '#tm-aa-railq:focus{border-color:var(--ac)}',
+      '#tm-aa-railq::placeholder{color:var(--tx3)}'
     ].join('');
     var st = document.createElement('style');
     st.id = 'tm-aa-style';
@@ -704,7 +712,7 @@
       '<div class="tm-aa-resize" id="tm-aa-resize" title="拖动调整宽度"></div>',   // UI·AI · 左缘拖拽调宽
       '<div id="tm-aa-hd"><span><button id="tm-aa-rail-tg" aria-label="会话历史侧栏" title="会话历史（全屏侧栏）">' + _icon('bars') + '</button><span class="tm-aa-ava">师</span><b>国师</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
       '<span class="tm-aa-hdbtns"><button id="tm-aa-theme" aria-label="切换明暗主题" title="明暗主题切换">' + _icon('contrast') + '</button><button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">' + _icon('pen') + '</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">' + _icon('expand') + '</button><button id="tm-aa-x" aria-label="关闭" title="关闭">' + _icon('close') + '</button></span></div>',
-      '<div id="tm-aa-rail"><button id="tm-aa-railnew" type="button">＋ 新对话</button><div class="rail-sec">近期运行</div><div id="tm-aa-raillist"></div><button id="tm-aa-railclear" type="button" title="清空全部运行历史">清空历史</button></div>',
+      '<div id="tm-aa-rail"><button id="tm-aa-railnew" type="button">＋ 新对话</button><input id="tm-aa-railq" type="text" placeholder="搜索历史…" aria-label="搜索运行历史"><div id="tm-aa-raillist"></div><button id="tm-aa-railclear" type="button" title="清空全部运行历史">清空历史</button></div>',
       '<div id="tm-aa-body">',
       '<div class="tm-aa-search" id="tm-aa-search" hidden><input type="text" id="tm-aa-search-in" placeholder="在结果里查找…"><span class="tm-aa-search-n" id="tm-aa-search-n">0/0</span><button type="button" id="tm-aa-search-prev" title="上一个">↑</button><button type="button" id="tm-aa-search-next" title="下一个">↓</button><button type="button" id="tm-aa-search-x" title="关闭 (Esc)">×</button></div>',
       '<div id="tm-aa-composer">',   // Claude 桌面端式 composer：圆角大卡片·内嵌底行（＋能力菜单 · 世界类型 · 发送）
@@ -720,6 +728,7 @@
       '<button type="button" id="tm-aa-plus" aria-label="更多能力" title="更多能力：体检 / 审阅 / 问答 / 讲解 / 分解编排 / 三堂会审 / 检查点">＋</button>',
       '<div id="tm-aa-worldkind"><span class="tm-aa-wk-lab">世界类型</span><button type="button" class="tm-aa-wk-opt" data-wk="historical" title="史实剧本·全考据：年号/生卒/职官/事件与正史相符，遇硬伤进谏">史实</button><button type="button" class="tm-aa-wk-opt" data-wk="fictional" title="虚构/架空世界观·奇幻/武侠/仙侠/未来/异世界等原创设定，不受真实历史约束，国师只管设定自洽与平衡">虚构</button></div>',
       '<span class="tm-aa-flex"></span>',
+      '<span id="tm-aa-model" title="当前模型（在设置面板可改）"></span>',
       '<button id="tm-aa-go" title="Enter 发送 · Shift+Enter 换行" aria-label="发送">↑</button>',
       '</div>',
       '<div id="tm-aa-plusmenu" hidden></div>',
@@ -903,17 +912,30 @@
     });
   }
 
-  // ── Claude 桌面端式 · 会话历史侧栏：全屏下左侧展开（数据=既有 listHistory 持久历史·点击回填输入框） ──
-  function _renderRail() {
+  // ── Claude 桌面端式 · 会话历史侧栏：全屏下左侧展开（数据=既有 listHistory 持久历史·点击回填输入框）
+  //    调研对齐：桌面端侧栏 = 搜索框 + 按日期分组的会话列表（今天/昨天/七日内/更早） ──
+  function _railGroupOf(ts) {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    var day0 = d.getTime();
+    if (ts >= day0) return '今天';
+    if (ts >= day0 - 86400000) return '昨天';
+    if (ts >= day0 - 6 * 86400000) return '七日内';
+    return '更早';
+  }
+  function _renderRail(query) {
     var list = ui.els && ui.els.raillist; if (!list) return;
-    var h = listHistory().slice(0, 30);
-    if (!h.length) { list.innerHTML = '<div class="rail-empty">还没有运行记录——发出第一条需求后，这里会像会话列表一样留档。</div>'; return; }
-    list.innerHTML = h.map(function (r) {
-      return '<div class="rail-item" data-req="' + esc(String(r.request || '').slice(0, 500)) + '" title="点击把这条需求填回输入框">'
+    var h = listHistory(query).slice(0, 40);
+    if (!h.length) { list.innerHTML = '<div class="rail-empty">' + (query ? '没有匹配「' + esc(String(query).slice(0, 20)) + '」的记录。' : '还没有运行记录——发出第一条需求后，这里会像会话列表一样留档。') + '</div>'; return; }
+    var out = [], lastGrp = null;
+    h.forEach(function (r) {
+      var g = _railGroupOf(r.ts || 0);
+      if (g !== lastGrp) { out.push('<div class="rail-sec">' + g + '</div>'); lastGrp = g; }
+      out.push('<div class="rail-item" data-req="' + esc(String(r.request || '').slice(0, 500)) + '" title="点击把这条需求填回输入框">'
         + '<div class="ri-req">' + esc(r.request || '（无需求文本）') + '</div>'
         + '<div class="ri-meta">' + esc(r.kind || '') + ' · ' + esc((r.when || '').replace(/^\d{4}\/|:\d{2}$/g, '')) + (r.applied ? ' · <span class="ri-ok">已应用 ✓</span>' : '') + '</div>'
-        + '</div>';
-    }).join('');
+        + '</div>');
+    });
+    list.innerHTML = out.join('');
   }
   function _ensureRail() {
     if (!ui.els || !ui.els.railTg || ui._railBound) return;
@@ -922,12 +944,14 @@
       var p = ui.els.panel;
       if (!p.classList.contains('railon') && !p._fs) _toggleFullscreen();   // 侧栏是全屏版式的一部分：未全屏先进全屏
       p.classList.toggle('railon');
-      if (p.classList.contains('railon')) _renderRail();
+      if (p.classList.contains('railon')) _renderRail(ui._railQ || '');
     });
+    var _rq = ui.els.panel.querySelector('#tm-aa-railq');
+    if (_rq) _rq.addEventListener('input', function () { ui._railQ = _rq.value.trim(); _renderRail(ui._railQ); });
     var _rn = ui.els.panel.querySelector('#tm-aa-railnew');
-    if (_rn) _rn.addEventListener('click', function () { newConversation(); _renderRail(); });
+    if (_rn) _rn.addEventListener('click', function () { newConversation(); _renderRail(ui._railQ || ''); });
     var _rc = ui.els.panel.querySelector('#tm-aa-railclear');
-    if (_rc) _rc.addEventListener('click', function () { clearHistory(); _renderRail(); setStatus('运行历史已清空'); });
+    if (_rc) _rc.addEventListener('click', function () { clearHistory(); _renderRail(ui._railQ || ''); setStatus('运行历史已清空'); });
     if (ui.els.raillist) ui.els.raillist.addEventListener('click', function (ev) {
       var it = ev.target && ev.target.closest ? ev.target.closest('.rail-item') : null;
       if (!it) return;
@@ -937,7 +961,13 @@
       ui.els.req.focus();
       setStatus('已把该条历史需求填回输入框 · 可编辑后发送');
     });
-    ui._onHistoryChange = function () { if (ui.els.panel.classList.contains('railon')) _renderRail(); };   // 新纪录/标记已应用 → 侧栏活刷新
+    ui._onHistoryChange = function () { if (ui.els.panel.classList.contains('railon')) _renderRail(ui._railQ || ''); };   // 新纪录/标记已应用 → 侧栏活刷新
+    // composer 模型徽：读设置面板的当前模型（只读展示·claude.ai 形制）
+    try {
+      var _mcfg = (AA && typeof AA.loadEditorApiConfig === 'function') ? AA.loadEditorApiConfig() : null;
+      var _mEl = ui.els.panel.querySelector('#tm-aa-model');
+      if (_mEl && _mcfg && _mcfg.model) _mEl.textContent = String(_mcfg.model).slice(0, 40);
+    } catch (eM) {}
   }
 
   function setStatus(t) { if (ui.els) ui.els.status.textContent = t || ''; }
