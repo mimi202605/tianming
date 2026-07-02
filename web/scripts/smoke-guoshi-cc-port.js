@@ -174,5 +174,49 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   var trSelf = rSelf.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat(m.toolResults || []); }, []);
   ok(rSelf.draft.name === '丙' && !trSelf.some(function (t) { return t.content.indexOf('被外部修改') >= 0; }), 'G4 自家连续写同区段不误报(写后指纹即刷新)');
 
+  // ───────── G7 · todo 收尾闸(CC verification nudge 对照) ─────────
+  console.log('— G7 todo 收尾闸 —');
+  // 7a: finish 时任务表有未完项 → 顶回一次(带原因+出路)·完成后 finish 放行
+  var vq = 0;
+  var rV = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '两步任务', {
+    caller: function () {
+      vq++;
+      if (vq === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'v1', name: 'todoWrite', input: { todos: [{ content: '补三将属性', status: 'in_progress' }, { content: '补势力资料', status: 'pending' }] } }] });
+      if (vq === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'v2', name: 'finish', input: { summary: '做完了' } }] });   // 未完就想溜
+      if (vq === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'v3', name: 'todoWrite', input: { todos: [{ content: '补三将属性', status: 'completed' }, { content: '补势力资料', status: 'completed' }] } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'v4', name: 'finish', input: { summary: '真做完了' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var trV = rV.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat(m.toolResults || []); }, []);
+  var vBounce = trV.filter(function (t) { return t.content.indexOf('todos-pending') >= 0 || t.content.indexOf('项未完成') >= 0; });
+  ok(vBounce.length === 1 && vBounce[0].id === 'v2', 'G7 未完 todo 时 finish → 顶回(带项数与出路)');
+  ok(vBounce[0].content.indexOf('补三将属性') >= 0 && vBounce[0].content.indexOf('todoWrite 更新任务表') >= 0, 'G7 顶回消息点名未完项+给"确不需要做"的出路');
+  ok(rV.finished && rV.stopReason === 'finish' && rV.todos.length === 0, 'G7 完成任务表后 finish 放行·表已自动清');
+  // 7b: 只顶一次(防死循环)——agent 坚持 finish 第二次放行·剩余 todo 经 result.todos 交 UI
+  var wq = 0;
+  var rW = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '固执收尾', {
+    caller: function () {
+      wq++;
+      if (wq === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'w1t', name: 'todoWrite', input: { todos: [{ content: '某项', status: 'pending' }] } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'wf' + wq, name: 'finish', input: { summary: '就这样' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(rW.finished && wq === 3, 'G7 顶回仅一次·坚持 finish 第二次放行(防死循环)');
+  ok(rW.todos.length === 1 && rW.todos[0].content === '某项', 'G7 未完项经 result.todos 交 UI(用户可见"没做完啥")');
+  // 7c: noToolCalls nudge 感知任务表(点名未完项)
+  var nq = 0;
+  var rN = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '卡壳任务', {
+    caller: function () {
+      nq++;
+      if (nq === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'n1', name: 'todoWrite', input: { todos: [{ content: '补齐某将', status: 'in_progress' }] } }] });
+      if (nq === 2) return Promise.resolve({ text: '我想想…', toolCalls: [] });   // 卡壳没调工具
+      if (nq === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'n3', name: 'todoWrite', input: { todos: [{ content: '补齐某将', status: 'completed' }] } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'nf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var nNudge = rN.conversation.filter(function (m) { return m.role === 'user' && /没有调用任何工具/.test(m.text || ''); });
+  ok(nNudge.length === 1 && nNudge[0].text.indexOf('补齐某将') >= 0, 'G7 noToolCalls nudge 点名未完 todo(有的放矢)');
+  ok(rN.finished, 'G7 nudge 后正常收尾');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

@@ -2203,6 +2203,7 @@
     // 刀G5(CC TodoWrite 对照) · 任务表:起跑重置·节流提醒(≥3轮未更新且有未完项·折叠进工具结果不伪造独立轮)
     _todoState.list = [];
     var _todoLastRound = 0, _todoRemindedAt = 0;
+    var _todoFinishBounced = false;   // 刀G7(CC verification nudge 对照) · finish 时任务表有未完项→顶回一次(仅一次·防死循环)
     // 刀G4 · 外部修改防护:起跑对全部顶层区段留指纹·agent 读/写都刷新·写前对照揪外部改动
     var _extSnap = {};
     try { Object.keys(draft || {}).forEach(function (rk) { _extSnap[rk] = _fpOf(draft[rk]); }); } catch (eSn) {}
@@ -2240,7 +2241,10 @@
             // 韧性：没调工具不直接放弃，先 nudge 推一把（卡住 → 重新发起）
             if (noToolNudges < maxNoToolNudges && !control.aborted) {
               noToolNudges++;
-              conversation.push({ role: 'user', text: '你刚才没有调用任何工具。若已按要求改完，请调用 finish 并写明改动说明；若还没改完，请继续用工具（applyEdit/applyPush/multiEdit/...）修改后再 finish。' });
+              // 刀G7 · nudge 感知任务表:有未完项就点名(比泛泛"继续"更有的放矢)
+              var _pNt = _todoState.list.filter(function (t) { return t.status !== 'completed'; });
+              var _pNtTxt = _pNt.length ? '任务表尚有 ' + _pNt.length + ' 项未完成（如「' + _pNt[0].content + '」）。' : '';
+              conversation.push({ role: 'user', text: '你刚才没有调用任何工具。' + _pNtTxt + '若已按要求改完，请调用 finish 并写明改动说明；若还没改完，请继续用工具（applyEdit/applyPush/multiEdit/...）修改后再 finish。' });
               if (typeof opts.onText === 'function') { try { opts.onText('（未检测到工具调用，正在提示 agent 继续…）', iterations); } catch (e) {} }
               return step();
             }
@@ -2255,6 +2259,12 @@
             var c = calls[_ci++];
             return Promise.resolve().then(function () {
               if (c.name === 'finish') {
+                // 刀G7 · 收尾闸:任务表尚有未完项 → 顶回一次(完成或先 todoWrite 更新表·仅顶一次不计入 finishAttempts)
+                var _pTd = _todoState.list.filter(function (t) { return t.status !== 'completed'; });
+                if (_pTd.length && !_todoFinishBounced) {
+                  _todoFinishBounced = true;
+                  return { ok: false, finish: false, errorCode: 'todos-pending', reason: '任务表尚有 ' + _pTd.length + ' 项未完成：' + _pTd.slice(0, 3).map(function (t) { return '「' + t.content + '」'; }).join('、') + (_pTd.length > 3 ? ' 等' : '') + '。请逐项完成并用 todoWrite 标 completed 后再 finish；若某项经查确实不需要做，先用 todoWrite 更新任务表（移除或改写该项）再 finish。' };
+                }
                 var blocking = _blockingViolations(validateDraft(draft), blockingChecks);
                 if (!blocking.length) { _finishSummary = (c.input && c.input.summary) || ''; finishAccepted = true; return { ok: true, finish: true, summary: _finishSummary }; }
                 finishAttempts++; return { ok: false, finish: false, reason: '\u8349\u7a3f\u4ecd\u6709 ' + blocking.length + ' \u9879\u5fc5\u4fee\u8fdd\u89c4\uff0c\u7981\u6b62\u7ed3\u675f\uff0c\u8bf7\u5148\u4fee\u590d', violations: blocking };
