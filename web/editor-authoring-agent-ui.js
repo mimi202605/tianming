@@ -814,7 +814,8 @@
       '<label class="mp-lab">API 地址<input id="tm-aa-api-url" type="text" placeholder="https://api.deepseek.com 或第三方中转地址" autocomplete="off" spellcheck="false"></label>',
       '<label class="mp-lab">API Key<input id="tm-aa-api-key" type="password" placeholder="sk-…" autocomplete="off"></label>',
       '<div class="mp-row"><button type="button" id="tm-aa-api-detect">检测模型</button><span class="mp-st" id="tm-aa-api-st"></span></div>',
-      '<label class="mp-lab">模型<select id="tm-aa-api-model"></select></label>',
+      '<label class="mp-lab">主模型<select id="tm-aa-api-model"></select></label>',
+      '<label class="mp-lab">次要模型（杂活分工：三堂会审两官 / 前情摘要·可省主模型开销）<select id="tm-aa-api-model2"><option value="">不用 · 都走主模型</option></select></label>',
       '<div class="mp-row mp-end"><button type="button" id="tm-aa-api-save">保存并使用</button></div>',
       '<div class="mp-hint">与正式游戏共用一份（存 tm_api · 国师 / 生图同源）。「检测模型」会真调该 API 的模型清单接口，选到的模型即刻用于下一次运行。</div>',
       '</div>',
@@ -1063,15 +1064,15 @@
   //    存全游戏共用 tm_api·并 best-effort 镜像回游戏存档 P.ai(tm_P_lite/tm_P·与工坊 API 模态同构——
   //    loadEditorApiConfig 以「游戏存档有 key」为优先源·不镜像则此处新配置会被存档压掉)。 ──
   function _loadApiCfg() { try { return (AA && typeof AA.loadEditorApiConfig === 'function') ? AA.loadEditorApiConfig() : {}; } catch (e) { return {}; } }
-  function _saveApiCfg(url, key, model) {
+  function _saveApiCfg(url, key, model, model2) {
     try {
       var cur = {}; try { cur = JSON.parse(localStorage.getItem('tm_api') || '{}') || {}; } catch (e0) {}
-      cur.url = url; cur.key = key; if (model) cur.model = model;
+      cur.url = url; cur.key = key; if (model) cur.model = model; cur.model2 = model2 || '';
       localStorage.setItem('tm_api', JSON.stringify(cur));
       ['tm_P_lite', 'tm_P'].forEach(function (k) {
         try {
           var o = JSON.parse(localStorage.getItem(k) || 'null');
-          if (o && o.ai) { o.ai.url = url; o.ai.key = key; if (model) o.ai.model = model; localStorage.setItem(k, JSON.stringify(o)); }
+          if (o && o.ai) { o.ai.url = url; o.ai.key = key; if (model) o.ai.model = model; o.ai.model2 = model2 || ''; localStorage.setItem(k, JSON.stringify(o)); }
         } catch (e1) {}
       });
       return true;
@@ -1169,12 +1170,19 @@
     if (!btn || !pop || ui._modelPopBound) return;
     ui._modelPopBound = true;
     var q = function (s) { return pop.querySelector(s); };
-    var inUrl = q('#tm-aa-api-url'), inKey = q('#tm-aa-api-key'), sel = q('#tm-aa-api-model'), st = q('#tm-aa-api-st');
+    var inUrl = q('#tm-aa-api-url'), inKey = q('#tm-aa-api-key'), sel = q('#tm-aa-api-model'), sel2 = q('#tm-aa-api-model2'), st = q('#tm-aa-api-st');
+    function _fill2(ids, cur2) {   // 次要模型下拉:首项恒「不用」·清单同主
+      sel2.innerHTML = '<option value="">不用 · 都走主模型</option>';
+      (ids || []).forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = id; sel2.appendChild(o); });
+      sel2.value = (cur2 && (ids || []).indexOf(cur2) >= 0) ? cur2 : (cur2 || '');
+      if (cur2 && sel2.value !== cur2) { var ox = document.createElement('option'); ox.value = cur2; ox.textContent = cur2 + '（当前）'; sel2.appendChild(ox); sel2.value = cur2; }
+    }
     function _seed() {
       var cfg = _loadApiCfg();
       inUrl.value = cfg.url || ''; inKey.value = cfg.key || '';
       sel.innerHTML = '';
       if (cfg.model) { var o0 = document.createElement('option'); o0.value = cfg.model; o0.textContent = cfg.model + '（当前）'; sel.appendChild(o0); }
+      _fill2([], cfg.model2 || '');
       st.textContent = '';
     }
     btn.addEventListener('click', function (ev) {
@@ -1188,18 +1196,20 @@
       st.textContent = '检测中…';
       _detectModels(u, k).then(function (ids) {
         var cur = sel.value || _loadApiCfg().model || '';
+        var cur2 = sel2.value || _loadApiCfg().model2 || '';
         sel.innerHTML = '';
         ids.slice(0, 300).forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = id; sel.appendChild(o); });
         if (cur && ids.indexOf(cur) >= 0) sel.value = cur;
+        _fill2(ids.slice(0, 300), cur2);
         st.textContent = '✓ 检测到 ' + ids.length + ' 个模型';
       }).catch(function (e) { st.textContent = '✗ ' + ((e && e.message) || e); });
     });
     q('#tm-aa-api-save').addEventListener('click', function () {
-      var u = inUrl.value.trim(), k = inKey.value.trim(), m = (sel.value || '').trim();
+      var u = inUrl.value.trim(), k = inKey.value.trim(), m = (sel.value || '').trim(), m2 = (sel2.value || '').trim();
       if (!u || !k) { st.textContent = 'API 地址与 Key 都要填'; return; }
-      if (_saveApiCfg(u, k, m)) {
+      if (_saveApiCfg(u, k, m, m2)) {
         _refreshModelChip(); _modelPopClose();
-        setStatus('API 已保存（全游戏共用 · 国师 / 生图同源）' + (m ? ' · 模型：' + m : '') + ' · 下一次运行即生效');
+        setStatus('API 已保存（全游戏共用 · 国师 / 生图同源）' + (m ? ' · 主模型：' + m : '') + (m2 ? ' · 次模：' + m2 + '（会审两官/摘要分工）' : '') + ' · 下一次运行即生效');
       } else st.textContent = '保存失败（localStorage 不可用）';
     });
     document.addEventListener('click', function (ev) { if (!pop.hidden && !pop.contains(ev.target) && ev.target !== btn) _modelPopClose(); });

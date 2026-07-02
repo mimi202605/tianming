@@ -708,8 +708,17 @@
       key: src.key || '',
       url: (src.url || '').replace(/\/+$/, ''),
       model: src.model || 'gpt-4o',
+      model2: src.model2 || '',   // 次要模型(杂活分工:会审两官/前情摘要等·空=同主模型)
       temp: (src.temp != null) ? src.temp : 0.7
     };
+  }
+  // 次要模型配置：同 API 换便宜模型干杂活(三堂会审的史官/谏官·宏压缩摘要)——未配则返回 null(用主模型)
+  function _secondaryCfg() {
+    try {
+      var c = loadEditorApiConfig();
+      if (!c.model2 || c.model2 === c.model) return null;
+      return { key: c.key, url: c.url, model: c.model2, temp: c.temp };
+    } catch (e) { return null; }
   }
 
   // 方向B · 剧本记忆：持久「剧本约定」（玩家写的创作偏好·等价 CLAUDE.md），每次 run 注入提示词。
@@ -2313,7 +2322,7 @@
         + '①用户各轮请求与意图(逐条·含意图变化与纠偏) ②已完成的改动(实体/字段级·关键新值) ③任务表现状(未完项) ④已查明的关键事实(字段结构/约定/引用关系) ⑤遇到的错误与修正 ⑥正在进行的工作 ⑦下一步(必须与用户最近请求直接一致·勿开新任务)\n'
         + '要具体：实体名/字段路径/关键值逐一点名，宁详勿略。调用 submitSummary 提交；若无法调用工具，直接以纯文本输出摘要正文。\n\n【对话记录】\n' + flat;
       if (typeof opts.onText === 'function') { try { opts.onText('（上下文过长，正在压缩前情摘要…）', iterations); } catch (eOt) {} }
-      return Promise.resolve(caller([{ role: 'user', text: ask }], sumTools, { maxTok: Math.max(4000, opts.maxTok || 0), maxRetries: 1, cfg: opts.cfg, system: '你是对话压缩器：只输出忠实、具体、结构化的前情摘要，不评论不建议。' }))   // 刀H1 · 后台请求不放大重试(CC 对照)
+      return Promise.resolve(caller([{ role: 'user', text: ask }], sumTools, { maxTok: Math.max(4000, opts.maxTok || 0), maxRetries: 1, cfg: opts.cfg2 || _secondaryCfg() || opts.cfg, system: '你是对话压缩器：只输出忠实、具体、结构化的前情摘要，不评论不建议。' }))   // 刀H1 · 后台请求不放大重试(CC 对照)·S3 · 摘要=杂活走次要模型
         .then(function (r) {
           var s = '';
           try { var tc0 = ((r && r.toolCalls) || []).filter(function (t) { return t && t.name === 'submitSummary'; })[0]; s = String((tc0 && tc0.input && tc0.input.summary) || (r && r.text) || ''); } catch (eS) { s = String((r && r.text) || ''); }
@@ -2641,9 +2650,10 @@
       var histReq = userRequest + (lowConf.length
         ? '\n\n【国师自核时把握不足、请你重点查证的史实】：\n' + lowConf.map(function (f) { return '· ' + f.claim + (f.note ? '（' + f.note + '）' : ''); }).join('\n')
         : '');
+      var _c2 = opts.cfg2 || _secondaryCfg();   // S3 · 两官审阅=杂活·配了次要模型就分工给它(省主模型钱)
       return Promise.all([
-        runAuthoringLoop(draft, histReq, baseClean({ reviewOnly: true, reviewFocus: 'history' })),
-        runAuthoringLoop(draft, userRequest, baseClean({ reviewOnly: true, reviewFocus: 'balance' }))
+        runAuthoringLoop(draft, histReq, baseClean(_c2 ? { reviewOnly: true, reviewFocus: 'history', cfg: _c2 } : { reviewOnly: true, reviewFocus: 'history' })),
+        runAuthoringLoop(draft, userRequest, baseClean(_c2 ? { reviewOnly: true, reviewFocus: 'balance', cfg: _c2 } : { reviewOnly: true, reviewFocus: 'balance' }))
       ]).then(function (revs) {
         var histR = revs[0], balR = revs[1];
         steps.push({ role: '史官·史实审', result: histR });

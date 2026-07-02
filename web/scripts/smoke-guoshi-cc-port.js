@@ -420,5 +420,29 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   var wsSrc5 = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-preview.html'), 'utf8');
   ok(/\.je-aa-planmode:not\(\.je-aa-fewshot\) \{ display: none !important; \}/.test(wsSrc5), 'H5 工坊旧计划模式勾选退役(升级为问策·少样例开关保留)');
 
+  // ───────── H6 · 次要模型分工(杂活走便宜模型·owner"自动调用次要API的模型为它工作") ─────────
+  console.log('— H6 次要模型分工 —');
+  var m2q = 0, m2seen = [];
+  var rM2 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '压缩演练二', {
+    macroCompactAt: 0.2, macroKeepTail: 0, cfg2: { model: 'cheap-x', url: 'u', key: 'k' },
+    caller: function (conv, tools2, cOpts) {
+      if (tools2 && tools2.length === 1 && tools2[0].name === 'submitSummary') {
+        m2seen.push(cOpts && cOpts.cfg && cOpts.cfg.model);
+        return Promise.resolve({ text: '', toolCalls: [{ id: 'sm2', name: 'submitSummary', input: { summary: '①压缩演练二 ②已写长注 ③无任务 ④完好 ⑤无错 ⑥收尾 ⑦finish。' + '摘'.repeat(200) } }] });
+      }
+      m2q++;
+      m2seen.push(cOpts && cOpts.cfg && cOpts.cfg.model);
+      if (m2q === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'n1', name: 'applyEdit', input: { path: 'name', value: '事'.repeat(30000) } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'nf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 200000
+  });
+  ok(rM2.finished && rM2.macroCompactions === 1, 'H6 场景成立(宏压缩发生)');
+  ok(m2seen.indexOf('cheap-x') >= 0 && m2seen.filter(function (m) { return m === 'cheap-x'; }).length === 1, 'H6 摘要杂活拿到次模 cfg(cheap-x)·主轮不受影响');
+  var agSrc6 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent.js'), 'utf8');
+  ok(/model2: src\.model2 \|\| ''/.test(agSrc6) && /function _secondaryCfg\(\)/.test(agSrc6), 'H6 配置层 model2 透传+_secondaryCfg(未配返回 null 用主模)');
+  ok(/var _c2 = opts\.cfg2 \|\| _secondaryCfg\(\);/.test(agSrc6) && /reviewFocus: 'history', cfg: _c2/.test(agSrc6), 'H6 三堂会审两官分工次模(源契约)');
+  var uiSrc6 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/id="tm-aa-api-model2"/.test(uiSrc6) && /_saveApiCfg\(u, k, m, m2\)/.test(uiSrc6) && /o\.ai\.model2 = model2 \|\| ''/.test(uiSrc6), 'H6 弹层次模下拉+保存/镜像链路');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
