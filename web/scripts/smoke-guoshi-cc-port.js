@@ -138,5 +138,41 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(!rT5.conversation.some(function (m) { return m.role === 'user' && /任务表已/.test(m.text || ''); }), 'G5 提醒不独立成 user 消息(不伪造轮边界)');
   ok(Array.isArray(rT5.todos) && rT5.todos.length === 2, 'G5 收尾 result.todos 面向 UI 暴露(2 项未完)');
 
+  // ───────── G4 · 外部修改新鲜度防护(D刀) ─────────
+  console.log('— G4 外部修改防护 —');
+  var dExt = AA.makeDraft({ name: '甲', factions: [{ name: '明' }] });
+  var xq = 0;
+  var rX = await AA.runAuthoringLoop(dExt, '测试外部修改', {
+    caller: function () {
+      xq++;
+      if (xq === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'x1', name: 'applyEdit', input: { path: 'name', value: '乙' } }] });
+      if (xq === 2) {
+        dExt.factions.push({ name: '清' });   // 模拟:agent 运行期间用户在编辑器里改了 factions
+        return Promise.resolve({ text: '', toolCalls: [{ id: 'x2', name: 'applyEdit', input: { path: 'factions.0.name', value: '后金' } }] });
+      }
+      if (xq === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'x3', name: 'getFields', input: { paths: ['factions'] } }] });   // 按提示重读→刷新指纹
+      if (xq === 4) return Promise.resolve({ text: '', toolCalls: [{ id: 'x4', name: 'applyEdit', input: { path: 'factions.0.name', value: '后金' } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'xf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var trX = rX.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat(m.toolResults || []); }, []);
+  ok(rX.draft.name === '乙', 'G4 无外部改动的写正常落地');
+  var xErr = trX.filter(function (t) { return t.content.indexOf('被外部修改') >= 0; });
+  ok(xErr.length === 1 && xErr[0].id === 'x2', 'G4 外部改动后的写被拦(external-modified·勿覆盖用户改动)');
+  ok(rX.draft.factions[0].name === '后金' && rX.draft.factions[1].name === '清', 'G4 重读刷新指纹后写放行·用户新增的势力保住');
+  // 自家连续写不误报
+  var dSelf = AA.makeDraft({ name: '甲' });
+  var sq3 = 0;
+  var rSelf = await AA.runAuthoringLoop(dSelf, '连续写', {
+    caller: function () {
+      sq3++;
+      if (sq3 === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 's1', name: 'applyEdit', input: { path: 'name', value: '乙' } }] });
+      if (sq3 === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 's2', name: 'applyEdit', input: { path: 'name', value: '丙' } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'sf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var trSelf = rSelf.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat(m.toolResults || []); }, []);
+  ok(rSelf.draft.name === '丙' && !trSelf.some(function (t) { return t.content.indexOf('被外部修改') >= 0; }), 'G4 自家连续写同区段不误报(写后指纹即刷新)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

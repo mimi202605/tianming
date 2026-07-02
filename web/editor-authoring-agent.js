@@ -1512,6 +1512,43 @@
   //   validateDraft/preflight 亦只读——结果随草稿变·但去重有"期间零写入"守卫·天然安全。
   var _READ_TOOLS = { getField: 1, getFields: 1, searchEntities: 1, globalSearch: 1, findReferences: 1, listCollection: 1, describeSchema: 1, listGaps: 1, fieldContract: 1, genReference: 1, readSource: 1, listSource: 1, grepSource: 1, mapOverview: 1, checkHistory: 1, validateDraft: 1, preflight: 1 };
   var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1 };
+  // 刀G4(2026-07-02·CC read-before-edit 新鲜度对照) · 外部修改防护:agent 运行期间用户可能在编辑器里
+  //   手改草稿——按顶层区段留指纹·写前对照·外部改过则拒写要求重读(agent 自己的读/写都会刷新指纹)。
+  //   注:CC 的"先读后写"门有意不搬——国师初始消息自带草稿摘要+写后有 nowValue 回读·硬加会拦正常流程。
+  function _pathRoot(p) { return String(p || '').split('.')[0].split('[')[0]; }
+  function _fpOf(v) {
+    if (v === undefined) return '∅';
+    try {
+      var s = JSON.stringify(v); if (s == null) return '∅';
+      var h = 0, stepN = Math.max(1, Math.floor(s.length / 97));
+      for (var i = 0; i < s.length; i += stepN) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+      return s.length + ':' + h;
+    } catch (e) { return 'err'; }
+  }
+  function _mutRoots(name, input) {
+    input = input || {};
+    var roots;
+    switch (name) {
+      case 'applyEdit': case 'applyPush': case 'removeEntity': roots = [_pathRoot(input.path)]; break;
+      case 'multiEdit': roots = (Array.isArray(input.edits) ? input.edits : []).map(function (e) { return _pathRoot(e && e.path); }); break;
+      case 'bulkAdd': roots = [_pathRoot(input.collection)]; break;
+      case 'mapAssignOwner': case 'renameRegion': roots = ['map', 'mapData']; break;
+      default: return null;   // renameEntity 等跨区段·不做写前对照(写后全量刷新)
+    }
+    // map↔mapData 同步镜像:写一个连带另一个(_mapSyncMirror)·指纹须成双·否则自家写误报外部修改
+    if (roots.indexOf('map') >= 0 || roots.indexOf('mapData') >= 0) { if (roots.indexOf('map') < 0) roots.push('map'); if (roots.indexOf('mapData') < 0) roots.push('mapData'); }
+    return roots;
+  }
+  function _readRootsOf(name, input) {
+    input = input || {};
+    switch (name) {
+      case 'getField': return [_pathRoot(input.path)];
+      case 'getFields': return (Array.isArray(input.paths) ? input.paths : []).map(_pathRoot);
+      case 'listCollection': return [_pathRoot(input.collection || input.path)];
+      case 'mapOverview': return ['map', 'mapData'];
+      default: return [];
+    }
+  }
   function _attachWriteVerify(draft, name, input, result) {
     if (!result || result.ok === false || !_WRITE_TOOLS[name]) return result;
     try {
@@ -2166,6 +2203,13 @@
     // 刀G5(CC TodoWrite 对照) · 任务表:起跑重置·节流提醒(≥3轮未更新且有未完项·折叠进工具结果不伪造独立轮)
     _todoState.list = [];
     var _todoLastRound = 0, _todoRemindedAt = 0;
+    // 刀G4 · 外部修改防护:起跑对全部顶层区段留指纹·agent 读/写都刷新·写前对照揪外部改动
+    var _extSnap = {};
+    try { Object.keys(draft || {}).forEach(function (rk) { _extSnap[rk] = _fpOf(draft[rk]); }); } catch (eSn) {}
+    function _refreshSnap(roots) {
+      if (!roots) { try { Object.keys(draft || {}).forEach(function (rk2) { _extSnap[rk2] = _fpOf(draft[rk2]); }); } catch (eR) {} return; }
+      roots.forEach(function (r0) { if (r0) { try { _extSnap[r0] = _fpOf(draft[r0]); } catch (eR2) {} } });
+    }
 
     function record(name, input, result) {
       transcript.push({ name: name, input: input, result: result });
@@ -2226,12 +2270,27 @@
                 }
                 c._readKey = _rk;
               }
+              // \u5200G4 \u00b7 \u5199\u524d\u65b0\u9c9c\u5ea6\u5bf9\u7167:\u76ee\u6807\u533a\u6bb5\u6307\u7eb9\u2260\u4e0a\u6b21\u6240\u89c1 \u2192 \u5916\u90e8(\u7f16\u8f91\u5668/\u7528\u6237)\u6539\u8fc7\u00b7\u62d2\u5199\u8981\u6c42\u91cd\u8bfb(\u52ff\u8986\u76d6\u7528\u6237\u6539\u52a8)
+              if (_MUT_TOOLS[c.name]) {
+                var _mr = _mutRoots(c.name, c.input);
+                if (_mr) {
+                  for (var _mi = 0; _mi < _mr.length; _mi++) {
+                    var _r0 = _mr[_mi];
+                    if (_r0 && _extSnap[_r0] !== undefined && _extSnap[_r0] !== _fpOf(draft[_r0])) {
+                      return { ok: false, errorCode: 'external-modified', reason: '\u533a\u6bb5\u300c' + _r0 + '\u300d\u5728\u4f60\u4e0a\u6b21\u67e5\u770b\u540e\u88ab\u5916\u90e8\u4fee\u6539(\u5f88\u53ef\u80fd\u662f\u7528\u6237\u6b63\u5728\u7f16\u8f91\u5668\u91cc\u6539\u52a8)\u3002\u672c\u6b21\u5199\u5165\u5df2\u4e2d\u6b62\u2014\u2014\u8bf7\u5148 getFields \u91cd\u65b0\u8bfb\u53d6\u8be5\u533a\u6bb5\u6700\u65b0\u503c\u00b7\u5728\u65b0\u503c\u57fa\u7840\u4e0a\u518d\u6539\u00b7\u52ff\u8986\u76d6\u7528\u6237\u6539\u52a8\u3002' };
+                    }
+                  }
+                }
+              }
               return Promise.resolve().then(function () { return dispatchTool(draft, c.name, c.input, surfaces); }).catch(function (te) { return { ok: false, reason: '\u5de5\u5177\u6267\u884c\u51fa\u9519\uff1a' + ((te && te.message) || te) + '\uff08\u8bf7\u68c0\u67e5\u53c2\u6570\u540e\u91cd\u8bd5\uff0c\u6216\u6362\u4e2a\u5de5\u5177/\u65b9\u5f0f\uff09' }; });
             }).then(function (result) {
               // \u5200G3 \u00b7 \u8bfb/\u5199\u8bb0\u8d26:\u6210\u529f\u8bfb\u8bb0\u5165 _seenReads(\u5e26\u5f53\u524d\u5199\u4e16\u4ee3)\u00b7\u6210\u529f\u5199\u63a8\u8fdb\u4e16\u4ee3\u53f7(\u5176\u540e\u540c\u53c2\u8bfb\u653e\u884c)
               if (result && result.ok !== false) {
                 if (c._readKey && !result.unchanged) _seenReads[c._readKey] = { iter: iterations, writes: _writeCount };
                 if (_MUT_TOOLS[c.name]) _writeCount++;
+                // \u5200G4 \u00b7 \u6307\u7eb9\u5237\u65b0:\u8bfb\u5230\u4ec0\u4e48/\u5199\u6210\u4ec0\u4e48\u90fd\u7b97"\u6700\u65b0\u6240\u89c1"(renameEntity \u8de8\u533a\u6bb5\u2192\u5168\u91cf\u5237\u65b0)
+                if (_MUT_TOOLS[c.name]) _refreshSnap(c.name === 'renameEntity' ? null : _mutRoots(c.name, c.input));
+                else if (_READ_TOOLS[c.name] && !result.unchanged) { var _rr0 = _readRootsOf(c.name, c.input); if (_rr0.length) _refreshSnap(_rr0); }
               }
               if (c.name === 'proposePlan' && result && result.plan) { _planResult = { steps: result.steps, summary: result.summary }; finishAccepted = true; }
               if (c.name === 'submitReview' && result && result.review) { _reviewResult = { findings: result.findings, summary: result.summary }; finishAccepted = true; }
