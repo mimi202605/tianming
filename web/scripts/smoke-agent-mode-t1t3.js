@@ -38,4 +38,17 @@ ok(/_suite = \['recall_consolidate'[^\]]*'deepen_cognition'[^\]]*'deepen_narrati
 ok(/deepen_cognition: 'relations'/.test(mode), 'T3 门控 relations 维度(死维度不空转)');
 ok(/case 'deepen_cognition':\s+return _wrap/.test(depth), 'T3 深化派发表本就有 case(实现在位·只是没挂)');
 
+console.log('— T4 关键站 JSON 重问自纠(Codex 韧性对照) —');
+ok(/async function _reaskJSON\(gm, msgs, maxTok, tier\)/.test(depth) && /Math\.round\(maxTok \* 1\.5\)/.test(depth), 'T4 重问一次·输出上限×1.5(截断与格式错一石二鸟)');
+ok(/无法解析为合法 JSON/.test(depth) && /不要 markdown 围栏/.test(depth), 'T4 纠错指令明确(围栏/转义/闭合)');
+ok(/整合解析失败\/空·已重问一次/.test(depth), 'T4 记忆固化站挂上(parse 双败才重问)');
+ok(/function _salvRecord\(tx, p0\)/.test(depth) && /史记四体解析失败\/空·已重问一次/.test(depth) && /p = _salvRecord\(_t2b, _parse\(_t2b\)\)/.test(depth), 'T4 史记主体站挂上(抢救函数化·重问后再抢救)');
+const reaskN = (depth.match(/await _reaskJSON\(gm, /g) || []).length;
+ok(reaskN === 2, 'T4 只挂两个质量命门站·机械深析不重问(实 ' + reaskN + ')');
+ok(/gm\._agentJsonReasks = \(gm\._agentJsonReasks \|\| 0\) \+ 1/.test(depth), 'T4 重问计数留痕');
+
+console.log('— T6 观测补口 —');
+ok(/gm\._agentJsonReasks = 0;/.test(mode), 'T6 回合起点归零重问计数');
+ok(/promptTrim: state\.promptTrim \|\| null, jsonReasks: gm\._agentJsonReasks \|\| 0, durMs: state\.t0/.test(mode), 'T6 meta 收 T1 收敛痕/T4 重问数/整回合耗时');
+
 console.log('\nPASS · ' + pass + ' 断言');

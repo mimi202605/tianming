@@ -799,7 +799,8 @@
       return _bParts.sys + (_bParts.bias ? '\n' + _bParts.bias : '') + (_bParts.time ? '\n' + _bParts.time : '') + '\n\n' + (_bParts.ops ? _bParts.ops + '\n\n' : '') + (_bParts.anomaly ? _bParts.anomaly + '\n\n' : '') + (_bParts.mem ? _bParts.mem + '\n\n' : '') + (_bParts.edicts ? _bParts.edicts + '\n\n' : '') + _bParts.basis;
     }
     var baseTranscript = _assembleBase();
-    var state = { finalized: false, summary: '', narrative: '', writeAttempts: 0, writeOk: 0, rounds: 0, depthTools: {}, depthFailed: [], finalizeRejects: 0, engineDims: engineDims };
+    var state = { finalized: false, summary: '', narrative: '', writeAttempts: 0, writeOk: 0, rounds: 0, depthTools: {}, depthFailed: [], finalizeRejects: 0, engineDims: engineDims, t0: Date.now() };
+    gm._agentJsonReasks = 0;   // T4/T6 · 本回合 JSON 重问计数(深化工具累加·meta 收口)
     // T1(审计①·Codex/CC 上下文预算对照) · 基线预算护栏:basis(全量依据)+记忆卷宗(~15K字)此前零核算·
     //   大存档+小窗口模型静默超窗(服务端截尾→产出劣化/失败)。按 getPromptBudget 收敛:超预算先砍
     //   记忆卷宗尾·再砍 basis 尾(头部保留·系统词/玩家操作/时间是推演命门不动)·细节 agent 可用读工具按需查回。
@@ -1006,7 +1007,7 @@
     var gaps = _detectSpineGaps(gm, state);
     gm._agentSpineGaps = gaps;
     gm._agentResolutionTurn = resolutionTurn;
-    gm._agentTurnMeta = { rounds: state.rounds, writeOk: state.writeOk, writeAttempts: state.writeAttempts, finalized: state.finalized, autoClosed: !!state.autoClosed, scaffolded: !!state.scaffolded, scaffoldActions: state.scaffoldActions || 0, engineFirst: engineRan, resolutionTurn: resolutionTurn, spineGaps: gaps, turn: gm.turn || 0, finalizeRejects: state.finalizeRejects || 0, depthTools: state.depthTools || {}, deepenSkipped: state.deepenSkipped || [], deepenFailed: state.depthFailed || [], engineDims: state.engineDims || {}, depthOk: !!state.depthOk, depthIncomplete: state.depthIncomplete || null, loopError: state.loopError || null };
+    gm._agentTurnMeta = { rounds: state.rounds, writeOk: state.writeOk, writeAttempts: state.writeAttempts, finalized: state.finalized, autoClosed: !!state.autoClosed, scaffolded: !!state.scaffolded, scaffoldActions: state.scaffoldActions || 0, engineFirst: engineRan, resolutionTurn: resolutionTurn, spineGaps: gaps, turn: gm.turn || 0, finalizeRejects: state.finalizeRejects || 0, depthTools: state.depthTools || {}, deepenSkipped: state.deepenSkipped || [], deepenFailed: state.depthFailed || [], engineDims: state.engineDims || {}, depthOk: !!state.depthOk, depthIncomplete: state.depthIncomplete || null, loopError: state.loopError || null, promptTrim: state.promptTrim || null, jsonReasks: gm._agentJsonReasks || 0, durMs: state.t0 ? (Date.now() - state.t0) : null };   /* T6 · 观测补口:T1 收敛痕/T4 重问数/整回合耗时 */
     try { console.log('[agent-mode] 回合 ' + resolutionTurn + '→' + (gm.turn || 0) + ' 完成 · 引擎先=' + engineRan + ' · 轮' + state.rounds + ' · 落地' + state.writeOk + '/' + state.writeAttempts + ' · 脊柱缺口[' + gaps.join('、') + ']'); } catch (_) {}
 
     // ── D7 产出焊缝:把 agent 产出映射成史记弹窗渲染器(_endTurn_render)期望的富结构 ──
