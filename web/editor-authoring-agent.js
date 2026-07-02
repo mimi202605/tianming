@@ -1831,7 +1831,7 @@
   function _resultToText(result) {
     if (!result) return '';
     if (result.violations && result.violations.length) return 'ok:false 违规: ' + result.violations.slice(0, 8).join('; ');
-    if (result.ok === false) return 'ok:false ' + (result.reason || '');
+    if (result.ok === false) return 'ok:false ' + (result.errorCode ? '[' + result.errorCode + '] ' : '') + (result.reason || '');   // 刀G9 · errorCode 让模型可见(错误分类可模式化自纠)
     return JSON.stringify(result).slice(0, 1200);
   }
 
@@ -2181,6 +2181,14 @@
   // 刀E · 可中断：模块级当前运行句柄 + abort()。Claude code 式"随时停"（轮间中断，干净收尾）。
   var _activeRun = null;
   function abort() { if (_activeRun) _activeRun.aborted = true; return !!_activeRun; }
+  // 刀G9(CC message queue 对照) · 运行中插话：agent 跑着时用户可继续发话——排队·本轮工具结果落定后
+  //   作为 user 消息注入(下一轮模型即见)·不打断当前轮(CC "先干完手头这步·必须处理·勿忽略"语义)。
+  function steer(text) {
+    var t = String(text == null ? '' : text).trim();
+    if (!_activeRun || _activeRun.aborted || !t) return false;
+    _activeRun.steers.push(t);
+    return true;
+  }
   // 刀G5 · todoWrite 任务表(模块级·每次 runAuthoringLoop 起跑重置·dispatch 写入·loop 读它做节流提醒)
   var _todoState = { list: [] };
 
@@ -2233,8 +2241,18 @@
     var _clarifyResult = null;   // 方向K · 交互式澄清产出（askClarification 的问题）
     var _remonstrateResult = null;   // 刀1 · 国师进谏产出（remonstrate 的异议+替代方案）
     var _finishSummary = '';   // 改动说明：finish 时 agent 给的"做了什么+为什么"
-    var control = { aborted: false };   // 刀E · 本次运行的中断句柄
+    var control = { aborted: false, steers: [] };   // 刀E · 本次运行的中断句柄；刀G9 · 运行中插话队列
     _activeRun = control;
+    // 刀G9 · 排空插话队列 → 包装成一条 user 消息注入(CC wrapCommandText 语义:必须处理·勿忽略)
+    var _steeredCount = 0;
+    function _drainSteers() {
+      if (!control.steers.length || control.aborted) return false;
+      var _stB = control.steers.splice(0, control.steers.length);
+      conversation.push({ role: 'user', text: '【用户在你工作期间发来新指示】\n' + _stB.map(function (s, si) { return (_stB.length > 1 ? (si + 1) + '. ' : '') + s; }).join('\n') + '\n（必须处理：完成当前这一步后立即按上述指示调整——它可能改变或追加原需求；处理完再 finish，勿忽略。）' });
+      _steeredCount += _stB.length;
+      record('steer', { texts: _stB }, { ok: true, queued: _stB.length });
+      return true;
+    }
     // 方向A · 鲁棒自愈：noToolCalls 先 nudge 再放弃；caller 瞬态错误退避重试
     var noToolNudges = 0, maxNoToolNudges = (opts.maxNoToolNudges != null ? opts.maxNoToolNudges : 2);
     var stepRetries = 0, maxStepRetries = (opts.maxStepRetries != null ? opts.maxStepRetries : 2);
@@ -2337,6 +2355,8 @@
           if (control.aborted) { conversation.push({ role: 'assistant', text: text, toolCalls: [] }); stopReason = 'aborted'; return; }   // 刀E · API 返回后即停，不再施改
           if (!calls.length) {
             conversation.push({ role: 'assistant', text: text, toolCalls: [] });
+            // 刀G9 · 卡壳时若有用户插话:新指示本身就是推动力·直接注入重启(不耗 nudge 配额)
+            if (_drainSteers()) return step();
             // 韧性：没调工具不直接放弃，先 nudge 推一把（卡住 → 重新发起）
             if (noToolNudges < maxNoToolNudges && !control.aborted) {
               noToolNudges++;
@@ -2358,6 +2378,10 @@
             var c = calls[_ci++];
             return Promise.resolve().then(function () {
               if (c.name === 'finish') {
+                // 刀G9 · 有未处理的用户插话 → 不许收尾(新指示可能改变需求·队列随轮末注入·处理完自然放行)
+                if (control.steers.length) {
+                  return { ok: false, finish: false, errorCode: 'steer-pending', reason: '用户在你工作期间发来了新指示（见下一条消息）。请先按新指示处理，再重新 finish。' };
+                }
                 // 刀G7 · 收尾闸:任务表尚有未完项 → 顶回一次(完成或先 todoWrite 更新表·仅顶一次不计入 finishAttempts)
                 var _pTd = _todoState.list.filter(function (t) { return t.status !== 'completed'; });
                 if (_pTd.length && !_todoFinishBounced) {
@@ -2417,6 +2441,12 @@
             conversation.push({ role: 'assistant', text: text, toolCalls: calls });
             conversation.push({ role: 'tool', toolResults: toolResults });
             _convRecount(); tokensUsed = _reqTokens();   // 刀G1 · 本轮消息已入对话·重算真实体量(70/90%提醒按真口径)
+            // 刀G9 · 运行中插话:本轮工具结果落定后注入(下一轮模型即见)。finish 刚被接受的瞬间来了新话
+            //   → 撤回收尾继续处理(收尾后的新指示等价"追问"·同一循环内直接续·不丢话)
+            if (control.steers.length && !control.aborted) {
+              _drainSteers();
+              if (finishAccepted) finishAccepted = false;
+            }
             // 工具D · 预算反馈：接近上限分级提醒收尾(让 agent 自控节奏·别非必要检索)
             if (!finishAccepted && !control.aborted) {
               var _frac = tokensUsed / maxTokens;
@@ -2478,6 +2508,7 @@
         tokensUsed: tokensUsed, finishAttempts: finishAttempts,
         tokensBreakdown: { system: _sysTok, tools: _toolsTok, conversation: _convTok },   // 刀G1 · 真口径构成(UI/诊断用)
         macroCompactions: _macroDone,   // 刀G8 · 本次运行发生的宏压缩次数(诊断/UI 可提示"前情已压缩")
+        steered: _steeredCount,   // 刀G9 · 本次运行注入的用户插话条数
         todos: _todoState.list.slice(),   // 刀G5 · 收尾时的任务表(全完成则已自动清空·UI 可渲染)
         summary: _finishSummary,   // 改动说明：做了什么+为什么
         notes: transcript.filter(function(t) { return t.name === 'note'; }).map(function(t) { return (t.input && t.input.text) || ''; }).filter(Boolean),
@@ -2798,6 +2829,7 @@
     callWithTools: callWithTools,
     testConnection: testConnection,
     abort: abort,
+    steer: steer,   // 刀G9 · 运行中插话(排队·下一轮注入·无活跃运行返回 false)
     estimateRun: estimateRun,
     AGENT_TOOLS: AGENT_TOOLS,
     dispatchTool: dispatchTool,

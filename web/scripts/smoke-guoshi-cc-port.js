@@ -289,5 +289,54 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   } catch (ex2) { e9 = ex2; }
   ok(e9 && e9.partial && e9.partial.draft, 'G8 非瞬态错误同样挂 partial(草稿引用在内·改动不丢)');
 
+  // ───────── G9 · 运行中插话 steering(CC message queue 对照) ─────────
+  console.log('— G9 运行中插话 —');
+  // 9a: 跑动中 steer → 本轮工具结果后注入 → 下一轮照办 → 收尾
+  var sa = 0, saOk = null;
+  var rS = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '先查一下', {
+    caller: function () {
+      sa++;
+      if (sa === 1) { saOk = AA.steer('把名字改成乙'); return Promise.resolve({ text: '', toolCalls: [{ id: 'sa1', name: 'getFields', input: { paths: ['name'] } }] }); }
+      if (sa === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'sa2', name: 'applyEdit', input: { path: 'name', value: '乙' } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'saf', name: 'finish', input: { summary: '按新指示改完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(saOk === true, 'G9 运行中 steer() 返回 true(已入队)');
+  var sMsg = rS.conversation.filter(function (m) { return m.role === 'user' && /用户在你工作期间发来新指示/.test(m.text || ''); });
+  ok(sMsg.length === 1 && sMsg[0].text.indexOf('把名字改成乙') >= 0 && sMsg[0].text.indexOf('勿忽略') >= 0, 'G9 插话包装注入(CC 必须处理·勿忽略语义)');
+  ok(rS.finished && rS.draft.name === '乙' && rS.steered === 1, 'G9 agent 按插话照办·result.steered 计数');
+  ok(rS.transcript.some(function (t) { return t.name === 'steer'; }), 'G9 插话留 transcript 记录(UI 可见)');
+  // 9b: 插话与 finish 同轮竞速 → finish 顶回(steer-pending)·处理完再收尾
+  var sb = 0;
+  var rS2 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '改个名', {
+    caller: function () {
+      sb++;
+      if (sb === 1) { AA.steer('慢着·改成丙不是乙'); return Promise.resolve({ text: '', toolCalls: [{ id: 'sb1', name: 'applyEdit', input: { path: 'name', value: '乙' } }, { id: 'sbf', name: 'finish', input: { summary: '完' } }] }); }
+      if (sb === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'sb2', name: 'applyEdit', input: { path: 'name', value: '丙' } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'sbf2', name: 'finish', input: { summary: '真完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var sbTr = rS2.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat(m.toolResults || []); }, []);
+  ok(sbTr.some(function (t) { return t.id === 'sbf' && t.content.indexOf('steer-pending') >= 0; }), 'G9 未处理插话时 finish → 顶回(steer-pending)');
+  ok(rS2.finished && rS2.draft.name === '丙', 'G9 顶回后按新指示改·再收尾成功');
+  // 9c: 无活跃运行 steer → false
+  ok(AA.steer('没人在跑') === false, 'G9 无活跃运行时 steer 返回 false');
+  // 9d: 模型卡壳(没调工具)时插话即推动力·不打泛泛 nudge
+  var sd = 0;
+  var rS3 = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '干活', {
+    caller: function () {
+      sd++;
+      if (sd === 1) { AA.steer('直接把名字改成丁然后结束'); return Promise.resolve({ text: '我想想…', toolCalls: [] }); }
+      if (sd === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'sd2', name: 'applyEdit', input: { path: 'name', value: '丁' } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'sdf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(!rS3.conversation.some(function (m) { return m.role === 'user' && /没有调用任何工具/.test(m.text || ''); }), 'G9 卡壳时插话顶替泛泛 nudge(不耗配额)');
+  ok(rS3.finished && rS3.draft.name === '丁', 'G9 卡壳被插话重新推动·照办收尾');
+  // 9e: UI 接线源契约(编辑器输入框运行中回车 → onSteer·运行态占位提示插话)
+  var uiSrc = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/ui\.running && typeof onSteer === 'function'\) onSteer\(\)/.test(uiSrc) && /function onSteer\(\)/.test(uiSrc), 'G9 UI 接线:运行中回车路由到 onSteer');
+  ok(uiSrc.indexOf('回车可随时插话') >= 0 && /AA\.steer\(t\)/.test(uiSrc), 'G9 UI 接线:运行态占位提示+steer 调用');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

@@ -373,6 +373,7 @@
       if (_isEnter && !ev.isComposing && !ui._atActive && (!ev.shiftKey || ev.metaKey || ev.ctrlKey)) {
         ev.preventDefault();
         if (!ui.running && typeof onGoClick === 'function') onGoClick();
+        else if (ui.running && typeof onSteer === 'function') onSteer();   // 刀G9 · 运行中回车=插话(排队注入下一轮·不打断)
       }
     });
     if (ui.els.atpop) ui.els.atpop.addEventListener('mousedown', function (ev) { var b = ev.target && ev.target.closest ? ev.target.closest('.tm-aa-atitem') : null; if (b) { ev.preventDefault(); _selectMention(b.getAttribute('data-label')); } });
@@ -742,6 +743,8 @@
     if (on && ui.els && ui.els.empty) ui.els.empty.style.display = 'none';   // UI·AD · 一跑就隐欢迎态
     // UI·Q · 运行中「生成」键变形为「■ 停止」(不禁用·桌面端范式)；收尾恢复「生成」
     if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■' : '↑'; ui.els.go.setAttribute('aria-label', on ? '停止' : '发送'); ui.els.go.classList.toggle('stopbtn', on); }
+    // 刀G9 · 运行中输入框保持可用·占位提示"回车可插话"(收尾恢复常规提示)
+    if (ui.els && ui.els.req) ui.els.req.placeholder = on ? '运行中 · 输入新指示并回车可随时插话（agent 完成当前一步后处理，不打断）' : _REQ_PLACEHOLDER;
     if (on) {
       ui._runStart = Date.now(); ui._lastTokens = 0; ui._lastIter = 0;
       if (ui._meterTimer) clearInterval(ui._meterTimer);
@@ -1849,6 +1852,20 @@
   }
   // 「生成」键的统一入口：运行中→停止，空闲→生成
   function onGoClick() { if (ui.running) onStop(); else onGenerate(); }
+
+  // 刀G9(CC message queue 对照) · 运行中插话：agent 跑着时在输入框回车 → 新指示排队·
+  //   本轮工具结果落定后注入(agent 下一轮即见·"完成当前一步后必须处理")·不打断当前轮。
+  function onSteer() {
+    if (!ui.running || ui._stopping) return;
+    var t = (ui.els.req.value || '').trim();
+    if (!t) return;
+    var okQ = false;
+    try { okQ = !!(AA && typeof AA.steer === 'function' && AA.steer(t)); } catch (e) {}
+    if (!okQ) { setStatus('插话未送达（运行正在收尾）· 可等本轮结束后作为追加需求发送'); return; }
+    _appendUserMsg('（插话）' + t, { kind: 'steer', input: t });   // 气泡回显·retry 时按普通需求重发
+    ui.els.req.value = ''; _autoGrowReq();
+    setStatus('已插话 · agent 完成当前一步后会按你的新指示调整');
+  }
 
   function onGenerate() {
     if (ui.running) return;
