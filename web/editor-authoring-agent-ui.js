@@ -353,6 +353,7 @@
     if (!cands.length) { _hideAtPop(); return; }
     ui._atActive = true; ui._atRange = at;
     ui.els.atpop.hidden = false;
+    _popPlace(ui.els.atpop);   // composer 在面板上部时翻到下方（否则飞出面板顶）
     ui.els.atpop.innerHTML = cands.map(function (c) { return '<button type="button" class="tm-aa-atitem" data-label="' + esc(c.label) + '"><span class="tm-aa-atkind">' + esc(c.kind) + '</span>' + esc(c.label) + '</button>'; }).join('');
   }
   function _selectMention(label) {
@@ -370,7 +371,7 @@
       if (ev.key === 'Escape' && ui._atActive) { ev.stopPropagation(); _hideAtPop(); return; }
       // Enter 发送 · Shift+Enter 换行（输入法合成中 / @提及浮层激活时不触发；Ctrl/⌘+Enter 亦发送）
       var _isEnter = (ev.key === 'Enter' || ev.keyCode === 13);
-      if (_isEnter && !ev.isComposing && !ui._atActive && (!ev.shiftKey || ev.metaKey || ev.ctrlKey)) {
+      if (_isEnter && !ev.isComposing && !ui._atActive && !ui._cmdActive && (!ev.shiftKey || ev.metaKey || ev.ctrlKey)) {
         ev.preventDefault();
         if (!ui.running && typeof onGoClick === 'function') onGoClick();
         else if (ui.running && typeof onSteer === 'function') onSteer();   // 刀G9 · 运行中回车=插话(排队注入下一轮·不打断)
@@ -604,10 +605,20 @@
       '#tm-aa-mentions[hidden]{display:none}',
       '.tm-aa-mchip{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--tx2);background:var(--surface);border:1px solid var(--bd2);border-radius:999px;padding:1px 4px 1px 8px}',
       '.tm-aa-mx{background:none;border:none;color:var(--tx2);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;opacity:.7}.tm-aa-mx:hover{opacity:1}',
-      '#tm-aa-atpop{position:absolute;left:16px;right:16px;bottom:calc(100% + 4px);z-index:13;max-height:210px;overflow:auto;background:var(--surface);border:1px solid var(--bd2);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:4px}',
+      '#tm-aa-atpop{position:absolute;left:50%;transform:translateX(-50%);width:min(728px,calc(100% - 40px));bottom:calc(100% + 4px);z-index:13;max-height:210px;overflow:auto;background:var(--surface);border:1px solid var(--bd2);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:4px}',
       '#tm-aa-atpop[hidden]{display:none}',
+      // composer 位于面板上部（空态/无消息）时浮层翻到下方，否则飞出面板顶（@ 与 / 同治·JS 量空间挂 below）
+      '#tm-aa-atpop.below,#tm-aa-cmdpop.below{bottom:auto;top:calc(100% + 4px)}',
       '.tm-aa-atitem{display:flex;align-items:center;gap:7px;width:100%;text-align:left;background:none;border:none;color:var(--tx);cursor:pointer;font-size:12px;padding:5px 8px;border-radius:8px;font-family:inherit}',
       '.tm-aa-atitem:hover{background:rgba(217,119,87,.16)}',
+      // S6 · / 命令面板（CC slash commands 对照·与 @提及同一浮层语言）
+      '#tm-aa-cmdpop{position:absolute;left:50%;transform:translateX(-50%);width:min(728px,calc(100% - 40px));bottom:calc(100% + 4px);z-index:14;max-height:280px;overflow:auto;background:var(--surface);border:1px solid var(--bd2);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:4px}',
+      '#tm-aa-cmdpop[hidden]{display:none}',
+      '.tm-aa-cmdhd{font-size:10.5px;color:var(--tx3);padding:4px 8px 5px;letter-spacing:.04em}',
+      '.tm-aa-cmditem{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;background:none;border:none;color:var(--tx);cursor:pointer;font-size:12.5px;padding:6px 8px;border-radius:8px;font-family:inherit}',
+      '.tm-aa-cmditem b{font-weight:600;white-space:nowrap}',
+      '.tm-aa-cmditem .cmd-d{color:var(--tx3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.tm-aa-cmditem:hover,.tm-aa-cmditem.on{background:rgba(217,119,87,.16)}',
       '.tm-aa-atkind{flex:0 0 auto;font-size:10px;color:var(--tx3);background:var(--sunken);border-radius:5px;padding:1px 5px}',
       '.tm-aa-diff-jump{cursor:pointer;border-bottom:1px dashed rgba(132,216,165,.5)}',
       '.tm-aa-diff-jump:hover{color:var(--ok)}',
@@ -810,6 +821,7 @@
       '<div id="tm-aa-ctx" hidden></div>',
       '<div id="tm-aa-mentions" hidden></div>',
       '<div id="tm-aa-atpop" hidden></div>',
+      '<div id="tm-aa-cmdpop" hidden></div>',
       '<div id="tm-aa-status" aria-live="polite"></div>',
       '<div id="tm-aa-meter" style="display:none"></div>',
       '<div id="tm-aa-attach" hidden></div>',
@@ -870,6 +882,7 @@
       ctx: panel.querySelector('#tm-aa-ctx'),
       mentions: panel.querySelector('#tm-aa-mentions'),
       atpop: panel.querySelector('#tm-aa-atpop'),
+      cmdpop: panel.querySelector('#tm-aa-cmdpop'),   // S6 · / 命令面板
       meter: panel.querySelector('#tm-aa-meter'),
       empty: panel.querySelector('#tm-aa-empty'),
       logSec: panel.querySelector('[data-sec="log"]'),
@@ -910,6 +923,7 @@
     _ensureSearch();   // UI·AJ · 过程区内搜索（⌘F）
     _ensureCtxChip();   // N1 焦点上下文 chip
     _ensureAtMention();   // N3 @提及作用域上下文
+    _ensureCmdPal();      // S6 · / 命令面板（CC slash commands 对照·⌘K 唤起）
     ui.els.go.addEventListener('click', onGoClick);   // UI·Q · 运行中此键=停止
     ui.els.apply.addEventListener('click', onApply);
     ui.els.discard.addEventListener('click', onDiscard);
@@ -1000,6 +1014,123 @@
     { act: 'undo', ic: 'undo', t: '撤销上次应用', d: '回到上次应用前的快照' }
   ];
   function _plusClose() { if (ui.els && ui.els.plusmenu) { ui.els.plusmenu.hidden = true; ui.els.plus.classList.remove('on'); } }
+  // ＋菜单与 / 命令面板共用的能力派发（S6·CC slash commands 对照）
+  function _plusAct(act) {
+    if (act === 'preflight') runPreflightUI();
+    else if (act === 'review') runReview();
+    else if (act === 'qa') runQaUI();
+    else if (act === 'explain') runExplainUI();
+    else if (act === 'orchestrate') runOrchestratedUI();
+    else if (act === 'critics') _armCritics();
+    else if (act === 'checkpoint') manualCheckpoint();
+    else if (act === 'undo') undoLastApply();
+  }
+
+  // ── S6 · / 命令面板（CC slash commands 对照）：输入框开头敲 / 即出面板·边敲边过滤·↑↓ 选·
+  //    Enter 执行·「/审阅 平衡性」式参数会回填输入框再跑对应模式·Ctrl/⌘+K 亦可唤起
+  //    （工坊 dock 顶栏的「⌘K 命令」提示至此成真）。全部命令走既有运行器·零新行为。 ──
+  function _cmdDefs() {
+    return [
+      { k: 'new', t: '新对话', d: '另起新会话（旧会话留侧栏可切回）', run: function () { newConversation(); } },
+      { k: 'sessions', t: '会话侧栏', d: '打开/收起会话历史（全屏侧栏）', run: function () { if (ui.els.railTg) ui.els.railTg.click(); } },
+      { k: 'review', t: '审阅出报告', d: '全面体检·可带重点：/审阅 平衡性', run: function () { _plusAct('review'); } },
+      { k: 'qa', t: '剧本问答', d: '就剧本提问：/剧本问答 谁掌兵权', run: function () { _plusAct('qa'); } },
+      { k: 'explain', t: '讲解剧本', d: '给接手的人做 onboarding 式讲解', run: function () { _plusAct('explain'); } },
+      { k: 'orchestrate', t: '分解编排', d: '大需求拆子任务：/分解编排 重做经济', run: function () { _plusAct('orchestrate'); } },
+      { k: 'critics', t: '三堂会审', d: '拟稿+史官+谏官（武装下一轮生成）', run: function () { _plusAct('critics'); } },
+      { k: 'preflight', t: '运行时体检', d: '确定性检查·免 API', run: function () { _plusAct('preflight'); } },
+      { k: 'changelog', t: '版本说明', d: '汇总已应用改动·零 token', run: function () { runChangelogUI(); } },
+      { k: 'checkpoint', t: '存检查点', d: '当前剧本存为可回退存档点', run: function () { _plusAct('checkpoint'); } },
+      { k: 'undo', t: '撤销上次应用', d: '回到上次应用前快照', run: function () { _plusAct('undo'); } },
+      { k: 'perm-plan', t: '权限·问策', d: '只读出计划·绝不动剧本', run: function () { var p = _loadPerm(); p.mode = 'plan'; _applyPerm(p); setStatus('权限已切到「问策」· 只读出计划'); } },
+      { k: 'perm-review', t: '权限·共审', d: '改动经你审后应用（默认）', run: function () { var p = _loadPerm(); p.mode = 'review'; _applyPerm(p); setStatus('权限已切到「共审」· 改动经你审后应用'); } },
+      { k: 'perm-auto', t: '权限·放行', d: '校验通过自动应用', run: function () { var p = _loadPerm(); p.mode = 'auto'; _applyPerm(p); setStatus('权限已切到「放行」· 校验通过自动应用'); } },
+      { k: 'theme', t: '切换主题', d: '深色 / 浅色', run: function () { if (ui.els.theme) ui.els.theme.click(); } }
+    ];
+  }
+  function _cmdQuery() {
+    var v = (ui.els && ui.els.req ? ui.els.req.value : '') || '';
+    if (v.charAt(0) !== '/') return null;
+    var sp = v.indexOf(' ');
+    return { cmd: (sp > 0 ? v.slice(1, sp) : v.slice(1)).trim().toLowerCase(), arg: sp > 0 ? v.slice(sp + 1) : '' };
+  }
+  // 浮层上下自适应：composer 上方空间不足（空态/无消息时 composer 贴顶）→ 翻到 composer 下方
+  function _popPlace(pop) {
+    function place() {
+      try {
+        var pb = ui.els.panel.getBoundingClientRect(), cb = pop.parentElement.getBoundingClientRect();
+        pop.classList.toggle('below', (cb.top - pb.top) < 300);
+      } catch (e) {}
+    }
+    place();
+    // 同一输入事件里 _syncEmpty 可能撤掉空态居中（composer 从屏中跳到贴顶）——布局稳定后复测一次
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(place);
+  }
+  function _hideCmdPop() { ui._cmdActive = false; ui._cmdIdx = 0; if (ui.els && ui.els.cmdpop) ui.els.cmdpop.hidden = true; }
+  function _showCmdPop() {
+    var pop = ui.els && ui.els.cmdpop; if (!pop) return;
+    var pq = _cmdQuery();
+    if (pq == null) { if (ui._cmdActive) _hideCmdPop(); return; }
+    var list = _cmdDefs().filter(function (c) { return !pq.cmd || (c.t + ' ' + c.d + ' ' + c.k).toLowerCase().indexOf(pq.cmd) >= 0; });
+    if (!list.length) { _hideCmdPop(); return; }
+    ui._cmdActive = true;
+    if (!ui._cmdIdx || ui._cmdIdx >= list.length) ui._cmdIdx = 0;
+    pop.innerHTML = '<div class="tm-aa-cmdhd">命令 · ↑↓ 选 · Enter 执行 · Esc 关</div>' + list.map(function (c, i) {
+      return '<button type="button" class="tm-aa-cmditem' + (i === ui._cmdIdx ? ' on' : '') + '" data-k="' + esc(c.k) + '"><b>/' + esc(c.t) + '</b><span class="cmd-d">' + esc(c.d) + '</span></button>';
+    }).join('');
+    pop.hidden = false;
+    _popPlace(pop);
+  }
+  function _execCmd(k) {
+    var pq = _cmdQuery() || { arg: '' };
+    var def = null;
+    _cmdDefs().forEach(function (c) { if (!def && c.k === k) def = c; });
+    _hideCmdPop();
+    if (!def) return;
+    if (ui.running && k !== 'sessions' && k !== 'theme') { setStatus('运行中 · 先点「■」停止，再用「' + def.t + '」'); return; }
+    ui.els.req.value = pq.arg || '';   // 「/命令 参数」→ 参数回填输入框供运行器取用
+    _autoGrowReq();
+    def.run();
+  }
+  function _ensureCmdPal() {
+    if (ui._cmdWired || !ui.els || !ui.els.req) return;
+    ui._cmdWired = true;
+    ui._cmdIdx = 0;
+    ui.els.req.addEventListener('input', _showCmdPop);
+    ui.els.req.addEventListener('keydown', function (ev) {
+      if (!ui._cmdActive) return;
+      var items = ui.els.cmdpop ? ui.els.cmdpop.querySelectorAll('.tm-aa-cmditem') : [];
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        if (!items.length) return;
+        ui._cmdIdx = (ui._cmdIdx + (ev.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length;
+        for (var i = 0; i < items.length; i++) items[i].classList.toggle('on', i === ui._cmdIdx);
+        try { items[ui._cmdIdx].scrollIntoView({ block: 'nearest' }); } catch (e) {}
+        return;
+      }
+      if ((ev.key === 'Enter' || ev.keyCode === 13) && !ev.isComposing) {
+        ev.preventDefault();
+        var el = items[ui._cmdIdx];
+        if (el) _execCmd(el.getAttribute('data-k'));
+        return;
+      }
+      if (ev.key === 'Escape') { ev.stopPropagation(); _hideCmdPop(); }
+    });
+    if (ui.els.cmdpop) ui.els.cmdpop.addEventListener('mousedown', function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest('.tm-aa-cmditem') : null;
+      if (b) { ev.preventDefault(); _execCmd(b.getAttribute('data-k')); }
+    });
+    document.addEventListener('keydown', function (ev) {   // Ctrl/⌘+K 唤起
+      if ((ev.ctrlKey || ev.metaKey) && (ev.key === 'k' || ev.key === 'K')) {
+        var p = ui.els.panel; if (!p || !p.classList.contains('open')) return;
+        ev.preventDefault();
+        ui.els.req.value = '/'; _autoGrowReq();
+        try { ui.els.req.focus(); ui.els.req.setSelectionRange(1, 1); } catch (e) {}
+        ui._cmdIdx = 0; _showCmdPop();
+      }
+    });
+    document.addEventListener('click', function (ev) { if (ui._cmdActive && ui.els.cmdpop && !ui.els.cmdpop.contains(ev.target) && ev.target !== ui.els.req) _hideCmdPop(); });
+  }
   function _ensurePlusMenu() {
     var btn = ui.els && ui.els.plus, menu = ui.els && ui.els.plusmenu;
     if (!btn || !menu || ui._plusBound) return;
@@ -1019,14 +1150,7 @@
       _plusClose();
       var act = b.getAttribute('data-act');
       if (ui.running) { setStatus('运行中 · 先点「■」停止，再使用「' + (b.textContent || '').slice(0, 6) + '…」'); return; }
-      if (act === 'preflight') runPreflightUI();
-      else if (act === 'review') runReview();
-      else if (act === 'qa') runQaUI();
-      else if (act === 'explain') runExplainUI();
-      else if (act === 'orchestrate') runOrchestratedUI();
-      else if (act === 'critics') _armCritics();
-      else if (act === 'checkpoint') manualCheckpoint();
-      else if (act === 'undo') undoLastApply();
+      _plusAct(act);
     });
     document.addEventListener('click', function (ev) {
       if (!menu.hidden && !menu.contains(ev.target) && ev.target !== btn) _plusClose();

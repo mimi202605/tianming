@@ -514,5 +514,18 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/data-sess=/.test(uiSrc9) && /ri-del/.test(uiSrc9) && /ri-ren/.test(uiSrc9) && /ri-file/.test(uiSrc9) && /清空会话/.test(uiSrc9), 'H9 UI:侧栏会话列表(切换/删除/重命名/跨剧本徽记)');
   ok(/renameSession: renameSession/.test(uiSrc9) && /\(old && old\.title\) \|\|/.test(uiSrc9), 'H9 UI:玩家改名压过自动标题(CC custom-title 对照)');
 
+  // ───────── H10 · / 命令面板(CC slash commands 对照) ─────────
+  console.log('— H10 / 命令面板 —');
+  var uiSrcA = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/id="tm-aa-cmdpop"/.test(uiSrcA) && /cmdpop: panel\.querySelector\('#tm-aa-cmdpop'\)/.test(uiSrcA), 'H10 命令面板 DOM+els 在位');
+  var defs10 = (uiSrcA.match(/\{ k: '[^']+', t: '[^']+'/g) || []).length;
+  ok(defs10 >= 14, 'H10 命令表≥14 条(实 ' + defs10 + ')');
+  ok(/k: 'new', t: '新对话'/.test(uiSrcA) && /k: 'perm-plan', t: '权限·问策'/.test(uiSrcA) && /k: 'theme', t: '切换主题'/.test(uiSrcA), 'H10 新对话/权限/主题等命令齐');
+  ok(/ui\.els\.req\.value = pq\.arg \|\| '';/.test(uiSrcA), 'H10 「/命令 参数」参数回填输入框(CC 带参命令)');
+  ok(/!ui\._atActive && !ui\._cmdActive/.test(uiSrcA), 'H10 面板激活时 Enter 不误发送(执行命令)');
+  ok(/\(ev\.ctrlKey \|\| ev\.metaKey\) && \(ev\.key === 'k'/.test(uiSrcA), 'H10 Ctrl/⌘+K 唤起(dock「⌘K 命令」提示成真)');
+  ok(/requestAnimationFrame\(place\)/.test(uiSrcA) && /#tm-aa-atpop\.below,#tm-aa-cmdpop\.below/.test(uiSrcA), 'H10 浮层上下自适应(rAF 复测·@与/同治空态飞出屏外)');
+  ok(/_plusAct\(act\);\n    \}\);/.test(uiSrcA.replace(/\r/g, '')) && /run: function \(\) \{ _plusAct\('review'\); \}/.test(uiSrcA), 'H10 ＋菜单与面板共用 _plusAct 派发(零新行为)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
