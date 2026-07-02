@@ -410,6 +410,27 @@
     _refreshCtxChip();
   }
 
+  // ── 单色描边 SVG 图标集（去 emoji·随 currentColor 融入双主题） ──
+  var _ICON_PATHS = {
+    bars: '<path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>',
+    contrast: '<circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11"/>',
+    pen: '<path d="M9.6 3.4l3 3L6.2 12.8 3 13l.2-3.2z"/>',
+    expand: '<path d="M6 3H3v3M10 3h3v3M3 10v3h3M13 10v3h-3"/>',
+    restore: '<path d="M5.5 3v2.5H3M10.5 3v2.5H13M3 10.5h2.5V13M13 10.5h-2.5V13"/>',
+    close: '<path d="M4 4l8 8M12 4l-8 8"/>',
+    pulse: '<path d="M2 8.5h2.6L6.6 4l2.6 8 1.6-3.5H14"/>',
+    search: '<circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2l3.2 3.2"/>',
+    chat: '<path d="M3 4.5h10V11H8.2L5 13.5V11H3z"/>',
+    book: '<path d="M8 4c-1.2-.9-3.2-1-5-.4V12c1.8-.6 3.8-.5 5 .4 1.2-.9 3.2-1 5-.4V3.6C11.2 3 9.2 3.1 8 4z"/><path d="M8 4v8.4"/>',
+    route: '<circle cx="4.5" cy="4" r="1.7"/><circle cx="11.5" cy="12" r="1.7"/><path d="M4.5 5.7V8a3 3 0 0 0 3 3h2.3"/>',
+    scale: '<path d="M8 3v10M4.5 5h7M4.5 5 3 8.2a1.9 1.9 0 0 0 3 0zM11.5 5 10 8.2a1.9 1.9 0 0 0 3 0z"/>',
+    save: '<path d="M3.5 3.5h7l2 2v7h-9z"/><path d="M5.5 3.5V7h5V3.5M5.5 12.5V9.5h5v3"/>',
+    undo: '<path d="M4.5 6.5H10a3 3 0 0 1 0 6H7"/><path d="M6.8 4 4.5 6.5 6.8 9"/>'
+  };
+  function _icon(name) {
+    return '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (_ICON_PATHS[name] || '') + '</svg>';
+  }
+
   function injectStyles() {
     if (document.getElementById('tm-aa-style')) return;
     var css = [
@@ -429,10 +450,11 @@
       '#tm-aa-worldkind .tm-aa-wk-opt{background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:2px 11px;font-size:11px;cursor:pointer;font-family:inherit;line-height:1.5;transition:background .12s,color .12s,border-color .12s}',
       '#tm-aa-worldkind .tm-aa-wk-opt:hover{background:var(--surface);color:var(--tx)}',
       '#tm-aa-worldkind .tm-aa-wk-opt.on{background:var(--ac);color:#fff;border-color:var(--ac)}',
-      // 呼出按钮
-      '#tm-aa-fab{position:fixed;right:18px;bottom:18px;z-index:99998;background:#d97757;color:#fff;border:none;',
-      'border-radius:999px;padding:10px 18px;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);font-family:inherit;letter-spacing:.02em;transition:transform .12s,box-shadow .12s,background .12s}',
-      '#tm-aa-fab:hover{background:#e08a6b;transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.4)}',
+      // 呼出按钮（朱印徽记 + 文字）
+      '#tm-aa-fab{position:fixed;right:18px;bottom:18px;z-index:99998;display:inline-flex;align-items:center;gap:8px;background:#2f2d2a;color:#f0eee6;border:1px solid rgba(255,255,255,.14);',
+      'border-radius:999px;padding:8px 16px 8px 9px;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);font-family:inherit;letter-spacing:.06em;transition:transform .12s,box-shadow .12s,background .12s,border-color .12s}',
+      '#tm-aa-fab:hover{background:#3a3833;border-color:rgba(217,119,87,.6);transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.4)}',
+      '#tm-aa-fab .fab-seal{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:Georgia,"Noto Serif SC","Songti SC",SimSun,serif;font-weight:600;font-size:12.5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}',
       // 面板窗体（应用级窗口感·开场淡入）
       '#' + PANEL_ID + '{position:fixed;right:18px;bottom:64px;z-index:99999;width:560px;max-width:calc(100vw - 36px);',
       'height:86vh;display:none;flex-direction:column;background:var(--bg);color:var(--tx);border:1px solid var(--bd2);',
@@ -452,11 +474,12 @@
       '.tm-aa-search .tm-aa-search-n{color:var(--tx3);font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}',
       '.tm-aa-search button{background:var(--surface);color:var(--tx2);border:none;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;line-height:1.4}.tm-aa-search button:hover{color:var(--tx)}',
       '.tm-aa-hl{background:rgba(229,192,123,.35);color:inherit;border-radius:2px}.tm-aa-hl.active{background:#e5c07b;color:#1a1206}',
-      '#tm-aa-hd button{background:none;border:none;color:var(--tx3);font-size:13px;cursor:pointer;line-height:1;padding:5px 6px;border-radius:7px;transition:background .12s,color .12s}',
+      '#tm-aa-hd button{display:inline-flex;align-items:center;justify-content:center;background:none;border:none;color:var(--tx3);cursor:pointer;line-height:1;padding:6px;border-radius:8px;transition:background .12s,color .12s}',
       '#tm-aa-hd button:hover{background:var(--surface);color:var(--tx)}',
-      '#tm-aa-x{font-size:16px !important}',
+      '#tm-aa-hd button svg{display:block}',
       '#tm-aa-hd b{font-size:15px;font-family:var(--serif);font-weight:600;letter-spacing:.08em}',
-      '.tm-aa-ava{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#d97757,#bf5f3f);font-size:14px;margin-right:8px;vertical-align:middle;box-shadow:0 1px 4px rgba(217,119,87,.4)}',
+      // 朱印徽记「师」：方印形制（印章为方·非圆）·衬线白文·随处替代 emoji 头像
+      '.tm-aa-ava{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:14px;margin-right:9px;vertical-align:middle;box-shadow:0 1px 5px rgba(217,119,87,.4),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
       '#tm-aa-hd .sub{font-size:11.5px;color:var(--tx3);margin-left:8px;font-family:inherit;letter-spacing:0}',
       // 侧栏（Claude 桌面端式·全屏下的会话历史栏）
       '#tm-aa-rail{position:absolute;left:0;top:45px;bottom:0;width:236px;display:none;flex-direction:column;gap:4px;background:var(--sunken);border-right:1px solid var(--bd);padding:10px 9px;box-sizing:border-box;z-index:6}',
@@ -473,7 +496,10 @@
       '.rail-item .ri-meta .ri-ok{color:var(--ok)}',
       '.rail-empty{font-size:11.5px;color:var(--tx3);padding:8px 6px;line-height:1.6}',
       '#tm-aa-railclear{background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:6px;border-radius:8px;font-family:inherit}#tm-aa-railclear:hover{color:var(--bad);background:var(--surface)}',
-      '#tm-aa-body{padding:10px 20px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;position:relative;flex:1 1 auto;min-height:0;transition:margin-left .15s ease-out}',
+      '#tm-aa-body{padding:10px 20px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;position:relative;flex:1 1 auto;min-height:0;transition:margin-left .15s ease-out;',
+      'background:radial-gradient(900px 380px at 82% -6%,rgba(217,119,87,.06),transparent 62%)}',   // 氛围：右上暖光晕·纵深而非平涂
+      '#' + PANEL_ID + '[data-theme="light"] #tm-aa-body{background:radial-gradient(900px 380px at 82% -6%,rgba(201,100,66,.05),transparent 62%)}',
+      '#' + PANEL_ID + ' button:focus-visible,#' + PANEL_ID + ' textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}',
       // 空态（Claude 桌面端招牌）：问候语 + composer 一起居中于画布·有内容后 composer 落底
       '#tm-aa-body.tm-aa-blank{justify-content:center}',
       '#tm-aa-body.tm-aa-blank #tm-aa-composer{order:5;margin-top:6px}',
@@ -497,7 +523,9 @@
       '#tm-aa-plusmenu[hidden]{display:none}',
       '.tm-aa-mi{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--tx);cursor:pointer;font-size:12.5px;padding:7px 9px;border-radius:8px;font-family:inherit;line-height:1.4}',
       '.tm-aa-mi:hover{background:rgba(217,119,87,.14)}',
-      '.tm-aa-mi .mi-ic{flex:0 0 18px;text-align:center;font-size:13px}',
+      '.tm-aa-mi .mi-ic{flex:0 0 18px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx3)}',
+      '.tm-aa-mi:hover .mi-ic{color:var(--ac)}',
+      '.tm-aa-mi .mi-ic svg{display:block}',
       '.tm-aa-mi .mi-d{display:block;font-size:10.5px;color:var(--tx3);margin-top:1px}',
       '.tm-aa-mi-sep{height:1px;background:var(--bd);margin:4px 8px}',
       '#tm-aa-go{flex:0 0 auto;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--ac);color:#fff;border:none;border-radius:50%;padding:0;cursor:pointer;font-size:15px;line-height:1;transition:background .12s,transform .08s}',
@@ -506,8 +534,8 @@
       '#tm-aa-go.stopbtn{background:var(--danger)}#tm-aa-go.stopbtn:hover{background:#d2554f}',
       '#tm-aa-status{font-size:11.5px;color:var(--tx3);min-height:15px;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box;padding:0 4px;line-height:1.5}',
       '.tm-aa-running #tm-aa-status{color:var(--tx2)}',
-      '.tm-aa-running #tm-aa-status::before{content:"✳ ";color:var(--ac);animation:tm-aa-pulse 1.6s ease-in-out infinite}',
-      '@keyframes tm-aa-pulse{0%,100%{opacity:1}50%{opacity:.35}}',
+      '.tm-aa-running #tm-aa-status::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ac);margin-right:7px;vertical-align:1px;animation:tm-aa-pulse 1.5s ease-in-out infinite}',   // 呼吸朱点（纯 CSS·非 emoji）
+      '@keyframes tm-aa-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}',
       '#tm-aa-ctx{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);background:rgba(217,119,87,.09);border:1px solid rgba(217,119,87,.3);border-radius:8px;padding:3px 9px;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box}',
       '#tm-aa-ctx[hidden]{display:none}',
       '.tm-aa-ctx-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -526,13 +554,17 @@
       '.tm-aa-diff-jump{cursor:pointer;border-bottom:1px dashed rgba(132,216,165,.5)}',
       '.tm-aa-diff-jump:hover{color:var(--ok)}',
       '#tm-aa-meter{font-size:11px;color:var(--tx3);font-variant-numeric:tabular-nums;padding:0 4px;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box}',
-      // 欢迎屏（衬线大字问候·建议药丸·与 composer 一同居中）
-      '.tm-aa-empty{order:4;margin:auto 0;background:none;border:none;padding:10px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center}',
-      '.tm-aa-empty .emp-hi{font-size:44px;line-height:1.15;filter:drop-shadow(0 2px 10px rgba(217,119,87,.32))}',
+      // 欢迎屏（朱印徽记 + 衬线问候·级联入场·与 composer 一同居中）
+      '.tm-aa-empty{order:4;margin:auto 0;background:none;border:none;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}',
+      '.tm-aa-empty>*{animation:tm-aa-rise .34s ease-out both}',
+      '.tm-aa-empty .emp-title{animation-delay:.05s}.tm-aa-empty .emp-sub{animation-delay:.11s}.tm-aa-empty .emp-chips{animation-delay:.17s}',
+      '.tm-aa-empty .emp-seal{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:30px;box-shadow:0 6px 24px rgba(217,119,87,.35),inset 0 0 0 1.5px rgba(255,255,255,.16);text-shadow:0 1px 2px rgba(0,0,0,.25);margin-bottom:4px}',
       '.tm-aa-empty .emp-title{color:var(--tx);font-size:27px;font-family:var(--serif);font-weight:600;letter-spacing:.06em;line-height:1.35}',
       '.tm-aa-empty .emp-sub{color:var(--tx3);font-size:13px;margin-bottom:10px;line-height:1.6}',
       '.tm-aa-empty .emp-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px}',
       '.tm-aa-empty .emp-chip{background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:6px 15px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s,transform .12s}.tm-aa-empty .emp-chip:hover{background:var(--surface);color:var(--tx);border-color:var(--ac);transform:translateY(-1px)}',
+      '@keyframes tm-aa-rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}',
+      '.tm-aa-msg-user,.tm-aa-reply,.tm-aa-think,.tm-aa-msg-ai{animation:tm-aa-rise .22s ease-out}',   // 消息入场微动
       // 会话流（居中栏·Claude 式）
       '.tm-aa-logwrap{position:relative;flex:1 1 0;min-height:0;overflow-y:auto}',
       '.tm-aa-log{padding:4px 2px;font-size:13px;line-height:1.7;max-width:760px;margin:0 auto}',
@@ -577,7 +609,7 @@
       '.tm-aa-msg-ai .ai-hint{color:var(--tx3);font-size:11px;margin-top:6px;border-top:1px solid var(--bd);padding-top:5px}',
       '.tm-aa-reply{margin:14px 0 12px;padding:0 2px;background:none;border:none;border-radius:0}',
       '.tm-aa-reply .reply-who{display:flex;align-items:center;gap:7px;margin-bottom:7px}',
-      '.tm-aa-reply .reply-who .reply-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#d97757,#bf5f3f);font-size:12px;line-height:1;box-shadow:0 1px 4px rgba(217,119,87,.35)}',
+      '.tm-aa-reply .reply-who .reply-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#d97757,#b8542f);color:#fff;font-family:var(--serif);font-weight:600;font-size:12px;line-height:1;box-shadow:0 1px 4px rgba(217,119,87,.35),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
       '.tm-aa-reply .reply-who b{color:var(--ac);font-size:12px;font-weight:600;font-family:var(--serif);letter-spacing:.1em}',
       '.tm-aa-reply .tm-aa-summary{background:none;padding:0;border-radius:0}',
       '.tm-aa-reply .tm-aa-summary::before{display:none}',
@@ -599,7 +631,7 @@
       '.tm-aa-diff .uncertain{background:rgba(229,192,123,.08);border-left:2px solid var(--warn);padding-left:5px;margin-left:-7px}',
       '.tm-aa-diff .tm-aa-unc{display:block;color:var(--warn);font-size:10px;margin-top:1px}',
       '.tm-aa-summary{background:none;border:none;border-radius:0;padding:1px 2px;font-size:14px;line-height:1.8;color:var(--tx);width:100%;max-width:760px;margin:0 auto;box-sizing:border-box}',
-      '.tm-aa-summary::before{content:"🧙 国师";display:block;font-size:11px;color:var(--ac);font-weight:600;margin-bottom:5px;font-family:var(--serif);letter-spacing:.1em}',
+      '.tm-aa-summary::before{content:"国师";display:block;font-size:11px;color:var(--ac);font-weight:600;margin-bottom:5px;font-family:var(--serif);letter-spacing:.1em}',
       '.tm-aa-summary b{color:var(--tx3);font-size:11px;display:block;margin-bottom:4px;font-weight:600;letter-spacing:.06em}',
       '.tm-aa-summary .note{color:var(--tx3);font-size:12px;margin-top:5px}',
       '.tm-aa-summary.tm-aa-clamped{max-height:var(--clamp-max,280px);overflow:hidden;position:relative;flex:0 0 auto}',
@@ -670,8 +702,8 @@
     panel.setAttribute('aria-label', '国师 · AI 剧本助手');
     panel.innerHTML = [
       '<div class="tm-aa-resize" id="tm-aa-resize" title="拖动调整宽度"></div>',   // UI·AI · 左缘拖拽调宽
-      '<div id="tm-aa-hd"><span><button id="tm-aa-rail-tg" aria-label="会话历史侧栏" title="会话历史（全屏侧栏）">☰</button><span class="tm-aa-ava">🧙</span><b>国师</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
-      '<span class="tm-aa-hdbtns"><button id="tm-aa-theme" aria-label="切换明暗主题" title="明暗主题切换">◐</button><button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">✎</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">⛶</button><button id="tm-aa-x" aria-label="关闭" title="关闭">×</button></span></div>',
+      '<div id="tm-aa-hd"><span><button id="tm-aa-rail-tg" aria-label="会话历史侧栏" title="会话历史（全屏侧栏）">' + _icon('bars') + '</button><span class="tm-aa-ava">师</span><b>国师</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
+      '<span class="tm-aa-hdbtns"><button id="tm-aa-theme" aria-label="切换明暗主题" title="明暗主题切换">' + _icon('contrast') + '</button><button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">' + _icon('pen') + '</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">' + _icon('expand') + '</button><button id="tm-aa-x" aria-label="关闭" title="关闭">' + _icon('close') + '</button></span></div>',
       '<div id="tm-aa-rail"><button id="tm-aa-railnew" type="button">＋ 新对话</button><div class="rail-sec">近期运行</div><div id="tm-aa-raillist"></div><button id="tm-aa-railclear" type="button" title="清空全部运行历史">清空历史</button></div>',
       '<div id="tm-aa-body">',
       '<div class="tm-aa-search" id="tm-aa-search" hidden><input type="text" id="tm-aa-search-in" placeholder="在结果里查找…"><span class="tm-aa-search-n" id="tm-aa-search-n">0/0</span><button type="button" id="tm-aa-search-prev" title="上一个">↑</button><button type="button" id="tm-aa-search-next" title="下一个">↓</button><button type="button" id="tm-aa-search-x" title="关闭 (Esc)">×</button></div>',
@@ -827,15 +859,15 @@
 
   // ── Claude 桌面端式 · ＋能力菜单：把散落的高级能力收进输入卡左下角（全部走既有运行器·零新行为） ──
   var _PLUS_ITEMS = [
-    { act: 'preflight', ic: '🩺', t: '运行时体检', d: '确定性检查·免 API·查会影响加载的阻塞' },
-    { act: 'review', ic: '🔍', t: '审阅出报告', d: '全面体检剧本（输入框可写审阅重点）' },
-    { act: 'qa', ic: '💬', t: '剧本问答', d: '就剧本提问（先在输入框写问题）' },
-    { act: 'explain', ic: '📖', t: '讲解剧本', d: '给接手的人做 onboarding 式讲解' },
-    { act: 'orchestrate', ic: '🧭', t: '分解编排', d: '大需求拆成子任务逐个执行' },
-    { act: 'critics', ic: '🏛️', t: '三堂会审', d: '国师拟稿·史官查史实·谏官批平衡' },
+    { act: 'preflight', ic: 'pulse', t: '运行时体检', d: '确定性检查·免 API·查会影响加载的阻塞' },
+    { act: 'review', ic: 'search', t: '审阅出报告', d: '全面体检剧本（输入框可写审阅重点）' },
+    { act: 'qa', ic: 'chat', t: '剧本问答', d: '就剧本提问（先在输入框写问题）' },
+    { act: 'explain', ic: 'book', t: '讲解剧本', d: '给接手的人做 onboarding 式讲解' },
+    { act: 'orchestrate', ic: 'route', t: '分解编排', d: '大需求拆成子任务逐个执行' },
+    { act: 'critics', ic: 'scale', t: '三堂会审', d: '国师拟稿·史官查史实·谏官批平衡' },
     { act: 'sep' },
-    { act: 'checkpoint', ic: '💾', t: '存检查点', d: '把当前剧本存为可回退的存档点' },
-    { act: 'undo', ic: '↩', t: '撤销上次应用', d: '回到上次应用前的快照' }
+    { act: 'checkpoint', ic: 'save', t: '存检查点', d: '把当前剧本存为可回退的存档点' },
+    { act: 'undo', ic: 'undo', t: '撤销上次应用', d: '回到上次应用前的快照' }
   ];
   function _plusClose() { if (ui.els && ui.els.plusmenu) { ui.els.plusmenu.hidden = true; ui.els.plus.classList.remove('on'); } }
   function _ensurePlusMenu() {
@@ -844,7 +876,7 @@
     ui._plusBound = true;
     menu.innerHTML = _PLUS_ITEMS.map(function (it, i) {
       if (it.act === 'sep') return '<div class="tm-aa-mi-sep"></div>';
-      return '<button type="button" class="tm-aa-mi" data-act="' + it.act + '"><span class="mi-ic">' + it.ic + '</span><span><span>' + esc(it.t) + '</span><span class="mi-d">' + esc(it.d) + '</span></span></button>';
+      return '<button type="button" class="tm-aa-mi" data-act="' + it.act + '"><span class="mi-ic">' + _icon(it.ic) + '</span><span><span>' + esc(it.t) + '</span><span class="mi-d">' + esc(it.d) + '</span></span></button>';
     }).join('');
     btn.addEventListener('click', function (ev) {
       ev.stopPropagation();
@@ -928,7 +960,7 @@
     if (on) _plusClose();   // 开跑收起能力菜单
     if (on && ui.els && ui.els.empty) ui.els.empty.style.display = 'none';   // UI·AD · 一跑就隐欢迎态
     // UI·Q · 运行中「生成」键变形为「■ 停止」(不禁用·桌面端范式)；收尾恢复「生成」
-    if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■' : '↑'; ui.els.go.setAttribute('aria-label', on ? '停止' : '发送'); ui.els.go.classList.toggle('stopbtn', on); }
+    if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■' : '↑'; ui.els.go.style.fontSize = ''; ui.els.go.setAttribute('aria-label', on ? '停止' : '发送'); ui.els.go.classList.toggle('stopbtn', on); }
     // 刀G9 · 运行中输入框保持可用·占位提示"回车可插话"(收尾恢复常规提示)
     if (ui.els && ui.els.req) ui.els.req.placeholder = on ? '运行中 · 输入新指示并回车可随时插话（agent 完成当前一步后处理，不打断）' : _REQ_PLACEHOLDER;
     if (on) {
@@ -1091,7 +1123,7 @@
     if (ui.els.logWrap) ui.els.logWrap.style.display = '';
     var card = document.createElement('div');
     card.className = 'tm-aa-reply';
-    card.innerHTML = '<div class="reply-who"><span class="reply-ava">🧙</span><b>国师</b></div>'
+    card.innerHTML = '<div class="reply-who"><span class="reply-ava">师</span><b>国师</b></div>'
       + '<div class="tm-aa-summary" style="display:none"></div>'
       + '<div class="tm-aa-sec" data-sec="diff" style="display:none">改动预览</div>'
       + '<div class="tm-aa-diff" style="display:none"></div>'
@@ -1225,14 +1257,14 @@
       p.style.cssText = p._fsPrev || ''; p._fs = false;
       p.classList.remove('railon');   // 侧栏是全屏版式的一部分·退全屏一并收起
       if (ui.els.resize) ui.els.resize.style.display = '';
-      if (ui.els.fs) ui.els.fs.textContent = '⛶';
+      if (ui.els.fs) ui.els.fs.innerHTML = _icon('expand');
     } else {
       p._fsPrev = p.style.cssText;
       p.style.position = 'fixed'; p.style.left = '14px'; p.style.top = '14px'; p.style.right = '14px'; p.style.bottom = '14px';
       p.style.width = 'auto'; p.style.height = 'auto'; p.style.maxWidth = 'none'; p.style.maxHeight = 'none'; p.style.zIndex = '100000';
       p._fs = true;
       if (ui.els.resize) ui.els.resize.style.display = 'none';
-      if (ui.els.fs) ui.els.fs.textContent = '🗗';
+      if (ui.els.fs) ui.els.fs.innerHTML = _icon('restore');
     }
   }
 
@@ -1313,13 +1345,13 @@
   // UI·AD · 空状态欢迎 + 建议提示（Claude.ai/ChatGPT 新会话招牌）：面板刚开、还没跑时给个上手引导 + 可点 chips。
   //   fill 类 → 回填输入框让玩家审阅再发；act 类（体检/审阅/讲解）→ 直接跑对应运行器。
   var _EMPTY_CHIPS = [
-    { label: '🩺 体检（免 API）', act: 'preflight' },
+    { label: '体检（免 API）', act: 'preflight' },
     { label: '补齐缺失字段', fill: '请用 listGaps 找出游戏运行时必需但缺失的字段，逐一补齐，让剧本完整可玩；改完用 validateDraft 自查。' },
     { label: '校验并列问题', fill: '请用 validateDraft 全面校验本剧本，列出所有引用冲突、人口/区划不一致等问题（先只报告，不要改）。' },
     { label: '加 3 个人物', fill: '请新增 3 名贴合本剧本背景的人物：含姓名、势力归属、官职、性格与 AI 人格；势力名必须用剧本里已存在的势力。' },
-    { label: '🔍 审阅出报告', act: 'review' },
-    { label: '📖 讲解剧本', act: 'explain' },
-    { label: '🏛️ 三堂会审', act: 'critics' }
+    { label: '审阅出报告', act: 'review' },
+    { label: '讲解剧本', act: 'explain' },
+    { label: '三堂会审', act: 'critics' }
   ];
   function _renderEmpty() {
     if (!ui.els || !ui.els.empty || ui._emptyBuilt) return;
@@ -1327,7 +1359,7 @@
     var chips = _EMPTY_CHIPS.map(function(c, i) { return '<button type="button" class="emp-chip" data-i="' + i + '">' + esc(c.label) + '</button>'; }).join('');
     var _hr = new Date().getHours();   // Claude 桌面端式 · 按时辰问安
     var _greet = _hr < 5 ? '夜深了' : (_hr < 11 ? '早上好' : (_hr < 13 ? '午安' : (_hr < 18 ? '下午好' : '晚上好')));
-    ui.els.empty.innerHTML = '<div class="emp-hi">🧙</div><div class="emp-title">' + _greet + '，陛下。国师在此</div><div class="emp-sub">把想改什么告诉国师，或试试：</div><div class="emp-chips">' + chips + '</div>';
+    ui.els.empty.innerHTML = '<div class="emp-seal">师</div><div class="emp-title">' + _greet + '，陛下。国师在此</div><div class="emp-sub">把想改什么告诉国师，或试试：</div><div class="emp-chips">' + chips + '</div>';
     ui.els.empty.addEventListener('click', function(ev) {
       var btn = ev.target && ev.target.closest ? ev.target.closest('.emp-chip') : null;
       if (!btn) return;
@@ -1382,7 +1414,7 @@
       }
     }
     if (sug.length) {
-      html += '<div class="tm-aa-sug"><b>💡 建议记住的约定</b>' + sug.slice(0, 5).map(function(c, i) {
+      html += '<div class="tm-aa-sug"><b>建议记住的约定</b>' + sug.slice(0, 5).map(function(c, i) {
         return '<div class="sug-row"><span>' + esc(String(c).slice(0, 120)) + '</span><button type="button" class="sug-keep" data-i="' + i + '">记住</button></div>';
       }).join('') + '</div>';
     }
@@ -1411,7 +1443,7 @@
       if (ui.els) { ui.els.logSec.style.display = ''; ui.els.logWrap.style.display = ''; }
       blk = document.createElement('details');
       blk.className = 'tm-aa-think';
-      blk.innerHTML = '<summary class="tm-aa-think-sum">⚙ <span class="tk-label">执行中…</span></summary><div class="tm-aa-think-body"></div>';
+      blk.innerHTML = '<summary class="tm-aa-think-sum"><span class="tk-label">执行中…</span></summary><div class="tm-aa-think-body"></div>';
       if (ui.els) ui.els.log.appendChild(blk);
       ui._thinkEl = blk; ui._thinkCount = 0;
     }
@@ -1426,7 +1458,7 @@
     var blk = _ensureExecBlock();
     var line = document.createElement('div');
     line.className = 'tk-line';
-    line.textContent = '💭 ' + String(text).slice(0, 400);
+    line.textContent = String(text).slice(0, 400);
     blk.querySelector('.tm-aa-think-body').appendChild(line);
     _bumpExecLabel(blk);
     _logScrollMaybe();
@@ -1453,19 +1485,19 @@
       case 'removeEntity': return '删除 ' + _friendlyPath(i.path);
       case 'getField': return '查看 ' + _friendlyPath(i.path);
       case 'searchEntities': return '搜索 ' + (_COLL_CN[i.collection] || i.collection || '') + (i.query ? '「' + i.query + '」' : '');
-      case 'globalSearch': return '🔎 全局检索「' + (i.query || '') + '」' + (r.total != null ? '（命中 ' + r.total + '）' : '');
-      case 'findReferences': return '🔗 查引用「' + (i.name || '') + '」' + (r.exactCount != null ? '（精确 ' + r.exactCount + '·提及 ' + (r.mentionCount || 0) + '）' : '');
+      case 'globalSearch': return '全局检索「' + (i.query || '') + '」' + (r.total != null ? '（命中 ' + r.total + '）' : '');
+      case 'findReferences': return '查引用「' + (i.name || '') + '」' + (r.exactCount != null ? '（精确 ' + r.exactCount + '·提及 ' + (r.mentionCount || 0) + '）' : '');
       case 'renameEntity': return '✎ 改名「' + (i.oldName || '') + '」→「' + (i.newName || '') + '」' + (r.changed != null ? '（联动 ' + r.changed + ' 处）' : '');
       case 'listCollection': return '浏览 ' + (_COLL_CN[i.collection] || i.collection || '') + (r.count != null ? '（共 ' + r.count + '）' : '');
       case 'describeSchema': return '查字段形状 ' + (i.kind || '(全部)');
       case 'listGaps': return '查规格缺口' + (r.requiredMissing ? '（必需缺 ' + r.requiredMissing.length + '）' : '');
       case 'validateDraft': return '校验' + (r.ok === false ? '：发现 ' + ((r.violations || []).length) + ' 处问题' : '：通过');
-      case 'preflight': return '🩺 运行时体检' + (r.bootable === false ? '：' + ((r.blockers || []).length) + ' 处阻塞' : (r.bootable === true ? '：可运行' : ''));
+      case 'preflight': return '运行时体检' + (r.bootable === false ? '：' + ((r.blockers || []).length) + ' 处阻塞' : (r.bootable === true ? '：可运行' : ''));
       case 'bulkAdd': return '批量新增 ' + (r.added != null ? r.added : '') + ' 项到 ' + (_COLL_CN[i.collection] || i.collection || '');
       case 'multiEdit': return '一次改 ' + (r.applied != null ? r.applied : (i.edits || []).length) + ' 处';
-      case 'note': return '📝 ' + _shortVal(i.text);
-      case 'flagUncertain': return '⚠ 标记待核 ' + _friendlyPath(i.path) + (i.reason ? '（' + _shortVal(i.reason) + '）' : '');
-      case 'recordConvention': return '📌 记下约定：' + _shortVal(i.convention);
+      case 'note': return '备注：' + _shortVal(i.text);
+      case 'flagUncertain': return '标记待核 ' + _friendlyPath(i.path) + (i.reason ? '（' + _shortVal(i.reason) + '）' : '');
+      case 'recordConvention': return '记下约定：' + _shortVal(i.convention);
       case 'finish': return '✓ 完成：' + (i.summary || '');
       default: return n + '(' + JSON.stringify(i).slice(0, 60) + ')';
     }
@@ -1499,7 +1531,7 @@
   function _diffEntryHtml(d, uncReason, idx) {
     var p = _friendlyPath(d.path);
     var pj = '<span class="tm-aa-diff-jump" data-reveal-path="' + esc(d.path || '') + '" title="在折子里精确定位此处">' + esc(p) + '</span>';
-    var warn = uncReason ? '<span class="tm-aa-unc">⚠ 待核：' + esc(uncReason) + '</span>' : '';
+    var warn = uncReason ? '<span class="tm-aa-unc">待核：' + esc(uncReason) + '</span>' : '';
     var cls = uncReason ? ' uncertain' : '';
     var body;
     if (d.type === 'added') body = '<span class="hunk-body add' + cls + '">＋ 新增 ' + pj + '：' + esc(_shortVal(d.after)) + warn + '</span>';
@@ -1543,7 +1575,7 @@
     var totalUnc = diffs.filter(function(d) { return _uncReasonFor(d.path, ui._lastUnc); }).length;
     if (!diffs.length) return '改动预览';
     var acc = diffs.length - rej.size;
-    return '改动预览 · 接受 ' + acc + '/' + diffs.length + ' 处' + (rej.size ? '（✗' + rej.size + '）' : '') + (totalUnc ? ' · ⚠ ' + totalUnc + ' 待核' : '');
+    return '改动预览 · 接受 ' + acc + '/' + diffs.length + ' 处' + (rej.size ? '（✗' + rej.size + '）' : '') + (totalUnc ? ' · ' + totalUnc + ' 处待核' : '');
   }
   function _paintDiff() {
     var diffs = ui._lastDiffs || [], unc = ui._lastUnc || [];
@@ -1559,7 +1591,7 @@
       var idxs = es.slice(0, 40).map(function(d) { return d.__idx; });
       var allRej = idxs.every(function(i) { return ui._diffRejected.has(i); });
       var firstPath = (es[0] && es[0].path) || field;
-      return '<div class="tm-aa-diff-group" data-group="' + esc(field) + '"><div class="tm-aa-diff-head"><b class="tm-aa-diff-jump" data-reveal-field="' + esc(field) + '" data-first-path="' + esc(firstPath) + '" title="在折子里定位此字段（跳首处改动）">' + esc(_COLL_CN[field] || field) + ' \u2197</b> <span style="color:#8f8a7e">(' + es.length + ' 处' + (gUnc ? ' · ⚠' + gUnc : '') + ')</span><button type="button" class="grp-tog" data-group-idxs="' + idxs.join(',') + '">' + (allRej ? '全收' : '全拒') + '</button></div>' + inner + '</div>';
+      return '<div class="tm-aa-diff-group" data-group="' + esc(field) + '"><div class="tm-aa-diff-head"><b class="tm-aa-diff-jump" data-reveal-field="' + esc(field) + '" data-first-path="' + esc(firstPath) + '" title="在折子里定位此字段（跳首处改动）">' + esc(_COLL_CN[field] || field) + ' \u2197</b> <span style="color:#8f8a7e">(' + es.length + ' 处' + (gUnc ? ' · 待核' + gUnc : '') + ')</span><button type="button" class="grp-tog" data-group-idxs="' + idxs.join(',') + '">' + (allRej ? '全收' : '全拒') + '</button></div>' + inner + '</div>';
     }).join('');
   }
   function _toggleHunk(idx) {
@@ -1581,7 +1613,7 @@
     v.style.display = '';
     if (report.ok) { v.className = 'tm-aa-val ok'; v.textContent = '✓ 校验通过'; return; }
     v.className = 'tm-aa-val bad';
-    v.textContent = '⚠ 仍有 ' + report.violations.length + ' 项校验问题：' + report.violations.slice(0, 4).join('；');
+    v.textContent = '仍有 ' + report.violations.length + ' 项校验问题：' + report.violations.slice(0, 4).join('；');
   }
 
   // 方向D · 审阅报告：总评进 summary 块、findings 按严重度排序着色进 diff 区（只读·无应用）
@@ -1616,7 +1648,7 @@
     var qs = questions.map(function(q, i) {
       return '<div class="ai-q">' + (i + 1) + '. ' + esc(typeof q === 'string' ? q : JSON.stringify(q)) + '</div>';
     }).join('') || '<div class="ai-q">（未列出具体问题）</div>';
-    _appendGuoshiMsg('<span class="ai-who">🧙 国师 · 请教</span>要改得准，我需要先弄清几点：<div class="ai-qs">' + qs + '</div><div class="ai-hint">在下方输入框作答后发送即可继续</div>');
+    _appendGuoshiMsg('<span class="ai-who">国师 · 请教</span>要改得准，我需要先弄清几点：<div class="ai-qs">' + qs + '</div><div class="ai-hint">在下方输入框作答后发送即可继续</div>');
   }
 
   // 国师的对话消息气泡（进谏/澄清走它·像聊天而非塞进改动预览区）—— 追加到对话流，不碰 summary/diff
@@ -1635,7 +1667,7 @@
     if (!ui.els) return;
     r = r || {};
     var sevMap = { '史实': '史实存疑', '平衡': '数值失衡', '机制': '跨朝代机制' };
-    var html = '<span class="ai-who">🧙 国师 · 进谏</span>'
+    var html = '<span class="ai-who">国师 · 进谏</span>'
       + '<span class="ai-sev">' + esc(sevMap[r.severity] || r.severity || '谏') + '</span>'
       + esc(r.concern || '（此举我以为不妥，恕未及细陈）')
       + (r.suggestion ? '<div class="ai-sug">↳ 建议：' + esc(r.suggestion) + '</div>' : '')
@@ -1692,7 +1724,7 @@
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     var focus = (ui.els.req.value || '').trim();
-    _appendUserMsg(focus || '🔍 审阅整个剧本', { kind: 'review', input: focus });   // UI·B 会话流 + UI·Y 重试派发
+    _appendUserMsg(focus || '审阅整个剧本', { kind: 'review', input: focus });   // UI·B 会话流 + UI·Y 重试派发
     ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照（审阅不改它）
     ui.conversation = null; ui._pendingPlan = false;
     setRunning(true);
@@ -1824,7 +1856,7 @@
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
     var focus = (ui.els.req.value || '').trim();
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
-    _appendUserMsg(focus || '📖 讲解剧本', { kind: 'explain', input: focus });   // UI·B 会话流 + UI·Y 重试派发
+    _appendUserMsg(focus || '讲解剧本', { kind: 'explain', input: focus });   // UI·B 会话流 + UI·Y 重试派发
     ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照
     ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
     setRunning(true);
@@ -1872,7 +1904,7 @@
     _beginReplyCard();   // 聊天化：错误也作为对话流里一张卡
     if (!ui.els.summary) { setStatus('失败：' + ui._lastErr.message); return; }
     ui.els.summary.innerHTML = '<div class="tm-aa-errcard">'
-      + '<div class="ec-head">⚠ 运行失败</div>'
+      + '<div class="ec-head">运行失败</div>'
       + '<div class="ec-msg">' + esc(ui._lastErr.message) + '</div>'
       + '<div class="ec-acts"><button type="button" class="ec-retry">↻ 重试</button><button type="button" class="ec-copy">复制错误</button></div>'
       + '</div>';
@@ -1923,7 +1955,7 @@
         ui.els.logSec.style.display = ''; ui.els.logWrap.style.display = '';
         ui.els.log.insertBefore(_clEl, ui.els.log.firstChild);
       }
-      _clEl.innerHTML = '<div class="cl-head">🧩 分解为 ' + _clSteps.length + ' 个子任务' + (allDone ? '（已完成）' : '') + '</div>' + _clSteps.map(function(s, k) {
+      _clEl.innerHTML = '<div class="cl-head">分解为 ' + _clSteps.length + ' 个子任务' + (allDone ? '（已完成）' : '') + '</div>' + _clSteps.map(function(s, k) {
         var st = (allDone || k < currentIdx) ? 'done' : (k === currentIdx ? 'run' : 'pend');
         var ic = st === 'done' ? '✓' : (st === 'run' ? '⟳' : '○');
         return '<div class="cl-item ' + st + '"><span class="cl-ic">' + ic + '</span>' + esc((k + 1) + '. ' + s) + '</div>';
@@ -1969,13 +2001,13 @@
   var _REQ_PLACEHOLDER = '描述你想要的修改，例如：把主角势力改名为「西凉军」并补两个文官';
   function _armCritics() {
     ui._criticsArmed = true;
-    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '🏛'; ui.els.go.title = '三堂会审：拟稿→史官查史+谏官批平衡→据谏修订'; }
+    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '审'; ui.els.go.style.fontSize = '13px'; ui.els.go.title = '三堂会审：拟稿→史官查史+谏官批平衡→据谏修订'; }
     if (ui.els && ui.els.req) { ui.els.req.placeholder = '【三堂会审】写下要新增/修改什么——国师拟稿，再由史官查史实、谏官批平衡，据谏修订后交你审'; ui.els.req.focus(); }
     setStatus('已开启三堂会审 · 写下需求后点发送：拟稿 → 史官+谏官会审 → 据谏修订（比普通生成多 2~3 次调用）');
   }
   function _disarmCriticsVisual() {
     ui._criticsArmed = false;
-    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '↑'; ui.els.go.title = 'Enter 发送 · Shift+Enter 换行'; }
+    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '↑'; ui.els.go.style.fontSize = ''; ui.els.go.title = 'Enter 发送 · Shift+Enter 换行'; }
     if (ui.els && ui.els.req) ui.els.req.placeholder = _REQ_PLACEHOLDER;
   }
   function runWithCriticsUI() {
@@ -1997,7 +2029,7 @@
       if (!_el) { _el = document.createElement('div'); _el.className = 'tm-aa-checklist'; var _anchor = _card && _card.querySelector('.tm-aa-summary'); if (_card && _anchor) _card.insertBefore(_el, _anchor); else if (ui.els.log) ui.els.log.insertBefore(_el, ui.els.log.firstChild); }
       function row(st, label) { var ic = st === 'done' ? '✓' : (st === 'run' ? '⟳' : '○'); return '<div class="cl-item ' + st + '"><span class="cl-ic">' + ic + '</span>' + label + '</div>'; }
       var rv = (_info.hist != null) ? ('（史官 ' + _info.hist + ' 条 · 谏官 ' + _info.bal + ' 条）') : '';
-      _el.innerHTML = '<div class="cl-head">🏛 三堂会审' + (done ? '（已完成）' : '') + '</div>'
+      _el.innerHTML = '<div class="cl-head">三堂会审' + (done ? '（已完成）' : '') + '</div>'
         + row(_phase.draft, '① 国师拟稿') + row(_phase.review, '② 史官查史实 + 谏官批平衡' + rv) + row(_phase.revise, '③ 国师据谏修订');
     }
     _render(false);
@@ -2045,7 +2077,7 @@
     if (!ui.els || !ui.els.summary) return;
     function block(icon, title, rev) {
       var fs = (rev && rev.findings) || [];
-      var head = '<div class="cl-head">' + icon + ' ' + title + '（' + fs.length + ' 条' + (rev && rev.summary ? '·' + esc(rev.summary) : '') + '）</div>';
+      var head = '<div class="cl-head">' + (icon ? icon + ' ' : '') + title + '（' + fs.length + ' 条' + (rev && rev.summary ? '·' + esc(rev.summary) : '') + '）</div>';
       if (!fs.length) return head + '<div class="ln" style="color:#7fe0a0">✓ 无异议</div>';
       var sevRank = { '高': 0, '中': 1, '低': 2 };
       fs = fs.slice().sort(function(a, b) { return (sevRank[a && a.severity] != null ? sevRank[a.severity] : 3) - (sevRank[b && b.severity] != null ? sevRank[b.severity] : 3); });
@@ -2059,8 +2091,8 @@
     }
     var hist = (res.critiques && res.critiques.history) || null;
     var bal = (res.critiques && res.critiques.balance) || null;
-    ui.els.summary.innerHTML = '<b>🏛 三堂会审报告</b><span class="tm-aa-stream">' + esc(res.summary || '') + '</span>'
-      + block('📜', '史官·史实核查', hist) + block('⚖', '谏官·平衡可玩', bal)
+    ui.els.summary.innerHTML = '<b>三堂会审报告</b><span class="tm-aa-stream">' + esc(res.summary || '') + '</span>'
+      + block('', '史官·史实核查', hist) + block('', '谏官·平衡可玩', bal)
       + (res.revised ? '<div class="ln" style="color:#a7e0cf;margin-top:6px">下方 diff 是国师据两官意见修订后的终稿，审阅后决定应用。</div>'
                      : '<div class="ln" style="color:#8f8a7e;margin-top:6px">两官未提需修订的问题，下方即拟稿终稿。</div>');
     ui.els.summary.style.display = '';
@@ -2306,7 +2338,7 @@
     if (document.getElementById('tm-aa-fab')) return;
     var fab = document.createElement('button');
     fab.id = 'tm-aa-fab';
-    fab.textContent = '🧙 国师';
+    fab.innerHTML = '<span class="fab-seal">师</span>国师';
     fab.addEventListener('click', function() {
       var p = ensurePanel();
       p.classList.toggle('open');
