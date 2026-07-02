@@ -1864,6 +1864,29 @@
       var _sc23stageOn = (P.ai && P.ai.sc2Pipeline === '3stage');
       var _sc2OutlineResult = null;
       var _sc27ReviewResult = null;
+      var _threeStageDone = false;   // ★2026-07-02 bug修:3stage 成功改标志位·不再 return 退出 _runBranchC(原 return 连带跳过 sc25c/sc25 记忆管线排队·3stage 回合记忆金字塔停摆)
+      // 建议兜底(自 legacy 收尾抽出共享·3stage 成功路径此前不产 suggestions→UI 建议空)——忠臣建议冗长说教/荒淫时混佞臣"好话"·语义与 legacy 原块一致
+      var _ensureSc2Suggestions = function(sugg) {
+        if (Array.isArray(sugg) && sugg.length >= 2) return sugg;
+        var _dynSugg = [];
+        _dynSugg.push('巩固民心，推行惠政（然此非一朝一夕之功，须持之以恒，不可半途而废）');
+        _dynSugg.push('臣以为当整饬吏治、选贤任能，此乃治国之本。然贤愚难辨，望陛下明察秋毫');
+        if (GM.eraState && GM.eraState.militaryProfessionalism < 0.4) _dynSugg.push('军备松弛久矣，臣以为宜操练兵马、加强边防。然此事费银甚巨、耗时良久，朝中恐有异议');
+        if (_dynSugg.length < 3) _dynSugg.push('臣以为当修文德以来远人，虽见效缓慢，然为万世之基业');
+        if (GM._tyrantDecadence && GM._tyrantDecadence > 25) {
+          var _badSugg = [
+            '近来操劳过度，宜宴饮群臣，以慰圣心',
+            '方士进献灵丹，服之可延年益寿，何不一试',
+            '天子当享天下之福，何必自苦？宜大赦天下、普天同庆',
+            '某处风景绝佳，可建行宫一座，以备避暑',
+            '后宫虚设，宜选天下淑女以充掖庭',
+            '边功卓著，何不御驾亲征、扬威四海？',
+            '近臣某某忠心可嘉，宜委以重任（注：此人谄媚之辈）'
+          ];
+          _dynSugg.push(_badSugg[Math.floor(random() * _badSugg.length)]);
+        }
+        return (Array.isArray(sugg) ? sugg : []).concat(_dynSugg).slice(0, 4);
+      };
 
       if (_sc23stageOn) {
         // Slice 2·sc2_outline·读 sc1/sc15 事实摘要 → 场景大纲
@@ -1940,6 +1963,7 @@
                 hourenXishuo = _pResult.houren_xishuo || _pResult.zhengwen;
                 // Phase 5·canonical mirror·subcall2 = { zhengwen, houren_xishuo, _sc2outline, _sc27review }
                 GM._turnAiResults.subcall2 = { zhengwen: zhengwen, hourenXishuo: hourenXishuo, houren_xishuo: hourenXishuo, _sc2outline: _sc2OutlineResult, _sc27review: _sc27ReviewResult, _threeStage: true };
+                GM._turnAiResults.subcall2_raw = _pCall.raw || '';   // ★与 legacy 对齐(诊断/agent 工具读 raw·此前 3stage 缺)
                 _dbg('[sc2_prose] zhengwen len=' + zhengwen.length);
                 // Phase 5 UI 反馈·sc2_prose 完成时 push 完整 prose 提示
                 try { if (typeof toast === 'function') toast('叙事成文·' + zhengwen.length + ' 字'); } catch(_){}
@@ -1948,12 +1972,24 @@
           });
         }
 
-        // 3stage 成功且 zhengwen 已写·skip 旧 sc2 + sc27
+        // 3stage 成功且 zhengwen 已写·skip 旧 sc2 + sc27（叙事已产·大纲审查已在 scR 做）
+        // ★2026-07-02 bug修:原 `return` 直接退出 _runBranchC——连带跳过其后 sc25c/sc25(记忆合成·伏笔)的排队·
+        //   3stage 回合整个记忆金字塔停摆(sc28 默认折叠进 sc25c·一并死)·且对话历史/建议/subcall2_raw 全缺。
+        //   改标志位:只跳 legacy sc2 与 sc27·其余管线照常·并补齐 legacy 收尾职责。
         if (zhengwen && GM._turnAiResults.subcall2 && GM._turnAiResults.subcall2._threeStage) {
-          _dbg('[Phase 5] 3stage 成功·skip 旧 sc2 + sc27');
-          return;  // skip legacy sc2 + sc27 below
+          _threeStageDone = true;
+          _dbg('[Phase 5] 3stage 成功·skip 旧 sc2 + sc27·记忆管线照常');
+          // 补齐①:建议兜底(UI 读 record.suggestions·此前 3stage 回合建议恒空)
+          try { GM._turnAiResults.subcall2.suggestions = _ensureSc2Suggestions(GM._turnAiResults.subcall2.suggestions); } catch(_sgE) {}
+          // 补齐②:正文入对话历史(与 legacy 同截断策略·否则后续回合的 AI 不记得本回合故事)
+          try {
+            var _cc3 = zhengwen || '';
+            if (_cc3.length > 1500) _cc3 = _cc3.substring(0, 600) + '\n……（后人戏说正文过长，此处略去中段；完整版见史记）……\n' + _cc3.substring(_cc3.length - 400);
+            GM.conv.push({ role: 'assistant', content: _cc3 });
+          } catch(_cvE) {}
+        } else {
+          _dbg('[Phase 5] 3stage 失败·fallback to legacy sc2');
         }
-        _dbg('[Phase 5] 3stage 失败·fallback to legacy sc2');
       }
 
       // --- Sub-call 2: 后人戏说（场景叙事，完整生活进程） --- [always runs]
@@ -2118,29 +2154,10 @@
         if(GM.biannianItems&&GM.biannianItems.length>50)GM.biannianItems=GM.biannianItems.filter(function(b){return b.startTurn+b.duration>=GM.turn;});
       }
 
-      // 建议不足时自动补全（借鉴 ChongzhenSim fallback choices）
+      // 建议不足时自动补全（借鉴 ChongzhenSim fallback choices·2026-07-02 抽出 _ensureSc2Suggestions 与 3stage 路径共享·语义不变）
       if (!p2 || !p2.suggestions || p2.suggestions.length < 2) {
-        // 动态生成建议——忠臣的建议故意写得冗长、说教（让玩家感受忠言逆耳）
-        var _dynSugg = [];
-        _dynSugg.push('巩固民心，推行惠政（然此非一朝一夕之功，须持之以恒，不可半途而废）');
-        _dynSugg.push('臣以为当整饬吏治、选贤任能，此乃治国之本。然贤愚难辨，望陛下明察秋毫');
-        if (GM.eraState && GM.eraState.militaryProfessionalism < 0.4) _dynSugg.push('军备松弛久矣，臣以为宜操练兵马、加强边防。然此事费银甚巨、耗时良久，朝中恐有异议');
-        if (_dynSugg.length < 3) _dynSugg.push('臣以为当修文德以来远人，虽见效缓慢，然为万世之基业');
-        // 当荒淫值较高时，混入佞臣式的"好建议"
-        if (GM._tyrantDecadence && GM._tyrantDecadence > 25) {
-          var _badSugg = [
-            '近来操劳过度，宜宴饮群臣，以慰圣心',
-            '方士进献灵丹，服之可延年益寿，何不一试',
-            '天子当享天下之福，何必自苦？宜大赦天下、普天同庆',
-            '某处风景绝佳，可建行宫一座，以备避暑',
-            '后宫虚设，宜选天下淑女以充掖庭',
-            '边功卓著，何不御驾亲征、扬威四海？',
-            '近臣某某忠心可嘉，宜委以重任（注：此人谄媚之辈）'
-          ];
-          _dynSugg.push(_badSugg[Math.floor(random() * _badSugg.length)]);
-        }
         if (!p2) p2 = {};
-        p2.suggestions = (p2.suggestions || []).concat(_dynSugg).slice(0, 4);
+        p2.suggestions = _ensureSc2Suggestions(p2.suggestions);
       }
 
       if(!hourenXishuo){
@@ -2159,7 +2176,7 @@
       }
       GM.conv.push({role:"assistant",content:_convContent});
       }); }; // end Sub-call 2 _runSubcall + _runLegacySc2 wrapper
-      await _runLegacySc2();
+      if (!_threeStageDone) await _runLegacySc2();   // ★3stage 成功时跳 legacy·但其后 sc25c/sc25 排队照常(bug修·原 return 全跳)
 
       // --- Sub-call 2.5c·Phase 4 A5·sc25 + sc_consolidate 双调用合一·tactical + strategic 并行 ---
       // 用·替代 sc25 (伏笔/state_board) + sc_consolidate (记忆固化)·两 LLM call Promise.all·~6K output 各·不易截断
@@ -2651,6 +2668,12 @@
       //   与 sc_audit(结构化数据一致性·承重·保留)职能不重叠不可合并·属 QC 栈最低承重项
       //   (下方实为"追加重写版"而非替换最弱段·跳过后 zhengwen 仍是 sc2 产出的合法完整正文)·
       //   默认关省每回合一次 standard 调用·剧本/玩家可设 P.ai.narrativeReviewEnabled=true 恢复。
+      if (_threeStageDone) {
+        // ★3stage 已在 scR 做过大纲级审查(时代错乱/人名/节拍)·此处跳过与原 return 语义一致(skip 旧 sc2 + sc27)
+        if (GM._turnAiResults) GM._turnAiResults.subcall27 = { _skipped: 'threeStageAlreadyReviewed' };
+        _dbg('[sc27] skip·3stage 路径已含 scR 大纲审查');
+        return;
+      }
       if (!(P.ai && P.ai.narrativeReviewEnabled)) {
         if (GM._turnAiResults) GM._turnAiResults.subcall27 = { _skipped: 'narrativeReviewDisabled' };
         _dbg('[sc27] skip·叙事审查默认关(降本)·zhengwen 用 sc2 原文');
