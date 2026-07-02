@@ -92,6 +92,38 @@ TURN.runPending(GM).then(function () {
   ok(TURN.emperorArmyId({}, [{ id: 'a', name: '边军', soldiers: 1000 }, { id: 'b', name: '御营亲军', soldiers: 800 }]) === 'b', '⑨ 无皇帝→标御营/亲军名的军');
   ok(TURN.emperorArmyId({}, [{ id: 'a', soldiers: 1000 }, { id: 'b', soldiers: 3000 }]) === 'b', '⑨ 兜底→御驾随最大军');
 
-  console.log('\n结果: ' + A + ' 通过 / ' + F + ' 失败');
-  process.exit(F ? 1 : 0);
+  /* ⑩ O11 出兵预勾(v2):army._battleStance 三态——always→免modal径入战术(headless本会auto-delegate·故launch被调=预勾生效铁证)·delegate→径庙算·未设→照旧 */
+  var launches = [];
+  global.window.TMBattleAdapter = { buildBattleConfig: function () { return { armies: { ming: [], jin: [] } }; } };
+  global.window.TMBattleResolve = {
+    predictBattleBand: function () { return { swing: true, winner: 'player', playerLoss: {}, enemyLoss: {}, k: 0.25, strA: 1, strB: 1, winProb: 0.5, playerSoldiers: 0, enemySoldiers: 0 }; },
+    tacticalToBattleResult: function (tac, ctx) { return { affectedArmies: [{ armyId: 'pa', loss: 123 }], winnerFactionId: '宋', loserFactionId: '金', _fromTactical: true }; }
+  };
+  global.window.TMBattleEmbed = { launch: function (cfg) { launches.push(cfg); return Promise.resolve({ outcome: 'win', units: [], commanders: [] }); } };
+  GM._yujiaQinzheng = true;
+  var paArmy = GM.armies[0];
+  function stanceRun(stance) {
+    paArmy._battleStance = stance; applied.length = 0; launches.length = 0; TURN._clear(); GM._pendingAbstractBattles = [];
+    global.window.MilitarySystems.applyBattleResult({ affectedArmies: [{ armyId: 'pa', loss: 400 }, { armyId: 'ea', loss: 500 }] }, GM);
+    return TURN.runPending(GM);
+  }
+  stanceRun('always').then(function () {
+    ok(launches.length === 1, '⑩ 预勾必亲征→免临场请旨·TMBattleEmbed.launch 被调(headless无modal仍入战术)');
+    ok(applied.length === 1 && applied[0]._fromTactical === true, '⑩ 预勾亲征→战术战果经原咽喉回填');
+    return stanceRun('delegate');
+  }).then(function () {
+    ok(launches.length === 0 && applied.length === 1 && !applied[0]._fromTactical, '⑩ 预勾必委之→不入战术·原 abstract 落地');
+    return stanceRun(undefined);
+  }).then(function () {
+    ok(launches.length === 0 && applied.length === 1, '⑩ 未预勾→照旧(headless modal auto-delegate·零行为变更)');
+    delete paArmy._battleStance;
+    /* ⑩ UI 源契约:军卡带 stance 三态按钮 + 命令分支 + 刷新 */
+    var fs2 = require('fs');
+    var rr = fs2.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-rightrail.js'), 'utf8');
+    ok(/data-command="stance"/.test(rr) && /rightArmyStanceLabel/.test(rr), '⑩ 军卡渲染带「若接战」预勾按钮(仅玩家军)');
+    ok(/cmd === 'stance'/.test(rr) && /_battleStance/.test(rr) && rr.indexOf("cur === 'always' ? 'delegate'") >= 0, '⑩ stance 命令分支三态轮换+refreshArmyFlyout');
+
+    console.log('\n结果: ' + A + ' 通过 / ' + F + ' 失败');
+    process.exit(F ? 1 : 0);
+  });
 });

@@ -828,8 +828,14 @@
       '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="train" data-id="' + attr(armyKey) + '">整训</button>' +
       '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="redeploy" data-id="' + attr(armyKey) + '">调防</button>' +
       '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="chaoyi" data-id="' + attr(armyKey) + '">入朝议</button>' +
+      (rightArmyBelongsToPlayer(a) ? '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="stance" data-id="' + attr(armyKey) + '" title="御驾亲征·出兵预勾(O11):此军接敌时 问我=会战阶段临场请旨 / 必亲征=免弹窗径入战术 / 必委之=径庙算">' + esc(rightArmyStanceLabel(a)) + '</button>' : '') +
       '</div>' +
       '</section>';
+  }
+  /* 御驾亲征·O11 出兵预勾三态(army._battleStance 持久随档·undefined=问我) */
+  function rightArmyStanceLabel(a){
+    var s = a && a._battleStance;
+    return s === 'always' ? '若接战·必亲征' : s === 'delegate' ? '若接战·必委之' : '若接战·问我';
   }
 
   // C4 流寇 UI：军情面板显在场流寇威胁（众/流窜省/势头）·仅有活贼才显（同军情预警 hot 卡范式）
@@ -3733,6 +3739,11 @@
       state.rightChaoyiMode = 'tinyi';
       state.rightChaoyiTopic = name + ' 军务处置';
       openPanel('issue');
+    } else if (cmd === 'stance') {
+      var cur = army._battleStance;   // O11 预勾三态轮换:问我→必亲征→必委之→问我(存 live GM.armies·随档)
+      army._battleStance = cur === 'always' ? 'delegate' : cur === 'delegate' ? undefined : 'always';
+      toast(name + '·' + (army._battleStance === 'always' ? '若接战必御驾亲征（免临场请旨）' : army._battleStance === 'delegate' ? '若接战必委之偏裨（庙算决之）' : '若接战临场请旨（会战阶段弹窗）'));
+      refreshArmyFlyout();
     }
   }
 

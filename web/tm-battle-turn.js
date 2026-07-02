@@ -310,7 +310,13 @@
         return Promise.resolve().then(function () {
           var pf = playerFaction(GM), ef = (item.enemyArmies[0] && item.enemyArmies[0].faction) || '敌军';
           var band = (w.TMBattleResolve) ? w.TMBattleResolve.predictBattleBand(item.playerArmies, item.enemyArmies, { GM: GM }) : null;
-          return promptCombatChoice(item, band).then(function (pick) {
+          /* O11 出兵预勾:领军(御驾所在/首军)军卡「若接战」三态——always→免临场请旨径入战术·delegate→径庙算·未设→临场 modal */
+          var _lead = findArmy(GM, emperorArmyId(GM, item.playerArmies)) || item.playerArmies[0];
+          var _stance = _lead && _lead._battleStance;
+          var _pick = _stance === 'always' ? Promise.resolve({ choice: 'fight', strategy: null })
+            : _stance === 'delegate' ? Promise.resolve({ choice: 'delegate', strategy: null })
+            : promptCombatChoice(item, band);
+          return _pick.then(function (pick) {
             var choice = (pick && pick.choice) || 'delegate', strategy = pick && pick.strategy;
             if (choice !== 'fight' || !w.TMBattleAdapter || !w.TMBattleEmbed || !w.TMBattleResolve) {
               applyDelegate(item, strategy, GM); return;                 // 委之(方略拨原结果)/件缺→落地
