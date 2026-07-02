@@ -1340,12 +1340,17 @@
       if (origin === 'user') { try { localStorage.setItem('tm_aa_winmode', 'fs'); } catch (e) {} }
     }
   }
-  // 首开默认全屏窗（应用感·Claude 桌面端即窗口）·此后尊重用户上次亲手选择的窗态
+  // 首开默认全屏窗（应用感·Claude 桌面端即窗口）·此后尊重用户上次亲手选择的窗态。
+  // 剧本工坊(reset)把面板钉成案侧常驻坞(body.je-guoshi-docked)——坞即窗态·不再叠加全屏。
   function _autoWinMode() {
-    try {
-      var m = localStorage.getItem('tm_aa_winmode');
-      if ((m === 'fs' || !m) && ui.els && ui.els.panel && !ui.els.panel._fs) _toggleFullscreen();
-    } catch (e) {}
+    setTimeout(function () {   // 推迟一拍：宿主坞胶水在 fab.click() 之后才挂 je-guoshi-docked·同步检查会扑空
+      try {
+        if (document.body.classList.contains('je-guoshi-docked')) return;
+        if (!ui.els || !ui.els.panel || !ui.els.panel.classList.contains('open')) return;
+        var m = localStorage.getItem('tm_aa_winmode');
+        if ((m === 'fs' || !m) && !ui.els.panel._fs) _toggleFullscreen();
+      } catch (e) {}
+    }, 0);
   }
 
   // UI·AJ · 过程区内搜索（⌘F）：在结果/过程区里查关键词，高亮 + 上下跳（浏览器 find 的面板版）。

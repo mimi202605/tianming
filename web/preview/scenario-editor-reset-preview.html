@@ -12106,20 +12106,14 @@
     body.je-guoshi-docked:not(.je-guoshi-settings-open) #tm-aa-panel .je-aa-planmode,
     body.je-guoshi-docked:not(.je-guoshi-settings-open) #tm-aa-panel .je-aa-guard-toggle,
     body.je-guoshi-docked:not(.je-guoshi-settings-open) #tm-aa-panel .je-aa-esttok,
-    body.je-guoshi-docked:not(.je-guoshi-settings-open) #tm-aa-hd button:not(#tm-aa-x):not(#tm-aa-fs):not(#tm-aa-settings) { display: none !important; }
+    body.je-guoshi-docked:not(.je-guoshi-settings-open) #tm-aa-hd button:not(#tm-aa-x):not(#tm-aa-fs):not(#tm-aa-settings):not(#tm-aa-newchat):not(#tm-aa-theme):not(#tm-aa-rail-tg) { display: none !important; }   /* 御案收纳保留·但共创面板原生五钮(新对话/明暗/侧栏)不再误藏 */
     #tm-aa-settings { background: none; border: none; color: var(--paper-dim); font-size: 13px; cursor: pointer; line-height: 1; padding: 0 3px; }
     #tm-aa-settings:hover { color: var(--paper-strong); }
     body.je-guoshi-settings-open #tm-aa-settings { color: var(--gold-bright); }
     @media (min-width: 1101px) {
-      body.je-guoshi-docked #tm-aa-body { flex: 1 1 auto; min-height: 0; }   /* 填满面板高度，composer 才能 margin-top:auto 推到底 + sticky 钉底 */
-      body.je-guoshi-docked #tm-aa-composer {
-        order: 80; margin: 8px -12px 0; padding: 9px 12px 2px;
-        position: sticky; bottom: -10px; z-index: 7;
-        margin-top: auto;   /* 内容短时推到底 */
-        background: linear-gradient(180deg, rgba(12, 10, 8, .55), rgba(10, 9, 7, .985) 32%);
-        border-top: 1px solid rgba(184, 154, 83, .18);
-      }
-      body.je-guoshi-docked #tm-aa-empty { order: 4; }
+      /* 2026-07-02 御案重皮退役视觉层：共创面板已自带 Claude 桌面端级主题(变量驱动)——
+         此处只保留功能胶水(常驻坞/宽度/设置抽屉/⌘K)·旧的逐元素重涂(金钮/紫泡/暗盒/楷体req)全部移除·
+         版式(composer 沉底/欢迎居中)由面板原生规则接管。 */
       /* 国师停靠后顶栏变窄 → 13 个图标钮收紧到 33px、间距 4px，尽量单行不换行不重叠 */
       body.je-guoshi-docked .top-actions { gap: 4px; }
       body.je-guoshi-docked .top-actions .icon-btn { width: 33px; height: 33px; }
@@ -12130,14 +12124,12 @@
       body.je-guoshi-docked #tm-aa-panel {
         display: flex !important;   /* 常驻：即便 × 去掉 .open 也不消失 */
         position: fixed; top: 14px; right: 12px; bottom: 14px;
-        width: var(--tm-aa-dock-w, 340px); max-width: 60vw; max-height: none;   /* UI·AI · 可调宽 */
+        width: var(--tm-aa-dock-w, 420px); max-width: 60vw; max-height: none; height: auto;   /* UI·AI · 可调宽（默认加宽到 420 容纳新版式） */
         flex-direction: column;
-        border: 1px solid rgba(184, 154, 83, .40);
-        border-radius: var(--je-radius-lg);
-        background: linear-gradient(180deg, rgba(26, 22, 18, .99), rgba(9, 8, 7, .995));
-        box-shadow: -18px 0 44px rgba(0, 0, 0, .42), inset 0 0 0 1px rgba(0, 0, 0, .3);
-        color: var(--paper);
+        border-color: rgba(184, 154, 83, .40);   /* 御案金框保留·底色/文色交面板原生主题 */
+        box-shadow: -18px 0 44px rgba(0, 0, 0, .42);
         overflow: hidden;
+        animation: none;   /* 常驻坞不重播开场动画 */
       }
       /* 治执行时大片死黑空白：极淡居中印记，让空白读作"留白"而非黑洞（在内容之下·不挡操作） */
       body.je-guoshi-docked #tm-aa-panel::after {
@@ -12147,59 +12139,8 @@
         color: rgba(184, 154, 83, .04); pointer-events: none; z-index: 0;
       }
       body.je-guoshi-docked #tm-aa-body { position: relative; z-index: 1; }
-      body.je-guoshi-docked #tm-aa-hd {
-        background: linear-gradient(90deg, rgba(35, 27, 18, .7), transparent);
-        border-bottom: 1px solid rgba(184, 154, 83, .30);
-        flex-wrap: wrap; gap: 4px 5px;   /* UI优化：按钮多了换行不挤爆 */
-      }
+      body.je-guoshi-docked #tm-aa-hd { flex-wrap: wrap; gap: 4px 5px; }   /* 御案注入钮多时换行不挤爆·配色交面板原生主题 */
       body.je-guoshi-docked #tm-aa-hd .je-aa-test { margin: 0; padding: 2px 7px; font-size: 11px; }   /* UI优化：去掉 margin-left:auto + 紧凑 */
-      body.je-guoshi-docked #tm-aa-hd b {
-        color: var(--gold-bright); font-family: var(--je-font-kai); letter-spacing: .04em;
-      }
-      body.je-guoshi-docked #tm-aa-hd .sub { color: var(--paper-dim); }
-      body.je-guoshi-docked #tm-aa-x { color: var(--paper-dim); }
-      body.je-guoshi-docked #tm-aa-body { color: var(--paper); }
-      body.je-guoshi-docked #tm-aa-req,
-      body.je-guoshi-docked .tm-aa-log,
-      body.je-guoshi-docked .tm-aa-diff {
-        background: rgba(8, 7, 5, .62);
-        border: 1px solid rgba(184, 154, 83, .26);
-        color: var(--paper-strong);
-      }
-      body.je-guoshi-docked #tm-aa-req { font-family: var(--je-font-kai); }
-      body.je-guoshi-docked #tm-aa-go {            /* 御案金 = 生成/起念（与"采纳"绿区分） */
-        background: linear-gradient(180deg, rgba(201, 168, 76, .94), rgba(150, 120, 48, .94));
-        color: #20160a; font-family: var(--je-font-kai); border-radius: var(--je-radius); font-weight: 700;
-      }
-      body.je-guoshi-docked #tm-aa-apply {         /* celadon 绿 = 采纳/应用（对齐 Claude Code accept=绿） */
-        background: linear-gradient(180deg, rgba(110, 188, 150, .95), rgba(74, 148, 112, .95));
-        color: #06140d; border-radius: var(--je-radius); font-weight: 700;
-      }
-      body.je-guoshi-docked #tm-aa-apply.warn {    /* amber = 待确认 */
-        background: linear-gradient(180deg, rgba(201, 168, 76, .92), rgba(138, 109, 43, .92));
-        color: #1c140a;
-      }
-      body.je-guoshi-docked #tm-aa-discard {
-        background: rgba(58, 53, 48, .82); color: var(--paper); border-radius: var(--je-radius);
-      }
-      /* 气泡对称：助手「本次改动说明」做成左对齐气泡（左下尖角），与右侧用户紫气泡呼应（对齐 Claude 网页端左右气泡） */
-      body.je-guoshi-docked .tm-aa-summary {
-        max-width: 94%; margin: 6px auto 6px 0; width: fit-content;
-        background: rgba(8, 7, 5, .52); border: 1px solid rgba(184, 154, 83, .24);
-        border-left: 3px solid rgba(110, 188, 150, .72);
-        border-radius: 10px 10px 10px 3px; color: var(--paper-strong);
-      }
-      body.je-guoshi-docked .tm-aa-summary b { color: var(--gold-bright); }
-      body.je-guoshi-docked .tm-aa-summary .note { color: var(--paper-dim); }
-      body.je-guoshi-docked .tm-aa-summary.tm-aa-clamped::after { background: linear-gradient(rgba(8, 7, 5, 0), rgba(8, 7, 5, .9)); }
-      body.je-guoshi-docked .tm-aa-clamp-btn { color: var(--gold-bright); }
-      /* 用户气泡：贴齐 reset 御案紫金质感（右下尖角已是助手镜像） */
-      body.je-guoshi-docked .tm-aa-msg-user {
-        background: rgba(122, 92, 255, .14); border: 1px solid rgba(184, 154, 83, .3);
-        color: var(--paper-strong); border-radius: 10px 10px 3px 10px;
-      }
-      body.je-guoshi-docked .tm-aa-msg-user .mu-who { color: var(--gold-bright); }
-    }
 
     /* ===== L1 · 左列「卷册目录」精修 — 对齐右侧国师质感（纯视觉·不改信息架构·2026-06-04） =====
        目标：模块名是清晰焦点，完成度/AI 等副信息退后；选中＝正在批阅的这一卷。
@@ -13069,11 +13010,11 @@
       function dock() {
         var fab = document.getElementById('tm-aa-fab');
         if (!fab) return false;                         // adapter 未就绪 / 非编辑器页
+        document.body.classList.add('je-guoshi-docked');   // 先声明坞态·再开面板（共创面板首开自动全屏据此让位于坞）
         var panel = document.getElementById('tm-aa-panel');
         if (!panel) { fab.click(); panel = document.getElementById('tm-aa-panel'); }
         if (!panel) return false;
         panel.classList.add('open');                    // 常驻打开
-        document.body.classList.add('je-guoshi-docked');
         var hd = panel.querySelector('#tm-aa-hd b');
         if (hd) hd.textContent = '国师 · AI 共创';
         var hdSub = panel.querySelector('#tm-aa-hd .sub');   // UI优化：⌘K 命令面板发现提示（点了也能开）
