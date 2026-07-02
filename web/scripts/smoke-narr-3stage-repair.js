@@ -72,5 +72,43 @@ ok(decadent.some(function(s){ return /宴饮群臣/.test(s); }), '⑤ 荒淫>25 
 fn = mkFn({ eraState: { militaryProfessionalism: 0.2 }, _tyrantDecadence: 0 }, function(){ return 0; });
 ok(fn([]).some(function(s){ return /操练兵马/.test(s); }), '⑤ 军备松弛 → 边防建议进兜底');
 
+// ⑥ 事实同源(commit 2)：_buildSc2FactsCore 抽出·legacy 与 scOl 双消费
+ok(/var _buildSc2FactsCore = function\(\) \{/.test(src), '⑥ _buildSc2FactsCore 已定义');
+ok(/var _factsCore2 = _buildSc2FactsCore\(\);\s*\n\s*p1Summary = _factsCore2\.p1Summary;\s*\n\s*var _basisBrief = _factsCore2\.basisBrief;/.test(src), '⑥ legacy sc2 改走共享组装');
+ok(/var _fOl = _buildSc2FactsCore\(\);/.test(src), '⑥ sc2_outline 改走共享组装(原5条切片弃用)');
+ok(src.indexOf("_olCtx += _tmLimitPromptSection('结构化推演摘要', _fOl.p1Summary, 4500)") >= 0, '⑥ scOl 事实预算 4500+3500(比 legacy 紧)');
+ok(/if \(!p1Summary\) p1Summary = _tmLimitPromptSection\('结构化推演摘要', _buildSc2FactsCore\(\)\.p1Summary, 6500\)/.test(src), '⑥ 3stage 成功路径补 p1Summary 镜像(下游 ctx.followup 读)');
+
+// ⑦ O1 因果综述 / O2 时代用语 / O4 场景伸缩 契约
+ok(/WorldDigest\.promptBlock\(GM, \{ turnsBack: 1 \}\)/.test(extractFn('var _buildSc2FactsCore = function() {') || ''), '⑦ O1·W1 因果综述折进共享组装(两路径同享)');
+ok(src.indexOf('时代用语（场景细节与 time_period_markers 优先从中选用') >= 0, '⑦ O2·periodVocabulary 开卷给 scOl');
+ok(/var _sceneCap = _factN >= 10 \? 8 : \(_factN >= 5 \? 6 : 4\);/.test(src), '⑦ O4·场景数 4/6/8 随事实量伸缩');
+ok(src.indexOf('须顺【天下牵动·因果综述】的因果脉络组织') >= 0, '⑦ O1·narrative_arc 要求沿因果链组织');
+
+// ⑧ 行为：抽真 _buildSc2FactsCore 喂假闭包跑
+const coreSrc = extractFn('var _buildSc2FactsCore = function() {');
+ok(!!coreSrc, '⑧ _buildSc2FactsCore 闭包提取');
+const mkCore = new Function('p1', 'shizhengji', 'shiluText', 'personnelChanges', 'GM', 'edicts', 'xinglu', 'memRes',
+  '_buildLateSpecialtySummary', '_tmLimitPromptSection', 'TM', '_dbg', 'WorldDigest',
+  'return (' + coreSrc.replace('var _buildSc2FactsCore = ', '') + ')');
+const fakeGM = { turn: 3, chars: [], _energy: 100, _courtRecords: null, _ty3_pendingReviewForPrompt: null };
+const core = mkCore(
+  { npc_actions: [{ name: '张甲', action: '上疏言事' }], character_deaths: [{ name: '李乙', reason: '病故' }], faction_ai_outcomes: [] },
+  '今岁大旱，河南饥', '实录一行', [{ name: '王丙', change: '升侍郎' }], fakeGM,
+  { decree: '开仓赈济河南' }, '夜读典籍', [{ from: '御史台', type: '弹章', status: 'approved', reply: '准' }],
+  function(){ return ''; }, function(n, t, c){ return String(t || '').slice(0, c); }, {}, function(){},
+  { promptBlock: function(){ return '\n【本回合天下牵动·因果综述】\n· [财政] 赈济→牵动户部\n'; } }
+);
+const coreOut = core();
+ok(coreOut.p1Summary.indexOf('【时政记(摘要)】今岁大旱') >= 0 && coreOut.p1Summary.indexOf('【NPC行动】张甲:上疏言事') >= 0
+  && coreOut.p1Summary.indexOf('【死亡】李乙:病故') >= 0 && coreOut.p1Summary.indexOf('【人事】王丙→升侍郎') >= 0,
+  '⑧ p1Summary 含时政/NPC行动/死亡/人事(与 legacy 原内联一致)');
+ok(coreOut.basisBrief.indexOf('【玩家诏令(须在场景中具体展开执行过程)】') >= 0 && coreOut.basisBrief.indexOf('颁行诏书:开仓赈济河南') >= 0
+  && coreOut.basisBrief.indexOf('【主角私人行止') >= 0 && coreOut.basisBrief.indexOf('【本回合奏疏批复') >= 0,
+  '⑧ basisBrief 含玩家诏令/行止/奏疏批复');
+ok(coreOut.basisBrief.indexOf('【本回合天下牵动·因果综述】') >= 0, '⑧ O1·因果综述已折进 basisBrief');
+const coreNoWd = mkCore(null, '', '', [], fakeGM, null, '', [], function(){ return ''; }, function(n, t, c){ return String(t || ''); }, {}, function(){}, { promptBlock: function(){ return ''; } })();
+ok(coreNoWd.basisBrief.indexOf('因果综述') < 0, '⑧ 无信号 → 因果综述不注入(返空不污染)');
+
 console.log('\n' + (F === 0 ? 'ALL PASS' : 'FAIL') + ' (' + A + ' pass / ' + F + ' fail)');
 process.exit(F === 0 ? 0 : 1);
