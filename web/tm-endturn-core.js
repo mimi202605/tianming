@@ -517,6 +517,17 @@ async function _endTurnCore(){
   // 维护费扣地方库银。须在 final aggregate 之前——完工改的叶子当回合即被聚合。
   try { if (window.TM && TM.BuildingWorks && typeof TM.BuildingWorks.tick === 'function') TM.BuildingWorks.tick(GM, P); } catch(_bwTickE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_bwTickE, 'endTurn] building works tick') : console.warn('[endTurn] building works tick', _bwTickE); }
 
+  // S3a·人才范式渗透引擎 tick：须在 BuildingWorks.tick 之后（本回合完工的新式学校已注册人才源），多瓶颈漏斗推进一回合。
+  // 瓶颈 ctx 由 tm-talent-bottlenecks 据全国真实 economyBase/政区/驻军实算（没产业=没岗位=毕业即失业）。flag talentCohortEnabled 默认关 → no-op。
+  try {
+    if (window.TM && TM.TalentCohorts && typeof TM.TalentCohorts.tick === 'function' && TM.TalentCohorts.enabled(P)) {
+      var _talentCtx = (TM.TalentBottlenecks && typeof TM.TalentBottlenecks.buildCtx === 'function') ? TM.TalentBottlenecks.buildCtx(GM, P) : null;
+      TM.TalentCohorts.tick(GM, P, _talentCtx);
+      // S5·全局阻力：渗透反弹 → 御案时政政治事件(请罢新学/失业学潮) + 临界旧式瓦解 + 写 _lastBacklash 供动态 room
+      if (TM.TalentBacklash && typeof TM.TalentBacklash.tick === 'function') TM.TalentBacklash.tick(GM, P, _talentCtx);
+    }
+  } catch(_tcTickE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_tcTickE, 'endTurn] talent cohorts tick') : console.warn('[endTurn] talent cohorts tick', _tcTickE); }
+
   // 地块状态 tick（2026-06-12·确定性步）：过期清除 + 状态民心摊叶 + 繁荣度缓变。
   // 须在 BuildingWorks.tick 之后（完工状态当回合生效）、final aggregate 之前。
   try { if (window.TM && TM.RegionStatus && typeof TM.RegionStatus.tick === 'function') TM.RegionStatus.tick(GM, P); } catch(_rsTickE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_rsTickE, 'endTurn] region status tick') : console.warn('[endTurn] region status tick', _rsTickE); }
@@ -605,7 +616,7 @@ EndTurnHooks.register('before', function() {
     GM.memorials.forEach(function(m){
       var statusText=m.status==="approved"?"准奏":m.status==="rejected"?"驳回":"未批复";
       var exists=GM.jishiRecords.find(function(r){return r.turn===GM.turn&&r.char===m.from&&r.playerSaid&&r.playerSaid.indexOf("奏疏")>=0;});
-      if(!exists)GM.jishiRecords.push({turn:GM.turn,char:m.from,playerSaid:"\u594F\u758F("+m.type+"): "+m.content,npcSaid:"\u6279\u590D: "+statusText+(m.reply?" | "+m.reply:"")});
+      if(!exists)GM.jishiRecords.push({turn:GM.turn,char:m.from,playerSaid:"\u594F\u758F("+m.type+"): "+m.content,npcSaid:"\u6279\u590D: "+statusText+(m.reply?" | "+m.reply:""),mode:'memorial'});   // \u26052026-07-01 O2\u00B7\u6253 mode:memorial\u00B7\u4EE4 O1 \u95EE\u5BF9\u6BB5\u8FC7\u6EE4\u6321\u6389(\u594F\u758F\u5DF2\u6709:581\u4E13\u6BB5\u00B7\u53BB\u53CC\u6CE8\u5165)\u00B7\u5B9E\u5F55\u4ECD\u4FDD\u7559\u6B64\u6761
     });
     renderJishi();
   }
@@ -614,6 +625,243 @@ EndTurnHooks.register('before', function() {
 // 钩子 6.6: AI 上下文注入 - 玩家总结规则(summaryRule 唤醒)
 // [slice 3b.3·2026-05-07 PoC] 迁 fragment·删 _origPromptSumRule before/after 配对
 // 原 before mutate P.ai.prompt + after restore·新 fragment 仅返回 text·prompt-builder 显式 join
+(function(){
+  var root = (typeof window !== 'undefined') ? window : (typeof globalThis !== 'undefined' ? globalThis : this);
+  if (!root) return;
+  root.TM = root.TM || {};
+  var TMNS = root.TM;
+  function _arr(v) { return Array.isArray(v) ? v : []; }
+  function _txt(v, max) {
+    if (v == null) return '';
+    var s = (typeof v === 'string') ? v : (function(){ try { return JSON.stringify(v); } catch(_) { return String(v); } })();
+    s = s.replace(/\s+/g, ' ').trim();
+    return max && s.length > max ? s.slice(0, max) + '...' : s;
+  }
+  function _norm(v) {
+    return _txt(v, 80).replace(/[（(].*?[）)]/g, '').replace(/\s+/g, '').toLowerCase();
+  }
+  function _aiKeys(f) {
+    var keys = ['aiPersonality','aiDecisionWeights','aiConditionalBehaviors','aiImmersionHooks','aiStrategy','aiAggressionProfile','aiBehaviorHints','policyHooks','strategicPriorities','aggressionProfile','decisionWeights','conditionalBehaviors'];
+    var out = {};
+    keys.forEach(function(k){ if (f && f[k] != null && f[k] !== '') out[k] = f[k]; });
+    return out;
+  }
+  function _stateKeys(f) {
+    var keys = ['id','name','type','leader','goal','shortGoal','resources','culture','mainstream','territory','territories','controlledDivisions','strength','economy','militaryStrength','attitude','playerRelation','cohesion','relations','capital','color'];
+    var out = {};
+    keys.forEach(function(k){ if (f && f[k] != null && f[k] !== '') out[k] = f[k]; });
+    return out;
+  }
+  function _playerNames(p) {
+    var out = [];
+    try {
+      if (p && p.playerInfo) {
+        ['factionName','faction','country','state'].forEach(function(k){ if (p.playerInfo[k]) out.push(String(p.playerInfo[k])); });
+      }
+    } catch(_) {}
+    return out.map(_norm).filter(Boolean);
+  }
+  function _isPlayerFaction(f, p) {
+    if (!f) return false;
+    if (f.player || f.isPlayer || f.controlledByPlayer) return true;
+    var names = _playerNames(p);
+    var n = _norm(f.name || f.id || f.faction || f.title);
+    return !!(n && names.indexOf(n) >= 0);
+  }
+  function _addFaction(map, raw, source, p, opts) {
+    if (!raw || typeof raw !== 'object') return;
+    if (opts && opts.excludePlayer !== false && _isPlayerFaction(raw, p)) return;
+    var name = raw.name || raw.title || raw.faction || raw.id;
+    if (!name) return;
+    var idKey = _norm(raw.id);
+    var nameKey = _norm(name);
+    var key = idKey || nameKey;
+    Object.keys(map).some(function(k) {
+      var cur0 = map[k];
+      if (!cur0) return false;
+      var curId = _norm(cur0.id);
+      var curName = _norm(cur0.name);
+      if ((idKey && (curId === idKey || curName === idKey)) || (nameKey && (curName === nameKey || curId === nameKey))) {
+        key = k;
+        return true;
+      }
+      return false;
+    });
+    if (!key) return;
+    var cur = map[key];
+    if (!cur) {
+      cur = { key: key, id: raw.id || '', name: String(name), sources: [], ai: {}, state: {}, rawRefs: [] };
+      map[key] = cur;
+    }
+    cur.sources.push(source || 'unknown');
+    cur.rawRefs.push(raw);
+    Object.assign(cur.state, _stateKeys(raw));
+    Object.assign(cur.ai, _aiKeys(raw));
+    if (!cur.id && raw.id) cur.id = raw.id;
+    if ((!cur.name || cur.name === cur.id) && name) cur.name = String(name);
+  }
+  function _scenarioRefs(gm, p) {
+    var refs = [];
+    [gm && gm.scenario, gm && gm.currentScenario, p && p.scenario, p && p.currentScenario, p && p.activeScenario].forEach(function(x){ if (x && typeof x === 'object') refs.push(x); });
+    try {
+      var sid = (gm && (gm.sid || gm.scenarioId)) || (p && (p.sid || p.scenarioId));
+      if (sid && typeof root.findScenarioById === 'function') {
+        var sc = root.findScenarioById(sid);
+        if (sc) refs.push(sc);
+      } else if (sid && typeof findScenarioById === 'function') {
+        var sc2 = findScenarioById(sid);
+        if (sc2) refs.push(sc2);
+      }
+    } catch(_) {}
+    return refs;
+  }
+  function collectFactionContexts(gm, p, opts) {
+    gm = gm || root.GM || {};
+    p = p || root.P || {};
+    opts = opts || {};
+    var map = {};
+    _arr(gm.facs).forEach(function(f){ _addFaction(map, f, 'GM.facs', p, opts); });
+    _arr(gm.factions).forEach(function(f){ _addFaction(map, f, 'GM.factions', p, opts); });
+    _arr(gm.externalForces).forEach(function(f){ _addFaction(map, f, 'GM.externalForces', p, opts); });
+    _arr(gm.extForces).forEach(function(f){ _addFaction(map, f, 'GM.extForces', p, opts); });
+    _arr(p.factions).forEach(function(f){ _addFaction(map, f, 'P.factions', p, opts); });
+    _arr(p.externalForces).forEach(function(f){ _addFaction(map, f, 'P.externalForces', p, opts); });
+    _scenarioRefs(gm, p).forEach(function(sc, i) {
+      _arr(sc.factions).forEach(function(f){ _addFaction(map, f, 'scenario[' + i + '].factions', p, opts); });
+      _arr(sc.externalForces).forEach(function(f){ _addFaction(map, f, 'scenario[' + i + '].externalForces', p, opts); });
+      _arr(sc.extForces).forEach(function(f){ _addFaction(map, f, 'scenario[' + i + '].extForces', p, opts); });
+    });
+    var list = Object.keys(map).map(function(k){ return map[k]; });
+    list.forEach(function(x){ x.hasAi = Object.keys(x.ai || {}).length > 0; x.sources = Array.from(new Set(x.sources)); });
+    list.sort(function(a, b) {
+      if (a.hasAi !== b.hasAi) return a.hasAi ? -1 : 1;
+      return String(a.name || '').localeCompare(String(b.name || ''), 'zh-Hans-CN');
+    });
+    return opts.limit ? list.slice(0, opts.limit) : list;
+  }
+  function _fmtFaction(x) {
+    return '- ' + (x.name || x.id || 'faction') + (x.id ? ' [' + x.id + ']' : '')
+      + ' state=' + _txt(x.state, 420)
+      + ' ai=' + _txt(x.ai, 700)
+      + ' sources=' + x.sources.join('/');
+  }
+  function formatForPrompt(gm, p, opts) {
+    opts = opts || {};
+    var list = collectFactionContexts(gm, p, { limit: opts.limit || 12, excludePlayer: opts.excludePlayer !== false });
+    var aiList = list.filter(function(x){ return x.hasAi; });
+    if (!aiList.length) return null;
+    var lines = [];
+    lines.push('\n\n=== Faction AI Mainloop Bridge / 势力AI接入主推演 ===');
+    lines.push('这些 aiPersonality / aiDecisionWeights / aiConditionalBehaviors / aiStrategy 不是平行设定。本回合 SC1、SC1c、SC16 必须把它们与当前国力、地盘、财政、军力、外交关系共同判断；若因此产生行动，必须落到正常结构化字段，而不是只写设定。');
+    lines.push('落地字段优先级：faction_events、faction_interactions_advanced、faction_relation_changes、faction_changes、army_changes、fiscal_adjustments、population_adjustments、central_local_actions、province/admin/region 相关字段。');
+    lines.push('另外输出 faction_ai_outcomes 数组，用作主循环桥账本。字段建议：{faction,factionId,intent,action,target,motive,result,publicSummary,posterityComment,recordTarget,structuralLinks}。recordTarget 可为 shizhengji/houren/both/none；公开政事写 publicSummary，适合场景的民间/士林/边报余波写 posterityComment。');
+    lines.push('不得把势力AI写成孤立旁白：若金、西夏、蒙古、大越等势力因 AI 倾向行动，必须让主推演数值/关系/军政账本受到影响；若主推演局势改变，也必须反过来改变其 intent/action。');
+    aiList.forEach(function(x){ lines.push(_fmtFaction(x)); });
+    return lines.join('\n');
+  }
+  function normalizeOutcomes(result) {
+    if (!result || typeof result !== 'object') return [];
+    var raw = result.faction_ai_outcomes || result.factionAiOutcomes || result.faction_ai_results || result.factionAiResults || [];
+    if (!Array.isArray(raw)) raw = raw ? [raw] : [];
+    return raw.filter(function(x){ return x && typeof x === 'object'; }).map(function(x) {
+      return {
+        faction: x.faction || x.name || x.actor || x.from || '',
+        factionId: x.factionId || x.id || '',
+        intent: x.intent || x.priority || x.goal || '',
+        action: x.action || x.move || x.event || '',
+        target: x.target || x.to || '',
+        motive: x.motive || x.reason || '',
+        result: x.result || x.outcome || '',
+        publicSummary: x.publicSummary || x.shizhengji || x.public || '',
+        posterityComment: x.posterityComment || x.houren || x.houren_xishuo || x.sceneSeed || '',
+        recordTarget: String(x.recordTarget || x.record || '').toLowerCase(),
+        structuralLinks: Array.isArray(x.structuralLinks) ? x.structuralLinks : (x.structuralLink ? [x.structuralLink] : [])
+      };
+    }).filter(function(x){ return x.faction || x.intent || x.action || x.result || x.publicSummary || x.posterityComment; });
+  }
+  function _findFaction(gm, rec) {
+    var idn = _norm(rec.factionId);
+    var fn = _norm(rec.faction);
+    var all = [].concat(_arr(gm && gm.facs), _arr(gm && gm.factions), _arr(gm && gm.externalForces), _arr(gm && gm.extForces));
+    for (var i = 0; i < all.length; i++) {
+      var f = all[i];
+      if (!f) continue;
+      if ((idn && _norm(f.id) === idn) || (fn && _norm(f.name || f.title || f.faction || f.id) === fn)) return f;
+    }
+    return null;
+  }
+  function applyTurnOutcomes(gm, result, opts) {
+    gm = gm || root.GM || {};
+    opts = opts || {};
+    var outcomes = normalizeOutcomes(result);
+    if (!outcomes.length) return { outcomes: [], shizhengjiAppend: '', hourenAppend: '' };
+    if (!Array.isArray(gm._factionAiMainloopLedger)) gm._factionAiMainloopLedger = [];
+    if (!Array.isArray(gm._factionUndercurrents)) gm._factionUndercurrents = [];
+    if (!Array.isArray(gm._turnReport)) gm._turnReport = [];
+    var turn = gm.turn || 0;
+    var shizheng = [];
+    var houren = [];
+    outcomes.forEach(function(o) {
+      var rec = Object.assign({ turn: turn, source: opts.source || 'faction-ai-mainloop' }, o);
+      gm._factionAiMainloopLedger.push(rec);
+      var fac = _findFaction(gm, rec);
+      if (fac) {
+        if (!Array.isArray(fac._aiMainloopHistory)) fac._aiMainloopHistory = [];
+        fac._aiMainloopHistory.push(rec);
+        if (fac._aiMainloopHistory.length > 24) fac._aiMainloopHistory = fac._aiMainloopHistory.slice(-24);
+      }
+      var summary = rec.publicSummary || rec.result || rec.action || rec.intent;
+      if (summary) {
+        gm._turnReport.push({ type: 'faction_ai', faction: rec.faction, factionId: rec.factionId, action: rec.action, target: rec.target, result: rec.result, text: summary, turn: turn, source: rec.source });
+        gm._factionUndercurrents.push({ faction: rec.faction || rec.factionId || '势力', situation: summary, nextMove: rec.intent || rec.action || '', source: rec.source, turn: turn });
+        try { if (typeof addEB === 'function') addEB('势力AI', (rec.faction ? rec.faction + '：' : '') + _txt(summary, 80)); } catch(_) {}
+      }
+      var rt = rec.recordTarget || '';
+      if ((rt === 'shizhengji' || rt === 'both' || (!rt && rec.publicSummary)) && rec.publicSummary) shizheng.push(rec.publicSummary);
+      if ((rt === 'houren' || rt === 'both' || (!rt && rec.posterityComment)) && rec.posterityComment) houren.push(rec.posterityComment);
+      try {
+        if (rec.publicSummary && root.PhaseD && typeof root.PhaseD.addFengwen === 'function') {
+          root.PhaseD.addFengwen({ type: '势力', text: rec.publicSummary, actors: [rec.faction].filter(Boolean), source: '势力AI', credibility: 0.72, turn: turn });
+        }
+      } catch(_) {}
+    });
+    if (gm._factionAiMainloopLedger.length > 120) gm._factionAiMainloopLedger = gm._factionAiMainloopLedger.slice(-120);
+    if (gm._factionUndercurrents.length > 80) gm._factionUndercurrents = gm._factionUndercurrents.slice(-80);
+    return {
+      outcomes: outcomes,
+      shizhengjiAppend: shizheng.length ? '【势力AI回响】' + shizheng.join('；') : '',
+      hourenAppend: houren.length ? '【势力余波】' + houren.join('；') : ''
+    };
+  }
+  function formatRecentOutcomesForNarrative(gm, opts) {
+    gm = gm || root.GM || {};
+    opts = opts || {};
+    var list = _arr(gm._factionAiMainloopLedger).slice(-(opts.limit || 8));
+    if (!list.length) return '';
+    var lines = ['\n【势力AI主循环回响·可入时政记/后人戏说】'];
+    list.forEach(function(o) {
+      lines.push('  - T' + (o.turn || '?') + ' ' + (o.faction || o.factionId || '势力') + '：' + _txt(o.publicSummary || o.result || o.action || o.intent, 140) + (o.posterityComment ? '；戏说线索：' + _txt(o.posterityComment, 120) : ''));
+    });
+    return lines.join('\n') + '\n';
+  }
+  TMNS.FactionAiMainloopBridge = {
+    version: '2026-06-25',
+    collectFactionContexts: collectFactionContexts,
+    formatForPrompt: formatForPrompt,
+    normalizeOutcomes: normalizeOutcomes,
+    applyTurnOutcomes: applyTurnOutcomes,
+    formatRecentOutcomesForNarrative: formatRecentOutcomesForNarrative
+  };
+})();
+
+EndTurnHooks.registerFragment('faction-ai-mainloop-bridge', function(ctx) {
+  try {
+    if (!(P && P.ai && P.ai.key)) return null;
+    if (typeof TM === 'undefined' || !TM.FactionAiMainloopBridge || typeof TM.FactionAiMainloopBridge.formatForPrompt !== 'function') return null;
+    return TM.FactionAiMainloopBridge.formatForPrompt(GM, P, { limit: 12 });
+  } catch (_) { return null; }
+});
+
 EndTurnHooks.registerFragment('summary-rule', function(ctx) {
   if (P.ai && P.ai.key && P.conf && P.conf.summaryRule && String(P.conf.summaryRule).trim()) {
     return "\n\n=== 玩家总结风格与特殊指令（优先级高） ===\n" + P.conf.summaryRule.trim() + "\n——按此风格/指令总结本回合shizhengji/zhengwen·不得违背。";
@@ -658,6 +906,10 @@ EndTurnHooks.register('after', function() {
       if (_edictSnapshot.other) _eL.push('其他:' + _edictSnapshot.other);
       if (_eL.length) _edictText = _eL.join('\n  ');
     }
+    // 【调用优化·Cut2·降本】玩家本回合无诏令 → 无「玩家诏令/行为」可查史实偏离(此检查专查玩家所为·非 AI 叙事)
+    //   → 必返空 deviations·不注入·无大事记 → 跳过 LLM 与结果完全一致·省一次每回合背景调用(确定性安全)。
+    var _hasEdictForHist = !!(_edictSnapshot && (_edictSnapshot.decree || _edictSnapshot.political || _edictSnapshot.military || _edictSnapshot.diplomatic || _edictSnapshot.economic || _edictSnapshot.other));
+    if (!_hasEdictForHist) return;
 
     // 【史实顾问 agent·S2】开关开且未回落时·史实顾问 agent 接管(逼引证真实先例·替模型脑内臆测)·此写死 hist_check 跳；默认关/演义模式/连失回落 → 原 hist_check 原样跑零回归
     try {
