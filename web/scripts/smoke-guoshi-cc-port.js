@@ -538,5 +538,16 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/m\.titleKind !== 'custom'/.test(uiSrcB) && /m\.titleKind = 'custom'/.test(uiSrcB), 'H11 玩家改名 titleKind=custom·AI 标题绝不覆盖(CC custom-title 层级)');
   ok(/if \(!cfg\.key \|\| !cfg\.url\) return;/.test(uiSrcB), 'H11 未配 API 静默跳过(标题保持首句·零打扰)');
 
+  // ───────── H12 · 约定分层(CC CLAUDE.md 层级对照：全局+本剧本) ─────────
+  console.log('— H12 约定分层 —');
+  var uiSrcC = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/tm_aa_conv_s::/.test(uiSrcC) && /_scenConvKey\(\) \{ return 'tm_aa_conv_s::' \+ _fileKey\(\); \}/.test(uiSrcC), 'H12 本剧本约定按 fileKey 分键(绍宋文风不灌天启)');
+  ok(/【全局约定·所有剧本通用】/.test(uiSrcC) && /【本剧本约定·仅当前剧本】/.test(uiSrcC), 'H12 两层合并注入(带层级标头)');
+  var convSites = (uiSrcC.match(/conventions: _convForRun\(\),/g) || []).length;
+  ok(convSites >= 7, 'H12 全部 7 个运行入口注入两层约定(实 ' + convSites + ')');
+  ok(/rememberConvention\(conv\)/.test(uiSrcC) && /已记住 ✓（本剧本）/.test(uiSrcC), 'H12 「记住」默认落本剧本层(CC 记进项目 CLAUDE.md 同款)');
+  ok(/function showConventionsUI/.test(uiSrcC) && /k: 'conv', t: '创作约定'/.test(uiSrcC) && /tm-aa-conv-clear/.test(uiSrcC), 'H12 /创作约定 两层透视卡+清空本剧本(CC /memory 对照)');
+  ok(/rememberConvention: rememberConvention/.test(uiSrcC), 'H12 rememberConvention 导出(e2e 可驱动)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

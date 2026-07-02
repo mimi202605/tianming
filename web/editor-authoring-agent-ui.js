@@ -751,6 +751,8 @@
       '.tm-aa-caret{display:inline-block;color:var(--ac);font-weight:400;margin-left:1px;animation:tm-aa-blink 1.05s step-end infinite}',
       '@keyframes tm-aa-blink{50%{opacity:0}}',
       '.tm-aa-summary .tm-aa-cl-copy{margin-left:8px;background:var(--sunken);color:var(--tx);border:none;border-radius:6px;padding:1px 9px;font-size:10px;cursor:pointer}',
+      '.tm-aa-summary .tm-aa-conv-clear{display:inline-block;margin-top:6px;background:var(--sunken);color:var(--tx2);border:1px solid var(--bd2);border-radius:6px;padding:2px 10px;font-size:10.5px;cursor:pointer;font-family:inherit}',
+      '.tm-aa-summary .tm-aa-conv-clear:hover{color:var(--bad);border-color:var(--bad)}',
       '.tm-aa-summary pre.tm-aa-cl{white-space:pre-wrap;margin:5px 0 0;font-family:inherit;font-size:11.5px;line-height:1.65;color:var(--tx2);max-height:200px;overflow:auto}',
       '.tm-aa-sug{margin-top:7px;padding-top:6px;border-top:1px solid var(--bd)}.tm-aa-sug b{color:var(--warn)}',
       '.tm-aa-sug .sug-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11.5px;color:var(--tx2)}.tm-aa-sug .sug-row span{flex:1}',
@@ -1042,6 +1044,7 @@
       { k: 'preflight', t: '运行时体检', d: '确定性检查·免 API', run: function () { _plusAct('preflight'); } },
       { k: 'changelog', t: '版本说明', d: '汇总已应用改动·零 token', run: function () { runChangelogUI(); } },
       { k: 'fork', t: '分叉会话', d: '把当前会话复制成分支再演化（原线不动）', run: function () { if (ui._sessId) forkSession(ui._sessId); else setStatus('当前没有活动会话（先跑一轮，或从侧栏选中一条）'); } },
+      { k: 'conv', t: '创作约定', d: '查看全局+本剧本两层约定（等价 CLAUDE.md）', run: function () { showConventionsUI(); } },
       { k: 'checkpoint', t: '存检查点', d: '当前剧本存为可回退存档点', run: function () { _plusAct('checkpoint'); } },
       { k: 'undo', t: '撤销上次应用', d: '回到上次应用前快照', run: function () { _plusAct('undo'); } },
       { k: 'perm-plan', t: '权限·问策', d: '只读出计划·绝不动剧本', run: function () { var p = _loadPerm(); p.mode = 'plan'; _applyPerm(p); setStatus('权限已切到「问策」· 只读出计划'); } },
@@ -1779,6 +1782,46 @@
     if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e2) {} }
   }
 
+  // ── S9 · 约定分层（CC CLAUDE.md 层级对照：~/.claude/CLAUDE.md=全局·项目 CLAUDE.md=本剧本）：
+  //    全局约定 tm_aa_conventions（工坊「剧本约定」抽屉继续管）+ 本剧本约定 tm_aa_conv_s::<fileKey>。
+  //    每轮 run 注入两层合并；「记住」与国师 recordConvention 的建议默认记到本剧本层
+  //    （CC 默认记进项目 CLAUDE.md 同款）——绍宋的文风约定不再灌进天启。 ──
+  function _scenConvKey() { return 'tm_aa_conv_s::' + _fileKey(); }
+  function _loadScenConv() { try { return String(localStorage.getItem(_scenConvKey()) || '').slice(0, 2600); } catch (e) { return ''; } }
+  function _saveScenConv(text) { try { localStorage.setItem(_scenConvKey(), String(text == null ? '' : text).slice(0, 2600)); return true; } catch (e) { return false; } }
+  function _convForRun() {
+    var g = '', s = _loadScenConv();
+    try { g = (AA.loadConventions && AA.loadConventions()) || ''; } catch (e) {}
+    if (g && s) return '【全局约定·所有剧本通用】\n' + g + '\n\n【本剧本约定·仅当前剧本】\n' + s;
+    return s ? ('【本剧本约定】\n' + s) : g;
+  }
+  function rememberConvention(conv) {   // 建议/手记 → 本剧本层（同句去重）
+    conv = String(conv || '').trim();
+    if (!conv) return false;
+    var cur = _loadScenConv(), lines = cur ? cur.split('\n') : [];
+    if (lines.indexOf(conv) >= 0) return true;
+    lines.push(conv);
+    return _saveScenConv(lines.join('\n'));
+  }
+  function showConventionsUI() {   // /创作约定 · 两层透视（CC /memory 对照）
+    if (ui.running) { setStatus('请等当前运行结束'); return; }
+    resetResults(true);
+    _beginReplyCard();
+    var g = ''; try { g = (AA.loadConventions && AA.loadConventions()) || ''; } catch (e) {}
+    var s = _loadScenConv(), fl = _fileLabel();
+    if (ui.els.summary) {
+      ui.els.summary.innerHTML = '<b>创作约定（等价 CLAUDE.md · 每轮注入提示词）</b>'
+        + '<div class="tm-aa-cl-md"><b>全局 · 所有剧本通用</b>' + (g ? _md(g) : '<div style="color:var(--tx3)">（空 · 可在工坊「剧本约定」里编辑）</div>')
+        + '<b>本剧本 · ' + esc(fl || '当前剧本') + '</b>' + (s ? _md(s) : '<div style="color:var(--tx3)">（空 · 「记住」按钮与国师自记的约定会落在这里）</div>')
+        + (s ? '<button type="button" class="tm-aa-conv-clear">清空本剧本约定</button>' : '') + '</div>';
+      ui.els.summary.style.display = '';
+      var cb = ui.els.summary.querySelector('.tm-aa-conv-clear');
+      if (cb) cb.addEventListener('click', function () { _saveScenConv(''); cb.textContent = '已清空 ✓'; cb.disabled = true; setStatus('本剧本约定已清空'); });
+    }
+    _freezeLastReply();
+    setStatus('约定两层：全局' + (g ? ' ' + g.split('\n').filter(Boolean).length + ' 条' : '空') + ' · 本剧本' + (s ? ' ' + s.split('\n').filter(Boolean).length + ' 条' : '空'));
+  }
+
   // 方向M · 运行历史/审计日志（持久·可搜·跨刷新存活·不存大快照避 quota·cap 50）
   var HISTORY_KEY = 'tm_aa_run_history';
   function _loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { return []; } }
@@ -2212,10 +2255,8 @@
     Array.prototype.forEach.call(ui.els.summary.querySelectorAll('.sug-keep'), function(btn) {
       btn.addEventListener('click', function() {
         var idx = +btn.getAttribute('data-i'), conv = sug[idx];
-        if (conv && AA && AA.saveConventions && AA.loadConventions) {
-          var cur = AA.loadConventions(), lines = cur ? cur.split('\n') : [];
-          if (lines.indexOf(conv) < 0) { lines.push(conv); AA.saveConventions(lines.join('\n')); }
-          btn.textContent = '已记住 ✓'; btn.disabled = true;
+        if (conv && rememberConvention(conv)) {   // S9 · 记到本剧本层(CC 默认记进项目 CLAUDE.md 同款)
+          btn.textContent = '已记住 ✓（本剧本）'; btn.disabled = true;
         }
       });
     });
@@ -2513,6 +2554,7 @@
     setRunning(true);
     setStatus('正在按计划执行…');
     AA.runAuthoringLoop(ui.draft, '按上面的计划执行这些改动；改完用 validateDraft 自查后调用 finish。', {
+      conventions: _convForRun(),   /* S9 · 两层约定注入(全局+本剧本) */
       priorConversation: ui.conversation,
       editorContext: _editorContext(),
       allowedCollections: ui.allowedCollections || null,
@@ -2548,6 +2590,7 @@
     setRunning(true);
     setStatus('正在审阅剧本…（agent 只读巡查，出体检报告，可能需要数十秒）');
     AA.runAuthoringLoop(ui.draft, focus, {
+      conventions: _convForRun(),   /* S9 · 两层约定注入(全局+本剧本) */
       reviewOnly: true,
       editorContext: _editorContext(),
       onStep: function(step) { appendLog(step); setStatus('审阅中·第 ' + step.iteration + ' 轮…'); },
@@ -2644,6 +2687,7 @@
     setRunning(true);
     setStatus('正在查证并回答…（只读，不改剧本）');
     AA.runAuthoringLoop(ui.draft, question, {
+      conventions: _convForRun(),   /* S9 · 两层约定注入(全局+本剧本) */
       qaOnly: true,
       editorContext: _editorContext(),
       onStep: function(step) { appendLog(step); setStatus('查证中·第 ' + step.iteration + ' 轮…'); },
@@ -2680,6 +2724,7 @@
     setRunning(true);
     setStatus('正在通读剧本并讲解…（只读，不改剧本）');
     AA.runAuthoringLoop(ui.draft, focus, {
+      conventions: _convForRun(),   /* S9 · 两层约定注入(全局+本剧本) */
       explainOnly: true,
       editorContext: _editorContext(),
       onStep: function(step) { appendLog(step); setStatus('通读中·第 ' + step.iteration + ' 轮…'); },
@@ -2780,6 +2825,7 @@
       }).join('');
     }
     AA.runOrchestrated(ui.draft, request, {
+      conventions: _convForRun(),   /* S9 · 两层约定注入(全局+本剧本) */
       editorContext: _editorContext(),
       allowedCollections: ui.allowedCollections || null,
       allowDestructive: ui.allowDestructive !== false,
@@ -2852,6 +2898,7 @@
     }
     _render(false);
     AA.runWithCritics(ui.draft, request, {
+      conventions: _convForRun(),   /* S9 · 两层约定注入(全局+本剧本) */
       editorContext: _editorContext(),
       allowedCollections: ui.allowedCollections || null,
       allowDestructive: ui.allowDestructive !== false,
@@ -2969,6 +3016,7 @@
     ui._restoredTodos = null;
     _clearAttach();   // S2 · 附件随本轮发出·签行清空
     AA.runAuthoringLoop(ui.draft, request + _attTxt, {
+      conventions: _convForRun(),   /* S9 · 两层约定注入(全局+本剧本) */
       planOnly: planOnly,
       images: _imgs,
       initialTodos: _rtd,
@@ -3189,5 +3237,5 @@
 
   // 暴露给测试/调试
   global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles,
-    listSessions: listSessions, switchSession: switchSession, deleteSession: deleteSession, renameSession: renameSession, forkSession: forkSession };
+    listSessions: listSessions, switchSession: switchSession, deleteSession: deleteSession, renameSession: renameSession, forkSession: forkSession, rememberConvention: rememberConvention };
 })(typeof window !== 'undefined' ? window : this);
