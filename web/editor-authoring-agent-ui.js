@@ -425,7 +425,16 @@
     route: '<circle cx="4.5" cy="4" r="1.7"/><circle cx="11.5" cy="12" r="1.7"/><path d="M4.5 5.7V8a3 3 0 0 0 3 3h2.3"/>',
     scale: '<path d="M8 3v10M4.5 5h7M4.5 5 3 8.2a1.9 1.9 0 0 0 3 0zM11.5 5 10 8.2a1.9 1.9 0 0 0 3 0z"/>',
     save: '<path d="M3.5 3.5h7l2 2v7h-9z"/><path d="M5.5 3.5V7h5V3.5M5.5 12.5V9.5h5v3"/>',
-    undo: '<path d="M4.5 6.5H10a3 3 0 0 1 0 6H7"/><path d="M6.8 4 4.5 6.5 6.8 9"/>'
+    undo: '<path d="M4.5 6.5H10a3 3 0 0 1 0 6H7"/><path d="M6.8 4 4.5 6.5 6.8 9"/>',
+    check: '<path d="M3 8.5 6.5 12 13 4.5"/>'
+  };
+  // 工作过程 · 步骤行的工具类别图标（写/读/校/记/完成）
+  var _TOOL_ICON = {
+    applyEdit: 'pen', applyPush: 'pen', multiEdit: 'pen', bulkAdd: 'pen', renameEntity: 'pen', removeEntity: 'pen', mapAssignOwner: 'pen', renameRegion: 'pen',
+    getField: 'search', getFields: 'search', searchEntities: 'search', globalSearch: 'search', findReferences: 'search', listCollection: 'search', describeSchema: 'search', listGaps: 'search', readSource: 'search', grepSource: 'search', listSource: 'search', mapOverview: 'search', genReference: 'search', checkHistory: 'search', fieldContract: 'search',
+    validateDraft: 'pulse', preflight: 'pulse',
+    note: 'book', todoWrite: 'book', recordConvention: 'book', flagUncertain: 'book', steer: 'chat', macroCompact: 'undo',
+    finish: 'check'
   };
   function _icon(name) {
     return '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (_ICON_PATHS[name] || '') + '</svg>';
@@ -572,12 +581,25 @@
       '.tm-aa-tobottom{position:absolute;right:9px;bottom:7px;background:var(--surface);color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:3px 11px;font-size:10.5px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:2}.tm-aa-tobottom:hover{color:var(--tx)}',
       '.tm-aa-tobottom[hidden]{display:none}',
       '.tm-aa-log .ln{color:var(--tx2)}.tm-aa-log .bad{color:var(--bad)}.tm-aa-log .fin{color:var(--ok)}',
-      // 工具执行卡（Claude 式折叠 chip）
-      '.tm-aa-step{margin:2px 0}.tm-aa-step>summary{cursor:pointer;list-style:none;padding:2px 4px;line-height:1.55;outline:none;border-radius:7px;font-size:11.5px}',
+      // 工具执行卡（Claude 式折叠 chip·带工具类别图标）
+      '.tm-aa-step{margin:2px 0}.tm-aa-step>summary{cursor:pointer;list-style:none;padding:3px 5px;line-height:1.55;outline:none;border-radius:7px;font-size:11.5px;display:flex;align-items:baseline;gap:6px}',
       '.tm-aa-step>summary:hover{background:var(--sunken)}',
-      '.tm-aa-step>summary::-webkit-details-marker{display:none}.tm-aa-step>summary::before{content:"▸ ";color:var(--tx3)}.tm-aa-step[open]>summary::before{content:"▾ "}',
-      '.tm-aa-step.fin>summary{color:var(--ok)}.tm-aa-step.ln>summary{color:var(--tx2)}.tm-aa-step.bad>summary{color:var(--bad)}',
+      '.tm-aa-step>summary::-webkit-details-marker{display:none}.tm-aa-step>summary::before{content:"▸";color:var(--tx3);flex:0 0 auto}.tm-aa-step[open]>summary::before{content:"▾"}',
+      '.tm-aa-step .st-ic{flex:0 0 auto;display:inline-flex;align-self:center;color:var(--tx3)}',
+      '.tm-aa-step .st-ic svg{display:block;width:12px;height:12px}',
+      '.tm-aa-step .st-tx{flex:1 1 auto;min-width:0}',
+      '.tm-aa-step.fin>summary{color:var(--ok)}.tm-aa-step.fin .st-ic{color:var(--ok)}.tm-aa-step.ln>summary{color:var(--tx2)}.tm-aa-step.bad>summary{color:var(--bad)}.tm-aa-step.bad .st-ic{color:var(--bad)}',
       '.tm-aa-step:not([open])>.tm-aa-step-body{display:none}',
+      // 工作过程 · 实时活动行（当前在做什么·转环+最新动作/思考）
+      '.tm-aa-live{display:flex;align-items:center;gap:8px;margin:8px 0 4px;padding:6px 11px;background:var(--surface);border:1px solid var(--bd);border-radius:11px;font-size:12px;color:var(--tx2);width:fit-content;max-width:100%;box-sizing:border-box}',
+      '.tm-aa-live .lv-spin{flex:0 0 auto;width:12px;height:12px;border:2px solid var(--bd2);border-top-color:var(--ac);border-radius:50%;animation:tm-aa-spin .8s linear infinite}',
+      '.tm-aa-live .lv-tx{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:560px}',
+      '.tm-aa-live .lv-tx.think{font-family:var(--serif);font-style:italic;color:var(--tx3)}',
+      '@keyframes tm-aa-spin{to{transform:rotate(360deg)}}',
+      // 工作过程 · 顶栏活动条（不确定进度·滑光）
+      '#tm-aa-progress{height:2px;background:transparent;position:relative;overflow:hidden;flex:0 0 auto}',
+      '.tm-aa-running #tm-aa-progress::after{content:"";position:absolute;left:-30%;top:0;bottom:0;width:30%;background:linear-gradient(90deg,transparent,var(--ac),transparent);animation:tm-aa-slide 1.3s ease-in-out infinite}',
+      '@keyframes tm-aa-slide{to{left:100%}}',
       '.tm-aa-think{margin:10px auto 10px 0;background:var(--surface);border:1px solid var(--bd);border-radius:11px;padding:3px 12px;width:fit-content;max-width:100%;box-sizing:border-box}',
       '.tm-aa-think[open]{width:100%}',
       '.tm-aa-think>summary{cursor:pointer;list-style:none;color:var(--tx2);font-size:12px;padding:4px 0;outline:none;white-space:nowrap}',
@@ -586,7 +608,8 @@
       '@keyframes tm-aa-sheen{0%{background-position:180% 0}100%{background-position:-20% 0}}',
       '.tm-aa-think:not([open])>.tm-aa-think-body{display:none}',
       '.tm-aa-think-body{padding:2px 0 6px 13px;border-left:2px solid var(--bd2);margin:2px 0 2px 4px}',
-      '.tm-aa-think-body .tk-line{color:var(--tx3);font-style:italic;font-size:11.5px;line-height:1.6;margin:2px 0;white-space:pre-wrap;word-break:break-word}',
+      '.tm-aa-think-body .tk-line{color:var(--tx3);font-style:italic;font-size:12px;line-height:1.7;margin:3px 0;white-space:pre-wrap;word-break:break-word;font-family:var(--serif)}',   // 思考=衬线斜体（与回复正文同族）
+      '.tm-aa-think[open]>.tm-aa-think-body{max-height:42vh;overflow-y:auto}',   // 长跑不撑爆视口·块内滚
       '.tm-aa-step-body{padding:2px 0 5px 12px;border-left:2px solid var(--bd);margin:2px 0 2px 4px}',
       '.tm-aa-step-body .sb-row{margin:2px 0}.tm-aa-step-body .sb-k{display:inline-block;color:var(--tx3);font-size:10px;margin-right:4px}',
       '.tm-aa-step-body pre{margin:1px 0;white-space:pre-wrap;word-break:break-all;font-family:var(--mono);font-size:10px;line-height:1.5;color:var(--tx3);max-height:120px;overflow:auto;background:var(--code);border-radius:6px;padding:4px 6px}',
@@ -595,7 +618,7 @@
       '.tm-aa-checklist .cl-item{font-size:11.5px;line-height:1.75;color:var(--tx3);display:flex;gap:6px;align-items:baseline}',
       '.tm-aa-checklist .cl-item .cl-ic{width:12px;text-align:center;flex:none}',
       '.tm-aa-checklist .cl-item.done{color:var(--ok)}.tm-aa-checklist .cl-item.done .cl-ic{color:var(--ok)}',
-      '.tm-aa-checklist .cl-item.run{color:var(--warn)}.tm-aa-checklist .cl-item.run .cl-ic{color:var(--warn)}',
+      '.tm-aa-checklist .cl-item.run{color:var(--warn)}.tm-aa-checklist .cl-item.run .cl-ic{color:var(--warn);display:inline-block;animation:tm-aa-spin 1.1s linear infinite}',   // 进行中 ⟳ 真转
       '.tm-aa-checklist .cl-item.pend{color:var(--tx3)}',
       // 用户消息（软卡片·右对齐）与助手正文（Claude 式：无气泡·直接书于底色上）
       '.tm-aa-msg-user{position:relative;margin:16px 0 12px auto;max-width:82%;width:fit-content;padding:9px 15px;background:var(--bubble);border:none;border-radius:18px 18px 6px 18px;font-size:13.5px;line-height:1.7;color:var(--tx);box-shadow:0 1px 5px rgba(0,0,0,.1)}',
@@ -712,6 +735,7 @@
       '<div class="tm-aa-resize" id="tm-aa-resize" title="拖动调整宽度"></div>',   // UI·AI · 左缘拖拽调宽
       '<div id="tm-aa-hd"><span><button id="tm-aa-rail-tg" aria-label="会话历史侧栏" title="会话历史（全屏侧栏）">' + _icon('bars') + '</button><span class="tm-aa-ava">师</span><b>国师</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
       '<span class="tm-aa-hdbtns"><button id="tm-aa-theme" aria-label="切换明暗主题" title="明暗主题切换">' + _icon('contrast') + '</button><button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">' + _icon('pen') + '</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">' + _icon('expand') + '</button><button id="tm-aa-x" aria-label="关闭" title="关闭">' + _icon('close') + '</button></span></div>',
+      '<div id="tm-aa-progress" aria-hidden="true"></div>',
       '<div id="tm-aa-rail"><button id="tm-aa-railnew" type="button">＋ 新对话</button><input id="tm-aa-railq" type="text" placeholder="搜索历史…" aria-label="搜索运行历史"><div id="tm-aa-raillist"></div><button id="tm-aa-railclear" type="button" title="清空全部运行历史">清空历史</button></div>',
       '<div id="tm-aa-body">',
       '<div class="tm-aa-search" id="tm-aa-search" hidden><input type="text" id="tm-aa-search-in" placeholder="在结果里查找…"><span class="tm-aa-search-n" id="tm-aa-search-n">0/0</span><button type="button" id="tm-aa-search-prev" title="上一个">↑</button><button type="button" id="tm-aa-search-next" title="下一个">↓</button><button type="button" id="tm-aa-search-x" title="关闭 (Esc)">×</button></div>',
@@ -990,7 +1014,15 @@
     if (on) _plusClose();   // 开跑收起能力菜单
     if (on && ui.els && ui.els.empty) ui.els.empty.style.display = 'none';   // UI·AD · 一跑就隐欢迎态
     // UI·Q · 运行中「生成」键变形为「■ 停止」(不禁用·桌面端范式)；收尾恢复「生成」
-    if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■' : '↑'; ui.els.go.style.fontSize = ''; ui.els.go.setAttribute('aria-label', on ? '停止' : '发送'); ui.els.go.classList.toggle('stopbtn', on); }
+    if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■' : '↑'; ui.els.go.style.fontSize = ''; ui.els.go.setAttribute('aria-label', on ? '停止' : '发送'); ui.els.go.title = on ? '停止（本轮 API 返回后干净收尾·不施未完成的改动）' : 'Enter 发送 · Shift+Enter 换行'; ui.els.go.classList.toggle('stopbtn', on); }
+    if (!on) {   // 工作过程 · 收尾：活动行移除·执行块自动折叠并定格标签
+      _removeLive();
+      if (ui._thinkEl && ui._thinkEl.isConnected) {
+        ui._thinkEl.open = false;
+        var _lbl = ui._thinkEl.querySelector('.tk-label');
+        if (_lbl && ui._thinkCount) _lbl.textContent = '执行过程 · ' + ui._thinkCount + ' 步';
+      }
+    }
     // 刀G9 · 运行中输入框保持可用·占位提示"回车可插话"(收尾恢复常规提示)
     if (ui.els && ui.els.req) ui.els.req.placeholder = on ? '运行中 · 输入新指示并回车可随时插话（agent 完成当前一步后处理，不打断）' : _REQ_PLACEHOLDER;
     if (on) {
@@ -1473,11 +1505,36 @@
       if (ui.els) { ui.els.logSec.style.display = ''; ui.els.logWrap.style.display = ''; }
       blk = document.createElement('details');
       blk.className = 'tm-aa-think';
+      blk.open = !!ui.running;   // 工作过程 · 运行中默认展开（实时看步骤流入）·收尾自动折叠
       blk.innerHTML = '<summary class="tm-aa-think-sum"><span class="tk-label">执行中…</span></summary><div class="tm-aa-think-body"></div>';
       if (ui.els) ui.els.log.appendChild(blk);
       ui._thinkEl = blk; ui._thinkCount = 0;
     }
     return blk;
+  }
+  // 工作过程 · 实时活动行：转环 + 当前动作/思考（贴在执行块下方·收尾移除）
+  function _ensureLive() {
+    if (!ui.running) return null;
+    var lv = ui._liveEl;
+    if (!lv || !lv.isConnected) {
+      lv = document.createElement('div');
+      lv.className = 'tm-aa-live';
+      lv.innerHTML = '<span class="lv-spin"></span><span class="lv-tx">国师正在斟酌…</span>';
+      if (ui.els) ui.els.log.appendChild(lv);
+      ui._liveEl = lv;
+    } else if (ui.els && ui.els.log.lastElementChild !== lv) {
+      ui.els.log.appendChild(lv);   // 保持在流式尾部（执行块内新增步骤不影响·回应卡插入后仍殿后）
+    }
+    return lv;
+  }
+  function _setLive(text, isThink) {
+    var lv = _ensureLive(); if (!lv) return;
+    var tx = lv.querySelector('.lv-tx');
+    if (tx) { tx.textContent = String(text || '').slice(0, 90); tx.classList.toggle('think', !!isThink); }
+    _logScrollMaybe();
+  }
+  function _removeLive() {
+    if (ui._liveEl) { try { ui._liveEl.remove(); } catch (e) {} ui._liveEl = null; }
   }
   function _bumpExecLabel(blk) {
     ui._thinkCount = (ui._thinkCount || 0) + 1;
@@ -1491,6 +1548,7 @@
     line.textContent = String(text).slice(0, 400);
     blk.querySelector('.tm-aa-think-body').appendChild(line);
     _bumpExecLabel(blk);
+    _setLive(String(text).slice(0, 90), true);   // 工作过程 · 最新思考进活动行（衬线斜体）
     _logScrollMaybe();
   }
 
@@ -1511,6 +1569,7 @@
     var n = step.name, i = step.input || {}, r = step.result || {};
     switch (n) {
       case 'applyEdit': return '改 ' + _friendlyPath(i.path) + ' ＝ ' + _shortVal(i.value);
+      case 'getFields': return '查看 ' + ((i.paths || []).slice(0, 3).map(_friendlyPath).join('、') || '(多路径)') + ((i.paths || []).length > 3 ? ' 等 ' + i.paths.length + ' 处' : '');
       case 'applyPush': return '新增一项到 ' + (_COLL_CN[i.path] || _friendlyPath(i.path)) + '：' + _shortVal(i.value);
       case 'removeEntity': return '删除 ' + _friendlyPath(i.path);
       case 'getField': return '查看 ' + _friendlyPath(i.path);
@@ -1528,7 +1587,7 @@
       case 'note': return '备注：' + _shortVal(i.text);
       case 'flagUncertain': return '标记待核 ' + _friendlyPath(i.path) + (i.reason ? '（' + _shortVal(i.reason) + '）' : '');
       case 'recordConvention': return '记下约定：' + _shortVal(i.convention);
-      case 'finish': return '✓ 完成：' + (i.summary || '');
+      case 'finish': return '完成：' + (i.summary || '');
       default: return n + '(' + JSON.stringify(i).slice(0, 60) + ')';
     }
   }
@@ -1547,13 +1606,14 @@
     var resultStr = ''; try { resultStr = JSON.stringify(step.result); } catch (e) { resultStr = String(step.result == null ? '' : step.result); }
     var card = document.createElement('details');
     card.className = 'tm-aa-step ' + cls;
-    card.innerHTML = '<summary>#' + step.iteration + ' ' + esc(_friendlyStep(step)) + detail + '</summary>'
+    card.innerHTML = '<summary><span class="st-ic">' + _icon(_TOOL_ICON[step.name] || 'route') + '</span><span class="st-tx">#' + step.iteration + ' ' + esc(_friendlyStep(step)) + detail + '</span></summary>'
       + '<div class="tm-aa-step-body">'
       + (inputStr && inputStr !== '{}' ? '<div class="sb-row"><span class="sb-k">输入</span><pre>' + esc(inputStr.slice(0, 600)) + (inputStr.length > 600 ? '…' : '') + '</pre></div>' : '')
       + (resultStr && resultStr !== '{}' ? '<div class="sb-row"><span class="sb-k">结果</span><pre>' + esc(resultStr.slice(0, 600)) + (resultStr.length > 600 ? '…' : '') + '</pre></div>' : '')
       + '</div>';
     var body = execBlk.querySelector('.tm-aa-think-body'); if (body) body.appendChild(card); else ui.els.log.appendChild(card);
     _bumpExecLabel(execBlk);
+    _setLive('刚完成：' + _friendlyStep(step) + ' · 继续推演中…');   // 工作过程 · 最新动作进活动行
     _logScrollMaybe();
   }
 
