@@ -1995,6 +1995,35 @@
         } catch(_wdNarrE) {}
         return { p1Summary: _ps, basisBrief: _bb };
       };
+      // O3·outline→审查/成文 的传递预算化(2026-07-02):原 JSON.stringify().slice(0,N) 盲切——场景一多·
+      //   尾部字段(character_features/time_period_markers)被拦腰截断·甚至给下游塞半截坏 JSON。
+      //   改逐级降载:先裁每场景要点→再裁场景数→再裁人物特征·始终返回合法 JSON·极端仍超才回退硬切。
+      var _outlineJsonBudget = function(ol, budget) {
+        try {
+          var o = JSON.parse(JSON.stringify(ol));
+          var s = JSON.stringify(o);
+          if (s.length <= budget) return s;
+          if (Array.isArray(o.scenes)) o.scenes.forEach(function(sc){ if (sc && Array.isArray(sc.outline_lines) && sc.outline_lines.length > 3) sc.outline_lines = sc.outline_lines.slice(0, 3); });
+          s = JSON.stringify(o);
+          while (s.length > budget && Array.isArray(o.scenes) && o.scenes.length > 3) { o.scenes.pop(); s = JSON.stringify(o); }
+          if (s.length > budget && Array.isArray(o.character_features) && o.character_features.length > 6) { o.character_features = o.character_features.slice(0, 6); s = JSON.stringify(o); }
+          return s.length <= budget ? s : s.slice(0, budget);
+        } catch (_e) { try { return JSON.stringify(ol).slice(0, budget); } catch (_e2) { return ''; } }
+      };
+      // 确定性亡者审计(2026-07-02):大纲引用已亡角色=幻觉复活(经典叙事bug)·名单内且 alive===false 才报=零误报·
+      //   scR 跳过(lite深度)或漏报也兜得住·并入 name_errors 交 prose 禁用。
+      var _outlineDeadAudit = function(ol) {
+        try {
+          if (!ol) return [];
+          var _dead = {};
+          (GM.chars || []).forEach(function(c){ if (c && c.name && c.alive === false) _dead[c.name] = 1; });
+          var _hits = {}, _names = [];
+          (Array.isArray(ol.scenes) ? ol.scenes : []).forEach(function(sc){ (sc && Array.isArray(sc.characters) ? sc.characters : []).forEach(function(n){ _names.push(n); }); });
+          (Array.isArray(ol.character_features) ? ol.character_features : []).forEach(function(cf){ if (cf && cf.name) _names.push(cf.name); });
+          _names.forEach(function(n){ n = String(n || '').trim(); if (n && _dead[n]) _hits[n] = 1; });
+          return Object.keys(_hits);
+        } catch (_e) { return []; }
+      };
 
       if (_sc23stageOn) {
         // Slice 2·sc2_outline·读 sc1/sc15 事实摘要 → 场景大纲
@@ -2042,7 +2071,7 @@
             try {
               var _charNamesR = (GM.chars||[]).filter(function(c){return c.alive!==false;}).map(function(c){return c.name;}).slice(0, 50);
               var tpR = '【sc27·审 sc2_outline·而非 prose】temp=0.3·仅在确信时报告·不确定的不要报\n'
-                + 'outline JSON:\n' + JSON.stringify(_sc2OutlineResult).slice(0, 5000) + '\n\n'
+                + 'outline JSON:\n' + _outlineJsonBudget(_sc2OutlineResult, 5000) + '\n\n'
                 + '在世角色名单 (outline 引用必须在此)：' + _charNamesR.join('、') + '\n';
               if (GM._aiScenarioDigest && GM._aiScenarioDigest.periodVocabulary) tpR += '时代用语：' + GM._aiScenarioDigest.periodVocabulary.slice(0, 250) + '\n';
               tpR += '\n返回严格 JSON·\n{"anachronisms":["发现的时代错乱·每条 30字"],"name_errors":["不在名单的人名"],"missing_beats":["大纲缺失的关键节拍 (40字每条·≤3 条)"],"tone_guidance":"整体语气调整建议 (60字)"}';
@@ -2059,22 +2088,43 @@
           });
         }
 
+        // 确定性亡者审计(2026-07-02)·不依赖 LLM·scR 跳过(lite深度)或漏报也兜住·并入 name_errors 交 prose 禁用
+        if (_sc2OutlineResult) {
+          try {
+            var _deadHits = _outlineDeadAudit(_sc2OutlineResult);
+            if (_deadHits.length) {
+              _sc27ReviewResult = _sc27ReviewResult || {};
+              var _ne0 = Array.isArray(_sc27ReviewResult.name_errors) ? _sc27ReviewResult.name_errors : [];
+              _deadHits.forEach(function(n){ var _tag = n + '（已亡故·不可现身·除非追忆）'; if (_ne0.indexOf(_tag) < 0 && _ne0.indexOf(n) < 0) _ne0.push(_tag); });
+              _sc27ReviewResult.name_errors = _ne0;
+              GM._turnAiResults.subcall27_review = _sc27ReviewResult;
+              _dbg('[sc27_review·确定性亡者审计] 大纲引用已亡角色: ' + _deadHits.join('、'));
+            }
+          } catch(_daE) {}
+        }
+
         // Slice 4·sc2_prose·读 outline+review+事实·写完整 prose (zhengwen)
         if (_sc2OutlineResult) {
           await _runSubcall('sc2_prose', '叙事成文', 'lite', async function() {
             try {
               var tpP = '【sc2_prose·据 outline+review 写完整正文】\n'
-                + 'outline JSON:\n' + JSON.stringify(_sc2OutlineResult).slice(0, 4500) + '\n\n';
+                + 'outline JSON:\n' + _outlineJsonBudget(_sc2OutlineResult, 4500) + '\n\n';
               if (_sc27ReviewResult) {
                 tpP += 'sc27 审查发现 (修正后再写)：\n' + JSON.stringify(_sc27ReviewResult).slice(0, 1500) + '\n';
                 tpP += '★ 修正方式·anachronisms 列出的时代错乱·写时避免·name_errors 列出的人名·禁止使用·missing_beats·必须在正文中补足·tone_guidance·按此语气写\n\n';
               }
               tpP += '在世角色：' + (GM.chars||[]).filter(function(c){return c.alive!==false;}).map(function(c){return c.name;}).slice(0, 30).join('、') + '\n';
-              tpP += '\n请按 outline 的 scenes 顺序写出完整正文 (zhengwen·700-1500 字·章回体)·只返回 JSON·{"zhengwen":"完整正文","houren_xishuo":"同 zhengwen·后人戏说体"}';
+              // 2026-07-02:原要求 zhengwen+houren_xishuo 双份同文异体——输出翻倍且两份可能漂移·而 legacy
+              //   本就只产一份(zhengwen 与 hourenXishuo 互为别名)·改单份+字数随场景数伸缩·
+              //   顺手补 suggestions(此前 3stage 恒空靠兜底)与 new_activities(编年·legacy 有此产出 3stage 缺)
+              var _scNP = (_sc2OutlineResult.scenes || []).length;
+              var _wcP = _scNP <= 4 ? '500-1000' : '700-1500';
+              tpP += '\n请按 outline 的 scenes 顺序写出完整正文（章回体·后人戏说笔法·' + _wcP + ' 字）·只返回 JSON·\n'
+                + '{"zhengwen":"完整正文","suggestions":["2-4条大臣进言(忠言可冗长说教)"],"new_activities":[{"name":"持续数回合的新事项名(可选·仅当正文确实开启了某项工程/风潮)","duration":3,"desc":"一句话"}]}';
               var _pBody = { model: P.ai.model||'gpt-4o', messages:[{role:'system',content:_maybeCacheSys(sysPFor('scP'))},{role:'user',content:tpP}], temperature: 0.75, max_tokens: _tok(6000) };
               if (_modelFamily === 'openai') _pBody.response_format = { type:'json_object' };
               var _pCall = await _callFollowupAI(_pBody, { id: 'sc2_prose', label: '叙事成文', priority: 'high' });
-              var _pParse = await _parseOrRepairJsonResult(_pCall.raw||'', _pCall.data, '叙事成文', { url: url, key: P.ai.key, body: _pBody, expectedKeys: ['zhengwen', 'houren_xishuo'], priority: 'high' });
+              var _pParse = await _parseOrRepairJsonResult(_pCall.raw||'', _pCall.data, '叙事成文', { url: url, key: P.ai.key, body: _pBody, expectedKeys: ['zhengwen'], priority: 'high' });
               var _pResult = _pParse && _pParse.parsed;
               if (_pResult && _pResult.zhengwen) {
                 zhengwen = _pResult.zhengwen;
@@ -2082,6 +2132,14 @@
                 // Phase 5·canonical mirror·subcall2 = { zhengwen, houren_xishuo, _sc2outline, _sc27review }
                 GM._turnAiResults.subcall2 = { zhengwen: zhengwen, hourenXishuo: hourenXishuo, houren_xishuo: hourenXishuo, _sc2outline: _sc2OutlineResult, _sc27review: _sc27ReviewResult, _threeStage: true };
                 GM._turnAiResults.subcall2_raw = _pCall.raw || '';   // ★与 legacy 对齐(诊断/agent 工具读 raw·此前 3stage 缺)
+                // 建议与编年产出(2026-07-02·与 legacy 对齐·建议不足时下游标志位块再兜底)
+                try { if (Array.isArray(_pResult.suggestions) && _pResult.suggestions.length) GM._turnAiResults.subcall2.suggestions = _pResult.suggestions.slice(0, 4); } catch(_sgP) {}
+                try {
+                  if (Array.isArray(_pResult.new_activities)) {
+                    _pResult.new_activities.forEach(function(a){ if (a && a.name) GM.biannianItems.push({ name: a.name, startTurn: GM.turn + 1, duration: a.duration || 3, desc: a.desc || '', effect: a.effect || {} }); });
+                    if (GM.biannianItems && GM.biannianItems.length > 50) GM.biannianItems = GM.biannianItems.filter(function(b){ return b.startTurn + b.duration >= GM.turn; });
+                  }
+                } catch(_naP) {}
                 _dbg('[sc2_prose] zhengwen len=' + zhengwen.length);
                 // Phase 5 UI 反馈·sc2_prose 完成时 push 完整 prose 提示
                 try { if (typeof toast === 'function') toast('叙事成文·' + zhengwen.length + ' 字'); } catch(_){}

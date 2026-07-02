@@ -110,5 +110,40 @@ ok(coreOut.basisBrief.indexOf('【本回合天下牵动·因果综述】') >= 0,
 const coreNoWd = mkCore(null, '', '', [], fakeGM, null, '', [], function(){ return ''; }, function(n, t, c){ return String(t || ''); }, {}, function(){}, { promptBlock: function(){ return ''; } })();
 ok(coreNoWd.basisBrief.indexOf('因果综述') < 0, '⑧ 无信号 → 因果综述不注入(返空不污染)');
 
+// ⑨ O3 传递预算化(commit 3)
+ok(/var _outlineJsonBudget = function\(ol, budget\) \{/.test(src), '⑨ _outlineJsonBudget 已定义');
+ok(src.indexOf('_outlineJsonBudget(_sc2OutlineResult, 5000)') >= 0, '⑨ scR 传递走预算化(原盲切5000)');
+ok(src.indexOf('_outlineJsonBudget(_sc2OutlineResult, 4500)') >= 0, '⑨ scP 传递走预算化(原盲切4500)');
+const budSrc = extractFn('var _outlineJsonBudget = function(ol, budget) {');
+const mkBud = new Function('return (' + budSrc.replace('var _outlineJsonBudget = ', '') + ')');
+const bud = mkBud();
+const bigOutline = { scenes: [], narrative_arc: '主线弧甲乙丙', character_features: [{ name: '张甲', trait: '刚直' }], time_period_markers: ['廷杖'] };
+for (let i = 0; i < 12; i++) bigOutline.scenes.push({ id: i + 1, location: '某地某地某地某地', time: '辰时', characters: ['张甲', '李乙'], event_seed: '事件种子'.repeat(12), outline_lines: ['要点一'.repeat(8), '要点二'.repeat(8), '要点三'.repeat(8), '要点四'.repeat(8), '要点五'.repeat(8)], mood: '肃杀' });
+const budOut = bud(bigOutline, 3000);
+let budParsed = null;
+try { budParsed = JSON.parse(budOut); } catch (_e) {}
+ok(budOut.length <= 3000 && !!budParsed, '⑨ 超预算大纲 → ≤预算且仍是合法 JSON(len=' + budOut.length + ')');
+ok(budParsed && budParsed.narrative_arc === '主线弧甲乙丙' && Array.isArray(budParsed.character_features) && budParsed.character_features.length === 1, '⑨ 降载后 narrative_arc/character_features 保全(不再被尾切)');
+const smallOutline = { scenes: [{ id: 1 }], narrative_arc: 'x' };
+ok(bud(smallOutline, 5000) === JSON.stringify(smallOutline), '⑨ 未超预算 → 原样直传');
+
+// ⑩ 确定性亡者审计
+ok(/var _outlineDeadAudit = function\(ol\) \{/.test(src), '⑩ _outlineDeadAudit 已定义');
+const deadSrc = extractFn('var _outlineDeadAudit = function(ol) {');
+const mkDead = new Function('GM', 'return (' + deadSrc.replace('var _outlineDeadAudit = ', '') + ')');
+const deadFn = mkDead({ chars: [{ name: '王死', alive: false }, { name: '张活', alive: true }, { name: '李活2' }] });
+const deadHits = deadFn({ scenes: [{ characters: ['王死', '张活'] }], character_features: [{ name: '李活2' }] });
+ok(deadHits.length === 1 && deadHits[0] === '王死', '⑩ 已亡角色被揪出·在世角色零误报');
+ok(deadFn(null).length === 0 && deadFn({}).length === 0, '⑩ 空大纲安全返 []');
+ok(src.indexOf('（已亡故·不可现身·除非追忆）') >= 0 && /GM\._turnAiResults\.subcall27_review = _sc27ReviewResult;[\s\S]{0,200}确定性亡者审计/.test(src), '⑩ 亡者并入 name_errors 交 prose 禁用(scR 跳过也兜住)');
+
+// ⑪ scP 单文成文+建议/编年产出
+ok(src.indexOf('同 zhengwen·后人戏说体') < 0, '⑪ 双份同文异体请求已删(输出减半·防两份漂移)');
+ok(/expectedKeys: \['zhengwen'\], priority: 'high'/.test(src), '⑪ expectedKeys 同步为单 zhengwen');
+ok(/var _wcP = _scNP <= 4 \? '500-1000' : '700-1500';/.test(src), '⑪ 字数随场景数伸缩');
+ok(src.indexOf('"suggestions":["2-4条大臣进言(忠言可冗长说教)"]') >= 0, '⑪ scP 产真建议(原 3stage 恒空靠兜底)');
+ok(/GM\._turnAiResults\.subcall2\.suggestions = _pResult\.suggestions\.slice\(0, 4\)/.test(src), '⑪ 建议写回 subcall2');
+ok(/_pResult\.new_activities\.forEach\(function\(a\)\{ if \(a && a\.name\) GM\.biannianItems\.push/.test(src), '⑪ new_activities 进编年(与 legacy 对齐)');
+
 console.log('\n' + (F === 0 ? 'ALL PASS' : 'FAIL') + ' (' + A + ' pass / ' + F + ' fail)');
 process.exit(F === 0 ? 0 : 1);
