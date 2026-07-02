@@ -1935,7 +1935,8 @@
     }, required: ['findings'] }
   };
   function _reviewTools() {
-    var readNames = { getField: 1, getFields: 1, fieldContract: 1, genReference: 1, readSource: 1, listSource: 1, grepSource: 1, searchEntities: 1, globalSearch: 1, findReferences: 1, listGaps: 1, listCollection: 1, describeSchema: 1, mapOverview: 1, validateDraft: 1, preflight: 1 };
+    // S11 · recordConvention 入审阅工具集：只产建议不动剧本·「/初始化约定」(Codex /init 对照)靠它总结剧本惯例
+    var readNames = { getField: 1, getFields: 1, fieldContract: 1, genReference: 1, readSource: 1, listSource: 1, grepSource: 1, searchEntities: 1, globalSearch: 1, findReferences: 1, listGaps: 1, listCollection: 1, describeSchema: 1, mapOverview: 1, validateDraft: 1, preflight: 1, recordConvention: 1 };
     return AGENT_TOOLS.filter(function(t) { return readNames[t.name]; }).concat([SUBMIT_REVIEW_TOOL]);
   }
   // 方向L · 剧本问答：只读工具 + submitAnswer（查清后直接回答，不动剧本）
@@ -2055,6 +2056,44 @@
       '',
       buildSchemaGuide()
     ].join('\n');
+  }
+
+  // ── 刀G8/S10 共用 · 宏压缩文案构件：循环内自动压缩与「/压缩前情」手动压缩同一套（勿两处漂移） ──
+  var _MACRO_SUM_TOOLS = [{ name: 'submitSummary', description: '提交结构化前情摘要', parameters: { type: 'object', properties: { summary: { type: 'string', description: '按七段结构写全的摘要正文' } }, required: ['summary'] } }];
+  var _MACRO_SUM_SYS = '你是对话压缩器：只输出忠实、具体、结构化的前情摘要，不评论不建议。';
+  function _macroSummaryAsk(flat) {
+    return '以下是一段「剧本编辑 agent」与用户/工具的工作对话记录。请把它压缩成结构化前情摘要，供同一 agent 在新上下文里无缝续作。必须涵盖七段：\n'
+      + '①用户各轮请求与意图(逐条·含意图变化与纠偏) ②已完成的改动(实体/字段级·关键新值) ③任务表现状(未完项) ④已查明的关键事实(字段结构/约定/引用关系) ⑤遇到的错误与修正 ⑥正在进行的工作 ⑦下一步(必须与用户最近请求直接一致·勿开新任务)\n'
+      + '要具体：实体名/字段路径/关键值逐一点名，宁详勿略。调用 submitSummary 提交；若无法调用工具，直接以纯文本输出摘要正文。\n\n【对话记录】\n' + flat;
+  }
+  function _macroHead(summary, draft, surfaces, tailLen) {
+    var gaps = null; try { gaps = _computeGaps(draft, surfaces || []); } catch (eG) {}
+    return '【前情摘要·上下文已压缩】此前对话过长已压缩为以下摘要（覆盖此前全部工作）：\n\n' + summary
+      + '\n\n【当前草稿最新状态·压缩后重读】\n' + _draftSummary(draft)
+      + ((gaps && gaps.requiredMissing.length) ? '\n（仍有必需缺口 ' + gaps.requiredMissing.length + ' 项：' + gaps.requiredMissing.slice(0, 12).join('、') + '）' : '')
+      + '\n\n请从中断处直接继续当前任务：不要复述摘要、不要重新确认、不要说「我继续」——当中断从未发生。任务表(todoWrite)与已落地的草稿改动均仍有效'
+      + (tailLen ? '；最近 ' + tailLen + ' 条原始消息保留在后。' : '。');
+  }
+  function _macroPickSummary(r) {
+    try { var tc0 = ((r && r.toolCalls) || []).filter(function (t) { return t && t.name === 'submitSummary'; })[0]; return String((tc0 && tc0.input && tc0.input.summary) || (r && r.text) || ''); }
+    catch (eS) { return String((r && r.text) || ''); }
+  }
+  /** S10(Codex /compact·CC /compact 对照) · 手动前情压缩：跑的间隙把会话线程压成七段摘要+近尾原文。
+   *  一次小结调用（优先次要模型）·摘要太薄按失败处理（原对话不动）。返回 {ok, conversation?, before, after, reason?}。 */
+  function compactConversation(conversation, draft, opts) {
+    opts = opts || {};
+    if (!Array.isArray(conversation) || conversation.length < 4) return Promise.resolve({ ok: false, reason: 'too-small' });
+    var beforeN = conversation.length;
+    var flat = _flattenForSummary(conversation, opts.frac != null ? opts.frac : 0.45);
+    var cfg = opts.cfg || loadEditorApiConfig();
+    return callWithTools([{ role: 'user', text: _macroSummaryAsk(flat) }], _MACRO_SUM_TOOLS, { maxTok: 4000, maxRetries: 1, cfg: opts.cfg2 || _secondaryCfg() || cfg, system: _MACRO_SUM_SYS })
+      .then(function (r) {
+        var s = _macroPickSummary(r);
+        if (s.length < 200) return { ok: false, reason: 'thin' };
+        var tail = _compactTailSlice(conversation, opts.keepTail != null ? opts.keepTail : 6);
+        var out = [{ role: 'user', text: _macroHead(s, draft, opts.surfaces || [], tail.length) }].concat(tail);
+        return { ok: true, conversation: out, before: beforeN, after: out.length, summaryChars: s.length };
+      });
   }
 
   function _buildSystemPrompt(conventions, worldKind) {
@@ -2361,12 +2400,7 @@
     var _macroKeepTail = (opts.macroKeepTail != null ? opts.macroKeepTail : 6);  // 压缩后保留的近尾原文条数
     function _applyMacroResult(summary, reasonTag) {
       var tail = _compactTailSlice(conversation, _macroKeepTail);
-      var gaps = null; try { gaps = _computeGaps(draft, surfaces || []); } catch (eG) {}
-      var head = '【前情摘要·上下文已压缩】此前对话过长已压缩为以下摘要（覆盖此前全部工作）：\n\n' + summary
-        + '\n\n【当前草稿最新状态·压缩后重读】\n' + _draftSummary(draft)
-        + ((gaps && gaps.requiredMissing.length) ? '\n（仍有必需缺口 ' + gaps.requiredMissing.length + ' 项：' + gaps.requiredMissing.slice(0, 12).join('、') + '）' : '')
-        + '\n\n请从中断处直接继续当前任务：不要复述摘要、不要重新确认、不要说「我继续」——当中断从未发生。任务表(todoWrite)与已落地的草稿改动均仍有效'
-        + (tail.length ? '；最近 ' + tail.length + ' 条原始消息保留在后。' : '。');
+      var head = _macroHead(summary, draft, surfaces, tail.length);
       conversation.length = 0;
       conversation.push({ role: 'user', text: head });
       for (var ti = 0; ti < tail.length; ti++) conversation.push(tail[ti]);
@@ -2379,15 +2413,10 @@
       if (_macroTries >= 2 || _convTok < 6000) return Promise.resolve(false);   // 熔断 + 对话太小不救
       _macroTries++;
       var flat = _flattenForSummary(conversation, _macroTries === 1 ? 0.45 : 0.2);   // 二次尝试再砍半(摘要请求自身超限的退路)
-      var sumTools = [{ name: 'submitSummary', description: '提交结构化前情摘要', parameters: { type: 'object', properties: { summary: { type: 'string', description: '按七段结构写全的摘要正文' } }, required: ['summary'] } }];
-      var ask = '以下是一段「剧本编辑 agent」与用户/工具的工作对话记录。请把它压缩成结构化前情摘要，供同一 agent 在新上下文里无缝续作。必须涵盖七段：\n'
-        + '①用户各轮请求与意图(逐条·含意图变化与纠偏) ②已完成的改动(实体/字段级·关键新值) ③任务表现状(未完项) ④已查明的关键事实(字段结构/约定/引用关系) ⑤遇到的错误与修正 ⑥正在进行的工作 ⑦下一步(必须与用户最近请求直接一致·勿开新任务)\n'
-        + '要具体：实体名/字段路径/关键值逐一点名，宁详勿略。调用 submitSummary 提交；若无法调用工具，直接以纯文本输出摘要正文。\n\n【对话记录】\n' + flat;
       if (typeof opts.onText === 'function') { try { opts.onText('（上下文过长，正在压缩前情摘要…）', iterations); } catch (eOt) {} }
-      return Promise.resolve(caller([{ role: 'user', text: ask }], sumTools, { maxTok: Math.max(4000, opts.maxTok || 0), maxRetries: 1, cfg: opts.cfg2 || _secondaryCfg() || opts.cfg, system: '你是对话压缩器：只输出忠实、具体、结构化的前情摘要，不评论不建议。' }))   // 刀H1 · 后台请求不放大重试(CC 对照)·S3 · 摘要=杂活走次要模型
+      return Promise.resolve(caller([{ role: 'user', text: _macroSummaryAsk(flat) }], _MACRO_SUM_TOOLS, { maxTok: Math.max(4000, opts.maxTok || 0), maxRetries: 1, cfg: opts.cfg2 || _secondaryCfg() || opts.cfg, system: _MACRO_SUM_SYS }))   // 刀H1 · 后台请求不放大重试(CC 对照)·S3 · 摘要=杂活走次要模型
         .then(function (r) {
-          var s = '';
-          try { var tc0 = ((r && r.toolCalls) || []).filter(function (t) { return t && t.name === 'submitSummary'; })[0]; s = String((tc0 && tc0.input && tc0.input.summary) || (r && r.text) || ''); } catch (eS) { s = String((r && r.text) || ''); }
+          var s = _macroPickSummary(r);
           if (s.length < 200) return false;   // 摘要太薄不可信·按失败处理(不替换对话)
           _applyMacroResult(s, reasonTag);
           return true;
@@ -2406,7 +2435,7 @@
     function record(name, input, result) {
       transcript.push({ name: name, input: input, result: result });
       if (typeof opts.onStep === 'function') {
-        try { opts.onStep({ name: name, input: input, result: result, iteration: iterations, tokensUsed: tokensUsed }); } catch (e) {}
+        try { opts.onStep({ name: name, input: input, result: result, iteration: iterations, tokensUsed: tokensUsed, budget: maxTokens }); } catch (e) {}   // S10 · budget=预算上限(UI 上下文余量表)
       }
     }
 
@@ -2957,6 +2986,7 @@
     _OVERFLOW_RE: _OVERFLOW_RE,   // 刀G8 · 超限文案识别(smoke)
     _parseOpenAI: _parseOpenAI, _parseAnthropic: _parseAnthropic, _parseGemini: _parseGemini,   // 刀H1 · 截断 surfacing(smoke)
     _toOpenAI: _toOpenAI, _toAnthropic: _toAnthropic, _toGemini: _toGemini,   // S2 · 多模态映射(smoke)
+    compactConversation: compactConversation,   // S10 · 手动前情压缩(Codex·CC /compact 对照)
     computeGaps: _computeGaps,
     preflight: preflight,
     ensureCharFactionId: ensureCharFactionId,

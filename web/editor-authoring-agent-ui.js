@@ -1045,6 +1045,9 @@
       { k: 'changelog', t: '版本说明', d: '汇总已应用改动·零 token', run: function () { runChangelogUI(); } },
       { k: 'fork', t: '分叉会话', d: '把当前会话复制成分支再演化（原线不动）', run: function () { if (ui._sessId) forkSession(ui._sessId); else setStatus('当前没有活动会话（先跑一轮，或从侧栏选中一条）'); } },
       { k: 'conv', t: '创作约定', d: '查看全局+本剧本两层约定（等价 CLAUDE.md）', run: function () { showConventionsUI(); } },
+      { k: 'initconv', t: '初始化约定', d: '通读剧本·总结值得沿用的创作约定（可逐条记住）', run: function () { ui.els.req.value = '【梳理创作约定】通读剧本，总结 5-10 条值得长期沿用的创作约定（命名规律、文风与称谓、数值区间、结构惯例、世界观基调）。每确认一条就调用 recordConvention 记录一条；报告 findings 也逐条列出这些约定及其依据。不评质量问题，只提炼惯例。'; runReview(); } },
+      { k: 'compact', t: '压缩前情', d: '把长对话压成前情摘要（省上下文·续接不断）', run: function () { runCompactUI(); } },
+      { k: 'notify', t: '完成通知', d: '页面切后台时跑完弹系统通知（开/关）', run: function () { _toggleNotify(); } },
       { k: 'checkpoint', t: '存检查点', d: '当前剧本存为可回退存档点', run: function () { _plusAct('checkpoint'); } },
       { k: 'undo', t: '撤销上次应用', d: '回到上次应用前快照', run: function () { _plusAct('undo'); } },
       { k: 'perm-plan', t: '权限·问策', d: '只读出计划·绝不动剧本', run: function () { var p = _loadPerm(); p.mode = 'plan'; _applyPerm(p); setStatus('权限已切到「问策」· 只读出计划'); } },
@@ -1472,8 +1475,11 @@
     if (!ui._runStart || done) { ui.els.meter.style.display = 'none'; return; }   // Claude 式：只在运行中显示（收尾由状态行汇总·不重复）
     var sec = Math.round((Date.now() - ui._runStart) / 1000);
     var tok = ui._lastTokens || 0, iter = ui._lastIter || 0;
+    // S10(Codex context-left 对照) · 上下文余量：预算越吃越紧时玩家能看见（≤30% 时着色提醒·撞线前引擎会自动宏压缩）
+    var left = (ui._budget && tok) ? Math.max(0, 100 - Math.round(tok * 100 / ui._budget)) : null;
     ui.els.meter.style.display = '';
-    ui.els.meter.textContent = '⏱ ' + sec + 's · ~' + _fmtTok(tok) + ' tokens' + (iter ? ' · ' + iter + ' 轮' : '');
+    ui.els.meter.textContent = '⏱ ' + sec + 's · ~' + _fmtTok(tok) + ' tokens' + (iter ? ' · ' + iter + ' 轮' : '') + (left != null ? ' · 上下文余 ' + left + '%' : '');
+    ui.els.meter.style.color = (left != null && left <= 15) ? 'var(--bad)' : ((left != null && left <= 30) ? 'var(--warn)' : '');
   }
   // 集中管理运行态：切换 running/禁用生成键 + 启停实时计量
   function setRunning(on) {
@@ -1485,6 +1491,7 @@
     // UI·Q · 运行中「生成」键变形为「■ 停止」(不禁用·桌面端范式)；收尾恢复「生成」
     if (ui.els && ui.els.go) { ui.els.go.disabled = false; ui.els.go.textContent = on ? '■' : '↑'; ui.els.go.style.fontSize = ''; ui.els.go.setAttribute('aria-label', on ? '停止' : '发送'); ui.els.go.title = on ? '停止（本轮 API 返回后干净收尾·不施未完成的改动）' : 'Enter 发送 · Shift+Enter 换行'; ui.els.go.classList.toggle('stopbtn', on); }
     if (!on) {   // 工作过程 · 收尾：活动行移除·执行块自动折叠并定格标签
+      _maybeNotify();   // S12 · 页面切后台时跑完弹系统通知(Codex notify 对照·先于 _runStart 清理)
       _removeLive();
       if (ui._thinkEl && ui._thinkEl.isConnected) {
         ui._thinkEl.open = false;
@@ -1802,6 +1809,62 @@
     if (lines.indexOf(conv) >= 0) return true;
     lines.push(conv);
     return _saveScenConv(lines.join('\n'));
+  }
+  // S11 · 审阅报告尾追加「发现的约定」记住签（复用本剧本层落点）
+  function _renderConvSuggest(sug) {
+    if (!Array.isArray(sug) || !sug.length || !ui.els || !ui.els.summary) return;
+    var box = document.createElement('div');
+    box.className = 'tm-aa-cl-md';
+    box.innerHTML = '<b>发现的创作约定</b>' + sug.slice(0, 12).map(function (c, i) {
+      return '<div>· ' + esc(c) + ' <button type="button" class="tm-aa-cl-copy" data-ci="' + i + '">记住</button></div>';
+    }).join('');
+    box.addEventListener('click', function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest('[data-ci]') : null;
+      if (!b || b.disabled) return;
+      if (rememberConvention(sug[+b.getAttribute('data-ci')])) { b.textContent = '已记住 ✓（本剧本）'; b.disabled = true; }
+    });
+    ui.els.summary.appendChild(box);
+  }
+  // S10(Codex·CC /compact 对照) · 手动压缩前情：跑的间隙把当前会话线程压成七段摘要（一次小结调用·优先次模）
+  function runCompactUI() {
+    if (ui.running) { setStatus('运行中 · 等本轮结束再压缩'); return; }
+    if (!ui.conversation || ui.conversation.length < 6) { setStatus('当前会话不长 · 无需压缩'); return; }
+    var draft = ui.draft || (AA.makeDraft && ui.adapter && ui.adapter.getScenario ? AA.makeDraft(ui.adapter.getScenario()) : null);
+    if (!draft || typeof AA.compactConversation !== 'function') { setStatus('压缩不可用'); return; }
+    var beforeN = ui.conversation.length;
+    setStatus('正在压缩前情…（一次小结调用 · 优先走次要模型）');
+    AA.compactConversation(ui.conversation, draft, {}).then(function (r) {
+      if (!r || !r.ok) { setStatus(r && r.reason === 'too-small' ? '对话太短 · 无需压缩' : '压缩失败（模型没给出可信摘要）· 原对话未动'); return; }
+      ui.conversation = r.conversation;
+      _saveSession({ conversation: r.conversation, todos: ui._restoredTodos || [], tokensUsed: 0 }, '压缩前情', null);
+      resetResults(true);
+      _beginReplyCard();
+      if (ui.els.summary) { ui.els.summary.innerHTML = '<b>前情已压缩</b><span class="tm-aa-stream">' + beforeN + ' 条 → ' + r.after + ' 条（摘要 ' + Math.round(r.summaryChars / 100) / 10 + 'k 字 · 近尾原文保留）。续接不断片，后续轮次省上下文。</span>'; ui.els.summary.style.display = ''; }
+      _freezeLastReply();
+      setStatus('前情压缩完成：' + beforeN + ' → ' + r.after + ' 条 · 直接输入续接');
+    }, function (e) { setStatus('压缩失败：' + ((e && e.message) || e) + ' · 原对话未动'); });
+  }
+  // S12(Codex notify 对照) · 完成通知：页面切后台时跑完弹系统通知（palette 开/关·授权在开启时申请）
+  function _toggleNotify() {
+    try {
+      if (localStorage.getItem('tm_aa_notify') === '1') { localStorage.removeItem('tm_aa_notify'); setStatus('完成通知已关'); return; }
+      if (typeof Notification === 'undefined') { setStatus('此环境不支持系统通知'); return; }
+      if (Notification.permission === 'granted') { localStorage.setItem('tm_aa_notify', '1'); setStatus('完成通知已开 · 页面切后台时跑完会弹通知'); }
+      else Notification.requestPermission().then(function (p) {
+        if (p === 'granted') { localStorage.setItem('tm_aa_notify', '1'); setStatus('完成通知已开 · 页面切后台时跑完会弹通知'); }
+        else setStatus('浏览器未授权通知 · 未开启');
+      });
+    } catch (e) { setStatus('通知开启失败'); }
+  }
+  function _maybeNotify() {
+    try {
+      if (localStorage.getItem('tm_aa_notify') !== '1') return;
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+      if (typeof document === 'undefined' || !document.hidden) return;   // 页面可见就不打扰
+      var dur = ui._runStart ? Math.round((Date.now() - ui._runStart) / 1000) : 0;
+      if (dur < 12) return;   // 快跑不值一条系统通知
+      new Notification('国师', { body: '本轮已完成（用时 ' + (dur >= 60 ? Math.floor(dur / 60) + ' 分 ' + (dur % 60) + ' 秒' : dur + ' 秒') + '）· 回来看看结果', tag: 'tm-aa-run' });
+    } catch (e) {}
   }
   function showConventionsUI() {   // /创作约定 · 两层透视（CC /memory 对照）
     if (ui.running) { setStatus('请等当前运行结束'); return; }
@@ -2364,6 +2427,7 @@
   function appendLog(step) {
     if (!ui.els) return;
     if (step && step.tokensUsed != null) ui._lastTokens = step.tokensUsed;   // 方向I · 实时计量
+    if (step && step.budget) ui._budget = step.budget;   // S10 · 预算上限(上下文余量表)
     if (step && step.iteration != null) ui._lastIter = step.iteration;
     var execBlk = _ensureExecBlock();   // UI·Z2 · 工具卡收进同一个「执行过程」折叠块
     var r = step.result || {};
@@ -2603,6 +2667,7 @@
       if (res.review) {
         _beginReplyCard();
         renderReview(res.review, true);   // UI·P · 流式
+        _renderConvSuggest(res.suggestedConventions);   // S11 · 审阅中发现的约定 → 记住(本剧本层)
         setStatus('审阅完成（' + res.iterations + ' 轮·约 ' + res.tokensUsed + ' tokens）· 仅诊断，未改动剧本');
       } else {
         setStatus('审阅结束（' + (res.stopReason || '') + '）· 未生成报告，可重试');

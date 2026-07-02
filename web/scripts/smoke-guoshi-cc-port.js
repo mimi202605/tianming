@@ -549,5 +549,29 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/function showConventionsUI/.test(uiSrcC) && /k: 'conv', t: '创作约定'/.test(uiSrcC) && /tm-aa-conv-clear/.test(uiSrcC), 'H12 /创作约定 两层透视卡+清空本剧本(CC /memory 对照)');
   ok(/rememberConvention: rememberConvention/.test(uiSrcC), 'H12 rememberConvention 导出(e2e 可驱动)');
 
+  // ───────── H13 · Codex 面吸收：/压缩前情·上下文余量·/初始化约定·完成通知 ─────────
+  console.log('— H13 Codex 面吸收 —');
+  var _sumTxt = '①用户请求：补两名文官并规范势力名。②已完成：新增袁可立、毕自严，东林→东林党。③任务表：无未完项。④关键事实：characters 需 faction 字段挂 id。⑤错误与修正：一次 id 漏挂已补。⑥进行中：无。⑦下一步：等用户新需求。' + new Array(40).join('摘要正文补足字符');
+  var _oldFetch13 = global.fetch;
+  global.fetch = function () { return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve({ choices: [{ finish_reason: 'stop', message: { content: '', tool_calls: [{ id: 't1', function: { name: 'submitSummary', arguments: JSON.stringify({ summary: _sumTxt }) } }] } }] }); }, text: function () { return Promise.resolve(''); } }); };
+  var conv13 = [];
+  for (var ci13 = 0; ci13 < 10; ci13++) conv13.push({ role: ci13 % 2 ? 'assistant' : 'user', text: '第' + ci13 + '条·' + new Array(60).join('内容'), toolCalls: [] });
+  var rc13 = await AA.compactConversation(conv13, AA.makeDraft({ name: '甲' }), { cfg: { url: 'https://api.x.com', key: 'k', model: 'm' } });
+  ok(rc13 && rc13.ok === true && rc13.after < rc13.before && /【前情摘要·上下文已压缩】/.test(rc13.conversation[0].text), 'H13 手动压缩：N 条→摘要头+近尾(真走 caller 管线)');
+  global.fetch = function () { return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve({ choices: [{ finish_reason: 'stop', message: { content: '太薄', tool_calls: [] } }] }); }, text: function () { return Promise.resolve(''); } }); };
+  var rc13b = await AA.compactConversation(conv13, AA.makeDraft({ name: '甲' }), { cfg: { url: 'https://api.x.com', key: 'k', model: 'm' } });
+  ok(rc13b && rc13b.ok === false && rc13b.reason === 'thin', 'H13 摘要太薄按失败处理(原对话不动)');
+  var rc13c = await AA.compactConversation([{ role: 'user', text: '短' }], AA.makeDraft({ name: '甲' }), {});
+  ok(rc13c && rc13c.ok === false && rc13c.reason === 'too-small', 'H13 对话太短不压');
+  global.fetch = _oldFetch13;
+  var agSrcD = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent.js'), 'utf8');
+  ok(/_macroSummaryAsk/.test(agSrcD) && /_macroHead/.test(agSrcD) && (agSrcD.match(/_macroSummaryAsk\(/g) || []).length >= 3, 'H13 循环内压缩与手动压缩共用同套文案构件(勿漂移)');
+  ok(/budget: maxTokens/.test(agSrcD) && /recordConvention: 1, };?/.test(agSrcD.replace(/\};/g, '}, };')) || (/budget: maxTokens/.test(agSrcD) && /preflight: 1, recordConvention: 1 \}/.test(agSrcD)), 'H13 onStep 带预算+审阅工具集含 recordConvention');
+  var uiSrcD = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/上下文余 /.test(uiSrcD) && /ui\._budget = step\.budget/.test(uiSrcD), 'H13 计量条显上下文余量%(Codex context-left 对照)');
+  ok(/k: 'compact', t: '压缩前情'/.test(uiSrcD) && /AA\.compactConversation\(ui\.conversation/.test(uiSrcD), 'H13 /压缩前情 命令接手动压缩');
+  ok(/k: 'initconv', t: '初始化约定'/.test(uiSrcD) && /_renderConvSuggest\(res\.suggestedConventions\)/.test(uiSrcD), 'H13 /初始化约定(Codex /init 对照)+审阅尾记住签');
+  ok(/k: 'notify', t: '完成通知'/.test(uiSrcD) && /document\.hidden/.test(uiSrcD) && /dur < 12/.test(uiSrcD), 'H13 完成通知(切后台才弹·快跑不扰)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
