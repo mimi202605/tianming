@@ -105,5 +105,23 @@ const AM = globalThis.TM.Endturn.AgentMode;
   assert(meta3.depthTools && meta3.depthTools.deepen_economy && meta3.depthTools.deepen_military, '回归命门:模型自收尾后·维度深化(经济/军事)仍由 auto-suite 补全(循环不挂深化工具也不丢深度)');
   global.P.conf.agentModeDepthGate = true;
 
+  // ── 回归:自动深化失败不得记功；engine-first 的真实状态变化即使没写 _turnReport，也要触发对应维度 ──
+  var gm4 = { turn: 11, guoku: 1000, neitang: 100, chars: [{ name: '甲' }], facs: [], evtLog: [], _turnReport: [] };
+  global.GM = gm4; deepenCalls = [];
+  global.P.conf.agentAdaptiveDeepen = true; global.P.conf.agentModeDepthGate = false; global.P.conf.agentScaffoldMinWrites = 0; global.P.conf.agentModeMaxRounds = 1;
+  global._endTurn_updateSystems = async function () { gm4.turn += 1; gm4.guoku -= 250; return { ok: true, appliedCount: 1 }; };
+  global.callAIWithTools = async function () { return { toolCalls: [], text: '' }; };
+  globalThis.TM.Endturn.AgentDepthTools.handle = async function (name) {
+    deepenCalls.push(name);
+    if (name === 'deepen_economy') return { ok: false, name: name, text: '经济深化失败' };
+    return { ok: true, name: name, text: 'stub' };
+  };
+  await AM.run({ GM: gm4, input: { edicts: [] }, results: {} });
+  var meta4 = gm4._agentTurnMeta || {};
+  assert(deepenCalls.indexOf('deepen_economy') >= 0, 'engine-first 改动国库但无 _turnReport 文本 → 仍触发经济深化');
+  assert(!meta4.depthTools.deepen_economy, '自动深化失败(deepen_economy ok=false)不得记入 depthTools');
+  assert(meta4.deepenFailed && meta4.deepenFailed.indexOf('deepen_economy') >= 0, '自动深化失败须进入 meta.deepenFailed 便于诊断');
+  delete global._endTurn_updateSystems;
+
   console.log('[smoke-agent-mode-wf2] pass assertions=' + passed.value);
 })().catch(function (e) { console.error(e); process.exit(1); });

@@ -26,6 +26,32 @@ function initProvinceEconomy() {
   if (!GM.provinceStats) GM.provinceStats = {};
 
   // 辅助：从行政区划树收集叶级或指定级别节点
+  function _asFiniteNumber(value, fallback) {
+    var n = Number(value);
+    return isFinite(n) ? n : fallback;
+  }
+
+  function _seedMilitaryRecruits(d, population) {
+    var md = d.militaryDetail || {};
+    var army = d.armyDetail || {};
+    var candidates = [
+      d.militaryRecruits,
+      d.recruits,
+      d.levyPool,
+      md.availableRecruits,
+      army.recruits,
+      army.availableRecruits
+    ];
+    for (var i = 0; i < candidates.length; i++) {
+      var n = Number(candidates[i]);
+      if (isFinite(n) && n > 0) return Math.round(n);
+    }
+    var pop = d.populationDetail || {};
+    var ding = Number(pop.ding);
+    if (isFinite(ding) && ding > 0) return Math.round(ding * 0.084);
+    return Math.max(0, Math.round((population || 0) / 100));
+  }
+
   function _collectAdminDivisions(divs, factionName) {
     var result = [];
     for (var i = 0; i < divs.length; i++) {
@@ -34,16 +60,29 @@ function initProvinceEconomy() {
       if (d.children && d.children.length > 0) {
         result = result.concat(_collectAdminDivisions(d.children, factionName));
       } else {
+        var _pop = d.populationDetail || {};
+        var _population = _asFiniteNumber(d.population, _asFiniteNumber(_pop.mouths, 50000 + Math.floor(random() * 50000)));
+        var _households = _asFiniteNumber(d.households, _asFiniteNumber(_pop.households, 0));
+        var _militaryRecruits = _seedMilitaryRecruits(d, _population);
+        var _militaryDetail = Object.assign({}, d.militaryDetail || {});
+        if (!_asFiniteNumber(_militaryDetail.availableRecruits, 0) && _militaryRecruits > 0) {
+          _militaryDetail.availableRecruits = _militaryRecruits;
+          _militaryDetail.recruitmentBase = _militaryRecruits;
+          _militaryDetail.recruitmentSource = _militaryDetail.recruitmentSource || 'populationDetail.ding';
+        }
         result.push({
           name: d.name,
           owner: factionName,
-          households: d.households || 0,
-          population: d.population || (50000 + Math.floor(random() * 50000)),
+          households: _households,
+          population: _population,
           wealth: d.prosperity || (50 + Math.floor(random() * 30)),
           stability: 60 + Math.floor(random() * 20),
           development: d.prosperity ? Math.round(d.prosperity * 0.8) : (40 + Math.floor(random() * 30)),
           taxRevenue: 0,
-          militaryRecruits: 0,
+          militaryRecruits: _militaryRecruits,
+          recruits: _militaryRecruits,
+          levyPool: _militaryRecruits,
+          militaryDetail: _militaryDetail,
           unrest: 10 + Math.floor(random() * 20),
           corruption: 20 + Math.floor(random() * 30),
           terrain: d.terrain || '',
@@ -98,15 +137,24 @@ function initProvinceEconomy() {
 
     faction.territories.forEach(function(territory) {
       if (GM.provinceStats[territory]) return;
+      var _fallbackPopulation = 50000 + Math.floor(random() * 50000);
+      var _fallbackRecruits = Math.max(0, Math.round(_fallbackPopulation / 100));
       GM.provinceStats[territory] = {
         name: territory,
         owner: faction.name,
-        population: 50000 + Math.floor(random() * 50000),
+        population: _fallbackPopulation,
         wealth: 50 + Math.floor(random() * 30),
         stability: 60 + Math.floor(random() * 20),
         development: 40 + Math.floor(random() * 30),
         taxRevenue: 0,
-        militaryRecruits: 0,
+        militaryRecruits: _fallbackRecruits,
+        recruits: _fallbackRecruits,
+        levyPool: _fallbackRecruits,
+        militaryDetail: {
+          availableRecruits: _fallbackRecruits,
+          recruitmentBase: _fallbackRecruits,
+          recruitmentSource: 'fallback.population'
+        },
         unrest: 10 + Math.floor(random() * 20),
         corruption: 20 + Math.floor(random() * 30),
         terrain: '', specialResources: '', governor: '', taxLevel: '中'
@@ -273,6 +321,11 @@ function updateProvinceEconomy() {
     var _maxRecruits = Math.floor(province.population / 50);
     var _monthlyRecovery = Math.floor(_maxRecruits / 12 * ((typeof getTimeRatio === 'function') ? getTimeRatio() * 12 : 1));
     province.militaryRecruits = Math.min(_maxRecruits, province.militaryRecruits + _monthlyRecovery);
+    province.recruits = province.militaryRecruits;
+    province.levyPool = province.militaryRecruits;
+    if (!province.militaryDetail || typeof province.militaryDetail !== 'object') province.militaryDetail = {};
+    province.militaryDetail.availableRecruits = province.militaryRecruits;
+    province.militaryDetail.recruitmentBase = province.militaryRecruits;
 
     // ═══ M10: 钱粮双轨——产出拆分（如果区域有moneyRatio/grainRatio）═══
     var _matchRegion = (P.map && P.map.regions || []).find(function(r) { return (r.id||r.name) === provinceName || r.name === provinceName; });

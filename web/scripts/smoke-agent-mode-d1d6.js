@@ -46,6 +46,7 @@ globalThis.P = { conf: {} };  // 门开
 // 深化工具的 callAIMessages stub(内容感知)
 globalThis.callAIMessages = async function (msgs) {
   var u = (msgs && msgs[1] && msgs[1].content) || '';
+  if (/固化为记忆|causal_edges/.test(u)) return JSON.stringify({ memory: 'm', state_board: { mood: 'x', recent_summary: 's', open_loops: [], unfulfilled_promises: [] }, causal_edges: [{ from: '整饬', to: '朝局收束', type: 'enabled', strength: 0.6, explanation: '本回合整饬促成' }] });
   if (/脉络/.test(u)) return JSON.stringify({ beats: ['甲', '乙'], tone: 't' });
   if (/据此产出完整史记|据此写史记|史记正文|据此写/.test(u)) return JSON.stringify({ shizhengji: '本回合史记。', shilu: '实录。', zhengwen: '政文。', houren: '戏说。', playerStatus: '状态。', playerInner: '反响。', suggestions: ['进言'], title: '标题', summary: '摘要' });
   if (/势力/.test(u)) return JSON.stringify({ factions: [{ name: '后金', intent: 'x', move: 'y', toward_player: '敌对', stance_delta: -5 }] });
@@ -69,6 +70,7 @@ var gm = { turn: 1, guoku: { money: 100000, balance: 100000 }, chars: [{ name: '
   assert(gm._agentTurnMeta && gm._agentTurnMeta.finalizeRejects >= 1, '③ 浅 finalize 被驳回过(finalizeRejects≥1)·实=' + (gm._agentTurnMeta && gm._agentTurnMeta.finalizeRejects));
   assert(gm._agentTurnMeta && gm._agentTurnMeta.finalized === true, '③ 最终深度达标·已收尾');
   assert(gm._agentTurnMeta && gm._agentTurnMeta.depthTools && gm._agentTurnMeta.depthTools.recall_consolidate, '③ meta 记录深化工具(recall_consolidate)');
+  assert(gm._agentTurnMeta && gm._agentTurnMeta.writeOk === 1, '③ writeOk 只统计真实守护写(push_field)·深化工具不冒充落地');
   assert(gm._agentTurnMeta && gm._agentTurnMeta.rounds >= 4, '③ 因门驳回多推了轮次(rounds≥4)·实=' + (gm._agentTurnMeta && gm._agentTurnMeta.rounds));
   console.log('[smoke-agent-mode-d1d6] pass assertions=' + passed.value);
 })().catch(function (e) { console.error(e); process.exit(1); });

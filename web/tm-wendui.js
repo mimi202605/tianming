@@ -362,7 +362,8 @@ function openWenduiModal(name, mode, prefillMsg) {
       var _playerLocC = (typeof _getPlayerLocation === 'function') ? _getPlayerLocation() : (GM._capital || '京师');
       var _locRaw = _gCh.location || '';
       var _loc = String(_locRaw || '').replace(/\s/g,'');
-      var _isAtCap = !_locRaw || ((typeof _isSameLocation === 'function') ? _isSameLocation(_locRaw, _playerLocC) : (_loc === String(_playerLocC || '').replace(/\s/g,'')));
+      // 2026-06-26 使节/外藩使者本就是来御前求见的·永远视作"在御前"·不受位置门拦(否则玩家不在都城时使节被判"远在·不能召见")
+      var _isAtCap = !_locRaw || _gCh._envoy || _gCh.fromFaction || ((typeof _isSameLocation === 'function') ? _isSameLocation(_locRaw, _playerLocC) : (_loc === String(_playerLocC || '').replace(/\s/g,'')));
       // 也考虑在途·若正赴京则仍不在京
       if (!_isAtCap || _gCh._travelTo || _gCh._enRouteToOffice) {
         _reasons.push('远在' + (_loc || '外地') + (_gCh._travelTo ? ('·正赴 '+_gCh._travelTo) : ''));
@@ -417,6 +418,7 @@ function openWenduiModal(name, mode, prefillMsg) {
     + '<div class="wd-modal-header-left">'
     + '<button class="bt bsm" id="wd-screen-btn" onclick="_wdToggleScreen()" title="屏退左右·本次问对内容不外泄（然外廷仍知陛下有密谈）">屏退</button>'
     + '<button class="bt bsm" onclick="_wdDirectOrder()" title="面谕当面差遣·确定性记入承诺追踪（不靠AI事后抽取）">差遣</button>'
+    + '<button class="bt bsm" onclick="_wdShowCommitTracker()" title="查看朕已交办的全部事项·进度/期限/复命·谁在拖谁办砸">交办</button>'
     + '<button class="bt bsm" id="wd-edict-btn" onclick="_wdAddToEdict()" title="\u5148\u5212\u9009\u5927\u81E3\u53D1\u8A00\u4E2D\u7684\u6587\u5B57\uFF0C\u518D\u70B9\u6B64\u6309\u94AE\u6458\u5165\u5EFA\u8BAE\u5E93">\u6458\u5165\u5EFA\u8BAE\u5E93</button>'
     + '<button class="bt bsm" onclick="_wdSummonConfronter()" title="\u53EC\u5165\u7B2C\u4E8C\u4EBA\u5F53\u9762\u5BF9\u8D28">\u53EC\u4EBA\u5BF9\u8D28</button>'
     + '<button class="bt bsm" style="color:var(--celadon-400);" onclick="_wdReward()" title="\u5F53\u573A\u8D4F\u8D50">\u8D4F</button>'
@@ -682,6 +684,71 @@ function _wdDoDirectOrder() {
   var chatEl = _$('wd-modal-chat');
   if (chatEl) { var d = document.createElement('div'); d.style.cssText = 'text-align:center;font-size:0.72rem;color:var(--gold-400);padding:4px;'; d.textContent = '（面谕差遣：' + task.slice(0, 30) + '·限' + deadline + ' 回合。已入承诺追踪。）'; chatEl.appendChild(d); chatEl.scrollTop = chatEl.scrollHeight; }
   return true;
+}
+// ★2026-07-01 W4·交办追踪面板:GM._npcCommitments 数据早已结构化(进度/期限/意愿/复命/逾期兜底全齐)·但只散落进混排事件流·
+//   玩家答不出「手上压着几件差事·谁在拖·谁办砸」。此处纯读聚合成一个可视视图·零新状态·不碰执行闭环。
+function _wdCommitBuckets() {
+  var out = { active: [], overdue: [], done: [], failed: [] };
+  var _t = GM.turn || 0;
+  var cm = GM._npcCommitments;
+  if (!cm || typeof cm !== 'object') return out;
+  Object.keys(cm).forEach(function(nm) {
+    (cm[nm] || []).forEach(function(c) {
+      if (!c || !c.task) return;
+      var st = c.status || 'pending';
+      var rec = { nm: nm, c: c };
+      if (st === 'completed') { out.done.push(rec); return; }
+      if (st === 'failed' || st === 'obstructed' || c._terminalSettled) { out.failed.push(rec); return; }
+      var due = (Number.isFinite(c.assignedTurn) ? c.assignedTurn : (GM.turn || 0)) + (c.deadline || 3);   // ★codex-fix W4:assignedTurn 缺失/脏数据不按 T0 算(否则老存档误判逾期)   // pending/executing/delayed → 逾期 or 承办中
+      if (due < _t) out.overdue.push(rec); else out.active.push(rec);
+    });
+  });
+  return out;
+}
+function _wdCommitRow(rec, kind) {
+  var c = rec.c, nm = rec.nm, _t = GM.turn || 0;
+  var prog = Math.max(0, Math.min(100, parseInt(c.progress, 10) || 0));
+  var due = (c.assignedTurn || 0) + (c.deadline || 3);
+  var left = due - _t;
+  var willPct = Math.round((parseFloat(c.willingness) || 0.6) * 100);
+  var barColor = kind === 'overdue' ? 'var(--red-400,#c0392b)' : kind === 'done' ? 'var(--green-400,#3a9a5c)' : kind === 'failed' ? 'var(--txt-s,#8a8578)' : 'var(--gold-500)';
+  var dueLabel = kind === 'done' ? '已履约' : kind === 'failed' ? '已终结' : (left < 0 ? ('逾期 ' + (-left) + ' 回合') : left === 0 ? '本回合到期' : ('尚余 ' + left + ' 回合'));
+  var promise = c.npcPromise ? ('<span style="color:var(--txt-s);">「' + escHtml(String(c.npcPromise).slice(0, 20)) + '」</span>') : '';
+  var fb = c.feedback ? ('<div style="color:var(--txt-s);font-size:0.7rem;margin-top:2px;">复命：' + escHtml(String(c.feedback).slice(0, 64)) + '</div>') : '';
+  // ★2026-07-01 打磨·失败归因徽标(为何办砸:推诿/无能/被掣肘/阳奉阴违·AI 报或确定性兜底)
+  var _frBadge = ((kind === 'failed' || kind === 'overdue') && c._failReason) ? ('<span style="display:inline-block;font-size:0.66rem;color:var(--red-400,#c0392b);border:1px solid var(--red-400,#c0392b);border-radius:3px;padding:0 5px;margin-top:2px;">因由：' + escHtml(String(c._failReason).slice(0, 12)) + '</span>') : '';
+  return '<div style="border-left:2px solid ' + barColor + ';padding:4px 8px;margin:4px 0;background:var(--bg-3);border-radius:0 4px 4px 0;">'
+    + '<div style="display:flex;justify-content:space-between;gap:6px;font-size:0.76rem;">'
+    + '<span style="color:var(--gold-300);font-weight:600;">' + escHtml(nm) + '</span>'
+    + '<span style="color:' + barColor + ';font-size:0.7rem;white-space:nowrap;">' + dueLabel + '</span></div>'
+    + '<div style="font-size:0.74rem;color:var(--color-foreground);margin:2px 0;">' + escHtml(String(c.task).slice(0, 50)) + ' ' + promise + '</div>'
+    + '<div style="display:flex;align-items:center;gap:6px;">'
+    + '<div style="flex:1;background:var(--bg-4);height:5px;border-radius:3px;overflow:hidden;"><div style="background:' + barColor + ';width:' + prog + '%;height:100%;"></div></div>'
+    + '<span style="font-size:0.66rem;color:var(--txt-s);white-space:nowrap;">' + prog + '%·意愿' + willPct + '</span></div>'
+    + _frBadge + fb + '</div>';
+}
+function _wdShowCommitTracker() {
+  var b = _wdCommitBuckets();
+  function section(title, arr, kind, color, cap) {
+    if (!arr.length) return '';
+    var shown = (cap && arr.length > cap) ? arr.slice(-cap) : arr;
+    return '<div style="margin-bottom:8px;"><div style="font-size:0.72rem;color:' + color + ';font-weight:600;border-bottom:1px solid var(--bg-4);padding-bottom:2px;margin-bottom:2px;">' + title + '（' + arr.length + '）</div>'
+      + shown.map(function(r){ return _wdCommitRow(r, kind); }).join('') + '</div>';
+  }
+  var body = section('⚠ 逾期未办', b.overdue, 'overdue', 'var(--red-400,#c0392b)')
+    + section('▸ 承办中', b.active, 'active', 'var(--gold-400)')
+    + section('✓ 已复命', b.done, 'done', 'var(--green-400,#3a9a5c)', 10)
+    + section('✕ 失诺·搁置', b.failed, 'failed', 'var(--txt-s,#8a8578)', 10);
+  if (!body) body = '<div style="color:var(--txt-s);font-size:0.78rem;text-align:center;padding:16px 4px;">尚无交办事项。可在问对中面谕「差遣」·或对臣工下达具体指令·所交办之事将在此追踪其进度与复命。</div>';
+  var total = b.overdue.length + b.active.length;
+  var bg = document.createElement('div');
+  bg.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+  bg.innerHTML = '<div style="background:var(--color-surface);border:1px solid var(--gold-500);border-radius:var(--radius-lg);padding:1rem 1.2rem;max-width:440px;width:92%;max-height:80vh;display:flex;flex-direction:column;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div style="font-size:var(--text-sm);color:var(--gold-400);">朕之交办 · 待办 ' + total + ' 件' + (b.overdue.length ? '（<span style="color:var(--red-400,#c0392b);">' + b.overdue.length + ' 件逾期</span>）' : '') + '</div>'
+    + '<button class="bt" style="padding:2px 8px;" onclick="this.closest(\'div[style*=fixed]\').remove();">✕</button></div>'
+    + '<div style="overflow-y:auto;flex:1;">' + body + '</div></div>';
+  bg.addEventListener('click', function(e){ if (e.target === bg) bg.remove(); });
+  document.body.appendChild(bg);
 }
 // ④ 纳谏:嘉纳其言→皇威(benevolence·明君纳言)+进言者知遇+采纳之谏入起居注(待办留档)
 function _wdAdoptCounsel() {
@@ -1269,7 +1336,7 @@ function _wdOpenAudienceQueue(qi) {
       interactionType: q.interactionType,
       _factionProposalId: q._factionProposalId, _diplomacyType: q._diplomacyType,  // 【S3】带提议 id·供准奏/驳回回写发起势力持久记忆
       envoyMission: q.reason || '',
-      location: GM._capital || '京城',
+      location: (typeof _getPlayerLocation === 'function' ? _getPlayerLocation() : null) || GM._capital || '京城',  // 2026-06-26 使节所在地随玩家实际所在地(非固定 GM._capital/京城)·否则玩家不在都城(如绍宋在应天府)时使节被判"远在京城·不能召见"
       isTemp: true,
       title: q.fromFaction ? (q.fromFaction + '使节') : '外藩使节',
       officialTitle: '使节',
@@ -1467,6 +1534,22 @@ function _wdReward() {
     + '</div></div>';
   document.body.appendChild(bg);
 }
+// ★2026-07-01 W5·双向问责:皇帝对臣的许诺登记入册·激活 tm-authority-deep 里在等却没人喂的 _imperialPromises 死钩子。
+//   快照许诺时官职→detector 每回合判:官职有变=践诺(宽松避误罚)·逾3月未变=铁证食言→掉该臣忠诚+入怨恨记忆+损皇威。
+//   同类未决承诺只续期不重复登记(避免反复许诺刷罚)。
+function _registerImperialPromise(npcName, kind, detail) {
+  if (!npcName) return;
+  var ch = (typeof findCharByName === 'function') ? findCharByName(npcName) : null;
+  if (!GM._imperialPromises) GM._imperialPromises = [];
+  var dup = GM._imperialPromises.find(function(p){ return p && p.npc === npcName && p.kind === kind && !p.fulfilled && !p._npcReneged; });
+  if (dup) { dup.promiseTurn = GM.turn || 0; return; }
+  GM._imperialPromises.push({
+    npc: npcName, kind: kind || 'promote', detail: detail || '',
+    promiseTurn: GM.turn || 0, fulfilled: false, _brokenFired: false, _npcReneged: false,
+    _snapTitle: ch ? (ch.officialTitle || ch.title || '') : '',
+    _snapRank: (ch && typeof ch.rankLevel === 'number') ? ch.rankLevel : null   // ★codex-fix W5:快照品级(1=正一品最高·数值越小越高)·detector 据此判「真升迁」而非任意 title 变化
+  });
+}
 function _wdDoReward(type) {
   var name = GM.wenduiTarget; var ch = findCharByName(name); if (!ch) return;
   var chatEl = _$('wd-modal-chat');
@@ -1475,6 +1558,7 @@ function _wdDoReward(type) {
   if (type === 'promote') {
     if (!GM._edictSuggestions) GM._edictSuggestions = [];
     GM._edictSuggestions.push({ source: '问对', from: '赏赐', content: '加官' + name, turn: GM.turn, used: false });
+    _registerImperialPromise(name, 'promote', '加官');   // ★W5·许加官=对该臣的承诺·登记入册·逾期不兑现将掉其忠诚+损皇威
     msg = '（许以加官。已录入诏书建议库。）';
   }
   // A·确定性落账：标多少落多少（dedup·prompt 已告知 AI 勿在 char_updates 重复给 loyalty/stress）
@@ -1688,10 +1772,14 @@ async function _wd_extractCommitments(targetName) {
   // 仅取本次问对的对话——按 mode 过滤，避免把朝议发言误作问对承诺
   var records = (GM.jishiRecords||[]).filter(function(r){
     if (r.char !== targetName || r.turn !== GM.turn) return false;
-    // D·仅 formal（朝堂正式·可成约束承诺）成约；私下叙谈(private)为体己之言·不转约束承诺；朝议(changchao/tinyi/yuqian)亦排除
-    return !r.mode || r.mode === 'formal';
+    // ★2026-07-01 S3治「允诺不执行」:问对三态(formal正式/private私下/cedui策对)皆可成约——玩家在私下叙谈里下达的
+    //   具体安排也应执行·而非只 formal。仍排除朝议(changchao/tinyi/yuqian)=群臣议政非君臣受命。具体性由下方抽取
+    //   prompt「泛辞不提取」保证·故纳私下不会把体己闲谈误转承诺。
+    return !r.mode || r.mode === 'formal' || r.mode === 'private' || r.mode === 'cedui';
   }).slice(-10);
-  if (records.length < 2) return; // 对话太短无需提取
+  // ★2026-07-01 codex-fix S3:单轮指令(1条有来有往)也须能成约——说一句「去办X」+NPC应答+关闭=只1条记录·旧 <2 会静默跳过
+  if (!records.length) return;
+  if (records.length < 2 && !(records[0] && records[0].playerSaid && records[0].npcSaid)) return;
   var dialog = records.map(function(r){ return (r.playerSaid||'') + '\n' + (r.npcSaid||''); }).join('\n').slice(-3000);
   var ch = findCharByName(targetName);
   if (!ch) return;
@@ -1703,17 +1791,24 @@ async function _wd_extractCommitments(targetName) {
   prompt += '· 泛泛之辞（"尽力为之""不负陛下"等）不提取\n';
   prompt += '· 若皇帝未下任何指令，返回空数组\n';
   prompt += '· willingness 体现该人执行意愿（按对话态度判——推诿者低，坦然应承者高）\n';
-  prompt += '返回 JSON：{"commitments":[{"task":"具体任务(30字内)","category":"query查办/write撰写/dispatch调遣/intel侦查/diplomacy外使/finance财赋/other","deadline":"回合数(1-10，默认3)","willingness":0-1,"npcPromise":"他答应的话(原句摘要)","conditions":"附加条件(若有)"}]}';
+  // ★2026-07-01 S4·传话/涉他:若皇帝在对话里「要第三方B知晓某事」或「让此人转告B某事」·抽入 relays·供把消息传达给B(让B日后能知)
+  prompt += '· relays：若皇帝提到要「通知/转告/让某第三方(记其姓名B)知道或去办」某事·填 relays（to=B的姓名·content=B应知或应办之事·via=经谁转告，如让此人转告B则填此人姓名、皇帝只是当面议及B则留空）；对话未涉及第三方则空数组\n';
+  prompt += '返回 JSON：{"commitments":[{"task":"具体任务(30字内)","category":"query查办/write撰写/dispatch调遣/intel侦查/diplomacy外使/finance财赋/other","deadline":"回合数(1-10，默认3)","willingness":0-1,"npcPromise":"他答应的话(原句摘要)","conditions":"附加条件(若有)"}],"relays":[{"to":"第三方姓名","content":"要其知晓或去办之事(30字内)","via":"经谁转告(空=皇帝当面议及)"}]}';
 
   try {
     var raw = await callAI(prompt, 500);
     var obj = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
-    if (!obj || !Array.isArray(obj.commitments) || obj.commitments.length === 0) return;
+    if (!obj) return;
+    // ★2026-07-01 codex-fix S4:纯传话场景 AI 返回 {commitments:[], relays:[...]}·绝不能因 commitments 空就早退·
+    //   否则 relays 永不执行=「让A转告B·B却不知」核心场景整个失效(codex 抓到的硬 bug)。commits/relays 任一有内容即处理。
+    var _hasCommits = Array.isArray(obj.commitments) && obj.commitments.length > 0;
+    var _hasRelays = Array.isArray(obj.relays) && obj.relays.length > 0;
+    if (!_hasCommits && !_hasRelays) return;
 
     if (!GM._npcCommitments) GM._npcCommitments = {};
     if (!GM._npcCommitments[targetName]) GM._npcCommitments[targetName] = [];
 
-    obj.commitments.forEach(function(c) {
+    (obj.commitments || []).forEach(function(c) {
       if (!c || !c.task) return;
       var _cTask = String(c.task || '').trim();
       if (!_cTask) return;
@@ -1738,7 +1833,7 @@ async function _wd_extractCommitments(targetName) {
         task: _cTask,
         category: c.category || 'other',
         assignedTurn: GM.turn,
-        deadline: parseInt(c.deadline,10) || 3,
+        deadline: Math.max(1, Math.min(10, parseInt(c.deadline,10) || 3)),   // ★codex-fix W4:clamp 1-10·防 AI 写负数/超大 deadline(负数会被立即判逾期)
         willingness: parseFloat(c.willingness) || 0.6,
         npcPromise: c.npcPromise || '',
         conditions: c.conditions || '',
@@ -1763,6 +1858,31 @@ async function _wd_extractCommitments(targetName) {
       if (typeof NpcMemorySystem !== 'undefined') {
         NpcMemorySystem.remember(targetName, '奉旨：' + c.task, c.willingness > 0.6 ? '敬' : '忧', 6);
       }
+    });
+    // ★2026-07-01 S4·传话落地:把「涉及第三方B」的消息写进 B 自己的记忆·B 日后被问对/推演即"知道"此事
+    //   (治「告诉A让A转告B·B却不知」)。B 须真人·在世·非玩家。imp 6 令推演也可见。
+    if (Array.isArray(obj.relays)) obj.relays.forEach(function(rl) {
+      if (!rl || !rl.to || !rl.content) return;
+      var _toName = String(rl.to).trim();
+      if (!_toName || _toName === targetName) return;
+      var _toCh = (typeof findCharByName === 'function') ? findCharByName(_toName) : null;
+      if (!_toCh || _toCh.alive === false || _toCh.dead || _toCh._fakeDeath || _toCh.isPlayer) return;   // ★codex-fix S4:补 dead/_fakeDeath 守卫(与问对入口死亡判断对齐)
+      var _via = String(rl.via || '').trim();
+      var _relayContent = String(rl.content).slice(0, 30);
+      // ★2026-07-01 W3b·传话以讹传讹:经中间人(via)转述时·若其操守低或对收件人有敌意→消息走样
+      //   (呼应「让A转告B·A不可靠则B听到的变了味」)·复用 W3 的 TM.Gossip._distort·纯词面变换。
+      //   注意:下面 addEB/起居注仍用原文(皇帝真实旨意留痕)·只有 B 的「记忆」存走样版·日后玩家可察觉出入。
+      if (_via && typeof TM !== 'undefined' && TM.Gossip && typeof TM.Gossip._distort === 'function') {
+        var _viaCh = (typeof findCharByName === 'function') ? findCharByName(_via) : null;
+        var _viaHostile = (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.getImpression) ? (NpcMemorySystem.getImpression(_via, _toName) < -20) : false;
+        _relayContent = TM.Gossip._distort(_relayContent, _viaCh, _viaHostile);
+      }
+      var _relayEvent = _via
+        ? ('经' + _via + '转达圣意：' + _relayContent)
+        : ('皇帝当面议及·嘱我知悉：' + _relayContent);
+      if (typeof NpcMemorySystem !== 'undefined') NpcMemorySystem.remember(_toName, _relayEvent, '平', 6, '天子');
+      if (typeof addEB === 'function') addEB('问对·传话', '皇帝托' + (_via || targetName) + '致意' + _toName + '：' + String(rl.content).slice(0, 30));
+      if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', content: '【问对·传话】皇帝令' + (_via || targetName) + '转致' + _toName + '：' + String(rl.content).slice(0, 30), category: '问对' });
     });
   } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, '_wd_extractCommitments') : console.warn('[_wd_extractCommitments]', e); }
 }
@@ -1811,7 +1931,7 @@ function _wdRenderHistory(name, ch) {
     if (msg.role === 'player') {
       _wdAppendPlayerBubble(chat, msg.content);
     } else {
-      _wdAppendNpcBubble(chat, name, ch, msg.content, msg.loyaltyDelta);
+      _wdAppendNpcBubble(chat, name, ch, msg.content, msg.loyaltyDelta, msg.suggestions, msg.toneEffect);
     }
   });
 
@@ -1825,7 +1945,35 @@ function _wdShichen(i) {
   var idx = _wdSessionShichenBase + (i | 0);
   return t[Math.min(Math.max(0, idx), t.length - 1)];
 }
-function _wdAppendNpcBubble(chat, name, ch, text, loyaltyDelta) {
+// 问对回复「附加块」HTML——语气效果 +「进言要点」(NPC 建议)。
+// 2026-06-26 根治：此前仅实时回复(主路径内联渲染)有进言要点，历史重渲染(_wdAppendNpcBubble)无此渲染位置，
+// 且历史条目不存 suggestions —— 故开窗/重渲后进言要点彻底丢失=「新UI没有进言要点这个设计」。
+// 抽为共享 helper，让历史气泡也能渲染保留；条件渲染：仅当该条确有 suggestions/toneEffect 才出现
+// （非每段都有，符合老问对UI行为）。
+function _wdReplyExtrasHtml(suggestions, toneEffect) {
+  var html = '';
+  if (toneEffect) {
+    html += '<div style="margin-top:3px;font-size:0.71rem;color:var(--ink-300);font-style:italic;">【' + escHtml(String(toneEffect)) + '】</div>';
+  }
+  var sugs = (suggestions && Array.isArray(suggestions)) ? suggestions.filter(function(s){ if (!s) return false; if (typeof s === 'string') return s.trim(); return s.content || s.text; }) : [];
+  if (sugs.length > 0) {
+    html += '<div style="margin-top:4px;padding:4px 6px;background:var(--gold-500,rgba(184,154,83,0.1));border-radius:4px;font-size:0.72rem;">';
+    html += '<div style="color:var(--gold-400);font-weight:700;margin-bottom:2px;">进言要点：</div>';
+    sugs.forEach(function(sg) {
+      var _sgText = (typeof sg === 'string') ? sg
+                  : (sg && sg.content) ? ((sg.topic ? '〔' + sg.topic + '〕 ' : '') + sg.content)
+                  : (sg && sg.text) ? sg.text : '';
+      if (!_sgText) return;
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;gap:6px;">';
+      html += '<span style="color:var(--color-foreground);flex:1;">• ' + escHtml(_sgText) + '</span>';
+      html += '<span style="color:var(--celadon-400);font-size:0.7rem;opacity:0.7;white-space:nowrap;">✓已入库</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  return html;
+}
+function _wdAppendNpcBubble(chat, name, ch, text, loyaltyDelta, suggestions, toneEffect) {
   var div = document.createElement('div');
   div.className = 'wendui-msg wendui-npc';
   var deltaTag = '';
@@ -1835,7 +1983,8 @@ function _wdAppendNpcBubble(chat, name, ch, text, loyaltyDelta) {
   var _portrait = ch && ch.portrait ? '<img src="'+escHtml(ch.portrait)+'" loading="lazy" decoding="async" style="width:28px;height:28px;object-fit:cover;border-radius:50%;flex-shrink:0;">' : '';
   var _ts = (typeof _wdShichen === 'function') ? _wdShichen(chat.children.length) : '';
   div.innerHTML = _portrait + '<div style="flex:1;min-width:0;"><div class="wendui-npc-name">' + escHtml(name) + deltaTag + '</div>'
-    + '<div class="wendui-npc-bubble wd-selectable">' + escHtml(text) + '<span class="wd-ts">' + _ts + '</span></div></div>';
+    + '<div class="wendui-npc-bubble wd-selectable">' + escHtml(text) + '<span class="wd-ts">' + _ts + '</span></div>'
+    + _wdReplyExtrasHtml(suggestions, toneEffect) + '</div>';
   chat.appendChild(div);
 }
 
@@ -2012,6 +2161,9 @@ async function sendWendui(){
         } catch(_){}
       }
       if (typeof _aiDialogueWordHint === 'function') sysP += '\n' + _aiDialogueWordHint("wd");
+      // 根治(2026-06-26)：真机证实此模型常把问对回复写成沉浸式散文·不守 {reply,loyaltyDelta} JSON →
+      // 改用末尾简单标记承载忠诚/压力(对这种模型远比 JSON 可靠)·顺带加「压力」维度(owner需求)。
+      sysP += '\n\n⚠【末尾硬性标记·务必输出】无论你以散文还是何种文体回话，回复的最末都必须另起一行，用此固定格式标出本次召对对你的真实影响：〔忠诚±N 压力±N〕（N为0-3整数）。判定：受重用/获理解/得偿所请→忠诚正；被冷落/受辱/失望/遭斥→忠诚负；被逼问/受责/惊惧→压力正；被安抚/宽慰/获赏→压力负；无波动填0。例：〔忠诚+2 压力-1〕。此行不可省略。';
       var history=GM.wenduiHistory[name].slice(-10);
       var messages=[{role:'system',content:sysP}];
       history.forEach(function(h){messages.push({role:h.role==='player'?'user':'assistant',content:h.content});});
@@ -2048,15 +2200,39 @@ async function sendWendui(){
       if(rawReply){
         var replyText = rawReply, loyaltyDelta = 0;
         var parsed = (typeof extractJSON==='function') ? extractJSON(rawReply) : null;
+        // 深诊断(2026-06-26)：定位"问对AI返回史记格式{shizhengji,zhengwen,player_status}"——
+        // 确认发出的 sysP 是问对(含loyaltyDelta)还是被串成史记(含shizhengji/时政记)·并看 AI 原始回复
+        try { var _spS = String(typeof sysP !== 'undefined' ? sysP : ''); console.log('[问对诊断·深] sysP问对schema=' + (_spS.indexOf('loyaltyDelta') >= 0) + '·sysP混入史记=' + (_spS.indexOf('shizhengji') >= 0 || _spS.indexOf('时政记') >= 0) + '·history条=' + ((GM.wenduiHistory && GM.wenduiHistory[name] || []).length) + '·rawReply前300=' + String(rawReply || '').slice(0, 300)); } catch (_dgX) {}
         if (parsed && parsed.reply) {
           replyText = parsed.reply;
-          // #9·基础对话忠诚缩放：深谈（多轮）更有分量·仍封顶（formal≤4·private≤5）
-          var _ldBase = (_wenduiMode === 'private') ? 3 : 2;
-          var _ldTurns = (GM._wdState && GM._wdState[name] && GM._wdState[name].turns) || 0;
-          var _ldMax = Math.min((_wenduiMode === 'private') ? 5 : 4, _ldBase + (_ldTurns >= 9 ? 2 : (_ldTurns >= 5 ? 1 : 0)));
-          loyaltyDelta = clamp(parseInt(parsed.loyaltyDelta) || 0, -_ldMax, _ldMax);
         } else {
           replyText = _wdSanitizeDialogueReplyText(name, ch, parsed, rawReply);
+        }
+        // #9·基础对话忠诚缩放：深谈（多轮）更有分量·仍封顶（formal≤4·private≤5）
+        var _ldBase = (_wenduiMode === 'private') ? 3 : 2;
+        var _ldTurns = (GM._wdState && GM._wdState[name] && GM._wdState[name].turns) || 0;
+        var _ldMax = Math.min((_wenduiMode === 'private') ? 5 : 4, _ldBase + (_ldTurns >= 9 ? 2 : (_ldTurns >= 5 ? 1 : 0)));
+        var _stressDelta = 0;
+        // 根治(2026-06-26)：真机 [问对诊断·深] 证实——此模型常把问对回复写成沉浸式散文·不返 {reply,loyaltyDelta} JSON
+        //（甚至混入史记式 JSON）。优先抽末尾标记〔忠诚±N 压力±N〕(对这种模型远比 JSON 可靠)·抽到即用并从展示正文抹去。
+        var _tagM = String(rawReply || '').match(/忠诚\s*([+\-]?\d+)[\s\S]{0,8}?压力\s*([+\-]?\d+)/);
+        if (_tagM) {
+          loyaltyDelta = clamp(parseInt(_tagM[1]) || 0, -_ldMax, _ldMax);
+          _stressDelta = clamp(parseInt(_tagM[2]) || 0, -5, 5);
+          replyText = String(replyText).replace(/〔?[^〔〕\n]*忠诚\s*[+\-]?\d+[\s\S]{0,8}?压力\s*[+\-]?\d+[^〔〕\n]*〕?/g, '').trim();
+        } else if (parsed && parsed.loyaltyDelta != null && parsed.loyaltyDelta !== '') {
+          loyaltyDelta = clamp(parseInt(parsed.loyaltyDelta) || 0, -_ldMax, _ldMax);
+          if (parsed.stressDelta != null) _stressDelta = clamp(parseInt(parsed.stressDelta) || 0, -5, 5);
+        } else if (parsed) {
+          // 兜底：AI 既无标记也无 loyaltyDelta → 用它给的情绪折算小幅忠诚(仍属 AI 驱动)
+          var _emo = String((parsed.memoryImpact && parsed.memoryImpact.emotion) || parsed.emotionState || parsed.toneEffect || '');
+          var _emoMap = { '敬':1, '喜':1, '悦':1, '感':1, '慰':1, '怒':-1, '恨':-2, '怨':-1, '惧':-1, '厌':-1, '失望':-1, '不满':-1 };
+          var _fb = 0;
+          for (var _ek in _emoMap) { if (_emo.indexOf(_ek) >= 0) { _fb = _emoMap[_ek]; break; } }
+          if (_fb !== 0) loyaltyDelta = clamp(_fb, -_ldMax, _ldMax);
+          try { console.log('[问对诊断] 无标记+AI未返回loyaltyDelta·情绪兜底=' + loyaltyDelta + '(emo=' + (_emo||'无') + ')'); } catch(_e){}
+        } else {
+          try { console.log('[问对诊断] 无标记+非JSON回复·raw前120=' + String(rawReply).slice(0,120)); } catch(_e){}
         }
         if (loyaltyDelta !== 0) {
           if (typeof adjustCharacterLoyalty === 'function') {
@@ -2071,6 +2247,11 @@ async function sendWendui(){
           // 刷新顶栏忠诚显示
           var loyEl = _$('wd-char-loyalty');
           if (loyEl) { loyEl.textContent = '忠' + (typeof _fmtNum1==='function'?_fmtNum1(ch.loyalty):ch.loyalty); loyEl.style.color = ch.loyalty > 70 ? 'var(--green)' : ch.loyalty < 30 ? 'var(--red)' : 'var(--txt-s)'; }
+        }
+        // 压力(2026-06-26·owner需求)：问对也影响对象压力·标记驱动·受逼问/惊惧→升·被宽慰/赏赐→降
+        if (_stressDelta !== 0 && ch) {
+          var _oldStress = (typeof ch.stress === 'number' && isFinite(ch.stress)) ? ch.stress : 0;
+          ch.stress = clamp(_oldStress + _stressDelta, 0, 100);
         }
         // 提取语气效果反馈
         var _toneEffect = (parsed && parsed.toneEffect) ? String(parsed.toneEffect).trim() : '';
@@ -2115,6 +2296,9 @@ async function sendWendui(){
         // L4·a·若 mode === 'cedui'·entry 加 mode + ceduiParadigmDigest 字段·便 L4·g1 自引用读
         // RX·B5·加 turn 字段·_kjpAppendOwnCeduiHint 按 turn 算近 5 turn boost
         var _wdEntry = { role:'npc', content:replyText, loyaltyDelta:loyaltyDelta, turn: (typeof GM !== 'undefined' && GM.turn) || 0 };
+        // 2026-06-26 根治：把进言要点(suggestions)与语气效果存进历史条目，使其在历史重渲染时不丢失(配合 _wdReplyExtrasHtml)
+        if (_wdSuggestions && _wdSuggestions.length) _wdEntry.suggestions = _wdSuggestions;
+        if (_toneEffect) _wdEntry.toneEffect = _toneEffect;
         if (_wenduiMode && _wenduiMode !== 'formal') _wdEntry.mode = _wenduiMode;
         if (_wenduiMode === 'cedui' && typeof window !== 'undefined' && window._kjpCurrentCeduiDigest) {
           _wdEntry.ceduiParadigmDigest = window._kjpCurrentCeduiDigest;
@@ -2131,13 +2315,15 @@ async function sendWendui(){
             var mi = parsed.memoryImpact;
             var miEvent = mi.event || ('问对：' + (msg||'').slice(0, 25) + ' → ' + (replyText||'').slice(0, 25));
             var miEmo = mi.emotion || (loyaltyDelta > 0 ? '敬' : loyaltyDelta < 0 ? '忧' : '平');
-            var miImp = Math.max(1, Math.min(10, parseFloat(mi.importance) || 5));
+            // ★2026-07-01 S1治「过回合失忆」:与天子面圣对话本身即要事·记忆 importance 下限提到 6·越过回合推演
+            //   <npc-hearts> 的 imp>=6 门槛(tm-endturn-prompt.js:922)——否则正式问对(原imp5)推演永远看不到=聊完过回合就"忘"。
+            var miImp = Math.max(6, Math.min(10, parseFloat(mi.importance) || 6));
             NpcMemorySystem.remember(name, miEvent, miEmo, miImp, _playerName);
           } else {
             var _wdEmo = loyaltyDelta > 0 ? '敬' : loyaltyDelta < 0 ? '忧' : '平';
             var _wdScene = _wenduiMode === 'private' ? '私下促膝长谈——' : '面圣问对——';
-            NpcMemorySystem.remember(name, _wdScene + msg.slice(0, 20), _wdEmo, _wenduiMode === 'private' ? 7 : 5, _playerName);
-            NpcMemorySystem.remember(name, '\u4E0E\u541B\u4E3B\u79C1\u4E0B\u95EE\u5BF9\uFF1A' + (replyText||'').slice(0,30), '\u5E73', 5, _playerName);
+            NpcMemorySystem.remember(name, _wdScene + msg.slice(0, 20), _wdEmo, _wenduiMode === 'private' ? 7 : 6, _playerName);  // ★正式 5→6 过推演门槛
+            NpcMemorySystem.remember(name, '\u4E0E\u541B\u4E3B\u79C1\u4E0B\u95EE\u5BF9\uFF1A' + (replyText||'').slice(0,30), '\u5E73', 6, _playerName);  // \u2605S1:5\u21926 \u8FC7\u63A8\u6F14\u95E8\u69DB
           }
         }
         // 更新气泡为最终版
@@ -2535,7 +2721,8 @@ function _wdEnvoyPromptBody(ch, opinionVal) {
         p += '【本方实力】兵 ' + _mil;
         if (_facObj.economy) p += '、经济 ' + _facObj.economy;
         var _treasury = _facObj.treasury && (_facObj.treasury.money || _facObj.treasury);
-        if (typeof _treasury === 'number') p += '、国库银 ' + _treasury + ' 两';
+        var _muW = (typeof CurrencyUnit !== 'undefined' && CurrencyUnit.unitOf) ? (CurrencyUnit.unitOf('money') || '两') : '两';
+        if (typeof _treasury === 'number') p += '、国库 ' + _treasury + ' ' + _muW;
         p += '——谈判筹码须与实力相称\n';
       }
       // 立场：stance / attitude.self / politicalStance
@@ -2764,7 +2951,7 @@ function _wdBuildPrompt(ch, name) {
     p += '请返回JSON：{"reply":"回复内容","loyaltyDelta":0,"suggestions":[{"topic":"针对什么问题/情境(10-25字)","content":"详尽可执行方案(80-200字，含执行者/手段/范围/时机，不要空话)"}],"toneEffect":"语气效果(直问时留空)","memoryImpact":{"event":"本次对话在我心中留下的最深印象(20-40字，第三人称纪要)","emotion":"敬/喜/忧/怒/恨/惧/平 之一","importance":1-10}}\n';
     p += '【deception·若有隐瞒】此人若因低忠诚/利益冲突/暗藏阴谋/有不可告人之事而隐瞒或谎报，JSON 顶层加 deception:{"lying":true,"hiding":"所隐之实或真动机","tell":"破绽(神色闪烁/答非所问/逻辑漏洞/前后矛盾·撒谎则必给一处可被明察者识破之处)"}；若坦诚相告则 lying:false 或省略此字段。高智者谎言圆融、破绽隐微；心虚或愚钝者破绽显露；皇帝逼问或沉默逼视会增其慌乱露馅。\n';
     p += '【memoryImpact·必填】此对话对我(NPC)的内心影响——event 用第三人称"我"视角纪要本次对话的核心感受，emotion 选一个最贴合的主情绪，importance 1-3=琐碎即忘 4-6=日常印象 7-8=深刻在意 9-10=终身难忘。\n';
-    p += 'loyaltyDelta 范围' + (_isPrivateMode ? '-3 到 +3' : '-2 到 +2') + '。\n';
+    p += '【loyaltyDelta·必填】范围' + (_isPrivateMode ? '-3 到 +3' : '-2 到 +2') + '——必须据本次对话对你忠诚的真实牵动给值：受重用/被理解/获准所请为正，被冷落/受辱/失望/遭驳为负，全然平淡才填0；此字段不可省略、不可一律填0。\n';
     p += '【suggestions 规则——只在你主动提出具体方案时才填】\n';
     p += '  · 每条必须是 object{topic, content}；没有具体方案则 []\n';
     p += '  · topic：明确指出此建议针对什么问题（非泛泛之议），如"针对河北灾民流亡入京"\n';

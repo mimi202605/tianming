@@ -249,6 +249,24 @@ function findSc1(cap) {
     else verdict = '⚠ 战败方实力低于结算值，需排查（护栏事件=' + probe.guardEv.length + '·再扣=' + aiTriedReDecr + '·_dt=' + _dtNow + '）。';
     log('\n裁决：' + verdict);
   }
+
+  // ── W2a flag 实战效果：AI 是否把"会战战败"编进叙事（reactor 战报→digest→AI 叙事 的闭环呈现）──
+  if (!DRY) {
+    log('\n══════ W2a flag 实战效果 · AI 叙事是否呼应会战 ══════');
+    var narr = '';
+    try {
+      var rj2 = JSON.parse(sc1.respText); var ct = (rj2.choices && rj2.choices[0] && rj2.choices[0].message && rj2.choices[0].message.content) || '';
+      var pj2 = null; try { pj2 = JSON.parse(ct); } catch (e) { var mm = ct.match(/\{[\s\S]*\}/); if (mm) try { pj2 = JSON.parse(mm[0]); } catch (e2) {} }
+      if (pj2) narr = [pj2.turn_summary, pj2.shizhengji, pj2.shilu_text, pj2.zhengwen].filter(Boolean).join(' ／ ');
+      if (!narr) narr = ct;   // 退化：原文
+    } catch (e) {}
+    narr = String(narr).replace(/\s+/g, ' ');
+    var mentionsBattle = new RegExp('(' + R.loser + '|' + R.winner + ')').test(narr) && /(战败|败于|败绩|失利|挫败|溃|丧师|大败|兵败|战事|交锋|失守)/.test(narr);
+    log('① reactor 战报入 digest（已 5/5 注入·含「' + R.loser + ' 战败于 ' + R.winner + '·实力-5」）→ AI 读到了战败既成事实');
+    log('② AI 叙事是否呼应会战：' + (mentionsBattle ? '✓ 提及（reactor 战报流入叙事·闭环成立）' : '◻ 本轮未明显提及（叙事自由·不强制）'));
+    log('   [AI 叙事摘录] ' + sanitize(narr.slice(0, 360)) + (narr.length > 360 ? '…' : ''));
+    log('③ flag 实战链：会战 applyBattleResult → reactor 确定性扣 ' + R.loser + ' 实力 ' + R.loserStrBefore + '→' + R.loserStrAfter + ' + 写联动 chronicle → WorldDigest 注入 sc1 prompt → AI 据此叙事（+ 硬护栏防 AI 重复扣）');
+  }
   log('\nerrors(尾4): ' + (flow.errors.slice(-4).map(sanitize).join(' | ') || '(无)'));
   process.exit(okN >= 4 ? 0 : 1);
 })();

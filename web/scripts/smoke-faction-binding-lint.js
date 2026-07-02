@@ -68,6 +68,9 @@ const ALLOW_LINES = [
   { file: 'tm-faction-npc-intervention.js', match: /c\.faction\s*=\s*pn;/ },
   // tm-ai-change-applier.js / tm-ai-change-army.js (Slice 2 拆出) / tm-region-enrich.js:
   //   assignArmy first·direct write only in legacy fallback/catch.
+  // tm-ai-change-applier.js·applyAllegianceChange 主路已走 assignChar；以下仅 membership 模块缺位时双锚 fallback.
+  { file: 'tm-ai-change-applier.js', match: /ch\.faction\s*=\s*newName/ },
+  { file: 'tm-ai-change-applier.js', match: /if \(newId\) ch\.factionId\s*=\s*newId/ },
   { file: 'tm-ai-change-applier.js', match: /army\.faction\s*=\s*factionName/ },
   { file: 'tm-ai-change-army.js',    match: /army\.faction\s*=\s*factionName/ },
   { file: 'tm-region-enrich.js',     match: /army\.faction\s*=\s*factionName/ },
@@ -81,9 +84,12 @@ const ALLOW_LINES = [
   // tm-endturn-agent-write-tools.js·change 是工具 schema 透传对象·change.faction 传给 applyAIArmyChange·
   //   下游 tm-ai-change-army.js 已走 TM.FactionMembership.assignArmy(已在本白名单)·此为 schema 透传非直接 mutate
   { file: 'tm-endturn-agent-write-tools.js', match: /change\.faction\s*=\s*input\.faction/ },
-  // tm-patches.js·_syncCharFactionId 名↔id 一致性同步(势力改名后人物名串跟新/旧档回填 id)·非归属变更
+  // tm-patches.js·_bindCharFactions 名↔id 一致性同步；patches 加载早于 tm-faction-membership.js，且此处非归属变更.
   { file: 'tm-patches.js', match: /c\.faction\s*=\s*byId\[c\.factionId\]\.name/ },
   { file: 'tm-patches.js', match: /c\.factionId\s*=\s*byName\[c\.faction\]\.id/ },
+  { file: 'tm-patches.js', match: /ch\.factionId\s*=\s*f\.id/ },
+  { file: 'tm-patches.js', match: /ch\.faction\s*=\s*f2\.name/ },
+  { file: 'tm-patches.js', match: /ch\.faction\s*=\s*byId\[ch\.factionId\]\.name/ },
 ];
 
 function scanFile(filePath, source, results) {

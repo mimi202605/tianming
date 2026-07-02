@@ -51,10 +51,10 @@ assert(c.input._systemsRan === undefined, 'rollback:清 _systemsRan(让 mode a �
 
 (async function () {
   // ── ① engine-first:引擎在 agent 前跑·agent 看真数·置 _systemsRan ──
-  let gm = makeGM(); let ctx = { GM: gm, input: { edicts: ['赈灾'] } };
+  let gm = makeGM(); let ctx = { GM: gm, input: { edicts: ['赈灾'] }, results: {} };
   globalThis.P = undefined;
   let engineRanBeforeAgent = null;
-  globalThis._endTurn_updateSystems = async function () { gm.turn += 1; gm.guoku += 500; gm._engineBaseline = true; }; // 模拟引擎:turn++ + 税入500
+  globalThis._endTurn_updateSystems = async function () { gm.turn += 1; gm.guoku += 500; gm._engineBaseline = true; return { ok: true, appliedCount: 2, failedCount: 0 }; }; // 模拟引擎:turn++ + 税入500
   // cawt:首次调用时记录「引擎是否已先跑」(证 engine-first 排序)
   const script = [
     { toolCalls: [{ name: 'adjust_field', input: { path: 'guoku', delta: -1000, reason: '赈灾拨款' } }], text: '' },
@@ -67,6 +67,7 @@ assert(c.input._systemsRan === undefined, 'rollback:清 _systemsRan(让 mode a �
   assert(engineRanBeforeAgent === true, '① 引擎在 agent 首轮之前已跑(看真数)');
   assert(gm.turn === 8, '① 引擎 turn++ 生效(7→8)');
   assert(ctx.input._systemsRan === true, '① 置 _systemsRan(后续 systems 步幂等跳)');
+  assert(ctx.results.queueResult && ctx.results.queueResult.appliedCount === 2, '① engine-first 返回 queueResult 须保留给 render/legacy 消费');
   // agent 在引擎基线(12000+500=12500)之上 -1000 = 11500
   const ge = gm._turnReport.find(function (e) { return e.type === 'change' && /guoku/.test(String(e.path)); });
   assert(ge && ge.old === 12500 && ge.new === 11500, '① agent 在引擎真数(12500)之上覆写→11500');

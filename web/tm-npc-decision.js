@@ -1188,6 +1188,22 @@ function _npcRecentTargetPenalty(npc, type, target) {
   return maxPenalty;
 }
 
+// ★2026-07-01 W2a·NPC自主决策纳入记忆链条:此前 _selectNpcActionTarget 只按党派/野心/忠诚/才干打分选对象·
+//   完全不读「此人对目标的印象/好感」(记忆底座 _impressions)——W1汇流审计坐实的缺口。此助手读好感(-100..100)·
+//   令 NPC 更倾向与亲近信任者密谋通书、构陷素所记恨者·把记忆真正接进自主推演的对象选择(确定性·无好感回退0=旧行为)。
+//   优先走零调用的 NpcMemorySystem.getImpression(点亮死API)·失败回退直读 _impressions.favor。
+function _npcFavorToward(npc, targetName) {
+  if (!npc || !targetName) return 0;
+  try {
+    if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.getImpression) {
+      var imp = NpcMemorySystem.getImpression(npc.name, targetName);
+      if (typeof imp === 'number') return imp;
+      if (imp && typeof imp.favor === 'number') return imp.favor;
+    }
+  } catch (_e) {}
+  var d = npc._impressions && npc._impressions[targetName];
+  return (d && typeof d.favor === 'number') ? d.favor : 0;
+}
 function _selectNpcActionTarget(npc, type, context) {
   if (!npc || !npc.name) return '';
   var people = _npcLiveCharacters().filter(function(ch) { return ch.name !== npc.name && !ch.isPlayer; });
@@ -1203,6 +1219,7 @@ function _selectNpcActionTarget(npc, type, context) {
       if (findNpcOffice(ch.name)) score += 6;
       score += Math.max(0, (ch.ambition || 50) - 50) * 0.1;
       score += Math.max(0, 75 - (ch.loyalty || 50)) * 0.05;
+      score += _npcFavorToward(npc, ch.name) * 0.2;   // W2a·亲近信任者更可能被引为同谋/结网·记恨者避之
       score -= _npcRecentTargetPenalty(npc, type, ch.name);
       return { ch: ch, score: score };
     }).filter(function(item) { return item.score > 0; }).sort(_npcTargetSort);
@@ -1219,6 +1236,7 @@ function _selectNpcActionTarget(npc, type, context) {
       score += Math.max(0, (ch.intelligence || 50) - 50) * 0.08;
       score += Math.max(0, 80 - (ch.loyalty || 50)) * 0.25;
       score -= Math.max(0, (ch.integrity || 50) - 75) * 0.8;
+      score += _npcFavorToward(npc, ch.name) * 0.18;   // W2a·更愿与好感高者私相通书
       score -= _npcRecentTargetPenalty(npc, type, ch.name);
       return { ch: ch, score: score };
     }).filter(function(item) { return item.score > 0; }).sort(_npcTargetSort);
@@ -1233,6 +1251,7 @@ function _selectNpcActionTarget(npc, type, context) {
       if (findNpcOffice(ch.name)) score += 6;
       score += Math.max(0, (ch.intelligence || 50) - 50) * 0.18;
       score += Math.max(0, (ch.integrity || 50) - 45) * 0.12;
+      score += _npcFavorToward(npc, ch.name) * 0.12;   // W2a·举荐倾向自己赏识者·不荐所恶
       score -= _npcRecentTargetPenalty(npc, type, ch.name);
       return { ch: ch, score: score };
     }).filter(function(item) { return item.score > 0; }).sort(_npcTargetSort);
@@ -1251,6 +1270,7 @@ function _selectNpcActionTarget(npc, type, context) {
       if (findNpcOffice(ch.name)) score += 6;
       score += Math.max(0, (ch.ambition || 50) - 55) * 0.15;
       score += Math.max(0, (ch.intelligence || 50) - 55) * 0.08;
+      score += (-_npcFavorToward(npc, ch.name)) * 0.2;   // W2a·记恨者(负好感)更易成构陷/弹劾目标·友好者(正好感)则避之
       score -= _npcRecentTargetPenalty(npc, type, ch.name);
       return { ch: ch, score: score };
     }).filter(function(item) { return item.score > 0; }).sort(_npcTargetSort);
@@ -1264,6 +1284,7 @@ function _selectNpcActionTarget(npc, type, context) {
       if (ch.motherClan && npc.motherClan && ch.motherClan !== npc.motherClan) score += 10;
       score += Math.max(0, (ch.charisma || 50) - 50) * 0.08;
       score += Math.max(0, (ch.ambition || 50) - 45) * 0.12;
+      score += Math.max(0, -_npcFavorToward(npc, ch.name)) * 0.15;   // W2a·宫斗倾向所忌所恶者
       score -= _npcRecentTargetPenalty(npc, type, ch.name);
       return { ch: ch, score: score };
     }).filter(function(item) { return item.score > 0; }).sort(_npcTargetSort);
@@ -1615,6 +1636,8 @@ function executeConspireBehavior(npc, target, decision, context) {
   }
   addEB('暗流', npc.name + '暗中联络人脉。');
   _npcRemember(npc.name, '暗中串联' + (target ? '·' + target : ''), '密', 6, target || '同党');
+  // ★2026-07-01 W3·走漏:所引同谋(target)之亲信圈或有耳闻→风声沿其同党/亲近传出·令第三方隐约知情(确定性·非玩家触发)
+  if (typeof TM !== 'undefined' && TM.Gossip && target) TM.Gossip.enqueue({ text: '风传' + npc.name + '暗中结连党羽', subject: npc.name, seeds: [target], importance: 4, budget: 2 });
 }
 
 function executeTrainTroopsBehavior(npc, target, decision, context) {
@@ -1678,6 +1701,8 @@ function executePrivateCorrespondenceBehavior(npc, target, decision, context) {
   addEB('私信', npc.name + '私下致书' + (to ? '·' + to : ''));
   _npcRemember(npc.name, '私下通信：' + _npcShortText(decision.intent, to, 50), '密', 5, to || '同僚');
   _npcRemember(to, '收到' + npc.name + '私下来信：' + _npcShortText(decision.intent, '', 50), '密', 5, npc.name);
+  // ★2026-07-01 W3·走漏:两人私相往来·旁观/侍从或有察觉→风声沿双方同党/亲近传出
+  if (typeof TM !== 'undefined' && TM.Gossip && to) TM.Gossip.enqueue({ text: npc.name + '与' + to + '近日私相往来', subject: npc.name, seeds: [npc.name, to], importance: 3, budget: 2 });
 }
 
 function executeSeekAudienceBehavior(npc, target, decision, context) {
@@ -2355,6 +2380,8 @@ function executeSlanderBehavior(npc, target, decision, context) {
   });
   addEB('谗言', npc.name + '议及' + (target || '他人'));
   _npcRemember(npc.name, '攻讦' + (target || '他人') + '：' + _npcShortText(decision.intent, '', 50), '密', 5, target || '他人');
+  // ★2026-07-01 W3·走漏:谗言天然扩散·slander者的同党圈会听到并附和→对 target 的恶评传开(经记恨者转述更走样)
+  if (typeof TM !== 'undefined' && TM.Gossip && target) TM.Gossip.enqueue({ text: '有人暗指' + target + '之过', subject: target, seeds: [npc.name], importance: 3, budget: 3 });
 }
 
 // ============================================================

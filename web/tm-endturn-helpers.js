@@ -1372,6 +1372,22 @@ SettlementPipeline.register('playerGrowth', '主角成长', function() {
 // GM.currentIssues = [{ id, title, description, category, status, raisedTurn, raisedDate, resolvedTurn }]
 // ============================================================
 
+// ★2026-07-01·御案时政「陛下决断」选项字段兼容归一（就地·幂等）。
+//   剧本作者有两套 choices 约定：天启官方=`{text, effect}`（渲染器与 _chooseIssueOption 权威读 text/desc/effect）；
+//   绍宋官方=`{label, consequence}`。只给 label/consequence 会：① 渲染回落占位符「选项1/2/3」（owner 报的 bug）；
+//   ② 点击后 AI 裁定/民心归因/chosenText 全拿到空文本。此处把 label→text、consequence→desc 就地补齐
+//   （保留原 label/consequence 不删·AI 裁定仍可读 consequence 语义）。GM.currentIssues 对象按引用共享→归一一次即全体生效。
+function _tmNormIssueChoices(issue) {
+  if (!issue || !Array.isArray(issue.choices)) return issue;
+  issue.choices.forEach(function (ch) {
+    if (!ch || typeof ch !== 'object') return;
+    if ((ch.text == null || ch.text === '') && ch.label) ch.text = ch.label;
+    if ((ch.desc == null || ch.desc === '') && ch.consequence) ch.desc = ch.consequence;
+  });
+  return issue;
+}
+if (typeof window !== 'undefined') window._tmNormIssueChoices = _tmNormIssueChoices;
+
 /**
  * 打开时局要务面板
  */
@@ -1443,6 +1459,7 @@ function _renderIssueCard(issue) {
   h += '</div>';
   h += '<div style="font-size:0.82rem;color:var(--txt-s);line-height:1.7;white-space:pre-wrap;">' + escHtml(issue.description) + '</div>';
   // 选项按钮(若有 choices 且 pending)
+  _tmNormIssueChoices(issue);   // label/consequence → text/desc 兼容归一(绍宋剧本用 label·防回落占位符「选项N」)
   if (isPending && Array.isArray(issue.choices) && issue.choices.length > 0) {
     h += '<div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px dashed rgba(201,168,76,0.2);">';
     h += '<div style="font-size:0.74rem;color:var(--gold);letter-spacing:0.2em;margin-bottom:0.4rem;">〔 陛 下 决 断 〕</div>';
@@ -1484,6 +1501,7 @@ async function _chooseIssueOption(issueId, choiceIdx) {
   if (!GM.currentIssues) return;
   var issue = GM.currentIssues.find(function(i) { return i.id === issueId; });
   if (!issue || !Array.isArray(issue.choices)) return;
+  _tmNormIssueChoices(issue);   // label→text·consequence→desc 兼容归一(否则 AI 裁定/民心归因/chosenText 拿到空文本)
   var ch = issue.choices[choiceIdx];
   if (!ch) return;
   // 命门(v0.2·事件并入御案时政):开关开 → AI 据当前国势裁即时硬核连锁后果(applyAITurnChanges);固定 effect 降兜底。

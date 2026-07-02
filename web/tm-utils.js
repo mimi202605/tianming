@@ -750,6 +750,13 @@ function getNpcCognitionSnippet(name, opts) {
     if (cog.recentMood) bits.push('\u5FC3\u7EEA\uFF1A' + cog.recentMood);
   }
   // 自作文苑作品（文事系统·NPC 对自己的作品应了如指掌）
+  // 【sc07 升级·S3 消费】新增认知维度注入(恩怨/诉求/朝局判断/风闻)——让问对·朝议中的他更立体、更像本人
+  if (!short) {
+    if (cog.gratitudeGrudge) bits.push('恩怨：' + cog.gratitudeGrudge);
+    if (cog.agenda) bits.push('所求：' + cog.agenda);
+    if (cog.situationRead) bits.push('朝局判断：' + cog.situationRead);
+    if (cog.rumorVsFact) bits.push('风闻(未证)：' + cog.rumorVsFact);
+  }
   if (!short && window.GM && Array.isArray(window.GM.culturalWorks)) {
     var _myW = window.GM.culturalWorks.filter(function(w){return w && w.author === name;});
     if (_myW.length) {
@@ -1748,6 +1755,57 @@ function _tmApplyMachinePrefsFromProject(project) {
   }
 }
 
+// 当缓存被判为「官方剧本不完整」而整体跳过恢复时，会连用户自建剧本一起丢（安卓/网页无桌面 autoSave 兜底）。
+// 真因：7MB 官方运行时快照走 requestIdleCallback 延迟注入，而 IndexedDB 恢复毫秒级先跑——若玩家在快照加载前
+// 就创建剧本并触发 saveP，存档里官方花名册尚未平铺到顶层（<30），重启即被守卫判为不完整。
+// 修：守卫触发时不再整体丢弃，而是「保留刚注册的官方数据 + 仅把用户自建剧本及其按 sid 归属的内容行合并回来」。
+// 自建剧本=缓存里有、但当前 P.scenarios（register 脚本刚注册的官方剧本）里没有的那些；官方剧本绝不从陈旧缓存覆盖。
+function _tmMergeCustomScenariosFromProject(project) {
+  if (!project || !Array.isArray(project.scenarios)) return 0;
+  if (!Array.isArray(P.scenarios)) P.scenarios = [];
+  var existing = {};
+  for (var i = 0; i < P.scenarios.length; i++) {
+    var s0 = P.scenarios[i];
+    if (s0 && s0.id != null) existing[s0.id] = true;
+  }
+  var customIds = {};
+  var added = 0;
+  for (var j = 0; j < project.scenarios.length; j++) {
+    var s = project.scenarios[j];
+    if (s && s.id != null && !existing[s.id]) {
+      P.scenarios.push(s);
+      existing[s.id] = true;
+      customIds[s.id] = true;
+      added++;
+    }
+  }
+  if (!added) return 0;
+  // 自建剧本按 sid 归属的内容行一并合并（空白剧本无行·此处自然跳过）
+  var COLLS = ['characters', 'factions', 'parties', 'classes', 'variables', 'events', 'relations', 'items', 'rigidHistoryEvents'];
+  for (var c = 0; c < COLLS.length; c++) {
+    var key = COLLS[c];
+    var srcRows = project[key];
+    if (!Array.isArray(srcRows)) continue;
+    if (!Array.isArray(P[key])) P[key] = [];
+    var have = {};
+    for (var h = 0; h < P[key].length; h++) {
+      var er = P[key][h];
+      if (er && er.sid != null && er.id != null) have[er.sid + '' + er.id] = true;
+    }
+    for (var r = 0; r < srcRows.length; r++) {
+      var row = srcRows[r];
+      if (!row || row.sid == null || !customIds[row.sid]) continue;   // 只收自建剧本的行·不碰官方行
+      if (row.id != null) {
+        var dk = row.sid + '' + row.id;
+        if (have[dk]) continue;
+        have[dk] = true;
+      }
+      P[key].push(row);
+    }
+  }
+  return added;
+}
+
 function _tmEmitPRestored(source) {
   try {
     if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
@@ -1772,8 +1830,10 @@ function _tmEmitPRestored(source) {
       var saved = JSON.parse(s);
       if (_tmIsIncompleteOfficialProject(saved)) {
         _tmApplyMachinePrefsFromProject(saved);
+        // 不整体丢弃：保留刚注册的官方剧本，仅把用户自建剧本合并回来
+        var _mergedLite = _tmMergeCustomScenariosFromProject(saved);
         try { localStorage.removeItem('tm_P'); } catch(_){}
-        console.warn('[restoreP] skipped incomplete official scenario cache from tm_P');
+        console.warn('[restoreP] incomplete official cache from tm_P·保留官方·合并自建剧本 ' + _mergedLite + ' 个');
       } else {
         for (var key in saved) {
           if (saved.hasOwnProperty(key)) P[key] = saved[key];
@@ -1812,8 +1872,13 @@ function _tmEmitPRestored(source) {
       if (fullP && fullP.scenarios) {
         if (_tmIsIncompleteOfficialProject(fullP)) {
           _tmApplyMachinePrefsFromProject(fullP);
-          console.warn('[restoreP] skipped incomplete official scenario project from IndexedDB');
-          _tmEmitPRestored('indexeddb-incomplete-skip');
+          // 不整体丢弃：保留刚注册的官方剧本，仅把用户自建剧本合并回来（修安卓/网页重启自建剧本消失）
+          var _mergedN = _tmMergeCustomScenariosFromProject(fullP);
+          console.warn('[restoreP] incomplete official cache from IndexedDB·保留官方·合并自建剧本 ' + _mergedN + ' 个');
+          if (_mergedN && typeof showScnManage === 'function' && document.querySelector('.scn-page.show')) {
+            showScnManage();
+          }
+          _tmEmitPRestored('indexeddb-incomplete-merge-custom');
           return;
         }
         for (var key in fullP) {

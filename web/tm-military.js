@@ -2483,6 +2483,7 @@ function updateBuildingSystem() {
 
 // 获取领地的所有建筑
 function getTerritoryBuildings(territory) {
+  if (typeof getTerritoryBuildingsCompat === 'function') return getTerritoryBuildingsCompat(territory);
   if (GM._indices.buildingByTerritory && GM._indices.buildingByTerritory.has(territory)) {
     return GM._indices.buildingByTerritory.get(territory);
   }
