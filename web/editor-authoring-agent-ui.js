@@ -427,7 +427,8 @@
     save: '<path d="M3.5 3.5h7l2 2v7h-9z"/><path d="M5.5 3.5V7h5V3.5M5.5 12.5V9.5h5v3"/>',
     image: '<rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><path d="m4.5 10.5 2.5-3 2 2.2L11 7l2.5 3.5"/><circle cx="6" cy="6.2" r="1"/>',
     undo: '<path d="M4.5 6.5H10a3 3 0 0 1 0 6H7"/><path d="M6.8 4 4.5 6.5 6.8 9"/>',
-    check: '<path d="M3 8.5 6.5 12 13 4.5"/>'
+    check: '<path d="M3 8.5 6.5 12 13 4.5"/>',
+    clip: '<path d="M12.4 7.6 7.8 12.2a3.1 3.1 0 0 1-4.4-4.4l5.2-5.2a2.1 2.1 0 0 1 3 3L6.4 10.8a1.05 1.05 0 0 1-1.5-1.5l4.3-4.3"/>'
   };
   // 工作过程 · 步骤行的工具类别图标（写/读/校/记/完成）
   var _TOOL_ICON = {
@@ -555,6 +556,20 @@
       '#tm-aa-plus{flex:0 0 auto;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:50%;padding:0;cursor:pointer;font-size:16px;line-height:1;transition:background .12s,color .12s,transform .12s}',
       '#tm-aa-plus:hover{background:var(--sunken);color:var(--tx)}',
       '#tm-aa-plus.on{background:var(--ac);border-color:var(--ac);color:#fff;transform:rotate(45deg)}',
+      '#tm-aa-attach-btn{flex:0 0 auto;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:50%;padding:0;cursor:pointer;transition:background .12s,color .12s}',
+      '#tm-aa-attach-btn:hover{background:var(--sunken);color:var(--tx)}',
+      // 附件签行（图片缩略 + 文件名签·发送时随需求交付）
+      '#tm-aa-attach{display:flex;flex-wrap:wrap;gap:6px;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box}',
+      '#tm-aa-attach[hidden]{display:none}',
+      '.att-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--bd2);border-radius:9px;padding:3px 6px 3px 8px;font-size:11px;color:var(--tx2);max-width:230px}',
+      '.att-chip .att-ic{display:inline-flex;color:var(--tx3)}',
+      '.att-chip .att-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}',
+      '.att-chip .att-sz{color:var(--tx3);font-size:10px}',
+      '.att-chip.att-img{padding:3px}',
+      '.att-chip.att-img img{width:40px;height:40px;object-fit:cover;border-radius:6px;display:block}',
+      '.att-x{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:13px;line-height:1;padding:0 3px}.att-x:hover{color:var(--bad)}',
+      '#' + PANEL_ID + '.tm-aa-drag{outline:2px dashed var(--ac);outline-offset:-6px}',
+      '#' + PANEL_ID + '.tm-aa-drag::before{content:"松手把文件 / 截图交给国师";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(204,120,92,.10);color:var(--ac);font-size:15px;font-family:var(--serif);z-index:99;pointer-events:none}',
       '#tm-aa-plusmenu{position:absolute;left:8px;bottom:calc(100% + 6px);z-index:12;min-width:230px;background:var(--surface);border:1px solid var(--bd2);border-radius:12px;box-shadow:0 14px 44px rgba(0,0,0,.35);padding:5px;max-height:min(460px,62vh);overflow:auto}',
       '#tm-aa-plusmenu[hidden]{display:none}',
       '.tm-aa-mi{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--tx);cursor:pointer;font-size:12.5px;padding:7px 9px;border-radius:8px;font-family:inherit;line-height:1.4}',
@@ -790,12 +805,15 @@
       '<div id="tm-aa-atpop" hidden></div>',
       '<div id="tm-aa-status" aria-live="polite"></div>',
       '<div id="tm-aa-meter" style="display:none"></div>',
+      '<div id="tm-aa-attach" hidden></div>',
       '<div id="tm-aa-field">',
       '<textarea id="tm-aa-req" placeholder="描述你想要的修改，例如：把主角势力改名为「西凉军」并补两个文官"></textarea>',
       '<span class="tm-aa-charcount" id="tm-aa-charcount" hidden></span>',
       '<div class="tm-aa-fieldbar">',
       '<button type="button" id="tm-aa-plus" aria-label="更多能力" title="更多能力：体检 / 审阅 / 问答 / 讲解 / 分解编排 / 三堂会审 / 检查点">＋</button>',
       '<button type="button" id="tm-aa-perm" aria-label="权限模式" title="权限模式：问策(只读出计划) / 共审(改动经你审后应用) / 放行(校验通过自动应用)"></button>',
+      '<button type="button" id="tm-aa-attach-btn" aria-label="添加附件" title="添加附件：文本文件(txt/md/json/csv…)作参考上下文·图片/截图走视觉(需主模型支持)。也可直接拖进面板或在输入框粘贴截图">' + _icon('clip') + '</button>',
+      '<input type="file" id="tm-aa-file" multiple hidden accept="image/*,.txt,.md,.json,.csv,.tsv,.js,.yml,.yaml,.xml,.html">',
       '<div id="tm-aa-worldkind"><span class="tm-aa-wk-lab">世界类型</span><button type="button" class="tm-aa-wk-opt" data-wk="historical" title="史实剧本·全考据：年号/生卒/职官/事件与正史相符，遇硬伤进谏">史实</button><button type="button" class="tm-aa-wk-opt" data-wk="fictional" title="虚构/架空世界观·奇幻/武侠/仙侠/未来/异世界等原创设定，不受真实历史约束，国师只管设定自洽与平衡">虚构</button></div>',
       '<span class="tm-aa-flex"></span>',
       '<button type="button" id="tm-aa-model" title="API 连接与模型选择" aria-label="API 连接与模型选择"></button>',
@@ -872,6 +890,7 @@
       modelpop: panel.querySelector('#tm-aa-modelpop'),
       perm: panel.querySelector('#tm-aa-perm'),         // 权限模式（问策/共审/放行·CC 对照）
       permpop: panel.querySelector('#tm-aa-permpop'),
+      attach: panel.querySelector('#tm-aa-attach'),     // S2 · 附件签行
       rail: panel.querySelector('#tm-aa-rail'),         // Claude 桌面端式 · 会话历史侧栏（全屏）
       raillist: panel.querySelector('#tm-aa-raillist'),
       railTg: panel.querySelector('#tm-aa-rail-tg')
@@ -893,6 +912,7 @@
     _ensureRail();        // Claude 桌面端式 · 会话历史侧栏（全屏下展开）
     _ensureModelPop();    // API 连接·模型选择弹层（模型徽即入口·检测该 API 的真实模型清单）
     _ensurePermPop();     // 权限模式（问策/共审/放行·持久·CC permission modes 对照）
+    _ensureAttach();      // S2 · 附件：曲别针/拖拽/粘贴截图 → 文本内联+图片视觉通道
     _ensureLogFollow();   // UI·AB · 滚动跟随 + 回到底部
     _renderEmpty();   // UI·AD · 空状态欢迎 + 建议提示
     ui.els.req.addEventListener('input', _syncEmpty);   // 有字则隐欢迎态
@@ -1113,6 +1133,75 @@
   }
   function _modelPopClose() { if (ui.els && ui.els.modelpop) ui.els.modelpop.hidden = true; }
 
+  // ── S2 · 附件（Claude 桌面端式）：曲别针/拖拽入面板/输入框粘贴截图 → 签行预览 → 发送时
+  //    文本文件内联为【附件】上下文·图片走视觉通道（user 消息 images[]·主模型须支持视觉）。 ──
+  var _ATT_TEXT_RE = /\.(txt|md|json|csv|tsv|js|yml|yaml|xml|html?)$/i;
+  function _attState() { if (!ui._att) ui._att = { files: [], images: [] }; return ui._att; }
+  function _renderAttach() {
+    var box = ui.els && ui.els.attach; if (!box) return;
+    var a = _attState();
+    if (!a.files.length && !a.images.length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = a.images.map(function (u, i) {
+      return '<span class="att-chip att-img"><img src="' + u + '" alt="附图"><button type="button" class="att-x" data-k="img" data-i="' + i + '" title="移除">×</button></span>';
+    }).join('') + a.files.map(function (f, i) {
+      return '<span class="att-chip"><span class="att-ic">' + _icon('book') + '</span><span class="att-nm" title="' + esc(f.name) + '">' + esc(f.name) + '</span><span class="att-sz">' + Math.ceil(f.text.length / 1000) + 'k字</span><button type="button" class="att-x" data-k="file" data-i="' + i + '" title="移除">×</button></span>';
+    }).join('');
+  }
+  function _ingestFiles(list) {
+    var a = _attState();
+    Array.prototype.forEach.call(list || [], function (f) {
+      if (!f) return;
+      if (/^image\//.test(f.type)) {
+        if (a.images.length >= 3) { setStatus('图片最多 3 张（已忽略「' + f.name + '」）'); return; }
+        if (f.size > 4 * 1024 * 1024) { setStatus('图片过大（>4MB）：' + f.name + ' 已忽略·请截小一点'); return; }
+        var rd = new FileReader();
+        rd.onload = function () { a.images.push(String(rd.result)); _renderAttach(); };
+        rd.readAsDataURL(f);
+      } else if (_ATT_TEXT_RE.test(f.name) || /^text\//.test(f.type) || f.type === 'application/json') {
+        if (a.files.length >= 4) { setStatus('文本附件最多 4 个（已忽略「' + f.name + '」）'); return; }
+        if (f.size > 300 * 1024) { setStatus('文件过大（>300KB）：' + f.name + ' 已忽略'); return; }
+        var rt = new FileReader();
+        rt.onload = function () { a.files.push({ name: f.name, text: String(rt.result || '').slice(0, 12000) }); _renderAttach(); };
+        rt.readAsText(f);
+      } else setStatus('暂不支持该类型附件：' + f.name + '（支持文本类与图片）');
+    });
+  }
+  function _attachPrefix() {   // 发送时把文本附件内联进需求（各 12k 上限·总量再由预算/压缩管）
+    var a = _attState();
+    if (!a.files.length) return '';
+    return a.files.map(function (f) { return '\n\n【附件 · ' + f.name + '】\n' + f.text; }).join('') + '\n\n（以上为玩家提供的参考附件·按需取用）';
+  }
+  function _takeImages() { var a = _attState(); var im = a.images.slice(0, 3); return im.length ? im : null; }
+  function _clearAttach() { ui._att = { files: [], images: [] }; _renderAttach(); }
+  function _ensureAttach() {
+    if (!ui.els || ui._attBound) return;
+    ui._attBound = true;
+    var btn = ui.els.panel.querySelector('#tm-aa-attach-btn'), fin = ui.els.panel.querySelector('#tm-aa-file');
+    if (btn && fin) {
+      btn.addEventListener('click', function () { fin.click(); });
+      fin.addEventListener('change', function () { _ingestFiles(fin.files); fin.value = ''; });
+    }
+    if (ui.els.attach) ui.els.attach.addEventListener('click', function (ev) {
+      var x = ev.target && ev.target.closest ? ev.target.closest('.att-x') : null;
+      if (!x) return;
+      var a = _attState();
+      if (x.getAttribute('data-k') === 'img') a.images.splice(+x.getAttribute('data-i'), 1); else a.files.splice(+x.getAttribute('data-i'), 1);
+      _renderAttach();
+    });
+    var p = ui.els.panel;
+    p.addEventListener('dragover', function (ev) { ev.preventDefault(); p.classList.add('tm-aa-drag'); });
+    p.addEventListener('dragleave', function (ev) { if (ev.target === p) p.classList.remove('tm-aa-drag'); });
+    p.addEventListener('drop', function (ev) {
+      ev.preventDefault(); p.classList.remove('tm-aa-drag');
+      if (ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files.length) { _ingestFiles(ev.dataTransfer.files); setStatus('附件已加入（发送时随需求一起交给国师）'); }
+    });
+    if (ui.els.req) ui.els.req.addEventListener('paste', function (ev) {
+      var fs = ev.clipboardData && ev.clipboardData.files;
+      if (fs && fs.length) { ev.preventDefault(); _ingestFiles(fs); setStatus('截图已加入附件（发送时走视觉通道·需主模型支持）'); }
+    });
+  }
+
   // ── 权限模式（owner 点名的缺失件·CC permission modes 对照）：问策=Plan(只读出计划)·共审=默认(diff 审后应用)·
   //    放行=Accept Edits(校验通过自动应用)。持久 tm_aa_perm·映射到既有引擎旗标(planMode/autonomy/allowDestructive)。 ──
   var PERM_KEY = 'tm_aa_perm';
@@ -1273,6 +1362,7 @@
     try {
       if (!res || !Array.isArray(res.conversation) || !res.conversation.length) return;
       var copy = JSON.parse(JSON.stringify(res.conversation));
+      copy.forEach(function (m) { if (m && m.images && m.images.length) { m.text = '【曾附图 ' + m.images.length + ' 张】' + (m.text || ''); delete m.images; } });   // S2 · 像素不进 localStorage(体量)
       try { AA._compactOldToolResults(copy, 4); } catch (e0) {}
       var pack = { sid: _scenKey(), ts: Date.now(), todos: (res.todos || []).slice(0, 20), conversation: copy };
       var s = JSON.stringify(pack);
@@ -2473,8 +2563,11 @@
     // 真·连续会话：只要对话线程还在就续接（哪怕上一轮已应用·draft 已清）。计划模式总从当前剧本起新计划。
     //   ——治「每发一条指令都是新对话」：之前续接还要求 ui.draft，应用后 draft 没了就被迫重置；现在线程贯穿整个会话。
     var continuing = !planOnly && !!(ui.conversation && ui.conversation.length && !ui._pendingPlan);
+    var _attTxt = _attachPrefix();   // S2 · 文本附件内联为参考上下文
+    var _imgs = _takeImages();       // S2 · 图片走视觉通道
+    var _attN = (_imgs ? _imgs.length : 0) + _attState().files.length;
     resetResults(continuing);   // UI·B · 会话流：续接保留线程+消息流、新对话清空
-    _appendUserMsg(request);    // 回显用户消息气泡
+    _appendUserMsg(request + (_attN ? '（附 ' + _attN + ' 件）' : ''), { input: request });    // 回显用户消息气泡
     setRunning(true);
     setStatus(planOnly ? '正在规划…（agent 先只读、出计划）' : '正在生成…（agent 多轮编辑+自校验，可能需要数十秒）');
     if (!continuing) { ui.draft = AA.makeDraft(ui.adapter.getScenario()); if (!planOnly) ui.conversation = null; }
@@ -2482,8 +2575,10 @@
 
     var _rtd = (continuing && ui._restoredTodos && ui._restoredTodos.length) ? ui._restoredTodos : null;   // 刀H3 · 恢复的任务表一次性回灌
     ui._restoredTodos = null;
-    AA.runAuthoringLoop(ui.draft, request, {
+    _clearAttach();   // S2 · 附件随本轮发出·签行清空
+    AA.runAuthoringLoop(ui.draft, request + _attTxt, {
       planOnly: planOnly,
+      images: _imgs,
       initialTodos: _rtd,
       priorConversation: continuing ? ui.conversation : null,
       memory: continuing ? '' : _buildMemory(),             // 跨会话记忆：新对话才注入历史；续接已在线程里
@@ -2701,5 +2796,5 @@
   else init();
 
   // 暴露给测试/调试
-  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; } };
+  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles };
 })(typeof window !== 'undefined' ? window : this);

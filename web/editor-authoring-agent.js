@@ -766,12 +766,24 @@
   }
 
   // ── 抽象 conversation → provider 消息 ──
-  // conversation 项：{role:'user',text} | {role:'assistant',text,toolCalls:[{id,name,input}]} | {role:'tool',toolResults:[{id,name,content}]}
+  // conversation 项：{role:'user',text,images?:[dataURL]} | {role:'assistant',text,toolCalls:[{id,name,input}]} | {role:'tool',toolResults:[{id,name,content}]}
   function _genId(i) { return 'call_' + Date.now().toString(36) + '_' + i; }
+  // S2 · 视觉附件：user 消息可带 images[](dataURL)——三家 provider 各自映射为多模态 content
+  function _imgParts(images) { return (Array.isArray(images) ? images : []).filter(function (u) { return /^data:image\//.test(String(u || '')); }).slice(0, 4); }
+  function _splitDataUrl(u) { var m = String(u).match(/^data:(image\/[a-z+.-]+);base64,(.*)$/i); return m ? { mime: m[1], b64: m[2] } : null; }
 
   function _toAnthropic(conversation, system, tools, maxTok, model) {
     var messages = conversation.map(function(turn) {
-      if (turn.role === 'user') return { role: 'user', content: turn.text || '' };
+      if (turn.role === 'user') {
+        var imgs = _imgParts(turn.images);
+        if (imgs.length) {
+          var blocks = [];
+          imgs.forEach(function (u) { var p = _splitDataUrl(u); if (p) blocks.push({ type: 'image', source: { type: 'base64', media_type: p.mime, data: p.b64 } }); });
+          blocks.push({ type: 'text', text: turn.text || '' });
+          return { role: 'user', content: blocks };
+        }
+        return { role: 'user', content: turn.text || '' };
+      }
       if (turn.role === 'assistant') {
         var content = [];
         if (turn.text) content.push({ type: 'text', text: turn.text });
@@ -794,7 +806,14 @@
     var messages = [];
     if (system) messages.push({ role: 'system', content: system });
     conversation.forEach(function(turn) {
-      if (turn.role === 'user') messages.push({ role: 'user', content: turn.text || '' });
+      if (turn.role === 'user') {
+        var imgs = _imgParts(turn.images);
+        if (imgs.length) {
+          var parts = [{ type: 'text', text: turn.text || '' }];
+          imgs.forEach(function (u) { parts.push({ type: 'image_url', image_url: { url: u } }); });
+          messages.push({ role: 'user', content: parts });
+        } else messages.push({ role: 'user', content: turn.text || '' });
+      }
       else if (turn.role === 'assistant') {
         var m = { role: 'assistant', content: turn.text || null };
         if (turn.toolCalls && turn.toolCalls.length) {
@@ -852,7 +871,11 @@
   }
   function _toGemini(conversation, system, tools, maxTok, temp) {
     var contents = conversation.map(function(turn) {
-      if (turn.role === 'user') return { role: 'user', parts: [{ text: turn.text || '' }] };
+      if (turn.role === 'user') {
+        var uParts = [{ text: turn.text || '' }];
+        _imgParts(turn.images).forEach(function (u) { var p = _splitDataUrl(u); if (p) uParts.push({ inline_data: { mime_type: p.mime, data: p.b64 } }); });
+        return { role: 'user', parts: uParts };
+      }
       if (turn.role === 'assistant') {
         var parts = [];
         if (turn.text) parts.push({ text: turn.text });
@@ -2261,12 +2284,17 @@
     var editorContext = opts.editorContext || '';   // 上下文感知：编辑器当前焦点（模块/集合/选中实体）
     var exemplars = opts.exemplars || '';   // 方向J · few-shot 范例（开关式·编辑官方剧本时即官方范例）
     var conversation, _priorTokens = 0;   // 维度1 · 对话式追问：有 priorConversation 则接着上轮线程改
+    var _turnImages = (Array.isArray(opts.images) && opts.images.length) ? opts.images.slice(0, 4) : null;   // S2 · 本轮视觉附件(截图/图片·dataURL)
     if (Array.isArray(opts.priorConversation) && opts.priorConversation.length) {
       conversation = opts.priorConversation.slice();
-      conversation.push({ role: 'user', text: _buildFollowUpUser(draft, userRequest, surfaces, editorContext) });
+      var _fu = { role: 'user', text: _buildFollowUpUser(draft, userRequest, surfaces, editorContext) };
+      if (_turnImages) _fu.images = _turnImages;
+      conversation.push(_fu);
       try { _priorTokens = _estimateTokens(JSON.stringify(opts.priorConversation)); } catch (e) {}
     } else {
-      conversation = [{ role: 'user', text: explainOnly ? _buildExplainUser(draft, userRequest, surfaces, editorContext) : (qaOnly ? _buildQaUser(draft, userRequest, surfaces, editorContext) : (reviewOnly ? _buildReviewUser(draft, userRequest, surfaces, editorContext) : _buildInitialUser(draft, userRequest, surfaces, editorContext, exemplars, opts.memory || ''))) }];
+      var _iu = { role: 'user', text: explainOnly ? _buildExplainUser(draft, userRequest, surfaces, editorContext) : (qaOnly ? _buildQaUser(draft, userRequest, surfaces, editorContext) : (reviewOnly ? _buildReviewUser(draft, userRequest, surfaces, editorContext) : _buildInitialUser(draft, userRequest, surfaces, editorContext, exemplars, opts.memory || ''))) };
+      if (_turnImages) _iu.images = _turnImages;
+      conversation = [_iu];
     }
     var transcript = [];
     var iterations = 0, finishAttempts = 0;
@@ -2899,6 +2927,7 @@
     _flattenForSummary: _flattenForSummary,   // 刀G8 · 摘要请求拍平(smoke)
     _OVERFLOW_RE: _OVERFLOW_RE,   // 刀G8 · 超限文案识别(smoke)
     _parseOpenAI: _parseOpenAI, _parseAnthropic: _parseAnthropic, _parseGemini: _parseGemini,   // 刀H1 · 截断 surfacing(smoke)
+    _toOpenAI: _toOpenAI, _toAnthropic: _toAnthropic, _toGemini: _toGemini,   // S2 · 多模态映射(smoke)
     computeGaps: _computeGaps,
     preflight: preflight,
     ensureCharFactionId: ensureCharFactionId,

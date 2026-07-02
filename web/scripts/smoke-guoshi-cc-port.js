@@ -463,5 +463,30 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/renameRegion: 1, generateImage: 1 \}/.test(agSrc7) && /case 'generateImage': return \[_topOf\(input\.path\)\]/.test(agSrc7), 'H7 注册进写工具/权限沙箱/指纹管线(范围与危险闸同管)');
   delete global.fetch;
 
+  // ───────── H8 · 附件与视觉(拖拽/粘贴截图/文件导入·Claude 桌面端对照) ─────────
+  console.log('— H8 附件与视觉 —');
+  var IMG = 'data:image/png;base64,iVBORw0KGgo=';
+  var aq = 0, aSeen = null;
+  var rA = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '看这张截图照着改', {
+    images: [IMG],
+    caller: function (conv) {
+      aq++;
+      if (aq === 1) aSeen = conv[0].images;
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'af', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  ok(rA.finished && Array.isArray(aSeen) && aSeen[0] === IMG, 'H8 opts.images 挂上本轮 user 消息(引擎透传)');
+  var conv8 = [{ role: 'user', text: '看图', images: [IMG] }, { role: 'assistant', text: '好', toolCalls: [] }];
+  var oa = AA._toOpenAI(conv8, 'sys', [{ name: 't', parameters: {} }], 100, 'm', 0.5);
+  ok(Array.isArray(oa.messages[1].content) && oa.messages[1].content[1].type === 'image_url' && oa.messages[1].content[1].image_url.url === IMG, 'H8 OpenAI 兼容多模态映射(text+image_url)');
+  var an = AA._toAnthropic(conv8, 'sys', [{ name: 't', parameters: {} }], 100, 'm');
+  ok(Array.isArray(an.messages[0].content) && an.messages[0].content[0].type === 'image' && an.messages[0].content[0].source.media_type === 'image/png' && an.messages[0].content[1].type === 'text', 'H8 Anthropic 多模态映射(base64 source)');
+  var ge = AA._toGemini(conv8, 'sys', [{ name: 't', parameters: {} }], 100, 0.5);
+  ok(ge.contents[0].parts.length === 2 && ge.contents[0].parts[1].inline_data && ge.contents[0].parts[1].inline_data.mime_type === 'image/png', 'H8 Gemini 多模态映射(inline_data)');
+  var uiSrc8 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/id="tm-aa-attach-btn"/.test(uiSrc8) && /addEventListener\('drop'/.test(uiSrc8) && /addEventListener\('paste'/.test(uiSrc8), 'H8 UI 三入口(曲别针/拖拽/粘贴截图)在位');
+  ok(/【附件 · /.test(uiSrc8) && /request \+ _attTxt/.test(uiSrc8) && /images: _imgs,/.test(uiSrc8), 'H8 发送链路(文本内联+图片走视觉)');
+  ok(/【曾附图 /.test(uiSrc8), 'H8 线程持久化剥像素(localStorage 体量)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
