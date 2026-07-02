@@ -286,6 +286,81 @@
     } catch (e) { return { added: 0 }; }
   }
 
+  /* ── O12 旁观(v2·战况重演):他方战事抽象战果照常即时落地(v1 语义不变)·旁观纯视觉——
+   * 咽喉透传前快照双方名册(变异前拷贝)→会战阶段末「他方战事」列表→iframe observe 模式重演·战果丢弃。
+   * flag GM._yujiaObserve 默认 OFF(独立于亲征 flag)·每回合至多 4 场防弹窗轰炸·不持久化(当回合 flavor)。 */
+  var observePending = [];
+  function observeOn(GM) { return !!(GM && GM._yujiaObserve); }
+  function _isNpcBattle(br, GM) {
+    var pf = playerFaction(GM); if (!pf) return true;
+    if (br.winnerFactionId === pf || br.loserFactionId === pf) return false;
+    var aa = br.affectedArmies || [];
+    for (var i = 0; i < aa.length; i++) { var a = findArmy(GM, aa[i].armyId); if (a && a.faction === pf) return false; }
+    return true;
+  }
+  function _cloneArmyForObserve(a) {
+    return { id: a.id, name: a.name, faction: a.faction, commander: a.commander,
+      morale: a.morale, training: a.training, supply: a.supply, quality: a.quality, veterancy: a.veterancy,
+      soldiers: Math.max(0, Math.round(+(a.soldiers || a.strength || 0) || 0)),
+      location: a.location, garrison: a.garrison,
+      composition: Array.isArray(a.composition) ? JSON.parse(JSON.stringify(a.composition)) : [],
+      equipment: Array.isArray(a.equipment) ? a.equipment.slice() : undefined };
+  }
+  function _snapshotObserve(br, GM) {
+    try {
+      if (!br || br._fromTactical || !observeOn(GM) || observePending.length >= 4) return;
+      if (!_isNpcBattle(br, GM)) return;
+      var armies = []; (br.affectedArmies || []).forEach(function (aa) { var a = aa && findArmy(GM, aa.armyId); if (a && !a.disbanded) armies.push(a); });
+      if (armies.length < 2) return;
+      var facA = String(armies[0].faction || ''); if (!facA) return;
+      var A = [], B = [], facB = '';
+      armies.forEach(function (a) { if (String(a.faction || '') === facA) A.push(_cloneArmyForObserve(a)); else { if (!facB) facB = String(a.faction || ''); B.push(_cloneArmyForObserve(a)); } });
+      if (!A.length || !B.length) return;
+      observePending.push({ facA: facA, facB: facB, sideA: A, sideB: B,
+        provinceName: (armies[0].location || armies[0].garrison) || '',
+        menA: A.reduce(function (s, x) { return s + x.soldiers; }, 0), menB: B.reduce(function (s, x) { return s + x.soldiers; }, 0) });
+    } catch (e) {}
+  }
+  /* 会战阶段末:他方战事列表→逐场 observe 重演(战果丢弃·抽象已落地)·headless/无件→即返 */
+  function _offerObserve(GM) {
+    return new Promise(function (resolve) {
+      var w = W();
+      var list = observePending.splice(0);
+      if (!w || !list.length || typeof document === 'undefined' || !document.body || typeof document.createElement !== 'function') { resolve(); return; }
+      if (!(w.TMBattleAdapter && w.TMBattleEmbed)) { resolve(); return; }
+      function show() {
+        var todo = list.filter(function (x) { return !x._watched; });
+        if (!todo.length) { resolve(); return; }
+        var ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:2147483500;background:rgba(8,6,4,.78);display:flex;align-items:center;justify-content:center;';
+        var box = document.createElement('div');
+        box.style.cssText = 'max-width:470px;background:linear-gradient(#1c140c,#241a10);border:1px solid #8a6a2a;border-radius:8px;padding:20px 24px;color:#ecdcc4;font-family:serif;box-shadow:0 12px 40px rgba(0,0,0,.6);';
+        box.innerHTML = '<div style="font:18px serif;color:#e8c87a;text-align:center;margin-bottom:6px;">👁 他方战事 · 可遣人观之</div>'
+          + '<div style="font-size:12px;opacity:.75;text-align:center;margin-bottom:12px;">战局天命自定·观之不改其果（有司战报已录）</div>';
+        todo.forEach(function (item) {
+          var row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;margin:7px 0;font-size:13.5px;';
+          var span = document.createElement('span');
+          span.innerHTML = '<b>' + esc(item.facA) + '</b> 战 <b>' + esc(item.facB) + '</b> · ' + esc(item.provinceName || '不知何地') + ' · ' + item.menA + ' 对 ' + item.menB;
+          var b = mkBtn('旁观', '#3f5a3a'); b.style.fontSize = '12.5px'; b.style.padding = '6px 12px';
+          b.onclick = function () {
+            item._watched = true; try { ov.remove(); } catch (e) {}
+            Promise.resolve().then(function () {
+              var cfg = w.TMBattleAdapter.buildBattleConfig(item.sideA, item.sideB, { GM: GM, playerFactionName: item.facA, enemyFactionName: item.facB, provinceName: item.provinceName });
+              cfg.observe = true;                                        // 原型封指挥(ctrlSel空)·纯观战
+              return w.TMBattleEmbed.launch(cfg);
+            }).catch(function () {}).then(function () { show(); });      // 战果丢弃·回列表续观
+          };
+          row.appendChild(span); row.appendChild(b); box.appendChild(row);
+        });
+        var done = mkBtn('散朝 · 不复观', '#6a4424'); done.style.width = '100%'; done.style.marginTop = '12px';
+        done.onclick = function () { try { ov.remove(); } catch (e) {} resolve(); };
+        box.appendChild(done); ov.appendChild(box); document.body.appendChild(ov);
+      }
+      show();
+    });
+  }
+
   /* 收一场战的玩家军战报(整编归伍):战损=战前快照-现兵·历练=effectiveVet·主将命运取该战 commanderFate(挂首军)·armyId 供补员交互 */
   function _collectReport(reports, item, preS, GM) {
     try {
@@ -375,7 +450,7 @@
   /* 会战阶段:逐场处理延后队列(管线 step 调·flag 关时 pending 恒空=no-op) */
   function runPending(GM) {
     GM = GM || (W() && W().GM);
-    if (!pending.length) { recoverPending(GM); return Promise.resolve(); }   // 无新战仍排空持久化残留(上回合中断+存档遗留)→抽象兜底
+    if (!pending.length) { recoverPending(GM); return _offerObserve(GM); }   // 无新战仍排空持久化残留→抽象兜底·再offer他方战事旁观(O12)
     var queue = pending.splice(0);
     var w = W();
     var reports = [];   // 会战战报小结(整编归伍·informational)累计
@@ -418,7 +493,7 @@
           try { applyDelegate(item, null, GM); } catch (_) {}            // ★单场出错→抽象兜底落地·该战绝不丢
         }).then(function () { dropPersisted(GM, item.battleResult); _collectReport(reports, item, preS, GM); });  // 结算完→撤持久化镜像 + 收战报
       });
-    }, _learn).then(function () { return showBattleReport(reports, GM); }).then(function () { recoverPending(GM); });     // ★seed=_learn(会战前补学生僻兵种·完成后逐场打) + 战报小结(整编归伍·补员双源交互) + 末了排空残留→抽象兜底
+    }, _learn).then(function () { return showBattleReport(reports, GM); }).then(function () { return _offerObserve(GM); }).then(function () { recoverPending(GM); });     // ★seed=_learn(会战前补学生僻兵种) + 战报小结(整编归伍·补员交互) + 他方战事旁观(O12) + 末了排空残留→抽象兜底
   }
 
   /* 包裹单一咽喉 MilitarySystems.applyBattleResult(bulletproof·幂等) */
@@ -431,6 +506,7 @@
       try {
         var GM = root || (W() && W().GM) || null;
         if (maybeDefer(br, GM)) return undefined;                   // 涉玩家+开启→延后·跳过立即抽象结算
+        _snapshotObserve(br, GM);                                   // O12:纯NPC战·旁观开启→变异前快照名册(抽象照常落地·会战阶段可重演)
       } catch (e) { /* 拦截出错→退回原咽喉·绝不弄坏战斗 */ }
       var _r = orig.call(this, br, root);
       _spoils(br, root || (W() && W().GM));                         // 透传战(flag关/非玩家)→战果应用后缴获
@@ -445,6 +521,7 @@
     recoverPending: recoverPending, emperorArmyId: emperorArmyId, emperorName: emperorName,
     replenishQuote: replenishQuote, applyReplenish: applyReplenish,
     retreatTarget: retreatTarget, _postBattleRetreat: _postBattleRetreat,
+    _snapshotObserve: _snapshotObserve, _observePending: function () { return observePending; }, _clearObserve: function () { observePending.length = 0; },
     involvesPlayer: involvesPlayer, _gainPostBattleVeterancy: _gainPostBattleVeterancy, _collectReport: _collectReport, _pending: function () { return pending; }, _clear: function () { pending.length = 0; }
   };
   /* 设置面板「御驾亲征·战术战斗」开关处理器(tm-patches.js 设置渲染调·切 GM._yujiaQinzheng·本局存档生效) */
@@ -454,7 +531,14 @@
     try { if (btn && btn.parentNode) { var bs = btn.parentNode.querySelectorAll('button[data-yjqz]'); for (var i = 0; i < bs.length; i++) { var want = bs[i].getAttribute('data-yjqz') === '1'; bs[i].className = 'bt ' + (want === on ? 'bp' : 'bs') + ' bsm'; } } } catch (e) {}
     try { var w2 = W(); if (w2 && typeof w2.toast === 'function') w2.toast(on ? '御驾亲征已开启 · 直辖军接敌可亲操此战' : '御驾亲征已关闭 · 一律庙算决之'); } catch (e) {}
   }
+  /* 「他方战事旁观」开关处理器(O12·切 GM._yujiaObserve·战况重演不改战果) */
+  function setYujiaObserve(on, btn) {
+    on = !!on;
+    try { var w = W(); if (w && w.GM) w.GM._yujiaObserve = on; } catch (e) {}
+    try { if (btn && btn.parentNode) { var bs = btn.parentNode.querySelectorAll('button[data-yjob]'); for (var i = 0; i < bs.length; i++) { var want = bs[i].getAttribute('data-yjob') === '1'; bs[i].className = 'bt ' + (want === on ? 'bp' : 'bs') + ' bsm'; } } } catch (e) {}
+    try { var w2 = W(); if (w2 && typeof w2.toast === 'function') w2.toast(on ? '他方战事旁观已开启 · 回合末可遣人观之' : '他方战事旁观已关闭'); } catch (e) {}
+  }
 
-  if (typeof window !== 'undefined') { window.TMBattleTurn = API; window._tmSetYujiaQinzheng = setYujiaQinzheng; try { installHook(); } catch (e) {} if (document && document.addEventListener) document.addEventListener('DOMContentLoaded', function () { try { installHook(); } catch (e) {} }); }
+  if (typeof window !== 'undefined') { window.TMBattleTurn = API; window._tmSetYujiaQinzheng = setYujiaQinzheng; window._tmSetYujiaObserve = setYujiaObserve; try { installHook(); } catch (e) {} if (document && document.addEventListener) document.addEventListener('DOMContentLoaded', function () { try { installHook(); } catch (e) {} }); }
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })();

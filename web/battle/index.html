@@ -937,7 +937,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),ang=(a,b)=>Math.atan2(b.y-a.y,b.x-
 const fighting=s=>units.filter(u=>u.alive&&u.side===s&&u.state!=="rout");
 const foes=s=>units.filter(u=>u.alive&&u.side!==s&&u.state!=="rout");
 const visibleFoes=s=>foes(s).filter(u=>!u.hidden);
-const ctrlSel=()=>[...sel].map(byId).filter(u=>u&&u.alive&&u.side==="ming"&&u.state!=="rout"&&!u._balk);
+const ctrlSel=()=>(state&&state.observe)?[]:[...sel].map(byId).filter(u=>u&&u.alive&&u.side==="ming"&&u.state!=="rout"&&!u._balk);   // ★旁观(O12):observe 态封全部玩家指挥(下令/结阵/战法全走此选集)·镜头照常
 function armyMorale(s){const a=fighting(s);if(!a.length)return 0;let w=0,m=0;for(const u of a){w+=u.soldiers;m+=u.mor*u.soldiers;}return w?Math.round(m/w):0;}
 const armyPower=s=>fighting(s).reduce((t,u)=>t+effStr(u),0);   // 现存战力总和(含兵力·士气·体力·地利)→形势天平
 function fmtK(n){n=Math.round(n||0);return n>=1000?(n/1000).toFixed(1)+"k":String(n);}
@@ -2319,6 +2319,7 @@ function startBattle(config){config=config||{};_activeBattleConfig=config;   // 
   if($("scene"))$("scene").value=config.mapId||"proc";                        // proc=genMap(_GENSEED)·或固定图id(hunhe/songjin/yaoshan)
   if(config.weather&&$("weather"))$("weather").value=config.weather;
   start({armies:config.armies,sideName:config.sideName,lead:config.lead,emperorSide:config.emperorSide});
+  if(config.observe&&typeof state!=="undefined"&&state){state.observe=true;try{banner("旁观战事","此战非御驾所将·天命自定·唯观之","aid");}catch(_o){}}   // ★旁观(O12·战况重演):封指挥·战果主游戏侧丢弃
   if(config.reserves&&typeof state!=="undefined"&&state){   // ★溢出队(>35/方)→援军波次涌入(接 reinf·从友方后缘·分波抱团)
     var waves=[];["ming","jin"].forEach(function(side){var res=config.reserves[side]||[];if(!res.length)return;
       var per=12,ey=side==="ming"?WORLD.h*0.97:WORLD.h*0.03;
