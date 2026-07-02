@@ -527,5 +527,16 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/requestAnimationFrame\(place\)/.test(uiSrcA) && /#tm-aa-atpop\.below,#tm-aa-cmdpop\.below/.test(uiSrcA), 'H10 浮层上下自适应(rAF 复测·@与/同治空态飞出屏外)');
   ok(/_plusAct\(act\);\n    \}\);/.test(uiSrcA.replace(/\r/g, '')) && /run: function \(\) \{ _plusAct\('review'\); \}/.test(uiSrcA), 'H10 ＋菜单与面板共用 _plusAct 派发(零新行为)');
 
+  // ───────── H11 · 会话分叉+AI 自动标题(CC /branch + ai-title 对照) ─────────
+  console.log('— H11 分叉与自动标题 —');
+  var uiSrcB = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/function forkSession/.test(uiSrcB) && /'·分支'/.test(uiSrcB) && /switchSession\(nid\)/.test(uiSrcB), 'H11 分叉=正文快照复制新会话+切换过去');
+  ok(/ri-fork/.test(uiSrcB) && /k: 'fork', t: '分叉会话'/.test(uiSrcB) && /forkSession: forkSession/.test(uiSrcB), 'H11 侧栏⎇按钮+/分叉会话命令+导出');
+  ok(/无从分叉/.test(uiSrcB) && /分叉失败/.test(uiSrcB), 'H11 无正文/quota 满两条失败路都有话讲');
+  ok(/function _autoTitle/.test(uiSrcB) && /name: 'setTitle'/.test(uiSrcB) && /if \(!old\) _autoTitle\(id, request, meta\.summary\);/.test(uiSrcB), 'H11 新会话首存后异步起题(结构化 setTitle 小调用)');
+  ok(/cfg\.model2 && cfg\.model2 !== cfg\.model/.test(uiSrcB), 'H11 起题优先走次要模型(便宜活给便宜模型)');
+  ok(/m\.titleKind !== 'custom'/.test(uiSrcB) && /m\.titleKind = 'custom'/.test(uiSrcB), 'H11 玩家改名 titleKind=custom·AI 标题绝不覆盖(CC custom-title 层级)');
+  ok(/if \(!cfg\.key \|\| !cfg\.url\) return;/.test(uiSrcB), 'H11 未配 API 静默跳过(标题保持首句·零打扰)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

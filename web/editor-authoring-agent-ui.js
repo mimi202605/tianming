@@ -518,11 +518,12 @@
       '.rail-item .ri-meta{font-size:10.5px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.rail-item .ri-meta .ri-ok{color:var(--ok)}',
       '.rail-item .ri-meta .ri-file{color:var(--ac)}',   // S5 · 属别的剧本 → 切换徽记
-      '.rail-item .ri-del,.rail-item .ri-ren{position:absolute;right:5px;top:6px;display:none;background:none;border:none;color:var(--tx3);font-size:13px;line-height:1;padding:2px 4px;border-radius:6px;cursor:pointer}',
+      '.rail-item .ri-del,.rail-item .ri-ren,.rail-item .ri-fork{position:absolute;right:5px;top:6px;display:none;background:none;border:none;color:var(--tx3);font-size:13px;line-height:1;padding:2px 4px;border-radius:6px;cursor:pointer}',
       '.rail-item .ri-ren{right:24px;font-size:11px;top:7px}',
-      '.rail-item:hover .ri-del,.rail-item:hover .ri-ren{display:block}',
+      '.rail-item .ri-fork{right:43px;font-size:11px;top:7px}',
+      '.rail-item:hover .ri-del,.rail-item:hover .ri-ren,.rail-item:hover .ri-fork{display:block}',
       '.rail-item .ri-del:hover{color:var(--bad);background:var(--sunken)}',
-      '.rail-item .ri-ren:hover{color:var(--tx);background:var(--sunken)}',
+      '.rail-item .ri-ren:hover,.rail-item .ri-fork:hover{color:var(--tx);background:var(--sunken)}',
       '.rail-empty{font-size:11.5px;color:var(--tx3);padding:8px 6px;line-height:1.6}',
       '#tm-aa-railclear{background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:6px;border-radius:8px;font-family:inherit}#tm-aa-railclear:hover{color:var(--bad);background:var(--surface)}',
       '#tm-aa-body{padding:10px 20px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;position:relative;flex:1 1 auto;min-height:0;transition:margin-left .15s ease-out;',
@@ -1040,6 +1041,7 @@
       { k: 'critics', t: '三堂会审', d: '拟稿+史官+谏官（武装下一轮生成）', run: function () { _plusAct('critics'); } },
       { k: 'preflight', t: '运行时体检', d: '确定性检查·免 API', run: function () { _plusAct('preflight'); } },
       { k: 'changelog', t: '版本说明', d: '汇总已应用改动·零 token', run: function () { runChangelogUI(); } },
+      { k: 'fork', t: '分叉会话', d: '把当前会话复制成分支再演化（原线不动）', run: function () { if (ui._sessId) forkSession(ui._sessId); else setStatus('当前没有活动会话（先跑一轮，或从侧栏选中一条）'); } },
       { k: 'checkpoint', t: '存检查点', d: '当前剧本存为可回退存档点', run: function () { _plusAct('checkpoint'); } },
       { k: 'undo', t: '撤销上次应用', d: '回到上次应用前快照', run: function () { _plusAct('undo'); } },
       { k: 'perm-plan', t: '权限·问策', d: '只读出计划·绝不动剧本', run: function () { var p = _loadPerm(); p.mode = 'plan'; _applyPerm(p); setStatus('权限已切到「问策」· 只读出计划'); } },
@@ -1188,6 +1190,7 @@
         + '<div class="ri-req">' + esc(m.title || '（未命名会话）') + '</div>'
         + '<div class="ri-meta">' + (other ? '<span class="ri-file">⇄ ' + esc(m.fileLabel || '?') + '</span> · ' : (m.fileLabel ? esc(m.fileLabel) + ' · ' : ''))
         + (m.msgs || 0) + ' 条 · ' + esc(m.kind || '') + '</div>'
+        + '<button type="button" class="ri-fork" data-fork="' + esc(m.id) + '" title="分叉该会话（复制成新会话·从这里分头演化）">⎇</button>'
         + '<button type="button" class="ri-ren" data-ren="' + esc(m.id) + '" title="重命名会话">✎</button>'
         + '<button type="button" class="ri-del" data-del="' + esc(m.id) + '" title="删除该会话">×</button>'
         + '</div>');
@@ -1212,6 +1215,8 @@
     if (ui.els.raillist) ui.els.raillist.addEventListener('click', function (ev) {
       var del = ev.target && ev.target.closest ? ev.target.closest('.ri-del') : null;
       if (del) { deleteSession(del.getAttribute('data-del')); _renderRail(ui._railQ || ''); return; }
+      var fk8 = ev.target && ev.target.closest ? ev.target.closest('.ri-fork') : null;
+      if (fk8) { if (ui.running) { setStatus('运行中 · 先停止再分叉'); return; } forkSession(fk8.getAttribute('data-fork')); _renderRail(ui._railQ || ''); return; }
       var ren = ev.target && ev.target.closest ? ev.target.closest('.ri-ren') : null;
       if (ren) {
         var rid = ren.getAttribute('data-ren'), row = ren.closest('.rail-item');
@@ -1589,6 +1594,7 @@
       } else { try { localStorage.removeItem(SESS_BODY + id); } catch (e2) {} }   // 仍过大：留档卡·正文宁缺毋 quota 爆
       _evictSessBodies(0);
       _sessPtrSet(meta.fileKey, id);
+      if (!old) _autoTitle(id, request, meta.summary);   // S8 · 新会话首存后异步起短标题(CC ai-title)
       if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e3) {} }
     } catch (e) {}
   }
@@ -1717,14 +1723,55 @@
     if (q) l = l.filter(function (m) { return ((m.title || '') + ' ' + (m.fileLabel || '') + ' ' + (m.kind || '') + ' ' + (m.summary || '')).toLowerCase().indexOf(q) >= 0; });
     return l;
   }
-  // CC custom-title 对照：玩家改名永远压过自动标题（_saveSession 里 old.title 优先·改名后续存不回退）
+  // CC custom-title 对照：玩家改名永远压过自动标题（titleKind=custom·AI 标题不再覆盖）
   function renameSession(id, title) {
     title = String(title || '').trim().slice(0, 60);
     if (!title) return false;
     var idx = _sessIndex(), hit = false;
-    idx.forEach(function (m) { if (m && m.id === id) { m.title = title; hit = true; } });
+    idx.forEach(function (m) { if (m && m.id === id) { m.title = title; m.titleKind = 'custom'; hit = true; } });
     if (hit) { _sessIndexSave(idx); if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e) {} } }
     return hit;
+  }
+  // S8(CC /branch + --fork-session 对照) · 会话分叉：正文快照复制成新会话（新 id·同剧本绑定），
+  //   从这一点分头演化——原会话不动，试两种改法/保底探索都不怕弄脏原线。
+  function forkSession(id) {
+    var src = null;
+    _sessIndex().forEach(function (m) { if (!src && m && m.id === id) src = m; });
+    if (!src) { setStatus('该会话已不存在'); return null; }
+    var body = _sessBody(id);
+    if (!body) { setStatus('该会话正文已按容量清理·无从分叉'); return null; }
+    ui._sessSeq = (ui._sessSeq || 0) + 1;
+    var nid = 's' + Date.now() + '-' + ui._sessSeq + 'f';
+    try { localStorage.setItem(SESS_BODY + nid, JSON.stringify({ id: nid, ts: Date.now(), todos: body.todos || [], conversation: body.conversation })); }
+    catch (e) { setStatus('分叉失败（本地空间不足·可先删几条旧会话）'); return null; }
+    var meta = { id: nid, ts: Date.now(), created: Date.now(), fileKey: src.fileKey, fileLabel: src.fileLabel,
+      title: String(src.title || '会话').slice(0, 52) + '·分支', titleKind: src.titleKind === 'custom' ? 'custom' : 'auto',
+      msgs: src.msgs, tokens: 0, kind: src.kind, summary: src.summary || '' };
+    var idx = _sessIndex(); idx.unshift(meta); _sessIndexSave(idx);
+    _evictSessBodies(0);
+    setStatus('已从「' + String(src.title || '').slice(0, 20) + '」分叉 · 正切换到分支');
+    switchSession(nid);
+    return nid;
+  }
+  // S8(CC ai-title 对照) · 会话首轮跑完后异步起短标题：走次要模型（没配则主模型）·一次结构化小调用·
+  //   静默失败保持首句标题·玩家改过名(titleKind=custom)绝不覆盖。
+  function _autoTitle(id, request, summary) {
+    try {
+      if (!AA || typeof AA.callWithTools !== 'function' || typeof AA.loadEditorApiConfig !== 'function') return;
+      var cfg = AA.loadEditorApiConfig() || {};
+      if (!cfg.key || !cfg.url) return;
+      if (cfg.model2 && cfg.model2 !== cfg.model) { cfg = JSON.parse(JSON.stringify(cfg)); cfg.model = cfg.model2; }
+      var tools = [{ name: 'setTitle', description: '提交会话标题', parameters: { type: 'object', properties: { title: { type: 'string', description: '不超过 12 个字的中文标题·名词短语·不带引号句号' } }, required: ['title'] } }];
+      AA.callWithTools([{ role: 'user', text: '给这轮剧本编辑会话起一个不超过 12 个字的中文短标题（概括意图·名词短语），调用 setTitle 提交。\n玩家需求：' + String(request || '').slice(0, 300) + (summary ? '\n完成摘要：' + String(summary).slice(0, 200) : '') }], tools, { cfg: cfg, maxTok: 260, system: '你只负责起标题。必须调用 setTitle 工具提交，不要输出其他内容。' })
+        .then(function (r) {
+          var tc = r && Array.isArray(r.toolCalls) ? r.toolCalls.filter(function (c) { return c && c.name === 'setTitle'; })[0] : null;
+          var t = tc && tc.input && String(tc.input.title || '').trim().replace(/^["'「『]+|["'」』。]+$/g, '').slice(0, 16);
+          if (!t) return;
+          var idx = _sessIndex(), hit = false;
+          idx.forEach(function (m) { if (m && m.id === id && m.titleKind !== 'custom') { m.title = t; m.titleKind = 'ai'; hit = true; } });
+          if (hit) { _sessIndexSave(idx); if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e0) {} } }
+        }, function () {});
+    } catch (e) {}
   }
   function clearSessions() {
     try { _sessIndex().forEach(function (m) { if (m && m.id) { try { localStorage.removeItem(SESS_BODY + m.id); } catch (e0) {} } }); localStorage.removeItem(SESS_KEY); } catch (e) {}
@@ -3142,5 +3189,5 @@
 
   // 暴露给测试/调试
   global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles,
-    listSessions: listSessions, switchSession: switchSession, deleteSession: deleteSession, renameSession: renameSession };
+    listSessions: listSessions, switchSession: switchSession, deleteSession: deleteSession, renameSession: renameSession, forkSession: forkSession };
 })(typeof window !== 'undefined' ? window : this);
