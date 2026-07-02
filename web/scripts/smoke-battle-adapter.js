@@ -132,5 +132,11 @@ ok(acfg.mapSeed === ADP.provinceSeed('蓟州'), '⑮ 自解析:provinceName 缺�
 const acfg2 = ADP.buildBattleConfig(winterArmy, enemy, { GM: { turn: 4 }, terrainTag: '草原' });   // 显式 terrainTag 覆盖·GM 冬
 ok(acfg2.terrainProfile.biome === 'plain' && acfg2.weather === 'snow', '⑮ 显式 terrainTag 优先·weather 仍由冬季自解析→snow');
 
+/* ⑯ 修饰位 flags 透传(§3 v2 LLM直出flag拼装):队 flags→token flags(白名单滤)·无 flags 不加字段 */
+const tokF = ADP.unitToToken({ id: 'q1', arm: 'cav', sub: 'shock', '番号': '象兵', men: 600, '历练': 40, flags: ['scare', 'slow', 'shock', 'miscellaneous', 'bogus'] }, { id: 'a9', morale: 70 }, null);
+ok(JSON.stringify(tokF.flags) === '["scare","slow","shock"]', '⑯ token flags 白名单透传(miscellaneous/bogus 滤除)');
+const tokN = ADP.unitToToken({ id: 'q2', arm: 'step', sub: 'spear', '番号': '长枪', men: 800, '历练': 30 }, { id: 'a9', morale: 70 }, null);
+ok(!('flags' in tokN), '⑯ 无 flags 队→token 不加字段(原型 hasFlag 恒 false·哈希不扰)');
+
 console.log('\n结果: ' + A + ' 通过 / ' + F + ' 失败');
 process.exit(F ? 1 : 0);

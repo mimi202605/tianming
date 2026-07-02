@@ -71,6 +71,29 @@ function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; conso
   ok((await AU.learnUnknownTypes(null, {})).reason === 'no-armies', '⑧ 无GM→no-armies(不崩)');
   ok((await AU.learnUnknownTypes({ armies: [] }, { callAI: mockAI })).reason === 'none-unknown', '⑧ 空军群→none-unknown');
 
+  /* ⑨ LLM 直出 flags 拼装(§3 v2):学到 flags→存词典→classify 命中时与修饰位正则 flags 合并去重·非法 flag 滤除 */
+  AU._clearLexicon();
+  const flagAI = () => Promise.resolve('[{"name":"象兵","arm":"cav","sub":"shock","flags":["shock","scare","slow"]},{"name":"藤甲死士","arm":"step","sub":"sword","flags":["shield","elite","fly","???"]}]');
+  const GM6 = { armies: [{ id: 'f1', composition: [{ type: '象兵', count: 600 }, { type: '藤甲死士', count: 400 }] }] };
+  AU.ensureAllArmies(GM6);
+  const r7 = await AU.learnUnknownTypes(GM6, { callAI: flagAI });
+  ok(r7.learned === 2, '⑨ 学会2个带flags');
+  ok(JSON.stringify(GM6._unitLexicon['象兵'].flags) === '["shock","scare","slow"]', '⑨ 象兵 flags=[shock,scare,slow] 入持久词典');
+  ok(JSON.stringify(GM6._unitLexicon['藤甲死士'].flags) === '["shield","elite"]', '⑨ 非法flag(fly/???)滤除·只留 shield/elite');
+  const cx = AU.classifyUnitType('象兵');
+  ok(cx.src === 'lexicon' && cx.flags.indexOf('scare') >= 0 && cx.flags.indexOf('slow') >= 0, '⑨ classify 命中词典→flags 直出');
+  const cy = AU.classifyUnitType('铁甲藤甲死士');   // 名含「铁甲」→正则 heavy;词典无此全名→fallback 不撞
+  ok(cy.src === 'fallback', '⑨ 变体名不误命中词典(全名匹配)');
+  AU.ensureArmyUnits(GM6.armies[0]);
+  const ex = GM6.armies[0].units.find(u => u['番号'] === '象兵');
+  ok(ex && Array.isArray(ex.flags) && ex.flags.indexOf('scare') >= 0, '⑨ units[] 队对象带 flags(→adapter token→原型 hasFlag)');
+  /* ⑨ 水合往返:flags 随存档 GM._unitLexicon 载回活缓存 */
+  AU._clearLexicon();
+  const GM7 = { _unitLexicon: { '象兵': { arm: 'cav', sub: 'shock', flags: ['scare', 'bogus'] } }, armies: [{ id: 'g1', composition: [{ type: '象兵', count: 500 }] }] };
+  AU.ensureAllArmies(GM7);
+  const cz = AU.classifyUnitType('象兵');
+  ok(cz.src === 'lexicon' && cz.flags.indexOf('scare') >= 0 && cz.flags.indexOf('bogus') < 0, '⑨ 存档水合 flags 生效·非法项滤除');
+
   console.log('\n结果: ' + A + ' 通过 / ' + F + ' 失败');
   process.exit(F ? 1 : 0);
 })();
