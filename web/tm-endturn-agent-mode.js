@@ -174,7 +174,7 @@
     var sys = '你是史识判官。判断君上本回合举措是否「非常规」——突破常规施政惯例、创造性、或历史上罕见之举(相对寻常的任免/赏罚/常规诏令而言)。只返回 JSON。';
     var u = '【君上本回合举措】\n' + acts.map(function (a) { return '· ' + a; }).join('\n') + '\n\n返回 JSON:{"unusual":true/false,"aspect":"非常规之处(≤30字·寻常则空)","precedentQuery":"可深查的史例检索词(≤20字·如『权臣夺兵权』『迁都』『裁撤冗官』)"}·寻常举措 unusual:false。';
     var raw;
-    try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: u }], 600, null, 'primary', { priority: 'normal', timeoutMs: 30000, maxRetries: 1, id: 'agent_anomaly_scan' }); }
+    try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: u }], 600, null, 'secondary', { priority: 'normal', timeoutMs: 30000, maxRetries: 1, id: 'agent_anomaly_scan' }); }   /* T2(审计②) · 二分类=机械活下 secondary(未配自动回落 primary) */
     catch (e) { return null; }
     var p = _safeJSON(raw);
     if (!p || !p.unusual) return null;
@@ -487,7 +487,7 @@
     var raw;
     try {
       _show('⟨执政⟩单发裁断·落地诏令…', 70);
-      raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: user }], 2800, null, 'primary');
+      raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: user }], 2800, null, 'secondary');   /* T2(审计②) · 动作清单抽取=机械活下 secondary(未配自动回落 primary) */
     } catch (e) { try { console.warn('[agent-mode] 动作脚手架调用失败', e); } catch (_) {} return 0; }
     var parsed = _safeJSON(raw);
     var acts = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
@@ -793,8 +793,40 @@
     var _anomalyN = '';
     try { if (_agentAnomalyOn(P)) { var _anRes = await _anomalyScan(ctx, gm); if (_anRes) { _anomalyN = _anomalyNudge(_anRes); gm._agentAnomaly = _anRes; } } } catch (_anE) {}
     var _timeCtx = _timeContext(gm, resolutionTurn);   // 本回合时间(纪元年月+历时+时间相关后果指引)·显要处·让 agent 推演不脱离时间
-    var baseTranscript = _buildSystemPrompt() + (_biasInject ? '\n' + _biasInject : '') + (_timeCtx ? '\n' + _timeCtx : '') + '\n\n' + (gm._turnPlayerOps ? gm._turnPlayerOps + '\n\n' : '') + (_anomalyN ? _anomalyN + '\n\n' : '') + (_memDossier ? _memDossier + '\n\n' : '') + (_edictDossier ? _edictDossier + '\n\n' : '') + basis; // 常量基线(系统词+偏差校正+本回合时间+玩家操作+冷门深查+跨回合记忆+在办诏令+依据)·不随轮数膨胀
+    // 基线组装抽成可重拼的份件——T1 预算护栏按份裁剪后重拼(常量基线:系统词+偏差校正+本回合时间+玩家操作+冷门深查+跨回合记忆+在办诏令+依据·不随轮数膨胀)
+    var _bParts = { sys: _buildSystemPrompt(), bias: _biasInject, time: _timeCtx, ops: gm._turnPlayerOps || '', anomaly: _anomalyN, mem: _memDossier, edicts: _edictDossier, basis: basis };
+    function _assembleBase() {
+      return _bParts.sys + (_bParts.bias ? '\n' + _bParts.bias : '') + (_bParts.time ? '\n' + _bParts.time : '') + '\n\n' + (_bParts.ops ? _bParts.ops + '\n\n' : '') + (_bParts.anomaly ? _bParts.anomaly + '\n\n' : '') + (_bParts.mem ? _bParts.mem + '\n\n' : '') + (_bParts.edicts ? _bParts.edicts + '\n\n' : '') + _bParts.basis;
+    }
+    var baseTranscript = _assembleBase();
     var state = { finalized: false, summary: '', narrative: '', writeAttempts: 0, writeOk: 0, rounds: 0, depthTools: {}, depthFailed: [], finalizeRejects: 0, engineDims: engineDims };
+    // T1(审计①·Codex/CC 上下文预算对照) · 基线预算护栏:basis(全量依据)+记忆卷宗(~15K字)此前零核算·
+    //   大存档+小窗口模型静默超窗(服务端截尾→产出劣化/失败)。按 getPromptBudget 收敛:超预算先砍
+    //   记忆卷宗尾·再砍 basis 尾(头部保留·系统词/玩家操作/时间是推演命门不动)·细节 agent 可用读工具按需查回。
+    try {
+      if (typeof estimateTokens === 'function' && typeof getPromptBudget === 'function') {
+        var _bgT = getPromptBudget();
+        var _capT = Math.floor(_bgT.budget * 0.9);   // 基线只许占 90%·余量留轮日志+催办+工具schema
+        var _est0 = estimateTokens(baseTranscript);
+        if (_est0 > _capT) {
+          var _mark = '\n…（超上下文预算已截·后续细节可用读工具按需查）';
+          var _cuts = [
+            function () { if (_bParts.mem.length > 2400) _bParts.mem = _bParts.mem.slice(0, Math.floor(_bParts.mem.length / 2)) + _mark; },
+            function () { if (_bParts.basis.length > 6000) _bParts.basis = _bParts.basis.slice(0, Math.floor(_bParts.basis.length * 0.7)) + _mark; },
+            function () { if (_bParts.mem.length > 1400) _bParts.mem = _bParts.mem.slice(0, 1200) + _mark; },
+            function () { if (_bParts.basis.length > 4000) _bParts.basis = _bParts.basis.slice(0, Math.floor(_bParts.basis.length * 0.7)) + _mark; }
+          ];
+          for (var _ci = 0; _ci < _cuts.length; _ci++) {
+            _cuts[_ci]();
+            baseTranscript = _assembleBase();
+            if (estimateTokens(baseTranscript) <= _capT) break;
+          }
+          var _est1 = estimateTokens(baseTranscript);
+          state.promptTrim = { from: _est0, to: _est1, budget: _bgT.budget, contextK: _bgT.contextK };
+          try { console.warn('[agent-mode] T1 基线超预算已收敛:' + _est0 + '→' + _est1 + ' tok(预算 ' + _capT + '·窗口 ' + _bgT.contextK + 'K)'); } catch (_) {}
+        }
+      }
+    } catch (_bgE) { try { console.warn('[agent-mode] T1 预算护栏异常(不阻断)', _bgE); } catch (_) {} }
     var _stall = 0;  // 连续"只察看不动手"轮数·防空转(真机逮弱模型重复 get_overview 原地打转)
     var _mtBase = (P.conf && P.conf.agentModeMaxTok) || 2400;  // 刀H2 · 输出上限基数
     var _tokBump = 0;  // 刀H2 · 输出截断自愈:被腰斩且没调成工具 → 上限×2重试本轮(≤2次·封顶9600)
@@ -893,11 +925,11 @@
       var _DTac = TM.Endturn.AgentDepthTools;
       if (_DTac) {
         // 顺序:先记忆固化(状态盘供叙事)→ 各维度深析(势力/经济/军事/NPC/世界·覆盖脊柱)→ 最后史记(综合成文)
-        var _suite = ['recall_consolidate', 'deepen_factions', 'deepen_economy', 'deepen_military', 'deepen_npcs', 'deepen_relations', 'deepen_letters', 'deepen_court', 'deepen_world', 'deepen_narrative'];
+        var _suite = ['recall_consolidate', 'deepen_factions', 'deepen_economy', 'deepen_military', 'deepen_npcs', 'deepen_cognition', 'deepen_relations', 'deepen_letters', 'deepen_court', 'deepen_world', 'deepen_narrative'];   /* T3(审计⑤) · deepen_cognition 此前不在 suite 也不在循环工具→agent 模式永不触发·NPC 认知层每回合静默缺失 */
         // 自适应:地板工具(记忆/NPC/世界/史记/朝务)永远跑;维度专项(势力/经济/军事/关系/书信)仅本回合该维度真有活动才跑。agentAdaptiveDeepen=false 关回全跑。
         //   deepen_court(御案时政+求见)入地板——世界向案头汇聚的待决事务每回合都该演化(无则返回空·不强凑);deepen_letters 门控 relations(人际有动静才生书信)。
         var _floorDeepen = { recall_consolidate: 1, deepen_npcs: 1, deepen_world: 1, deepen_narrative: 1, deepen_court: 1 };
-        var _gateDim = { deepen_factions: 'faction', deepen_economy: 'fiscal', deepen_military: 'military', deepen_relations: 'relations', deepen_letters: 'relations' };
+        var _gateDim = { deepen_factions: 'faction', deepen_economy: 'fiscal', deepen_military: 'military', deepen_relations: 'relations', deepen_letters: 'relations', deepen_cognition: 'relations' };   /* T3 · 认知随人际动静演化(死维度不空转) */
         var _adaptiveDeepen = !(P.conf && P.conf.agentAdaptiveDeepen === false);
         var _activeD = _adaptiveDeepen ? _activeDims(gm, state) : null;
         state.deepenSkipped = [];

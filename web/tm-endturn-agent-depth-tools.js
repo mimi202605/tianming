@@ -483,12 +483,18 @@
   }
 
   // ── D3 deepen_narrative:复用 sc2 链·叙事多遍打磨(纲要→正文·两遍)·替单遍 finalize 叙事 ──
+  // T2(审计②·模型分工修正) · 史记正文是玩家逐字读的质量命门·此前错落 secondary(与机械深析同档)——
+  //   默认回 primary·P.conf.agentNarrativeTier 可改(如明确要省钱)。未配 secondary 时两值等价·零变化。
+  function _narrTier() {
+    try { var pc = (root.P && root.P.conf) || (typeof P !== 'undefined' && P && P.conf) || {}; return pc.agentNarrativeTier || 'primary'; }
+    catch (e) { return 'primary'; }
+  }
   async function _deepenNarrative(gm, input) {
     if (!gm) return { ok: false, text: '(无存档)' };
     if (typeof root.callAIMessages !== 'function') return { ok: false, text: '(callAIMessages 未加载)' };
     var turn = gm.turn || 0; var digest = _turnDigest(gm); var memCtx = _memoryContext(gm);   // memCtx:跨回合记忆·史记须接前文
     // 第1遍·纲要
-    var raw1; try { raw1 = await root.callAIMessages([{ role: 'system', content: '你是天命史官。先列本回合史记的关键脉络(不写正文)。只返回 JSON:{"beats":["要点1","要点2"],"tone":"基调"}' }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n列出本回合史记应涵盖的关键脉络(3-6 点·须呼应跨回合记忆中的情节线与伏笔)。' }], 900, null, 'secondary'); } catch (e) { return { ok: false, text: '(叙事纲要失败:' + (e && e.message) + ')' }; }
+    var raw1; try { raw1 = await root.callAIMessages([{ role: 'system', content: '你是天命史官。先列本回合史记的关键脉络(不写正文)。只返回 JSON:{"beats":["要点1","要点2"],"tone":"基调"}' }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n列出本回合史记应涵盖的关键脉络(3-6 点·须呼应跨回合记忆中的情节线与伏笔)。' }], 900, null, _narrTier()); } catch (e) { return { ok: false, text: '(叙事纲要失败:' + (e && e.message) + ')' }; }
     var t1 = (typeof raw1 === 'string') ? raw1 : ((raw1 && (raw1.content || raw1.text)) || ''); var o = _parse(t1);
     var beats = (o && Array.isArray(o.beats)) ? o.beats.join('；') : '';
     // 第2遍·据纲要成正文
@@ -523,9 +529,9 @@
     // ★工具调用优化(2026-06):后人戏说(raw3·_tokHouren≤24k)与史记主体(raw2·_tokRecord≤16k)均只依赖 raw1 纲要 beats、彼此独立·又是系统最大两次调用→**并行**(先 kick off raw3·再 await raw2·省 1 次最大调用墙钟·AI 队列自限真并发)。raw3 .catch 返 null·不阻断史记主体。
     var _hsFn = (root.TM && root.TM.Endturn && root.TM.Endturn.AI && root.TM.Endturn.AI.prompt && root.TM.Endturn.AI.prompt.hourenSpec);
     var _raw3P = _hsFn
-      ? root.callAIMessages([{ role: 'system', content: '你是天命史官·撰写《后人戏说》——把本回合还原为可感知的生活场景(具体人物/对话/动作/画面·与"政文"宏观政论文风迥异·勿写成评论摘要)。只返回 JSON。' }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n纲要:' + (beats || '(自拟)') + _hsFn({}) + _xinshi }], _tokHouren, null, 'secondary').catch(function () { return null; })
+      ? root.callAIMessages([{ role: 'system', content: '你是天命史官·撰写《后人戏说》——把本回合还原为可感知的生活场景(具体人物/对话/动作/画面·与"政文"宏观政论文风迥异·勿写成评论摘要)。只返回 JSON。' }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n纲要:' + (beats || '(自拟)') + _hsFn({}) + _xinshi }], _tokHouren, null, _narrTier()).catch(function () { return null; })
       : Promise.resolve(null);
-    var raw2; try { raw2 = await root.callAIMessages([{ role: 'system', content: '你是天命史官·产出本回合史记主体记录(对齐 LLM 管线 ctx.record 契约·各文体风格有别·后人戏说另由专项 pass 出)。' + _schema }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n纲要:' + (beats || '(自拟)') + '\n\n据此产出完整史记记录(时政记/实录/政文 + 君上状态/主角内心/宰辅进言 + 标题/摘要)·各体文风须别·须达字数下限·须续接跨回合记忆(呼应过往与情节线·勿失忆重起)·**人物言行须与其本回合在问对/朝议/书信中的表现一致(勿矛盾·勿人格分裂)**。' + _xinshi }], _tokRecord, null, 'secondary'); } catch (e) { return { ok: false, text: '(史记记录失败:' + (e && e.message) + ')' }; }
+    var raw2; try { raw2 = await root.callAIMessages([{ role: 'system', content: '你是天命史官·产出本回合史记主体记录(对齐 LLM 管线 ctx.record 契约·各文体风格有别·后人戏说另由专项 pass 出)。' + _schema }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n纲要:' + (beats || '(自拟)') + '\n\n据此产出完整史记记录(时政记/实录/政文 + 君上状态/主角内心/宰辅进言 + 标题/摘要)·各体文风须别·须达字数下限·须续接跨回合记忆(呼应过往与情节线·勿失忆重起)·**人物言行须与其本回合在问对/朝议/书信中的表现一致(勿矛盾·勿人格分裂)**。' + _xinshi }], _tokRecord, null, _narrTier()); } catch (e) { return { ok: false, text: '(史记记录失败:' + (e && e.message) + ')' }; }
     var t2 = (typeof raw2 === 'string') ? raw2 : ((raw2 && (raw2.content || raw2.text)) || ''); var p = _parse(t2);
     // ★2026-07-01·健壮兜底(镜像下方 houren 兜底·根治"实录/政文直接没了"):史记主体是长 prose(时政记+实录+政文
     //   动辄数千字)·内部真换行/未转义引号极易致 JSON.parse 失败→p 空→**整个史记四体丢弃**→renderer 回落
