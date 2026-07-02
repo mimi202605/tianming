@@ -11,7 +11,7 @@ const EXPECTED_REGION_COUNT = 182;
 
 const FACTIONS = {
   'fac-song': { name: '宋', color: '#C62828', realm: '大宋', control: '宋廷实控' },
-  'fac-jin': { name: '金', color: '#455A64', realm: '大金', control: '金军实控' },
+  'fac-jin': { name: '金', color: '#7E57C2', realm: '大金', control: '金军实控' },
   'fac-hebei-yijun': { name: '河北义军', color: '#1565C0', realm: '两河忠义寨', control: '忠义寨控制' },
   'fac-xijun': { name: '关陕西军', color: '#6A5ACD', realm: '关陕西军', control: '西军控制' },
   'fac-taihang-bzj': { name: '太行八字军', color: '#0D47A1', realm: '太行八字军', control: '义军控制' },
@@ -24,7 +24,7 @@ const FACTIONS = {
   'fac-karakhan-west': { name: '西喀喇汗国', color: '#92400E', realm: '西喀喇汗国', control: '西喀喇汗实控' },
   'fac-qocho': { name: '高昌回鹘', color: '#C2410C', realm: '高昌回鹘国', control: '亦都护实控' },
   'fac-caoyuan': { name: '乃蛮部', color: '#8D6E63', realm: '乃蛮部', control: '乃蛮部控制' },
-  'fac-kereit': { name: '克烈部', color: '#7E57C2', realm: '克烈部', control: '克烈部控制' },
+  'fac-kereit': { name: '克烈部', color: '#455A64', realm: '克烈部', control: '克烈部控制' },
   'fac-merkit': { name: '蔑儿乞部', color: '#00897B', realm: '蔑儿乞部', control: '蔑儿乞部控制' },
   'fac-mongol': { name: '蒙兀诸部', color: '#3949AB', realm: '蒙兀诸部', control: '蒙兀诸部控制' },
   'fac-tatar': { name: '塔塔儿联盟', color: '#9E9D24', realm: '塔塔儿联盟', control: '塔塔儿部控制' },
@@ -87,6 +87,35 @@ const ECONOMY_BASE_DEFAULTS = {
   disasterRecord: []
 };
 
+const CIVIL_SERVICE_OWNER_KEYS = new Set([
+  'fac-song',
+  'fac-jin',
+  'fac-goryeo',
+  'fac-daiviet',
+  'fac-dali',
+  'fac-japan'
+]);
+
+const SOUTHWEST_OWNER_KEYS = new Set([
+  'fac-dali',
+  'fac-jianchang',
+  'fac-nw-yunnan',
+  'fac-wumeng',
+  'fac-xinan-tribes',
+  'fac-jinchi',
+  'fac-luodian',
+  'fac-ziqi'
+]);
+
+const MARITIME_OWNER_KEYS = new Set([
+  'fac-liuqiu',
+  'fac-nanhai',
+  'fac-mai',
+  'fac-visayas',
+  'fac-butuan',
+  'fac-beihai'
+]);
+
 const REGION_SOCIOECONOMIC_OVERRIDES = {
   div_1781355760530_5834: { population: 80000, prosperity: 24, taxLevel: '低', economyBase: { farmland: 8, commerceVolume: 18000, saltProduction: 2, mineralProduction: 4, horseProduction: 14, fishingProduction: 8, roadQuality: 26 } },
   div_1781355389457_4291: { population: 260000, prosperity: 42, taxLevel: '中', economyBase: { farmland: 28, commerceVolume: 90000, saltProduction: 2, mineralProduction: 8, horseProduction: 18, fishingProduction: 8, roadQuality: 46 } },
@@ -131,6 +160,19 @@ const REGION_SOCIOECONOMIC_OVERRIDES = {
   div_1781349997872_7279: { population: 200000, prosperity: 42, taxLevel: '中', economyBase: { farmland: 52, commerceVolume: 98000, saltProduction: 8, fishingProduction: 18, roadQuality: 54 } },
   div_1781349947087_7864: { population: 170000, prosperity: 38, taxLevel: '中', economyBase: { farmland: 50, commerceVolume: 56000, saltProduction: 2, fishingProduction: 8, roadQuality: 42 } },
 
+  div_1781400616464_643: { population: 920000 },
+  div_1781400635057_5515: { population: 470000 },
+  div_1781400651881_7356: { population: 700000 },
+  div_1781400673164_6669: { population: 1600000 },
+  div_1781400705823_4094: { population: 1150000 },
+  div_1781400715695_6981: { population: 560000 },
+  div_1781400739769_3153: { population: 760000 },
+
+  div_1781350142225_295: { population: 1050000 },
+  div_1781350274495_4414: { population: 130000 },
+  div_1781350291174_9801: { population: 180000 },
+  div_1781350305715_4661: { population: 450000 },
+
   div_1781399059930_267: { population: 95000, prosperity: 24, taxLevel: '盟贡', economyBase: { farmland: 4, commerceVolume: 15000, horseProduction: 60, roadQuality: 28 } },
   div_1781353164644_1158: { population: 26000, prosperity: 18, taxLevel: '盟贡', economyBase: { farmland: 3, commerceVolume: 5000, horseProduction: 22, roadQuality: 24 } },
   div_1781354621786_7079: { population: 62000, prosperity: 22, taxLevel: '盟贡', economyBase: { farmland: 4, commerceVolume: 11000, horseProduction: 48, roadQuality: 28 } },
@@ -170,31 +212,87 @@ function buildPopulationDetail(population, profile) {
   };
 }
 
+function clampNumber(value, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, n));
+}
+
 function buildFiscalDetail(population, economyBase, profile) {
   const fiscal = profile.fiscal || {};
   const tribute = Math.round(population * (fiscal.tributePerMouth || 0));
-  const landTax = Math.round(population * (fiscal.landTaxPerMouth || 0));
-  const commerceTax = Math.round((economyBase.commerceVolume || 0) * (fiscal.commerceRate || 0));
+  const landTax = Math.round(
+    (population * (fiscal.landTaxPerMouth || 0)) +
+    ((economyBase.imperialFarmland || 0) * (fiscal.imperialFarmlandUnit || 0)) +
+    ((economyBase.landsSurveyed || 0) * (fiscal.surveyedLandUnit || 0))
+  );
+  const commerceTax = Math.round(
+    ((economyBase.commerceVolume || 0) * (fiscal.commerceRate || 0)) +
+    ((economyBase.maritimeTradeVolume || 0) * (fiscal.maritimeRate ?? fiscal.commerceRate ?? 0)) +
+    ((economyBase.postRelays || 0) * (fiscal.relayUnit || 0))
+  );
   const resourceTax = Math.round(
     ((economyBase.saltProduction || 0) * (fiscal.saltUnit || 0)) +
     ((economyBase.horseProduction || 0) * (fiscal.horseUnit || 0)) +
-    ((economyBase.fishingProduction || 0) * (fiscal.fishUnit || 0))
+    ((economyBase.fishingProduction || 0) * (fiscal.fishUnit || 0)) +
+    ((economyBase.mineralProduction || 0) * (fiscal.mineralUnit || 0))
   );
+  const claimedRevenue = tribute + landTax + commerceTax + resourceTax;
+  const compliance = clampNumber(
+    profile.fiscalCompliance ??
+      (0.73 + ((Number(profile.minxinLocal) || 45) - 45) / 250 - ((Number(profile.corruptionLocal) || 25) - 25) / 360),
+    0.52,
+    0.92
+  );
+  const actualRevenue = Math.max(1, Math.round(claimedRevenue * compliance));
+  const remitRate = clampNumber(profile.remitRate ?? (profile.fiscalAutonomy ? 1 - profile.fiscalAutonomy : 0.45), 0.12, 0.72);
+  const remittedToCenter = Math.round(actualRevenue * remitRate);
+  const retainedBudget = Math.max(0, actualRevenue - remittedToCenter);
+  const skimmingRate = clampNumber(
+    profile.skimmingRate ?? (0.05 + ((Number(profile.corruptionLocal) || 25) - 20) / 420),
+    0.02,
+    0.22
+  );
+  const autonomy = clampNumber(profile.fiscalAutonomy ?? (1 - remitRate), 0.08, 0.88);
+  const taxBurden = Math.round(clampNumber(
+    profile.taxBurden ?? (24 + (claimedRevenue / Math.max(1, population)) * 85 + (1 - compliance) * 18),
+    12,
+    72
+  ));
+  const grainOutput = Math.max(1, Math.round(population * (profile.grainPerMouth || 0.08)));
   return {
     '岁贡折': tribute,
     '两税': landTax,
     '商税': commerceTax,
     '盐茶酒课': resourceTax,
-    '岁入总': tribute + landTax + commerceTax + resourceTax
+    '岁入总': claimedRevenue,
+    claimedRevenue,
+    actualRevenue,
+    remittedToCenter,
+    retainedBudget,
+    compliance: Number(compliance.toFixed(2)),
+    skimmingRate: Number(skimmingRate.toFixed(2)),
+    autonomy: Number(autonomy.toFixed(2)),
+    taxBurden,
+    moneyOutput: actualRevenue,
+    grainOutput
   };
 }
 
 function buildPublicTreasury(population, fiscalDetail, profile) {
   const fiscalTotal = fiscalDetail['岁入总'];
+  const money = Math.round(fiscalTotal * (profile.treasuryYears || 1.5));
+  const grain = Math.round(population * (profile.grainPerMouth || 0.08));
+  const military = Math.round(fiscalTotal * (profile.militaryYears || 0.8));
+  const cloth = Math.max(1, Math.round(population * (profile.clothPerMouth || 0.035)));
   return {
-    '库存折贯': Math.round(fiscalTotal * (profile.treasuryYears || 1.5)),
-    '常平仓石': Math.round(population * (profile.grainPerMouth || 0.08)),
-    '军资库': Math.round(fiscalTotal * (profile.militaryYears || 0.8))
+    '库存折贯': money,
+    '常平仓石': grain,
+    '军资库': military,
+    money,
+    grain,
+    cloth,
+    military
   };
 }
 
@@ -203,6 +301,246 @@ function buildEconomy(overrides) {
     imperialAssets: Object.assign({}, ECONOMY_BASE_DEFAULTS.imperialAssets, overrides?.imperialAssets || {}),
     disasterRecord: Array.isArray(overrides?.disasterRecord) ? overrides.disasterRecord : []
   });
+}
+
+function hasName(region, pattern) {
+  return pattern.test(region.name || '');
+}
+
+function hasCoastalEconomy(region, ownerKey) {
+  return MARITIME_OWNER_KEYS.has(ownerKey) || hasName(region, /海|岛|港|州·复州|平州|合懒|辽阳|高丽|广州|福州|杭州|琼州|两浙|福建|江宁|海东|清化|红河|若开|下缅甸|日本|东海道|北陆|西海道|南海道|山阳|山阴|骨嵬|流鬼|夜叉|虾夷/);
+}
+
+function hasRiverEconomy(region) {
+  return hasName(region, /江|河|湖|泽|淮|红河|富良|蒲甘|成都|潼川|夔州|鄂州|洪州|襄阳|杭州|江宁|开封|河中|河间|平阳|真定|太原/);
+}
+
+function hasMountainMinerals(region, ownerKey) {
+  return SOUTHWEST_OWNER_KEYS.has(ownerKey) || ownerKey === 'fac-kham' || ownerKey === 'fac-guge' ||
+    hasName(region, /山|岭|高原|金齿|乌蒙|乌撒|建昌|磨些|柴达木|阿尔金|青唐|雅州|夔州|矿|银|铜|盐|石国|于阗|龟兹|高昌|北庭/);
+}
+
+function hasHorseEconomy(region, ownerKey) {
+  if (ownerKey === 'fac-daiviet' || MARITIME_OWNER_KEYS.has(ownerKey)) return false;
+  return STEPPE_OWNER_KEYS.has(ownerKey) || ownerKey === 'fac-xixia' || ownerKey === 'fac-jin' ||
+    ownerKey === 'fac-tubo' || ownerKey === 'fac-kham' || ownerKey === 'fac-guge' ||
+    WESTERN_REGION_OWNER_KEYS.has(ownerKey) || SOUTHWEST_OWNER_KEYS.has(ownerKey) ||
+    hasName(region, /马|牧|草原|阴山|云内|天德|河东|秦凤|泾原|熙河|鄜延|麟州|西京|北界/);
+}
+
+function hasSaltEconomy(region, ownerKey) {
+  return ownerKey === 'fac-xixia' || hasCoastalEconomy(region, ownerKey) ||
+    hasName(region, /盐|海|沙州|瓜州|肃州|甘州|柴达木|青海|河中|解州|琼州|福建|广州/);
+}
+
+function defaultFarmlandFor(region, ownerKey) {
+  if (STEPPE_OWNER_KEYS.has(ownerKey)) return hasName(region, /可敦城|阴山/) ? 6 : 3;
+  if (ownerKey === 'fac-xixia') return hasName(region, /中兴|灵州|西凉|甘州/) ? 28 : 12;
+  if (ownerKey === 'fac-jin') return hasName(region, /河北|河东|真定|太原|平阳|河中|隆德/) ? 66 : 24;
+  if (ownerKey === 'fac-song') return hasName(region, /两浙|江南|福建|成都|潼川|荆湖|广州|开封/) ? 86 : 62;
+  if (ownerKey === 'fac-daiviet') return hasName(region, /升龙|红河|富良|清化|海东/) ? 72 : 38;
+  if (ownerKey === 'fac-goryeo' || ownerKey === 'fac-japan') return 58;
+  if (ownerKey === 'fac-pagan') return hasName(region, /蒲甘|下缅甸/) ? 70 : 24;
+  if (WESTERN_REGION_OWNER_KEYS.has(ownerKey)) return hasName(region, /八剌沙衮|疏勒|于阗|高昌|北庭|龟兹/) ? 34 : 18;
+  if (ownerKey === 'fac-tubo' || ownerKey === 'fac-kham' || ownerKey === 'fac-guge') return hasName(region, /逻些|雅隆|青唐/) ? 18 : 8;
+  if (SOUTHWEST_OWNER_KEYS.has(ownerKey)) return ownerKey === 'fac-dali' ? 52 : 20;
+  if (MARITIME_OWNER_KEYS.has(ownerKey)) return ownerKey === 'fac-beihai' ? 6 : 18;
+  return 24;
+}
+
+function completeEconomyBase(economyBase, region, ownerKey, profile, population) {
+  const economy = buildEconomy(economyBase);
+  const setPositive = (key, value) => {
+    if (!(Number(economy[key]) > 0)) economy[key] = Math.max(1, Math.round(value));
+  };
+  const farmland = Number(economy.farmland) || defaultFarmlandFor(region, ownerKey);
+  economy.farmland = Math.max(1, Math.round(farmland));
+  if (!(Number(economy.commerceCoefficient) > 0)) economy.commerceCoefficient = profile.commerceCoefficient || 1;
+  setPositive('commerceVolume', Math.max(5000, population * (profile.commercePerMouth || 0.08) * economy.commerceCoefficient));
+  if (hasCoastalEconomy(region, ownerKey)) {
+    setPositive('maritimeTradeVolume', economy.commerceVolume * (profile.maritimeShare || 0.38));
+  }
+  if (hasCoastalEconomy(region, ownerKey) || hasRiverEconomy(region)) {
+    setPositive('fishingProduction', Math.max(2, population / (profile.fishingDivisor || 90000)));
+  }
+  if (hasSaltEconomy(region, ownerKey)) {
+    setPositive('saltProduction', Math.max(2, economy.farmland * (profile.saltScale || 0.16)));
+  }
+  if (hasMountainMinerals(region, ownerKey)) {
+    setPositive('mineralProduction', Math.max(2, economy.farmland * (profile.mineralScale || 0.14)));
+  }
+  if (hasHorseEconomy(region, ownerKey)) {
+    setPositive('horseProduction', Math.max(2, economy.farmland * (profile.horseScale || 0.22)));
+  }
+  if (ownerKey === 'fac-daiviet') economy.horseProduction = 0;
+  if (ownerKey === 'fac-song' || ownerKey === 'fac-jin') {
+    setPositive('imperialFarmland', Math.max(2, economy.farmland * (ownerKey === 'fac-song' ? 0.18 : 0.08)));
+    economy.imperialAssets.zhizao = Math.max(Number(economy.imperialAssets.zhizao) || 0, hasName(region, /杭州|江宁|成都|开封|福州|广州|会宁|太原|真定/) ? 2 : 1);
+    economy.imperialAssets.kuangchang = Math.max(Number(economy.imperialAssets.kuangchang) || 0, hasMountainMinerals(region, ownerKey) ? 2 : 1);
+    economy.imperialAssets.yuyao = Math.max(Number(economy.imperialAssets.yuyao) || 0, hasName(region, /两浙|杭州|江南|开封|真定|太原/) ? 2 : 1);
+  } else if (CIVIL_SERVICE_OWNER_KEYS.has(ownerKey)) {
+    economy.imperialAssets.zhizao = Math.max(Number(economy.imperialAssets.zhizao) || 0, 1);
+    economy.imperialAssets.kuangchang = Math.max(Number(economy.imperialAssets.kuangchang) || 0, hasMountainMinerals(region, ownerKey) ? 1 : 0);
+    economy.imperialAssets.yuyao = Math.max(Number(economy.imperialAssets.yuyao) || 0, 1);
+  }
+  setPositive('postRelays', Math.max(1, (Number(economy.roadQuality) || 35) / 12 + population / (profile.relayPopulationDivisor || 700000)));
+  if (CIVIL_SERVICE_OWNER_KEYS.has(ownerKey) || WESTERN_REGION_OWNER_KEYS.has(ownerKey)) {
+    setPositive('kejuQuota', Math.max(1, population / (profile.kejuPopulationDivisor || 850000)));
+  }
+  setPositive('landsSurveyed', Math.max(1, economy.farmland * (profile.surveyScale || 0.72)));
+  setPositive('landsReclaimed', Math.max(1, economy.farmland * (profile.reclaimScale || 0.36)));
+  setPositive('landsAnnexed', Math.max(1, economy.farmland * (profile.annexScale || 0.12)));
+  economy.roadQuality = Math.max(18, Math.round(Number(economy.roadQuality) || profile.roadQuality || 35));
+  return economy;
+}
+
+function deriveInitialTroops(region, ownerKey, population) {
+  const current = Number(region.troops) || 0;
+  if (current >= 500) return Math.round(current);
+  const name = region.name || '';
+  let ratio = 0.008;
+  let min = 600;
+  let max = 18000;
+  if (ownerKey === 'fac-xixia') {
+    ratio = /中兴|灵州|怀德|建宁|夏州|宥州/.test(name) ? 0.055 : 0.036;
+    min = 3500;
+    max = 18000;
+  } else if (ownerKey === 'fac-jin') {
+    ratio = /会宁|胡里改|合懒|金北边/.test(name) ? 0.055 : (/大同|云内|丰州|天德|太原|真定|平阳|河中/.test(name) ? 0.032 : 0.024);
+    min = 4500;
+    max = 26000;
+  } else if (ownerKey === 'fac-daiviet') {
+    ratio = /升龙/.test(name) ? 0.08 : (/广源|谅州|农州|乂安/.test(name) ? 0.045 : 0.028);
+    min = 2500;
+    max = 16000;
+  } else if (STEPPE_OWNER_KEYS.has(ownerKey)) {
+    ratio = /可敦城|阴山|阿尔泰|肯特|鄂嫩|三河|克鲁伦/.test(name) ? 0.18 : 0.14;
+    min = 3000;
+    max = 24000;
+  } else if (WESTERN_REGION_OWNER_KEYS.has(ownerKey)) {
+    ratio = /八剌沙衮|疏勒|于阗|龟兹|高昌|北庭|西州/.test(name) ? 0.055 : 0.036;
+    min = 1800;
+    max = 15000;
+  } else if (ownerKey === 'fac-song') {
+    ratio = /开封|河间|麟州|延安|凤翔|泾原|熙河|西京/.test(name) ? 0.022 : 0.008;
+    min = /开封|河间|麟州|延安|凤翔|泾原|熙河|西京/.test(name) ? 3000 : 800;
+    max = 22000;
+  } else if (ownerKey === 'fac-goryeo' || ownerKey === 'fac-japan' || ownerKey === 'fac-pagan' || ownerKey === 'fac-dali') {
+    ratio = 0.018;
+    min = 1400;
+    max = 12000;
+  } else if (SOUTHWEST_OWNER_KEYS.has(ownerKey) || ownerKey === 'fac-tubo' || ownerKey === 'fac-kham' || ownerKey === 'fac-guge') {
+    ratio = 0.05;
+    min = 1000;
+    max = 9000;
+  } else if (MARITIME_OWNER_KEYS.has(ownerKey)) {
+    ratio = 0.035;
+    min = 800;
+    max = 6500;
+  }
+  return Math.round(clampNumber(population * ratio, min, max));
+}
+
+function deriveRecruitPool(region, ownerKey, population) {
+  let ratio = 0.045;
+  if (STEPPE_OWNER_KEYS.has(ownerKey)) ratio = 0.22;
+  else if (ownerKey === 'fac-xixia') ratio = 0.12;
+  else if (ownerKey === 'fac-jin') ratio = 0.105;
+  else if (ownerKey === 'fac-daiviet') ratio = /广源|谅州|农州/.test(region.name || '') ? 0.09 : 0.065;
+  else if (WESTERN_REGION_OWNER_KEYS.has(ownerKey)) ratio = 0.085;
+  else if (ownerKey === 'fac-song') ratio = /开封|河间|麟州|延安|凤翔|泾原|熙河/.test(region.name || '') ? 0.08 : 0.045;
+  return Math.max(1, Math.round(population * ratio));
+}
+
+function buildMilitaryDetail(populationDetail, militaryRecruits) {
+  const availableRecruits = Math.max(0, Math.round(Number(militaryRecruits) || 0));
+  const ding = Math.max(0, Number(populationDetail?.ding) || 0);
+  const detail = {
+    availableRecruits,
+    recruitmentBase: availableRecruits,
+    recruitmentSource: 'populationDetail.ding'
+  };
+  if (ding > 0) detail.recruitmentRate = Number((availableRecruits / ding).toFixed(4));
+  return detail;
+}
+
+function deriveArmyPressure(region, ownerKey, troops, population) {
+  const name = region.name || '';
+  const density = troops / Math.max(1, population);
+  let score = 10 + density * 420;
+  if (ownerKey === 'fac-jin') score += /太原|真定|平阳|河中|隆德|大同|云内|丰州/.test(name) ? 22 : 12;
+  else if (ownerKey === 'fac-xixia') score += /怀德|建宁|夏州|宥州|灵州|盐州/.test(name) ? 18 : 10;
+  else if (ownerKey === 'fac-daiviet') score += /广源|谅州|农州|乂安/.test(name) ? 12 : 5;
+  else if (STEPPE_OWNER_KEYS.has(ownerKey)) score += 8;
+  else if (ownerKey === 'fac-song') score += /开封|河间|麟州|延安|凤翔|泾原|熙河|西京/.test(name) ? 20 : 4;
+  if (Number(region.garrisonStress) > score) score = Number(region.garrisonStress);
+  return Math.round(clampNumber(score, 6, 92));
+}
+
+function toTagObject(value) {
+  if (!value) return {};
+  if (Array.isArray(value)) {
+    return value.reduce((out, item) => {
+      if (item !== undefined && item !== null && String(item).trim()) out[String(item).trim()] = true;
+      return out;
+    }, {});
+  }
+  if (typeof value === 'object') return Object.assign({}, value);
+  return { [String(value)]: true };
+}
+
+function normalizeRegionTags(region) {
+  const tags = toTagObject(region.tags);
+  const economy = region.economyBase || {};
+  tags.hasPort = Boolean(region.isTradePort || Number(economy.maritimeTradeVolume) > 0);
+  tags.saltRegion = Number(economy.saltProduction) > 0;
+  tags.mineralRegion = Number(economy.mineralProduction) > 0;
+  tags.horseRegion = Number(economy.horseProduction) > 0;
+  tags.fishingRegion = Number(economy.fishingProduction) > 0;
+  tags.imperialDomain = Number(economy.imperialFarmland) > 0;
+  return tags;
+}
+
+function percentText(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value || '');
+  if (number <= 0) return '';
+  return `${Math.round(number * 100)}%`;
+}
+
+function shareObjectForPanel(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const out = {};
+  for (const [key, raw] of Object.entries(value)) {
+    const text = percentText(raw);
+    if (text) out[key] = text;
+  }
+  return out;
+}
+
+function syncHukouPanelFields(target, region) {
+  for (const field of ['byAge', 'byGender', 'byEthnicity', 'byFaith', 'bySettlement']) {
+    if (region[field] !== undefined) target[field] = shareObjectForPanel(region[field]);
+  }
+}
+
+function syncRegionPanelData(region) {
+  const data = Object.assign({}, region.data || {});
+  const fields = [
+    'name', 'description', 'regionType', 'level', 'officialPosition', 'governor', 'terrain',
+    'specialResources', 'taxLevel', 'tags', 'byAge', 'byGender', 'byEthnicity', 'byFaith',
+    'bySettlement', 'population', 'populationDetail', 'fiscalDetail', 'publicTreasuryInit',
+    'economyBase', 'carryingCapacity', 'minxinLocal', 'corruptionLocal', 'prosperity',
+    'unrest', 'taxBurden', 'militaryRecruits', 'recruits', 'levyPool', 'militaryDetail',
+    'armyPressure', 'localMilitaryCost', 'retainedNet', 'armyDetail', 'ownerHistory',
+    'dejureOwner', 'coreStatus', 'borderStatus'
+  ];
+  for (const field of fields) {
+    if (region[field] !== undefined) data[field] = region[field];
+  }
+  data.garrison = region.armyDetail?.troops ?? region.troops;
+  syncHukouPanelFields(data, region);
+  region.data = data;
 }
 
 function getXixiaProfile(region) {
@@ -370,13 +708,259 @@ function getTuboProfile(region) {
   };
 }
 
+function getSongProfile(region) {
+  const isNorthFront = /京畿|京东|河北|麟州|鄜延|秦凤|泾原|熙河|凤翔|延安|河间/.test(region.name);
+  const isSouthRich = /两浙|江南|福建|成都|潼川|荆湖|广州|江宁|杭州|福州|洪州|潭州/.test(region.name);
+  const isCapital = /东京开封/.test(region.name);
+  return {
+    householdSize: 5,
+    dingRatio: 0.38,
+    fugitiveRatio: isNorthFront ? 0.035 : 0.012,
+    hiddenRatio: isNorthFront ? 0.045 : 0.018,
+    byAge: { '幼': 0.34, '青壮': 0.47, '老': 0.19 },
+    byGender: { '男': 0.5, '女': 0.5 },
+    bySettlement: isCapital
+      ? { '城': 0.34, '镇': 0.22, '乡': 0.44 }
+      : (isSouthRich ? { '城': 0.18, '镇': 0.24, '乡': 0.58 } : { '城': 0.1, '镇': 0.18, '乡': 0.62, '寨堡': 0.1 }),
+    byEthnicity: isNorthFront ? { '汉': 0.9, '蕃汉弓箭手诸部': 0.05, '契丹女真渤海': 0.03, '其他': 0.02 } : { '汉': 0.94, '溪洞蛮夷诸部': 0.03, '海商蕃客': 0.02, '其他': 0.01 },
+    byFaith: { '儒道': 0.48, '佛': 0.34, '民间': 0.18 },
+    minxinLocal: isNorthFront ? 46 : 58,
+    corruptionLocal: isNorthFront ? 34 : 28,
+    carryingMultiplier: isNorthFront ? 1.28 : 1.5,
+    grainPerMouth: isSouthRich ? 0.28 : 0.2,
+    treasuryYears: isNorthFront ? 0.8 : 1.25,
+    militaryYears: isNorthFront ? 1.05 : 0.75,
+    commercePerMouth: isSouthRich ? 0.18 : 0.1,
+    fiscal: { landTaxPerMouth: isNorthFront ? 0.08 : 0.12, commerceRate: 0.075, maritimeRate: 0.06, saltUnit: 420, horseUnit: 70, fishUnit: 65, mineralUnit: 120, imperialFarmlandUnit: 80, relayUnit: 450 }
+  };
+}
+
+function getGoryeoProfile(region) {
+  const isSouth = /五道南部|西海道/.test(region.name);
+  return {
+    householdSize: 5,
+    dingRatio: 0.38,
+    fugitiveRatio: 0.008,
+    hiddenRatio: 0.014,
+    byAge: { '幼': 0.35, '青壮': 0.46, '老': 0.19 },
+    byGender: { '男': 0.5, '女': 0.5 },
+    bySettlement: isSouth ? { '城': 0.12, '镇': 0.2, '乡': 0.68 } : { '城': 0.08, '镇': 0.14, '乡': 0.58, '边寨': 0.2 },
+    byEthnicity: { '高丽': 0.9, '女真': isSouth ? 0.02 : 0.06, '汉': 0.04, '其他': isSouth ? 0.04 : 0 },
+    byFaith: { '佛': 0.56, '儒': 0.24, '民间': 0.2 },
+    minxinLocal: 54,
+    corruptionLocal: 28,
+    carryingMultiplier: 1.4,
+    grainPerMouth: 0.22,
+    treasuryYears: 1.1,
+    militaryYears: 0.8,
+    commercePerMouth: isSouth ? 0.12 : 0.08,
+    fiscal: { tributePerMouth: 0.006, landTaxPerMouth: 0.085, commerceRate: 0.06, maritimeRate: 0.045, saltUnit: 340, fishUnit: 55, mineralUnit: 90, horseUnit: 55, relayUnit: 260 }
+  };
+}
+
+function getJapanProfile(region) {
+  const isKinai = /畿内/.test(region.name);
+  return {
+    householdSize: 5,
+    dingRatio: 0.37,
+    fugitiveRatio: 0.006,
+    hiddenRatio: 0.02,
+    byAge: { '幼': 0.35, '青壮': 0.46, '老': 0.19 },
+    byGender: { '男': 0.5, '女': 0.5 },
+    bySettlement: isKinai ? { '京': 0.08, '寺社庄园': 0.24, '乡': 0.6, '港津': 0.08 } : { '城镇': 0.08, '寺社庄园': 0.18, '乡': 0.62, '港津': 0.12 },
+    byEthnicity: { '倭人': 0.94, '虾夷': /陆奥/.test(region.name) ? 0.04 : 0.01, '渡来人后裔': 0.03, '其他': 0.02 },
+    byFaith: { '神佛习合': 0.72, '民间': 0.18, '儒': 0.1 },
+    minxinLocal: 50,
+    corruptionLocal: 32,
+    carryingMultiplier: 1.38,
+    grainPerMouth: 0.2,
+    treasuryYears: 0.9,
+    militaryYears: 0.7,
+    commercePerMouth: isKinai ? 0.12 : 0.08,
+    fiscal: { tributePerMouth: 0.008, landTaxPerMouth: 0.07, commerceRate: 0.055, maritimeRate: 0.05, saltUnit: 280, fishUnit: 60, mineralUnit: 80, relayUnit: 220 }
+  };
+}
+
+function getWesternOasisProfile(region, ownerKey) {
+  const isMajor = /八剌沙衮|疏勒|于阗|龟兹|高昌|北庭|西州|石国/.test(region.name);
+  return {
+    householdSize: 5,
+    dingRatio: 0.39,
+    fugitiveRatio: 0.006,
+    hiddenRatio: 0.012,
+    byAge: { '幼': 0.34, '青壮': 0.48, '老': 0.18 },
+    byGender: { '男': 0.51, '女': 0.49 },
+    bySettlement: isMajor ? { '城': 0.24, '镇': 0.26, '绿洲乡': 0.42, '牧落': 0.08 } : { '城': 0.12, '镇': 0.18, '绿洲乡': 0.46, '牧落': 0.24 },
+    byEthnicity: ownerKey === 'fac-qocho'
+      ? { '回鹘': 0.48, '汉': 0.18, '粟特': 0.12, '吐蕃': 0.08, '突厥': 0.08, '其他': 0.06 }
+      : { '突厥': 0.5, '粟特': 0.16, '回鹘': 0.12, '波斯大食商旅': 0.08, '汉': 0.08, '其他': 0.06 },
+    byFaith: ownerKey === 'fac-qocho' ? { '佛': 0.62, '景教摩尼': 0.18, '伊斯兰': 0.1, '民间': 0.1 } : { '伊斯兰': 0.72, '佛': 0.12, '景教': 0.06, '民间': 0.1 },
+    minxinLocal: 48,
+    corruptionLocal: 24,
+    carryingMultiplier: 1.32,
+    grainPerMouth: 0.12,
+    treasuryYears: 1.1,
+    militaryYears: 0.8,
+    commercePerMouth: isMajor ? 0.2 : 0.12,
+    fiscal: { tributePerMouth: 0.012, landTaxPerMouth: 0.07, commerceRate: 0.09, saltUnit: 260, horseUnit: 65, fishUnit: 25, mineralUnit: 100, relayUnit: 240 }
+  };
+}
+
+function getSouthwestProfile(ownerKey, region) {
+  const isDali = ownerKey === 'fac-dali';
+  const isStatelet = ownerKey === 'fac-luodian' || ownerKey === 'fac-ziqi';
+  return {
+    householdSize: 5,
+    dingRatio: 0.37,
+    fugitiveRatio: 0.006,
+    hiddenRatio: 0.018,
+    byAge: { '幼': 0.36, '青壮': 0.46, '老': 0.18 },
+    byGender: { '男': 0.5, '女': 0.5 },
+    bySettlement: isDali ? { '城': 0.14, '镇': 0.18, '坝区乡': 0.5, '山寨': 0.18 } : { '寨': 0.46, '溪洞': 0.24, '坝区乡': 0.22, '市镇': 0.08 },
+    byEthnicity: isDali ? { '白蛮': 0.44, '乌蛮': 0.24, '汉': 0.16, '僰爨诸部': 0.1, '其他': 0.06 } : { '乌蛮': 0.42, '白蛮': 0.18, '僰爨诸部': 0.16, '汉': 0.12, '磨些金齿诸部': 0.08, '其他': 0.04 },
+    byFaith: isDali ? { '佛': 0.58, '本土神祇': 0.26, '儒道': 0.16 } : { '本土神祇': 0.52, '佛': 0.28, '儒道': 0.12, '其他': 0.08 },
+    minxinLocal: isDali ? 52 : 44,
+    corruptionLocal: isDali ? 26 : 18,
+    carryingMultiplier: isDali ? 1.34 : 1.24,
+    grainPerMouth: isDali ? 0.16 : 0.09,
+    treasuryYears: isDali ? 1.1 : 0.8,
+    militaryYears: 0.75,
+    commercePerMouth: isDali ? 0.1 : 0.055,
+    fiscal: { tributePerMouth: 0.018, landTaxPerMouth: isDali ? 0.07 : 0.035, commerceRate: 0.055, saltUnit: 280, horseUnit: 65, fishUnit: 30, mineralUnit: 120, relayUnit: isStatelet ? 120 : 180 }
+  };
+}
+
+function getPaganProfile(region) {
+  const isCore = /蒲甘|下缅甸/.test(region.name);
+  return {
+    householdSize: 5,
+    dingRatio: 0.38,
+    fugitiveRatio: 0.006,
+    hiddenRatio: 0.014,
+    byAge: { '幼': 0.37, '青壮': 0.45, '老': 0.18 },
+    byGender: { '男': 0.5, '女': 0.5 },
+    bySettlement: isCore ? { '城': 0.14, '佛寺庄园': 0.18, '乡': 0.6, '港津': 0.08 } : { '山寨': 0.38, '乡': 0.42, '溪洞': 0.16, '市镇': 0.04 },
+    byEthnicity: isCore ? { '缅': 0.62, '孟': 0.16, '掸': 0.1, '印度商旅': 0.04, '其他': 0.08 } : { '掸': 0.42, '缅': 0.24, '孟': 0.12, '山地诸部': 0.16, '其他': 0.06 },
+    byFaith: { '上座部佛': 0.64, '民间': 0.22, '印度教婆罗门': 0.08, '其他': 0.06 },
+    minxinLocal: 50,
+    corruptionLocal: 24,
+    carryingMultiplier: isCore ? 1.45 : 1.22,
+    grainPerMouth: isCore ? 0.22 : 0.08,
+    treasuryYears: isCore ? 1.1 : 0.75,
+    militaryYears: 0.75,
+    commercePerMouth: isCore ? 0.1 : 0.05,
+    fiscal: { tributePerMouth: 0.01, landTaxPerMouth: isCore ? 0.075 : 0.03, commerceRate: 0.055, maritimeRate: 0.045, saltUnit: 260, horseUnit: 35, fishUnit: 45, mineralUnit: 85, relayUnit: 140 }
+  };
+}
+
+function getHighlandProfile(ownerKey, region) {
+  const isGuge = ownerKey === 'fac-guge';
+  const isKham = ownerKey === 'fac-kham';
+  return {
+    householdSize: 5,
+    dingRatio: 0.37,
+    fugitiveRatio: 0.004,
+    hiddenRatio: 0.01,
+    byAge: { '幼': 0.34, '青壮': 0.47, '老': 0.19 },
+    byGender: { '男': 0.5, '女': 0.5 },
+    bySettlement: isGuge ? { '王城': 0.08, '寺院庄园': 0.14, '河谷村': 0.34, '牧帐': 0.44 } : { '寨': 0.12, '寺院庄园': 0.08, '河谷村': 0.28, '牧帐': 0.52 },
+    byEthnicity: isKham ? { '吐蕃': 0.68, '羌': 0.12, '汉': 0.08, '磨些': 0.04, '其他': 0.08 } : { '吐蕃': 0.78, '象雄阿里诸部': 0.12, '商旅': 0.04, '其他': 0.06 },
+    byFaith: { '藏传佛': 0.62, '苯教': 0.26, '民间': 0.12 },
+    minxinLocal: 44,
+    corruptionLocal: 18,
+    carryingMultiplier: 1.2,
+    grainPerMouth: 0.06,
+    treasuryYears: 0.85,
+    militaryYears: 0.65,
+    commercePerMouth: 0.04,
+    fiscal: { tributePerMouth: 0.018, landTaxPerMouth: 0.025, commerceRate: 0.04, saltUnit: 300, horseUnit: 55, fishUnit: 20, mineralUnit: 80, relayUnit: 90 }
+  };
+}
+
+function getMaritimeProfile(ownerKey, region) {
+  const isBeihai = ownerKey === 'fac-beihai';
+  return {
+    householdSize: 5,
+    dingRatio: 0.39,
+    fugitiveRatio: 0.003,
+    hiddenRatio: 0.012,
+    byAge: { '幼': 0.36, '青壮': 0.46, '老': 0.18 },
+    byGender: { '男': 0.51, '女': 0.49 },
+    bySettlement: isBeihai ? { '渔猎营': 0.62, '港湾聚落': 0.18, '山海部落': 0.2 } : { '港聚落': 0.32, '乡社': 0.38, '舟师营': 0.12, '山地部落': 0.18 },
+    byEthnicity: isBeihai ? { '北海渔猎诸部': 0.76, '女真渤海': 0.08, '虾夷': 0.08, '其他': 0.08 } : { '海岛诸部': 0.78, '华商': 0.08, '南海商旅': 0.08, '其他': 0.06 },
+    byFaith: { '海神与祖灵': 0.52, '佛': 0.18, '本土神祇': 0.22, '其他': 0.08 },
+    minxinLocal: 46,
+    corruptionLocal: 16,
+    carryingMultiplier: 1.22,
+    grainPerMouth: 0.07,
+    treasuryYears: 0.75,
+    militaryYears: 0.55,
+    commercePerMouth: isBeihai ? 0.035 : 0.09,
+    maritimeShare: isBeihai ? 0.42 : 0.75,
+    fiscal: { tributePerMouth: 0.012, landTaxPerMouth: 0.02, commerceRate: 0.045, maritimeRate: 0.07, saltUnit: 220, fishUnit: 75, mineralUnit: 50, relayUnit: 60 }
+  };
+}
+
+function getHebeiMilitiaRegionProfile(region) {
+  return {
+    householdSize: 5,
+    dingRatio: 0.4,
+    fugitiveRatio: 0.06,
+    hiddenRatio: 0.08,
+    byAge: { '幼': 0.3, '青壮': 0.52, '老': 0.18 },
+    byGender: { '男': 0.52, '女': 0.48 },
+    bySettlement: { '城寨': 0.26, '乡': 0.38, '避兵坞壁': 0.28, '山寨': 0.08 },
+    byEthnicity: { '汉': 0.94, '契丹渤海': 0.03, '女真': 0.01, '其他': 0.02 },
+    byFaith: { '儒道': 0.44, '佛': 0.34, '民间': 0.22 },
+    minxinLocal: 62,
+    corruptionLocal: 18,
+    carryingMultiplier: 1.25,
+    grainPerMouth: 0.14,
+    treasuryYears: 0.45,
+    militaryYears: 0.9,
+    commercePerMouth: 0.04,
+    fiscal: { tributePerMouth: 0.004, landTaxPerMouth: 0.035, commerceRate: 0.03, saltUnit: 120, horseUnit: 45, fishUnit: 25, mineralUnit: 60, relayUnit: 120 }
+  };
+}
+
+function getGenericRegionProfile(region, ownerKey) {
+  if (ownerKey === 'fac-song') return getSongProfile(region);
+  if (ownerKey === 'fac-goryeo') return getGoryeoProfile(region);
+  if (ownerKey === 'fac-japan') return getJapanProfile(region);
+  if (WESTERN_REGION_OWNER_KEYS.has(ownerKey)) return getWesternOasisProfile(region, ownerKey);
+  if (SOUTHWEST_OWNER_KEYS.has(ownerKey)) return getSouthwestProfile(ownerKey, region);
+  if (ownerKey === 'fac-pagan') return getPaganProfile(region);
+  if (ownerKey === 'fac-kham' || ownerKey === 'fac-guge') return getHighlandProfile(ownerKey, region);
+  if (MARITIME_OWNER_KEYS.has(ownerKey)) return getMaritimeProfile(ownerKey, region);
+  if (ownerKey === 'fac-hebei-yijun') return getHebeiMilitiaRegionProfile(region);
+  return {
+    householdSize: 5,
+    dingRatio: 0.38,
+    fugitiveRatio: 0.008,
+    hiddenRatio: 0.014,
+    byAge: { '幼': 0.35, '青壮': 0.47, '老': 0.18 },
+    byGender: { '男': 0.5, '女': 0.5 },
+    bySettlement: { '聚落': 0.44, '乡': 0.34, '市镇': 0.12, '营寨': 0.1 },
+    byEthnicity: { '本地诸部': 0.7, '汉': 0.16, '商旅': 0.06, '其他': 0.08 },
+    byFaith: { '本土神祇': 0.46, '佛': 0.28, '民间': 0.2, '其他': 0.06 },
+    minxinLocal: 45,
+    corruptionLocal: 20,
+    carryingMultiplier: 1.25,
+    grainPerMouth: 0.08,
+    treasuryYears: 0.8,
+    militaryYears: 0.65,
+    commercePerMouth: 0.05,
+    fiscal: { tributePerMouth: 0.012, landTaxPerMouth: 0.035, commerceRate: 0.045, saltUnit: 220, horseUnit: 55, fishUnit: 35, mineralUnit: 75, relayUnit: 80 }
+  };
+}
+
 function getSocioeconomicProfile(region, ownerKey) {
   if (ownerKey === 'fac-jin') return getJinProfile(region);
   if (ownerKey === 'fac-xixia') return getXixiaProfile(region);
   if (ownerKey === 'fac-daiviet') return getDaiVietProfile(region);
   if (STEPPE_OWNER_KEYS.has(ownerKey)) return getSteppeProfile(ownerKey, region);
   if (ownerKey === 'fac-tubo') return getTuboProfile(region);
-  return null;
+  return getGenericRegionProfile(region, ownerKey);
 }
 
 function applySocioeconomicProfile(region, ownerKey) {
@@ -384,11 +968,17 @@ function applySocioeconomicProfile(region, ownerKey) {
   if (!profile) return;
   const overrides = REGION_SOCIOECONOMIC_OVERRIDES[region.id] || {};
   const population = overrides.population ?? region.population ?? 50000;
-  const economyBase = buildEconomy(Object.assign({}, overrides.economyBase || {}));
+  const economyBase = completeEconomyBase(Object.assign({}, region.economyBase || {}, overrides.economyBase || {}), region, ownerKey, profile, population);
   const fiscalDetail = buildFiscalDetail(population, economyBase, profile);
+  const populationDetail = buildPopulationDetail(population, profile);
+  const troops = deriveInitialTroops(region, ownerKey, population);
+  const militaryRecruits = deriveRecruitPool(region, ownerKey, population);
+  const militaryDetail = buildMilitaryDetail(populationDetail, militaryRecruits);
+  const armyPressure = deriveArmyPressure(region, ownerKey, troops, population);
+  const localMilitaryCost = Math.round(troops * (profile.militaryCostPerSoldier || (STEPPE_OWNER_KEYS.has(ownerKey) ? 1.4 : (ownerKey === 'fac-jin' ? 3.5 : (ownerKey === 'fac-xixia' ? 2.4 : 2.8)))));
   Object.assign(region, {
     population,
-    populationDetail: buildPopulationDetail(population, profile),
+    populationDetail,
     byAge: Object.assign({}, profile.byAge),
     byGender: Object.assign({}, profile.byGender),
     bySettlement: Object.assign({}, overrides.bySettlement || profile.bySettlement),
@@ -402,8 +992,26 @@ function applySocioeconomicProfile(region, ownerKey) {
     carryingCapacity: Math.round(population * (profile.carryingMultiplier || 1.25)),
     minxinLocal: profile.minxinLocal,
     corruptionLocal: profile.corruptionLocal,
+    taxBurden: fiscalDetail.taxBurden,
+    troops,
+    militaryRecruits,
+    recruits: militaryRecruits,
+    levyPool: militaryRecruits,
+    militaryDetail,
+    armyPressure,
+    localMilitaryCost,
+    retainedNet: fiscalDetail.retainedBudget - localMilitaryCost,
+    armyDetail: {
+      troops,
+      recruits: militaryRecruits,
+      availableRecruits: militaryRecruits,
+      armyPressure,
+      localMilitaryCost
+    },
     baojia: null
   });
+  region.tags = normalizeRegionTags(region);
+  syncRegionPanelData(region);
 }
 
 function applyOwnerDefaults(region, ownerKey) {
@@ -661,7 +1269,7 @@ const ASSIGNMENT_ROWS = [
   ['div_1781498019765_3252', '平州军帅司', 'fac-jin'],
   ['div_1781498114835_4296', '河东北路·太原府', 'fac-jin'],
   ['div_1781498100984_6331', '河东南路·平阳府', 'fac-jin'],
-  ['div_1781498010824_6498', '河北东路·河间府', 'fac-song'],
+  ['div_1781498010824_6498', '河北东路·河间府', 'fac-jin'],
   ['div_1781497994899_9662', '河北西路·真定府', 'fac-jin'],
   ['div_1781400785960_8090', '虾夷地', 'fac-beihai'],
   ['div_1781498061377_8807', '河东南路·河中府', 'fac-jin'],
@@ -1537,14 +2145,42 @@ function syncXixiaMetadata(scenario) {
         { id: 'xixia-jin-border', title: '催金割地还是暂忍', choices: ['催金履行陕北割地', '暂忍天德云内之失，专压宋边', '暗通契丹旧部牵制金军'] },
         { id: 'xixia-hengshan-policy', title: '横山新附地如何治理', choices: ['增兵屯戍', '以榷场安抚蕃汉寨户', '纵兵抄掠以养军'] },
         { id: 'xixia-song-contact', title: '是否试探宋廷', choices: ['遣使通好求互市', '继续观望赵构能否稳住西军', '联金夹迫关陕'] },
-        { id: 'xixia-faction-balance', title: '宗室武臣与汉法文臣平衡', choices: ['重察哥拓边', '重文臣理财收税', '防任得敬等降人坐大'] }
+        { id: 'xixia-faction-balance', title: '宗室武臣与汉法文臣平衡', choices: ['重察哥拓边', '重文臣理财收税', '防任得敬等降人坐大'] },
+        { id: 'xixia-vassal-mask', title: '称臣金国的分寸', choices: ['奉表顺从换陕北实利', '拖延出兵避免作金前驱', '借金名义压宋而暗修边备'] },
+        { id: 'xixia-border-intelligence', title: '横山与关陕情报', choices: ['重金收买蕃汉寨户', '遣商旅探宋西军虚实', '监视金军天德云内动向'] }
       ],
       aiBehaviorHints: [
         '西夏不是纯反派，也不是宋方天然盟友；每一步都以保夏国宗社、拓横山利益为准。',
         '李乾顺应表现为老练守成而善算计；察哥偏军略进取；任得敬是中长期权臣隐患。',
         '若宋西军内乱，西夏倾向压迫横山；若宋重整关陕，西夏倾向议和互市或借金牵制。',
-        '不可把麟州本州提前写成西夏稳控；建宁寨、怀德军、夏宥等才是当前可控前沿。'
+        '不可把麟州本州提前写成西夏稳控；建宁寨、怀德军、夏宥等才是当前可控前沿。',
+        'AI 语气应像边境老猎手：少喊灭国口号，多谈盐池、榷场、寨户、质子、割地文书和谁替谁流血。',
+        '西夏会趁火取利，但不愿把铁鹞子消耗在金军指定的主战场；若金压迫过甚，应出现敷衍出兵、索地、暗联旧辽部族等反应。'
       ],
+      aiPersonality: {
+        voice: '克制、精算、边地现实主义；用臣金的外衣包住自保和扩边。',
+        rulerBias: '李乾顺偏稳、偏文治、偏财政续航；不轻易孤注一掷。',
+        hawkFaction: '察哥与横山边军主张趁宋乱夺寨夺堡。',
+        hiddenRisk: '任得敬等降人和新附寨户坐大，会在中长期侵蚀宗室与监军司权威。'
+      },
+      aiDecisionWeights: {
+        preserveCore: 100,
+        exploitSongWeakness: 78,
+        obeyJin: 44,
+        demandJinCompensation: 82,
+        avoidOverextension: 86,
+        reopenTrade: 64,
+        suppressNewBorder: 70
+      },
+      aiConditionalBehaviors: [
+        { trigger: 'song_western_army_disorganized', response: '压迫横山、怀德军、建宁寨，优先夺寨而非深入关中。' },
+        { trigger: 'song_controls_shaanxi_and_reopens_trade', response: '降低战意，试探互市、质子、边界承认。' },
+        { trigger: 'jin_demands_full_auxiliary_campaign', response: '名义应从，实际以粮道、马疫、边报为由拖慢出兵，并索取陕北割地。' },
+        { trigger: 'jin_withholds_promised_lands', response: '提高对金疑惧，暗联阴山、契丹旧部或加强天德云内方向斥候。' },
+        { trigger: 'new_hengshan_regions_unrest', response: '先安抚寨户和榷场，再派监军司屯戍；避免一次性高压导致叛逃回宋。' }
+      ],
+      aiImmersionHooks: ['盐池岁入', '榷场开闭', '横山寨户归附', '铁鹞子惜用', '任得敬伏线', '对金索地文书'],
+      aiStrategy: '机会主义守成扩边。默认不主动灭宋，也不真心替金打消耗战；优先守灵夏、河西和盐池财政，利用宋金主战场牵制关陕西军，在横山夺取可守寨堡。外交上称臣金国、索取陕北补偿，同时保留同宋互市和缓冲的后手。',
       posture: '守成兼扩边',
       warState: {
         active: [],
@@ -1589,7 +2225,7 @@ function syncXixiaMetadata(scenario) {
         fiscalAnnual: summary.totalFiscal,
         keyRegions: summary.keyRegions.slice(0, 6)
       },
-      policyHooks: ['横山新附地治理', '对金索地', '宋夏互市试探', '察哥军权与任得敬隐患'],
+      policyHooks: ['横山新附地治理', '对金索地', '宋夏互市试探', '察哥军权与任得敬隐患', '称臣金国但避免充当前驱', '盐池榷场财政驱动'],
       history: [
         { year: 1099, event: '李乾顺亲政，兴庆府改称中兴府。' },
         { year: 1124, event: '西夏奉表降金，金许以阴山以南部分辽地。' },
@@ -1618,8 +2254,8 @@ function syncJinMetadata(scenario) {
       courtInfluence: 78,
       popularInfluence: 32,
       fiscalCondition: '汴京府藏与北狩掳获形成强大战役储备；燕云、河东、河北新占地可供转输，但人心未附、义军未平，长期治理成本极高。',
-      stateDescription: '建炎元年八月，金朝处于灭辽破宋后的最强进攻窗口。女真本部、辽旧五京残余、燕云河东河北新占州府被同一套军政机器强行捏合；会宁府仍是龙兴根本，云中宗翰西路与燕云东路军府分掌南侵。金已稳握原辽腹地、燕云、太原、真定与河东若干要地；河间、山东和东京开封仍有宋廷守军或忠义武装，不能把同年秋冬以后的战果提前写入八月版图。此时金强在骑军、战役机动和掳获府藏，弱在新占汉地消化未深、东路宗望死后军权待重整。',
-      longTermStrategy: '以最强女真骑军压迫南宋草创期：秋冬优先再攻河间、山东、京畿与河南，若赵构南走则搜山检海追击；北方以汉地降官、傀儡政权和路府军镇代守，女真主力保持高机动攻势，不给宋廷重整河防、关陕和江淮防线的时间。',
+      stateDescription: '建炎元年八月，金朝处于灭辽破宋后的最强进攻窗口。女真本部、辽旧五京残余、燕云河东河北新占州府被同一套军政机器强行捏合；会宁府仍是龙兴根本，云中宗翰西路与燕云东路军府分掌南侵。金已稳握原辽腹地、燕云、太原、真定、河间与河东若干要地；河间府虽已入金军实控，但民心未附、粮道需护、义军仍可切扰，山东和东京开封仍不应提前写作稳定占领。此时金强在骑军、战役机动和掳获府藏，弱在新占汉地消化未深、东路宗望死后军权待重整。',
+      longTermStrategy: '以最强女真骑军压迫南宋草创期：秋冬以河间为前进廊道和转运节点，优先再压山东、京畿与河南，若赵构南走则搜山检海追击；北方以汉地降官、傀儡政权和路府军镇代守，女真主力保持高机动攻势，不给宋廷重整河防、关陕和江淮防线的时间。',
       primaryTarget: 'fac_song',
       primaryThreat: '宋廷若召回李纲、倚重宗泽并整合河北义军、关陕西军与江淮水军，金军南侵成本会迅速上升。',
       internalParties: ['女真勃极烈宗室', '西路宗翰系', '东路宗望旧部与宗弼新锐', '汉契渤海官僚', '新占汉地降官与傀儡伏线', '北边属部'],
@@ -1669,8 +2305,8 @@ function syncJinMetadata(scenario) {
         ethnicities: summary.ethnicities,
         coreRegions: ['会宁府', '胡里改万户', '合懒路', '辽阳府·复州'],
         liaoLegacyRegions: ['上京·临潢府', '中京·大定府', '西京路·大同府', '平州军帅司'],
-        southernFrontierRegions: ['河东北路·太原府', '河北西路·真定府', '河东南路·平阳府', '河东南路·河中府', '河东南路·隆德府'],
-        note: '统计由当前 map.regions 中 ownerKey=fac-jin 的地块汇总，随地图重判同步更新；不把河间、山东、东京开封提前计为金稳控。'
+        southernFrontierRegions: ['河东北路·太原府', '河北西路·真定府', '河北东路·河间府', '河东南路·平阳府', '河东南路·河中府', '河东南路·隆德府'],
+        note: '统计由当前 map.regions 中 ownerKey=fac-jin 的地块汇总，随地图重判同步更新；河间府按本轮校正计入金军实控，不把山东、东京开封提前计为金稳控。'
       },
       economyProfile: {
         basis: ['汴京府藏与靖康掳获', '燕云河东河北新占地赋调', '辽东马政与渔猎皮货', '契丹渤海汉官转输文书', '傀儡代守与签军制度'],
@@ -1704,27 +2340,55 @@ function syncJinMetadata(scenario) {
       openingDilemmas: [
         { id: 'jin-east-route-vacuum', title: '宗望死后东路军权谁主', choices: ['扶宗弼速成追击主帅', '由挞懒安抚燕云河北', '让宗翰统筹两路以求速胜'] },
         { id: 'jin-puppet-or-direct-rule', title: '中原用傀儡还是军府直辖', choices: ['再立傀儡代守', '设军府直辖征赋', '降官守州、女真控兵'] },
-        { id: 'jin-southward-tempo', title: '秋冬南侵节奏', choices: ['立即再攻河间山东京畿', '先平河北义军再南下', '西路压关陕、东路追赵构'] },
+        { id: 'jin-southward-tempo', title: '秋冬南侵节奏', choices: ['以河间为廊道压山东京畿', '先平河北义军再南下', '西路压关陕、东路追赵构'] },
         { id: 'jin-occupation-cost', title: '新占汉地如何消化', choices: ['重征粮草养战', '减征安抚编户', '迁女真猛安屯守要地'] },
-        { id: 'jin-xixia-border', title: '西夏割地与北边防务', choices: ['履行部分许地换其牵制宋军', '拖延交割保天德云内', '用阴山诸部防夏防契丹'] }
+        { id: 'jin-xixia-border', title: '西夏割地与北边防务', choices: ['履行部分许地换其牵制宋军', '拖延交割保天德云内', '用阴山诸部防夏防契丹'] },
+        { id: 'jin-hejian-corridor', title: '河间新占廊道如何稳住', choices: ['降官编户护粮道', '猛安屯守震慑州县', '放轻赋税诱河北豪右归附'] },
+        { id: 'jin-song-pursuit-intel', title: '追击赵构的情报网', choices: ['重用燕云通事和降官', '逼河北州县供给斥候', '以傀儡名义诱降宋臣'] }
       ],
       aiBehaviorHints: [
         '金 AI 应主动、连续、压迫性南侵；赵构未稳江淮前优先进攻而非长期休整。',
-        'AI 目标以灭宋正朔为最高优先级：东京、河间、山东、淮北、赵构行在均应被标为高压方向。',
-        '金很强但不全知：不能提前稳占河间、山东、东京开封；这些应通过秋冬战事或事件推进。',
+        'AI 目标以灭宋正朔为最高优先级：东京、山东、淮北、赵构行在均应被标为高压方向；河间作为已控但未安的前进廊道处理。',
+        '金很强但不全知：河间可作新占实控，山东和东京开封不能提前稳占；这些应通过秋冬战事或事件推进。',
         '宗翰系偏西路强攻，宗弼系偏追击赵构，挞懒与汉官更重代守安抚；AI 决策可围绕三者张力摆动。',
-        '若宋廷启用宗泽、李纲、岳飞、韩世忠并整合河北义军，金 AI 应转为更凶猛的预防性打击。'
+        '若宋廷启用宗泽、李纲、岳飞、韩世忠并整合河北义军，金 AI 应转为更凶猛的预防性打击。',
+        'AI 语气应带灭国余威和军府冷酷：少讲仁义，多讲渡河、围城、签军、粮道、傀儡、降官、追索行在。',
+        '占领逻辑要有成本：每多一片汉地，河北义军、逃户、粮道和降官忠诚都应制造噪音，迫使金在疾攻与消化之间拉扯。'
       ],
       aiAggressionProfile: {
         score: 100,
         openingTurns: '前 30 回合保持最高攻击欲望，优先制造宋廷迁幸、河防、河北义军多线压力。',
-        strategicPriorities: ['hunt-emperor', 'capture-kaifeng', 'break-hebei-loyalists', 'pressure-shaanxi', 'install-puppet'],
+        strategicPriorities: ['hunt-emperor', 'secure-hejian-corridor', 'capture-kaifeng', 'break-hebei-loyalists', 'pressure-shaanxi', 'install-puppet'],
         restThreshold: 18,
         retreatThreshold: 8,
         acceptsPeaceOnlyIf: ['宋称臣纳贡并割河南河东关键州府', '赵构被俘或行在崩溃', '金本部爆发继承或北边危机']
       },
+      aiPersonality: {
+        voice: '强硬、短句、军令式，带灭辽破宋后的自信和对新占汉地的不信任。',
+        strategicTemper: '开局疾攻优先，除非补给、疫病、义军和北边危机同时压高，才会短暂停顿。',
+        internalTension: '宗翰要西路破关陕，宗弼要追赵构立威，挞懒与汉官想用傀儡和安抚降低占领成本。',
+        blindSpot: '过度相信骑军威慑和靖康掳获能解决长期占领，容易低估江淮水网和河北义军。'
+      },
+      aiDecisionWeights: {
+        destroySongLegitimacy: 100,
+        huntEmperor: 98,
+        secureHejianCorridor: 84,
+        suppressHebeiMilitia: 88,
+        conserveJurchenCore: 64,
+        usePuppetRegimes: 76,
+        appeaseHanOfficials: 48,
+        pressureXixia: 42
+      },
+      aiConditionalBehaviors: [
+        { trigger: 'song_court_reorganizes_yuying', response: '立即提高追击赵构和破坏御营整编优先级，不给其在江淮成军。' },
+        { trigger: 'hebei_loyalists_link_regions', response: '暂停部分南下纵深，先以河间、真定、平州为轴清剿粮道威胁。' },
+        { trigger: 'kaifeng_or_zongze_resists', response: '加大围城和傀儡招降压力，同时命西路牵制关陕援军。' },
+        { trigger: 'supply_or_epidemic_crisis', response: '改以降官、签军、傀儡守州，女真主力后撤至河间、燕云、河东补给节点。' },
+        { trigger: 'xixia_refuses_auxiliary_pressure', response: '拖延陕北割地，扶阴山诸部牵制西夏，但避免马上开启北边全面冲突。' }
+      ],
+      aiImmersionHooks: ['河间转运廊道', '宗望死后东路重整', '靖康府藏战役储备', '傀儡代守', '签军征发', '搜山检海伏线'],
       posture: 'all_out_invasion',
-      aiStrategy: '超高侵略性南侵。默认主动寻战、围城、追击赵构和切断宋廷河防重建；除非补给或北边危机跌破阈值，否则不应长时间停在既占区经营。前期每回合优先压迫宋廷核心目标：东京开封、河间河北、山东京东、河南淮北、关陕河中。扶傀儡和招降是为释放女真主力继续进攻，不是转入保守防御。',
+      aiStrategy: '超高侵略性南侵。默认主动寻战、围城、追击赵构和切断宋廷河防重建；除非补给或北边危机跌破阈值，否则不应长时间停在既占区经营。前期每回合以河间新占廊道、真定、太原、平州为北方节点，优先压迫宋廷核心目标：东京开封、山东、河南淮北、关陕河中与赵构行在。扶傀儡和招降是为释放女真主力继续进攻，不是转入保守防御。',
       warState: {
         active: [
           { enemy: '宋朝廷', since: '1126.11', front: '河北、河东、京畿、河南与淮北' },
@@ -1774,7 +2438,7 @@ function syncJinMetadata(scenario) {
     history.push({
       year: 1127,
       month: 8,
-      event: '金已占原辽地、燕云、太原、真定与河东若干要地；河间、山东和东京开封尚未纳入稳定占领线。宗望死后东路重整，宗翰、宗弼等正准备以更高强度秋冬南侵追击赵构。'
+      event: '金已占原辽地、燕云、太原、真定、河间与河东若干要地；河间为新占实控但民心未附，山东和东京开封尚未纳入稳定占领线。宗望死后东路重整，宗翰、宗弼等正准备以更高强度秋冬南侵追击赵构。'
     });
     faction.history = history;
     faction.timeline = history.slice();
@@ -1788,22 +2452,22 @@ function syncJinMetadata(scenario) {
       ruler: '完颜吴乞买',
       capital: '会宁府',
       threatLevel: 10,
-      stance: '建炎元年八月：大金处在灭辽破宋后的攻势峰值，已据原辽地、燕云、太原、真定与河东若干要地；河间、河南、山东和东京开封尚未完成稳定占领，正准备秋冬高强度南侵并追击赵构。',
-      interests: ['持续南侵，尽快扑灭赵构南朝正朔', '巩固原辽地、燕云、太原与真定等已占州府', '秋冬再攻河间、河南、京畿与山东', '以傀儡和降官代守新占汉地，释放女真主力'],
+      stance: '建炎元年八月：大金处在灭辽破宋后的攻势峰值，已据原辽地、燕云、太原、真定、河间与河东若干要地；河间是新入实控的前进廊道，河南、山东和东京开封尚未完成稳定占领，正准备秋冬高强度南侵并追击赵构。',
+      interests: ['持续南侵，尽快扑灭赵构南朝正朔', '巩固原辽地、燕云、太原、真定与河间等已占州府', '秋冬再压河南、京畿与山东', '以傀儡和降官代守新占汉地，释放女真主力'],
       keyFigures: ['完颜吴乞买', '完颜宗翰', '完颜宗弼', '完颜娄室', '完颜挞懒', '完颜希尹', '韩企先'],
       resources: ['猛安谋克骑军', '汴京府藏', '辽东马源', '燕云河东河北赋税', '汉契降官转输'],
       militaryNote: '开局按最高威胁处理：女真骑军野战、突袭和长驱追击能力极强；攻城与占领依赖汉契官僚、签军和傀儡代守，越往江淮越受水网、疫病和粮道限制。',
-      intervention: '若宋廷整军或北方义军连成片，金会倾向提前发动预防性进攻；若赵构南走，则优先追击行在而不是保守经营已占地。',
+      intervention: '若宋廷整军或北方义军连成片，金会倾向提前发动预防性进攻；若赵构南走，则优先追击行在而不是保守经营已占地；若河间粮道受扰，则短暂停顿清剿河北义军。',
       territorySummary: {
         mapRegionCount: summary.regionCount,
         population: summary.totalPopulation,
         fiscalAnnual: summary.totalFiscal,
         keyRegions: summary.keyRegions.slice(0, 8)
       },
-      policyHooks: ['东路宗望死后军权重整', '秋冬高强度南侵', '傀儡代守新占汉地', '河北义军清剿', '西路宗翰与东路宗弼争功', '西夏割地与阴山边防'],
+      policyHooks: ['东路宗望死后军权重整', '秋冬高强度南侵', '河间转运廊道治理', '傀儡代守新占汉地', '河北义军清剿', '西路宗翰与东路宗弼争功', '西夏割地与阴山边防'],
       aiAggressionProfile: {
         score: 100,
-        strategicPriorities: ['hunt-emperor', 'capture-kaifeng', 'break-hebei-loyalists', 'pressure-shaanxi', 'install-puppet']
+        strategicPriorities: ['hunt-emperor', 'secure-hejian-corridor', 'capture-kaifeng', 'break-hebei-loyalists', 'pressure-shaanxi', 'install-puppet']
       },
       history: [
         { year: 1115, event: '完颜阿骨打称帝建金。' },
@@ -1811,7 +2475,7 @@ function syncJinMetadata(scenario) {
         { year: 1126, event: '金两路攻宋，宗望初围汴京。' },
         { year: 1127, month: 3, event: '汴京陷后掳徽钦二帝北行，立张邦昌伪楚。' },
         { year: 1127, month: 6, event: '完颜宗望病死，东路军权重整。' },
-        { year: 1127, month: 8, event: '开局时金军准备秋冬再举南侵；河间、山东、东京开封仍不作稳定占领。' }
+        { year: 1127, month: 8, event: '开局时金军准备秋冬再举南侵；河间府已作金军新占实控廊道，山东、东京开封仍不作稳定占领。' }
       ]
     });
   }
@@ -2049,9 +2713,10 @@ function buildMapFactions() {
 
 function copyRegionAdminData(region) {
   const fields = [
-    'populationDetail', 'fiscalDetail', 'publicTreasuryInit', 'economyBase', 'byAge', 'byGender',
-    'byEthnicity', 'byFaith', 'carryingCapacity', 'baojia', 'prosperity', 'taxLevel', 'minxinLocal',
-    'corruptionLocal'
+    'population', 'populationDetail', 'fiscalDetail', 'publicTreasuryInit', 'economyBase', 'byAge',
+    'byGender', 'byEthnicity', 'byFaith', 'bySettlement', 'carryingCapacity', 'baojia', 'prosperity',
+    'taxLevel', 'tags', 'taxBurden', 'minxinLocal', 'corruptionLocal', 'unrest', 'troops', 'armyDetail',
+    'militaryRecruits', 'recruits', 'levyPool', 'militaryDetail', 'armyPressure', 'localMilitaryCost', 'retainedNet'
   ];
   const child = {
     name: region.name,
@@ -2063,6 +2728,7 @@ function copyRegionAdminData(region) {
   for (const field of fields) {
     if (region[field] !== undefined) child[field] = region[field];
   }
+  syncHukouPanelFields(child, region);
   return child;
 }
 
@@ -2082,6 +2748,79 @@ function rebuildAdminHierarchy(regions) {
     };
   }
   return hierarchy;
+}
+
+function syncMilitaryRegionHints(scenario) {
+  const regions = scenario.map?.regions || [];
+  const names = new Set(regions.map((region) => region.name));
+  const exactHints = {
+    '御营司·中军': '京东两路·东平济南青州',
+    '御营前军': '江南东路·江宁府',
+    '御营右军': '江南东路·江宁府',
+    '御营左军': '江南东路·江宁府',
+    '东京留守司·正兵': '京畿路·东京开封府',
+    '东京留守司·招抚义军': '京畿路·东京开封府',
+    '太行八字军': '磁相忠义寨',
+    '泾原吴玠部': '泾原路·渭州',
+    '江淮水军': '江南东路·江宁府',
+    '殿前司·残部': '江南东路·江宁府',
+    '御营·苗傅刘正彦部': '两浙路·杭州',
+    '熙河刘锜部': '泾原路·渭州',
+    '泾原王庶节制兵': '泾原路·渭州',
+    '河东忠义·李彦仙部': '京西北路·西京河南府',
+    '建康水军·韩世忠舟师': '江南东路·江宁府',
+    '建康水军·别部': '江南东路·江宁府',
+    '川峡屯驻·吴璘部': '利州路·兴元府',
+    '御营·张俊讨盗别部': '江南东路·江宁府',
+    '御营·杨惟忠部': '江南东路·江宁府',
+    '陕州忠义·邵隆部': '京西北路·西京河南府',
+    '梁山泊水寨·张荣': '京东两路·东平济南青州',
+    '洞庭乡社·钟相(将起)': '荆湖南路·潭州',
+    '金西路军(粘罕)': '西京路·大同府',
+    '金东路军(斡离不)': '河北西路·真定府',
+    '金·娄室活女部(陕西)': '河东南路·河中府',
+    '金·东京辽阳镇兵': '辽阳府·复州',
+    '金·阇母山东兵': '京东两路·东平济南青州',
+    '金·撒离喝陕西兵': '河东南路·河中府',
+    '金·韩常燕京戍兵': '平州军帅司',
+    '西夏·铁鹞子': '灵州·盐州',
+    '西夏·铁鹞子重骑': '中兴府',
+    '西夏·步跋子强弩': '夏州·宥州',
+    '大越·李朝禁军': '升龙京畿',
+    '大越·南疆御占军': '乂安州',
+    '东喀喇汗·突厥游骑': '八剌沙衮',
+    '东喀喇汗·怛逻斯边军': '怛罗斯',
+    '高昌·回鹘统军': '高昌',
+    '高昌·西陲戍军': '焉耆',
+    '乃蛮·汗金印军': '乃蛮部·阿尔泰东麓',
+    '乃蛮·镇山那颜军': '漠北西南诸部',
+    '塔塔儿·盟主大纛本部': '塔塔儿·捕鱼儿湖西部',
+    '塔塔儿·诸支联骑': '塔塔儿·捕鱼儿湖东部',
+    '平氏·伊势武士团': '畿内',
+    '延历寺山门僧兵': '畿内',
+    '卫藏·后藏豪族部曲': '藏地诸部',
+    '多康·康巴武士': '多康中部诸部',
+    '多康·甘孜部骑': '多康东部诸部',
+    '滇中南·乌蛮联部': '滇南诸部',
+    '滇中南·白蛮城兵': '滇南溪洞诸部',
+    '滇西北·磨些峡谷兵': '磨些诸部·滇西北',
+    '蒲甘·伊江水步军': '上缅甸·蒲甘',
+    '北海·渔猎部众': '黑水诸部'
+  };
+  const troops = scenario.military?.initialTroops;
+  if (!Array.isArray(troops)) return;
+  let corrected = 0;
+  for (const army of troops) {
+    const nextHint = exactHints[army.name];
+    if (nextHint && names.has(nextHint) && army.regionHint !== nextHint) {
+      army.regionHint = nextHint;
+      corrected += 1;
+    } else if (army.garrison && names.has(army.garrison) && army.regionHint !== army.garrison) {
+      army.regionHint = army.garrison;
+      corrected += 1;
+    }
+  }
+  scenario._militaryRegionHintNote = `initialTroops regionHint已按重判后的182区地块名同步；本次校正${corrected}项，确保真实地块面板可绑定活军。`;
 }
 
 function validateMap(map, assignments) {
@@ -2135,6 +2874,7 @@ function main() {
   syncJinMetadata(scenario);
   syncXixiaMetadata(scenario);
   scenario.adminHierarchy = rebuildAdminHierarchy(scenario.map.regions);
+  syncMilitaryRegionHints(scenario);
   scenario._mapReplaceNote = '直接基于已绑定shaosong-1127-182几何重判182区名称与建炎元年八月势力归属；保留稳定ID、polygon、center与neighbors。';
   scenario._adminNote = 'adminHierarchy按重判后的mapRegionId与owner重新生成；owner绑定根势力ID，ownerKey保留稳定地图势力ID，map与mapData的名称、归属与势力绑定同步。';
   fs.writeFileSync(scenarioPath, `${JSON.stringify(scenario, null, 1)}\n`, 'utf8');
