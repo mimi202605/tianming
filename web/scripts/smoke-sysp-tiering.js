@@ -60,18 +60,26 @@ ctx = mkCtx();
 fn = mkSysPFor(ctx, mkGlobal(true));
 ok(fn('sc17') === '[B][C][WG][R][T]', '② sc17→LITE = base+context+worldGov(营造经济/国策/区划)+roster+tail');
 ok(fn('sc16') === '[B][WP][E][C][WS][R][T]' && fn('sc18') === '[B][WP][E][C][WS][R][T]', '② sc16/sc18→FAC = Plan(关系矩阵)+Social(势力规则/矛盾)+events·不带Gov细账');
-ok(fn('sc27') === '[B][C][WG][PE][R][T]', '② sc27→EDICT 含 worldGov(诏令执行环境)+personnel(current_issues/字段目录)');
-ok(fn('sc27').indexOf('[PE]') >= 0, '② sc27 保住 personnel 桶');
+ok(fn('sc27') === '[B][C][R][T]', '② sc27→REVIEW(三批纠错:唯一调用点=legacy 叙事审查·非诏令·EDICT 系首批按文档名误判)');
 ok(fn('sc07') === '[B][WP][D][C][PL][N][WS][R][T]', '② sc07→COG 含 Plan(隐藏议程)+Social(党派)+npcDeep+player+digest');
 ok(fn('sc28') === '[B][D][C][WS][WG][R][T]', '② sc28→SNAP 含 Social+Gov 当前态+digest·不带 Plan 规划meta');
 ok(['sc17', 'sc16', 'sc18', 'sc27', 'sc28', 'sc07'].every(function (id) { return fn(id).indexOf('[WL]') < 0; }), '② worldLifecycle(生灭schema)仅 FULL/NPC 带·分级档全不带');
 
-// ③ 主线与谨慎区不在表 → 恒 FULL
-['sc0', 'sc1', 'sc1q', 'sc1b', 'sc1c', 'sc1d', 'sc2', 'sc05', 'sc15', 'sc15n', 'memwrite', 'sc19', 'sc25', 'scOl', 'scR', 'scP', 'scTac', 'scStr'].forEach(function (id) {
-  if (SYS_PROFILE_OF[id]) { F++; console.log('  ✗ ③ ' + id + ' 不应在首批表里'); }
+// ③ 主线 8 id 永不入表 → 恒 FULL;谨慎区 10 id 三批已实审入表
+['sc0', 'sc1', 'sc1q', 'sc1b', 'sc1c', 'sc1d', 'sc2', 'sc05'].forEach(function (id) {
+  if (SYS_PROFILE_OF[id]) { F++; console.log('  ✗ ③ 主线 ' + id + ' 不应入表'); }
 });
-ok(fn('sc1') === ctx.prompt.sysP && fn('sc15') === ctx.prompt.sysP, '③ 主线 sc1/谨慎区 sc15 开闸下仍 FULL');
-A++; console.log('  ✓ ③ 主线+谨慎区 18 个 id 全不在首批表(抽查通过)');
+ok(fn('sc1') === ctx.prompt.sysP && fn('sc2') === ctx.prompt.sysP, '③ 主线 sc1/sc2 开闸下仍 FULL(永不降)');
+A++; console.log('  ✓ ③ 主线 8 个 id 全不在表(抽查通过)');
+
+// ③b 三批·谨慎区 10 id(2026-07-02 逐调用点实审)
+ok(fn('scOl') === '[B][E][D][C][PL][N][WS][R][T]' && fn('scP') === fn('scOl'), '③b scOl/scP→NARR(事实已同源喂 user prompt·舍 Gov/Plan/生灭)');
+ok(fn('scR') === '[B][C][R][T]', '③b scR→REVIEW 最薄档(查时代错/人名·roster 在)');
+ok(fn('sc15') === '[B][WP][E][D][C][PL][N][WS][L][S][R][T]' && fn('sc15n') === fn('sc15'), '③b sc15/sc15n→NPCDEEP(全库最宽·仅舍 Gov 细账/生灭/personnel)');
+ok(fn('memwrite') === '[B][C][N][R][T]', '③b memwrite→MEMW(事实全在 tpMW·npcDeep 身份接地)');
+ok(fn('scTac') === '[B][D][C][WS][R][T]' && fn('scStr') === fn('scTac') && fn('sc25') === fn('scTac'), '③b scTac/scStr/sc25→MEMC(综述要 Social+digest)');
+ok(fn('sc19') === '[B][C][WS][R][T]', '③b sc19→ENRICH(党派阶层背景+史观基准+防撞名)');
+ok(['scOl', 'scP', 'scR', 'sc15', 'sc15n', 'memwrite', 'scTac', 'scStr', 'sc25', 'sc19'].every(function (id) { return fn(id).indexOf('[WL]') < 0 && fn(id).indexOf('[WG]') < 0; }), '③b 谨慎区全不带 worldGov 细账/生灭 schema');
 
 // ④ 铁律：每个启用档必含 base(硬约束)+roster(幻觉防火墙)+tail
 Object.keys(SYS_PROFILE_OF).forEach(function (id) {

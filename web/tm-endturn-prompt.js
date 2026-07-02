@@ -79,7 +79,21 @@
     //   SNAP(快照)要Social+Gov当前态不要Plan规划meta；COG(认知)要Plan(隐藏议程)+Social(党派)不要Gov。
     EDICT: { base:1, worldGov:1, context:1, personnel:1, roster:1, tail:1 },
     SNAP:  { base:1, worldSocial:1, worldGov:1, digest:1, context:1, roster:1, tail:1 },
-    COG:   { base:1, worldPlan:1, worldSocial:1, player:1, npcDeep:1, digest:1, context:1, roster:1, tail:1 }
+    COG:   { base:1, worldPlan:1, worldSocial:1, player:1, npcDeep:1, digest:1, context:1, roster:1, tail:1 },
+    // [三批·谨慎区·2026-07-02] 逐调用点实审后定档(callsite 语义而非成本文档名)：
+    //   NARR(叙事大纲/成文):事实面已由 _buildSc2FactsCore 同源喂 user prompt·sysP 供史观/口吻(base)+
+    //     前情(context/digest)+人物(player/npcDeep/worldSocial 党派阶层背景)+roster 防火墙·不需 Gov 细账/Plan 规划meta;
+    //   REVIEW(大纲审查/叙事审查):只查时代错乱/人名/节拍·base(史观)+roster(名单)+context 即可·最薄;
+    //   NPCDEEP(sc15/sc15n):全库最宽域调用·产心理/关系/阴谋/阶层/党争·仅舍 worldGov 细账/生灭schema/personnel;
+    //   MEMW(记忆回写):事实全在 user prompt·sysP 供身份接地(npcDeep)+roster;
+    //   MEMC(记忆合成 scTac/scStr/sc25):综述主线/势力向量·要 Social+digest·不需 Plan/Gov;
+    //   ENRICH(sc19 丰化):补人物党派身世·要 Social(党派阶层背景)+base(史观数值基准)+roster(防撞名)。
+    NARR:    { base:1, events:1, digest:1, context:1, player:1, npcDeep:1, worldSocial:1, roster:1, tail:1 },
+    REVIEW:  { base:1, context:1, roster:1, tail:1 },
+    NPCDEEP: { base:1, worldPlan:1, worldSocial:1, events:1, context:1, player:1, npcDeep:1, letters:1, socialRules:1, digest:1, roster:1, tail:1 },
+    MEMW:    { base:1, context:1, npcDeep:1, roster:1, tail:1 },
+    MEMC:    { base:1, worldSocial:1, digest:1, context:1, roster:1, tail:1 },
+    ENRICH:  { base:1, worldSocial:1, context:1, roster:1, tail:1 }
   };
   global.TM.Endturn.AI.prompt.SYS_PROFILE_OF = {
     // [sysP分级·2026-07-02] 首批启用——受总闸 P.conf.sysPTieringEnabled 门控(默认关=全FULL=零行为变更·
@@ -89,10 +103,18 @@
     //   谨慎区(scOl/scR/scP/scTac/scStr/memwrite/sc15/sc15n/sc19/sc25)留FULL待第二批验后再降。
     sc17: 'LITE',                 // 财政:账目全在tp17·不产新人名(roster仍在)
     sc28: 'SNAP',                 // 世界快照:需digest(称谓/关系网基线)
-    sc27: 'EDICT',                // 诏令生命周期:需personnel桶(current_issues/字段目录)
+    sc27: 'REVIEW',               // ★三批纠错:sc27 唯一调用点=legacy 叙事审查(followup·查时代错/人名·默认关)·
+                                  //   首批按成本文档名误判为"诏令"配了 EDICT·实审 callsite 改 REVIEW(EDICT 档保留备用)
     sc07: 'COG',                  // NPC认知:需npcDeep+player+digest
     sc16: 'FAC', sc16L: 'FAC',    // 势力战略:动态关系矩阵在worldState·静态factionBalance可舍
-    sc18: 'FAC', sc18L: 'FAC'     // 军事:军情明细在tp18·worldState有势力态
+    sc18: 'FAC', sc18L: 'FAC',    // 军事:军情明细在tp18·worldState有势力态
+    // [三批·谨慎区·2026-07-02] 10 个 id 逐调用点实审后启用(同受总闸门控·默认关):
+    scOl: 'NARR', scP: 'NARR',    // 叙事大纲/成文:事实已同源喂 user prompt(_buildSc2FactsCore)
+    scR: 'REVIEW',                // 大纲审查:时代错/人名/节拍·最薄档
+    sc15: 'NPCDEEP', sc15n: 'NPCDEEP',   // NPC深度:全库最宽域·仅舍Gov细账/生灭/personnel
+    memwrite: 'MEMW',             // 记忆回写:事实全在tpMW·sysP只供身份接地
+    scTac: 'MEMC', scStr: 'MEMC', sc25: 'MEMC',   // 记忆合成:综述主线要Social+digest
+    sc19: 'ENRICH'                // 新实体丰化:党派阶层背景+史观数值基准+防撞名
   };
 
   /**
@@ -900,13 +922,22 @@
       var impMin = _hcp.heartsImportanceMin != null ? _hcp.heartsImportanceMin : 6;
       var totalCap = _hcp.heartsTotalCap != null ? _hcp.heartsTotalCap : 12;
 
+      // 受限状态(下狱/流放/在逃/致仕)标签·令这些人不被当活跃在职官员注入(玩家报:下狱者仍上朝上奏)
+      function _restStatus(c){
+        if (!c) return '';
+        if (c._imprisoned) return '在狱';
+        if (c._exiled) return '流放';
+        if (c._fled || c._missing) return '在逃';
+        if (c._retired || c.retired) return '致仕';
+        return '';
+      }
       var candidates = [];
       (GM.chars || []).forEach(function(c){
         if (!c || c.alive === false || c._fakeDeath) return;
         if (!Array.isArray(c._memory) || c._memory.length === 0) return;
         if (c.isPlayer) return; // 玩家本人不生成 NPC 行为·不占用深度心声名额(2026-06-13)
         var weight = (c.historicalImportance || 0);
-        if (c.officialTitle) weight += 20;
+        if (c.officialTitle && !_restStatus(c)) weight += 20;  // 受限者不享在职加权·免挤占活跃官员名额
         // 品级抬升(朝代中立·c.rank 多未设令旧 +15 恒哑·改走运行时 rank 解析器·越高品权重越大·2026-06-13)
         var _rk = null;
         try { if (window.TMPromotion && typeof window.TMPromotion.resolveRankLevel === 'function') _rk = window.TMPromotion.resolveRankLevel(c, GM); } catch (_rkE) {}
@@ -947,6 +978,9 @@
         var mood = c._mood || '平';
         // 完整官职（主⊕兼·走 office-system 真源·治"AI 只认主职、漏兼任高职"症状B）
         var curTitle = (typeof _offFormatCharTitles === 'function') ? (_offFormatCharTitles(c, { fallback: c.officialTitle || c.title || '' }) || c.officialTitle || c.title || '') : (c.officialTitle || c.title || '');
+        // 受限者:官衔改标为「原任X·现在狱/流放…」·令 AI 勿把其写成如常视事的在职官员
+        var _rst = _restStatus(c);
+        if (_rst) curTitle = (curTitle ? '原任' + curTitle + '·' : '') + '现' + _rst + '(不预朝政)';
         var activeArcs = (c._arcs || []).filter(function(a){ return a.phase !== 'resolved'; });
         var arcAttr = activeArcs.length ? ' active_arcs="' + _xE(activeArcs.slice(0,3).map(function(a){return a.title;}).join('·')) + '"' : '';
         var _gmAttr = '';
@@ -3847,6 +3881,31 @@
       if (_cemingNames.length > 0) {
         sysP += '\n\n【玩家亲自策名·已在场的合法角色（务必认作真实在场·可正常参与推演与叙事·不得当作虚构或时代错乱）】';
         sysP += '\n' + _cemingNames.join('、');
+      }
+      // 受限人员现状名册·治「下狱者仍上朝/上奏、罢官者仍被称旧衔」(玩家报)·
+      //   旧防火墙只挡死人·不知谁在狱/流放/罢官→AI 继续把他们写成活跃官员。此处明列现状 + 硬约束。
+      var _restricted = { imprison: [], exile: [], flee: [], retire: [], dismiss: [] };
+      var _curTurnR = GM.turn || 0;
+      (GM.chars || []).forEach(function(c){
+        if (!c || c.alive === false || !c.name) return;
+        if (c._imprisoned) _restricted.imprison.push(c.name);
+        else if (c._exiled) _restricted.exile.push(c.name);
+        else if (c._fled || c._missing) _restricted.flee.push(c.name);
+        else if (c._retired || c.retired) _restricted.retire.push(c.name);
+        else if (c._removedFromOfficeTurn != null && !c.officialTitle && (_curTurnR - c._removedFromOfficeTurn) <= 6) _restricted.dismiss.push(c.name);
+      });
+      var _restLines = [];
+      if (_restricted.imprison.length) _restLines.push('【已下狱·候勘/待决】' + _restricted.imprison.join('、'));
+      if (_restricted.exile.length)    _restLines.push('【已流放/发配】' + _restricted.exile.join('、'));
+      if (_restricted.flee.length)     _restLines.push('【逃亡/失踪】' + _restricted.flee.join('、'));
+      if (_restricted.retire.length)   _restLines.push('【已致仕归乡】' + _restricted.retire.join('、'));
+      if (_restricted.dismiss.length)  _restLines.push('【已罢官免职·现无官职】' + _restricted.dismiss.join('、'));
+      if (_restLines.length) {
+        sysP += '\n\n【受限人员现状名册·硬约束】';
+        sysP += '\n以下人员本回合处于下列状态·除非玩家诏令明确赦免/释放/起复/复职·否则严格遵守：';
+        sysP += '\n· 下狱/流放/逃亡者：不得上朝、不得上奏题本、不得参与朝议廷议、不得在外任职理事；叙事只可写其身陷囹圄/在流放/在逃之情形，不得写其如常视事。';
+        sysP += '\n· 已罢官/致仕者：现无官职，严禁再以旧官衔（如「X尚书」「X巡抚」）称呼或令其行使职权；确需提及只可称其人名或「原任X」。';
+        sysP += '\n' + _restLines.join('\n');
       }
       // 有效地名白名单（从行政区划收集）
       if (P.adminHierarchy) {

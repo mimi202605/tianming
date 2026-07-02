@@ -59,9 +59,9 @@ function installInputNodes(sandbox) {
   const rep = JSON.parse(vm.runInContext('JSON.stringify((function(){' +
     'var p=window.__promptCtx.prompt;var out={full:p.sysP.length,blocksOk:!!p.sysBlocks,segs:{}};' +
     'if(p.sysBlocks)Object.keys(p.sysBlocks).forEach(function(k){out.segs[k]=p.sysBlocks[k].length;});' +
-    'var ids=["sc17","sc28","sc27","sc07","sc16","sc16L","sc18","sc18L"];' +
+    'var ids=["sc17","sc28","sc27","sc07","sc16","sc16L","sc18","sc18L","scOl","scR","scP","sc15","sc15n","memwrite","scTac","scStr","sc25","sc19"];' +
     'P.conf.sysPTieringEnabled=false;out.offIdentical=ids.every(function(id){return p.sysPFor(id)===p.sysP;});' +
-    'out.offMainline=(p.sysPFor("sc1")===p.sysP)&&(p.sysPFor("sc15")===p.sysP);' +
+    'out.offMainline=(p.sysPFor("sc1")===p.sysP)&&(p.sysPFor("sc2")===p.sysP);' +
     'P.conf.sysPTieringEnabled=true;out.on={};' +
     'var rosterTok=(p.sysBlocks&&p.sysBlocks.roster)?p.sysBlocks.roster.slice(2,26):"";' +
     'var letterTok=(p.sysBlocks&&p.sysBlocks.letters&&p.sysBlocks.letters.length>40)?p.sysBlocks.letters.slice(2,26):"";' +
@@ -75,8 +75,8 @@ function installInputNodes(sandbox) {
   console.log('\n[真 sysP] FULL=' + rep.full + ' 字 · 截断=' + diag.truncated + ' · 尾60字=「' + diag.tail.replace(/\n/g, '⏎') + '」');
   console.log('[分段] ' + JSON.stringify(rep.segs));
   ok(rep.blocksOk, '① 真局 build 分块成功(无 RECON MISMATCH 回退)');
-  ok(rep.offIdentical, '② 闸关 → 8 个分级 id 全部引用恒等(字节零变)');
-  ok(rep.offMainline, '② 闸关 → 主线/谨慎区恒 FULL');
+  ok(rep.offIdentical, '② 闸关 → 18 个分级 id 全部引用恒等(字节零变)');
+  ok(rep.offMainline, '② 闸关 → 主线 sc1/sc2 恒 FULL');
 
   let saved = 0, cnt = 0;
   const rows = [];
@@ -91,13 +91,19 @@ function installInputNodes(sandbox) {
   if (overflowed) {
     ok(Object.keys(rep.on).every(function (id) { return rep.on[id].len <= rep.full; }), '③ (溢出态)分级不劣于 FULL——可丢段已被溢出守卫清空·无字可省属正确');
   } else {
-    ok(Object.keys(rep.on).every(function (id) { return rep.on[id].len < rep.full; }), '③ 闸开 → 8 id 全部小于 FULL');
+    ok(Object.keys(rep.on).every(function (id) { return rep.on[id].len < rep.full; }), '③ 闸开 → 18 id 全部小于 FULL');
   }
   ok(Object.keys(rep.on).every(function (id) { return rep.on[id].roster !== false; }), '④ 全部保住 roster(幻觉防火墙名单)');
   ok(rep.on.sc17.letters !== true, '⑤ sc17(LITE) 确删 letters 段');
-  ok(rep.on.sc27.personnel !== false, '⑥ sc27(EDICT) 保住 personnel(current_issues/字段目录)');
+  ok(rep.on.sc27.personnel !== true, '⑥ sc27(REVIEW·三批纠错:实为叙事审查非诏令) 确删 personnel');
   ok(rep.on.sc07.npcDeep !== false, '⑦ sc07(COG) 保住 npcDeep(性格/弧线/记忆规则)');
   ok(rep.on.sc16.npcDeep !== true && rep.on.sc18.letters !== true, '⑧ sc16/sc18(FAC) 确删 npcDeep/letters');
+  // 三批·谨慎区抽查
+  ok(rep.on.sc15.npcDeep !== false && rep.on.sc15n.npcDeep !== false, '⑨ sc15/sc15n(NPCDEEP) 保住 npcDeep');
+  ok(rep.on.memwrite.npcDeep !== false, '⑨ memwrite(MEMW) 保住 npcDeep(记忆归属身份接地)');
+  ok(rep.on.scOl.letters !== true && rep.on.scP.letters !== true, '⑨ scOl/scP(NARR) 确删 letters');
+  ok(rep.on.scR.len <= rep.on.scOl.len && rep.on.scR.personnel !== true, '⑨ scR(REVIEW) 最薄·无 personnel');
+  ok(rep.on.sc19.npcDeep !== true && rep.on.scTac.npcDeep !== true, '⑨ sc19(ENRICH)/scTac(MEMC) 确删 npcDeep');
 
   // 全回合估算：实测文档=18 调用带 FULL。首批分级 8 个(sc16/16L、sc18/18L 互斥深度·按 8 全算偏保守上限、按 6 算下限)
   const turn18 = 18 * rep.full;

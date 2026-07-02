@@ -865,6 +865,13 @@ openSettings=function(){
           '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">' + _m[2] + '</div></div>' +
         '</label>';
       }
+      // sc2Pipeline 是 P.ai 字符串非 P.conf 布尔·单独渲染于同栏(2026-07-02 人话化·此前仅「AI 管线开关(高级)」里的 jargon 复选框"sc2 3stage"·玩家不可能知道是什么)
+      var _m3s = !!(P && P.ai && P.ai.sc2Pipeline === '3stage');
+      _mh += '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px dotted var(--bdr);">' +
+        '<input type="checkbox" ' + (_m3s?'checked ':'') + 'onchange="if(!P.ai)P.ai={};P.ai.sc2Pipeline=this.checked?\'3stage\':null;saveP();" style="margin-top:0.15rem;flex-shrink:0;">' +
+        '<div style="flex:1;"><div style="font-size:0.82rem;color:var(--gold);font-weight:600;">📜 史记·三段成文（默认关）</div>' +
+        '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后，每回合史记正文改为三步产出：先铺场景大纲、再审时代错乱与人名（含亡者复活确定性拦截）、最后按大纲成文——正文更有章法、时代感更稳，代价是叙事一步变三步（多两次小额 AI 调用）。关闭则单步成文（默认）。</div></div>' +
+      '</label>';
       _mh += '</div>';
       return _mh;
     })()+
