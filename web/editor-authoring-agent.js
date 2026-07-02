@@ -2834,11 +2834,16 @@
   /** 旧编辑器（editor.html）：body = 全局 scriptData。 */
   function makeOldEditorAdapter(g) {
     g = g || global;
+    // S5 · 文件身份（CC session↔cwd 对照）：旧编辑器一页一剧本·无库可切，openFile 仅同键命中。
+    function _fileKey() { try { var sc = g.scriptData; return 'file:' + String((sc && (sc.id || sc.name)) || 'default'); } catch (e) { return 'file:default'; } }
     return {
       id: 'legacy-editor',
       label: '剧本编辑器',
       isAvailable: function() { return typeof g.scriptData !== 'undefined' && g.scriptData && typeof g.saveScript === 'function'; },
       getScenario: function() { return g.scriptData; },
+      getFileKey: _fileKey,
+      getFileLabel: function() { try { var sc = g.scriptData; return String((sc && sc.name) || '当前剧本'); } catch (e) { return '当前剧本'; } },
+      openFile: function(key) { return Promise.resolve(String(key || '') === _fileKey()); },
       getContext: function() { return ''; },   // 旧编辑器 state 结构不同·暂不提供焦点上下文
       commit: function(draft) {
         var sd = g.scriptData;
@@ -2856,11 +2861,35 @@
   function makeResetEditorAdapter(g) {
     g = g || global;
     function app() { return g.TM_SCENARIO_EDITOR_RESET_APP; }
+    // S5 · 文件身份（CC session↔cwd 对照）：入库案卷用 proj:<案卷id>（改名不漂移·可按键重开）；
+    //   未入库/官方直载的用 name:<剧本名>（弱键·只有恰好还开着才命中）。
+    function _fileKey() {
+      try {
+        var a = app(), st = a && a.state;
+        if (st && st.currentProjectId) return 'proj:' + String(st.currentProjectId);
+        var sc = st && st.scenario;
+        return 'name:' + String((sc && sc.name) || '未命名剧本');
+      } catch (e) { return 'name:未命名剧本'; }
+    }
     return {
       id: 'scenario-editor-reset',
       label: '剧本编辑器（新）',
       isAvailable: function() { var a = app(); return !!(a && a.state && typeof a.applyImportedScenario === 'function'); },
       getScenario: function() { return app().state.scenario; },
+      getFileKey: _fileKey,
+      getFileLabel: function() { try { var sc = app().state.scenario; return String((sc && sc.name) || '未命名剧本'); } catch (e) { return '未命名剧本'; } },
+      // 会话切剧本（CC resume 切项目对照）：proj: 键走案卷库真载入；载不到（已删/库不可用）返回 false 交 UI 降级只读。
+      openFile: function(key) {
+        key = String(key || '');
+        if (key === _fileKey()) return Promise.resolve(true);
+        if (/^proj:/.test(key)) {
+          var a = app();
+          if (!a || typeof a.loadProjectSnapshot !== 'function') return Promise.resolve(false);
+          try { return Promise.resolve(a.loadProjectSnapshot(key.slice(5))).then(function(snap) { return !!snap; }).catch(function() { return false; }); }
+          catch (e) { return Promise.resolve(false); }
+        }
+        return Promise.resolve(false);
+      },
       // 上下文感知（像 Claude code 知道你打开的文件）：读编辑器当前焦点——模块/集合/选中实体。
       getContext: function() {
         try {

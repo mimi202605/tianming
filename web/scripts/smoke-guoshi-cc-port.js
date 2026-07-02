@@ -392,12 +392,12 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(!JSON.stringify(rR.todos).match(/坏项/), 'H3 非法 status/空 content 的恢复项被滤掉');
   // 2: UI 源契约(存/取/清/回灌四处接线·jsdom 行为由真机验)
   var uiSrc3 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
-  ok(/ui\.conversation = res\.conversation;[^\n]*\n\s*_saveThread\(res\);/.test(uiSrc3.replace(/\r/g, '')), 'H3 UI:跑完即存线程(_saveThread 紧随 conversation 赋值)');
-  ok(/_maybeRestoreThread\(\); _autoWinMode\(\); \}/.test(uiSrc3) && /48 \* 3600 \* 1000/.test(uiSrc3), 'H3 UI:开面板自动恢复(48h 新鲜度守卫)+首开默认全屏窗');
-  ok(/pack\.sid !== _scenKey\(\)/.test(uiSrc3), 'H3 UI:剧本 id 对不上不恢复(跨剧本不串线程)');
+  ok(/ui\.conversation = res\.conversation;[^\n]*\n\s*_saveSession\(res, request/.test(uiSrc3.replace(/\r/g, '')), 'H3 UI:跑完即落盘当前会话(_saveSession 紧随 conversation 赋值)');
+  ok(/_maybeRestoreThread\(\); _autoWinMode\(\); \}/.test(uiSrc3) && /SESS_FRESH_MS = 48 \* 3600 \* 1000/.test(uiSrc3), 'H3 UI:开面板自动续接(48h 新鲜度守卫)+首开默认全屏窗');
+  ok(/m\.fileKey === fk/.test(uiSrc3), 'H3 UI:按剧本 fileKey 找候选会话(跨剧本不串线程)');
   ok(/900000/.test(uiSrc3) && /_compactOldToolResults\(copy, 4\)/.test(uiSrc3), 'H3 UI:存前压缩副本+体量上限护 quota');
-  var _clrN = (uiSrc3.match(/_clearThread\(\);/g) || []).length;
-  ok(_clrN >= 3, 'H3 UI:新对话/撤销/回退检查点三处清存档(实 ' + _clrN + ' 处)');
+  var _clrN = (uiSrc3.match(/ui\._sessId = null; _sessPtrSet\(_fileKey\(\), null\);/g) || []).length;
+  ok(_clrN >= 3, 'H3 UI:新对话/撤销/回退检查点三处脱离会话+指针置空(实 ' + _clrN + ' 处)');
   ok(/initialTodos: _rtd,/.test(uiSrc3) && /ui\._restoredTodos = null;/.test(uiSrc3), 'H3 UI:恢复的任务表一次性回灌 initialTodos');
 
   // ───────── H4 · API 连接·模型选择弹层(模型徽即入口·owner 定案) ─────────
@@ -487,6 +487,32 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/id="tm-aa-attach-btn"/.test(uiSrc8) && /addEventListener\('drop'/.test(uiSrc8) && /addEventListener\('paste'/.test(uiSrc8), 'H8 UI 三入口(曲别针/拖拽/粘贴截图)在位');
   ok(/【附件 · /.test(uiSrc8) && /request \+ _attTxt/.test(uiSrc8) && /images: _imgs,/.test(uiSrc8), 'H8 发送链路(文本内联+图片走视觉)');
   ok(/【曾附图 /.test(uiSrc8), 'H8 线程持久化剥像素(localStorage 体量)');
+
+  // ───────── H9 · 会话体系(CC sessions 对照·会话绑剧本·切会话即切剧本) ─────────
+  console.log('— H9 会话体系 —');
+  var app9 = { state: { currentProjectId: 'p1', scenario: { name: '甲剧本' } }, applyImportedScenario: function () {},
+    loadProjectSnapshot: function (id) { app9._loaded = id; if (id === 'p2') { app9.state.currentProjectId = 'p2'; app9.state.scenario = { name: '乙剧本' }; return Promise.resolve({ id: 'p2' }); } return Promise.resolve(null); } };
+  var ad9 = AA.makeResetEditorAdapter({ TM_SCENARIO_EDITOR_RESET_APP: app9 });
+  ok(ad9.getFileKey() === 'proj:p1' && ad9.getFileLabel() === '甲剧本', 'H9 工坊适配器 fileKey=proj:<案卷id>(改名不漂移)');
+  var same9 = await ad9.openFile('proj:p1');
+  ok(same9 === true && app9._loaded === undefined, 'H9 openFile 同键快路(不动案卷库)');
+  var sw9 = await ad9.openFile('proj:p2');
+  ok(sw9 === true && app9._loaded === 'p2' && ad9.getFileKey() === 'proj:p2' && ad9.getFileLabel() === '乙剧本', 'H9 openFile 跨案卷真载入(切会话即切剧本)');
+  ok((await ad9.openFile('proj:nope')) === false, 'H9 案卷不存在→false(UI 降级只读回看不误绑)');
+  app9.state.currentProjectId = null;
+  ok(ad9.getFileKey() === 'name:乙剧本', 'H9 未入库剧本弱键 name:<剧本名>');
+  var adL9 = AA.makeOldEditorAdapter({ scriptData: { name: '丙' }, saveScript: function () {} });
+  ok(adL9.getFileKey() === 'file:丙' && (await adL9.openFile('file:丙')) === true && (await adL9.openFile('file:丁')) === false, 'H9 旧编辑器单剧本·仅同键命中');
+  var uiSrc9 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(uiSrc9.indexOf("'tm_aa_sessions'") >= 0 && uiSrc9.indexOf("'tm_aa_sessbody_'") >= 0 && uiSrc9.indexOf("'tm_aa_sess_active'") >= 0
+    && 'tm_aa_sess_active'.indexOf('tm_aa_sessbody_') !== 0, 'H9 UI:索引/正文/指针三键分立(指针不带正文前缀·evict 不误清)');
+  ok(/ui\.adapter\.openFile\(meta\.fileKey\)\.then/.test(uiSrc9) && /只读回看/.test(uiSrc9), 'H9 UI:切会话先切剧本·打不开降级只读回看');
+  ok(/_renderConversation\(body\.conversation, (cand|meta)\)/.test(uiSrc9) && /function _rawReq/.test(uiSrc9), 'H9 UI:恢复/切换都回放正文(玩家原话提取)');
+  ok(/_migrateLegacyThread/.test(uiSrc9) && /localStorage\.removeItem\(THREAD_KEY\)/.test(uiSrc9), 'H9 UI:旧单线程一次性迁移成会话');
+  ok(/ptr\.fileKey === fk && !ptr\.sessId/.test(uiSrc9), 'H9 UI:「新对话」指针置空→开面板不拉回旧线程(CC --continue 语义)');
+  ok(/SESS_BODY_KEEP = 10/.test(uiSrc9) && /_evictSessBodies/.test(uiSrc9), 'H9 UI:正文只保最新10条(quota·索引留档卡)');
+  ok(/data-sess=/.test(uiSrc9) && /ri-del/.test(uiSrc9) && /ri-ren/.test(uiSrc9) && /ri-file/.test(uiSrc9) && /清空会话/.test(uiSrc9), 'H9 UI:侧栏会话列表(切换/删除/重命名/跨剧本徽记)');
+  ok(/renameSession: renameSession/.test(uiSrc9) && /\(old && old\.title\) \|\|/.test(uiSrc9), 'H9 UI:玩家改名压过自动标题(CC custom-title 对照)');
 
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });

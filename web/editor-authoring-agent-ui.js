@@ -510,11 +510,18 @@
       '#tm-aa-railnew:hover{background:var(--surface);border-color:var(--ac)}',
       '#tm-aa-rail .rail-sec{font-size:11px;color:var(--tx3);letter-spacing:.06em;margin:10px 4px 3px}',
       '#tm-aa-raillist{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}',
-      '.rail-item{padding:7px 9px;border-radius:9px;cursor:pointer;transition:background .12s}',
+      '.rail-item{position:relative;padding:7px 24px 7px 9px;border-radius:9px;cursor:pointer;transition:background .12s}',
       '.rail-item:hover{background:var(--surface)}',
+      '.rail-item.on{background:var(--surface);box-shadow:inset 2px 0 0 var(--ac)}',   // S5 · 当前会话高亮（Claude 桌面端式左缘线）
       '.rail-item .ri-req{font-size:12.5px;color:var(--tx);line-height:1.45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.rail-item .ri-meta{font-size:10.5px;color:var(--tx3);margin-top:2px}',
+      '.rail-item .ri-meta{font-size:10.5px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.rail-item .ri-meta .ri-ok{color:var(--ok)}',
+      '.rail-item .ri-meta .ri-file{color:var(--ac)}',   // S5 · 属别的剧本 → 切换徽记
+      '.rail-item .ri-del,.rail-item .ri-ren{position:absolute;right:5px;top:6px;display:none;background:none;border:none;color:var(--tx3);font-size:13px;line-height:1;padding:2px 4px;border-radius:6px;cursor:pointer}',
+      '.rail-item .ri-ren{right:24px;font-size:11px;top:7px}',
+      '.rail-item:hover .ri-del,.rail-item:hover .ri-ren{display:block}',
+      '.rail-item .ri-del:hover{color:var(--bad);background:var(--sunken)}',
+      '.rail-item .ri-ren:hover{color:var(--tx);background:var(--sunken)}',
       '.rail-empty{font-size:11.5px;color:var(--tx3);padding:8px 6px;line-height:1.6}',
       '#tm-aa-railclear{background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:6px;border-radius:8px;font-family:inherit}#tm-aa-railclear:hover{color:var(--bad);background:var(--surface)}',
       '#tm-aa-body{padding:10px 20px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;position:relative;flex:1 1 auto;min-height:0;transition:margin-left .15s ease-out;',
@@ -796,7 +803,7 @@
       '<div id="tm-aa-hd"><span><button id="tm-aa-rail-tg" aria-label="会话历史侧栏" title="会话历史（全屏侧栏）">' + _icon('bars') + '</button><span class="tm-aa-ava">师</span><b>国师</b><span class="sub">' + esc(ui.adapter.label || '') + '</span></span>',
       '<span class="tm-aa-hdbtns"><button id="tm-aa-theme" aria-label="切换明暗主题" title="明暗主题切换">' + _icon('contrast') + '</button><button id="tm-aa-newchat" aria-label="开始新对话" title="开始新对话（清空当前会话线程与消息·上一会话已入历史/记忆）">' + _icon('pen') + '</button><button id="tm-aa-fs" aria-label="全屏或还原" title="全屏 / 还原">' + _icon('expand') + '</button><button id="tm-aa-x" aria-label="关闭" title="关闭">' + _icon('close') + '</button></span></div>',
       '<div id="tm-aa-progress" aria-hidden="true"></div>',
-      '<div id="tm-aa-rail"><button id="tm-aa-railnew" type="button">＋ 新对话</button><input id="tm-aa-railq" type="text" placeholder="搜索历史…" aria-label="搜索运行历史"><div id="tm-aa-raillist"></div><button id="tm-aa-railclear" type="button" title="清空全部运行历史">清空历史</button></div>',
+      '<div id="tm-aa-rail"><button id="tm-aa-railnew" type="button">＋ 新对话</button><input id="tm-aa-railq" type="text" placeholder="搜索会话…" aria-label="搜索会话"><div id="tm-aa-raillist"></div><button id="tm-aa-railclear" type="button" title="清空全部会话（运行审计/版本说明不受影响）">清空会话</button></div>',
       '<div id="tm-aa-body">',
       '<div class="tm-aa-search" id="tm-aa-search" hidden><input type="text" id="tm-aa-search-in" placeholder="在结果里查找…"><span class="tm-aa-search-n" id="tm-aa-search-n">0/0</span><button type="button" id="tm-aa-search-prev" title="上一个">↑</button><button type="button" id="tm-aa-search-next" title="下一个">↓</button><button type="button" id="tm-aa-search-x" title="关闭 (Esc)">×</button></div>',
       '<div id="tm-aa-composer">',   // Claude 桌面端式 composer：圆角大卡片·内嵌底行（＋能力菜单 · 世界类型 · 发送）
@@ -1039,17 +1046,26 @@
     if (ts >= day0 - 6 * 86400000) return '七日内';
     return '更早';
   }
+  // S5 · 侧栏=会话列表（CC/Claude 桌面端对照）：按日期分组·点击切换会话（跨剧本自动切剧本）·
+  //   悬停 × 删除·当前会话高亮·会话属别的剧本时显剧本徽记。
   function _renderRail(query) {
     var list = ui.els && ui.els.raillist; if (!list) return;
-    var h = listHistory(query).slice(0, 40);
-    if (!h.length) { list.innerHTML = '<div class="rail-empty">' + (query ? '没有匹配「' + esc(String(query).slice(0, 20)) + '」的记录。' : '还没有运行记录——发出第一条需求后，这里会像会话列表一样留档。') + '</div>'; return; }
+    var l = listSessions(query).slice(0, 40), fk = _fileKey();
+    if (!l.length) { list.innerHTML = '<div class="rail-empty">' + (query ? '没有匹配「' + esc(String(query).slice(0, 20)) + '」的会话。' : '还没有会话——发出第一条需求后，这里会按日期列出会话，点击可随时切回（连剧本一起切）。') + '</div>'; return; }
     var out = [], lastGrp = null;
-    h.forEach(function (r) {
-      var g = _railGroupOf(r.ts || 0);
+    l.forEach(function (m) {
+      if (!m || !m.id) return;
+      var g = _railGroupOf(m.ts || 0);
       if (g !== lastGrp) { out.push('<div class="rail-sec">' + g + '</div>'); lastGrp = g; }
-      out.push('<div class="rail-item" data-req="' + esc(String(r.request || '').slice(0, 500)) + '" title="点击把这条需求填回输入框">'
-        + '<div class="ri-req">' + esc(r.request || '（无需求文本）') + '</div>'
-        + '<div class="ri-meta">' + esc(r.kind || '') + ' · ' + esc((r.when || '').replace(/^\d{4}\/|:\d{2}$/g, '')) + (r.applied ? ' · <span class="ri-ok">已应用 ✓</span>' : '') + '</div>'
+      var other = m.fileKey && m.fileKey !== fk;
+      var noBody = !_sessBody(m.id);
+      out.push('<div class="rail-item' + (m.id === ui._sessId ? ' on' : '') + '" data-sess="' + esc(m.id) + '" title="'
+        + (other ? '点击切换到剧本「' + esc(m.fileLabel || '') + '」并续接该会话' : '点击续接该会话') + (noBody ? '（正文已按容量清理·只余档卡）' : '') + '">'
+        + '<div class="ri-req">' + esc(m.title || '（未命名会话）') + '</div>'
+        + '<div class="ri-meta">' + (other ? '<span class="ri-file">⇄ ' + esc(m.fileLabel || '?') + '</span> · ' : (m.fileLabel ? esc(m.fileLabel) + ' · ' : ''))
+        + (m.msgs || 0) + ' 条 · ' + esc(m.kind || '') + '</div>'
+        + '<button type="button" class="ri-ren" data-ren="' + esc(m.id) + '" title="重命名会话">✎</button>'
+        + '<button type="button" class="ri-del" data-del="' + esc(m.id) + '" title="删除该会话">×</button>'
         + '</div>');
     });
     list.innerHTML = out.join('');
@@ -1068,17 +1084,25 @@
     var _rn = ui.els.panel.querySelector('#tm-aa-railnew');
     if (_rn) _rn.addEventListener('click', function () { newConversation(); _renderRail(ui._railQ || ''); });
     var _rc = ui.els.panel.querySelector('#tm-aa-railclear');
-    if (_rc) _rc.addEventListener('click', function () { clearHistory(); _renderRail(ui._railQ || ''); setStatus('运行历史已清空'); });
+    if (_rc) _rc.addEventListener('click', function () { clearSessions(); _renderRail(ui._railQ || ''); setStatus('会话历史已清空（运行审计与版本说明不受影响）'); });
     if (ui.els.raillist) ui.els.raillist.addEventListener('click', function (ev) {
+      var del = ev.target && ev.target.closest ? ev.target.closest('.ri-del') : null;
+      if (del) { deleteSession(del.getAttribute('data-del')); _renderRail(ui._railQ || ''); return; }
+      var ren = ev.target && ev.target.closest ? ev.target.closest('.ri-ren') : null;
+      if (ren) {
+        var rid = ren.getAttribute('data-ren'), row = ren.closest('.rail-item');
+        var cur = (row && row.querySelector('.ri-req') || {}).textContent || '';
+        var nv = null; try { nv = window.prompt('重命名会话', cur); } catch (e) {}
+        if (nv != null && renameSession(rid, nv)) { _renderRail(ui._railQ || ''); setStatus('已重命名会话'); }
+        return;
+      }
       var it = ev.target && ev.target.closest ? ev.target.closest('.rail-item') : null;
       if (!it) return;
-      if (ui.running) { setStatus('运行中 · 先停止再取用历史需求'); return; }
-      ui.els.req.value = it.getAttribute('data-req') || '';
-      try { ui.els.req.dispatchEvent(new Event('input')); } catch (e) {}
-      ui.els.req.focus();
-      setStatus('已把该条历史需求填回输入框 · 可编辑后发送');
+      switchSession(it.getAttribute('data-sess'));
+      _renderRail(ui._railQ || '');
     });
-    ui._onHistoryChange = function () { if (ui.els.panel.classList.contains('railon')) _renderRail(ui._railQ || ''); };   // 新纪录/标记已应用 → 侧栏活刷新
+    ui._onSessionsChange = function () { if (ui.els.panel.classList.contains('railon')) _renderRail(ui._railQ || ''); };   // 会话落盘/删除 → 侧栏活刷新
+    ui._onHistoryChange = function () { if (ui.els.panel.classList.contains('railon')) _renderRail(ui._railQ || ''); };    // 兼容旧钩子(标记已应用等)
   }
 
   // ── API 连接 · 模型选择（模型徽即入口·owner 定案）：地址+Key → 真调该 API 的模型清单接口 → 下拉选定即用。
@@ -1349,42 +1373,239 @@
     }
   }
 
-  // 刀H3(CC session resume 对照) · 会话线程持久化：线程/任务表此前刷新即丢（已应用的改动在剧本里·
-  //   但对话上下文死）。每轮跑完存 localStorage（压缩副本·体量上限护 quota）·开面板时同剧本且够新
-  //   (48h)自动恢复——续接语义复用既有 continuing 路径（draft 没了从当前剧本重建·线程贯穿）。
-  //   「＋ 新对话」/撤销/回退检查点即清（线程与剧本状态须一致）。
-  var THREAD_KEY = 'tm_aa_thread';
+  // S5(CC sessions 对照) · 会话体系：会话=独立线程·绑定剧本文件（fileKey）·切会话即切剧本。
+  //   索引 tm_aa_sessions（meta·新→旧·cap 20）+ 正文 tm_aa_sessbody_<id>（只保最新 10 条·护 quota）·
+  //   活动指针 tm_aa_sess_active{fileKey,sessId}（「＋ 新对话」把 sessId 置空 → 开面板不再拉回旧线程·
+  //   对应 CC --continue 取「当前项目最近会话」的语义）·旧单线程 tm_aa_thread 首次开面板迁移成一条会话。
+  var THREAD_KEY = 'tm_aa_thread';   // 旧单线程键·仅迁移用
+  var SESS_KEY = 'tm_aa_sessions', SESS_BODY = 'tm_aa_sessbody_', SESS_PTR = 'tm_aa_sess_active';
+  var SESS_MAX = 20, SESS_BODY_KEEP = 10, SESS_FRESH_MS = 48 * 3600 * 1000;
   function _scenKey() {
     try { var sc = ui.adapter && ui.adapter.getScenario ? ui.adapter.getScenario() : null; return String((sc && (sc.id || sc.editingScenarioId || sc.name)) || 'default'); }
     catch (e) { return 'default'; }
   }
-  function _saveThread(res) {
+  function _fileKey() {
+    try { return (ui.adapter && typeof ui.adapter.getFileKey === 'function') ? String(ui.adapter.getFileKey()) : ('name:' + _scenKey()); }
+    catch (e) { return 'name:' + _scenKey(); }
+  }
+  function _fileLabel() {
+    try {
+      if (ui.adapter && typeof ui.adapter.getFileLabel === 'function') return String(ui.adapter.getFileLabel());
+      var sc = ui.adapter && ui.adapter.getScenario ? ui.adapter.getScenario() : null;
+      return String((sc && sc.name) || '');
+    } catch (e) { return ''; }
+  }
+  function _sessIndex() { try { var v = JSON.parse(localStorage.getItem(SESS_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+  function _sessIndexSave(list) { try { localStorage.setItem(SESS_KEY, JSON.stringify(list.slice(0, SESS_MAX))); } catch (e) {} }
+  function _sessBody(id) { try { var v = JSON.parse(localStorage.getItem(SESS_BODY + id) || 'null'); return (v && Array.isArray(v.conversation) && v.conversation.length) ? v : null; } catch (e) { return null; } }
+  function _sessPtr() { try { return JSON.parse(localStorage.getItem(SESS_PTR) || 'null') || {}; } catch (e) { return {}; } }
+  function _sessPtrSet(fileKey, sessId) { try { localStorage.setItem(SESS_PTR, JSON.stringify({ fileKey: fileKey, sessId: sessId || null, ts: Date.now() })); } catch (e) {} }
+  // 从「构建后的 user 消息」提取玩家原话（回放气泡/会话标题用）：剥掉【用户需求】等标记头与草稿现状等附文
+  function _rawReq(text) {
+    var t = String(text || '').replace(/^【曾附图 \d+ 张】/, '').trim();
+    var m = t.match(/^【[^】]{1,14}】\n?([\s\S]*)$/);
+    var body = m ? m[1] : t;
+    var cut = body.search(/\n【|\n（在上面已改|\n（当前编辑上下文|\n（提示：/);
+    if (cut > 0) body = body.slice(0, cut);
+    return body.trim().slice(0, 300);
+  }
+  // 正文只保最新 N 条（quota）·索引之外的孤儿正文一并清（SESS_PTR 不带 SESS_BODY 前缀·不会被误清）
+  function _evictSessBodies(extra) {
+    try {
+      var keep = {};
+      _sessIndex().slice(0, Math.max(0, SESS_BODY_KEEP - (extra || 0))).forEach(function (m) { if (m && m.id) keep[SESS_BODY + m.id] = 1; });
+      var kill = [];
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf(SESS_BODY) === 0 && !keep[k]) kill.push(k); }
+      kill.forEach(function (k) { try { localStorage.removeItem(k); } catch (e0) {} });
+    } catch (e) {}
+  }
+  function _migrateLegacyThread() {
+    try {
+      var raw = localStorage.getItem(THREAD_KEY); if (!raw) return;
+      localStorage.removeItem(THREAD_KEY);
+      var pack = JSON.parse(raw);
+      if (!pack || !Array.isArray(pack.conversation) || !pack.conversation.length) return;
+      var same = pack.sid && pack.sid === _scenKey();
+      var id = 's' + (pack.ts || Date.now()) + '-mig';
+      var meta = { id: id, ts: pack.ts || Date.now(), created: pack.ts || Date.now(),
+        fileKey: same ? _fileKey() : ('name:' + (pack.sid || 'default')), fileLabel: same ? _fileLabel() : String(pack.sid || ''),
+        title: _rawReq(pack.conversation[0] && pack.conversation[0].text) || '上次会话', msgs: pack.conversation.length, tokens: 0, kind: '编辑', summary: '' };
+      localStorage.setItem(SESS_BODY + id, JSON.stringify({ id: id, ts: meta.ts, todos: pack.todos || [], conversation: pack.conversation }));
+      var idx = _sessIndex(); idx.unshift(meta); _sessIndexSave(idx);
+    } catch (e) {}
+  }
+  // 每轮跑完落盘到当前会话（无则新建）：meta 进索引·正文分键存（压缩副本·体量上限护 quota）
+  function _saveSession(res, request, kind) {
     try {
       if (!res || !Array.isArray(res.conversation) || !res.conversation.length) return;
       var copy = JSON.parse(JSON.stringify(res.conversation));
       copy.forEach(function (m) { if (m && m.images && m.images.length) { m.text = '【曾附图 ' + m.images.length + ' 张】' + (m.text || ''); delete m.images; } });   // S2 · 像素不进 localStorage(体量)
       try { AA._compactOldToolResults(copy, 4); } catch (e0) {}
-      var pack = { sid: _scenKey(), ts: Date.now(), todos: (res.todos || []).slice(0, 20), conversation: copy };
-      var s = JSON.stringify(pack);
-      if (s.length > 900000) { try { AA._compactOldToolResults(copy, 1); } catch (e1) {} s = JSON.stringify(pack); }
-      if (s.length > 900000) { localStorage.removeItem(THREAD_KEY); return; }   // 仍过大：宁缺毋 quota 爆
-      localStorage.setItem(THREAD_KEY, s);
-    } catch (e) { try { localStorage.removeItem(THREAD_KEY); } catch (e2) {} }
+      ui._sessSeq = (ui._sessSeq || 0) + 1;
+      var id = ui._sessId || ('s' + Date.now() + '-' + ui._sessSeq);
+      ui._sessId = id;
+      var body = { id: id, ts: Date.now(), todos: (res.todos || []).slice(0, 20), conversation: copy };
+      var s = JSON.stringify(body);
+      if (s.length > 900000) { try { AA._compactOldToolResults(copy, 1); } catch (e1) {} s = JSON.stringify(body); }
+      var all = _sessIndex();
+      var old = null, rest = [];
+      all.forEach(function (m) { if (m && m.id === id) old = m; else if (m) rest.push(m); });
+      var meta = {
+        id: id, ts: Date.now(), created: old ? (old.created || old.ts) : Date.now(),
+        fileKey: _fileKey(), fileLabel: _fileLabel(),
+        title: (old && old.title) || _rawReq(String(request || '')) || _rawReq(copy[0] && copy[0].text) || '（未命名会话）',
+        msgs: copy.length, tokens: ((old && old.tokens) || 0) + ((res && res.tokensUsed) || 0),
+        kind: kind || (old && old.kind) || '编辑',
+        summary: String(_runSummaryOf(res) || '').slice(0, 240)
+      };
+      rest.unshift(meta); _sessIndexSave(rest);
+      if (s.length <= 900000) {
+        try { localStorage.setItem(SESS_BODY + id, s); }
+        catch (eq) { _evictSessBodies(3); try { localStorage.setItem(SESS_BODY + id, s); } catch (eq2) {} }   // quota 满：先腾再存
+      } else { try { localStorage.removeItem(SESS_BODY + id); } catch (e2) {} }   // 仍过大：留档卡·正文宁缺毋 quota 爆
+      _evictSessBodies(0);
+      _sessPtrSet(meta.fileKey, id);
+      if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e3) {} }
+    } catch (e) {}
   }
-  function _clearThread() { try { localStorage.removeItem(THREAD_KEY); } catch (e) {} }
+  // 把会话正文回放进消息流（CC 恢复会话即见完整往来对照）：user 气泡=玩家原话；
+  //   assistant/tool 段聚合成一张只读回应卡（取该轮最后一条有文字的 assistant·统计工具数）。
+  function _renderConversation(conv, meta) {
+    if (!ui.els || !Array.isArray(conv)) return;
+    resetResults(false);
+    if (ui.els.empty) ui.els.empty.style.display = 'none';
+    var i = 0;
+    while (i < conv.length) {
+      var turn = conv[i];
+      if (turn && turn.role === 'user') { var t = _rawReq(turn.text); if (t) _appendUserMsg(t, { input: t }); i++; continue; }
+      var lastTxt = '', tools = 0;
+      while (i < conv.length && conv[i] && conv[i].role !== 'user') {
+        var a = conv[i];
+        if (a.role === 'assistant') {
+          if (String(a.text || '').trim()) lastTxt = String(a.text).trim();
+          tools += Array.isArray(a.toolCalls) ? a.toolCalls.length : 0;
+        }
+        i++;
+      }
+      if (lastTxt || tools) {
+        _beginReplyCard();
+        if (ui.els.summary) { ui.els.summary.innerHTML = lastTxt ? _md(lastTxt.slice(0, 4000)) : '<span class="tm-aa-stream">（该轮以工具操作为主）</span>'; ui.els.summary.style.display = ''; }
+        var tag = ui._reply && ui._reply.querySelector('.reply-tag'); if (tag && tools) tag.textContent = '— 本轮执行 ' + tools + ' 个工具';
+        _freezeLastReply();
+      }
+    }
+    if (meta && meta.summary) {   // 收尾档卡：当轮 finish 的改动说明存在 meta 里（正文里只有工具调用）
+      _beginReplyCard();
+      if (ui.els.summary) { ui.els.summary.innerHTML = _md(String(meta.summary)); ui.els.summary.style.display = ''; }
+      _freezeLastReply();
+    }
+    ui._logPinned = true;
+    if (ui.els.logWrap) { try { ui.els.logWrap.scrollTop = ui.els.logWrap.scrollHeight; } catch (e) {} }
+  }
+  // 开面板自动续接（CC --continue 语义）：优先活动指针指的会话·否则本剧本最新会话；
+  //   玩家点过「＋ 新对话」（指针 sessId=null）或过陈(48h)则不拉回。
   function _maybeRestoreThread() {
     try {
       if (ui.running || (ui.conversation && ui.conversation.length)) return false;
-      var raw = localStorage.getItem(THREAD_KEY); if (!raw) return false;
-      var pack = JSON.parse(raw);
-      if (!pack || pack.sid !== _scenKey() || !Array.isArray(pack.conversation) || !pack.conversation.length) return false;
-      if (Date.now() - (pack.ts || 0) > 48 * 3600 * 1000) return false;   // 过陈线程不自动续（要续可继续输入·不需要点新对话）
-      ui.conversation = pack.conversation;
-      ui._restoredTodos = Array.isArray(pack.todos) ? pack.todos : null;
+      _migrateLegacyThread();
+      var fk = _fileKey(), ptr = _sessPtr(), idx = _sessIndex();
+      if (ptr && ptr.fileKey === fk && !ptr.sessId && Date.now() - (ptr.ts || 0) < SESS_FRESH_MS) return false;
+      var cand = null;
+      if (ptr && ptr.fileKey === fk && ptr.sessId) idx.forEach(function (m) { if (!cand && m && m.id === ptr.sessId) cand = m; });
+      if (!cand) idx.forEach(function (m) { if (!cand && m && m.fileKey === fk) cand = m; });
+      if (!cand || Date.now() - (cand.ts || 0) > SESS_FRESH_MS) return false;
+      var body = _sessBody(cand.id); if (!body) return false;
+      ui.conversation = body.conversation;
+      ui._restoredTodos = Array.isArray(body.todos) ? body.todos : null;
+      ui._sessId = cand.id;
+      _renderConversation(body.conversation, cand);
       var pend = (ui._restoredTodos || []).filter(function (t) { return t && t.status !== 'completed'; }).length;
-      setStatus('已恢复上次会话线程（' + pack.conversation.length + ' 条消息' + (pend ? '·' + pend + ' 项任务未完' : '') + '）· 直接输入即可续接；不需要就点「＋ 新对话」');
+      setStatus('已续上会话「' + (cand.title || '') + '」（' + body.conversation.length + ' 条消息' + (pend ? '·' + pend + ' 项任务未完' : '') + '）· 直接输入续接；不需要就点「＋ 新对话」');
       return true;
     } catch (e) { return false; }
+  }
+  // 跨剧本切换后刷新顶栏副标题（仅当副标题仍是我方默认值/带「 · 」分隔时才动——工坊 dock 的自定义 sub 不碰）
+  function _refreshFileSub() {
+    try {
+      var sub = ui.els && ui.els.panel ? ui.els.panel.querySelector('#tm-aa-hd .sub') : null;
+      if (!sub) return;
+      var cur = sub.textContent || '', lbl = String((ui.adapter && ui.adapter.label) || '');
+      if (cur !== lbl && cur.indexOf(' · ') < 0) return;
+      var fl = _fileLabel();
+      sub.textContent = fl ? (lbl.split(' · ')[0] + ' · ' + fl) : lbl;
+    } catch (e) {}
+  }
+  // 切换会话（CC resume 对照）：绑定的剧本≠当前 → 先让宿主按键打开那个剧本（案卷库），成功才续接；
+  //   打不开（已删/未入库/宿主不支持）→ 只读回看正文，不绑定，防止把 A 剧本的会话续在 B 剧本上。
+  function switchSession(id) {
+    if (ui.running) { setStatus('运行中 · 先停止再切换会话'); return; }
+    var meta = null;
+    _sessIndex().forEach(function (m) { if (!meta && m && m.id === id) meta = m; });
+    if (!meta) { setStatus('该会话已不存在'); return; }
+    var body = _sessBody(id), fk = _fileKey();
+    function bind(viewOnly) {
+      ui._pendingPlan = false; ui._pendingClarify = false; ui.draft = null; ui._autoCont = 0;
+      if (ui._criticsArmed) _disarmCriticsVisual();
+      if (body && !viewOnly) {
+        ui.conversation = body.conversation;
+        ui._restoredTodos = Array.isArray(body.todos) ? body.todos : null;
+        ui._sessId = id;
+        _sessPtrSet(meta.fileKey, id);
+        _renderConversation(body.conversation, meta);
+        setStatus('已切到会话「' + (meta.title || '') + '」· 剧本「' + (meta.fileLabel || '') + '」· 直接输入续接');
+      } else if (body && viewOnly) {
+        ui.conversation = null; ui._restoredTodos = null; ui._sessId = null;
+        _renderConversation(body.conversation, meta);
+        setStatus('只读回看：会话绑定的剧本「' + (meta.fileLabel || '') + '」当前打不开（可能已删或未入案卷库）· 未续接，输入会对当前打开的剧本生效');
+      } else {
+        ui.conversation = null; ui._restoredTodos = null; ui._sessId = viewOnly ? null : id;
+        resetResults(false); _syncEmpty();
+        if (!viewOnly) _sessPtrSet(meta.fileKey, id);
+        setStatus('该会话正文已按容量清理（只余档卡）' + (viewOnly ? '·且其剧本打不开' : ' · 已就位，直接输入开新一轮'));
+      }
+      if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e) {} }
+    }
+    if (meta.fileKey && meta.fileKey !== fk && ui.adapter && typeof ui.adapter.openFile === 'function') {
+      setStatus('正在切换到剧本「' + (meta.fileLabel || '') + '」…');
+      try {
+        ui.adapter.openFile(meta.fileKey).then(function (okv) {
+          if (okv) { try { _reflectWorldKind(); } catch (e0) {} _refreshFileSub(); bind(false); }
+          else bind(true);
+        }, function () { bind(true); });
+      } catch (e) { bind(true); }
+    } else if (meta.fileKey && meta.fileKey !== fk) {
+      bind(true);   // 宿主没有 openFile（旧适配器/极端环境）
+    } else bind(false);
+  }
+  function deleteSession(id) {
+    var idx = _sessIndex(), meta = null;
+    idx.forEach(function (m) { if (!meta && m && m.id === id) meta = m; });
+    _sessIndexSave(idx.filter(function (m) { return m && m.id !== id; }));
+    try { localStorage.removeItem(SESS_BODY + id); } catch (e) {}
+    if (ui._sessId === id) { ui._sessId = null; ui.conversation = null; ui._restoredTodos = null; }
+    var p = _sessPtr(); if (p && p.sessId === id) _sessPtrSet(p.fileKey, null);
+    setStatus('已删除会话' + (meta && meta.title ? '「' + String(meta.title).slice(0, 24) + '」' : ''));
+    if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e2) {} }
+  }
+  function listSessions(query) {
+    var l = _sessIndex().slice();
+    var q = String(query || '').trim().toLowerCase();
+    if (q) l = l.filter(function (m) { return ((m.title || '') + ' ' + (m.fileLabel || '') + ' ' + (m.kind || '') + ' ' + (m.summary || '')).toLowerCase().indexOf(q) >= 0; });
+    return l;
+  }
+  // CC custom-title 对照：玩家改名永远压过自动标题（_saveSession 里 old.title 优先·改名后续存不回退）
+  function renameSession(id, title) {
+    title = String(title || '').trim().slice(0, 60);
+    if (!title) return false;
+    var idx = _sessIndex(), hit = false;
+    idx.forEach(function (m) { if (m && m.id === id) { m.title = title; hit = true; } });
+    if (hit) { _sessIndexSave(idx); if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e) {} } }
+    return hit;
+  }
+  function clearSessions() {
+    try { _sessIndex().forEach(function (m) { if (m && m.id) { try { localStorage.removeItem(SESS_BODY + m.id); } catch (e0) {} } }); localStorage.removeItem(SESS_KEY); } catch (e) {}
+    ui._sessId = null;
+    if (typeof ui._onSessionsChange === 'function') { try { ui._onSessionsChange(); } catch (e2) {} }
   }
 
   // 方向M · 运行历史/审计日志（持久·可搜·跨刷新存活·不存大快照避 quota·cap 50）
@@ -2591,7 +2812,7 @@
     }).then(function(res) {
       setRunning(false);
       ui.conversation = res.conversation;   // 维度1 · 存住线程
-      _saveThread(res);   // 刀H3 · 线程落盘(跨刷新可恢复)
+      _saveSession(res, request, res.remonstrance ? '进谏' : (res.clarification ? '澄清' : (res.plan ? '计划' : '编辑')));   // S5 · 落盘到当前会话(跨刷新/跨剧本可切回)
       // 自动续接：未完成且因轮次/token 上限停 → 自动发「继续」续接（复用连续会话线程·持续调用直到完整·安全上限 3 次）。
       if (!planOnly && !res.finished && (res.stopReason === 'maxIterations' || res.stopReason === 'tokenBudget') && (ui._autoCont || 0) < 3) {
         ui._autoCont = (ui._autoCont || 0) + 1;
@@ -2712,7 +2933,7 @@
   function newConversation() {
     if (ui.running) { setStatus('运行中，请先停止再新开对话'); return; }
     ui.draft = null; ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
-    ui._restoredTodos = null; _clearThread();   // 刀H3 · 新对话即弃存档线程
+    ui._restoredTodos = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 新对话=新会话·旧会话留侧栏可切回·指针置空(开面板不再拉回)
     if (ui._criticsArmed) _disarmCriticsVisual();   // 刀3 · 新对话清掉未用的会审武装
     resetResults(false);
     _syncEmpty();
@@ -2735,7 +2956,7 @@
     try {
       var cp = ui._checkpoints.pop();
       ui.adapter.commit(cp.snapshot);
-      ui.draft = null; ui.conversation = null; _clearThread();   // 刀H3 · 剧本已回退·存档线程随之作废
+      ui.draft = null; ui.conversation = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 剧本已回退·脱离当前会话(旧会话留档不删)
       if (typeof ui._onCheckpointsChange === 'function') { try { ui._onCheckpointsChange(); } catch (e) {} }
       setStatus('已撤销，回到「' + cp.label + '」(' + cp.when + ') ↩');
       return true;
@@ -2755,7 +2976,7 @@
     try {
       _pushCheckpoint('回退前 ' + _ckptTime());
       ui.adapter.commit(_clone(cp.snapshot));
-      ui.draft = null; ui.conversation = null; _clearThread();   // 刀H3 · 同上·回退后线程作废
+      ui.draft = null; ui.conversation = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 同上·回退后脱离会话(留档)
       setStatus('已回到检查点「' + cp.label + '」(' + cp.when + ')');
       return true;
     } catch (e) { setStatus('回退失败：' + (e && e.message || e)); return false; }
@@ -2796,5 +3017,6 @@
   else init();
 
   // 暴露给测试/调试
-  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles };
+  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles,
+    listSessions: listSessions, switchSession: switchSession, deleteSession: deleteSession, renameSession: renameSession };
 })(typeof window !== 'undefined' ? window : this);
