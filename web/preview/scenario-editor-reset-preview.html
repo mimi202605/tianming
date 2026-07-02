@@ -12038,8 +12038,9 @@
     body.je-guoshi-docked #tm-aa-go:not(:disabled):active, body.je-guoshi-docked .je-aa-test:not(:disabled):active { transform: translateY(1px); }
     body.je-guoshi-docked #tm-aa-actions { border-top: 1px solid var(--bd); padding-top: 8px; margin-top: 2px; }
     body.je-guoshi-docked .tm-aa-sec { letter-spacing: .03em; }
-    /* 2026-07-02 · 与共创面板＋菜单/停止钮重复的旧注入件永久收纳（测试连接为独有能力保留） */
-    .je-aa-review, .je-aa-orch, .je-aa-preflight, .je-aa-qa, .je-aa-explain, .je-aa-undo, .je-aa-stop { display: none !important; }
+    /* 2026-07-02 · 与共创面板＋菜单/停止钮重复的旧注入件永久收纳（测试连接为独有能力保留）。
+       je-aa-apicfg 旧 API 抽屉亦退役——API 连接/模型选择已移至 composer 模型徽弹层（检测真实模型清单·同写 tm_api）。 */
+    .je-aa-review, .je-aa-orch, .je-aa-preflight, .je-aa-qa, .je-aa-explain, .je-aa-undo, .je-aa-stop, .je-aa-apicfg { display: none !important; }
     /* 方向T · 一致性守护实时横幅 */
     .je-guard-toast {
       position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 70; max-width: 560px; width: max-content;

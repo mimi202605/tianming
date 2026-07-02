@@ -723,9 +723,26 @@
       '#tm-aa-apply.warn{background:transparent;border:1px solid var(--warn);color:var(--warn)}',
       '#tm-aa-discard{flex:1;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:10px;padding:9px;cursor:pointer;font-family:inherit;font-size:13px}',
       '#tm-aa-discard:hover{color:var(--tx);background:var(--surface)}',
-      // composer 模型徽（claude.ai：模型指示在输入卡内右下·此处只读·设置面板可改）
-      '#tm-aa-model{flex:0 0 auto;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--tx3);border:1px solid var(--bd);border-radius:7px;padding:3px 8px;line-height:1.4}',
-      '#tm-aa-model:empty{display:none}',
+      // composer 模型徽（claude.ai 形制：模型选择器在输入卡内右下）——点开 API 连接·模型弹层
+      '#tm-aa-model{flex:0 0 auto;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--tx3);background:transparent;border:1px solid var(--bd);border-radius:7px;padding:3px 9px;line-height:1.4;cursor:pointer;font-family:inherit;transition:color .12s,border-color .12s,background .12s}',
+      '#tm-aa-model::after{content:" ▾";font-size:8px;color:var(--tx3)}',
+      '#tm-aa-model:hover{color:var(--tx);border-color:var(--bd2);background:var(--sunken)}',
+      '#tm-aa-model.warn{color:var(--ac);border-color:rgba(204,120,92,.5)}',
+      // API 连接·模型弹层（右对齐·与＋菜单同族）
+      '#tm-aa-modelpop{position:absolute;right:8px;bottom:calc(100% + 6px);z-index:12;width:320px;max-width:calc(100vw - 40px);background:var(--surface);border:1px solid var(--bd2);border-radius:12px;box-shadow:0 14px 44px rgba(0,0,0,.35);padding:11px 13px}',
+      '#tm-aa-modelpop[hidden]{display:none}',
+      '#tm-aa-modelpop .mp-h{font-size:12px;color:var(--tx);font-weight:600;margin-bottom:6px;letter-spacing:.04em}',
+      '#tm-aa-modelpop .mp-lab{display:block;font-size:11px;color:var(--tx3);margin:8px 0 0}',
+      '#tm-aa-modelpop input,#tm-aa-modelpop select{display:block;width:100%;box-sizing:border-box;margin-top:4px;background:var(--sunken);color:var(--tx);border:1px solid var(--bd2);border-radius:8px;padding:7px 9px;font-size:12px;font-family:inherit;outline:none;transition:border-color .12s}',
+      '#tm-aa-modelpop input:focus,#tm-aa-modelpop select:focus{border-color:var(--ac)}',
+      '#tm-aa-modelpop .mp-row{display:flex;align-items:center;gap:8px;margin-top:10px}',
+      '#tm-aa-modelpop .mp-row.mp-end{justify-content:flex-end;margin-top:12px}',
+      '#tm-aa-api-detect{background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:8px;padding:6px 13px;font-size:12px;cursor:pointer;font-family:inherit;transition:color .12s,border-color .12s}',
+      '#tm-aa-api-detect:hover{color:var(--tx);border-color:var(--ac)}',
+      '#tm-aa-api-save{background:var(--ac);color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .12s}',
+      '#tm-aa-api-save:hover{background:var(--ac-hi)}',
+      '#tm-aa-modelpop .mp-st{font-size:11px;color:var(--tx3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '#tm-aa-modelpop .mp-hint{font-size:10.5px;color:var(--tx3);line-height:1.65;margin-top:10px;border-top:1px solid var(--bd);padding-top:8px}',
       // 侧栏搜索与日期分组
       '#tm-aa-railq{width:100%;box-sizing:border-box;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:9px;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;margin-top:2px}',
       '#tm-aa-railq:focus{border-color:var(--ac)}',
@@ -763,10 +780,19 @@
       '<button type="button" id="tm-aa-plus" aria-label="更多能力" title="更多能力：体检 / 审阅 / 问答 / 讲解 / 分解编排 / 三堂会审 / 检查点">＋</button>',
       '<div id="tm-aa-worldkind"><span class="tm-aa-wk-lab">世界类型</span><button type="button" class="tm-aa-wk-opt" data-wk="historical" title="史实剧本·全考据：年号/生卒/职官/事件与正史相符，遇硬伤进谏">史实</button><button type="button" class="tm-aa-wk-opt" data-wk="fictional" title="虚构/架空世界观·奇幻/武侠/仙侠/未来/异世界等原创设定，不受真实历史约束，国师只管设定自洽与平衡">虚构</button></div>',
       '<span class="tm-aa-flex"></span>',
-      '<span id="tm-aa-model" title="当前模型（在设置面板可改）"></span>',
+      '<button type="button" id="tm-aa-model" title="API 连接与模型选择" aria-label="API 连接与模型选择"></button>',
       '<button id="tm-aa-go" title="Enter 发送 · Shift+Enter 换行" aria-label="发送">↑</button>',
       '</div>',
       '<div id="tm-aa-plusmenu" hidden></div>',
+      '<div id="tm-aa-modelpop" hidden>',
+      '<div class="mp-h">API 连接 · 模型</div>',
+      '<label class="mp-lab">API 地址<input id="tm-aa-api-url" type="text" placeholder="https://api.deepseek.com 或第三方中转地址" autocomplete="off" spellcheck="false"></label>',
+      '<label class="mp-lab">API Key<input id="tm-aa-api-key" type="password" placeholder="sk-…" autocomplete="off"></label>',
+      '<div class="mp-row"><button type="button" id="tm-aa-api-detect">检测模型</button><span class="mp-st" id="tm-aa-api-st"></span></div>',
+      '<label class="mp-lab">模型<select id="tm-aa-api-model"></select></label>',
+      '<div class="mp-row mp-end"><button type="button" id="tm-aa-api-save">保存并使用</button></div>',
+      '<div class="mp-hint">与正式游戏共用一份（存 tm_api · 国师 / 生图同源）。「检测模型」会真调该 API 的模型清单接口，选到的模型即刻用于下一次运行。</div>',
+      '</div>',
       '</div>',
       '</div>',
       '<div class="tm-aa-empty" id="tm-aa-empty" style="display:none"></div>',
@@ -815,6 +841,8 @@
       theme: panel.querySelector('#tm-aa-theme'),       // Claude 桌面端式 · 明暗主题切换
       plus: panel.querySelector('#tm-aa-plus'),         // Claude 桌面端式 · ＋能力菜单
       plusmenu: panel.querySelector('#tm-aa-plusmenu'),
+      model: panel.querySelector('#tm-aa-model'),       // API 连接·模型选择（弹层）
+      modelpop: panel.querySelector('#tm-aa-modelpop'),
       rail: panel.querySelector('#tm-aa-rail'),         // Claude 桌面端式 · 会话历史侧栏（全屏）
       raillist: panel.querySelector('#tm-aa-raillist'),
       railTg: panel.querySelector('#tm-aa-rail-tg')
@@ -834,6 +862,7 @@
     _ensureTheme();       // Claude 桌面端式 · 明暗主题（持久）
     _ensurePlusMenu();    // Claude 桌面端式 · ＋能力菜单（体检/审阅/问答/讲解/编排/会审/检查点/撤销）
     _ensureRail();        // Claude 桌面端式 · 会话历史侧栏（全屏下展开）
+    _ensureModelPop();    // API 连接·模型选择弹层（模型徽即入口·检测该 API 的真实模型清单）
     _ensureLogFollow();   // UI·AB · 滚动跟随 + 回到底部
     _renderEmpty();   // UI·AD · 空状态欢迎 + 建议提示
     ui.els.req.addEventListener('input', _syncEmpty);   // 有字则隐欢迎态
@@ -1000,12 +1029,100 @@
       setStatus('已把该条历史需求填回输入框 · 可编辑后发送');
     });
     ui._onHistoryChange = function () { if (ui.els.panel.classList.contains('railon')) _renderRail(ui._railQ || ''); };   // 新纪录/标记已应用 → 侧栏活刷新
-    // composer 模型徽：读设置面板的当前模型（只读展示·claude.ai 形制）
+  }
+
+  // ── API 连接 · 模型选择（模型徽即入口·owner 定案）：地址+Key → 真调该 API 的模型清单接口 → 下拉选定即用。
+  //    存全游戏共用 tm_api·并 best-effort 镜像回游戏存档 P.ai(tm_P_lite/tm_P·与工坊 API 模态同构——
+  //    loadEditorApiConfig 以「游戏存档有 key」为优先源·不镜像则此处新配置会被存档压掉)。 ──
+  function _loadApiCfg() { try { return (AA && typeof AA.loadEditorApiConfig === 'function') ? AA.loadEditorApiConfig() : {}; } catch (e) { return {}; } }
+  function _saveApiCfg(url, key, model) {
     try {
-      var _mcfg = (AA && typeof AA.loadEditorApiConfig === 'function') ? AA.loadEditorApiConfig() : null;
-      var _mEl = ui.els.panel.querySelector('#tm-aa-model');
-      if (_mEl && _mcfg && _mcfg.model) _mEl.textContent = String(_mcfg.model).slice(0, 40);
-    } catch (eM) {}
+      var cur = {}; try { cur = JSON.parse(localStorage.getItem('tm_api') || '{}') || {}; } catch (e0) {}
+      cur.url = url; cur.key = key; if (model) cur.model = model;
+      localStorage.setItem('tm_api', JSON.stringify(cur));
+      ['tm_P_lite', 'tm_P'].forEach(function (k) {
+        try {
+          var o = JSON.parse(localStorage.getItem(k) || 'null');
+          if (o && o.ai) { o.ai.url = url; o.ai.key = key; if (model) o.ai.model = model; localStorage.setItem(k, JSON.stringify(o)); }
+        } catch (e1) {}
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+  // 检测模型清单：OpenAI 兼容(含 DeepSeek/一切中转) GET {base}/models · Anthropic /v1/models · Gemini /v1beta/models
+  function _detectModels(url, key) {
+    url = String(url || '').replace(/\/+$/, '');
+    var gemini = /generativelanguage\.googleapis\.com/i.test(url) && !/\/v1beta\/openai\//i.test(url);
+    var anthropic = !gemini && /api\.anthropic\.com/i.test(url);
+    var endpoint, headers = {};
+    if (gemini) { endpoint = url.replace(/\/v1beta.*$/i, '') + '/v1beta/models?key=' + encodeURIComponent(key || ''); }
+    else if (anthropic) { endpoint = url + '/v1/models'; headers = { 'x-api-key': key || '', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }; }
+    else {
+      var base = url.replace(/\/chat\/completions\/?$/i, '');
+      if (!/\/v\d+(beta)?$/i.test(base)) base += '/v1';
+      endpoint = base + '/models'; headers = { 'Authorization': 'Bearer ' + (key || '') };
+    }
+    return fetch(endpoint, { headers: headers }).then(function (r) {
+      if (!r.ok) return r.text().then(function (t) { throw new Error('HTTP ' + r.status + '：' + String(t).slice(0, 120)); });
+      return r.json();
+    }).then(function (d) {
+      var ids;
+      if (gemini) ids = ((d && d.models) || []).map(function (m) { return String((m && m.name) || '').replace(/^models\//, ''); });
+      else ids = (((d && d.data) || (d && d.models)) || []).map(function (m) { return m && (m.id || m.name); });
+      ids = (ids || []).filter(Boolean).map(String); ids.sort();
+      if (!ids.length) throw new Error('该 API 未返回模型列表（可手填模型名后直接保存）');
+      return ids;
+    });
+  }
+  function _refreshModelChip() {
+    var el = ui.els && ui.els.model; if (!el) return;
+    var cfg = _loadApiCfg();
+    var ok = !!(cfg.key && cfg.url);
+    el.textContent = ok ? (String(cfg.model || '').slice(0, 40) || '选择模型') : '配置 API';
+    el.classList.toggle('warn', !ok);
+  }
+  function _modelPopClose() { if (ui.els && ui.els.modelpop) ui.els.modelpop.hidden = true; }
+  function _ensureModelPop() {
+    var btn = ui.els && ui.els.model, pop = ui.els && ui.els.modelpop;
+    if (!btn || !pop || ui._modelPopBound) return;
+    ui._modelPopBound = true;
+    var q = function (s) { return pop.querySelector(s); };
+    var inUrl = q('#tm-aa-api-url'), inKey = q('#tm-aa-api-key'), sel = q('#tm-aa-api-model'), st = q('#tm-aa-api-st');
+    function _seed() {
+      var cfg = _loadApiCfg();
+      inUrl.value = cfg.url || ''; inKey.value = cfg.key || '';
+      sel.innerHTML = '';
+      if (cfg.model) { var o0 = document.createElement('option'); o0.value = cfg.model; o0.textContent = cfg.model + '（当前）'; sel.appendChild(o0); }
+      st.textContent = '';
+    }
+    btn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      pop.hidden = !pop.hidden;
+      if (!pop.hidden) { _plusClose(); _seed(); try { inUrl.focus(); } catch (eF) {} }
+    });
+    q('#tm-aa-api-detect').addEventListener('click', function () {
+      var u = inUrl.value.trim(), k = inKey.value.trim();
+      if (!u) { st.textContent = '先填 API 地址'; return; }
+      st.textContent = '检测中…';
+      _detectModels(u, k).then(function (ids) {
+        var cur = sel.value || _loadApiCfg().model || '';
+        sel.innerHTML = '';
+        ids.slice(0, 300).forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = id; sel.appendChild(o); });
+        if (cur && ids.indexOf(cur) >= 0) sel.value = cur;
+        st.textContent = '✓ 检测到 ' + ids.length + ' 个模型';
+      }).catch(function (e) { st.textContent = '✗ ' + ((e && e.message) || e); });
+    });
+    q('#tm-aa-api-save').addEventListener('click', function () {
+      var u = inUrl.value.trim(), k = inKey.value.trim(), m = (sel.value || '').trim();
+      if (!u || !k) { st.textContent = 'API 地址与 Key 都要填'; return; }
+      if (_saveApiCfg(u, k, m)) {
+        _refreshModelChip(); _modelPopClose();
+        setStatus('API 已保存（全游戏共用 · 国师 / 生图同源）' + (m ? ' · 模型：' + m : '') + ' · 下一次运行即生效');
+      } else st.textContent = '保存失败（localStorage 不可用）';
+    });
+    document.addEventListener('click', function (ev) { if (!pop.hidden && !pop.contains(ev.target) && ev.target !== btn) _modelPopClose(); });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !pop.hidden) { _modelPopClose(); ev.stopPropagation(); } });
+    _refreshModelChip();
   }
 
   function setStatus(t) { if (ui.els) ui.els.status.textContent = t || ''; }
@@ -2490,5 +2607,5 @@
   else init();
 
   // 暴露给测试/调试
-  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle };
+  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg };
 })(typeof window !== 'undefined' ? window : this);

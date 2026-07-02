@@ -400,5 +400,15 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(_clrN >= 3, 'H3 UI:新对话/撤销/回退检查点三处清存档(实 ' + _clrN + ' 处)');
   ok(/initialTodos: _rtd,/.test(uiSrc3) && /ui\._restoredTodos = null;/.test(uiSrc3), 'H3 UI:恢复的任务表一次性回灌 initialTodos');
 
+  // ───────── H4 · API 连接·模型选择弹层(模型徽即入口·owner 定案) ─────────
+  console.log('— H4 API连接·模型弹层 —');
+  var uiSrc4 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/id="tm-aa-modelpop"/.test(uiSrc4) && /id="tm-aa-api-url"/.test(uiSrc4) && /id="tm-aa-api-key"/.test(uiSrc4) && /id="tm-aa-api-detect"/.test(uiSrc4) && /id="tm-aa-api-model"/.test(uiSrc4) && /id="tm-aa-api-save"/.test(uiSrc4), 'H4 弹层五件套(地址/Key/检测/模型选/保存)在位');
+  ok(/generativelanguage\\\.googleapis\\\.com/.test(uiSrc4) && /anthropic-dangerous-direct-browser-access/.test(uiSrc4) && /'Authorization': 'Bearer ' \+ \(key \|\| ''\)/.test(uiSrc4), 'H4 检测覆盖三家 provider(Gemini/Anthropic/OpenAI兼容含中转)');
+  ok(/\['tm_P_lite', 'tm_P'\]\.forEach/.test(uiSrc4) && /localStorage\.setItem\('tm_api'/.test(uiSrc4), 'H4 保存写 tm_api+镜像游戏存档 P.ai(否则被存档优先级压掉)');
+  ok(/_refreshModelChip/.test(uiSrc4) && /'配置 API'/.test(uiSrc4) && /classList\.toggle\('warn', !ok\)/.test(uiSrc4), 'H4 模型徽未配置显「配置 API」警示态');
+  var wsSrc = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-preview.html'), 'utf8');
+  ok(/\.je-aa-apicfg \{ display: none !important; \}|\.je-aa-stop, \.je-aa-apicfg \{ display: none !important; \}/.test(wsSrc), 'H4 工坊旧 API 抽屉已退役(功能移模型徽弹层)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
