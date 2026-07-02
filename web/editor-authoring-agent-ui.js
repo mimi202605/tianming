@@ -425,6 +425,7 @@
     route: '<circle cx="4.5" cy="4" r="1.7"/><circle cx="11.5" cy="12" r="1.7"/><path d="M4.5 5.7V8a3 3 0 0 0 3 3h2.3"/>',
     scale: '<path d="M8 3v10M4.5 5h7M4.5 5 3 8.2a1.9 1.9 0 0 0 3 0zM11.5 5 10 8.2a1.9 1.9 0 0 0 3 0z"/>',
     save: '<path d="M3.5 3.5h7l2 2v7h-9z"/><path d="M5.5 3.5V7h5V3.5M5.5 12.5V9.5h5v3"/>',
+    image: '<rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><path d="m4.5 10.5 2.5-3 2 2.2L11 7l2.5 3.5"/><circle cx="6" cy="6.2" r="1"/>',
     undo: '<path d="M4.5 6.5H10a3 3 0 0 1 0 6H7"/><path d="M6.8 4 4.5 6.5 6.8 9"/>',
     check: '<path d="M3 8.5 6.5 12 13 4.5"/>'
   };
@@ -432,7 +433,7 @@
   var _TOOL_ICON = {
     applyEdit: 'pen', applyPush: 'pen', multiEdit: 'pen', bulkAdd: 'pen', renameEntity: 'pen', removeEntity: 'pen', mapAssignOwner: 'pen', renameRegion: 'pen',
     getField: 'search', getFields: 'search', searchEntities: 'search', globalSearch: 'search', findReferences: 'search', listCollection: 'search', describeSchema: 'search', listGaps: 'search', readSource: 'search', grepSource: 'search', listSource: 'search', mapOverview: 'search', genReference: 'search', checkHistory: 'search', fieldContract: 'search',
-    validateDraft: 'pulse', preflight: 'pulse',
+    validateDraft: 'pulse', preflight: 'pulse', generateImage: 'image',
     note: 'book', todoWrite: 'book', recordConvention: 'book', flagUncertain: 'book', steer: 'chat', macroCompact: 'undo',
     finish: 'check'
   };
@@ -1831,6 +1832,7 @@
       case 'note': return '备注：' + _shortVal(i.text);
       case 'flagUncertain': return '标记待核 ' + _friendlyPath(i.path) + (i.reason ? '（' + _shortVal(i.reason) + '）' : '');
       case 'recordConvention': return '记下约定：' + _shortVal(i.convention);
+      case 'generateImage': return '生图 → ' + _friendlyPath(i.path) + (r.model ? '（' + r.model + '）' : '') + (r.image ? ' · ' + r.image : '');
       case 'finish': return '完成：' + (i.summary || '');
       default: return n + '(' + JSON.stringify(i).slice(0, 60) + ')';
     }

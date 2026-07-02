@@ -712,6 +712,13 @@
       temp: (src.temp != null) ? src.temp : 0.7
     };
   }
+  // 生图 API 配置(全游戏共用 tm_api_image·与工坊生图面板同源)——agent 的 generateImage 工具用
+  function _loadImageApiConfig() {
+    try {
+      var t = JSON.parse((global.localStorage && global.localStorage.getItem('tm_api_image')) || '{}') || {};
+      return { key: t.key || '', url: (t.url || '').replace(/\/+$/, ''), model: t.model || 'dall-e-3' };
+    } catch (e) { return { key: '', url: '', model: 'dall-e-3' }; }
+  }
   // 次要模型配置：同 API 换便宜模型干杂活(三堂会审的史官/谏官·宏压缩摘要)——未配则返回 null(用主模型)
   function _secondaryCfg() {
     try {
@@ -1213,6 +1220,15 @@
       }, required: ['collection', 'items'] }
     },
     {
+      name: 'generateImage',
+      description: '调用玩家配置的生图 API（tm_api_image·全游戏共用）生成一张图并写入指定字段（data URL）。适合人物画像（characters.N.portrait）、势力旗徽、场景意象。玩家未配生图 API 时会明确报错并引导配置——届时改用文字描述代替。',
+      parameters: { type: 'object', properties: {
+        path: { type: 'string', description: '写入路径·如 characters.3.portrait' },
+        prompt: { type: 'string', description: '画面描述（中文可·写清人物气质/服制/构图）' },
+        size: { type: 'string', description: '尺寸·默认 1024x1024' }
+      }, required: ['path', 'prompt'] }
+    },
+    {
       name: 'multiEdit',
       description: '一次施加多处改动（省往返）。edits[]，每项 {path, value, reason?}。',
       parameters: { type: 'object', properties: {
@@ -1565,11 +1581,11 @@
   }
 
   // 工具B · 写后回读：写类工具结果回挂"变更后当前值"·agent 不必再 getField 确认·减重复读
-  var _WRITE_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1 };
+  var _WRITE_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, generateImage: 1 };
   // 刀G3(2026-07-02·CC 对照) · 只读/致变工具表：重复读去重与"纯勘察打转"检测共用。
   //   validateDraft/preflight 亦只读——结果随草稿变·但去重有"期间零写入"守卫·天然安全。
   var _READ_TOOLS = { getField: 1, getFields: 1, searchEntities: 1, globalSearch: 1, findReferences: 1, listCollection: 1, describeSchema: 1, listGaps: 1, fieldContract: 1, genReference: 1, readSource: 1, listSource: 1, grepSource: 1, mapOverview: 1, checkHistory: 1, validateDraft: 1, preflight: 1 };
-  var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1 };
+  var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1, generateImage: 1 };
   // 刀G4(2026-07-02·CC read-before-edit 新鲜度对照) · 外部修改防护:agent 运行期间用户可能在编辑器里
   //   手改草稿——按顶层区段留指纹·写前对照·外部改过则拒写要求重读(agent 自己的读/写都会刷新指纹)。
   //   注:CC 的"先读后写"门有意不搬——国师初始消息自带草稿摘要+写后有 nowValue 回读·硬加会拦正常流程。
@@ -1587,7 +1603,7 @@
     input = input || {};
     var roots;
     switch (name) {
-      case 'applyEdit': case 'applyPush': case 'removeEntity': roots = [_pathRoot(input.path)]; break;
+      case 'applyEdit': case 'applyPush': case 'removeEntity': case 'generateImage': roots = [_pathRoot(input.path)]; break;
       case 'multiEdit': roots = (Array.isArray(input.edits) ? input.edits : []).map(function (e) { return _pathRoot(e && e.path); }); break;
       case 'bulkAdd': roots = [_pathRoot(input.collection)]; break;
       case 'mapAssignOwner': case 'renameRegion': roots = ['map', 'mapData']; break;
@@ -1630,6 +1646,24 @@
       case 'applyEdit': return applyEdit(draft, input.path, input.value, { reason: input.reason });
       case 'applyPush': return applyPush(draft, input.path, input.value);
       case 'removeEntity': return applyRemove(draft, input.path);
+      case 'generateImage': {   // S4 · 生图模型为国师工作:tm_api_image 生成 → 复用 applyEdit 写回(享权限/指纹/回读全套)
+        var _icfg = _loadImageApiConfig();
+        if (!_icfg.key || !_icfg.url) return { ok: false, errorCode: 'image-api-missing', reason: '生图 API 未配置：请玩家在「API 设置 → 生图」里填好（存 tm_api_image）后再试；当前请改用文字描述该形象并写入相邻描述字段。' };
+        if (!input.path || !input.prompt) return { ok: false, reason: '需要 path（写入字段·如 characters.3.portrait）与 prompt（画面描述）' };
+        var _ibase = String(_icfg.url).replace(/\/+$/, ''); if (!/\/v\d+(beta)?$/i.test(_ibase)) _ibase += '/v1';
+        return _fetchJSON(_ibase + '/images/generations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _icfg.key },
+          body: JSON.stringify({ model: _icfg.model || 'dall-e-3', prompt: String(input.prompt).slice(0, 1800), n: 1, size: input.size || '1024x1024', response_format: 'b64_json' })
+        }, { maxRetries: 1, timeoutMs: 150000 }).then(function (d) {
+          var _it = d && d.data && d.data[0];
+          var _val = (_it && _it.b64_json) ? ('data:image/png;base64,' + _it.b64_json) : (_it && _it.url);
+          if (!_val) return { ok: false, reason: '生图 API 未返回图片（b64_json/url 皆空）' };
+          var _w = applyEdit(draft, input.path, _val, { reason: '生图：' + String(input.prompt).slice(0, 40) });
+          if (_w && _w.ok === false) return _w;
+          return { ok: true, path: input.path, image: (_it && _it.b64_json) ? ('base64·约' + Math.round(_it.b64_json.length * 3 / 4 / 1024) + 'KB') : ('url·' + String(_it.url).slice(0, 60)), model: _icfg.model || 'dall-e-3' };
+        }).catch(function (eG) { return { ok: false, reason: '生图失败：' + ((eG && eG.message) || eG) + '（可稍后重试或改用文字描述）' }; });
+      }
       case 'getField': {
         var rr = _resolvePath(draft, input.path);
         if (!rr.parent) return { ok: false, reason: 'path not found: ' + input.path };
@@ -2169,7 +2203,7 @@
   function _toolCollections(name, input) {   // 该工具会改的顶层集合；null=全局(无法限定·如 renameEntity 跨集合联动)
     input = input || {};
     switch (name) {
-      case 'applyEdit': case 'applyPush': case 'removeEntity': return [_topOf(input.path)];
+      case 'applyEdit': case 'applyPush': case 'removeEntity': case 'generateImage': return [_topOf(input.path)];
       case 'bulkAdd': return [_topOf(input.collection)];
       case 'multiEdit': return (Array.isArray(input.edits) ? input.edits : []).map(function(e) { return _topOf(e && e.path); });
       case 'renameEntity': return null;

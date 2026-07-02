@@ -444,5 +444,24 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   var uiSrc6 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
   ok(/id="tm-aa-api-model2"/.test(uiSrc6) && /_saveApiCfg\(u, k, m, m2\)/.test(uiSrc6) && /o\.ai\.model2 = model2 \|\| ''/.test(uiSrc6), 'H6 弹层次模下拉+保存/镜像链路');
 
+  // ───────── H7 · 生图模型为国师工作(generateImage 工具·tm_api_image 同源) ─────────
+  console.log('— H7 生图工具 —');
+  global.localStorage = { _s: {}, getItem: function (k) { return Object.prototype.hasOwnProperty.call(this._s, k) ? this._s[k] : null; }, setItem: function (k, v) { this._s[k] = String(v); }, removeItem: function (k) { delete this._s[k]; } };
+  var dG = AA.makeDraft({ name: '甲', characters: [{ name: '袁可立' }] });
+  var rG0 = await Promise.resolve(AA.dispatchTool(dG, 'generateImage', { path: 'characters.0.portrait', prompt: '明代登莱巡抚半身像' }));
+  ok(rG0.ok === false && rG0.errorCode === 'image-api-missing' && /生图 API 未配置/.test(rG0.reason), 'H7 未配生图 API → 明确报错+引导(不装死)');
+  global.localStorage.setItem('tm_api_image', JSON.stringify({ url: 'https://img.example.com', key: 'ik', model: 'flux-1' }));
+  var _imgReq = null;
+  global.fetch = function (u, o) {
+    _imgReq = { url: u, body: JSON.parse(o.body) };
+    return Promise.resolve({ ok: true, status: 200, headers: { get: function () { return null; } }, json: function () { return Promise.resolve({ data: [{ b64_json: 'aGVsbG8=' }] }); }, text: function () { return Promise.resolve(''); } });
+  };
+  var rG1 = await Promise.resolve(AA.dispatchTool(dG, 'generateImage', { path: 'characters.0.portrait', prompt: '明代登莱巡抚半身像·布面甲·沉稳' }));
+  ok(rG1.ok === true && /images\/generations$/.test(_imgReq.url) && _imgReq.body.model === 'flux-1' && _imgReq.body.response_format === 'b64_json', 'H7 真调生图端点(模型/回参形制对)');
+  ok(dG.characters[0].portrait === 'data:image/png;base64,aGVsbG8=', 'H7 图片以 data URL 写入指定字段(经 applyEdit 管线)');
+  var agSrc7 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent.js'), 'utf8');
+  ok(/renameRegion: 1, generateImage: 1 \}/.test(agSrc7) && /case 'generateImage': return \[_topOf\(input\.path\)\]/.test(agSrc7), 'H7 注册进写工具/权限沙箱/指纹管线(范围与危险闸同管)');
+  delete global.fetch;
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
