@@ -650,6 +650,31 @@ async function _aiFetchWithRetryInner(url, body, signal, opts) {
 }
 
 // ============================================================
+// 失败态人话化（2026-07-02）：把 AI 调用的技术性报错翻成「哪坏了 + 该去哪修」的人话。
+//   此前过回合/探测失败直接把 error.message 甩给玩家（HTTP 401: {"error"...}），新手无从下手。
+//   分类不出返回 null → 调用方回退原文（不吞信息）。挂 window 供过回合/设置探测等出错兜底共用。
+// ============================================================
+function _tmAiErrHuman(err) {
+  try {
+    var msg = String((err && err.message) || err || '');
+    var m = msg.match(/HTTP (\d{3})/);
+    var status = (err && err.status) || (m ? +m[1] : 0);
+    if (/API未配置|API地址未配置|未配置可用 API|未配置 API key/.test(msg)) return '尚未配置 AI 密钥或接口地址——请到「设置 → AI · 模型」填写 API 地址、模型名与密钥。';
+    if (status === 401 || /invalid[ _]?api[ _]?key|incorrect api key|unauthorized|authentication/i.test(msg)) return 'AI 密钥无效或已过期（401）——请到「设置 → AI · 模型」核对密钥是否填对、是否仍有效。';
+    if (status === 402 || /insufficient_quota|insufficient balance|exceeded your current quota|欠费|余额不足|quota/i.test(msg)) return 'AI 账户额度不足或欠费——请前往所用 API 平台查看余额充值，或更换密钥。';
+    if (status === 403) return 'AI 接口拒绝访问（403）——密钥无权调用该模型，或所在网络/中转不被允许；请核对模型权限或更换中转。';
+    if (status === 404 || /model.{0,20}(not.{0,8}found|does not exist)|无此模型/i.test(msg)) return '接口路径或模型名不存在（404）——请到「设置 → AI · 模型」核对 API 地址与模型名拼写。';
+    if (status === 429 || /rate.?limit|too many requests/i.test(msg)) return 'AI 接口限速（429）且重试后仍被拒——稍候片刻再试；频繁出现可换中转或升级所用平台套餐。';
+    if (status >= 500) return 'AI 服务端故障（' + status + '）——对方服务器暂时不稳，稍候重试；反复出现可更换中转或改用官方接口。';
+    if ((err && err.name === 'AbortError') || /\babort/i.test(msg) || /timeout|超时/i.test(msg)) return 'AI 响应超时——网络不稳或模型推理过慢；可稍候重试，或到「设置」换更快的模型/中转。';
+    if (!status && /failed to fetch|networkerror|network error|load failed/i.test(msg)) return '网络不可达——连不上 AI 接口；请检查网络连接与「设置」中的 API 地址（部分接口需中转可达）。';
+    if (/unexpected token|unexpected end of json|json 解析|截断/i.test(msg)) return 'AI 返回内容解析失败——多为模型太弱或输出被截断；建议换更强模型（本作主推演需单次输出 ≥8K）。';
+    return null;
+  } catch (_e) { return null; }
+}
+if (typeof window !== 'undefined') window._tmAiErrHuman = _tmAiErrHuman;
+
+// ============================================================
 // M3.1·次 API(secondary) 网络不可达 → 自动回退主 API(primary)
 //   规则(owner)：这几个子系统「优先次要 API，没有/不可用则走主 API」。
 //   _getAITier 已处理「secondary 未配 → 用 primary」；这里补「secondary 配了但连不上」一档。

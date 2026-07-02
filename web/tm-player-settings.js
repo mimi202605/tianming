@@ -164,7 +164,7 @@ async function _probeRunContext(tier) {
     if (typeof saveP === 'function') saveP();
     toast('\u2705 \u4E0A\u4E0B\u6587\u63A2\u6D4B\u5B8C\u6210');
     _refreshBothProbePanels();
-  } catch(e) { if (typeof hideLoading === 'function') hideLoading(); toast('\u63A2\u6D4B\u5931\u8D25\uFF1A' + (e.message||e)); }
+  } catch(e) { if (typeof hideLoading === 'function') hideLoading(); var _eh1 = (typeof _tmAiErrHuman === 'function') ? _tmAiErrHuman(e) : null; toast('\u63A2\u6D4B\u5931\u8D25\uFF1A' + (_eh1 || e.message || e)); }
 }
 
 async function _probeRunOutput(tier) {
@@ -180,7 +180,7 @@ async function _probeRunOutput(tier) {
     if (typeof saveP === 'function') saveP();
     toast('\u2705 \u8F93\u51FA\u4E0A\u9650\u5B9E\u6D4B\u5B8C\u6210');
     _refreshBothProbePanels();
-  } catch(e) { if (typeof hideLoading === 'function') hideLoading(); toast('\u5B9E\u6D4B\u5931\u8D25\uFF1A' + (e.message||e)); }
+  } catch(e) { if (typeof hideLoading === 'function') hideLoading(); var _eh2 = (typeof _tmAiErrHuman === 'function') ? _tmAiErrHuman(e) : null; toast('\u5B9E\u6D4B\u5931\u8D25\uFF1A' + (_eh2 || e.message || e)); }
 }
 
 async function _probeRunEvidence(tier) {

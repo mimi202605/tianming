@@ -564,7 +564,9 @@ async function _endTurnCore(){
   GM._endTurnBusy=false;
   } catch (error) {
     console.error('endTurn error:', error);
-    toast('回合处理出错: ' + error.message);
+    // 失败态人话化（2026-07-02）：认得出的 AI 类故障给「哪坏了+去哪修」，认不出回退原文
+    var _ehuman = (typeof _tmAiErrHuman === 'function') ? _tmAiErrHuman(error) : null;
+    toast(_ehuman ? ('回合中断 · ' + _ehuman) : ('回合处理出错: ' + error.message));
     GM.busy = false;
     GM._endTurnBusy=false;
     var btn = _$("btn-end")||_$("btn-end-turn");
