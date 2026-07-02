@@ -644,6 +644,8 @@
       '.tm-aa-reply .reply-who{display:flex;align-items:center;gap:7px;margin-bottom:7px}',
       '.tm-aa-reply .reply-who .reply-ava{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:linear-gradient(140deg,#cc785c,#a9583e);color:#fff;font-family:var(--seal);font-weight:400;font-size:14px;line-height:1;box-shadow:0 1px 4px rgba(217,119,87,.35),inset 0 0 0 1px rgba(255,255,255,.14);text-shadow:0 1px 1px rgba(0,0,0,.2)}',
       '.tm-aa-reply .reply-who b{color:var(--ac);font-size:12px;font-weight:600;font-family:var(--serif);letter-spacing:0}',
+      '.tm-aa-reply .reply-copy{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:12px;padding:2px 7px;border-radius:6px;opacity:0;transition:opacity .12s,color .12s,background .12s;line-height:1.4}',
+      '.tm-aa-reply:hover .reply-copy{opacity:1}.tm-aa-reply .reply-copy:hover{color:var(--tx);background:var(--sunken)}',
       '.tm-aa-reply .tm-aa-summary{background:none;padding:0;border-radius:0}',
       '.tm-aa-reply .tm-aa-summary::before{display:none}',
       '.tm-aa-reply.frozen{opacity:.62}',
@@ -943,6 +945,9 @@
     document.addEventListener('click', function (ev) {
       if (!menu.hidden && !menu.contains(ev.target) && ev.target !== btn) _plusClose();
     });
+    document.addEventListener('keydown', function (ev) {   // Esc 关能力菜单
+      if (ev.key === 'Escape' && !menu.hidden) { _plusClose(); ev.stopPropagation(); }
+    });
   }
 
   // ── Claude 桌面端式 · 会话历史侧栏：全屏下左侧展开（数据=既有 listHistory 持久历史·点击回填输入框）
@@ -1194,7 +1199,7 @@
     if (ui.els.logWrap) ui.els.logWrap.style.display = '';
     var card = document.createElement('div');
     card.className = 'tm-aa-reply';
-    card.innerHTML = '<div class="reply-who"><span class="reply-ava">师</span><b>国师</b></div>'
+    card.innerHTML = '<div class="reply-who"><span class="reply-ava">师</span><b>国师</b><span class="tm-aa-flex"></span><button type="button" class="reply-copy" title="复制这条回复">⧉</button></div>'
       + '<div class="tm-aa-summary" style="display:none"></div>'
       + '<div class="tm-aa-sec" data-sec="diff" style="display:none">改动预览</div>'
       + '<div class="tm-aa-diff" style="display:none"></div>'
@@ -1212,6 +1217,13 @@
     ui.els.discard = card.querySelector('.reply-discard');
     ui.els.apply.addEventListener('click', onApply);
     ui.els.discard.addEventListener('click', onDiscard);
+    var _cp = card.querySelector('.reply-copy');   // Claude 式 · 回复悬停复制
+    if (_cp) _cp.addEventListener('click', function () {
+      var _sm = card.querySelector('.tm-aa-summary');
+      var _txt = (_sm && _sm.innerText) || card.innerText || '';
+      try { navigator.clipboard.writeText(_txt.trim()).then(function () { _cp.textContent = '✓'; setTimeout(function () { _cp.textContent = '⧉'; }, 900); }, function () { setStatus('复制失败（浏览器限制）'); }); }
+      catch (e) { setStatus('复制失败'); }
+    });
     ui._reply = card;
     ui._clampBtn = null;   // 长总结折叠按钮归属新卡
     _logScrollMaybe(true);   // 设 pinned·生成中跟随
