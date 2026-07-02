@@ -73,6 +73,84 @@
     if (typeof fn === 'function') { try { fn.call(MS, br, GM); } catch (e) {} }
     _spoils(br, GM);
     _gainPostBattleVeterancy(br, GM);   // 战后历练(玩家军·按减员率·仅御驾亲征流程→flag-gated)
+    _postBattleRetreat(br, GM);         // O2 战后溃退(败方退最近友控邻省/被围重损请降·仅御驾亲征流程→flag-gated)
+  }
+
+  /* ── O2 撤退/追击(v2·§9):败方军沿邻接退最近友控邻省·无路可退=被围(重损/低士气请降)。
+   * 追击战损已由夹带覆盖(tacticalToBattleResult 把败方损失落带内·战术实况定落点·清退低/被堵高);
+   * 主将突围/被俘已由战术 commanders fate 流入 commanderFate——本函数只补「空间后果」(位置移动/被围)。
+   * 邻接数据:GM.mapData/P.map/P.mapData/MING_MAP_REGIONS 的 regions[].neighbors(region id 空间)映射回省名;
+   * 无邻接数据的剧本→优雅降级不移动(永不崩·审计:tianqi-ming2 邻接对称干净·7 边陲空邻接)。 */
+  function _mapRegions() {
+    var w = W(); if (!w) return null;
+    var cands = [w.GM && w.GM.mapData, w.P && w.P.map, w.P && w.P.mapData, { regions: w.MING_MAP_REGIONS }];
+    for (var i = 0; i < cands.length; i++) { var m = cands[i]; if (m && Array.isArray(m.regions) && m.regions.length) return m.regions; }
+    return null;
+  }
+  function _provOwner(GM, name) {
+    try {
+      var m = GM && GM._provinceToFaction; if (m && m[name] != null && String(m[name])) return String(m[name]);
+      var ps = GM && GM.provinceStats; if (ps && ps[name] && ps[name].owner != null) return String(ps[name].owner);
+    } catch (e) {}
+    return null;
+  }
+  function _regionOf(regions, provName) {
+    var key = String(provName || '').trim(); if (!key) return null;
+    var i, r;
+    for (i = 0; i < regions.length; i++) { r = regions[i]; if (r && String(r.name || '').trim() === key) return r; }
+    for (i = 0; i < regions.length; i++) { r = regions[i]; var n = String((r && r.name) || '').trim(); if (n && (n.indexOf(key) >= 0 || key.indexOf(n) >= 0)) return r; }
+    return null;
+  }
+  /* 军的撤退去向:{kind:'hold'本省友控就地收拢|'retreat',to友控邻省|'surrounded'四面无路|'none'数据不足降级} */
+  function retreatTarget(GM, army) {
+    try {
+      var loc = (army && (army.garrison || army.location)) || '';
+      var fac = String((army && army.faction) || '');
+      if (!loc || !fac) return { kind: 'none' };
+      var curOwner = _provOwner(GM, loc);
+      if (curOwner == null) return { kind: 'none' };                    // 归属判不出→降级不动
+      if (curOwner === fac) return { kind: 'hold' };                    // 本省仍友控→退守本省
+      var regions = _mapRegions(); if (!regions) return { kind: 'none' };
+      var cur = _regionOf(regions, loc); if (!cur) return { kind: 'none' };
+      var byId = {}; regions.forEach(function (r) { if (r && r.id != null) byId[r.id] = r; });
+      var nb = Array.isArray(cur.neighbors) ? cur.neighbors : [];
+      for (var i = 0; i < nb.length; i++) {                             // 邻省顺序确定性(数据序)→首个友控
+        var r2 = byId[nb[i]];
+        if (r2 && r2.name && _provOwner(GM, r2.name) === fac) return { kind: 'retreat', to: String(r2.name) };
+      }
+      return { kind: 'surrounded' };
+    } catch (e) { return { kind: 'none' }; }
+  }
+  function _postBattleRetreat(br, GM) {
+    try {
+      if (!br || !GM || br._retreatDone) return; br._retreatDone = true;   // 防双跑(applyReal 幂等护)
+      var loser = String(br.loserFactionId || br.loserFaction || br.loser || ''); if (!loser) return;
+      var w = W(), eb = (w && typeof w.addEB === 'function') ? w.addEB : (typeof addEB !== 'undefined' ? addEB : null);
+      function note(msg) { try { if (eb) eb('军事', msg); } catch (e) {} }
+      (br.affectedArmies || []).forEach(function (aa) {
+        var a = aa && findArmy(GM, aa.armyId); if (!a) return;
+        if (String(a.faction || '') !== loser || a.disbanded) return;
+        var s0 = Math.max(0, Math.round(+(a.soldiers || a.strength || 0) || 0)); if (s0 <= 0) return;
+        var t = retreatTarget(GM, a);
+        if (t.kind === 'retreat') {
+          a.location = a.garrison = t.to;                                // 溃退位移(spec O2·沿邻接退最近友控省)
+          note((a.name || '败军') + '兵败·沿路溃退至友控之地 ' + t.to);
+        } else if (t.kind === 'surrounded') {
+          var mor = +(a.morale || 0);
+          if (mor < 30 || s0 < 800) {                                    // 势穷力孤→被围请降(全军瓦解·主将命运以战术为准不覆写)
+            a.soldiers = 0; if (a.size != null) a.size = 0; if (a.strength != null) a.strength = 0;
+            a.disbanded = true; a.state = 'surrendered';
+            note((a.name || '败军') + '败退无路·四面被围·势穷请降（全军瓦解）');
+          } else {                                                       // 犹有战力→血战突围·重损(试玩调 25%)
+            var loss = Math.round(s0 * 0.25);
+            a.soldiers = s0 - loss; if (a.size != null) a.size = a.soldiers; if (a.strength != null) a.strength = a.soldiers;
+            a.morale = Math.max(0, Math.min(100, (+(a.morale || 50)) - 12));
+            a._unitsStale = true;
+            note((a.name || '败军') + '败退无路·被围血战突围·折兵 ' + loss);
+          }
+        }                                                                // hold/none→不移动(本省友控退守/数据不足降级)
+      });
+    } catch (e) {}
   }
   function emperorName(GM) {   /* 皇帝角色(朝代中立:role/officialTitle==='皇帝'·不锁单朝) */
     if (!GM || !Array.isArray(GM.chars)) return null;
@@ -366,6 +444,7 @@
     runPending: runPending, installHook: installHook, maybeDefer: maybeDefer, applyDelegate: applyDelegate,
     recoverPending: recoverPending, emperorArmyId: emperorArmyId, emperorName: emperorName,
     replenishQuote: replenishQuote, applyReplenish: applyReplenish,
+    retreatTarget: retreatTarget, _postBattleRetreat: _postBattleRetreat,
     involvesPlayer: involvesPlayer, _gainPostBattleVeterancy: _gainPostBattleVeterancy, _collectReport: _collectReport, _pending: function () { return pending; }, _clear: function () { pending.length = 0; }
   };
   /* 设置面板「御驾亲征·战术战斗」开关处理器(tm-patches.js 设置渲染调·切 GM._yujiaQinzheng·本局存档生效) */
