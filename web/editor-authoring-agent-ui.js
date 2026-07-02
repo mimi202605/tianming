@@ -533,7 +533,23 @@
       '#tm-aa-field{position:relative;width:100%;max-width:760px;margin:0 auto;box-sizing:border-box;background:var(--surface);border:1px solid var(--bd2);border-radius:16px;transition:border-color .15s,box-shadow .15s;box-shadow:0 2px 12px rgba(0,0,0,.10)}',
       '#tm-aa-field:focus-within{border-color:var(--ac);box-shadow:0 0 0 3px rgba(204,120,92,.15),0 2px 14px rgba(0,0,0,.12)}',
       // 输入卡内嵌底行：＋能力菜单 · 世界类型 · 发送
-      '.tm-aa-fieldbar{display:flex;align-items:center;gap:7px;padding:5px 7px 7px 8px}',
+      '.tm-aa-fieldbar{display:flex;align-items:center;gap:7px;padding:5px 7px 7px 8px;flex-wrap:wrap}',
+      // 权限模式 pill（问策/共审/放行·CC permission modes 对照）
+      '#tm-aa-perm{flex:0 0 auto;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:999px;padding:2px 12px;font-size:11px;cursor:pointer;font-family:inherit;line-height:1.5;transition:color .12s,border-color .12s,background .12s}',
+      '#tm-aa-perm:hover{color:var(--tx);background:var(--sunken)}',
+      '#tm-aa-perm.pm-auto{color:#fff;background:var(--ac);border-color:var(--ac)}',   // 放行=高权·实底提示
+      '#tm-aa-perm.pm-plan{color:var(--ok);border-color:rgba(132,216,165,.45)}',        // 问策=只读·青提示
+      '#tm-aa-permpop{position:absolute;left:8px;bottom:calc(100% + 6px);z-index:12;width:300px;max-width:calc(100vw - 40px);background:var(--surface);border:1px solid var(--bd2);border-radius:12px;box-shadow:0 14px 44px rgba(0,0,0,.35);padding:9px 8px}',
+      '#tm-aa-permpop[hidden]{display:none}',
+      '#tm-aa-permpop .mp-h{font-size:12px;color:var(--tx);font-weight:600;margin:2px 5px 7px;letter-spacing:.04em}',
+      '.tm-aa-pm{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;color:var(--tx);cursor:pointer;font-size:12.5px;padding:7px 9px;border-radius:9px;font-family:inherit;line-height:1.45}',
+      '.tm-aa-pm:hover{background:rgba(204,120,92,.12)}',
+      '.tm-aa-pm.on{border-color:var(--ac);background:rgba(204,120,92,.10)}',
+      '.tm-aa-pm b{font-weight:600}',
+      '.tm-aa-pm .pm-d{display:block;font-size:10.5px;color:var(--tx3);margin-top:1px}',
+      '#tm-aa-permpop .pm-danger{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--tx2);margin:8px 6px 2px;cursor:pointer}',
+      '#tm-aa-permpop .pm-danger input{cursor:pointer}',
+      '#tm-aa-permpop .mp-hint{font-size:10.5px;color:var(--tx3);line-height:1.6;margin:8px 6px 2px;border-top:1px solid var(--bd);padding-top:7px}',
       '.tm-aa-flex{flex:1 1 auto}',
       '#tm-aa-plus{flex:0 0 auto;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:transparent;color:var(--tx2);border:1px solid var(--bd2);border-radius:50%;padding:0;cursor:pointer;font-size:16px;line-height:1;transition:background .12s,color .12s,transform .12s}',
       '#tm-aa-plus:hover{background:var(--sunken);color:var(--tx)}',
@@ -778,12 +794,21 @@
       '<span class="tm-aa-charcount" id="tm-aa-charcount" hidden></span>',
       '<div class="tm-aa-fieldbar">',
       '<button type="button" id="tm-aa-plus" aria-label="更多能力" title="更多能力：体检 / 审阅 / 问答 / 讲解 / 分解编排 / 三堂会审 / 检查点">＋</button>',
+      '<button type="button" id="tm-aa-perm" aria-label="权限模式" title="权限模式：问策(只读出计划) / 共审(改动经你审后应用) / 放行(校验通过自动应用)"></button>',
       '<div id="tm-aa-worldkind"><span class="tm-aa-wk-lab">世界类型</span><button type="button" class="tm-aa-wk-opt" data-wk="historical" title="史实剧本·全考据：年号/生卒/职官/事件与正史相符，遇硬伤进谏">史实</button><button type="button" class="tm-aa-wk-opt" data-wk="fictional" title="虚构/架空世界观·奇幻/武侠/仙侠/未来/异世界等原创设定，不受真实历史约束，国师只管设定自洽与平衡">虚构</button></div>',
       '<span class="tm-aa-flex"></span>',
       '<button type="button" id="tm-aa-model" title="API 连接与模型选择" aria-label="API 连接与模型选择"></button>',
       '<button id="tm-aa-go" title="Enter 发送 · Shift+Enter 换行" aria-label="发送">↑</button>',
       '</div>',
       '<div id="tm-aa-plusmenu" hidden></div>',
+      '<div id="tm-aa-permpop" hidden>',
+      '<div class="mp-h">权限模式</div>',
+      '<button type="button" class="tm-aa-pm" data-pm="plan"><b>问策</b><span class="pm-d">只读勘察·出编号计划交你批准·绝不动剧本（对应 Claude Code 的 Plan）</span></button>',
+      '<button type="button" class="tm-aa-pm" data-pm="review"><b>共审</b><span class="pm-d">国师起草改动·你逐条审 diff 后应用（默认·最稳）</span></button>',
+      '<button type="button" class="tm-aa-pm" data-pm="auto"><b>放行</b><span class="pm-d">校验通过即自动应用到剧本·适合信得过的批量活（对应 Accept Edits）</span></button>',
+      '<label class="pm-danger"><input type="checkbox" id="tm-aa-perm-danger">允许危险操作（删除实体 / 改名联动等破坏性写入）</label>',
+      '<div class="mp-hint">模式与开关会记住。范围沙箱（只许改某几类集合）在＋菜单的分解编排/会审同样生效。</div>',
+      '</div>',
       '<div id="tm-aa-modelpop" hidden>',
       '<div class="mp-h">API 连接 · 模型</div>',
       '<label class="mp-lab">API 地址<input id="tm-aa-api-url" type="text" placeholder="https://api.deepseek.com 或第三方中转地址" autocomplete="off" spellcheck="false"></label>',
@@ -843,6 +868,8 @@
       plusmenu: panel.querySelector('#tm-aa-plusmenu'),
       model: panel.querySelector('#tm-aa-model'),       // API 连接·模型选择（弹层）
       modelpop: panel.querySelector('#tm-aa-modelpop'),
+      perm: panel.querySelector('#tm-aa-perm'),         // 权限模式（问策/共审/放行·CC 对照）
+      permpop: panel.querySelector('#tm-aa-permpop'),
       rail: panel.querySelector('#tm-aa-rail'),         // Claude 桌面端式 · 会话历史侧栏（全屏）
       raillist: panel.querySelector('#tm-aa-raillist'),
       railTg: panel.querySelector('#tm-aa-rail-tg')
@@ -863,6 +890,7 @@
     _ensurePlusMenu();    // Claude 桌面端式 · ＋能力菜单（体检/审阅/问答/讲解/编排/会审/检查点/撤销）
     _ensureRail();        // Claude 桌面端式 · 会话历史侧栏（全屏下展开）
     _ensureModelPop();    // API 连接·模型选择弹层（模型徽即入口·检测该 API 的真实模型清单）
+    _ensurePermPop();     // 权限模式（问策/共审/放行·持久·CC permission modes 对照）
     _ensureLogFollow();   // UI·AB · 滚动跟随 + 回到底部
     _renderEmpty();   // UI·AD · 空状态欢迎 + 建议提示
     ui.els.req.addEventListener('input', _syncEmpty);   // 有字则隐欢迎态
@@ -1082,6 +1110,60 @@
     el.classList.toggle('warn', !ok);
   }
   function _modelPopClose() { if (ui.els && ui.els.modelpop) ui.els.modelpop.hidden = true; }
+
+  // ── 权限模式（owner 点名的缺失件·CC permission modes 对照）：问策=Plan(只读出计划)·共审=默认(diff 审后应用)·
+  //    放行=Accept Edits(校验通过自动应用)。持久 tm_aa_perm·映射到既有引擎旗标(planMode/autonomy/allowDestructive)。 ──
+  var PERM_KEY = 'tm_aa_perm';
+  var _PM_LABEL = { plan: '问策', review: '共审', auto: '放行' };
+  function _loadPerm() {
+    var p = { mode: 'review', allowDestructive: true };
+    try { var s = JSON.parse(localStorage.getItem(PERM_KEY) || 'null'); if (s && _PM_LABEL[s.mode]) { p.mode = s.mode; p.allowDestructive = s.allowDestructive !== false; } } catch (e) {}
+    return p;
+  }
+  function _applyPerm(p) {
+    ui.planMode = p.mode === 'plan';
+    ui.autonomy = p.mode === 'auto' ? 'auto' : 'review';
+    ui.allowDestructive = p.allowDestructive !== false;
+    try { localStorage.setItem(PERM_KEY, JSON.stringify({ mode: p.mode, allowDestructive: p.allowDestructive !== false })); } catch (e) {}
+    _refreshPermChip();
+  }
+  function _refreshPermChip() {
+    var el = ui.els && ui.els.perm; if (!el) return;
+    var p = _loadPerm();
+    el.textContent = _PM_LABEL[p.mode] || '共审';
+    el.classList.toggle('pm-auto', p.mode === 'auto');
+    el.classList.toggle('pm-plan', p.mode === 'plan');
+    if (ui.els.permpop) {
+      Array.prototype.forEach.call(ui.els.permpop.querySelectorAll('.tm-aa-pm'), function (b) { b.classList.toggle('on', b.getAttribute('data-pm') === p.mode); });
+      var dg = ui.els.permpop.querySelector('#tm-aa-perm-danger'); if (dg) dg.checked = p.allowDestructive !== false;
+    }
+  }
+  function _permPopClose() { if (ui.els && ui.els.permpop) ui.els.permpop.hidden = true; }
+  function _ensurePermPop() {
+    var btn = ui.els && ui.els.perm, pop = ui.els && ui.els.permpop;
+    if (!btn || !pop || ui._permBound) return;
+    ui._permBound = true;
+    _applyPerm(_loadPerm());   // 启动即按持久模式布防（含引擎旗标）
+    btn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      pop.hidden = !pop.hidden;
+      if (!pop.hidden) { _plusClose(); _modelPopClose(); _refreshPermChip(); }
+    });
+    pop.addEventListener('click', function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest('.tm-aa-pm') : null;
+      if (!b) return;
+      var p = _loadPerm(); p.mode = b.getAttribute('data-pm');
+      _applyPerm(p); _permPopClose();
+      setStatus(p.mode === 'plan' ? '已切「问策」——国师只读勘察出计划·批准后才会执行'
+        : (p.mode === 'auto' ? '已切「放行」——校验通过的改动将自动应用到剧本（可随时切回共审）'
+          : '已切「共审」——改动出 diff·由你逐条审后应用'));
+    });
+    var dg = pop.querySelector('#tm-aa-perm-danger');
+    if (dg) dg.addEventListener('change', function () { var p = _loadPerm(); p.allowDestructive = !!dg.checked; _applyPerm(p); setStatus(dg.checked ? '已允许危险操作（删除/改名联动等）' : '已禁止危险操作——删除类写入会被权限闸拦下'); });
+    document.addEventListener('click', function (ev) { if (!pop.hidden && !pop.contains(ev.target) && ev.target !== btn) _permPopClose(); });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !pop.hidden) { _permPopClose(); ev.stopPropagation(); } });
+    _refreshPermChip();
+  }
   function _ensureModelPop() {
     var btn = ui.els && ui.els.model, pop = ui.els && ui.els.modelpop;
     if (!btn || !pop || ui._modelPopBound) return;
@@ -2607,5 +2689,5 @@
   else init();
 
   // 暴露给测试/调试
-  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg };
+  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; } };
 })(typeof window !== 'undefined' ? window : this);

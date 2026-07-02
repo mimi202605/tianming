@@ -410,5 +410,15 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   var wsSrc = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-preview.html'), 'utf8');
   ok(/\.je-aa-apicfg \{ display: none !important; \}|\.je-aa-stop, \.je-aa-apicfg \{ display: none !important; \}/.test(wsSrc), 'H4 工坊旧 API 抽屉已退役(功能移模型徽弹层)');
 
+  // ───────── H5 · 权限模式(问策/共审/放行·CC permission modes 对照·owner 点名缺失件) ─────────
+  console.log('— H5 权限模式 —');
+  var uiSrc5 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/id="tm-aa-perm"/.test(uiSrc5) && /id="tm-aa-permpop"/.test(uiSrc5) && /data-pm="plan"/.test(uiSrc5) && /data-pm="review"/.test(uiSrc5) && /data-pm="auto"/.test(uiSrc5), 'H5 权限 pill+弹层三模式(问策/共审/放行)在位');
+  ok(/ui\.planMode = p\.mode === 'plan'/.test(uiSrc5) && /ui\.autonomy = p\.mode === 'auto' \? 'auto' : 'review'/.test(uiSrc5) && /ui\.allowDestructive = p\.allowDestructive !== false/.test(uiSrc5), 'H5 模式映射既有引擎旗标(planMode/autonomy/allowDestructive·非新权限系统)');
+  ok(/localStorage\.setItem\(PERM_KEY/.test(uiSrc5) && /_applyPerm\(_loadPerm\(\)\)/.test(uiSrc5), 'H5 模式持久+启动即布防');
+  ok(/id="tm-aa-perm-danger"/.test(uiSrc5), 'H5 危险操作开关(允许删除/改名联动)');
+  var wsSrc5 = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-preview.html'), 'utf8');
+  ok(/\.je-aa-planmode:not\(\.je-aa-fewshot\) \{ display: none !important; \}/.test(wsSrc5), 'H5 工坊旧计划模式勾选退役(升级为问策·少样例开关保留)');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
