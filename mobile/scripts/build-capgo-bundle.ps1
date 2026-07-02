@@ -35,6 +35,10 @@ Write-Host "复制 web → staging（剔垃圾）..." -ForegroundColor Cyan
 $cruft = @('.git','godot','.playwright-cli','_screenshots','docs','backups','test-results','scripts','node_modules','.vscode','.hot-update-staging','dev-tools','_archive')
 robocopy $WebDir $stage /E /NFL /NDL /NJH /NJS /NP /XD ($cruft | ForEach-Object { Join-Path $WebDir $_ }) | Out-Null
 Get-ChildItem $stage -Recurse -File | Where-Object { $_.Name -match '\.bak' } | Remove-Item -Force -ErrorAction SilentlyContinue
+# 剔 preview 子目录的设计稿/验证截图（保留 preview/img、official-scenarios-bundle.js 等运行素材；与 hot 端 isPreviewMockup 对齐，否则 capgo 白夹带 ~157MB 截图）
+$pvShots = Join-Path $stage 'preview\shots'
+if (Test-Path $pvShots) { Remove-Item $pvShots -Recurse -Force -ErrorAction SilentlyContinue }
+Get-ChildItem (Join-Path $stage 'preview') -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'verify.*\.png$' } | Remove-Item -Force -ErrorAction SilentlyContinue
 $sz = [math]::Round((Get-ChildItem $stage -Recurse -File | Measure-Object Length -Sum).Sum/1MB,1)
 Write-Host "  staging = $sz MB" -ForegroundColor Gray
 

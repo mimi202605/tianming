@@ -1,11 +1,11 @@
 {
   "type": "tianming-hot-update-feed",
-  "version": "1.3.4.1",
-  "packageUrl": "tianming-hot-1.3.4.1.zip",
-  "manifestUrl": "manifests/1.3.4.1.json",
+  "version": "1.3.4.4",
+  "packageUrl": "tianming-hot-1.3.4.4.zip",
+  "manifestUrl": "manifests/1.3.4.4.json",
   "filesBaseUrl": "files/",
-  "sha256": "814cf344c35411c0bc3c616efc3f49ba45660d1a237383eac0d0d4d50885e381",
-  "size": 804340374,
-  "notes": "新增《绍宋·建炎元年八月》可玩剧本+地图势力配色差异化+奏疏归本臣对君+人物改换门庭与绑定强化+君上称谓随时代切换+经济活人化与建筑系统+地图/剧本编辑器增强+推演结果落地·另附多项实验性玩法(设置可开)",
-  "generatedAt": "2026-06-25T03:05:07.640Z"
+  "sha256": "66d721d21cd5af918c43cf5069845df642271dd5dcde6e17585b3fbe8c24bbfa",
+  "size": 829496380,
+  "notes": "深化过回合推演:对话/朝议许诺进问责、朝议决议逐回合跟进、势力外交转向真生效、军情跨回合连续、时政记有血有肉并附独立时评、新登场人物即带认知人脉;修复储君候选/跨回合记忆/自省对照等静默失灵的功能;界面截断长文可悬停查看全文",
+  "generatedAt": "2026-07-01T16:55:07.103Z"
 }
