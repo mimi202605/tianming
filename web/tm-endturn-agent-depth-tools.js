@@ -231,14 +231,17 @@
       if (!Array.isArray(gm._aiMemory)) gm._aiMemory = [];
       gm._aiMemory.push({ turn: turn, text: String(p.memory), priority: 'high' });
       if (!Array.isArray(gm._consolidatedMemory)) gm._consolidatedMemory = [];
-      gm._consolidatedMemory.push({ turn: turn, summary: String(p.memory).slice(0, 300) });
+      // 刀F(2026-07-02)·形状调和:LLM 管线写 {consolidated,...}·此处原只写 {summary}——跨模式互读各自扑空
+      //   (管线的滚动续写读 .consolidated·agent 的记忆档读 .summary)。双键并写·两边消费者都能读。
+      gm._consolidatedMemory.push({ turn: turn, summary: String(p.memory).slice(0, 300), consolidated: String(p.memory).slice(0, 300) });
       if (gm._consolidatedMemory.length > 50) gm._consolidatedMemory = gm._consolidatedMemory.slice(-50);
       did.push('记忆');
     }
     if (p.saga) { gm._sagaMemory = { turn: turn, text: String(p.saga).slice(0, 600) }; did.push('多回合脉络'); }  // 综合多回合·滚动更新
     if (p.state_board) {
       var sb = p.state_board;
-      gm._stateBoard = { turn: turn, mood: String(sb.mood || '').slice(0, 60), recent_summary: String(sb.recent_summary || '').slice(0, 250), open_loops: Array.isArray(sb.open_loops) ? sb.open_loops.slice(0, 5) : [], unfulfilled_promises: Array.isArray(sb.unfulfilled_promises) ? sb.unfulfilled_promises.slice(0, 5) : [], _agent: true };
+      // 刀F(2026-07-02)·形状调和:补 ts/expiresAt(LLM 管线同款·§6.5 R3 五回合失效)——原缺 expiresAt·agent 写的状态盘在消费端永不过期·老悬念误导后续回合
+      gm._stateBoard = { turn: turn, ts: Date.now(), expiresAt: (turn + 5), mood: String(sb.mood || '').slice(0, 60), recent_summary: String(sb.recent_summary || '').slice(0, 250), open_loops: Array.isArray(sb.open_loops) ? sb.open_loops.slice(0, 5) : [], unfulfilled_promises: Array.isArray(sb.unfulfilled_promises) ? sb.unfulfilled_promises.slice(0, 5) : [], _agent: true };
       did.push('状态盘');
     }
     if (Array.isArray(p.plot_updates) && p.plot_updates.length) {

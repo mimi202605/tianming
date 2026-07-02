@@ -2493,6 +2493,7 @@
           var _payload = {
             turn: _ptT25c, ts: Date.now(),
             consolidated: pS.consolidated || '',
+            summary: String(pS.consolidated || '').slice(0, 300),   // 刀F·形状调和:agent 模式的记忆档读 .summary·双键并写跨模式互通
             key_threads: Array.isArray(pS.key_threads) ? pS.key_threads : [],
             npc_trajectories: Array.isArray(pS.npc_trajectories) ? pS.npc_trajectories : [],
             faction_vectors: Array.isArray(pS.faction_vectors) ? pS.faction_vectors : [],
