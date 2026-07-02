@@ -1622,6 +1622,12 @@
             return _turn != null && (GM.turn - _turn) <= _RETRY_WINDOW && !c._enriched;
           });
 
+          // ★2026-07-02 单次上限:实体一多输出必截断(原固定3000 token)→parse 失败→全部实体丰化失败。
+          //   每次最多 角色6/势力3/党派2/阶层2·余者仍在 3 回合重试窗内·下回合接着丰化。
+          _sparseChars = _sparseChars.slice(0, 6);
+          _sparseFacs = _sparseFacs.slice(0, 3);
+          _sparseParties = _sparseParties.slice(0, 2);
+          _sparseClasses = _sparseClasses.slice(0, 2);
           var _totalSparse = _sparseFacs.length + _sparseClasses.length + _sparseParties.length + _sparseChars.length;
           if (_totalSparse === 0) return; // 无新实体，跳过
 
@@ -1727,7 +1733,7 @@
             model: P.ai.model || 'gpt-4o',
             messages: [{ role: 'system', content: _maybeCacheSys(sysPFor('sc19')) }, { role: 'user', content: enrichP }],   // 【sc19 升级·S3】补系统提示(原先无 sysP·裸 user·史观/口吻/时代全无约束)
             temperature: 0.7,
-            max_tokens: _tok(3000)
+            max_tokens: _tok(Math.min(6000, 1500 + _totalSparse * 450))   // ★2026-07-02 随实体数伸缩(原固定3000·多实体必截断→丰化恒失败)
           };
           if (_modelFamily === 'openai') _enrichBody.response_format = { type: 'json_object' };
           var _enrichCall = null;
@@ -2345,6 +2351,31 @@
             _ctx25c += '  · [' + (cr.forum||'?') + '] ' + cr.topic + ' → ' + String(cr.decision||'').slice(0, 60) + '\n';
           });
         }
+
+        // ★2026-07-02 记忆连续性:此前 sc25c 看不见自己上回合的产出——伏笔只种不回收还重复种/
+        //   open_loops 每回合失忆重写/consolidated 每次从零写。注入四样自持上下文(全 guarded·缺则跳):
+        try {
+          // ① 未了伏笔 → 优先推进/回收·勿种同义新伏笔
+          if (Array.isArray(GM._foreshadows) && GM._foreshadows.length) {
+            var _pend25c = GM._foreshadows.filter(function(f){ return f && f.type !== 'compressed'; }).slice(-6);
+            if (_pend25c.length) _ctx25c += '\n未了伏笔(immediate_foreshadow 应优先推进/回收这些·勿另种同义新伏笔)：\n' + _pend25c.map(function(f){ return '  · T' + (f.turn||'?') + ' ' + String(f.content||'').slice(0, 50) + (f.resolveBy ? ('·限T' + f.resolveBy) : ''); }).join('\n') + '\n';
+          }
+          // ② 上回合状态板 → 悬念/未兑现延续或显式收束·不凭空蒸发
+          if (GM._stateBoard && ((GM._stateBoard.open_loops || []).length + (GM._stateBoard.unfulfilled_promises || []).length) > 0) {
+            _ctx25c += '上回合状态板(仍未了的延续进新 state_board·已了结的不再列)：'
+              + (GM._stateBoard.open_loops || []).concat(GM._stateBoard.unfulfilled_promises || []).slice(0, 8).join('；') + '\n';
+          }
+          // ③ 上次跨回合综述 → consolidated 滚动续写而非从零重写
+          if (Array.isArray(GM._consolidatedMemory) && GM._consolidatedMemory.length) {
+            var _lastCons = GM._consolidatedMemory[GM._consolidatedMemory.length - 1];
+            if (_lastCons && _lastCons.consolidated) _ctx25c += '上次跨回合综述(在此基础上滚动更新·非从零重写)：' + String(_lastCons.consolidated).slice(0, 400) + '\n';
+          }
+          // ④ W1 因果综述 → key_threads/主线沿因果组织而非并列
+          if (typeof WorldDigest !== 'undefined' && typeof WorldDigest.promptBlock === 'function') {
+            var _wd25c = WorldDigest.promptBlock(GM, { turnsBack: 1 });
+            if (_wd25c) _ctx25c += String(_wd25c).slice(0, 500) + '\n';
+          }
+        } catch(_cont25cE) {}
 
         // 两个 prompt
         var tpTac = '【sc25c·战术层 tactical】（temp=0.3·宁可不写不可编造）\n' + _ctx25c + '\n返回严格 JSON·\n'
