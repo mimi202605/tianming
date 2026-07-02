@@ -704,13 +704,26 @@
     if (v && typeof v === 'object' && typeof v.balance === 'number') return !isFinite(v.balance); // 对象形:查 .balance
     return false;                                                                    // 其它(对象无 balance/缺失)→ 保守不判坏
   }
-  function _selfCheck(gm) {
+  // 刀E2(2026-07-02·对照 CC 收尾保护) · 自检语义加深:原版只查结构合法(turn数字/数组形/报告非空)——
+  //   「结构合法但语义损坏」的脏回合(名册坏条目/NaN 扩散/玩家被误删/回合数漂移)可蒙混提交。
+  //   opts 可选(旧单参调用全兼容):expectTurn=engine-first 后应有的回合数·hadPlayer=快照时是否有玩家角色。
+  function _selfCheck(gm, opts) {
+    opts = opts || {};
     var problems = [];
     if (!gm) return { ok: false, problems: ['无存档'] };
     if (typeof gm.turn !== 'number' || !isFinite(gm.turn)) problems.push('turn 非法');
+    if (typeof opts.expectTurn === 'number' && gm.turn !== opts.expectTurn) problems.push('turn 漂移(应 ' + opts.expectTurn + ' 实 ' + gm.turn + ')');
     ['guoku', 'neitang'].forEach(function (k) { if (gm[k] != null && _numFieldBad(gm[k])) problems.push(k + ' 数值异常'); });
     ['chars', 'facs'].forEach(function (k) { if (gm[k] != null && !Array.isArray(gm[k])) problems.push(k + ' 被毁(非数组)'); });
+    if (Array.isArray(gm.chars) && gm.chars.some(function (c) { return !c || typeof c.name !== 'string' || !c.name; })) problems.push('chars 含坏条目(null/缺name)');
+    if (Array.isArray(gm.facs) && gm.facs.some(function (f) { return !f || typeof f.name !== 'string' || !f.name; })) problems.push('facs 含坏条目');
+    if (opts.hadPlayer === true && Array.isArray(gm.chars) && !gm.chars.some(function (c) { return c && c.isPlayer; })) problems.push('玩家角色消失(快照有·收尾无)');
+    try { var _vs = gm.vars || {}; Object.keys(_vs).some(function (k) { var v = _vs[k]; if (v && typeof v.value === 'number' && !isFinite(v.value)) { problems.push('vars.' + k + ' NaN'); return true; } return false; }); } catch (_e1) {}
+    try { (Array.isArray(gm.classes) ? gm.classes : []).some(function (cl) { if (cl && typeof cl.satisfaction === 'number' && !isFinite(cl.satisfaction)) { problems.push('阶层满意度 NaN(' + (cl.name || '?') + ')'); return true; } return false; }); } catch (_e2) {}
+    try { if (gm.huangwei && typeof gm.huangwei.index === 'number' && !isFinite(gm.huangwei.index)) problems.push('皇威 NaN'); } catch (_e3) {}
+    try { var _pss = gm.provinceStats || {}; Object.keys(_pss).some(function (pk) { var pv = _pss[pk]; if (pv && ((typeof pv.unrest === 'number' && !isFinite(pv.unrest)) || (typeof pv.wealth === 'number' && !isFinite(pv.wealth)))) { problems.push('省况 NaN(' + pk + ')'); return true; } return false; }); } catch (_e4) {}
     if (!Array.isArray(gm._turnReport) || gm._turnReport.length === 0) problems.push('_turnReport 空(无产出)');
+    else if (gm._turnReport.some(function (e) { return !e || typeof e !== 'object'; })) problems.push('_turnReport 含坏条目');
     return { ok: problems.length === 0, problems: problems };
   }
 
@@ -731,6 +744,7 @@
     var _extSnap = _snapshotExternals();   // S8·结算前一并快照 GM 外的 module 单例(账本/耦合基线)·供回滚补全
     var engineRan = false;
     var engineDims = {};
+    var _turnAfterEngine = null;   // 刀E2 · engine-first 后的实测回合数(而非假设引擎必turn++·stub/异种引擎语义都稳)
     // 回落兜底:engineRan 时先回滚再回落(让 mode a 在干净态重跑)
     function bail(reason) { if (engineRan && snapshot) _rollback(gm, snapshot, ctx, _extSnap); return { ok: false, fallback: true, reason: reason }; }
 
@@ -743,6 +757,7 @@
         engineDims = _engineDiffDims(snapshot, gm);
         if (ctx && ctx.input) ctx.input._systemsRan = true;  // 让后续 systems 步幂等跳过引擎 tick(防双跑)
         engineRan = true;
+        _turnAfterEngine = gm.turn;   // 刀E2 · 记实测:engine-first 之后任何人(agent写工具/深化)不得再动 gm.turn(收尾自检契约)
       } catch (engErr) {
         // 引擎在 await 中抛错:engineRan 尚未置 true·但引擎可能已部分 mutate(turn++ + 账本/耦合单例累加)→显式回滚(含单例)
         if (snapshot) _rollback(gm, snapshot, ctx, _extSnap);
@@ -841,6 +856,10 @@
       }
     } catch (loopErr) {
       if (state.writeOk === 0 && Object.keys(state.depthTools || {}).length === 0) return bail('agent 循环异常且无实质落地·回落 LLM:' + (loopErr && loopErr.message));
+      // 刀E1(2026-07-02) · 已有实质落地→继续降级完成(auto-suite 补齐+收尾自检把关提交)·但异常必须留痕——
+      //   此前静默吞掉·脏回合成因无从追查。留痕进 _agentTurnMeta.loopError 供诊断/UI。
+      state.loopError = String((loopErr && loopErr.message) || loopErr).slice(0, 200);
+      try { console.warn('[agent-mode] 循环中途异常·已降级续跑(收尾自检把关)', loopErr); } catch (_) {}
     }
 
     // ── 弱模型动作脚手架兜底(2026-06·着重加强弱模型)──
@@ -929,7 +948,12 @@
     }
 
     // ── S5 状态自检 → 过则提交·崩则回滚回落 LLM ──
-    var chk = _selfCheck(gm);
+    // 刀E2 · 传语义契约:engine-first 之后任何人不得再动 gm.turn(用引擎跑完的实测值·不假设引擎必turn++);
+    //   快照时有玩家角色则收尾必须还在
+    var chk = _selfCheck(gm, {
+      expectTurn: (engineRan && typeof _turnAfterEngine === 'number') ? _turnAfterEngine : null,
+      hadPlayer: snapshot ? (Array.isArray(snapshot.chars) && snapshot.chars.some(function (c) { return c && c.isPlayer; })) : null
+    });
     if (!chk.ok) {
       return bail('状态自检未过·回滚回落 LLM:' + chk.problems.join('；'));
     }
@@ -941,7 +965,7 @@
     var gaps = _detectSpineGaps(gm, state);
     gm._agentSpineGaps = gaps;
     gm._agentResolutionTurn = resolutionTurn;
-    gm._agentTurnMeta = { rounds: state.rounds, writeOk: state.writeOk, writeAttempts: state.writeAttempts, finalized: state.finalized, autoClosed: !!state.autoClosed, scaffolded: !!state.scaffolded, scaffoldActions: state.scaffoldActions || 0, engineFirst: engineRan, resolutionTurn: resolutionTurn, spineGaps: gaps, turn: gm.turn || 0, finalizeRejects: state.finalizeRejects || 0, depthTools: state.depthTools || {}, deepenSkipped: state.deepenSkipped || [], deepenFailed: state.depthFailed || [], engineDims: state.engineDims || {}, depthOk: !!state.depthOk, depthIncomplete: state.depthIncomplete || null };
+    gm._agentTurnMeta = { rounds: state.rounds, writeOk: state.writeOk, writeAttempts: state.writeAttempts, finalized: state.finalized, autoClosed: !!state.autoClosed, scaffolded: !!state.scaffolded, scaffoldActions: state.scaffoldActions || 0, engineFirst: engineRan, resolutionTurn: resolutionTurn, spineGaps: gaps, turn: gm.turn || 0, finalizeRejects: state.finalizeRejects || 0, depthTools: state.depthTools || {}, deepenSkipped: state.deepenSkipped || [], deepenFailed: state.depthFailed || [], engineDims: state.engineDims || {}, depthOk: !!state.depthOk, depthIncomplete: state.depthIncomplete || null, loopError: state.loopError || null };
     try { console.log('[agent-mode] 回合 ' + resolutionTurn + '→' + (gm.turn || 0) + ' 完成 · 引擎先=' + engineRan + ' · 轮' + state.rounds + ' · 落地' + state.writeOk + '/' + state.writeAttempts + ' · 脊柱缺口[' + gaps.join('、') + ']'); } catch (_) {}
 
     // ── D7 产出焊缝:把 agent 产出映射成史记弹窗渲染器(_endTurn_render)期望的富结构 ──
