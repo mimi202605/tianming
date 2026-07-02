@@ -756,6 +756,43 @@
     }
   }
 
+  // 刀H3(CC session resume 对照) · 会话线程持久化：线程/任务表此前刷新即丢（已应用的改动在剧本里·
+  //   但对话上下文死）。每轮跑完存 localStorage（压缩副本·体量上限护 quota）·开面板时同剧本且够新
+  //   (48h)自动恢复——续接语义复用既有 continuing 路径（draft 没了从当前剧本重建·线程贯穿）。
+  //   「＋ 新对话」/撤销/回退检查点即清（线程与剧本状态须一致）。
+  var THREAD_KEY = 'tm_aa_thread';
+  function _scenKey() {
+    try { var sc = ui.adapter && ui.adapter.getScenario ? ui.adapter.getScenario() : null; return String((sc && (sc.id || sc.editingScenarioId || sc.name)) || 'default'); }
+    catch (e) { return 'default'; }
+  }
+  function _saveThread(res) {
+    try {
+      if (!res || !Array.isArray(res.conversation) || !res.conversation.length) return;
+      var copy = JSON.parse(JSON.stringify(res.conversation));
+      try { AA._compactOldToolResults(copy, 4); } catch (e0) {}
+      var pack = { sid: _scenKey(), ts: Date.now(), todos: (res.todos || []).slice(0, 20), conversation: copy };
+      var s = JSON.stringify(pack);
+      if (s.length > 900000) { try { AA._compactOldToolResults(copy, 1); } catch (e1) {} s = JSON.stringify(pack); }
+      if (s.length > 900000) { localStorage.removeItem(THREAD_KEY); return; }   // 仍过大：宁缺毋 quota 爆
+      localStorage.setItem(THREAD_KEY, s);
+    } catch (e) { try { localStorage.removeItem(THREAD_KEY); } catch (e2) {} }
+  }
+  function _clearThread() { try { localStorage.removeItem(THREAD_KEY); } catch (e) {} }
+  function _maybeRestoreThread() {
+    try {
+      if (ui.running || (ui.conversation && ui.conversation.length)) return false;
+      var raw = localStorage.getItem(THREAD_KEY); if (!raw) return false;
+      var pack = JSON.parse(raw);
+      if (!pack || pack.sid !== _scenKey() || !Array.isArray(pack.conversation) || !pack.conversation.length) return false;
+      if (Date.now() - (pack.ts || 0) > 48 * 3600 * 1000) return false;   // 过陈线程不自动续（要续可继续输入·不需要点新对话）
+      ui.conversation = pack.conversation;
+      ui._restoredTodos = Array.isArray(pack.todos) ? pack.todos : null;
+      var pend = (ui._restoredTodos || []).filter(function (t) { return t && t.status !== 'completed'; }).length;
+      setStatus('已恢复上次会话线程（' + pack.conversation.length + ' 条消息' + (pend ? '·' + pend + ' 项任务未完' : '') + '）· 直接输入即可续接；不需要就点「＋ 新对话」');
+      return true;
+    } catch (e) { return false; }
+  }
+
   // 方向M · 运行历史/审计日志（持久·可搜·跨刷新存活·不存大快照避 quota·cap 50）
   var HISTORY_KEY = 'tm_aa_run_history';
   function _loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { return []; } }
@@ -1885,8 +1922,11 @@
     if (!continuing) { ui.draft = AA.makeDraft(ui.adapter.getScenario()); if (!planOnly) ui.conversation = null; }
     else if (!ui.draft) { ui.draft = AA.makeDraft(ui.adapter.getScenario()); }   // 续接但上轮已应用 → 从当前(已更新)剧本新建 draft，对话线程保留
 
+    var _rtd = (continuing && ui._restoredTodos && ui._restoredTodos.length) ? ui._restoredTodos : null;   // 刀H3 · 恢复的任务表一次性回灌
+    ui._restoredTodos = null;
     AA.runAuthoringLoop(ui.draft, request, {
       planOnly: planOnly,
+      initialTodos: _rtd,
       priorConversation: continuing ? ui.conversation : null,
       memory: continuing ? '' : _buildMemory(),             // 跨会话记忆：新对话才注入历史；续接已在线程里
       editorContext: _editorContext(),
@@ -1898,6 +1938,7 @@
     }).then(function(res) {
       setRunning(false);
       ui.conversation = res.conversation;   // 维度1 · 存住线程
+      _saveThread(res);   // 刀H3 · 线程落盘(跨刷新可恢复)
       // 自动续接：未完成且因轮次/token 上限停 → 自动发「继续」续接（复用连续会话线程·持续调用直到完整·安全上限 3 次）。
       if (!planOnly && !res.finished && (res.stopReason === 'maxIterations' || res.stopReason === 'tokenBudget') && (ui._autoCont || 0) < 3) {
         ui._autoCont = (ui._autoCont || 0) + 1;
@@ -2018,6 +2059,7 @@
   function newConversation() {
     if (ui.running) { setStatus('运行中，请先停止再新开对话'); return; }
     ui.draft = null; ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
+    ui._restoredTodos = null; _clearThread();   // 刀H3 · 新对话即弃存档线程
     if (ui._criticsArmed) _disarmCriticsVisual();   // 刀3 · 新对话清掉未用的会审武装
     resetResults(false);
     _syncEmpty();
@@ -2040,7 +2082,7 @@
     try {
       var cp = ui._checkpoints.pop();
       ui.adapter.commit(cp.snapshot);
-      ui.draft = null; ui.conversation = null;
+      ui.draft = null; ui.conversation = null; _clearThread();   // 刀H3 · 剧本已回退·存档线程随之作废
       if (typeof ui._onCheckpointsChange === 'function') { try { ui._onCheckpointsChange(); } catch (e) {} }
       setStatus('已撤销，回到「' + cp.label + '」(' + cp.when + ') ↩');
       return true;
@@ -2060,7 +2102,7 @@
     try {
       _pushCheckpoint('回退前 ' + _ckptTime());
       ui.adapter.commit(_clone(cp.snapshot));
-      ui.draft = null; ui.conversation = null;
+      ui.draft = null; ui.conversation = null; _clearThread();   // 刀H3 · 同上·回退后线程作废
       setStatus('已回到检查点「' + cp.label + '」(' + cp.when + ')');
       return true;
     } catch (e) { setStatus('回退失败：' + (e && e.message || e)); return false; }
@@ -2078,7 +2120,7 @@
     fab.addEventListener('click', function() {
       var p = ensurePanel();
       p.classList.toggle('open');
-      if (p.classList.contains('open')) { _syncEmpty(); _reflectWorldKind(); }   // UI·AD · 开面板时按需显欢迎态 + 反映当前世界类型
+      if (p.classList.contains('open')) { _syncEmpty(); _reflectWorldKind(); _maybeRestoreThread(); }   // UI·AD · 开面板时按需显欢迎态 + 反映当前世界类型；刀H3 · 同剧本自动恢复上次线程
     });
     document.body.appendChild(fab);
   }

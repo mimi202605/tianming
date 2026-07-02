@@ -372,5 +372,33 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   });
   ok(rH2.finished && hx === 4, 'H1 bump 耗尽后第3次截断按 noToolCalls 处理(nudge→finish)·不无限重试');
 
+  // ───────── H3 · 会话线程持久化/恢复(CC session resume 对照) ─────────
+  console.log('— H3 会话恢复 —');
+  // 1: initialTodos 回灌——恢复的未完任务表接着管收尾(G7 闸认账)
+  var rq2 = 0;
+  var rR = await AA.runAuthoringLoop(AA.makeDraft({ name: '甲' }), '继续上次的活', {
+    initialTodos: [{ content: '上次没补完的势力', status: 'in_progress' }, { content: '坏项', status: '不合法' }, { content: '', status: 'pending' }],
+    caller: function () {
+      rq2++;
+      if (rq2 === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'r1', name: 'finish', input: { summary: '想直接溜' } }] });
+      if (rq2 === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'r2', name: 'todoWrite', input: { todos: [{ content: '上次没补完的势力', status: 'completed' }] } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'rf', name: 'finish', input: { summary: '完' } }] });
+    }, conventions: '', blockingChecks: [], maxTokens: 5000000
+  });
+  var rTr = rR.conversation.filter(function (m) { return m.role === 'tool'; }).reduce(function (a, m) { return a.concat(m.toolResults || []); }, []);
+  var rB = rTr.filter(function (t) { return t.content.indexOf('todos-pending') >= 0; });
+  ok(rB.length === 1 && rB[0].content.indexOf('上次没补完的势力') >= 0, 'H3 恢复的任务表接着管收尾(finish 被 G7 闸按恢复项顶回)');
+  ok(rR.finished && rR.todos.length === 0, 'H3 补完恢复项后正常收尾');
+  ok(!JSON.stringify(rR.todos).match(/坏项/), 'H3 非法 status/空 content 的恢复项被滤掉');
+  // 2: UI 源契约(存/取/清/回灌四处接线·jsdom 行为由真机验)
+  var uiSrc3 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  ok(/ui\.conversation = res\.conversation;[^\n]*\n\s*_saveThread\(res\);/.test(uiSrc3.replace(/\r/g, '')), 'H3 UI:跑完即存线程(_saveThread 紧随 conversation 赋值)');
+  ok(/_maybeRestoreThread\(\); \}/.test(uiSrc3) && /48 \* 3600 \* 1000/.test(uiSrc3), 'H3 UI:开面板自动恢复(48h 新鲜度守卫)');
+  ok(/pack\.sid !== _scenKey\(\)/.test(uiSrc3), 'H3 UI:剧本 id 对不上不恢复(跨剧本不串线程)');
+  ok(/900000/.test(uiSrc3) && /_compactOldToolResults\(copy, 4\)/.test(uiSrc3), 'H3 UI:存前压缩副本+体量上限护 quota');
+  var _clrN = (uiSrc3.match(/_clearThread\(\);/g) || []).length;
+  ok(_clrN >= 3, 'H3 UI:新对话/撤销/回退检查点三处清存档(实 ' + _clrN + ' 处)');
+  ok(/initialTodos: _rtd,/.test(uiSrc3) && /ui\._restoredTodos = null;/.test(uiSrc3), 'H3 UI:恢复的任务表一次性回灌 initialTodos');
+
   console.log('\nPASS · ' + pass + ' 断言');
 })().catch(function (e) { console.error(e); process.exit(1); });
