@@ -1463,15 +1463,34 @@
   }
 
   // 工具D · 上下文瘦身：把"早先轮次"的工具结果内容压成占位·只留最近 keepRecent 轮详尽·控上下文窗口(保 id/name·provider 配对不破)
-  function _compactOldToolResults(conv, keepRecent) {
+  // 刀G2(2026-07-02·CC microcompact 对照)：同界限内连 assistant 的 toolCalls.input 一并压——
+  //   bulkAdd(造30人)/multiEdit/大 applyEdit 的巨型入参此前永驻上下文·恰是最占体量的部分没被清。
+  //   改动早已落进草稿·入参占位后如需现值 getField 即可·id/name 保留 provider 配对不破。
+  function _compactOldToolResults(conv, keepRecent, inputMax) {
     if (!Array.isArray(conv)) return;
+    inputMax = inputMax || 200;
     var idxs = []; for (var i = 0; i < conv.length; i++) if (conv[i] && conv[i].role === 'tool') idxs.push(i);
     var cut = idxs.length - keepRecent;
+    if (cut <= 0) return;
     for (var j = 0; j < cut; j++) {
       var trs = conv[idxs[j]].toolResults || [];
       for (var k = 0; k < trs.length; k++) {
         var tr = trs[k];
         if (tr && typeof tr.content === 'string' && tr.content.length > 80 && tr.content.indexOf('[已省略') !== 0) tr.content = '[已省略·早先轮次结果·需要可重新查询]';
+      }
+    }
+    var keepFrom = idxs[cut];   // 首个保留详尽的 tool 消息
+    if (conv[keepFrom - 1] && conv[keepFrom - 1].role === 'assistant') keepFrom = keepFrom - 1;   // 其配对 assistant 入参一并保留(压结果与压入参界限对齐)
+    for (var a = 0; a < keepFrom; a++) {
+      var m = conv[a];
+      if (!m || m.role !== 'assistant' || !Array.isArray(m.toolCalls)) continue;
+      for (var b = 0; b < m.toolCalls.length; b++) {
+        var tc = m.toolCalls[b];
+        if (!tc || !tc.input || typeof tc.input !== 'object' || tc.input._compacted) continue;
+        try {
+          var sIn = JSON.stringify(tc.input);
+          if (sIn.length > inputMax) tc.input = { _compacted: '[已省略·早先轮次入参·原' + sIn.length + '字·改动已落草稿·需要现值可 getField 查询]' };
+        } catch (eIn) {}
       }
     }
   }
@@ -2078,7 +2097,16 @@
     }
     var transcript = [];
     var iterations = 0, finishAttempts = 0;
-    var tokensUsed = _estimateTokens(system) + _priorTokens + _estimateTokens(conversation[conversation.length - 1].text);
+    // 刀G1(2026-07-02·CC QueryEngine 对照) · 预算核算修真：tokensUsed = 「下一次请求的真实上下文体量」
+    //   = system + 工具schema(每轮全量重发·旧口径从不计入) + 全对话(含 assistant 的 toolCalls 入参·旧口径漏算)。
+    //   旧口径只零星累加响应文本与工具结果 ≈ 真实体量的零头 → 260k 闸与 70/90% 提醒形同虚设、压缩触发迟到。
+    var _sysTok = _estimateTokens(system);
+    var _toolsTok = 0; try { _toolsTok = _estimateTokens(JSON.stringify(tools)); } catch (eTt) {}
+    var _convTok = 0;
+    function _convRecount() { try { _convTok = _estimateTokens(JSON.stringify(conversation)); } catch (eCr) {} }
+    function _reqTokens() { return _sysTok + _toolsTok + _convTok; }
+    _convRecount();
+    var tokensUsed = _reqTokens();
     var finished = false, stopReason = 'maxIterations';
     var _planResult = null;   // 计划模式产出（proposePlan 的步骤）
     var _reviewResult = null;   // 方向D · 审阅模式产出（submitReview 的报告）
@@ -2105,15 +2133,18 @@
     function step() {
       if (control.aborted) { stopReason = 'aborted'; return Promise.resolve(); }   // 刀E · 轮间中断
       if (iterations >= maxIterations) { stopReason = 'maxIterations'; return Promise.resolve(); }
+      _convRecount(); tokensUsed = _reqTokens();   // 刀G1 · 每轮真算(体量小·全量重估防漂移)
       if (tokensUsed >= maxTokens) { stopReason = 'tokenBudget'; return Promise.resolve(); }
-      if (tokensUsed > maxTokens * 0.5) { try { _compactOldToolResults(conversation, 6); } catch (e) {} }   // 工具D · 半程后压旧工具结果·控窗口
+      if (tokensUsed > maxTokens * 0.5) {   // 工具D · 半程后压旧工具结果+旧入参·控窗口(压后重算)
+        try { _compactOldToolResults(conversation, 6); _convRecount(); tokensUsed = _reqTokens(); } catch (e) {}
+      }
       iterations++;
       return Promise.resolve(caller(conversation, tools, { maxTok: opts.maxTok, cfg: opts.cfg, system: system }))
         .then(function(resp) {
           stepRetries = 0;   // 成功一轮即重置：每个停顿点各容忍 maxStepRetries 次抖动
           var text = (resp && resp.text) || '';
           var calls = (resp && resp.toolCalls) || [];
-          tokensUsed += _estimateTokens(text) + 200;
+          // 刀G1 · 不再零星累加(响应文本随消息入对话后由 _reqTokens 全量重估)
           if (text && typeof opts.onText === 'function') { try { opts.onText(text, iterations); } catch (e) {} }
           if (control.aborted) { conversation.push({ role: 'assistant', text: text, toolCalls: [] }); stopReason = 'aborted'; return; }   // 刀E · API 返回后即停，不再施改
           if (!calls.length) {
@@ -2159,7 +2190,7 @@
           return _procCall().then(function () {
             conversation.push({ role: 'assistant', text: text, toolCalls: calls });
             conversation.push({ role: 'tool', toolResults: toolResults });
-            tokensUsed += _estimateTokens(JSON.stringify(toolResults));
+            _convRecount(); tokensUsed = _reqTokens();   // 刀G1 · 本轮消息已入对话·重算真实体量(70/90%提醒按真口径)
             // 工具D · 预算反馈：接近上限分级提醒收尾(让 agent 自控节奏·别非必要检索)
             if (!finishAccepted && !control.aborted) {
               var _frac = tokensUsed / maxTokens;
@@ -2190,6 +2221,7 @@
         iterations: iterations, finished: finished, plan: _planResult, review: _reviewResult, answer: _qaResult, explanation: _explainResult, clarification: _clarifyResult, remonstrance: _remonstrateResult,
         finalValidation: validateDraft(draft), stopReason: stopReason,
         tokensUsed: tokensUsed, finishAttempts: finishAttempts,
+        tokensBreakdown: { system: _sysTok, tools: _toolsTok, conversation: _convTok },   // 刀G1 · 真口径构成(UI/诊断用)
         summary: _finishSummary,   // 改动说明：做了什么+为什么
         notes: transcript.filter(function(t) { return t.name === 'note'; }).map(function(t) { return (t.input && t.input.text) || ''; }).filter(Boolean),
         // 方向B · agent 回写：发现的可长期沿用约定（交玩家「记住」）
