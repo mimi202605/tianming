@@ -410,6 +410,53 @@
       }
       p.cohesion = ps.cohesion;
     });
+
+    // 3. 政柄格局（V3式·2026-07-03）：从占官+影响力派生 秉政(governing)/在野(opposition)/边缘(marginal)。
+    //    此前党派只有数值没有「朝局地位」——占官最多也不过 influence±3·在野边缘化无任何后果。
+    //    齿①：秉政党的基础阶层「朝中有人」小幅缓升（走 gateSatisfaction 总闸·<70 才升不推顶）；
+    //    齿②：边缘党的基础阶层戳 _marginalPatronTurn·由 SocialFoundation.tickClassRadical ⑦ 项抬离心。
+    var maxOffice = 0;
+    GM.parties.forEach(function(p) {
+      if (!p || !p.name || !GM.partyState[p.name]) return;
+      var c = GM.partyState[p.name].officeCount || 0;
+      if (c > maxOffice) maxOffice = c;
+    });
+    GM.parties.forEach(function(p) {
+      if (!p || !p.name) return;
+      var ps = GM.partyState[p.name];
+      if (!ps) return;
+      var oc = ps.officeCount || 0;
+      var standing;
+      if (maxOffice > 0 && oc > 0 && oc >= maxOffice * 0.7) standing = 'governing';
+      else if (oc > 0 || (ps.influence || 0) >= 25) standing = 'opposition';
+      else standing = 'marginal';
+      if (ps.standing && ps.standing !== standing) {
+        ps.historyLog = ps.historyLog || [];
+        ps.historyLog.push({ turn: turn, type: 'standing', from: ps.standing, to: standing, reason: '朝局更迭' });
+        if (ps.historyLog.length > 20) ps.historyLog = ps.historyLog.slice(-20);
+      }
+      ps.standing = standing;
+      p.standing = standing;
+      var sb = p.socialBase || p.social_base || p.baseClasses;
+      var sbList = Array.isArray(sb) ? sb : (typeof sb === 'string' ? sb.split(/[、,，\/]/) : []);
+      var baseNames = [];
+      sbList.forEach(function(b) {
+        var bn = (b && typeof b === 'object') ? String(b.name || b.className || '') : String(b || '');
+        bn = bn.trim();
+        if (bn) baseNames.push(bn);
+      });
+      if (!baseNames.length || !Array.isArray(GM.classes)) return;
+      GM.classes.forEach(function(cls) {
+        if (!cls || !cls.name) return;
+        var hit = baseNames.some(function(bn) { return cls.name.indexOf(bn) >= 0 || bn.indexOf(cls.name) >= 0; });
+        if (!hit) return;
+        if (standing === 'governing' && (Number(cls.satisfaction) || 50) < 70
+            && global.TM && global.TM.ClassEngine && typeof global.TM.ClassEngine.gateSatisfaction === 'function') {
+          global.TM.ClassEngine.gateSatisfaction(GM, cls, 0.5, { turn: turn, source: 'party-standing', reason: p.name + '秉政·朝中有人' });
+        }
+        if (standing === 'marginal') cls._marginalPatronTurn = turn;
+      });
+    });
   }
 
   // 辅助：动态补齐党派成员列表(从成员文字描述或 chars.party 字段建立)

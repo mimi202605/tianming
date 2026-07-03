@@ -193,7 +193,17 @@
     };
   }
 
-  function snapshotClass(cls) {
+  function snapshotClass(cls, root) {
+    // 政治运动（V3式·GM._politicalMovements·SocialFoundation §三E）：取本阶层最盛一支
+    var movement;
+    if (root && Array.isArray(root._politicalMovements) && cls && cls.name) {
+      root._politicalMovements.forEach(function(m) {
+        if (m && m.className === cls.name && (!movement || Number(m.support) > Number(movement.support))) {
+          movement = { label: String(m.label || m.kind || '').slice(0, 30), phase: m.phase || '', support: Math.round(Number(m.support) || 0) };
+        }
+      });
+      if (movement && movement.support < 40) movement = undefined;
+    }
     // 满意度近势：_satLedger 最近一个回合的净变动（主推演正册同款信号·此前校准器全盲）
     var satTrend;
     var ledger = toArray(cls && cls._satLedger);
@@ -219,6 +229,7 @@
       satTrend: satTrend,
       radicalFrac: (cls && typeof cls._radicalFrac === 'number' && cls._radicalFrac > 0.01) ? Math.round(cls._radicalFrac * 100) / 100 : undefined,
       revoltPhase: (cls && cls.revoltState && cls.revoltState.phase) || undefined,
+      movement: movement,
       worstRegion: worstRegion,
       demands: clone(cls && (cls.demands || cls.currentDemand || cls.currentAgenda || cls.shortGoal)),
       unrestLevels: clone(cls && cls.unrestLevels),
@@ -235,6 +246,7 @@
       name: partyNameOf(party),
       influence: party && party.influence,
       cohesion: party && party.cohesion,
+      standing: (ps && ps.standing) || (party && party.standing) || undefined,
       officeCount: (ps && typeof ps.officeCount === 'number' && ps.officeCount > 0) ? ps.officeCount : undefined,
       reputation: (ps && typeof ps.reputationBalance === 'number' && ps.reputationBalance !== 0) ? ps.reputationBalance : undefined,
       recentImpeach: (ps && ((ps.recentImpeachWin || 0) >= 0.5 || (ps.recentImpeachLose || 0) >= 0.5))
@@ -470,7 +482,7 @@
         name: source.scenarioName || source.scenario || '',
         eraName: source.eraName || ''
       },
-      classes: getClasses(source).map(snapshotClass).filter(function(x) { return !!x.name; }),
+      classes: getClasses(source).map(function(c) { return snapshotClass(c, source); }).filter(function(x) { return !!x.name; }),
       parties: getParties(source).map(function(p) { return snapshotParty(p, source); }).filter(function(x) { return !!x.name; }),
       legitimacy: (source._legitimacy && typeof source._legitimacy === 'object') ? clone(source._legitimacy) : undefined,
       fiscalNote: (typeof source.stateTreasury === 'number') ? { stateTreasury: Math.round(source.stateTreasury) } : undefined,
@@ -538,7 +550,7 @@
       'All demands/agenda/goal texts must be written in Chinese, concise and concrete. Each class has distinct interests rooted in its own economic role and grievances - never reuse the same demand wording across different classes. Only include demands for a class when the evidence shows a genuinely new or shifted demand; omit otherwise.',
       'For class-character relation updates use fractional deltas between -0.25 and 0.25 and keep evidence short.',
       'For new or uncertain party-class links set emergent:true and keep affinityDelta small.',
-      'Snapshot field semantics: class.structBaseline = structural equilibrium satisfaction (satisfaction far below it means pressure to recover, far above means drift down); class.satTrend = last-turn net satisfaction drift; class.radicalFrac = radicalized fraction 0-1 (>=0.4 is dangerous); class.revoltPhase = current unrest phase; class.worstRegion = hardest-hit regional account. party.officeCount = offices held; party.reputation = public repute -60..60 (positive = clean-stream prestige); party.recentImpeach = recent impeachment wins/losses; party.alliedWith/conflictWith = live alliances/feuds. legitimacy = mandate weighting; fiscalNote.stateTreasury = court treasury. Ground your deltas in these accounts.'
+      'Snapshot field semantics: class.structBaseline = structural equilibrium satisfaction (satisfaction far below it means pressure to recover, far above means drift down); class.satTrend = last-turn net satisfaction drift; class.radicalFrac = radicalized fraction 0-1 (>=0.4 is dangerous); class.revoltPhase = current unrest phase; class.movement = political movement condensed from a long-unmet demand (support 0-100; >=70 is boiling and destabilizing); class.worstRegion = hardest-hit regional account. party.standing = governing/opposition/marginal court position; party.officeCount = offices held; party.reputation = public repute -60..60 (positive = clean-stream prestige); party.recentImpeach = recent impeachment wins/losses; party.alliedWith/conflictWith = live alliances/feuds. legitimacy = mandate weighting; fiscalNote.stateTreasury = court treasury. Ground your deltas in these accounts.'
     ].join('\n');
     var user = [
       'Snapshot JSON:',

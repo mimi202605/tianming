@@ -2957,6 +2957,27 @@
     return '<div class="tmrp-chip-list">' + chips + '</div>';
   }
 
+  // 政柄徽(V3式·2026-07-03)：秉政/在野/边缘——读 p.standing(canonical)或 partyState 镜像
+  function rightPartyStandingTag(p){
+    var st = p && (p.standing || (rightSocGM().partyState && rightSocGM().partyState[rightSocialName(p)] && rightSocGM().partyState[rightSocialName(p)].standing));
+    if (st === 'governing') return ' <span class="tmrp-pill tmrp-agenda u1">秉政</span>';
+    if (st === 'marginal') return ' <span class="tmrp-pill tmrp-agenda u3">边缘</span>';
+    if (st === 'opposition') return ' <span class="tmrp-pill">在野</span>';
+    return '';
+  }
+  // 政治运动 chips(V3式)：本阶层的运动·初起/成势/鼎沸
+  function rightClassMovementChips(c){
+    var GMx = rightSocGM();
+    if (!c || !c.name || !Array.isArray(GMx._politicalMovements)) return '';
+    var mine = GMx._politicalMovements.filter(function(m){ return m && m.className === c.name; });
+    if (!mine.length) return '';
+    var chips = mine.slice(0, 3).map(function(m){
+      var tone = Number(m.support) >= 70 ? 'u3' : (Number(m.support) >= 40 ? 'u2' : 'u1');
+      return '<span class="tmrp-pill tmrp-agenda ' + tone + '">运动·' + esc(String(m.label || m.kind).slice(0, 14)) + '·' + esc(m.phase || '') + esc(Math.round(Number(m.support) || 0)) + '</span>';
+    }).join('');
+    return '<div class="tmrp-chip-list">' + chips + '</div>';
+  }
+
   // 列表态·瘦卡(名+满意/影响+诉求·整卡可点进详情)
   function rightSocialClassHead(c){
     var sat = rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50);
@@ -2981,6 +3002,7 @@
       rightArmyBar('满意', sat) + rightArmyBar('影响', inf) +
       rightArmyRows([['规模', rightSocialLocalizeText(c.size || c.population || c.scale)], ['经济角色', rightSocialLocalizeText(c.economicRole || c.role)], ['法律地位', rightSocialLocalizeText(c.status)], ['流动性', rightSocialLocalizeText(c.mobility)], ['特权', rightSocialLocalizeText(c.privileges)], ['义务', rightSocialLocalizeText(c.obligations)]].concat(baseRow).concat(legRow)) +
       (agendaHtml || rightArmyRows([['诉求', rightSocialBriefText(c.demands || c.currentDemand)]])) +
+      rightClassMovementChips(c) +
       rightClassRegionRows(c) +
       rightSatLedgerRows(c) +
       renderRightSocialCauses('class', c) +
@@ -3006,7 +3028,7 @@
     var inf = rightSocNum(p, ['influence','power','weight'], 0);
     var status = p.status || p.state || '未录';
     return '<section class="tmrp-card tmrp-social-head ' + (/活跃|active/i.test(String(status)) ? 'hot' : '') + '" data-right-action="outline-select" data-type="party" data-key="' + attr(rightSocialName(p)) + '">' +
-      '<div class="tmrp-card-title"><span>' + esc(p.name || p.label || p.id || '未名党派') + '</span><small>' + esc(rightSocialLocalizeText(status)) + ' · 影响 ' + esc(Math.round(inf)) + ' ›</small></div>' +
+      '<div class="tmrp-card-title"><span>' + esc(p.name || p.label || p.id || '未名党派') + rightPartyStandingTag(p) + '</span><small>' + esc(rightSocialLocalizeText(status)) + ' · 影响 ' + esc(Math.round(inf)) + ' ›</small></div>' +
       rightArmyBar('影响', inf) +
       rightArmyRows([['立场', rightSocialLocalizeText(p.ideology || p.stance)], ['当前议程', rightSocialBriefText(p.currentAgenda || p.agenda || p.shortGoal)]]) +
       rightPartyRelChips(p) +
@@ -3019,7 +3041,7 @@
     var status = p.status || p.state || '未录';
     var stance = p.policyStance || p.stances || p.agenda;
     var stanceHtml = (Array.isArray(stance) ? stance : [stance]).filter(Boolean).map(function(x){ return '<span class="tmrp-pill">' + esc(rightSocialLocalizeText(x)) + '</span>'; }).join('');
-    return '<section class="tmrp-card ' + (/活跃|active/i.test(String(status)) ? 'hot' : '') + '"><div class="tmrp-card-title"><span>' + esc(p.name || p.label || p.id || '未名党派') + '</span><small>' + esc(rightSocialLocalizeText(status)) + ' · 影响 ' + esc(Math.round(inf)) + '</small></div>' +
+    return '<section class="tmrp-card ' + (/活跃|active/i.test(String(status)) ? 'hot' : '') + '"><div class="tmrp-card-title"><span>' + esc(p.name || p.label || p.id || '未名党派') + rightPartyStandingTag(p) + '</span><small>' + esc(rightSocialLocalizeText(status)) + ' · 影响 ' + esc(Math.round(inf)) + '</small></div>' +
       rightArmyBar('影响', inf) +
       rightArmyRows([['首领', p.leader || p.head], ['立场', rightSocialLocalizeText(p.ideology || p.stance)], ['支持群体', rightSocialLocalizeText(p.base || p.supportBase)], ['核心成员', rightSocialLocalizeText(p.members)], ['当前议程', rightSocialBriefText(p.currentAgenda || p.agenda)], ['短期目标', rightSocialBriefText(p.shortGoal)], ['长期追求', rightSocialBriefText(p.longGoal)]]) +
       rightPartyRelChips(p) +
