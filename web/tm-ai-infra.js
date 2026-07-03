@@ -3443,11 +3443,14 @@ function getCompressionParams(ctxK) {
     // buildAIContext的截断因子
     contextTruncFactor: scale,
     // A3 NPC 心声注入参数（模型越好·纳入越多角色·每角色更多条·门槛更低）
-    // 8K:3人/1条/阈8  32K:8人/2条/阈6  128K:13人/3条/阈5  256K:15人/3条/阈4  1M:15人/4条/阈3
+    // 有效覆盖 NPC 数 = min(heartsMaxChars, floor(heartsTotalCap/heartsPerChar))·下为实际值:
+    // 8K:3人/1条/阈8  32K:8人/2条/阈6  64K:12人/3条/阈5  128K:12-16人/4条/阈4  256K:15-20人/4条/阈3  1M:18-20人/4条/阈3
+    // ★2026-07-03 修:旧 totalCap=16*scale 在 64-128K 被 perChar 反噬·把覆盖饿死到~8人(公式本意 maxChars 人)·
+    //   与 NPC 记忆⇄推演连通性"方向A 名额饥饿"对应·系数 16→24 令 floor(totalCap/perChar) 逼近 maxChars(见 proj 记忆)。
     heartsMaxChars: Math.max(3, Math.min(20, Math.round(8 * scale))),
     heartsPerChar: Math.max(1, Math.min(4, Math.round(2 * scale))),
     heartsImportanceMin: Math.max(3, Math.min(9, Math.round(8 - scale * 2))),
-    heartsTotalCap: Math.max(6, Math.min(80, Math.round(16 * scale))),
+    heartsTotalCap: Math.max(6, Math.min(80, Math.round(24 * scale))),
     // D2 对话摘要注入参数
     // 8K:8条  32K:16条  128K:25条  256K:30条  1M:40条
     dialogueTotalCap: Math.max(6, Math.min(50, Math.round(16 * scale))),

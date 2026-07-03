@@ -86,6 +86,62 @@
     return { actor: actor, text: text };
   }
 
+  // 应用一批 memory_writes(供 sc_memwrite 首轮 + 截断续写复用)·covered 记已录入 char·续写据此去重。
+  // skipCovered:仅续写阶段传 true→拦截已录入角色(不重复补);首轮不传→全录(同一角色多件不同事件都录·不吞·
+  //   完全重复的 event 由 NpcMemorySystem.remember 内部近窗去重挡)。
+  function _applyMwList(list, covered, skipCovered) {
+    if (!Array.isArray(list) || typeof NpcMemorySystem === 'undefined' || !NpcMemorySystem.remember) return 0;
+    var n = 0;
+    list.forEach(function(mw) {
+      if (!mw || !mw.char || !mw.event) return;
+      if (skipCovered && covered && covered[mw.char]) return;  // 仅续写阶段拦截已录入角色
+      try {
+        NpcMemorySystem.remember(mw.char, mw.event, mw.emotion || '平', mw.importance || 5, mw.relatedPerson || '',
+          { type: mw.type, source: mw.source, credibility: mw.credibility, location: mw.location, witnesses: mw.witnesses, participants: mw.participants, arcId: mw.arcId });
+        if (covered) covered[mw.char] = 1;
+        n++;
+      } catch(_amwE) { if (typeof _dbg === 'function') _dbg('[MemWrite] remember failed for', mw.char, _amwE); }
+    });
+    return n;
+  }
+
+  // ★通道②(sc_memwrite)真空兜底·确定性·不依赖 AI(截断/失败/静默吞均不影响)：
+  //   本回合叙事(时政记/实录/npc_actions)提到、在 GM.chars、且本回合起(m.turn>=源回合T·覆盖通道①的T与②的T+1)
+  //   尚无任何记忆的活人 NPC·补一条轻量"亲历"记忆(取含其名的叙事句·importance 4)·
+  //   保证纯叙事涉事者不因通道②截断/失败而"失忆停在开局"·跨界面(问对/朝议/图志)人格连续。
+  function _memWriteFallbackFromNarrative(p1, sourceTurn) {
+    try {
+      if (!p1 || typeof GM === 'undefined' || !GM.chars) return 0;
+      if (typeof NpcMemorySystem === 'undefined' || !NpcMemorySystem.remember) return 0;
+      var text = String(p1.shizhengji || '') + '\n' + String(p1.shilu_text || p1.zhengwen || '');
+      if (Array.isArray(p1.npc_actions)) p1.npc_actions.slice(0, 60).forEach(function(a){ if (a) text += '\n' + (a.name || '') + (a.action || '') + (a.result || '') + (a.target || ''); });
+      // 也扫势力事件/通用事件的涉事者(faction_events/events 的当事人也算本回合"经历"·扩兜底覆盖面)
+      if (Array.isArray(p1.faction_events)) p1.faction_events.slice(0, 30).forEach(function(fe){ if (fe) text += '\n' + (fe.actor || '') + (fe.action || '') + (fe.result || '') + (fe.target || ''); });
+      if (Array.isArray(p1.events)) p1.events.slice(0, 30).forEach(function(e){ if (e && e.desc) text += '\n' + String(e.desc); });
+      if (text.replace(/\s/g, '').length < 8) return 0;
+      // 判重基准=叙事源回合T：优先 post-turn 队列入队时捕获的 GM._postTurnJobs.turn(不依赖 GM.turn++ 与本兜底完成的先后·
+      //   避免时序偏移把"上回合已有任意记忆"的 NPC 误判为已覆盖而漏写)·回退 GM.turn-1(旧行为)。①tag=T·②/本兜底 tag=T+1·m.turn>=T 覆盖三者。
+      var recent = (typeof sourceTurn === 'number') ? sourceTurn
+        : (GM._postTurnJobs && typeof GM._postTurnJobs.turn === 'number') ? GM._postTurnJobs.turn
+        : (typeof GM.turn === 'number' ? Math.max(0, GM.turn - 1) : 0);
+      var sentences = text.split(/[。！？!?\n；;]/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length >= 4; });
+      var n = 0, CAP = 50;
+      for (var i = 0; i < GM.chars.length && n < CAP; i++) {
+        var ch = GM.chars[i];
+        if (!ch || !ch.name || String(ch.name).length < 2 || ch.alive === false || ch.isPlayer) continue;
+        if (text.indexOf(ch.name) < 0) continue;
+        if (Array.isArray(ch._memory) && ch._memory.some(function(m){ return m && typeof m.turn === 'number' && m.turn >= recent; })) continue;
+        var sent = null;
+        for (var j = 0; j < sentences.length; j++) { if (sentences[j].indexOf(ch.name) >= 0) { sent = sentences[j]; break; } }
+        if (!sent) continue;
+        var ev = sent.length > 48 ? sent.slice(0, 48) + '…' : sent;
+        try { NpcMemorySystem.remember(ch.name, ev, '平', 4, '', { source: 'witnessed', type: 'general', _fallback: true }); n++; } catch(_re) {}
+      }
+      if (n > 0 && typeof _dbg === 'function') _dbg('[MemWrite] 真空兜底·补 ' + n + ' 名涉事 NPC 轻量记忆(通道②未覆盖)');
+      return n;
+    } catch(_e) { return 0; }
+  }
+
   function _tmNormFactionName(v) {
     return String(v == null ? "" : v).replace(/\s+/g, "").trim();
   }
@@ -469,18 +525,50 @@
                 recordChange("characters", msCh.name || ms.name, "mood", _oldMood, msCh._mood, ms.reason || "AI推演");
               }
             }
+            // ★心绪突变须留个人记忆(方向B 结构化补漏)·否则 NPC"莫名生气/沮丧却不记得为何"·停在开局人设。
+            //   仅在有 reason 且变化不琐碎时写·情绪按新 mood·重要度按 loyalty/stress 幅度。
+            var _msLd = Math.abs(parseInt(ms.loyalty_delta) || 0), _msSd = Math.abs(parseInt(ms.stress_delta) || 0);
+            var _msMoodChanged = (typeof ms.mood === 'string' && ms.mood.trim() && ms.mood.trim() !== '平');
+            if (ms.reason && String(ms.reason).trim() && (_msMoodChanged || _msLd >= 2 || _msSd >= 2)
+                && typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
+              var _msImp = (_msLd >= 5 || _msSd >= 5) ? 6 : (_msLd >= 3 || _msSd >= 3) ? 5 : 4;
+              var _msMood = String(ms.mood || '');
+              var _msEmo = /怒|恨|愤|忿/.test(_msMood) ? '怒'
+                         : /悲|忧|沮|郁|惧|惊|惶/.test(_msMood) ? '忧'
+                         : /喜|悦|慰|敬|奋/.test(_msMood) ? '喜'
+                         : ((parseInt(ms.loyalty_delta) || 0) < 0 ? '忧' : '平');
+              try { NpcMemorySystem.remember(ms.name, String(ms.reason).slice(0, 40), _msEmo, _msImp, '', { source: 'intuition', type: 'general', _moodShift: true }); } catch(_msmE) {}
+            }
           });
         }
         // 应用隐藏关系变化
         if (pND.relationship_changes && Array.isArray(pND.relationship_changes)) {
           pND.relationship_changes.forEach(function(rc) {
             if (!rc.a || !rc.b || !rc.delta) return;
-            if (typeof AffinityMap !== 'undefined') AffinityMap.add(rc.a, rc.b, clamp(parseInt(rc.delta) || 0, -15, 15), rc.reason || '暗流');
+            var _rcD = clamp(parseInt(rc.delta) || 0, -15, 15);
+            if (typeof AffinityMap !== 'undefined') AffinityMap.add(rc.a, rc.b, _rcD, rc.reason || '暗流');
+            // ★关系变动须留记忆(方向B补漏·暗流隐于叙事外·②失败即丢)·A 记住对 B 观感因何而变·否则"疏远/亲近却不记得为何"
+            if (rc.reason && String(rc.reason).trim() && Math.abs(_rcD) >= 4
+                && typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
+              var _rcEmo = _rcD <= -8 ? '恨' : _rcD < 0 ? '忧' : _rcD >= 8 ? '敬' : '喜';
+              var _rcImp = Math.abs(_rcD) >= 10 ? 5 : 4;
+              try { NpcMemorySystem.remember(rc.a, String(rc.reason).slice(0, 40), _rcEmo, _rcImp, rc.b, { source: 'intuition', type: 'general', _relShift: true }); } catch(_rcE) {}
+            }
           });
         }
         // 隐藏行动记入事件日志
         if (pND.hidden_moves && Array.isArray(pND.hidden_moves)) {
-          pND.hidden_moves.forEach(function(hm) { addEB('暗流', hm); });
+          pND.hidden_moves.forEach(function(hm) {
+            addEB('暗流', hm);
+            // ★暗中行动者须自记其谋(方向B补漏·hidden_moves 隐于公开叙事外·兜底扫不到·②失败即彻底丢)·确定性给行动者留记忆
+            if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
+              var _hmp = (typeof _tmHiddenMoveForMemory === 'function') ? _tmHiddenMoveForMemory(hm) : { actor: '', text: '' };
+              if (_hmp.actor && _hmp.text && String(_hmp.actor).length >= 2) {
+                var _hmType = /背叛|叛|谋|阴谋|通敌|篡|弑/.test(_hmp.text) ? 'betrayal' : 'general';
+                try { NpcMemorySystem.remember(_hmp.actor, '暗中：' + String(_hmp.text).slice(0, 36), '平', 5, '', { source: 'intuition', type: _hmType, _hiddenMove: true }); } catch(_hmE) {}
+              }
+            }
+          });
         }
         // 应用级联变量效果（AI补充的连锁影响）
         if (pND.cascade_effects && typeof pND.cascade_effects === 'object') {
@@ -925,33 +1013,9 @@
                 }
               });
             }
-            // 应用 memory_writes
-            var _mwCount = 0;
-            if (Array.isArray(pMW.memory_writes)) {
-              pMW.memory_writes.forEach(function(mw) {
-                if (!mw || !mw.char || !mw.event) return;
-                if (typeof NpcMemorySystem === 'undefined' || !NpcMemorySystem.remember) return;
-                try {
-                  NpcMemorySystem.remember(
-                    mw.char,
-                    mw.event,
-                    mw.emotion || '平',
-                    mw.importance || 5,
-                    mw.relatedPerson || '',
-                    {
-                      type: mw.type,
-                      source: mw.source,
-                      credibility: mw.credibility,
-                      location: mw.location,
-                      witnesses: mw.witnesses,
-                      participants: mw.participants,
-                      arcId: mw.arcId
-                    }
-                  );
-                  _mwCount++;
-                } catch(_mwE) { _dbg('[MemWrite] remember failed for', mw.char, _mwE); }
-              });
-            }
+            // 应用 memory_writes(covered 记已录入 char·供截断续写去重)
+            var _mwCovered = {};
+            var _mwCount = _applyMwList(pMW.memory_writes, _mwCovered);
             // 应用 causal_edges
             if (Array.isArray(pMW.causal_edges) && pMW.causal_edges.length > 0) {
               if (!GM._causalGraph) GM._causalGraph = { nodes: [], edges: [] };
@@ -970,9 +1034,36 @@
               if (GM._causalGraph.edges.length > 300) GM._causalGraph.edges = GM._causalGraph.edges.slice(-300);
             }
             _dbg('[MemWrite] 回写', _mwCount, '条 NPC 记忆·', (pMW.arc_updates||[]).length, '个 arc 更新·', (pMW.causal_edges||[]).length, '条因果');
+            // ★截断续写(方向B加强)·繁忙回合 sc_memwrite 输出易被 length 截断→后半 memory_writes 丢失·
+            //   检测到 length/max_tokens 截断且已录入部分→补【一次】续写·告知已录入者令其只补未录入的涉事 NPC(去重·不重复)·
+            //   再截断则止(交由前四层兜底:①结构化/心绪/暗流 + 叙事真空兜底)。
+            var _mwFinish = (dataMW && dataMW.choices && dataMW.choices[0] && (dataMW.choices[0].finish_reason || dataMW.choices[0].stop_reason)) || '';
+            if ((_mwFinish === 'length' || _mwFinish === 'max_tokens') && Object.keys(_mwCovered).length > 0) {
+              try {
+                var _covList = Object.keys(_mwCovered);
+                var _contUser = tpMW + '\n\n【续写·上次输出因长度截断】已录入下列 NPC 的记忆(切勿重复)：' + _covList.join('、')
+                  + '\n请继续，只输出**尚未录入**的涉事 NPC 的 memory_writes(不含已录入者)。JSON：{"memory_writes":[ … ]}';
+                var _contBody = {
+                  model: P.ai.model || "gpt-4o",
+                  messages: [{ role: "system", content: _maybeCacheSys(sysPFor('memwrite')) }, { role: "user", content: _contUser }],
+                  temperature: 0.5,
+                  max_tokens: _mwBudget
+                };
+                if (_modelFamily === 'openai') _contBody.response_format = { type: 'json_object' };
+                var _contCall = await _callFollowupAI(_contBody, { id: 'sc_memwrite_cont', label: 'NPC记忆回写·续写', priority: 'low' });
+                var _contParse = await _parseOrRepairJsonResult(_contCall.raw || '', _contCall.data, 'NPC记忆回写·续写', { url: url, key: P.ai.key, body: _contBody, expectedKeys: ['memory_writes'], priority: 'low' });
+                var _contP = _contParse ? _contParse.parsed : null;
+                if (_contP && Array.isArray(_contP.memory_writes)) {
+                  var _contN = _applyMwList(_contP.memory_writes, _mwCovered, true);
+                  _dbg('[MemWrite] 截断续写·补录', _contN, '条(已录入', _covList.length, '人)');
+                }
+              } catch(_contErr) { _dbg('[MemWrite] 续写失败(不影响·后有兜底):', _contErr); }
+            }
           }
         }
       } catch(eMW) { _dbg('[MemWrite] 失败:', eMW); /* P8.1 post-turn·静默失败不抛 */ }
+      // ★真空兜底·置于 catch 之后·无论通道②成功/截断/静默失败均执行·补②漏掉的叙事涉事 NPC(不依赖 AI)
+      try { _memWriteFallbackFromNarrative(p1, (GM._postTurnJobs && typeof GM._postTurnJobs.turn === 'number') ? GM._postTurnJobs.turn : undefined); } catch(_fbE) { try { _dbg('[MemWrite] fallback 失败:', _fbE); } catch(__) {} }
       }); }); // end SC_MEMWRITE (queued post-turn)
 
       // ── Branch B · 势力·经济·军事专项（_runSubcallBatch 已内部 concurrency=3）──

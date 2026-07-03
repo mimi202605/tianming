@@ -868,6 +868,43 @@
       if (_chrArch && _chrArch !== _lastAft) tp += "\u3010\u65E9\u671F\u53D9\u4E8B\u5F52\u6863\u3011\n" + _chrArch.summary + "\n";
       if (_lastAft) tp += "\u3010\u4E0A\u56DE\u56DE\u987E\u3011\n" + _lastAft.summary + "\n";
     }
+    // \u2605\u4E0A\u56DE\u5408\u65F6\u653F\u8BB0/\u5B9E\u5F55\u539F\u6587\u00B7\u4EE4\u672C\u56DE\u5408\u53D9\u4E8B\u627F\u63A5\u5B9E\u9645\u60C5\u8282(\u975E\u4EC5 200 \u5B57\u6458\u8981)\u00B7\u6CBB"\u65F6\u653F\u8BB0/\u5B9E\u5F55\u4E0E\u63A8\u6F14\u65AD\u88C2"\u00B7
+    //   AI \u987B\u5EF6\u7EED\u672A\u51B3\u4E4B\u4E8B/\u60C5\u8282\u7EBF\u00B7\u4E0D\u5F97\u51ED\u7A7A\u9057\u5FD8\u6216\u524D\u540E\u77DB\u76FE\u3002\u6309\u4E0A\u4E0B\u6587\u9884\u7B97\u622A\u65AD(\u5C0F\u4E0A\u4E0B\u6587\u5C11\u7ED9\u00B7\u5927\u4E0A\u4E0B\u6587\u591A\u7ED9)\u3002
+    if ((Array.isArray(GM._recentNarrative) && GM._recentNarrative.length > 0) || (Array.isArray(GM._narrativeDigest) && GM._narrativeDigest.length > 0)) {
+      var _rnCp = (typeof getCompressionParams === 'function') ? getCompressionParams() : null;
+      var _rnScale = (_rnCp && _rnCp.scale) ? _rnCp.scale : 1;
+      var _rnBudget = Math.max(700, Math.min(2000, Math.round(1100 * _rnScale)));
+      // \u957F\u7EBF\u53D9\u4E8B\u7EFC\u8FF0\u00B7\u538B\u7F29\u6897\u6982\u00B7\u628A\u63E1\u957F\u671F\u8D70\u5411\u4E0E\u672A\u4E86\u4E4B\u5C40\u00B7\u9632\u957F\u5F27\u65AD\u88C2\u3002\u6765\u6E90\u4E24\u6BB5\u00B7\u65E9\u2192\u8FD1\u8FDE\u7EED\u8986\u76D6"\u8D85\u51FA\u8FD13\u56DE\u5408\u5168\u6587\u6CE8\u5165"\u7684\u5168\u90E8\u56DE\u5408(\u4E0D\u7559\u7A7A\u6863)\uFF1A
+      //   \u2460digest(\u66F4\u65E9\u00B7\u5DF2\u6324\u51FA6\u56DE\u5408\u539F\u6587\u7A97) \u2461\u539F\u6587\u7A97\u5185\u4F46\u8D85\u51FA\u8FD13\u5168\u6587\u6CE8\u5165\u7684\u56DE\u5408(N-4~N-6)\u53D6\u5176 summary\u00B7\u7D27\u63A5\u5168\u6587\u00B7\u65E0\u7F1D\u8854\u63A5\u3002
+      var _digSrc = (GM._narrativeDigest || []).slice();
+      var _rnMid = (GM._recentNarrative || []).slice(0, -3);   // \u5B58\u4E86\u539F\u6587\u4F46\u672A\u5168\u6587\u6CE8\u5165\u7684\u8F83\u8FD1\u56DE\u5408\u2192\u7528\u6458\u8981\u8865\u8FDB\u7EFC\u8FF0
+      for (var _mi = 0; _mi < _rnMid.length; _mi++) { if (_rnMid[_mi]) _digSrc.push({ turn: _rnMid[_mi].turn, summary: _rnMid[_mi].summary || '' }); }
+      if (_digSrc.length > 0) {
+        var _digTxt = _digSrc.map(function(d){ return 'T' + (d.turn || '?') + '\uFF1A' + (d.summary || ''); }).join('\uFF1B');
+        var _digBud = Math.max(500, Math.min(1600, Math.round(800 * _rnScale + 300)));
+        // \u9884\u7B97\u4E0D\u8DB3\u65F6\u4FDD\u7559\u5C3E\u90E8(\u8F83\u8FD1\u00B7\u7D27\u63A5\u5168\u6587\u66F4\u8FDE\u8D2F)
+        var _digOut = _digTxt.length > _digBud ? _digTxt.slice(-_digBud) : _digTxt;
+        tp += '\n\u3010\u957F\u7EBF\u53D9\u4E8B\u7EFC\u8FF0\uFF08\u66F4\u65E9\u5404\u56DE\u5408\u6897\u6982\u00B7\u628A\u63E1\u957F\u671F\u8D70\u5411\u4E0E\u672A\u4E86\u4E4B\u5C40\uFF0C\u672C\u56DE\u5408\u53D9\u4E8B\u52FF\u4E0E\u4E4B\u77DB\u76FE\uFF09\u3011\n' + _digOut + '\n';
+      }
+      // \u8FD1\u6700\u591A 3 \u56DE\u5408\u539F\u6587(\u6700\u65B0\u56DE\u5408\u5168\u989D\u00B7\u524D\u4E24\u56DE\u5408\u5404\u534A\u989D)\u00B7\u4EE4 AI \u770B\u5230\u8DE8\u56DE\u5408\u53D9\u4E8B\u5F27\u00B7\u60C5\u8282\u5EF6\u7EED\u66F4\u4E0D\u65AD\u88C2
+      if (Array.isArray(GM._recentNarrative) && GM._recentNarrative.length > 0) {
+        var _rnSlice = GM._recentNarrative.slice(-3);
+        var _rnBlocks = [];
+        for (var _rni = _rnSlice.length - 1; _rni >= 0; _rni--) {   // \u4ECE\u6700\u65B0\u5F80\u56DE\u6392
+          var _rnItem = _rnSlice[_rni];
+          if (!_rnItem || !(_rnItem.shizhengji || _rnItem.shilu)) continue;
+          var _isLatest = (_rni === _rnSlice.length - 1);
+          var _bud = _isLatest ? _rnBudget : Math.round(_rnBudget / 2);
+          var _rnT = String(_rnItem.shizhengji || '').slice(0, _bud);
+          if (_rnItem.shilu && _isLatest) _rnT += '\n\u3014\u5B9E\u5F55\u3015' + String(_rnItem.shilu).slice(0, Math.round(_bud / 2));
+          var _rnLbl = _isLatest ? '\u00B7\u4E0A\u56DE\u5408' : ('\u00B7\u524D' + (_rnSlice.length - 1 - _rni) + '\u56DE\u5408');
+          _rnBlocks.push('\u3016T' + (_rnItem.turn || '?') + _rnLbl + '\u3017\n' + _rnT);
+        }
+        if (_rnBlocks.length) {
+          tp += '\n\u3010\u8FD1\u56DE\u5408\u65F6\u653F\u8BB0\u00B7\u5B9E\u5F55\u539F\u6587\uFF08\u672C\u56DE\u5408\u53D9\u4E8B\u987B\u627F\u63A5\u5176\u4E2D\u672A\u51B3\u4E4B\u4E8B\u3001\u5EF6\u7EED\u60C5\u8282\u7EBF\u4E0E\u4EBA\u7269\u52A8\u5411\uFF0C\u6536\u675F\u6216\u63A8\u8FDB\u5DF2\u5F00\u4E4B\u4F0F\u7B14\uFF0C\u4E0D\u5F97\u51ED\u7A7A\u9057\u5FD8\u6216\u524D\u540E\u77DB\u76FE\uFF09\u3011\n' + _rnBlocks.join('\n') + '\n';
+        }
+      }
+    }
 
     // —— 层4: 辅助信息（宰辅建言 + 官制 + 科举 + 地图 + 参考）——
     var suggestions = generateChancellorSuggestions();
@@ -953,10 +990,16 @@
         if (Array.isArray(c._arcs) && c._arcs.some(function(_a){ return _a && _a.phase !== 'resolved'; })) _heat += 12;
         if (/[怒惧悲恨惊狂]/.test(c._mood || '平')) _heat += 8;
         if (Array.isArray(c._memory)) {
-          for (var _hi = c._memory.length - 1; _hi >= 0 && _hi >= c._memory.length - 4; _hi--) {
+          // 近忆热度按最近2回合内记忆的最高重要度分档(不止 imp>=8)·令刚经历中等事件者也升入深度名额·
+          // 闭合"经历→被选中→反应"环(补强1保证选中后最近记忆必进·此处保证刚经历者更易被选中·2026-07-03)
+          var _freshImp = 0;
+          for (var _hi = c._memory.length - 1; _hi >= 0 && _hi >= c._memory.length - 6; _hi--) {
             var _hmem = c._memory[_hi];
-            if (_hmem && (_hmem.importance || 0) >= 8 && ((GM.turn || 0) - (_hmem.turn || 0)) <= 2) { _heat += 10; break; }
+            if (_hmem && ((GM.turn || 0) - (_hmem.turn || 0)) <= 2 && (_hmem.importance || 0) > _freshImp) _freshImp = (_hmem.importance || 0);
           }
+          if (_freshImp >= 8) _heat += 10;
+          else if (_freshImp >= 5) _heat += 6;
+          else if (_freshImp >= 3) _heat += 3;
         }
         weight += (_heat > 25 ? 25 : _heat);
         candidates.push({ ch: c, weight: weight, rk: _rk });
@@ -1015,6 +1058,19 @@
         var top = sorted.filter(function(m){
           return (m.importance||0) >= impMin || ((m.importance||0) >= 6 && (m.turn||0) >= _recentTurnGate);
         }).slice(0, perChar);
+        // ★2026-07-03 闭合「经历→记忆→推演→反应」环:保证"最近1回合的经历"必进推演(哪怕低 importance·如叙事兜底 imp4)。
+        //   否则低上下文(impMin 6-8)+recency 仅放行 imp>=6 会把新近轻记忆挡在推演外·NPC 对上回合的事毫无反应=停在开局。
+        //   取最近回合中(turn 最新、同 turn 取 importance 最高)一条·若未入选则占最后 1 槽(perChar<=1 时独占·定义性伤疤已在 <self>)。
+        var _lastTurnGate = (GM.turn || 0) - 1;
+        var _freshest = null;
+        for (var _fi = 0; _fi < c._memory.length; _fi++) {
+          var _fm = c._memory[_fi];
+          if (!_fm || (_fm.turn||0) < _lastTurnGate) continue;
+          if (!_freshest || (_fm.turn||0) > (_freshest.turn||0) || ((_fm.turn||0) === (_freshest.turn||0) && (_fm.importance||0) > (_freshest.importance||0))) _freshest = _fm;
+        }
+        if (_freshest && top.indexOf(_freshest) < 0) {
+          top = (perChar <= 1) ? [_freshest] : top.slice(0, perChar - 1).concat([_freshest]);
+        }
         top.forEach(function(m){
           if (heartCount >= totalCap) return;
           var attrs = [
@@ -1081,7 +1137,18 @@
         _neg.forEach(function(_cd2) {
           var c2 = _cd2.ch;
           var t2 = (typeof _offFormatCharTitles === 'function') ? (_offFormatCharTitles(c2, { fallback: c2.officialTitle || c2.title || '' }) || c2.officialTitle || c2.title || '') : (c2.officialTitle || c2.title || '');
-          _nl.push('  · ' + c2.name + (t2 ? '（' + t2 + '）' : '') + '·' + (c2.faction || '') + '·心绪' + (c2._mood || '平'));
+          // 附一条定义性记忆(顶级伤疤 or 最高重要度近忆)·令 AI 知其心结·不至于停在开局人设(治方向A 名额饥饿·重臣即便未入深度名额也带记忆)
+          var _defMem = '';
+          try {
+            if (Array.isArray(c2._scars) && c2._scars.length) {
+              var _sc = c2._scars[c2._scars.length - 1];
+              if (_sc) _defMem = String(_sc.event || '').slice(0, 26) + (_sc.emotion ? '[' + _sc.emotion + ']' : '');
+            } else if (Array.isArray(c2._memory) && c2._memory.length) {
+              var _mm = c2._memory.slice().sort(function(a, b){ return (b.importance || 0) - (a.importance || 0); })[0];
+              if (_mm && _mm.event) _defMem = String(_mm.event).slice(0, 26);
+            }
+          } catch (_dmE) {}
+          _nl.push('  · ' + c2.name + (t2 ? '（' + t2 + '）' : '') + '·' + (c2.faction || '') + '·心绪' + (c2._mood || '平') + (_defMem ? '·记忆「' + _defMem + '」' : ''));
         });
         tp += _nl.join(_NL) + _NL;
       })();

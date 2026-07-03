@@ -88,7 +88,7 @@ assert(followupSrc.indexOf('var _specialtySummary = { sc15: "", sc16: "", sc17: 
   'parallel specialty summaries use deterministic slots');
 assert(followupSrc.indexOf('function _buildLateSpecialtySummary()') > 0 &&
        followupSrc.indexOf('var _branchSpecialtySummary = _buildLateSpecialtySummary()') > 0 &&
-       followupSrc.indexOf('if (_branchSpecialtySummary) p1Summary += _branchSpecialtySummary;') > 0,
+       followupSrc.indexOf('if (_branchSpecialtySummary) _ps += _branchSpecialtySummary;') > 0,
   'sc2/sc27 share the late specialty summary builder');
 
 assert(followupSrc.indexOf("_queuePostTurnSubcall('sc_consolidate'") >= 0,
