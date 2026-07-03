@@ -27,6 +27,8 @@ function _yq2_openSetup() {
   // 候选：同势力 + 高忠诚 + 在玩家所在地（御前密议·异族不入）
   var candidates = (GM.chars||[]).filter(function(c) {
     if (c.alive === false || c.isPlayer || !_isAtCapital(c) || !_isPlayerFactionChar(c)) return false;
+    // 受限者不得入御前密议(玩家报:下狱者仍能上朝议事)·下狱/流放/逃亡/致仕/丁忧/病危·走共享全变体谓词
+    if (typeof _cyCannotAttend === 'function' && _cyCannotAttend(c)) return false;
     return (c.loyalty||50) >= 50; // 至少中等忠诚可入密议
   }).sort(function(a,b) {
     // 按"机密适合度"排序：忠*0.5 + 品*0.3 + 恩遇*0.2
@@ -212,6 +214,8 @@ async function _yq2_startRoundQuery() {
         _yq2_emp(_pl);
         if (CY._yq2.record !== 'secret') _cy_jishiAdd('yuqian', CY._yq2.topic, '皇帝', _pl, { playerInterject: true, round: _rd });
         CY._yq2._transcript += '\n皇帝：' + _pl;
+        // 令心腹应答皇帝插言(治御前只塞 transcript 无人回应)·智能选人·秘议不入纪事
+        try { await _cyInterjectRespond(_pl, { kind: 'yuqian', topic: CY._yq2.topic, attendees: CY._yq2.advisors, lastSpeaker: CY._yq2._lastSpeaker, round: _rd, noJishi: CY._yq2.record === 'secret' }); } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}
       }
       var nm = CY._yq2.advisors[i];
       await _yq2_oneAdvisorSpeak(nm, _rd);
@@ -224,6 +228,7 @@ async function _yq2_startRoundQuery() {
 
 async function _yq2_oneAdvisorSpeak(name, roundNum) {
   roundNum = roundNum || 1;
+  if (CY._yq2) CY._yq2._lastSpeaker = name;  // 记上一发言者·供玩家插言"卿/你说"代词消解
   var ch = findCharByName(name);
   if (!ch) return;
   // B3·坦白度从预计算表取·无则兜底

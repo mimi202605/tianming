@@ -24,7 +24,7 @@ function _ty2_openSetup() {
     if (!c) return true;
     if (c.alive === false || c.dead) return true;
     if (c.isPlayer) return true;
-    if (c._imprisoned || c.imprisoned || c._inPrison) return true;
+    if (c._imprisoned || c.imprisoned || c._inPrison || c._jailed || c._inJail) return true;
     if (c._exiled || c.exiled || c._banished) return true;
     if (c._status === 'imprisoned' || c._status === 'exiled' || c._status === 'fled' || c._status === 'retired' || c._status === 'mourning' || c._status === 'sick_grave') return true;
     if (c._retired || c.retired) return true;  // 致仕
@@ -92,6 +92,7 @@ function _ty2_openSetup() {
   // 额外召人：仅同势力 & 在玩家所在地（外邦使臣/远地官员不入廷议）
   var extraPool = (GM.chars||[]).filter(function(c){
     if (c.alive === false || c.isPlayer) return false;
+    if (_cannotAttend(c)) return false;   // 下狱/流放/致仕/逃亡/丁忧/病危者不得被额外召入廷议(玩家报:下狱还能上朝)
     if (!_isAtCapital(c) || !_isPlayerFactionChar(c)) return false;
     if (defaultAttendees.some(function(d){return d.name===c.name;})) return false;
     return true;
@@ -496,6 +497,7 @@ async function _ty2_phaseInitialRound() {
 
 /** 生成一位与议者的一轮发言 */
 async function _ty2_genOneSpeech(name, roundNum, prevSpeeches) {
+  if (CY._ty2) CY._ty2._lastSpeaker = name;  // 记上一发言者·供玩家插言"卿/你说"代词消解
   if (!P.ai || !P.ai.key) {
     addCYBubble(name, '（臣以为……）', false);
     _cy_jishiAdd('tinyi', CY._ty2.topic, name, '（臣以为……）', { round: roundNum });
@@ -780,29 +782,14 @@ async function _ty2_playerInterjectEarly() {
 
 async function _ty2_playerTriggeredResponse(playerText) {
   if (!CY._ty2) return;
-  // 挑 2-3 人回应
-  var responders = CY._ty2.attendees.slice().sort(function(){return Math.random()-0.5;}).slice(0, Math.min(3, CY._ty2.attendees.length));
-  var prevSpeeches = [];
-  for (var i = 0; i < responders.length; i++) {
-    var prompt = '皇帝在廷议中插言：「' + playerText + '」\n';
-    prompt += '议题：' + CY._ty2.topic + '\n';
-    var ch = findCharByName(responders[i]);
-    prompt += '你扮演' + responders[i] + '（' + (ch && ch.officialTitle || '') + '），当前立场:' + CY._ty2.stances[responders[i]].current + '\n';
-    prompt += '性格：' + (ch && ch.personality || '') + '，忠' + ((ch && ch.loyalty)||50) + '\n';
-    prompt += '请回应皇帝此言，可能：顺帝意/进谏/转移话题/重申立场' + (typeof _aiDialogueWordHint === 'function' ? _aiDialogueWordHint() : '') + '\n';
-    prompt += '返回 JSON：{"newStance":"...(可能因此轮变化)","line":"..."}';
-    try {
-      var raw = await callAI(prompt, (typeof _aiDialogueTok==='function'?_aiDialogueTok("cy", 1):400), null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);  // 廷议走次 API
-      var obj = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
-      if (obj && obj.line) {
-        addCYBubble(responders[i], '〔回言〕' + escHtml(obj.line), false, true);
-        if (obj.newStance && CY._ty2.stances[responders[i]]) {
-          CY._ty2.stances[responders[i]].current = obj.newStance;
-        }
-        _cy_jishiAdd('tinyi', CY._ty2.topic, responders[i], obj.line, { round: CY._ty2.roundNum });
-      }
-    } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}
-  }
+  // 智能选人回应(点名 > 代词指上一发言者 > 相关者)·走共享 _cyInterjectRespond·非随机挑人
+  try {
+    await _cyInterjectRespond(playerText, {
+      kind: 'tinyi', topic: CY._ty2.topic,
+      attendees: CY._ty2.attendees, stances: CY._ty2.stances,
+      lastSpeaker: CY._ty2._lastSpeaker, round: CY._ty2.roundNum
+    });
+  } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}
   _ty2_render();
 }
 
@@ -823,6 +810,15 @@ async function _ty2_startDebate() {
 
   var prevSpeeches = [];
   for (var i = 0; i < speakers.length; i++) {
+    if (CY._abortChaoyi) { CY._abortChaoyi = false; break; }
+    // 玩家中途插言·辩论阶段也可插话(治"只有第一阶段能插")
+    if (CY._pendingPlayerLine) {
+      var _pl = CY._pendingPlayerLine; CY._pendingPlayerLine = null;
+      addCYBubble('皇帝', _pl, false);
+      _cy_jishiAdd('tinyi', CY._ty2.topic, '皇帝', _pl, { round: CY._ty2.roundNum, playerInterject: true });
+      if (Array.isArray(CY._ty2._playerInterjects)) CY._ty2._playerInterjects.push({ round: CY._ty2.roundNum, text: _pl });
+      try { await _ty2_playerTriggeredResponse(_pl); } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}
+    }
     var r = await _ty2_genOneSpeech(speakers[i], CY._ty2.roundNum, prevSpeeches);
     if (r) prevSpeeches.push({ name: speakers[i], stance: r.stance, line: r.line });
   }
