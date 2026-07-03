@@ -49,8 +49,9 @@ setTimeout(() => {
     const GM = sandbox.GM = {
       running:true, sid, turn:1, busy:false,
       vars:{}, rels:{}, evtLog:[], officeChanges:[], qijuHistory:[],
-      facs:(sandbox.P.factions||[]).filter(f=>f.sid===sid).map(f=>Object.assign({},f)),
-      chars:(sandbox.P.characters||[]).filter(c=>c.sid===sid).map(c=>Object.assign({},c)),
+      // 官方剧本已改自注册单对象形态(角色嵌在 scenario.characters)·两种形态都兼容
+      facs:((sc&&sc.factions)||(sandbox.P.factions||[]).filter(f=>f.sid===sid)).map(f=>Object.assign({},f)),
+      chars:((sc&&sc.characters)||(sandbox.P.characters||[]).filter(c=>c.sid===sid)).map(c=>Object.assign({},c)),
       letters:[], _pendingNpcLetters:[], _letterSuspects:[], _courierStatus:{},
       _routeDisruptions:[], _capital:(sc.playerInfo&&sc.playerInfo.capital)||'京师',
       adminHierarchy: sc.adminHierarchy || sandbox.P.adminHierarchy,

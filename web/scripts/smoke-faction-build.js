@@ -130,7 +130,8 @@ function setup(switchOn) {
   setup(true);
   var lines = FND._formatBuildOpportunities({ name: '后金', treasury: { money: 88000 } });
   var joined = lines.join('\n');
-  ok(joined.indexOf('库银') >= 0 && joined.indexOf('量入为出') >= 0, '感知·财力门槛(库银/量入为出·让 LLM 量力而拟)');
+  // 运行时措辞为权威：提示词实文是「本派库藏约…」·spec 原认死「库银」已过时
+  ok(joined.indexOf('库藏') >= 0 && joined.indexOf('量入为出') >= 0, '感知·财力门槛(库藏/量入为出·让 LLM 量力而拟)');
 })();
 
 console.log('\n[smoke-faction-build] ' + pass + '/' + (pass + fail) + ' 通过' + (fail ? ('·' + fail + ' 失败') : ''));

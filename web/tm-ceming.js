@@ -107,11 +107,11 @@
     if (!ch) return;
     try {
       var playerFac = (typeof P !== 'undefined' && P.playerInfo && P.playerInfo.factionName) || '';
-      if (playerFac && ch.faction && ch.faction !== playerFac) {
-        ch._historicalFaction = ch._historicalFaction || ch.faction;
-        ch.faction = playerFac;
-      } else if (playerFac && !ch.faction) {
-        ch.faction = playerFac;
+      // 转籍走 FactionMembership 单一写口（审计/_factionHistory/索引增量/事件总线一处即全）·禁直写 ch.faction
+      if (playerFac && ch.faction !== playerFac &&
+          typeof TM !== 'undefined' && TM.FactionMembership && TM.FactionMembership.assignChar) {
+        if (ch.faction) ch._historicalFaction = ch._historicalFaction || ch.faction;
+        TM.FactionMembership.assignChar(ch, playerFac, { reason: '策名征辟·入仕玩家势力' });
       }
       if (!ch.party && typeof GM !== 'undefined' && Array.isArray(GM.parties)) {
         var hint = String((profileLike && (profileLike.historicalFaction || profileLike.faction || profileLike.party)) || '');

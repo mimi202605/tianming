@@ -27,7 +27,8 @@ assert(inbox.indexOf("'letter-target-desk'") < 0, '展阅不应走 letter-target
 assert(inbox.indexOf("'letter-expand-desk'") < 0, '不应再有旧的就地展开 letter-expand-desk');
 assert(inbox.indexOf("actionBtn('展阅', 'letter-read-desk'") >= 0, '展阅按钮文案+动作正确');
 // 阅览浮层函数
-assert(inbox.indexOf('function openLetterReadOverlay(letter)') >= 0, '须有 openLetterReadOverlay 浮层函数');
+// 前缀匹配·签名已演进为 (letter, navList, navIdx)·验特征不验精确形参表
+assert(inbox.indexOf('function openLetterReadOverlay(letter') >= 0, '须有 openLetterReadOverlay 浮层函数');
 assert(/openDeskOverlay\('tm-letter-read-overlay'/.test(inbox), '须经 openDeskOverlay 弹出(自带 scrim+点外关闭)');
 assert(/fullHongyanText\(content/.test(inbox), '浮层须 fullHongyanText 显示正文全文(pre-wrap·不截断)');
 assert(inbox.indexOf('data-close-bridge="1"') >= 0, '浮层须有关闭按钮(data-close-bridge)');

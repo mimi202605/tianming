@@ -144,6 +144,8 @@ const checks = [
   { name: 'memory-turn-inference-projection', file: 'smoke-memory-turn-inference-projection.js', estSec: 1, expectExit: 0 },
   { name: 'memory-legacy-source-migration', file: 'smoke-memory-legacy-source-migration.js', estSec: 1, expectExit: 0 },
   { name: 'memory-focus-relevance', file: 'smoke-memory-focus-relevance.js', estSec: 1, expectExit: 0 },
+  { name: 'memory-loop-closure', file: 'smoke-memory-loop-closure.js', estSec: 1, expectExit: 0 },
+  { name: 'memory-pipeline-continuity', file: 'smoke-memory-pipeline-continuity.js', estSec: 1, expectExit: 0 },
   { name: 'memory-character-stance', file: 'smoke-memory-character-stance.js', estSec: 1, expectExit: 0 },
   { name: 'memory-stance-netting', file: 'smoke-memory-stance-netting.js', estSec: 1, expectExit: 0 },
   { name: 'memory-forget', file: 'smoke-memory-forget.js', estSec: 1, expectExit: 0 },

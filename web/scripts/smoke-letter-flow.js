@@ -133,8 +133,9 @@ setTimeout(() => {
       GM.rels = GM.rels || {};
       const allP = sandbox.P;
       const sid = 'sc-tianqi7-1627';
-      GM.facs = (allP.factions || []).filter(f => f.sid === sid).map(f => Object.assign({}, f));
-      GM.chars = (allP.characters || []).filter(c => c.sid === sid).map(c => Object.assign({}, c));
+      // 官方剧本已改自注册单对象形态(角色嵌在 scenario.characters·非平铺 P.characters+sid)·两种形态都兼容
+      GM.facs = ((sc && sc.factions) || (allP.factions || []).filter(f => f.sid === sid)).map(f => Object.assign({}, f));
+      GM.chars = ((sc && sc.characters) || (allP.characters || []).filter(c => c.sid === sid)).map(c => Object.assign({}, c));
       GM.letters = [];
       GM._pendingNpcLetters = [];
       GM._letterSuspects = [];

@@ -146,6 +146,7 @@ console.log('— §C · 策名入局接线(行为·本地路) —');
     var p = sb.HISTORICAL_CHAR_PROFILES[id];
     return { name: p.name, faction: (id === 'p2') ? '塞北汗庭' : '', socialClass: '文士' };
   };
+  load(sb, 'tm-faction-membership.js');   // 转籍已收口到 FactionMembership 单一写口(2026-07-04)·沙箱须与运行时同形态
   load(sb, 'tm-ceming.js');
   return (async function() {
     var r1 = await sb.TM.ceming.summonByProfile('p1');

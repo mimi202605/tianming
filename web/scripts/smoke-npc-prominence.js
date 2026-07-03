@@ -38,7 +38,8 @@ function extract(startMark, endMark) {
   if (b < 0) throw new Error('找不到终点: ' + endMark);
   return PROMPT.slice(a, b + endMark.length);
 }
-const scoringSrc = extract('var candidates = [];', 'candidates = candidates.slice(0, maxChars);');
+// 起点前移到 _restStatus：a77989ee 在 candidates 块前新增 _restStatus/_edictHay 辅助·提取须连它们一起(否则 eval ReferenceError)
+const scoringSrc = extract('function _restStatus(c){', 'candidates = candidates.slice(0, maxChars);');
 const negSrc = extract('(function _injectNeglectedAuthority()', '})();');
 
 // ── 真 resolveRankLevel ──
