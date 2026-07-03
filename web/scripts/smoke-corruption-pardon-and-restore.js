@@ -20,6 +20,7 @@ const h = createHarness({
   random: function() { return 0.5; }
 });
 
+h.load('tm-fiscal-engine.js');   // 国库出入已收口走真账(2026-07-04)·沙箱须与运行时同形态
 h.load('tm-corruption-engine.js');
 
 const CE = h.context.CorruptionEngine;

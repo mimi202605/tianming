@@ -421,11 +421,9 @@
     // 内帑接济帑廪：把 guokuRescue 实际加给国库（之前只算数字未入账）
     var rescueAnnual = safe(expBreakdown.guokuRescue, 0);
     var rescueThisPeriod = (rescueAnnual / 12) * mr;
-    if (rescueThisPeriod > 0 && GM.guoku) {
-      GM.guoku.balance = (GM.guoku.balance || 0) + rescueThisPeriod;
-      if (GM.guoku.ledgers && GM.guoku.ledgers.money) {
-        GM.guoku.ledgers.money.stock = (GM.guoku.ledgers.money.stock || 0) + rescueThisPeriod;
-      }
+    if (rescueThisPeriod > 0 && typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) {
+      // 入库走 FiscalEngine 真账(2026-07-04 收口)·手工双账同步退役
+      FiscalEngine.addToGuoku({ money: rescueThisPeriod }, '内帑济国用');
       n._annualRescueAmount = 0;  // 重置一次性接济额
     }
 
@@ -583,7 +581,8 @@
       amount = amount || 100000;
       if (!GM.guoku) return { success: false, reason: '帑廪未就绪' };
       if (GM.guoku.balance < amount) return { success: false, reason: '帑廪不足' };
-      GM.guoku.balance -= amount;
+      // 国库侧走 FiscalEngine 真账(2026-07-04 收口)
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: amount }, '拨入内帑');
       GM.neitang.balance += amount;
       if (typeof addEB === 'function') addEB('朝代', '帑廪调拨 ' + Math.round(amount/10000) + ' 万两入内帑', { credibility: 'high' });
       return { success: true };
@@ -596,7 +595,7 @@
       if (GM.neitang.balance < amount) return { success: false, reason: '内帑不足' };
       if (!GM.guoku) return { success: false, reason: '帑廪未就绪' };
       GM.neitang.balance -= amount;
-      GM.guoku.balance += amount;
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) FiscalEngine.addToGuoku({ money: amount }, '内帑济国用'); // 收口·走真账
       GM.neitang._annualRescueAmount = (GM.neitang._annualRescueAmount || 0) + amount;
       // 皇家德政 → 皇威+ 民心+
       if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 3);
@@ -1140,11 +1139,11 @@
 
     // 默认出帑廪粮（明代）
     var dest = rcp.destination || 'guoku.grain';
-    if (dest === 'guoku.grain' && GM.guoku && GM.guoku.ledgers && GM.guoku.ledgers.grain) {
-      GM.guoku.ledgers.grain.stock = Math.max(0, GM.guoku.ledgers.grain.stock - monthlyCost / 5);
-      // 粮价 5 两/石，等价金额
-    } else if (GM.guoku) {
-      GM.guoku.balance -= monthlyCost;
+    // 宗禄支出走 FiscalEngine 真账(2026-07-04 收口)·粮价 5 两/石等价折算
+    if (dest === 'guoku.grain' && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) {
+      FiscalEngine.spendFromGuoku({ grain: monthlyCost / 5 }, '宗禄');
+    } else if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) {
+      FiscalEngine.spendFromGuoku({ money: monthlyCost }, '宗禄');
     }
 
     // 崩溃触发
@@ -1277,10 +1276,8 @@
       return path === 'neitang.money' || path === 'neicang.money';
     }
     function syncCashMirrors() {
-      if (GM.guoku && typeof GM.guoku.balance === 'number') {
-        GM.guoku.money = GM.guoku.balance;
-        if (GM.guoku.ledgers && GM.guoku.ledgers.money) GM.guoku.ledgers.money.stock = GM.guoku.balance;
-      }
+      // 国库侧对账走 FiscalEngine(2026-07-04 收口)·空扣账=纯 reconcile(ledger↔balance 单一真相)
+      try { if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({}, '对账'); } catch (_e) {}
       if (GM.neitang && typeof GM.neitang.balance === 'number') {
         GM.neitang.money = GM.neitang.balance;
         if (GM.neitang.ledgers && GM.neitang.ledgers.money) GM.neitang.ledgers.money.stock = GM.neitang.balance;
@@ -1302,13 +1299,14 @@
         if (tr.mode === 'fixed') amt = (tr.amount || 0) * mr;
         else if (tr.mode === 'percent') amt = (tr.percent || 0) * ((GM.guoku && GM.guoku.monthlyIncome) || 0) * mr;
         if (amt > 0 && GM.guoku && GM.guoku.balance > amt) {
+          // 国库侧走 FiscalEngine 真账(2026-07-04 收口)·内帑侧仍本引擎自账
           if (tr.from === 'guoku.money' && isNeitangMoneyPath(tr.to)) {
-            GM.guoku.balance -= amt;
+            if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: amt }, '定拨内帑');
             GM.neitang.balance += amt;
           } else if (isNeitangMoneyPath(tr.from) && tr.to === 'guoku.money') {
             if (GM.neitang.balance > amt) {
               GM.neitang.balance -= amt;
-              GM.guoku.balance += amt;
+              if (typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) FiscalEngine.addToGuoku({ money: amt }, '内帑定拨入库');
             }
           }
         }

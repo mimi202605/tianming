@@ -148,6 +148,7 @@ async function main() {
 
   load(ctx, 'tm-npc-engine.js');
   load(ctx, 'tm-npc-action-ledger.js');
+  load(ctx, 'tm-fiscal-engine.js');   // 国库出入已收口走真账(2026-07-04)·沙箱须与运行时同形态
   load(ctx, 'tm-npc-decision.js');
 
   assert(ctx.TM && ctx.TM.NPC && ctx.TM.NPC.ActionLedger,

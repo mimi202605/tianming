@@ -1605,12 +1605,10 @@
     if (!Array.isArray(E.policyHistory)) E.policyHistory = [];
     // 扣钱
     var cost = policy.cost || {};
-    if (cost.money && global.GM.guoku) {
-      if ((global.GM.guoku.money || 0) < cost.money) return { ok: false, reason: '帑廪不足' };
-      global.GM.guoku.money -= cost.money;
-    }
-    if (cost.grain && global.GM.guoku) {
-      global.GM.guoku.grain = Math.max(0, (global.GM.guoku.grain || 0) - cost.grain);
+    if (cost.money && global.GM.guoku && (global.GM.guoku.money || 0) < cost.money) return { ok: false, reason: '帑廪不足' };
+    // 国库支出走 FiscalEngine 真账(2026-07-04 收口)
+    if ((cost.money || cost.grain) && global.FiscalEngine && global.FiscalEngine.spendFromGuoku) {
+      global.FiscalEngine.spendFromGuoku({ money: cost.money || 0, grain: cost.grain || 0 }, '经济政策');
     }
     var immediate = _applyPolicyImmediateEffect(policy, policyId, regionId || 'all');
     // 加入活跃政策（默认持续 24 回合，重点政策可自定）
@@ -1866,7 +1864,7 @@
       var h = (GM.huangquan || {}).index || 50;
       var complianceMult = h < 35 ? 0.5 :
                            h < 60 ? 0.85 : 1.0;
-      GM.guoku.balance += centerAmt * complianceMult;
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) FiscalEngine.addToGuoku({ money: centerAmt * complianceMult }, '央解入库'); // 收口·走真账
     }
 
     // 记录"挪用流"到 illicit
@@ -1909,7 +1907,7 @@
         order.failReason = '帑廪不足';
         return { success: false, reason: '帑廪不足' };
       }
-      GM.guoku.balance -= order.amount;
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: order.amount }, '银钱调度'); // 收口·走真账
     } else if (order.fromAccount === 'neitang.money' && GM.neitang) {
       if (GM.neitang.balance < order.amount) {
         order.status = 'failed';
@@ -1995,7 +1993,7 @@
           }
         }
         if (!paid && GM.guoku && GM.guoku.balance >= salary) {
-          GM.guoku.balance -= salary;
+          if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: salary }, '俸禄'); // 收口·走真账
           paid = true;
         }
         if (paid) {
@@ -2371,9 +2369,9 @@
           rp[src.id].grain = p1 < p2 ? p1 + gap * 0.02 * mr : p2 + gap * 0.02 * mr;
           rp[dst.id].grain = p1 < p2 ? p2 - gap * 0.02 * mr : p1 - gap * 0.02 * mr;
           // 商税入帑廪
-          if (global.GM.guoku && global.GM.guoku.money !== undefined) {
+          if (global.FiscalEngine && global.FiscalEngine.addToGuoku) {
             var tax = flowFactor * 100;
-            global.GM.guoku.money = (global.GM.guoku.money || 0) + tax;
+            global.FiscalEngine.addToGuoku({ money: tax }, '商税'); // 收口·走真账
           }
         }
       }
@@ -2444,7 +2442,7 @@
       tick: function(holding, mr) {
         var annual = (holding.annualRevenue || 100000) * mr / 12;
         // 中央只拿 10%
-        if (global.GM.guoku) global.GM.guoku.money = (global.GM.guoku.money || 0) + annual * 0.10;
+        if (global.FiscalEngine && global.FiscalEngine.addToGuoku) global.FiscalEngine.addToGuoku({ money: annual * 0.10 }, '庄田央解'); // 收口·走真账
         // 其余入王府
         holding.vassalWealth = (holding.vassalWealth || 0) + annual * 0.90;
       }
@@ -2463,9 +2461,8 @@
       },
       tick: function(holding, mr) {
         var tribute = (holding.tributeValue || 20000) * mr / 12;
-        if (global.GM.guoku) {
-          global.GM.guoku.money = (global.GM.guoku.money || 0) + tribute * 0.3;
-          global.GM.guoku.grain = (global.GM.guoku.grain || 0) + tribute * 0.5;
+        if (global.FiscalEngine && global.FiscalEngine.addToGuoku) {
+          global.FiscalEngine.addToGuoku({ money: tribute * 0.3, grain: tribute * 0.5 }, '藩贡'); // 收口·走真账
         }
       }
     },
@@ -2484,7 +2481,7 @@
         // 一年一贡
         if (!_isYearBoundaryTurn(global.GM.turn || 0)) return;
         var tribute = holding.tributeValue || 50000;
-        if (global.GM.guoku) global.GM.guoku.money = (global.GM.guoku.money || 0) + tribute;
+        if (global.FiscalEngine && global.FiscalEngine.addToGuoku) global.FiscalEngine.addToGuoku({ money: tribute }, '外藩年贡'); // 收口·走真账
         if (global.addEB) global.addEB('外藩', (holding.name || '外藩') + ' 来朝进贡 ' + tribute + ' 两');
       }
     },
@@ -2521,7 +2518,7 @@
       },
       tick: function(holding, mr) {
         var revenue = (holding.householdCount || 1000) * 2 * mr / 12; // 每户每年 2 两
-        if (global.GM.guoku) global.GM.guoku.money = (global.GM.guoku.money || 0) + revenue * 0.8;
+        if (global.FiscalEngine && global.FiscalEngine.addToGuoku) global.FiscalEngine.addToGuoku({ money: revenue * 0.8 }, '食邑税入'); // 收口·走真账
         // 受封者所得——记入角色 privateWealth
         if (holding.holderName && global.GM.chars) {
           var ch = global.GM.chars.find(function(c) { return c.name === holding.holderName; });

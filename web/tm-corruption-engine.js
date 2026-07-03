@@ -581,7 +581,8 @@
       if (GM.guoku && GM.guoku.balance < cost) {
         return { success: false, reason: '帑廪不足' };
       }
-      if (GM.guoku) GM.guoku.balance -= cost;
+      // 国库支出走 FiscalEngine 真账(2026-07-04 收口)
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: cost }, '肃贪运动');
       // 集中压一个部门腐败
       var dept = opts.targetDept || 'provincial';
       if (GM.corruption.subDepts[dept]) {
@@ -693,7 +694,7 @@
       }[type] || null;
       if (!template) return { success: false, reason: '未知机构类型' };
       if (GM.guoku && GM.guoku.balance < template.cost) return { success: false, reason: '帑廪不足' };
-      if (GM.guoku) GM.guoku.balance -= template.cost;
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: template.cost }, '设监察机构'); // 收口·走真账
       GM.corruption.supervision.institutions.push(Object.assign({}, template, {
         id: 'inst_' + GM.turn + '_' + Math.random().toString(36).slice(2,7),
         establishedTurn: GM.turn,
@@ -1516,7 +1517,7 @@
     }
     if (cost.huangwei  && GM.huangwei)  GM.huangwei.index  = Math.max(0, GM.huangwei.index  - Math.abs(cost.huangwei));
     if (cost.minxin) _mxApply(-Math.abs(cost.minxin), '惩贪行动波及地方');
-    if (cost.guoku     && GM.guoku)     GM.guoku.balance -= Math.abs(cost.guoku);
+    if (cost.guoku && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: Math.abs(cost.guoku) }, '惩贪行动'); // 收口·走真账
     if (cost.stress) { /* player stress — hook */ }
 
     // 应用收益
@@ -1533,7 +1534,7 @@
         GM.huangquan.index = Math.min(100, GM.huangquan.index + ben.huangquan);
       }
     }
-    if (ben.guoku    && GM.guoku)    GM.guoku.balance   += ben.guoku;
+    if (ben.guoku && typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) FiscalEngine.addToGuoku({ money: ben.guoku }, '追赃入库'); // 收口·走真账
     if (ben.neitang  && GM.neitang)  GM.neitang.balance += ben.neitang;
     if (ben.partyStrife && GM.partyStrife !== undefined) GM.partyStrife = Math.max(0, GM.partyStrife + ben.partyStrife);
     if (ben.armyMorale && GM.armies) {
@@ -1994,8 +1995,8 @@
     var mr = (context && context._monthRatio) ||
              (typeof CorruptionEngine.getMonthRatio === 'function' ? CorruptionEngine.getMonthRatio()
               : (typeof _getDaysPerTurn === 'function' ? _getDaysPerTurn()/30 : 1));
-    // monthlyIncome 是月入 → 按月数入账
-    if (GM.guoku) GM.guoku.balance += j.monthlyIncome * mr;
+    // monthlyIncome 是月入 → 按月数入账·走 FiscalEngine 真账(2026-07-04 收口)
+    if (typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) FiscalEngine.addToGuoku({ money: j.monthlyIncome * mr }, '鬻爵月入');
     j.cumulativeSold = (j.cumulativeSold || 0) + mr;
     // 按月速率加剧部门腐败
     if (GM.corruption) {

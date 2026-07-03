@@ -1354,7 +1354,11 @@
       GM.neitang.balance = num(GM.neitang.balance) + total;
       GM.neitang._recentConfiscation = (GM.neitang._recentConfiscation || 0) + total;
     } else if (GM.guoku) {
-      GM.guoku.balance = num(GM.guoku.balance) + total;
+      // 抄没入官走 FiscalEngine 真账(2026-07-04 收口)
+      try {
+        var _F = (typeof FiscalEngine !== 'undefined' && FiscalEngine) || (typeof window !== 'undefined' && window.FiscalEngine) || null;
+        if (_F && _F.addToGuoku) _F.addToGuoku({ money: total }, '抄没入官');
+      } catch (_e) {}
       dest = 'guoku';
     }
 

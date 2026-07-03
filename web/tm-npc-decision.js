@@ -1776,11 +1776,14 @@ function _npcAdjustPrivateWealth(npc, delta, reason) {
 }
 
 function _npcAdjustGuoku(delta) {
-  if (!GM.guoku) GM.guoku = { balance: 0 };
-  GM.guoku.balance = Number(GM.guoku.balance || 0) + Math.round(delta || 0);
-  GM.guoku.money = GM.guoku.balance;
-  if (GM.guoku.ledgers && GM.guoku.ledgers.money) GM.guoku.ledgers.money.stock = GM.guoku.balance;
-  return GM.guoku.balance;
+  // 国库出入走 FiscalEngine 真账(2026-07-04 收口)·手工三账同步就是两本账的病灶
+  delta = Math.round(delta || 0);
+  try {
+    var _F = (typeof FiscalEngine !== 'undefined' && FiscalEngine) || (typeof window !== 'undefined' && window.FiscalEngine) || null;
+    if (_F && delta > 0 && _F.addToGuoku) _F.addToGuoku({ money: delta }, '臣工进献');
+    else if (_F && delta < 0 && _F.spendFromGuoku) _F.spendFromGuoku({ money: -delta }, '臣工奏销');
+  } catch (_e) {}
+  return (GM.guoku && GM.guoku.balance) || 0;
 }
 
 function _npcWuchangScore(npc, key, fallback) {

@@ -1089,7 +1089,8 @@ function _kejuSettleCentralCost(exam, stage) {
 
   var guokuMoney = (GM.guoku && GM.guoku.money) || 0;
   if (guokuMoney >= amount) {
-    if (GM.guoku) GM.guoku.money = Math.max(0, guokuMoney - amount);
+    // 科举经费走 FiscalEngine 真账(2026-07-04 收口)
+    if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: amount }, '科举经费');
     exam.costsPaid.central = (exam.costsPaid.central || 0) + amount;
     if (typeof addEB === 'function') addEB('\u79D1\u4E3E\u7ECF\u8D39', '\u5E11\u5EAA\u6263 ' + amount + ' \u4E24\u00B7' + stage);
     return { paid: amount, source: 'guoku' };

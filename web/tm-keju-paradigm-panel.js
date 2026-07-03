@@ -1778,9 +1778,9 @@
         applied = true;
       }
       var guoku = parseInt(cost.guoku, 10);
-      if (guoku && guoku < 0 && typeof GM !== 'undefined' && GM.guoku) {
-        GM.guoku.balance = Math.max(0, (GM.guoku.balance || 0) + guoku);
-        if (GM.guoku.ledgers && GM.guoku.ledgers.money) GM.guoku.ledgers.money.stock = GM.guoku.balance;
+      if (guoku && guoku < 0 && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) {
+        // 国库支出走 FiscalEngine 真账(2026-07-04 收口)
+        FiscalEngine.spendFromGuoku({ money: -guoku }, '科举范式之费');
         applied = true;
       }
     } catch(_){}

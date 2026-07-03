@@ -40,6 +40,7 @@ function main() {
   };
   ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
+  load(ctx, 'tm-fiscal-engine.js');   // 国库出入已收口走真账(2026-07-04)·沙箱须与运行时同形态
   load(ctx, 'tm-char-economy-engine.js');
   const CE = ctx.CharEconEngine;
   assert(CE && typeof CE.confiscate === 'function', 'CharEconEngine.confiscate exported');
