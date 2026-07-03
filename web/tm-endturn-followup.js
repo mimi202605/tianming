@@ -92,6 +92,7 @@
   function _applyMwList(list, covered, skipCovered) {
     if (!Array.isArray(list) || typeof NpcMemorySystem === 'undefined' || !NpcMemorySystem.remember) return 0;
     var n = 0;
+    var witTotal = 0;  // ★2026-07-04 目击传播每批封顶·防 witnesses 滥填爆记忆
     list.forEach(function(mw) {
       if (!mw || !mw.char || !mw.event) return;
       if (skipCovered && covered && covered[mw.char]) return;  // 仅续写阶段拦截已录入角色
@@ -100,6 +101,20 @@
           { type: mw.type, source: mw.source, credibility: mw.credibility, location: mw.location, witnesses: mw.witnesses, participants: mw.participants, arcId: mw.arcId });
         if (covered) covered[mw.char] = 1;
         n++;
+        // ★2026-07-04 方向B·目击者传播：要事(imp>=6)填了 witnesses·目击者本人也得一条"亲见"记忆
+        //   (重要度-2地板3·source witnessed)——否则 witnesses 只是当事人记忆上的注脚·杀一儆百从不儆百。
+        //   每条至多3人·每批至多12条·死者/玩家/当事人自己不写·不占 covered(续写去重语义只属当事人)。
+        if ((mw.importance || 5) >= 6 && Array.isArray(mw.witnesses) && witTotal < 12) {
+          mw.witnesses.slice(0, 3).forEach(function(wn) {
+            if (witTotal >= 12 || !wn || typeof wn !== 'string' || wn === mw.char) return;
+            var wc = null;
+            try { if (typeof GM !== 'undefined' && Array.isArray(GM.chars)) GM.chars.some(function(c) { if (c && c.name === wn) { wc = c; return true; } return false; }); } catch (_wfE) {}
+            if (!wc || wc.alive === false || wc.isPlayer) return;
+            NpcMemorySystem.remember(wn, '亲见：' + String(mw.event).slice(0, 60), mw.emotion || '忧', Math.max(3, (mw.importance || 5) - 2), mw.char,
+              { type: 'witnessed', source: 'witnessed', location: mw.location });
+            witTotal++;
+          });
+        }
       } catch(_amwE) { if (typeof _dbg === 'function') _dbg('[MemWrite] remember failed for', mw.char, _amwE); }
     });
     return n;

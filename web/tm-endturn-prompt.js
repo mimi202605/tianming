@@ -968,6 +968,9 @@
         if (c._retired || c.retired) return '致仕';
         return '';
       }
+      // ★2026-07-04 方向A·点名必入：本回合玩家诏令/指令点到名的 NPC 大幅加权——玩家正对其行事·AI 必须深演其反应
+      var _edictHay = '';
+      try { if (typeof edicts !== 'undefined' && edicts) _edictHay = [edicts.decree, edicts.political, edicts.military, edicts.diplomatic, edicts.economic, edicts.other].filter(Boolean).join(' '); } catch (_ehE) {}
       var candidates = [];
       (GM.chars || []).forEach(function(c){
         if (!c || c.alive === false || c._fakeDeath) return;
@@ -1002,11 +1005,15 @@
           else if (_freshImp >= 3) _heat += 3;
         }
         weight += (_heat > 25 ? 25 : _heat);
+        if (_edictHay && c.name && String(c.name).length >= 2 && _edictHay.indexOf(c.name) >= 0) weight += 40;  // 点名必入(2字以上名才查·防单字误中)
         candidates.push({ ch: c, weight: weight, rk: _rk });
       });
       candidates.sort(function(a,b){ return b.weight - a.weight; });
       var _allScored = candidates.slice(); // 全量已排序·供「实权重臣未入深度名额」配额(slice B)
       candidates = candidates.slice(0, maxChars);
+      // 同场深度名额名单——供相关性选忆/在场恩怨对照(方向A·2026-07-04)
+      var _present = {};
+      candidates.forEach(function(cd) { if (cd && cd.ch && cd.ch.name) _present[cd.ch.name] = 1; });
 
       if (candidates.length === 0) return;
 
@@ -1015,6 +1022,7 @@
 
       var xmlLines = ['<npc-hearts ctx="' + ((_hcp.contextK||'?')+'K') + '">'];
       var heartCount = 0;
+      var _withCount = 0;  // 在场恩怨对照条数(方向A·2026-07-04)
       candidates.forEach(function(cand){
         if (heartCount >= totalCap) return;
         var c = cand.ch;
@@ -1050,7 +1058,17 @@
             xmlLines.push('    <goal ' + _gAttrs.join(' ') + '>' + _xE(_gtxt.substring(0, 100)) + '</goal>');
           }
         }
-        var sorted = c._memory.slice().sort(function(a,b){ return (b.importance||0) - (a.importance||0); });
+        // ★2026-07-04 方向A·相关性选忆：重要度之上叠加对手戏/点名加分——涉同场深度 NPC 的记忆(+2.5)、
+        //   涉本回合诏令点到之人的记忆(+2)优先出线。门槛过滤仍按原 importance(impMin/recency)·只改出线顺序不放水质量闸。
+        var _memScore = function(m) {
+          var s = (m.importance || 0), w = (m && m.who) || '';
+          if (w && w !== c.name) {
+            if (_present[w]) s += 2.5;
+            if (_edictHay && String(w).length >= 2 && _edictHay.indexOf(w) >= 0) s += 2;
+          }
+          return s;
+        };
+        var sorted = c._memory.slice().sort(function(a,b){ return _memScore(b) - _memScore(a); });
         // ★2026-07-01 codex-fix S1:hearts 门槛 impMin 随模型上下文动态(3~9·见 tm-ai-infra heartsImportanceMin)·中/小上下文可到 7~8·
         //   会把 imp6 的正式问对记忆挡在推演外。额外放行「近2回合内 importance>=6」的记忆(典型=刚发生的问对/奏疏交谈)·
         //   令新近君臣交谈无论动态门槛多高都能进推演·不改其 importance(避伤疤膨胀)。先过滤后截断·以保其入选。
@@ -1116,10 +1134,27 @@
             }
           }
         } catch (_tiesE) {}
+        // ★2026-07-04 方向A·在场恩怨对照：与同场深度 NPC 之间的定义性旧账(每对取最高重要度一条·imp>=5·
+        //   已入上方 <memory> 的不重挂)显式挂 <with>·令两人同场时 AI 见得到"他们之间发生过什么"·对手戏不靠猜。
+        try {
+          var _gBest = {};
+          (c._memory || []).forEach(function(m) {
+            var w = m && m.who;
+            if (!w || w === c.name || !_present[w] || (m.importance || 0) < 5) return;
+            if (top.indexOf(m) >= 0) return;  // 已作 <memory> 注入·不重挂
+            if (!_gBest[w] || (m.importance || 0) > (_gBest[w].importance || 0)) _gBest[w] = m;
+          });
+          Object.keys(_gBest).sort(function(x, y) { return (_gBest[y].importance || 0) - (_gBest[x].importance || 0); }).slice(0, 2).forEach(function(w) {
+            var gm = _gBest[w];
+            xmlLines.push('    <with name="' + _xE(w) + '" emotion="' + _xE(gm.emotion || '平') + '">' + _xE(String(gm.event || '').slice(0, 50)) + '</with>');
+            _withCount++;
+          });
+        } catch (_gwE) {}
         xmlLines.push('  </heart>');
       });
       xmlLines.push('</npc-hearts>');
       tp += '\n' + xmlLines.join('\n') + '\n';
+      if (_withCount > 0) tp += '※ <with> 为在场者之间的旧怨宿谊——同朝有旧账者·其言行/npc_actions 须演出这段关系(或明争、或暗防、或修好)·对手戏优先于独角戏·勿各说各话。\n';
       // 实权重臣行止配额(朝代中立·纯按品级 rk·防高品官员长期在叙事中沉寂/封疆边事静止·2026-06-13)
       (function _injectNeglectedAuthority() {
         var _NL = String.fromCharCode(10);

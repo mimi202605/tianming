@@ -664,6 +664,7 @@
         }
       });
     });
+    var PHASE_RANK = { '初起': 0, '成势': 1, '鼎沸': 2 };
     for (var i = moves.length - 1; i >= 0; i -= 1) {
       var mv = moves[i];
       if (!mv || !mv.key) { moves.splice(i, 1); continue; }
@@ -671,9 +672,41 @@
         mv.support = round2((Number(mv.support) || 0) - 18);
         if (mv.support <= 0) { moves.splice(i, 1); continue; }
       }
+      var oldPhase = mv.phase || '初起';
       mv.phase = mv.support >= 70 ? '鼎沸' : (mv.support >= 40 ? '成势' : '初起');
+      // ★2026-07-04 方向B·运动升相入党魁记忆(仅升相·退潮降相不写)——民情从此在人的脑子里
+      if (mv.phase !== oldPhase && (PHASE_RANK[mv.phase] || 0) > (PHASE_RANK[oldPhase] || 0) && mv.phase !== '初起') {
+        _movementMemory(GM, mv);
+      }
     }
     return moves.length;
+  }
+  // ★2026-07-04 方向B·运动入党魁记忆：民间运动成势/鼎沸→社会基础相合的党魁记「根基之民可为请命」·
+  //   秉政党魁记「朝局承压」——否则推演/问对里党魁对自家根基的民间运动无知无觉。至多4人/次·
+  //   NpcMemorySystem 缺位(如引擎单测)静默跳过·不触碰 support 数学。
+  function _movementMemory(GM, mv) {
+    try {
+      if (typeof NpcMemorySystem === 'undefined' || !NpcMemorySystem.remember) return;
+      var hot = mv.phase === '鼎沸';
+      var n = 0;
+      toArray(GM.parties).forEach(function(p) {
+        if (n >= 4 || !p || !p.leader) return;
+        var lc = null;
+        (GM.chars || []).some(function(c) { if (c && c.name === p.leader) { lc = c; return true; } return false; });
+        if (!lc || lc.alive === false || lc.isPlayer) return;
+        var sb = p.socialBase || p.social_base || p.baseClasses;
+        var sbStr = Array.isArray(sb) ? sb.map(function(b) { return (b && typeof b === 'object') ? (b.name || b.className || '') : b; }).join('、') : String(sb || '');
+        var isBase = sbStr && mv.className && sbStr.indexOf(mv.className) >= 0;
+        var isGov = p.standing === 'governing';
+        if (isBase) {
+          NpcMemorySystem.remember(p.leader, '民间「' + (mv.label || mv.kind) + '」之请' + mv.phase + '·此乃吾党根基之民·可为请命亦须善抚', hot ? '忧' : '喜', hot ? 8 : 7, mv.className, { type: 'political' });
+          n += 1;
+        } else if (isGov) {
+          NpcMemorySystem.remember(p.leader, '民间「' + (mv.label || mv.kind) + '」之请' + mv.phase + '·朝局承压·当筹应对', hot ? '惧' : '忧', hot ? 8 : 6, mv.className, { type: 'political' });
+          n += 1;
+        }
+      });
+    } catch (_mmE) {}
   }
   function classMovementLoad(GM, cls) {
     var name = cls && (cls.name || cls.className);

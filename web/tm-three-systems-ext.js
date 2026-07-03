@@ -434,6 +434,26 @@
         ps.historyLog = ps.historyLog || [];
         ps.historyLog.push({ turn: turn, type: 'standing', from: ps.standing, to: standing, reason: '朝局更迭' });
         if (ps.historyLog.length > 20) ps.historyLog = ps.historyLog.slice(-20);
+        // ★2026-07-04 方向B·政柄更迭入党人记忆：秉政/失柄是党人身家大事·党魁+核心党人须记得·
+        //   否则推演/问对里党人对自家进退毫无知觉。仅 standing 真变时写(本块即变更闸)·党魁重要度+1·至多5人。
+        try {
+          if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember && Array.isArray(GM.chars)) {
+            var _smFrom = ps.standing, _smTxt, _smEmo, _smImp;
+            if (standing === 'governing') { _smTxt = '吾党秉政·朝中要职过半在握'; _smEmo = '喜'; _smImp = 7; }
+            else if (_smFrom === 'governing') { _smTxt = '吾党失柄·见逐于朝堂中枢'; _smEmo = '怒'; _smImp = 8; }
+            else if (standing === 'marginal') { _smTxt = '吾党于朝中日渐边缘·同志零落'; _smEmo = '忧'; _smImp = 6; }
+            else { _smTxt = '吾党重列朝堂·渐有声势'; _smEmo = '喜'; _smImp = 5; }
+            var _smMembers = GM.chars.filter(function(mc) {
+              return mc && mc.alive !== false && !mc.isPlayer && (mc.party === p.name || (p.leader && mc.name === p.leader));
+            }).sort(function(x, y) {
+              return ((p.leader && y.name === p.leader) ? 1 : 0) - ((p.leader && x.name === p.leader) ? 1 : 0);
+            }).slice(0, 5);
+            _smMembers.forEach(function(mc) {
+              var _isLd = p.leader && mc.name === p.leader;
+              NpcMemorySystem.remember(mc.name, _smTxt + '（' + p.name + '）', _smEmo, _isLd ? Math.min(9, _smImp + 1) : _smImp, '朝局', { type: 'political' });
+            });
+          }
+        } catch (_smE) {}
       }
       ps.standing = standing;
       p.standing = standing;
