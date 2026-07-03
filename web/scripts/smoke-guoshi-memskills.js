@@ -70,6 +70,15 @@ AA.memories.recall('需求', null, mockSel).then(function (blk) {
     ok(r.finished, 'run 正常收尾');
   });
 }).then(function () {
+  console.log('— UI 曝光(源码契约·2026-07-03 二轮) —');
+  var fs2 = require('fs'), path2 = require('path');
+  var uiSrc = fs2.readFileSync(path2.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var adSrc = fs2.readFileSync(path2.resolve(__dirname, '..', 'preview', 'scenario-editor-reset-adapters.js'), 'utf8');
+  ok(/function showMemoriesUI/.test(uiSrc) && /function showSkillsUI/.test(uiSrc) && /function showPacksUI/.test(uiSrc) && /function showUsageUI/.test(uiSrc), 'UI 四卡函数在(记忆册/技能册/能力包/用量)');
+  ok(/showMemories: showMemoriesUI/.test(uiSrc), 'UI 四卡导出 TM_AuthoringAgentUI(供 je-cmdk 调)');
+  ok(/data-pack-tg/.test(uiSrc) && /data-pack-imp/.test(uiSrc) && /data-mem-del/.test(uiSrc), 'UI 卡内交互(启停/导入/删)接线');
+  ok(/tokensBreakdown/.test(uiSrc) && /真口径/.test(uiSrc) && /_lastRunMeta/.test(uiSrc), 'UI 用量卡吃 G1 真口径构成(codex-token-usage/claude-hud 思路)');
+  ok(/记忆册/.test(adSrc) && /用量·上下文/.test(adSrc), '工坊 je-cmdk 四命令接线(双入口可达)');
   console.log('\nsmoke-guoshi-memskills ' + (F === 0 ? 'PASS' : 'FAIL') + ' ' + P + '/' + (P + F));
   process.exit(F === 0 ? 0 : 1);
 }).catch(function (e) { console.error('CHAIN FAIL', e && e.message); process.exit(1); });

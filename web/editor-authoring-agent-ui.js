@@ -1055,6 +1055,10 @@
       { k: 'changelog', t: '版本说明', d: '汇总已应用改动·零 token', run: function () { runChangelogUI(); } },
       { k: 'fork', t: '分叉会话', d: '把当前会话复制成分支再演化（原线不动）', run: function () { if (ui._sessId) forkSession(ui._sessId); else setStatus('当前没有活动会话（先跑一轮，或从侧栏选中一条）'); } },
       { k: 'conv', t: '创作约定', d: '查看全局+本剧本两层约定（等价 CLAUDE.md）', run: function () { showConventionsUI(); } },
+      { k: 'memories', t: '记忆册', d: '国师存下的跨会话记忆（四型·可删）', run: function () { showMemoriesUI(); } },
+      { k: 'skills', t: '技能册', d: '可用技能清单（内置+能力包+自存·可删自存）', run: function () { showSkillsUI(); } },
+      { k: 'packs', t: '能力包', d: '技能+约定的打包单元（启停/导入/导出）', run: function () { showPacksUI(); } },
+      { k: 'usage', t: '用量·上下文', d: '本轮 token 构成与上下文窗口占比', run: function () { showUsageUI(); } },
       { k: 'initconv', t: '初始化约定', d: '通读剧本·总结值得沿用的创作约定（可逐条记住）', run: function () { ui.els.req.value = '【梳理创作约定】通读剧本，总结 5-10 条值得长期沿用的创作约定（命名规律、文风与称谓、数值区间、结构惯例、世界观基调）。每确认一条就调用 recordConvention 记录一条；报告 findings 也逐条列出这些约定及其依据。不评质量问题，只提炼惯例。'; runReview(); } },
       { k: 'compact', t: '压缩前情', d: '把长对话压成前情摘要（省上下文·续接不断）', run: function () { runCompactUI(); } },
       { k: 'notify', t: '完成通知', d: '页面切后台时跑完弹系统通知（开/关）', run: function () { _toggleNotify(); } },
@@ -1895,6 +1899,119 @@
     setStatus('约定两层：全局' + (g ? ' ' + g.split('\n').filter(Boolean).length + ' 条' : '空') + ' · 本剧本' + (s ? ' ' + s.split('\n').filter(Boolean).length + ' 条' : '空'));
   }
 
+  /* ═══ CC 三件套 UI 曝光（2026-07-03·记忆册/技能册/能力包）+ 用量·上下文卡 ═══ */
+  function _mgmtCard(title, bodyHtml, status) {
+    if (ui.running) { setStatus('请等当前运行结束'); return null; }
+    resetResults(true);
+    _beginReplyCard();
+    if (!ui.els.summary) return null;
+    ui.els.summary.innerHTML = '<b>' + title + '</b><div class="tm-aa-cl-md">' + bodyHtml + '</div>';
+    ui.els.summary.style.display = '';
+    _freezeLastReply();
+    if (status) setStatus(status);
+    return ui.els.summary;
+  }
+  function showMemoriesUI() {   // /记忆册 · ≈CC /memory 的记忆目录视图
+    var ms = []; try { ms = (AA.memories && AA.memories.list()) || []; } catch (e) {}
+    var TYPE_ZH = { user: '玩家', feedback: '反馈', project: '进行中', reference: '资料' };
+    var body = ms.length
+      ? ms.map(function (m) {
+          return '<div style="border-bottom:1px solid var(--bd);padding:6px 0"><b>' + esc(m.name) + '</b> <span style="color:var(--tx3);font-size:11px">[' + (TYPE_ZH[m.type] || m.type) + '] ' + esc(m.description || '') + '</span>'
+            + '<div style="color:var(--tx2);font-size:12px;margin-top:2px;white-space:pre-wrap">' + esc(m.body || '') + '</div>'
+            + '<button type="button" class="tm-aa-conv-clear" data-mem-del="' + esc(m.name) + '">删除</button></div>';
+        }).join('')
+      : '<div style="color:var(--tx3)">（空 · 国师在共事中了解到推导不出的背景时会自动存；也可让它「把XX记住」）</div>';
+    var host = _mgmtCard('记忆册（跨会话背景 · 按需求召回注入 · 存 ' + ms.length + ' 条）', body, '记忆 ' + ms.length + ' 条');
+    if (host) host.querySelectorAll('[data-mem-del]').forEach(function (b) {
+      b.addEventListener('click', function () { try { AA.memories.remove(b.getAttribute('data-mem-del')); } catch (e) {} b.closest('div').style.opacity = '.35'; b.textContent = '已删 ✓'; b.disabled = true; });
+    });
+  }
+  function showSkillsUI() {   // /技能册 · ≈CC Skill 目录
+    var sk = []; try { sk = (AA.skills && AA.skills.list()) || []; } catch (e) {}
+    var userNames = {}; try { JSON.parse(localStorage.getItem('tm_aa_skills') || '[]').forEach(function (s) { userNames[s.name] = 1; }); } catch (e) {}
+    var biNames = {}; try { (AA.skills.builtin || []).forEach(function (s) { biNames[s.name] = 1; }); } catch (e) {}
+    var body = sk.length
+      ? sk.map(function (s) {
+          var src = biNames[s.name] ? '内置' : (userNames[s.name] ? '自存' : '能力包');
+          return '<div style="border-bottom:1px solid var(--bd);padding:6px 0"><b>' + esc(s.name) + '</b> <span style="color:var(--tx3);font-size:11px">[' + src + '] ' + esc(s.whenToUse || s.description || '') + '</span>'
+            + '<details style="margin-top:2px"><summary style="cursor:pointer;color:var(--tx3);font-size:11px">展开指令全文</summary><div style="color:var(--tx2);font-size:12px;white-space:pre-wrap">' + esc(s.body || '') + '</div></details>'
+            + (userNames[s.name] ? '<button type="button" class="tm-aa-conv-clear" data-skill-del="' + esc(s.name) + '">删除</button>' : '') + '</div>';
+        }).join('')
+      : '<div style="color:var(--tx3)">（空）</div>';
+    var host = _mgmtCard('技能册（打磨过的操作指令包 · 国师做对应事时自动展开照做 · ' + sk.length + ' 项）', body, '技能 ' + sk.length + ' 项');
+    if (host) host.querySelectorAll('[data-skill-del]').forEach(function (b) {
+      b.addEventListener('click', function () { try { AA.skills.remove(b.getAttribute('data-skill-del')); } catch (e) {} b.closest('div').style.opacity = '.35'; b.textContent = '已删 ✓'; b.disabled = true; });
+    });
+  }
+  function showPacksUI() {   // /能力包 · ≈CC /plugin（启停/导入/导出）
+    var ps = []; try { ps = (AA.packs && AA.packs.list()) || []; } catch (e) {}
+    var body = ps.map(function (p) {
+      return '<div style="border-bottom:1px solid var(--bd);padding:6px 0"><b>' + esc(p.name) + '</b> <span style="color:var(--tx3);font-size:11px">v' + esc(p.version || '1.0') + (p.builtin ? ' · 内置' : ' · 玩家装') + ' · ' + p.skills + ' 技能</span>'
+        + '<div style="color:var(--tx2);font-size:12px">' + esc(p.description || '') + '</div>'
+        + '<button type="button" class="tm-aa-conv-clear" data-pack-tg="' + esc(p.name) + '">' + (p.enabled ? '停用' : '启用') + '</button>'
+        + '<button type="button" class="tm-aa-conv-clear" data-pack-exp="' + esc(p.name) + '">导出 JSON</button>'
+        + (!p.builtin ? '<button type="button" class="tm-aa-conv-clear" data-pack-rm="' + esc(p.name) + '">卸载</button>' : '') + '</div>';
+    }).join('') + '<div style="margin-top:6px"><button type="button" class="tm-aa-conv-clear" data-pack-imp="1">导入能力包 JSON（粘贴）</button></div>';
+    var host = _mgmtCard('能力包（技能+约定的打包单元 · 可跨玩家分享 · ' + ps.length + ' 个）', body, '能力包 ' + ps.length + ' 个');
+    if (!host) return;
+    host.querySelectorAll('[data-pack-tg]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var n = b.getAttribute('data-pack-tg'), now = b.textContent === '停用' ? false : true;
+        try { AA.packs.setEnabled(n, now); } catch (e) {}
+        b.textContent = now ? '停用' : '启用'; setStatus('「' + n + '」已' + (now ? '启用' : '停用') + '（下轮生效）');
+      });
+    });
+    host.querySelectorAll('[data-pack-exp]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var j = ''; try { j = AA.packs.exportJSON(b.getAttribute('data-pack-exp')) || ''; } catch (e) {}
+        if (j && navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(j); b.textContent = '已复制 ✓'; }
+        else if (j) { window.prompt('复制此 JSON 分享给其他玩家：', j); }
+      });
+    });
+    host.querySelectorAll('[data-pack-rm]').forEach(function (b) {
+      b.addEventListener('click', function () { try { AA.packs.remove(b.getAttribute('data-pack-rm')); } catch (e) {} b.closest('div').style.opacity = '.35'; b.textContent = '已卸 ✓'; b.disabled = true; });
+    });
+    var ib = host.querySelector('[data-pack-imp]');
+    if (ib) ib.addEventListener('click', function () {
+      var j = window.prompt('粘贴能力包 JSON：', '');
+      if (!j) return;
+      var r = null; try { r = AA.packs.importJSON(j); } catch (e) { r = { ok: false, error: String(e && e.message || e) }; }
+      setStatus(r && r.ok ? '已导入「' + r.imported + '」（' + r.skills + ' 技能·下轮生效）' : '导入失败：' + ((r && r.error) || '未知'));
+      if (r && r.ok) showPacksUI();
+    });
+  }
+  function showUsageUI() {   // /用量·上下文 · CC /context+/cost 对照（本地 codex-token-usage / claude-hud 思路）
+    function fmt(n) { return n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(Math.round(n || 0)); }
+    function bar(part, total, color, label) {
+      var pct = total > 0 ? Math.min(100, Math.round(part * 100 / total)) : 0;
+      return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:2px 0"><span style="flex:0 0 92px;color:var(--tx2)">' + label + '</span>'
+        + '<span style="flex:1;height:8px;background:var(--sunken);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:' + pct + '%;background:' + color + '"></i></span>'
+        + '<span style="flex:0 0 88px;text-align:right;color:var(--tx3)">' + fmt(part) + ' · ' + pct + '%</span></div>';
+    }
+    var m = ui._lastRunMeta, budget = ui._budget || 260000;
+    var est = function (o) { try { return Math.ceil(((JSON.stringify(o) || '').replace(/[^一-鿿]/g, '').length) * 1.3 + ((JSON.stringify(o) || '').replace(/[一-鿿]/g, '').length) * 0.25); } catch (e) { return 0; } };
+    var convTok = ui.conversation && ui.conversation.length ? est(ui.conversation) : 0;
+    var memTok = 0, skillTok = 0;
+    try { memTok = est((AA.memories.list() || []).map(function (x) { return x.name + x.description; })); } catch (e) {}
+    try { skillTok = est((AA.skills.list() || []).map(function (x) { return x.name + (x.whenToUse || ''); })); } catch (e) {}
+    var body = '';
+    if (m && m.tokensBreakdown) {
+      var b = m.tokensBreakdown, tot = m.tokensUsed || (b.system + b.tools + b.conversation);
+      body += '<b style="font-size:12px">最近一轮（' + esc(m.kind || '') + ' · ' + m.iterations + ' 轮迭代' + (m.macroCompactions ? ' · 宏压缩×' + m.macroCompactions : '') + (m.steered ? ' · 插话×' + m.steered : '') + '）</b>'
+        + bar(b.system, tot, 'var(--ac)', '系统词')
+        + bar(b.tools, tot, 'var(--warn)', '工具schema')
+        + bar(b.conversation, tot, 'var(--ok)', '对话与结果')
+        + '<div style="font-size:12px;color:var(--tx2);margin:4px 0 10px">合计（=下次请求真实体量）：<b>' + fmt(tot) + '</b> tokens · 占预算上限 ' + Math.round(tot * 100 / budget) + '%（上限 ' + fmt(budget) + '·撞 85% 会自动宏压缩）</div>';
+    } else {
+      body += '<div style="color:var(--tx3);font-size:12px;margin-bottom:8px">（本会话还没跑过——跑一轮后这里显示真口径构成）</div>';
+    }
+    body += '<b style="font-size:12px">当前会话线程</b>'
+      + '<div style="font-size:12px;color:var(--tx2)">消息 ' + ((ui.conversation && ui.conversation.length) || 0) + ' 条 · 线程体量约 ' + fmt(convTok) + ' tokens（续跑时计入下轮请求）</div>'
+      + '<b style="font-size:12px;display:block;margin-top:8px">常驻注入面（每轮都发）</b>'
+      + '<div style="font-size:12px;color:var(--tx2)">记忆清单候选 ~' + fmt(memTok) + ' · 技能清单 ~' + fmt(skillTok) + ' tokens（记忆正文只在被召回时注入·技能全文只在 useSkill 时展开）</div>';
+    _mgmtCard('用量 · 上下文（真口径 = 系统词 + 工具 schema + 全对话）', body, m ? ('最近一轮 ' + fmt(m.tokensUsed) + ' tokens · 占上限 ' + Math.round((m.tokensUsed || 0) * 100 / budget) + '%') : '暂无运行数据');
+  }
+
   // 方向M · 运行历史/审计日志（持久·可搜·跨刷新存活·不存大快照避 quota·cap 50）
   var HISTORY_KEY = 'tm_aa_run_history';
   function _loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { return []; } }
@@ -1922,6 +2039,8 @@
       stopReason: (res && res.stopReason) || '',
       applied: false
     };
+    /* 用量卡数据：最近一轮的真口径构成(G1)与压缩/插话计数(所有模式都经此汇点) */
+    if (res && res.tokensUsed != null) ui._lastRunMeta = { kind: kind, tokensUsed: res.tokensUsed || 0, tokensBreakdown: res.tokensBreakdown || null, iterations: res.iterations || 0, macroCompactions: res.macroCompactions || 0, steered: res.steered || 0, ts: Date.now() };
     var h = _loadHistory(); h.push(rec); _saveHistory(h);
     ui._lastRunId = rec.id;
     if (typeof ui._onHistoryChange === 'function') { try { ui._onHistoryChange(); } catch (e) {} }
@@ -3311,6 +3430,6 @@
   else init();
 
   // 暴露给测试/调试
-  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles,
+  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles, showMemories: showMemoriesUI, showSkills: showSkillsUI, showPacks: showPacksUI, showUsage: showUsageUI,
     listSessions: listSessions, switchSession: switchSession, deleteSession: deleteSession, renameSession: renameSession, forkSession: forkSession, rememberConvention: rememberConvention };
 })(typeof window !== 'undefined' ? window : this);
