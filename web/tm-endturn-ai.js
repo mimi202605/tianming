@@ -282,7 +282,8 @@
         if (expectedKeys.length) {
           var _fieldDesc = [];
           // 命中已知 schema 的字段类型·从 tm-ai-schema 推断 (若可用)·否则 fallback 启发式
-          var _schemaTbl = (typeof window !== 'undefined' && window.TM && TM.AISchema && TM.AISchema.S) || null;
+          // 修死引用·TM.AISchema 从不存在(tm-ai-schema.js 真实导出是 window.TM_AI_SCHEMA.raw)·此前恒 null 静默走 fallback 启发式
+          var _schemaTbl = (typeof window !== 'undefined' && window.TM_AI_SCHEMA && window.TM_AI_SCHEMA.raw) || null;
           expectedKeys.forEach(function(k) {
             var def = _schemaTbl && _schemaTbl[k];
             var ty = def && def.type ? def.type : (
