@@ -1120,7 +1120,21 @@
     'modelRequirements': 'AI 模型要求 · 最小能力 / 上下文长度',
     'aiAutoEnrich': 'AI 自动补全开关',
     'aiPersonaText': 'AI 人格描述 · 描述此角色的语气、价值观、行为偏好',
-    'aiBehaviorPolicy': 'AI 行为边界 · 不可做、必须做的事'
+    'aiBehaviorPolicy': 'AI 行为边界 · 不可做、必须做的事',
+    /* 2026-07-03 · 补齐绍宋等剧本顶层漏网键（缺条目时「其他字段」组回退英文 key 裸露；描述同喂字段搜索） */
+    'minxin': '民心 · 开局民心值',
+    'huangquan': '皇权 · 开局皇权值',
+    'huangwei': '皇威 · 开局皇威值',
+    'currentIssues': '开局议题 · 摆在案头的时弊与急务',
+    'memorials': '开局奏疏 · 进入剧本时已在御案的奏疏',
+    'openingAudiences': '开局召对 · 预置的开局召对场次',
+    'tianjiEnabled': '启用天机 · 剧本授权天机系统',
+    'junqingBriefEnabled': '启用军情简报 · 剧本授权军情简报',
+    'xinjunObserveEnabled': '启用新君观政 · 观政引导期开关',
+    'xinjunObserveTurns': '新君观政回合 · 观政引导期时长',
+    'suggestions': '开局建议 · 给玩家的开局提示',
+    'isShaosongHeightened': '绍宋强化版 · 强化版内容标记',
+    'shaosongNote': '剧本备注 · 制作者备注'
   };
 
   function describeField(field) {
@@ -14404,9 +14418,20 @@
   }
 
   // ───────── 开篇章 ─────────
-  var GAMESET_LABELS = { enabledSystems: '启用系统', startYear: '起始年', startMonth: '起始月', startDay: '起始日', enableGanzhi: '干支纪年', enableGanzhiDay: '干支纪日', enableEraName: '用年号', eraName: '年号', eraNames: '年号表', daysPerTurn: '每回合天数', turnDuration: '回合时长', turnUnit: '回合单位' };
+  var GAMESET_LABELS = { enabledSystems: '启用系统', startYear: '起始年', startMonth: '起始月', startDay: '起始日', enableGanzhi: '干支纪年', enableGanzhiDay: '干支纪日', enableEraName: '用年号', eraName: '年号', eraNames: '年号表', daysPerTurn: '每回合天数', turnDuration: '回合时长', turnUnit: '回合单位',
+    /* 2026-07-03 · 补齐绍宋等剧本 gameSettings 漏网键（缺条目回退英文 key 裸露在开局折子） */
+    eraStartYear: '年号起始年', difficulty: '难度', recommendedDifficulty: '建议难度', forcedDifficulty: '锁定难度',
+    minxin: '民心', huangquan: '皇权', huangwei: '皇威', currentIssues: '开局议题', memorials: '开局奏疏',
+    openingAudiences: '开局召对', tianjiEnabled: '启用天机', junqingBriefEnabled: '启用军情简报',
+    xinjunObserveEnabled: '启用新君观政', xinjunObserveTurns: '新君观政回合', suggestions: '开局建议',
+    isShaosongHeightened: '绍宋强化版', shaosongNote: '剧本备注' };
   var GAMESET_SUB = { enabledSystems: { items: '物品', military: '军事', techTree: '科技树', civicTree: '民政树', events: '事件', map: '地图', characters: '人物', factions: '势力', classes: '阶层', rules: '规则', officeTree: '官制', parties: '党派', variables: '变量', timeline: '时间线', economy: '经济', diplomacy: '外交', tinyi: '廷议', keju: '科举' } };
-  var PLAYERINFO_LABELS = { playerRole: '玩家身份', playerRoleCustom: '自定身份', leaderIsPlayer: '首领即玩家', factionName: '势力名', factionType: '势力类型', factionLeader: '势力首领', factionLeaderTitle: '首领头衔', factionTerritory: '疆域', factionStrength: '实力', factionCulture: '文化', factionGoal: '目标', factionResources: '资源', factionDesc: '势力简述', characterName: '角色名', characterTitle: '角色头衔', characterFaction: '所属势力', characterAge: '年龄', characterGender: '性别', characterPersonality: '性格', characterFaith: '信仰', characterCulture: '文化', characterBio: '小传', characterDesc: '角色简述', characterAppearance: '角色外貌', characterCharisma: '魅力', loyalty: '忠诚', ambition: '野心', intelligence: '智谋', valor: '武勇', military: '军事', benevolence: '仁德', administration: '政务', management: '管理', integrity: '廉节', diplomacy: '外交' };
+  var PLAYERINFO_LABELS = { playerRole: '玩家身份', playerRoleCustom: '自定身份', leaderIsPlayer: '首领即玩家', factionName: '势力名', factionType: '势力类型', factionLeader: '势力首领', factionLeaderTitle: '首领头衔', factionTerritory: '疆域', factionStrength: '实力', factionCulture: '文化', factionGoal: '目标', factionResources: '资源', factionDesc: '势力简述', characterName: '角色名', characterTitle: '角色头衔', characterFaction: '所属势力', characterAge: '年龄', characterGender: '性别', characterPersonality: '性格', characterFaith: '信仰', characterCulture: '文化', characterBio: '小传', characterDesc: '角色简述', characterAppearance: '角色外貌', characterCharisma: '魅力', loyalty: '忠诚', ambition: '野心', intelligence: '智谋', valor: '武勇', military: '军事', benevolence: '仁德', administration: '政务', management: '管理', integrity: '廉节', diplomacy: '外交',
+    /* 2026-07-03 · 补齐绍宋等剧本 playerInfo 漏网键（开局状态/授权 flag·缺条目回退英文 key 裸露） */
+    minxin: '民心', huangquan: '皇权', huangwei: '皇威', currentIssues: '开局议题', memorials: '开局奏疏',
+    openingAudiences: '开局召对', tianjiEnabled: '启用天机', junqingBriefEnabled: '启用军情简报',
+    xinjunObserveEnabled: '启用新君观政', xinjunObserveTurns: '新君观政回合', suggestions: '开局建议',
+    isShaosongHeightened: '绍宋强化版', shaosongNote: '剧本备注' };
   // 玩家入口·从已有势力/角色下拉选→一键导入字段（照搬老编辑器 pickFactionForPlayer/pickCharacterForPlayer 范式）·2026-06-05
   function playerPickerOptions(list, cur, ph) {
     var opts = '<option value="">' + ph + '</option>';
