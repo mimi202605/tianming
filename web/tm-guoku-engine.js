@@ -22,6 +22,16 @@
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function safe(v, d) { return (v === undefined || v === null) ? (d || 0) : v; }
 
+  // 民心走 MinxinLedger 总闸(2026-07-04 收口)：delta 落叶子+按源封顶。
+  // 直写 GM.minxin.trueIndex 是死路——它只是聚合缓存·下次 aggregateTrue 按叶子人口加权重算即冲掉。
+  function _mxApply(delta, reason, kind) {
+    if (!delta) return;
+    try {
+      var L = (typeof TM !== 'undefined' && TM.MinxinLedger) || global.MinxinLedger;
+      if (L && L.recordAndApply) L.recordAndApply(global.GM, { sourceSystem: 'guoku-engine', kind: kind || 'guokuFiscal', delta: delta, reason: reason });
+    } catch (_e) {}
+  }
+
   function getMonthRatio() {
     if (typeof _getDaysPerTurn === 'function') return _getDaysPerTurn() / 30;
     return 1;
@@ -1019,11 +1029,11 @@
   function triggerMutinyOrFamine() {
     if (GM.activeWars && GM.activeWars.length > 0) {
       if (typeof addEB === 'function') addEB('军事', '军饷断绝，兵变四起', { credibility: 'high' });
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 10);
+      _mxApply(-10, '军饷断绝，兵变四起');
     }
     if (GM.activeDisasters && GM.activeDisasters.length > 0) {
       if (typeof addEB === 'function') addEB('朝代', '赈济不继，饥民暴起', { credibility: 'high' });
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 15);
+      _mxApply(-15, '赈济不继，饥民暴起', 'disasterRelief');
     }
   }
 
@@ -1111,7 +1121,7 @@
         GM.corruption.sources.emergencyLevy = (GM.corruption.sources.emergencyLevy || 0) + rate * 10;
       }
       // 民心大损
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - rate * 15);
+      _mxApply(-(rate * 15), '加派' + Math.round(rate*100) + '%，民怨骤起', 'taxation');
       if (typeof addEB === 'function') addEB('朝代', '加派' + Math.round(rate*100) + '%，民怨骤起', { credibility: 'high' });
       return { success: true };
     },
@@ -1138,7 +1148,7 @@
       var minxinGain = scale === 'national' ? 15 :
                        scale === 'regional' ? 8 : 3;
       if (relieved === 0) minxinGain = Math.round(minxinGain / 2);
-      if (GM.minxin) GM.minxin.trueIndex = Math.min(100, GM.minxin.trueIndex + minxinGain);
+      _mxApply(minxinGain, '开仓赈济·民得食', 'disasterRelief');
       // 刀五·赈济→灾民回迁：开仓得食→流亡之民复归编户(减既有逃户池=釜底抽流寇之薪)。与刀B粮荒欠征(扣库粮)不同轴·非双算。
       //   不碰 hukou.fugitives(每回合由 aggregatePopulation 从叶子重算·改之无效)·只动 byLegalStatus 流亡池→编户(守恒·持久)。
       var resettled = 0;
@@ -1192,7 +1202,7 @@
         }
       }
       // 民心微升（节俭）
-      if (GM.minxin) GM.minxin.trueIndex = Math.min(100, GM.minxin.trueIndex + 2);
+      _mxApply(2, '裁冗员省俸禄·朝廷示俭');
       if (typeof addEB === 'function') addEB('朝代', '裁冗员 ' + cut + ' 名，省俸禄', { credibility: 'high' });
       return { success: true };
     },
@@ -1204,7 +1214,7 @@
       // 通过调整 taxRateMultiplier
       if (!GM.hukou) GM.hukou = {};
       GM.hukou.taxRateMultiplier = (GM.hukou.taxRateMultiplier || 1) * (1 - percent);
-      if (GM.minxin) GM.minxin.trueIndex = Math.min(100, GM.minxin.trueIndex + percent * 30);
+      _mxApply(percent * 30, '减税' + Math.round(percent*100) + '%·民困得纾', 'taxation');
       if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + percent * 8);
       if (typeof addEB === 'function') addEB('朝代', '减赋 ' + Math.round(percent*100) + '%，民感圣恩', { credibility: 'high' });
       return { success: true };
@@ -1217,7 +1227,7 @@
       GM.guoku.balance += amount;
       // 立即后果：通胀、皇威损
       if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8);
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 5);
+      _mxApply(-5, '朝廷敛财应急·物议沸腾');
       // 粮价/物价浮动留 hook 给货币系统
       if (GM.currency) GM.currency.inflationPressure = (GM.currency.inflationPressure || 0) + amount / 1000000;
       if (typeof addEB === 'function') addEB('朝代', '发行纸钞 ' + Math.round(amount/10000) + ' 万，市面疑虑', { credibility: 'high' });
@@ -1388,7 +1398,7 @@
       impact = 2 * (0.7 - ratio) * mr;
     }
     if (Math.abs(impact) > 0.1) {
-      GM.minxin.trueIndex = clamp(GM.minxin.trueIndex + impact, 0, 100);
+      _mxApply(impact, impact < 0 ? '农户税负过重·民力不支' : '税负轻省·民得休息', 'taxation');
     }
     if (GM.fiscal && GM.fiscal.floatingCollectionRate > 0) {
       GM.fiscal.floatingCollectionRate = Math.max(0, GM.fiscal.floatingCollectionRate - 0.02 * mr);
@@ -1592,7 +1602,7 @@
           GM.hukou.registeredTotal += Math.floor(found);
         }
         if (eff.populationGrowthBonus && GM.hukou) GM.hukou.growthBonus = (GM.hukou.growthBonus || 0) + eff.populationGrowthBonus;
-        if (eff.minxinDelta && GM.minxin) GM.minxin.trueIndex = clamp(GM.minxin.trueIndex + eff.minxinDelta, 0, 100);
+        if (eff.minxinDelta) _mxApply(eff.minxinDelta, '财政改革奏效及民');
         if (eff.huangweiDelta && GM.huangwei) GM.huangwei.index = clamp(GM.huangwei.index + eff.huangweiDelta, 0, 100);
         GM.guoku.completedReforms.push(o.id);
         if (typeof addEB === 'function') addEB('朝代', r.name + ' 施行既毕，' + eff.note, { credibility: 'high' });
@@ -1622,7 +1632,7 @@
     else GM.guoku._militaryCostMultiplier = 1;
     if (GM.prices.grain > 2.0 && GM.minxin) {
       var impact = -(GM.prices.grain - 2.0) * 3 * mr;
-      GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex + impact);
+      _mxApply(impact, '粮价' + GM.prices.grain.toFixed(2) + '倍·民生艰难', 'priceStability');
       if (Math.random() < 0.1 * mr && typeof addEB === 'function') addEB('事件', '粮价涨至 ' + GM.prices.grain.toFixed(2) + ' 倍，民生艰难', { credibility: 'high' });
     }
   }
@@ -1656,7 +1666,7 @@
       if (!GM.currency) GM.currency = {};
       GM.currency.inflationPressure = (GM.currency.inflationPressure || 0) + reduction * 0.5;
       if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - reduction * 15);
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - reduction * 8);
+      _mxApply(-(reduction * 8), '减重改铸·新钱成色降·市面疑虑');
       if (typeof addEB === 'function') addEB('朝代', '减重改铸：新钱成色降 ' + Math.round(reduction*100) + '%，市面疑虑', { credibility: 'high' });
       return { success: true, revenue: boost };
     },
@@ -1792,7 +1802,7 @@
     ];
     var txt = events[Math.floor(Math.random() * events.length)];
     if (typeof addEB === 'function') addEB('事件', '漕弊：' + txt, { credibility: 'high' });
-    if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 2);
+    _mxApply(-2, '漕弊扰民');
     if (GM.guoku && GM.guoku.ledgers && GM.guoku.ledgers.grain) {
       GM.guoku.ledgers.grain.stock = Math.max(0, GM.guoku.ledgers.grain.stock * 0.95);
     }
@@ -1831,7 +1841,7 @@
       }
     }
     if (se.huangwei && GM.huangwei) GM.huangwei.index = clamp(GM.huangwei.index + se.huangwei, 0, 100);
-    if (se.minxin && GM.minxin) GM.minxin.trueIndex = clamp(GM.minxin.trueIndex + se.minxin, 0, 100);
+    if (se.minxin) _mxApply(se.minxin, '应急借贷·市面所感');
     if (se.foreign && GM.huangwei && GM.huangwei.subDims && GM.huangwei.subDims.foreign) {
       GM.huangwei.subDims.foreign.value = clamp(GM.huangwei.subDims.foreign.value + se.foreign, 0, 100);
     }

@@ -23,6 +23,16 @@
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function safe(v, def) { return (v === undefined || v === null) ? (def || 0) : v; }
 
+  // 民心走 MinxinLedger 总闸(2026-07-04 收口)：delta 落叶子+按源封顶。
+  // 直写 GM.minxin.trueIndex 是死路——它只是聚合缓存·下次 aggregateTrue 按叶子人口加权重算即冲掉。
+  function _mxApply(delta, reason, kind) {
+    if (!delta) return;
+    try {
+      var L = (typeof TM !== 'undefined' && TM.MinxinLedger) || global.MinxinLedger;
+      if (L && L.recordAndApply) L.recordAndApply(global.GM, { sourceSystem: 'corruption-engine', kind: kind || 'corruption', delta: delta, reason: reason });
+    } catch (_e) {}
+  }
+
   function hasCatalogKeyOffice(grp) {
     var offices = Array.isArray(grp && grp.keyOffices) ? grp.keyOffices : [];
     if (!offices.length) return false;
@@ -280,11 +290,9 @@
     }
 
     // 3.4 司法不公 → 民心
-    if (GM.minxin) {
+    {
       var ji = Consequences.calcJudicialImpact();
-      GM.minxin.trueIndex = clamp(
-        safe(GM.minxin.trueIndex, 50) - ji.civilUnrestContribution * 0.05 * mr,
-        0, 100);
+      _mxApply(-(ji.civilUnrestContribution * 0.05 * mr), '司法不公·民有冤抑', 'judicialFairness');
     }
 
     // 其他（空额率/工程质量）留待军事/工程系统实现时调用 Consequences.calcXxx()
@@ -600,7 +608,7 @@
           GM.corruption.subDepts[k].true - reduction);
       });
       // 副作用
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 5);
+      _mxApply(-5, '肃贪株连·地方震荡');
       GM.corruption.countermeasures.purgeCampaign = {
         active: true, scale: scale, startTurn: GM.turn, turnsLeft: 6
       };
@@ -668,7 +676,7 @@
       GM.corruption.countermeasures.harshPunishment = Math.min(1,
         GM.corruption.countermeasures.harshPunishment + 0.5);
       // 民心↓
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 8);
+      _mxApply(-8, '酷吏肃贪·滥刑及众', 'judicialFairness');
       if (typeof addEB === 'function') addEB('朝代', '陛下以酷吏肃贪，朝野肃然', { credibility: 'high' });
       syncIndexFromSubDepts('\u9177\u540f\u8083\u8d2a');
       return { success: true };
@@ -943,7 +951,7 @@
           function() {
             GM.corruption.subDepts.judicial.true += 15;
             GM.corruption.countermeasures.harshPunishment = 0;
-            if (GM.minxin) GM.minxin.trueIndex = Math.min(100, GM.minxin.trueIndex + 5);
+            _mxApply(5, '清算酷吏·冤狱得雪', 'judicialFairness');
             if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8);
           });
         counters.harshAccum = 0;
@@ -963,7 +971,7 @@
             if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangquan) {
               global.AuthorityEngines.adjustHuangquan('factionConsuming', -10, '\u53cd\u8150\u515a\u4e89\u5931\u63a7');
             } else if (GM.huangquan) GM.huangquan.index = Math.max(0, GM.huangquan.index - 10);
-            if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 8);
+            _mxApply(-8, '反腐沦为党争·朝局动荡');
             // 清流大批辞官
             if (GM.chars) {
               var quit = 0;
@@ -1163,6 +1171,15 @@
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function safe(v, def) { return (v === undefined || v === null) ? (def || 0) : v; }
+
+  // 民心走 MinxinLedger 总闸(2026-07-04 收口)·同 p1 的 _mxApply(多 IIFE 各一份·作用域隔离)
+  function _mxApply(delta, reason, kind) {
+    if (!delta) return;
+    try {
+      var L = (typeof TM !== 'undefined' && TM.MinxinLedger) || global.MinxinLedger;
+      if (L && L.recordAndApply) L.recordAndApply(global.GM, { sourceSystem: 'corruption-engine', kind: kind || 'corruption', delta: delta, reason: reason });
+    } catch (_e) {}
+  }
 
   // ═════════════════════════════════════════════════════════════
   // §6.1 揭发事件库（25 条）
@@ -1498,7 +1515,7 @@
       }
     }
     if (cost.huangwei  && GM.huangwei)  GM.huangwei.index  = Math.max(0, GM.huangwei.index  - Math.abs(cost.huangwei));
-    if (cost.minxin    && GM.minxin)    GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - Math.abs(cost.minxin));
+    if (cost.minxin) _mxApply(-Math.abs(cost.minxin), '惩贪行动波及地方');
     if (cost.guoku     && GM.guoku)     GM.guoku.balance -= Math.abs(cost.guoku);
     if (cost.stress) { /* player stress — hook */ }
 
@@ -1507,7 +1524,7 @@
       GM.corruption.subDepts[caseObj.dept].true = Math.max(0,
         GM.corruption.subDepts[caseObj.dept].true + ben.corruption);
     }
-    if (ben.minxin   && GM.minxin)   GM.minxin.trueIndex = Math.min(100, GM.minxin.trueIndex + ben.minxin);
+    if (ben.minxin) _mxApply(ben.minxin, '惩贪见效·民心称快');
     if (ben.huangwei && GM.huangwei) GM.huangwei.index   = Math.min(100, GM.huangwei.index   + ben.huangwei);
     if (ben.huangquan && GM.huangquan) {
       if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangquan) {
@@ -1551,7 +1568,7 @@
         c.status = 'expired';
         c.resolvedTurn = GM.turn;
         // 不处理的后果：民心 -2，皇威 -1，腐败略升
-        if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 2);
+        _mxApply(-2, '贪案悬而不决·民怨积');
         if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 1);
         if (c.dept && GM.corruption.subDepts[c.dept]) {
           GM.corruption.subDepts[c.dept].true = Math.min(100, GM.corruption.subDepts[c.dept].true + 3);
@@ -1633,8 +1650,8 @@
 
     GM.corruption.lumpSumIncidents.push(incident);
 
-    if (incident.directPeopleBurden && GM.minxin) {
-      GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - ratio * 15);
+    if (incident.directPeopleBurden) {
+      _mxApply(-(ratio * 15), '贪弊直取于民');
     }
 
     if (typeof addEB === 'function') {

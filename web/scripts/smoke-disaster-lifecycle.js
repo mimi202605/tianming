@@ -14,6 +14,7 @@ ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
 ctx.turnsForMonths = function (m) { return m; }; // 身份映射:灾种月数=回合数(便于断言)
 ctx.addEB = function () {};
 vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-minxin-ledger.js'), 'utf8'), ctx, { filename: 'tm-minxin-ledger.js' });   // 民心已收口走总闸(2026-07-04)·沙箱须与运行时同形态
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-guoku-engine.js'), 'utf8'), ctx, { filename: 'tm-guoku-engine.js' });
 const GE = ctx.GuokuEngine;
 

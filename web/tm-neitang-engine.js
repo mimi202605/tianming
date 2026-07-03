@@ -19,6 +19,15 @@
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function safe(v, d) { return (v === undefined || v === null) ? (d || 0) : v; }
 
+  // 民心走 MinxinLedger 总闸(2026-07-04 收口)：delta 落叶子+按源封顶。直写 trueIndex 会被 aggregateTrue 冲掉。
+  function _mxApply(delta, reason, kind) {
+    if (!delta) return;
+    try {
+      var L = (typeof TM !== 'undefined' && TM.MinxinLedger) || global.MinxinLedger;
+      if (L && L.recordAndApply) L.recordAndApply(global.GM, { sourceSystem: 'neitang-engine', kind: kind || 'neitangPalace', delta: delta, reason: reason });
+    } catch (_e) {}
+  }
+
   function getMonthRatio() {
     if (typeof _getDaysPerTurn === 'function') return _getDaysPerTurn() / 30;
     return 1;
@@ -591,7 +600,7 @@
       GM.neitang._annualRescueAmount = (GM.neitang._annualRescueAmount || 0) + amount;
       // 皇家德政 → 皇威+ 民心+
       if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 3);
-      if (GM.minxin) GM.minxin.trueIndex = Math.min(100, GM.minxin.trueIndex + 2);
+      _mxApply(2, '罄内帑济国用·皇家德政', 'imperialVirtue');
       if (typeof addEB === 'function') addEB('朝代', '陛下罄内帑 ' + Math.round(amount/10000) + ' 万两济国用，群臣感泣', { credibility: 'high' });
       return { success: true };
     },
@@ -605,7 +614,7 @@
       GM.neitang.specialTaxType = type;
       GM.neitang.specialTaxMonthly = monthly;
       // 民心损（历史上矿税害民）
-      if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 5);
+      _mxApply(-5, '开征' + (type || '特税') + '·中官四出害民', 'taxation');
       if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 3);
       if (typeof addEB === 'function') addEB('朝代', '开' + type + '，月收 ' + Math.round(monthly/1000) + ' 千两入内帑', { credibility: 'high' });
       return { success: true };
@@ -616,7 +625,7 @@
       ensureNeitangModel();
       if (!GM.neitang.specialTaxActive) return { success: false, reason: '未开启' };
       GM.neitang.specialTaxActive = false;
-      if (GM.minxin) GM.minxin.trueIndex = Math.min(100, GM.minxin.trueIndex + 3);
+      _mxApply(3, '罢特税·民困得苏', 'taxation');
       if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 2);
       if (typeof addEB === 'function') addEB('朝代', '罢' + (GM.neitang.specialTaxType || '特别税') + '，民感圣德', { credibility: 'high' });
       return { success: true };
@@ -816,6 +825,15 @@
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
   function safe(v, d) { return (v === undefined || v === null) ? (d || 0) : v; }
+
+  // 民心走 MinxinLedger 总闸(2026-07-04 收口)·同 p1 的 _mxApply(两 IIFE 各一份·作用域隔离)
+  function _mxApply(delta, reason, kind) {
+    if (!delta) return;
+    try {
+      var L = (typeof TM !== 'undefined' && TM.MinxinLedger) || global.MinxinLedger;
+      if (L && L.recordAndApply) L.recordAndApply(global.GM, { sourceSystem: 'neitang-engine', kind: kind || 'neitangPalace', delta: delta, reason: reason });
+    } catch (_e) {}
+  }
   function rng(min, max) { return min + Math.random() * (max - min); }
 
   // ═════════════════════════════════════════════════════════════
@@ -916,7 +934,7 @@
             GM.huangquan.index = clamp(GM.huangquan.index + side.huangquan * mr, 0, 100);
           }
         }
-        if (side.minxin && GM.minxin) GM.minxin.trueIndex = clamp(GM.minxin.trueIndex + side.minxin * mr, 0, 100);
+        if (side.minxin) _mxApply(side.minxin * mr, '内帑举措及民');
         if (side.corruption_imperial && GM.corruption && GM.corruption.subDepts.imperial) {
           GM.corruption.subDepts.imperial.true = clamp(GM.corruption.subDepts.imperial.true + side.corruption_imperial * mr, 0, 100);
         }
@@ -1147,7 +1165,7 @@
       addEB('朝代', '宗室子孙繁衍数十倍，朝廷难以供养，藩王贫极殴夺民产',
         { credibility: 'high' });
     }
-    if (GM.minxin) GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 10);
+    _mxApply(-10, '宗室繁衍难供·藩王殴夺民产');
     if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8);
     if (GM.neitang.history) GM.neitang.history.events.push({
       turn: GM.turn, type: 'royal_clan_bankruptcy'

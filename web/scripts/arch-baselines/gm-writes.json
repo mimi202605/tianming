@@ -4,9 +4,9 @@
       "tm-save-lifecycle.js"
     ]
   },
-  "updatedAt": "2026-07-03T17:15:24.088Z",
+  "updatedAt": "2026-07-03T22:47:06.814Z",
   "totals": {
-    "gm": 3314,
+    "gm": 3275,
     "p": 708
   },
   "files": {
@@ -324,14 +324,13 @@
       }
     },
     "tm-wendui-prison.js": {
-      "gm": 27,
+      "gm": 23,
       "p": 0,
       "roots": {
         "gm:_prisonVisits": 2,
         "gm:_prisonVisitsTotal": 2,
         "gm:<dynamic>": 8,
         "gm:qijuHistory": 3,
-        "gm:minxin": 4,
         "gm:huangwei": 2,
         "gm:memorials": 4,
         "gm:_palaceFavoritism": 2
@@ -1415,13 +1414,12 @@
       }
     },
     "tm-keju-reform-evolution.js": {
-      "gm": 21,
+      "gm": 19,
       "p": 0,
       "roots": {
         "gm:_kejuParadigm": 11,
         "gm:_chronicle": 4,
         "gm:corruption": 2,
-        "gm:minxin": 2,
         "gm:_factionTension": 2
       }
     },
@@ -1462,7 +1460,7 @@
       }
     },
     "tm-keju-enke.js": {
-      "gm": 40,
+      "gm": 36,
       "p": 0,
       "roots": {
         "gm:_chronicle": 10,
@@ -1475,7 +1473,6 @@
         "gm:_enkeHistory": 2,
         "gm:prestige": 1,
         "gm:_kejuParadigm": 2,
-        "gm:minxin": 4,
         "gm:_specialExamCalendar": 1,
         "gm:_pendingEnkeFromEdict": 1
       }
@@ -1574,13 +1571,12 @@
       }
     },
     "tm-keju.js": {
-      "gm": 8,
+      "gm": 7,
       "p": 14,
       "roots": {
         "p:keju": 14,
         "gm:keju": 2,
         "gm:huangquan": 1,
-        "gm:minxin": 1,
         "gm:classes": 1,
         "gm:qijuHistory": 1,
         "gm:guoku": 1,
@@ -2120,14 +2116,13 @@
       }
     },
     "tm-corruption-engine.js": {
-      "gm": 119,
+      "gm": 110,
       "p": 0,
       "roots": {
         "gm:corruption": 63,
         "gm:guoku": 6,
         "gm:_corrStats": 6,
         "gm:neitang": 2,
-        "gm:minxin": 10,
         "gm:turnChanges": 3,
         "gm:officialSalary": 2,
         "gm:_corrDeptLongTerm": 1,
@@ -2137,11 +2132,12 @@
         "gm:hukou": 3,
         "gm:partyStrife": 2,
         "gm:juanna": 3,
+        "gm:minxin": 1,
         "gm:mapData": 2
       }
     },
     "tm-guoku-engine.js": {
-      "gm": 155,
+      "gm": 142,
       "p": 0,
       "roots": {
         "gm:guoku": 78,
@@ -2150,7 +2146,6 @@
         "gm:military": 1,
         "gm:huangwei": 12,
         "gm:huangquan": 3,
-        "gm:minxin": 13,
         "gm:vars": 5,
         "gm:activeFamine": 2,
         "gm:activeDisasters": 1,
@@ -2171,7 +2166,7 @@
       }
     },
     "tm-neitang-engine.js": {
-      "gm": 83,
+      "gm": 78,
       "p": 0,
       "roots": {
         "gm:neitang": 56,
@@ -2179,7 +2174,6 @@
         "gm:corruption": 3,
         "gm:huangwei": 6,
         "gm:huangquan": 2,
-        "gm:minxin": 5,
         "gm:fiscal": 1
       }
     },
@@ -2215,7 +2209,7 @@
       }
     },
     "tm-economy-engine.js": {
-      "gm": 24,
+      "gm": 23,
       "p": 1,
       "roots": {
         "p:national": 1,
@@ -2224,8 +2218,7 @@
         "gm:regions": 2,
         "gm:transferOrders": 3,
         "gm:neitang": 2,
-        "gm:_linkageStats": 2,
-        "gm:minxin": 1
+        "gm:_linkageStats": 2
       }
     },
     "tm-central-local-engine.js": {

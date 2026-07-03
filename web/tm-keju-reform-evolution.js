@@ -390,10 +390,9 @@
         GM.corruption.trueIndex = Math.max(0, Math.min(100,
           GM.corruption.trueIndex + d.corruptionAccum));
       }
-      // RAA·C5·真路径·GM.minxin.trueIndex
-      if (d.civilianReact && GM.minxin && typeof GM.minxin.trueIndex === 'number') {
-        GM.minxin.trueIndex = Math.max(0, Math.min(100,
-          GM.minxin.trueIndex + d.civilianReact));
+      // RAA·C5·真路径已改走 MinxinLedger 总闸(2026-07-04 收口·直写 trueIndex 会被 aggregateTrue 冲掉)
+      if (d.civilianReact && typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
+        try { TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'keju-reform-evolution', kind: 'socialMobility', delta: d.civilianReact, reason: '科举改革·民间所感' }); } catch (_e) {}
       }
       // RAA·C4·_factionTension 是 number·直加·clamp -100~100
       if (d.factionTension) {
@@ -907,9 +906,8 @@
           GM.corruption.trueIndex = Math.max(0, Math.min(100,
             GM.corruption.trueIndex + d.corruption));
         }
-        if (d.civilianReact && GM.minxin && typeof GM.minxin.trueIndex === 'number') {
-          GM.minxin.trueIndex = Math.max(0, Math.min(100,
-            GM.minxin.trueIndex + d.civilianReact));
+        if (d.civilianReact && typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
+          try { TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'keju-reform-evolution', kind: 'socialMobility', delta: d.civilianReact, reason: '科举改革·民间所感' }); } catch (_e) {}
         }
         if (d.factionTension) {
           var ft2 = parseInt(GM._factionTension, 10) || 0;

@@ -998,8 +998,7 @@
     if (td.subtype === 'reign-change') {
       var _AEk1 = (typeof window !== 'undefined' && window.AuthorityEngines) || (typeof global !== 'undefined' && global.AuthorityEngines) || null;
       if (_AEk1 && _AEk1.adjustMinxin) _AEk1.adjustMinxin('socialMobility', -3, '改元恩科·士林失望', { persist: true });
-      else if (GM.minxin && typeof GM.minxin.trueIndex === 'number') GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 3);
-      else if (typeof GM.minxin === 'number') GM.minxin -= 3;
+      else if (typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'keju-enke', kind: 'socialMobility', delta: -3, reason: '改元恩科未开·士林失望' }); // 收口·直写死路(聚合冲掉)·兜底也走闸
     }
   }
 
@@ -1023,8 +1022,7 @@
       var _dMx = Math.round(ac['士林'] * 0.3); // 士林 +10 → minxin +3 (士林是 minxin subset)
       var _AEk2 = (typeof window !== 'undefined' && window.AuthorityEngines) || (typeof global !== 'undefined' && global.AuthorityEngines) || null;
       if (_AEk2 && _AEk2.adjustMinxin) _AEk2.adjustMinxin('socialMobility', _dMx, '恩科·士林感念', { persist: true });
-      else if (GM.minxin && typeof GM.minxin.trueIndex === 'number') GM.minxin.trueIndex = Math.max(0, Math.min(100, GM.minxin.trueIndex + _dMx));
-      else if (typeof GM.minxin === 'number') GM.minxin += _dMx;
+      else if (typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'keju-enke', kind: 'socialMobility', delta: _dMx, reason: '恩科开科·士林感念' }); // 收口·直写死路(聚合冲掉)·兜底也走闸
     }
     // 不 apply 官僚 / lizhi·避跟其他 system 重复
     // chronicle 记 cost apply

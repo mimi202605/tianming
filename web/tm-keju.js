@@ -426,8 +426,9 @@ function _adjustMinxin(delta, reason) {
       if (typeof addEB === 'function') addEB('\u6C11\u5FC3', (delta > 0 ? '+' : '') + delta + '\u00B7' + (reason || ''));
       return;
     }
-    if (GM.minxin && typeof GM.minxin === 'object') {
-      GM.minxin.trueIndex = Math.max(0, Math.min(100, (typeof GM.minxin.trueIndex === 'number' ? GM.minxin.trueIndex : 50) + delta));
+    // \u515C\u5E95\u4E5F\u8D70 MinxinLedger \u603B\u95F8(2026-07-04 \u6536\u53E3\u00B7\u76F4\u5199 trueIndex \u4F1A\u88AB aggregateTrue \u51B2\u6389)
+    if (typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
+      TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'keju', kind: 'socialMobility', delta: delta, reason: reason || '\u79D1\u4E3E\u4E8B\u00B7\u58EB\u6797\u6240\u611F' });
       if (typeof addEB === 'function') addEB('\u6C11\u5FC3', (delta > 0 ? '+' : '') + delta + '\u00B7' + (reason || ''));
     }
   } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}

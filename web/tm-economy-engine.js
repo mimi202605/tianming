@@ -2144,10 +2144,10 @@
     });
     avgLevy /= burdens.length;
 
-    // 加派 > 0.3 开始显著扣民心
-    if (avgLevy > 0.3) {
+    // 加派 > 0.3 开始显著扣民心·走 MinxinLedger 总闸(2026-07-04 收口·直写 trueIndex 会被 aggregateTrue 冲掉)
+    if (avgLevy > 0.3 && typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
       var impact = -(avgLevy - 0.3) * 4 * mr;
-      GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex + impact);
+      try { TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'economy-engine', kind: 'taxation', delta: impact, reason: '加派沉重·民力困竭' }); } catch (_e) {}
     }
   }
 

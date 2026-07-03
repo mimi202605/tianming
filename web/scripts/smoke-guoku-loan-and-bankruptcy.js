@@ -18,6 +18,7 @@ function load(file) {
 }
 function assert(cond, msg) { if (!cond) throw new Error('[smoke-guoku-loan-and-bankruptcy] ' + msg); }
 
+load('tm-minxin-ledger.js');   // 民心已收口走总闸(2026-07-04)·沙箱须与运行时同形态
 load('tm-guoku-engine.js');
 
 

@@ -368,9 +368,9 @@
   function _applyEffects(eff, ch) {
     var GM = global.GM;
     if (!GM) return;
-    if (eff.minxin && GM.minxin) {
-      if (typeof GM.minxin.trueIndex === 'number') GM.minxin.trueIndex = Math.max(0, Math.min(100, GM.minxin.trueIndex + eff.minxin));
-      if (typeof GM.minxin.value === 'number') GM.minxin.value = GM.minxin.trueIndex;
+    // 民心走 MinxinLedger 总闸(2026-07-04 收口)·直写 trueIndex 会被 aggregateTrue 冲掉·value 镜像随之退役
+    if (eff.minxin && typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
+      try { TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'wendui-prison', kind: 'judicialFairness', delta: eff.minxin, reason: '狱案处置·朝野所感' }); } catch (_e) {}
     }
     if (eff.huangwei && GM.huangwei) {
       if (typeof GM.huangwei.index === 'number') GM.huangwei.index = Math.max(0, Math.min(100, GM.huangwei.index + eff.huangwei));
@@ -570,9 +570,8 @@
       apply: function(ch, GM) {
         ch.loyalty = Math.max(0, (ch.loyalty || 50) - 5);
         // 2026-05-21·原"党争 +1"·官方剧本未初始化 partyStrife·改民心 -1 (朝野非议)
-        if (GM.minxin && typeof GM.minxin.trueIndex === 'number') {
-          GM.minxin.trueIndex = Math.max(0, GM.minxin.trueIndex - 1);
-          if (typeof GM.minxin.value === 'number') GM.minxin.value = GM.minxin.trueIndex;
+        if (typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
+          try { TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'wendui-prison', kind: 'judicialFairness', delta: -1, reason: '诏狱攀供·朝野非议' }); } catch (_e) {}
         }
         return { qiju: '【诏狱】' + ch.name + ' 为攀供·咬出同党·朝野有议·忠诚 -5·民心 -1。' };
       }
