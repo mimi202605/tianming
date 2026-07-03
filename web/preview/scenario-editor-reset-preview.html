@@ -12966,6 +12966,202 @@
       background: var(--je-chrome-1);
       box-shadow: var(--je-shadow-lg);
     }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 X1 —— 总览控制台内部玄墨化
+       overlay 容器上轮已换玄墨，本刀清内部 ~31 面板的老暗金语言：
+       按「视觉族」成批映射(卡/行/井/签/青瓷/靛蓝/金语义)·hover 一并接管
+       (同特异性后置会压死原 hover·故每族自带 hover)。全部 .main-stack 限定。
+       ════════════════════════════════════════════════════════════════ */
+    .main-stack h2, .main-stack h3 { font-family: var(--je-font-display); font-weight: 400; }
+    /* 卡片族：墨面卡 */
+    .main-stack .metric,
+    .main-stack .mode-card,
+    .main-stack .health-card,
+    .main-stack .shortcut-card,
+    .main-stack .empty-state-card,
+    .main-stack .starter-template-card,
+    .main-stack .ai-card,
+    .main-stack .flow-step,
+    .main-stack .events-merge-group {
+      background: var(--je-chrome-2);
+      border-color: var(--je-hairline-2);
+      box-shadow: none;
+    }
+    .main-stack .metric:hover,
+    .main-stack .mode-card:hover,
+    .main-stack .health-card:hover,
+    .main-stack .shortcut-card:hover,
+    .main-stack .starter-template-card:hover,
+    .main-stack .ai-card:hover,
+    .main-stack .flow-step:hover {
+      border-color: rgba(184, 154, 83, .55);
+      background: var(--je-chrome-3);
+    }
+    /* 行族：淡墨行 */
+    .main-stack .runtime-field-row,
+    .main-stack .validation-row,
+    .main-stack .coverage-row,
+    .main-stack .parity-row,
+    .main-stack .global-search-row,
+    .main-stack .reference-repair-row,
+    .main-stack .events-merge-row,
+    .main-stack .quick-test-summary,
+    .main-stack .runtime-field-summary,
+    .main-stack .parity-summary {
+      background: rgba(245, 240, 232, .03);
+      border-color: var(--je-hairline);
+    }
+    .main-stack .runtime-field-row:hover,
+    .main-stack .validation-row:hover,
+    .main-stack .global-search-row:hover,
+    .main-stack .reference-repair-row:hover,
+    .main-stack .events-merge-row:hover {
+      border-color: rgba(184, 154, 83, .45);
+      background: rgba(184, 154, 83, .06);
+    }
+    /* 井族：文本/日志盒 */
+    .main-stack .release-note-markdown,
+    .main-stack .status-log-list,
+    .main-stack .ai-prompt-box {
+      background: #181715;
+      border-color: var(--je-hairline);
+    }
+    /* 签族：导航 pill / 折叠钮 */
+    .section-nav-strip { border-color: var(--je-hairline); }
+    .main-stack .section-nav-pill,
+    .main-stack .runtime-subnav-pill,
+    .main-stack .panel-collapse-toggle,
+    .main-stack .section-nav-toggle {
+      background: transparent;
+      border-color: var(--je-hairline-2);
+      color: var(--je-tx-mid);
+    }
+    .main-stack .section-nav-pill:hover,
+    .main-stack .runtime-subnav-pill:hover,
+    .main-stack .panel-collapse-toggle:hover,
+    .main-stack .section-nav-toggle:hover {
+      background: var(--je-chrome-3);
+      border-color: rgba(184, 154, 83, .55);
+      color: var(--je-tx-hi);
+    }
+    .main-stack .section-nav-pill[data-active="true"] {
+      background: rgba(184, 154, 83, .14);
+      border-color: rgba(184, 154, 83, .55);
+      color: var(--je-tx-hi);
+      font-weight: 400;
+    }
+    .main-stack .runtime-subnav { background: transparent; border-color: var(--je-hairline); }
+    .main-stack .runtime-subnav-sep { background: var(--je-hairline-2); }
+    /* 青瓷件统一色相(celadon 126,184,167) */
+    .main-stack .workflow-step-card,
+    .main-stack .production-task-row,
+    .main-stack .queue-card,
+    .main-stack .runtime-field-note,
+    .main-stack .ai-fix-plan-panel,
+    .main-stack .comparison-summary,
+    .main-stack .api-settings-status {
+      background: rgba(126, 184, 167, .06);
+      border-color: rgba(126, 184, 167, .3);
+    }
+    .main-stack .runtime-audit-filter { background: rgba(126, 184, 167, .16); border-color: rgba(126, 184, 167, .6); }
+    .main-stack .coverage-tag { background: rgba(126, 184, 167, .1); border-color: rgba(126, 184, 167, .35); }
+    /* 靛蓝件统一(74,111,165) */
+    .main-stack .api-presets-bar,
+    .main-stack .comparison-row,
+    .main-stack .events-merge-toolbar {
+      background: rgba(74, 111, 165, .08);
+      border-color: rgba(74, 111, 165, .38);
+    }
+    /* 金语义件(提示/待办) */
+    .main-stack .preflight-row,
+    .main-stack .release-note-card,
+    .main-stack .runtime-field-key {
+      background: rgba(184, 154, 83, .07);
+      border-color: rgba(184, 154, 83, .3);
+    }
+    .main-stack .empty-state-glyph,
+    .main-stack .shortcut-icon {
+      background: var(--je-chrome-2);
+      border-color: rgba(184, 154, 83, .4);
+      color: var(--je-gold-300);
+    }
+    .main-stack .hero-board { border-color: var(--je-hairline-2); }
+    .main-stack .progress-line { background: rgba(245, 240, 232, .1); }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 X2 —— 弹窗族收敛
+       ⌘K / 导入 / 玩家视角模态：老暗金渐变盒 → 玄墨浮层。
+       玩家视角内容保持暗(它模拟游戏内观感·语义正确)，只收敛容器语言。
+       ════════════════════════════════════════════════════════════════ */
+    .je-cmdk,
+    .je-import,
+    .je-pv-modal {
+      background: var(--je-chrome-2);
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius-lg);
+      box-shadow: var(--je-shadow-lg);
+    }
+    .je-cmdk input { border-bottom: 1px solid var(--je-hairline-2); color: var(--je-tx-hi); }
+    .je-cmdk .je-cmdk-item { color: var(--je-tx-mid); }
+    .je-cmdk .je-cmdk-item.active,
+    .je-cmdk .je-cmdk-item:hover { background: rgba(184, 154, 83, .15); color: var(--je-gold-300); }
+    .je-cmdk .je-cmdk-item .hint { color: var(--je-tx-dim); }
+    .je-import textarea,
+    .je-bundle .je-bundle-fac,
+    .je-batch .je-batch-coll,
+    .je-batch .je-batch-n,
+    .je-batch .je-batch-note {
+      background: #181715;
+      border-color: var(--je-hairline-2);
+      color: var(--je-tx-hi);
+    }
+    .je-import h4 { color: var(--je-gold-300); font-family: var(--je-font-display); font-weight: 400; }
+    .je-cmdk-back, .je-import-back, .je-pv-back { background: rgba(10, 8, 6, .66); }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 X3 —— 一致性横幅 + 深度台漏网清剿
+       ════════════════════════════════════════════════════════════════ */
+    /* 一致性守护横幅：亮珊瑚块 → 玄墨朱批浮签(与纸面体检横幅同语言·浮于暗上) */
+    .je-guard-toast {
+      background: var(--je-chrome-2);
+      border: 1px solid rgba(192, 64, 48, .5);
+      border-left: 3px solid #c04030;
+      color: var(--je-tx-hi);
+      box-shadow: var(--je-shadow-lg);
+    }
+    .je-guard-toast .gt-body b { color: var(--je-vermillion-300); }
+    .je-guard-toast .gt-body .gt-item { color: var(--je-tx-mid); opacity: 1; }
+    .je-guard-toast button {
+      background: transparent;
+      border: 1px solid var(--je-hairline-2);
+      color: var(--je-tx-mid);
+    }
+    .je-guard-toast button:hover { border-color: rgba(184, 154, 83, .55); color: var(--je-tx-hi); }
+    .je-guard-toast .gt-x { border: none; color: var(--je-tx-dim); }
+    /* 深度台漏网：JSON 编辑器本尊(上轮盖了四同族漏了它)→纸面井·等宽 */
+    .inspector #field-editor-value {
+      background: #f6f0df;
+      border: 1px solid #dcc99c;
+      color: #262014;
+      font-family: var(--je-font-mono);
+      font-size: 12px;
+    }
+    .inspector #field-editor-value:focus {
+      outline: none;
+      border-color: #a8833a;
+      box-shadow: 0 0 0 2px rgba(168, 131, 58, .16);
+    }
+    /* 字段缺失 callout：亮字在纸上隐形 → 纸面墨字 */
+    .inspector .missing-field-callout {
+      background: rgba(168, 131, 58, .08);
+      border-color: rgba(168, 131, 58, .35);
+    }
+    .inspector .missing-field-callout b { color: #7d5e22; }
+    .inspector .missing-field-callout span { color: #574733; }
+    /* 深度台里的状态行(操作记录等) */
+    .inspector .status-row { color: #574733; }
+    .inspector .status-row b { color: #262014; }
   </style>
 </head>
 <body>
