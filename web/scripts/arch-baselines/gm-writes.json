@@ -1,0 +1,666 @@
+{
+  "config": {
+    "owners": [
+      "tm-save-lifecycle.js"
+    ]
+  },
+  "updatedAt": "2026-07-03T16:56:53.517Z",
+  "totals": {
+    "gm": 3314,
+    "p": 708
+  },
+  "files": {
+    "map-converter.js": {
+      "gm": 0,
+      "p": 1
+    },
+    "map-editor-to-game.js": {
+      "gm": 1,
+      "p": 2
+    },
+    "tm-utils.js": {
+      "gm": 6,
+      "p": 13
+    },
+    "tm-ai-infra.js": {
+      "gm": 2,
+      "p": 18
+    },
+    "tm-memory-trace.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-memory-issue-governance.js": {
+      "gm": 4,
+      "p": 0
+    },
+    "tm-memory-writegate.js": {
+      "gm": 21,
+      "p": 0
+    },
+    "tm-memory-turn-archive.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-memory-turn-rollup.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-memory-turn-backfill.js": {
+      "gm": 4,
+      "p": 0
+    },
+    "tm-memory-controls.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-memory-workshop.js": {
+      "gm": 8,
+      "p": 0
+    },
+    "tm-relations.js": {
+      "gm": 16,
+      "p": 0
+    },
+    "tm-memory-tables.js": {
+      "gm": 11,
+      "p": 0
+    },
+    "tm-semantic-recall.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-recall-gate.js": {
+      "gm": 0,
+      "p": 1
+    },
+    "tm-memory-ui.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-mechanics.js": {
+      "gm": 26,
+      "p": 0
+    },
+    "tm-mechanics-world.js": {
+      "gm": 44,
+      "p": 0
+    },
+    "tm-agent-flags.js": {
+      "gm": 0,
+      "p": 2
+    },
+    "tm-memory-steward.js": {
+      "gm": 18,
+      "p": 0
+    },
+    "tm-reflection-agent.js": {
+      "gm": 11,
+      "p": 0
+    },
+    "tm-edict-oversight.js": {
+      "gm": 10,
+      "p": 0
+    },
+    "tm-history-advisor.js": {
+      "gm": 8,
+      "p": 0
+    },
+    "tm-change-queue.js": {
+      "gm": 14,
+      "p": 0
+    },
+    "tm-indices.js": {
+      "gm": 46,
+      "p": 7
+    },
+    "tm-world.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-memorials.js": {
+      "gm": 29,
+      "p": 0
+    },
+    "tm-wendui.js": {
+      "gm": 96,
+      "p": 0
+    },
+    "tm-wendui-prison.js": {
+      "gm": 27,
+      "p": 0
+    },
+    "tm-office-system.js": {
+      "gm": 10,
+      "p": 0
+    },
+    "tm-office-fallback.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-office-runtime.js": {
+      "gm": 28,
+      "p": 0
+    },
+    "tm-office-panel.js": {
+      "gm": 38,
+      "p": 1
+    },
+    "tm-office-flags.js": {
+      "gm": 0,
+      "p": 1
+    },
+    "tm-office-reform.js": {
+      "gm": 6,
+      "p": 0
+    },
+    "tm-npc-engine.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-npc-decision.js": {
+      "gm": 18,
+      "p": 0
+    },
+    "tm-launch.js": {
+      "gm": 2,
+      "p": 43
+    },
+    "tm-player-settings.js": {
+      "gm": 0,
+      "p": 28
+    },
+    "tm-player-core.js": {
+      "gm": 26,
+      "p": 17
+    },
+    "tm-hongyan-office.js": {
+      "gm": 82,
+      "p": 0
+    },
+    "tm-game-loop.js": {
+      "gm": 83,
+      "p": 0
+    },
+    "tm-map-system.js": {
+      "gm": 27,
+      "p": 10
+    },
+    "tm-dynamic-systems.js": {
+      "gm": 15,
+      "p": 0
+    },
+    "tm-save-manager.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-help-social.js": {
+      "gm": 25,
+      "p": 0
+    },
+    "tm-economy.js": {
+      "gm": 8,
+      "p": 0
+    },
+    "tm-military.js": {
+      "gm": 42,
+      "p": 0
+    },
+    "tm-feudal.js": {
+      "gm": 27,
+      "p": 0
+    },
+    "tm-event-system.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-endturn-helpers.js": {
+      "gm": 52,
+      "p": 0
+    },
+    "tm-custom-build-agent.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-endturn-province.js": {
+      "gm": 10,
+      "p": 0
+    },
+    "tm-endturn-qiaozhi.js": {
+      "gm": 7,
+      "p": 0
+    },
+    "tm-ai-apply-deaths.js": {
+      "gm": 8,
+      "p": 1
+    },
+    "tm-sidebar-ui.js": {
+      "gm": 8,
+      "p": 0
+    },
+    "tm-renwu-ui.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-shiji-qiju-ui.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-court-meter.js": {
+      "gm": 21,
+      "p": 0
+    },
+    "tm-endturn-systems.js": {
+      "gm": 12,
+      "p": 0
+    },
+    "tm-endturn-ai-helpers.js": {
+      "gm": 16,
+      "p": 0
+    },
+    "tm-history-events.js": {
+      "gm": 15,
+      "p": 0
+    },
+    "tm-tianji.js": {
+      "gm": 7,
+      "p": 0
+    },
+    "tm-junqing-brief.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-xinjun-observe.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-post-turn-jobs.js": {
+      "gm": 25,
+      "p": 0
+    },
+    "tm-arcs.js": {
+      "gm": 7,
+      "p": 0
+    },
+    "tm-memory-anchors.js": {
+      "gm": 10,
+      "p": 0
+    },
+    "tm-endturn-edict.js": {
+      "gm": 11,
+      "p": 0
+    },
+    "tm-ai-planning.js": {
+      "gm": 12,
+      "p": 0
+    },
+    "tm-endturn-prep.js": {
+      "gm": 25,
+      "p": 0
+    },
+    "tm-party-goals.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-endturn-prompt.js": {
+      "gm": 10,
+      "p": 0
+    },
+    "tm-endturn-ai.js": {
+      "gm": 103,
+      "p": 0
+    },
+    "tm-endturn-apply.js": {
+      "gm": 263,
+      "p": 6
+    },
+    "tm-endturn-followup.js": {
+      "gm": 136,
+      "p": 1
+    },
+    "tm-endturn-record.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-endturn-ai-infer.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-endturn-core.js": {
+      "gm": 29,
+      "p": 0
+    },
+    "tm-endturn-timing-ledger.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-endturn-pipeline-steps.js": {
+      "gm": 14,
+      "p": 0
+    },
+    "tm-endturn-render.js": {
+      "gm": 22,
+      "p": 0
+    },
+    "tm-patches.js": {
+      "gm": 95,
+      "p": 165
+    },
+    "tm-military-ui.js": {
+      "gm": 0,
+      "p": 14
+    },
+    "tm-world-view.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "editor-details.js": {
+      "gm": 0,
+      "p": 43
+    },
+    "tm-three-systems-ext.js": {
+      "gm": 31,
+      "p": 0
+    },
+    "tm-armory.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-battle-turn.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-faction-npc-settings.js": {
+      "gm": 0,
+      "p": 5
+    },
+    "tm-faction-npc-news-bridge.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-faction-npc-intervention.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-faction-npc-llm-decision.js": {
+      "gm": 12,
+      "p": 0
+    },
+    "tm-faction-npc-in-turn-driver.js": {
+      "gm": 6,
+      "p": 3
+    },
+    "tm-faction-npc-dispatcher.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-faction-index.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-three-systems-ui.js": {
+      "gm": 8,
+      "p": 0
+    },
+    "tm-char-arcs.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-keju-paradigm.js": {
+      "gm": 12,
+      "p": 2
+    },
+    "tm-keju-reform-llm.js": {
+      "gm": 4,
+      "p": 0
+    },
+    "tm-keju-paradigm-panel.js": {
+      "gm": 10,
+      "p": 3
+    },
+    "tm-keju-examiner-view.js": {
+      "gm": 0,
+      "p": 1
+    },
+    "tm-keju-mentor.js": {
+      "gm": 14,
+      "p": 0
+    },
+    "tm-keju-disciple-graph.js": {
+      "gm": 10,
+      "p": 0
+    },
+    "tm-keju-disciple-memorial.js": {
+      "gm": 7,
+      "p": 0
+    },
+    "tm-keju-cohort-meet.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-keju-yanguan-qingyi.js": {
+      "gm": 7,
+      "p": 0
+    },
+    "tm-keju-reform-memorial.js": {
+      "gm": 9,
+      "p": 0
+    },
+    "tm-keju-reform-evolution.js": {
+      "gm": 21,
+      "p": 0
+    },
+    "tm-keju-special-exams.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-keju-event-hooks.js": {
+      "gm": 15,
+      "p": 0
+    },
+    "tm-keju-enke-player-initiative.js": {
+      "gm": 8,
+      "p": 0
+    },
+    "tm-keju-enke.js": {
+      "gm": 40,
+      "p": 0
+    },
+    "tm-keju-wuju.js": {
+      "gm": 53,
+      "p": 0
+    },
+    "tm-keju-tongzi.js": {
+      "gm": 22,
+      "p": 0
+    },
+    "tm-keju-school-network.js": {
+      "gm": 55,
+      "p": 0
+    },
+    "tm-keju-reform-rollback.js": {
+      "gm": 4,
+      "p": 0
+    },
+    "tm-keju-reform-apply.js": {
+      "gm": 20,
+      "p": 0
+    },
+    "tm-keju-activation.js": {
+      "gm": 1,
+      "p": 12
+    },
+    "tm-keju.js": {
+      "gm": 8,
+      "p": 14
+    },
+    "tm-chaoyi.js": {
+      "gm": 14,
+      "p": 0
+    },
+    "tm-electron.js": {
+      "gm": 4,
+      "p": 29
+    },
+    "tm-keju-runtime.js": {
+      "gm": 27,
+      "p": 43
+    },
+    "tm-chaoyi-tinyi.js": {
+      "gm": 15,
+      "p": 0
+    },
+    "tm-chaoyi-yuqian.js": {
+      "gm": 10,
+      "p": 0
+    },
+    "tm-chaoyi-changchao.js": {
+      "gm": 29,
+      "p": 0
+    },
+    "tm-tinyi-v3.js": {
+      "gm": 110,
+      "p": 0
+    },
+    "tm-char-autogen.js": {
+      "gm": 16,
+      "p": 0
+    },
+    "tm-audio-theme.js": {
+      "gm": 0,
+      "p": 8
+    },
+    "tm-save-lifecycle.js": {
+      "gm": 382,
+      "p": 60
+    },
+    "tm-office-editor.js": {
+      "gm": 2,
+      "p": 49
+    },
+    "tm-houguong.js": {
+      "gm": 12,
+      "p": 0
+    },
+    "tm-shizheng-panel.js": {
+      "gm": 14,
+      "p": 0
+    },
+    "tm-corruption-engine.js": {
+      "gm": 119,
+      "p": 0
+    },
+    "tm-guoku-engine.js": {
+      "gm": 155,
+      "p": 0
+    },
+    "tm-guoku-panel.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-neitang-engine.js": {
+      "gm": 83,
+      "p": 0
+    },
+    "tm-char-economy-engine.js": {
+      "gm": 5,
+      "p": 0
+    },
+    "tm-char-historical-profiles.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-ceming.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-char-economy-ui.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-economy-engine.js": {
+      "gm": 24,
+      "p": 1
+    },
+    "tm-central-local-engine.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-huji-engine.js": {
+      "gm": 3,
+      "p": 36
+    },
+    "tm-edict-parser.js": {
+      "gm": 5,
+      "p": 29
+    },
+    "tm-env-recovery-fill.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-talent-cohorts.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-talent-backlash.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "tm-renli.js": {
+      "gm": 13,
+      "p": 0
+    },
+    "tm-social-foundation.js": {
+      "gm": 7,
+      "p": 0
+    },
+    "tm-authority-complete.js": {
+      "gm": 3,
+      "p": 0
+    },
+    "tm-event-bus.js": {
+      "gm": 0,
+      "p": 8
+    },
+    "tm-class-mobility.js": {
+      "gm": 0,
+      "p": 2
+    },
+    "tm-ai-change-applier.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-test-harness.js": {
+      "gm": 0,
+      "p": 4
+    },
+    "tm-content-manager.js": {
+      "gm": 0,
+      "p": 7
+    },
+    "phase8-formal-bridge.js": {
+      "gm": 2,
+      "p": 0
+    },
+    "phase8-formal-map.js": {
+      "gm": 2,
+      "p": 2
+    },
+    "phase8-formal-drafts.js": {
+      "gm": 1,
+      "p": 0
+    },
+    "tm-renwu-tuzhi.js": {
+      "gm": 2,
+      "p": 1
+    },
+    "phase8-formal-rightrail.js": {
+      "gm": 19,
+      "p": 0
+    },
+    "preview/scenario-editor-sandbox-bridge.js": {
+      "gm": 0,
+      "p": 15
+    }
+  }
+}

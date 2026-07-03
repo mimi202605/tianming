@@ -7,6 +7,11 @@
 - 改完代码先 `node` 跑通或跑断言再说完成；关键改动留 `.bak`。
 - 回复「我能不能 / 有没有 X」时先核实，别凭记忆下断言。
 
+## 架构守卫（2026-07-04 起 · 详见 web/docs/arch-guards.md）
+- 每刀收尾跑 `node scripts/lint-arch-all.js`，须全绿。四刀皆棘轮：基线只许降不许升。
+- **读随便，写必须走账**：新增 GM/P 直写即红——改走子系统 mutator/ledger，或裁定后登记 owners / 行内 `// arch-ok`。
+- 拆分/改名前先 `node scripts/lint-dep-graph.js --who TM.Xxx` 查引用面；按主题回归用 `node scripts/run-smokes.js --grep <主题>`。
+
 ## 改动边界
 - 用户说「改 X」就**只动 X**，别顺手改无关文件（如 styles.css）。preview/mockup 与运行时代码是两条 review 路径，不混。
 - 大改拆 3–5 个小 slice，一刀只做一件事，拒绝把无关事捆进同一刀。

@@ -1,0 +1,15 @@
+{
+  "updatedAt": "2026-07-03T16:58:36.964Z",
+  "dangling": [
+    "AISchema",
+    "AuthoringAgent",
+    "AuthorityEngines",
+    "FactionAiMainloopBridge",
+    "TMPhase8FormalBridge",
+    "ThreeSystems",
+    "_registry",
+    "ai",
+    "register",
+    "utils"
+  ]
+}
