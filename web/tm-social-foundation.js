@@ -546,6 +546,30 @@
         st[key] = p[key];
         st['_synced_' + key] = p[key];
       });
+      // 盟敌单源对账：AI 运行时盟敌只写 partyState.alliedWith/conflictWith，
+      // 而反对目标派生(opposingPartyNames)读 parties[].allies/enemies——旧版只剩剧本 seed·runtime 漂移读不到。
+      // 并账：runtime 盟约/敌意并回 canonical·同名冲突以 runtime 为准。
+      var runtimeAlly = toArray(st.alliedWith);
+      var runtimeFoe = toArray(st.conflictWith);
+      if (runtimeAlly.length || runtimeFoe.length) {
+        var entryName = function(v) { return (v && typeof v === 'object') ? String(v.name || v.party || '') : String(v || ''); };
+        var allies = toArray(p.allies).slice();
+        var enemies = toArray(p.enemies).slice();
+        runtimeAlly.forEach(function(v) {
+          var nm = entryName(v);
+          if (!nm || nm === p.name) return;
+          if (allies.map(entryName).indexOf(nm) < 0) allies.push(nm);
+          enemies = enemies.filter(function(e) { return entryName(e) !== nm; });
+        });
+        runtimeFoe.forEach(function(v) {
+          var nm = entryName(v);
+          if (!nm || nm === p.name) return;
+          if (enemies.map(entryName).indexOf(nm) < 0) enemies.push(nm);
+          allies = allies.filter(function(a) { return entryName(a) !== nm; });
+        });
+        p.allies = allies;
+        p.enemies = enemies;
+      }
       // 议程保鲜：8 回合无鲜议程且有活跃目标 → 由 top 目标派生
       var agendaTurn = Number(p._agendaTurn);
       var stale = !isFinite(agendaTurn) || (turn - agendaTurn) >= 8;

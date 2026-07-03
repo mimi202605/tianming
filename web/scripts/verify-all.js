@@ -227,6 +227,7 @@ const checks = [
   { name: 'party-class-dynamic-relations', file: 'smoke-party-class-dynamic-relations.js', estSec: 1, expectExit: 0 },
   { name: 'player-action-signals', file: 'smoke-player-action-signals.js', estSec: 1, expectExit: 0 },
   { name: 'party-class-llm-calibrator', file: 'smoke-party-class-llm-calibrator.js', estSec: 1, expectExit: 0 },
+  { name: 'classparty-tinyi-optim', file: 'smoke-classparty-tinyi-optim.js', estSec: 1, expectExit: 0 },
   { name: 'party-goals-scenario-variance', file: 'smoke-party-goals-scenario-variance.js', estSec: 1, expectExit: 0 },
   { name: 'party-goals-adaptive-evidence', file: 'smoke-party-goals-adaptive-evidence.js', estSec: 1, expectExit: 0 },
   { name: 'class-demand-party-goals', file: 'smoke-class-demand-party-goals.js', estSec: 1, expectExit: 0 },

@@ -2621,6 +2621,16 @@ function _ty3_normalizePartyNames(list) {
   return out;
 }
 
+// 清誉账（reputationBalance）：此前全项目只初始化为 0 无任何写者·却一直被喂进 prompt/UI 当「清名/恶名」。
+// 写者=廷议政策胜负/弹劾定罪；消费=弹劾判级(清流难扳)+公推票权；每回合 _updatePartyState 侧向 0 缓归。
+function _ty3_bumpPartyReputation(ps, delta) {
+  if (!ps || typeof ps !== 'object') return;
+  var d = Math.max(-4, Math.min(4, Number(delta) || 0));
+  if (!d) return;
+  var cur = Number(ps.reputationBalance) || 0;
+  ps.reputationBalance = Math.max(-60, Math.min(60, Math.round((cur + d) * 100) / 100));
+}
+
 function _ty3_applyPolicyPartyResult(sourceParty, opposingParties, grade, mode, blockerParty) {
   var sanction = _ty3_policySanctionByGrade(grade);
   var source = sourceParty ? _ty3_getPartyStateWritable(sourceParty) : null;
@@ -2644,6 +2654,7 @@ function _ty3_applyPolicyPartyResult(sourceParty, opposingParties, grade, mode, 
   if (source) {
     source.recentPolicyWin = Math.round((source.recentPolicyWin + sourceWin) * 100) / 100;
     source.recentPolicyLose = Math.round((source.recentPolicyLose + sourceLose) * 100) / 100;
+    _ty3_bumpPartyReputation(source, (sourceWin - sourceLose) * 0.8);
     _ty3_syncPartyStateMirror(sourceParty);
   }
   if (blockerParty) opposers = _ty3_normalizePartyNames([blockerParty].concat(opposers));
@@ -2653,6 +2664,7 @@ function _ty3_applyPolicyPartyResult(sourceParty, opposingParties, grade, mode, 
     if (!ps) return;
     ps.recentPolicyWin = Math.round((ps.recentPolicyWin + oppWin) * 100) / 100;
     ps.recentPolicyLose = Math.round((ps.recentPolicyLose + oppLose) * 100) / 100;
+    _ty3_bumpPartyReputation(ps, (oppWin - oppLose) * 0.8);
     _ty3_syncPartyStateMirror(pn);
   });
   return { sourceWin: sourceWin, sourceLose: sourceLose, opposingWin: oppWin, opposingLose: oppLose };
@@ -2746,6 +2758,9 @@ function _ty3_impeachmentVerdictGrade(charges, partyMetrics, inquiryBody, accuse
   // 名望防弹劾(设计-角色经济·资源三)：高名望者清誉难扳·名声已坏则更易定罪·fame≠prestige
   var _fameIm = (accusedCh && accusedCh.resources && typeof accusedCh.resources.fame === 'number') ? accusedCh.resources.fame : 0;
   if (_fameIm) score -= Math.round(_fameIm / 25);   // fame +100→-4 难成案 · -100→+4 易成案
+  // 党清誉防弹劾：清流之党难扳·恶名之党易罪（reputationBalance∈[-60,60] → ∓2.4 分）
+  var _repIm = (partyMetrics && partyMetrics.state && typeof partyMetrics.state.reputationBalance === 'number') ? partyMetrics.state.reputationBalance : 0;
+  if (_repIm) score -= Math.round(_repIm / 25);
   if (score >= 15) return 'S';
   if (score >= 12) return 'A';
   if (score >= 9) return 'B';
@@ -3773,9 +3788,12 @@ function _ty3_renderRegaliaList() {
         var meta = (window._ty3_publicMeta) || (CY._ty3 && CY._ty3.meta);
         if (meta && meta.isAccusation && meta.accusationType === 'clique' && meta.accused) {
           var counts = (typeof _ty2_countStances === 'function') ? _ty2_countStances() : { support: 0, oppose: 0 };
+          // 与众议方向同步：按加权票（人头为体·党势为衡）·无权重字段回退人头
+          var _wS = (typeof counts.supportW === 'number') ? counts.supportW : counts.support;
+          var _wO = (typeof counts.opposeW === 'number') ? counts.opposeW : counts.oppose;
           var wasApproved = false;
-          if (mode === 'majority') wasApproved = counts.support >= counts.oppose;
-          else if (mode === 'override') wasApproved = counts.support < counts.oppose;
+          if (mode === 'majority') wasApproved = _wS >= _wO;
+          else if (mode === 'override') wasApproved = _wS < _wO;
           else if (mode === 'mediation') wasApproved = false;
 
           var accuMemo = null;
@@ -4968,7 +4986,9 @@ function _ty3_phase3_doPublicVote() {
   var pool = [];
   Object.values(CY._ty3_phase3_byParty || {}).forEach(function(info) {
     info.candidates.forEach(function(c) {
-      var weight = (info.party.influence || 50) + (c.prestige || 50) * 0.5;
+      // 公推票权 = 党势 + 候选名望 + 党清誉（清流之党所荐更易见用）
+      var _pvRep = (GM.partyState && GM.partyState[info.party.name] && typeof GM.partyState[info.party.name].reputationBalance === 'number') ? GM.partyState[info.party.name].reputationBalance : 0;
+      var weight = Math.max(5, (info.party.influence || 50) + (c.prestige || 50) * 0.5 + _pvRep * 0.5);
       pool.push({ name: c.name, party: info.party.name, weight: weight });
     });
   });
@@ -5342,6 +5362,8 @@ function _ty3_phase6_recordSeal(status, ctx, detail) {
           origin: seal.origin || null,
           relationEvidence: seal.relationEvidence || []
         }, { turn: GM.turn || 0, source: 'tinyi-stage6-blocked' });
+        // 销单：v2 decide 侧挂起的粗账落账意向（双写收口·退朝兜底不再补落）
+        if (CY._ty3) { CY._ty3._classOutcomeApplied = true; CY._ty3._classOutcomePending = null; }
       }
     } catch (_pcBlockedE) {
       try { window.TM && TM.errors && TM.errors.captureSilent(_pcBlockedE, 'tinyi-stage6-party-class-blocked'); } catch (_) {}
@@ -5391,6 +5413,8 @@ function _ty3_phase6_recordSeal(status, ctx, detail) {
           origin: seal.origin || null,
           relationEvidence: seal.relationEvidence || []
         }, { turn: GM.turn || 0, source: 'tinyi-stage6-issued' });
+        // 销单：v2 decide 侧挂起的粗账落账意向（双写收口·退朝兜底不再补落）
+        if (CY._ty3) { CY._ty3._classOutcomeApplied = true; CY._ty3._classOutcomePending = null; }
       }
     } catch (_pcIssuedE) {
       try { window.TM && TM.errors && TM.errors.captureSilent(_pcIssuedE, 'tinyi-stage6-party-class-issued'); } catch (_) {}
@@ -5717,8 +5741,14 @@ function _ty3_phase12_onAccusationApproved(topic, accusedNames, accuser, topicMe
   if (sourceParty && GM.partyState && GM.partyState[sourceParty]) {
     var ps = GM.partyState[sourceParty];
     ps.recentImpeachLose = (ps.recentImpeachLose || 0) + 1;
+    // 罢官压力档位断链修：officeApplyDismissalPressure 读这三个 grade 字段定罢黜档位·
+    // 此前全项目无写者→恒退化 C 档·S/A 档重罚从不触发
+    ps.lastImpeachGrade = verdictGrade;
+    ps.recentImpeachGrade = verdictGrade;
+    ps.lastVerdictGrade = verdictGrade;
     ps.cohesion = Math.max(0, (parseInt(ps.cohesion, 10) || 50) - Math.max(1, Math.round(sanction / 2)));
     ps.influence = Math.max(0, (parseInt(ps.influence, 10) || 30) - Math.max(1, Math.round(sanction / 3)));
+    _ty3_bumpPartyReputation(ps, -sanction / 2);
   }
   var base = sourceParty ? (sourceParty + ' Trial Faction') : 'Impeached Faction';
   var newName = base;

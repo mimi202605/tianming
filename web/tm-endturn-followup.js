@@ -599,7 +599,12 @@
             var cls = GM.classes.find(function(c){return c.name===cr.class;});
             if (cls && cr.satisfaction_delta) {
               var _classReactionOldSat = parseInt(cls.satisfaction||50) || 50;
-              cls.satisfaction = clamp(_classReactionOldSat + clamp(parseInt(cr.satisfaction_delta)||0, -8, 8), 0, 100);
+              var _crDelta = clamp(parseInt(cr.satisfaction_delta)||0, -8, 8);
+              if (TM && TM.ClassEngine && typeof TM.ClassEngine.gateSatisfaction === 'function') {
+                TM.ClassEngine.gateSatisfaction(GM, cls, _crDelta, { turn: GM.turn, source: 'endturn-followup', reason: cr.reason || '后朝阶层反应' });
+              } else {
+                cls.satisfaction = clamp(_classReactionOldSat + _crDelta, 0, 100);
+              }
               if (TM && TM.ClassEngine && typeof TM.ClassEngine.applyClassPartyCoupling === 'function') {
                 try {
                   TM.ClassEngine.applyClassPartyCoupling(GM, cls, cls.satisfaction - _classReactionOldSat, { turn: GM.turn, source: 'endturn-ai-infer', reason: cr.reason || '' });

@@ -4998,10 +4998,16 @@ inst._imprisonedTurn = GM.turn||0;
                 var impact = parseFloat(info.impact) || 0;
                 var clsObj = (GM.classes || []).find(function(c) { return c.name === cls; });
                 if (clsObj) {
-                  clsObj.satisfaction = Math.max(0, Math.min(100, (clsObj.satisfaction || 50) + impact));
-                  if (TM && TM.ClassEngine && typeof TM.ClassEngine.applyClassPartyCoupling === 'function' && impact) {
+                  var _uaOldSat = Number(clsObj.satisfaction || 50) || 50;
+                  if (TM && TM.ClassEngine && typeof TM.ClassEngine.gateSatisfaction === 'function') {
+                    TM.ClassEngine.gateSatisfaction(GM, clsObj, impact, { turn: GM.turn, source: 'unlock-effect', reason: info.reason || '解锁影响' });
+                  } else {
+                    clsObj.satisfaction = Math.max(0, Math.min(100, _uaOldSat + impact));
+                  }
+                  var _uaApplied = (Number(clsObj.satisfaction) || _uaOldSat) - _uaOldSat;
+                  if (TM && TM.ClassEngine && typeof TM.ClassEngine.applyClassPartyCoupling === 'function' && _uaApplied) {
                     try {
-                      TM.ClassEngine.applyClassPartyCoupling(GM, clsObj, impact, { turn: GM.turn, source: 'endturn-ai-infer', reason: info.reason || '' });
+                      TM.ClassEngine.applyClassPartyCoupling(GM, clsObj, _uaApplied, { turn: GM.turn, source: 'endturn-ai-infer', reason: info.reason || '' });
                     } catch(_classCoupleImpactE) {
                       (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_classCoupleImpactE, 'endturn] class party impact coupling:') : console.warn('[endturn] class party impact coupling:', _classCoupleImpactE);
                     }

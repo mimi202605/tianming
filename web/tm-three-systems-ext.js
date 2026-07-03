@@ -399,6 +399,9 @@
       ps.recentImpeachLose = Math.max(0, (ps.recentImpeachLose || 0) * 0.7);
       ps.recentPolicyWin = Math.max(0, (ps.recentPolicyWin || 0) * 0.7);
       ps.recentPolicyLose = Math.max(0, (ps.recentPolicyLose || 0) * 0.7);
+      // 清誉向 0 缓归（清名/恶名随时间淡忘·写者在廷议政策胜负/弹劾定罪）
+      var _repDecay = Number(ps.reputationBalance) || 0;
+      ps.reputationBalance = Math.abs(_repDecay) < 0.25 ? 0 : Math.round(_repDecay * 0.92 * 100) / 100;
       // 回传 p.influence 以供旧 UI 读取
       p.influence = ps.influence;
       // cohesion：反弹·如果内部冲突多则下降
