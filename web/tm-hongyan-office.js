@@ -644,7 +644,7 @@ function _ltResend(letterId, mode) {
   // 起居注 + 编年
   var _date = (typeof getTSText === 'function') ? getTSText(GM.turn) : '';
   if (Array.isArray(GM.qijuHistory)) {
-    GM.qijuHistory.unshift({
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
       turn: GM.turn, date: _date,
       content: '【鸿雁重发】致' + l.to + '的前函疑被劫·改' + (mode === 'secret_agent' ? '密使暗递' : '多路八百里加急') + '重发。'
     });
@@ -818,7 +818,7 @@ function sendLetter() {
 
   if (GM.qijuHistory) {
     var _targetNames = targets.join('、');
-    GM.qijuHistory.unshift({ turn: GM.turn, date: sentDate, content: '【鸿雁传书】遣' + (urgLabels[urgency]||'驿递') + '致' + _targetNames + '（' + typeLabel + (cipher !== 'none' ? '·' + (LETTER_CIPHERS[cipher]||{}).label : '') + '）。内容：' + content });
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: sentDate, content: '【鸿雁传书】遣' + (urgLabels[urgency]||'驿递') + '致' + _targetNames + '（' + typeLabel + (cipher !== 'none' ? '·' + (LETTER_CIPHERS[cipher]||{}).label : '') + '）。内容：' + content });
   }
 
   if (textarea) textarea.value = '';
@@ -1012,7 +1012,7 @@ function _settleLettersAndTravel() {
       }
       var replyDate = (typeof getTSText === 'function') ? getTSText(GM.turn) : '';
       if (typeof addEB === 'function') addEB('传书', l.to + '的回信已到达');
-      if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: replyDate, content: '【鸿雁传书】' + l.to + '回函到达。' + (l.reply||'') });
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: replyDate, content: '【鸿雁传书】' + l.to + '回函到达。' + (l.reply||'') });
     }
     // 伪造回信
     if (l.status === 'intercepted_forging' && nowDay >= _ltReplyArrivalDay(l)) {
@@ -1021,7 +1021,7 @@ function _settleLettersAndTravel() {
       GM._courierStatus[l.id] = '信使回报：' + (l.to||'') + '已收函。';
       var _fd = (typeof getTSText === 'function') ? getTSText(GM.turn) : '';
       if (typeof addEB === 'function') addEB('传书', l.to + '的回信已到达');
-      if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: _fd, content: '【鸿雁传书】' + l.to + '回函到达。' + l.reply });
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: _fd, content: '【鸿雁传书】' + l.to + '回函到达。' + l.reply });
       if (!GM._interceptedIntel) GM._interceptedIntel = [];
       GM._interceptedIntel.push({ turn: GM.turn, interceptor: l.interceptedBy||'敌方', from: '伪造', to: '皇帝', content: '敌方已伪造' + l.to + '的回信欺骗玩家', urgency: 'forged' });
     }
@@ -1126,7 +1126,7 @@ function _settleLettersAndTravel() {
       _npcArrived++;
       var ad = (typeof getTSText === 'function') ? getTSText(GM.turn) : '';
       if (typeof addEB === 'function') addEB('传书', l.from + '的来函已送达');
-      if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: ad, content: '【鸿雁传书】收到' + l.from + '自' + (l.fromLocation||'远方') + '来函。' });
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: ad, content: '【鸿雁传书】收到' + l.from + '自' + (l.fromLocation||'远方') + '来函。' });
       // NPC来函附带的可操作建议 → 自动推入诏书建议库（同问对/朝议流程）
       // 只推AI提炼的suggestion摘要，不推整封信原文
       if (l._suggestion) {
@@ -1183,7 +1183,7 @@ function _settleLettersAndTravel() {
     _arrivedMems.forEach(function(mem) {
       var ad = (typeof getTSText === 'function') ? getTSText(GM.turn) : '';
       if (typeof addEB === 'function') addEB('奏疏', mem.from + '自' + (mem._remoteFrom||'远方') + '的奏疏到达');
-      if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: ad, content: '【驿递奏疏】收到' + mem.from + '自' + (mem._remoteFrom||'远方') + '所上奏疏。' });
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: ad, content: '【驿递奏疏】收到' + mem.from + '自' + (mem._remoteFrom||'远方') + '所上奏疏。' });
     });
     if (_arrivedMems.length > 0 && typeof renderMemorials === 'function') renderMemorials();
   }
@@ -1427,7 +1427,7 @@ function _ltDoIntercept(l, hostileFacs) {
     var _qijuTxt = l._npcInitiated
       ? '【鸿雁遇险】' + l.from + '自' + (l.fromLocation||'远方') + '的来函中途被劫·疑为' + _int + '所为'
       : '【鸿雁遇险】致' + l.to + '的' + (LETTER_TYPES[l.letterType]||{label:'书函'}).label + '于驿道遇袭·疑为' + _int + '所为';
-    GM.qijuHistory.unshift({ turn: GM.turn, date: _date, content: _qijuTxt });
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: _date, content: _qijuTxt });
   }
   // 重大政令/军令被截·入编年史
   if (!l._npcInitiated && (_isMilitary || l.letterType === 'formal_edict' || _isDiplomatic)) {
@@ -2665,7 +2665,7 @@ function _applyPolishedEdict(mode) {
   if (!GM.qijuHistory) GM.qijuHistory = [];
   var _statusLabel = status === 'promulgated' ? '\u9881\u884C\u5929\u4E0B' : '\u8BCF\u4E66\u624B\u7A3F';
   var _headline = '\u3010\u8BCF\u4E66\u00B7' + _statusLabel + '\u00B7\u7B2C' + polishVersion + '\u6B21\u6DA6\u8272\u00B7' + styleLabel + '\u3011';
-  GM.qijuHistory.push({
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
     turn: _curTurn,
     time: rec.time,
     category: '\u8BCF\u4EE4',

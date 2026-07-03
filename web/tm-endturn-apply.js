@@ -2101,7 +2101,7 @@ inst._imprisonedTurn = GM.turn||0;
             _spawnedCount++;
             addEB('\u5B98\u5236', '\u3010\u5B9E\u4F53\u5316\u3011' + sp.holderName + '\u5C31\u4EFB' + targetDept.name + sp.position + (sp.reason ? '\uFF08' + sp.reason + '\uFF09' : ''));
             if (GM.qijuHistory) {
-              GM.qijuHistory.unshift({
+              if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
                 turn: GM.turn,
                 date: typeof getTSText === 'function' ? getTSText(GM.turn) : '',
                 content: '\u3010\u5B98\u5236\u5B9E\u4F53\u3011\u900F\u8FC7\u63A8\u6F14\u6D89\u53CA\uFF0C' + targetDept.name + sp.position + '\u4E4B\u4F4D\u4E4B\u4EFB\u804C\u8005' + sp.holderName + '\u6D6E\u51FA\u53F2\u4E0B\u3002' + (sp.reason || ''),
@@ -2196,7 +2196,7 @@ inst._imprisonedTurn = GM.turn||0;
             fObj.historicalEvents.push({ turn: GM.turn, event: sc.disputeType || '继承', impact: oldLeader + '→' + sc.newLeader });
             addEB('\u7EE7\u627F', '\u3010' + sc.faction + '\u3011' + (oldLeader||'?') + '\u2192' + sc.newLeader + '(' + ({forced_abdication:'逼宫禅位',contested_succession:'争立',usurpation:'篡位',coup:'政变夺位',regency:'摄政',peaceful:'平稳承袭'}[sc.disputeType]||sc.disputeType||'\u6B63\u5E38\u7EE7\u627F') + ')' + (sc.narrative ? '\uFF1A' + sc.narrative.slice(0,80) : ''));
             if (GM.qijuHistory) {
-              GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u7EE7\u627F\u4E8B\u3011' + sc.faction + '\uFF1A' + sc.narrative, category: '\u52BF\u529B' });
+              if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u7EE7\u627F\u4E8B\u3011' + sc.faction + '\uFF1A' + sc.narrative, category: '\u52BF\u529B' });
             }
           });
         }
@@ -2309,7 +2309,7 @@ inst._imprisonedTurn = GM.turn||0;
             }
             // 写入起居注
             if (GM.qijuHistory && cu.feedback) {
-              GM.qijuHistory.unshift({
+              if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
                 turn: GM.turn,
                 date: typeof getTSText==='function'?getTSText(GM.turn):'',
                 content: '【问对·履命】' + foundNpc + '就「' + found.task + '」：' + cu.feedback,
@@ -2724,7 +2724,7 @@ inst._imprisonedTurn = GM.turn||0;
               GM._revoltPrecursors = GM._revoltPrecursors.filter(function(pc){return !(pc.class === rv.class && pc.region === rv.region);});
             }
             addEB('\u8D77\u4E49', '\u3010' + (rv.region||'') + '\u3011' + rv.class + '\u8D77\u4E49\uFF01\u9886\u8896' + rv.leaderName + (rv.slogan?'\u6253\u300C' + rv.slogan + '\u300D':'') + '\u2014\u2014' + (rv.historicalArchetype?'\u5F62\u5982' + rv.historicalArchetype + '\uFF0C':'') + '\u89C4\u6A21' + (rv.scale||'\u4E2D') + (rv.reason ? '\u56E0\u2014\u2014' + rv.reason : ''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【起义爆发】' + rv.leaderName + '起兵于' + (rv.region||'?') + (rv.slogan?'，号"' + rv.slogan + '"':'') + '。' + (rv.reason||''), category: '起义' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【起义爆发】' + rv.leaderName + '起兵于' + (rv.region||'?') + (rv.slogan?'，号"' + rv.slogan + '"':'') + '。' + (rv.reason||''), category: '起义' });
           });
         }
 
@@ -2780,7 +2780,7 @@ inst._imprisonedTurn = GM.turn||0;
             }
             addEB('\u8D77\u4E49', '\u3010' + r.leaderName + '\u3011' + (oldPhase!==r.phase?'\u8F6C\u5165' + r.phase + '\uFF1A':'\u63A8\u8FDB\uFF1A') + (ru.keyEvent||'') + (ru.narrative?'\u2014\u2014' + ru.narrative.slice(0,80):''));
             if (GM.qijuHistory && (ru.keyEvent || ru.narrative)) {
-              GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【起义·' + r.phase + '】' + r.leaderName + '：' + (ru.keyEvent||ru.narrative||''), category: '起义' });
+              if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【起义·' + r.phase + '】' + r.leaderName + '：' + (ru.keyEvent||ru.narrative||''), category: '起义' });
             }
           });
         }
@@ -2809,7 +2809,7 @@ inst._imprisonedTurn = GM.turn||0;
             }
             r.history.push({ turn: GM.turn, phase: r.phase, event: '镇压:' + (sp.suppressor||'官军') + '-' + (sp.outcome||'相持') });
             addEB('\u9547\u538B', '【' + (sp.suppressor||'官军') + '】' + (sp.tactic||'') + '→' + r.leaderName + '之乱' + (sp.outcome==='victory'?'\u5E73\u5B9A':sp.outcome==='defeat'?'\u53CD\u88AB\u51FB\u6E83':'') + (sp.narrative?'\u2014\u2014' + sp.narrative.slice(0,80):''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【镇压】' + (sp.suppressor||'?') + '战' + r.leaderName + '，结' + (sp.outcome||'?') + '。' + (sp.narrative||''), category: '起义' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【镇压】' + (sp.suppressor||'?') + '战' + r.leaderName + '，结' + (sp.outcome||'?') + '。' + (sp.narrative||''), category: '起义' });
           });
         }
 
@@ -2863,7 +2863,7 @@ inst._imprisonedTurn = GM.turn||0;
             }
             r.history.push({ turn: GM.turn, phase: r.phase, event: '招安:' + (am.envoy||'') + '-' + (am.outcome||'') });
             addEB('\u62DB\u5B89', '【' + (am.envoy||'?') + '】招安' + r.leaderName + '：' + (am.outcome||'?') + (am.terms?'；条件：' + am.terms.slice(0,60):''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【招安】' + (am.envoy||'?') + '抚' + r.leaderName + '，' + (am.outcome||'?') + '。' + (am.narrative||''), category: '起义' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【招安】' + (am.envoy||'?') + '抚' + r.leaderName + '，' + (am.outcome||'?') + '。' + (am.narrative||''), category: '起义' });
           });
         }
 
@@ -2941,7 +2941,7 @@ inst._imprisonedTurn = GM.turn||0;
             }
             r.history.push({ turn: GM.turn, phase: r.phase, event: '转化:' + tr.transformType });
             addEB('\u8D77\u4E49', '【转化】' + r.leaderName + '之乱→' + ({toFaction:'据地立帜',dynastyReplaced:'改朝换代',merged:'并入他部',coopted:'招安受抚',dissolved:'溃散平定'}[tr.transformType]||tr.transformType) + (tr.newFactionName?'：立' + tr.newFactionName:'') + (tr.narrative?'——' + tr.narrative.slice(0,80):''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【起义转化】' + r.leaderName + '：' + tr.transformType + '。' + (tr.narrative||''), category: '起义' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【起义转化】' + r.leaderName + '：' + tr.transformType + '。' + (tr.narrative||''), category: '起义' });
           });
         }
 
@@ -2975,7 +2975,7 @@ inst._imprisonedTurn = GM.turn||0;
               if (_ldr) _ldr.party = pc.name;
             }
             addEB('\u515A\u4E89', '\u3010\u65B0\u515A\u5D1B\u8D77\u3011' + pc.name + (pc.leader ? '\uFF08\u9996\uFF1A' + pc.leader + '\uFF09' : '') + (pc.trigger ? '\u2014\u2014' + pc.trigger : '') + (pc.reason ? '\uFF1A' + pc.reason : ''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u65B0\u515A\u3011' + pc.name + '\u6210\u7ACB\u3002' + (pc.reason||''), category: '\u515A\u6D3E' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u65B0\u515A\u3011' + pc.name + '\u6210\u7ACB\u3002' + (pc.reason||''), category: '\u515A\u6D3E' });
           });
         }
 
@@ -3009,7 +3009,7 @@ inst._imprisonedTurn = GM.turn||0;
             GM.parties = GM.parties.filter(function(p){return p.name !== pd.name;});
             var _cLbl = {banned:'被查禁',liquidated:'被肃清',faded:'自然消亡',leaderKilled:'领袖被杀而散',absorbed:'被吞并'}[pd.cause] || pd.cause || '覆灭';
             addEB('\u515A\u4E89', '\u3010\u515A\u6D3E\u89E6\u706D\u3011' + pd.name + _cLbl + (pd.perpetrator?'\uFF08' + pd.perpetrator + '\u4E3B\u7F16\uFF09':'') + (pd.reason?'\uFF1A' + pd.reason:''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u515A\u6D3E\u89E6\u706D\u3011' + pd.name + _cLbl + '\u3002' + (pd.reason||''), category: '\u515A\u6D3E' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u515A\u6D3E\u89E6\u706D\u3011' + pd.name + _cLbl + '\u3002' + (pd.reason||''), category: '\u515A\u6D3E' });
           });
         }
 
@@ -3064,7 +3064,7 @@ inst._imprisonedTurn = GM.turn||0;
               }
             }
             addEB('\u52BF\u529B', '\u3010\u65B0\u52BF\u529B\u7AD6\u8D77\u3011' + fc.name + '\u6210\u7ACB\uFF08' + (({military:'军镇',religious:'教门',warlord:'藩镇',foreign:'外藩',dynasty:'王朝',rebel:'义军',tribe:'部族',sect:'会党',separatist:'割据',bandit:'草寇',peasant:'民军'}[fc.type])||fc.type||'') + '\uFF09' + (fc.parentFaction?'\u2014\u2014\u8131\u79BB\u81EA' + fc.parentFaction:'') + (fc.triggerEvent?'\uFF1A' + fc.triggerEvent:''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u65B0\u52BF\u529B\u3011' + fc.name + '\u7AD6\u8D77\u3002' + (fc.reason||''), category: '\u52BF\u529B' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u65B0\u52BF\u529B\u3011' + fc.name + '\u7AD6\u8D77\u3002' + (fc.reason||''), category: '\u52BF\u529B' });
           });
         }
 
@@ -3137,7 +3137,7 @@ inst._imprisonedTurn = GM.turn||0;
             }
             var _fcLbl = {conquered:'被征服',absorbed:'被并入',collapsed:'内部崩解',seceded_all:'分崩离析',replaced:'被取代'}[fd.cause] || fd.cause || '覆灭';
             addEB('\u52BF\u529B', '\u3010\u52BF\u529B\u89E6\u706D\u3011' + fd.name + _fcLbl + (fd.conqueror?'\uFF08\u4E3A' + fd.conqueror + '\u6240\u7EC8\uFF09':'') + (fd.territoryFate?'\uFF0C\u7586\u571F:' + fd.territoryFate:'') + (fd.leaderFate?'\u2014\u2014\u9996\u8111:' + fd.leaderFate:'') + (fd.reason?'\uFF1A' + fd.reason:''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u52BF\u529B\u89E6\u706D\u3011' + fd.name + _fcLbl + '\u3002' + (fd.reason||''), category: '\u52BF\u529B' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u52BF\u529B\u89E6\u706D\u3011' + fd.name + _fcLbl + '\u3002' + (fd.reason||''), category: '\u52BF\u529B' });
           });
         }
 
@@ -3185,7 +3185,7 @@ inst._imprisonedTurn = GM.turn||0;
               })(newC);
             }
             addEB('\u9636\u5C42', '\u3010\u65B0\u9636\u5C42\u5174\u8D77\u3011' + ce.name + (ce.origin?'\u2014\u2014' + ce.origin:'') + (ce.reason?'\uFF1A' + ce.reason:''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u9636\u5C42\u5174\u66BF\u3011' + ce.name + '\u5174\u8D77\u3002' + (ce.reason||''), category: '\u9636\u5C42' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u9636\u5C42\u5174\u66BF\u3011' + ce.name + '\u5174\u8D77\u3002' + (ce.reason||''), category: '\u9636\u5C42' });
           });
         }
 
@@ -3217,7 +3217,7 @@ inst._imprisonedTurn = GM.turn||0;
             GM.classes = GM.classes.filter(function(c){return c.name !== cd.name;});
             var _ccLbl = {abolished:'被法令废除',assimilated:'被吸收融合',extincted:'衰落消亡',replaced:'被新阶层取代'}[cd.cause] || cd.cause || '消亡';
             addEB('\u9636\u5C42', '\u3010\u9636\u5C42\u6D88\u4EA1\u3011' + cd.name + _ccLbl + (cd.successorClass?'\uFF08\u7EE7\u4EFB\uFF1A' + cd.successorClass + '\uFF09':'') + (cd.membersFate?'\u2014\u2014\u6210\u5458:' + cd.membersFate:'') + (cd.reason?'\uFF1A' + cd.reason:''));
-            if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u9636\u5C42\u6D88\u4EA1\u3011' + cd.name + _ccLbl + '\u3002' + (cd.reason||''), category: '\u9636\u5C42' });
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u9636\u5C42\u6D88\u4EA1\u3011' + cd.name + _ccLbl + '\u3002' + (cd.reason||''), category: '\u9636\u5C42' });
           });
         }
 
@@ -5080,7 +5080,7 @@ inst._imprisonedTurn = GM.turn||0;
             if (u.unintendedConsequences) {
               addEB('\u8BCF\u4EE4', '【意外】' + u.unintendedConsequences);
               if (GM.qijuHistory) {
-                GM.qijuHistory.unshift({
+                if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
                   turn: GM.turn,
                   date: typeof getTSText==='function'?getTSText(GM.turn):'',
                   content: '【意外后果】' + u.unintendedConsequences,
@@ -5215,7 +5215,7 @@ inst._imprisonedTurn = GM.turn||0;
               // ── publicKnown 的 NPC 间互动 → 起居注风闻 + 风闻录事 ──
               if (it.publicKnown) {
                 if (GM.qijuHistory) {
-                  GM.qijuHistory.unshift({
+                  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
                     turn: GM.turn,
                     date: typeof getTSText==='function'?getTSText(GM.turn):'',
                     content: '【风闻】' + it.actor + ' 对 ' + it.target + ' ' + typeInfo + (it.description ? '——' + it.description.substring(0,60) : ''),
@@ -5320,7 +5320,7 @@ inst._imprisonedTurn = GM.turn||0;
           }
           // 所有对玩家的 NPC 行为也记起居注
           if (GM.qijuHistory) {
-            GM.qijuHistory.unshift({
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
               turn: turn, date: date,
               content: '【' + typeInfo + '】' + actor + '→陛下' + (desc ? '：' + desc : ''),
               category: '对上'
@@ -5481,7 +5481,7 @@ inst._imprisonedTurn = GM.turn||0;
           }
           // 所有对玩家势力的行为都入起居注
           if (GM.qijuHistory) {
-            GM.qijuHistory.unshift({
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
               turn: turn, date: date,
               content: '【外藩】' + from + ' → 本朝：' + typeInfo + (desc ? '——' + desc.substring(0,80) : ''),
               category: '外交'

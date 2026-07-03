@@ -4,9 +4,9 @@
       "tm-save-lifecycle.js"
     ]
   },
-  "updatedAt": "2026-07-03T23:01:07.497Z",
+  "updatedAt": "2026-07-03T23:29:48.010Z",
   "totals": {
-    "gm": 3237,
+    "gm": 3183,
     "p": 708
   },
   "files": {
@@ -37,6 +37,13 @@
         "p:conf": 4,
         "p:scenarios": 2,
         "p:<dynamic>": 5
+      }
+    },
+    "tm-qiju-ledger.js": {
+      "gm": 3,
+      "p": 0,
+      "roots": {
+        "gm:qijuHistory": 3
       }
     },
     "tm-ai-infra.js": {
@@ -160,7 +167,7 @@
       }
     },
     "tm-mechanics.js": {
-      "gm": 26,
+      "gm": 25,
       "p": 0,
       "roots": {
         "gm:offendGroupScores": 6,
@@ -170,14 +177,13 @@
         "gm:activeRebounds": 3,
         "gm:_deathRiskChars": 2,
         "gm:_legitimacyAlerts": 1,
-        "gm:qijuHistory": 1,
         "gm:_charInteractionCount": 4,
         "gm:_charInteractionCountTurn": 1,
         "gm:_memoryArchiveFull": 2
       }
     },
     "tm-mechanics-world.js": {
-      "gm": 44,
+      "gm": 43,
       "p": 0,
       "roots": {
         "gm:_gossipQueue": 4,
@@ -191,7 +197,6 @@
         "gm:enYuanRecords": 3,
         "gm:patronNetwork": 2,
         "gm:_contradictions": 2,
-        "gm:qijuHistory": 1,
         "gm:biannianItems": 1
       }
     },
@@ -277,7 +282,7 @@
       }
     },
     "tm-memorials.js": {
-      "gm": 29,
+      "gm": 28,
       "p": 0,
       "roots": {
         "gm:memorials": 4,
@@ -290,11 +295,11 @@
         "gm:_pendingTinyiTopics": 4,
         "gm:_pendingLetterTo": 1,
         "gm:_chronicle": 2,
-        "gm:qijuHistory": 2
+        "gm:qijuHistory": 1
       }
     },
     "tm-wendui.js": {
-      "gm": 96,
+      "gm": 91,
       "p": 0,
       "roots": {
         "gm:_pendingLetterTo": 1,
@@ -303,7 +308,6 @@
         "gm:_consortFormalAudiences": 2,
         "gm:_wdState": 2,
         "gm:_npcCommitments": 6,
-        "gm:qijuHistory": 5,
         "gm:_adoptedCounsel": 3,
         "gm:_wdAudienceMode": 4,
         "gm:jishiRecords": 5,
@@ -324,13 +328,12 @@
       }
     },
     "tm-wendui-prison.js": {
-      "gm": 23,
+      "gm": 20,
       "p": 0,
       "roots": {
         "gm:_prisonVisits": 2,
         "gm:_prisonVisitsTotal": 2,
         "gm:<dynamic>": 8,
-        "gm:qijuHistory": 3,
         "gm:huangwei": 2,
         "gm:memorials": 4,
         "gm:_palaceFavoritism": 2
@@ -372,12 +375,12 @@
       }
     },
     "tm-office-panel.js": {
-      "gm": 38,
+      "gm": 37,
       "p": 1,
       "roots": {
         "gm:_edictSuggestions": 13,
         "gm:_chronicle": 9,
-        "gm:qijuHistory": 2,
+        "gm:qijuHistory": 1,
         "gm:_edictTracker": 5,
         "gm:chars": 4,
         "gm:minxin": 1,
@@ -477,7 +480,7 @@
       }
     },
     "tm-hongyan-office.js": {
-      "gm": 82,
+      "gm": 74,
       "p": 0,
       "roots": {
         "gm:_ltFilter": 1,
@@ -489,7 +492,6 @@
         "gm:_ltReplyingTo": 2,
         "gm:_edictSuggestions": 5,
         "gm:letters": 11,
-        "gm:qijuHistory": 9,
         "gm:_edictTracker": 2,
         "gm:_ltMultiMode": 2,
         "gm:_pendingNpcLetters": 6,
@@ -502,7 +504,8 @@
         "gm:memorials": 2,
         "gm:_hongyanPolicyActions": 3,
         "gm:_chronicle": 2,
-        "gm:edicts": 3
+        "gm:edicts": 3,
+        "gm:qijuHistory": 1
       }
     },
     "tm-game-loop.js": {
@@ -828,11 +831,11 @@
       }
     },
     "tm-endturn-edict.js": {
-      "gm": 11,
+      "gm": 10,
       "p": 0,
       "roots": {
         "gm:_chronicle": 2,
-        "gm:qijuHistory": 2,
+        "gm:qijuHistory": 1,
         "gm:corruption": 1,
         "gm:customPolicies": 3,
         "gm:_edictMechanicalReport": 1,
@@ -852,7 +855,7 @@
       }
     },
     "tm-endturn-prep.js": {
-      "gm": 25,
+      "gm": 24,
       "p": 0,
       "roots": {
         "gm:_pendingAudiences": 2,
@@ -867,7 +870,6 @@
         "gm:_turnSchemeResults": 1,
         "gm:_edictTracker": 3,
         "gm:letters": 2,
-        "gm:qijuHistory": 1,
         "gm:_turnMoveCommands": 2,
         "gm:_turnFiscalReforms": 2,
         "gm:_turnFiscalActions": 2
@@ -913,7 +915,7 @@
       }
     },
     "tm-endturn-apply.js": {
-      "gm": 263,
+      "gm": 245,
       "p": 6,
       "roots": {
         "gm:_unappliedChanges": 6,
@@ -950,7 +952,6 @@
         "gm:factionRelations": 4,
         "gm:eraState": 3,
         "gm:chars": 4,
-        "gm:qijuHistory": 18,
         "gm:_interceptedIntel": 3,
         "gm:_courtSilenced": 1,
         "gm:_npcCommitments": 4,
@@ -1071,7 +1072,7 @@
       }
     },
     "tm-endturn-render.js": {
-      "gm": 22,
+      "gm": 21,
       "p": 0,
       "roots": {
         "gm:eraName": 1,
@@ -1079,7 +1080,7 @@
         "gm:_fengwenRecord": 2,
         "gm:shijiHistory": 1,
         "gm:_yearlyDigest": 3,
-        "gm:qijuHistory": 2,
+        "gm:qijuHistory": 1,
         "gm:_prevVars": 1,
         "gm:_metricHistory": 3,
         "gm:<dynamic>": 1,
@@ -1090,13 +1091,12 @@
       }
     },
     "tm-patches.js": {
-      "gm": 95,
+      "gm": 93,
       "p": 165,
       "roots": {
         "p:conf": 39,
         "p:ai": 26,
         "p:scenarios": 9,
-        "gm:qijuHistory": 2,
         "p:<dynamic>": 4,
         "p:variables": 3,
         "gm:vars": 3,
@@ -1262,10 +1262,10 @@
       }
     },
     "tm-faction-npc-news-bridge.js": {
-      "gm": 3,
+      "gm": 1,
       "p": 0,
       "roots": {
-        "gm:qijuHistory": 3
+        "gm:qijuHistory": 1
       }
     },
     "tm-faction-npc-intervention.js": {
@@ -1286,11 +1286,11 @@
       }
     },
     "tm-faction-npc-in-turn-driver.js": {
-      "gm": 6,
+      "gm": 4,
       "p": 3,
       "roots": {
         "gm:_npcFactionLlmPickLog": 3,
-        "gm:qijuHistory": 3,
+        "gm:qijuHistory": 1,
         "p:conf": 3
       }
     },
@@ -1569,24 +1569,23 @@
       }
     },
     "tm-keju.js": {
-      "gm": 6,
+      "gm": 5,
       "p": 14,
       "roots": {
         "p:keju": 14,
         "gm:keju": 2,
         "gm:huangquan": 1,
         "gm:classes": 1,
-        "gm:qijuHistory": 1,
         "gm:neitang": 1
       }
     },
     "tm-chaoyi.js": {
-      "gm": 14,
+      "gm": 13,
       "p": 0,
       "roots": {
         "gm:_chaoyiCount": 4,
         "gm:jishiRecords": 2,
-        "gm:qijuHistory": 2,
+        "gm:qijuHistory": 1,
         "gm:_kjG2PendingKeyiPromote": 4,
         "gm:_kjpHPendingParadigmShifts": 1,
         "gm:_ccHeldItems": 1
@@ -1606,11 +1605,10 @@
       }
     },
     "tm-keju-runtime.js": {
-      "gm": 27,
+      "gm": 25,
       "p": 43,
       "roots": {
         "p:keju": 43,
-        "gm:qijuHistory": 2,
         "gm:huangwei": 2,
         "gm:eraState": 3,
         "gm:keju": 3,
@@ -1624,13 +1622,12 @@
       }
     },
     "tm-chaoyi-tinyi.js": {
-      "gm": 15,
+      "gm": 14,
       "p": 0,
       "roots": {
         "gm:_pendingTinyiTopics": 3,
         "gm:_chaoyiMemory": 3,
         "gm:_courtRecords": 3,
-        "gm:qijuHistory": 1,
         "gm:_edictTracker": 2,
         "gm:partyStrife": 1,
         "gm:activeSchemes": 2
@@ -1648,7 +1645,7 @@
       }
     },
     "tm-chaoyi-changchao.js": {
-      "gm": 29,
+      "gm": 28,
       "p": 0,
       "roots": {
         "gm:_deptAbsenceTracker": 2,
@@ -1663,12 +1660,11 @@
         "gm:_lastChangchaoDecisions": 1,
         "gm:_lastChangchaoDecisionMeta": 1,
         "gm:_lastChangchaoDecisionsTargetTurn": 1,
-        "gm:qijuHistory": 1,
         "gm:biannianItems": 1
       }
     },
     "tm-tinyi-v3.js": {
-      "gm": 110,
+      "gm": 109,
       "p": 0,
       "roots": {
         "gm:_mentorIndex": 1,
@@ -1682,7 +1678,6 @@
         "gm:_pendingPartTopics": 2,
         "gm:_pendingTinyiTopics": 11,
         "gm:memorials": 1,
-        "gm:qijuHistory": 1,
         "gm:partyState": 2,
         "gm:_mentorIndexSig": 1,
         "gm:_ccFinalBlockedItems": 2,
@@ -2103,12 +2098,12 @@
       }
     },
     "tm-shizheng-panel.js": {
-      "gm": 14,
+      "gm": 13,
       "p": 0,
       "roots": {
         "gm:_pendingTinyiTopics": 3,
         "gm:jishiRecords": 2,
-        "gm:qijuHistory": 2,
+        "gm:qijuHistory": 1,
         "gm:_edictSuggestions": 7
       }
     },
@@ -2320,13 +2315,6 @@
         "p:byCategory": 1
       }
     },
-    "tm-ai-change-applier.js": {
-      "gm": 1,
-      "p": 0,
-      "roots": {
-        "gm:qijuHistory": 1
-      }
-    },
     "tm-test-harness.js": {
       "gm": 0,
       "p": 4,
@@ -2378,7 +2366,7 @@
       }
     },
     "phase8-formal-rightrail.js": {
-      "gm": 19,
+      "gm": 18,
       "p": 0,
       "roots": {
         "gm:wenduiHistory": 4,
@@ -2388,7 +2376,7 @@
         "gm:_pendingAudiences": 1,
         "gm:_pendingLetterTo": 1,
         "gm:_pendingTinyiTopics": 3,
-        "gm:qijuHistory": 2,
+        "gm:qijuHistory": 1,
         "gm:_phase8ChaoyiNoRecord": 1
       }
     },

@@ -464,7 +464,7 @@ function _offPickerConfirm(charName, deptName, posName, oldHolder, mode) {
 
       // 起居注·启程条
       if (!Array.isArray(GM.qijuHistory)) GM.qijuHistory = [];
-      GM.qijuHistory.unshift({
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
         turn: GM.turn,
         date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
         content: '【启程】' + charName + ' 自' + newChar.location + ' 赴 ' + _travelDestination + '·就任 ' + deptName + posName + '·预计 ' + _trvDays + ' 日'

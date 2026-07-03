@@ -203,7 +203,7 @@ function _cy_jishiAdd(kind, topic, speaker, line, meta) {
       } else {
         content = '【' + modeLbl + '】' + topicStr + '·陛下：' + lineStr.slice(0, 60);
       }
-      GM.qijuHistory.unshift({
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
         turn: turn,
         date: date,
         category: modeLbl,

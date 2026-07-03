@@ -24,6 +24,7 @@ function buildContext() {
    'tm-faction-derived-health.js', 'tm-faction-membership.js',
    'tm-faction-derived-economy.js', 'tm-faction-derived-cohesion.js', 'tm-faction-derived-strength.js',
    'tm-faction-npc-settings.js',
+   'tm-qiju-ledger.js',   // 起居注已收口走写口(2026-07-04)·沙箱须与运行时同形态
    'tm-faction-npc-news-bridge.js',
    'tm-faction-action-engine.js',
    'tm-faction-npc-memorial.js', 'tm-faction-npc-edict.js', 'tm-faction-npc-chaoyi.js',

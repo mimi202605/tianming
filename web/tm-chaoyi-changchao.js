@@ -4212,7 +4212,7 @@ function _cc3_persistCourtRecord() {
       const titles = state.decisions.slice(0, 3).map(d => d.item.title).join('、');
       qjContent += '。议：' + titles + (state.decisions.length > 3 ? '等' : '');
     }
-    GM.qijuHistory.unshift({ turn: turn, targetTurn: record.targetTurn, phase: record.phase, date: date, content: qjContent });
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: turn, targetTurn: record.targetTurn, phase: record.phase, date: date, content: qjContent });
   }
 
   // ── 重大决议（modify / decree / 高重要性 confrontation）写入编年长期项 ──

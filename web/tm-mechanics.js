@@ -1456,7 +1456,7 @@ var StressTraitSystem = {
         }
         if (typeof addEB === 'function') addEB('崩溃', c.name + '精神崩溃！忠诚度骤降');
         if (GM.qijuHistory) {
-          GM.qijuHistory.unshift({
+          if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
             turn: GM.turn,
             date: typeof getTSText === 'function' ? getTSText(GM.turn) : '',
             content: '【精神崩溃】' + c.name + '因压力过大精神崩溃，朝中震动。'

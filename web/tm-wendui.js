@@ -677,7 +677,7 @@ function _wdDoDirectOrder() {
   });
   if (typeof _spendEnergy === 'function') _spendEnergy(2, '面谕差遣');
   if (typeof addEB === 'function') addEB('问对·差遣', name + '领命：' + task.slice(0, 40));
-  if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', content: '【问对·面谕】命' + name + '：' + task + '（限' + deadline + '回合）', category: '问对' });
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', content: '【问对·面谕】命' + name + '：' + task + '（限' + deadline + '回合）', category: '问对' });
   if (typeof NpcMemorySystem !== 'undefined') NpcMemorySystem.remember(name, '奉旨面谕：' + task.slice(0, 30), willingness > 0.6 ? '敬' : '忧', 6, '天子');
   if (!GM.wenduiHistory[name]) GM.wenduiHistory[name] = [];
   GM.wenduiHistory[name].push({ role: 'system', content: '【面谕】皇帝命' + name + '：' + task + '（限' + deadline + '回合）' });
@@ -773,7 +773,7 @@ function _wdAdoptCounsel() {
   if (!Array.isArray(GM._adoptedCounsel)) GM._adoptedCounsel = [];
   GM._adoptedCounsel.push({ advisor: name, counsel: _adv, turn: GM.turn });
   if (GM._adoptedCounsel.length > 40) GM._adoptedCounsel = GM._adoptedCounsel.slice(-40);
-  if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: (typeof getTSText === 'function') ? getTSText(GM.turn) : '', content: '【问对·纳谏】陛下嘉纳' + name + '之言' + (_adv ? '：' + _adv : ''), category: '问对' });
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: (typeof getTSText === 'function') ? getTSText(GM.turn) : '', content: '【问对·纳谏】陛下嘉纳' + name + '之言' + (_adv ? '：' + _adv : ''), category: '问对' });
   if (typeof addEB === 'function') addEB('问对·纳谏', '嘉纳' + name + '之谏');
   var chatEl = _$('wd-modal-chat');
   if (chatEl) { var d = document.createElement('div'); d.style.cssText = 'text-align:center;font-size:0.72rem;color:var(--gold-400);padding:4px;'; d.textContent = '（嘉纳其言·' + name + '感君知遇）'; chatEl.appendChild(d); chatEl.scrollTop = chatEl.scrollHeight; }
@@ -1727,7 +1727,7 @@ function closeWenduiModal() {
         GM._envoyAudiences.push({ faction: _envFac, interactionType: _ch.interactionType || '', mission: _envMission, turn: GM.turn, received: true, disposition: _envDisp });
         delete _ch._pendingEnvoyDisposition;
         if (GM._envoyAudiences.length > 30) GM._envoyAudiences = GM._envoyAudiences.slice(-30);
-        if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: (typeof getTSText === 'function') ? getTSText(GM.turn) : '', content: '【问对·受使】陛下接见' + _envFac + '使节' + _targetName + '·议「' + _envMission + '」', category: '外交' });
+        if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: (typeof getTSText === 'function') ? getTSText(GM.turn) : '', content: '【问对·受使】陛下接见' + _envFac + '使节' + _targetName + '·议「' + _envMission + '」', category: '外交' });
         if (typeof addEB === 'function') addEB('外交·受使', _envFac + '使节面圣·议' + _envMission);
       }
       // 接见后压降压力/野心（见完心里踏实）
@@ -1848,7 +1848,7 @@ async function _wd_extractCommitments(targetName) {
       // 事件板
       if (typeof addEB === 'function') addEB('问对·受命', targetName + '允诺：' + c.task.slice(0,40));
       // 起居注
-      if (GM.qijuHistory) GM.qijuHistory.unshift({
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
         turn: GM.turn,
         date: typeof getTSText==='function'?getTSText(GM.turn):'',
         content: '【问对·受命】' + targetName + '允：' + c.task + (c.npcPromise?' ——"' + c.npcPromise + '"':''),
@@ -1882,7 +1882,7 @@ async function _wd_extractCommitments(targetName) {
         : ('皇帝当面议及·嘱我知悉：' + _relayContent);
       if (typeof NpcMemorySystem !== 'undefined') NpcMemorySystem.remember(_toName, _relayEvent, '平', 6, '天子');
       if (typeof addEB === 'function') addEB('问对·传话', '皇帝托' + (_via || targetName) + '致意' + _toName + '：' + String(rl.content).slice(0, 30));
-      if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', content: '【问对·传话】皇帝令' + (_via || targetName) + '转致' + _toName + '：' + String(rl.content).slice(0, 30), category: '问对' });
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', content: '【问对·传话】皇帝令' + (_via || targetName) + '转致' + _toName + '：' + String(rl.content).slice(0, 30), category: '问对' });
     });
   } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, '_wd_extractCommitments') : console.warn('[_wd_extractCommitments]', e); }
 }

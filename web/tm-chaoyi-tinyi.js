@@ -1141,7 +1141,7 @@ async function _ty2_decide(mode) {
   if (GM._courtRecords.length > 8) GM._courtRecords.shift();
   // 事件板
   if (typeof addEB === 'function') addEB('廷议', CY._ty2.topic + '：' + actualDirection);
-  if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【廷议】' + CY._ty2.topic + '——' + actualDirection });
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '【廷议】' + CY._ty2.topic + '——' + actualDirection });
 
   // ★ 将廷议裁决转为诏令进入 _edictTracker，驱动后续推演
   if (mode !== 'defer') {

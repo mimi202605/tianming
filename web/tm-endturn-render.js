@@ -1431,7 +1431,7 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
       });
     }
   } catch(_) { _qijuMeta = null; }
-  GM.qijuHistory.push({
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
     id: _qijuMeta && _qijuMeta.id,
     turn:GM.turn-1,time:getTSText(GM.turn-1),zhengwen:zhengwen,
     sourceType: 'official_record',

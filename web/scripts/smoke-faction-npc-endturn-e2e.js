@@ -25,6 +25,7 @@ function buildContext() {
    'tm-faction-derived-health.js', 'tm-faction-membership.js',
    'tm-faction-derived-economy.js', 'tm-faction-derived-cohesion.js', 'tm-faction-derived-strength.js',
    'tm-faction-npc-settings.js',
+   'tm-qiju-ledger.js',   // 起居注已收口走写口(2026-07-04)·沙箱须与运行时同形态
    'tm-faction-npc-news-bridge.js',
    'tm-faction-npc-memorial.js', 'tm-faction-npc-edict.js', 'tm-faction-npc-chaoyi.js',
    'tm-faction-npc-office.js', 'tm-faction-npc-guoku.js',
@@ -109,8 +110,10 @@ function main() {
   });
   console.log('  TOTAL: mem=' + summary.mem + ' ed=' + summary.ed + ' cy=' + summary.cy + ' of=' + summary.of + ' gk=' + summary.gk);
   var quickNews = (ctx.GM.qijuHistory || []).filter(function(x){ return x && x._source === 'npc-bridge'; });
-  var expectedQuickNews = Math.min(200, summary.mem + summary.ed + summary.cy + summary.of + summary.gk);
-  console.log('  近事快报 npc-bridge=' + quickNews.length + ' expected=' + expectedQuickNews + ' (cap 200)');
+  // cap 已归一到 TM.Qiju.CAP(2026-07-04 收口·原散装 200 退役)·断言读单一真相不再认死数字
+  var _qijuCap = (ctx.TM && ctx.TM.Qiju && ctx.TM.Qiju.CAP) || 240;
+  var expectedQuickNews = Math.min(_qijuCap, summary.mem + summary.ed + summary.cy + summary.of + summary.gk);
+  console.log('  近事快报 npc-bridge=' + quickNews.length + ' expected=' + expectedQuickNews + ' (cap ' + _qijuCap + ')');
   assert(quickNews.length === expectedQuickNews, 'NPC 5 系统所有操作都应进入近事快报直到 cap·got ' + quickNews.length + ' expected ' + expectedQuickNews);
 
   // 断言·5 回合·11 NPC·至少有些数据 (排除 chaoyi 因可能单派)

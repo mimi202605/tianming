@@ -1689,7 +1689,7 @@ async function _logicAuditOnStart(sc) {
         var logParts = [];
         if (genCount > 0) logParts.push('为' + genCount + '位人物生成所在地');
         if (fixCount > 0) logParts.push('修正' + fixCount + '处矛盾');
-        GM.qijuHistory.unshift({
+        if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
           turn: 0, date: '开局审查',
           content: '【逻辑审查】' + logParts.join('，') + '。'
         });
@@ -3316,7 +3316,7 @@ function doActualStart(sid){
   if (_checkWarnings.length > 0) {
     console.warn('[ScenarioCheck]', _checkWarnings.join('; '));
     // 在起居注中记录警告
-    if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: 0, date: '\u5F00\u5C40\u68C0\u67E5', content: '\u3010\u5267\u672C\u4E0D\u5B8C\u6574\u8B66\u544A\u3011' + _checkWarnings.join('\uFF1B') });
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: 0, date: '\u5F00\u5C40\u68C0\u67E5', content: '\u3010\u5267\u672C\u4E0D\u5B8C\u6574\u8B66\u544A\u3011' + _checkWarnings.join('\uFF1B') });
   }
 
   // 确保所有字段有默认值

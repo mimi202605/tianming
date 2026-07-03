@@ -1158,7 +1158,7 @@ function _summonRecall(name) {
     category: '\u4EBA\u4E8B', tags: ['人事', '召回', '启程', name]
   });
   if (!Array.isArray(GM.qijuHistory)) GM.qijuHistory = [];
-  GM.qijuHistory.unshift({
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
     turn: GM.turn, date: GM._gameDate || '',
     content: '\u3010\u5FB4\u53EC\u3011' + name + ' \u5956\u65E8\u81EA' + ch.location + ' \u56DE\u4EAC\u00B7\u9884\u8BA1 ' + Math.ceil(travelTurns * dpv) + ' \u65E5\u62B5\u8FBE\u3002'
   });

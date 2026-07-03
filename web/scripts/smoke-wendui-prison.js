@@ -24,6 +24,7 @@ function makeCtx() {
   ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-minxin-ledger.js'), 'utf8'), ctx, { filename: 'tm-minxin-ledger.js' });   // 民心已收口走总闸(2026-07-04)
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-qiju-ledger.js'), 'utf8'), ctx, { filename: 'tm-qiju-ledger.js' });   // 起居注已收口走写口(2026-07-04)
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-wendui-prison.js'), 'utf8'), ctx, { filename: 'tm-wendui-prison.js' });
 
   ctx.GM = {

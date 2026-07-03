@@ -55,6 +55,7 @@ async function main() {
   const { ctx, timers } = makeCtx();
 
   runFile(ctx, 'tm-faction-npc-settings.js');
+  runFile(ctx, 'tm-qiju-ledger.js');   // 起居注已收口走写口(2026-07-04)·沙箱须与运行时同形态
   runFile(ctx, 'tm-faction-npc-news-bridge.js');
   runFile(ctx, 'tm-faction-npc-in-turn-driver.js');
   runFile(ctx, 'tm-faction-npc-dispatcher.js');

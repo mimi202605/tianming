@@ -337,7 +337,7 @@
     // 近事快报·chat 不入 (太频繁会刷屏)
     if (actionKey !== 'chat' && typeof global.GM !== 'undefined' && global.GM.qijuHistory) {
       var qjContent = '【诏狱】陛下亲临·' + action.label + ' ' + charName + (freeText ? '·谕示:「' + freeText.slice(0, 32) + '」' : '');
-      global.GM.qijuHistory.unshift({
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
         category: '人事',
         content: qjContent,
         time: typeof global.getTSText === 'function' ? global.getTSText(GM.turn) : 'T' + (GM.turn || 0),
@@ -403,7 +403,7 @@
 
     // 近事快报
     if (GM.qijuHistory) {
-      GM.qijuHistory.unshift({
+      if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
         category: '人事',
         content: '【诏狱】' + ch.name + '体魄不支·瘐死狱中。罪名·' + (ch._imprisonReason || '原因不详'),
         time: typeof global.getTSText === 'function' ? global.getTSText(GM.turn) : 'T' + (GM.turn || 0),
@@ -603,7 +603,7 @@
         var res = ev.apply(ch, GM) || {};
         triggered++;
         if (res.qiju && GM.qijuHistory) {
-          GM.qijuHistory.unshift({
+          if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
             category: '人事', content: res.qiju,
             time: typeof global.getTSText === 'function' ? global.getTSText(GM.turn) : 'T' + (GM.turn || 0),
             turn: GM.turn || 0, _source: 'prison-event-' + pick, _facName: ch.name

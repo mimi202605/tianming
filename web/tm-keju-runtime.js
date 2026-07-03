@@ -317,7 +317,7 @@ async function checkKejuTrigger() {
         if (typeof toast === 'function') toast('📜 礼部奏·' + data.reason + '·点科举面板议筹办');
         if (GM.qijuHistory) {
           var dateStr = (typeof getTSText === 'function') ? getTSText(GM.turn) : '';
-          GM.qijuHistory.unshift({
+          if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
             turn: GM.turn, date: dateStr,
             content: '【科举·自动判到期】礼部 AI 奏·' + data.reason + '·待陛下亲议。'
           });
@@ -2644,7 +2644,7 @@ function _keyiPersistToCourtRecords(method) {
   if (GM.qijuHistory) {
     var dateStr = (typeof getTSText === 'function') ? getTSText(GM.turn) : '';
     var bd = KEYI_STATE._breakdown || {};
-    GM.qijuHistory.unshift({
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
       turn: GM.turn, date: dateStr,
       content: '\u3010\u79D1\u8BAE\u3011' + topicSubject + '\u00B7\u652F\u6301 ' + (bd.support||0) + '/\u53CD\u5BF9 ' + (bd.oppose||0) + '/\u89C2\u671B ' + (bd.abstain||0) + '\u00B7\u9661\u4E0B' + methodLabel + '\u3002'
     });

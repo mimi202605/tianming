@@ -48,6 +48,7 @@ const sb = { console:console, Array:Array, String:String, Number:Number, Object:
 vm.createContext(sb);
 sb.window = sb;
 sb.GM = { qijuHistory:[], turn:3 };
+vm.runInContext(read('tm-qiju-ledger.js'), sb, { filename:'tm-qiju-ledger.js' });   // 起居注已收口走写口(2026-07-04)
 vm.runInContext(bridgeSrc, sb, { filename:'news-bridge' });
 const NB = sb.TM && sb.TM.FactionNpcNewsBridge;
 ok(NB && typeof NB.pushFiscalPolicy === 'function', '近事快报桥真实加载');

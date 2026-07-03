@@ -3998,7 +3998,7 @@
       var r = rightRecordChaoyi(rightChaoyiModeLabel(state.rightChaoyiMode || 'changchao'), '记起居注', line);
       if (window.GM) {
         if (!Array.isArray(GM.qijuHistory)) GM.qijuHistory = [];
-        GM.qijuHistory.unshift({
+        if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
           turn: GM.turn || 1,
           date: r.date,
           content: '【' + r.kind + '】议「' + r.topic + '」' + (line ? '。上谕：' + line : '。')

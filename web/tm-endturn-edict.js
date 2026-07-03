@@ -431,7 +431,7 @@ function applyEdictActions(actions) {
               category: '人事', tags: ['人事', '赴任', '启程', a.character]
             });
             if (!Array.isArray(GM.qijuHistory)) GM.qijuHistory = [];
-            GM.qijuHistory.unshift({
+            if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
               turn: GM.turn, date: GM._gameDate || '',
               content: '【启程】' + a.character + ' 自' + char.location + ' 赴 ' + _destE + ' 就任 ' + a.position
             });

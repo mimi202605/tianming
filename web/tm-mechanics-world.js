@@ -1834,7 +1834,7 @@ var ContradictionSystem = (function() {
         c.phase = 'crisis';
         c.lastEscalation = GM.turn;
         if (typeof addEB === 'function') addEB('矛盾爆发', '〔' + c.title + '〕已升级为危机！');
-        if (GM.qijuHistory) GM.qijuHistory.unshift({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', content: '【矛盾危机】' + c.title + '已全面激化，朝野震动。' });
+        if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', content: '【矛盾危机】' + c.title + '已全面激化，朝野震动。' });
       } else if (c.intensity >= 70 && c.phase === 'latent') {
         c.phase = 'escalating';
         c.lastEscalation = GM.turn;

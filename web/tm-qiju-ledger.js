@@ -1,0 +1,48 @@
+// @ts-check
+/*
+ * tm-qiju-ledger.js — 起居注单一写口（2026-07-04 gm:qijuHistory 收口）
+ *
+ * 此前 25 个文件 69 处直写 GM.qijuHistory：形状高度统一但——
+ *   - cap 三处散装互搏（phase8-drafts 240 / in-turn-driver 200 / news-bridge 200·其余 22 写手裸写）
+ *   - hongyan-office 有一处 push 破坏 newest-first 序（注释写着「即时可见」·push 恰恰塞到最不可见的末尾）
+ *   - turn/date 兜底逻辑逐处复制
+ * 收口后：唯一入口·永远 unshift(newest-first)·cap 归一·turn/date 自动兜底·扩展字段透传。
+ *
+ * API：
+ *   TM.Qiju.record(content, opts)   便捷形·opts 可带 {turn,date,time,category,_edictRef,...} 透传
+ *   TM.Qiju.recordEntry(entry)      透传形·entry 即原对象字面量({turn,date,content,category,...})·缺省字段自动补
+ *   TM.Qiju.CAP                     240（原 UI 上限·单一真相）
+ */
+(function(global) {
+  'use strict';
+
+  var TM = global.TM = global.TM || {};
+  var CAP = 240; // cap 归一：取原 UI 上限 240·三处散装 trim 已随收口退役
+
+  function recordEntry(entry) {
+    var GM = global.GM;
+    if (!GM || !entry || typeof entry !== 'object') return null;
+    if (entry.content == null || entry.content === '') return null;
+    if (!Array.isArray(GM.qijuHistory)) GM.qijuHistory = [];
+    if (entry.turn == null) entry.turn = Number(GM.turn) || 0;
+    // date 兜底：调用方给了 date 或 time（诏书条目用 time）就尊重·否则 getTSText
+    if (entry.date == null && entry.time == null) {
+      entry.date = (typeof getTSText === 'function') ? getTSText(entry.turn) : '';
+    }
+    GM.qijuHistory.unshift(entry); // 永远 newest-first
+    if (GM.qijuHistory.length > CAP) GM.qijuHistory.length = CAP;
+    return entry;
+  }
+
+  function record(content, opts) {
+    var entry = {};
+    if (opts && typeof opts === 'object') {
+      for (var k in opts) { if (Object.prototype.hasOwnProperty.call(opts, k)) entry[k] = opts[k]; }
+    }
+    entry.content = content;
+    return recordEntry(entry);
+  }
+
+  TM.Qiju = { record: record, recordEntry: recordEntry, CAP: CAP };
+  global.QijuLedger = TM.Qiju;
+})(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : globalThis));

@@ -907,7 +907,7 @@ function _kejuNotifyUrgentStage(exam, stage) {
   }
   if (typeof addEB === 'function') addEB('\u79D1\u4E3E\u00B7\u5F85\u529E', c.title, {important:true});
   if (GM.qijuHistory) {
-    GM.qijuHistory.unshift({
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
       turn: GM.turn,
       date: (typeof getTSText === 'function') ? getTSText(GM.turn) : 'T'+(GM.turn||0),
       content: '\u3010\u79D1\u4E3E\u00B7\u5F85\u529E\u3011' + c.title + '\u3002' + c.urgency

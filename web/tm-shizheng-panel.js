@@ -576,7 +576,7 @@ function _mzEndDialogue() {
     // 3. 起居注（简短记录召对事实）
     if (!GM.qijuHistory) GM.qijuHistory = [];
     var _tsT = (typeof getTSText === 'function') ? getTSText(GM.turn || 1) : '';
-    GM.qijuHistory.unshift({
+    if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({
       turn: GM.turn || 1,
       date: _tsT,
       category: '问对',

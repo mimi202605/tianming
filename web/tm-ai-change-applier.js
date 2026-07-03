@@ -599,7 +599,7 @@
             }
             if (global.GM && global.GM.qijuHistory) {
               var _qd = (typeof getTSText === 'function') ? getTSText(global.GM.turn) : '';
-              global.GM.qijuHistory.unshift({ turn: global.GM.turn, date: _qd, content: '【抄家】抄' + charName + '家产·得银 ' + Math.round((_confR.total||0)/10000) + ' 万两·解内帑。' });
+              if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: global.GM.turn, date: _qd, content: '【抄家】抄' + charName + '家产·得银 ' + Math.round((_confR.total||0)/10000) + ' 万两·解内帑。' });
             }
           }
         }

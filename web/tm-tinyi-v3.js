@@ -1670,7 +1670,7 @@ function _ty3_checkExpiredTopics() {
     } else {
       // 默认·留中
       if (Array.isArray(GM.qijuHistory)) {
-        GM.qijuHistory.push({ turn: GM.turn || 0, content: '【NPC 议题留中】' + (t.topic || '') });
+        if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn || 0, content: '【NPC 议题留中】' + (t.topic || '') });
       }
     }
     GM._pendingTinyiTopics.splice(i, 1);
