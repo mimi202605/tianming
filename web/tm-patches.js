@@ -545,6 +545,16 @@ openSettings=function(){
             '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后·常规回合跳过 SC_RECALL 5 源召回·节省 40-60% API 成本。关闭时（默认）每回合都跑全量召回·AI 记忆富度最高。</div>' +
           '</div>' +
         '</label>' +
+        (function(){
+          var _wtAgOn = !(P.conf && P.conf.wentianAgentMode === false);
+          return '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
+            '<input type="checkbox" id="s-wentian-agent" ' + (_wtAgOn?'checked ':'') + 'onchange="_togglePConf(\'wentianAgentMode\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">问天·先查证后裁定（agent 模式·默认启用）</div>' +
+              '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">问天指令先由 AI 用只读工具核实对象在档真名与现值（治错字/绰号/记错现状致直改失败）·再提交裁定·可一次多笔直改。多 1-3 次轻量调用（走次要 API）。关闭则回到单发解析。</div>' +
+            '</div>' +
+          '</label>';
+        })() +
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
           '<input type="checkbox" id="s-consol" ' + (_consolOn?'checked ':'') + 'onchange="_togglePConf(\'memorySynthesisEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
           '<div style="flex:1;">' +
