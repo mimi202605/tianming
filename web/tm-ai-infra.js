@@ -25,6 +25,11 @@
 //  1.1 Prompt分层压缩系统
 //  固定层（朝代设定/官制/规则）缓存 + 缓变层差异描述 + 速变层限500字
 // ============================================================
+// 探测结果落 P.conf 后须持久化(2026-07-04 p:conf 收口)——探测烧真金 API·不存则重启蒸发每会话重烧
+function _persistProbeConf() {
+  try { if (typeof saveP === 'function') saveP(); } catch (_e) {}
+}
+
 var PromptLayerCache = (function() {
   var cache = { hash: '', fixedLayer: '', lastTurn: -1, slowLayer: '' };
   return {
@@ -2797,6 +2802,7 @@ function _finishDetect(k, layer, cacheKey, maxOutputTok, tier) {
   P.conf['_ctxDetectLayer' + _sfx] = layer;
   if (maxOutputTok && maxOutputTok > 0) P.conf['_detectedMaxOutput' + _sfx] = maxOutputTok;
   _ctxLog('最终结果[' + (tier||'primary') + ']: 上下文' + k + 'K, 输出上限' + (maxOutputTok||0) + ' tokens (' + layer + ')');
+  _persistProbeConf();
 }
 
 // ============================================================
@@ -2889,6 +2895,7 @@ async function detectModelOutputLimit(opts) {
   };
   if (realLimit > 0) P.conf['_measuredMaxOutput' + _sfx] = realLimit;
   _ctxLog('[output测·' + _tier + '] 最终实测: ' + realLimit + ' tokens');
+  _persistProbeConf();
   return realLimit;
 }
 
@@ -2979,6 +2986,7 @@ async function probeModelSelfReport(opts) {
   if (!P.conf._probeHistory) P.conf._probeHistory = {};
   var _srKey = _tierP === 'secondary' ? 'selfReport_secondary' : 'selfReport';
   P.conf._probeHistory[_srKey] = report;
+  _persistProbeConf();
   return report;
 }
 
@@ -3096,6 +3104,7 @@ async function probeModelEvidenceAuditLegacy(opts) {
   P.conf._probeHistory[keyName] = report;
   P.conf['_evidenceScore' + _sfx] = report.score;
   P.conf['_evidenceReliability' + _sfx] = report.reliability;
+  _persistProbeConf();
   return report;
 }
 
@@ -3274,6 +3283,7 @@ async function probeModelEvidenceAudit(opts) {
   P.conf._probeHistory[keyName] = report;
   P.conf['_evidenceScore' + _sfx] = report.score;
   P.conf['_evidenceReliability' + _sfx] = report.reliability;
+  _persistProbeConf();
   return report;
 }
 

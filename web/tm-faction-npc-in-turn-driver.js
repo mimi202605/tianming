@@ -295,6 +295,7 @@
     global.P.conf.npcInTurnFirstDelayMs = preset.first;
     global.P.conf.npcInTurnRepeatDelayMs = preset.repeat;
     // 已经排好的旧 timer 没影响·下一回合 reschedule 用新值
+    try { if (typeof global.saveP === 'function') global.saveP(); } catch (_e) {} // 写必随存(2026-07-04 p:conf 收口)
     return { ok: true, preset: name, first: preset.first, repeat: preset.repeat };
   }
 
