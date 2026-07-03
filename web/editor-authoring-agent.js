@@ -739,6 +739,256 @@
     catch (e) { return false; }
   }
 
+  /* ═══════════════════════════════════════════════════════════════════
+     CC 对照移植 · 记忆 / 技能 / 能力包 三件套（2026-07-03）
+     - 记忆(≈CC memdir)：四型条目(user/feedback/project/reference)·localStorage 当
+       文件系统·清单≈MEMORY.md 索引·run 首轮用次要模型按需求召回≤5条(失败回退关键词)。
+       与「约定」分工：约定=显式规范·每轮全文注入；记忆=背景上下文·按需召回。
+     - 技能(≈CC SkillTool)：{name,description,whenToUse,body} 指令包·清单注入系统词·
+       agent 经 useSkill 按需展开全文照做·saveSkill 沉淀可复用做法。
+     - 能力包(≈CC plugin)：技能+约定的打包分发单元·可启停·JSON 导入导出(像剧本包
+       一样跨玩家分享)。启停/装卸=玩家权限·不设 agent 工具·只挂 API 供 UI/console。
+     ═══════════════════════════════════════════════════════════════════ */
+  var MEMDIR_KEY = 'tm_aa_memdir';
+  var MEMORY_TYPES = ['user', 'feedback', 'project', 'reference'];
+  function _loadMemories() {
+    try { var a = JSON.parse((global.localStorage && global.localStorage.getItem(MEMDIR_KEY)) || '[]'); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function _saveMemoriesArr(arr) {
+    try { global.localStorage && global.localStorage.setItem(MEMDIR_KEY, JSON.stringify(arr.slice(0, 60))); return true; }
+    catch (e) { return false; }
+  }
+  function saveMemoryEntry(m) {
+    m = m || {};
+    var name = String(m.name || '').trim().slice(0, 60);
+    var type = MEMORY_TYPES.indexOf(m.type) >= 0 ? m.type : 'project';
+    var description = String(m.description || '').trim().slice(0, 160);
+    var body = String(m.body || '').trim().slice(0, 1500);
+    if (!name || !description || !body) return { ok: false, error: 'name/description/body 均必填' };
+    var arr = _loadMemories();
+    var i = arr.findIndex(function (x) { return x && x.name === name; });
+    var entry = { id: i >= 0 ? arr[i].id : ('mem_' + Date.now().toString(36)), name: name, type: type, description: description, body: body, ts: Date.now() };
+    if (i >= 0) arr[i] = entry; else arr.unshift(entry);
+    _saveMemoriesArr(arr);
+    return { ok: true, saved: name, type: type, total: Math.min(arr.length, 60), updated: i >= 0 };
+  }
+  function deleteMemory(idOrName) {
+    var arr = _loadMemories(), n = arr.length;
+    arr = arr.filter(function (x) { return x && x.id !== idOrName && x.name !== idOrName; });
+    _saveMemoriesArr(arr);
+    return { ok: arr.length < n, removed: n - arr.length };
+  }
+  var _RECALL_TOOL = [{
+    name: 'selectMemories',
+    description: '从记忆清单中选出对处理当前需求明确有用的记忆名（≤5 个；不确定就不选；没有就传空数组）。',
+    parameters: { type: 'object', properties: { names: { type: 'array', items: { type: 'string' } } }, required: ['names'] }
+  }];
+  /* 关键词回退：次要模型不可用/失败时·按需求词面在 name/description 上计分取 top */
+  function _recallByKeywords(query, mems) {
+    var terms = [];
+    String(query || '').replace(/[一-鿿]{2,}|[A-Za-z]{3,}/g, function (w) {
+      if (/[一-鿿]/.test(w)) { for (var i = 0; i + 1 < w.length && i < 8; i++) terms.push(w.slice(i, i + 2)); }
+      else terms.push(w.toLowerCase());
+      return w;
+    });
+    if (!terms.length) return [];
+    return mems.map(function (m) {
+      var hay = (m.name + ' ' + m.description).toLowerCase(), score = 0;
+      terms.forEach(function (t) { if (hay.indexOf(t) >= 0) score++; });
+      return { m: m, score: score };
+    }).filter(function (x) { return x.score > 0; })
+      .sort(function (a, b) { return b.score - a.score; })
+      .slice(0, 5).map(function (x) { return x.m; });
+  }
+  function _memBlock(sel) {
+    if (!sel.length) return '';
+    return '【相关记忆·你此前与该玩家/剧本共事时存下的背景】（参考用·非当前指令；与玩家当前要求冲突时以当前要求为准）\n'
+      + sel.map(function (m) { return '· [' + m.type + '] ' + m.name + '：' + m.body; }).join('\n');
+  }
+  /* 召回：≤3 条全注入免调用；>3 条用次要模型(未配则主模型)选≤5；调用失败回退关键词。
+     callerFn 可注入(mock 测试·与 runAuthoringLoop 的 opts.caller 同型)。 */
+  function _recallMemories(query, cfgMain, callerFn) {
+    var mems = _loadMemories();
+    if (!mems.length) return Promise.resolve('');
+    if (mems.length <= 3) return Promise.resolve(_memBlock(mems));
+    var manifest = mems.map(function (m) { return '- ' + m.name + ' [' + m.type + '] ' + m.description; }).join('\n');
+    var sys = '你在为一个剧本编辑 agent 挑选背景记忆。根据用户需求，从清单中选出明确有用的记忆名（≤5 个）。拿不准的不选；没有就空数组。只调用 selectMemories 工具。';
+    var ask = '【用户需求】\n' + String(query || '').slice(0, 600) + '\n\n【记忆清单】\n' + manifest;
+    return Promise.resolve((callerFn || callWithTools)([{ role: 'user', text: ask }], _RECALL_TOOL, { maxTok: 300, maxRetries: 1, cfg: _secondaryCfg() || cfgMain, system: sys }))
+      .then(function (r) {
+        var call = r && r.toolCalls && r.toolCalls[0];
+        var names = (call && call.input && Array.isArray(call.input.names)) ? call.input.names : null;
+        if (!names) return _memBlock(_recallByKeywords(query, mems));
+        var sel = mems.filter(function (m) { return names.indexOf(m.name) >= 0; }).slice(0, 5);
+        return _memBlock(sel);
+      })
+      .catch(function () { return _memBlock(_recallByKeywords(query, mems)); });
+  }
+
+  /* ── 技能：内置 + 用户 + 启用能力包（同名后者不覆盖先者·builtin 最先） ── */
+  var SKILLS_KEY = 'tm_aa_skills';
+  var BUILTIN_SKILLS = [
+    {
+      name: '人物塑造章法', builtin: true,
+      description: '把人物做成有血肉、可入局的完整实体',
+      whenToUse: '新增人物或丰满既有人物时',
+      body: [
+        '1. 先 searchEntities 看 1-2 个剧本已有同类人物，以其字段集与丰满度为基线（勿低于官方实体）。',
+        '2. 身份链：姓名/表字/官衔/品级/所属势力(用已存在势力)/年龄/籍贯，一个不缺。',
+        '3. 数值：能力(智谋/武勇/军事/政务/管理/魅力等)+忠诚/野心，按人物定位落在设定区间内、彼此自洽（权臣≠全能，名将常短于政务）。',
+        '4. 血肉：小传 100-200 字（出身→关键经历→当下处境）、性格、外貌、言辞风格。',
+        '5. 关系网：至少 2 条与既有人物的关系（同党/政敌/师生/姻亲），双向自洽。',
+        '6. AI 人格：核心动机+底线+处世方式，让 NPC 行为可预期且有个性。',
+        '7. 史实人物先 checkHistory 核生卒/官衔；虚构人物名字要贴时代（避免现代感用字）。'
+      ].join('\n')
+    }
+  ];
+  function _loadUserSkills() {
+    try { var a = JSON.parse((global.localStorage && global.localStorage.getItem(SKILLS_KEY)) || '[]'); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function _saveUserSkills(arr) {
+    try { global.localStorage && global.localStorage.setItem(SKILLS_KEY, JSON.stringify(arr.slice(0, 40))); return true; }
+    catch (e) { return false; }
+  }
+  function saveSkillEntry(s) {
+    s = s || {};
+    var name = String(s.name || '').trim().slice(0, 60);
+    var description = String(s.description || '').trim().slice(0, 160);
+    var whenToUse = String(s.whenToUse || '').trim().slice(0, 120);
+    var body = String(s.body || '').trim().slice(0, 4000);
+    if (!name || !body) return { ok: false, error: 'name/body 必填' };
+    if (BUILTIN_SKILLS.some(function (b) { return b.name === name; })) return { ok: false, error: '「' + name + '」是内置技能，换个名字' };
+    var arr = _loadUserSkills();
+    var i = arr.findIndex(function (x) { return x && x.name === name; });
+    var entry = { name: name, description: description, whenToUse: whenToUse, body: body, ts: Date.now() };
+    if (i >= 0) arr[i] = entry; else arr.unshift(entry);
+    _saveUserSkills(arr);
+    return { ok: true, saved: name, updated: i >= 0 };
+  }
+  function deleteSkill(name) {
+    var arr = _loadUserSkills(), n = arr.length;
+    arr = arr.filter(function (x) { return x && x.name !== name; });
+    _saveUserSkills(arr);
+    return { ok: arr.length < n };
+  }
+  function listAllSkills() {
+    var seen = {}, out = [];
+    BUILTIN_SKILLS.concat(_enabledPackSkills(), _loadUserSkills()).forEach(function (s) {
+      if (!s || !s.name || seen[s.name]) return;
+      seen[s.name] = 1; out.push(s);
+    });
+    return out;
+  }
+  function _skillsBlock() {
+    var all = listAllSkills();
+    if (!all.length) return '';
+    return '【可用技能】以下技能是打磨过的操作指令包。做对应事情时，先调 useSkill(name) 展开全文再照做：\n'
+      + all.slice(0, 14).map(function (s) { return '- ' + s.name + '：' + (s.whenToUse || s.description || ''); }).join('\n')
+      + '\n（做完某类事发现值得沉淀的做法，可 saveSkill 存成技能供下次复用。）';
+  }
+
+  /* ── 能力包：技能+约定打包·启停·导入导出（启停装卸=玩家权限·无 agent 工具） ── */
+  var PACKS_KEY = 'tm_aa_packs';
+  var PACKS_STATE_KEY = 'tm_aa_packs_state';
+  var BUILTIN_PACKS = [
+    {
+      name: '立绘工坊', version: '1.0', builtin: true,
+      description: '人物立绘/势力旗徽的生成规范与提示词模板（配合 generateImage）',
+      conventions: '立绘统一写 characters.N.portrait；剧本里已有的有效立绘视为玩家资产，除非玩家明确要求替换，绝不覆盖。',
+      skills: [{
+        name: '人物立绘生成规范',
+        description: '历史向人物立绘的提示词章法与安全边界',
+        whenToUse: '给人物生成立绘/画像或给势力生成旗徽时',
+        body: [
+          '1. 先 getField 读该人物的 age/gender/faction/role/officialTitle/appearance/bio——立绘必须长在人设上。',
+          '2. 用 generateImage 写入 characters.N.portrait。提示词按此模板填充：',
+          '   「历史策略游戏人物立绘·竖版3:4·单人·腰部以上四分之三侧身·<年龄><性别><族属>·<官职/身份/势力处境>·外貌：<appearance>·<时代>考据服饰：<按身份定>·背景：<身份相称场景·无他人>·写实中国历史插画·工笔线条·墨彩质感·宣纸色调·电影感自然光·五官与织物高细节」。',
+          '3. 一律追加禁则：无文字/无水印/无现代物/无奇幻元素。',
+          '4. 北族(女真/契丹/党项/草原)人物追加：避免清代辫发剃额、避免无据的蒙元装束、避免角盔与奇幻甲。',
+          '5. 女性/未成年/俘虏等人物追加：庄重肖像、不性化、不羞辱、不血腥。',
+          '6. 剧本已有有效立绘的绝不覆盖（除非玩家点名要换）；玩家未配生图 API 时报错即停，改为把 appearance 文字描述写丰满。'
+        ].join('\n')
+      }]
+    },
+    {
+      name: '疆域工坊', version: '1.0', builtin: true,
+      description: '地图疆域/归属/名称调整的稳妥操作法',
+      conventions: '',
+      skills: [{
+        name: '疆域与地图调整法',
+        description: '改地块归属/疆域/省名的标准流程',
+        whenToUse: '划地块给某势力、调整疆域归属、地块或省改名时',
+        body: [
+          '1. 先 mapOverview 看清现有地块/归属/势力全局，再动手；大批调整先 todoWrite 列清单逐块核对。',
+          '2. 改归属用 mapAssignOwner(地块名+势力名)——自动上色并同步 map/mapData 双镜像，别绕道 applyEdit 拼路径。',
+          '3. 地块/省改名用 renameRegion（同步双镜像）；若剧本其他文字还引用旧名，再补 renameEntity(旧名,新名) 联动。',
+          '4. 行政区划(adminHierarchy)与地图是两层：区划改了归属/名称，要检查地图侧是否呼应，反之亦然。',
+          '5. 收尾 validateDraft + 抽查 2-3 个改过的地块归属确认落地。'
+        ].join('\n')
+      }]
+    }
+  ];
+  function _loadUserPacks() {
+    try { var a = JSON.parse((global.localStorage && global.localStorage.getItem(PACKS_KEY)) || '[]'); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function _packsState() {
+    try { return JSON.parse((global.localStorage && global.localStorage.getItem(PACKS_STATE_KEY)) || '{}') || {}; }
+    catch (e) { return {}; }
+  }
+  function _packEnabled(name) {
+    var st = _packsState();
+    return st[name] !== false;   /* 默认启用·显式 false 才停 */
+  }
+  function listPacks() {
+    return BUILTIN_PACKS.concat(_loadUserPacks()).map(function (p) {
+      return { name: p.name, version: p.version || '', description: p.description || '', builtin: !!p.builtin, enabled: _packEnabled(p.name), skills: (p.skills || []).length };
+    });
+  }
+  function setPackEnabled(name, on) {
+    var st = _packsState(); st[name] = !!on;
+    try { global.localStorage && global.localStorage.setItem(PACKS_STATE_KEY, JSON.stringify(st)); } catch (e) {}
+    return { ok: true, name: name, enabled: !!on };
+  }
+  function _enabledPacks() {
+    return BUILTIN_PACKS.concat(_loadUserPacks()).filter(function (p) { return p && _packEnabled(p.name); });
+  }
+  function _enabledPackSkills() {
+    var out = [];
+    _enabledPacks().forEach(function (p) { (p.skills || []).forEach(function (s) { out.push(s); }); });
+    return out;
+  }
+  function _packsConventions() {
+    return _enabledPacks().map(function (p) { return String(p.conventions || '').trim(); })
+      .filter(Boolean).join('\n');
+  }
+  function importPackJSON(json) {
+    try {
+      var p = typeof json === 'string' ? JSON.parse(json) : json;
+      if (!p || !p.name || !Array.isArray(p.skills)) return { ok: false, error: '能力包需含 name 与 skills[]' };
+      if (BUILTIN_PACKS.some(function (b) { return b.name === p.name; })) return { ok: false, error: '与内置包同名' };
+      var clean = { name: String(p.name).slice(0, 60), version: String(p.version || '1.0').slice(0, 20), description: String(p.description || '').slice(0, 200), conventions: String(p.conventions || '').slice(0, 1500), skills: p.skills.slice(0, 10).map(function (s) { return { name: String(s.name || '').slice(0, 60), description: String(s.description || '').slice(0, 160), whenToUse: String(s.whenToUse || '').slice(0, 120), body: String(s.body || '').slice(0, 4000) }; }).filter(function (s) { return s.name && s.body; }) };
+      var arr = _loadUserPacks();
+      var i = arr.findIndex(function (x) { return x && x.name === clean.name; });
+      if (i >= 0) arr[i] = clean; else arr.unshift(clean);
+      try { global.localStorage && global.localStorage.setItem(PACKS_KEY, JSON.stringify(arr.slice(0, 20))); } catch (e2) {}
+      return { ok: true, imported: clean.name, skills: clean.skills.length };
+    } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+  }
+  function exportPackJSON(name) {
+    var p = BUILTIN_PACKS.concat(_loadUserPacks()).find(function (x) { return x && x.name === name; });
+    if (!p) return null;
+    return JSON.stringify({ name: p.name, version: p.version || '1.0', description: p.description || '', conventions: p.conventions || '', skills: p.skills || [] }, null, 2);
+  }
+  function removePack(name) {
+    var arr = _loadUserPacks(), n = arr.length;
+    arr = arr.filter(function (x) { return x && x.name !== name; });
+    try { global.localStorage && global.localStorage.setItem(PACKS_KEY, JSON.stringify(arr)); } catch (e) {}
+    return { ok: arr.length < n };
+  }
+
   function _isAnthropic(url) {
     return url.indexOf('anthropic.com') >= 0 || url.indexOf('api.anthropic') >= 0;
   }
@@ -1262,6 +1512,31 @@
       name: 'note',
       description: '记录一条计划/进度备注（不改剧本，只写进过程记录，便于多步任务自我规划、也让用户看到思路）。单条杂感用这个；≥3 步的任务改用 todoWrite。',
       parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] }
+    },
+    {
+      name: 'saveMemory',
+      description: '存一条跨会话记忆（背景上下文·下次共事按需召回）。只存从当前剧本/对话推导不出来的信息：user=玩家是谁与偏好；feedback=玩家给过的做法反馈(含为什么)；project=创作中的长线目标/未尽事宜；reference=玩家提过的外部资料指引。剧本里本来就有的数据、本次改动明细(有历史记录)不要存。与 recordConvention 分工：约定=每次都要遵守的显式规范；记忆=帮下次更懂上下文的背景。',
+      parameters: { type: 'object', properties: {
+        name: { type: 'string', description: '短横线风格短名(≤60字)·同名覆盖更新' },
+        type: { type: 'string', enum: ['user', 'feedback', 'project', 'reference'] },
+        description: { type: 'string', description: '一行摘要(召回时据此判断相关性·≤160字)' },
+        body: { type: 'string', description: '记忆正文(≤1500字·写清事实与来龙去脉)' }
+      }, required: ['name', 'type', 'description', 'body'] }
+    },
+    {
+      name: 'useSkill',
+      description: '展开一个技能(打磨过的操作指令包)的全文。系统提示里列了可用技能清单——要做对应事情时先展开再照做，别凭印象。',
+      parameters: { type: 'object', properties: { name: { type: 'string', description: '技能名(照清单原文)' } }, required: ['name'] }
+    },
+    {
+      name: 'saveSkill',
+      description: '把一套可复用的做法沉淀成技能（下次同类任务可 useSkill 直接展开）。body 写成可照做的分步指令；只在做法确实打磨成型、值得复用时存，别把一次性方案存进来。',
+      parameters: { type: 'object', properties: {
+        name: { type: 'string' },
+        description: { type: 'string', description: '一行说明这技能做什么' },
+        whenToUse: { type: 'string', description: '什么时候该用它(清单里显示这句)' },
+        body: { type: 'string', description: '分步操作指令全文(≤4000字)' }
+      }, required: ['name', 'body'] }
     },
     {
       name: 'todoWrite',
@@ -1827,6 +2102,13 @@
         return { ok: fails.length === 0, applied: done, failures: fails.slice(0, 5) };
       }
       case 'note': return { ok: true, note: String(input.text || '').slice(0, 500) };
+      case 'saveMemory': return saveMemoryEntry(input);
+      case 'saveSkill': return saveSkillEntry(input);
+      case 'useSkill': {
+        var _sk = listAllSkills().find(function (s) { return s.name === String(input.name || '').trim(); });
+        if (!_sk) return { ok: false, error: '无此技能', available: listAllSkills().map(function (s) { return s.name; }) };
+        return { ok: true, skill: _sk.name, instructions: '【技能·' + _sk.name + '】以下是该技能的操作指令，按步骤照做：\n' + _sk.body };
+      }
       case 'todoWrite': {   // 刀G5(2026-07-02·CC TodoWrite 对照) · 结构化任务表:整表替换·全完成自动清·成功消息自带用法再教育
         var _tds = Array.isArray(input.todos) ? input.todos : null;
         if (!_tds) return { ok: false, reason: 'todos 必须是数组(整表替换)·每项 {content, status, activeForm?}' };
@@ -1970,8 +2252,10 @@
   // 方向B · 把玩家的「剧本约定」拼成系统提示词里的一段（空则不注入）
   function _conventionsBlock(conventions) {
     var c = String(conventions || '').trim();
+    var pc = _packsConventions();   /* P刀 · 启用能力包自带的约定并入(所有模式统一生效) */
+    if (pc) c = (c ? c + '\n' : '') + pc;
     if (!c) return '';
-    return '\n【玩家的剧本创作约定·务必遵守】\n' + c.slice(0, 4000) + '\n（以上是该玩家一贯的创作偏好/规范，本次编辑须始终遵循；与具体需求冲突时以本次需求为准。）';
+    return '\n【玩家的剧本创作约定·务必遵守】\n' + c.slice(0, 4600) + '\n（以上是该玩家一贯的创作偏好/规范，本次编辑须始终遵循；与具体需求冲突时以本次需求为准。）';
   }
 
   function _buildPlanSystemPrompt(conventions) {
@@ -2140,12 +2424,13 @@
       '③【勘察】先查后改：getField（单路径）/getFields（批量·一次读多个路径省往返，需同时核对多处时优先用它）/listCollection/describeSchema 看清现状与字段；searchEntities/listGaps 查实体与规格缺口；不确定东西在哪个集合时用 globalSearch 全局检索定位。想确认正式游戏怎么读某字段、读不读它，用 fieldContract 查契约（按需查，别凭印象）；想看游戏 UI/逻辑的源码实现，用 listSource 找文件、readSource 读、grepSource 全局搜——可直接读整个代码库。生成或大改某部分(人物/势力/经济/官制/封臣…)前，先 genReference 看老编辑器对该部分的生成范式(设定深度/字段形状/朝代逻辑/参数区间)，借鉴后再动手。',
       '④【落改】bulkAdd/multiEdit 一次多改提效。改名优先 renameEntity（联动所有引用、不留死链）；地图地块/省名改名用 renameRegion（同步 map/mapData 双镜像·如需联动其他引用再补 renameEntity）；删除实体前先 findReferences 查谁引用了它，再 removeEntity。改地图归属（把某地块划给某势力、调整疆域）先 mapOverview 看清地块/归属/势力，再 mapAssignOwner 按地块名+势力名改（自动上色、同步双镜像）。玩家配了生图 API 时，可用 generateImage 给人物立绘(characters.N.portrait)/势力旗徽生成图像（未配置会明确报错，届时用文字描述代替，不要反复重试）。与用户需求相关的必需缺口顺手补齐，让剧本完整可玩。',
       '⑤【自查与收尾】每改完一批用 validateDraft 自查，有违规继续修（写类工具的返回已回挂变更后的当前值 nowValue/nowValues/collectionLength，据此确认改动已落地，无需再 getField 重读确认）。改好后用 preflight 跑运行时体检（确保游戏能正常加载），有 blockers 继续修到 bootable，再调用 finish——summary 要向玩家说清「改了什么、为什么这么改」（具体到关键实体/字段，2-4 句中文），不要只写"完成"。',
-      '⑥ 若发现该玩家/剧本有值得长期沿用的约定（命名规律、文风、设定惯例），可调 recordConvention 记一条（仅在确有发现时，别凑数）。⑦ 用户消息可能附图（编辑器截图/史料素材/手绘草图）——图即需求的一部分，按图中信息办。⑧ 对没把握的改动（史实存疑、靠推测填充）调 flagUncertain 标一下路径，提醒玩家重点复核（只标真没把握的）；运行中若在工具结果里收到「（插话）」注入，那是玩家的实时补充指令——完成当前一步后必须优先处理它，勿忽略。',
+      '⑥ 若发现该玩家/剧本有值得长期沿用的约定（命名规律、文风、设定惯例），可调 recordConvention 记一条（仅在确有发现时，别凑数）；从对话中了解到**推导不出来的背景**（玩家是谁与偏好/玩家给的做法反馈/创作长线目标/外部资料指引），用 saveMemory 存对应类型的记忆供下次共事召回——剧本里本就有的数据与本次改动明细不要存。⑦ 用户消息可能附图（编辑器截图/史料素材/手绘草图）——图即需求的一部分，按图中信息办。⑧ 对没把握的改动（史实存疑、靠推测填充）调 flagUncertain 标一下路径，提醒玩家重点复核（只标真没把握的）；运行中若在工具结果里收到「（插话）」注入，那是玩家的实时补充指令——完成当前一步后必须优先处理它，勿忽略。',
       '⑨【填实·禁空内容·铁律】新增或改写实体必须填到可直接用的质量，绝不留空：先用 listCollection / searchEntities 看一两个剧本里已有的同类实体（或 genReference 看生成范式），照着它们的字段集与丰满度，把新实体的所有相关字段都填上有意义的中文内容——身份/官衔/数值(能力/人口/兵力等)/背景小传/性格/目标/关系/履历等该有的都要有，数值要符合设定区间、彼此自洽。禁止留空字符串、0 占位（除非数值确为 0）、"待补/TODO/未知/暂无"之类占位词，也禁止只填 name 就交差。createEntity 模板只是最小骨架，拿到后必须逐字段补全。宁可少加一个实体，也要把加的每个都填实、达到与官方实体同等的完整度。',
       '⑩【高权限·可写任意字段】你对剧本草稿有完全的写入权限：applyEdit/applyPush 可以创建任意新字段、新嵌套结构，包括剧本编辑器当前没有专门面板/不在结构速查/fieldContract 查不到的"非标准/自定义"字段——编辑器会自动吸收并展示这些字段，不会丢。fieldContract 返回"不在游戏字段契约中"只表示它是扩展/自定义字段（正式游戏不直接读），并不代表禁止写；只要对实现用户需求有用就大胆写。唯一不可改的是：剧本唯一 id、下划线开头的内部字段、ai/conf/meta 等配置（改这些会损坏剧本）。其余一切随需求自由创建与修改。',
       ruleRemonstrate,
       ruleSelfCheck,
       _conventionsBlock(conventions),
+      _skillsBlock(),   /* S刀 · 技能清单(useSkill 按需展开·≈CC SkillTool 的技能目录注入) */
       '',
       buildSchemaGuide(worldKind)
     ].join('\n');
@@ -2642,7 +2927,17 @@
         });
     }
 
-    return Promise.resolve().then(step).then(function() {
+    return Promise.resolve().then(function () {
+      /* M刀(CC memdir 对照) · 记忆召回：仅新会话首轮·6s 超时·失败静默跳过不阻塞主流程 */
+      if (Array.isArray(opts.priorConversation) && opts.priorConversation.length) return '';
+      if (opts.noMemoryRecall) return '';
+      return Promise.race([_recallMemories(userRequest, opts.cfg, opts.caller), _delay(6000)]).catch(function () { return ''; });
+    }).then(function (memBlk) {
+      if (memBlk && conversation.length && conversation[0] && conversation[0].role === 'user') {
+        conversation[0].text += '\n\n' + memBlk;
+        _convRecount(); tokensUsed = _reqTokens();
+      }
+    }).then(step).then(function() {
       if (_activeRun === control) _activeRun = null;   // 刀E · 收尾清句柄
       return {
         draft: draft, transcript: transcript, conversation: conversation,
@@ -3000,6 +3295,10 @@
     loadConventions: loadConventions,
     saveConventions: saveConventions,
     callWithTools: callWithTools,
+    // CC 对照三件套（2026-07-03）：记忆/技能/能力包——启停装卸=玩家权限走此 API(非 agent 工具)
+    memories: { list: _loadMemories, save: saveMemoryEntry, remove: deleteMemory, recall: _recallMemories },
+    skills: { list: listAllSkills, save: saveSkillEntry, remove: deleteSkill, builtin: BUILTIN_SKILLS },
+    packs: { list: listPacks, setEnabled: setPackEnabled, importJSON: importPackJSON, exportJSON: exportPackJSON, remove: removePack },
     testConnection: testConnection,
     abort: abort,
     steer: steer,   // 刀G9 · 运行中插话(排队·下一轮注入·无活跃运行返回 false)
