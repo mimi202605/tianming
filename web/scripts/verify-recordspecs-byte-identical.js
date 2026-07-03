@@ -43,8 +43,10 @@ function newBlock(rs) {
 }
 
 // shilu 于 2026-06-22 有意改进为更地道文言实录体(owner 要求)·不再与原 sc1 字节相同·
-//   对拍策略改:6 个稳定字段仍字节级对拍(strip 掉 shilu_text)·shilu 单独验字数范围 + canonical 实录特征。
+//   对拍策略改:稳定字段仍字节级对拍(strip 掉 shilu_text)·shilu 单独验字数范围 + canonical 实录特征。
+// shizhengji 于 2026-07-03 有意加「党争与民情主线」(V3机制入叙事·owner 要求)·同法剥出对拍改验特征。
 function stripShilu(s) { return String(s).replace(/("shilu_text":")[\s\S]*?(","szj_title":)/, '$1<SHILU>$2'); }
+function stripSzj(s) { return String(s).replace(/("shizhengji":")[\s\S]*?(","szj_summary":)/, '$1<SZJ>$2'); }
 const combos = [
   [120, 200, 200, 400], [300, 500, 400, 700], [50, 80, 100, 150], [180, 260, 320, 560]
 ];
@@ -58,10 +60,14 @@ combos.forEach(function (c) {
   } catch (e) { console.error('[FAIL] eval 原内联块失败:', e.message); process.exit(1); }
   const rs = recordSpecs({ prompt: { _shiluMin: _shiluMin, _shiluMax: _shiluMax, _szjMin: _szjMin, _szjMax: _szjMax, _hourenMin: 200, _hourenMax: 400 } });
   const newStr = newBlock(rs);
-  eq(stripShilu(oldStr), stripShilu(newStr), '字数组合(除 shilu·6 稳定字段)' + JSON.stringify(c));
-  // shilu 单独:字数范围 + canonical 实录特征(干支/记事不评论/实录体)
-  if (!(new RegExp('实录' + _shiluMin + '-' + _shiluMax + '字')).test(rs.shilu) || !/干支/.test(rs.shilu) || !/记事不评论/.test(rs.shilu) || !/实录体/.test(rs.shilu)) {
+  eq(stripSzj(stripShilu(oldStr)), stripSzj(stripShilu(newStr)), '字数组合(除 shilu/shizhengji·5 稳定字段)' + JSON.stringify(c));
+  // shilu 单独:字数范围 + canonical 实录特征(干支/记事不评论/实录体) + 2026-07-03 党派进退入纪
+  if (!(new RegExp('实录' + _shiluMin + '-' + _shiluMax + '字')).test(rs.shilu) || !/干支/.test(rs.shilu) || !/记事不评论/.test(rs.shilu) || !/实录体/.test(rs.shilu) || !/党派进退/.test(rs.shilu)) {
     console.error('[FAIL] shilu 缺字数范围或 canonical 实录特征 @' + JSON.stringify(c)); process.exit(1);
+  }
+  // shizhengji 单独:字数范围 + canonical 特征(开篇总括/因果链/信息源) + 2026-07-03 党争民情主线
+  if (!(new RegExp('时政记正文' + _szjMin + '-' + _szjMax + '字')).test(rs.shizhengji) || !/开篇总括/.test(rs.shizhengji) || !/因果链/.test(rs.shizhengji) || !/【党争】/.test(rs.shizhengji) || !/民间请愿运动/.test(rs.shizhengji) || !/勿凭空造党争/.test(rs.shizhengji)) {
+    console.error('[FAIL] shizhengji 缺字数范围或 canonical 特征(含党争民情主线) @' + JSON.stringify(c)); process.exit(1);
   }
   passed++;
 });
@@ -71,20 +77,21 @@ const rsFallback = recordSpecs({});
 if (!rsFallback || !rsFallback.shilu || !rsFallback.shizhengji) { console.error('[FAIL] 无 ctx.prompt 回落失败'); process.exit(1); }
 passed++;
 
-// ── DA-Q2b·houren:从 .bak followup 提取 sc2 静态块 eval·对拍 hourenSpec ──
+// ── DA-Q2b·houren:hourenSpec 于 2026-07-03 有意加「党争朝局/阶层民情场景化」(V3机制入叙事)·
+//   不再与 .bak 字节相同·对拍改 canonical 特征校验(字数/骨架/禁则/新增两条着重呈现)。──
 const hourenSpec = globalThis.TM.Endturn.AI.prompt.hourenSpec;
-const BAK_FU = path.join(ROOT, 'tm-endturn-followup.js.bak-pre-20260621-daq2b');
-const fuBak = fs.readFileSync(BAK_FU, 'utf8');
-const hsStart = fuBak.indexOf('"\\n基于上述全部资料');
-const hsEnd = fuBak.indexOf(']}";', hsStart);
-if (hsStart < 0 || hsEnd < 0) { console.error('[FAIL] 无法在 followup .bak 定位 sc2 houren 静态块 s=' + hsStart + ' e=' + hsEnd); process.exit(1); }
-const hourenBlockSrc = fuBak.slice(hsStart, hsEnd + 3);  // 含闭合 ]}"·不含 ;
 [[200, 400], [120, 260], [333, 666]].forEach(function (c) {
   const _hourenMin = c[0], _hourenMax = c[1];
-  let oldHo;
-  try { oldHo = eval('(' + hourenBlockSrc + ')'); } catch (e) { console.error('[FAIL] eval sc2 houren 块失败:', e.message); process.exit(1); }
   const newHo = hourenSpec({ prompt: { _hourenMin: _hourenMin, _hourenMax: _hourenMax } });
-  eq(oldHo, newHo, 'houren 字数组合 ' + JSON.stringify(c));
+  const feats = ['核心要义——叙事性第一', '按时辰顺序自然展开', '不是时政记的复述',
+    '党争朝局', '阶层民情与民间运动', 'houren_xishuo'];
+  for (const f of feats) {
+    if (newHo.indexOf(f) < 0) { console.error('[FAIL] houren 缺 canonical 特征「' + f + '」@' + JSON.stringify(c)); process.exit(1); }
+  }
+  if (newHo.indexOf('【字数】' + _hourenMin + '-' + _hourenMax + '字') < 0) {
+    console.error('[FAIL] houren 缺字数范围 @' + JSON.stringify(c)); process.exit(1);
+  }
+  passed++;
 });
 
 console.log('[verify-recordspecs-byte-identical] pass assertions=' + passed + ' (combos=' + combos.length + ' +fallback +houren×3)');

@@ -2107,6 +2107,34 @@
               '此回合议结：【' + (rv.histLabel || rv.label) + '】\n';
           });
         }
+        // 党争朝局与阶层民情事实清单(2026-07-03·V3机制入叙事)：政柄/清誉/弹劾近况+政治运动+天命权重——
+        // hourenSpec 文体指令已教「党争化为人物得意惶惶·民情用市井小场景带出」·此处供料(数据不至则指令空转)
+        try {
+          var _pcLines = [];
+          if (GM.partyState && typeof GM.partyState === 'object') {
+            Object.keys(GM.partyState).slice(0, 10).forEach(function(pn) {
+              var _psN = GM.partyState[pn];
+              if (!_psN) return;
+              var _pcBits = [];
+              if (_psN.standing === 'governing') _pcBits.push('秉政');
+              else if (_psN.standing === 'marginal') _pcBits.push('见逐于朝');
+              if ((_psN.recentImpeachLose || 0) >= 1) _pcBits.push('新遭弹劾之挫');
+              if ((_psN.recentImpeachWin || 0) >= 1) _pcBits.push('新胜弹章');
+              if (typeof _psN.reputationBalance === 'number' && Math.abs(_psN.reputationBalance) >= 8) _pcBits.push(_psN.reputationBalance > 0 ? '清誉日隆' : '物议沸然');
+              if (_pcBits.length) _pcLines.push('    ' + pn + '：' + _pcBits.join('·'));
+            });
+          }
+          if (Array.isArray(GM._politicalMovements)) {
+            GM._politicalMovements.forEach(function(_mvN) {
+              if (_mvN && Number(_mvN.support) >= 40) _pcLines.push('    民间运动·' + _mvN.className + '「' + (_mvN.label || '') + '」·' + (_mvN.phase || '') + '(' + Math.round(Number(_mvN.support)) + ')');
+            });
+          }
+          var _legN = GM._legitimacy;
+          if (_legN && _legN.flag && _legN.flag !== '相安') _pcLines.push('    天命权重：' + _legN.flag);
+          if (_pcLines.length) {
+            _bb += '  ※ 党争朝局与阶层民情(据实入场景·勿凭空造党争)：\n' + _pcLines.join('\n') + '\n';
+          }
+        } catch (_pcFactsE) {}
         // O1·天下牵动·因果综述(W1·2026-07-02 新增)——两条叙事路径同享·叙事沿因果链组织而非流水账·无信号返空不注入
         try {
           if (typeof WorldDigest !== 'undefined' && typeof WorldDigest.promptBlock === 'function') {
