@@ -12094,14 +12094,7 @@
     .je-aa-planmode input { cursor: pointer; }
     /* 跑前估 token */
     .je-aa-esttok { margin: 0 0 6px; padding: 3px 8px; font-size: 11px; line-height: 1.5; color: var(--tx3); border-left: 2px solid var(--ac); background: transparent; border-radius: 0 var(--je-radius) var(--je-radius) 0; }
-    /* 输入框旁「＋ 模式」菜单（向上弹） */
-    .je-aa-plus { position: relative; align-self: flex-start; }
-    .je-aa-plus-btn { background: var(--surface); color: var(--tx3); border: 1px solid var(--bd2); border-radius: 13px; padding: 2px 10px; font-size: 11px; cursor: pointer; font-family: inherit; }
-    .je-aa-plus-btn:hover { background: var(--surface); color: var(--tx); }
-    .je-aa-plus-menu { position: absolute; bottom: calc(100% + 5px); left: 0; min-width: 152px; background: #1a1612; border: 1px solid rgba(184, 154, 83, .35); border-radius: 9px; padding: 4px; box-shadow: 0 -10px 28px rgba(0, 0, 0, .55); z-index: 20; display: flex; flex-direction: column; gap: 1px; }
-    .je-aa-plus-menu[hidden] { display: none; }
-    .je-aa-plus-menu button { text-align: left; background: none; border: none; color: var(--paper); padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
-    .je-aa-plus-menu button:hover { background: rgba(184, 154, 83, .15); }
+    /* （旧「＋ 模式」菜单 CSS 已随注入件退役·2026-07-03） */
     /* ===== 对话优先版式：默认把所有设置类 chrome 收进「⚙ 设置」抽屉，foreground 对话区，输入框沉底 ===== */
     body.je-guoshi-docked:not(.je-guoshi-settings-open) #tm-aa-panel .je-aa-apicfg,
     body.je-guoshi-docked:not(.je-guoshi-settings-open) #tm-aa-panel .je-aa-quick,
@@ -14724,28 +14717,9 @@
               }
             } catch (_eDcol) {}
         }
-        // 输入框旁「＋ 模式」菜单：把审阅/体检/问答/讲解/分解/导入/捆绑/批量重新摆出来（不只靠 ⌘K/斜杠）
-        var composerEl = panel.querySelector('#tm-aa-composer');
-        if (composerEl && !composerEl.querySelector('.je-aa-plus')) {
-          var MODES = [
-            { label: '🔍 审阅剧本', run: function () { var u = window.TM_AuthoringAgentUI; if (u && u.review) u.review(); } },
-            { label: '🩺 运行时体检', run: function () { var u = window.TM_AuthoringAgentUI; if (u && u.preflight) u.preflight(); } },
-            { label: '💬 剧本问答', run: function () { var u = window.TM_AuthoringAgentUI; if (u && u.qa) u.qa(); } },
-            { label: '📖 讲解剧本', run: function () { var u = window.TM_AuthoringAgentUI; if (u && u.explain) u.explain(); } },
-            { label: '🧩 分解执行', run: function () { var u = window.TM_AuthoringAgentUI; if (u && u.orchestrate) u.orchestrate(); } },
-            { label: '📥 导入素材', run: function () { if (window._jeOpenImport) window._jeOpenImport(); } },
-            { label: '📦 实体捆绑', run: function () { if (window._jeOpenBundle) window._jeOpenBundle(); } },
-            { label: '🔢 批量扩写', run: function () { if (window._jeOpenBatch) window._jeOpenBatch(); } }
-          ];
-          var plusWrap = document.createElement('div'); plusWrap.className = 'je-aa-plus';
-          var plusBtn = document.createElement('button'); plusBtn.type = 'button'; plusBtn.className = 'je-aa-plus-btn'; plusBtn.textContent = '＋ 模式'; plusBtn.title = '更多模式：审阅 / 体检 / 问答 / 讲解 / 分解 / 导入 / 捆绑 / 批量';
-          var plusMenu = document.createElement('div'); plusMenu.className = 'je-aa-plus-menu'; plusMenu.hidden = true;
-          MODES.forEach(function (m) { var b = document.createElement('button'); b.type = 'button'; b.textContent = m.label; b.addEventListener('click', function () { plusMenu.hidden = true; try { m.run(); } catch (e) {} }); plusMenu.appendChild(b); });
-          plusBtn.addEventListener('click', function (e) { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; });
-          document.addEventListener('click', function () { plusMenu.hidden = true; });
-          plusWrap.appendChild(plusBtn); plusWrap.appendChild(plusMenu);
-          composerEl.insertBefore(plusWrap, composerEl.firstChild);
-        }
+        /* 2026-07-03 · 旧「＋ 模式」注入菜单退役（owner 指认重复）：
+           审阅/体检/问答/讲解/分解已收进共创面板 composer 的＋能力菜单（agent-ui 原生），
+           导入素材/实体捆绑/批量扩写在 ⌘K 命令面板有入口——不失能力，去重复。 */
         return true;
       }
       var tries = 0;
