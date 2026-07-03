@@ -450,15 +450,26 @@
   // 每回合确定性步（挂 endTurn 收尾、final aggregate 之前·恰一次）：
   // 在建递减→完工入账；完好扣维护；连欠 3 回合失修（效果存量不动·由叙事与玩家整修接手）。
   function tick(GM, P) {
-    if (!GM || !P || !P.adminHierarchy) return { completed: 0, building: 0, neglected: 0, upkeepPaid: 0, damaged: 0, repaired: 0 };
+    if (!GM || !P) return { completed: 0, building: 0, neglected: 0, upkeepPaid: 0, damaged: 0, repaired: 0 };
     var stat = { completed: 0, building: 0, neglected: 0, upkeepPaid: 0, damaged: 0, repaired: 0 };
     var _hazardOn = !(P.conf && P.conf.buildingHazardEnabled === false);   // S6·灾损·默认开·显式 false 可关
-    Object.keys(P.adminHierarchy).forEach(function (fk) {
-      var fh = P.adminHierarchy[fk];
-      if (!fh || !fh.divisions) return;
+    // 2026-07-03·工期不推进根治：历史 P/GM 双 admin 树并存(开局 GM.adminHierarchy=deepClone(P)·独立对象·
+    //   运行时活树多为 GM·P 树可能为空{})。自拟营建/写工具经 _adminSources 双源搜索落库·P 树空时工程落 GM 树·
+    //   而本 tick 旧只扫 P.adminHierarchy 单树→落 GM 树的在建工程 remainingTurns 永不递减「永远工役中」。
+    //   修：遍历 P+GM 双源(镜像 _adminSources 范式)·按 div 对象引用去重(防同一 div 被递减两次)。
+    var _roots = [];
+    if (P.adminHierarchy && typeof P.adminHierarchy === 'object') _roots.push(P.adminHierarchy);
+    if (GM.adminHierarchy && typeof GM.adminHierarchy === 'object' && GM.adminHierarchy !== P.adminHierarchy) _roots.push(GM.adminHierarchy);
+    var _seenDiv = (typeof Set !== 'undefined') ? new Set() : null;
+    function _divSeen(d) { if (!_seenDiv) return false; if (_seenDiv.has(d)) return true; _seenDiv.add(d); return false; }
+    _roots.forEach(function (ah) {
+    Object.keys(ah).forEach(function (fk) {
+      var fh = ah[fk];
+      var ds0 = fh && (fh.divisions || fh.children);
+      if (!ds0 || !ds0.length) return;
       (function walk(ds) {
         ds.forEach(function (div) {
-          if (!div) return;
+          if (!div || _divSeen(div)) return;
           if (Array.isArray(div.buildings) && div.buildings.length) {
             var money = div.publicTreasury && div.publicTreasury.money;
             var _freshSev = _hazardOn ? _freshDisasterSeverity(div, GM && GM.turn) : 0;   // S6·本回合该叶灾情(0/1/2/3·读 disasterRecord)
@@ -529,7 +540,8 @@
           var kids = div.children || div.divisions;
           if (kids && kids.length) walk(kids);
         });
-      })(fh.divisions);
+      })(ds0);
+    });
     });
     return stat;
   }

@@ -144,5 +144,27 @@ BW.tick(GM, P);
 ok(div7.economyBase.commerceVolume === 10800, '自拟织坊完工：30% 削至 8% → 商贸 10000→10800');
 ok(div7.minxin === 61, '自拟核定民心 +1 入账');
 
+// ── 12. 双源修（2026-07-03）：工程落 GM.adminHierarchy（活树）而非 P.adminHierarchy 时也须被 tick ──
+//   复现玩家 bug：自拟营建经 _adminSources 落 GM 树·P 树为空{}·旧 tick 只扫 P → 工期永不推进「永远工役中」。
+(function () {
+  var gmDiv = leafDiv('北直隶·GM树');
+  gmDiv.buildings.push({ name: '平世大学', level: 1, status: 'building', remainingTurns: 1, costActual: 6000, isCustom: true });
+  // P 树为空（真机存档所见）·工程只在 GM 树
+  var P2 = { conf: {}, adminHierarchy: {}, buildingSystem: { buildingTypes: [] } };
+  var GM2 = { turn: 30, adminHierarchy: { player: { factionName: '明廷', divisions: [gmDiv] } } };
+  var s = BW.tick(GM2, P2);
+  ok(gmDiv.buildings[0].remainingTurns === 0 && gmDiv.buildings[0].status === 'completed',
+     '★工程落 GM 树·P 树空：tick 遍历双源→余1回合工程当回合工竣（根治「永远工役中」）');
+  ok(s.completed === 1, 'tick 统计计入 GM 树完工');
+
+  // 去重：同一 div 对象同时挂在 P 树与 GM 树（别名存档）→ 只递减一次，不双减
+  var shared = leafDiv('共享区');
+  shared.buildings.push({ name: '义仓', level: 1, status: 'building', remainingTurns: 3, costActual: 2000 });
+  var Pn = { conf: {}, adminHierarchy: { player: { divisions: [shared] } }, buildingSystem: { buildingTypes: [] } };
+  var GMn = { turn: 31, adminHierarchy: { player: { divisions: [shared] } } };  // 同一 shared 对象引用
+  BW.tick(GMn, Pn);
+  ok(shared.buildings[0].remainingTurns === 2, '★别名树去重：同一 div 只递减一次(3→2·非 3→1 双减)');
+})();
+
 console.log('\n[smoke-building-works] ' + (failed === 0 ? 'PASS' : 'FAIL') + ' — ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed === 0 ? 0 : 1);
