@@ -1175,7 +1175,14 @@
     'xinjunObserveTurns': '新君观政回合 · 观政引导期时长',
     'suggestions': '开局建议 · 给玩家的开局提示',
     'isShaosongHeightened': '绍宋强化版 · 强化版内容标记',
-    'shaosongNote': '剧本备注 · 制作者备注'
+    'shaosongNote': '剧本备注 · 制作者备注',
+    /* 2026-07-03 · 内容整备：蓝图 102 字段与本字典做差集·补齐最后 6 个缺描述字段（据 runtimeSurface 运行时证据） */
+    'presetRelations': '预置关系 · 开局初始化的人物/势力关系',
+    'adminConfig': '行政配置 · 区划体系的运行时配置',
+    'worldview': '世界观 · 供 AI 与叙事生成的世界观设定',
+    'mechanics': '机制说明 · 剧本专属机制的规则说明',
+    'influenceGroups': '影响集团 · 可施加朝野影响的利益集团',
+    'offendGroups': '得罪集团 · 决策可能触怒的利益集团'
   };
 
   function describeField(field) {

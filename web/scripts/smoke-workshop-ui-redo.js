@@ -63,5 +63,9 @@ ok(/::selection \{ background: rgba\(184, 154, 83, \.32\)/.test(css) && /\.inspe
 ok(!/open-api-settings-modal/.test(app) && !/openApiSettingsModal/.test(app), 'Z 顶栏⚙API设置模态退役(owner指认·主API配置在国师模型徽弹层)');
 ok(/data-runtime-panel="api-settings-workbench"/.test(app) && /renderApiSettingsWorkbench/.test(app), 'Z 生图API面板(api-settings-workbench)保留·能力不失');
 
+console.log('— C 内容整备 —');
+ok(/'worldview': '世界观/.test(app) && /'influenceGroups': '影响集团/.test(app) && /'presetRelations': '预置关系/.test(app), 'C 蓝图差集6字段描述补齐(喂字段搜索·据runtimeSurface证据)');
+ok(/军事内容要成体系/.test(adapters) && /财政经济要能跑通/.test(adapters) && /阶层与党派要有张力/.test(adapters), 'C SECTION_GUIDES 补军事/财政/规则/编年/阶层五章领域指引(生成本章不再退化通用句)');
+
 console.log('\nsmoke-workshop-ui-redo ' + (F === 0 ? 'PASS' : 'FAIL') + ' ' + A + '/' + (A + F));
 process.exit(F === 0 ? 0 : 1);
