@@ -4,7 +4,7 @@
       "tm-save-lifecycle.js"
     ]
   },
-  "updatedAt": "2026-07-03T16:56:53.517Z",
+  "updatedAt": "2026-07-03T17:15:24.088Z",
   "totals": {
     "gm": 3314,
     "p": 708
@@ -12,655 +12,2417 @@
   "files": {
     "map-converter.js": {
       "gm": 0,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "p:map": 1
+      }
     },
     "map-editor-to-game.js": {
       "gm": 1,
-      "p": 2
+      "p": 2,
+      "roots": {
+        "p:map": 1,
+        "p:adminHierarchy": 1,
+        "gm:adminHierarchy": 1
+      }
     },
     "tm-utils.js": {
       "gm": 6,
-      "p": 13
+      "p": 13,
+      "roots": {
+        "gm:_errorLog": 2,
+        "gm:_rngCheckpoints": 3,
+        "gm:_trCurrentIdx": 1,
+        "p:ai": 2,
+        "p:conf": 4,
+        "p:scenarios": 2,
+        "p:<dynamic>": 5
+      }
     },
     "tm-ai-infra.js": {
       "gm": 2,
-      "p": 18
+      "p": 18,
+      "roots": {
+        "p:time": 1,
+        "p:conf": 17,
+        "gm:_lastSysPHash": 1,
+        "gm:_sysCacheInvalidatedAt": 1
+      }
     },
     "tm-memory-trace.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_turnAiResults": 1
+      }
     },
     "tm-memory-issue-governance.js": {
       "gm": 4,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memEdges": 4
+      }
     },
     "tm-memory-writegate.js": {
       "gm": 21,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memoryWriteQueue": 2,
+        "gm:_memoryDraftInbox": 2,
+        "gm:_memoryQuarantine": 2,
+        "gm:_memoryAccepted": 2,
+        "gm:_memoryAuditEvents": 9,
+        "gm:_memEdges": 2,
+        "gm:_memoryControls": 2
+      }
     },
     "tm-memory-turn-archive.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_turnMemoryArchive": 4,
+        "gm:_memoryAuditEvents": 1
+      }
     },
     "tm-memory-turn-rollup.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memoryChronicleRollups": 1,
+        "gm:_memoryIssueChains": 1,
+        "gm:_memoryCharacterDossiers": 1,
+        "gm:_memoryEraRollups": 1,
+        "gm:_memoryAuditEvents": 1
+      }
     },
     "tm-memory-turn-backfill.js": {
       "gm": 4,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_turnMemoryArchive": 2,
+        "gm:_memoryAuditEvents": 2
+      }
     },
     "tm-memory-controls.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memoryControls": 1,
+        "gm:_memEdges": 3,
+        "gm:_memoryControlSeq": 1
+      }
     },
     "tm-memory-workshop.js": {
       "gm": 8,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memoryAuditEvents": 5,
+        "gm:_memoryAuditSeq": 1,
+        "gm:_memoryControls": 1,
+        "gm:_memEdges": 1
+      }
     },
     "tm-relations.js": {
       "gm": 16,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_npcRelationEvents": 3,
+        "gm:factionRelationsMap": 9,
+        "gm:factionRelations": 4
+      }
     },
     "tm-memory-tables.js": {
       "gm": 11,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memTables": 11
+      }
     },
     "tm-semantic-recall.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_runId": 1
+      }
     },
     "tm-recall-gate.js": {
       "gm": 0,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "p:conf": 1
+      }
     },
     "tm-memory-ui.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memTables": 1
+      }
     },
     "tm-mechanics.js": {
       "gm": 26,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:offendGroupScores": 6,
+        "gm:triggeredOffendEvents": 3,
+        "gm:biannianItems": 2,
+        "gm:memorials": 1,
+        "gm:activeRebounds": 3,
+        "gm:_deathRiskChars": 2,
+        "gm:_legitimacyAlerts": 1,
+        "gm:qijuHistory": 1,
+        "gm:_charInteractionCount": 4,
+        "gm:_charInteractionCountTurn": 1,
+        "gm:_memoryArchiveFull": 2
+      }
     },
     "tm-mechanics-world.js": {
       "gm": 44,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_gossipQueue": 4,
+        "gm:families": 5,
+        "gm:harem": 9,
+        "gm:_varMapping": 5,
+        "gm:_tyrantDecadence": 3,
+        "gm:_tyrantHistory": 2,
+        "gm:vars": 2,
+        "gm:eventCooldowns": 5,
+        "gm:enYuanRecords": 3,
+        "gm:patronNetwork": 2,
+        "gm:_contradictions": 2,
+        "gm:qijuHistory": 1,
+        "gm:biannianItems": 1
+      }
     },
     "tm-agent-flags.js": {
       "gm": 0,
-      "p": 2
+      "p": 2,
+      "roots": {
+        "p:conf": 1,
+        "p:<dynamic>": 1
+      }
     },
     "tm-memory-steward.js": {
       "gm": 18,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memoryStewardLog": 3,
+        "gm:_aiMemory": 1,
+        "gm:_foreshadows": 1,
+        "gm:_convArchive": 1,
+        "gm:conv": 1,
+        "gm:_memoryLayers": 7,
+        "gm:_memoryStewardDecision": 1,
+        "gm:_memoryStewardFailStreak": 3
+      }
     },
     "tm-reflection-agent.js": {
       "gm": 11,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_reflectionAgentLog": 1,
+        "gm:_aiReflections": 3,
+        "gm:_aiBiasProfile": 1,
+        "gm:_reflectionDecision": 1,
+        "gm:_lastTurnPredictions": 2,
+        "gm:_reflectionFailStreak": 3
+      }
     },
     "tm-edict-oversight.js": {
       "gm": 10,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_edictOversightLog": 1,
+        "gm:_edictEfficacyReport": 2,
+        "gm:_edictEfficacyHistory": 3,
+        "gm:_edictOversightDecision": 1,
+        "gm:_edictOversightFailStreak": 3
+      }
     },
     "tm-history-advisor.js": {
       "gm": 8,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_historyAdvisorLog": 1,
+        "gm:_historicalDeviations": 3,
+        "gm:_historyAdvisorDecision": 1,
+        "gm:_historyAdvisorFailStreak": 3
+      }
     },
     "tm-change-queue.js": {
       "gm": 14,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:vars": 1,
+        "gm:<dynamic>": 1,
+        "gm:_listeners": 5,
+        "gm:_changeQueue": 3,
+        "gm:eraState": 4
+      }
     },
     "tm-indices.js": {
       "gm": 46,
-      "p": 7
+      "p": 7,
+      "roots": {
+        "gm:_indices": 46,
+        "p:_indices": 7
+      }
     },
     "tm-world.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_deathRiskChars": 1
+      }
     },
     "tm-memorials.js": {
       "gm": 29,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:memorials": 4,
+        "gm:_interceptedIntel": 2,
+        "gm:_pendingMemorialDeliveries": 2,
+        "gm:_edictSuggestions": 2,
+        "gm:letters": 4,
+        "gm:_approvedMemorials": 4,
+        "gm:_kjpL5UserActedCooldown": 2,
+        "gm:_pendingTinyiTopics": 4,
+        "gm:_pendingLetterTo": 1,
+        "gm:_chronicle": 2,
+        "gm:qijuHistory": 2
+      }
     },
     "tm-wendui.js": {
       "gm": 96,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingLetterTo": 1,
+        "gm:wenduiTarget": 2,
+        "gm:wenduiHistory": 20,
+        "gm:_consortFormalAudiences": 2,
+        "gm:_wdState": 2,
+        "gm:_npcCommitments": 6,
+        "gm:qijuHistory": 5,
+        "gm:_adoptedCounsel": 3,
+        "gm:_wdAudienceMode": 4,
+        "gm:jishiRecords": 5,
+        "gm:_edictSuggestions": 6,
+        "gm:_pendingOvernightReq": 3,
+        "gm:_wdRefusedCounsel": 3,
+        "gm:_pendingAudiences": 7,
+        "gm:chars": 2,
+        "gm:_indices": 1,
+        "gm:_pendingOvernight": 2,
+        "gm:_imperialPromises": 2,
+        "gm:neitang": 2,
+        "gm:_wdRewardPunish": 4,
+        "gm:_envoyAudiences": 3,
+        "gm:_wdSuspicions": 3,
+        "gm:_interceptedIntel": 2,
+        "gm:_eavesdroppedTopics": 6
+      }
     },
     "tm-wendui-prison.js": {
       "gm": 27,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_prisonVisits": 2,
+        "gm:_prisonVisitsTotal": 2,
+        "gm:<dynamic>": 8,
+        "gm:qijuHistory": 3,
+        "gm:minxin": 4,
+        "gm:huangwei": 2,
+        "gm:memorials": 4,
+        "gm:_palaceFavoritism": 2
+      }
     },
     "tm-office-system.js": {
       "gm": 10,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:chars": 3,
+        "gm:_lastEvalTurn": 1,
+        "gm:_officeDerivedSig": 2,
+        "gm:officeTree": 2,
+        "gm:_chronicle": 1,
+        "gm:_jingchaResult": 1
+      }
     },
     "tm-office-fallback.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:chars": 2
+      }
     },
     "tm-office-runtime.js": {
       "gm": 28,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_officeCourt": 2,
+        "gm:_officeSubTab": 3,
+        "gm:_officeCollapsed": 11,
+        "gm:_officeCollapsedInit": 1,
+        "gm:_officeFilterMode": 3,
+        "gm:_officeViewMode": 3,
+        "gm:_officeViewModeExplicit": 1,
+        "gm:_officeSearchKw": 1,
+        "gm:officeTree": 1,
+        "gm:_edictSuggestions": 2
+      }
     },
     "tm-office-panel.js": {
       "gm": 38,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "gm:_edictSuggestions": 13,
+        "gm:_chronicle": 9,
+        "gm:qijuHistory": 2,
+        "gm:_edictTracker": 5,
+        "gm:chars": 4,
+        "gm:minxin": 1,
+        "gm:officeChanges": 2,
+        "gm:officeTree": 1,
+        "p:officeTree": 1,
+        "gm:biannianItems": 1
+      }
     },
     "tm-office-flags.js": {
       "gm": 0,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "p:conf": 1
+      }
     },
     "tm-office-reform.js": {
       "gm": 6,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:officeTree": 2,
+        "gm:huangwei": 1,
+        "gm:_pendingReforms": 3
+      }
     },
     "tm-npc-engine.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:turnChanges": 1
+      }
     },
     "tm-npc-decision.js": {
       "gm": 18,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:rels": 1,
+        "gm:vars": 1,
+        "gm:eraState": 1,
+        "gm:_npcActionLedger": 1,
+        "gm:provinceStats": 2,
+        "gm:guoku": 4,
+        "gm:corruption": 2,
+        "gm:_turnContext": 2,
+        "gm:_npcDecisionDiagnostics": 3,
+        "gm:_npcIdleAutonomy": 1
+      }
     },
     "tm-launch.js": {
       "gm": 2,
-      "p": 43
+      "p": 43,
+      "roots": {
+        "gm:_energy": 1,
+        "p:conf": 4,
+        "gm:saveName": 1,
+        "p:scenarios": 3,
+        "p:characters": 9,
+        "p:factions": 2,
+        "p:variables": 4,
+        "p:relations": 3,
+        "p:military": 8,
+        "p:civicTree": 2,
+        "p:time": 1,
+        "p:officeTree": 1,
+        "p:techTree": 1,
+        "p:events": 1,
+        "p:items": 2,
+        "p:classes": 2
+      }
     },
     "tm-player-settings.js": {
       "gm": 0,
-      "p": 28
+      "p": 28,
+      "roots": {
+        "p:ai": 4,
+        "p:conf": 24
+      }
     },
     "tm-player-core.js": {
       "gm": 26,
-      "p": 17
+      "p": 17,
+      "roots": {
+        "p:playerInfo": 5,
+        "p:ai": 8,
+        "gm:evtLog": 2,
+        "gm:_edictSuggestions": 10,
+        "gm:eraNames": 2,
+        "gm:eraName": 1,
+        "p:time": 4,
+        "gm:wenduiTarget": 1,
+        "gm:_pendingLetterTo": 1,
+        "gm:chars": 1,
+        "gm:_pendingCharacters": 1,
+        "gm:provinceStats": 1,
+        "gm:_enkeParty": 2,
+        "gm:harem": 2,
+        "gm:deletedCharNames": 2
+      }
     },
     "tm-hongyan-office.js": {
       "gm": 82,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_ltFilter": 1,
+        "gm:_ltSearchQuery": 1,
+        "gm:_ltSearchTimer": 3,
+        "gm:_ltMultiTargets": 4,
+        "gm:_pendingLetterTo": 2,
+        "gm:_letterSuspects": 2,
+        "gm:_ltReplyingTo": 2,
+        "gm:_edictSuggestions": 5,
+        "gm:letters": 11,
+        "gm:qijuHistory": 9,
+        "gm:_edictTracker": 2,
+        "gm:_ltMultiMode": 2,
+        "gm:_pendingNpcLetters": 6,
+        "gm:_courierStatus": 9,
+        "gm:_npcCorrespondence": 2,
+        "gm:_undeliveredLetters": 4,
+        "gm:_interceptedIntel": 5,
+        "gm:_pendingNpcCorrespondence": 1,
+        "gm:_pendingMemorialDeliveries": 1,
+        "gm:memorials": 2,
+        "gm:_hongyanPolicyActions": 3,
+        "gm:_chronicle": 2,
+        "gm:edicts": 3
+      }
     },
     "tm-game-loop.js": {
       "gm": 83,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_corruptionPresetDone": 1,
+        "gm:_guokuPresetDone": 1,
+        "gm:_neitangPresetDone": 1,
+        "gm:_cascadePreviewDone": 1,
+        "gm:_fixedExpensePreviewDone": 1,
+        "gm:guoku": 7,
+        "gm:_lastFixedExpense": 1,
+        "gm:_historicalCharsLoaded": 1,
+        "gm:population": 7,
+        "gm:regentSignal": 1,
+        "gm:regentState": 5,
+        "gm:_diplomaticMissions": 2,
+        "gm:_playerDirectives": 12,
+        "gm:_importedMemories": 6,
+        "gm:_wentianHistory": 22,
+        "gm:corruption": 10,
+        "gm:neitang": 2,
+        "gm:minxin": 1,
+        "gm:_pendingWenduiChar": 1
+      }
     },
     "tm-map-system.js": {
       "gm": 27,
-      "p": 10
+      "p": 10,
+      "roots": {
+        "gm:mapData": 23,
+        "p:map": 8,
+        "p:mapData": 2,
+        "gm:turnChanges": 3,
+        "gm:terrainTypes": 1
+      }
     },
     "tm-dynamic-systems.js": {
       "gm": 15,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:postSystem": 2,
+        "gm:_indices": 2,
+        "gm:turnChanges": 3,
+        "gm:vars": 3,
+        "gm:eraState": 1,
+        "gm:eraStateHistory": 3,
+        "gm:_aiDispatchStats": 1
+      }
     },
     "tm-save-manager.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:running": 1,
+        "gm:turn": 1
+      }
     },
     "tm-help-social.js": {
       "gm": 25,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:historicalEvents": 2,
+        "gm:vars": 12,
+        "gm:eraState": 4,
+        "gm:affinityMap": 5,
+        "gm:_affinityDecayTick": 2
+      }
     },
     "tm-economy.js": {
       "gm": 8,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:stateTreasury": 1,
+        "gm:privateTreasury": 1,
+        "gm:_bankruptcyTurns": 3,
+        "gm:vars": 2,
+        "gm:chars": 1
+      }
     },
     "tm-military.js": {
       "gm": 42,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_turnBattleResults": 3,
+        "gm:battleHistory": 3,
+        "gm:activeBattles": 1,
+        "gm:marchOrders": 3,
+        "gm:activeSieges": 3,
+        "gm:provinceStats": 1,
+        "gm:_turnSiegeResults": 3,
+        "gm:units": 2,
+        "gm:_indices": 5,
+        "gm:supplyDepots": 2,
+        "gm:supplyRoutes": 1,
+        "gm:buildings": 3,
+        "gm:buildingQueue": 2,
+        "gm:stateTreasury": 1,
+        "gm:vars": 1,
+        "gm:militaryStrength": 1,
+        "gm:_buildingOutputReport": 1,
+        "gm:population": 6
+      }
     },
     "tm-feudal.js": {
       "gm": 27,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:armies": 2,
+        "gm:activeWars": 6,
+        "gm:_turnRebellionResults": 2,
+        "gm:supplyRoutes": 2,
+        "gm:treaties": 4,
+        "gm:schemeCooldowns": 3,
+        "gm:activeSchemes": 3,
+        "gm:_turnSchemeResults": 2,
+        "gm:_marchReport": 1,
+        "gm:stateTreasury": 1,
+        "gm:eraState": 1
+      }
     },
     "tm-event-system.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:activeWars": 2
+      }
     },
     "tm-endturn-helpers.js": {
       "gm": 52,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_annualReviewHistory": 3,
+        "gm:biannianItems": 1,
+        "gm:_mutableFacts": 3,
+        "gm:_chronicle": 4,
+        "gm:_edictTracker": 4,
+        "gm:eraProgress": 3,
+        "gm:_eraProgressReport": 1,
+        "gm:borderThreat": 3,
+        "gm:_couplingReport": 2,
+        "gm:_npcIntents": 2,
+        "gm:_npcEventProposals": 1,
+        "gm:_healthAlerts": 1,
+        "gm:_partyDynamics": 2,
+        "gm:_decisionAlerts": 2,
+        "gm:_achievements": 2,
+        "gm:currentIssues": 1,
+        "gm:<dynamic>": 1,
+        "gm:_issueEffects": 2,
+        "gm:_tradeReport": 2,
+        "gm:stateTreasury": 1,
+        "gm:_diplomaticMissions": 1,
+        "gm:_tensionHistory": 3,
+        "gm:_historyIndex": 6,
+        "gm:_historyIndexCursor": 1
+      }
     },
     "tm-custom-build-agent.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingCustomBuilds": 3
+      }
     },
     "tm-endturn-province.js": {
       "gm": 10,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:provinceStats": 3,
+        "gm:_prevProvinceStats": 2,
+        "gm:_resourceProvinces": 5
+      }
     },
     "tm-endturn-qiaozhi.js": {
       "gm": 7,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_lostTerritories": 2,
+        "gm:provinceStats": 5
+      }
     },
     "tm-ai-apply-deaths.js": {
       "gm": 8,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "gm:currentIssues": 1,
+        "gm:provinceStats": 2,
+        "gm:harem": 2,
+        "p:playerInfo": 1,
+        "gm:_successionEvent": 1,
+        "gm:_playerDead": 1,
+        "gm:_playerDeathReason": 1
+      }
     },
     "tm-sidebar-ui.js": {
       "gm": 8,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:vars": 2,
+        "gm:_edictSuggestions": 6
+      }
     },
     "tm-renwu-ui.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingLetterTo": 2,
+        "gm:wenduiTarget": 1
+      }
     },
     "tm-shiji-qiju-ui.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:qijuHistory": 1
+      }
     },
     "tm-court-meter.js": {
       "gm": 21,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_courtMeter": 2,
+        "gm:vars": 2,
+        "gm:_pendingShijiModal": 9,
+        "gm:_isPostTurnCourt": 6,
+        "gm:_chaoyiCount": 2
+      }
     },
     "tm-endturn-systems.js": {
       "gm": 12,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:turn": 1,
+        "gm:_hujiEarlyTicked": 2,
+        "gm:_lastCurrencyFullTickTurn": 1,
+        "gm:_energy": 1,
+        "gm:_lastChangeQueueFailure": 1,
+        "gm:keju": 1,
+        "gm:_forgottenWorks": 3,
+        "gm:culturalWorks": 1,
+        "gm:_lastEndturnSystemsTimings": 1
+      }
     },
     "tm-endturn-ai-helpers.js": {
       "gm": 16,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_candidateEvents": 1,
+        "gm:_candidateEventMeta": 1,
+        "gm:_longTermDigest": 5,
+        "gm:_edictEfficacyReport": 4,
+        "gm:_edictEfficacyHistory": 3,
+        "gm:_chronicle": 2
+      }
     },
     "tm-history-events.js": {
       "gm": 15,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:triggeredHistoryEvents": 2,
+        "gm:currentIssues": 2,
+        "gm:vars": 2,
+        "gm:<dynamic>": 2,
+        "gm:biannianItems": 2,
+        "gm:_triggeredThisTurn": 5
+      }
     },
     "tm-tianji.js": {
       "gm": 7,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_tianji": 1,
+        "gm:_gaiming": 4,
+        "gm:currentIssues": 2
+      }
     },
     "tm-junqing-brief.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_junqingBrief": 2,
+        "gm:currentIssues": 3
+      }
     },
     "tm-xinjun-observe.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:currentIssues": 3
+      }
     },
     "tm-post-turn-jobs.js": {
       "gm": 25,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_memoryLayers": 7,
+        "gm:_lastTurnPredictions": 2,
+        "gm:_aiReflections": 3,
+        "gm:_factionArcs": 2,
+        "gm:_postTurnJobs": 2,
+        "gm:_postTurnDetachedJobs": 4,
+        "gm:_turnAiResults": 1,
+        "gm:memoryArchive": 4
+      }
     },
     "tm-arcs.js": {
       "gm": 7,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:characterArcs": 4,
+        "gm:playerDecisions": 3
+      }
     },
     "tm-memory-anchors.js": {
       "gm": 10,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:memoryAnchors": 5,
+        "gm:executionConstraints": 3,
+        "gm:memoryArchive": 2
+      }
     },
     "tm-endturn-edict.js": {
       "gm": 11,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_chronicle": 2,
+        "gm:qijuHistory": 2,
+        "gm:corruption": 1,
+        "gm:customPolicies": 3,
+        "gm:_edictMechanicalReport": 1,
+        "gm:_edictExecutionReport": 1,
+        "gm:_lastEdictClassification": 1
+      }
     },
     "tm-ai-planning.js": {
       "gm": 12,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_aiScenarioDigest": 7,
+        "gm:_officeTreeHash": 2,
+        "gm:_aiInferencePlan": 1,
+        "gm:_aiFactionMatrix": 1,
+        "gm:memoryAnchors": 1
+      }
     },
     "tm-endturn-prep.js": {
       "gm": 25,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingAudiences": 2,
+        "gm:culturalWorks": 2,
+        "gm:_consortPendingLiteraryForEmperor": 2,
+        "gm:_prevGuoku": 1,
+        "gm:_prevNeitang": 1,
+        "gm:_prevPopulation": 1,
+        "gm:_turnBattleResults": 1,
+        "gm:_turnRebellionResults": 1,
+        "gm:_turnSiegeResults": 1,
+        "gm:_turnSchemeResults": 1,
+        "gm:_edictTracker": 3,
+        "gm:letters": 2,
+        "gm:qijuHistory": 1,
+        "gm:_turnMoveCommands": 2,
+        "gm:_turnFiscalReforms": 2,
+        "gm:_turnFiscalActions": 2
+      }
     },
     "tm-party-goals.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_partyGoalRelationIndex": 1
+      }
     },
     "tm-endturn-prompt.js": {
       "gm": 10,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_successionEvent": 1,
+        "gm:conv": 1,
+        "gm:_aiWeakWriteHints": 1,
+        "gm:regentSignal": 1,
+        "gm:regentState": 5,
+        "gm:_lastSysPHash": 1
+      }
     },
     "tm-endturn-ai.js": {
       "gm": 103,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_turnAiResults": 65,
+        "gm:_aiDispatchStats": 10,
+        "gm:_subcallTimings": 7,
+        "gm:_sysCacheMode": 2,
+        "gm:_sysCacheLen": 1,
+        "gm:_postTurnJobs": 2,
+        "gm:_officeRecallResult": 3,
+        "gm:_consortPendingLiteraryForEmperor": 1,
+        "gm:_consortFormalAudiences": 1,
+        "gm:_pendingOvernight": 1,
+        "gm:_sc1qMissedLastTurn": 2,
+        "gm:_edictRelations": 3,
+        "gm:activeSchemes": 2,
+        "gm:_hiddenMoves": 3
+      }
     },
     "tm-endturn-apply.js": {
       "gm": 263,
-      "p": 6
+      "p": 6,
+      "roots": {
+        "gm:_unappliedChanges": 6,
+        "gm:_needsReconcile": 1,
+        "gm:_aiAuthCapTurn": 1,
+        "gm:_aiAuthAcc": 1,
+        "gm:<dynamic>": 2,
+        "gm:turnChanges": 48,
+        "gm:activeWars": 11,
+        "gm:minxin": 3,
+        "gm:activeDisasters": 2,
+        "gm:facs": 6,
+        "p:keju": 4,
+        "gm:parties": 7,
+        "gm:activeEdicts": 2,
+        "gm:_capitalHistory": 2,
+        "gm:capital": 1,
+        "gm:activeProjects": 4,
+        "gm:omens": 2,
+        "gm:_marriageBirthHistory": 2,
+        "gm:_conspiracies": 2,
+        "gm:currency": 4,
+        "gm:religions": 3,
+        "gm:_reconcilePatchLog": 3,
+        "gm:taxPressure": 2,
+        "gm:_pendingNpcLetters": 2,
+        "gm:memorials": 12,
+        "gm:_pendingNpcCorrespondence": 2,
+        "gm:_routeDisruptions": 2,
+        "gm:_foreshadowings": 3,
+        "gm:biannianItems": 11,
+        "gm:currentIssues": 4,
+        "gm:factionEvents": 3,
+        "gm:factionRelations": 4,
+        "gm:eraState": 3,
+        "gm:chars": 4,
+        "gm:qijuHistory": 18,
+        "gm:_interceptedIntel": 3,
+        "gm:_courtSilenced": 1,
+        "gm:_npcCommitments": 4,
+        "gm:_courtResolutions": 3,
+        "gm:_revoltPrecursors": 4,
+        "gm:_activeRevolts": 2,
+        "gm:_gameOverPending": 1,
+        "gm:factionRelationsMap": 3,
+        "gm:classes": 3,
+        "gm:provinceStats": 13,
+        "gm:officeTree": 3,
+        "gm:buildings": 3,
+        "gm:_indices": 6,
+        "gm:_lostTerritories": 2,
+        "gm:harem": 3,
+        "p:palaceSystem": 2,
+        "gm:culturalWorks": 2,
+        "gm:_edictLifecycle": 2,
+        "gm:vars": 3,
+        "gm:stateTreasury": 1,
+        "gm:_pendingAudiences": 4,
+        "gm:letters": 4,
+        "gm:customPolicies": 4,
+        "gm:_recentNarrative": 3,
+        "gm:_narrativeDigest": 3
+      }
     },
     "tm-endturn-followup.js": {
       "gm": 136,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "gm:vars": 1,
+        "gm:_factionUndercurrents": 2,
+        "gm:_factionUndercurrentsHistory": 3,
+        "gm:activeSchemes": 3,
+        "gm:_turnAiResults": 47,
+        "gm:_npcCognition": 6,
+        "gm:_causalGraph": 3,
+        "gm:factionRelations": 4,
+        "gm:guoku": 2,
+        "gm:_factionMilitaryLog": 3,
+        "gm:_militaryOutlook": 3,
+        "gm:_turnReport": 2,
+        "gm:biannianItems": 4,
+        "gm:conv": 4,
+        "p:ai": 1,
+        "gm:_foreshadows": 8,
+        "gm:_stateBoard": 2,
+        "gm:_currentTrend": 2,
+        "gm:_imperialCandidates": 6,
+        "gm:_aiMemory": 9,
+        "gm:_consolidatedMemory": 6,
+        "gm:_plotThreads": 4,
+        "gm:_decisionEchoes": 4,
+        "gm:_factionNarrative": 1,
+        "gm:_lastSc28Snapshot": 1,
+        "gm:_convArchive": 3,
+        "gm:chronicleAfterwords": 3
+      }
     },
     "tm-endturn-record.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_costHistory": 3
+      }
     },
     "tm-endturn-ai-infer.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:vars": 1,
+        "gm:_turnContext": 1
+      }
     },
     "tm-endturn-core.js": {
       "gm": 29,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_partyClassPreSubmitBusy": 2,
+        "gm:busy": 4,
+        "gm:_endTurnBusy": 3,
+        "gm:_aiMemorySummaries": 3,
+        "gm:monthlyChronicles": 5,
+        "gm:_turnContext": 1,
+        "gm:_turnTyrantActivities": 1,
+        "gm:_turnAiResults": 1,
+        "gm:running": 1,
+        "gm:_playerDead": 1,
+        "gm:_playerDeathReason": 1,
+        "gm:vars": 1,
+        "gm:jishiRecords": 1,
+        "gm:_historicalDeviations": 4
+      }
     },
     "tm-endturn-timing-ledger.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_endturnTimingHistory": 1,
+        "gm:_endturnTimingLedger": 1,
+        "gm:_lastEndturnTimingSummary": 1
+      }
     },
     "tm-endturn-pipeline-steps.js": {
       "gm": 14,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:turnChanges": 1,
+        "gm:_npcBehaviorPostTurnQueued": 1,
+        "gm:_edictTracker": 2,
+        "gm:_chronicle": 2,
+        "gm:_turnTyrantActivities": 1,
+        "gm:_longTermDigest": 1,
+        "gm:_lastEndturnValidity": 1,
+        "gm:_pendingShijiModal": 4,
+        "gm:_lastEndturnAiContext": 1
+      }
     },
     "tm-endturn-render.js": {
       "gm": 22,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:eraName": 1,
+        "gm:_lastTurnDigest": 2,
+        "gm:_fengwenRecord": 2,
+        "gm:shijiHistory": 1,
+        "gm:_yearlyDigest": 3,
+        "gm:qijuHistory": 2,
+        "gm:_prevVars": 1,
+        "gm:_metricHistory": 3,
+        "gm:<dynamic>": 1,
+        "gm:_factionHistory": 3,
+        "gm:_turnReport": 1,
+        "gm:jishiRecords": 1,
+        "gm:_pendingToasts": 1
+      }
     },
     "tm-patches.js": {
       "gm": 95,
-      "p": 165
+      "p": 165,
+      "roots": {
+        "p:conf": 39,
+        "p:ai": 26,
+        "p:scenarios": 9,
+        "gm:qijuHistory": 2,
+        "p:<dynamic>": 4,
+        "p:variables": 3,
+        "gm:vars": 3,
+        "gm:mapData": 3,
+        "p:map": 8,
+        "p:mapData": 7,
+        "gm:_useAIGeo": 2,
+        "gm:chars": 16,
+        "gm:facs": 5,
+        "gm:_corruptionPresetDone": 1,
+        "gm:_guokuPresetDone": 1,
+        "gm:_neitangPresetDone": 1,
+        "gm:saveName": 1,
+        "gm:eraState": 8,
+        "p:goals": 1,
+        "p:offendGroups": 1,
+        "p:keju": 1,
+        "p:playerInfo": 1,
+        "gm:engineConstants": 1,
+        "p:engineConstants": 1,
+        "gm:influenceGroups": 1,
+        "p:influenceGroups": 1,
+        "gm:characterArcs": 1,
+        "gm:playerDecisions": 1,
+        "gm:memoryArchive": 1,
+        "gm:chronicleAfterwords": 1,
+        "gm:customPolicies": 1,
+        "gm:affinityMap": 1,
+        "p:economyConfig": 2,
+        "gm:postSystem": 4,
+        "p:gameSettings": 1,
+        "gm:eraName": 1,
+        "gm:eraNames": 1,
+        "p:time": 11,
+        "p:military": 1,
+        "p:rules": 1,
+        "p:timeline": 1,
+        "p:worldSettings": 1,
+        "p:government": 1,
+        "p:adminHierarchy": 1,
+        "gm:adminHierarchy": 1,
+        "p:officeTree": 2,
+        "p:officeConfig": 1,
+        "gm:officeTree": 3,
+        "p:techTree": 2,
+        "p:civicTree": 2,
+        "p:_varFormulas": 2,
+        "p:openingText": 1,
+        "p:globalRules": 1,
+        "p:buildingSystem": 1,
+        "p:battleConfig": 1,
+        "p:mechanicsConfig": 1,
+        "p:militaryConfig": 1,
+        "p:adminConfig": 1,
+        "p:chronicleConfig": 1,
+        "p:eventConstraints": 1,
+        "p:warConfig": 1,
+        "p:diplomacyConfig": 1,
+        "p:schemeConfig": 1,
+        "p:decisionConfig": 1,
+        "p:vassalSystem": 1,
+        "p:titleSystem": 1,
+        "p:officialVassalMapping": 1,
+        "p:characters": 2,
+        "p:factions": 2,
+        "p:parties": 2,
+        "p:classes": 2,
+        "p:items": 2,
+        "p:relations": 2,
+        "p:events": 2,
+        "p:rigidHistoryEvents": 2,
+        "gm:currentIssues": 2,
+        "gm:memorials": 2,
+        "gm:letters": 2,
+        "gm:_pendingAudiences": 2,
+        "gm:_varFormulas": 1,
+        "gm:rels": 1,
+        "gm:factionRelations": 1,
+        "gm:factionRelationsMap": 1,
+        "gm:items": 1,
+        "gm:armies": 1,
+        "gm:classes": 2,
+        "gm:parties": 2,
+        "gm:techTree": 1,
+        "gm:civicTree": 1,
+        "gm:events": 1,
+        "gm:rigidHistoryEvents": 1,
+        "gm:_tianjiEnabled": 1,
+        "gm:_junqingBriefEnabled": 1,
+        "gm:_xinjunObserveEnabled": 1,
+        "gm:_xinjunObserveTurns": 1,
+        "gm:allCharacters": 2,
+        "gm:playerCharacterId": 1,
+        "gm:families": 2,
+        "gm:harem": 3,
+        "p:supplySystem": 2
+      }
     },
     "tm-military-ui.js": {
       "gm": 0,
-      "p": 14
+      "p": 14,
+      "roots": {
+        "p:military": 14
+      }
     },
     "tm-world-view.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:historicalEvents": 1
+      }
     },
     "editor-details.js": {
       "gm": 0,
-      "p": 43
+      "p": 43,
+      "roots": {
+        "p:items": 7,
+        "p:rules": 7,
+        "p:events": 3,
+        "p:factions": 2,
+        "p:classes": 8,
+        "p:world": 7,
+        "p:techTree": 9
+      }
     },
     "tm-three-systems-ext.js": {
       "gm": 31,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:parties": 1,
+        "gm:partyState": 3,
+        "gm:_provinceToFaction": 4,
+        "gm:provinceStats": 1,
+        "gm:armies": 1,
+        "gm:_chronicle": 14,
+        "gm:_npcDecisions": 1,
+        "gm:_openingLettersActivated": 2,
+        "gm:letters": 2,
+        "gm:currentIssues": 2
+      }
     },
     "tm-armory.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:guoku": 5
+      }
     },
     "tm-battle-turn.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingAbstractBattles": 1,
+        "gm:_yujiaQinzheng": 1,
+        "gm:_yujiaObserve": 1
+      }
     },
     "tm-faction-npc-settings.js": {
       "gm": 0,
-      "p": 5
+      "p": 5,
+      "roots": {
+        "p:conf": 5
+      }
     },
     "tm-faction-npc-news-bridge.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:qijuHistory": 3
+      }
     },
     "tm-faction-npc-intervention.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_npcInterventions": 3
+      }
     },
     "tm-faction-npc-llm-decision.js": {
       "gm": 12,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_npcFactionAiTurnLedger": 5,
+        "gm:_npcFactionLlmLedger": 3,
+        "gm:_factionToolStats": 3,
+        "gm:_npcFactionLlmCandidateRanks": 1
+      }
     },
     "tm-faction-npc-in-turn-driver.js": {
       "gm": 6,
-      "p": 3
+      "p": 3,
+      "roots": {
+        "gm:_npcFactionLlmPickLog": 3,
+        "gm:qijuHistory": 3,
+        "p:conf": 3
+      }
     },
     "tm-faction-npc-dispatcher.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_npcFactionAiTurnLedger": 4,
+        "gm:_npcFactionLlmDispatchLedger": 1
+      }
     },
     "tm-faction-index.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_facIndex": 2
+      }
     },
     "tm-three-systems-ui.js": {
       "gm": 8,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_edictTracker": 2,
+        "gm:_chronicle": 2,
+        "gm:partyState": 4
+      }
     },
     "tm-char-arcs.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_charArcs": 5
+      }
     },
     "tm-keju-paradigm.js": {
       "gm": 12,
-      "p": 2
+      "p": 2,
+      "roots": {
+        "gm:_kejuParadigm": 10,
+        "gm:_chronicle": 2,
+        "p:scenario": 2
+      }
     },
     "tm-keju-reform-llm.js": {
       "gm": 4,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_kjpL5InjectCooldown": 3,
+        "gm:_chronicle": 1
+      }
     },
     "tm-keju-paradigm-panel.js": {
       "gm": 10,
-      "p": 3
+      "p": 3,
+      "roots": {
+        "p:conf": 3,
+        "gm:_kjpPrivateAudienceLog": 3,
+        "gm:vars": 2,
+        "gm:guoku": 2,
+        "gm:_chronicle": 1,
+        "gm:_factionTension": 1,
+        "gm:_kjpFairnessBonusGranted": 1
+      }
     },
     "tm-keju-examiner-view.js": {
       "gm": 0,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "p:keju": 1
+      }
     },
     "tm-keju-mentor.js": {
       "gm": 14,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_mentorIndex": 14
+      }
     },
     "tm-keju-disciple-graph.js": {
       "gm": 10,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_discipleGraph": 10
+      }
     },
     "tm-keju-disciple-memorial.js": {
       "gm": 7,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_kjDiscipleMemorials": 3,
+        "gm:_kjMemorialCooldown": 2,
+        "gm:_pendingTinyiTopics": 2
+      }
     },
     "tm-keju-cohort-meet.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_kjCohortMeets": 3,
+        "gm:_kjCohortMeetCooldown": 2
+      }
     },
     "tm-keju-yanguan-qingyi.js": {
       "gm": 7,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_kjYanguanQingyi": 4,
+        "gm:_kjYanguanQingyiCooldown": 3
+      }
     },
     "tm-keju-reform-memorial.js": {
       "gm": 9,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_kjReformMemorials": 3,
+        "gm:_kjReformMemorialCooldown": 2,
+        "gm:_kjReformMemorialLastSpawnTurn": 1,
+        "gm:_l9TinyiSpawnTurn": 1,
+        "gm:_pendingTinyiTopics": 2
+      }
     },
     "tm-keju-reform-evolution.js": {
       "gm": 21,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_kejuParadigm": 11,
+        "gm:_chronicle": 4,
+        "gm:corruption": 2,
+        "gm:minxin": 2,
+        "gm:_factionTension": 2
+      }
     },
     "tm-keju-special-exams.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_specialExamCalendar": 2,
+        "gm:_tongziPlatformDisasterFired": 1
+      }
     },
     "tm-keju-event-hooks.js": {
       "gm": 15,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_lastReignChangeYear": 1,
+        "gm:_currentReignName": 1,
+        "gm:_lastImperialWeddingYear": 1,
+        "gm:_lastImperialSpouse": 1,
+        "gm:_lastPlatformDisasterYear": 1,
+        "gm:_lastPlatformDisasterType": 1,
+        "gm:_lastAuspicePortentYear": 1,
+        "gm:_lastAuspicePortentDesc": 1,
+        "gm:<dynamic>": 2,
+        "gm:_reignTransitionFiredFor": 2,
+        "gm:_lastReignTransitionDetectedAt": 1,
+        "gm:_lastWarStateValForRecoveryWatch": 2
+      }
     },
     "tm-keju-enke-player-initiative.js": {
       "gm": 8,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_edictSuggestions": 3,
+        "gm:_pendingEnkeFromEdict": 3,
+        "gm:_enkeLibuWenduiLastYear": 1,
+        "gm:_chronicle": 1
+      }
     },
     "tm-keju-enke.js": {
       "gm": 40,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_chronicle": 10,
+        "gm:_enkeAbuseCounter": 4,
+        "gm:_tesuomingHistory": 2,
+        "gm:_enkeParty": 3,
+        "gm:chars": 2,
+        "gm:_enkeXieendaQueue": 6,
+        "gm:_enkeXieendaPending": 2,
+        "gm:_enkeHistory": 2,
+        "gm:prestige": 1,
+        "gm:_kejuParadigm": 2,
+        "gm:minxin": 4,
+        "gm:_specialExamCalendar": 1,
+        "gm:_pendingEnkeFromEdict": 1
+      }
     },
     "tm-keju-wuju.js": {
       "gm": 53,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_wujuPeacefulCounter": 3,
+        "gm:_wujuAssignSpinIdx": 2,
+        "gm:_chronicle": 17,
+        "gm:chars": 4,
+        "gm:_wujuCeremonyQueue": 4,
+        "gm:_wujuParty": 4,
+        "gm:_wenguanImpeachmentCount": 2,
+        "gm:_wujuCoupFiredTurn": 1,
+        "gm:_wujuHistory": 2,
+        "gm:_specialExamCalendar": 2,
+        "gm:_martialClans": 2,
+        "gm:_wujuAbolished": 1,
+        "gm:vars": 1,
+        "gm:_edictSuggestions": 2,
+        "gm:_wujuBingbuWenduiLastYear": 1,
+        "gm:_kjG2PendingKeyiPromote": 2,
+        "gm:_wujuPendingDepotAssignments": 3
+      }
     },
     "tm-keju-tongzi.js": {
       "gm": 22,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_chronicle": 2,
+        "gm:_tongziDeferredQueue": 2,
+        "gm:chars": 2,
+        "gm:_tongziHistory": 2,
+        "gm:_tongziFamilies": 1,
+        "gm:_tongziCeremonyQueue": 2,
+        "gm:<dynamic>": 1,
+        "gm:vars": 1,
+        "gm:_kejuParadigm": 2,
+        "gm:_enkeHistory": 1,
+        "gm:_tongziLastAnnualY": 2,
+        "gm:_tongziLibuWenduiLastYear": 1,
+        "gm:_edictSuggestions": 2,
+        "gm:_tongziUserDecreeMode": 1
+      }
     },
     "tm-keju-school-network.js": {
       "gm": 55,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_schoolNetwork": 4,
+        "gm:chars": 2,
+        "gm:_chronicle": 17,
+        "gm:_kjpHTierChangeFiredTurn": 1,
+        "gm:_lastSchoolFoundedYear": 1,
+        "gm:_lastSchoolBannedYear": 1,
+        "gm:parties": 4,
+        "gm:_kjpHWeightDriftAccum": 2,
+        "gm:_kjpHPendingParadigmShifts": 2,
+        "gm:_kjpHLectureQueue": 4,
+        "gm:_kjpHLastAutoLectureYear": 2,
+        "gm:_edictSuggestions": 2,
+        "gm:_kjpHLibuWenduiLastYear": 1,
+        "gm:_kjpHRebelPartySpawnedThisWatershed": 2,
+        "gm:_kejuParadigm": 3,
+        "gm:_kjpHFeedbackCooldown": 2,
+        "gm:_kjpHFeedbackFiredThisTurn": 3,
+        "gm:_kjpHWatershedFired": 2
+      }
     },
     "tm-keju-reform-rollback.js": {
       "gm": 4,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_kejuParadigm": 3,
+        "gm:_chronicle": 1
+      }
     },
     "tm-keju-reform-apply.js": {
       "gm": 20,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_chronicle": 6,
+        "gm:_kejuParadigm": 9,
+        "gm:prestige": 4,
+        "gm:_factionTension": 1
+      }
     },
     "tm-keju-activation.js": {
       "gm": 1,
-      "p": 12
+      "p": 12,
+      "roots": {
+        "p:keju": 12,
+        "gm:vars": 1
+      }
     },
     "tm-keju.js": {
       "gm": 8,
-      "p": 14
+      "p": 14,
+      "roots": {
+        "p:keju": 14,
+        "gm:keju": 2,
+        "gm:huangquan": 1,
+        "gm:minxin": 1,
+        "gm:classes": 1,
+        "gm:qijuHistory": 1,
+        "gm:guoku": 1,
+        "gm:neitang": 1
+      }
     },
     "tm-chaoyi.js": {
       "gm": 14,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_chaoyiCount": 4,
+        "gm:jishiRecords": 2,
+        "gm:qijuHistory": 2,
+        "gm:_kjG2PendingKeyiPromote": 4,
+        "gm:_kjpHPendingParadigmShifts": 1,
+        "gm:_ccHeldItems": 1
+      }
     },
     "tm-electron.js": {
       "gm": 4,
-      "p": 29
+      "p": 29,
+      "roots": {
+        "p:scenarios": 6,
+        "p:<dynamic>": 6,
+        "p:_activeScnName": 3,
+        "gm:sid": 3,
+        "gm:saveName": 1,
+        "p:conf": 4,
+        "p:mapData": 10
+      }
     },
     "tm-keju-runtime.js": {
       "gm": 27,
-      "p": 43
+      "p": 43,
+      "roots": {
+        "p:keju": 43,
+        "gm:qijuHistory": 2,
+        "gm:huangwei": 2,
+        "gm:eraState": 3,
+        "gm:keju": 3,
+        "gm:_courtRecords": 3,
+        "gm:_edictTracker": 2,
+        "gm:jishiRecords": 2,
+        "gm:chars": 5,
+        "gm:allCharacters": 1,
+        "gm:_kejuPendingAssignment": 3,
+        "gm:_runId": 1
+      }
     },
     "tm-chaoyi-tinyi.js": {
       "gm": 15,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingTinyiTopics": 3,
+        "gm:_chaoyiMemory": 3,
+        "gm:_courtRecords": 3,
+        "gm:qijuHistory": 1,
+        "gm:_edictTracker": 2,
+        "gm:partyStrife": 1,
+        "gm:activeSchemes": 2
+      }
     },
     "tm-chaoyi-yuqian.js": {
       "gm": 10,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_courtRecords": 3,
+        "gm:_secretMeetings": 2,
+        "gm:activeSchemes": 2,
+        "gm:_edictTracker": 2,
+        "gm:partyStrife": 1
+      }
     },
     "tm-chaoyi-changchao.js": {
       "gm": 29,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_deptAbsenceTracker": 2,
+        "gm:jishiRecords": 3,
+        "gm:_chaoyiPolicyActions": 3,
+        "gm:_edictTracker": 2,
+        "gm:_pendingTinyiTopics": 2,
+        "gm:_ccHeldItems": 2,
+        "gm:deptTasks": 2,
+        "gm:_chaoyiCount": 5,
+        "gm:_courtRecords": 3,
+        "gm:_lastChangchaoDecisions": 1,
+        "gm:_lastChangchaoDecisionMeta": 1,
+        "gm:_lastChangchaoDecisionsTargetTurn": 1,
+        "gm:qijuHistory": 1,
+        "gm:biannianItems": 1
+      }
     },
     "tm-tinyi-v3.js": {
       "gm": 110,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_mentorIndex": 1,
+        "gm:_pendingSickLeaveEvents": 2,
+        "gm:_pendingResignMemorials": 2,
+        "gm:_pendingClearOpinionEvents": 2,
+        "gm:_pendingMartyrEvents": 4,
+        "gm:_pendingTinyiActions": 4,
+        "gm:<dynamic>": 1,
+        "gm:_affinityMap": 5,
+        "gm:_pendingPartTopics": 2,
+        "gm:_pendingTinyiTopics": 11,
+        "gm:memorials": 1,
+        "gm:qijuHistory": 1,
+        "gm:partyState": 2,
+        "gm:_mentorIndexSig": 1,
+        "gm:_ccFinalBlockedItems": 2,
+        "gm:_ccHeldItems": 7,
+        "gm:_ty3_aiReissueResults": 1,
+        "gm:huangwei": 1,
+        "gm:vars": 2,
+        "gm:partyStrife": 6,
+        "gm:huangquan": 1,
+        "gm:_regaliaCounters": 1,
+        "gm:unlockedRegalia": 2,
+        "gm:recentChaoyi": 9,
+        "gm:_chronicle": 10,
+        "gm:tinyi": 4,
+        "gm:_courtRecords": 3,
+        "gm:parties": 4,
+        "gm:_partyEvolutionState": 1,
+        "gm:corruption": 2,
+        "gm:_turnReport": 4,
+        "gm:_ty3_pendingReviewForPrompt": 5,
+        "gm:_ty3_spawnCooldowns": 3,
+        "gm:_chronicleTickNarratives": 3
+      }
     },
     "tm-char-autogen.js": {
       "gm": 16,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_generatingChars": 6,
+        "gm:chars": 4,
+        "gm:_indices": 1,
+        "gm:_pendingCharacters": 5
+      }
     },
     "tm-audio-theme.js": {
       "gm": 0,
-      "p": 8
+      "p": 8,
+      "roots": {
+        "p:classes": 1,
+        "p:externalForces": 1,
+        "p:techTree": 1,
+        "p:civicTree": 1,
+        "p:officeConfig": 1,
+        "p:world": 1,
+        "p:officeDeptLinks": 1,
+        "p:conf": 1
+      }
     },
     "tm-save-lifecycle.js": {
       "gm": 382,
-      "p": 60
+      "p": 60,
+      "roots": {
+        "gm:shijiHistory": 1,
+        "gm:allCharacters": 1,
+        "gm:classes": 1,
+        "gm:parties": 1,
+        "gm:extForces": 1,
+        "gm:techTree": 1,
+        "gm:civicTree": 1,
+        "gm:memorials": 1,
+        "gm:qijuHistory": 1,
+        "gm:jishiRecords": 1,
+        "gm:biannianItems": 1,
+        "gm:officeTree": 1,
+        "gm:officeChanges": 1,
+        "gm:wenduiHistory": 1,
+        "gm:evtLog": 1,
+        "gm:conv": 1,
+        "gm:autoSummary": 1,
+        "gm:summarizedTurns": 1,
+        "gm:characterArcs": 2,
+        "gm:playerDecisions": 2,
+        "gm:memoryArchive": 2,
+        "gm:renli": 2,
+        "gm:chronicleAfterwords": 2,
+        "gm:customPolicies": 2,
+        "gm:affinityMap": 2,
+        "gm:offendGroupScores": 2,
+        "gm:activeRebounds": 2,
+        "gm:triggeredOffendEvents": 2,
+        "gm:_tyrantDecadence": 2,
+        "gm:_tyrantHistory": 2,
+        "gm:harem": 3,
+        "gm:families": 2,
+        "gm:memoryAnchors": 2,
+        "gm:provinceStats": 2,
+        "gm:eraStateHistory": 2,
+        "gm:pendingConsequences": 2,
+        "gm:turnChanges": 1,
+        "gm:historicalEvents": 1,
+        "gm:playerPendingTasks": 1,
+        "gm:factionRelations": 2,
+        "gm:factionEvents": 2,
+        "gm:_factionHistory": 2,
+        "gm:_factionUndercurrents": 2,
+        "gm:_factionUndercurrentsHistory": 2,
+        "gm:_courtRecords": 2,
+        "gm:_lastSc28Snapshot": 1,
+        "gm:_costHistory": 1,
+        "gm:activeSchemes": 2,
+        "gm:_edictTracker": 2,
+        "gm:_plotThreads": 2,
+        "gm:_decisionEchoes": 2,
+        "gm:_edictSuggestions": 2,
+        "gm:_approvedMemorials": 2,
+        "gm:_achievements": 2,
+        "gm:_energy": 2,
+        "gm:_energyMax": 2,
+        "gm:_annualReviewHistory": 2,
+        "gm:_kejuPendingAssignment": 2,
+        "gm:_mutableFacts": 2,
+        "gm:eraProgress": 2,
+        "gm:borderThreat": 2,
+        "gm:monthlyChronicles": 2,
+        "gm:yearlyChronicles": 2,
+        "gm:_aiMemorySummaries": 2,
+        "gm:letters": 2,
+        "gm:_pendingNpcLetters": 2,
+        "gm:_letterSuspects": 2,
+        "gm:_courierStatus": 2,
+        "gm:_routeDisruptions": 2,
+        "gm:_npcCorrespondence": 2,
+        "gm:_pendingNpcCorrespondence": 2,
+        "gm:_npcInternalActionHistory": 2,
+        "gm:_npcActionLedger": 2,
+        "gm:_npcPlans": 2,
+        "gm:_npcDecisionDiagnostics": 2,
+        "gm:_pendingMemorialDeliveries": 2,
+        "gm:_interceptedIntel": 2,
+        "gm:_undeliveredLetters": 2,
+        "p:conf": 22,
+        "p:ai": 3,
+        "p:classes": 1,
+        "p:externalForces": 1,
+        "p:techTree": 1,
+        "p:civicTree": 1,
+        "p:officeConfig": 2,
+        "p:world": 2,
+        "p:officeDeptLinks": 1,
+        "p:relations": 1,
+        "p:events": 1,
+        "p:items": 1,
+        "p:characters": 1,
+        "p:factions": 1,
+        "p:parties": 1,
+        "p:variables": 1,
+        "p:_varFormulas": 2,
+        "p:mechanicsConfig": 1,
+        "p:militaryConfig": 4,
+        "gm:_chronicleSysState": 2,
+        "gm:_warTruces": 1,
+        "gm:_rngState": 1,
+        "gm:_savedAffinityMap": 2,
+        "gm:_savedRenli": 2,
+        "gm:_savedOffendScores": 2,
+        "gm:_savedActiveRebounds": 2,
+        "gm:_savedTriggeredOffend": 2,
+        "gm:_savedEventOpinions": 2,
+        "gm:_savedTyrantDecadence": 2,
+        "gm:_savedTyrantHistory": 2,
+        "gm:_savedVarMapping": 2,
+        "gm:_savedHarem": 2,
+        "gm:_savedFamilies": 2,
+        "gm:_savedVarFormulas": 2,
+        "gm:_savedForeshadows": 2,
+        "gm:_savedAiMemory": 2,
+        "gm:_savedSagaMemory": 2,
+        "gm:_savedAgentRecentDirectives": 2,
+        "gm:_savedConvArchive": 2,
+        "gm:_savedContradictions": 2,
+        "gm:_savedLetters": 2,
+        "gm:_savedCapital": 2,
+        "gm:_savedTrend": 2,
+        "gm:_savedCharacterArcs": 2,
+        "gm:_savedPlayerDecisions": 2,
+        "gm:_savedMemoryArchive": 2,
+        "gm:_savedChronicleAfterwords": 2,
+        "gm:_savedCustomPolicies": 2,
+        "gm:_savedMemoryAnchors": 2,
+        "gm:_savedProvinceStats": 2,
+        "gm:_savedEraState": 2,
+        "gm:_savedEraStateHistory": 2,
+        "gm:_savedPostSystem": 2,
+        "gm:_savedVassalSystem": 2,
+        "gm:_savedTitleSystem": 2,
+        "gm:_savedBuildingSystem": 2,
+        "gm:_savedAdminHierarchy": 2,
+        "gm:_savedKeju": 2,
+        "gm:_savedOfficialVassalMapping": 2,
+        "gm:_savedGovernment": 2,
+        "gm:_savedEraNames": 2,
+        "gm:_savedAiDigest": 2,
+        "gm:_savedEdictTracker": 2,
+        "gm:_savedEdictDrafts": 3,
+        "gm:_savedEventBus": 2,
+        "gm:_savedEnYuanRecords": 2,
+        "gm:_savedPatronNetwork": 2,
+        "gm:_savedActiveSchemes": 2,
+        "gm:_savedYearlyChronicles": 2,
+        "gm:_savedMonthlyChronicles": 2,
+        "gm:_savedAiMemorySummaries": 2,
+        "gm:_savedSchemeCooldowns": 2,
+        "gm:_savedEventCooldowns": 2,
+        "gm:_savedMarchOrders": 2,
+        "gm:_savedActiveSieges": 2,
+        "gm:_savedActiveBattles": 2,
+        "gm:_savedBattleHistory": 2,
+        "gm:_savedActiveWars": 2,
+        "gm:_savedTreaties": 2,
+        "gm:_savedDiplomaticMissions": 2,
+        "gm:_savedForeshadowings": 2,
+        "gm:_savedTensionHistory": 2,
+        "gm:_savedYearlyDigest": 2,
+        "gm:_savedMetricHistory": 2,
+        "gm:_savedMilitaryReform": 2,
+        "gm:_savedRngCheckpoints": 2,
+        "gm:_savedEnergy": 2,
+        "gm:_savedEnergyMax": 2,
+        "gm:_savedAnnualReviewHistory": 2,
+        "gm:_savedKejuPending": 2,
+        "gm:_savedSuccessionEvent": 2,
+        "gm:_savedMutableFacts": 2,
+        "gm:_savedLostTerritories": 2,
+        "gm:_savedCurrentIssues": 2,
+        "gm:_savedAiDispatchStats": 2,
+        "gm:_savedNpcClaims": 2,
+        "gm:_savedEavesdroppedTopics": 2,
+        "gm:_savedInterceptedIntel": 2,
+        "gm:_savedUndeliveredLetters": 2,
+        "gm:_savedLetterSuspects": 2,
+        "gm:_savedCourierStatus": 2,
+        "gm:_savedPendingNpcLetters": 2,
+        "gm:_savedPendingMemDeliveries": 2,
+        "gm:_savedPendingNpcCorr": 2,
+        "gm:_savedNpcInternalActionHistory": 2,
+        "gm:_savedNpcActionLedger": 2,
+        "gm:_savedNpcPlans": 2,
+        "gm:_savedNpcDecisionDiagnostics": 2,
+        "gm:_savedNpcFactionAiTurnLedger": 2,
+        "gm:_savedNpcFactionLlmLedger": 2,
+        "gm:_savedNpcFactionLlmDispatchLedger": 2,
+        "gm:_savedSc16FactionDirectives": 2,
+        "gm:_savedOfficeCollapsed": 2,
+        "gm:_savedWdState": 2,
+        "gm:_savedPlayerDirectives": 2,
+        "gm:_savedImportedMemories": 2,
+        "gm:_savedWentianHistory": 2,
+        "gm:_savedMemoryLayers": 2,
+        "gm:_savedEpitaphs": 2,
+        "gm:_savedFakeDeathHolding": 2,
+        "gm:_savedFiscalValidatorLog": 2,
+        "gm:_postTurnJobs": 1,
+        "gm:_memoryArchiveFull": 2,
+        "gm:_savedMemoryArchiveFull": 2,
+        "gm:_savedCausalGraph": 2,
+        "gm:_savedFactionArcs": 2,
+        "gm:_savedAiReflections": 2,
+        "gm:_savedLastTurnPredictions": 2,
+        "gm:_savedCharMemExt": 2,
+        "gm:_savedChronicle": 2,
+        "gm:_savedWdRewardPunish": 2,
+        "gm:_savedLastEvalTurn": 2,
+        "gm:_savedCharOfficeFields": 2,
+        "gm:_savedRouteDisruptions": 2,
+        "gm:_savedNpcCorrespondence": 2,
+        "gm:_savedEraProgress": 2,
+        "gm:_savedBorderThreat": 2,
+        "gm:_savedOfficeConfig": 2,
+        "gm:_savedBuildings": 2,
+        "gm:_savedBuildingQueue": 2,
+        "gm:_savedMapData": 2,
+        "gm:_savedNpcContext": 2,
+        "gm:_savedPendingConsequences": 2,
+        "gm:_savedFactionRelations": 2,
+        "gm:_savedFactionEvents": 2,
+        "gm:_savedFactionHistory": 2,
+        "gm:_savedFacUndHist": 2,
+        "gm:_savedFacUndercurrents": 2,
+        "gm:_savedApprovedMemorials": 2,
+        "gm:_savedCourtRecords": 2,
+        "gm:_savedPlotThreads": 2,
+        "gm:_savedDecisionEchoes": 2,
+        "gm:_savedEdictSuggestions": 2,
+        "gm:_savedCulturalWorks": 2,
+        "gm:_savedForgottenWorks": 2,
+        "gm:_savedFactionRelationsMap": 2,
+        "gm:_savedEdictLifecycle": 2,
+        "gm:_savedActiveRevolts": 2,
+        "gm:_savedRevoltPrecursors": 2,
+        "gm:_savedNpcCommitments": 2,
+        "gm:_savedSecretMeetings": 2,
+        "gm:_savedAchievements": 2,
+        "gm:_savedHistoryIndex": 2,
+        "gm:_savedHistoryIndexCursor": 2,
+        "gm:saveName": 1,
+        "gm:_varMapping": 1,
+        "gm:_varFormulas": 1,
+        "gm:_foreshadows": 1,
+        "gm:_aiMemory": 1,
+        "gm:_sagaMemory": 1,
+        "gm:_agentRecentDirectives": 1,
+        "gm:_convArchive": 1,
+        "gm:_currentTrend": 1,
+        "gm:eraState": 1,
+        "gm:postSystem": 1,
+        "p:vassalSystem": 1,
+        "p:titleSystem": 1,
+        "p:buildingSystem": 1,
+        "p:adminHierarchy": 1,
+        "p:keju": 1,
+        "p:officialVassalMapping": 1,
+        "p:government": 1,
+        "gm:_contradictions": 1,
+        "gm:_capital": 1,
+        "gm:eraNames": 1,
+        "gm:_aiScenarioDigest": 1,
+        "gm:enYuanRecords": 1,
+        "gm:patronNetwork": 1,
+        "gm:schemeCooldowns": 1,
+        "gm:eventCooldowns": 1,
+        "gm:marchOrders": 1,
+        "gm:activeSieges": 1,
+        "gm:activeBattles": 1,
+        "gm:battleHistory": 1,
+        "gm:activeWars": 1,
+        "gm:treaties": 1,
+        "gm:_diplomaticMissions": 1,
+        "gm:_foreshadowings": 1,
+        "gm:_tensionHistory": 1,
+        "gm:_yearlyDigest": 1,
+        "gm:_metricHistory": 1,
+        "gm:_militaryReform": 1,
+        "gm:_rngCheckpoints": 1,
+        "gm:_successionEvent": 1,
+        "gm:_lostTerritories": 1,
+        "gm:currentIssues": 1,
+        "gm:_aiDispatchStats": 1,
+        "gm:_npcClaims": 1,
+        "gm:_eavesdroppedTopics": 1,
+        "gm:_npcFactionAiTurnLedger": 1,
+        "gm:_npcFactionLlmLedger": 1,
+        "gm:_npcFactionLlmDispatchLedger": 1,
+        "gm:_sc16FactionDirectives": 1,
+        "gm:_officeCollapsed": 1,
+        "gm:_wdState": 1,
+        "gm:_playerDirectives": 1,
+        "gm:_importedMemories": 1,
+        "gm:_wentianHistory": 1,
+        "gm:_memoryLayers": 1,
+        "gm:_epitaphs": 1,
+        "gm:_fakeDeathHolding": 1,
+        "gm:_fiscalValidatorLog": 1,
+        "gm:_causalGraph": 1,
+        "gm:_factionArcs": 1,
+        "gm:_aiReflections": 1,
+        "gm:_lastTurnPredictions": 1,
+        "gm:_chronicle": 2,
+        "gm:_wdRewardPunish": 1,
+        "gm:_lastEvalTurn": 1,
+        "gm:buildings": 1,
+        "gm:buildingQueue": 1,
+        "gm:mapData": 2,
+        "gm:npcContext": 1,
+        "gm:culturalWorks": 1,
+        "gm:_forgottenWorks": 1,
+        "gm:factionRelationsMap": 1,
+        "gm:_edictLifecycle": 1,
+        "gm:_activeRevolts": 1,
+        "gm:_revoltPrecursors": 1,
+        "gm:_npcCommitments": 1,
+        "gm:_secretMeetings": 1,
+        "gm:_historyIndex": 1,
+        "gm:_historyIndexCursor": 1,
+        "gm:running": 1,
+        "gm:busy": 1,
+        "gm:_endTurnBusy": 1,
+        "gm:_useAIGeo": 2,
+        "p:map": 1,
+        "p:mapData": 1,
+        "gm:adminHierarchy": 2,
+        "gm:engineConstants": 1,
+        "gm:influenceGroups": 1,
+        "p:engineConstants": 1,
+        "p:influenceGroups": 1,
+        "gm:fiscal": 4,
+        "p:<dynamic>": 1
+      }
     },
     "tm-office-editor.js": {
       "gm": 2,
-      "p": 49
+      "p": 49,
+      "roots": {
+        "p:scenarios": 1,
+        "p:<dynamic>": 2,
+        "p:_activeScnName": 1,
+        "gm:officeTree": 2,
+        "p:officeTree": 8,
+        "p:characters": 5,
+        "p:factions": 3,
+        "p:variables": 1,
+        "p:relations": 1,
+        "p:techTree": 3,
+        "p:civicTree": 4,
+        "p:items": 1,
+        "p:rules": 2,
+        "p:events": 2,
+        "p:conf": 2,
+        "p:officeConfig": 10,
+        "p:_officeCollapsed": 3
+      }
     },
     "tm-houguong.js": {
       "gm": 12,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:harem": 10,
+        "gm:evtLog": 2
+      }
     },
     "tm-shizheng-panel.js": {
       "gm": 14,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingTinyiTopics": 3,
+        "gm:jishiRecords": 2,
+        "gm:qijuHistory": 2,
+        "gm:_edictSuggestions": 7
+      }
     },
     "tm-corruption-engine.js": {
       "gm": 119,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:corruption": 63,
+        "gm:guoku": 6,
+        "gm:_corrStats": 6,
+        "gm:neitang": 2,
+        "gm:minxin": 10,
+        "gm:turnChanges": 3,
+        "gm:officialSalary": 2,
+        "gm:_corrDeptLongTerm": 1,
+        "gm:_corrBacklashCounters": 1,
+        "gm:huangwei": 7,
+        "gm:huangquan": 8,
+        "gm:hukou": 3,
+        "gm:partyStrife": 2,
+        "gm:juanna": 3,
+        "gm:mapData": 2
+      }
     },
     "tm-guoku-engine.js": {
       "gm": 155,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:guoku": 78,
+        "gm:<dynamic>": 3,
+        "gm:corruption": 6,
+        "gm:military": 1,
+        "gm:huangwei": 12,
+        "gm:huangquan": 3,
+        "gm:minxin": 13,
+        "gm:vars": 5,
+        "gm:activeFamine": 2,
+        "gm:activeDisasters": 1,
+        "gm:population": 2,
+        "gm:totalOfficials": 2,
+        "gm:hukou": 5,
+        "gm:currency": 8,
+        "gm:fiscal": 3,
+        "gm:prices": 4,
+        "gm:neitang": 7
+      }
     },
     "tm-guoku-panel.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_edictSuggestions": 2
+      }
     },
     "tm-neitang-engine.js": {
       "gm": 83,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:neitang": 56,
+        "gm:guoku": 10,
+        "gm:corruption": 3,
+        "gm:huangwei": 6,
+        "gm:huangquan": 2,
+        "gm:minxin": 5,
+        "gm:fiscal": 1
+      }
     },
     "tm-char-economy-engine.js": {
       "gm": 5,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:corruption": 1,
+        "gm:neitang": 3,
+        "gm:guoku": 1
+      }
     },
     "tm-char-historical-profiles.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:chars": 3
+      }
     },
     "tm-ceming.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:chars": 2,
+        "gm:_indices": 1
+      }
     },
     "tm-char-economy-ui.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_charInvestigations": 2
+      }
     },
     "tm-economy-engine.js": {
       "gm": 24,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "p:national": 1,
+        "gm:guoku": 11,
+        "gm:fiscal": 3,
+        "gm:regions": 2,
+        "gm:transferOrders": 3,
+        "gm:neitang": 2,
+        "gm:_linkageStats": 2,
+        "gm:minxin": 1
+      }
     },
     "tm-central-local-engine.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:currency": 1
+      }
     },
     "tm-huji-engine.js": {
       "gm": 3,
-      "p": 36
+      "p": 36,
+      "roots": {
+        "p:byAge": 1,
+        "p:byGender": 1,
+        "p:deepFieldEffects": 9,
+        "p:national": 10,
+        "p:hiddenCount": 2,
+        "p:fugitives": 2,
+        "p:meta": 3,
+        "gm:guoku": 2,
+        "p:byLegalStatus": 4,
+        "p:largeCorveeActive": 1,
+        "gm:legitimacy": 1,
+        "p:byRegion": 2,
+        "p:migrationEvents": 1
+      }
     },
     "tm-edict-parser.js": {
       "gm": 5,
-      "p": 29
+      "p": 29,
+      "roots": {
+        "p:largeCorveeActive": 1,
+        "p:corvee": 6,
+        "p:military": 10,
+        "p:fugitives": 2,
+        "p:migrationEvents": 2,
+        "gm:fiscalConfig": 3,
+        "p:meta": 1,
+        "p:byCategory": 2,
+        "p:hiddenCount": 1,
+        "p:byLegalStatus": 4,
+        "gm:customOffices": 2
+      }
     },
     "tm-env-recovery-fill.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:guoku": 2
+      }
     },
     "tm-talent-cohorts.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_talentCohorts": 1
+      }
     },
     "tm-talent-backlash.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:currentIssues": 2
+      }
     },
     "tm-renli.js": {
       "gm": 13,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:renli": 9,
+        "gm:population": 1,
+        "gm:<dynamic>": 1,
+        "gm:memorials": 1,
+        "gm:letters": 1
+      }
     },
     "tm-social-foundation.js": {
       "gm": 7,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_socialStructInputs": 1,
+        "gm:_socialLocalInputs": 3,
+        "gm:_politicalMovements": 1,
+        "gm:_legitimacy": 1,
+        "gm:_socialFoundationLastTick": 1
+      }
     },
     "tm-authority-complete.js": {
       "gm": 3,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:huangquan": 1,
+        "gm:huangwei": 1,
+        "gm:_gameOver": 1
+      }
     },
     "tm-event-bus.js": {
       "gm": 0,
-      "p": 8
+      "p": 8,
+      "roots": {
+        "p:hiddenCount": 1,
+        "p:byLegalStatus": 3,
+        "p:fugitives": 2,
+        "p:meta": 2
+      }
     },
     "tm-class-mobility.js": {
       "gm": 0,
-      "p": 2
+      "p": 2,
+      "roots": {
+        "p:buddhistTemplesDestroyed": 1,
+        "p:byCategory": 1
+      }
     },
     "tm-ai-change-applier.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:qijuHistory": 1
+      }
     },
     "tm-test-harness.js": {
       "gm": 0,
-      "p": 4
+      "p": 4,
+      "roots": {
+        "p:conf": 1,
+        "p:ai": 3
+      }
     },
     "tm-content-manager.js": {
       "gm": 0,
-      "p": 7
+      "p": 7,
+      "roots": {
+        "p:scenarios": 4,
+        "p:<dynamic>": 3
+      }
     },
     "phase8-formal-bridge.js": {
       "gm": 2,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:wenduiTarget": 1,
+        "gm:_pendingLetterTo": 1
+      }
     },
     "phase8-formal-map.js": {
       "gm": 2,
-      "p": 2
+      "p": 2,
+      "roots": {
+        "gm:mapData": 1,
+        "gm:_useAIGeo": 1,
+        "p:map": 1,
+        "p:mapData": 1
+      }
     },
     "phase8-formal-drafts.js": {
       "gm": 1,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:_pendingLetterTo": 1
+      }
     },
     "tm-renwu-tuzhi.js": {
       "gm": 2,
-      "p": 1
+      "p": 1,
+      "roots": {
+        "gm:<dynamic>": 1,
+        "p:characters": 1,
+        "gm:_pendingLetterTo": 1
+      }
     },
     "phase8-formal-rightrail.js": {
       "gm": 19,
-      "p": 0
+      "p": 0,
+      "roots": {
+        "gm:wenduiHistory": 4,
+        "gm:_edictSuggestions": 2,
+        "gm:wenduiTarget": 3,
+        "gm:_pendingWenduiChar": 2,
+        "gm:_pendingAudiences": 1,
+        "gm:_pendingLetterTo": 1,
+        "gm:_pendingTinyiTopics": 3,
+        "gm:qijuHistory": 2,
+        "gm:_phase8ChaoyiNoRecord": 1
+      }
     },
     "preview/scenario-editor-sandbox-bridge.js": {
       "gm": 0,
-      "p": 15
+      "p": 15,
+      "roots": {
+        "p:scenarios": 5,
+        "p:<dynamic>": 4,
+        "p:conf": 1,
+        "p:ai": 4,
+        "p:time": 1
+      }
     }
   }
 }
