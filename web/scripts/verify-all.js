@@ -231,6 +231,7 @@ const checks = [
   { name: 'party-class-v3style', file: 'smoke-party-class-v3style.js', estSec: 1, expectExit: 0 },
   { name: 'court-social-uplift', file: 'smoke-court-social-uplift.js', estSec: 1, expectExit: 0 },
   { name: 'building-product-gate', file: 'smoke-building-product-gate.js', estSec: 1, expectExit: 0 },
+  { name: 'settings-ui', file: 'smoke-settings-ui.js', estSec: 1, expectExit: 0 },
   { name: 'party-goals-scenario-variance', file: 'smoke-party-goals-scenario-variance.js', estSec: 1, expectExit: 0 },
   { name: 'party-goals-adaptive-evidence', file: 'smoke-party-goals-adaptive-evidence.js', estSec: 1, expectExit: 0 },
   { name: 'class-demand-party-goals', file: 'smoke-class-demand-party-goals.js', estSec: 1, expectExit: 0 },

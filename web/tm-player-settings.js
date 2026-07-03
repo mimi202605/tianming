@@ -45,8 +45,8 @@ function _renderModelProbePanel(tier) {
   var isSec = tier === 'secondary';
   var _hasKey = isSec ? !!(P.ai && P.ai.secondary && P.ai.secondary.key) : !!(P.ai && P.ai.key);
   if (isSec && !_hasKey) {
-    return '<div style="font-size:0.74rem;padding:0.5rem 0.6rem;background:rgba(138,92,245,0.04);border-left:3px solid var(--purple,#8a5cf5);border-radius:2px;color:var(--txt-d);line-height:1.7;">' +
-      '<b style="color:var(--purple,#8a5cf5);">\u3010\u6B21 API\u3011</b> \u672A\u914D\u7F6E\u00B7\u914D\u7F6E\u540E\u6B64\u5904\u5C06\u663E\u793A\u63A2\u6D4B\u7ED3\u679C\u3002' +
+    return '<div style="font-size:0.74rem;padding:0.5rem 0.6rem;background:rgba(74,111,165,0.04);border-left:3px solid var(--purple,var(--indigo-400,#4a6fa5));border-radius:2px;color:var(--txt-d);line-height:1.7;">' +
+      '<b style="color:var(--purple,var(--indigo-400,#4a6fa5));">\u3010\u6B21 API\u3011</b> \u672A\u914D\u7F6E\u00B7\u914D\u7F6E\u540E\u6B64\u5904\u5C06\u663E\u793A\u63A2\u6D4B\u7ED3\u679C\u3002' +
     '</div>';
   }
   var model = '(未配置)';
@@ -64,7 +64,7 @@ function _renderModelProbePanel(tier) {
   var evidence = isSec ? probe.evidence_secondary : probe.evidence;
 
   var _tierLbl = isSec ? '【次 API】' : '【主 API】';
-  var h = '<div style="font-size:0.76rem;line-height:1.8;padding:0.4rem;background:' + (isSec?'rgba(138,92,245,0.04)':'rgba(184,154,83,0.04)') + ';border-left:3px solid ' + (isSec?'var(--purple,#8a5cf5)':'var(--gold-d)') + ';border-radius:2px;">';
+  var h = '<div style="font-size:0.76rem;line-height:1.8;padding:0.4rem;background:' + (isSec?'rgba(74,111,165,0.04)':'rgba(184,154,83,0.04)') + ';border-left:3px solid ' + (isSec?'var(--purple,var(--indigo-400,#4a6fa5))':'var(--gold-d)') + ';border-radius:2px;">';
   h += '<div><b>' + _tierLbl + ' \u5F53\u524D\u6A21\u578B\uFF1A</b><code style="color:var(--gold);">' + escHtml(model) + '</code></div>';
   h += '<div style="margin-top:0.4rem;display:grid;grid-template-columns:auto auto auto auto;gap:0.3rem 0.8rem;padding:0.4rem;background:var(--color-elevated);border-radius:3px;">';
   h += '<div style="color:var(--txt-d);">\u6765\u6E90</div><div style="color:var(--txt-d);">\u4E0A\u4E0B\u6587</div><div style="color:var(--txt-d);">\u8F93\u51FA\u4E0A\u9650</div><div style="color:var(--txt-d);">\u5907\u6CE8</div>';

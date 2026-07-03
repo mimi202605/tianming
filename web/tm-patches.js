@@ -219,8 +219,8 @@ window._settingsSizeApply = function(size, el) {
 function _settingsTabText(section, index) {
   var h = section && section.querySelector ? section.querySelector('h4') : null;
   var txt = h ? (h.textContent || '').replace(/\s+/g, ' ').trim() : '';
-  // 导航标签精简（右栏 h4 原样不动）：去状态尾（如「○ 未配置」）与括注（如「（实验·默认关）」）
-  if (txt) txt = txt.replace(/（[^）]*）/g, '').replace(/\s*[○●].*$/, '').replace(/\s+/g, ' ').trim();
+  // 导航标签精简（右栏 h4 原样不动）：去状态尾（如「○ 未配置」）与括注（如「（实验·默认关）」）·去 emoji（左栏中立·⚡🧪等留在右栏标题）
+  if (txt) txt = txt.replace(/（[^）]*）/g, '').replace(/\s*[○●].*$/, '').replace(/[☀-➿️]|[\uD83C-\uD83E][\uDC00-\uDFFF]/g, '').replace(/\s+/g, ' ').trim();
   var fallback = [
     'API连接', '次要 API', '性能', '更新工坊', '声乐', '主题字号',
     '回合读取', 'AI记忆', '生成字数', '高级预算', '模型校验',
@@ -263,18 +263,34 @@ function _settingsBuildTabs() {
     return _settingsGroups.length - 1; // 未命中 → 落「系统·其他」（含将来新增分区，不丢）
   }
 
-  // 一遍：给每个 section 建 pane（按原 DOM 顺序）+ 记录分组
-  var _settingsEntries = sections.map(function(section, idx) {
+  // 稀签合并（2026-07-03·治「一签一个开关·半屏空荡」）：小节按主题并入同一 pane（节间距走 CSS）·
+  // 左栏少而实。只并版面·不动任何 section 内容与既有控件 id。
+  var _settingsMerges = [
+    { label: '玩法 · 战斗与亲征', re: /战斗规则|御驾亲征|玩法机制/ },
+    { label: '文风 · 游戏模式', re: /^文风|游戏模式/ }
+  ];
+  var _mergedPaneByRule = {};
+
+  // 一遍：给每个 section 建 pane（按原 DOM 顺序）+ 记录分组·命中合并规则的节并入共享 pane
+  var _settingsEntries = [];
+  sections.forEach(function(section, idx) {
     var label = _settingsTabText(section, idx);
     var key = 'tab-' + idx;
     section.setAttribute('data-settings-section', key);
+    var mi = -1;
+    for (var m = 0; m < _settingsMerges.length; m++) { if (_settingsMerges[m].re.test(label)) { mi = m; break; } }
+    if (mi >= 0 && _mergedPaneByRule[mi]) {
+      _mergedPaneByRule[mi].appendChild(section);   // 并入既有共享 pane·不再出新签
+      return;
+    }
     var pane = document.createElement('div');
     pane.className = 'settings-pane';
     pane.setAttribute('role', 'tabpanel');
     pane.setAttribute('data-settings-pane', key);
     pane.appendChild(section);
     panes.appendChild(pane);
-    return { key: key, label: label, group: _settingsGroupOf(label) };
+    if (mi >= 0) { _mergedPaneByRule[mi] = pane; label = _settingsMerges[mi].label; }
+    _settingsEntries.push({ key: key, label: label, group: _settingsGroupOf(label) });
   });
 
   // 二遍：按分组顺序渲染左栏 tab（组内保持原顺序），组首插组标题，编号按显示顺序连排
@@ -332,6 +348,35 @@ window._settingsSwitchTab = function(key) {
   try { localStorage.setItem('tm.settings.activeTab', key); } catch(_){}
 };
 
+// 设置全文搜索（2026-07-03）：按「页签名 + 该页全部文字」过滤左栏·组内全隐则组题隐·
+// 活签被滤走时自动切到首个命中·清空即复原。
+window._settingsFilter = function(q) {
+  var body = _$('sb2');
+  if (!body) return;
+  q = String(q || '').trim().toLowerCase();
+  var firstHit = null;
+  body.querySelectorAll('.settings-tab').forEach(function(tab) {
+    var key = tab.getAttribute('data-settings-tab');
+    var pane = body.querySelector('[data-settings-pane="' + key + '"]');
+    var hay = ((tab.textContent || '') + ' ' + (pane ? (pane.textContent || '') : '')).toLowerCase();
+    var hit = !q || hay.indexOf(q) >= 0;
+    tab.classList.toggle('search-miss', !hit);
+    if (hit && !firstHit) firstHit = key;
+  });
+  body.querySelectorAll('.settings-tab-group').forEach(function(gh) {
+    var el = gh.nextElementSibling, vis = false;
+    while (el && !(el.classList && el.classList.contains('settings-tab-group'))) {
+      if (el.classList && el.classList.contains('settings-tab') && !el.classList.contains('search-miss')) { vis = true; break; }
+      el = el.nextElementSibling;
+    }
+    gh.classList.toggle('search-miss', !vis);
+  });
+  if (q && firstHit) {
+    var active = body.querySelector('.settings-tab.active');
+    if (!active || active.classList.contains('search-miss')) window._settingsSwitchTab(firstHit);
+  }
+};
+
 // ── 界面显示设置（2026-06-10·治玩家「双端字太小」反馈）─────────────────
 // 字号档：html 根 font-size 缩放。--text-* token 全是 rem → 全局即时生效。
 // 设备本地偏好（localStorage·不进存档）；index.html head 有同 key 的早期应用块。
@@ -381,7 +426,8 @@ try { setTimeout(function(){ try { if (localStorage.getItem('tm.fullscreen') ===
 
 openSettings=function(){
   var bg=_$("settings-bg");
-  bg.innerHTML="<div class=\"settings-box\"><div style=\"padding:0.8rem 1.2rem;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;\"><div style=\"font-size:1.1rem;font-weight:700;color:var(--gold);\">"+((typeof tmIcon==='function')?tmIcon('settings',18):'')+"\u8BBE\u7F6E</div><button class=\"bt bs bsm\" onclick=\"closeSettings()\">\u2715</button></div><div class=\"settings-body\" id=\"sb2\"></div></div>";
+  // 2026-07-03 \u8BBE\u7F6E\u9762\u677F\u5347\u7EA7\uFF1A\u5934\u90E8\u52A0\u5168\u6587\u641C\u7D22\uFF08\u6309\u9875\u7B7E\u540D/\u8BF4\u660E\u6587\u5B57\u8FC7\u6EE4\u5DE6\u680F\u00B7\u9996\u4E2A\u547D\u4E2D\u81EA\u52A8\u5207\u5165\uFF09
+  bg.innerHTML="<div class=\"settings-box\"><div style=\"padding:0.8rem 1.2rem;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;gap:0.6rem;\"><div style=\"font-size:1.1rem;font-weight:700;color:var(--gold);white-space:nowrap;\">"+((typeof tmIcon==='function')?tmIcon('settings',18):'')+"\u8BBE\u7F6E</div><input class=\"settings-search\" id=\"s-search\" placeholder=\"\u641C\u8BBE\u7F6E\u2026\uFF08\u540D\u79F0\u6216\u8BF4\u660E\u6587\u5B57\uFF09\" oninput=\"_settingsFilter(this.value)\"><button class=\"bt bs bsm\" onclick=\"closeSettings()\">\u2715</button></div><div class=\"settings-body\" id=\"sb2\"></div></div>";
 
   var b=_$("sb2");
   b.innerHTML=
@@ -466,7 +512,7 @@ openSettings=function(){
       if (active) badge = ' <span style="display:inline-block;padding:0.1rem 0.5rem;border-radius:10px;background:rgba(107,176,124,0.18);color:var(--celadon-400,#6bb07c);font-size:0.7rem;font-weight:700;">\u25CF \u5DF2\u6FC0\u6D3B</span>';
       else if (hasKey) badge = ' <span style="display:inline-block;padding:0.1rem 0.5rem;border-radius:10px;background:rgba(184,154,83,0.18);color:var(--gold);font-size:0.7rem;font-weight:700;">\u25CB \u5DF2\u914D\u00B7\u672A\u542F\u7528</span>';
       else badge = ' <span style="display:inline-block;padding:0.1rem 0.5rem;border-radius:10px;background:rgba(120,120,120,0.2);color:var(--txt-d);font-size:0.7rem;">\u25CB \u672A\u914D\u7F6E</span>';
-      return "<div class=\"settings-section\" style=\"border-left:3px solid #8a5cf5;\"><h4 style=\"color:#a585ff;\">\u6B21\u8981 API\u00B7\u5FEB\u6A21\u578B\u8DEF\u7531" + badge + "</h4>"+
+      return "<div class=\"settings-section\" style=\"border-left:3px solid var(--indigo-400,#4a6fa5);\"><h4 style=\"color:#92acd0;\">\u6B21\u8981 API\u00B7\u5FEB\u6A21\u578B\u8DEF\u7531" + badge + "</h4>"+
         "<div style=\"font-size:0.72rem;color:var(--txt-d);margin:-0.3rem 0 0.5rem;line-height:1.55;\">\u7528\u4E8E\u95EE\u5BF9\u00B7\u4E09\u79CD\u671D\u8BAE\u00B7\u6587\u4E8B\u52BF\u529B\u5B50\u8C03\u7528\u7B49\u6B21\u8981\u573A\u666F\u3002\u4E3B\u63A8\u6F14\u59CB\u7EC8\u8D70\u4E3B API\u3002</div>"+
         "<div class=\"rw\"><div class=\"fd\"><label>\u670D\u52A1\u5546</label><select id=\"s-sec-prov\"><option value=\"openai\">OpenAI</option><option value=\"deepseek\">DeepSeek</option><option value=\"anthropic\">Claude</option><option value=\"custom\">\u81EA\u5B9A\u4E49</option></select></div><div class=\"fd\"><label>Key</label><input type=\"password\" id=\"s-sec-key\" value=\""+(sec.key||"")+"\" placeholder=\"\u7559\u7A7A\u5219\u56DE\u9000\u4E3B API\"></div></div>"+
         "<div class=\"rw\"><div class=\"fd\"><label>\u5730\u5740</label><input id=\"s-sec-url\" value=\""+(sec.url||"")+"\" placeholder=\"https://api.openai.com/v1\"></div><div class=\"fd\"><label>\u6A21\u578B</label><input id=\"s-sec-model\" value=\""+(sec.model||"")+"\" placeholder=\"gpt-4o-mini / haiku\"></div></div>"+
@@ -477,7 +523,7 @@ openSettings=function(){
         "</div>"+
         "<div id=\"s-sec-status\" style=\"font-size:0.78rem;color:var(--txt-d);margin-top:0.3rem;\"></div>"+
         "<div id=\"s-sec-models\" class=\"model-list\" style=\"display:none;margin-top:0.4rem;\"></div>"+
-        (hasKey ? "<div style=\"margin-top:0.5rem;padding:0.4rem 0.5rem;background:rgba(138,92,245,0.06);border-left:2px solid #8a5cf5;border-radius:2px;font-size:0.7rem;color:var(--txt-d);line-height:1.55;\"><div><b style=\"color:#a585ff;\">\u6FC0\u6D3B\u65F6\u8DEF\u7531\uFF1A</b>\u95EE\u5BF9 \u00B7 \u5EF7\u8BAE \u00B7 \u5FA1\u524D \u00B7 \u5E38\u671D \u00B7 \u6587\u4E8B\u52BF\u529B\uFF08\u4E94\u7C7B\u9AD8\u9891\u5B50\u8C03\u7528\uFF09</div><div style=\"margin-top:0.2rem;\"><b>\u4E3B API \u59CB\u7EC8\u8D1F\u8D23\uFF1A</b>\u56DE\u5408\u63A8\u6F14(SC1/SC1b/SC1c) \u00B7 \u8BE2\u5929 \u00B7 \u8BE1\u5199\u6DF1\u5EA6\u6587\u672C</div></div>" : "") +
+        (hasKey ? "<div style=\"margin-top:0.5rem;padding:0.4rem 0.5rem;background:rgba(74,111,165,0.06);border-left:2px solid var(--indigo-400,#4a6fa5);border-radius:2px;font-size:0.7rem;color:var(--txt-d);line-height:1.55;\"><div><b style=\"color:#92acd0;\">\u6FC0\u6D3B\u65F6\u8DEF\u7531\uFF1A</b>\u95EE\u5BF9 \u00B7 \u5EF7\u8BAE \u00B7 \u5FA1\u524D \u00B7 \u5E38\u671D \u00B7 \u6587\u4E8B\u52BF\u529B\uFF08\u4E94\u7C7B\u9AD8\u9891\u5B50\u8C03\u7528\uFF09</div><div style=\"margin-top:0.2rem;\"><b>\u4E3B API \u59CB\u7EC8\u8D1F\u8D23\uFF1A</b>\u56DE\u5408\u63A8\u6F14(SC1/SC1b/SC1c) \u00B7 \u8BE2\u5929 \u00B7 \u8BE1\u5199\u6DF1\u5EA6\u6587\u672C</div></div>" : "") +
         "</div>";
     })()+
 
@@ -489,8 +535,8 @@ openSettings=function(){
       var _consolOn = !(P.conf && (P.conf.memorySynthesisEnabled === false || (P.conf.memorySynthesisEnabled === undefined && P.conf.consolidationEnabled === false)));
       var _semOn = !(P.conf && P.conf.semanticRecallAutoload === false);
       // 注:agent-only 调参(记忆深度/自适应深化/工作上下文窗口)已移至「🧪实验模式→🤖Agent 模式」块(仅该模式生效·归位)
-      return '<div class="settings-section" style="border-left:3px solid #6b9eff;background:rgba(107,158,255,0.03);">' +
-        '<h4 style="color:#9bbfff;">⚡ 性能·成本控制</h4>' +
+      return '<div class="settings-section" style="border-left:3px solid var(--celadon-500,#5a8f7f);background:rgba(126,184,167,0.03);">' +
+        '<h4 style="color:var(--celadon-400,#7eb8a7);">⚡ 性能·成本控制</h4>' +
         '<div style="font-size:0.72rem;color:var(--txt-d);margin:-0.3rem 0 0.6rem;line-height:1.55;">这些开关控制 AI 调用频率与本地资源使用·默认设置面向"质量优先"。</div>' +
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
           '<input type="checkbox" id="s-recall-gate" ' + (_gateOn?'checked ':'') + 'onchange="_togglePConf(\'recallGateEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
@@ -624,8 +670,8 @@ openSettings=function(){
       var _evu = !!((P.conf && P.conf.eventUnificationEnabled) || (P.ai && P.ai.eventUnificationEnabled));
       var _ofa = !!((P.conf && P.conf.officeActivationEnabled) || (P.ai && P.ai.officeActivationEnabled));
       var _tlc = !!((P.conf && P.conf.talentCohortEnabled) || (P.ai && P.ai.talentCohortEnabled));
-      var h = '<div class="settings-section" style="border-left:3px solid #b98bff;background:rgba(185,139,255,0.04);">' +
-        '<h4 style="color:#c9a9ff;">🧪 实验模式</h4>' +
+      var h = '<div class="settings-section" style="border-left:3px solid var(--vermillion-400,#c04030);background:rgba(192,64,48,0.04);">' +
+        '<h4 style="color:var(--vermillion-300,#d4706a);">🧪 实验模式</h4>' +
         '<div style="font-size:0.72rem;color:var(--txt-d);margin:-0.3rem 0 0.6rem;line-height:1.55;">实验性玩法（默认关）。先<b>开启实验模式</b>·再二选一：<b>LLM 模式</b>(对现回合管线的增量增强)或 <b>Agent 模式</b>(全新·AI 主动改世界·替换管线)。会增加 API 调用·建议先小局试。</div>' +
         // 总闸
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;">' +
@@ -637,7 +683,7 @@ openSettings=function(){
         '</label>';
       if (_expOn) {
         // 模式选择（二选一·互斥）
-        h += '<div style="margin:0.4rem 0;padding:0.45rem 0.55rem;background:rgba(185,139,255,0.07);border-radius:4px;">' +
+        h += '<div style="margin:0.4rem 0;padding:0.45rem 0.55rem;background:rgba(192,64,48,0.07);border-radius:4px;">' +
           '<div style="font-size:0.74rem;color:var(--txt-d);margin-bottom:0.35rem;">选择模式（二选一·互斥）：</div>' +
           '<label style="display:inline-flex;align-items:center;gap:0.3rem;margin-right:1.2rem;cursor:pointer;font-size:0.84rem;font-weight:600;color:' + (!_isAgent?'var(--gold)':'var(--txt-d)') + ';">' +
             '<input type="radio" name="exp-mode" ' + (!_isAgent?'checked ':'') + 'onchange="_setExperimentalMode(\'llm\')"> 🧠 LLM 模式</label>' +
@@ -646,8 +692,8 @@ openSettings=function(){
         '</div>';
         if (_isAgent) {
           // ── Agent 模式（模式 b·回合推演 agent化·选中即启用）──
-          h += '<div style="padding:0.5rem 0.6rem;background:rgba(120,180,255,0.06);border-left:2px solid #6b9eff;border-radius:3px;">' +
-            '<div style="font-size:0.82rem;color:#9bbfff;font-weight:600;">🤖 回合推演 agent 化（模式 b·已启用）</div>' +
+          h += '<div style="padding:0.5rem 0.6rem;background:rgba(120,180,255,0.06);border-left:2px solid var(--celadon-500,#5a8f7f);border-radius:3px;">' +
+            '<div style="font-size:0.82rem;color:var(--celadon-400,#7eb8a7);font-weight:600;">🤖 回合推演 agent 化（模式 b·已启用）</div>' +
             '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.6;margin-top:0.25rem;">选中即启用。回合推演<b>不再走 LLM 管线(sc0-sc28)</b>·改由 AI agent 像「局内 Claude Code」一样运作：引擎先算硬核基线 → agent 看真数 → 主动读写存档任意内容直接落地（想怎么改怎么改）→ 状态自检·崩则回滚降级。产出与应用焊死（报告=实际改动）·根治「推演说改了却没改」。<b>需主 API key·比 LLM 模式更慢更费（实验）</b>·崩溃自动回落 LLM。</div>' +
             '<div style="font-size:0.68rem;color:var(--txt-d);opacity:0.85;margin-top:0.3rem;">目前覆盖：回合推演。后续更多环节将按此 agent 化。</div>' +
           '</div>';
@@ -656,7 +702,7 @@ openSettings=function(){
           var _adaptiveOn = !(P.conf && P.conf.agentAdaptiveDeepen === false);
           var _transRounds = Math.max(1, Math.round((P.conf && P.conf.agentTranscriptRecentRounds) || 2));
           h += '<div style="margin-top:0.45rem;padding:0.5rem 0.6rem;background:rgba(120,180,255,0.045);border-radius:3px;">' +
-            '<div style="font-size:0.8rem;color:#9bbfff;font-weight:600;margin-bottom:0.15rem;">⚙️ Agent 调参（按模型能力 · 省调用/上下文）</div>' +
+            '<div style="font-size:0.8rem;color:var(--celadon-400,#7eb8a7);font-weight:600;margin-bottom:0.15rem;">⚙️ Agent 调参（按模型能力 · 省调用/上下文）</div>' +
             // 记忆深度(agent 长记忆窗口)
             '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.35rem 0;border-top:1px dotted rgba(120,180,255,0.2);">' +
               '<div style="flex:1;">' +
@@ -746,7 +792,7 @@ openSettings=function(){
             '</div>' +
           '</label>' +
           // ── 官制活化（实验）·总闸·2026-06-20·一键启用官职履职/权限门/改制裁定/agent 按需取数 ──
-          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(192,64,48,0.15);margin-top:0.3rem;">' +
             '<input type="checkbox" id="s-office-activation" ' + (_ofa?'checked ':'') + 'onchange="_togglePConf(\'officeActivationEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
             '<div style="flex:1;">' +
               '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🏛️ 启用官制活化（默认关·实验）</div>' +
@@ -754,7 +800,7 @@ openSettings=function(){
             '</div>' +
           '</label>' +
           // ── 官制活化·细粒度（活化四刀/recall/出缺补员各独立开关·总闸开则全覆盖·此处供总闸关时单独调；默认开者可在此关·2026-07-01）──
-          '<div style="font-size:0.74rem;color:var(--gold-d);margin:0.45rem 0 0.15rem;padding-top:0.35rem;border-top:1px dashed rgba(185,139,255,0.22);">🏛️ 官制活化·细粒度（总闸开则四刀全启；下列供总闸关时单独调·默认开者可在此关）</div>' +
+          '<div style="font-size:0.74rem;color:var(--gold-d);margin:0.45rem 0 0.15rem;padding-top:0.35rem;border-top:1px dashed rgba(192,64,48,0.22);">🏛️ 官制活化·细粒度（总闸开则四刀全启；下列供总闸关时单独调·默认开者可在此关）</div>' +
           (function(){
             var _acts = [
               ['officePowerPerceptionEnabled','职权舆图（默认开）','把官制结构(谁掌何权/才德/履职/出缺)喂进 AI 推演·纯增益无 balance 后果。',true],
@@ -770,7 +816,7 @@ openSettings=function(){
               var _acOn = _ac[3]
                 ? !((P && P.conf && P.conf[_ac[0]] === false) || (P && P.ai && P.ai[_ac[0]] === false))
                 : !!((P && P.conf && P.conf[_ac[0]]) || (P && P.ai && P.ai[_ac[0]]));
-              _ah += '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.3rem 0;cursor:pointer;border-top:1px dotted rgba(185,139,255,0.12);">' +
+              _ah += '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.3rem 0;cursor:pointer;border-top:1px dotted rgba(192,64,48,0.12);">' +
                 '<input type="checkbox" ' + (_acOn ? 'checked ' : '') + 'onchange="_togglePConf(\'' + _ac[0] + '\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
                 '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">' + _ac[1] + '</div>' +
                 '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.5;margin-top:0.1rem;">' + _ac[2] + '</div></div>' +
@@ -779,7 +825,7 @@ openSettings=function(){
             return _ah;
           })() +
           // ── 官制·机制深化（S1/S4·各独立开关·与上「官制活化」并行·默认关·2026-06-30）──
-          '<div style="font-size:0.74rem;color:var(--gold-d);margin:0.45rem 0 0.15rem;padding-top:0.35rem;border-top:1px dashed rgba(185,139,255,0.22);">🏛️ 官制·机制深化（独立开关·默认关·开后官制真撬动财政/吏治/阴谋/人才/皇权）</div>' +
+          '<div style="font-size:0.74rem;color:var(--gold-d);margin:0.45rem 0 0.15rem;padding-top:0.35rem;border-top:1px dashed rgba(192,64,48,0.22);">🏛️ 官制·机制深化（独立开关·默认关·开后官制真撬动财政/吏治/阴谋/人才/皇权）</div>' +
           (function(){
             var _items = [
               ['powerMinisterEnabled','权臣坐大','久居要位(宰相/首辅等)+高野心者坐大：截留奏疏·自拟诏命·皇权极弱时篡位终局。'],
@@ -794,7 +840,7 @@ openSettings=function(){
             for (var _i = 0; _i < _items.length; _i++) {
               var _it = _items[_i];
               var _on = !!(typeof P !== 'undefined' && P && P.conf && P.conf[_it[0]]);
-              _hh += '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.3rem 0;cursor:pointer;border-top:1px dotted rgba(185,139,255,0.12);">' +
+              _hh += '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.3rem 0;cursor:pointer;border-top:1px dotted rgba(192,64,48,0.12);">' +
                 '<input type="checkbox" ' + (_on ? 'checked ' : '') + 'onchange="_togglePConf(\'' + _it[0] + '\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
                 '<div style="flex:1;"><div style="font-size:0.8rem;color:var(--gold);font-weight:600;">' + _it[1] + '</div>' +
                 '<div style="font-size:0.68rem;color:var(--txt-d);line-height:1.5;margin-top:0.1rem;">' + _it[2] + '</div></div>' +
@@ -803,7 +849,7 @@ openSettings=function(){
             return _hh;
           })() +
           // 【A·S4】势力按需取数·单独 opt-in(总闸已含·此处供隔离试)·换深度非降本
-          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(192,64,48,0.15);margin-top:0.3rem;">' +
             '<input type="checkbox" id="s-faction-toolcall" ' + (_ftc?'checked ':'') + 'onchange="_togglePConf(\'factionToolDecisionEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
             '<div style="flex:1;">' +
               '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🔧 势力按需取数（A·单独试·默认关）</div>' +
@@ -811,7 +857,7 @@ openSettings=function(){
             '</div>' +
           '</label>' +
           // 【事件系统统一·S1】统一事件总线开关·独立(不并 LLM 升级总闸·同势力按需取数那样单独 opt-in)
-          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(192,64,48,0.15);margin-top:0.3rem;">' +
             '<input type="checkbox" id="s-event-unification" ' + (_evu?'checked ':'') + 'onchange="_togglePConf(\'eventUnificationEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
             '<div style="flex:1;">' +
               '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🎭 事件系统统一（S1 骨架·默认关）</div>' +
@@ -819,7 +865,7 @@ openSettings=function(){
             '</div>' +
           '</label>' +
           // 【人才范式渗透·S1-S6】制度性建筑(新式学校)→人才渐渗·独立 opt-in
-          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(185,139,255,0.15);margin-top:0.3rem;">' +
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;border-top:1px solid rgba(192,64,48,0.15);margin-top:0.3rem;">' +
             '<input type="checkbox" id="s-talent-cohort" ' + (_tlc?'checked ':'') + 'onchange="_togglePConf(\'talentCohortEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
             '<div style="flex:1;">' +
               '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🎓 人才范式渗透（默认关·实验）</div>' +
@@ -937,7 +983,7 @@ openSettings=function(){
     "</div></div>"+
 
     // P18.1: Token 预算 + 模型档位（修复 dead player-settings 的 G4/G5·代码在读 UI 缺失）
-    "<div class=\"settings-section\" style=\"border-left:3px solid #c0a060;background:rgba(192,160,96,0.04);\"><h4 style=\"color:#d4b878;\">高级·预算与档位</h4>"+
+    "<div class=\"settings-section\" style=\"border-left:3px solid var(--gold-d,#c0a060);background:rgba(192,160,96,0.04);\"><h4 style=\"color:var(--gold-l,#d4b878);\">高级·预算与档位</h4>"+
     "<div style=\"font-size:0.7rem;color:var(--txt-d);margin:-0.3rem 0 0.5rem;line-height:1.55;\">控制 token 总预算与模型能力档位·这些字段已被运行时代码读取·之前 UI 丢失·本升级补齐。</div>"+
     "<div class=\"rw\" style=\"align-items:center;\">"+
     "<div class=\"fd\"><label>每回合 Token 预算</label>"+
@@ -973,8 +1019,8 @@ openSettings=function(){
     "<button class=\"bt bp bsm\" onclick=\"_probeRunSelfReport('primary')\">\u6A21\u578B\u81EA\u62A5</button>"+
     "<button class=\"bt bs bsm\" onclick=\"_showAvailableModels('primary')\">\u5217\u51FA\u53EF\u7528\u6A21\u578B</button>"+
     "</div></div>"+
-    "<div style=\"margin-top:0.4rem;padding:0.4rem;background:rgba(138,92,245,0.04);border-radius:3px;\">"+
-    "<div style=\"font-size:0.7rem;color:var(--purple,#8a5cf5);margin-bottom:0.3rem;\">\u6B21 API \u64CD\u4F5C\uFF08\u672A\u914D\u5219\u6309\u94AE\u63D0\u9192\uFF09</div>"+
+    "<div style=\"margin-top:0.4rem;padding:0.4rem;background:rgba(74,111,165,0.04);border-radius:3px;\">"+
+    "<div style=\"font-size:0.7rem;color:var(--purple,var(--indigo-400,#4a6fa5));margin-bottom:0.3rem;\">\u6B21 API \u64CD\u4F5C\uFF08\u672A\u914D\u5219\u6309\u94AE\u63D0\u9192\uFF09</div>"+
     "<div style=\"display:flex;gap:0.3rem;flex-wrap:wrap;\">"+
     "<button class=\"bt bp bsm\" onclick=\"_probeRunContext('secondary')\">\u4E0A\u4E0B\u6587</button>"+
     "<button class=\"bt bp bsm\" onclick=\"_probeRunOutput('secondary')\">\u8F93\u51FA\u5B9E\u6D4B</button>"+
