@@ -1674,7 +1674,7 @@ function robustParseJSON(raw) {
       try {
         var rep = fixed;
         // 1·删 ASCII 控制字符 (除 \t \n \r 已 escape)
-        rep = rep.replace(/[ --]/g, '');
+        rep = rep.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '');
         // 2·`}{` / `]{` / `}[` / `][` 之间缺逗号·插入
         rep = rep.replace(/\}(\s*)\{/g, '},$1{').replace(/\](\s*)\[/g, '],$1[').replace(/\}(\s*)\[/g, '},$1[').replace(/\](\s*)\{/g, '],$1{');
         // 3·删重复逗号 `,,` 与 `,]` `,}`·已在 Layer 2b 部分处理·再扫一遍
@@ -3563,7 +3563,8 @@ function runSelfTests() {
   })());
 
   // 代码架构
-  assert('8.2 TM namespace exists', typeof TM !== 'undefined' && typeof TM.utils === 'object');
+  // 修谎言断言·TM.utils 全仓从未定义·此检查项此前恒 FAIL·改为忠实检查 TM 命名空间本体
+  assert('8.2 TM namespace exists', typeof TM === 'object' && TM !== null);
   assert('8.6 ErrorMonitor exists', typeof ErrorMonitor !== 'undefined' && typeof ErrorMonitor.capture === 'function');
 
   // GM状态完整性

@@ -1790,13 +1790,13 @@ function _tmMergeCustomScenariosFromProject(project) {
     var have = {};
     for (var h = 0; h < P[key].length; h++) {
       var er = P[key][h];
-      if (er && er.sid != null && er.id != null) have[er.sid + '' + er.id] = true;
+      if (er && er.sid != null && er.id != null) have[er.sid + '\u0001' + er.id] = true;
     }
     for (var r = 0; r < srcRows.length; r++) {
       var row = srcRows[r];
       if (!row || row.sid == null || !customIds[row.sid]) continue;   // 只收自建剧本的行·不碰官方行
       if (row.id != null) {
-        var dk = row.sid + '' + row.id;
+        var dk = row.sid + '\u0001' + row.id;
         if (have[dk]) continue;
         have[dk] = true;
       }

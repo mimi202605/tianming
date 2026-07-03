@@ -16,6 +16,7 @@ const CHECKS = [
   { name: 'lint-gm-writes', file: 'lint-gm-writes.js' },
   { name: 'lint-dep-graph', file: 'lint-dep-graph.js' },
   { name: 'lint-file-size', file: 'lint-file-size.js' },
+  { name: 'lint-control-bytes', file: 'lint-control-bytes.js' },
   { name: 'ref-check', file: 'ref-check.js' }
 ];
 
