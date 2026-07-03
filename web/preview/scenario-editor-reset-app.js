@@ -14561,13 +14561,22 @@
     '.oft-pos2 .rwf2-ctl{font-size:11px;padding:1px 4px;flex:1;min-width:60px}' +
     '.oft-duties{display:flex;gap:4px;align-items:center;margin:1px 0 3px}.oft-duties .rwf2-ctl{font-size:11px;padding:1px 4px}' +
     '.oft-l{font-size:10px;color:#9c8b6b;flex:0 0 auto}' +
+    '.oft-obj{display:inline-block;border:1px dashed #cbb98e;background:rgba(168,131,58,.06);color:#8b7d66;cursor:default;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
   '</style>';
+  /* 2026-07-03 · 官职字段值为对象/数组时(绍宋 holder/duties 等结构值)不再 String() 成
+     "[object Object]" 塞进可回写 input——那会在用户一编辑时把字符串写回毁掉结构。
+     渲染为只读结构签(无 data-office-path·不参与回写)，引导去深度编辑台按 JSON 改。 */
+  function oftObjChip(val) {
+    if (val === null || typeof val !== 'object') return '';
+    var summ = Array.isArray(val) ? '[' + val.length + ' 项]' : '{' + Object.keys(val).length + ' 键}';
+    return '<span class="rwf2-ctl oft-obj" title="结构值 · 请在下方深度编辑台按 JSON 编辑">' + escapeHtml(summ) + '</span>';
+  }
   function officeNodeHtml(node, nodePath) {
     var posRows = (node.positions || []).map(function (pos, j) {
       var base = nodePath.concat(['positions', j]).join('.');
-      function ctl(field, val, ph, num) { return '<input ' + (num ? 'type="number" ' : '') + 'class="rwf2-ctl' + (num ? ' rwf2-num' : '') + '" data-office-path="' + base + '" data-office-field="' + field + '" value="' + escapeHtml(val == null ? '' : val) + '"' + (ph ? ' placeholder="' + ph + '"' : '') + (field === 'vacancyCount' && Number(val) > 0 ? ' style="color:#a83228"' : '') + '>'; }
+      function ctl(field, val, ph, num) { return oftObjChip(val) || '<input ' + (num ? 'type="number" ' : '') + 'class="rwf2-ctl' + (num ? ' rwf2-num' : '') + '" data-office-path="' + base + '" data-office-field="' + field + '" value="' + escapeHtml(val == null ? '' : val) + '"' + (ph ? ' placeholder="' + ph + '"' : '') + (field === 'vacancyCount' && Number(val) > 0 ? ' style="color:#a83228"' : '') + '>'; }
       var row1 = '<div class="oft-pos">' + ctl('name', pos.name, '官职') + ctl('rank', pos.rank, '品级') + ctl('holder', pos.holder, '现任(空缺则留白)') + ctl('establishedCount', pos.establishedCount, '员额', true) + ctl('vacancyCount', pos.vacancyCount, '缺员', true) + '</div>';
-      function ctl2(field, val, ph, num) { return '<input ' + (num ? 'type="number" ' : '') + 'class="rwf2-ctl' + (num ? ' rwf2-num' : '') + '" data-office-path="' + base + '" data-office-field="' + field + '" value="' + escapeHtml(val == null ? '' : val) + '" placeholder="' + ph + '">'; }
+      function ctl2(field, val, ph, num) { return oftObjChip(val) || '<input ' + (num ? 'type="number" ' : '') + 'class="rwf2-ctl' + (num ? ' rwf2-num' : '') + '" data-office-path="' + base + '" data-office-field="' + field + '" value="' + escapeHtml(val == null ? '' : val) + '" placeholder="' + ph + '">'; }
       var hasExtra = ('salary' in pos) || ('perPersonSalary' in pos) || ('duties' in pos) || ('authority' in pos) || ('succession' in pos) || ('powers' in pos) || ('privateIncome' in pos);
       var row2 = hasExtra ? '<div class="oft-pos2"><span class="oft-l">俸</span>' + ctl2('salary', pos.salary, '俸禄', true) + ctl2('perPersonSalary', pos.perPersonSalary, '俸注') + '<span class="oft-l">权</span>' + ctl2('authority', pos.authority, '权限') + ctl2('succession', pos.succession, '继任') + ('powers' in pos ? ctl2('powers', pos.powers, '权责') : '') + ('privateIncome' in pos ? ctl2('privateIncome', pos.privateIncome, '灰收') : '') + '</div>' + ('duties' in pos ? '<div class="oft-duties"><span class="oft-l">职责</span>' + ctl2('duties', pos.duties, '职责') + '</div>' : '') : '';
       return row1 + row2;

@@ -53,5 +53,9 @@ ok(/\.je-guard-toast\s*\{\s*\n\s*background: var\(--je-chrome-2\);\s*\n\s*border
 ok(/\.inspector #field-editor-value\s*\{\s*\n\s*background: #f6f0df/.test(html) && /var\(--je-font-mono\)/.test(html), 'X3 JSON编辑器本尊纸面井+等宽(上轮漏网)');
 ok(/\.inspector \.missing-field-callout b \{ color: #7d5e22; \}/.test(html), 'X3 字段缺失 callout 纸上墨字');
 
+console.log('— Z 逐章走查收尾 —');
+ok(/function oftObjChip\(val\)/.test(app) && /oftObjChip\(val\) \|\| '<input /.test(app), 'Z 官制对象值渲只读结构签(不再 [object Object] 进可回写 input·防编辑毁结构)');
+ok(/::selection \{ background: rgba\(184, 154, 83, \.32\)/.test(html) && /\.inspector ::selection/.test(html), 'Z ::selection 墨面金晕/纸面朱晕(去浏览器默认蓝)');
+
 console.log('\nsmoke-workshop-ui-redo ' + (F === 0 ? 'PASS' : 'FAIL') + ' ' + A + '/' + (A + F));
 process.exit(F === 0 ? 0 : 1);

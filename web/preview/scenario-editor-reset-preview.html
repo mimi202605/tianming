@@ -13155,6 +13155,16 @@
     /* 深度台里的状态行(操作记录等) */
     .inspector .status-row { color: #574733; }
     .inspector .status-row b { color: #262014; }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 Z —— 逐章走查收尾
+       ① ::selection：全页此前无规则(浏览器默认蓝在纸面上出戏)——
+          墨面选金晕、纸面选朱晕(与两域各自的语义色一致)。
+       ════════════════════════════════════════════════════════════════ */
+    ::selection { background: rgba(184, 154, 83, .32); color: var(--je-tx-hi); }
+    .inspector ::selection { background: rgba(192, 64, 48, .22); color: #262014; }
+    .inspector input::selection,
+    .inspector textarea::selection { background: rgba(168, 131, 58, .3); color: #262014; }
   </style>
 </head>
 <body>
