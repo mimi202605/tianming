@@ -349,7 +349,7 @@
       _kjpL8ApplyEvolutionDeltas(entry, evo);
       try {
         if (Array.isArray(GM._chronicle) && evo.text) {
-          GM._chronicle.push({
+          if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
             turn: GM.turn || 1, type: 'keju-reform-evolution',
             text: year + '年·改革志·' + evo.text.slice(0, 60) + '…',
             tags: ['科举', 'reform', 'evolution'],
@@ -530,7 +530,7 @@
       var added = newLen - prevLen;
       try {
         if (Array.isArray(GM._chronicle)) {
-          GM._chronicle.push({
+          if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
             turn: GM.turn || 1, type: 'keju-reform-inheritance',
             text: '新朝承前·' + verdict.mode + '·' + (verdict.edict || '').slice(0, 60) + '…',
             tags: ['科举', 'reform', 'inheritance'],
@@ -835,7 +835,7 @@
       entry.historicalEvaluation = named.historicalEvaluation;
       try {
         if (Array.isArray(GM._chronicle)) {
-          GM._chronicle.push({
+          if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
             turn: GM.turn || 1, type: 'keju-reform-named',
             text: '改革命名·' + named.canonicalName + (named.historicalEvaluation ? '·' + named.historicalEvaluation.slice(0, 40) + '…' : ''),
             tags: ['科举', 'reform', 'named'], reformId: entry.id
@@ -983,7 +983,7 @@
     // 4·push GM._chronicle 邸报可见
     try {
       if (Array.isArray(GM._chronicle)) {
-        GM._chronicle.push({
+        if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
           turn: GM.turn || 1, type: 'keju-reform-blackswan',
           text: year + '年·改革黑天鹅·' + (BLACK_SWAN_TYPE_LABEL[event.type] || event.type) +
                 '·' + (event.narrative || '').slice(0, 40) + '…',

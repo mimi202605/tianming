@@ -451,8 +451,8 @@ function _offPickerConfirm(charName, deptName, posName, oldHolder, mode) {
       newChar._travelAssignPost = deptName + '/' + posName;
 
       // 编年·启程条
-      if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
-      GM._chronicle.unshift({
+      // 编年史走 TM.Chronicle 写口(2026-07-04 收口)·时序 push 归一(原 unshift 混写破序)
+      if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn,
         date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
         type: '赴任启程',
@@ -1195,7 +1195,7 @@ function _offMenyin(officialName) {
   ch.children.push(sonName);
   try { if (GM.minxin && GM.minxin.byClass && GM.minxin.byClass.shi && typeof GM.minxin.byClass.shi.true === 'number') GM.minxin.byClass.shi.true = Math.max(0, GM.minxin.byClass.shi.true - 0.15); } catch (e) {}
   if (typeof addEB === 'function') addEB('功名', ch.name + ' 荫一子 ' + sonName + ' 入仕（荫生·待铨)');
-  try { if (!Array.isArray(GM._chronicle)) GM._chronicle = []; GM._chronicle.push({ turn: GM.turn || 0, date: GM._gameDate || '', type: '官制↔人才', text: ch.name + ' 行门荫·' + sonName + ' 以荫生入仕候铨（恩荫世禄）', tags: ['联动', '官制'] }); } catch (e) {}
+  try { if (!Array.isArray(GM._chronicle)) GM._chronicle = []; if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({ turn: GM.turn || 0, date: GM._gameDate || '', type: '官制↔人才', text: ch.name + ' 行门荫·' + sonName + ' 以荫生入仕候铨（恩荫世禄）', tags: ['联动', '官制'] }); } catch (e) {}
   if (typeof toast === 'function') toast('已荫 ' + ch.name + ' 之子 ' + sonName + '（荫生·入候选池·可于任命中授官）');
   if (typeof renderOfficeTree === 'function') renderOfficeTree(true);
 }
@@ -1233,7 +1233,7 @@ function _offJianbi(officialName) {
   if (typeof TMGongming !== 'undefined' && TMGongming.grant) { try { TMGongming.grant(person, { path: 'jianxuan', tier: '荐辟', source: 'edict', turn: GM.turn }, GM); } catch (e) {} }
   ch._jianbiGranted = { person: name, turn: GM.turn || 0 };
   if (typeof addEB === 'function') addEB('功名', ch.name + ' 荐布衣 ' + name + ' 入仕（荐辟·待铨)');
-  try { if (!Array.isArray(GM._chronicle)) GM._chronicle = []; GM._chronicle.push({ turn: GM.turn || 0, date: GM._gameDate || '', type: '官制↔人才', text: ch.name + ' 行荐辟·布衣 ' + name + ' 以荐贤入仕候铨（野有遗贤·结知遇）', tags: ['联动', '官制'] }); } catch (e) {}
+  try { if (!Array.isArray(GM._chronicle)) GM._chronicle = []; if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({ turn: GM.turn || 0, date: GM._gameDate || '', type: '官制↔人才', text: ch.name + ' 行荐辟·布衣 ' + name + ' 以荐贤入仕候铨（野有遗贤·结知遇）', tags: ['联动', '官制'] }); } catch (e) {}
   if (typeof toast === 'function') toast('已荐 ' + ch.name + ' 所举布衣 ' + name + '（荐辟·入候选池·可于任命中授官）');
   if (typeof renderOfficeTree === 'function') renderOfficeTree(true);
 }
@@ -1545,7 +1545,7 @@ function processBiannian(){
     if (typeof addEB === 'function') addEB('\u5B8C\u6210', item.name||item.title);
     if (item.effect) Object.entries(item.effect).forEach(function(e) { if (GM.vars[e[0]]) GM.vars[e[0]].value = clamp(GM.vars[e[0]].value + e[1], GM.vars[e[0]].min, GM.vars[e[0]].max); });
     // 归入编年
-    GM._chronicle.push({
+    if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
       title: (item.title||item.name||'') + '（已毕）',
       content: item.content||item.desc||'',
       date: item.date || (typeof getTSText === 'function' ? getTSText(item.startTurn||item.turn||GM.turn) : ''),
@@ -1570,7 +1570,7 @@ function _bnExtractFromShiji() {
   if (_alreadyExtracted) return;
   // 提取turn_summary作为一行编年条目
   if (latest.turnSummary) {
-    GM._chronicle.push({
+    if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
       title: latest.turnSummary,
       content: '',
       date: latest.time || (typeof getTSText === 'function' ? getTSText(latest.turn) : ''),

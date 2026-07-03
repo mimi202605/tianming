@@ -805,7 +805,7 @@ if (typeof GameEventBus !== 'undefined') {
           // 起居注登记每个空缺
           if (!GM._chronicle) GM._chronicle = [];
           _vr.vacated.forEach(function(v){
-            GM._chronicle.push({
+            if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
               turn: GM.turn || 0, date: GM._gameDate || '',
               type: '官缺',
               text: v.chain + '·' + v.pos + '\u00B7\u56E0 ' + data.name + ' \u6B83\u800C\u7F3A\u5458',
@@ -1583,7 +1583,7 @@ async function _chooseIssueOption(issueId, choiceIdx) {
   issue.chosenText = ch.text;
   // 写编年
   if (!GM._chronicle) GM._chronicle = [];
-  GM._chronicle.push({
+  if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
     turn: GM.turn || 1, date: GM._gameDate || '',
     type: '要务决断',
     text: '【' + (issue.title||'') + '】陛下决：' + (ch.text||'') + (ch.desc?' ·'+ch.desc:''),

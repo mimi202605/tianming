@@ -49,7 +49,7 @@
     }
     if (typeof GM !== 'undefined' && GM) {
       GM._chronicle = GM._chronicle || [];
-      GM._chronicle.push({
+      if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn || 1,
         type: entry.type || 'tongzi',
         text: entry.text || '',

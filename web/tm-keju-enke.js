@@ -122,7 +122,7 @@
     }
     // F4c 未 ship 或 cooldown 内·退化 chronicle 记一笔
     if (Array.isArray(GM._chronicle)) {
-      GM._chronicle.push({
+      if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn || 1,
         type: 'enke_yanguan_protest',
         text: _getCurYear() + '年·言官 ' + n + ' 次恩科·清议讥滥',
@@ -241,7 +241,7 @@
       if (enkeThisYear) {
         // chronicle 记一笔·tesuoming 推迟
         if (Array.isArray(GM._chronicle)) {
-          GM._chronicle.push({
+          if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
             turn: GM.turn || 1,
             type: 'tesuoming_defer',
             text: curYear + '年·宋特奏名议·因本年已开恩科·礼部推迟特奏名至明岁',
@@ -280,7 +280,7 @@
 
     // chronicle
     if (Array.isArray(GM._chronicle)) {
-      GM._chronicle.push({
+      if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn || 1,
         type: 'tesuoming_open',
         text: curYear + '年·宋特奏名·' + (td.reason || '安抚老举子') +
@@ -791,7 +791,7 @@
         if (xeStyle.tier !== 'pious') {
           xeBody = xeBody + '\n\n(' + xeStyle.bodyTone + ')';
         }
-        GM._chronicle.push({
+        if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
           turn: GM.turn || 1,
           type: 'enke_xieenda',
           text: pending.year + '年·' +
@@ -852,7 +852,7 @@
       var staleTurns = curTurn - (pending.startTurn || 0);
       if (staleTurns > XIEENDA_TIMEOUT_TURNS) {
         if (Array.isArray(GM._chronicle)) {
-          GM._chronicle.push({
+          if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
             turn: curTurn,
             type: 'enke_xieenda',
             text: pending.year + '年·' + (pending.historyPath || '恩科') + '·谢恩大典 (奏疏散佚)',
@@ -886,7 +886,7 @@
     if (!examiner) {
       // 朝中无主礼部之人·拒开·写 chronicle
       if (Array.isArray(GM._chronicle)) {
-        GM._chronicle.push({
+        if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
           turn: GM.turn || 1,
           type: 'enke_abort',
           text: curYear + '年·欲开 ' + (td.historyPath || '恩科') + '·朝中无主礼部之人·罢',
@@ -950,7 +950,7 @@
       })[entry.initiative] || '';
       var openStyle = _kjG2GetEnkeChronicleStyle();
       var openSuffix = openStyle.tier === 'pious' ? '' : '·' + openStyle.bodyTone;
-      GM._chronicle.push({
+      if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn || 1,
         type: 'enke_open',
         text: curYear + '年·' + (entry.historyPath || '恩科') + (openStyle.titleSuffix || '') + '·' +
@@ -982,7 +982,7 @@
     td = td || {};
     var curYear = _getCurYear();
     if (Array.isArray(GM._chronicle)) {
-      GM._chronicle.push({
+      if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn || 1,
         type: 'enke_rejected',
         text: curYear + '年·议罢' + (td.historyPath || '恩科') + '·陛下吝赏·士林失望',
@@ -1027,7 +1027,7 @@
     // 不 apply 官僚 / lizhi·避跟其他 system 重复
     // chronicle 记 cost apply
     if (Array.isArray(GM._chronicle)) {
-      GM._chronicle.push({
+      if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn || 1,
         type: 'enke_lifecycle_cost',
         text: _getCurYear() + '年·诏令·恩科·apply lifecycle cost (士林+10·国库-8)',
@@ -1042,7 +1042,7 @@
         GM._enkeAbuseCounter && GM._enkeAbuseCounter.enkeCount >= 4 &&
         Math.random() < 0.05) {
       if (Array.isArray(GM._chronicle)) {
-        GM._chronicle.push({
+        if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
           turn: GM.turn || 1,
           type: 'enke_unintended_risk',
           text: _getCurYear() + '年·恩科党尾大不掉·部分恩科党人结社·士林讥之',

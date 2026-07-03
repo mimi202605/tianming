@@ -1427,7 +1427,7 @@ function _officePersonnelTurnoverOn() {
   } catch (e) { return false; }
 }
 function _officeChronLink(type, text) {
-  try { if (!Array.isArray(GM._chronicle)) GM._chronicle = []; GM._chronicle.push({ turn: GM.turn || 0, date: GM._gameDate || '', type: type, text: text, tags: ['联动', '官制'] }); } catch (e) {}
+  try { if (!Array.isArray(GM._chronicle)) GM._chronicle = []; if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({ turn: GM.turn || 0, date: GM._gameDate || '', type: type, text: text, tags: ['联动', '官制'] }); } catch (e) {}
 }
 function _engineRetireOfficial(c, reason) {
   if (!c) return;

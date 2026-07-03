@@ -17,6 +17,7 @@ global.findCharByName = function(name) {
   return global.GM.chars.find(c => c && c.name === name);
 };
 
+require('../tm-qiju-ledger.js');   // 编年史已收口走 TM.Chronicle 写口(2026-07-04)·沙箱须与运行时同形态
 require('../tm-keju-school-network.js');
 
 const fns = {};
@@ -836,3 +837,4 @@ check('U4·H10·events array init', Array.isArray(a2.events));
 console.log('\n========================================');
 console.log(`smoke-h-school·${pass} PASS·${fail} FAIL`);
 console.log('========================================');
+process.exit(fail === 0 ? 0 : 1);   // 修谎言退出码·此前有 FAIL 仍 exit 0(runner suspect 机制抓获 2026-07-04)

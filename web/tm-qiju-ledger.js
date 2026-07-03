@@ -45,4 +45,22 @@
 
   TM.Qiju = { record: record, recordEntry: recordEntry, CAP: CAP };
   global.QijuLedger = TM.Qiju;
-})(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : globalThis));
+
+  /* ── TM.Chronicle — 编年史(GM._chronicle)单一写口（2026-07-04 gm:_chronicle 收口）──
+   * 与 qiju 不同的契约·收口时逐读者核过：
+   *   - push 时序(旧在前)·读者全是 filter/find 全量扫（keju-reformer-bio 按 reformId 反查老条目）
+   *   - 【无 cap·忠实现状】——截老条目会弄断 reformId 反查·无界增长的归档策略属 owner 设计题(见 docs/arch-guards.md)
+   * 条目形状 {turn, type, text, tags, ...扩展字段(reformId 等)透传}·turn 缺省自动补。 */
+  function chronicleRecord(entry) {
+    var GM = global.GM;
+    if (!GM || !entry || typeof entry !== 'object') return null;
+    if (entry.text == null && entry.content == null) return null;
+    if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
+    if (entry.turn == null) entry.turn = Number(GM.turn) || 0;
+    GM._chronicle.push(entry); // 时序 push·契约与 qiju(unshift) 相反·勿改
+    return entry;
+  }
+  TM.Chronicle = { record: chronicleRecord };
+  global.ChronicleLedger = TM.Chronicle;
+// globalThis 优先：浏览器 globalThis≡window 零差异·node/vm 沙箱不被 window mock 劫走绑定(smoke-h-school 之鉴)
+})(typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this));

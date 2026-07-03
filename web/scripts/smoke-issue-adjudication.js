@@ -31,7 +31,7 @@ ok(/path:.*民心.*皇威.*皇权.*吏治.*国库.*内帑/.test(src), '③ path 
 // ④ edictTracker 长期追踪保留(未被 AI 裁定改造破坏)
 ok(/GM\._edictTracker\.push/.test(src), '④ edictTracker 长期追踪保留(决断进 AI 推演)');
 ok(/issue\.status = 'resolved'/.test(src), '④ 标 resolved 保留');
-ok(/GM\._chronicle\.push/.test(src), '④ 写编年保留');
+ok(/TM\.Chronicle\.record/.test(src), '④ 写编年保留（2026-07-04 起走 TM.Chronicle 写口）');
 
 // ⑤ 开关默认关 = 零回归(走原固定 effect)
 ok(/eventUnificationEnabled/.test(src), '⑤ 开关 eventUnificationEnabled(设置面板 toggle 复用)');

@@ -5176,7 +5176,7 @@ function _ty3_pushChronicle(type, text, extra) {
     tags: ['\u5ef7\u8bae', type]
   };
   Object.keys(extra || {}).forEach(function(k){ entry[k] = extra[k]; });
-  GM._chronicle.push(entry);
+  if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record(entry);
   return entry;
 }
 
@@ -5766,7 +5766,7 @@ function _ty3_partySpawn(opts) {
   });
   GM.parties.push(newParty);
   if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
-  GM._chronicle.push({
+  if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
     turn: GM.turn || 1,
     date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
     type: '党祸·新党生',
@@ -5796,7 +5796,7 @@ function _ty3_partyDispose(partyName, reason) {
   p.disposedReason = reason || '式微无继';
   (GM.chars || []).forEach(function(c) { if (c && c.party === partyName) c.party = ''; });
   if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
-  GM._chronicle.push({
+  if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
     turn: GM.turn || 1,
     date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
     type: '党祸·党亡',
@@ -5875,7 +5875,7 @@ function _ty3_phase12_onAccusationApproved(topic, accusedNames, accuser, topicMe
     });
     if (typeof addCYBubble === 'function') addCYBubble('内侍', '〔 准奏弹劾·定性新党：' + newName + ' 〕', true);
     if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
-    GM._chronicle.push({
+    if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
       turn: GM.turn || 1,
       date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
       type: 'impeachment-party',
@@ -6228,7 +6228,7 @@ function _ty3_phase7_reviewOne(edict) {
   var topicText = String(edict.title || edict.topic || edict.content || '').replace(/\s+/g, ' ').slice(0, 40);
   var partyLabel = proposerParty ? (proposerParty + '\u4e3b\u4e4b') : '\u671d\u8bba\u5171\u8bae';
   var chronText = '\u524d' + venueLabel + '\u300a' + topicText + '\u300b\u00b7' + partyLabel + '\u00b7\u4e09\u56de\u5408\u540e' + histLabel;
-  GM._chronicle.push({
+  if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
     turn: GM.turn || 1,
     date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
     type: chronType,

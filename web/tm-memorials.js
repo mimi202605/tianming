@@ -1148,8 +1148,8 @@ function _summonRecall(name) {
   if (!GM.letters) GM.letters = [];
   GM.letters.push(letter);
   // 编年·召回启程
-  if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
-  GM._chronicle.unshift({
+  // 编年史走 TM.Chronicle 写口(2026-07-04 收口)·时序 push 归一(原 unshift 混写破序)
+  if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
     turn: GM.turn,
     date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
     type: '\u5FB4\u53EC\u56DE\u4EAC',

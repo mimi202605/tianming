@@ -2403,7 +2403,7 @@
       if (typeof GM !== 'undefined' && GM && Array.isArray(GM._chronicle)) {
         // C4 修·_escHtml topic text·防 XSS·虽然 Electron local
         // A4 修·加"待 L7 apply"·让 user 知改革效果待后续 slice
-        GM._chronicle.push({
+        if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
           turn: GM.turn || 1,
           date: GM._gameDate || '',
           type: 'keju-reform-proposed',

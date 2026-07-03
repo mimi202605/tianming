@@ -423,8 +423,8 @@ function applyEdictActions(actions) {
             char._travelReason = '奉诏赴任 ' + a.position;
             char._travelAssignPost = (hit.deptPath || '') + '/' + a.position;
             char._travelAssignConcurrent = !!isConcurrent;
-            if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
-            GM._chronicle.unshift({
+            // 编年史走 TM.Chronicle 写口(2026-07-04 收口)·时序 push 归一(原 unshift 混写破序)
+            if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
               turn: GM.turn, date: GM._gameDate || (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
               type: '赴任启程', title: a.character + ' 赴 ' + _destE,
               content: a.character + ' 自' + char.location + ' 启程赴' + _destE + '·就任 ' + a.position + '·预计 ' + _daysE + ' 日抵任。',

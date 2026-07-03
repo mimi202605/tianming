@@ -1431,8 +1431,8 @@ function _ltDoIntercept(l, hostileFacs) {
   }
   // 重大政令/军令被截·入编年史
   if (!l._npcInitiated && (_isMilitary || l.letterType === 'formal_edict' || _isDiplomatic)) {
-    if (!Array.isArray(GM._chronicle)) GM._chronicle = [];
-    GM._chronicle.unshift({
+    // 编年史走 TM.Chronicle 写口(2026-07-04 收口)·时序 push 归一(原 unshift 混写破序)
+    if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
       turn: GM.turn, date: _date, type: '鸿雁遇险',
       title: '致' + l.to + '的' + (_isMilitary ? '军令' : _isDiplomatic ? '国书' : '诏令') + '被劫',
       content: '驿使于' + (l.toLocation||'远途') + '附近遇袭·疑为' + _int + '所为' + (_canRead ? '·原文已落敌方' : '·所幸密函未破译') + '。',
