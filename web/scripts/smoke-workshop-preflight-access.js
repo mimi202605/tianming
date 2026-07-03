@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 /* smoke-workshop-preflight-access — 剧本工坊 W1:确定性 preflight 体检的可达性。
- * W1a 国师面板加常驻 🩺体检 按钮(此前体检 chip 只在空状态·交互后消失)→接 runPreflightUI(已有·跑 AA.preflight 确定性免API)。
+ * W1a 体检(runPreflightUI·跑 AA.preflight 确定性免API)可达。2026-07-03 更新：国师 UI 重做后
+ *     旧「常驻 🩺 头部钮」按设计退役，可达路径改为三条：＋能力菜单 / 空态 chip / ⌘K 命令面板——断言随之对齐新形态。
  * W1b 快速测试(quickTestScenario)接入 AA.preflight·把运行时 blockers 并入预检 issues(补 ad-hoc 检查的运行时盲区)。
  * (DOM/点击行为另真浏览器验证·此 smoke 守接线防腐) */
 const fs = require('fs'), path = require('path');
@@ -10,10 +11,10 @@ const fg = fs.readFileSync(path.resolve(__dirname, '..', 'editor-fullgen.js'), '
 let A = 0, F = 0; function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 console.log('smoke-workshop-preflight-access');
 
-// W1a · 常驻体检按钮
-ok(/id="tm-aa-preflight"[^>]*>🩺<\/button>/.test(ui), 'W1a 头部含常驻 🩺体检 按钮');
-ok(/运行时体检（确定性·免 API）/.test(ui), 'W1a 按钮 title 标确定性免 API');
-ok(/#tm-aa-preflight\{[^}]*cursor:pointer/.test(ui), 'W1a #tm-aa-preflight CSS 规则存在');
+// W1a · 体检三条可达路径（＋能力菜单 / 空态 chip / ⌘K 命令面板·2026-07-03 对齐重做后形态）
+ok(/act: 'preflight'[^\n]*运行时体检[^\n]*免 API/.test(ui), 'W1a ＋能力菜单含「运行时体检」(确定性·免 API)');
+ok(/label: '体检（免 API）', act: 'preflight'/.test(ui), 'W1a 空态 chip「体检（免 API）」在');
+ok(/k: 'preflight'[^\n]*run: function \(\) \{ _plusAct\('preflight'\); \}/.test(ui), 'W1a ⌘K 命令面板含体检命令');
 ok(/querySelector\('#tm-aa-preflight'\)[\s\S]{0,80}addEventListener\('click', function \(\) \{ runPreflightUI\(\)/.test(ui), 'W1a 按钮接 runPreflightUI');
 ok(/function runPreflightUI/.test(ui) && /AA\.preflight\(AA\.makeDraft/.test(ui), 'W1a runPreflightUI 跑确定性 AA.preflight(已有·复用)');
 

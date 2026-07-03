@@ -809,6 +809,15 @@
     return state.modules.find(function(module) { return module.id === id; }) || state.modules[0] || { id: 'scenarioOpening', title: '剧本总览', topLevelKeys: Object.keys(state.scenario || {}) };
   }
 
+  /* 重做W4 · 换章翻页动效：给 #module-detail 重触发一次入场动画（CSS 类 je-page-turn·reduced-motion 由全局规则豁免） */
+  function jePageTurn() {
+    var det = document.getElementById('module-detail');
+    if (!det) return;
+    det.classList.remove('je-page-turn');
+    void det.offsetWidth;
+    det.classList.add('je-page-turn');
+  }
+
   function runtimeSurfaceForField(field) {
     return RUNTIME_FIELD_SURFACES.find(function(surface) { return surface.field === field; }) || null;
   }
@@ -15119,6 +15128,19 @@
       }
       return true;
     });
+    // 重做W4 · 跨模块搜索：单模块聚焦后，筛选词命中其他章的字段时给「他章命中」跳转签，
+    // 点击=切章+选中该字段（保留筛选词，落地后字段云已按词过滤）。
+    var crossHits = [];
+    if (textFilter) {
+      (state.modules || []).forEach(function(m) {
+        if (!m || m.id === state.selectedModuleId || crossHits.length >= 18) return;
+        (moduleFieldsForDetail(m) || []).forEach(function(field) {
+          if (crossHits.length >= 18) return;
+          var hay2 = (field + ' ' + describeField(field)).toLowerCase();
+          if (hay2.indexOf(textFilter) >= 0) crossHits.push({ m: m, f: field });
+        });
+      });
+    }
     var provOptions = [
       { id: 'all', label: '全部' },
       { id: 'both', label: '共 (两个剧本)' },
@@ -15167,6 +15189,10 @@
       multiBar,
       multiActions,
       '</div>',
+      /* 重做W4 · 他章命中跳转签 */
+      crossHits.length ? '<div class="field-cross-hits"><span class="fch-cap">他章命中 ' + crossHits.length + '</span>' + crossHits.map(function(h) {
+        return '<button type="button" class="fch-chip" data-cross-jump="' + escapeHtml(h.m.id + '::' + h.f) + '" title="跳到 ' + escapeHtml((h.m.title || h.m.id) + ' · ' + h.f) + '">' + escapeHtml(h.m.title || h.m.id) + ' · ' + escapeHtml(folioFieldLabel(h.f)) + '</button>';
+      }).join('') + '</div>' : '',
       '<div class="field-cloud">',
       // Slice 3b · 字段组中层：按模块字段组把 chip 折叠成 <details> 分区。
       // 单个 chip 的渲染抽到 renderFieldChip()（保留原 chipTitle/字段 chip 结构）。
@@ -21854,13 +21880,29 @@
           return;
         }
       }
+      var crossJump = event.target.closest('[data-cross-jump]');
+      if (crossJump) {
+        /* 重做W4 · 他章命中签：切章+选中命中字段（保留筛选词） */
+        event.preventDefault();
+        var cj = String(crossJump.dataset.crossJump || '').split('::');
+        if (cj[0] && cj[0] !== state.selectedModuleId) {
+          state.selectedModuleId = cj[0];
+          state.selectedField = cj[1] || (findModule(cj[0]).topLevelKeys || [])[0];
+          state.selectedEntityIndex = 0;
+          jePageTurn();
+          renderAll();
+        }
+        return;
+      }
       var moduleTile = event.target.closest('[data-module-id]');
       if (moduleTile) {
         event.preventDefault();
+        var jeSwitched = state.selectedModuleId !== moduleTile.dataset.moduleId;
         state.selectedModuleId = moduleTile.dataset.moduleId;
         state.selectedField = (findModule(state.selectedModuleId).topLevelKeys || [])[0];
         state.selectedEntityIndex = 0;
         state.search = '';
+        if (jeSwitched) jePageTurn();   /* 重做W4 · 换章翻页动效（重选同章不闪） */
         renderAll();
         return;
       }

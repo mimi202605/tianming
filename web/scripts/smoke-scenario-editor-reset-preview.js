@@ -71,10 +71,12 @@ assert(html.includes('families') && html.includes('openingLetters') && html.incl
   'preview should surface known current editor coverage gaps');
 assert(html.includes('203') && html.includes('22') && html.includes('83'),
   'preview should surface official Tianqi scenario counts');
-assert(html.includes('img/ancient-tabletop-board.png'),
-  'preview should use an existing Tianming visual asset');
-assert(fs.existsSync(path.join(ROOT, 'preview', 'img', 'ancient-tabletop-board.png')),
-  'preview background asset should exist');
+/* 2026-07-03 玄墨案头重做：照片纹理(img/ancient-tabletop-board.png)按设计退役，
+   背景改程序化墨底+微噪点；「使用天命自有视觉资产」的守卫改钉随游戏分发的自带字体。 */
+assert(html.includes('../assets/fonts/ZCOOLXiaoWei-Regular.ttf'),
+  'preview should use an existing Tianming visual asset (bundled fonts)');
+assert(fs.existsSync(path.join(ROOT, 'assets', 'fonts', 'ZCOOLXiaoWei-Regular.ttf')),
+  'preview font asset should exist');
 assert(html.includes('scenario-editor-reset-data.js'), 'preview should load generated official scenario data');
 assert(html.includes('scenario-editor-reset-app.js'), 'preview should load standalone functional app script');
 assert(html.includes('id="scenario-editor-reset-static-prototype"'), 'preview should keep the old static prototype inert');

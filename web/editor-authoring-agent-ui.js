@@ -23,6 +23,16 @@
 
   var AA = global.TM && global.TM.AuthoringAgent;
   var PANEL_ID = 'tm-aa-panel';
+  /* 字体基址按脚本自身位置解析（须在顶层求值·injectStyles 运行时 currentScript 已是 null）：
+     宿主页面可能在子目录（剧本工坊 preview/），页面相对 "assets/fonts/…" 会 404 → 面板字体一直在回退。
+     editor.html 在根目录引用，脚本相对 == 页面相对，行为不变；无 src（内联）时回退旧相对路径。 */
+  var FONT_BASE = (function () {
+    try {
+      var s = document.currentScript;
+      var src = s && s.src ? String(s.src) : '';
+      return src ? src.replace(/[^\/]*(?:[?#].*)?$/, '') : '';
+    } catch (e) { return ''; }
+  })();
   var ui = { adapter: null, draft: null, running: false, els: null, _checkpoints: [], _ckptSeq: 0 };
   var MAX_CKPT = 15;   // 方向G · 检查点栈上限（session 内存态·满则淘汰最旧）
 
@@ -448,8 +458,8 @@
     var css = [
       // ── 自带美术字体（editor.html 未链主 styles.css·面板自声明 @font-face·同名文件随游戏分发）──
       //    站酷小薇=文艺宋体风(显示+回复正文·SIL OFL)·马善政=毛笔楷(朱印「师」)。Windows 无思源宋时不再砸到 SimSun 锯齿。
-      '@font-face{font-family:"GS-XiaoWei";src:url("assets/fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}',
-      '@font-face{font-family:"GS-MaShanZheng";src:url("assets/fonts/MaShanZheng-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}',
+      '@font-face{font-family:"GS-XiaoWei";src:url("' + FONT_BASE + 'assets/fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}',
+      '@font-face{font-family:"GS-MaShanZheng";src:url("' + FONT_BASE + 'assets/fonts/MaShanZheng-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}',
       // 面板域内钉死盒模型与表单字体继承（宿主 editor.html 有 *{box-sizing:border-box}·此处显式声明保证任何宿主下渲染一致）
       '#' + PANEL_ID + ',#' + PANEL_ID + ' *,#' + PANEL_ID + ' *::before,#' + PANEL_ID + ' *::after{box-sizing:border-box}',
       '#' + PANEL_ID + ' button,#' + PANEL_ID + ' input,#' + PANEL_ID + ' textarea{font-family:inherit;font-size:inherit;line-height:inherit}',

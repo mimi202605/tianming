@@ -59,10 +59,9 @@
 
     body {
       overflow-x: hidden;
-      background:
-        linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.66)),
-        url("img/ancient-tabletop-board.png") center / cover fixed,
-        #100d09;
+      /* 2026-07-03 玄墨案头：照片纹理(ancient-tabletop-board.png)退役——
+         程序化墨底+微噪点+暖晕见文末「重做 W1」追加层的 body 规则。此处只留兜底底色。 */
+      background: #100d09;
     }
 
     button,
@@ -12123,7 +12122,7 @@
       body.je-guoshi-docked .top-actions .icon-btn { width: 33px; height: 33px; }
     }
     @media (min-width: 1101px) {
-      body.je-guoshi-docked .reset-shell { padding-right: calc(var(--tm-aa-dock-w, 340px) + 14px); }   /* UI·AI · 国师调宽时槽宽随动 */
+      body.je-guoshi-docked .reset-shell { padding-right: calc(var(--tm-aa-dock-w, 420px) + 14px); }   /* UI·AI · 国师调宽时槽宽随动（回退值与面板 width 回退 420 对齐·差 80px 会让内容钻到面板底下） */
       body.je-guoshi-docked #tm-aa-fab { display: none; }
       body.je-guoshi-docked #tm-aa-panel {
         display: flex !important;   /* 常驻：即便 × 去掉 .open 也不消失 */
@@ -12374,6 +12373,599 @@
     .je-pv-flagrow em { color: var(--cinnabar); font-size: 11px; font-style: normal; }
     .je-pv-ok { color: var(--jade); font-size: 12px; padding: 4px 0; }
     .je-pv-more { color: var(--paper-dim); font-size: 11px; padding: 4px 0; }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 W1 —— 壳层视觉全面对齐国师面板质感
+       终局覆盖段（追加层惯例：后来居上·回滚=删本段）。
+       ① 自带美术字体：页面在 preview/ 下，国师面板的 "assets/fonts/…" 相对路径
+          在此解析 404（字体一直在回退）。工坊自声明 JE-* 家族（../assets/fonts/
+          正确路径），并在字体栈里兼收 GS-* —— 面板修好后两名皆中。
+       ② 玄墨 chrome token：对齐国师面板暖墨系(#181715/#1f1e1b/#262624)与
+          发丝线语言；珊瑚色留给国师，工坊主案语义仍走朱/金。
+       ③ 灭掉照片纹理(ancient-tabletop-board.png)与磨砂重影：
+          换 程序化墨底 + 微噪点 + 一盏暖晕（烛照案头）。
+       ════════════════════════════════════════════════════════════════ */
+    @font-face {
+      font-family: "JE-XiaoWei";
+      src: url("../assets/fonts/ZCOOLXiaoWei-Regular.ttf") format("truetype");
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    @font-face {
+      font-family: "JE-MaShanZheng";
+      src: url("../assets/fonts/MaShanZheng-Regular.ttf") format("truetype");
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+    :root {
+      --je-chrome-0: #131110;
+      --je-chrome-1: #1b1917;
+      --je-chrome-2: #242120;
+      --je-chrome-3: #2e2a27;
+      --je-hairline: rgba(245, 240, 232, .08);
+      --je-hairline-2: rgba(245, 240, 232, .16);
+      --je-tx-hi: #f0e9d8;
+      --je-tx-mid: #a89f8d;
+      --je-tx-dim: #7b7264;
+      --je-shadow-lg: 0 18px 60px rgba(0, 0, 0, .5), 0 2px 10px rgba(0, 0, 0, .35);
+      --je-shadow-soft: 0 10px 34px rgba(0, 0, 0, .32), 0 1px 4px rgba(0, 0, 0, .26);
+      --je-font-display: "JE-XiaoWei", "GS-XiaoWei", "TM-ZCOOL-XiaoWei", var(--je-font-kai);
+      --je-font-seal: "JE-MaShanZheng", "GS-MaShanZheng", "KaiTi", "楷体", serif;
+      --je-font-mono: "JetBrains Mono", ui-monospace, Consolas, "Courier New", monospace;
+    }
+    body {
+      background:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncA type='linear' slope='.05'/></feComponentTransfer></filter><rect width='140' height='140' filter='url(%23n)'/></svg>") repeat,
+        radial-gradient(1100px 460px at 50% -10%, rgba(184, 154, 83, .09), transparent 62%),
+        linear-gradient(180deg, #171412, #13100e 44%, #100e0c);
+      background-attachment: fixed;
+    }
+    .reset-shell {
+      background: none;
+      padding: 16px 20px 20px;
+    }
+    /* ── topbar：墨玉横匾 ── */
+    .top-ribbon {
+      margin: 0 auto 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--je-hairline);
+    }
+    .top-ribbon .seal {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: var(--je-radius);
+      background: linear-gradient(140deg, #b23c2c, #832a1f);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 2px 8px rgba(0, 0, 0, .4);
+      color: #f8ead8;
+      font-family: var(--je-font-seal);
+      font-weight: 400;
+      font-size: 22px;
+    }
+    .brand-title h1 {
+      font-family: var(--je-font-display);
+      font-weight: 400;
+      font-size: 19px;
+      letter-spacing: .1em;
+      color: var(--je-tx-hi);
+    }
+    .brand-title p {
+      margin-top: 3px;
+      font-size: 11px;
+      letter-spacing: .08em;
+      color: var(--je-tx-dim);
+    }
+    /* ── 中央题签：全页 chrome 唯一的亮纸元素 = 当前这卷稿 ── */
+    .scenario-pill {
+      min-height: 50px;
+      padding: 7px 20px;
+      gap: 14px;
+      border: 1px solid rgba(138, 109, 43, .55);
+      border-radius: var(--je-radius);
+      background: linear-gradient(180deg, #faf6ec, #f1e9d6);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5), 0 3px 14px rgba(0, 0, 0, .38);
+    }
+    .scenario-pill--button:hover {
+      border-color: var(--je-gold-400);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5), 0 5px 18px rgba(0, 0, 0, .44);
+    }
+    .scenario-pill strong {
+      font-family: var(--je-font-display);
+      font-weight: 400;
+      font-size: 16px;
+      letter-spacing: .03em;
+      color: #241e14;
+    }
+    .scenario-pill span { font-size: 11px; color: rgba(58, 48, 35, .66); }
+    .scenario-pill-chevron { color: var(--je-gold-500); font-size: 12px; }
+    /* 题签下拉：暖墨浮层 */
+    .scenario-pill-menu {
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius-lg);
+      background: var(--je-chrome-2);
+      box-shadow: var(--je-shadow-lg);
+    }
+    .scenario-pill-menu-head { border-bottom: 1px solid var(--je-hairline); }
+    .scenario-pill-menu-title { color: var(--je-tx-dim); }
+    .scenario-pill-menu-close {
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius);
+      background: transparent;
+      color: var(--je-tx-mid);
+    }
+    .scenario-pill-menu-close:hover,
+    .scenario-pill-menu-close:focus-visible {
+      border-color: var(--je-vermillion-400);
+      background: rgba(192, 64, 48, .18);
+      color: var(--je-tx-hi);
+    }
+    .scenario-pill-menu-item {
+      border: 1px solid var(--je-hairline);
+      border-radius: var(--je-radius);
+      background: transparent;
+    }
+    .scenario-pill-menu-item:hover,
+    .scenario-pill-menu-item:focus {
+      border-color: var(--je-hairline-2);
+      background: var(--je-chrome-3);
+    }
+    .scenario-pill-menu-item[aria-current="true"] {
+      border-color: rgba(184, 154, 83, .5);
+      background: rgba(184, 154, 83, .1);
+    }
+    .scenario-pill-menu-item-title { color: var(--je-tx-hi); }
+    .scenario-pill-menu-item-detail { color: var(--je-tx-dim); }
+    .scenario-pill-menu-item-badge {
+      color: var(--je-gold-300);
+      border: 1px solid rgba(184, 154, 83, .4);
+      border-radius: var(--je-radius-sm);
+    }
+    /* ── 右侧动作钮：安静的墨方钮 ── */
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius);
+      background: var(--je-chrome-1);
+      color: var(--je-tx-mid);
+      box-shadow: none;
+      font-family: var(--je-font-display);
+      font-size: 14px;
+      transition: background .14s ease, border-color .14s ease, color .14s ease, transform .08s ease;
+    }
+    .icon-btn:hover,
+    .icon-btn:focus-visible {
+      outline: none;
+      border-color: rgba(184, 154, 83, .55);
+      background: var(--je-chrome-3);
+      color: var(--je-tx-hi);
+    }
+    .icon-btn:active { transform: translateY(1px); }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 W2 —— 左 rail「九章书脊」+ 面板基底
+       磨砂玻璃退役 → 扁平墨面 + 发丝线；tile 静息无框、悬浮现形、
+       选中=朱印左标 + 朱砂印章 glyph（毛笔楷）。
+       特异性对齐 L1 层（#module-rail 前缀），后来居上。
+       ════════════════════════════════════════════════════════════════ */
+    .panel {
+      border: 1px solid var(--je-hairline);
+      border-radius: var(--je-radius-lg);
+      background: var(--je-chrome-1);
+      box-shadow: var(--je-shadow-soft);
+      backdrop-filter: none;
+    }
+    .rail-head,
+    .section-head { border-bottom: 1px solid var(--je-hairline); }
+    #module-rail .rail-head h2 {
+      font-family: var(--je-font-display);
+      font-weight: 400;
+      font-size: 15px;
+      letter-spacing: .3em;
+      color: var(--je-tx-hi);
+    }
+    #module-rail .rail-head span {
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius-sm);
+      background: transparent;
+      color: var(--je-tx-dim);
+    }
+    .rail-collapse-btn {
+      border: 1px solid transparent;
+      border-radius: var(--je-radius);
+      background: transparent;
+      color: var(--je-tx-dim);
+      transition: background .14s ease, border-color .14s ease, color .14s ease;
+    }
+    .rail-collapse-btn:hover {
+      border-color: var(--je-hairline-2);
+      background: var(--je-chrome-2);
+      color: var(--je-tx-hi);
+    }
+    /* ── 章 tile：静息隐形 / 悬浮现形 / 选中盖朱印 ── */
+    #module-rail .module-tile {
+      border: 1px solid transparent;
+      border-radius: var(--je-radius);
+      background: transparent;
+      min-height: 50px;
+      padding: 7px 11px 11px;
+      transition: background .14s ease, border-color .14s ease;
+    }
+    #module-rail .module-tile:hover,
+    #module-rail .module-tile:focus-visible {
+      background: var(--je-chrome-2);
+      border-color: var(--je-hairline);
+    }
+    #module-rail .module-tile.active {
+      background: linear-gradient(92deg, rgba(184, 154, 83, .1), rgba(184, 154, 83, .02) 70%);
+      border-color: rgba(184, 154, 83, .3);
+      box-shadow: none;   /* 压掉 Slice 52 的内嵌金圈 */
+    }
+    /* 朱印左标：接管 Slice 52 的 ::before（金玉渐变→朱砂·去辉光） */
+    #module-rail .module-tile.active::before {
+      top: 9px;
+      bottom: 9px;
+      background: linear-gradient(180deg, #c04030, #8b2e25);
+      box-shadow: none;
+    }
+    #module-rail .module-glyph {
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius);
+      background: var(--je-chrome-2);
+      color: var(--je-gold-300);
+      font-family: var(--je-font-seal);
+      font-weight: 400;
+      font-size: 19px;
+    }
+    #module-rail .module-tile.active .module-glyph {
+      border-color: transparent;
+      background: linear-gradient(140deg, #b23c2c, #832a1f);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14);
+      color: #f8ead8;
+    }
+    #module-rail .module-name {
+      font-family: var(--je-font-display);
+      font-size: 13.5px;
+      letter-spacing: .04em;
+      color: var(--je-tx-mid);
+    }
+    #module-rail .module-tile:hover .module-name,
+    #module-rail .module-tile.active .module-name { color: var(--je-tx-hi); }
+    #module-rail .module-sub { color: var(--je-tx-dim); }
+    #module-rail .module-count {
+      color: var(--je-tx-dim);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    #module-rail .module-tile.active .module-count,
+    #module-rail .module-tile:hover .module-count { color: var(--je-gold-300); }
+    /* AI 标：ghost 青瓷小签 */
+    #module-rail .module-ai,
+    .mini-ai {
+      border: 1px solid rgba(126, 184, 167, .34);
+      border-radius: var(--je-radius-pill);
+      background: transparent;
+      box-shadow: none;
+      color: var(--je-celadon-400);
+    }
+    #module-rail .module-ai:hover,
+    .mini-ai:hover {
+      border-color: var(--je-celadon-400);
+      background: rgba(126, 184, 167, .12);
+    }
+    /* 完成度细线：静息更沉（九条全满时不喧宾夺主） */
+    #module-rail .module-progress { background: rgba(245, 240, 232, .08); opacity: .42; }
+    #module-rail .module-tile:hover .module-progress { opacity: .8; }
+    /* ── 左下「总览」与保存指示 chip：安静墨签 ── */
+    .je-deck-toggle {
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius);
+      background: var(--je-chrome-1);
+      color: var(--je-tx-mid);
+      font-family: var(--je-font-display);
+      letter-spacing: .08em;
+      box-shadow: var(--je-shadow-soft);
+    }
+    .je-deck-toggle:hover {
+      border-color: rgba(184, 154, 83, .55);
+      background: var(--je-chrome-2);
+      color: var(--je-tx-hi);
+    }
+    #save-indicator {
+      border: 1px solid var(--je-hairline);
+      border-radius: var(--je-radius-pill);
+      background: transparent;
+      color: var(--je-tx-dim);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 W3 —— 案卷=一整张纸
+       聚焦中心(.inspector/#module-detail)从「暗壳里嵌亮折子」翻成
+       连续宣纸案卷：墨案(壳) | 宣纸(正文) | 玄墨(国师) 三段构图。
+       手法：①语义 token 在纸面作用域内重定义 → 凡走 var(--paper/--gold…)
+       的内文一次翻转为纸上墨字；②硬编码暗底的部件点名改纸面等价色；
+       ③rwf2 实体折子本就是亮纸调，落纸自然融合，不动 app.js。
+       ════════════════════════════════════════════════════════════════ */
+    .editor-grid > .inspector {
+      /* ── ① token 翻转：纸上墨字 ── */
+      --paper: #4a4132;
+      --paper-strong: #262014;
+      --paper-dim: #8b7d66;
+      --gold: #8a6d2b;
+      --gold-bright: #7d5e22;
+      --jade: #47806f;
+      --cinnabar: #a83228;
+      --indigo: #3a5580;
+      --line: rgba(138, 109, 43, .32);
+      --glass: rgba(255, 252, 242, .8);
+      --shadow: rgba(70, 52, 28, .16);
+      /* ── 纸面本体 ── */
+      border: 1px solid #d6c8a4;
+      border-radius: var(--je-radius-lg);
+      background:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncA type='linear' slope='.028'/></feComponentTransfer></filter><rect width='140' height='140' filter='url(%23n)'/></svg>") repeat,
+        linear-gradient(180deg, #fbf7ec, #f4ecd9);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, .42);
+      padding: 20px 24px 26px;
+    }
+    /* sticky 案卷头：暗玻璃→纸面 */
+    .inspector .section-head {
+      margin: 0 -24px 0;
+      padding: 12px 24px 12px 32px;
+      background: linear-gradient(180deg, rgba(251, 247, 236, .97), rgba(251, 247, 236, .88));
+      backdrop-filter: none;
+      box-shadow: 0 4px 14px rgba(70, 52, 28, .1);
+      border-bottom: 1px solid rgba(138, 109, 43, .26);
+    }
+    .inspector .section-head::before { left: 24px; }
+    .inspector .section-head h2 {
+      font-family: var(--je-font-display);
+      font-weight: 400;
+      letter-spacing: .14em;
+      color: #262014;
+    }
+    /* 卷首：模块印章落纸 */
+    .inspector .detail-title .module-glyph {
+      border: none;
+      border-radius: var(--je-radius);
+      background: linear-gradient(140deg, #b23c2c, #832a1f);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 2px 6px rgba(70, 52, 28, .28);
+      color: #f8ead8;
+      font-family: var(--je-font-seal);
+      font-weight: 400;
+      font-size: 23px;
+    }
+    .inspector .detail-title h2 {
+      font-family: var(--je-font-display);
+      font-weight: 400;
+      letter-spacing: .06em;
+    }
+    .inspector .detail-title p { color: #8b7d66; }
+    /* ── ② 硬编码暗底部件 → 纸面等价 ── */
+    /* 体检横幅：朱批眉批条 */
+    .inspector .je-health {
+      border: 1px solid rgba(168, 50, 40, .34);
+      border-left: 3px solid #a83228;
+      border-radius: var(--je-radius);
+      background: rgba(168, 50, 40, .055);
+    }
+    .inspector .je-health-ok {
+      border-color: rgba(71, 128, 111, .4);
+      border-left-color: #47806f;
+      background: rgba(71, 128, 111, .06);
+    }
+    .inspector .je-health-pill,
+    .inspector .je-health-mini { background: rgba(138, 109, 43, .07); }
+    /* 折子组卡：白折面 + 朱丝栏 */
+    .inspector .folio-group {
+      border: 1px solid #ddcfae;
+      border-radius: var(--je-radius);
+      background: rgba(255, 253, 246, .55);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+    }
+    .inspector .folio-group-head::before {
+      background: linear-gradient(180deg, #b23c2c, #8b2e25);
+    }
+    .inspector .folio-row:hover { background: rgba(138, 109, 43, .06); }
+    .inspector .folio-row:focus-within { background: rgba(138, 109, 43, .09); }
+    .inspector .folio-input {
+      border: 1px solid #dcc99c;
+      background: rgba(255, 253, 246, .92);
+      color: #262014;
+    }
+    .inspector .folio-input:focus {
+      border-color: #a8833a;
+      background: #fffdf6;
+      box-shadow: 0 0 0 2px rgba(168, 131, 58, .16);
+    }
+    .inspector .folio-row-complex .folio-control {
+      border-color: rgba(168, 131, 58, .3);
+      background: rgba(168, 131, 58, .05);
+    }
+    .inspector .folio-expand {
+      border: 1px solid rgba(168, 131, 58, .4);
+      background: rgba(168, 131, 58, .1);
+      color: #7d5e22;
+    }
+    .inspector .folio-expand:hover { background: rgba(168, 131, 58, .2); border-color: #a8833a; }
+    .inspector .folio-missing-tag { border-radius: var(--je-radius-sm); }
+    /* 组间快跳（面包屑章节签） */
+    .inspector .folio-groupnav-btn {
+      border: 1px solid rgba(138, 109, 43, .3);
+      background: rgba(255, 253, 246, .5);
+      color: #574733;
+    }
+    .inspector .folio-groupnav-btn:hover { border-color: #a8833a; color: #262014; }
+    /* 字段索引 / 深度工作台 / 各 detail 块：纸上浅匣 */
+    .inspector .field-index,
+    .inspector .deep-bench,
+    .inspector .detail-block {
+      border: 1px solid rgba(160, 132, 74, .32);
+      border-radius: var(--je-radius);
+      background: rgba(250, 245, 232, .55);
+    }
+    .inspector .detail-block h3 { color: #7d5e22; }
+    .inspector .detail-block p,
+    .inspector .detail-block li { color: #574733; }
+    .inspector .workbench-mode-bar {
+      border-radius: var(--je-radius);
+      background: rgba(240, 232, 212, .8);
+      border: 1px solid rgba(160, 132, 74, .3);
+    }
+    .inspector .field-cloud-filter {
+      border: 1px solid rgba(160, 132, 74, .28);
+      background: rgba(255, 253, 246, .5);
+      color: #574733;
+    }
+    .inspector .field-cloud-filter-count { color: #8b7d66; }
+    .inspector .field-cloud-filter select,
+    .inspector .field-cloud-filter input,
+    .inspector select {
+      border: 1px solid #dcc99c;
+      border-radius: var(--je-radius-sm);
+      background: rgba(255, 253, 246, .92);
+      color: #262014;
+    }
+    .inspector .field-cloud-filter input:focus {
+      outline: none;
+      border-color: #a8833a;
+      box-shadow: 0 0 0 2px rgba(168, 131, 58, .16);
+    }
+    .inspector input[type="checkbox"],
+    .inspector input[type="radio"] { accent-color: #a83228; }
+    /* 字段 chip：纸上药丸 */
+    .inspector .field-chip {
+      border: 1px solid rgba(138, 109, 43, .35);
+      background: rgba(168, 131, 58, .08);
+      color: #574733;
+    }
+    .inspector .field-chip-star {
+      border-color: rgba(138, 109, 43, .3);
+      background: rgba(255, 253, 246, .6);
+      color: #8b7d66;
+    }
+    .inspector .gap-chip {
+      border-color: rgba(168, 50, 40, .4);
+      background: rgba(168, 50, 40, .07);
+      color: #8b2e25;
+    }
+    /* AI 件：纸上青瓷 */
+    .inspector .ai-button,
+    .inspector .mini-ai,
+    .inspector .folio-ai,
+    .inspector .folio-ask {
+      border: 1px solid rgba(90, 143, 127, .48);
+      background: rgba(126, 184, 167, .1);
+      box-shadow: none;
+      color: #3f7d6c;
+    }
+    .inspector .ai-button:hover,
+    .inspector .mini-ai:hover,
+    .inspector .folio-ai:hover,
+    .inspector .folio-ask:hover {
+      border-color: #47806f;
+      background: rgba(126, 184, 167, .2);
+    }
+    .inspector .ai-button--combo {
+      border-color: rgba(138, 109, 43, .5);
+      background: rgba(168, 131, 58, .12);
+      color: #7d5e22;
+    }
+    .inspector .workbench-tab {
+      border: 1px solid rgba(160, 132, 74, .3);
+      background: rgba(255, 253, 246, .4);
+      color: #574733;
+    }
+    .inspector .workbench-tab:hover { border-color: #a8833a; color: #262014; }
+    /* 文本域 / 提示区 / 空态 */
+    .inspector .field-note-text,
+    .inspector .ai-task-prompt,
+    .inspector .ai-task-response,
+    .inspector .bulk-import-input {
+      border: 1px solid #dcc99c;
+      background: rgba(255, 253, 246, .85);
+      color: #262014;
+    }
+    .inspector .specialist-empty { background: rgba(250, 245, 232, .6); }
+    .inspector .coverage-row { background: rgba(255, 253, 246, .5); color: #574733; }
+    .inspector .specialist-hint { color: #6d6353; }
+    .inspector .reference-ok { background: rgba(126, 184, 167, .12); }
+    .inspector .entity-row { background: rgba(126, 184, 167, .1); }
+    /* boolsw 开关：关态文字在纸上要够深 */
+    .inspector .je-boolsw { color: #574733; background: rgba(168, 131, 58, .1); }
+    .inspector .je-boolsw[data-on="1"] { color: #fdf9ee; background: var(--je-gold-500); }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 W4 —— 次级面收敛 + 功能件
+       ① 他章命中跳转签（跨模块搜索·纸面样式）
+       ② 换章翻页动效（je-page-turn·reduced-motion 全局豁免已覆盖）
+       ③ 总览 overlay / 退幕 / toast / AI 抽屉 对齐玄墨 chrome
+       ════════════════════════════════════════════════════════════════ */
+    .field-cross-hits {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0 10px;
+      padding: 7px 10px;
+      border: 1px dashed rgba(138, 109, 43, .38);
+      border-radius: var(--je-radius);
+      background: rgba(168, 131, 58, .05);
+      font-size: 11px;
+    }
+    .field-cross-hits .fch-cap {
+      color: #8b7d66;
+      letter-spacing: .04em;
+      font-family: var(--je-font-kai);
+    }
+    .field-cross-hits .fch-chip {
+      padding: 3px 9px;
+      cursor: pointer;
+      border: 1px solid rgba(138, 109, 43, .35);
+      border-radius: var(--je-radius-pill);
+      background: rgba(255, 253, 246, .6);
+      color: #574733;
+      font-family: var(--je-font-kai);
+      font-size: 11px;
+      transition: border-color .13s ease, background .13s ease, color .13s ease;
+    }
+    .field-cross-hits .fch-chip:hover {
+      border-color: #a83228;
+      background: rgba(168, 50, 40, .07);
+      color: #8b2e25;
+    }
+    /* 换章翻页 */
+    .je-page-turn { animation: jePageTurn .24s ease; }
+    @keyframes jePageTurn {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* 总览 overlay：御案旧渐变 → 玄墨浮层 */
+    body.je-deck-open .editor-grid > .main-stack {
+      background: var(--je-chrome-1);
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius-lg);
+      box-shadow: var(--je-shadow-lg);
+    }
+    /* 国师停靠时总览浮层让出坞宽（否则右缘钻到面板底下） */
+    @media (min-width: 1101px) {
+      body.je-guoshi-docked.je-deck-open .editor-grid > .main-stack {
+        right: calc(var(--tm-aa-dock-w, 420px) + 24px);
+      }
+    }
+    .je-deck-backdrop { background: rgba(10, 8, 6, .66); }
+    /* 浮动状态 toast */
+    .status-toast {
+      border: 1px solid var(--je-hairline-2);
+      border-radius: var(--je-radius);
+      background: var(--je-chrome-2);
+      color: var(--je-tx-hi);
+      box-shadow: var(--je-shadow-soft);
+    }
+    /* AI 生成抽屉（浮层）：对齐玄墨 */
+    .ai-drawer {
+      border-color: var(--je-hairline-2);
+      background: var(--je-chrome-1);
+      box-shadow: var(--je-shadow-lg);
+    }
   </style>
 </head>
 <body>
@@ -13030,6 +13622,14 @@
         }
         // 注入「测试连接」：一键自检中转 API 连通（成功调用中转的可点验证）
         var hdRow = panel.querySelector('#tm-aa-hd');
+        /* 2026-07-03 · 新版面板头把 ✕ 包进 .tm-aa-hdbtns 嵌套 span——#tm-aa-x 不再是
+           hdRow 直系子节点，直接 insertBefore 会抛 NotFoundError 且掐死 dock() 后半段。
+           安全插入：✕ 仍是直系则插其前，否则追加到行尾。 */
+        var hdIns = function (el) {
+          var xb = hdRow && hdRow.querySelector('#tm-aa-x');
+          if (xb && xb.parentNode === hdRow) hdRow.insertBefore(el, xb);
+          else if (hdRow) hdRow.appendChild(el);
+        };
         if (hdRow && !panel.querySelector('.je-aa-test')) {
           var tb = document.createElement('button');
           tb.type = 'button';
@@ -13048,7 +13648,7 @@
               if (st) st.textContent = '✗ ' + ((e && e.message) || e);
             }).then(function () { tb.disabled = false; });
           });
-          hdRow.insertBefore(tb, hdRow.querySelector('#tm-aa-x'));
+          hdIns(tb);
         }
         // 方向D · 审阅按钮：一键让国师把整个剧本当作品体检（只读·出报告·不改剧本）
         if (hdRow && !panel.querySelector('.je-aa-review')) {
@@ -13059,7 +13659,7 @@
             var U = window.TM_AuthoringAgentUI;
             if (U && U.review) U.review(); else { var st = panel.querySelector('#tm-aa-status'); if (st) st.textContent = 'agent 未就绪'; }
           });
-          hdRow.insertBefore(rvb, hdRow.querySelector('#tm-aa-x'));
+          hdIns(rvb);
         }
         // 方向H · 分解执行按钮：把输入框里的大需求分解成多个子任务、逐步执行（共享草稿合并）
         if (hdRow && !panel.querySelector('.je-aa-orch')) {
@@ -13070,7 +13670,7 @@
             var U = window.TM_AuthoringAgentUI;
             if (U && U.orchestrate) U.orchestrate(); else { var st = panel.querySelector('#tm-aa-status'); if (st) st.textContent = 'agent 未就绪'; }
           });
-          hdRow.insertBefore(ob, hdRow.querySelector('#tm-aa-x'));
+          hdIns(ob);
         }
         // 方向E · 体检按钮：确定性运行时校验（无需 API）·报告剧本能否被游戏正常加载
         if (hdRow && !panel.querySelector('.je-aa-preflight')) {
@@ -13081,7 +13681,7 @@
             var U = window.TM_AuthoringAgentUI;
             if (U && U.preflight) U.preflight(); else { var st = panel.querySelector('#tm-aa-status'); if (st) st.textContent = 'agent 未就绪'; }
           });
-          hdRow.insertBefore(pfb, hdRow.querySelector('#tm-aa-x'));
+          hdIns(pfb);
         }
         // 方向L · 问答按钮：把输入框里的问题交给国师只读查证后回答（不改剧本）
         if (hdRow && !panel.querySelector('.je-aa-qa')) {
@@ -13092,7 +13692,7 @@
             var U = window.TM_AuthoringAgentUI;
             if (U && U.qa) U.qa(); else { var st = panel.querySelector('#tm-aa-status'); if (st) st.textContent = 'agent 未就绪'; }
           });
-          hdRow.insertBefore(qab, hdRow.querySelector('#tm-aa-x'));
+          hdIns(qab);
         }
         // 方向N · 讲解按钮：让国师讲解剧本设计与机制（只读·onboarding）
         if (hdRow && !panel.querySelector('.je-aa-explain')) {
@@ -13103,7 +13703,7 @@
             var U = window.TM_AuthoringAgentUI;
             if (U && U.explain) U.explain(); else { var st = panel.querySelector('#tm-aa-status'); if (st) st.textContent = 'agent 未就绪'; }
           });
-          hdRow.insertBefore(exb, hdRow.querySelector('#tm-aa-x'));
+          hdIns(exb);
         }
         // 维度3/方向G · 撤销按钮：有检查点时出现，点了弹栈回退（可见性由检查点变化回调驱动）
         if (hdRow && !panel.querySelector('.je-aa-undo')) {
@@ -13114,7 +13714,7 @@
             var U = window.TM_AuthoringAgentUI;
             if (U && U.undo) U.undo();
           });
-          hdRow.insertBefore(ub, hdRow.querySelector('#tm-aa-x'));
+          hdIns(ub);
         }
         // 刀F · 快捷操作条：玩家一键常用任务（不用会写 prompt，点了直跑）
         var body = panel.querySelector('#tm-aa-body');
@@ -13715,7 +14315,7 @@
             ibtn.type = 'button'; ibtn.className = 'je-aa-test je-aa-import'; ibtn.textContent = '📥 导入';
             ibtn.title = '粘史料 / 文本 → 抽取成剧本实体入草稿';
             ibtn.addEventListener('click', openImport);
-            hdRowI.insertBefore(ibtn, hdRowI.querySelector('#tm-aa-x'));
+            (function(h,el){var xb=h.querySelector('#tm-aa-x');if(xb&&xb.parentNode===h)h.insertBefore(el,xb);else h.appendChild(el);})(hdRowI, ibtn);   /* 2026-07-03 · ✕ 已嵌套进 .tm-aa-hdbtns·安全插入 */
           }
         }
         // 方向W · 实体捆绑导出/导入（跨剧本复用·确定性·零 token）
@@ -13764,7 +14364,7 @@
             bbtn.type = 'button'; bbtn.className = 'je-aa-test je-aa-bundle'; bbtn.textContent = '📦 捆绑';
             bbtn.title = '导出/导入势力捆绑包·跨剧本复用';
             bbtn.addEventListener('click', openBundle);
-            hdRowB.insertBefore(bbtn, hdRowB.querySelector('#tm-aa-x'));
+            (function(h,el){var xb=h.querySelector('#tm-aa-x');if(xb&&xb.parentNode===h)h.insertBefore(el,xb);else h.appendChild(el);})(hdRowB, bbtn);   /* 2026-07-03 · ✕ 已嵌套进 .tm-aa-hdbtns·安全插入 */
           }
         }
         // 方向S · 批量扩写：选集合+数量+风格 → 构造批量提示词(内嵌该集合现有范例保持一致) → bulkAdd 一次性生成 → diff/应用审
@@ -13806,7 +14406,7 @@
             batBtn.type = 'button'; batBtn.className = 'je-aa-test je-aa-batch'; batBtn.textContent = '🔢 批量';
             batBtn.title = '批量新增某类实体（保持风格一致）';
             batBtn.addEventListener('click', openBatch);
-            hdRowBt.insertBefore(batBtn, hdRowBt.querySelector('#tm-aa-x'));
+            (function(h,el){var xb=h.querySelector('#tm-aa-x');if(xb&&xb.parentNode===h)h.insertBefore(el,xb);else h.appendChild(el);})(hdRowBt, batBtn);   /* 2026-07-03 · ✕ 已嵌套进 .tm-aa-hdbtns·安全插入 */
           }
         }
         // 方向V · 命令面板（⌘K / Ctrl+K）：模糊搜索 + 一键调用任意动作（所有能力一个入口）
@@ -13915,7 +14515,7 @@
           sgear.id = 'tm-aa-settings'; sgear.type = 'button'; sgear.title = '设置 / 高级：API · 权限 · 模板 · 历史 · 检查点 · 计划/范例/守护 · 更多模式';
           sgear.textContent = '⚙';
           sgear.addEventListener('click', function () { document.body.classList.toggle('je-guoshi-settings-open'); });
-          hdRow2.insertBefore(sgear, xb2);
+          if (xb2.parentNode === hdRow2) hdRow2.insertBefore(sgear, xb2); else hdRow2.appendChild(sgear);   /* 2026-07-03 · ✕ 已嵌套进 .tm-aa-hdbtns·安全插入 */
             // 刀·收放常驻：toggle 作者自己的 body.je-guoshi-docked → 收起还正文满宽，国师转浮层仍可用
             try {
               if (!hdRow2.querySelector('#tm-aa-dockcollapse')) {
