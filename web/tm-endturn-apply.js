@@ -4000,7 +4000,7 @@ inst._imprisonedTurn = GM.turn||0;
                     if (_feasibility === '不合理') {
                       addEB('\u5EFA\u8BBE', bc.territory + '拟建 ' + _bcDisp + ' 因不合理未能实施');
                     } else {
-                      _targetDiv.buildings.push({
+                      var _newBld = {
                         name: bc.type,
                         level: bc.level || 1,
                         isCustom: _isCustom,
@@ -4012,7 +4012,16 @@ inst._imprisonedTurn = GM.turn||0;
                         status: (bc.timeActual && bc.timeActual > 0) ? 'building' : 'completed',
                         remainingTurns: bc.timeActual || 0,
                         startTurn: GM.turn
-                      });
+                      };
+                      _targetDiv.buildings.push(_newBld);
+                      // 完工入账缺口修（2026-07-03）：timeActual≤0 直落 completed 的建筑绕过 tick→
+                      // applyCompletion 永不触发·效果从不入账（也进不了工竣立制钩）。此处即时补入账。
+                      if (_newBld.status === 'completed') {
+                        try {
+                          var _BW = (typeof TM !== 'undefined' && TM.BuildingWorks) || (typeof window !== 'undefined' && window.TM && window.TM.BuildingWorks);
+                          if (_BW && typeof _BW.applyCompletion === 'function') _BW.applyCompletion(_targetDiv, _newBld, P, GM);
+                        } catch (_bwcE) {}
+                      }
                       addEB('\u5EFA\u8BBE', bc.territory + (_isCustom?'自定义建造 ':'建造 ') + _bcDisp + (_feasibility!=='合理'?('('+_feasibility+')'):'') + (bc.reason?' —— '+bc.reason:''));
                     }
                   }
