@@ -1,14 +1,34 @@
 {
-  "updatedAt": "2026-07-03T17:09:43.794Z",
-  "dangling": [
-    "AuthoringAgent",
-    "AuthorityEngines",
-    "FactionAiMainloopBridge",
-    "TMPhase8FormalBridge",
-    "ThreeSystems",
-    "_registry",
-    "ai",
-    "register",
-    "utils"
-  ]
+  "updatedAt": "2026-07-03T17:30:42.338Z",
+  "entries": {
+    "index.html": {
+      "dangling": [
+        "AuthoringAgent",
+        "AuthorityEngines",
+        "TMPhase8FormalBridge",
+        "ThreeSystems",
+        "_registry",
+        "ai",
+        "register"
+      ]
+    },
+    "editor.html": {
+      "dangling": [
+        "AIChange",
+        "ClassEngine",
+        "EngineConstants",
+        "MemorySourceBound",
+        "Renli",
+        "ThreeSystems",
+        "_registry",
+        "errors"
+      ]
+    },
+    "map-editor.html": {
+      "dangling": [
+        "Editor",
+        "platform"
+      ]
+    }
+  }
 }
