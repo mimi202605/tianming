@@ -407,7 +407,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/generativelanguage\\\.googleapis\\\.com/.test(uiSrc4) && /anthropic-dangerous-direct-browser-access/.test(uiSrc4) && /'Authorization': 'Bearer ' \+ \(key \|\| ''\)/.test(uiSrc4), 'H4 检测覆盖三家 provider(Gemini/Anthropic/OpenAI兼容含中转)');
   ok(/\['tm_P_lite', 'tm_P'\]\.forEach/.test(uiSrc4) && /localStorage\.setItem\('tm_api'/.test(uiSrc4), 'H4 保存写 tm_api+镜像游戏存档 P.ai(否则被存档优先级压掉)');
   ok(/_refreshModelChip/.test(uiSrc4) && /'配置 API'/.test(uiSrc4) && /classList\.toggle\('warn', !ok\)/.test(uiSrc4), 'H4 模型徽未配置显「配置 API」警示态');
-  var wsSrc = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-preview.html'), 'utf8');
+  var wsSrc = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-style.css'), 'utf8') /* R1·工坊CSS已外提 */;
   ok(/\.je-aa-apicfg \{ display: none !important; \}|\.je-aa-stop, \.je-aa-apicfg \{ display: none !important; \}/.test(wsSrc), 'H4 工坊旧 API 抽屉已退役(功能移模型徽弹层)');
 
   // ───────── H5 · 权限模式(问策/共审/放行·CC permission modes 对照·owner 点名缺失件) ─────────
@@ -417,7 +417,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(/ui\.planMode = p\.mode === 'plan'/.test(uiSrc5) && /ui\.autonomy = p\.mode === 'auto' \? 'auto' : 'review'/.test(uiSrc5) && /ui\.allowDestructive = p\.allowDestructive !== false/.test(uiSrc5), 'H5 模式映射既有引擎旗标(planMode/autonomy/allowDestructive·非新权限系统)');
   ok(/localStorage\.setItem\(PERM_KEY/.test(uiSrc5) && /_applyPerm\(_loadPerm\(\)\)/.test(uiSrc5), 'H5 模式持久+启动即布防');
   ok(/id="tm-aa-perm-danger"/.test(uiSrc5), 'H5 危险操作开关(允许删除/改名联动)');
-  var wsSrc5 = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-preview.html'), 'utf8');
+  var wsSrc5 = require('fs').readFileSync(path.join(__dirname, '..', 'preview', 'scenario-editor-reset-style.css'), 'utf8') /* R1·工坊CSS已外提 */;
   ok(/\.je-aa-planmode:not\(\.je-aa-fewshot\) \{ display: none !important; \}/.test(wsSrc5), 'H5 工坊旧计划模式勾选退役(升级为问策·少样例开关保留)');
 
   // ───────── H6 · 次要模型分工(杂活走便宜模型·owner"自动调用次要API的模型为它工作") ─────────

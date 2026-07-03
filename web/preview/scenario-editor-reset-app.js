@@ -1,6 +1,47 @@
 (function(global) {
   'use strict';
 
+  /* ════════════════════════════════════════════════════════════════════════
+     剧本工坊 app.js · 架构目录（2026-07-03 整备 R3·纯注释·定位用 grep 锚词，行号会漂不写死）
+
+     ◆ 四文件分工：
+       scenario-editor-reset-preview.html   静态骨架(三列grid/rail九章tile/JSON原型)+外链清单
+       scenario-editor-reset-style.css      全量样式(内联外提·追加层惯例:后来居上·回滚=删段)
+       scenario-editor-reset-adapters.js    九个页内适配IIFE(总览开关/国师坞dock/引擎合并/M2/M7/N2/P1/P2P3/boolsw)
+       scenario-editor-reset-app.js(本文件) 编辑器本体(state/渲染/命令/存档)
+
+     ◆ 主区段（按锚词 grep 定位）：
+       常量与存储 key ················ grep "STORAGE_KEY ="
+       字段字典与来源徽 ·············· grep "FIELD_DESCRIPTIONS = {"（字典总目录见下）
+       state 与模块蓝图 ·············· grep "selectedModuleId"
+       中心渲染(单模块聚焦) ·········· grep "function renderDetailApp"（渲进 #module-detail）
+       深度工作台 40 路分发 ·········· grep "function renderStructuredWorkbench"
+       完成度收口(slice5) ············ grep "重设 slice 5"
+       字段组中层(slice3b) ··········· grep "重设 slice 3b"
+       人物列传/势力图谱 ············· grep "可视化编辑 POC①" / "可视化编辑 B"
+       通用实体渲染 genDetail ········ grep "通用实体渲染基建"
+       各章 Folio(事件/财政/开篇/军事/官制/规则/区划) · grep "───────── XX章"
+       通用树状图(行政/官制共用) ····· grep "通用树状图(org-chart)"
+       运行时字段审计 ················ grep "function renderRuntimeFieldAudit"
+       顶栏/控制台注入 ··············· grep "bootstrapChrome"
+       编辑器命令分发 ················ grep "data-editor-command 分发" 或 "command === '"
+       全局点击委托(rail换章等) ······ grep "closest('[data-module-id]')"
+
+     ◆ 标签字典总目录（★补翻译先对号——同一模块的裸英文键可能分属不同渲染链，补错表不生效）：
+       FIELD_DESCRIPTIONS      剧本【顶层字段】·「字段名 · 描述」格式·folioFieldLabel 取「·」前头·
+                               同喂字段搜索(Slice85/跨章命中)·高级折子「其他字段」组走此表
+       GAMESET_LABELS/_SUB     gameSettings 对象内键（开局设置·时间历法组）
+       PLAYERINFO_LABELS       playerInfo 对象内键（玩家入口组）
+       SPECIALIST_FIELD_LABELS specialist 专业表单(M13)·能力值用游戏官方名
+       CHAR_NEST_LABELS/_SUB   人物列传嵌套区(关系网/家族/价值观…)
+       TRAIT_LABELS/WUCHANG_LABELS  特质 / 五常
+       FAC_LABELS/_SUB         势力折子；OA_KEY/OA_VAL_LABELS=对象数组键/值美化(通用)
+       EVENT_LABELS            事件章；MIL_LABELS/_SUB=军事章；ADMIN_DIV_LABELS=行政区划章
+       FISCAL/CORRUPT/ECON_LABELS(+_SUB)  财政·吏治·经济章
+       PROVENANCE_LABELS       字段来源徽(启/宋/编)
+       （官制章官职树无字典·placeholder 直书·对象值走 oftObjChip 只读结构签）
+     ════════════════════════════════════════════════════════════════════════ */
+
   var DATA = global.TM_SCENARIO_EDITOR_RESET_DATA || {};
   var STORAGE_KEY = 'tm.scenarioEditorReset.previewDraft.v1';
   // 修 quota：超过此字符数的草稿不再写 localStorage（大剧本如天启 3.7M 字符会超浏览器配额）。

@@ -25,7 +25,9 @@ assert(fs.existsSync(dataFile), 'scenario editor reset preview data should exist
 assert(fs.existsSync(appFile), 'scenario editor reset preview app script should exist');
 assert(fs.existsSync(bridgeFile), 'scenario editor formal sandbox bridge should exist');
 
-const html = fs.readFileSync(file, 'utf8');
+/* R1 架构整备(2026-07-03)：CSS 已外提 scenario-editor-reset-style.css——此 smoke 的
+   2000+ 断言历史语义=『整页(内联时代)包含…』·故 html 取 html+css 合体·语义不变。 */
+const html = fs.readFileSync(file, 'utf8') + fs.readFileSync(path.join(ROOT, 'preview', 'scenario-editor-reset-style.css'), 'utf8');
 const dataJs = fs.readFileSync(dataFile, 'utf8');
 const appJs = fs.readFileSync(appFile, 'utf8');
 const bridgeJs = fs.readFileSync(bridgeFile, 'utf8');
