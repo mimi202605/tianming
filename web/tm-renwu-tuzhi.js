@@ -822,7 +822,8 @@ function tabPov(p){
 }
 /* ===================== 朝局全景 + 群臣排行 ===================== */
 function realFacStrength(name){
-  try{var GM=_g();var f=(GM.facs||[]).find(function(x){return x.name===name;});if(f){if(typeof f.derivedStrength==='number')return f.derivedStrength;if(typeof f.strength==='number')return f.strength;if(typeof f.renown==='number')return f.renown;}if(window.TM&&TM.FactionIndex&&TM.FactionIndex.get){var fi=TM.FactionIndex.get(name);if(fi&&typeof fi.derivedStrength==='number')return fi.derivedStrength;}}catch(e){}
+  /* 2026-07-03 死链修：derivedStrength 是对象{value,label}·旧判 typeof==='number' 恒 false→谱牒实力永远回落静态账 */
+  try{var GM=_g();var f=(GM.facs||[]).find(function(x){return x.name===name;});if(f){if(f.derivedStrength&&typeof f.derivedStrength.value==='number')return f.derivedStrength.value;if(typeof f.derivedStrength==='number')return f.derivedStrength;if(typeof f.strength==='number')return f.strength;if(typeof f.renown==='number')return f.renown;}if(window.TM&&TM.FactionIndex&&TM.FactionIndex.get){var fi=TM.FactionIndex.get(name);if(fi&&fi.derivedStrength&&typeof fi.derivedStrength.value==='number')return fi.derivedStrength.value;if(fi&&typeof fi.derivedStrength==='number')return fi.derivedStrength;}}catch(e){}
   return null;
 }
 function factionData(){
