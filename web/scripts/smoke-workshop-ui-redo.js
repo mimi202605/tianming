@@ -56,6 +56,8 @@ ok(/\.inspector \.missing-field-callout b \{ color: #7d5e22; \}/.test(html), 'X3
 console.log('— Z 逐章走查收尾 —');
 ok(/function oftObjChip\(val\)/.test(app) && /oftObjChip\(val\) \|\| '<input /.test(app), 'Z 官制对象值渲只读结构签(不再 [object Object] 进可回写 input·防编辑毁结构)');
 ok(/::selection \{ background: rgba\(184, 154, 83, \.32\)/.test(html) && /\.inspector ::selection/.test(html), 'Z ::selection 墨面金晕/纸面朱晕(去浏览器默认蓝)');
+ok(!/open-api-settings-modal/.test(app) && !/openApiSettingsModal/.test(app), 'Z 顶栏⚙API设置模态退役(owner指认·主API配置在国师模型徽弹层)');
+ok(/data-runtime-panel="api-settings-workbench"/.test(app) && /renderApiSettingsWorkbench/.test(app), 'Z 生图API面板(api-settings-workbench)保留·能力不失');
 
 console.log('\nsmoke-workshop-ui-redo ' + (F === 0 ? 'PASS' : 'FAIL') + ' ' + A + '/' + (A + F));
 process.exit(F === 0 ? 0 : 1);
