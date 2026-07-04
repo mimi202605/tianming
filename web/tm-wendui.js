@@ -1571,8 +1571,13 @@ function _wdDoReward(type) {
       var _gbal = (typeof GM.neitang.balance === 'number') ? GM.neitang.balance : (typeof GM.neitang.money === 'number' ? GM.neitang.money : null);
       if (_gbal !== null) {
         _gpay = Math.min(5000, Math.max(0, _gbal));
-        if (typeof GM.neitang.balance === 'number') GM.neitang.balance = _gbal - _gpay;
-        if (typeof GM.neitang.money === 'number') GM.neitang.money = _gbal - _gpay;
+        // 内帑走 FiscalEngine 写口(2026-07-04 收口)·直改标量=ledger 不知情两本账
+        if (_gpay > 0 && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromNeitang) {
+          FiscalEngine.spendFromNeitang({ money: _gpay }, '赐金');
+        } else if (_gpay > 0) { // 沙箱兜底
+          if (typeof GM.neitang.balance === 'number') GM.neitang.balance = _gbal - _gpay;
+          if (typeof GM.neitang.money === 'number') GM.neitang.money = _gbal - _gpay;
+        }
       }
     }
     msg = _gpay > 0 ? ('（赐金。忠+5·内帑-' + _gpay + '两。）') : '（赐金。忠+5·内帑空乏。）';

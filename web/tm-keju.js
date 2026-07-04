@@ -1104,7 +1104,9 @@ function _kejuSettleCentralCost(exam, stage) {
   var neitangMoney = (GM.neitang && GM.neitang.money) || 0;
   if (neitangMoney >= amount) {
     // 默认自动内帑补贴（避免阻塞时间线·可改为弹窗确认）
-    GM.neitang.money = Math.max(0, neitangMoney - amount);
+    // 内帑走 FiscalEngine 写口(2026-07-04 收口)·直改标量=ledger 不知情两本账
+    if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromNeitang) FiscalEngine.spendFromNeitang({ money: amount }, '科举经费');
+    else GM.neitang.money = Math.max(0, neitangMoney - amount); // 沙箱兜底
     exam.costsPaid.central = (exam.costsPaid.central || 0) + amount;
     exam.costsPaid['_stage_' + stage] = true;
     // C4\u00B7toast/EB \u6587\u6848\u00B7\u965B\u4E0B\u6177\u6168\u00B7\u5185\u5E11\u8865\u8D34 X \u4E24\u00B7\u58EB\u6797\u611F\u5FF5 (paradigm 0 \u6539\u00B7huangwei+2 \u4E0D\u52A8)

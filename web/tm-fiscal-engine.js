@@ -2005,6 +2005,48 @@
     return { ok: true };
   }
 
+  // ── 内帑对称写口（2026-07-04 守卫v3收口）────────────────────────────────
+  // 此前八处外部金流散写 GM.neitang.balance/money（赐金/科举补贴/宫廷俸禄/侵吞/追赃/抄没/归公/调度）
+  // =内帑侧「两本账」病灶：neitang ledger 不知情·monthlySettle 对账漂移。语义与国库口一致：尽扣记欠·同步标量镜像。
+  function spendFromNeitang(amounts, sinkTag) {
+    var G = getGame();
+    if (!G) return { ok: false, reason: 'no GM' };
+    amounts = amounts || {};
+    var L = ensureNeitang(G);
+    reconcileLedgerScalar(L.money, G.neitang.money, G.neitang.balance);
+    reconcileLedgerScalar(L.grain, G.neitang.grain, null);
+    reconcileLedgerScalar(L.cloth, G.neitang.cloth, null);
+    var out = {};
+    ['money', 'grain', 'cloth'].forEach(function(kind) {
+      var amt = safeNumber(amounts[kind], 0);
+      out[kind] = (amt > 0) ? deductFromLedger(L[kind], amt, sinkTag || '内帑支出') : { deducted: 0, deficit: 0 };
+    });
+    syncAccountScalars(G.neitang, L);
+    return { ok: true, deducted: out };
+  }
+
+  function addToNeitang(amounts, sourceTag) {
+    var G = getGame();
+    if (!G) return { ok: false, reason: 'no GM' };
+    amounts = amounts || {};
+    var L = ensureNeitang(G);
+    reconcileLedgerScalar(L.money, G.neitang.money, G.neitang.balance);
+    reconcileLedgerScalar(L.grain, G.neitang.grain, null);
+    reconcileLedgerScalar(L.cloth, G.neitang.cloth, null);
+    ['money', 'grain', 'cloth'].forEach(function(kind) {
+      var amt = safeNumber(amounts[kind], 0);
+      if (amt > 0) {
+        var led = L[kind];
+        led.stock = (Number(led.stock) || 0) + amt;
+        led.thisTurnIn = (Number(led.thisTurnIn) || 0) + amt;
+        if (!led.sources) led.sources = {};
+        led.sources[sourceTag || '入账'] = (Number(led.sources[sourceTag || '入账']) || 0) + amt;
+      }
+    });
+    syncAccountScalars(G.neitang, L);
+    return { ok: true };
+  }
+
   function fixedTick(ctx) {
     try { return fixedCollect(ctx); } catch (e) {
       if (global.TM && global.TM.errors && global.TM.errors.capture) global.TM.errors.capture(e, 'FixedExpense.tick');
@@ -2072,6 +2114,8 @@
     triggerPlayerSurvey: triggerPlayerSurvey,
     spendFromGuoku: spendFromGuoku,
     addToGuoku: addToGuoku,
+    spendFromNeitang: spendFromNeitang,
+    addToNeitang: addToNeitang,
     applyPlayerTaxReform: applyPlayerTaxReform,
     // S1·俸禄认人单测钩子
     calcSalary: calcSalary,

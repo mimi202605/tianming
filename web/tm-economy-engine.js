@@ -1914,7 +1914,8 @@
         order.failReason = '内帑不足';
         return { success: false, reason: '内帑不足' };
       }
-      GM.neitang.balance -= order.amount;
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromNeitang) FiscalEngine.spendFromNeitang({ money: order.amount }, '银钱调度'); // 收口·走真账
+      else GM.neitang.balance -= order.amount; // 沙箱兜底
     }
     return { success: true, order: order };
   }
@@ -1980,7 +1981,8 @@
         var paid = false;
         if (ch.department === 'imperial' && GM.neitang) {
           if (GM.neitang.balance >= salary) {
-            GM.neitang.balance -= salary;
+            if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromNeitang) FiscalEngine.spendFromNeitang({ money: salary }, '俸禄'); // 收口·走真账
+            else GM.neitang.balance -= salary; // 沙箱兜底
             paid = true;
           }
         } else if (ch.currentRegion && GM.regions && GM.regions[ch.currentRegion]) {

@@ -285,7 +285,8 @@
       // calcInnerTreasuryLeak 基于 neitang.monthlyIncome=本就是月度值·再/12 曾把 imperial 侵吞削到设计值 1/12·
       // 内帑腐败近乎无感(2026-07-04 审查定罪)。转回合只乘 mr。
       var monthlyLeak = leak * mr;
-      GM.neitang.balance = Math.max(0, safe(GM.neitang.balance, 0) - monthlyLeak);
+      if (monthlyLeak > 0 && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromNeitang) FiscalEngine.spendFromNeitang({ money: monthlyLeak }, '内帑侵吞'); // 收口·走真账(sink 可查)
+      else GM.neitang.balance = Math.max(0, safe(GM.neitang.balance, 0) - monthlyLeak); // 沙箱兜底
       if (!GM._corrStats) GM._corrStats = {};
       GM._corrStats.lastMonthInnerLeak = monthlyLeak;
     }
@@ -1536,7 +1537,10 @@
       }
     }
     if (ben.guoku && typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) FiscalEngine.addToGuoku({ money: ben.guoku }, '追赃入库'); // 收口·走真账
-    if (ben.neitang  && GM.neitang)  GM.neitang.balance += ben.neitang;
+    if (ben.neitang && GM.neitang) {
+      if (typeof FiscalEngine !== 'undefined' && FiscalEngine.addToNeitang) FiscalEngine.addToNeitang({ money: ben.neitang }, '追赃入帑'); // 收口·走真账
+      else GM.neitang.balance += ben.neitang; // 沙箱兜底
+    }
     if (ben.partyStrife && GM.partyStrife !== undefined) GM.partyStrife = Math.max(0, GM.partyStrife + ben.partyStrife);
     if (ben.armyMorale && GM.armies) {
       GM.armies.forEach(function(a) { a.morale = Math.min(100, (a.morale || 50) + ben.armyMorale); });
