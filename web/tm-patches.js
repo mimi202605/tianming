@@ -2448,6 +2448,7 @@ function doActualStart(sid){
   if (sc.goals && sc.goals.length > 0) P.goals = deepClone(sc.goals);
   if (sc.offendGroups) P.offendGroups = deepClone(sc.offendGroups);
   if (sc.keju) P.keju = deepClone(sc.keju);
+  else if (P.keju) { P.keju.currentExam = null; P.keju.currentEnke = null; } // arch-ok 换剧本清残局考试·旧局currentExam曾串新局继续推进/归档进新局history(2026-07-04 审查定罪)
   if (sc.playerInfo) P.playerInfo = deepClone(sc.playerInfo);
   if (sc.engineConstants) {
     GM.engineConstants = deepClone(sc.engineConstants);

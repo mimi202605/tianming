@@ -1101,7 +1101,7 @@ function _offShowCareer(charName) {
   bg.style.cssText = 'position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
   var html = '<div style="background:var(--color-surface);border:1px solid var(--gold-500);border-radius:var(--radius-lg);padding:1.2rem 1.5rem;max-width:450px;max-height:80vh;overflow-y:auto;">';
   html += '<div style="font-size:var(--text-md);color:var(--color-primary);margin-bottom:var(--space-2);letter-spacing:0.1em;">' + escHtml(charName) + ' \u4ED5\u9014</div>';
-  html += '<div style="font-size:0.7rem;color:var(--color-foreground-muted);margin-bottom:var(--space-2);">\5FE0' + (typeof _fmtNum1==='function'?_fmtNum1(ch.loyalty||50):(ch.loyalty||50)) + ' \u667A' + (ch.intelligence||50) + ' \u653F' + (ch.administration||50) + ' \u519B' + (ch.military||50) + ' \u91CE\u5FC3' + (ch.ambition||50) + '</div>';
+  html += '<div style="font-size:0.7rem;color:var(--color-foreground-muted);margin-bottom:var(--space-2);">忠' + (typeof _fmtNum1==='function'?_fmtNum1(ch.loyalty||50):(ch.loyalty||50)) + ' \u667A' + (ch.intelligence||50) + ' \u653F' + (ch.administration||50) + ' \u519B' + (ch.military||50) + ' \u91CE\u5FC3' + (ch.ambition||50) + '</div>';
   html += _offRenderCareerHTML(charName);
   html += '<div style="text-align:center;margin-top:var(--space-2);"><button class="bt" onclick="this.closest(\'div[style*=fixed]\').remove();">\u5173\u95ED</button></div>';
   html += '</div>';

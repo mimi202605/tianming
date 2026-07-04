@@ -385,8 +385,9 @@ function _ltRenderLetterCard(l, target) {
   else if (/military|army|order/.test(l.letterType||'')) sealCls = 'military';
   var sealChar = typeInfo.label ? String(typeInfo.label).charAt(0) : (isOutgoing ? '\u8C15' : '\u62A5');
 
-  // 标记已读
-  if (!isOutgoing && !l._playerRead) l._playerRead = true;
+  // 标记已读（在途来函不算读·信使未到不该能读全文更不该吞掉到达红点·2026-07-04 审查定罪）
+  var _inFlightIn = !isOutgoing && l.status === 'traveling';
+  if (!isOutgoing && !l._playerRead && !_inFlightIn) l._playerRead = true;
 
   html += '<div class="' + msgCls + '"><span class="hy-msg-tag"></span>';
   html += '<div class="hy-letter">';
@@ -401,8 +402,8 @@ function _ltRenderLetterCard(l, target) {
   if (l._multiRecipients) html += '<span>\u7FA4\u53D1' + l._multiRecipients + '\u4EBA</span>';
   html += '<span class="date">' + escHtml(sentDate) + '</span>';
   html += '</div>';
-  // 正文
-  html += '<div class="body wd-selectable">' + escHtml(l.content || '') + '</div>';
+  // 正文（在途来函遮蔽全文）
+  html += '<div class="body wd-selectable">' + (_inFlightIn ? '<em style="opacity:.65">〔信使在途·尚未送抵御前〕</em>' : escHtml(l.content || '')) + '</div>';
   // 署名
   var _sig = isOutgoing ? '\u6731\u624B\u4E66' : ('\u81E3 ' + escHtml(l.from||target) + ' \u987F\u9996');
   html += '<div class="signature">' + escHtml(sentDate) + '\u00B7' + _sig + '</div>';
