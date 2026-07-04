@@ -1546,7 +1546,12 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
       eraName: GM.eraName || ''
     };
     // 写入 autosave（页面刷新恢复用）+ slot_0（案卷目录显示用）
-    TM_SaveDB.save('autosave', _autoState, _autoMeta).catch(function(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'AutoSave] autosave写入失败:') : console.warn('[AutoSave] autosave写入失败:', e); });
+    TM_SaveDB.save('autosave', _autoState, _autoMeta).then(function() {
+      // ★ 推演成功且本回合 autosave 已落库·才清 pre_endturn 崩溃标记——旧写法在 async IIFE 外同步删·
+      // 等后台 job+落库的数十秒窗口内闪退=mark 已删而新档未写·重启不弹恢复·静默回滚上一回合
+      // (安卓 OOM 闪退史正踩此窗·2026-07-04 审查定罪)。写失败则 mark 留着·下次启动照常弹恢复=保守正确。
+      try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_rmE){}
+    }).catch(function(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'AutoSave] autosave写入失败:') : console.warn('[AutoSave] autosave写入失败:', e); });
     TM_SaveDB.save('slot_0', _autoState, _autoMeta).then(function() {
       if (typeof _updateSaveIndex === 'function') _updateSaveIndex(0, _autoMeta);
       // 同时写轻量标记到localStorage（用于页面刷新检测）
@@ -1562,6 +1567,8 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
     // IDB 中的 pre_endturn 不删·下次回合开始时自动覆盖·留作"上回合操作快照"应急
       } catch(e) { console.warn('[AutoSave] post-turn save failed:', e); }
     })();
+  } else {
+    // 无 IDB 环境保留旧语义：mark 在此环境本也不会被 core 设置·同步清掉防误弹
     try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_rmE){}
   }
 

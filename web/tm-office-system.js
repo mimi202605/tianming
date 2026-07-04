@@ -1434,6 +1434,9 @@ function _engineRetireOfficial(c, reason) {
   c._preRetireTitle = c._preRetireTitle || c.officialTitle || '';
   c._retired = true; c.retired = true; c._retireTurn = (GM.turn || 0); c._seeksRetirement = null;
   if (c.officialTitle && !_OFF_RETIRE_RE.test(c.officialTitle)) c.officialTitle = c.officialTitle + '·致仕';
+  // 数组 claim 一并撤(2026-07-04 审查定罪)：officialTitles/concurrentTitles 里未带后缀的旧衔仍是活 claim·
+  // 派生同步(claims 过滤只滤带致仕后缀的 officialTitle)会把致仕者原座坐回=致仕自我还原。_preRetireTitle 已留起复凭据。
+  c.officialTitles = []; c.concurrentTitles = []; c.concurrentTitle = '';
   if (typeof _offVacateByCharName === 'function') { try { _offVacateByCharName(c.name, reason); } catch (e) {} }
   if (typeof addEB === 'function') addEB('人事', c.name + ' ' + reason + '·致仕去位（官缺待补·可诏起复）');
   _officeChronLink('官制↔人事', c.name + ' ' + reason + '·准致仕去位（新陈代谢·官缺待补）');
