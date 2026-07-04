@@ -549,6 +549,9 @@ function renderKejuProgressStage(container, title, subtitle) {
 /** 阶段结束·执行终结动作+推进到下一阶段 */
 async function _finalizeStageAndAdvance(exam, slot) {
   slot = slot || 'currentExam';
+  // 重入锁(2026-07-04 审查定罪)：内部 AI 调用可长于一回合·stageElapsedDays 继续累积曾令同阶段被二次终结(经费/皇威罚/AI 各双份)
+  if (!exam || exam._finalizing) return;
+  exam._finalizing = true;
   // 老阶段名兼容：旧存档 stage === 'preliminary' → 视为 'preliminary_local'
   if (exam.stage === 'preliminary') exam.stage = 'preliminary_local';
   var fromStage = exam.stage;
@@ -657,7 +660,7 @@ async function _finalizeStageAndAdvance(exam, slot) {
     toast('\uD83D\uDCDC \u79D1\u4E3E\u8FDB\u5165\u300C' + (stageNames[exam.stage] || exam.stage) + '\u300D\u9636\u6BB5');
   } catch(e) {
     console.error('[科举·B2] 阶段切换异常', fromStage, '→', exam.stage, e);
-  }
+  } finally { exam._finalizing = false; }
 }
 
 /** 辅助·调整皇威（若引擎可用） */
@@ -847,6 +850,7 @@ function proceedToHuishi() {
   var exam = P.keju.currentExam;
   if (!exam.chiefExaminer) { toast('\u8BF7\u5148\u9009\u62E9\u4E3B\u8003\u5B98'); return; }
   exam.stage = 'huishi';
+  exam.stageStartTurn = GM.turn; exam.stageElapsedDays = 0; // \u624B\u52A8\u5207\u9636\u6BB5\u540C\u6B65\u91CD\u7F6E\u8BA1\u65F6(2026-07-04 \u5BA1\u67E5\u5B9A\u7F6A:\u7EE7\u627F\u65E7\u5929\u6570\u81F4\u65B0\u9636\u6BB5\u88AB\u63D0\u524D\u7EC8\u7ED3)
   renderKejuStage();
 }
 
@@ -1019,7 +1023,11 @@ async function generateHuishiResults() {
     };
 
     exam.dianshiCandidates = exam.huishiPassed.slice(0, dianshiCount);
+    // 手动开榜与 timed finalize 同责(2026-07-04 审查定罪)：结中央会试经费(settle 已按阶段幂等·不会与 finalize 双扣)
+    // +重置阶段计时(旧手动路径继承上一阶段天数·新阶段曾被提前终结)
+    if (typeof _kejuSettleCentralCost === 'function') { try { _kejuSettleCentralCost(exam, 'huishi'); } catch(_kc1){} }
     exam.stage = 'dianshi';
+    exam.stageStartTurn = GM.turn; exam.stageElapsedDays = 0;
 
     // v7.1·C3·alignment event·开榜后若题目错配主考偏好·spawn warning + tension/affinity
     if (typeof _kjApplyAlignmentEvent === 'function' && exam.chiefExaminer) {
@@ -1288,7 +1296,10 @@ async function startDianshi() {
       _kejuUpdateDianshiProgress('\u2705 \u5171 ' + exam.dianshiResults.length + ' \u5377\u7B54\u5377\u00B7\u4E3B\u8003\u6279\u8BED\u5DF2\u62DF\u00B7\u8BF7\u94A6\u5B9A\u4E09\u7532', 100);
       await new Promise(function(r){ setTimeout(r, 700); });
       _kejuCloseDianshiProgress();
+      // 手动开考与 timed finalize 同责：结殿试经费(按阶段幂等)+计时重置
+      if (typeof _kejuSettleCentralCost === 'function') { try { _kejuSettleCentralCost(exam, 'dianshi'); } catch(_kc2){} }
       exam.stage = 'finished';
+      exam.stageStartTurn = GM.turn; exam.stageElapsedDays = 0;
       renderKejuStage();
       return;
     } catch(e) {
