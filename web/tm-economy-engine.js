@@ -1993,7 +1993,11 @@
           }
         }
         if (!paid && GM.guoku && GM.guoku.balance >= salary) {
-          if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: salary }, '俸禄'); // 收口·走真账
+          // 俸禄双扣修(2026-07-04 审查定罪)：FixedExpense 本回合已按 officeTree 编制从国库总扣过「俸禄」——
+          // 此处只记「发放到人」不再二次出账；FixedExpense 未跑的场合才走真账兜底。
+          if (GM._lastFixedExpenseTurn !== GM.turn) {
+            if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: salary }, '俸禄'); // 收口·走真账
+          }
           paid = true;
         }
         if (paid) {

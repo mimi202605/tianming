@@ -690,10 +690,9 @@ function executeRequestLoyaltyBehavior(npc, target, decision, context) {
 function executeReformBehavior(npc, target, decision, context) {
   addEB('改革', npc.name + ' 推行改革：' + target);
 
-  // 改革影响资源和稳定度
-  var __npcMk=typeof _findVarByType==='function'?_findVarByType('morale'):null;
-  if (__npcMk&&GM.vars[__npcMk]) {
-    GM.vars[__npcMk].value = Math.max(GM.vars[__npcMk].min||0, GM.vars[__npcMk].value - 5);
+  // 改革影响资源和稳定度——民心走总闸：vars['民心'].value 是已退役镜像·直写被 aggregateTrue 冲掉(2026-07-04 审查定罪)
+  if (typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
+    try { TM.MinxinLedger.recordAndApply(GM, { sourceSystem: 'npc-reform', kind: 'npcReform', delta: -5, reason: (npc && npc.name || '大臣') + '推行改革·扰动民生' }); } catch (_e) {}
   }
 
   if (GM.eraState) {
