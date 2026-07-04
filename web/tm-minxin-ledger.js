@@ -701,6 +701,7 @@
     var level = raw.level || levelForTruth(raw.true, momentum);
     if (!found) {
       found = {
+        _touchedTurn: Number(options.turn) || 0,
         id: id,
         turn: Number(options.turn) || 0,
         region: raw.region || '',
@@ -723,6 +724,7 @@
       found.cause = compact(raw.cause || raw.reason || found.cause, 180);
       found.linkedIssue = raw.linkedIssue || found.linkedIssue || '';
       found.lastTurn = Number(options.turn) || found.lastTurn || 0;
+      found._touchedTurn = Number(options.turn) || 0; // 本回合被压力刷新·免于衰减
     }
     return found;
   }
@@ -732,9 +734,12 @@
     if (!chain || chain.level < 3) return null;
     var existing = mx.revolts.filter(function(r) { return r && r.sourceChainId === chain.id && r.status === 'ongoing'; })[0];
     if (existing) return existing;
+    var _t = Number(root.turn) || 0;
+    // 复燃冷却：同链上一场民变结束后 12 回合内不自动补位——旧行为=镇压次回合原地复活成永动民变(2026-07-04 审查定罪)
+    if (chain._lastSpawnTurn != null && (_t - chain._lastSpawnTurn) < 12) return null;
     var scale = chain.level >= 4 ? 200000 : 30000;
     var revolt = {
-      id: 'revolt-' + chain.id,
+      id: 'revolt-' + chain.id + '-t' + _t, // 带回合号唯一 id·旧写法复用同 id 令镇压 find 命中旧尸体(按 id 镇不掉复燃场)
       turn: chain.turn || root.turn || 0,
       region: chain.region || 'unknown',
       className: chain.className || '',
@@ -746,12 +751,14 @@
       sourceChainId: chain.id
     };
     mx.revolts.push(revolt);
+    chain._lastSpawnTurn = _t;
     return revolt;
   }
 
   function advanceUprisingChain(root, options) {
     root = pickRoot(root);
     options = options || {};
+    if (options.turn == null) options.turn = Number(root.turn) || 0; // 统一回合锚·upsert 的 _touchedTurn 与下方衰减判据同源
     var mx = ensureMinxin(root);
     if (!Array.isArray(mx.uprisingChain)) mx.uprisingChain = [];
     toArray(mx.uprisingCandidates).forEach(function(c) {
@@ -782,6 +789,19 @@
         cause: 'low regional minxin',
         sourceType: 'regional_minxin'
       }, options);
+    });
+    // 链条衰减/退场：本回合未被压力刷新(候选与低民心区皆无)的链·势头逐回合消退·消尽除名——
+    // 旧行为 momentum/level 只涨不落+每回合补 ongoing=民心恢复后民变仍永动(2026-07-04 审查定罪)
+    var _nowTurn = Number(options.turn) || 0;
+    mx.uprisingChain = mx.uprisingChain.filter(function(chain) {
+      if (!chain) return false;
+      if (chain._touchedTurn === _nowTurn) return true;
+      chain.momentum = round2(Math.max(0, (Number(chain.momentum) || 0) - 12));
+      if (chain.momentum < 30 && (chain.level || 1) > 1) {
+        chain.level = (chain.level || 1) - 1;
+        chain.stage = (UPRISING_LEVELS[chain.level - 1] || UPRISING_LEVELS[0]).name;
+      }
+      return chain.momentum > 0;
     });
     mx.uprisingChain = mx.uprisingChain.slice(-80);
     mx.uprisingChain.forEach(function(chain) { syncRevoltFromChain(root, chain); });
