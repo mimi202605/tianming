@@ -140,7 +140,7 @@ async function main() {
   load(ctx, 'tm-ai-change-applier.js');
   load(ctx, 'tm-npc-engine.js');
   load(ctx, 'tm-npc-action-ledger.js');
-  load(ctx, 'tm-npc-decision.js');
+  load(ctx, 'tm-npc-decision.js'); load(ctx, 'tm-npc-decision-ai-driven.js');
 
   assert(ctx.CharEconEngine && typeof ctx.CharEconEngine.buildEconomySnapshot === 'function',
     'CharEconEngine should expose buildEconomySnapshot contract');

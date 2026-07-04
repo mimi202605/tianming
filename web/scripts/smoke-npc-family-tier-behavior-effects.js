@@ -210,7 +210,7 @@ async function main() {
   load(ctx, 'tm-char-economy-engine.js');
   load(ctx, 'tm-npc-engine.js');
   load(ctx, 'tm-npc-action-ledger.js');
-  load(ctx, 'tm-npc-decision.js');
+  load(ctx, 'tm-npc-decision.js'); load(ctx, 'tm-npc-decision-ai-driven.js');
 
   const patron = ctx.GM.chars[0];
   const isolated = ctx.GM.chars[1];

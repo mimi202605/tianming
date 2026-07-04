@@ -249,7 +249,7 @@ function main() {
   const ctx = buildContext();
   load(ctx, 'tm-npc-engine.js');
   load(ctx, 'tm-npc-action-ledger.js');
-  load(ctx, 'tm-npc-decision.js');
+  load(ctx, 'tm-npc-decision.js'); load(ctx, 'tm-npc-decision-ai-driven.js');
 
   assert(typeof ctx._buildNpcActionCandidates === 'function',
     'NPC decision layer should expose action candidate builder');

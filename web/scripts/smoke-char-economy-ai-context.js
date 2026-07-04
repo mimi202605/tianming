@@ -140,7 +140,7 @@ async function main() {
   load(ctx, 'tm-ai-change-applier.js');
   load(ctx, 'tm-npc-engine.js');
   load(ctx, 'tm-npc-action-ledger.js');
-  load(ctx, 'tm-npc-decision.js');
+  load(ctx, 'tm-npc-decision.js'); load(ctx, 'tm-npc-decision-ai-driven.js');
 
   const fullContext = ctx.AIChangeApplier.buildFullAIContext();
   const richNpc = fullContext.npcs.find(function(n) { return n.name === 'RichMinister'; });

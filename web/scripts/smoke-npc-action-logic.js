@@ -149,7 +149,7 @@ async function main() {
   load(ctx, 'tm-npc-engine.js');
   load(ctx, 'tm-npc-action-ledger.js');
   load(ctx, 'tm-fiscal-engine.js');   // 国库出入已收口走真账(2026-07-04)·沙箱须与运行时同形态
-  load(ctx, 'tm-npc-decision.js');
+  load(ctx, 'tm-npc-decision.js'); load(ctx, 'tm-npc-decision-ai-driven.js');
 
   assert(ctx.TM && ctx.TM.NPC && ctx.TM.NPC.ActionLedger,
     'TM.NPC.ActionLedger should expose the unified character NPC action ledger');
@@ -167,7 +167,7 @@ async function main() {
   const indexSrc = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const inferSrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-ai-infer.js'), 'utf8');
   const applySrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8');
-  const decisionSrc = fs.readFileSync(path.join(ROOT, 'tm-npc-decision.js'), 'utf8');
+  const decisionSrc = (fs.readFileSync(path.join(ROOT, 'tm-npc-decision.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-npc-decision-ai-driven.js'), 'utf8'));
   assert(indexSrc.indexOf('tm-npc-action-ledger.js') >= 0,
     'index.html should load the unified NPC action ledger before npc decision logic');
   assert(inferSrc.indexOf('collectHandledNamesFromP1') >= 0,

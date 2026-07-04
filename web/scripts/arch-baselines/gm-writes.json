@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T07:16:14.739Z",
+  "updatedAt": "2026-07-04T07:24:44.723Z",
   "totals": {
     "gm": 4573,
     "p": 739
@@ -438,14 +438,20 @@
       }
     },
     "tm-npc-decision.js": {
-      "gm": 34,
+      "gm": 7,
       "p": 0,
       "roots": {
         "gm:rels": 1,
         "gm:eraState": 1,
         "gm:_npcActionLedger": 1,
         "gm:provinceStats": 2,
-        "gm:corruption": 2,
+        "gm:corruption": 2
+      }
+    },
+    "tm-npc-decision-ai-driven.js": {
+      "gm": 27,
+      "p": 0,
+      "roots": {
         "gm:_turnContext": 2,
         "gm:_npcDecisionDiagnostics": 3,
         "gm:_npcIdleAutonomy": 22

@@ -10,7 +10,7 @@ const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
 const memorials = read('tm-memorials.js');
 const saveLifecycle = read('tm-save-lifecycle.js');
-const npcDecision = read('tm-npc-decision.js');
+const npcDecision = (read('tm-npc-decision.js') + read('tm-npc-decision-ai-driven.js'));
 const helpSocial = read('tm-help-social.js');
 const utils = read('tm-utils.js');
 const edictLifecycle = read('tm-edict-lifecycle.js');
