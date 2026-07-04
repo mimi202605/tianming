@@ -11,7 +11,7 @@ function countMatches(src, pattern) {
 }
 
 const keju = read('tm-keju.js');
-const kejuRuntime = read('tm-keju-runtime.js');
+const kejuRuntime = (read('tm-keju-runtime.js') + read('tm-keju-runtime-keyi.js'));
 const playerSettings = read('tm-player-settings.js');
 const saveLifecycle = read('tm-save-lifecycle.js');
 const patches = read('tm-patches.js');

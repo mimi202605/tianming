@@ -13,7 +13,7 @@ function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; conso
 function r2(n) { return Math.round(Number(n) * 100) / 100; }
 function sliceFn(s, marker) { const a = s.indexOf(marker); let j = s.indexOf('{', a), d = 0; for (; j < s.length; j++) { const c = s[j]; if (c === '{') d++; else if (c === '}') { d--; if (d === 0) { j++; break; } } } return s.slice(a, j); }
 
-const kjSrc = fs.readFileSync(path.join(WEB, 'tm-keju-runtime.js'), 'utf8');
+const kjSrc = (fs.readFileSync(path.join(WEB, 'tm-keju-runtime.js'), 'utf8') + '\n' + fs.readFileSync(path.join(WEB, 'tm-keju-runtime-keyi.js'), 'utf8'));
 const flowSrc = sliceFn(kjSrc, 'function _kejuMobilityFlow(');
 
 console.log('smoke-keju-quota-lever — ④ G 名额显式 throttle 杠杆');

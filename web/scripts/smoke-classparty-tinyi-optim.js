@@ -45,7 +45,7 @@ console.log('— S1 · 满意度总闸收口(行为) —');
 console.log('— S1 · 七处绕闸点接闸(契约) —');
 ok((read('tm-keju.js').match(/gateSatisfaction/g) || []).length >= 2, 'tm-keju.js 两处(宗室/礼制)接闸');
 ok(/gateSatisfaction/.test(read('tm-keju-activation.js')), 'tm-keju-activation.js 接闸');
-ok((read('tm-keju-runtime.js').match(/gateSatisfaction/g) || []).length >= 4, 'tm-keju-runtime.js 两处考生占比接闸');
+ok(((read('tm-keju-runtime.js') + read('tm-keju-runtime-keyi.js')).match(/gateSatisfaction/g) || []).length >= 4, 'tm-keju-runtime.js 两处考生占比接闸');
 ok(/gateSatisfaction\(GM, cls, _crDelta/.test(read('tm-endturn-followup.js')), '后朝 class_reactions 接闸');
 var _apl = read('tm-endturn-apply.js');
 ok(/gateSatisfaction\(GM, clsObj, impact/.test(_apl), '解锁 classesAffected 接闸');

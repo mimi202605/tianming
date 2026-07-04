@@ -36,7 +36,7 @@ SF.tickClassRadical({}, cDecay, {}, 6);
 ok(r2(cDecay._aspirationBlock) === 0.02, '小残怨望续衰减 0.06→0.02 (' + cDecay._aspirationBlock + ')');
 
 console.log('— Part B：_kejuMobilityFlow（真函数抽取）—');
-const src = fs.readFileSync(path.join(WEB, 'tm-keju-runtime.js'), 'utf8');
+const src = (fs.readFileSync(path.join(WEB, 'tm-keju-runtime.js'), 'utf8') + '\n' + fs.readFileSync(path.join(WEB, 'tm-keju-runtime-keyi.js'), 'utf8'));
 function sliceFn(s, marker) { const a = s.indexOf(marker); let j = s.indexOf('{', a), d = 0; for (; j < s.length; j++) { const c = s[j]; if (c === '{') d++; else if (c === '}') { d--; if (d === 0) { j++; break; } } } return s.slice(a, j); }
 const fnSrc = sliceFn(src, 'function _kejuMobilityFlow(');
 
