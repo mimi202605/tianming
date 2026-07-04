@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T05:53:57.472Z",
+  "updatedAt": "2026-07-04T06:07:33.443Z",
   "totals": {
     "gm": 4573,
     "p": 739
@@ -1649,23 +1649,36 @@
         "gm:partyStrife": 1
       }
     },
-    "tm-chaoyi-changchao.js": {
-      "gm": 28,
+    "tm-chaoyi-changchao-adapter.js": {
+      "gm": 2,
       "p": 0,
       "roots": {
-        "gm:_deptAbsenceTracker": 2,
+        "gm:_deptAbsenceTracker": 2
+      }
+    },
+    "tm-chaoyi-changchao.js": {
+      "gm": 16,
+      "p": 0,
+      "roots": {
         "gm:jishiRecords": 3,
         "gm:_chaoyiPolicyActions": 3,
         "gm:_edictTracker": 2,
         "gm:_pendingTinyiTopics": 2,
         "gm:_ccHeldItems": 2,
         "gm:deptTasks": 2,
-        "gm:_chaoyiCount": 5,
+        "gm:_chaoyiCount": 2
+      }
+    },
+    "tm-chaoyi-changchao-flows.js": {
+      "gm": 10,
+      "p": 0,
+      "roots": {
         "gm:_courtRecords": 3,
         "gm:_lastChangchaoDecisions": 1,
         "gm:_lastChangchaoDecisionMeta": 1,
         "gm:_lastChangchaoDecisionsTargetTurn": 1,
-        "gm:biannianItems": 1
+        "gm:biannianItems": 1,
+        "gm:_chaoyiCount": 3
       }
     },
     "tm-tinyi-v3-persona.js": {

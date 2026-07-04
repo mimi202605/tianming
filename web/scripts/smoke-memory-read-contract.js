@@ -32,7 +32,7 @@ assert(/recallMemory:\s*function\(query,\s*opts\)/.test(mechanics), 'NpcMemorySy
 assert(/recall:\s*function\(charName,\s*limit\)/.test(mechanics), 'NpcMemorySystem.recall compatibility alias should exist');
 assert(/GM\._memoryArchiveFull/.test(mechanics), 'recall compatibility alias should read the full memory archive first');
 
-const chaoyi = read('tm-chaoyi-changchao.js');
+const chaoyi = (read('tm-chaoyi-changchao-adapter.js') + read('tm-chaoyi-changchao.js') + read('tm-chaoyi-changchao-flows.js'));
 assert(/NpcMemorySystem\.recall\b/.test(chaoyi), 'old chaoyi recall caller should remain covered by compatibility alias');
 
 const infra = read('tm-ai-infra.js');

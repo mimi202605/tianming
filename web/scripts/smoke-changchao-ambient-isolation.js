@@ -15,7 +15,7 @@ let passed = 0, failed = 0;
 function assert(cond, msg){ if(cond) passed++; else { failed++; console.error('  ✗ '+msg); } }
 
 const TIANQI = ['满桂','韩爌','黄宗周','倪元璐','温体仁','毕自严','王在晋','黄景昉','袁崇焕','王永光'];
-const src = fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf8');
+const src = (fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-adapter.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-flows.js'), 'utf8'));
 
 console.log('===== 静态·氛围池与发言气泡不再写死天启人名 =====');
 // AMBIENT_LINES + AMBIENT_TEMPLATES 区段

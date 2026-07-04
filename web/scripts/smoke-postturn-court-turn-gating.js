@@ -10,7 +10,7 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const promptSrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-prompt.js'), 'utf8');
-const changchaoSrc = fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf8');
+const changchaoSrc = (fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-adapter.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-flows.js'), 'utf8'));
 const courtSrc = fs.readFileSync(path.join(ROOT, 'tm-court-meter.js'), 'utf8');
 const chaoyiSrc = fs.readFileSync(path.join(ROOT, 'tm-chaoyi.js'), 'utf8');
 

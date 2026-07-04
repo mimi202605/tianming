@@ -134,7 +134,7 @@ function smokeMentorData() {
 
 // 8·verify Slice 5·4 廷议 mode templates 存在
 function smokeTinyiModes() {
-  const cc = fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf-8');
+  const cc = (fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-adapter.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-flows.js'), 'utf-8'));
   const modes = ['confront:', 'cite_classic:', 'clientelism:', 'martyr:'];
   let pass = 0;
   modes.forEach(m => {

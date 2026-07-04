@@ -28,7 +28,7 @@ ok(/window\._sovereignAddressTerm = _sovereignAddressTerm/.test(dm), '② _sover
 ok(/eraLangField\(era, 'sovereignAddress', ''\)/.test(dm), '② _sovereignAddressTerm 走 era 包 sovereignAddress');
 
 // ── ③ tm-chaoyi-changchao.js:常朝注入感知行 + 去强制陛下 ──
-const cc = fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao.js'), 'utf8');
+const cc = (fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao-adapter.js'), 'utf8') + '\n' + fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao.js'), 'utf8') + '\n' + fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao-flows.js'), 'utf8'));
 ok(/_sovereignLanguagePromptLine\(typeof GM !== 'undefined' \? GM : null\)/.test(cc), '③ 常朝系统提示注入感知行(补齐缺失)');
 ok(!/requireWords: \['臣', '陛下'\]/.test(cc), '③ lead 模式 requireWords 不再强制"陛下"');
 ok(/requireWords: \['臣'\]/.test(cc), '③ lead requireWords 仅留"臣"');

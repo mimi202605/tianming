@@ -38,7 +38,7 @@ ok(ctxF.indexOf('【现行地块状态】') >= 0, '★region_status 读回块在
 ok(/region_status_changes remove/.test(ctxF), '指示 AI 灾异消弭须 remove');
 
 // ── 常朝回流 ──
-const chao = read('tm-chaoyi-changchao.js');
+const chao = (read('tm-chaoyi-changchao-adapter.js') + read('tm-chaoyi-changchao.js') + read('tm-chaoyi-changchao-flows.js'));
 ok(/recordPlayerResponse\(GM, \{ channel: 'chaoyi', decision: action, linkedIssue: _miLink/.test(chao), '★常朝处置回喂 MinxinPressureActions(民心矩阵认账·不再重复 spawn)');
 ok(/changchao-minxin-pressure-response/.test(chao), '回流标记 source');
 

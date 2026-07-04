@@ -9,7 +9,7 @@ const vm = require('vm');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const v3src = fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf8');
+const v3src = (fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-adapter.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-chaoyi-changchao-flows.js'), 'utf8'));
 const legacySrc = fs.readFileSync(path.join(ROOT, 'tm-chaoyi.js'), 'utf8');
 
 if (!/禁止原文照搬|不得原文照搬/.test(v3src)) throw new Error('v3 prompt must block verbatim issue reuse');

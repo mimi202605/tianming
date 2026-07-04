@@ -3,10 +3,9 @@
     "thresholdLines": 3000,
     "growBudget": 100
   },
-  "updatedAt": "2026-07-04T05:53:51.634Z",
+  "updatedAt": "2026-07-04T06:07:28.081Z",
   "files": {
     "tm-endturn-apply.js": 5955,
-    "tm-chaoyi-changchao.js": 5286,
     "tm-endturn-ai.js": 4838,
     "tm-ai-change-applier.js": 4699,
     "tm-content-manager.js": 4408,

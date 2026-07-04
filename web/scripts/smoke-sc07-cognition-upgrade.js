@@ -12,7 +12,7 @@ console.log('smoke-sc07-cognition-upgrade');
 
 const fu = fs.readFileSync(path.resolve(ROOT, 'tm-endturn-followup.js'), 'utf8');
 const ut = fs.readFileSync(path.resolve(ROOT, 'tm-utils.js'), 'utf8');
-const cc = fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao.js'), 'utf8');
+const cc = (fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao-adapter.js'), 'utf8') + '\n' + fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao.js'), 'utf8') + '\n' + fs.readFileSync(path.resolve(ROOT, 'tm-chaoyi-changchao-flows.js'), 'utf8'));
 
 // ── S1 输入增强 ──
 ok(/sc07 升级·S1 输入增强/.test(fu) && /_close07/.test(fu) && /_foe07/.test(fu), 'S1 每 NPC 注入关系网(亲近/嫌隙 top·信息不对称之据)');
