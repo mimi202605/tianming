@@ -2124,6 +2124,30 @@
   // 主 tick
   // ═════════════════════════════════════════════════════════════
 
+  // 清偿旧欠：库有余则按月偿还 ledgers.money.deficit（欠俸/欠饷累欠）。
+  // deficit 此前全仓只进不出——一次欠账=永久 inCrisis·破产链棘轮升满永不解除(2026-07-04 审查定罪)。
+  // 节奏：每月最多偿 月入25%×mr·且不动用库藏最后一成(留缓冲)·清讫发邸报。
+  function _repayDeficit(mr) {
+    var g = GM.guoku;
+    var led = g && g.ledgers && g.ledgers.money;
+    if (!led) return 0;
+    var owed = Math.max(0, safe(led.deficit, 0));
+    if (!owed) return 0;
+    var avail = Math.max(0, safe(g.balance, 0));
+    if (avail <= 0) return 0;
+    var monthly = Math.max(0, safe(g.monthlyIncome, 0));
+    var cap = monthly > 0 ? monthly * 0.25 * mr : avail * 0.25;
+    var pay = Math.round(Math.min(owed, avail * 0.9, cap));
+    if (pay <= 0) return 0;
+    led.stock = Math.max(0, safe(led.stock, 0) - pay);
+    g.balance = led.stock;
+    led.deficit = Math.round(Math.max(0, owed - pay));
+    if (!led.sinks) led.sinks = {};
+    led.sinks['清偿旧欠'] = safe(led.sinks['清偿旧欠'], 0) + pay;
+    if (led.deficit === 0 && typeof addEB === 'function') addEB('财政', '累年积欠清讫，帑藏归于常度', { credibility: 'high' });
+    return pay;
+  }
+
   function tick(context) {
     ensureGuokuModel();
     var mr = (context && context._monthRatio) || getMonthRatio();
@@ -2143,6 +2167,7 @@
     try { processLoansMonthly(mr); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'guoku] loans:') : console.error('[guoku] loans:', e); }
     // ── p6 inline (R9d)·tick add-ons ──
     try { processFixedDeductions(mr); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'guoku] fixedDed:') : console.error('[guoku] fixedDed:', e); }
+    try { _repayDeficit(mr); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'guoku] repayDeficit:') : console.error('[guoku] repayDeficit:', e); }
 
     // 年末决算（每年一次，简化：若当前 turn 跨越年）
     var dpt = (typeof _getDaysPerTurn === 'function') ? _getDaysPerTurn() : 30;
