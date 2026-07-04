@@ -17,6 +17,7 @@ const CHECKS = [
   { name: 'lint-dep-graph', file: 'lint-dep-graph.js' },
   { name: 'lint-file-size', file: 'lint-file-size.js' },
   { name: 'lint-control-bytes', file: 'lint-control-bytes.js' },
+  { name: 'lint-split-contracts', file: 'lint-split-contracts.js' },
   { name: 'ref-check', file: 'ref-check.js' }
 ];
 
