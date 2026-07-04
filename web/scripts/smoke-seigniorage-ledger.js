@@ -13,7 +13,7 @@ function sliceFn(src, marker){ const a=src.indexOf(marker); if(a<0) return null;
 
 console.log('smoke-seigniorage-ledger');
 
-const eco = fs.readFileSync(path.join(ROOT,'tm-economy-engine.js'),'utf8');
+const eco = (fs.readFileSync(path.join(ROOT, 'tm-economy-engine-currency.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-economy-engine.js'), 'utf8'));
 const mintSrc = sliceFn(eco, 'function _mintCycle(');
 ok(!!mintSrc, '_mintCycle 抽取成功');
 ok(/typeof gk\.ledgers\.money === 'object'/.test(mintSrc) && /_ml\.stock =/.test(mintSrc), '源契约:入库走 money ledger.stock(对象守卫)');

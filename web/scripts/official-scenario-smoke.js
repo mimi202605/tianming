@@ -272,6 +272,7 @@ function main() {
   [
     'tm-guoku-engine.js',
     'tm-neitang-engine.js',
+    'tm-economy-engine-currency.js', // 2026-07-04 立项拆分：§A+§B货币两IIFE保序切出·载于origin前
     'tm-economy-engine.js',
     'tm-region-enrich.js',
     'tm-integration-bridge.js',

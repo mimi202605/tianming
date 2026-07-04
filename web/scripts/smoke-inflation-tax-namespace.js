@@ -13,7 +13,7 @@ const fis = fs.readFileSync(path.join(ROOT,'tm-fiscal-engine.js'),'utf8');
 ok(/window\.EconomyGapFill \|\| window\.EconomyCore/.test(fis), '★_ce 查找优先 EconomyGapFill/EconomyCore(真命名空间)');
 ok(/getPurchasingPower/.test(fis), '仍调 getPurchasingPower');
 // 确认 getPurchasingPower 真挂 EconomyGapFill(非 CurrencyEngine)
-const eco = fs.readFileSync(path.join(ROOT,'tm-economy-engine.js'),'utf8');
+const eco = (fs.readFileSync(path.join(ROOT, 'tm-economy-engine-currency.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-economy-engine.js'), 'utf8'));
 ok(/global\.EconomyGapFill = \{[\s\S]*getPurchasingPower: getPurchasingPower/.test(eco) || /getPurchasingPower: getPurchasingPower/.test(eco), 'EconomyGapFill 导出 getPurchasingPower');
 
 // 复刻新/旧查找:stub window 只有 EconomyGapFill(无 CurrencyEngine)

@@ -70,7 +70,7 @@ ctx.findScenarioById = () => ctx.P;
 
 vm.createContext(ctx);
 load(ctx, 'tm-fiscal-engine.js');   // 国库出入已收口走真账(2026-07-04)·沙箱须与运行时同形态
-load(ctx, 'tm-economy-engine.js');
+load(ctx, 'tm-economy-engine-currency.js'); load(ctx, 'tm-economy-engine.js');
 load(ctx, 'tm-edict-parser.js');
 
 ctx.EnvCapacityEngine.init(ctx.P);

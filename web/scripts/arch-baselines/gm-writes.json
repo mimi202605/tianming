@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T07:49:00.184Z",
+  "updatedAt": "2026-07-04T08:10:27.933Z",
   "totals": {
     "gm": 4574,
     "p": 739
@@ -2264,23 +2264,29 @@
         "gm:_charInvestigations": 2
       }
     },
-    "tm-economy-engine.js": {
-      "gm": 127,
-      "p": 1,
+    "tm-economy-engine-currency.js": {
+      "gm": 70,
+      "p": 0,
       "roots": {
-        "gm:fiscal": 22,
+        "gm:fiscal": 6,
         "gm:currency": 23,
-        "gm:guoku": 8,
+        "gm:guoku": 4,
         "gm:mintingControl": 3,
         "gm:paper": 3,
-        "gm:market": 15,
+        "gm:market": 14,
         "gm:_qianhuangSignaled": 2,
         "gm:_qianjianSignaled": 2,
         "gm:foreignFlow": 7,
         "gm:coins": 2,
         "gm:currentStandard": 1,
         "gm:reforms": 1,
-        "gm:events": 2,
+        "gm:events": 2
+      }
+    },
+    "tm-economy-engine.js": {
+      "gm": 57,
+      "p": 1,
+      "roots": {
         "gm:environment": 4,
         "gm:nationalCarrying": 1,
         "gm:nationalLoad": 1,
@@ -2290,13 +2296,16 @@
         "gm:byRegion": 1,
         "gm:policyHistory": 4,
         "gm:activePolicies": 3,
+        "gm:fiscal": 16,
         "gm:regions": 2,
         "gm:transferOrders": 3,
         "gm:neitang": 2,
         "gm:_linkageStats": 2,
+        "gm:market": 1,
         "gm:landAnnexation": 6,
         "gm:vars": 1,
         "gm:rebellionRisk": 1,
+        "gm:guoku": 4,
         "gm:_pendingTinyiTopics": 2
       }
     },
