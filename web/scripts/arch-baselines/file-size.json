@@ -3,7 +3,7 @@
     "thresholdLines": 3000,
     "growBudget": 100
   },
-  "updatedAt": "2026-07-04T08:25:14.228Z",
+  "updatedAt": "2026-07-04T09:14:33.422Z",
   "files": {
     "tm-endturn-apply.js": 5957,
     "tm-endturn-ai.js": 4838,
@@ -15,7 +15,6 @@
     "tm-endturn-followup.js": 3992,
     "phase8-formal-map.js": 3846,
     "tm-player-core.js": 3411,
-    "tm-keju-paradigm-panel.js": 3324,
     "phase8-formal-drafts.js": 3229,
     "phase8-formal-bridge.js": 3115
   }

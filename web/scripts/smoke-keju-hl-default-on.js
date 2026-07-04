@@ -54,15 +54,17 @@ function guardFlipped(file, flag, sample) {
 guardFlipped('tm-keju-reform-llm.js', 'L5');
 guardFlipped('tm-keju-reform-evolution.js', 'L8'); // 含 ×3
 guardFlipped('tm-keju-reform-evolution.js', 'L9'); // 含 ×2
-guardFlipped('tm-keju-paradigm-panel.js', 'L10');
-guardFlipped('tm-keju-paradigm-panel.js', 'L6');
-// paradigm-panel L8 守卫(line 2971·!== true) { )翻正
+// 2026-07-04 立项拆分：L10/L6/L5 守卫随§4渲染族迁入 tm-keju-paradigm-panel-render.js·断言跟人走
+guardFlipped('tm-keju-paradigm-panel-render.js', 'L10');
+guardFlipped('tm-keju-paradigm-panel-render.js', 'L6');
+// paradigm-panel L8 守卫(!== true → === false 翻正·L8 段留守 origin)
 {
   const s = fs.readFileSync(path.join(ROOT, 'tm-keju-paradigm-panel.js'), 'utf8');
   ok(s.indexOf('useNewKejuL8 === false) {') >= 0, 'paradigm-panel L8 守卫翻 === false');
   ok(s.indexOf('useNewKejuL8 !== true)') < 0, 'paradigm-panel L8 旧 !== true 已清');
-  // L5 l5Off 取反翻正
-  ok(s.indexOf('useNewKejuL5 === false)') >= 0 && s.indexOf('useNewKejuL5 === true)') < 0, 'paradigm-panel L5 l5Off 翻 === false');
+  // L5 l5Off 取反翻正(在渲染族)
+  const r = fs.readFileSync(path.join(ROOT, 'tm-keju-paradigm-panel-render.js'), 'utf8');
+  ok(r.indexOf('useNewKejuL5 === false)') >= 0 && r.indexOf('useNewKejuL5 === true)') < 0, 'paradigm-panel L5 l5Off 翻 === false');
 }
 
 // ── L8/L9 节流确证(默认开安全·同年只1次 cooldown) ──

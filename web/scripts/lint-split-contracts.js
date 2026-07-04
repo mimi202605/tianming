@@ -28,6 +28,8 @@ const CONTRACTS = [
   ['tm-patches.js', 'tm-patches-start.js'],
   // 第七拆：tm-economy-engine 两片(头切·currency 在前)
   ['tm-economy-engine-currency.js', 'tm-economy-engine.js'],
+  // 第九拆(alias 范式首例)：keju-paradigm-panel·render 必须在前(alias 装载期解析·错序=undefined)
+  ['tm-keju-paradigm-panel-render.js', 'tm-keju-paradigm-panel.js'],
 ];
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
