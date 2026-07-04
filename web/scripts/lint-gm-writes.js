@@ -33,40 +33,101 @@ const topIdx = args.indexOf('--top');
 const TOP_N = topIdx !== -1 ? parseInt(args[topIdx + 1], 10) || 10 : 0;
 
 // 写模式（对某单例根 sym 生成一组正则·capture[1]=被写子树根，动态下标归 <dynamic>）
+// v3(2026-07-04)：sym 前置 (?<![\w$.]) 负回顾——防 `cfg.g.x=` 误认短别名 g、也治 `foo.GM.x=` 老误报
 const MUTATORS = 'push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin|set|add|delete|clear';
-function writePatterns(sym) {
+function writePatterns(sym, fixedRoot) {
   const TAIL = String.raw`(?:\.[\w$]+|\[[^\]\n]+\])*`;
+  const S = String.raw`(?<![\w$.])` + sym;
   return [
     // 赋值/复合赋值：排除 == === => >= <= !=（后三者 = 前有别的字符，天然不匹配）
-    { re: new RegExp(String.raw`\b` + sym + String.raw`\.([\w$]+)` + TAIL + String.raw`\s*(?:=(?![=>])|[+\-*/%&|^]=|\+\+|--)`) },
-    { re: new RegExp(String.raw`\b` + sym + String.raw`\[[^\]\n]+\]` + TAIL + String.raw`\s*(?:=(?![=>])|[+\-*/%&|^]=|\+\+|--)`), dyn: true },
-    { re: new RegExp(String.raw`\bdelete\s+` + sym + String.raw`\.([\w$]+)`) },
-    { re: new RegExp(String.raw`\bdelete\s+` + sym + String.raw`\[`), dyn: true },
-    { re: new RegExp(String.raw`\b` + sym + String.raw`\.([\w$]+)` + TAIL + String.raw`\.(?:` + MUTATORS + String.raw`)\s*\(`) },
-    { re: new RegExp(String.raw`\b` + sym + String.raw`\[[^\]\n]+\]` + TAIL + String.raw`\.(?:` + MUTATORS + String.raw`)\s*\(`), dyn: true },
-    { re: new RegExp(String.raw`\bObject\.assign\(\s*` + sym + String.raw`\.([\w$]+)`) },
-    { re: new RegExp(String.raw`\bObject\.assign\(\s*` + sym + String.raw`\s*[,)]`), dyn: true, rootLevel: true }
+    { re: new RegExp(S + String.raw`\.([\w$]+)` + TAIL + String.raw`\s*(?:=(?![=>])|[+\-*/%&|^]=|\+\+|--)`), fixedRoot },
+    { re: new RegExp(S + String.raw`\[[^\]\n]+\]` + TAIL + String.raw`\s*(?:=(?![=>])|[+\-*/%&|^]=|\+\+|--)`), dyn: true, fixedRoot },
+    { re: new RegExp(String.raw`\bdelete\s+` + sym + String.raw`\.([\w$]+)`), fixedRoot },
+    { re: new RegExp(String.raw`\bdelete\s+` + sym + String.raw`\[`), dyn: true, fixedRoot },
+    { re: new RegExp(S + String.raw`\.([\w$]+)` + TAIL + String.raw`\.(?:` + MUTATORS + String.raw`)\s*\(`), fixedRoot },
+    { re: new RegExp(S + String.raw`\[[^\]\n]+\]` + TAIL + String.raw`\.(?:` + MUTATORS + String.raw`)\s*\(`), dyn: true, fixedRoot },
+    { re: new RegExp(String.raw`\bObject\.assign\(\s*` + sym + String.raw`\.([\w$]+)`), fixedRoot },
+    { re: new RegExp(String.raw`\bObject\.assign\(\s*` + sym + String.raw`\s*[,)]`), dyn: true, rootLevel: true, fixedRoot }
   ];
 }
 
 const GM_PATTERNS = writePatterns('GM');
 const P_PATTERNS = writePatterns('P');
 
+// ── v3·别名写探测（2026-07-04·审查定罪的守卫盲区：_adjAuthority 用 var G=global.GM 间接写
+//    trueIndex·31 处调用点的蒸发 bug 在正则棘轮眼皮下活了数月）──
+// 识别两类且仅两类（宁缺勿噪·元素别名 var ch=GM.chars[i] 明确不追）：
+//   ① 全量别名  var G = GM | global.GM | window.GM | root.GM | <工厂>()   → 写经 G 同 GM 计
+//   ② 子树别名  var g = GM.guoku | G.guoku（G 为已识别全量别名·RHS 单层成员·无下标） → 写经 g 计入 gm:guoku
+// 工厂名单在基线 config.gmFactories / config.pFactories（默认 getGame → GM）。
+const ESC = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const RESERVED = new Set(['GM', 'P', 'TM', 'window', 'global', 'globalThis', 'root', 'self', 'this']);
+
+function collectAliases(lines, gmFactories, pFactories) {
+  const whole = {}; // aliasName -> 'gm' | 'p'
+  const sub = {};   // aliasName -> { kind:'gm'|'p', root:'guoku' }
+  const gmFact = gmFactories.map(f => ESC(f) + String.raw`\s*\(`).join('|');
+  const pFact = pFactories.map(f => ESC(f) + String.raw`\s*\(`).join('|');
+  const wholeRe = new RegExp(
+    String.raw`\b(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:` +
+    String.raw`(?:(?:globalThis|global|window|root)\.)?(GM|P)\b(?!\s*[.\[])` +
+    (gmFact ? String.raw`|(` + gmFact + String.raw`)` : '') +
+    (pFact ? String.raw`|(` + pFact + String.raw`)` : '') +
+    String.raw`)`, 'g');
+  const subReSrc = kindSyms => new RegExp(
+    String.raw`\b(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:(?:globalThis|global|window|root)\.)?(` +
+    kindSyms + String.raw`)\.([\w$]+)\s*(?:;|,|\)|\|\||$)`, 'g');
+  for (const raw of lines) {
+    if (lib.isCommentLine(raw)) continue;
+    const line = lib.stripLineComment(raw);
+    let m;
+    wholeRe.lastIndex = 0;
+    while ((m = wholeRe.exec(line))) {
+      const name = m[1];
+      if (RESERVED.has(name)) continue;
+      whole[name] = m[2] === 'P' ? 'p' : (m[2] === 'GM' || m[3]) ? 'gm' : 'p';
+    }
+  }
+  // 子树别名第二遍：源可以是 GM/P 本体，也可以是已识别的全量别名
+  const wholeNames = Object.keys(whole);
+  const symAlt = ['GM', 'P'].concat(wholeNames.map(ESC)).join('|');
+  const subRe = subReSrc(symAlt);
+  for (const raw of lines) {
+    if (lib.isCommentLine(raw)) continue;
+    const line = lib.stripLineComment(raw);
+    let m;
+    subRe.lastIndex = 0;
+    while ((m = subRe.exec(line))) {
+      const name = m[1], srcSym = m[2], root = m[3];
+      if (RESERVED.has(name) || whole[name]) continue;
+      const kind = srcSym === 'GM' ? 'gm' : srcSym === 'P' ? 'p' : whole[srcSym];
+      if (!kind) continue;
+      sub[name] = { kind, root };
+    }
+  }
+  return { whole, sub };
+}
+
 // 返回 { gm, p, roots: { 'gm:minxin': n, 'p:<dynamic>': n, ... } }
 // gm/p 计数单位=行（与首版基线一致）；roots 记录该行写到的每棵子树
-function countWrites(absFile) {
+function countWrites(absFile, gmFactories, pFactories) {
   const lines = fs.readFileSync(absFile, 'utf8').split(/\r?\n/);
+  const aliases = collectAliases(lines, gmFactories, pFactories);
+  // 按 kind 组装模式：本体 + 全量别名（root 取 capture）+ 子树别名（root 固定）
+  const kindPatterns = { gm: GM_PATTERNS.slice(), p: P_PATTERNS.slice() };
+  for (const [name, kind] of Object.entries(aliases.whole)) kindPatterns[kind] = kindPatterns[kind].concat(writePatterns(ESC(name)));
+  for (const [name, info] of Object.entries(aliases.sub)) kindPatterns[info.kind] = kindPatterns[info.kind].concat(writePatterns(ESC(name), info.root));
   const out = { gm: 0, p: 0, roots: {} };
   for (const raw of lines) {
     if (lib.isCommentLine(raw)) continue;
     if (lib.hasArchOkMarker(raw)) continue;
     const line = lib.stripLineComment(raw);
-    for (const [kind, patterns] of [['gm', GM_PATTERNS], ['p', P_PATTERNS]]) {
+    for (const kind of ['gm', 'p']) {
       const hitRoots = new Set();
-      for (const pat of patterns) {
+      for (const pat of kindPatterns[kind]) {
         const m = line.match(pat.re);
         if (!m) continue;
-        hitRoots.add(pat.rootLevel ? '<root-level>' : pat.dyn ? '<dynamic>' : m[1]);
+        hitRoots.add(pat.fixedRoot || (pat.rootLevel ? '<root-level>' : pat.dyn ? '<dynamic>' : m[1]));
       }
       if (hitRoots.size) {
         out[kind]++;
@@ -80,11 +141,15 @@ function countWrites(absFile) {
   return out;
 }
 
+const _cfgBase = lib.loadJSON(BASELINE_FILE, null);
+const GM_FACTORIES = (_cfgBase && _cfgBase.config && _cfgBase.config.gmFactories) || ['getGame'];
+const P_FACTORIES = (_cfgBase && _cfgBase.config && _cfgBase.config.pFactories) || [];
+
 const files = lib.runtimeCodeFiles();
 const current = {};
 let totalGm = 0, totalP = 0;
 for (const f of files) {
-  const c = countWrites(f.abs);
+  const c = countWrites(f.abs, GM_FACTORIES, P_FACTORIES);
   if (c.gm || c.p) current[f.src] = c;
   totalGm += c.gm; totalP += c.p;
 }
@@ -128,7 +193,11 @@ if (TOP_N) {
 
 if (UPDATE) {
   const prev = lib.loadJSON(BASELINE_FILE, { config: { owners: [] } });
-  lib.saveJSON(BASELINE_FILE, { config: prev.config || { owners: [] }, updatedAt: new Date().toISOString(), totals: { gm: totalGm, p: totalP }, files: current });
+  const cfg = prev.config || {};
+  if (!cfg.owners) cfg.owners = [];
+  if (!cfg.gmFactories) cfg.gmFactories = ['getGame'];
+  if (!cfg.pFactories) cfg.pFactories = [];
+  lib.saveJSON(BASELINE_FILE, { config: cfg, updatedAt: new Date().toISOString(), totals: { gm: totalGm, p: totalP }, files: current });
   console.log(`[lint-gm-writes] 基线已更新 → ${lib.rel(BASELINE_FILE)}`);
   process.exit(0);
 }
