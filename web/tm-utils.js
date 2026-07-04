@@ -1848,7 +1848,7 @@ function _tmEmitPRestored(source) {
         console.log('[restoreP] 从localStorage(tm_P)恢复, scenarios:', P.scenarios.length);
         // 迁移：旧格式存在则写入IndexedDB并清理（tm-storage 后载·短轮询等就位·原 typeof 一次性检查恒 false=迁移死代码）
         (function _tmMigrateTmPWhenReady(tries) {
-          if (typeof TM_SaveDB === 'undefined') { if (tries < 100) setTimeout(function() { _tmMigrateTmPWhenReady(tries + 1); }, 100); return; }
+          if (typeof TM_SaveDB === 'undefined') { if (tries < 100 && typeof setTimeout === 'function') setTimeout(function() { _tmMigrateTmPWhenReady(tries + 1); }, 100); return; }
           TM_SaveDB.saveProject(_tmStripAiKeyInPlace(deepClone(P))).then(function() {
             try { localStorage.removeItem('tm_P'); } catch(e) {}
             console.log('[restoreP] 已迁移tm_P到IndexedDB');
@@ -1880,8 +1880,8 @@ function _tmEmitPRestored(source) {
   // 改为短轮询等 TM_SaveDB 就位(≤10s)·loadProject 本就是异步晚到语义·与原设计一致。
   (function _tmIdbRestoreWhenReady(tries) {
     if (typeof TM_SaveDB === 'undefined') {
-      if (tries < 100) setTimeout(function() { _tmIdbRestoreWhenReady(tries + 1); }, 100);
-      else console.warn('[restoreP] TM_SaveDB 10s 未就位·IndexedDB 恢复层跳过');
+      if (tries < 100 && typeof setTimeout === 'function') setTimeout(function() { _tmIdbRestoreWhenReady(tries + 1); }, 100); // vm 沙箱无 timer 则放弃(沙箱本就无 IDB)
+      else if (tries >= 100) console.warn('[restoreP] TM_SaveDB 10s 未就位·IndexedDB 恢复层跳过');
       return;
     }
     TM_SaveDB.loadProject().then(function(fullP) {
