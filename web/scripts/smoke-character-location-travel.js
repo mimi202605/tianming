@@ -8,7 +8,7 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const utilsSrc = fs.readFileSync(path.join(ROOT, 'tm-utils.js'), 'utf8');
-const wenduiSrc = fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8');
+const wenduiSrc = (fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui-persona-views.js'), 'utf8'));
 const pathutilsSrc = fs.readFileSync(path.join(ROOT, 'tm-ai-change-pathutils.js'), 'utf8');
 const armySrc = fs.readFileSync(path.join(ROOT, 'tm-ai-change-army.js'), 'utf8');
 const narrativeSrc = fs.readFileSync(path.join(ROOT, 'tm-ai-change-narrative.js'), 'utf8');

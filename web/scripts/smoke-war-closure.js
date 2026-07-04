@@ -76,6 +76,6 @@ ok(g3.activeWars.length === 1, '⑤ 非同盟条约(互市)→ 不触发参战')
 ok(/mutual_defense: template\.mutual_defense === true/.test(feu), '⑥ createTreaty 从模板带 mutual_defense 标志(原写而不读)');
 ok(/_ty_callAlliesToWar\(defender, attacker, cb\)/.test(feu), '⑥ declareWar 挂钩联盟参战');
 ok(/_ty_updateWarFromBattle\(winner, loser, br, G\)/.test(mil), '⑥ applyBattleResult 挂钩 warScore 推进');
-ok(/sue_for_peace.*CasusBelliSystem.*endWar|itype === 'sue_for_peace'/.test(fs.readFileSync(path.join(ROOT,'tm-wendui.js'),'utf8')), '⑥ wendui 准和→endWar');
+ok(/sue_for_peace.*CasusBelliSystem.*endWar|itype === 'sue_for_peace'/.test((fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui-persona-views.js'), 'utf8'))), '⑥ wendui 准和→endWar');
 
 console.log('\n结果: '+A+' 通过 / 0 失败');

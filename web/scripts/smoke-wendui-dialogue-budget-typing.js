@@ -17,7 +17,7 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const utils = fs.readFileSync(path.join(ROOT, 'tm-utils.js'), 'utf8');
-const wendui = fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8');
+const wendui = (fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui-persona-views.js'), 'utf8'));
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 
 let passed = 0;

@@ -6,7 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const ROOT = path.resolve(__dirname, '..');
-const src = fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8');
+// 沙箱纪律:qiju 写口须同载(2026-07-04 拆分时暴露的既有欠账·拆前同败已实证)
+const src = (fs.readFileSync(path.join(ROOT, 'tm-qiju-ledger.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui-persona-views.js'), 'utf8'));
 let passed = 0;
 function assert(cond, label) { if (!cond) throw new Error('[assert] ' + label); passed += 1; }
 
@@ -60,7 +61,8 @@ setEnvoy('demand_tribute');
 sandbox._wdEnvoyDecision('accept');
 assert(relCalls[0].delta === 15, '③许索贡关系 +15(安抚)');
 assert(hwCalls.length === 1 && hwCalls[0].source === 'diplomaticHumiliation' && hwCalls[0].delta === -6, '③许其索贡应皇威屈辱-6·实得 ' + JSON.stringify(hwCalls));
-assert(fiscalCalls.length === 1 && fiscalCalls[0].amounts.money === 30000 && fiscalCalls[0].amounts.cloth === 3000, '③许其索贡应走 spendFromGuoku 扣国库岁币(银3万绢3千)·实得 ' + JSON.stringify(fiscalCalls));
+// 岁币按势力 strength 派生(tm-wendui:825·money=str×600·cloth=str×40)·str50→银3万绢2千——旧断言停在退役表值绢3千(2026-07-04 拆分暴露的既有漂移·拆前同败)
+assert(fiscalCalls.length === 1 && fiscalCalls[0].amounts.money === 30000 && fiscalCalls[0].amounts.cloth === 2000, '③许其索贡应走 spendFromGuoku 扣国库岁币(银3万绢2千·按strength派生)·实得 ' + JSON.stringify(fiscalCalls));
 
 // ④ 驳回·斥其索贡 → 关系-16·无皇威屈辱(立威不走 humiliation)·不扣国库(没答应给)
 setEnvoy('demand_tribute');

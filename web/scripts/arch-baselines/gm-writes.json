@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T07:14:04.558Z",
+  "updatedAt": "2026-07-04T07:16:14.739Z",
   "totals": {
     "gm": 4573,
     "p": 739
@@ -316,7 +316,7 @@
       }
     },
     "tm-wendui.js": {
-      "gm": 89,
+      "gm": 88,
       "p": 0,
       "roots": {
         "gm:_pendingLetterTo": 1,
@@ -327,7 +327,7 @@
         "gm:_npcCommitments": 6,
         "gm:_adoptedCounsel": 3,
         "gm:_wdAudienceMode": 4,
-        "gm:jishiRecords": 5,
+        "gm:jishiRecords": 4,
         "gm:_edictSuggestions": 6,
         "gm:_pendingOvernightReq": 3,
         "gm:_wdRefusedCounsel": 3,
@@ -342,6 +342,13 @@
         "gm:_wdSuspicions": 3,
         "gm:_interceptedIntel": 2,
         "gm:_eavesdroppedTopics": 6
+      }
+    },
+    "tm-wendui-persona-views.js": {
+      "gm": 1,
+      "p": 0,
+      "roots": {
+        "gm:jishiRecords": 1
       }
     },
     "tm-wendui-prison.js": {

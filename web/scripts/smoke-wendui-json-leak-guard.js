@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const code = fs.readFileSync(path.join(root, 'tm-wendui.js'), 'utf8');
+const code = (fs.readFileSync(path.join(root, 'tm-wendui.js'), 'utf8') + '\n' + fs.readFileSync(path.join(root, 'tm-wendui-persona-views.js'), 'utf8'));
 
 const sandbox = {
   console,

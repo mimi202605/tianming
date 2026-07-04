@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const ROOT = path.resolve(__dirname, '..');
-const src = fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8');
+// 沙箱纪律:qiju 写口须同载(2026-07-04 拆分时暴露的既有欠账·拆前同败已实证)
+const src = (fs.readFileSync(path.join(ROOT, 'tm-qiju-ledger.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui-persona-views.js'), 'utf8'));
 const applySrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8');
 let passed = 0;
 function assert(cond, label) { if (!cond) throw new Error('[assert] ' + label); passed += 1; }

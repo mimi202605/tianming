@@ -15,7 +15,7 @@ console.log('smoke-diplo-consequence');
 
 const rel = fs.readFileSync(path.join(ROOT,'tm-relations.js'),'utf8');
 const fiscal = fs.readFileSync(path.join(ROOT,'tm-fiscal-engine.js'),'utf8');
-const wendui = fs.readFileSync(path.join(ROOT,'tm-wendui.js'),'utf8');
+const wendui = (fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-wendui-persona-views.js'), 'utf8'));
 const f1 = sliceFn(rel,'function _diploFindFac('), f2 = sliceFn(rel,'function _diploPlayerFac('), f3 = sliceFn(rel,'function _diploTributeAmt('), f4 = sliceFn(rel,'function _applyDiploResourceConsequence(');
 ok(f1&&f2&&f3&&f4, '外交后果四函数抽取成功');
 

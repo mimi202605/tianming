@@ -3,7 +3,7 @@
     "thresholdLines": 3000,
     "growBudget": 100
   },
-  "updatedAt": "2026-07-04T07:14:05.187Z",
+  "updatedAt": "2026-07-04T07:16:15.277Z",
   "files": {
     "tm-endturn-apply.js": 5955,
     "tm-endturn-ai.js": 4838,
@@ -15,7 +15,6 @@
     "phase8-formal-rightrail.js": 4084,
     "tm-endturn-followup.js": 3992,
     "phase8-formal-map.js": 3845,
-    "tm-wendui.js": 3518,
     "tm-npc-decision.js": 3475,
     "tm-player-core.js": 3411,
     "tm-patches.js": 3390,
