@@ -1068,6 +1068,8 @@ function closePanel(){var ov=document.getElementById('tm-zhi-overlay');if(ov)ov.
 
 /* 交互 */
 var TMZhi={
+  // 外部新增/移除人物后失效名册缓存·面板开着则就地刷新(2026-07-04 审查定罪:策名召入曾读死缓存)
+  invalidatePeople:function(){_peopleCache=null;try{if(q('#tm-zhi-main')){renderRoster();renderMain();renderFolio();}}catch(_e){}},
   selectP:function(name){if(!findP(name))return;state.sel=name;state.tab=state.tab||'overview';state.view='liezhuan';state.compare=null;state.compare2=null;renderViewTabs();renderMain();renderFolio();renderRoster();var ms=q('#tm-zhi-main');if(ms)ms.scrollTop=0;},
   setCompare:function(name){if(!findP(name)||name===state.sel)return;if(name===state.compare||name===state.compare2)return;if(!state.compare)state.compare=name;else if(!state.compare2)state.compare2=name;else state.compare2=name;state.view='liezhuan';renderViewTabs();renderMain();renderRoster();var ms=q('#tm-zhi-main');if(ms)ms.scrollTop=0;toast('对参：'+state.sel+' ⇌ '+state.compare+(state.compare2?' ⇌ '+state.compare2:''));},
   dropCompare:function(which){if(which===2)state.compare2=null;else{state.compare=state.compare2;state.compare2=null;}if(!state.compare){this.clearCompare();return;}renderMain();renderRoster();},

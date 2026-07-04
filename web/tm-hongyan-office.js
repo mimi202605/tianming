@@ -1766,7 +1766,12 @@ function renderGameState(){
 
   // 中间面板（游戏主体）
   var gc=_$("gc");if(!gc)return;
+  // 草稿保护(2026-07-04 审查定罪)：外部调用点(科举纳志/LLM校准回调等)触发全量重建曾清空玩家
+  // 已敲入的诏令/行止/书信草稿——重建前快照非空输入·重建后仅回填重建留空的同 id 输入框
+  var _draftSnap = {};
+  try { gc.querySelectorAll('textarea[id],input[id]').forEach(function(el){ if (el.value && el.type !== 'checkbox' && el.type !== 'radio') _draftSnap[el.id] = el.value; }); } catch(_ds){}
   gc.innerHTML="";
+  if (Object.keys(_draftSnap).length) setTimeout(function(){ try { Object.keys(_draftSnap).forEach(function(id){ var el = document.getElementById(id); if (el && !el.value && el.type !== 'checkbox' && el.type !== 'radio') el.value = _draftSnap[id]; }); } catch(_dr){} }, 0);
 
   // 面包屑
   var _bc=document.createElement("div");_bc.className="gs-breadcrumb";

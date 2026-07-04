@@ -232,6 +232,8 @@
       if (GM._indices && GM._indices.charByName && typeof GM._indices.charByName.set === 'function') {
         GM._indices.charByName.set(ch.name, ch);
       }
+      // 图志 _peopleCache 失效——策名召入后名册/统计曾看不到新人须整面板重开(2026-07-04 审查定罪)
+      try { if (typeof window !== 'undefined' && window.TMZhi && typeof window.TMZhi.invalidatePeople === 'function') window.TMZhi.invalidatePeople(); } catch (_zi) {}
     }
     _cmIntegrateSummoned(ch, profile);
 
