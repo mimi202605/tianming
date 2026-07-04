@@ -1930,6 +1930,12 @@ function _wdRenderHistory(name, ch) {
   _wdHistWin.forEach(function(msg) {
     if (msg.role === 'player') {
       _wdAppendPlayerBubble(chat, msg.content);
+    } else if (msg.role === 'system') {
+      // 面谕/赏罚等 system 纪事渲染为居中注记——曾被当 NPC 气泡·御赐显示成大臣发言(2026-07-04 审查定罪)
+      var _sysD = document.createElement('div');
+      _sysD.style.cssText = 'text-align:center;font-size:0.71rem;color:var(--ink-300);padding:4px 8px;';
+      _sysD.textContent = String(msg.content || '');
+      chat.appendChild(_sysD);
     } else {
       _wdAppendNpcBubble(chat, name, ch, msg.content, msg.loyaltyDelta, msg.suggestions, msg.toneEffect);
     }
@@ -2086,8 +2092,7 @@ async function sendWendui(){
       _silChat.appendChild(_silDiv); _silChat.scrollTop = _silChat.scrollHeight;
     }
     var _silName = GM.wenduiTarget;
-    if (!GM.wenduiHistory[_silName]) GM.wenduiHistory[_silName] = [];
-    GM.wenduiHistory[_silName].push({role:'player', content:'（沉默以对）'});
+    // 沉默条目由下方统一入史(msg='（沉默以对）'走通用 push)——此处预写曾双写·AI 上下文与重开渲染出重复条目(2026-07-04 审查定罪)
     // NPC对沉默的反应——按性格不同
     var _silCh = findCharByName(_silName);
     if (_silCh && P.ai && P.ai.key) {
@@ -2166,7 +2171,16 @@ async function sendWendui(){
       sysP += '\n\n⚠【末尾硬性标记·务必输出】无论你以散文还是何种文体回话，回复的最末都必须另起一行，用此固定格式标出本次召对对你的真实影响：〔忠诚±N 压力±N〕（N为0-3整数）。判定：受重用/获理解/得偿所请→忠诚正；被冷落/受辱/失望/遭斥→忠诚负；被逼问/受责/惊惧→压力正；被安抚/宽慰/获赏→压力负；无波动填0。例：〔忠诚+2 压力-1〕。此行不可省略。';
       var history=GM.wenduiHistory[name].slice(-10);
       var messages=[{role:'system',content:sysP}];
-      history.forEach(function(h){messages.push({role:h.role==='player'?'user':'assistant',content:h.content});});
+      history.forEach(function(h){
+        // system(面谕/赏罚)=帝侧动作·曾被映成 assistant 令 AI 把御赐当自己说过的话(2026-07-04 审查定罪)。
+        // 映 user+纪事前缀·相邻 user 合并(防严格交替 API 400)。
+        var _isSys = h.role === 'system';
+        var _r = (h.role === 'player' || _isSys) ? 'user' : 'assistant';
+        var _c = _isSys ? ('【朝廷纪事·非对话】' + h.content) : h.content;
+        var _last = messages[messages.length - 1];
+        if (_last && _last.role === 'user' && _r === 'user') _last.content += '\n' + _c;
+        else messages.push({ role: _r, content: _c });
+      });
 
       var streamBubble = _$('wd-stream-text');
       // 性能·2026-06-10·流式合帧:原每 chunk 都「全文重提取+textContent 重排+scrollTop 强制布局」·快流 20-60 chunk/s 把聊天列每秒重排几十次。
@@ -2942,7 +2956,7 @@ function _wdBuildPrompt(ch, name) {
     p += '  \u5C423\u00B7\u4E94\u5E38+\u7279\u8D28\u4FEE\u6B63\uFF1A\u77E5\u9053\u81EA\u5DF1\u4E0D\u884C\u65F6\u600E\u4E48\u529E\uFF1F\n';
     p += '    \u4FE1\u9AD8+\u5766\u8BDA\u2192\u76F4\u8A00\u201C\u975E\u81E3\u6240\u957F\u201D  \u4FE1\u4F4E+\u72E1\u8BC8\u2192\u63A9\u9970\u65E0\u77E5\u4F83\u4F83\u800C\u8C08\n';
     p += '    \u793C\u9AD8\u2192\u59D4\u5A49\u5F97\u4F53  \u793C\u4F4E\u2192\u5F00\u6028\u4E0D\u7559\u9762  \u4EC1\u9AD8\u2192\u5148\u60F3\u767E\u59D3  \u91CE\u5FC3\u9AD8\u2192\u6697\u542B\u81EA\u5229\n';
-    + '  层4·信仰文化：提供价值观滤镜，但可被高能力覆盖\n'
+    p += '  层4·信仰文化：提供价值观滤镜，但可被高能力覆盖\n'; // 修:原行首裸+缺p+=·孤立表达式·层4从未进过prompt(2026-07-04 审查定罪)
     p += '  \u5C425\u00B7\u8BB0\u5FC6\u7ECF\u5386\uFF1A\u6B64\u65F6\u6B64\u523B\u7684\u60C5\u7EEA\u57FA\u8C03\u2014\u2014\u8FD1\u671F\u906D\u9047>\u4E00\u5207\u957F\u671F\u5C5E\u6027\n';
     if (opinionVal > 70) p += '\u2022 \u5FE0\u5FC3' + Math.round(ch.loyalty||50) + (_isPrivateMode ? '\u2014\u2014\u79C1\u4E0B\u66F4\u5766\u8BDA\u4E5F\u66F4\u7D6E\u53E8\n' : '\u2014\u2014\u4F46\u8BF4\u8BDD\u603B\u5E26\u8BF4\u6559\u5473\n');
     if (opinionVal < 30) p += '\u2022 \u597D\u611F\u4EC5' + opinionVal + (_isPrivateMode ? '\u2014\u2014\u79C1\u4E0B\u53EF\u80FD\u8A00\u8BED\u523A\u4EBA\n' : '\u2014\u2014\u53EF\u80FD\u6577\u884D\u9633\u5949\u9634\u8FDD\n');
