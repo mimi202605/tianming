@@ -83,7 +83,7 @@ ok(brc._deterministicCasualties === true, '⑧ battleConfig.deterministicCasualt
 const mil = fs.readFileSync(path.join(ROOT, 'tm-military.js'), 'utf8');
 ok(/!cfg\.enabled && !\(context && context\.forceCompute\)/.test(mil), '⑨ resolve 加 forceCompute 旁路(不需全引擎 enabled)');
 ok(/deterministicCasualties === true[\s\S]{0,400}BattleEngine\.resolve/.test(mil), '⑨ applyBattleResult opt-in 块接 BattleEngine.resolve');
-const pat = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+const pat = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
 ok(pat.indexOf('确定性战果（默认关）') >= 0 && pat.indexOf('deterministicCasualties') >= 0 && /id="s-det-cas"/.test(pat), '⑨ 设置开关「确定性战果」已加(checkbox 接 _togglePConf deterministicCasualties)');
 
 console.log('\n结果: ' + A + ' 通过 / 0 失败');

@@ -77,7 +77,7 @@ assert(_tmActiveScenarioRows('not-array').length === 0 && _tmActiveScenarioRows(
 
 // ── 7. 根治契约：刚性史事/事件有了 GM 单剧本之家·gameplay 读 GM 不读 P 库 ──
 //   ① doActualStart 给当前局建 GM.rigidHistoryEvents(单剧本干净副本)——补上唯一缺 GM 之家的 gameplay 数组
-const patchesSrc = read('tm-patches.js');
+const patchesSrc = (read('tm-patches.js') + '\n' + read('tm-patches-start.js'));
 assert(/GM\.rigidHistoryEvents\s*=\s*\(P\.rigidHistoryEvents\s*\|\|\s*\[\]\)\.filter\([\s\S]{0,80}\.sid\s*===\s*sid/.test(patchesSrc),
   '根治: doActualStart 必须建当前剧本的 GM.rigidHistoryEvents 单一真相源');
 //   ② rigidHistoryEvents/events 的 gameplay 消费方读 GM·不读 P 库

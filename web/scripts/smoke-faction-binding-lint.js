@@ -84,12 +84,13 @@ const ALLOW_LINES = [
   // tm-endturn-agent-write-tools.js·change 是工具 schema 透传对象·change.faction 传给 applyAIArmyChange·
   //   下游 tm-ai-change-army.js 已走 TM.FactionMembership.assignArmy(已在本白名单)·此为 schema 透传非直接 mutate
   { file: 'tm-endturn-agent-write-tools.js', match: /change\.faction\s*=\s*input\.faction/ },
-  // tm-patches.js·_bindCharFactions 名↔id 一致性同步；patches 加载早于 tm-faction-membership.js，且此处非归属变更.
-  { file: 'tm-patches.js', match: /c\.faction\s*=\s*byId\[c\.factionId\]\.name/ },
-  { file: 'tm-patches.js', match: /c\.factionId\s*=\s*byName\[c\.faction\]\.id/ },
-  { file: 'tm-patches.js', match: /ch\.factionId\s*=\s*f\.id/ },
-  { file: 'tm-patches.js', match: /ch\.faction\s*=\s*f2\.name/ },
-  { file: 'tm-patches.js', match: /ch\.faction\s*=\s*byId\[ch\.factionId\]\.name/ },
+  // tm-patches-start.js·_bindCharFactions 名↔id 一致性同步；patches 加载早于 tm-faction-membership.js，且此处非归属变更.
+  //   （2026-07-04 立项拆分：剧本启动链自 tm-patches.js 保序切出·五条豁免随代码迁档）
+  { file: 'tm-patches-start.js', match: /c\.faction\s*=\s*byId\[c\.factionId\]\.name/ },
+  { file: 'tm-patches-start.js', match: /c\.factionId\s*=\s*byName\[c\.faction\]\.id/ },
+  { file: 'tm-patches-start.js', match: /ch\.factionId\s*=\s*f\.id/ },
+  { file: 'tm-patches-start.js', match: /ch\.faction\s*=\s*f2\.name/ },
+  { file: 'tm-patches-start.js', match: /ch\.faction\s*=\s*byId\[ch\.factionId\]\.name/ },
 ];
 
 function scanFile(filePath, source, results) {

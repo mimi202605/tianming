@@ -80,7 +80,7 @@ async function main() {
   assert(/_agentLiveWorldRan/.test(amSrc), 'agent-mode 记 _agentLiveWorldRan(观测落地势力数)');
 
   // ⑥ 设置面板 toggle wired(tm-patches.js·agent 模式专属)
-  const patchSrc = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+  const patchSrc = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
   assert(/s-agent-liveworld/.test(patchSrc), 'patches 含活世界 toggle(id s-agent-liveworld)');
   // 注:onchange 内是 JS 字符串·单引号被转义为 \'·故用 indexOf 宽松匹配(同 smoke-agent-mode-s6 做法)
   assert(patchSrc.indexOf('agentLiveWorldEnabled') >= 0 && patchSrc.indexOf('_togglePConf') >= 0, 'patches 活世界 toggle 绑 _togglePConf(agentLiveWorldEnabled)');

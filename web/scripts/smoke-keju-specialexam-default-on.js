@@ -61,7 +61,7 @@ gate('tm-keju-tongzi.js',        'function _isG5Enabled() {', 'useNewKejuG5');
 
 // 设置 UI 源契约
 {
-  const p = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+  const p = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
   assert(p.indexOf('🎓 特科·总开关（默认开）') >= 0, '设置标题改人话（特科总开关）');
   assert(p.indexOf('🎓 恩科（需总开关）') >= 0 && p.indexOf('🎓 武举（需总开关）') >= 0 && p.indexOf('🎓 童子科（需总开关）') >= 0, '恩科/武举/童子标题改人话');
   assert(p.indexOf('default OFF') < 0 && p.indexOf('need D2') < 0 && p.indexOf('spawn infra') < 0, '开发黑话已清（default OFF / need D2 / spawn infra）');

@@ -19,7 +19,7 @@ ok((css.match(/@font-face\{font-family:"TM-ZCOOL-XiaoWei"/g) || []).length === 1
 ok(/TM-ZCOOL-QingKe[^}]*ZCOOLQingKeHuangYou/.test(css) && !/TM-ZCOOL-QingKe[^}]*unicode-range/.test(css), '黄油体不动(体检通过·粗体≠坏)');
 
 console.log('— S1/S2 · 结构 —');
-var patches = read('tm-patches.js');
+var patches = (read('tm-patches.js') + '\n' + read('tm-patches-start.js'));
 ok(/_settingsMerges = \[/.test(patches) && /战斗规则\|御驾亲征\|玩法机制/.test(patches), '稀签合并规则:玩法三节并一页');
 ok(/\^文风\|游戏模式/.test(patches), '稀签合并规则:文风+游戏模式并一页');
 ok(/_mergedPaneByRule\[mi\]\.appendChild\(section\)/.test(patches), '后至节并入共享 pane 不出新签');

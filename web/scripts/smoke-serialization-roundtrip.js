@@ -158,7 +158,7 @@ function assertSourceContracts() {
   assert(editorText.indexOf('SchemaAdapter.exportScenario(scriptData)') >= 0, 'editor export should serialize full scriptData (via SchemaAdapter.exportScenario)');
   assert(editorText.indexOf('scriptData[key] = d[key]') >= 0, 'editor import should merge all own top-level keys');
 
-  const patchesText = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+  const patchesText = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
   assert(patchesText.indexOf('GM.engineConstants = deepClone(sc.engineConstants)') >= 0, 'startGame should copy engineConstants to GM');
   assert(patchesText.indexOf('P.engineConstants = deepClone(sc.engineConstants)') >= 0, 'startGame should copy engineConstants to P');
   assert(patchesText.indexOf('GM.influenceGroups = deepClone(sc.influenceGroups)') >= 0, 'startGame should copy influenceGroups to GM');

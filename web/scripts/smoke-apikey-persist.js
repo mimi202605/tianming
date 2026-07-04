@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
-const SRC = fs.readFileSync(path.join(ROOT, 'web', 'tm-patches.js'), 'utf-8');
+const SRC = (fs.readFileSync(path.join(ROOT, 'web', 'tm-patches.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'web', 'tm-patches-start.js'), 'utf-8'));
 const UTILS = fs.readFileSync(path.join(ROOT, 'web', 'tm-utils.js'), 'utf-8');
 
 let pass = 0, fail = 0;

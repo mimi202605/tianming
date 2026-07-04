@@ -27,6 +27,8 @@ const SRC = {
   saveLifecycle: path.join(ROOT, 'tm-save-lifecycle.js'),
   postTurnJobs: path.join(ROOT, 'tm-post-turn-jobs.js'),
   patches: path.join(ROOT, 'tm-patches.js'),
+  patchesStart: path.join(ROOT, 'tm-patches-start.js'), // 2026-07-04 立项拆分：剧本启动链保序切出·patches 信号须并读两片
+
   playerSettings: path.join(ROOT, 'tm-player-settings.js')
 };
 
@@ -165,7 +167,7 @@ function captureSignals() {
   }
 
   // ─── 10. aiCallDepth UI hardcoded counts·Phase 7.5 会重写 ───
-  const patchesSrc = readFile(SRC.patches);
+  const patchesSrc = [readFile(SRC.patches), readFile(SRC.patchesStart)].filter(Boolean).join('\n');
   out.files.patches = { exists: !!patchesSrc, lineCount: patchesSrc ? patchesSrc.split('\n').length : 0 };
   if (patchesSrc) {
     const depthHints = patchesSrc.match(/(11调用|6调用|3调用|17调用|11 调用|6 调用)/g);

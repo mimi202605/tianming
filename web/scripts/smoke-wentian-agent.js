@@ -118,7 +118,7 @@ console.log('— §B · agent 循环(行为) —');
   ok(/divisions\[府州名\]\.economyBase\.farmland/.test(gl) && /office\[官职名\]\.publicTreasury/.test(gl), '教学补区划/官职常见路径');
   ok(/_wtHcList/.test(gl) && /dir\.hardChanges = hDone/.test(gl), '确认流支持多笔 hardChanges');
   ok(/_agentTrace/.test(gl), '确认框展示查证轨迹');
-  ok(/wentianAgentMode/.test(read('tm-patches.js')) && /问天·先查证后裁定/.test(read('tm-patches.js')), '设置面板开关(默认启用可关)');
+  ok(/wentianAgentMode/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))) && /问天·先查证后裁定/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))), '设置面板开关(默认启用可关)');
   ok(/tm-wentian-agent\.js/.test(read('index.html')), 'index.html 挂载(在只读工具之后)');
   console.log('\nsmoke-wentian-agent ' + (F0 === 0 ? 'PASS' : 'FAIL') + ' ' + P0 + '/' + (P0 + F0));
   process.exit(F0 === 0 ? 0 : 1);

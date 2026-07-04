@@ -45,7 +45,7 @@ globalThis.P = { conf: { courtDebateEnabled: true } };
 assert(agentFlagOn('courtDebateEnabled') === true && agentFlagOn('other') === false, '独立开关零回归(非agent模式)');
 
 // ── ③④ UI 源码守卫(tm-patches.js) ──
-const patchSrc = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+const patchSrc = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
 assert(/s-exp-enabled/.test(patchSrc) && /_toggleExperimentalEnabled/.test(patchSrc), '③ 总闸 toggle(s-exp-enabled+handler)');
 // 注:onchange 内是 JS 字符串·单引号被转义为 \'·故宽松匹配 handler 名 + 两模式标签
 assert(/name="exp-mode"/.test(patchSrc) && patchSrc.indexOf('_setExperimentalMode(') >= 0, '③ 模式选择 radio + handler 调用');

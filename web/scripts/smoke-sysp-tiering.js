@@ -106,7 +106,7 @@ ok(/_sc1cSys\.length > 1500/.test(aiSrc), '⑦ sc1c 手工 cache 包装同步改
 ok(!/content:_maybeCacheSys\(sysP\)\}.*tp1b/.test(aiSrc), '⑦ sc1b 旧直拿写法已不存');
 
 // ⑧ 设置开关契约
-const patchesSrc = fs.readFileSync(path.join(W, 'tm-patches.js'), 'utf8');
+const patchesSrc = (fs.readFileSync(path.join(W, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(W, 'tm-patches-start.js'), 'utf8'));
 ok(patchesSrc.indexOf("'sysPTieringEnabled'") >= 0 && /省流/.test(patchesSrc), '⑧ 设置「玩法机制·深化」有 AI 省流开关');
 
 console.log('\n' + (F === 0 ? 'ALL PASS' : 'FAIL') + ' (' + A + ' pass / ' + F + ' fail)');

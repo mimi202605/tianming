@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T07:24:44.723Z",
+  "updatedAt": "2026-07-04T07:49:00.184Z",
   "totals": {
-    "gm": 4573,
+    "gm": 4574,
     "p": 739
   },
   "files": {
@@ -316,9 +316,10 @@
       }
     },
     "tm-wendui.js": {
-      "gm": 88,
+      "gm": 89,
       "p": 0,
       "roots": {
+        "gm:_pendingAudiences": 8,
         "gm:_pendingLetterTo": 1,
         "gm:wenduiTarget": 2,
         "gm:wenduiHistory": 18,
@@ -331,7 +332,6 @@
         "gm:_edictSuggestions": 6,
         "gm:_pendingOvernightReq": 3,
         "gm:_wdRefusedCounsel": 3,
-        "gm:_pendingAudiences": 7,
         "gm:chars": 2,
         "gm:_indices": 1,
         "gm:_pendingOvernight": 2,
@@ -1120,12 +1120,18 @@
       }
     },
     "tm-patches.js": {
-      "gm": 93,
-      "p": 165,
+      "gm": 0,
+      "p": 72,
       "roots": {
-        "p:conf": 39,
+        "p:conf": 37,
         "p:ai": 26,
-        "p:scenarios": 9,
+        "p:scenarios": 9
+      }
+    },
+    "tm-patches-start.js": {
+      "gm": 93,
+      "p": 93,
+      "roots": {
         "p:<dynamic>": 4,
         "p:variables": 3,
         "gm:vars": 1,
@@ -1139,6 +1145,7 @@
         "gm:_corruptionPresetDone": 1,
         "gm:_guokuPresetDone": 1,
         "gm:_neitangPresetDone": 1,
+        "p:conf": 2,
         "gm:saveName": 1,
         "gm:eraState": 8,
         "p:goals": 1,

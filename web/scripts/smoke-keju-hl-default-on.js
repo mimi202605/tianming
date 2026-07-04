@@ -74,7 +74,7 @@ guardFlipped('tm-keju-paradigm-panel.js', 'L6');
 {
   const h = fs.readFileSync(path.join(ROOT, 'tm-keju-school-network.js'), 'utf8');
   ok(/每 5 年|5%|0\.05/.test(h), 'H 讲会内置节流(每5年+5%·默认开不刷屏)');
-  const pat = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+  const pat = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
   ok(/useNewKejuH !== false/.test(pat) && /默认开/.test(pat), 'H 设置开关同步默认开(!== false·复选框默认勾)');
 }
 

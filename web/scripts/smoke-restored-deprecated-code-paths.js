@@ -5,7 +5,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
-const patches = read('tm-patches.js');
+const patches = (read('tm-patches.js') + '\n' + read('tm-patches-start.js'));
 const officeEditor = read('tm-office-editor.js');
 const verifyAll = read(path.join('scripts', 'verify-all.js'));
 

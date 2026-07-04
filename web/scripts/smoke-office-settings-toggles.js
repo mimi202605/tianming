@@ -12,7 +12,7 @@ const ROOT = path.resolve(__dirname, '..');
 let pass = 0, fail = 0;
 function ok(c, m) { if (c) pass++; else { fail++; console.log('  ✗ FAIL: ' + m); } }
 
-const src = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+const src = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
 ok(/官制·机制深化/.test(src), 'openSettings 含「官制·机制深化」开关区');
 const FLAGS = ['powerMinisterEnabled', 'officeReviewLandingEnabled', 'officeConspiracyEnabled', 'officeSatisfactionFeedbackEnabled', 'officeSalaryHeadcountEnabled', 'officePersonnelTurnoverEnabled', 'officeJingchaEnabled'];
 FLAGS.forEach(function (f) {

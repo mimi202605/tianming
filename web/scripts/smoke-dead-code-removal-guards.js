@@ -14,7 +14,7 @@ const keju = read('tm-keju.js');
 const kejuRuntime = (read('tm-keju-runtime.js') + read('tm-keju-runtime-keyi.js'));
 const playerSettings = read('tm-player-settings.js');
 const saveLifecycle = read('tm-save-lifecycle.js');
-const patches = read('tm-patches.js');
+const patches = (read('tm-patches.js') + '\n' + read('tm-patches-start.js'));
 const gameLoop = read('tm-game-loop.js');
 const endturnCore = read('tm-endturn-core.js');
 const launch = read('tm-launch.js');
@@ -363,7 +363,7 @@ assert(/var\s+CentralizationSystem\s*=\s*\(function/.test(npcEngineSrc), 'live C
 assert(/function\s+resetTurnChanges\s*\(/.test(npcEngineSrc) && /function\s+evaluateThresholdTriggers\s*\(/.test(npcEngineSrc), 'live resetTurnChanges/evaluateThresholdTriggers must remain');
 // 5-file 解线:死调用/死注册保持移除
 assert(!/NpcEngine\.runEngine\s*\(/.test(read('tm-endturn-systems.js')), 'dead NpcEngine.runEngine() call should stay removed');
-assert(!/InteractionSystem\.initialize\s*\(/.test(read('tm-patches.js')) && !/NpcEngine\.initialize\s*\(/.test(read('tm-patches.js')), 'dead InteractionSystem/NpcEngine.initialize() calls should stay removed');
+assert(!/InteractionSystem\.initialize\s*\(/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))) && !/NpcEngine\.initialize\s*\(/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))), 'dead InteractionSystem/NpcEngine.initialize() calls should stay removed');
 assert(!/_buildWindowRefGroup\('NPC\.legacy'/.test(read('tm-namespaces.js')), 'dead NPC.legacy namespace group should stay removed');
 
 // ── 二阶死代码切除(2026-06-16·被删发射器/调用方留下的孤儿)·锁定不回潮 ──

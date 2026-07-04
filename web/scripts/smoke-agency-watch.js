@@ -90,7 +90,7 @@ const tickSeg = src.slice(src.indexOf('function tick('), src.indexOf('function a
 ok(/applyPlayerCounterIntel\(G\);[\s\S]*_agencyWatch\(G\);[\s\S]*_spawn\(/.test(tickSeg), '⑧ tick 内序:反制→常侦→萌发');
 
 // ⑨ 设置面板契约
-const patchesSrc = fs.readFileSync(path.join(W, 'tm-patches.js'), 'utf8');
+const patchesSrc = (fs.readFileSync(path.join(W, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(W, 'tm-patches-start.js'), 'utf8'));
 ok(patchesSrc.indexOf("'agencyWatchEnabled'") >= 0 && /密探常侦/.test(patchesSrc), '⑨ 设置「玩法机制·深化」有开关');
 
 console.log('\n' + (F === 0 ? 'ALL PASS' : 'FAIL') + ' (' + A + ' pass / ' + F + ' fail)');

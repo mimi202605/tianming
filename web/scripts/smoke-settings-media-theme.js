@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const patches = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
+const patches = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
 const themeFont = fs.readFileSync(path.join(ROOT, 'tm-theme-font.js'), 'utf8');
 const styles = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 const index = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');

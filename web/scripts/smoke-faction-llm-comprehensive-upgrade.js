@@ -63,7 +63,7 @@ function makeFactionLlmContext() {
 }
 
 function settingsTextSeparationTest() {
-  const patches = src('tm-patches.js');
+  const patches = (src('tm-patches.js') + '\n' + src('tm-patches-start.js'));
   const settings = src('tm-faction-npc-settings.js');
   assert(settings.indexOf('npcAiCosmeticEnrich') >= 0, 'settings should expose a separate cosmetic enrich switch');
   assert(settings.indexOf('isCosmeticEnrichEnabled') >= 0, 'settings should expose a cosmetic enrich capability check');
