@@ -649,6 +649,8 @@
     ch.officialTitles = [];
     ch.concurrentTitles = [];
     ch.concurrentTitle = '';
+    // 免职须斩在途赴任链：否则 _arriveCharNow 到期无条件 onAppointment·被免者「抵达即复职」翻案(2026-07-04 审查定罪)
+    delete ch._travelAssignPost; delete ch._travelTo; delete ch._travelRemainingDays;
     // 记去职标记·供推演 prompt「受限人员现状名册」识别罢官者·令 AI 勿再称旧衔/勿令其理事
     // (下狱/流放另有 _imprisoned/_exiled·此标记主要覆盖纯罢官免职;再任命后 officialTitle 非空即不再判罢官)
     ch._removedFromOfficeTurn = G.turn || 0;
@@ -4529,6 +4531,7 @@
 
     G.chars.forEach(function(ch) {
       if (!ch || !ch._travelTo) return;
+      if (ch.alive === false || ch.dead === true) return; // 死者不赶路·不「抵达就任」(2026-07-04 审查定罪)
       // ★赴任硬上限·按"天"计(与每回合天数刻度无关·1回合=1天的剧本不会被误伤)：
       //  逐 tick 累计实耗天数(AI 重发同终点不清此计数→剩余天数被重置也兜得住)·
       //  首 tick 锚定应耗天数(此后不被 AI 重置缩小)·实耗超「应耗×2 且 ≥40 天」即判卡死强制抵达。

@@ -404,11 +404,13 @@
       ps.reputationBalance = Math.abs(_repDecay) < 0.25 ? 0 : Math.round(_repDecay * 0.92 * 100) / 100;
       // 回传 p.influence 以供旧 UI 读取
       p.influence = ps.influence;
+      ps._synced_influence = ps.influence; // 镜像即已并账·同步水位——否则 syncPartyTruth 按水位差把同笔 delta 再入一次(双倍入账·2026-07-04 审查定罪)
       // cohesion：反弹·如果内部冲突多则下降
       if ((ps.recentPolicyLose || 0) > 2 && (ps.recentImpeachLose || 0) > 1) {
         ps.cohesion = Math.max(0, ps.cohesion - 3);
       }
       p.cohesion = ps.cohesion;
+      ps._synced_cohesion = ps.cohesion; // 同上·防二次并账
     });
 
     // 3. 政柄格局（V3式·2026-07-03）：从占官+影响力派生 秉政(governing)/在野(opposition)/边缘(marginal)。

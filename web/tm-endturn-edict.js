@@ -581,6 +581,8 @@ function applyEdictActions(actions) {
       char.officialTitles = [];
       char.concurrentTitles = [];
       char.concurrentTitle = '';
+      // 免职须斩在途赴任链(同 onDismissal)：否则到期自动就任翻案
+      delete char._travelAssignPost; delete char._travelTo; delete char._travelRemainingDays;
       if (!char.careerHistory) char.careerHistory = [];
       char.careerHistory.push({ turn: GM.turn, event: '奉诏免职' });
     }

@@ -4780,12 +4780,8 @@ function _ty3_phase5_skip() {
 function _ty3_advanceToSeal() {
   var ctx = CY._ty3_settleCtx;
   if (!ctx || !ctx.grade) return;
-  // S 档 跳过用印
-  if (ctx.grade === 'S') {
-    if (typeof addCYBubble === 'function') addCYBubble('内侍', '★ S 档·圣旨煌煌·跳过用印阶段·诏命直颁。', true);
-    CY._ty3_settleCtx = null;
-    return;
-  }
+  // S 档不在此早退：phase6_open 自有 S 分支(跳过用印弹窗·直接 resolveSeal 落账+气泡)——
+  // 早退曾令 S 档整链断头：无 sealedEdict/编年/阶层销单·v2 兜底记错党错档(2026-07-04 审查定罪)
   // D 档·用户须先选硬推/妥协·若 force 则用印·yield 则不用印
   if (ctx.grade === 'D' && ctx.dChoice !== 'force') {
     CY._ty3_settleCtx = null;
