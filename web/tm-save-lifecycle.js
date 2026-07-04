@@ -832,6 +832,7 @@ function fullLoadGame(data){
     }
   }
   if (typeof _tmInstallScenarioGetter === 'function') _tmInstallScenarioGetter(); // P 整体重赋值后重装 P.scenario 派生 getter
+  try { if (typeof window !== 'undefined') window._tmLoadGen = (window._tmLoadGen || 0) + 1; } catch (_lg) {} // 读档代际++·按GM.turn失效的模块级缓存(officeIndex/memCache)读同turn档曾泄漏旧局数据(2026-07-04 审查定罪)
   // 恢复被存档冲掉的 API 配置（key/url/model 等都从 localStorage 拉回）
   if (_preservedAi && typeof _preservedAi === 'object' && (_preservedAi.key || _preservedAi.url)) {
     if (!P.ai) P.ai = {};

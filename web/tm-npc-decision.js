@@ -474,10 +474,14 @@ function _buildOfficeIndex() {
   }
   walk(GM.officeTree);
   _officeIndexTurn = GM.turn;
+  _officeIndexGen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
 }
 
+var _officeIndexGen = -1;
 function _ensureOfficeIndex() {
-  if (_officeIndexTurn !== GM.turn || !_officeIndex) _buildOfficeIndex();
+  // 读档代际参与失效(2026-07-04 审查定罪)：只按 GM.turn 失效·读同回合号存档(回滚/另一局)曾继续用旧局官职树
+  var _gen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
+  if (_officeIndexTurn !== GM.turn || _officeIndexGen !== _gen || !_officeIndex) _buildOfficeIndex();
 }
 
 /** @param {string} npcName @returns {{deptName:string, posName:string, rank:string, position:Object}|null} */

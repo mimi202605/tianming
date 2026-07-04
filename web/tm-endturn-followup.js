@@ -751,7 +751,9 @@
               // ★2026-07-02 应用同源:走与 sc15 相同的 _applyNpcDeepResult——此前 sc15n 只存结果不应用·
               //   开着 sc15n 时 mood/忠诚/压力/关系网/暗流事件簿/阴谋台账全部静默停摆(半成品替代)。
               //   faction_undercurrents 亦由共享函数接管(历史归档+势力strength+事件簿·比原 append 版语义全)。
-              _applyNpcDeepResult(p15n);
+              // 应用错误不外抛(2026-07-04 审查定罪)：外层 _runSubcall 重试会整段重跑·已落的 delta 再落一次=双记账。
+              // 应用中断=部分落地不回滚(可容)·但绝不因应用错误触发 AI 重调重应用。
+              try { _applyNpcDeepResult(p15n); } catch (_apE15n) { console.warn('[sc15n] 应用中断(不重试防双记):', _apE15n); }
               if (Array.isArray(p15n.npc_cognition)) {
                 if (!GM._npcCognition || typeof GM._npcCognition !== 'object') GM._npcCognition = {};
                 p15n.npc_cognition.forEach(function(nc) {
@@ -896,7 +898,8 @@
           var p15 = _p15Parse ? _p15Parse.parsed : null;
           if (p15) {
             // ★2026-07-02 应用逻辑抽出 _applyNpcDeepResult(见 Branch A 顶部)与 sc15n 共享·内容与原内联一致
-            _applyNpcDeepResult(p15);
+            // 应用错误不外抛(同 sc15n·重试整段重跑=已落 delta 双记账·2026-07-04 审查定罪)
+            try { _applyNpcDeepResult(p15); } catch (_apE15) { console.warn('[sc15] 应用中断(不重试防双记):', _apE15); }
 
             GM._turnAiResults.subcall15 = p15;
             // Phase 4·sc15n API surface mirror (Slice 3 scaffold)·下游可读 subcall15n 而非分散 subcall15/subcall07

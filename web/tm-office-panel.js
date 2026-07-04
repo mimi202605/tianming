@@ -594,6 +594,7 @@ function _offRecruitSubmit() {
     }
     // 生成成功·重开 picker（新人已在候选池中）
     if (typeof toast === 'function') toast(_capName + ' \u5E94\u8BCF\u800C\u81F3\u00B7\u8BF7\u9009\u4EFB');
+    if (!_OFF_PICKER) return; // 异步等待期玩家已关拣选器·裸取曾TypeError被吞成「征召出错」(2026-07-04 审查定罪)·新人已入池·重开面板可见
     var _path = _OFF_PICKER.pathArr;
     var _dept = _OFF_PICKER.deptName;
     var _pos = _OFF_PICKER.posName;

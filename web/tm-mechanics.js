@@ -1933,8 +1933,9 @@ var NpcMemorySystem = {
   _memCache: {}, _memCacheTurn: -1,
   getMemoryContext: function(charName) {
     charName = _tmMemoryCanonName(charName);
-    // 6.2: 每回合缓存——同一回合内同一角色只构建一次
-    if (this._memCacheTurn !== GM.turn) { this._memCache = {}; this._memCacheTurn = GM.turn; }
+    // 6.2: 每回合缓存——同一回合内同一角色只构建一次（读档代际参与失效·读同turn档曾把旧局记忆注入新局prompt·2026-07-04 审查定罪）
+    var _mcGen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
+    if (this._memCacheTurn !== GM.turn || this._memCacheGen !== _mcGen) { this._memCache = {}; this._memCacheTurn = GM.turn; this._memCacheGen = _mcGen; }
     if (this._memCache[charName]) return this._memCache[charName];
     if (!GM.chars) return '';
     charName = _tmMemoryCanonName(charName);

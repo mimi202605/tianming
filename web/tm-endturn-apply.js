@@ -465,6 +465,7 @@
                     var _scaleCap = _mouths != null ? Math.max(2000, Math.round(_mouths * P_AI_REVOLT_SCALE_FRAC)) : P_AI_REVOLT_SCALE_ABS;
                     var _scale = Math.min(Number(r.scale) || 1000, _scaleCap);
                     GM.minxin.revolts.push({
+                      id: 'revolt-airec-t' + (GM.turn || 0) + '-' + GM.minxin.revolts.length, // 补id·镇压路径按id find·无id曾镇不掉(2026-07-04 审查定罪)
                       region: r.region,
                       leader: r.leader || '',
                       scale: _scale,
