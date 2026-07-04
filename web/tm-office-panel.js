@@ -862,9 +862,17 @@ function _offUndoAppointment(deptName, posName) {
         if (_ci2 >= 0) newChar.concurrentTitles.splice(_ci2, 1);
       }
     } else {
-      // 辞旧就新撤销·恢复原主职
-      if (newChar.officialTitle === pe.posName) newChar.officialTitle = pe._snapPrevMainTitle || '';
-      if (newChar.position === pe.posName) newChar.position = pe._snapPrevMainTitle || '';
+      // 辞旧就新撤销·恢复原主职——须连 officialTitles 数组 claim 一并撤：残留 claim 曾令
+      // 派生引擎(renderOfficeTree→_offSyncHoldersFromChars)下次渲染把人精确匹配重新坐回·撤销自我失效(2026-07-04 审查定罪)
+      var _wasNewMain = (newChar.officialTitle === pe.posName);
+      if (typeof _offRemoveCharOfficeTitle === 'function') _offRemoveCharOfficeTitle(newChar, pe.posName);
+      else if (Array.isArray(newChar.officialTitles)) newChar.officialTitles = newChar.officialTitles.filter(function(t){ return t !== pe.posName; });
+      if (_wasNewMain || newChar.officialTitle === pe.posName) newChar.officialTitle = pe._snapPrevMainTitle || '';
+      if (_wasNewMain || newChar.position === pe.posName) newChar.position = pe._snapPrevMainTitle || '';
+      // 撤销亦须斩 Step4b 已启动的赴任行程(与免职同理·否则到期照样自动就任)
+      if (newChar._travelAssignPost && String(newChar._travelAssignPost).split('/').pop() === pe.posName) {
+        delete newChar._travelAssignPost; delete newChar._travelTo; delete newChar._travelRemainingDays;
+      }
     }
     if (pe._snapNewCharCareerPushed && Array.isArray(newChar.careerHistory) && newChar.careerHistory.length > 0) {
       newChar.careerHistory.pop();
