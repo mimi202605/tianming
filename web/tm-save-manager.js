@@ -121,6 +121,7 @@ var SaveManager = {
         var gs = record.gameState;
         GM = deepClone(gs.GM || gs);
         P = deepClone(gs.P || P);
+        if (typeof _tmInstallScenarioGetter === 'function') _tmInstallScenarioGetter(); // P 重赋值后重装 P.scenario getter
         GM.running = true;
         if (typeof buildIndices === 'function') buildIndices();
         if (typeof enterGame === 'function') enterGame();

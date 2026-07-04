@@ -827,6 +827,7 @@ function fullLoadGame(data){
       GM = data.gameState;
     }
   }
+  if (typeof _tmInstallScenarioGetter === 'function') _tmInstallScenarioGetter(); // P 整体重赋值后重装 P.scenario 派生 getter
   // 恢复被存档冲掉的 API 配置（key/url/model 等都从 localStorage 拉回）
   if (_preservedAi && typeof _preservedAi === 'object' && (_preservedAi.key || _preservedAi.url)) {
     if (!P.ai) P.ai = {};
