@@ -1264,8 +1264,10 @@ assert(!html.includes('tm-patches.js') && !html.includes('tm-endturn-ai-infer.js
   'preview should not load formal game runtime scripts');
 assert(indexHtml.includes('preview/scenario-editor-sandbox-bridge.js'),
   'formal runtime should load the scenario editor sandbox bridge');
-assert(indexHtml.includes('打开新版剧本工坊'),
-  'formal launch card should advertise the new scenario workshop');
+// 2026-07-04 放宽为语义锚：菜单页文案在迭代（并行会话重做启动页去开发腔）·逐字钉营销文案必然反复断——
+// 只验「著卷入口卡存在且宣传剧本工坊」·措辞随文案组自由
+assert(indexHtml.includes('btn-editor') && indexHtml.includes('剧本工坊'),
+  'formal launch card should advertise the scenario workshop (btn-editor + 剧本工坊 anchor)');
 assert(officeEditorJs.includes('function openScenarioResetEditor'),
   'formal runtime should provide a bridge into the new scenario workshop');
 assert(officeEditorJs.includes('tm.scenarioEditorReset.previewDraft.v1'),
