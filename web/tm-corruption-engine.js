@@ -955,7 +955,9 @@
             GM.corruption.subDepts.judicial.true += 15;
             GM.corruption.countermeasures.harshPunishment = 0;
             _mxApply(5, '清算酷吏·冤狱得雪', 'judicialFairness');
-            if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8);
+            if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+              global.AuthorityEngines.adjustHuangwei('lostVirtueRumor', -8, '清算酷吏·冤狱曝于朝野');
+            } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8); // 沙箱回退
           });
         counters.harshAccum = 0;
       }
@@ -1087,11 +1089,15 @@
       }
     }
 
-    // 腐败 → 皇威（每月扣 0.2 → 按月数）
+    // 腐败 → 皇威（每月扣 0.2 → 按月数）·收口走写口(按源封顶+phase迁移·手搓drains台账退役为沙箱回退)
     if (GM.huangwei && c.trueIndex > 75) {
-      GM.huangwei.index = Math.max(0, GM.huangwei.index - 0.2 * mr);
-      if (!GM.huangwei.drains) GM.huangwei.drains = {};
-      GM.huangwei.drains.lostVirtueRumor = (GM.huangwei.drains.lostVirtueRumor || 0) + 0.2 * mr;
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('lostVirtueRumor', -0.2 * mr, '腐败侵蚀圣德');
+      } else {
+        GM.huangwei.index = Math.max(0, GM.huangwei.index - 0.2 * mr);
+        if (!GM.huangwei.drains) GM.huangwei.drains = {};
+        GM.huangwei.drains.lostVirtueRumor = (GM.huangwei.drains.lostVirtueRumor || 0) + 0.2 * mr;
+      }
     }
 
     // 冗官和卖官导致新官能力衰减（每月扣 → 按月数）
@@ -1517,7 +1523,11 @@
         GM.huangquan.index = Math.max(0, GM.huangquan.index - Math.abs(cost.huangquan));
       }
     }
-    if (cost.huangwei  && GM.huangwei)  GM.huangwei.index  = Math.max(0, GM.huangwei.index  - Math.abs(cost.huangwei));
+    if (cost.huangwei && GM.huangwei) {
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('courtScandal', -Math.abs(cost.huangwei), '整肃代价·朝局震动');
+      } else GM.huangwei.index = Math.max(0, GM.huangwei.index - Math.abs(cost.huangwei)); // 沙箱回退
+    }
     if (cost.minxin) _mxApply(-Math.abs(cost.minxin), '惩贪行动波及地方');
     if (cost.guoku && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) FiscalEngine.spendFromGuoku({ money: Math.abs(cost.guoku) }, '惩贪行动'); // 收口·走真账
     if (cost.stress) { /* player stress — hook */ }
@@ -1528,7 +1538,11 @@
         GM.corruption.subDepts[caseObj.dept].true + ben.corruption);
     }
     if (ben.minxin) _mxApply(ben.minxin, '惩贪见效·民心称快');
-    if (ben.huangwei && GM.huangwei) GM.huangwei.index   = Math.min(100, GM.huangwei.index   + ben.huangwei);
+    if (ben.huangwei && GM.huangwei) {
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('executeRebelMinister', ben.huangwei, '惩贪奏效·朝纲肃然');
+      } else GM.huangwei.index = Math.min(100, GM.huangwei.index + ben.huangwei); // 沙箱回退
+    }
     if (ben.huangquan && GM.huangquan) {
       if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangquan) {
         global.AuthorityEngines.adjustHuangquan('personalRule', ben.huangquan, '\u6574\u8083\u594f\u6548');
@@ -1575,7 +1589,9 @@
         c.resolvedTurn = GM.turn;
         // 不处理的后果：民心 -2，皇威 -1，腐败略升
         _mxApply(-2, '贪案悬而不决·民怨积');
-        if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 1);
+        if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+          global.AuthorityEngines.adjustHuangwei('idleGovern', -1, '贪案悬而不决');
+        } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 1); // 沙箱回退
         if (c.dept && GM.corruption.subDepts[c.dept]) {
           GM.corruption.subDepts[c.dept].true = Math.min(100, GM.corruption.subDepts[c.dept].true + 3);
         }

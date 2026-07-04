@@ -1025,7 +1025,9 @@
         GM.huangquan.index = Math.max(0, GM.huangquan.index - 10);
       }
     }
-    if (GM.huangwei)  GM.huangwei.index = Math.max(0, GM.huangwei.index - 15);
+    if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+      global.AuthorityEngines.adjustHuangwei('brokenPromise', -15, '国库破产·朝廷失信天下');
+    } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 15); // 沙箱回退
     if (GM.corruption && GM.corruption.sources) {
       GM.corruption.sources.lowSalary = (GM.corruption.sources.lowSalary || 0) + 15;
     }
@@ -1192,7 +1194,9 @@
       g.emergency.loan.amount = amount;
       g.emergency.loan.monthsLeft = term;
       // 皇威代价
-      if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 3);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('brokenPromise', -3, '举债应急·有损天威');
+      } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 3); // 沙箱回退
       if (typeof addEB === 'function') addEB('朝代', '借银 ' + Math.round(amount/10000) + ' 万两，限 ' + term + ' 月归还', { credibility: 'high' });
       return { success: true };
     },
@@ -1226,7 +1230,9 @@
       if (!GM.hukou) GM.hukou = {};
       GM.hukou.taxRateMultiplier = (GM.hukou.taxRateMultiplier || 1) * (1 - percent);
       _mxApply(percent * 30, '减税' + Math.round(percent*100) + '%·民困得纾', 'taxation');
-      if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + percent * 8);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('benevolence', percent * 8, '减赋施仁');
+      } else if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + percent * 8); // 沙箱回退
       if (typeof addEB === 'function') addEB('朝代', '减赋 ' + Math.round(percent*100) + '%，民感圣恩', { credibility: 'high' });
       return { success: true };
     },
@@ -1237,7 +1243,9 @@
       amount = amount || 500000;
       GM.guoku.balance += amount;
       // 立即后果：通胀、皇威损
-      if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('brokenPromise', -8, '滥发纸钞·钱法失信');
+      } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8); // 沙箱回退
       _mxApply(-5, '朝廷敛财应急·物议沸腾');
       // 粮价/物价浮动留 hook 给货币系统
       if (GM.currency) GM.currency.inflationPressure = (GM.currency.inflationPressure || 0) + amount / 1000000;
@@ -1614,7 +1622,11 @@
         }
         if (eff.populationGrowthBonus && GM.hukou) GM.hukou.growthBonus = (GM.hukou.growthBonus || 0) + eff.populationGrowthBonus;
         if (eff.minxinDelta) _mxApply(eff.minxinDelta, '财政改革奏效及民');
-        if (eff.huangweiDelta && GM.huangwei) GM.huangwei.index = clamp(GM.huangwei.index + eff.huangweiDelta, 0, 100);
+        if (eff.huangweiDelta && GM.huangwei) {
+          if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+            global.AuthorityEngines.adjustHuangwei('structuralReform', eff.huangweiDelta, '财政改革之效');
+          } else GM.huangwei.index = clamp(GM.huangwei.index + eff.huangweiDelta, 0, 100); // 沙箱回退
+        }
         GM.guoku.completedReforms.push(o.id);
         if (typeof addEB === 'function') addEB('朝代', r.name + ' 施行既毕，' + eff.note, { credibility: 'high' });
       } else {
@@ -1676,7 +1688,9 @@
       g.balance += boost;
       if (!GM.currency) GM.currency = {};
       GM.currency.inflationPressure = (GM.currency.inflationPressure || 0) + reduction * 0.5;
-      if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - reduction * 15);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('brokenPromise', -reduction * 15, '减重改铸·钱法失信');
+      } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - reduction * 15); // 沙箱回退
       _mxApply(-(reduction * 8), '减重改铸·新钱成色降·市面疑虑');
       if (typeof addEB === 'function') addEB('朝代', '减重改铸：新钱成色降 ' + Math.round(reduction*100) + '%，市面疑虑', { credibility: 'high' });
       return { success: true, revenue: boost };
@@ -1695,7 +1709,9 @@
       GM.currency.latestCoin = name;
       var cost = 100000;
       if (GM.guoku) GM.guoku.balance -= cost;
-      if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 5);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('benevolence', 5, '新钱精良·民信渐复');
+      } else if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 5); // 沙箱回退
       if (typeof addEB === 'function') addEB('朝代', '新铸"' + name + '"钱，成色精良，民信渐复', { credibility: 'high' });
       return { success: true, cost: cost };
     }
@@ -1851,7 +1867,11 @@
         GM.huangquan.index = clamp(GM.huangquan.index + se.huangquan, 0, 100);
       }
     }
-    if (se.huangwei && GM.huangwei) GM.huangwei.index = clamp(GM.huangwei.index + se.huangwei, 0, 100);
+    if (se.huangwei && GM.huangwei) {
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei(se.huangwei > 0 ? 'benevolence' : 'brokenPromise', se.huangwei, '借贷来源副作用');
+      } else GM.huangwei.index = clamp(GM.huangwei.index + se.huangwei, 0, 100); // 沙箱回退
+    }
     if (se.minxin) _mxApply(se.minxin, '应急借贷·市面所感');
     if (se.foreign && GM.huangwei && GM.huangwei.subDims && GM.huangwei.subDims.foreign) {
       GM.huangwei.subDims.foreign.value = clamp(GM.huangwei.subDims.foreign.value + se.foreign, 0, 100);

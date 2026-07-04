@@ -346,7 +346,9 @@
           return { ok: true };
         } else {
           pm.controlLevel = Math.min(1, pm.controlLevel + 0.1);
-          if (typeof G.huangwei === 'object') G.huangwei.index = Math.max(0, G.huangwei.index - 8);
+          if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+            global.AuthorityEngines.adjustHuangwei('courtScandal', -8, '斥臣反遭顶撞·皇威受挫');
+          } else if (typeof G.huangwei === 'object') G.huangwei.index = Math.max(0, G.huangwei.index - 8); // 沙箱回退
           if (global.addEB) global.addEB('朝堂', '斥责反遭顶撞，皇威更挫');
           return { ok: false, backfire: true };
         }

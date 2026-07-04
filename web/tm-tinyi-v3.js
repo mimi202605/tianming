@@ -1869,8 +1869,9 @@ function _ty3_paDoHold(topic, meta) {
 function _ty3_paDoPrivate(topic, meta) {
   // 私决：转御前·携带议题
   if (typeof addEB === 'function') addEB('议前', '私决御前·' + topic);
-  // 皇威 +1
-  if (GM.huangwei && typeof GM.huangwei.index === 'number') GM.huangwei.index = Math.min(100, GM.huangwei.index + 1);
+  // 皇威 +1（收口走写口·未注册源走 _default 封顶）
+  if (typeof AuthorityEngines !== 'undefined' && AuthorityEngines.adjustHuangwei) AuthorityEngines.adjustHuangwei('privateDecision', 1, '私决御前·乾纲独断');
+  else if (GM.huangwei && typeof GM.huangwei.index === 'number') GM.huangwei.index = Math.min(100, GM.huangwei.index + 1); // 沙箱回退
   else if (GM.vars && GM.vars['皇威'] && typeof GM.vars['皇威'].value === 'number') GM.vars['皇威'].value = Math.min(100, GM.vars['皇威'].value + 1);
   // Topic handling note.
   window._yq2_seedTopic = topic;

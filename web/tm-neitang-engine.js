@@ -561,7 +561,9 @@
       addEB('朝代', '内帑不足以赡宫廷，皇家体面难维', { credibility: 'high' });
     }
     // 连锁：皇威下降 + 皇家地位减损
-    if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 5);
+    if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+      global.AuthorityEngines.adjustHuangwei('familyScandal', -5, '内帑匮乏·皇家体面难维');
+    } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 5); // 沙箱回退
     if (GM.huangquan && GM.huangquan.subDims && GM.huangquan.subDims.imperial) {
       GM.huangquan.subDims.imperial.value = Math.max(0, GM.huangquan.subDims.imperial.value - 8);
     }
@@ -598,7 +600,9 @@
       if (typeof FiscalEngine !== 'undefined' && FiscalEngine.addToGuoku) FiscalEngine.addToGuoku({ money: amount }, '内帑济国用'); // 收口·走真账
       GM.neitang._annualRescueAmount = (GM.neitang._annualRescueAmount || 0) + amount;
       // 皇家德政 → 皇威+ 民心+
-      if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 3);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('benevolence', 3, '罄内帑济国用·皇家德政');
+      } else if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 3); // 沙箱回退
       _mxApply(2, '罄内帑济国用·皇家德政', 'imperialVirtue');
       if (typeof addEB === 'function') addEB('朝代', '陛下罄内帑 ' + Math.round(amount/10000) + ' 万两济国用，群臣感泣', { credibility: 'high' });
       return { success: true };
@@ -614,7 +618,9 @@
       GM.neitang.specialTaxMonthly = monthly;
       // 民心损（历史上矿税害民）
       _mxApply(-5, '开征' + (type || '特税') + '·中官四出害民', 'taxation');
-      if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 3);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('lostVirtueRumor', -3, '中官税使四出·天下侧目');
+      } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 3); // 沙箱回退
       if (typeof addEB === 'function') addEB('朝代', '开' + type + '，月收 ' + Math.round(monthly/1000) + ' 千两入内帑', { credibility: 'high' });
       return { success: true };
     },
@@ -625,7 +631,9 @@
       if (!GM.neitang.specialTaxActive) return { success: false, reason: '未开启' };
       GM.neitang.specialTaxActive = false;
       _mxApply(3, '罢特税·民困得苏', 'taxation');
-      if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 2);
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('benevolence', 2, '罢特税·民感圣德');
+      } else if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + 2); // 沙箱回退
       if (typeof addEB === 'function') addEB('朝代', '罢' + (GM.neitang.specialTaxType || '特别税') + '，民感圣德', { credibility: 'high' });
       return { success: true };
     },
@@ -644,7 +652,9 @@
       if (GM.neitang.balance < cost) return { success: false, reason: '内帑不足' };
       GM.neitang.balance -= cost;
       GM.neitang._thisYearCeremonyBudget = (GM.neitang._thisYearCeremonyBudget || 0) + cost;
-      if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + (gains[type] || 8));
+      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+        global.AuthorityEngines.adjustHuangwei('grandCeremony', gains[type] || 8, '大典彰威');
+      } else if (GM.huangwei) GM.huangwei.index = Math.min(100, GM.huangwei.index + (gains[type] || 8)); // 沙箱回退
       if (typeof addEB === 'function') addEB('朝代', '行大典，费内帑 ' + Math.round(cost/10000) + ' 万两', { credibility: 'high' });
       return { success: true };
     },
@@ -1170,7 +1180,9 @@
         { credibility: 'high' });
     }
     _mxApply(-10, '宗室繁衍难供·藩王殴夺民产');
-    if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8);
+    if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
+      global.AuthorityEngines.adjustHuangwei('familyScandal', -8, '宗禄难支·藩王夺民产');
+    } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 8); // 沙箱回退
     if (GM.neitang.history) GM.neitang.history.events.push({
       turn: GM.turn, type: 'royal_clan_bankruptcy'
     });

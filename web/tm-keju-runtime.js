@@ -663,10 +663,15 @@ async function _finalizeStageAndAdvance(exam, slot) {
   } finally { exam._finalizing = false; }
 }
 
-/** 辅助·调整皇威（若引擎可用） */
+/** 辅助·调整皇威（注释一直说「若引擎可用」·2026-07-04 收口才真接上写口：按源封顶+台账+phase 迁移） */
 function _adjustHuangwei(delta, reason) {
   try {
-    if (GM.huangwei && typeof GM.huangwei === 'object') {
+    if (typeof AuthorityEngines !== 'undefined' && AuthorityEngines.adjustHuangwei) {
+      AuthorityEngines.adjustHuangwei(delta > 0 ? 'culturalAchievement' : 'courtScandal', delta, reason || '科举牵动皇威');
+      if (typeof addEB === 'function') addEB('皇威', (delta > 0 ? '+' : '') + delta + '·' + (reason || ''));
+      return;
+    }
+    if (GM.huangwei && typeof GM.huangwei === 'object') { // 沙箱回退
       var old = (typeof GM.huangwei.index === 'number') ? GM.huangwei.index : (typeof GM.huangwei.value === 'number' ? GM.huangwei.value : 50);
       GM.huangwei.index = Math.max(0, Math.min(100, old + delta));
       GM.huangwei.value = GM.huangwei.index;
