@@ -282,8 +282,9 @@
     // 3.7 内帑侵吞 → 每月扣内帑
     if (GM.neitang) {
       var leak = Consequences.calcInnerTreasuryLeak();
-      // leak 是年度值（见 calcInnerTreasuryLeak），转回合：× mr / 12
-      var monthlyLeak = leak * mr / 12;
+      // calcInnerTreasuryLeak 基于 neitang.monthlyIncome=本就是月度值·再/12 曾把 imperial 侵吞削到设计值 1/12·
+      // 内帑腐败近乎无感(2026-07-04 审查定罪)。转回合只乘 mr。
+      var monthlyLeak = leak * mr;
       GM.neitang.balance = Math.max(0, safe(GM.neitang.balance, 0) - monthlyLeak);
       if (!GM._corrStats) GM._corrStats = {};
       GM._corrStats.lastMonthInnerLeak = monthlyLeak;

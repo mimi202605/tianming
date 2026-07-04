@@ -639,10 +639,19 @@
           ledger.sources[label] = (Number(ledger.sources[label]) || 0) + amount;
           if (resource === 'money') result.moneyIn += amount;
         } else {
-          ledger.stock = (Number(ledger.stock) || 0) - amount;
-          ledger.thisTurnOut = (Number(ledger.thisTurnOut) || 0) + amount;
-          ledger.sinks[label] = (Number(ledger.sinks[label]) || 0) + amount;
-          if (resource === 'money') result.moneyOut += amount;
+          // 扣账不打负·落0+记欠(与 deductFromLedger 同语义)——旧写法直打负余额·同一国库账里
+          // 年例欠账走负余额而俸饷欠账走 deficit·破产判据双轨不一致(2026-07-04 审查定罪)
+          var _have = Number(ledger.stock) || 0;
+          var _ded = Math.min(_have, amount);
+          var _short = amount - _ded;
+          ledger.stock = _have - _ded;
+          ledger.thisTurnOut = (Number(ledger.thisTurnOut) || 0) + _ded;
+          ledger.sinks[label] = (Number(ledger.sinks[label]) || 0) + _ded;
+          if (_short > 0) {
+            ledger.sinks[label + '_欠'] = (Number(ledger.sinks[label + '_欠']) || 0) + _short;
+            ledger.deficit = (Number(ledger.deficit) || 0) + _short;
+          }
+          if (resource === 'money') result.moneyOut += _ded;
         }
         if (resource === 'money') {
           container.balance = ledger.stock;

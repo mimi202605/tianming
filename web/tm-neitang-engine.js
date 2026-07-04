@@ -1139,11 +1139,16 @@
 
     // 默认出帑廪粮（明代）
     var dest = rcp.destination || 'guoku.grain';
-    // 宗禄支出走 FiscalEngine 真账(2026-07-04 收口)·粮价 5 两/石等价折算
-    if (dest === 'guoku.grain' && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) {
-      FiscalEngine.spendFromGuoku({ grain: monthlyCost / 5 }, '宗禄');
-    } else if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) {
-      FiscalEngine.spendFromGuoku({ money: monthlyCost }, '宗禄');
+    // 宗禄出账判权(2026-07-04 审查定罪)：rcp.annualStipendPaid 已配则 FixedExpense.calcRoyalStipend
+    // 按年额扣同一 sink「宗禄」——本引擎同回合再按人口扣一遍=双扣。FixedExpense 本回合已跑即让位(人口演化照跑)。
+    var _fixedOwnsStipend = (Number(rcp.annualStipendPaid) > 0) && (GM._lastFixedExpenseTurn === GM.turn);
+    if (!_fixedOwnsStipend) {
+      // 宗禄支出走 FiscalEngine 真账(2026-07-04 收口)·粮价 5 两/石等价折算
+      if (dest === 'guoku.grain' && typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) {
+        FiscalEngine.spendFromGuoku({ grain: monthlyCost / 5 }, '宗禄');
+      } else if (typeof FiscalEngine !== 'undefined' && FiscalEngine.spendFromGuoku) {
+        FiscalEngine.spendFromGuoku({ money: monthlyCost }, '宗禄');
+      }
     }
 
     // 崩溃触发
