@@ -41,7 +41,7 @@ function assert(cond, msg) { if (!cond) throw new Error('FAIL: ' + msg); asserti
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   // 桩:仪式/事件 push(避免 DOM)
-  try { vm.runInContext((fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8')), ctx, { filename: 'tm-tinyi-v3.js' }); }
+  try { vm.runInContext((fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-edict-personnel.js'), 'utf8')) + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8')), ctx, { filename: 'tm-tinyi-v3.js' }); }
   catch (e) { /* IIFE 钩子可能因缺依赖抛错·不影响函数定义 */ }
   // 覆盖可能含 DOM 的仪式函数为桩
   ctx._ty3_runCeremony = function(){};

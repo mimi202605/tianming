@@ -16,7 +16,7 @@ function assert(cond, msg) {
 const zhi = read('tm-renwu-tuzhi.js');
 const shijiList = read('tm-shiji-qiju-ui.js');
 const playerCore = read('tm-player-core.js');
-const tinYi = (read('tm-tinyi-v3-persona.js') + read('tm-tinyi-v3.js') + read('tm-tinyi-v3-parties.js'));
+const tinYi = (read('tm-tinyi-v3-persona.js') + (read('tm-tinyi-v3.js') + '\n' + read('tm-tinyi-v3-edict-personnel.js')) + read('tm-tinyi-v3-parties.js'));
 const topbarVars = read('tm-topbar-vars.js');
 const office = read('tm-hongyan-office.js');
 const ceming = read('tm-ceming.js');

@@ -71,7 +71,7 @@ console.log('— S2 · 盟敌对账(行为) —');
   ok(p.enemies.indexOf('浙党') >= 0, 'runtime 敌意并入 canonical (' + p.enemies.join('/') + ')');
 })();
 console.log('— S2 · 清誉/弹劾grade(契约) —');
-var _tv3 = (read('tm-tinyi-v3-persona.js') + read('tm-tinyi-v3.js') + read('tm-tinyi-v3-parties.js'));
+var _tv3 = (read('tm-tinyi-v3-persona.js') + (read('tm-tinyi-v3.js') + '\n' + read('tm-tinyi-v3-edict-personnel.js')) + read('tm-tinyi-v3-parties.js'));
 ok(/function _ty3_bumpPartyReputation\(ps, delta\)/.test(_tv3), '清誉写入器在(此前全项目零写者)');
 ok(/_ty3_bumpPartyReputation\(source, \(sourceWin - sourceLose\)/.test(_tv3), '政策胜负写清誉(倡议方)');
 ok(/_ty3_bumpPartyReputation\(ps, \(oppWin - oppLose\)/.test(_tv3), '政策胜负写清誉(反对方)');

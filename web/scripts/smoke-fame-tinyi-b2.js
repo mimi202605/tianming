@@ -22,7 +22,7 @@ function main() {
   ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   try {
-    vm.runInContext((fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8')), ctx, { filename: 'tm-tinyi-v3.js' });
+    vm.runInContext((fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-edict-personnel.js'), 'utf8')) + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8')), ctx, { filename: 'tm-tinyi-v3.js' });
   } catch (e) {
     console.error('[smoke-fame-tinyi-b2] load threw (expected if heavy deps): ' + (e && e.message));
   }

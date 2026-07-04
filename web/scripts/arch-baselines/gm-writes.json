@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T08:10:27.933Z",
+  "updatedAt": "2026-07-04T08:25:13.488Z",
   "totals": {
     "gm": 4574,
     "p": 739
@@ -1727,26 +1727,34 @@
       }
     },
     "tm-tinyi-v3.js": {
-      "gm": 44,
+      "gm": 29,
       "p": 0,
       "roots": {
         "gm:partyState": 2,
         "gm:_mentorIndexSig": 1,
         "gm:_pendingTinyiTopics": 3,
         "gm:_ccFinalBlockedItems": 2,
-        "gm:_ccHeldItems": 7,
+        "gm:_ccHeldItems": 5,
         "gm:_ty3_aiReissueResults": 1,
         "gm:huangwei": 1,
         "gm:vars[皇威]": 1,
-        "gm:partyStrife": 5,
+        "gm:partyStrife": 4,
         "gm:huangquan": 1,
         "gm:vars[皇权]": 1,
         "gm:_regaliaCounters": 5,
-        "gm:unlockedRegalia": 2,
+        "gm:unlockedRegalia": 2
+      }
+    },
+    "tm-tinyi-v3-edict-personnel.js": {
+      "gm": 15,
+      "p": 0,
+      "roots": {
         "gm:recentChaoyi": 5,
         "gm:_chronicle": 1,
         "gm:tinyi": 3,
-        "gm:_courtRecords": 3
+        "gm:_courtRecords": 3,
+        "gm:_ccHeldItems": 2,
+        "gm:partyStrife": 1
       }
     },
     "tm-tinyi-v3-parties.js": {

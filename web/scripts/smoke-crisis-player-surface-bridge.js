@@ -94,7 +94,8 @@ assert(surfaceHook('phase8-formal-drafts.js', 'hongyan'), 'hongyan letter surfac
 assert(surfaceHook('phase8-formal-drafts.js', 'player_action'), 'player action surface should call crisis bridge');
 assert(surfaceHook('phase8-formal-rightrail.js', 'wendui'), 'wendui surface should call crisis bridge');
 assert(surfaceHook('phase8-formal-rightrail.js', 'chaoyi'), 'chaoyi record surface should call crisis bridge');
-assert(surfaceHook('tm-tinyi-v3.js', 'tinyi'), 'tinyi outcome surface should call crisis bridge');
+// 2026-07-04 立项拆分二切：tinyi 表态出口(§9/§10)随代码迁入 tm-tinyi-v3-edict-personnel.js
+assert(surfaceHook('tm-tinyi-v3-edict-personnel.js', 'tinyi'), 'tinyi outcome surface should call crisis bridge');
 
 CE.ensureModel();
 gm.corruption.activeCases = [{

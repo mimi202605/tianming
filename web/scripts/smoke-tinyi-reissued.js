@@ -73,7 +73,7 @@ function assertEq(actual, expected, msg) {
 load('tm-engine-constants.js');
 load('tm-ai-schema.js');
 load('tm-ai-output-validator.js');
-load('tm-tinyi-v3-persona.js'); load('tm-tinyi-v3.js'); load('tm-tinyi-v3-parties.js');
+load('tm-tinyi-v3-persona.js'); load('tm-tinyi-v3.js'); load('tm-tinyi-v3-edict-personnel.js'); load('tm-tinyi-v3-parties.js');
 
 const sourceParty = 'source-party';
 const blockerParty = 'blocker-party';

@@ -19,7 +19,7 @@ function assert(cond, msg) {
 }
 
 const index = read('index.html');
-const tinyi = (read('tm-tinyi-v3-persona.js') + read('tm-tinyi-v3.js') + read('tm-tinyi-v3-parties.js'));
+const tinyi = (read('tm-tinyi-v3-persona.js') + (read('tm-tinyi-v3.js') + '\n' + read('tm-tinyi-v3-edict-personnel.js')) + read('tm-tinyi-v3-parties.js'));
 const changchao = (read('tm-chaoyi-changchao-adapter.js') + read('tm-chaoyi-changchao.js') + read('tm-chaoyi-changchao-flows.js'));
 
 assert(/TM_CSS_RETRY/.test(index), 'index.html should define shared CSS retry helper');

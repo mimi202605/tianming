@@ -68,7 +68,7 @@ const clearChar = c => { c.officialTitle = ''; c.title = ''; c.officialTitles = 
 
 // ── ④ 源码契约:tinyi 革除/革职两函数体内含树同步调用 ──
 (function () {
-  const src = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8'));
+  const src = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-edict-personnel.js'), 'utf8')) + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8'));
   function fnBody(name) {
     const a = src.indexOf('function ' + name);
     if (a < 0) return '';

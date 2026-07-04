@@ -8,7 +8,7 @@ const path = require('path');
 const assert = require('assert');
 
 const ROOT = path.resolve(__dirname, '..');
-const src = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8'));
+const src = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-edict-personnel.js'), 'utf8')) + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8'));
 
 assert(/function\s+_ty3_localizeCourtTopicText\s*\(/.test(src), 'court topic localization helper should exist');
 assert(/function\s+_ty3_topicDisplayText\s*\(/.test(src), 'court topic display helper should exist');

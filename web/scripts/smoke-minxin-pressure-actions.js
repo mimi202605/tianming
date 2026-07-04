@@ -122,7 +122,7 @@ assert(index.indexOf('tm-minxin-pressure-actions.js') < index.indexOf('tm-endtur
 assert(/MinxinPressureActions\.maintain/.test(src('tm-endturn-core.js')), 'endturn pre-submit should maintain pressure actions');
 assert(/MinxinPressureActions\.formatForPrompt/.test(src('tm-endturn-core.js')), 'endturn prompt should include pressure package');
 assert(/MinxinPressureActions\.recordPlayerResponse/.test(src('phase8-formal-drafts.js')), 'memorial replies should feed pressure responses');
-assert(/MinxinPressureActions\.recordPlayerResponse/.test((src('tm-tinyi-v3-persona.js') + src('tm-tinyi-v3.js') + src('tm-tinyi-v3-parties.js'))), 'tinyi outcomes should feed pressure responses');
+assert(/MinxinPressureActions\.recordPlayerResponse/.test((src('tm-tinyi-v3-persona.js') + (src('tm-tinyi-v3.js') + '\n' + src('tm-tinyi-v3-edict-personnel.js')) + src('tm-tinyi-v3-parties.js'))), 'tinyi outcomes should feed pressure responses');
 assert(/MinxinPressureActions\.recordPlayerResponse/.test(src('phase8-formal-rightrail.js')), 'wendui clues should feed pressure responses');
 
 console.log('[smoke-minxin-pressure-actions] PASS minxin pressure action loop');
