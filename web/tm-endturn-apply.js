@@ -2175,8 +2175,9 @@ inst._imprisonedTurn = GM.turn||0;
             absd.status = '已解散';
             // 迁移成员
             if (GM.chars) GM.chars.forEach(function(c){ if (c.party === absd.name) c.party = abs.name; });
-            // 从 parties 中移除被吸收方
-            GM.parties = GM.parties.filter(function(p){return p.name !== absd.name || p.mergedWith;});
+            // 从 parties 中移除被吸收方（旧写法 `|| p.mergedWith` 对刚打标的被吸收方恒真=filter 空转·
+            // 已解散党永久留在 parties 参与票权/列表·2026-07-04 审查定罪）
+            GM.parties = GM.parties.filter(function(p){return p.name !== absd.name;});
             addEB('\u515A\u4E89', '\u3010\u5408\u6D41\u3011' + absd.name + '\u5E76\u5165' + abs.name + (mg.reason ? '\uFF08' + mg.reason + '\uFF09' : ''));
           });
         }
@@ -2738,8 +2739,8 @@ inst._imprisonedTurn = GM.turn||0;
             if (ru.newPhase) r.phase = ru.newPhase;
             if (Array.isArray(ru.territoryGained)) ru.territoryGained.forEach(function(t){ if(t && r.territoryControl.indexOf(t)<0) r.territoryControl.push(t); });
             if (Array.isArray(ru.territoryLost)) ru.territoryLost.forEach(function(t){ r.territoryControl = r.territoryControl.filter(function(tt){return tt !== t;}); });
-            if (ru.strength_delta) r.militaryStrength = Math.max(0, (r.militaryStrength||0) + parseInt(ru.strength_delta, 10));
-            if (ru.supplyStatus_delta) r.supplyStatus = Math.max(0, Math.min(100, (r.supplyStatus||50) + parseInt(ru.supplyStatus_delta, 10)));
+            if (ru.strength_delta) r.militaryStrength = Math.max(0, (r.militaryStrength||0) + (parseInt(ru.strength_delta, 10) || 0)); // ||0·AI给非数字曾写NaN入档(2026-07-04 审查定罪)
+            if (ru.supplyStatus_delta) r.supplyStatus = Math.max(0, Math.min(100, (r.supplyStatus||50) + (parseInt(ru.supplyStatus_delta, 10) || 0)));
             if (Array.isArray(ru.absorbedForces)) ru.absorbedForces.forEach(function(f){ if (r.absorbedForces.indexOf(f) < 0) r.absorbedForces.push(f); });
             if (Array.isArray(ru.externalSupport)) ru.externalSupport.forEach(function(s){ if (r.externalSupport.indexOf(s) < 0) r.externalSupport.push(s); });
             if (Array.isArray(ru.defectedOfficials)) {
@@ -2792,7 +2793,7 @@ inst._imprisonedTurn = GM.turn||0;
             var r = GM._activeRevolts.find(function(x){return x.id === sp.revoltId;});
             if (!r || r.outcome) return;
             var cas = sp.casualties || {};
-            if (cas.rebel) r.militaryStrength = Math.max(0, (r.militaryStrength||0) - parseInt(cas.rebel, 10));
+            if (cas.rebel) r.militaryStrength = Math.max(0, (r.militaryStrength||0) - (parseInt(cas.rebel, 10) || 0)); // ||0·同上防NaN
             if (sp.tactic === '坚壁清野') r.supplyStatus = Math.max(0, (r.supplyStatus||50) - 15);
             if (sp.tactic === '分化瓦解') { r.absorbedForces = r.absorbedForces.slice(0, Math.max(0, r.absorbedForces.length - 2)); }
             if (sp.outcome === 'victory') {
@@ -3118,9 +3119,12 @@ inst._imprisonedTurn = GM.turn||0;
                 if (_r) { _r._refugee = true; _r._refugeeTurn = GM.turn; _tmApplyLoyaltyDelta(_r, -10, '\u52BF\u529B\u8986\u706D\u51FA\u9003', 'faction-dissolve-refugee'); }
               });
             }
-            // 从 activeWars 移除相关条目（该势力已灭）
+            // 从 activeWars 移除相关条目（该势力已灭）——条目形状多样(enemy/attacker/defender/faction)·
+            // 只滤 enemy 曾让 declare_war 形战争成幽灵条目(2026-07-04 审查定罪)
             if (Array.isArray(GM.activeWars)) {
-              GM.activeWars = GM.activeWars.filter(function(w) { return w.enemy !== fd.name; });
+              GM.activeWars = GM.activeWars.filter(function(w) {
+                return !(w && (w.enemy === fd.name || w.attacker === fd.name || w.defender === fd.name || w.faction === fd.name));
+              });
             }
             // 从 factions 中移除
             GM.facs = GM.facs.filter(function(f){return f.name !== fd.name;});

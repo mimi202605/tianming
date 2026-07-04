@@ -399,7 +399,7 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
   // ── 势力动态（faction_events）展示 ──
   var factionEvtHtml = '';
   if (GM.factionEvents && GM.factionEvents.length > 0) {
-    var _recentFE = GM.factionEvents.filter(function(e) { return e.turn === GM.turn; });
+    var _recentFE = GM.factionEvents.filter(function(e) { return e.turn === GM.turn - 1; }); // render 在 turn++ 之后跑·本回合事件戳=GM.turn-1(旧判 ===GM.turn 恒空·「天下势力动态」板块从未显示过·2026-07-04 审查定罪·同文件322/686同口径)
     if (_recentFE.length > 0) {
       factionEvtHtml = '<div class="turn-section"><h3>\u2694\uFE0F \u5929\u4E0B\u52BF\u529B\u52A8\u6001</h3><div style="font-size:0.75rem;color:var(--txt-d);margin-bottom:0.3rem;">\u672C\u56DE\u5408\u5404\u65B9\u52BF\u529B\u7684\u81EA\u4E3B\u884C\u52A8</div>';
       _recentFE.forEach(function(fe) {
