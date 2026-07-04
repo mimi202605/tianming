@@ -117,6 +117,19 @@ function countWrites(absFile, gmFactories, pFactories) {
   const kindPatterns = { gm: GM_PATTERNS.slice(), p: P_PATTERNS.slice() };
   for (const [name, kind] of Object.entries(aliases.whole)) kindPatterns[kind] = kindPatterns[kind].concat(writePatterns(ESC(name)));
   for (const [name, info] of Object.entries(aliases.sub)) kindPatterns[info.kind] = kindPatterns[info.kind].concat(writePatterns(ESC(name), info.root));
+  // v3·gm:vars 按 key 细分权属（争抢队列末棵的正解·「GM.vars['威望'] 谁是写主」）：
+  // 字面键升格为伪子树 vars[键]（吃现成的闯入/新开机器）·动态键归 vars[<dynamic>]（总量棘轮管）·
+  // 裸 GM.vars = {} 整袋写保留 'vars' 原根。键提取覆盖 GM/全量别名/vars 子树别名三种写形。
+  const varsSyms = ['GM'].concat(Object.entries(aliases.whole).filter(([, k]) => k === 'gm').map(([n]) => ESC(n)));
+  const varsAliasNames = Object.entries(aliases.sub).filter(([, i]) => i.kind === 'gm' && i.root === 'vars').map(([n]) => ESC(n));
+  const varsKeyRe = new RegExp(
+    String.raw`(?:(?<![\w$.])(?:` + varsSyms.join('|') + String.raw`)\.vars` +
+    (varsAliasNames.length ? String.raw`|(?<![\w$.])(?:` + varsAliasNames.join('|') + String.raw`)` : '') +
+    String.raw`)\s*\[\s*(['"])((?:(?!\1).)+)\1\s*\]`, 'g');
+  const varsBracketRe = new RegExp(
+    String.raw`(?:(?<![\w$.])(?:` + varsSyms.join('|') + String.raw`)\.vars` +
+    (varsAliasNames.length ? String.raw`|(?<![\w$.])(?:` + varsAliasNames.join('|') + String.raw`)` : '') +
+    String.raw`)\s*\[`);
   const out = { gm: 0, p: 0, roots: {} };
   for (const raw of lines) {
     if (lib.isCommentLine(raw)) continue;
@@ -128,6 +141,14 @@ function countWrites(absFile, gmFactories, pFactories) {
         const m = line.match(pat.re);
         if (!m) continue;
         hitRoots.add(pat.fixedRoot || (pat.rootLevel ? '<root-level>' : pat.dyn ? '<dynamic>' : m[1]));
+      }
+      if (kind === 'gm' && hitRoots.has('vars') && varsBracketRe.test(line)) {
+        const keys = [];
+        let km; varsKeyRe.lastIndex = 0;
+        while ((km = varsKeyRe.exec(line))) keys.push(km[2].replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))); // \uXXXX 键与明文键归一(同键两写法勿裂两棵)
+        hitRoots.delete('vars');
+        if (keys.length) keys.forEach(k => hitRoots.add('vars[' + k + ']'));
+        else hitRoots.add('vars[<dynamic>]');
       }
       if (hitRoots.size) {
         out[kind]++;

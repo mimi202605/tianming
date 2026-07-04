@@ -8,9 +8,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T04:45:35.674Z",
+  "updatedAt": "2026-07-04T04:51:02.155Z",
   "totals": {
-    "gm": 4568,
+    "gm": 4569,
     "p": 739
   },
   "files": {
@@ -208,7 +208,7 @@
         "gm:_varMapping": 5,
         "gm:_tyrantDecadence": 3,
         "gm:_tyrantHistory": 2,
-        "gm:vars": 2,
+        "gm:vars[<dynamic>]": 2,
         "gm:eventCooldowns": 5,
         "gm:enYuanRecords": 3,
         "gm:patronNetwork": 2,
@@ -275,7 +275,7 @@
       "gm": 14,
       "p": 0,
       "roots": {
-        "gm:vars": 1,
+        "gm:vars[<dynamic>]": 1,
         "gm:<dynamic>": 1,
         "gm:_listeners": 5,
         "gm:_changeQueue": 3,
@@ -564,7 +564,7 @@
         "gm:postSystem": 2,
         "gm:_indices": 2,
         "gm:turnChanges": 3,
-        "gm:vars": 3,
+        "gm:vars[<dynamic>]": 3,
         "gm:eraState": 18,
         "gm:eraStateHistory": 3,
         "gm:_aiDispatchStats": 1
@@ -582,7 +582,7 @@
       "p": 0,
       "roots": {
         "gm:historicalEvents": 2,
-        "gm:vars": 12,
+        "gm:vars[<dynamic>]": 12,
         "gm:eraState": 4,
         "gm:affinityMap": 5,
         "gm:_affinityDecayTick": 2
@@ -595,7 +595,7 @@
         "gm:stateTreasury": 1,
         "gm:privateTreasury": 1,
         "gm:_bankruptcyTurns": 3,
-        "gm:vars": 2,
+        "gm:vars[<dynamic>]": 2,
         "gm:eraState": 4,
         "gm:chars": 1
       }
@@ -618,7 +618,7 @@
         "gm:buildings": 3,
         "gm:buildingQueue": 2,
         "gm:stateTreasury": 1,
-        "gm:vars": 1,
+        "gm:vars[<dynamic>]": 1,
         "gm:militaryStrength": 1,
         "gm:_buildingOutputReport": 1,
         "gm:population": 6
@@ -726,7 +726,7 @@
       "gm": 8,
       "p": 0,
       "roots": {
-        "gm:vars": 2,
+        "gm:vars[<dynamic>]": 2,
         "gm:_edictSuggestions": 6
       }
     },
@@ -750,7 +750,7 @@
       "p": 0,
       "roots": {
         "gm:_courtMeter": 18,
-        "gm:vars": 2,
+        "gm:vars[皇威]": 2,
         "gm:_pendingShijiModal": 9,
         "gm:_isPostTurnCourt": 6,
         "gm:_chaoyiCount": 2
@@ -789,7 +789,7 @@
       "roots": {
         "gm:triggeredHistoryEvents": 2,
         "gm:currentIssues": 2,
-        "gm:vars": 2,
+        "gm:vars[<dynamic>]": 2,
         "gm:<dynamic>": 2,
         "gm:biannianItems": 2,
         "gm:_triggeredThisTurn": 5
@@ -982,7 +982,7 @@
         "p:palaceSystem": 2,
         "gm:culturalWorks": 2,
         "gm:_edictLifecycle": 2,
-        "gm:vars": 3,
+        "gm:vars[<dynamic>]": 3,
         "gm:stateTreasury": 1,
         "gm:_pendingAudiences": 4,
         "gm:letters": 4,
@@ -995,7 +995,7 @@
       "gm": 149,
       "p": 1,
       "roots": {
-        "gm:vars": 1,
+        "gm:vars[<dynamic>]": 1,
         "gm:_factionUndercurrents": 2,
         "gm:_factionUndercurrentsHistory": 3,
         "gm:activeSchemes": 3,
@@ -1036,7 +1036,7 @@
       "gm": 2,
       "p": 0,
       "roots": {
-        "gm:vars": 1,
+        "gm:vars[<dynamic>]": 1,
         "gm:_turnContext": 1
       }
     },
@@ -1055,7 +1055,7 @@
         "gm:running": 1,
         "gm:_playerDead": 1,
         "gm:_playerDeathReason": 1,
-        "gm:vars": 1,
+        "gm:vars[<dynamic>]": 1,
         "gm:jishiRecords": 1,
         "gm:_historicalDeviations": 4
       }
@@ -1113,7 +1113,8 @@
         "p:scenarios": 9,
         "p:<dynamic>": 4,
         "p:variables": 3,
-        "gm:vars": 3,
+        "gm:vars": 1,
+        "gm:vars[<dynamic>]": 2,
         "gm:mapData": 3,
         "p:map": 8,
         "p:mapData": 7,
@@ -1358,7 +1359,7 @@
       "roots": {
         "p:conf": 3,
         "gm:_kjpPrivateAudienceLog": 3,
-        "gm:vars": 2,
+        "gm:vars[威望]": 2,
         "gm:_factionTension": 1,
         "gm:_kjpFairnessBonusGranted": 1
       }
@@ -1496,7 +1497,7 @@
         "gm:_specialExamCalendar": 2,
         "gm:_martialClans": 2,
         "gm:_wujuAbolished": 1,
-        "gm:vars": 1,
+        "gm:vars[边事]": 1,
         "gm:_edictSuggestions": 2,
         "gm:_wujuBingbuWenduiLastYear": 1,
         "gm:_kjG2PendingKeyiPromote": 2,
@@ -1504,7 +1505,7 @@
       }
     },
     "tm-keju-tongzi.js": {
-      "gm": 22,
+      "gm": 23,
       "p": 0,
       "roots": {
         "gm:_chronicle": 1,
@@ -1514,7 +1515,7 @@
         "gm:_tongziFamilies": 2,
         "gm:_tongziCeremonyQueue": 2,
         "gm:<dynamic>": 1,
-        "gm:vars": 1,
+        "gm:vars[民心]": 2,
         "gm:_kejuParadigm": 2,
         "gm:_enkeHistory": 1,
         "gm:_tongziLastAnnualY": 2,
@@ -1567,7 +1568,7 @@
       "p": 12,
       "roots": {
         "p:keju": 12,
-        "gm:vars": 1
+        "gm:vars[<dynamic>]": 1
       }
     },
     "tm-keju.js": {
@@ -1686,9 +1687,10 @@
         "gm:_ccHeldItems": 7,
         "gm:_ty3_aiReissueResults": 1,
         "gm:huangwei": 1,
-        "gm:vars": 2,
+        "gm:vars[皇威]": 1,
         "gm:partyStrife": 6,
         "gm:huangquan": 1,
+        "gm:vars[皇权]": 1,
         "gm:_regaliaCounters": 5,
         "gm:unlockedRegalia": 2,
         "gm:recentChaoyi": 9,
