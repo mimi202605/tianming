@@ -1187,3 +1187,41 @@ var WorldHelper = {
 };
 
 // findCharByName / findFacByName 已在索引系统中定义（约6895行），此处不再重复
+
+// ── TM.Roster·人物名册写口（2026-07-04 守卫v3收口·gm:chars 数组级）──────────
+// 各造人点曾各自为政：push 后 charByName 索引/图志名册缓存的配套动作漏一处=
+// 新人 findCharByName 走线性扫(本文件 fallback 注释即此病自白)/图志名册看不到(策名之鉴)。
+// 单口收齐：push + 索引 set + TMZhi 缓存失效；removeChar 同步反向。
+// globalThis 优先绑定(沙箱 window mock 劫持之鉴)。
+(function(global) {
+  var TM = global.TM = global.TM || {};
+  function addChar(ch) {
+    if (typeof GM === 'undefined' || !GM || !ch || typeof ch !== 'object' || !ch.name) return null;
+    if (!Array.isArray(GM.chars)) GM.chars = [];
+    GM.chars.push(ch);
+    try {
+      if (GM._indices && GM._indices.charByName && typeof GM._indices.charByName.set === 'function') {
+        GM._indices.charByName.set(typeof _tmCleanCharLookupName === 'function' ? _tmCleanCharLookupName(ch.name) : String(ch.name), ch);
+      }
+    } catch (_e) {}
+    try { if (global.TMZhi && typeof global.TMZhi.invalidatePeople === 'function') global.TMZhi.invalidatePeople(); } catch (_e) {}
+    return ch;
+  }
+  function removeChar(name) {
+    if (typeof GM === 'undefined' || !GM || !Array.isArray(GM.chars) || !name) return false;
+    var n = typeof _tmCleanCharLookupName === 'function' ? _tmCleanCharLookupName(name) : String(name);
+    var removed = false;
+    for (var i = GM.chars.length - 1; i >= 0; i--) {
+      var c = GM.chars[i];
+      if (c && (c.name === name || (typeof _tmCleanCharLookupName === 'function' && _tmCleanCharLookupName(c.name) === n))) {
+        GM.chars.splice(i, 1); removed = true;
+      }
+    }
+    if (removed) {
+      try { if (GM._indices && GM._indices.charByName && typeof GM._indices.charByName.delete === 'function') GM._indices.charByName.delete(n); } catch (_e) {}
+      try { if (global.TMZhi && typeof global.TMZhi.invalidatePeople === 'function') global.TMZhi.invalidatePeople(); } catch (_e) {}
+    }
+    return removed;
+  }
+  TM.Roster = { addChar: addChar, removeChar: removeChar };
+})(typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this));

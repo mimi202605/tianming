@@ -49,7 +49,7 @@ sandbox.findCharByName = function(name) {
 
 vm.createContext(sandbox);
 
-const runtimeFiles = ['tm-char-historical-profiles.js'].concat(
+const runtimeFiles = ['tm-indices.js', 'tm-char-historical-profiles.js'].concat( // 沙箱纪律:造人走 TM.Roster 写口(2026-07-04 收口)·须同载 tm-indices 与运行时同形态
   fs.readdirSync(ROOT)
     .filter((f) => /^tm-char-historical-wave-\d+\.js$/.test(f))
     .sort()

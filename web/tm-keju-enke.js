@@ -726,7 +726,7 @@
         isHistorical:  false
       };
       _kjG2MarkEnkeJinshi(jinshi, examYear, examiner, td);
-      GM.chars.push(jinshi);
+      (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(jinshi);
       jinshiList.push(jinshi);
     }
     return jinshiList;

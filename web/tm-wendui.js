@@ -1349,7 +1349,7 @@ function _wdOpenAudienceQueue(qi) {
       intelligence: 60
     };
     if (!GM.chars) GM.chars = [];
-    GM.chars.push(ch);
+    (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(ch);
     // 关键：新加入的使节须立即注册到索引·否则 findCharByName 找不到·_wdNpcInitiateSpeak 静默退出（这是"使节不发言"的真正根因）
     if (GM._indices && GM._indices.charByName) {
       GM._indices.charByName.set(name, ch);

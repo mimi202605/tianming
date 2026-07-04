@@ -3001,7 +3001,7 @@ function recruitCandidate(index) {
     children: []
   };
 
-  GM.chars.push(newChar);
+  (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(newChar);
   GM.allCharacters.push({
     name: newChar.name, title: newChar.title, age: newChar.age, gender: newChar.gender,
     personality: newChar.personality, desc: newChar.description, loyalty: newChar.loyalty,
@@ -3386,7 +3386,7 @@ function _kejuBasicRecruit(candidate, rankTitle) {
   var bonus = P.keju.attributeBonus || {};
   var key = rankTitle === '\u72B6\u5143' ? 'zhuangyuan' : rankTitle === '\u699C\u773C' ? 'bangyan' : 'tanhua';
   var b = bonus[key] || {};
-  GM.chars.push({
+  (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })({
     id: 'keju_' + Date.now() + '_' + candidate.rank,
     name: candidate.name,
     age: candidate.age || 25,
@@ -3580,7 +3580,7 @@ async function _aiGenerateFullCharacter(candidate, rankKey) {
       if (!GM.chars) GM.chars = [];
       // 去重·避免已存在
       if (!GM.chars.find(function(c){ return c && c.name === newChar.name; })) {
-        GM.chars.push(newChar);
+        (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(newChar);
       }
       return newChar;
     } catch(e) {

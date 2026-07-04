@@ -616,7 +616,7 @@
         wujinshi.resources.fame = 50 + Math.floor(rng() * 20);
       }
       _kjG3MarkWujinshi(wujinshi, examYear, examiner, td, exteriorScores);
-      GM.chars.push(wujinshi);
+      (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(wujinshi);
       wujinshiList.push(wujinshi);
     }
     return wujinshiList;
@@ -1176,7 +1176,7 @@
       alive:     true
     };
     if (!Array.isArray(GM.chars)) GM.chars = [];
-    GM.chars.push(son);
+    (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(son);
     if (Array.isArray(GM._chronicle)) {
       if (typeof TM !== 'undefined' && TM.Chronicle) TM.Chronicle.record({
         turn: GM.turn || 1,

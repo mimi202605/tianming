@@ -228,12 +228,8 @@
 
     if (typeof GM !== 'undefined') {
       if (!GM.chars) GM.chars = [];
-      GM.chars.push(ch);
-      if (GM._indices && GM._indices.charByName && typeof GM._indices.charByName.set === 'function') {
-        GM._indices.charByName.set(ch.name, ch);
-      }
-      // 图志 _peopleCache 失效——策名召入后名册/统计曾看不到新人须整面板重开(2026-07-04 审查定罪)
-      try { if (typeof window !== 'undefined' && window.TMZhi && typeof window.TMZhi.invalidatePeople === 'function') window.TMZhi.invalidatePeople(); } catch (_zi) {}
+      // TM.Roster 写口一站收齐 push+charByName 索引+图志缓存失效(2026-07-04 收口·原三步手工配套随之退役)
+      (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(ch);
     }
     _cmIntegrateSummoned(ch, profile);
 

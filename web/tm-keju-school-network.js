@@ -234,7 +234,7 @@
       _disciples:        [],
       _academyLifecycle: 'founding'
     };
-    GM.chars.push(shanzhang);
+    (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(shanzhang);
     return shanzhang;
   }
 

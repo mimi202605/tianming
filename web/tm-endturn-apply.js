@@ -2098,7 +2098,7 @@ inst._imprisonedTurn = GM.turn||0;
               _spawnedFromOffice: { dept: targetDept.name, position: sp.position, turn: GM.turn, reason: sp.reason || '' }
             };
             if (!Array.isArray(GM.chars)) GM.chars = [];
-            GM.chars.push(newChar);
+            (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(newChar);
             _spawnedCount++;
             addEB('\u5B98\u5236', '\u3010\u5B9E\u4F53\u5316\u3011' + sp.holderName + '\u5C31\u4EFB' + targetDept.name + sp.position + (sp.reason ? '\uFF08' + sp.reason + '\uFF09' : ''));
             if (GM.qijuHistory) {
@@ -2650,7 +2650,7 @@ inst._imprisonedTurn = GM.turn||0;
               else if (rv.ideology === 'warlord' || rv.organizationType === 'militaryMutiny') { _abBase.military += 15; _abBase.valor += 10; }
               else if (rv.ideology === 'nobleClaim') { _abBase.administration += 15; _abBase.intelligence += 10; _abBase.charisma += 10; }
               else if (rv.ideology === 'populist') { _abBase.benevolence += 15; _abBase.charisma += 10; }
-              GM.chars.push({
+              (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })({
                 name: rv.leaderName,
                 title: rv.class + '领袖',
                 faction: rv.class + '起义军',
@@ -2674,7 +2674,7 @@ inst._imprisonedTurn = GM.turn||0;
             if (Array.isArray(rv.secondaryLeaders) && GM.chars) {
               rv.secondaryLeaders.forEach(function(sln) {
                 if (!sln || findCharByName(sln)) return;
-                GM.chars.push({
+                (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })({
                   name: sln, title: rv.class + '义军副将', faction: rv.class + '起义军', class: rv.class, alive: true,
                   age: 32, loyalty: 70, stance: '反对',
                   intelligence: 45, administration: 35, military: 60, valor: 65, charisma: 50, diplomacy: 35, benevolence: 45,

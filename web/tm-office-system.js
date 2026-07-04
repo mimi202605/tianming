@@ -556,7 +556,7 @@ async function _offMaterialize(deptName, posName) {
     if (parsed && parsed.name) {
       if (!GM.chars) GM.chars = [];
       if (!GM.chars.find(function(ch){ return ch.name === parsed.name; })) {
-        GM.chars.push({
+        (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })({
           name: parsed.name, title: posName, officialTitle: posName,
           personality: parsed.personality||'', intelligence: parsed.intelligence||55,
           administration: parsed.administration||55, military: parsed.military||40,

@@ -1,16 +1,17 @@
 {
   "config": {
     "owners": [
-      "tm-save-lifecycle.js"
+      "tm-save-lifecycle.js",
+      "tm-indices.js"
     ],
     "gmFactories": [
       "getGame"
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T04:55:37.287Z",
+  "updatedAt": "2026-07-04T05:29:10.343Z",
   "totals": {
-    "gm": 4569,
+    "gm": 4573,
     "p": 739
   },
   "files": {
@@ -283,11 +284,12 @@
       }
     },
     "tm-indices.js": {
-      "gm": 46,
+      "gm": 51,
       "p": 7,
       "roots": {
-        "gm:_indices": 46,
-        "p:_indices": 7
+        "gm:_indices": 48,
+        "p:_indices": 7,
+        "gm:chars": 3
       }
     },
     "tm-world.js": {
@@ -2190,11 +2192,10 @@
       }
     },
     "tm-ceming.js": {
-      "gm": 3,
+      "gm": 2,
       "p": 0,
       "roots": {
-        "gm:chars": 2,
-        "gm:_indices": 1
+        "gm:chars": 2
       }
     },
     "tm-char-economy-ui.js": {

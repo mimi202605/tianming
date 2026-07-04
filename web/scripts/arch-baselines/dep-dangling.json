@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-03T23:30:58.522Z",
+  "updatedAt": "2026-07-04T05:30:45.053Z",
   "entries": {
     "index.html": {
       "dangling": [
@@ -19,6 +19,7 @@
         "EngineConstants",
         "MemorySourceBound",
         "Renli",
+        "Roster",
         "ThreeSystems",
         "_registry",
         "errors"

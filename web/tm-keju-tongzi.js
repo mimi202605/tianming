@@ -387,7 +387,7 @@
         _tongziArchetype: initArchetype
       };
       _kjG5MarkTongzijinshi(tj, examYear, examiner, td, scores);
-      GM.chars.push(tj);
+      (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(tj);
       pool.push(tj);
     }
     GM._tongziHistory = GM._tongziHistory || [];

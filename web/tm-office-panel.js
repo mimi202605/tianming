@@ -1197,7 +1197,7 @@ function _offMenyin(officialName) {
   if (typeof CharFullSchema !== 'undefined' && CharFullSchema.ensureFullFields) { try { CharFullSchema.ensureFullFields(son); } catch (e) {} }
   son.officialTitle = '';   // 候选·未授官(ensureFullFields 后再确保空)
   if (!Array.isArray(GM.chars)) GM.chars = [];
-  GM.chars.push(son);
+  (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(son);
   if (typeof TMGongming !== 'undefined' && TMGongming.grantPreset) { try { TMGongming.grantPreset(son, 'menyin', { turn: GM.turn }, GM); } catch (e) {} }
   ch._menyinGranted = { son: sonName, turn: GM.turn || 0 };
   if (!Array.isArray(ch.children)) ch.children = [];
@@ -1238,7 +1238,7 @@ function _offJianbi(officialName) {
   if (typeof CharFullSchema !== 'undefined' && CharFullSchema.ensureFullFields) { try { CharFullSchema.ensureFullFields(person); } catch (e) {} }
   person.officialTitle = '';
   if (!Array.isArray(GM.chars)) GM.chars = [];
-  GM.chars.push(person);
+  (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(person);
   if (typeof TMGongming !== 'undefined' && TMGongming.grant) { try { TMGongming.grant(person, { path: 'jianxuan', tier: '荐辟', source: 'edict', turn: GM.turn }, GM); } catch (e) {} }
   ch._jianbiGranted = { person: name, turn: GM.turn || 0 };
   if (typeof addEB === 'function') addEB('功名', ch.name + ' 荐布衣 ' + name + ' 入仕（荐辟·待铨)');
