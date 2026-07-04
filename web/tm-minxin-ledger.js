@@ -248,7 +248,9 @@
       if (!region) return;
       var weight = Number(r.weight != null ? r.weight : r.share);
       if (!isFinite(weight) || weight <= 0) weight = 1;
-      var delta = Number(r.deltaTrue != null ? r.deltaTrue : (r.delta != null ? r.delta : raw.deltaTrue));
+      // 行未显式给 delta 就留 null → apply 端按权重摊「削顶后」的信号 delta。
+      // （旧写法回退到 raw.deltaTrue：每个命中区各吃全额未封顶原始值·权重拆分成死路·P-ZV7 封顶被架空·2026-07-04 审查定罪）
+      var delta = Number(r.deltaTrue != null ? r.deltaTrue : (r.delta != null ? r.delta : NaN));
       rows.push({ region: region, weight: weight, deltaTrue: isFinite(delta) ? delta : null });
     });
     return rows;
@@ -361,7 +363,7 @@
     return null;
   }
 
-  function applyToMatrix(root, signal, regionDivs) {
+  function applyToMatrix(root, signal, regionDivs, gatedDelta) {
     var mx = ensureMinxin(root);
     if (!mx.matrix || typeof mx.matrix !== 'object') mx.matrix = {};
     var classes = signal.targetClasses.length ? signal.targetClasses : getClasses(root).slice(0, 12).map(function(cls) {
@@ -378,7 +380,8 @@
         var base = Number(prev.true != null ? prev.true : (prev.index != null ? prev.index : div.minxin));
         if (!isFinite(base)) base = Number(div.minxin);
         if (!isFinite(base)) base = mx.trueIndex;
-        var next = round2(clamp(base + signal.deltaTrue, 0, 100));
+        // 矩阵细项与叶子同口径：吃「削顶后」delta（旧写法吃原始 signal.deltaTrue·越触顶越漂移·2026-07-04 审查定罪）
+        var next = round2(clamp(base + (gatedDelta != null ? gatedDelta : signal.deltaTrue), 0, 100));
         mx.matrix[rid][ck] = {
           regionId: rid,
           regionName: regionNameOf(div),
@@ -414,7 +417,11 @@
       var _zvCap = MINXIN_SOURCE_CAP[_zvKey] || MINXIN_SOURCE_CAP._default;
       if (_zvCap) {
         var _zvCur = Number(mx.sources[_zvKey]) || 0;
-        delta = round2(clamp(_zvCur + delta, _zvCap[0], _zvCap[1]) - _zvCur);
+        var _zvGd = round2(clamp(_zvCur + delta, _zvCap[0], _zvCap[1]) - _zvCur);
+        // 越界旧账防翻转：削顶只许缩量/归零·不许把小额同号 delta 翻成拉回边界的大额反号 delta(2026-07-04 审查定罪)
+        if (_zvGd !== 0 && (_zvGd > 0) !== (delta > 0)) _zvGd = 0;
+        else if (Math.abs(_zvGd) > Math.abs(delta)) _zvGd = delta;
+        delta = _zvGd;
       }
     }
     if (delta) {
@@ -430,6 +437,15 @@
             affected.push({ region: regionNameOf(div), regionId: regionIdOf(div), before: round2(before), after: round2(div.minxin), delta: round2(div.minxin - before) });
           });
         });
+        if (!affected.length) {
+          // 目标区域全失配（跨剧本别名/AI 生成地名）：全国兜底摊布——旧行为是静默丢弃效果却仍烧封顶额度(2026-07-04 审查定罪)
+          leaves.forEach(function(div) {
+            var before = Number(div.minxin != null ? div.minxin : div.minxinLocal);
+            if (!isFinite(before)) return;
+            writeDivisionMinxin(div, before + delta);
+            affected.push({ region: regionNameOf(div), regionId: regionIdOf(div), before: round2(before), after: round2(div.minxin), delta: round2(div.minxin - before) });
+          });
+        }
       } else if (leaves.length) {
         leaves.forEach(function(div) {
           var before = Number(div.minxin != null ? div.minxin : div.minxinLocal);
@@ -893,7 +909,7 @@
     var src = root.minxin.sources;
     var out = [];
     Object.keys(src).forEach(function(key) {
-      var cap = MINXIN_SOURCE_CAP[key];
+      var cap = MINXIN_SOURCE_CAP[key] || MINXIN_SOURCE_CAP._default; // 表外源同样按 _default 削平·否则越界旧账永不规整
       if (!cap) return;
       var cur = Number(src[key]) || 0;
       var target = clamp(cur, cap[0], cap[1]);

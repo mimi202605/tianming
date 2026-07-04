@@ -202,7 +202,10 @@
     ts._awakenTurn = G.turn || 0;
     hw.index = Math.max(0, hw.index + (eff.hwDelta || -20));
     if (eff.exposeHidden) {
-      if (G.minxin) G.minxin.trueIndex = Math.max(0, G.minxin.trueIndex - (ts.hiddenDamage.unreportedMinxinDrop || 0));
+      var _hidDrop = ts.hiddenDamage.unreportedMinxinDrop || 0;
+      if (_hidDrop && typeof TM !== 'undefined' && TM.MinxinLedger && TM.MinxinLedger.recordAndApply) {
+        try { TM.MinxinLedger.recordAndApply(G, { sourceSystem: 'prophecy-awakening', kind: 'tyrantHiddenDamage', delta: -_hidDrop, reason: '暴君觉醒·隐伤兑现' }); } catch (_e) {}
+      } else if (_hidDrop && G.minxin) G.minxin.trueIndex = Math.max(0, G.minxin.trueIndex - _hidDrop); // 沙箱兜底·真机直写会被 aggregateTrue 冲掉
       if (G.corruption && typeof G.corruption === 'object') { G.corruption.trueIndex = Math.min(100, (typeof G.corruption.trueIndex === 'number' ? G.corruption.trueIndex : (typeof G.corruption.overall === 'number' ? G.corruption.overall : 30)) + (ts.hiddenDamage.concealedCorruption || 0)); G.corruption.overall = G.corruption.trueIndex; }
       ts.hiddenDamage = {};
       ts.flatteryMemorialRatio = 0;
