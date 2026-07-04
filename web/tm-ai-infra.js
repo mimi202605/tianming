@@ -778,6 +778,16 @@ async function callAIWithTools(prompt, tools, opts) {
   if (!url) throw new Error('API地址未配置');
   var provider = (typeof _detectAIProvider === 'function') ? _detectAIProvider() : 'openai_compat';
   var userUrl = (P.ai && P.ai.url) || '';
+  // 主次错配修(2026-07-04 审查定罪)：url/key/model 均取自 opts.tier·而族判定曾只看主 API——
+  // 主次不同族(如主=Anthropic原生·次=OAI兼容中转)时组错 body/headers 必发一次注定失败的请求再走文本兜底。
+  // 次 API 在手即按次 API 的 url/model 判族(中转 claude 语义保留:族=anthropic 但非官方域→仍走 OAI 兼容分支)。
+  if (opts.tier === 'secondary' && _aiCfg && (_aiCfg.url || _aiCfg.model)) {
+    userUrl = _aiCfg.url || userUrl;
+    var _tierModel = String(_aiCfg.model || '');
+    if (/api\.anthropic\.com/i.test(userUrl) || /^claude/i.test(_tierModel)) provider = 'anthropic';
+    else if (/generativelanguage\.googleapis\.com/i.test(userUrl) || /^gemini/i.test(_tierModel)) provider = 'gemini';
+    else provider = 'openai_compat';
+  }
   var isAnthropicNative = provider === 'anthropic' && /api\.anthropic\.com/i.test(userUrl);
   // Gemini 原生：用 generateContent 接口（非 /v1beta/openai/）
   var isGeminiNative = provider === 'gemini' && /generativelanguage\.googleapis\.com/i.test(userUrl) && !/\/v1beta\/openai\//i.test(userUrl);
@@ -882,6 +892,7 @@ async function callAIWithTools(prompt, tools, opts) {
   async function _toolFetchQueued() {
     var ctrl = new AbortController();
     var timer = setTimeout(function() { ctrl.abort(); }, (opts.timeoutMs != null ? opts.timeoutMs : 180000));
+    if (opts.signal && opts.signal.aborted) { clearTimeout(timer); throw new Error('Aborted'); } // 已置位的 signal 监听器永不触发·排队期被取消的请求曾照常发出白烧token(2026-07-04 审查定罪)
     if (opts.signal) opts.signal.addEventListener('abort', function() { ctrl.abort(); });
     try {
       var resp = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body), signal: ctrl.signal });
@@ -1140,6 +1151,7 @@ async function _callAIMessagesStreamDirect(messages, maxTok, opts) {
   if (!url) throw new Error('API地址未配置');
   var ctrl = new AbortController();
   var timer = setTimeout(function() { ctrl.abort(); }, (opts.timeoutMs != null ? opts.timeoutMs : 180000));
+  if (opts.signal && opts.signal.aborted) { clearTimeout(timer); throw new Error('Aborted'); } // 同 _toolFetchQueued·已置位预检(2026-07-04 审查定罪)
   if (opts.signal) opts.signal.addEventListener('abort', function() { ctrl.abort(); });
   var _scaledTok = Math.round((maxTok || 500) * ((typeof getCompressionParams === 'function') ? Math.max(1.0, getCompressionParams().scale) : 1.0));
   try {
