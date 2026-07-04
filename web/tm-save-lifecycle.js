@@ -820,11 +820,15 @@ function fullLoadGame(data){
     // 格式B：SaveManager格式
     P = data.gameState.P;
     GM = data.gameState.GM;
+    if (P && P.gameState) delete P.gameState; // 嵌套僵尸(旧档遗留)一并斩
   } else {
     // 格式A：标准格式
     P = data;
     if (data.gameState) {
       GM = data.gameState;
+      // P=data·不删则整棵旧局 GM 挂在 P 上随每次 saveP/autoSave 序列化——换剧本后恢复档
+      // 弹的是已放弃旧局(串局回滚)+配额爆炸的直接推手(2026-07-04 审查定罪)。GM 已持引用·删键不失数据。
+      delete data.gameState;
     }
   }
   if (typeof _tmInstallScenarioGetter === 'function') _tmInstallScenarioGetter(); // P 整体重赋值后重装 P.scenario 派生 getter

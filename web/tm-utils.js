@@ -1695,6 +1695,10 @@ function _trDownloadTxt(txt, turn){
   if (typeof toast === 'function') toast('\u5DF2\u5BFC\u51FA');
 }
 function saveP(){
+  // P 永不该拥有 gameState——合法附带只发生在 60s autosave 的克隆件上(save-lifecycle:1327)。
+  // 存量僵尸(旧 fullLoadGame 格式A遗留·整棵旧局 GM 挂 P 随每次持久化序列化=配额爆炸+启动误恢复已弃旧局)
+  // 在写入咽喉一律斩除(2026-07-04 审查定罪)
+  try { if (P && P.gameState) delete P.gameState; } catch(_zg) {} // arch-ok 僵尸字段斩除·裁定见上
   // 1. 写入 IndexedDB（主存储，无容量限制）
   if (typeof TM_SaveDB !== 'undefined') {
     TM_SaveDB.saveProject(_tmStripAiKeyInPlace(deepClone(P))).catch(function(e) {
@@ -1715,7 +1719,10 @@ function saveP(){
     localStorage.removeItem('tm_P');
   } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'saveP] localStorage骨架写入失败:') : console.warn('[saveP] localStorage骨架写入失败:', e); }
   // 3. 桌面端额外保存
-  if (window.tianming && window.tianming.isDesktop) {
+  //    GM.running 时不写：此写与 60s 崩溃恢复档同写 __autosave__.json(last-writer-wins)——对局中改一次设置
+  //    曾把恢复档降级成纯 P 无 gameState·随后崩溃=本局进度静默丢且无恢复弹窗(2026-07-04 审查定罪)。
+  //    对局中 P 已由上方 IDB+lite 即时持久化·桌面档由 60s 周期档(P+gameState 全量)接力·至多 60s 滞后。
+  if (window.tianming && window.tianming.isDesktop && !(typeof GM !== 'undefined' && GM && GM.running)) {
     window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'saveP] desktop failed:') : console.warn('[saveP] desktop failed:', e); });
   }
 }
@@ -1839,13 +1846,14 @@ function _tmEmitPRestored(source) {
           if (saved.hasOwnProperty(key)) P[key] = saved[key];
         }
         console.log('[restoreP] 从localStorage(tm_P)恢复, scenarios:', P.scenarios.length);
-        // 迁移：旧格式存在则写入IndexedDB并清理
-        if (typeof TM_SaveDB !== 'undefined') {
+        // 迁移：旧格式存在则写入IndexedDB并清理（tm-storage 后载·短轮询等就位·原 typeof 一次性检查恒 false=迁移死代码）
+        (function _tmMigrateTmPWhenReady(tries) {
+          if (typeof TM_SaveDB === 'undefined') { if (tries < 100) setTimeout(function() { _tmMigrateTmPWhenReady(tries + 1); }, 100); return; }
           TM_SaveDB.saveProject(_tmStripAiKeyInPlace(deepClone(P))).then(function() {
             try { localStorage.removeItem('tm_P'); } catch(e) {}
             console.log('[restoreP] 已迁移tm_P到IndexedDB');
           });
-        }
+        })(0);
       }
     } else {
       // 新格式：从lite骨架恢复API配置 (R153 包内 try·防嵌套被外层 catch 误吞)
@@ -1867,7 +1875,15 @@ function _tmEmitPRestored(source) {
   } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'restoreP] localStorage恢复失败:') : console.warn('[restoreP] localStorage恢复失败:', e); }
 
   // 层2: IndexedDB 完整数据（异步，覆盖骨架）
-  if (typeof TM_SaveDB !== 'undefined') {
+  // 2026-07-04 审查定罪：tm-utils(index.html:490)先于 tm-storage(:592)加载·原 typeof 一次性检查恒 false——
+  // saveP 的主存储(IDB current_project)只写不读·网页/安卓端自建剧本重启即丢(桌面被 autoSave 层3掩盖)。
+  // 改为短轮询等 TM_SaveDB 就位(≤10s)·loadProject 本就是异步晚到语义·与原设计一致。
+  (function _tmIdbRestoreWhenReady(tries) {
+    if (typeof TM_SaveDB === 'undefined') {
+      if (tries < 100) setTimeout(function() { _tmIdbRestoreWhenReady(tries + 1); }, 100);
+      else console.warn('[restoreP] TM_SaveDB 10s 未就位·IndexedDB 恢复层跳过');
+      return;
+    }
     TM_SaveDB.loadProject().then(function(fullP) {
       if (fullP && fullP.scenarios) {
         if (_tmIsIncompleteOfficialProject(fullP)) {
@@ -1882,7 +1898,7 @@ function _tmEmitPRestored(source) {
           return;
         }
         for (var key in fullP) {
-          if (fullP.hasOwnProperty(key)) P[key] = fullP[key];
+          if (fullP.hasOwnProperty(key) && key !== 'gameState' && key !== '_saveMeta') P[key] = fullP[key]; // 跳僵尸键·与层3同口径
         }
         console.log('[restoreP] 从IndexedDB恢复完整P, scenarios:', P.scenarios.length);
         // 如果已在剧本管理页，刷新显示
@@ -1892,7 +1908,7 @@ function _tmEmitPRestored(source) {
         _tmEmitPRestored('indexeddb');
       }
     }).catch(function(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'restoreP] IndexedDB恢复失败:') : console.warn('[restoreP] IndexedDB恢复失败:', e); });
-  }
+  })(0);
 
   // 层3: 桌面端 autoSave
   if (window.tianming && window.tianming.isDesktop) {
