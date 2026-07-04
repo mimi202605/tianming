@@ -154,7 +154,7 @@ SettlementPipeline.register('npcEpochRefine', '早年概略精炼', function() {
           if (rng() > (sameParty ? 0.5 : 0.35)) continue;
           var text = Gossip._distort(fact.text, seed, false);
           if (typeof NpcMemorySystem !== 'undefined') {
-            NpcMemorySystem.remember(ch.name, '风闻·' + seeds[s] + '言及：' + text.slice(0, 40), '察', Math.max(2, (fact.importance || 3) - 1), subject || undefined, { source: 'rumor', credibility: 45 });   // ★codex-fix W3:传meta·风闻=二手低可信·否则默认 witnessed/95 被当亲历高可信
+            NpcMemorySystem.remember(ch.name, '风闻·' + seeds[s] + '言及：' + text.slice(0, 40), '察', Math.max(2, (fact.importance || 3) - 1), subject || undefined, { source: 'rumor', credibility: 45, _noMirror: true });   // ★codex-fix W3:传meta·风闻=二手低可信·否则默认 witnessed/95 被当亲历高可信 ★_noMirror:subject=被议论者·镜像回写曾让背后议论对当事人全透明+记忆灌水(2026-07-04 审查定罪)
           }
           told++;
         }

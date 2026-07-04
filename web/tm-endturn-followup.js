@@ -111,7 +111,7 @@
             try { if (typeof GM !== 'undefined' && Array.isArray(GM.chars)) GM.chars.some(function(c) { if (c && c.name === wn) { wc = c; return true; } return false; }); } catch (_wfE) {}
             if (!wc || wc.alive === false || wc.isPlayer) return;
             NpcMemorySystem.remember(wn, '亲见：' + String(mw.event).slice(0, 60), mw.emotion || '忧', Math.max(3, (mw.importance || 5) - 2), mw.char,
-              { type: 'witnessed', source: 'witnessed', location: mw.location });
+              { type: 'witnessed', source: 'witnessed', location: mw.location, _noMirror: true }); // _noMirror:当事人已有原始记忆·每个目击者再镜像回弹=同事件重复灌水(2026-07-04 审查定罪)
             witTotal++;
           });
         }

@@ -399,7 +399,8 @@ async function _saveAPIAndAutoProbe() {
   if (window.tianming && window.tianming.isDesktop) { try { window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(){}); } catch(_){} }
   if (!_changed) { toast('\u2705 \u5DF2\u4FDD\u5B58\uFF08\u914D\u7F6E\u672A\u53D8\uFF09'); return; }
   // 配置变化·清旧缓存·跑新探测
-  delete P.conf._detectedContextK; delete P.conf._detectedMaxOutput; delete P.conf._measuredMaxOutput; delete P.conf._ctxCacheKey; delete P.conf._ctxDetectLayer; delete P.conf._probeHistory;
+  delete P.conf._detectedContextK; delete P.conf._detectedMaxOutput; delete P.conf._measuredMaxOutput; delete P.conf._ctxCacheKey; delete P.conf._ctxDetectLayer;
+  // _probeHistory 按 model@url 键存档·主API换配置无须整删——整删曾把次API烧真金跑出的证据一并销毁(2026-07-04 审查定罪)
   if (!newKey) { toast('\u2705 \u5DF2\u4FDD\u5B58\uFF08\u672A\u914D key\u00B7\u8DF3\u8FC7\u81EA\u52A8\u6821\u9A8C\uFF09'); return; }
   toast('\u2705 \u5DF2\u4FDD\u5B58\u00B7\u6B63\u5728\u81EA\u52A8\u6821\u9A8C\u6A21\u578B\u00B7\u7A0D\u5019\u2026');
   try {
@@ -423,6 +424,12 @@ function _probeClearCache() {
   delete P.conf._ctxCacheKey;
   delete P.conf._ctxDetectLayer;
   delete P.conf._probeHistory;
+  // 「清除所有」须连 _secondary 族一起清——漏掉曾令次API永读死缓存不重探(2026-07-04 审查定罪)
+  delete P.conf._detectedContextK_secondary; // arch-ok 设置面板conf本职写·随后saveP
+  delete P.conf._detectedMaxOutput_secondary; // arch-ok
+  delete P.conf._measuredMaxOutput_secondary; // arch-ok
+  delete P.conf._ctxCacheKey_secondary; // arch-ok
+  delete P.conf._ctxDetectLayer_secondary; // arch-ok
   if (typeof saveP === 'function') saveP();
   toast('\u5DF2\u6E05\u9664\u63A2\u6D4B\u7F13\u5B58');
   _refreshBothProbePanels();

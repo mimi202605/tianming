@@ -4553,7 +4553,7 @@ inst._imprisonedTurn = GM.turn||0;
                       _tmApplyLoyaltyDelta(_lgCh, -10, '\u4EFB\u6240\u5931\u5730', 'admin-territory-lost-governor');
                       _lgCh.stress = Math.min(100, (_lgCh.stress || 0) + 15);
                       if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
-                        NpcMemorySystem.remember(_lostGov, '\u6240\u8F96' + adu.division + '\u5931\u9677\u4E8E' + (adu.lostTo || '\u654C\u65B9') + '\uFF0C\u5BF9\u6B64\u6DF1\u611F\u7126\u8651\u548C\u7F9A\u803B', 'trauma');
+                        NpcMemorySystem.remember(_lostGov, '\u6240\u8F96' + adu.division + '\u5931\u9677\u4E8E' + (adu.lostTo || '\u654C\u65B9') + '\uFF0C\u5BF9\u6B64\u6DF1\u611F\u7126\u8651\u548C\u7F9A\u803B', '\u5FE7', 7, undefined, { type: 'trauma' }); // \u53C2\u6570\u9519\u4F4D\u4FEE:'trauma'\u66FE\u5360emotion\u4F4D\u00B7importance\u843D\u9ED8\u8BA45\u6C38\u4E0D\u6210\u4F24\u75A4(2026-07-04 \u5BA1\u67E5\u5B9A\u7F6A)
                       }
                     }
                   }
@@ -4635,7 +4635,7 @@ inst._imprisonedTurn = GM.turn||0;
               addEB('\u540E\u5BAB', he.character + '\u4E11\u95FB' + (he.detail ? '\uFF1A' + he.detail : ''));
               // NPC记忆
               if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
-                NpcMemorySystem.remember(he.character, '\u540E\u5BAB\u4E11\u95FB\uFF1A' + (he.detail || ''), 'scandal');
+                NpcMemorySystem.remember(he.character, '\u540E\u5BAB\u4E11\u95FB\uFF1A' + (he.detail || ''), '\u5FE7', 7, undefined, { type: 'scandal' }); // \u53C2\u6570\u9519\u4F4D\u4FEE:'scandal'\u66FE\u5360emotion\u4F4D(2026-07-04 \u5BA1\u67E5\u5B9A\u7F6A)
               }
             }
           });
