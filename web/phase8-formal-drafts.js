@@ -2318,7 +2318,7 @@
     html += '<div class="ed-tab-panel xinglu">';
     html += '<div class="xinglu-main"><div class="xm-hd"><span class="xm-title">本 回 合 行 动</span><span class="xm-desc">—— 私事不入诏书·仅影响人物·皇威·民心</span></div>';
     html += '<textarea id="xinglu-pub" class="x-field" data-desk-player-action="1" placeholder="如：召见某臣、校阅三军、微服私访、夜读史书、祖庙祭祀、宴请群臣、命人查办旧案……" oninput="(window.TM_PHASE8_FORMAL||(window.TM_PHASE8_FORMAL={})).playerAction=this.value">' + esc(deskValue('#xinglu-pub', state.playerAction || '')) + '</textarea></div>';
-    var recentXinglu = firstArray(gm.qijuHistory).filter(function(q){ return q && q.xinglu && Number(q.turn || 0) < Number(gm.turn || 1); }).slice(-6).reverse();
+    var recentXinglu = firstArray(gm.qijuHistory).filter(function(q){ return q && q.xinglu && Number(q.turn || 0) < Number(gm.turn || 1); }).slice(0, 6); // qijuHistory 已 newest-first·头 6 条即最近·无需再 reverse
     html += '<div class="xinglu-hist"><div class="xh-t">近 期 行 止 记 录 · ' + esc(recentXinglu.length) + ' 条</div><div class="xh-list">';
     if (recentXinglu.length) {
       recentXinglu.forEach(function(q){ html += '<div class="x-hist-item"><span class="t">T' + esc(q.turn) + '</span>' + esc(q.xinglu) + '</div>'; });

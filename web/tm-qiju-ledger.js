@@ -22,7 +22,12 @@
   function recordEntry(entry) {
     var GM = global.GM;
     if (!GM || !entry || typeof entry !== 'object') return null;
-    if (entry.content == null || entry.content === '') return null;
+    // 空拒门只拒真空条目：结构化记录(edicts/xinglu/memorials=每回合主记录·zhengwen=官修正文)无 content 也是合法条目
+    // ——2026-07-04 收口时此门曾把 prep/render 两大写手每回合整条吞掉(审查抓获·勿再收紧)
+    var hasBody = (entry.content != null && entry.content !== '') ||
+                  entry.zhengwen != null || entry.edicts != null ||
+                  entry.xinglu != null || entry.memorials != null;
+    if (!hasBody) return null;
     if (!Array.isArray(GM.qijuHistory)) GM.qijuHistory = [];
     if (entry.turn == null) entry.turn = Number(GM.turn) || 0;
     // date 兜底：调用方给了 date 或 time（诏书条目用 time）就尊重·否则 getTSText
