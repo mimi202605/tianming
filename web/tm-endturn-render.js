@@ -745,7 +745,7 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
       if (side === 'defender') return '守方';
       return '';
     }
-    function _battleInferFate(row, liveArmy) {
+    function _battleInferFate(row, liveArmy, battle) {
       row = row || {};
       var explicit = _battleText(row.fate || row.destiny || row.result || row.outcome);
       if (explicit) return explicit;
@@ -762,8 +762,11 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
       if (loss > 0) return '受创';
       var side = _battleText(row.side).toLowerCase();
       var faction = _battleText(row.faction || row.owner || (liveArmy && (liveArmy.faction || liveArmy.owner)));
-      if (faction && _battleSame(faction, b.winner || b.winnerFactionId || b.winnerFaction)) return '胜后保全';
-      if (faction && _battleSame(faction, b.loser || b.loserFactionId || b.loserFaction)) return '败后整顿';
+      // battle 经参数传入——旧代码引用词法作用域外的 b·无损获胜军走到这两行即 ReferenceError·
+      // 整个史记渲染崩+本回合 shijiHistory/autosave 全在崩溃点之后(2026-07-04 审查定罪)
+      var _bt = battle || {};
+      if (faction && _battleSame(faction, _bt.winner || _bt.winnerFactionId || _bt.winnerFaction)) return '胜后保全';
+      if (faction && _battleSame(faction, _bt.loser || _bt.loserFactionId || _bt.loserFaction)) return '败后整顿';
       if (side === 'attacker' || side === 'defender') return _battleSideLabel(side) + '保全';
       return '在阵';
     }
@@ -845,7 +848,7 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
                          _battleText(liveArmy && (liveArmy.name || liveArmy.army || liveArmy.armyName || liveArmy.label)) ||
                          _battleArmyName(army) || _battleArmyName(liveArmy) || '未识别军队';
           var commanderName = _battleText(army.commander || (army.commanderFate && army.commanderFate.name)) || _battleArmyCommander(liveArmy);
-          var fate = _battleInferFate(army, liveArmy);
+          var fate = _battleInferFate(army, liveArmy, b);
           var fateColor = fate.indexOf('\u6E83\u706D') >= 0 ? 'var(--vermillion-500,#dc2626)' :
                           fate.indexOf('\u6E83') >= 0 ? 'var(--vermillion-400,#ef4444)' :
                           fate.indexOf('\u4F24') >= 0 ? 'var(--amber-400,#f59e0b)' :

@@ -1185,7 +1185,8 @@ async function generateDianshiQuestion() {
       '\u76F4\u63A5\u8F93\u51FA\u9898\u76EE\uFF0C\u4E0D\u8981JSON\u683C\u5F0F\u3002';
 
     var question = await callAISmart(prompt, 500, {minLength: 80, maxRetries: 2});
-    document.getElementById('dianshi-question').value = question;
+    var _dqEl = document.getElementById('dianshi-question');
+    if (_dqEl) _dqEl.value = question; // 弹窗未开时无此元素·裸赋值曾抛错被吞→playerQuestion 永不落→整场殿试空产(2026-07-04 审查定罪)
     // v7.1·D2·AI 代拟后·写 playerQuestion + 算 alignment·错配 toast warning
     var exam = P.keju.currentExam;
     if (exam) {
@@ -1253,7 +1254,8 @@ function _kejuCloseDianshiProgress() {
 
 async function startDianshi() {
   var exam = P.keju.currentExam;
-  var question = document.getElementById('dianshi-question').value.trim();
+  var _dqEl = document.getElementById('dianshi-question');
+  var question = _dqEl ? _dqEl.value.trim() : String((exam && exam.playerQuestion) || '').trim(); // 弹窗未开走 exam.playerQuestion(AI 代拟已落)·勿再依赖 DOM(2026-07-04 审查定罪)
 
   if (!question) {
     toast('请先输入殿试题目');

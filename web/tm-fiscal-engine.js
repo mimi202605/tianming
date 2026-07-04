@@ -1418,6 +1418,12 @@
   function cascadeCollect(opts) {
     var G = getGame();
     if (!G || !G.adminHierarchy) return { ok: false, reason: 'no adminHierarchy' };
+    // 回合幂等(2026-07-04 审查定罪)：征税埋在 sc1 体内·推演失败重试整段重跑=同回合双征。
+    // 非 force 且本回合已开征即跳过；旗标开征即置(宁少征一回合·不双征)。
+    if (!(opts && opts.force) && G._lastCascadeTaxTurn != null && G._lastCascadeTaxTurn === (G.turn || 0)) {
+      return { ok: false, skipped: 'already-collected-this-turn' };
+    }
+    G._lastCascadeTaxTurn = G.turn || 0;
     applyDisasterEconomyReduction(G); // 每回合刷新受灾区税基折减(清-设·幂等)·须在 per-division 征税前
 
     opts = opts || {};
@@ -1875,6 +1881,10 @@
   function fixedCollect(ctx) {
     var G = getGame();
     if (!G) return { ok: false, reason: 'no GM' };
+    // 回合幂等(同 cascadeCollect)：重试不双扣俸饷·成功旗标 _lastFixedExpenseTurn 在尾部既有
+    if (!(ctx && ctx.force) && G._lastFixedExpenseTurn != null && G._lastFixedExpenseTurn === (G.turn || 0)) {
+      return { ok: false, skipped: 'already-collected-this-turn' };
+    }
     var guokuLedgers = ensureGuoku(G);
     var neitangLedgers = ensureNeitang(G);
     reconcileLedgerScalar(guokuLedgers.money, G.guoku.money, G.guoku.balance);
