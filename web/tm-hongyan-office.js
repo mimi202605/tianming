@@ -1541,7 +1541,9 @@ function _generateLetterReply(letter) {
     prompt += '\n\n直接输出回信正文·无前言无解释。';
     callAI(prompt, 600, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined).then(function(reply) {  // 【降本2026-06-19】回信生成(机械对话)走次 API
       letter.reply = (reply || '').trim() || '臣叩首拜读·容臣三思后详禀。';
-      letter.status = 'returned';
+      // 不在此置 returned——回信须待 _ltReplyArrivalDay 到期由结算分支(status==='replying')落地：
+      // 核实揭伪(_forgedRevealed 唯一写点)/军令无虎符拒从/回信到达邸报都在那。即时 returned 曾令
+      // 整条结算分支成死路·揭伪机制正常游玩永不触发·且回信零回程时间即刻可读(2026-07-04 审查定罪)
       letter._fallbackReply = false;
       try { if (typeof renderLetterPanel === 'function' && document.getElementById('letter-history')) renderLetterPanel(); } catch(_){}
       try { if (typeof addEB === 'function') addEB('传书', (letter.to||'') + '的回函已落笔'); } catch(_){}
@@ -1555,13 +1557,12 @@ function _generateLetterReply(letter) {
         else _t = '臣' + _ch2.name + '叩首拜读圣函·谨当详察·不日具复。';
       }
       letter.reply = _t;
-      letter.status = 'returned';
-      letter._fallbackReply = true;
+      letter._fallbackReply = true; // 同上·status 留给到期结算分支翻转
       try { if (typeof renderLetterPanel === 'function' && document.getElementById('letter-history')) renderLetterPanel(); } catch(_){}
     });
   } else {
     letter.reply = '臣' + ch.name + '叩首·拜读圣函。容臣细思·当速具回奏。';
-    letter.status = 'returned';
+    // 无 key 路径同上·status 留给到期结算分支翻转(回程时间照走)
   }
 }
 
