@@ -823,8 +823,10 @@
     // 破产检查
     checkBankruptcy(mr);
 
-    // 借款月付
-    if (g.emergency.loan.active && g.emergency.loan.monthsLeft > 0) {
+    // 借款月付（legacy 2%/月）——新账 emergency.loans[] 存在时由 processLoansMonthly 本息摊还·
+    // 此腿须让位：takeLoanBySource 双写新旧账·两腿同扣曾令一笔借款每月双重还款(+24%·2026-07-04 审查定罪)
+    var _newLoansActive = Array.isArray(g.emergency.loans) && g.emergency.loans.length > 0;
+    if (!_newLoansActive && g.emergency.loan.active && g.emergency.loan.monthsLeft > 0) {
       var payment = (g.emergency.loan.amount || 0) * 0.02 * mr;  // 本息 2%/月
       g.balance -= payment;
       g.emergency.loan.monthsLeft -= mr;
