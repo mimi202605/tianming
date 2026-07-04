@@ -282,7 +282,7 @@ function load(file) {
     return originalRecord(root, payload);
   };
   load('tm-endturn-core.js');
-  load('tm-tinyi-v3.js');
+  load('tm-tinyi-v3-persona.js'); load('tm-tinyi-v3.js'); load('tm-tinyi-v3-parties.js');
 
   assert(typeof sandbox._runPreSubmitPartyClassCalibration === 'function', 'pre-submit calibration entry should be loadable');
   assert(sandbox.TM.PartyClassSignalBridge && typeof sandbox.TM.PartyClassSignalBridge.applyPending === 'function', 'signal bridge should be available');

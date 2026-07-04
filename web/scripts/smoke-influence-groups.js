@@ -256,7 +256,7 @@ assert(context.CorruptionEngine.Sources.innerCircle() === 15, 'innerCircle shoul
 context.GM = { chars: [{ name: 'legacy-favorite', influence: 90, integrity: 10, isImperialFavorite: true }] };
 assert(context.CorruptionEngine.Sources.innerCircle() === 6, 'innerCircle legacy fallback mismatch');
 
-const tinyiText = fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8');
+const tinyiText = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8'));
 const sealStart = tinyiText.indexOf('function _ty3_phase6_influenceGroupSealBonus');
 const sealEnd = tinyiText.indexOf('function _ty3_pushChronicle', sealStart);
 assert(sealStart >= 0 && sealEnd > sealStart, 'tinyi seal influence helper missing');

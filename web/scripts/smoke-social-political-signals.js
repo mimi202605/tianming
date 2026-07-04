@@ -272,7 +272,7 @@ assert(actionRoot._socialPoliticalSignals.items[0].linkedIssue === 'issue-tax-le
 assert(actionRoot._socialPoliticalSignals.items[0].affectedClasses.some(x => x.name === 'Farmers'), 'mirrored player action should list affected classes');
 assert(actionRoot._socialPoliticalSignals.items[0].affectedParties.some(x => x.name === 'Relief Party'), 'mirrored player action should list affected parties');
 
-const tinyiSource = fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8');
+const tinyiSource = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8'));
 assert(/SocialPoliticalSignals\.record/.test(tinyiSource), 'tinyi results should be mirrored into the standard social/political ledger');
 assert(/tinyi-stage6-social-signal/.test(tinyiSource), 'tinyi result signal should have a stable source marker');
 

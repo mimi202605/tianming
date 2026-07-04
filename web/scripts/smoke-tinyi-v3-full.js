@@ -40,7 +40,7 @@ function smokeScenarioConfig() {
 
 // 2·verify v3 helper expose (grep)
 function smokeV3HelperExpose() {
-  const v3 = fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8');
+  const v3 = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf-8'));
   const required = [
     'window._ty3_phase6_recordSeal',           // Slice 0.5
     'window._ty3_inferTopicTags',              // Slice 2
@@ -72,7 +72,7 @@ function smokeV3HelperExpose() {
 
 // 3·verify currentPhase 8 update (Slice 4.5)
 function smokeCurrentPhaseUpdates() {
-  const v3 = fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8');
+  const v3 = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf-8'));
   const matches = v3.match(/CY\._ty3\.currentPhase\s*=\s*['"]/g) || [];
   console.log('  currentPhase write hits·' + matches.length + ' (expect ≥8)');
   return matches.length >= 8;
@@ -80,7 +80,7 @@ function smokeCurrentPhaseUpdates() {
 
 // 4·verify v3 L781 typo fix
 function smokeV3TypoFix() {
-  const v3 = fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8');
+  const v3 = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf-8'));
   const bad = v3.indexOf('完整七阶段/div>');  // no closing <
   const good = v3.indexOf('完整七阶段</div>');
   console.log('  bad hit (should be 0)·' + bad);
@@ -90,7 +90,7 @@ function smokeV3TypoFix() {
 
 // 5·verify ChronicleTracker upsert type tingyi (Slice 11 改名)
 function smokeTingyiRename() {
-  const v3 = fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8');
+  const v3 = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf-8'));
   const tingyi = (v3.match(/tingyi_pending/g) || []).length;
   console.log('  tingyi_pending hits·' + tingyi + ' (expect ≥2)');
   return tingyi >= 2;
@@ -147,7 +147,7 @@ function smokeTinyiModes() {
 // 9·verify Slice 6·25 RULES + 54 trait
 // v2.6 polish·只算 TINYI_MODE_RULES 段·避 _ty3_REGALIA_DEFS / censorate 误算
 function smokeMode6Engine() {
-  const v3 = fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8');
+  const v3 = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf-8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf-8'));
   const rulesBlock = v3.match(/var TINYI_MODE_RULES\s*=\s*\[([\s\S]*?)\n\];/);
   const rules = rulesBlock ? (rulesBlock[1].match(/\{ id: '[^']+',/g) || []).length : 0;
   const traits = (v3.match(/weight: 0\.[0-9]+ \}/g) || []).length;

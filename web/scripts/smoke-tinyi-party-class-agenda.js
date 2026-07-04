@@ -75,7 +75,7 @@ function assert(cond, msg) {
   if (!cond) throw new Error('[assert] ' + msg);
 }
 
-load('tm-tinyi-v3.js');
+load('tm-tinyi-v3-persona.js'); load('tm-tinyi-v3.js'); load('tm-tinyi-v3-parties.js');
 
 sandbox.GM = {
   running: true,

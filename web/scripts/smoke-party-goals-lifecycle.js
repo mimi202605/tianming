@@ -77,7 +77,7 @@ function load(file) {
 }
 
 load('tm-party-goals.js');
-load('tm-tinyi-v3.js');
+load('tm-tinyi-v3-persona.js'); load('tm-tinyi-v3.js'); load('tm-tinyi-v3-parties.js');
 
 sandbox.GM = {
   running: true,

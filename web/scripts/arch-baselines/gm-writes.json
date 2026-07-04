@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T05:29:10.343Z",
+  "updatedAt": "2026-07-04T05:53:57.472Z",
   "totals": {
     "gm": 4573,
     "p": 739
@@ -1668,8 +1668,8 @@
         "gm:biannianItems": 1
       }
     },
-    "tm-tinyi-v3.js": {
-      "gm": 114,
+    "tm-tinyi-v3-persona.js": {
+      "gm": 28,
       "p": 0,
       "roots": {
         "gm:_mentorIndex": 1,
@@ -1681,29 +1681,47 @@
         "gm:<dynamic>": 1,
         "gm:_affinityMap": 5,
         "gm:_pendingPartTopics": 2,
-        "gm:_pendingTinyiTopics": 11,
-        "gm:memorials": 1,
+        "gm:_pendingTinyiTopics": 4,
+        "gm:memorials": 1
+      }
+    },
+    "tm-tinyi-v3.js": {
+      "gm": 44,
+      "p": 0,
+      "roots": {
         "gm:partyState": 2,
         "gm:_mentorIndexSig": 1,
+        "gm:_pendingTinyiTopics": 3,
         "gm:_ccFinalBlockedItems": 2,
         "gm:_ccHeldItems": 7,
         "gm:_ty3_aiReissueResults": 1,
         "gm:huangwei": 1,
         "gm:vars[皇威]": 1,
-        "gm:partyStrife": 6,
+        "gm:partyStrife": 5,
         "gm:huangquan": 1,
         "gm:vars[皇权]": 1,
         "gm:_regaliaCounters": 5,
         "gm:unlockedRegalia": 2,
-        "gm:recentChaoyi": 9,
-        "gm:_chronicle": 5,
-        "gm:tinyi": 4,
-        "gm:_courtRecords": 3,
+        "gm:recentChaoyi": 5,
+        "gm:_chronicle": 1,
+        "gm:tinyi": 3,
+        "gm:_courtRecords": 3
+      }
+    },
+    "tm-tinyi-v3-parties.js": {
+      "gm": 42,
+      "p": 0,
+      "roots": {
         "gm:parties": 4,
+        "gm:_chronicle": 4,
         "gm:_partyEvolutionState": 7,
+        "gm:partyStrife": 1,
         "gm:corruption": 2,
         "gm:_turnReport": 4,
+        "gm:tinyi": 1,
         "gm:_ty3_pendingReviewForPrompt": 5,
+        "gm:recentChaoyi": 4,
+        "gm:_pendingTinyiTopics": 4,
         "gm:_ty3_spawnCooldowns": 3,
         "gm:_chronicleTickNarratives": 3
       }
