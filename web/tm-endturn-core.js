@@ -269,8 +269,13 @@ async function endTurn(){
   } catch(_npcInTurnCancelE) {
     try { console.warn('[endTurn] NPC in-turn timer cancel failed', _npcInTurnCancelE); } catch(_){}
   }
-  await _runPreSubmitPartyClassCalibration();
-  _showPostTurnCourtPromptAndStartEndTurn();
+  // 重入闸：校准 await(BYOK 下可达数十秒)期间 GM.busy 尚未置位·连点曾双跑 pre-submit 按回合维护+叠出第二个朔朝弹窗(2026-07-04 审查定罪)
+  if (endTurn._preSubmitInFlight) return;
+  endTurn._preSubmitInFlight = true;
+  try {
+    await _runPreSubmitPartyClassCalibration();
+    _showPostTurnCourtPromptAndStartEndTurn();
+  } finally { endTurn._preSubmitInFlight = false; }
 }
 
 async function _endTurnCore(){

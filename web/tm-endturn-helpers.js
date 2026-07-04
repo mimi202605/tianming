@@ -1533,6 +1533,8 @@ async function _chooseIssueOption(issueId, choiceIdx) {
   _tmNormIssueChoices(issue);   // label→text·consequence→desc 兼容归一(否则 AI 裁定/民心归因/chosenText 拿到空文本)
   var ch = issue.choices[choiceIdx];
   if (!ch) return;
+  if (issue.status === 'resolved' || issue._resolving) return; // AI 裁定 await 窗口(数秒)连点曾双裁定双落账(2026-07-04 审查定罪)
+  issue._resolving = true;
   // 命门(v0.2·事件并入御案时政):开关开 → AI 据当前国势裁即时硬核连锁后果(applyAITurnChanges);固定 effect 降兜底。
   //   edictTracker 长期追踪不变(见下)。开关关 = 原固定 effect 查表(零回归)。
   var _adj = false;

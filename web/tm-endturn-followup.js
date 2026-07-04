@@ -3630,7 +3630,7 @@
         var _stewardOn = !!(window.TM && window.TM.MemorySteward && window.TM.MemorySteward.shouldHandle(GM));
         if (_stewardOn) {
           _queuePostTurnSubcall('memory_steward', function(){ return _runSubcall('memory_steward', '记忆管家固化', 'lite', async function(){
-            await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc28', 'sc_consolidate']);
+            await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc25c', 'sc28', 'sc_consolidate']); // sc25c=现役默认记忆写手·漏await曾与压缩并发·整数组替换把本回合turn_memory静默蒸发(2026-07-04 审查定罪)
             try { var _msr = await window.TM.MemorySteward.run(GM, {}); _dbg('[memory_steward] ' + JSON.stringify(_msr)); }
             catch(_mse){ _dbg('[memory_steward] fail:', _mse); }
           }); });
@@ -3642,7 +3642,7 @@
         // 压缩AI记忆
         if (!_stewardOn && GM._aiMemory && GM._aiMemory.length > _memCompressThreshold) {
           _queuePostTurnSubcall('compress_ai_memory', function(){ return _runSubcall('compress_ai_memory', '压缩AI记忆', 'lite', async function() {
-          await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc28', 'sc_consolidate']);
+          await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc25c', 'sc28', 'sc_consolidate']); // sc25c=现役默认记忆写手·漏await曾与压缩并发·整数组替换把本回合turn_memory静默蒸发(2026-07-04 审查定罪)
           if (!GM._aiMemory || GM._aiMemory.length <= _memCompressThreshold) return;
           _needCompress = true;
           var _oldMem = GM._aiMemory.slice(0, GM._aiMemory.length - _memKeepRecent);
@@ -3680,7 +3680,7 @@
         // 压缩伏笔
         if (!_stewardOn && GM._foreshadows && GM._foreshadows.length > _foreCompressThreshold) {
           _queuePostTurnSubcall('compress_foreshadows', function(){ return _runSubcall('compress_foreshadows', '整理伏笔', 'lite', async function() {
-          await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc28', 'sc_consolidate']);
+          await _awaitQueuedPostTurnSubcallsById(['sc25', 'sc25c', 'sc28', 'sc_consolidate']); // sc25c=现役默认记忆写手·漏await曾与压缩并发·整数组替换把本回合turn_memory静默蒸发(2026-07-04 审查定罪)
           if (!GM._foreshadows || GM._foreshadows.length <= _foreCompressThreshold) return;
           var _oldFore = GM._foreshadows.slice(0, GM._foreshadows.length - _foreKeepRecent);
           var _keepFore = GM._foreshadows.slice(-_foreKeepRecent);
