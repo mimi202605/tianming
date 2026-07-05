@@ -28,6 +28,8 @@ const checks = [
   { name: 'encoding-check', file: 'smoke-encoding-check.js', estSec: 1, expectExit: 0 },
   { name: 'ref-check', file: 'ref-check.js', estSec: 1, expectExit: 0 },
   { name: 'find-orphans', file: 'find-orphans.js', estSec: 1, expectExit: 0 },
+  { name: 'dead-functions', file: 'lint-dead-functions.js', estSec: 4, expectExit: 0 },
+  { name: 'nesting-depth', file: 'lint-nesting-depth.js', estSec: 2, expectExit: 0 },
   { name: 'ledger-consistency', file: 'smoke-ledger-consistency.js', estSec: 1, expectExit: 0 },
   { name: 'non-dead-retention-guards', file: 'smoke-non-dead-retention-guards.js', estSec: 1, expectExit: 0 },
   { name: 'restored-deprecated-code-paths', file: 'smoke-restored-deprecated-code-paths.js', estSec: 1, expectExit: 0 },
