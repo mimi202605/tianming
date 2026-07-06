@@ -1398,7 +1398,37 @@
     // 继承（分给子嗣）
     distributeInheritance(ch);
     if (typeof addEB === 'function') {
-      addEB('死亡', ch.name + '薨（' + cause + '）', { credibility: 'high', subject: ch.id });
+      addEB('死亡', ch.name + (ch.isPlayer ? '崩' : '薨') + '（' + cause + '）', { credibility: 'high', subject: ch.id });
+    }
+    // 玩家皇帝之死不得静默(2026-07-07)：此前经济 tick 扣到 health≤0 的自然死只标 dead——
+    // 不触继承/终局·先帝成「静默尸体」照常执政。镜像 AI 死亡路径(tm-ai-apply-deaths.js E10)：
+    // 先试 resolveHeir 世代传承·无嗣则 _playerDead 交 endturn-core 终局屏消费。
+    if (ch.isPlayer) {
+      try {
+        var _heir = (typeof resolveHeir === 'function') ? resolveHeir(ch) : null;
+        if (_heir && _heir.alive !== false && !_heir.dead) {
+          ch.isPlayer = false;
+          _heir.isPlayer = true;
+          if (typeof P !== 'undefined' && P && P.playerInfo) P.playerInfo.characterName = _heir.name; // arch-ok 世代传承第二路径(镜像 tm-ai-apply-deaths E10)
+          if (typeof addEB === 'function') addEB('继承', ch.name + '驾崩，' + _heir.name + '继位');
+          if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.addMemory) {
+            NpcMemorySystem.addMemory(_heir.name, '先帝驾崩，继承大统', 10, 'career');
+            (GM.chars || []).forEach(function (c2) {
+              if (c2 && c2.alive !== false && !c2.isPlayer) NpcMemorySystem.addMemory(c2.name, '先帝' + ch.name + '驾崩，新君' + _heir.name + '继位', 8, 'political');
+            });
+          }
+          GM._successionEvent = { from: ch.name, to: _heir.name, reason: cause }; // arch-ok 同上·叙事【帝位更迭】既有消费点
+          if (typeof GameEventBus !== 'undefined' && GameEventBus.emit) GameEventBus.emit('succession', { from: ch.name, to: _heir.name, reason: cause });
+        } else {
+          GM._playerDead = true; // arch-ok 玩家死亡第二路径本体(自然死·镜像 tm-ai-apply-deaths E10 语义)
+          GM._playerDeathReason = (cause === '疾') ? '圣躬不豫，医药罔效' : cause; // arch-ok 同上
+        }
+      } catch (ePD) {
+        // 继承路由异常也绝不静默——回落终局(宁终局勿尸政)
+        GM._playerDead = true; // arch-ok 同上·异常回落
+        GM._playerDeathReason = cause; // arch-ok 同上
+        try { console.warn('[皇帝之死] 继承路由异常·回落终局:', ePD && ePD.message); } catch (_) {}
+      }
     }
   }
 
