@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-06T15:48:43.933Z",
+  "updatedAt": "2026-07-06T15:55:29.437Z",
   "totals": {
-    "gm": 4578,
+    "gm": 4579,
     "p": 739
   },
   "files": {
@@ -1064,9 +1064,10 @@
       }
     },
     "tm-endturn-followup.js": {
-      "gm": 149,
+      "gm": 150,
       "p": 1,
       "roots": {
+        "gm:_recentHiddenMoves": 1,
         "gm:vars[<dynamic>]": 1,
         "gm:_factionUndercurrents": 2,
         "gm:_factionUndercurrentsHistory": 3,

@@ -233,17 +233,22 @@
         }
         // 隐藏行动记入事件日志
         if (pND.hidden_moves && Array.isArray(pND.hidden_moves)) {
+          // ★谍报S3·暗流缓冲(2026-07-06)：解析出真身的暗流落 GM._recentHiddenMoves(每回合整体覆写·cap10)·
+          //   密探常侦(tm-conspiracy._agencyWatch)下回合按效力筛报「密探风闻」入御案——查访要一回合工夫。
+          var _hmBuf = [];
           pND.hidden_moves.forEach(function(hm) {
             addEB('暗流', hm);
-            // ★暗中行动者须自记其谋(方向B补漏·hidden_moves 隐于公开叙事外·兜底扫不到·②失败即彻底丢)·确定性给行动者留记忆
-            if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
-              var _hmp = (typeof _tmHiddenMoveForMemory === 'function') ? _tmHiddenMoveForMemory(hm) : { actor: '', text: '' };
-              if (_hmp.actor && _hmp.text && String(_hmp.actor).length >= 2) {
+            var _hmp = (typeof _tmHiddenMoveForMemory === 'function') ? _tmHiddenMoveForMemory(hm) : { actor: '', text: '' };
+            if (_hmp.actor && _hmp.text && String(_hmp.actor).length >= 2) {
+              if (_hmBuf.length < 10) _hmBuf.push({ actor: _hmp.actor, text: String(_hmp.text).slice(0, 60) });
+              // ★暗中行动者须自记其谋(方向B补漏·hidden_moves 隐于公开叙事外·兜底扫不到·②失败即彻底丢)·确定性给行动者留记忆
+              if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
                 var _hmType = /背叛|叛|谋|阴谋|通敌|篡|弑/.test(_hmp.text) ? 'betrayal' : 'general';
                 try { NpcMemorySystem.remember(_hmp.actor, '暗中：' + String(_hmp.text).slice(0, 36), '平', 5, '', { source: 'intuition', type: _hmType, _hiddenMove: true }); } catch(_hmE) {}
               }
             }
           });
+          if (_hmBuf.length) GM._recentHiddenMoves = { turn: GM.turn || 0, moves: _hmBuf };
         }
         // 应用级联变量效果（AI补充的连锁影响）
         if (pND.cascade_effects && typeof pND.cascade_effects === 'object') {

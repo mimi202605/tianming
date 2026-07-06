@@ -539,6 +539,53 @@
         category: '朝局', status: 'pending', raisedTurn: G.turn || 0, _info: true, _spyReport: true
       });
     });
+    // ─── S3·暗流风闻(2026-07-06·方向五谍报线收官) ───
+    //   常侦不止侦阴谋——推演暗流(sc15 hidden_moves·followup 落 GM._recentHiddenMoves 缓冲)亦入密探耳目。
+    //   门槛 intensity>=6(至少一座满效衙门·弱衙门捕不到暗流)·每回合至多2报·同人同类8回合窗内不重报
+    //   (GM._agencyMoveReported)·措辞留白只报风闻类别不给原文——真相要玩家自己穷治(与S2密报同则)。
+    (function _agencyCovertMoves() {
+      if (intensity < 6) return;
+      var buf = G._recentHiddenMoves;
+      if (!buf || !Array.isArray(buf.moves) || !buf.moves.length) return;
+      if (typeof buf.turn === 'number' && buf.turn < (G.turn || 0) - 2) return;   // 陈年缓冲不报
+      if (!Array.isArray(G.currentIssues)) return;
+      if (!Array.isArray(G._agencyMoveReported)) G._agencyMoveReported = [];
+      var seen = G._agencyMoveReported;
+      function _mvCat(text) {
+        if (/通敌|外藩|敌国|私通北|私通external/.test(text)) return '疑通外镇';
+        if (/结党|串联|密会|过从|朋党|联络/.test(text)) return '暗结朋党';
+        if (/贿|银|贪|私相授受|财/.test(text)) return '贿门私通';
+        if (/兵|军|卫|甲|武/.test(text)) return '私涉兵事';
+        return '别有图谋';
+      }
+      var reported = 0;
+      buf.moves.forEach(function (m) {
+        if (reported >= 2 || !m || !m.actor || !m.text) return;
+        var known = false;
+        for (var ci = 0; ci < (G.chars || []).length; ci++) {
+          var cc = G.chars[ci];
+          if (cc && cc.name === m.actor && cc.alive !== false && !cc.isPlayer) { known = true; break; }
+        }
+        if (!known) return;   // 查无此人/已故/陛下本人——不报
+        var c = _mvCat(String(m.text));
+        var k = m.actor + '·' + c;
+        var dupe = false;
+        for (var ri = 0; ri < seen.length; ri++) {
+          var r = seen[ri];
+          if (r && r.k === k && ((G.turn || 0) - (r.turn || 0)) < 8) { dupe = true; break; }
+        }
+        if (dupe) return;
+        seen.push({ k: k, turn: G.turn || 0 });
+        if (seen.length > 24) seen.splice(0, seen.length - 24);
+        G.currentIssues.push({
+          id: 'iss_spy_move_' + (G.turn || 0) + '_' + m.actor,
+          title: '密探风闻 · ' + m.actor + ' 私下有所动作',
+          description: '密探风闻：' + m.actor + ' 近日行事多避耳目，迹类「' + c + '」，未得实据。若欲穷治，可下诏命有司查办其人。',
+          category: '朝局', status: 'pending', raisedTurn: G.turn || 0, _info: true, _spyReport: true
+        });
+        reported++;
+      });
+    })();
     return intensity;
   }
 
