@@ -45,6 +45,9 @@ const CONTRACTS = [
   ['tm-office-runtime.js', 'tm-office-runtime-summary-appoint.js'],
   // 第十九拆(IIFE 型·alias 范式)：tm-endturn-followup 27 顶层纯 helper+6 ns 导出迁出·helpers 须在 origin【之前】装载(填 TM.__etFollowupParts bucket·origin 顶部 alias 回绑)
   ['tm-endturn-followup-helpers.js', 'tm-endturn-followup.js'],
+  // 第二十拆(IIFE 型·origin-first bucket)：tm-content-manager §2-§5 社区/商城 UI 中段切出·community 须【紧随 origin 之后】
+  //   origin 装载期向 bucket TM.__cmParts 导出 kept 成员→community 闭包捕获；community 回填 §2-§5 函数→origin 委托 shim 调用期解析·错序即崩
+  ['tm-content-manager.js', 'tm-content-manager-community.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

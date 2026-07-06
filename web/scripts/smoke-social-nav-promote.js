@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const ROOT = path.resolve(__dirname, '..');
-const manager = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
+const manager = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-content-manager-community.js'), 'utf8');
 const verifyAll = fs.readFileSync(path.join(ROOT, 'scripts/verify-all.js'), 'utf8');
 let n = 0;
 function ok(cond, msg) { assert(cond, msg); n++; }

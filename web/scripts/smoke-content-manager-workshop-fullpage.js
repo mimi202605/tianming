@@ -17,7 +17,7 @@ function ruleBody(css, selector) {
   return match ? match[1] : '';
 }
 
-const manager = read('tm-content-manager.js');
+const manager = read('tm-content-manager.js') + '\n' + read('tm-content-manager-community.js');
 const mallCss = read('tm-online-mall.css');
 const index = read('index.html');
 const verifyAll = read('scripts/verify-all.js');

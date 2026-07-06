@@ -6,7 +6,7 @@ const path = require('path');
 const assert = require('assert');
 
 const ROOT = path.resolve(__dirname, '..');
-const manager = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
+const manager = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-content-manager-community.js'), 'utf8');
 const client = fs.readFileSync(path.join(ROOT, 'tm-online-client.js'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'tm-online-mall.css'), 'utf8');
 const verifyAll = fs.readFileSync(path.join(ROOT, 'scripts/verify-all.js'), 'utf8');
