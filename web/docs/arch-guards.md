@@ -142,7 +142,24 @@ editor-authoring-agent 两件·已 grep 逐一确认皆单只)→alias 范式专
   八处外部散写迁入：赐金(wendui)/科举补贴(keju)/宫廷俸禄+银钱调度(economy)/内帑侵吞+追赃(corruption)/
   抄没+无嗣归公(char-economy)·各留沙箱兜底。neitang-engine 本体(120 写)=owner 级·两引擎合账另议。
 
+## 增补守卫（四刀之后·随拆分战役立）
+
+### ⑤ 控制字节 `lint-control-bytes.js`（2026-07 前后入伞）
+源文件禁藏控制字节（bash 转义把 `\b` 变退格一类事故的下游防线）。
+
+### ⑥ 拆分装载序契约 `lint-split-contracts.js`（2026-07-04）
+每座已拆巨石登记 `[before..., origin, after...]` 家族序列，要求在对应入口 html 的
+`<script src>` 顺序里**连续且按序**出现，且每片恰装载一次。保序切割/bucket 范式的
+行为等价性全押在装载序上——挪动或插队即红。新拆一座 = 契约加一条（收尾步骤之一）。
+契约覆盖入口：index.html / editor.html / preview（家族清单的单一真相源在本文件）。
+
+### ⑦ 拆分家族缓存戳一致 `lint-split-stamps.js`（2026-07-06）
+同一家族在同一入口的所有成员必须共用同一 `?v=` 戳。病根：旧戳 origin 命中缓存 +
+新 sibling 现取 = 「半旧半新」装载，bucket 成员缺失即崩（治理刀曾手工 bump 十座）。
+纪律：**改拆分家族的任何一片，整族 bump 同一新戳**。历史分歧走豁免基线
+`split-stamps.json`（棘轮只减不增·当前=空）。附带全入口重复装载检测（零基线）。
+
 ## 基线文件（要进 git）
 
-`scripts/arch-baselines/{gm-writes,dep-dangling,file-size,smoke-skip}.json` —— 棘轮的账本，删了守卫就瞎。
+`scripts/arch-baselines/{gm-writes,dep-dangling,file-size,smoke-skip,split-stamps}.json` —— 棘轮的账本，删了守卫就瞎。
 `dev-tools/arch-guard/` 下是生成物（依赖清单/smoke报告），不进安装包，可随时重生成。
