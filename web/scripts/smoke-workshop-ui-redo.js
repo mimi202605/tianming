@@ -15,7 +15,7 @@ const css = fs.readFileSync(path.resolve(__dirname, '..', 'preview', 'scenario-e
 /* R2 架构整备：页内九个适配 IIFE 已外提合并·适配层断言读 adapters */
 const adapters = fs.readFileSync(path.resolve(__dirname, '..', 'preview', 'scenario-editor-reset-adapters.js'), 'utf8');
 const app = fs.readFileSync(path.resolve(__dirname, '..', 'preview', 'scenario-editor-reset-app.js'), 'utf8');
-const ui = fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+const ui = fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
 let A = 0, F = 0; function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 console.log('smoke-workshop-ui-redo');
 

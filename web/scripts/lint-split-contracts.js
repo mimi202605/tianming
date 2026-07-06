@@ -49,6 +49,9 @@ const CONTRACTS = [
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */
 const EDITOR_CONTRACTS = [
+  // 第十八拆(真 IIFE ui-bucket 范式)：editor-authoring-agent-ui 三片·icons 在 origin【前】(叶子·发布_icon/injectStyles/_TOOL_ICON)
+  //   render 在 origin【后】(纯消费·读 ui 共享单例+origin 助手)·origin 反向 shim 委托两侧。preview 双入口同步(未被本 lint 校验)
+  ['editor-authoring-agent-ui-icons.js', 'editor-authoring-agent-ui.js', 'editor-authoring-agent-ui-render.js'],
   // 第十一拆(真 IIFE alias 首例)：editor-authoring-agent Provider 簇(D)迁出·provider 须在 origin【之前】装载(填 TM.__aaParts bucket·origin 顶部读 alias)
   ['editor-authoring-agent-provider.js', 'editor-authoring-agent.js'],
   // 第十二拆(editor.html 侧同族)：tm-mechanics memory 片(index.html + editor.html 双入口装载)

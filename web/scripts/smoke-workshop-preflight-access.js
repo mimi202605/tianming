@@ -6,7 +6,7 @@
  * W1b 快速测试(quickTestScenario)接入 AA.preflight·把运行时 blockers 并入预检 issues(补 ad-hoc 检查的运行时盲区)。
  * (DOM/点击行为另真浏览器验证·此 smoke 守接线防腐) */
 const fs = require('fs'), path = require('path');
-const ui = fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+const ui = fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
 const fg = fs.readFileSync(path.resolve(__dirname, '..', 'editor-fullgen.js'), 'utf8');
 let A = 0, F = 0; function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 console.log('smoke-workshop-preflight-access');

@@ -72,7 +72,7 @@ AA.memories.recall('需求', null, mockSel).then(function (blk) {
 }).then(function () {
   console.log('— UI 曝光(源码契约·2026-07-03 二轮) —');
   var fs2 = require('fs'), path2 = require('path');
-  var uiSrc = fs2.readFileSync(path2.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc = fs2.readFileSync(path2.resolve(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + fs2.readFileSync(path2.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + fs2.readFileSync(path2.resolve(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   var adSrc = fs2.readFileSync(path2.resolve(__dirname, '..', 'preview', 'scenario-editor-reset-adapters.js'), 'utf8');
   ok(/function showMemoriesUI/.test(uiSrc) && /function showSkillsUI/.test(uiSrc) && /function showPacksUI/.test(uiSrc) && /function showUsageUI/.test(uiSrc), 'UI 四卡函数在(记忆册/技能册/能力包/用量)');
   ok(/showMemories: showMemoriesUI/.test(uiSrc), 'UI 四卡导出 TM_AuthoringAgentUI(供 je-cmdk 调)');

@@ -4,7 +4,7 @@
  *   选择器渲染(史实/虚构) + els 绑定 + 点击写 scenario.worldKind(makeDraft 克隆活对象→draft.worldKind→runAuthoringLoop 自动读) +
  *   开面板反映当前类型 + CSS 注入。DOM 行为另由真浏览器 e2e 验证；此 smoke 守接线防腐。 */
 const fs = require('fs'), path = require('path');
-const src = fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+const src = fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + fs.readFileSync(path.resolve(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
 let A = 0, F = 0; function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 console.log('smoke-authoring-ui-worldkind');
 

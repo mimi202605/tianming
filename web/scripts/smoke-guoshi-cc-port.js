@@ -334,7 +334,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(!rS3.conversation.some(function (m) { return m.role === 'user' && /没有调用任何工具/.test(m.text || ''); }), 'G9 卡壳时插话顶替泛泛 nudge(不耗配额)');
   ok(rS3.finished && rS3.draft.name === '丁', 'G9 卡壳被插话重新推动·照办收尾');
   // 9e: UI 接线源契约(编辑器输入框运行中回车 → onSteer·运行态占位提示插话)
-  var uiSrc = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/ui\.running && typeof onSteer === 'function'\) onSteer\(\)/.test(uiSrc) && /function onSteer\(\)/.test(uiSrc), 'G9 UI 接线:运行中回车路由到 onSteer');
   ok(uiSrc.indexOf('回车可随时插话') >= 0 && /AA\.steer\(t\)/.test(uiSrc), 'G9 UI 接线:运行态占位提示+steer 调用');
 
@@ -391,7 +391,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(rR.finished && rR.todos.length === 0, 'H3 补完恢复项后正常收尾');
   ok(!JSON.stringify(rR.todos).match(/坏项/), 'H3 非法 status/空 content 的恢复项被滤掉');
   // 2: UI 源契约(存/取/清/回灌四处接线·jsdom 行为由真机验)
-  var uiSrc3 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc3 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/ui\.conversation = res\.conversation;[^\n]*\n\s*_saveSession\(res, request/.test(uiSrc3.replace(/\r/g, '')), 'H3 UI:跑完即落盘当前会话(_saveSession 紧随 conversation 赋值)');
   ok(/_maybeRestoreThread\(\); _autoWinMode\(\); \}/.test(uiSrc3) && /SESS_FRESH_MS = 48 \* 3600 \* 1000/.test(uiSrc3), 'H3 UI:开面板自动续接(48h 新鲜度守卫)+首开默认全屏窗');
   ok(/m\.fileKey === fk/.test(uiSrc3), 'H3 UI:按剧本 fileKey 找候选会话(跨剧本不串线程)');
@@ -402,7 +402,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
 
   // ───────── H4 · API 连接·模型选择弹层(模型徽即入口·owner 定案) ─────────
   console.log('— H4 API连接·模型弹层 —');
-  var uiSrc4 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc4 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/id="tm-aa-modelpop"/.test(uiSrc4) && /id="tm-aa-api-url"/.test(uiSrc4) && /id="tm-aa-api-key"/.test(uiSrc4) && /id="tm-aa-api-detect"/.test(uiSrc4) && /id="tm-aa-api-model"/.test(uiSrc4) && /id="tm-aa-api-save"/.test(uiSrc4), 'H4 弹层五件套(地址/Key/检测/模型选/保存)在位');
   ok(/generativelanguage\\\.googleapis\\\.com/.test(uiSrc4) && /anthropic-dangerous-direct-browser-access/.test(uiSrc4) && /'Authorization': 'Bearer ' \+ \(key \|\| ''\)/.test(uiSrc4), 'H4 检测覆盖三家 provider(Gemini/Anthropic/OpenAI兼容含中转)');
   ok(/\['tm_P_lite', 'tm_P'\]\.forEach/.test(uiSrc4) && /localStorage\.setItem\('tm_api'/.test(uiSrc4), 'H4 保存写 tm_api+镜像游戏存档 P.ai(否则被存档优先级压掉)');
@@ -412,7 +412,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
 
   // ───────── H5 · 权限模式(问策/共审/放行·CC permission modes 对照·owner 点名缺失件) ─────────
   console.log('— H5 权限模式 —');
-  var uiSrc5 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc5 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/id="tm-aa-perm"/.test(uiSrc5) && /id="tm-aa-permpop"/.test(uiSrc5) && /data-pm="plan"/.test(uiSrc5) && /data-pm="review"/.test(uiSrc5) && /data-pm="auto"/.test(uiSrc5), 'H5 权限 pill+弹层三模式(问策/共审/放行)在位');
   ok(/ui\.planMode = p\.mode === 'plan'/.test(uiSrc5) && /ui\.autonomy = p\.mode === 'auto' \? 'auto' : 'review'/.test(uiSrc5) && /ui\.allowDestructive = p\.allowDestructive !== false/.test(uiSrc5), 'H5 模式映射既有引擎旗标(planMode/autonomy/allowDestructive·非新权限系统)');
   ok(/localStorage\.setItem\(PERM_KEY/.test(uiSrc5) && /_applyPerm\(_loadPerm\(\)\)/.test(uiSrc5), 'H5 模式持久+启动即布防');
@@ -441,7 +441,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   var agSrc6 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent.js'), 'utf8');
   ok(/model2: src\.model2 \|\| ''/.test(agSrc6) && /function _secondaryCfg\(\)/.test(agSrc6), 'H6 配置层 model2 透传+_secondaryCfg(未配返回 null 用主模)');
   ok(/var _c2 = opts\.cfg2 \|\| _secondaryCfg\(\);/.test(agSrc6) && /reviewFocus: 'history', cfg: _c2/.test(agSrc6), 'H6 三堂会审两官分工次模(源契约)');
-  var uiSrc6 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc6 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/id="tm-aa-api-model2"/.test(uiSrc6) && /_saveApiCfg\(u, k, m, m2\)/.test(uiSrc6) && /o\.ai\.model2 = model2 \|\| ''/.test(uiSrc6), 'H6 弹层次模下拉+保存/镜像链路');
 
   // ───────── H7 · 生图模型为国师工作(generateImage 工具·tm_api_image 同源) ─────────
@@ -483,7 +483,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(Array.isArray(an.messages[0].content) && an.messages[0].content[0].type === 'image' && an.messages[0].content[0].source.media_type === 'image/png' && an.messages[0].content[1].type === 'text', 'H8 Anthropic 多模态映射(base64 source)');
   var ge = AA._toGemini(conv8, 'sys', [{ name: 't', parameters: {} }], 100, 0.5);
   ok(ge.contents[0].parts.length === 2 && ge.contents[0].parts[1].inline_data && ge.contents[0].parts[1].inline_data.mime_type === 'image/png', 'H8 Gemini 多模态映射(inline_data)');
-  var uiSrc8 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc8 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/id="tm-aa-attach-btn"/.test(uiSrc8) && /addEventListener\('drop'/.test(uiSrc8) && /addEventListener\('paste'/.test(uiSrc8), 'H8 UI 三入口(曲别针/拖拽/粘贴截图)在位');
   ok(/【附件 · /.test(uiSrc8) && /request \+ _attTxt/.test(uiSrc8) && /images: _imgs,/.test(uiSrc8), 'H8 发送链路(文本内联+图片走视觉)');
   ok(/【曾附图 /.test(uiSrc8), 'H8 线程持久化剥像素(localStorage 体量)');
@@ -503,7 +503,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(ad9.getFileKey() === 'name:乙剧本', 'H9 未入库剧本弱键 name:<剧本名>');
   var adL9 = AA.makeOldEditorAdapter({ scriptData: { name: '丙' }, saveScript: function () {} });
   ok(adL9.getFileKey() === 'file:丙' && (await adL9.openFile('file:丙')) === true && (await adL9.openFile('file:丁')) === false, 'H9 旧编辑器单剧本·仅同键命中');
-  var uiSrc9 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrc9 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(uiSrc9.indexOf("'tm_aa_sessions'") >= 0 && uiSrc9.indexOf("'tm_aa_sessbody_'") >= 0 && uiSrc9.indexOf("'tm_aa_sess_active'") >= 0
     && 'tm_aa_sess_active'.indexOf('tm_aa_sessbody_') !== 0, 'H9 UI:索引/正文/指针三键分立(指针不带正文前缀·evict 不误清)');
   ok(/ui\.adapter\.openFile\(meta\.fileKey\)\.then/.test(uiSrc9) && /只读回看/.test(uiSrc9), 'H9 UI:切会话先切剧本·打不开降级只读回看');
@@ -516,7 +516,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
 
   // ───────── H10 · / 命令面板(CC slash commands 对照) ─────────
   console.log('— H10 / 命令面板 —');
-  var uiSrcA = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrcA = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/id="tm-aa-cmdpop"/.test(uiSrcA) && /cmdpop: panel\.querySelector\('#tm-aa-cmdpop'\)/.test(uiSrcA), 'H10 命令面板 DOM+els 在位');
   var defs10 = (uiSrcA.match(/\{ k: '[^']+', t: '[^']+'/g) || []).length;
   ok(defs10 >= 14, 'H10 命令表≥14 条(实 ' + defs10 + ')');
@@ -529,7 +529,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
 
   // ───────── H11 · 会话分叉+AI 自动标题(CC /branch + ai-title 对照) ─────────
   console.log('— H11 分叉与自动标题 —');
-  var uiSrcB = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrcB = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/function forkSession/.test(uiSrcB) && /'·分支'/.test(uiSrcB) && /switchSession\(nid\)/.test(uiSrcB), 'H11 分叉=正文快照复制新会话+切换过去');
   ok(/ri-fork/.test(uiSrcB) && /k: 'fork', t: '分叉会话'/.test(uiSrcB) && /forkSession: forkSession/.test(uiSrcB), 'H11 侧栏⎇按钮+/分叉会话命令+导出');
   ok(/无从分叉/.test(uiSrcB) && /分叉失败/.test(uiSrcB), 'H11 无正文/quota 满两条失败路都有话讲');
@@ -540,7 +540,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
 
   // ───────── H12 · 约定分层(CC CLAUDE.md 层级对照：全局+本剧本) ─────────
   console.log('— H12 约定分层 —');
-  var uiSrcC = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrcC = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/tm_aa_conv_s::/.test(uiSrcC) && /_scenConvKey\(\) \{ return 'tm_aa_conv_s::' \+ _fileKey\(\); \}/.test(uiSrcC), 'H12 本剧本约定按 fileKey 分键(绍宋文风不灌天启)');
   ok(/【全局约定·所有剧本通用】/.test(uiSrcC) && /【本剧本约定·仅当前剧本】/.test(uiSrcC), 'H12 两层合并注入(带层级标头)');
   var convSites = (uiSrcC.match(/conventions: _convForRun\(\),/g) || []).length;
@@ -567,7 +567,7 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   var agSrcD = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent.js'), 'utf8');
   ok(/_macroSummaryAsk/.test(agSrcD) && /_macroHead/.test(agSrcD) && (agSrcD.match(/_macroSummaryAsk\(/g) || []).length >= 3, 'H13 循环内压缩与手动压缩共用同套文案构件(勿漂移)');
   ok(/budget: maxTokens/.test(agSrcD) && /recordConvention: 1, };?/.test(agSrcD.replace(/\};/g, '}, };')) || (/budget: maxTokens/.test(agSrcD) && /preflight: 1, recordConvention: 1 \}/.test(agSrcD)), 'H13 onStep 带预算+审阅工具集含 recordConvention');
-  var uiSrcD = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8');
+  var uiSrcD = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-icons.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui.js'), 'utf8') + require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent-ui-render.js'), 'utf8');
   ok(/上下文余 /.test(uiSrcD) && /ui\._budget = step\.budget/.test(uiSrcD), 'H13 计量条显上下文余量%(Codex context-left 对照)');
   ok(/k: 'compact', t: '压缩前情'/.test(uiSrcD) && /AA\.compactConversation\(ui\.conversation/.test(uiSrcD), 'H13 /压缩前情 命令接手动压缩');
   ok(/k: 'initconv', t: '初始化约定'/.test(uiSrcD) && /_renderConvSuggest\(res\.suggestedConventions\)/.test(uiSrcD), 'H13 /初始化约定(Codex /init 对照)+审阅尾记住签');
