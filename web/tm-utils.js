@@ -1457,6 +1457,14 @@ function _tmIsPlayerFactionCharLoose(ch) {
   return false;
 }
 
+/** 阵营硬闸(2026-07-04)：仅拦「明确标了非本朝势力」的角色——faction 类字段全空者视为本朝放行(散官/编辑器剧本常不填势力·loose 守卫对空字段判非本朝会误杀·与 _wdIsPlayerSideChar 空字段兜底语义对齐)。用于宰辅进言/求见队列/转对候选等臣→君产出口·防外邦君主(皇太极/德川氏等·其 faction 必有值)混入喂推演。 */
+function _tmIsForeignCourtChar(ch) {
+  if (!ch) return false;
+  var explicit = _tmCharacterFactionValues(ch);
+  if (!explicit.length) return false;
+  return !_tmIsPlayerFactionCharLoose(ch);
+}
+
 function _tmIsPlayerConsort(ch) {
   if (!ch || ch.alive === false || ch.dead) return false;
   var playerNames = _tmPlayerNames().map(_tmCleanIdentityName).filter(Boolean);

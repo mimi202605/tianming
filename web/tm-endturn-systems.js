@@ -254,6 +254,11 @@ async function _endTurn_updateSystems(timeRatio, zhengwen) {
     if (typeof GlobalRulesEngine !== 'undefined' && GlobalRulesEngine.tick) GlobalRulesEngine.tick();
   } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'endTurn] GlobalRulesEngine.tick 失败:') : console.error('[endTurn] GlobalRulesEngine.tick 失败:', e); }
 
+  // 6.156 典章·祖制建构轴（国策先演进→典章再看哪条熬过考验著为成宪·Wave5 slice-1）
+  try {
+    if (window.TM && TM.Dianzhang && TM.Dianzhang.tick) TM.Dianzhang.tick(GM);
+  } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'endTurn] Dianzhang.tick 失败:') : console.error('[endTurn] Dianzhang.tick 失败:', e); }
+
   // 6.16 C/D/B/A/E 阶段补丁 tick
   try {
     if (typeof PhaseC !== 'undefined') PhaseC.tick({ turn: GM.turn, monthRatio: monthRatio, _monthRatio: monthRatio });

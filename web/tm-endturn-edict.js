@@ -404,6 +404,8 @@ function applyEdictActions(actions) {
         // 官职公库 currentHead 跟着换
         if (hit.pos.publicTreasury) hit.pos.publicTreasury.currentHead = a.character;
         if (typeof recordCharacterArc === 'function') recordCharacterArc(a.character, 'appointment', '奉诏就任' + a.position);
+        // ★2026-07-04 交互双向性·受任者留一条"奉诏就任"知情记忆(imp7)·此前只进 careerHistory/arc/AffinityMap 不入 _memory→推演看不到这桩定义性擢升。relatedPerson=天子(玩家)
+        if (typeof NpcMemorySystem !== 'undefined') { try { NpcMemorySystem.remember(a.character, '奉诏' + (isConcurrent ? '加兼' : '就任') + a.position, '敬', 7, (P.playerInfo && P.playerInfo.characterName) || '天子', { source: 'witnessed', type: 'career', _noMirror: true }); } catch(_apM) {} }
         if (typeof CorruptionEngine !== 'undefined' && CorruptionEngine.markAsRecentAppointment) CorruptionEngine.markAsRecentAppointment(char);
         addEB('人事', a.character + (isConcurrent ? '奉诏加兼' : '奉诏就任') + a.position + '（' + hit.deptPath + '）', { credibility: 'high' });
         if (typeof AffinityMap !== 'undefined') AffinityMap.add(a.character, P.playerInfo.characterName || '玩家', 5, '被委以重任');

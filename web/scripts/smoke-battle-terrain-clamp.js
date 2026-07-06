@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 // smoke-battle-terrain-clamp — BattleEngine 地形/季节/城防夹取(#28·接通批·opt-in 扩展)
-//   源契约:仍 opt-in(默认OFF零变更)·resolve 传 season·矛盾判定+夹取标记·原 absurd 处理保留(回归)
+//   源契约:默认 ON(2026-07-05 翻默认·===false 才关)·resolve 传 season·矛盾判定+夹取标记·原 absurd 处理保留(回归)
 //   行为复刻:矛盾条件(AI攻方胜+引擎判守住+AI低估攻方伤亡)的触发/不触发
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +14,7 @@ console.log('smoke-battle-terrain-clamp');
 const mil = fs.readFileSync(path.join(ROOT,'tm-military.js'),'utf8');
 
 // ── 源契约 ──
-ok(/deterministicCasualties === true/.test(mil), '① opt-in 闸保留(deterministicCasualties·默认 OFF=零行为变更)');
+ok(/deterministicCasualties === false/.test(mil), '① 确定性战果闸保留(deterministicCasualties·默认 ON·===false 才关)');
 ok(/_hasTerrainFactor = \(_toNum\(br\.fortLevel, 0\) > 0\)/.test(mil), '② 地形/城防因子判定(fortLevel>0 或非平原)');
 ok(/season: br\.season/.test(mil), '③ resolve() 现传 season(季节参与战力)');
 ok(/_detDefenderHeld = \(_det\.verdict === '败北'\)/.test(mil), '④ 引擎判「败北」=守方守住');

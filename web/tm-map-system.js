@@ -1493,7 +1493,19 @@ function showCityInfo(cityId) {
   html += '<div style="margin-bottom:0.5rem;"><strong>归属：</strong>' + city.owner + '</div>';
   html += '<div style="margin-bottom:0.5rem;"><strong>人口：</strong>' + (city.population||0).toLocaleString() + '</div>';
   html += '<div style="margin-bottom:0.5rem;"><strong>收入：</strong>' + (city.income||0).toLocaleString() + ' 金/月</div>';
-  html += '<div style="margin-bottom:0.5rem;"><strong>驻军：</strong>' + (city.garrison||0).toLocaleString() + '</div>';
+  var _cgv = Number(city.garrison || 0);
+  if (_cgv > 0) {
+    html += '<div style="margin-bottom:0.5rem;"><strong>驻军：</strong>' + _cgv.toLocaleString() + '</div>';
+  } else {
+    // 无逐块驻军实体：兜底显所属势力机动军力（游牧显「机动兵力」·余显「势力军力」），免得游牧/无常驻势力显 0
+    var _cms = faction && Number(faction.militaryStrength || faction.military || 0);
+    if (isFinite(_cms) && _cms > 0) {
+      var _cnomad = /部落|游牧|游猎/.test(String((faction && faction.type) || '') + String((faction && faction.traits) ? faction.traits.join('') : ''));
+      html += '<div style="margin-bottom:0.5rem;"><strong>' + (_cnomad ? '机动兵力' : '势力军力') + '：</strong>' + _cms.toLocaleString() + '</div>';
+    } else {
+      html += '<div style="margin-bottom:0.5rem;"><strong>驻军：</strong>0</div>';
+    }
+  }
 
   if ((city.neighbors||[]).length > 0) {
     html += '<div style="margin-top:1rem;"><strong>相邻城市：</strong></div>';

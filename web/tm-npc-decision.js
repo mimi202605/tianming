@@ -1709,6 +1709,8 @@ function executePrivateCorrespondenceBehavior(npc, target, decision, context) {
 }
 
 function executeSeekAudienceBehavior(npc, target, decision, context) {
+  // 阵营闸(2026-07-04)：求见入对/遣书入奏=臣→君·须本朝人物。决策池(_npcLiveCharacters)只滤活人·外邦君主也会跑到此行为——放行则入 _pendingAudiences 喂推演·成「皇太极候于殿外求见」。只拦明确标了异势力者·空 faction 朝臣放行。外邦对朝廷的往来自有使节/国书线。
+  if (typeof _tmIsForeignCourtChar === 'function' && _tmIsForeignCourtChar(npc)) return;
   if (!_npcIsAtPlayerLocation(npc)) {
     var redirected = {};
     Object.keys(decision || {}).forEach(function(k) { redirected[k] = decision[k]; });

@@ -634,8 +634,14 @@ function _tmShowOpeningCeremony(sc, sid) {
   var _pBio = _pi.characterBio || (_pChar && _pChar.bio) || '';
   if (_pBio) _pBio = String(_pBio).replace(/\s+/g, ' ').trim().slice(0, 64);
   // 开局戏眼（开局事件前 3·跨剧本通用）
+  // 事件既可能是扁平数组（官方天启/绍宋），也可能是 {historical/random/conditional/story/chain}
+  // 分组对象（编辑器/旧格式剧本，如西游记·紫霄纪）。此处与 doActualStart 同构地先归一化成数组再
+  // 遍历——否则对分组对象直接 .forEach 会抛 TypeError，崩在开场仪典之前、整局黑屏无法进局。
+  var _evSrc = sc.events;
+  var _evList = Array.isArray(_evSrc) ? _evSrc
+    : (_evSrc ? [].concat(_evSrc.historical || [], _evSrc.random || [], _evSrc.conditional || [], _evSrc.story || [], _evSrc.chain || []) : []);
   var _eyes = [];
-  (sc.events || []).forEach(function (e) {
+  _evList.forEach(function (e) {
     if (_eyes.length >= 3 || !e) return;
     if (!(e.isOpeningEvent === true || e.triggerTurn === 1)) return;
     _eyes.push({ ti: e.name || '开局要务', ds: String(e.description || e.narrative || '').replace(/\s+/g, ' ').trim().slice(0, 16), key: (e.importance === '关键') });

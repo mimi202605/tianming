@@ -160,7 +160,15 @@
                     : _cDead ? '<span style="color:var(--vermillion-400,#c0563a);">'+esc(_cn)+'(殁)</span>'
                     : esc(_cn);
         var _locBase = a.location || a.stationed || '';
-        var _locLine = (_locBase ? esc(_locBase)+' · ' : '') + _cmHtml;
+        // 行军可视化：在途军队显趋向目的地+进度+剩余回合(此前 GM.marchOrders 仅喂 AI prompt·玩家侧零渲染器·军情落差最大处)
+        var _march = (GM.marchOrders && GM.marchOrders.length) ? GM.marchOrders.find(function(o){ return o && o.status === 'marching' && (o.armyId === a.id || o.armyName === (a.name||'')); }) : null;
+        var _locLine;
+        if (_march) {
+          var _mTot = _march.totalTurns || 0, _mPrg = _march.progress || 0, _mRem = Math.max(0, _mTot - _mPrg);
+          _locLine = '<span style="color:var(--amber-400,#c9a045);" title="'+esc(_march.routeDescription || ((_march.from||'')+'→'+(_march.to||'')))+'">⟶ '+esc(_march.to||'？')+'途中 '+_mPrg+'/'+_mTot+'回合·余'+_mRem+'</span> · ' + _cmHtml;
+        } else {
+          _locLine = (_locBase ? esc(_locBase)+' · ' : '') + _cmHtml;
+        }
         _mHtml += '<div class="gs-army-row" onclick="if(typeof openMilitaryDetailPanel===\'function\')openMilitaryDetailPanel();">'
           + '<span class="gs-army-icon">⚔</span>'
           + '<div class="gs-army-info"><div class="gs-army-name">'+esc(a.name||'军')+_facChip+'</div>'
@@ -268,6 +276,26 @@
       });
       tp.innerHTML=_tHtml;
       gl.appendChild(tp);
+    }
+
+    // 2.935 典章·祖制（Wave5 建构轴·制度熬过考验著为成宪·累积塑造王朝·双刃：越厚越稳、亦越僵）
+    if (window.TM && TM.Dianzhang && typeof TM.Dianzhang.count === 'function' && TM.Dianzhang.count(GM) > 0) {
+      var dz = document.createElement('div');
+      dz.className = 'gs-panel p-dianzhang';
+      dz.setAttribute('data-panel-key','dianzhang');
+      var _dzList = TM.Dianzhang.list(GM);
+      var _dzBonus = (typeof TM.Dianzhang.legitimacyBonus === 'function') ? TM.Dianzhang.legitimacyBonus(GM) : 0;
+      var _dzHtml = '<div class="gs-panel-hdr"><div class="gs-panel-title">典 章 · 祖 制</div><span class="gs-panel-cnt">'+_dzList.length+'</span></div>';
+      _dzHtml += '<div style="font-size:.68rem;color:rgba(234,223,203,.55);padding:0 .1rem .35rem;line-height:1.5;">累世成宪·予正统 +'+_dzBonus+'　然祖制既立则难轻改·渐失变通</div>';
+      _dzList.slice(0,6).forEach(function(s){
+        var _yr = Math.max(0, ((GM.turn||0) - (s.maturedTurn||0)));
+        _dzHtml += '<div class="gs-class-row">'
+          + '<span class="gs-class-icon" style="--c-c:var(--gold-400);">典</span>'
+          + '<span class="gs-class-name">'+esc(s.name||'')+'</span>'
+          + '<span class="gs-class-pop" style="color:rgba(234,223,203,.5);">历 '+_yr+' 回</span></div>';
+      });
+      dz.innerHTML=_dzHtml;
+      gl.appendChild(dz);
     }
 
     // 2.94 文物奇珍

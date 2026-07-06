@@ -6,7 +6,7 @@
  * v1 标杆：taxCollect。落点在 ③b——fiscal_adjustments 税类 income × effectiveness，漏额→腐败(中饱私囊)。
  * 力度(owner 默认·可调)：出缺/无设 ×0.25 · 在职失职<35 ×0.55 · 中庸 ×0.85 · 称职>70 ×1.0 · 异己(忠<40)×0.7 叠乘。
  * 跨朝代：纯按抽象 power 反查掌权者，不认官署/官职专名（弱化 canPerformAction 里的名字正则技术债）。
- * 状态：PoC·纯函数·未接线。
+ * 状态：已接线（resolveOfficeAuthority 挂 tm-ai-change-applier.js·税类 income×effectiveness·漏额→腐败）。注释此前误标「未接线」·已正。
  */
 (function (global) {
   'use strict';

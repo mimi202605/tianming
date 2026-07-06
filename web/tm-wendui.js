@@ -147,6 +147,17 @@ function renderWenduiChars(force){
   }
 
   // 【阶下待见】使节/外藩/AI推送
+  // 存量清洗(2026-07-04)：旧版 NPC 社交行动无阵营闸·外邦君主(皇太极等)曾被排进求见队列并喂入推演。渲染时滤除已混入的明确异势力人物·救活污染存档免回档。使节(isEnvoy/fromFaction)/后妃(isConsort·消费侧另有专检)/剧本预置(_sid/_opening·作者意图)/空 faction 者均放行;查无此人留给消费侧既有兜底。
+  if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences.length > 0) {
+    GM._pendingAudiences = GM._pendingAudiences.filter(function(q) {
+      if (!q || !q.name) return true;
+      if (q.isEnvoy || q.fromFaction || q.isConsort || q._sid || q._opening) return true;
+      var _qCh = (typeof findCharByName === 'function') ? findCharByName(q.name) : null;
+      if (!_qCh) return true;
+      if (typeof _tmIsForeignCourtChar === 'function' && _tmIsForeignCourtChar(_qCh)) return false;
+      return true;
+    });
+  }
   if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences.length > 0) {
     html += '<div class="wdp-group wdp-g-envoy">';
     html += '<div class="wdp-group-title"><span class="tag">\u9636 \u4E0B \u5F85 \u89C1</span><span class="desc">\u4F7F\u8282\u00B7\u5916\u85E9\u00B7\u7279\u8BF7\u00B7\u7B49\u5F85\u9661\u4E0B\u51B3\u65AD</span><span class="count">' + GM._pendingAudiences.length + ' \u4EBA</span></div>';

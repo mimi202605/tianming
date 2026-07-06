@@ -920,6 +920,11 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
         var arrearColor = (a.payArrearsMonths||0) >= 3 ? 'var(--vermillion-400,#ef4444)' : (a.payArrearsMonths||0) >= 1 ? 'var(--amber-400,#f59e0b)' : 'var(--text,#fff)';
         var mutinyColor = (a.mutinyRisk||0) >= 60 ? 'var(--vermillion-500,#dc2626)' : (a.mutinyRisk||0) >= 30 ? 'var(--amber-400,#f59e0b)' : 'var(--text,#fff)';
         var stateText = a.state === 'marching' ? '行军中' : a.state === 'sieging' ? '围城中' : a.state === 'garrison' ? '驻守' : (a.state || '驻守');
+        // 行军可视化(Wave2 slice-1b)：marching 军队附进度+剩余回合(与朝野内情抽屉一致·取 GM.marchOrders 真进度·非按时间猜)
+        if (a.state === 'marching' && GM.marchOrders && GM.marchOrders.length) {
+          var _mo = GM.marchOrders.find(function(o){ return o && o.status === 'marching' && (o.armyId === a.id || o.armyName === (a.name||'')); });
+          if (_mo) { var _mt = _mo.totalTurns||0, _mp = _mo.progress||0; stateText = '行军中 ' + _mp + '/' + _mt + '回合·余' + Math.max(0, _mt - _mp); }
+        }
         battleVisHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
         battleVisHtml += '<td style="padding:4px;">' + escHtml(a.name||'?') + '</td>';
         battleVisHtml += '<td style="padding:4px;color:var(--text-dim,#999);">' + escHtml(a.faction||a.owner||'未挂旗') + '</td>';
@@ -1708,6 +1713,49 @@ function _rucReasonChips(reasons, fallback) {
   });
   return html;
 }
+// 政治核心逐因（B-batch·「机械后果被玩家感知」）：皇威/皇权走 turnChanges.variables（_recordAuthorityChange 已写 reasons·按 label 匹配）；
+// 民心走 MinxinLedger 逐因台账（recentCauses·此前只喂 AI prompt·面板硬写 reasons:[] 只显裸数）。纯读·失败静默回空。
+function _coreMetricReasons(k, label) {
+  var out = [];
+  try {
+    var vars = (GM.turnChanges && GM.turnChanges.variables) || [];
+    for (var i = 0; i < vars.length; i++) {
+      var v = vars[i]; if (!v || !Array.isArray(v.reasons)) continue;
+      var p = String(v.path || ''), nm = String(v.name || v.label || '');
+      if (p === k || p.indexOf(k + '.') === 0 || (label && nm === label)) {
+        for (var j = 0; j < v.reasons.length; j++) out.push(v.reasons[j]);
+      }
+    }
+  } catch (e) {}
+  try {
+    if ((k === 'minxin' || /民心/.test(label || '')) && window.TM && TM.MinxinLedger && TM.MinxinLedger.recentCauses) {
+      var causes = TM.MinxinLedger.recentCauses(GM, { limit: 6 }) || [];
+      for (var m = 0; m < causes.length; m++) {
+        var c = causes[m];
+        var d = (typeof c.deltaTrue === 'number') ? c.deltaTrue : (typeof c.delta === 'number' ? c.delta : (typeof c.amount === 'number' ? c.amount : null));
+        var desc = c.reason || c.kind || c.sourceSystem || '';
+        if (desc) out.push({ desc: desc, delta: d });
+      }
+    }
+  } catch (e) {}
+  return out;
+}
+// 人口逐因（B4·治写死占位）：本回合有真实 population_changes(逃亡/伤亡·带地域+缘由)则显真因；无则回落诚实通用词
+// （原逃户硬写固定灾种+具体地名·断言了这回合未必发生之事·误导→有真因则显真·无则软化为诚实通用词）。
+function _popReasonHtml(kinds, generic) {
+  try {
+    var pcs = (GM.turnChanges && GM.turnChanges.population_changes) || [];
+    var chips = '', seen = {}, cnt = 0;
+    for (var i = 0; i < pcs.length && cnt < 4; i++) {
+      var p = pcs[i]; if (!p || kinds.indexOf(p.kind || 'death') < 0) continue;
+      var rs = String(p.reason || ''); if (!rs) continue;
+      var key = (p.region || '') + '|' + rs; if (seen[key]) continue; seen[key] = 1; cnt++;
+      chips += '<span class="tr-reason-chip neg">' + escHtml((p.region ? p.region + '·' : '') + rs) + (p.amount ? '<span class="v">-' + escHtml(String(Math.abs(p.amount))) + '</span>' : '') + '</span>';
+    }
+    if (chips) return chips;
+  } catch (e) {}
+  return '<span class="tr-reason-txt">' + escHtml(generic) + '</span>';
+}
 function _renderUnifiedChanges(oldVars) {
   oldVars = oldVars || {};
   // v2：新布局 · 10 分类卡块·每项带原因 chip
@@ -2098,11 +2146,11 @@ function _renderUnifiedChanges(oldVars) {
     var npAll = GM.population;
     var pItems = [];
     if (typeof np.households === 'number') pItems.push({ic:'\u6237', name:'\u6237 \u6570', sub:'\u5728\u7C4D', ov:op.households, nv:np.households, reasonsHtml:'<span class="tr-reason-txt">\u65B0\u518C\u00B7\u9003\u6237\u00B7\u65B0\u5206\u6237</span>'});
-    if (typeof np.mouths === 'number') pItems.push({ic:'\u53E3', name:'\u53E3 \u6570', sub:'\u5728\u7C4D', ov:op.mouths, nv:np.mouths, reasonsHtml:'<span class="tr-reason-txt">\u65B0\u751F\u00B7\u6B7B\u4EA1\u00B7\u9003\u6563</span>'});
-    if (typeof np.ding === 'number') pItems.push({ic:'\u4E01', name:'\u4E01 \u53E3', sub:'\u53EF\u5F81\u5F79', ov:op.ding, nv:np.ding, reasonsHtml:'<span class="tr-reason-txt">\u62BD\u4E01\u00B7\u8015\u8FC1\u00B7\u4F24\u4EA1\u8017\u635F</span>'});
+    if (typeof np.mouths === 'number') pItems.push({ic:'\u53E3', name:'\u53E3 \u6570', sub:'\u5728\u7C4D', ov:op.mouths, nv:np.mouths, reasonsHtml: _popReasonHtml(['death'], '\u65B0\u751F\u00B7\u6B7B\u4EA1\u00B7\u9003\u6563')});
+    if (typeof np.ding === 'number') pItems.push({ic:'\u4E01', name:'\u4E01 \u53E3', sub:'\u53EF\u5F81\u5F79', ov:op.ding, nv:np.ding, reasonsHtml: _popReasonHtml(['death'], '\u62BD\u4E01\u00B7\u8015\u8FC1\u00B7\u4F24\u4EA1\u8017\u635F')});
     if (typeof npAll.fugitives === 'number') {
       var fCls = (npAll.fugitives > (opAll.fugitives||0)) ? 'danger' : '';
-      pItems.push({ic:'\u9003', name:'\u9003 \u6237', sub:'\u5931\u7C4D', ov:opAll.fugitives, nv:npAll.fugitives, cls: fCls, reasonsHtml:'<span class="tr-reason-txt">\u65F1\u707E\u00B7\u6D2A\u707E\u00B7\u8D4B\u5F79\u52A0\u91CD\u00B7\u6C11\u9003\u6C5F\u6DEE</span>'});
+      pItems.push({ic:'\u9003', name:'\u9003 \u6237', sub:'\u5931\u7C4D', ov:opAll.fugitives, nv:npAll.fugitives, cls: fCls, reasonsHtml: _popReasonHtml(['flee'], '\u8D4B\u5F79\u3001\u707E\u8352\u3001\u517C\u5E76\u6240\u8FEB')});
     }
     if (typeof npAll.hiddenCount === 'number') pItems.push({ic:'\u9690', name:'\u9690 \u6237', sub:'\u8C6A\u7EC5\u836B\u5E87', ov:opAll.hiddenCount, nv:npAll.hiddenCount, cls: 'warn', reasonsHtml:'<span class="tr-reason-txt">\u5730\u65B9\u8C6A\u7EC5\u9690\u533F\u4F43\u6237\u8EB2\u4E01\u5DEE</span>'});
     if (pItems.length > 0) {
@@ -2146,7 +2194,7 @@ function _renderUnifiedChanges(oldVars) {
       if (nv === ov) return;
       var label = CORE_METRIC_LABELS[k] || k;
       if (/\u56FD\u5E93|\u5185\u5E91/.test(label)) return;
-      politicItems.push({ic:label.charAt(0), name:label, ov:ov, nv:nv, reasons:[]});
+      politicItems.push({ic:label.charAt(0), name:label, ov:ov, nv:nv, reasons: _coreMetricReasons(k, label)});
     });
   }
   if (politicItems.length > 0) {

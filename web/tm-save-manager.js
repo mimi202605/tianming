@@ -529,6 +529,10 @@ function _renderSaveManagerUI(ov, saves, preEndturnRec) {
   html += '</div>';
   html += '<div class="scroll-manager-footer">';
   if (GM.running) html += '<button class="bt bp" onclick="saveToSlot(-1)" style="padding:var(--space-2) var(--space-5);">'+_ic('prestige',16)+' 玉玺封卷（当前）</button>';
+  // 发为残局：把当前局发到在线工坊（type=mod·tags 标残局），他人可「从此局接演」。仅局中可见。
+  if (GM.running && window.TM && TM.ResumePoint && TM.ResumePoint.canPublish && TM.ResumePoint.canPublish(GM)) {
+    html += '<button class="bt bs bsm" onclick="publishCurrentAsResume(this)" style="padding:var(--space-2) var(--space-3);" title="把此局发到在线工坊，他人可从此接演续写">'+_ic('chronicle',14)+' 发为残局</button>';
+  }
   html += '<button class="bt bs bsm" onclick="openSaveCompare()" style="padding:var(--space-2) var(--space-3);">\u2696 \u5BF9\u6BD4\u5377\u5B97</button>';
   html += '<label class="bt bs" style="cursor:pointer;padding:var(--space-2) var(--space-4);">';
   html += _ic('load',14) + ' 调入外卷';
@@ -762,6 +766,30 @@ function deleteSaveSlot(slotId) {
 
 function exportSaveSlot(slotId) {
   SaveManager.exportSave(slotId);
+}
+
+// 发为残局：把当前局发到在线工坊（走 TM.ResumePoint.publish → 已 E2E 验过的 uploadPack 路径）。
+// 落 pending 待审；管理员审批后他人可「从此局接演」。剥 AI key 在 buildPayload 内完成，绝不外泄玩家密钥。
+function publishCurrentAsResume(btn) {
+  if (!(window.TM && TM.ResumePoint && TM.ResumePoint.publish)) { toast('残局模块未就绪'); return; }
+  if (!TM.ResumePoint.canPublish(window.GM)) { toast('需在局中（已推过回合）方可发为残局'); return; }
+  var _label = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '发布中…'; }
+  var restore = function () { if (btn) { btn.disabled = false; btn.innerHTML = _label; } };
+  TM.ResumePoint.publish(window.GM, window.P).then(function (res) {
+    restore();
+    if (res && res.success) {
+      var nm = (res.pack && res.pack.title) || (res._meta && res._meta.name) || '残局';
+      toast('✅ 已发为残局：' + nm + '（待审核，通过后他人可接演）');
+    } else if (res && res.needLogin) {
+      toast('请先登录在线工坊账号，再发为残局');
+    } else {
+      toast('❌ 发布失败：' + ((res && res.error) || '未知错误'));
+    }
+  }).catch(function (e) {
+    restore();
+    toast('❌ 发布失败：' + (e && e.message || '网络错误'));
+  });
 }
 
 // 从空卡位直接触发导入·省去选槽位步骤

@@ -173,6 +173,10 @@ function getAllBuildingsCompat() {
     if (typeof GM !== 'undefined' && GM && Array.isArray(GM.buildings)) {
       GM.buildings.forEach(function (b) {
         if (!b) return;
+        // 影子过滤(2026-07-04)：历史 AI 落建造反查失败铸的「未知建筑」死条目(无描述/无 status/无效果)
+        // 不入合并清单——它会按 territory|type 键位把新账真记录挤出(营造志曾因此全显「未知建筑·完好」)。
+        // 读档处已一次性清存量·此处兜底拦当场新铸/未过读档的。
+        if (b.name === '未知建筑' && !(typeof BUILDING_TYPES !== 'undefined' && BUILDING_TYPES[b.type])) return;
         out.push(b);
         seen[_tmBuildingKey(b)] = true;
         if (b.name) seen[String(b.territory || '') + '|' + String(b.name)] = true;

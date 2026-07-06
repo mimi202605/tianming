@@ -15,7 +15,7 @@
 // 守铁律：后台(玩家不等·post-turn)·单跳不自主循环·开关默认关·aiEdictEfficacyAudit 兜底零回归·跨朝代中立(维度/分类皆通用词)。
 // 向后兼容：仍写 GM._edictEfficacyReport(同形状·reports/efficacyByDimension/courtReaction/…)·故 buildEdictEfficacyFollowUp + sc1 御批回听注入零改仍工作。
 //
-// 接线(S2·未做)：endturn 把 aiEdictEfficacyAudit 调用处在 agentFlagOn('edictOversightEnabled') 真时改调 TM.EdictOversight.run(GM)。
+// 接线(S2·已接·2026-07)：endturn(tm-endturn-pipeline-steps.js:504-508)已在 agentFlagOn('edictOversightEnabled') 真且 shouldHandle 时改调 TM.EdictOversight.run(GM)·否则回落 aiEdictEfficacyAudit(零回归)。开关现仅 LLM 升级总闸覆盖·无独立设置项。
 // ============================================================
 
 (function (global) {

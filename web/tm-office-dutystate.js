@@ -1,7 +1,7 @@
 /* tm-office-dutystate.js — 官制活化 Slice② 履职度(duty state) tick + 对称域效果
  *
  * 用途：每回合更新每个主官/掌权官职的履职度 _dutyState，并算出"失职扣/称职奖"的域效果(delta)。
- * 状态：PoC·纯函数(返回 delta·不调 FE)·未接线。挂 FiscalEngine/接 endturn 管线/UI 是下一子步。
+ * 状态：已接线（tickOfficeDutyState 每回合挂 tm-ai-change-applier.js·失职扣/称职奖映射既有 FE 杠杆 taxCollect/supervise/impeach）。注释此前误标「未接线」·已正。
  * 设计依据：docs/officialdom-activation-design.md §3 Slice② + owner 力度裁示(2026-06-20·对称档)。
  *
  * 政策(§9)：引擎管数(履职度分值)，AI 管料(backlog 内容·此 PoC 暂不含 backlog)。

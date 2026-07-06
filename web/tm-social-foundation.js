@@ -743,11 +743,16 @@
       sumCS += loyalty * clout; sumC += clout;
     });
     var cloutIdx = sumC > 0 ? round2(sumCS / sumC) : round2(sumCS / Math.max(1, classes.length));
+    // 典章·祖制红利（Wave5 双刃·红利侧）：累世成宪予朝廷正统 → 抬合法性(clout 侧·封顶100)。
+    // 见 tm-dianzhang.legitimacyBonus（count-based·封顶+15）。典章越厚→缙绅离心 divergence 收窄。
+    var dzBonus = 0;
+    try { if (TM.Dianzhang && typeof TM.Dianzhang.legitimacyBonus === 'function') dzBonus = TM.Dianzhang.legitimacyBonus(GM) || 0; } catch (e) {}
+    if (dzBonus) cloutIdx = round2(Math.min(100, cloutIdx + dzBonus));
     var popIdx = (GM.minxin && isFinite(Number(GM.minxin.trueIndex))) ? round2(Number(GM.minxin.trueIndex)) : null;
     var div = (popIdx != null) ? round2(cloutIdx - popIdx) : 0;
     var flag = '';
     if (popIdx != null) flag = div <= -12 ? '缙绅离心' : (div >= 12 ? '民怨上达' : '相安');
-    var leg = { clout: cloutIdx, pop: popIdx, divergence: div, flag: flag, turn: numOr(GM.turn, 0) };
+    var leg = { clout: cloutIdx, pop: popIdx, divergence: div, flag: flag, turn: numOr(GM.turn, 0), dianzhangBonus: dzBonus };
     GM._legitimacy = leg;
     return leg;
   }

@@ -415,6 +415,39 @@
     return c;
   }
 
+  // ── 地图标签几何：委托纯几何/字号/配色引擎 tm-map-label-geo.js（跨朝代通用·零游戏依赖·独立单测）──
+  //   本文件只留「region 适配层」：pointsForRegion 取环 + WeakMap 按几何签名缓存(几何静态·frozen 剧本对象亦安全)。
+  //   引擎未加载时全部安全回落(面积→bbox·锚点→actualCenter·字号→min·亮色→null)·不崩。
+  var _TMGeo = (typeof window !== 'undefined' && window.TMMapLabelGeo) ||
+               (typeof TMMapLabelGeo !== 'undefined' ? TMMapLabelGeo : null);
+  function _tmGeoSig(pts){ return pts.length + (pts.length ? (':' + pts[0].x.toFixed(1) + ',' + pts[0].y.toFixed(1)) : ''); }
+  var _tmAreaCache = (typeof WeakMap !== 'undefined') ? new WeakMap() : null;
+  var _tmAnchorCache = (typeof WeakMap !== 'undefined') ? new WeakMap() : null;
+  // region 真面积(缓存·shoelace)·引擎缺失或无点→回落 bbox 面积。
+  function regionTrueArea(r){
+    if (!r) return 0;
+    var pts = pointsForRegion(r), sig = _tmGeoSig(pts);
+    if (_tmAreaCache) { var hit = _tmAreaCache.get(r); if (hit && hit.sig === sig) return hit.area; }
+    var area = _TMGeo ? Math.abs(_TMGeo.polyAreaSigned(pts)) : 0;
+    if (!(area > 0)) { var ext = regionExtent(r); area = ext.area || 0; }
+    if (_tmAreaCache) { try { _tmAreaCache.set(r, { sig: sig, area: area }); } catch (_) {} }
+    return area;
+  }
+  // region 标签锚点(缓存·polylabel 内接圆心)·引擎缺失/无点→回落 actualCenter。
+  function labelAnchor(r){
+    if (!r) return { x: 0, y: 0 };
+    var pts = pointsForRegion(r), sig = _tmGeoSig(pts);
+    if (_tmAnchorCache) { var hit = _tmAnchorCache.get(r); if (hit && hit.sig === sig) return hit.anchor; }
+    var a = (_TMGeo && pts.length >= 3) ? _TMGeo.polylabel(pts) : null;
+    if (!a || !isFinite(a.x) || !isFinite(a.y)) a = actualCenter(r);
+    if (_tmAnchorCache) { try { _tmAnchorCache.set(r, { sig: sig, anchor: a }); } catch (_) {} }
+    return a;
+  }
+  // 面积→字号 平滑幂律(委托引擎·缺失回落 min)。
+  function _tmAreaFont(area, ref, base, k, min, max){ return _TMGeo ? _TMGeo.areaFont(area, ref, base, k, min, max) : min; }
+  // 势力色亮化(委托引擎·缺失回落 null → CSS fallback 金)。
+  function _tmBrightenLabelColor(color){ return _TMGeo ? _TMGeo.brightenLabelColor(color) : null; }
+
   // perf round6 (2026-06-10): 归一化结果 memo·载档/回合末地图刷新对同一批字符串
   // 反复 trim+regex+lower 数百万次·见 _admIdxCache 注释
   var _rknCache = new Map();
@@ -979,6 +1012,7 @@
   }
 
   function ownerGroups(map){
+    var legacy = (typeof window !== 'undefined' && window.__TM_LABEL_LEGACY);
     var groups = {};
     (map && map.regions || []).forEach(function(r){
       var key = canonicalOwnerKey(r);
@@ -986,14 +1020,20 @@
       var c = actualCenter(r);
       if (!isFinite(c.x) || !isFinite(c.y)) return;
       if (!groups[key]) {
-        groups[key] = { key: key, name: ownerName(r), color: regionColor(r), x: 0, y: 0, n: 0, area: 0, minX: c.x, maxX: c.x, minY: c.y, maxY: c.y };
+        var f = findFaction(key, r.factionName || r.ownerName);   // 势力本色(mode 无关·数据视图下也用势力色标名)
+        var fc = (f && (f.color || f.line)) || r.factionColor || r.color || regionColor(r);
+        groups[key] = { key: key, name: ownerName(r), color: regionColor(r), factionColor: fc, x: 0, y: 0, n: 0, area: 0, minX: c.x, maxX: c.x, minY: c.y, maxY: c.y, _biggest: null, _bigArea: -1, _wx: 0, _wy: 0, _wsum: 0, _regs: [] };
       }
       var g = groups[key];
       var ext = regionExtent(r);
+      var ta = legacy ? Math.max(1, ext.area || 0) : Math.max(1, regionTrueArea(r));   // 势力大小=领土真面积之和
       g.x += c.x;
       g.y += c.y;
       g.n += 1;
-      g.area += Math.max(1, ext.area || 0);
+      g.area += ta;
+      g._wx += c.x * ta; g._wy += c.y * ta; g._wsum += ta;         // 面积加权质心(全领土居中的中心)
+      g._regs.push(r);
+      if (ta > g._bigArea) { g._bigArea = ta; g._biggest = r; }
       g.minX = Math.min(g.minX, ext.minX, c.x);
       g.maxX = Math.max(g.maxX, ext.maxX, c.x);
       g.minY = Math.min(g.minY, ext.minY, c.y);
@@ -1001,39 +1041,71 @@
     });
     return Object.keys(groups).map(function(k){
       var g = groups[k];
-      g.x = g.x / Math.max(1, g.n);
-      g.y = g.y / Math.max(1, g.n);
+      var avgx = g.x / Math.max(1, g.n), avgy = g.y / Math.max(1, g.n);
+      // 势力名锚点：全领土居中(面积加权质心·落域内则用之)·否则吸附最近本势力地块内接圆心(保证在领土内)
+      if (legacy) { g.x = avgx; g.y = avgy; }
+      else { var a = _factionLabelAnchor(g, avgx, avgy); g.x = a.x; g.y = a.y; }
       g.span = Math.sqrt(Math.pow(Math.max(0, g.maxX - g.minX), 2) + Math.pow(Math.max(0, g.maxY - g.minY), 2));
+      g._regs = null;
       return g;
     }).sort(function(a, b){ return b.n - a.n; });
   }
 
+  // 势力名锚点：全领土面积加权质心 → 落在本势力任一地块内则用之(居中)·否则吸附到内接圆心离质心最近的本势力地块(既近中心又在领土内)。
+  function _factionLabelAnchor(g, avgx, avgy){
+    var cx = g._wsum > 0 ? g._wx / g._wsum : avgx, cy = g._wsum > 0 ? g._wy / g._wsum : avgy;
+    var regs = g._regs || [];
+    if (_TMGeo && regs.length) {
+      for (var i = 0; i < regs.length; i++) {                     // 质心是否落在本势力某地块内
+        var pts = pointsForRegion(regs[i]);
+        if (pts.length >= 3 && _TMGeo.pointToPolyDist(cx, cy, pts) > 0) return { x: cx, y: cy };
+      }
+      var best = null, bestD = Infinity;                          // 落缝隙/飞地外→吸附最近本势力地块内接圆心
+      for (var j = 0; j < regs.length; j++) {
+        var an = labelAnchor(regs[j]);
+        if (!an || !isFinite(an.x)) continue;
+        var d = (an.x - cx) * (an.x - cx) + (an.y - cy) * (an.y - cy);
+        if (d < bestD) { bestD = d; best = an; }
+      }
+      if (best) return { x: best.x, y: best.y };
+    }
+    if (g._biggest) { var lb = labelAnchor(g._biggest); if (lb && isFinite(lb.x)) return lb; }   // 引擎缺失兜底
+    return { x: avgx, y: avgy };
+  }
+
   function factionLabelLayer(map){
+    var legacy = (typeof window !== 'undefined' && window.__TM_LABEL_LEGACY);
     var groups = ownerGroups(map);
     var maxArea = Math.max.apply(null, groups.map(function(g){ return Number(g.area || 0); }).concat([1]));
     var maxN = Math.max.apply(null, groups.map(function(g){ return Number(g.n || 0); }).concat([1]));
     var maxSpan = Math.max.apply(null, groups.map(function(g){ return Number(g.span || 0); }).concat([1]));
+    // 势力名字号按疆域「真面积」铺满区间：最小势力→MINF、最大→MAXF·中间 area^K 平滑铺开(owner: 大够大/小够小/均匀按面积)
+    var facAreas = groups.map(function(g){ return Number(g.area || 0); }).filter(function(a){ return a > 0; });
+    var minA = facAreas.length ? Math.min.apply(null, facAreas) : 1;
+    var maxA = facAreas.length ? Math.max.apply(null, facAreas) : 1;
     return groups.map(function(g){
-      var name = realmFactionName(g);
-      var size = realmLabelSize(g, maxArea, maxN, maxSpan, name);
+      var name = realmFactionName(g), nlen = String(name).length || 1;
+      var size = (legacy && _TMGeo) ? _TMGeo.legacyFactionSize(Number(g.area||0), maxArea, Number(g.n||0), maxN, Number(g.span||0), maxSpan, nlen) : realmLabelSize(Number(g.area||0), minA, maxA);
       var rotate = realmLabelRotation(g.key || name);
-      return '<g class="tmf-faction-label" data-faction-key="' + attr(g.key) + '" style="--realm-label-size:' + attr(size) + 'px" transform="translate(' + attr(g.x) + ' ' + attr(g.y) + ') rotate(' + attr(rotate) + ')" onclick="TMPhase8FormalBridge.openFactionByKey(\'' + attr(g.key) + '\')">' +
+      var lw = Math.max(size * 1.05, nlen * size * 1.12), lh = size * 1.25;   // 纯文字盒(无框·含 .34em 字距)·供防重叠
+      var style = '--realm-label-size:' + size + 'px';
+      if (!legacy) { var bc = _tmBrightenLabelColor(g.factionColor); if (bc) style += ';--realm-label-color:' + bc; }
+      return '<g class="tmf-faction-label" data-faction-key="' + attr(g.key) + '" data-fs="' + attr(size) + '" data-lw="' + attr(Math.round(lw)) + '" data-lh="' + attr(Math.round(lh)) + '" data-ax="' + attr(Math.round(g.x)) + '" data-ay="' + attr(Math.round(g.y)) + '" data-pr="' + attr(size) + '" style="' + style + '" transform="translate(' + attr(g.x) + ' ' + attr(g.y) + ') rotate(' + attr(rotate) + ')" onclick="TMPhase8FormalBridge.openFactionByKey(\'' + attr(g.key) + '\')">' +
         '<text class="main" x="0" y="0" text-anchor="middle">' + esc(name) + '</text>' +
       '</g>';
     }).join('');
   }
 
-  function realmLabelSize(g, maxArea, maxN, maxSpan, name){
-    var areaScore = maxArea ? Math.sqrt(Math.max(0, Number(g.area || 0)) / maxArea) : 0;
-    var countScore = maxN ? Math.sqrt(Math.max(0, Number(g.n || 0)) / maxN) : 0;
-    var spanScore = maxSpan ? Math.sqrt(Math.max(0, Number(g.span || 0)) / maxSpan) : 0;
-    var score = Math.max(0.05, areaScore * 0.56 + countScore * 0.28 + spanScore * 0.16);
-    var size = 16 + score * 40;
-    if (Number(g.n || 0) <= 1) size = Math.min(size, 24);
-    var len = String(name || '').length;
-    if (len >= 5) size *= 0.9;
-    if (len >= 7) size *= 0.82;
-    return Math.round(Math.max(16, Math.min(56, size)));
+  // 势力名 ∝ 领土真面积·平滑幂律 k=0.38(≈按边长·比旧 sqrt 三项混合更贴「面积」且不失衡)·长名收敛·单块封顶
+  // 势力名字号：把[最小势力面积,最大势力面积]映射到[MINF,MAXF]·中间按 area^K 平滑铺开——
+  // 最大势力恒得 MAXF、最小恒得 MINF·无长度惩罚·无单块封顶(纯按面积·大够大/小够小)。K 越大越拉开顶部。
+  function realmLabelSize(area, minA, maxA){
+    var MINF = 13, MAXF = 82, K = 0.62;
+    if (!(area > 0)) return MINF;
+    var lo = Math.pow(Math.max(1, minA), K), hi = Math.pow(Math.max(1, maxA), K), v = Math.pow(area, K);
+    var t = (hi > lo) ? (v - lo) / (hi - lo) : 0.5;
+    t = Math.max(0, Math.min(1, t));
+    return Math.round(MINF + t * (MAXF - MINF));
   }
 
   function realmFactionName(g){
@@ -1252,14 +1324,32 @@
       if (!d) return '';
       return '<path class="tmf-region-halo ming-region-halo" data-id="' + attr(r.id || r.name || '') + '" data-region-id="' + attr(r.id || r.name || '') + '" d="' + attr(d) + '"></path>';
     }).join('');
+    // ① 地名动态字号：面积参考取可见地块真面积的 ~55 百分位(≈「典型省」·base 对齐它)·预排一次
+    var _labelLegacy = (typeof window !== 'undefined' && window.__TM_LABEL_LEGACY);
+    var _regAreas = _labelLegacy ? [] : visibleRegions.map(regionTrueArea).filter(function(a){ return a > 0; }).sort(function(a, b){ return a - b; });
+    var _regRef = _regAreas.length ? _regAreas[Math.floor(_regAreas.length * 0.55)] : 0;
     var regionPaths = visibleRegions.map(function(r){
       var d = pathForRegion(r);
       if (!d) return '';
-      var c = actualCenter(r);
       var labelText = String(r.title || r.name || r.officialName || '');
-      var labelWidth = Math.max(34, Math.min(96, labelText.length * 13 + 18));
-      return '<path class="tmf-region ming-region" data-id="' + attr(r.id || r.name || '') + '" data-region-id="' + attr(r.id || r.name || '') + '" d="' + attr(d) + '" fill="' + attr(regionColor(r)) + '" fill-rule="evenodd"></path>' +
-        '<g class="tmf-region-label ming-label" transform="translate(' + attr(c.x) + ' ' + attr(c.y) + ')"><rect x="' + attr(-labelWidth / 2) + '" y="-10" width="' + attr(labelWidth) + '" height="20"></rect><text x="0" y="0">' + esc(labelText) + '</text></g>';
+      var facePath = '<path class="tmf-region ming-region" data-id="' + attr(r.id || r.name || '') + '" data-region-id="' + attr(r.id || r.name || '') + '" d="' + attr(d) + '" fill="' + attr(regionColor(r)) + '" fill-rule="evenodd"></path>';
+      if (_labelLegacy) {
+        var c0 = actualCenter(r);
+        var lw0 = Math.max(34, Math.min(96, labelText.length * 13 + 18));
+        return facePath + '<g class="tmf-region-label ming-label" transform="translate(' + attr(c0.x) + ' ' + attr(c0.y) + ')"><rect x="' + attr(-lw0 / 2) + '" y="-10" width="' + attr(lw0) + '" height="20"></rect><text x="0" y="0">' + esc(labelText) + '</text></g>';
+      }
+      // 地名 ∝ 地块面积(平滑幂律 k=0.32) + polylabel 内接圆心锚点(凹/沿海不落域外) + 牌匾随字号缩放
+      var raw = _tmAreaFont(regionTrueArea(r), _regRef, 15, 0.32, 4, 24);
+      if (!labelText || raw < 9) return facePath;             // <~9px 直接不画(极小地块让位·可读性下限)
+      var fs = Math.round(raw * 10) / 10;
+      var a = labelAnchor(r);
+      var chars = labelText.length || 1;
+      var rw = Math.max(fs + 12, Math.round(chars * fs * 0.62 + fs * 0.9));
+      var rh = Math.round(fs + 8);
+      return facePath +
+        '<g class="tmf-region-label ming-label" data-region-id="' + attr(r.id || r.name || '') + '" data-fs="' + fs + '" data-lw="' + rw + '" data-lh="' + rh + '" data-ax="' + attr(Math.round(a.x)) + '" data-ay="' + attr(Math.round(a.y)) + '" data-pr="' + fs + '" transform="translate(' + attr(a.x) + ' ' + attr(a.y) + ')">' +
+          '<text x="0" y="0" style="font-size:' + fs + 'px">' + esc(labelText) + '</text>' +
+        '</g>';
     }).join('');
     var oceanPaths = oceans.map(function(r){
       var d = pathForRegion(r);
@@ -1297,6 +1387,7 @@
     renderMapAlerts(map);
     syncMapSearch(map);
     bindRegionPathEvents(map);
+    scheduleLabelLayout();      // P1·首渲后算标签防重叠+LOD
   }
 
   function renderLegend(map){
@@ -1354,8 +1445,9 @@
     var map = getMapData();
     var regions = map && Array.isArray(map.regions) ? map.regions : [];
     var query = String(q || '').trim().toLowerCase();
-    var rows = regions.filter(function(r){
-      return !query || regionSearchText(r).toLowerCase().indexOf(query) >= 0;
+    // 2026-07-04 主界面收纳：空检索不再列头 6 省（任意序无信息量·撑高工具坞盖地图）·走原有空态提示
+    var rows = !query ? [] : regions.filter(function(r){
+      return regionSearchText(r).toLowerCase().indexOf(query) >= 0;
     }).slice(0, 6);
     host.innerHTML = rows.length ? rows.map(function(r){
       return '<button type="button" data-region-id="' + attr(r.id || r.name || r.title || '') + '" onclick="TMPhase8FormalBridge.focusRegion(\'' + attr(r.id || r.name || r.title || '') + '\')"><b>' + esc(r.title || r.name || r.officialName || '未名地块') + '</b><span>' + esc(ownerName(r)) + '</span></button>';
@@ -1405,6 +1497,7 @@
     var stage = mapStage();
     if (stage) stage.classList.toggle('zoomed', v.scale > 1.35);
     _syncScaleLevelFromZoom();  // 阶段3·缩放跨阈值自动切层级(CK3)
+    scheduleLabelLayout();      // P1·缩放/平移结束后防抖重算标签防重叠+LOD
   }
 
   // 拖拽性能（治拖拽卡顿）：把 applyMapTransform（含 DOM 写 + _syncScaleLevelFromZoom）rAF 节流·
@@ -1416,6 +1509,22 @@
       _mapTransformRaf = 0;
       applyMapTransform();
     });
+  }
+
+  // ── 标签防重叠 + 屏上字号 LOD（P1）：委托 tm-map-label-collide.js（渲染层 DOM helper·跨朝代通用）──
+  //   只在缩放/平移结束 + 重渲后防抖重算(非每帧)。__TM_LABEL_LEGACY→整体跳过(还原改前全显)·
+  //   __TM_LABEL_NOCOLLIDE→仅走 LOD 门跳碰撞(调试)。引擎未加载则安全跳过(标签全显·不崩)。
+  var _labelLayoutTimer = 0;
+  function scheduleLabelLayout(){
+    clearTimeout(_labelLayoutTimer);
+    _labelLayoutTimer = setTimeout(resolveLabelLayout, 90);
+  }
+  function resolveLabelLayout(){
+    if (typeof window !== 'undefined' && window.__TM_LABEL_LEGACY) return;
+    var C = (typeof window !== 'undefined') && window.TMMapLabelCollide;
+    if (!C || !C.resolve) return;
+    C.resolve(mapStage(), (state.mapView && state.mapView.scale) || 1, state.mapScale || 'region',
+      { noCollide: (typeof window !== 'undefined' && window.__TM_LABEL_NOCOLLIDE) });
   }
 
   function regionPathFromPoint(e){
@@ -1453,6 +1562,19 @@
   function _tipRow(k, v, tone){
     if (!hasDisplayValue(v)) return '';
     return '<div class="tip-row"><span class="tip-k">' + esc(k) + '</span><span class="tip-v ' + (tone || '') + '">' + esc(ppValue(v)) + '</span></div>';
+  }
+  // 「机动兵力」兜底——地块无逐块驻军实体、但所属势力有军力时，显势力机动军力，免得游牧/无常驻势力图上显 0/空。
+  // 跨朝代通用：游牧（部落/游牧）显「机动兵力」，其余有军力无驻军的抽象/海外势力显「势力军力」。地块归地块、势力归势力，驻军栏本身不动。
+  function _mobileForceRow(r, b){
+    if (!r) return '';
+    var data = (b && b.data) || {};
+    var localGarrison = firstValue(data.garrison, b && b.army && b.army.troops, r && r.troops);
+    if (Number(localGarrison) > 0) return '';   // 本地有真驻军(>0)才让位；0/空=无常驻实体，游牧仍显机动兵力（察哈尔 troops 显式为 0）
+    var f = findFaction(ownerKey(r), r.factionName || r.ownerName);
+    var ms = f && Number(firstValue(f.militaryStrength, f.military));
+    if (!f || !isFinite(ms) || ms <= 0) return '';
+    var nomad = /部落|游牧|游猎/.test(String(f.type || '') + String((f.traits || []).join('')));
+    return _tipRow(nomad ? '机动兵力' : '势力军力', ms);
   }
   function mapTipVerdict(mode, r, b, score){
     var data = b.data || {};
@@ -1513,6 +1635,7 @@
       rows = _tipRow('归属', ownerName(r)) +
         _tipRow('主官', firstValue(data.governor, data.official)) +
         _tipRow('驻军', firstValue(data.garrison, b.army.troops, r && r.troops)) +
+        _mobileForceRow(r, b) +
         _tipRow('民心', firstValue(data.minxinLocal, r && r.mood));
       return '<b>' + esc(regionTitle(r)) + '</b><span class="tip-owner">' + esc(ownerName(r) || '') + '</span>' +
         '<div class="tip-body">' + rows + '</div>' +
@@ -1529,6 +1652,7 @@
     } else if (mode === 'army') {
       rows = _tipRow('军压', grade ? grade.mark + ' · ' + ppValue(score) : score, gradeIsWarn(mode, grade) ? 'zhu' : '') +
         _tipRow('驻军', firstValue(data.garrison, b.army.troops, r && r.troops)) +
+        _mobileForceRow(r, b) +
         _tipRow('城防', firstValue(data.fortification, b.army.fortification)) +
         _tipRow('边警', firstValue(data.borderRisk, data.warRisk, data.threats), 'zhu');
     } else if (mode === 'office') {
@@ -2692,6 +2816,13 @@
     var score = Math.max(isFinite(corvee) ? corvee * 100 : 0, fallowShare * 100);
     return Math.max(0, Math.min(100, Math.round(score)));
   }
+  // 据报人口（督抚奏报口径·slice-1b「默认看上报值」薛定谔范式）：读 GM.renli.reported·仅已种子且有瞒报之地·无则 null→回落真值。
+  function _reportedPop(r){
+    var GMx = (typeof GM !== 'undefined' && GM) ? GM : ((typeof window !== 'undefined' && window.GM) ? window.GM : null);
+    if (!GMx || !GMx.renli || !GMx.renli.reported) return null;
+    var rid = (r && (r.id || r.regionId || r.name)) || '';
+    return GMx.renli.reported[rid] || (r && r.name ? GMx.renli.reported[r.name] : null) || null;
+  }
   // 五档色板（深色舆图底·对比≥3:1·档字供哨牌/图例·色不孤行）
   var GRADE_BANDS = {
     mood:   { inverse: true,  bands: [[0,35,'#8c2f26','危'],[35,50,'#a85a3a','忧'],[50,65,'#a8833a','平'],[65,80,'#7d9183','安'],[80,101,'#557f6f','乐']], nullColor:'#5a6258', nullMark:'—' },
@@ -3207,7 +3338,15 @@
     var hukou = bkLan([
       bkRow('在册口数', firstValue(data.population, b.pop.mouths)),
       bkRow('在册户', b.pop.households),
-      bkRow('丁口', b.pop.ding, null, 'ding'),
+      (function(){
+        var rp = _reportedPop(r);
+        if (rp && rp.ding != null && Number(rp.conceal) > 0 && hasDisplayValue(b.pop.ding)) {
+          // 默认只看上报值（督抚据报·瞒报税基/隐户）·真丁口藏于聚光（hover 核验）——薛定谔奏报范式 pilot
+          var cP = Math.round(Number(rp.conceal) * 100);
+          return '<div class="bk-lr" data-bk-cause="ding" title="督抚奏报口径 · 真丁口 ' + attr(ppValue(b.pop.ding)) + '（约瞒报 ' + cP + '%·聚光核验）"><span class="bk-k">丁口 <small style="opacity:.65">据报</small></span><span class="bk-v">' + esc(ppValue(rp.ding)) + '</span></div>';
+        }
+        return bkRow('丁口', b.pop.ding, null, 'ding');
+      })(),
       bkRow('逃户', b.pop.fugitives, 'zhu', 'fugitive'),
       bkRow('隐户', b.pop.hiddenCount, 'zhu', 'hidden'),
       bkRow('承载上限', data.carryingCapacity),

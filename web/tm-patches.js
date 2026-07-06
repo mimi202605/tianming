@@ -137,7 +137,7 @@ function _renderSettingsAudioSection() {
   var current = (typeof A.getCurrentTrack === 'function') ? A.getCurrentTrack() : null;
   var tracks = Array.isArray(A.playlist) ? A.playlist : [];
   var h = '<div class="settings-section tm-settings-audio"><h4>声乐</h4>';
-  h += '<div class="tm-settings-sub">迁移自旧“音声”侧栏。控制背景音乐、音效和 BGM 曲库。</div>';
+  h += '<div class="tm-settings-sub">殿乐与音效总调度；曲库可自备乐曲，导入后本机常存。</div>';
   h += '<div class="tm-settings-two">';
   h += '<label class="tm-settings-toggle"><input type="checkbox" id="s-audio-bgm-enabled" ' + (A.bgmEnabled !== false ? 'checked ' : '') + 'onchange="_settingsAudioToggleBgm(this.checked)"><span>背景音乐</span><em>' + (current ? _settingsEsc(current.title) : '未配置曲目') + '</em></label>';
   h += '<label class="tm-settings-toggle"><input type="checkbox" id="s-audio-sfx-enabled" ' + (A.enabled !== false ? 'checked ' : '') + 'onchange="_settingsAudioToggleSfx(this.checked)"><span>界面音效</span><em>按钮、通知、结算提示</em></label>';
@@ -149,14 +149,20 @@ function _renderSettingsAudioSection() {
   h += '<button class="gs-audio-loop-btn ' + ((A.loopMode || 'single') === 'single' ? 'active' : '') + '" onclick="_settingsAudioLoopMode(\'single\')">单曲</button>';
   h += '<button class="gs-audio-loop-btn ' + (A.loopMode === 'random' ? 'active' : '') + '" onclick="_settingsAudioLoopMode(\'random\')">随机</button>';
   h += '</div>';
+  // 2026-07-04 导入音乐入典章声乐页：接 AudioSystem.importUserMusic 既有引擎（IndexedDB blob·本机持久）
+  if (typeof A.importUserMusic === 'function') {
+    h += '<div class="tm-settings-audio-actions"><button type="button" class="bt bs" onclick="_settingsAudioImport()">导 入 音 乐</button><span class="tm-settings-audio-hint">自备乐曲入库常奏 · 存于本机（mp3 / ogg / wav 等）</span></div>';
+  }
   h += '<div class="tm-settings-track-list">';
   if (tracks.length) {
     tracks.forEach(function(t) {
       var active = current && current.id === t.id;
-      h += '<button class="tm-settings-track ' + (active ? 'active' : '') + '" data-track-id="' + _settingsEsc(t.id) + '" onclick="_settingsAudioPlayTrack(\'' + String(t.id).replace(/'/g, "\\'") + '\')"><span>' + _settingsEsc(t.title) + '</span><em>' + _settingsEsc(t.meta || 'BGM') + '</em></button>';
+      var safeId = String(t.id).replace(/'/g, "\\'");
+      var del = t.user ? '<i class="tm-settings-track-del" title="移出曲库" onclick="event.stopPropagation();event.preventDefault();_settingsAudioRemoveTrack(\'' + safeId + '\')">✕</i>' : '';
+      h += '<button class="tm-settings-track ' + (active ? 'active' : '') + '" data-track-id="' + _settingsEsc(t.id) + '" onclick="_settingsAudioPlayTrack(\'' + safeId + '\')"><span>' + _settingsEsc(t.title) + '</span><em>' + _settingsEsc(t.meta || 'BGM') + '</em>' + del + '</button>';
     });
   } else {
-    h += '<div class="tm-settings-empty">请把音乐文件放入 assets/audio/bgm，并在 tm-bgm-config.js 中登记。</div>';
+    h += '<div class="tm-settings-empty">曲库尚虚。点「导入音乐」，自备乐曲即可入库常奏。</div>';
   }
   h += '</div></div>';
   return h;
@@ -209,6 +215,35 @@ window._settingsAudioLoopMode = function(mode) {
   AudioSystem.setLoopMode(mode);
   try { closeSettings(); openSettings(); } catch(_){}
 };
+// 2026-07-04 典章声乐·导入音乐：自建 picker（AudioSystem._pickMusicFiles 的 onDone 刷的是游戏内音声侧栏·
+// 设置页须刷自己）·导入/移除后重开设置（activeTab 有 localStorage 记忆·回到声乐页）
+window._settingsAudioImport = function() {
+  var A = window.AudioSystem;
+  if (!A || typeof A.importUserMusic !== 'function') return;
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'audio/*';
+  inp.multiple = true;
+  inp.style.display = 'none';
+  inp.onchange = function() {
+    if (!inp.files || !inp.files.length) return;
+    A.importUserMusic(inp.files, function() {
+      try { if (typeof toast === 'function') toast('乐曲已入库'); } catch(_){}
+      try { closeSettings(); openSettings(); } catch(_){}
+      try { if (window.TM && TM.UI && TM.UI.shell && typeof TM.UI.shell.refreshLeft === 'function') TM.UI.shell.refreshLeft(); } catch(_){}
+    });
+  };
+  document.body.appendChild(inp);
+  inp.click();
+  setTimeout(function(){ try { inp.remove(); } catch(_){} }, 60000);
+};
+window._settingsAudioRemoveTrack = function(id) {
+  if (!window.AudioSystem || typeof AudioSystem.removeUserTrack !== 'function') return;
+  AudioSystem.removeUserTrack(id);
+  try { if (typeof toast === 'function') toast('已移出曲库'); } catch(_){}
+  try { closeSettings(); openSettings(); } catch(_){}
+  try { if (window.TM && TM.UI && TM.UI.shell && typeof TM.UI.shell.refreshLeft === 'function') TM.UI.shell.refreshLeft(); } catch(_){}
+};
 window._settingsThemeApply = function(name, el) {
   if (typeof _tmApplyTheme === 'function') _tmApplyTheme(name, el);
 };
@@ -240,6 +275,17 @@ function _settingsBuildTabs() {
   var saveBtn = Array.prototype.slice.call(body.children).filter(function(el) {
     return el && el.tagName === 'BUTTON' && /sSaveAll/.test(el.getAttribute('onclick') || '');
   })[0] || null;
+  // 2026-07-04 典章：存钮若嵌在末节内（历史遗留·只有人物志签看得见）→提出来进全签常驻底栏
+  if (!saveBtn) saveBtn = body.querySelector('button[onclick*="sSaveAll"]');
+
+  // 2026-07-04 色律统一：节题 emoji 剥除（⚡🧪等彩emoji破纸面「墨·金·朱」色律·节题已有朱菱点·只动 h4 文本节点·行级标记不动）
+  sections.forEach(function(section) {
+    var _h4 = section.querySelector('h4');
+    if (!_h4) return;
+    for (var _n = _h4.firstChild; _n; _n = _n.nextSibling) {
+      if (_n.nodeType === 3 && _n.nodeValue) _n.nodeValue = _n.nodeValue.replace(/[☀-➿️]|[\uD83C-\uD83E][\uDC00-\uDFFF]/g, '').replace(/^\s+/, '');
+    }
+  });
 
   var shell = document.createElement('div');
   shell.className = 'settings-tab-shell';
@@ -255,8 +301,8 @@ function _settingsBuildTabs() {
     { name: '常用',      re: /界面显示|声乐|主题|字号|文风|游戏模式|回合读取/ },
     { name: 'AI · 模型', re: /API|次要|性能|成本|高级|预算|档位|模型|记忆|生成字数|提示词/ },
     { name: '玩法机制',  re: /御驾|战斗|玩法机制|人物志/ },
-    { name: '实验 · 进阶', re: /实验/ },
-    { name: '系统 · 其他', re: /更新|工坊/ }
+    // 2026-07-04 设置重置：「实验·进阶」组退役——实验模式并入「系统·更新与实验」·组空即不渲染
+    { name: '系统 · 其他', re: /更新|工坊|实验/ }
   ];
   function _settingsGroupOf(title) {
     for (var g = 0; g < _settingsGroups.length; g++) { if (_settingsGroups[g].re.test(title)) return g; }
@@ -267,7 +313,13 @@ function _settingsBuildTabs() {
   // 左栏少而实。只并版面·不动任何 section 内容与既有控件 id。
   var _settingsMerges = [
     { label: '玩法 · 战斗与亲征', re: /战斗规则|御驾亲征|玩法机制/ },
-    { label: '文风 · 游戏模式', re: /^文风|游戏模式/ }
+    { label: '文风 · 游戏模式', re: /^文风|游戏模式/ },
+    // 2026-07-04 设置重置二批：治「单签单节·画布七成空」·16→11 签·语义配对·只并版面不动控件
+    { label: '界面 · 主题字号', re: /界面显示|主题字号/ },
+    { label: 'API · 连接与路由', re: /API连接|次要\s*API/ },
+    { label: '性能 · 成本与预算', re: /性能·成本|预算与档位/ },
+    { label: 'AI · 记忆与字数', re: /AI记忆|AI生成字数/ },
+    { label: '系统 · 更新与实验', re: /更新与工坊|实验模式/ }
   ];
   var _mergedPaneByRule = {};
 
@@ -293,24 +345,26 @@ function _settingsBuildTabs() {
     _settingsEntries.push({ key: key, label: label, group: _settingsGroupOf(label) });
   });
 
-  // 二遍：按分组顺序渲染左栏 tab（组内保持原顺序），组首插组标题，编号按显示顺序连排
-  var _settingsNum = 0;
+  // 二遍：按分组顺序渲染左栏目次（组内保持原顺序），组首插组标题。
+  // 2026-07-04 典章重做：编号退役·改「卷首字印」（签名首个汉字入圈印·印色随分组 data-settings-group）
   for (var _gi = 0; _gi < _settingsGroups.length; _gi++) {
     var _groupEntries = _settingsEntries.filter(function(e) { return e.group === _gi; });
     if (!_groupEntries.length) continue;
     var _gh = document.createElement('div');
     _gh.className = 'settings-tab-group';
+    _gh.setAttribute('data-settings-group', String(_gi));
     _gh.textContent = _settingsGroups[_gi].name;
     tabs.appendChild(_gh);
     _groupEntries.forEach(function(e) {
-      _settingsNum++;
       var tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'settings-tab';
       tab.setAttribute('role', 'tab');
       tab.setAttribute('data-settings-tab', e.key);
+      tab.setAttribute('data-settings-group', String(_gi));
       tab.setAttribute('onclick', "_settingsSwitchTab('" + e.key + "')");
-      tab.innerHTML = '<span class="settings-tab-index">' + String(_settingsNum).padStart(2, '0') + '</span><span class="settings-tab-label">' + _settingsEsc(e.label) + '</span>';
+      var _glyph = (String(e.label).match(/[一-鿿]/) || ['·'])[0];
+      tab.innerHTML = '<span class="settings-tab-glyph">' + _settingsEsc(_glyph) + '</span><span class="settings-tab-label">' + _settingsEsc(e.label) + '</span>';
       tabs.appendChild(tab);
     });
   }
@@ -427,7 +481,8 @@ try { setTimeout(function(){ try { if (localStorage.getItem('tm.fullscreen') ===
 openSettings=function(){
   var bg=_$("settings-bg");
   // 2026-07-03 \u8BBE\u7F6E\u9762\u677F\u5347\u7EA7\uFF1A\u5934\u90E8\u52A0\u5168\u6587\u641C\u7D22\uFF08\u6309\u9875\u7B7E\u540D/\u8BF4\u660E\u6587\u5B57\u8FC7\u6EE4\u5DE6\u680F\u00B7\u9996\u4E2A\u547D\u4E2D\u81EA\u52A8\u5207\u5165\uFF09
-  bg.innerHTML="<div class=\"settings-box\"><div style=\"padding:0.8rem 1.2rem;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center;gap:0.6rem;\"><div style=\"font-size:1.1rem;font-weight:700;color:var(--gold);white-space:nowrap;\">"+((typeof tmIcon==='function')?tmIcon('settings',18):'')+"\u8BBE\u7F6E</div><input class=\"settings-search\" id=\"s-search\" placeholder=\"\u641C\u8BBE\u7F6E\u2026\uFF08\u540D\u79F0\u6216\u8BF4\u660E\u6587\u5B57\uFF09\" oninput=\"_settingsFilter(this.value)\"><button class=\"bt bs bsm\" onclick=\"closeSettings()\">\u2715</button></div><div class=\"settings-body\" id=\"sb2\"></div></div>";
+  // 2026-07-04 \u8BBE\u7F6E\u91CD\u505A\u300C\u5178\u7AE0\u300D\u5168\u5C4F\u9875\uFF1A\u9898\u5934=\u73BA\u5370\u5927\u9898+\u68C0\u7D22+\u8FD4\u56DE\u00B7\u7ED3\u6784\u8D70 .settings-head \u7C7B\uFF08\u64A4 inline style\uFF09
+  bg.innerHTML="<div class=\"settings-box\"><div class=\"settings-head\"><div class=\"settings-title\"><span class=\"settings-title-seal\">\u5178</span><div class=\"settings-title-txt\"><b>\u5178\u3000\u7AE0</b><small>\u8BF8 \u822C \u8C03 \u5EA6 \u00B7 \u7686 \u4E8E \u6B64 \u518C</small></div></div><input class=\"settings-search\" id=\"s-search\" placeholder=\"\u68C0\u7D22\u8BBE\u7F6E\u2026\uFF08\u540D\u79F0\u6216\u8BF4\u660E\u6587\u5B57\uFF09\" oninput=\"_settingsFilter(this.value)\"><button class=\"settings-return\" onclick=\"closeSettings()\">\u8FD4 \u56DE</button></div><div class=\"settings-body\" id=\"sb2\"></div></div>";
 
   var b=_$("sb2");
   b.innerHTML=
@@ -888,15 +943,15 @@ openSettings=function(){
       return h;
     })()+
 
-    // ── 战斗规则·确定性战果 (opt-in·默认关·2026-06-15) ──
+    // ── 战斗规则·确定性战果 (默认开·2026-07-05 翻默认·原 opt-in 2026-06-15) ──
     (function(){
-      var _on = !!(P.conf && P.conf.deterministicCasualties === true);
+      var _on = !(P.conf && P.conf.deterministicCasualties === false);
       return '<div class="settings-section"><h4>战斗规则</h4>' +
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;">' +
         '<input type="checkbox" id="s-det-cas" ' + (_on?'checked ':'') + 'onchange="_togglePConf(\'deterministicCasualties\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
         '<div style="flex:1;">' +
-          '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">⚔️ 确定性战果（默认关）</div>' +
-          '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后，当推演 AI 漏报或给出离谱伤亡时，改由战斗引擎按双方兵力、地形、城防、季节确定性核算战损，机械可信度更高；关闭则一切战果由 AI 自由裁量（默认）。</div>' +
+          '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">⚔️ 确定性战果（默认开）</div>' +
+          '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后（默认），当推演 AI 漏报或给出离谱伤亡时，改由战斗引擎按双方兵力、地形、城防、季节确定性核算战损，机械可信度更高；关闭则一切战果由 AI 自由裁量。</div>' +
         '</div>' +
       '</label></div>';
     })()+
@@ -1052,12 +1107,12 @@ openSettings=function(){
     "<div class=\"fd\"><label>AI\u63A8\u6F14\u6DF1\u5EA6</label><select id=\"s-aidepth\"><option value=\"full\" "+((P.conf.aiCallDepth||'full')==='full'?'selected':'')+">\u5B8C\u6574\u00B7\u5168 (18 \u8C03\u7528\u00B7\u542B sc1q + 3stage)</option><option value=\"standard\" "+((P.conf.aiCallDepth||'full')==='standard'?'selected':'')+">\u6807\u51C6\u00B7\u5FEB (14 \u8C03\u7528\u00B7Phase 4 \u5408\u5E76\u540E)</option><option value=\"lite\" "+((P.conf.aiCallDepth||'full')==='lite'?'selected':'')+">\u7CBE\u7B80\u00B7\u8DF3 (10 \u8C03\u7528\u00B7\u8DF3 sc16/17/18/sc_audit)</option></select></div>"+
     // Phase 7\u00B7"AI \u6210\u672C\u9762\u677F"\u6309\u94AE (4 \u533A) + "\u5BFC\u51FA AI \u65E5\u5FD7" \u6309\u94AE
     "<div class=\"fd\"><label>AI \u8BCA\u65AD</label><div style=\"display:flex;gap:0.4rem;\">"+
-    "<button class=\"bt bs bsm\" onclick=\"if(window.TM&&TM.ai&&TM.ai.showCostPanel){TM.ai.showCostPanel();}else if(typeof showAICostPanel==='function'){showAICostPanel();}else{toast('\u6210\u672C\u9762\u677F\u672A\u52A0\u8F7D');}\">\uD83D\uDCCA AI \u6210\u672C\u9762\u677F</button>"+
+    "<button class=\"bt bs bsm\" onclick=\"if(window.TM&&TM.ai&&TM.ai.showCostPanel){TM.ai.showCostPanel();}else if(typeof showAICostPanel==='function'){showAICostPanel();}else{toast('\u6210\u672C\u9762\u677F\u672A\u52A0\u8F7D');}\">AI \u6210\u672C\u9762\u677F</button>"+
     "<button class=\"bt bs bsm\" onclick=\"if(window.TM&&TM.ai&&TM.ai.exportDiagnostics){TM.ai.exportDiagnostics();}else if(typeof exportAIDiagnosticsJSON==='function'){exportAIDiagnosticsJSON();}else{toast('\u8BCA\u65AD API \u672A\u52A0\u8F7D');}\">\u2193 \u5BFC\u51FA\u65E5\u5FD7</button>"+
     ((typeof _renderMemoryDiagnosticsButton === 'function') ? _renderMemoryDiagnosticsButton() : "<button class=\"bt bs bsm\" onclick=\"if(window.TM&&TM.ai&&TM.ai.openMemoryDiagnostics){TM.ai.openMemoryDiagnostics();}else if(typeof openMemoryDiagnostics==='function'){openMemoryDiagnostics();}else{toast('\u8BB0\u5FC6\u8BCA\u65AD\u672A\u52A0\u8F7D');}\">\u8BB0\u5FC6\u8BCA\u65AD</button>")+
     "</div></div>"+
     // Phase 7.5 A\u00B79 \u4E2A\u65B0 P.ai opt-in toggle \u66B4\u9732\u00B7user \u53EF\u52FE\u9009\u5207\u6362
-    "<div class=\"fd\" style=\"flex-direction:column;align-items:flex-start;gap:0.3rem;\"><label>AI \u7BA1\u7EBF\u5F00\u5173 (\u9AD8\u7EA7)</label>"+
+    "<details class=\"fd tm-settings-adv\"><summary>AI \u7BA1\u7EBF\u5F00\u5173 \u00B7 \u9AD8\u7EA7\uFF08\u5185\u90E8\u5B50\u8C03\u7528\u65CB\u94AE\u00B7\u4E00\u822C\u65E0\u9700\u6539\u52A8\uFF09</summary>"+
     "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:0.25rem;font-size:0.78rem;width:100%;\">"+
     "<label><input type=\"checkbox\" "+(P.ai && P.ai.stream_sc1===true?'checked':'')+" onchange=\"if(!P.ai)P.ai={};P.ai.stream_sc1=this.checked;saveP();\"> SC1 stream</label>"+
     "<label><input type=\"checkbox\" "+(P.ai && P.ai.openaiStrict===true?'checked':'')+" onchange=\"if(!P.ai)P.ai={};P.ai.openaiStrict=this.checked;P.conf.strictSchemaEnabled=this.checked;saveP();\"> OpenAI strict</label>"+
@@ -1072,8 +1127,8 @@ openSettings=function(){
     "<label><input type=\"checkbox\" "+(P.ai && P.ai.narrativeReviewEnabled===true?'checked':'')+" onchange=\"if(!P.ai)P.ai={};P.ai.narrativeReviewEnabled=this.checked;saveP();\"> sc27 叙事审查</label>"+
     "<label><input type=\"checkbox\" "+(P.ai && P.ai.sc28Enabled===true?'checked':'')+" onchange=\"if(!P.ai)P.ai={};P.ai.sc28Enabled=this.checked;saveP();\"> sc28 世界快照</label>"+
     "</div>"+
-    "<span style=\"font-size:0.7rem;color:var(--ink-300,#888);\">\u6CE8\u00B7\u6539\u540E\u6E05 sysP cache\u00B7\u9996\u56DE\u5408\u591A\u82B1 ~$0.004 (Phase 7.5 D)</span>"+
-    "</div></div></div>"+
+    "<span style=\"font-size:0.7rem;color:var(--ink-300,#888);\">\u6CE8\uFF1A\u6539\u52A8\u540E\u9996\u56DE\u5408\u4F1A\u91CD\u5EFA\u63D0\u793A\u7F13\u5B58\uFF0C\u7565\u589E\u4E00\u6B21\u5C0F\u989D\u5F00\u9500\u3002</span>"+
+    "</details></div></div>"+
 
     // ⚠️ P.conf.showRelation 当前是僵尸字段——UI 写但无消费者读·将来或补 renderCharProfile 端读取或删此 UI
     // 人物志
@@ -1387,49 +1442,107 @@ function sPickSecModel(m,el){
   if(el)el.classList.add("active");
 }
 
+// ── 连接体检·判读与报告卡（2026-07-04「全面加强测试连接时的模型能力检测」）──
+// 快检三小调用走 probeModelQuickCheck(tm-ai-infra)·重项（证据校验/实测输出）按钮转交既有探测
+function _sConnVerdict(qr, ctxK, outTok) {
+  var notes = [];
+  var grade = 3; // 3=堪任 2=可用 1=不宜
+  if (!qr.json.ok) { grade = 1; notes.push('结构化输出不可靠（严格 JSON 未过）——回合结算的命门'); }
+  if (ctxK > 0) {
+    if (ctxK < 32) { grade = Math.min(grade, 1); notes.push('上下文仅 ' + ctxK + 'K，记忆须激进压缩，久局易失真'); }
+    else if (ctxK < 64) { grade = Math.min(grade, 2); notes.push('上下文 ' + ctxK + 'K，中局之后记忆压缩趋紧'); }
+  }
+  if (outTok > 0 && outTok < 4096) { grade = Math.min(grade, 2); notes.push('输出上限约 ' + Math.round(outTok / 1024) + 'K，长篇（后人戏说、密折）可能被腰斩'); }
+  if (qr.echo === 'mismatch') grade = Math.min(grade, 2);
+  var label = grade === 3 ? '堪任天命推演' : grade === 2 ? '可用 · 体验有折损' : '不宜久任 · 见下方提醒';
+  var color = grade === 3 ? 'var(--celadon-400,#5a8f7f)' : grade === 2 ? 'var(--gold)' : 'var(--vermillion-400,#c04030)';
+  return { grade: grade, label: label, color: color, notes: notes };
+}
+function _sRenderConnReport(qr, ctxK, ctxSrc, outTok, outSrc, tier) {
+  var esc = _settingsEsc;
+  function chip(ok, label, title) {
+    return '<span title="' + esc(title || '') + '" style="display:inline-flex;align-items:center;gap:3px;margin-right:0.6rem;white-space:nowrap;"><b style="color:' + (ok ? 'var(--celadon-400,#5a8f7f)' : 'var(--vermillion-400,#c04030)') + ';">' + (ok ? '✓' : '✕') + '</b>' + esc(label) + '</span>';
+  }
+  var v = _sConnVerdict(qr, ctxK, outTok);
+  var h = '<div class="s-conn-report" style="margin-top:0.35rem;padding:0.5rem 0.65rem;border:1px solid var(--bdr);border-left:3px solid ' + v.color + ';border-radius:3px;background:rgba(0,0,0,0.05);font-size:0.74rem;line-height:1.9;">';
+  h += '<div><b style="color:var(--gold);">连接体检</b> · ' + Math.round(qr.latencyMs) + 'ms';
+  if (qr.responseModel) {
+    var echoTxt = qr.echo === 'match' ? '回声一致' : qr.echo === 'family' ? '同族异名' : qr.echo === 'mismatch' ? '回声不符' : '回声未知';
+    h += ' · <span style="color:' + (qr.echo === 'mismatch' ? 'var(--vermillion-400,#c04030)' : 'var(--txt-d)') + ';" title="API 实际返回的模型标识">' + echoTxt + '（' + esc(qr.responseModel) + '）</span>';
+  }
+  h += '</div>';
+  h += '<div>' + chip(qr.stream.ok, '流式', qr.stream.detail) + chip(qr.json.ok, '严格JSON', qr.json.detail) + chip(qr.usageSeen, 'usage用量', '是否返回 token 用量·关系成本统计与预算档位');
+  if (ctxK > 0) h += '<span style="margin-right:0.6rem;">上下文 <b>' + ctxK + 'K</b><small style="color:var(--txt-d);">（' + esc(ctxSrc || '') + '）</small></span>';
+  if (outTok > 0) h += '<span>输出 <b>' + Math.round(outTok / 1024) + 'K</b><small style="color:var(--txt-d);">（' + esc(outSrc || '') + '）</small></span>';
+  else h += '<span style="color:var(--txt-d);">输出上限未知 · 建议实测</span>';
+  h += '</div>';
+  h += '<div>判读：<b style="color:' + v.color + ';">' + v.label + '</b></div>';
+  var warns = (qr.warnings || []).concat(v.notes).filter(function(w, i, arr) { return arr.indexOf(w) === i; });
+  if (warns.length) h += '<div style="margin-top:0.15rem;color:var(--txt-d);">' + warns.map(function(w) { return '⚠ ' + esc(w); }).join('<br>') + '</div>';
+  var t = tier === 'secondary' ? "'secondary'" : "'primary'";
+  h += '<div style="margin-top:0.3rem;display:flex;gap:0.35rem;flex-wrap:wrap;">'
+    + '<button class="bt bs bsm" onclick="_probeRunEvidence(' + t + ')">深度证据校验 · 6 次小调用</button>'
+    + '<button class="bt bs bsm" onclick="_probeRunOutput(' + t + ')">实测输出上限</button>'
+    + '<button class="bt bs bsm" onclick="_showAvailableModels(' + t + ')">可用模型清单</button>'
+    + '</div></div>';
+  return h;
+}
 async function sTestSecondaryConn(){
   var key=_$("s-sec-key")?_$("s-sec-key").value.trim():"";
   var url=_$("s-sec-url")?_$("s-sec-url").value.trim():"";
   var model=_$("s-sec-model")?_$("s-sec-model").value.trim():"gpt-4o-mini";
   if(!key||!url){toast("\u586B\u5199\u6B21 API Key \u548C\u5730\u5740");return;}
-  var st=_$("s-sec-status");if(st)st.textContent="\u8FDE\u63A5\u4E2D\u2026";
+  var st=_$("s-sec-status");if(st)st.textContent="\u6B63\u5728\u4F53\u68C0\u2026";
+  // \u4E34\u65F6\u5E94\u7528\u672A\u4FDD\u5B58\u7684\u6B21 API \u503C\uFF08\u4F53\u68C0\u8D70 tier \u7BA1\u9053\u8BFB P.ai.secondary\uFF09\u00B7\u7ED3\u675F\u540E\u6062\u590D
+  var _had=!!(P.ai&&P.ai.secondary);
+  var _orig=_had?{key:P.ai.secondary.key,url:P.ai.secondary.url,model:P.ai.secondary.model}:null;
+  if(!P.ai)P.ai={}; // arch-ok 体检临时应用未保存值·收尾恢复（与主API sTestConn 同范式）
+  if(!P.ai.secondary)P.ai.secondary={}; // arch-ok 同上
+  P.ai.secondary.key=key;P.ai.secondary.url=url;P.ai.secondary.model=model; // arch-ok 同上·临时应用
   try{
-    var testUrl=url;
-    if(testUrl.indexOf("/chat/completions")<0)testUrl=testUrl.replace(/\/+$/,"")+"/chat/completions";
-    var t0=Date.now();
-    var resp=await fetch(testUrl,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model:model,messages:[{role:"user",content:"Hi"}],max_tokens:5})});
-    var dt=Date.now()-t0;
-    if(resp.ok){
-      if(st)st.innerHTML="<span style=\"color:var(--green);\">\u2705 \u8FDE\u63A5\u6210\u529F\u00B7"+dt+"ms</span>";
-    }else{
-      if(st)st.innerHTML="<span style=\"color:var(--red);\">\u274C HTTP "+resp.status+"</span>";
-    }
+    var qr=await probeModelQuickCheck({tier:'secondary',onProgress:function(msg){if(st)st.innerHTML='<span style="color:var(--gold);">'+msg+'</span>';}});
+    var wlC=(typeof _matchModelCtx==='function')?_matchModelCtx(model):0;
+    var wlO=((typeof _matchModelOutput==='function')?_matchModelOutput(model):0)*1024;
+    var ctxK=(P.conf&&P.conf._detectedContextK_secondary)||wlC||0;
+    var ctxSrc=(P.conf&&P.conf._detectedContextK_secondary)?(P.conf._ctxDetectLayer_secondary||'API\u63A2\u6D4B'):(wlC?'\u767D\u540D\u5355':'');
+    var outTok=(P.conf&&P.conf._detectedMaxOutput_secondary)||wlO||0;
+    var outSrc=(P.conf&&P.conf._detectedMaxOutput_secondary)?'API\u63A2\u6D4B':(wlO?'\u767D\u540D\u5355':'');
+    if(st)st.innerHTML=_sRenderConnReport(qr,ctxK,ctxSrc,outTok,outSrc,'secondary');
   }catch(err){
-    if(st)st.innerHTML="<span style=\"color:var(--red);\">\u274C "+err.message+"</span>";
+    if(st)st.innerHTML="<span style=\"color:var(--red);\">\u274C "+(err.message||err)+"</span>";
   }
+  // \u6062\u590D\u539F\u59CB\u503C\uFF08\u907F\u514D\u672A\u4FDD\u5B58\u65F6\u6C61\u67D3\uFF09
+  if(_had){P.ai.secondary.key=_orig.key;P.ai.secondary.url=_orig.url;P.ai.secondary.model=_orig.model;} // arch-ok 体检收尾恢复原值
+  else{try{delete P.ai.secondary;}catch(_){}} // arch-ok 体检收尾·本无次API则拆除临时对象
 }
 async function sTestConn(){
   var key=_$("s-key")?_$("s-key").value:"";var url=_$("s-url")?_$("s-url").value:"";
-  if(!key||!url){toast("\u586B\u5199");return;}var st=_$("s-status");if(st)st.textContent="\u8FDE\u63A5\u4E2D...";
-  // 临时更新P.ai以便detectModelContextSize能使用
+  if(!key||!url){toast("填写");return;}var st=_$("s-status");if(st)st.textContent="正在体检…";
+  // 临时更新P.ai以便体检与探测能使用未保存值·结束后恢复
   var _origKey=P.ai.key, _origUrl=P.ai.url, _origModel=P.ai.model;
   P.ai.key=key; P.ai.url=url; P.ai.model=_$("s-model")?_$("s-model").value:"gpt-4o";
-  try{var testUrl=url;if(testUrl.indexOf("/chat/completions")<0)testUrl=testUrl.replace(/\/+$/,"")+"/chat/completions";
-    var resp=await fetch(testUrl,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model:P.ai.model,messages:[{role:"user",content:"Hi"}],max_tokens:5})});
-    if(resp.ok){
-      if(st)st.innerHTML="<span style=\"color:var(--green);\">\u2705 \u8FDE\u63A5\u6210\u529F\uFF0C\u6B63\u5728\u63A2\u6D4B\u4E0A\u4E0B\u6587\u7A97\u53E3...</span>";
-      // 连接成功后自动探测上下文窗口
-      try{
-        delete P.conf._detectedContextK; delete P.conf._ctxCacheKey; delete P.conf._ctxDetectLayer;
-        var detK = await detectModelContextSize({
-          force: true,
-          onProgress: function(msg) { if(st) st.innerHTML='<span style="color:var(--gold);">\u2705 \u8FDE\u63A5\u6210\u529F \u00B7 '+msg+'</span>'; }
-        });
-        if(st)st.innerHTML='<span style="color:var(--green);">\u2705 \u8FDE\u63A5\u6210\u529F \u00B7 \u4E0A\u4E0B\u6587: <b>'+detK+'K</b> ('+(P.conf._ctxDetectLayer||'')+')</span>';
-        _sShowCtxInfo(); _sVerbUpdatePreview();
-      }catch(ce){if(st)st.innerHTML='<span style="color:var(--green);">\u2705 \u8FDE\u63A5\u6210\u529F</span><span style="color:var(--txt-d);"> (\u63A2\u6D4B\u5931\u8D25)</span>';}
-    }else{if(st)st.innerHTML="<span style=\"color:var(--red);\">\u274C HTTP "+resp.status+"</span>";}
-  }catch(err){if(st)st.innerHTML="<span style=\"color:var(--red);\">\u274C "+err.message+"</span>";}
+  try{
+    // 2026-07-04 全面加强：快检三小调用（连通/延迟/模型回声 + 流式 + 严格JSON）→ 富报告卡
+    var qr=await probeModelQuickCheck({tier:'primary',onProgress:function(msg){if(st)st.innerHTML='<span style="color:var(--gold);">'+msg+'</span>';}});
+    // 上下文窗口探测（沿用既有分层探测）
+    var detK=0;
+    try{
+      delete P.conf._detectedContextK; delete P.conf._ctxCacheKey; delete P.conf._ctxDetectLayer;
+      detK=await detectModelContextSize({
+        force:true,
+        onProgress:function(msg){if(st)st.innerHTML='<span style="color:var(--gold);">连通 ✓ · '+msg+'</span>';}
+      });
+    }catch(_ce){}
+    var wlCtx=(typeof _matchModelCtx==='function')?_matchModelCtx(P.ai.model||''):0;
+    var ctxK=detK||wlCtx||0;
+    var ctxSrc=detK?(P.conf._ctxDetectLayer||'API探测'):(wlCtx?'白名单':'');
+    // 输出上限取已知最优来源（此处不实测·报告卡上有实测按钮）：手动 > 实测缓存 > API探测 > 白名单
+    var wlOut=((typeof _matchModelOutput==='function')?_matchModelOutput(P.ai.model||''):0)*1024;
+    var outTok=(P.conf.maxOutputTokens||0)||(P.conf._measuredMaxOutput||0)||(P.conf._detectedMaxOutput||0)||wlOut||0;
+    var outSrc=P.conf.maxOutputTokens?'手动':(P.conf._measuredMaxOutput?'实测':(P.conf._detectedMaxOutput?'API探测':(wlOut?'白名单':'')));
+    if(st)st.innerHTML=_sRenderConnReport(qr,ctxK,ctxSrc,outTok,outSrc,'primary');
+    _sShowCtxInfo(); _sVerbUpdatePreview();
+  }catch(err){if(st)st.innerHTML="<span style=\"color:var(--red);\">❌ "+(err.message||err)+"</span>";}
   // 恢复原始值（避免未保存时污染）
   P.ai.key=_origKey; P.ai.url=_origUrl; P.ai.model=_origModel;
 }

@@ -1357,7 +1357,7 @@ function _cc3_writeNextItemEmperorIntent(action, extra, curItem) {
  * NPC-NPC consequence linkage·朝议塑造派系网而非消费完即烧
  * 在 _cc3_aiGenReact 末尾·LLM 返结果后追加
  *
- * AffinityMap 真 API·.add(a, b, delta, reason)·单向·两 NPC 需调 2 次
+ * AffinityMap 真 API·.add(a, b, delta, reason)·★对称无向图(key 按名排序)·单次调用即双向·勿调 2 次(会落同一条边叠加成双倍·2026-07-04 订正)
  * NpcMemorySystem.remember signature·positional·(name, text, '中文 emotion', weight, source)
  */
 function _cc3_writeNpcInteraction(name, mode, lastSpeaker, item, controversial) {
@@ -1370,14 +1370,12 @@ function _cc3_writeNpcInteraction(name, mode, lastSpeaker, item, controversial) 
   switch (mode) {
     case 'rebut':
       try {
-        AffinityMap.add(name, lastSpeaker, -intensity, '常朝议事·' + name + '驳' + lastSpeaker);
-        AffinityMap.add(lastSpeaker, name, -intensity, '常朝议事·被' + name + '驳');
+        AffinityMap.add(name, lastSpeaker, -intensity, '常朝议事·' + name + '驳' + lastSpeaker);  // ★对称图·单次即双向(原调两次叠成 -2×intensity)
       } catch (_) {}
       break;
     case 'second':
       try {
-        AffinityMap.add(name, lastSpeaker, +intensity, '常朝议事·' + name + '附议' + lastSpeaker);
-        AffinityMap.add(lastSpeaker, name, +1, '常朝议事·' + name + '附议');
+        AffinityMap.add(name, lastSpeaker, +intensity, '常朝议事·' + name + '附议' + lastSpeaker);  // ★对称图·单次即双向(原另调 +1 落同边叠加)
       } catch (_) {}
       break;
     case 'soften':

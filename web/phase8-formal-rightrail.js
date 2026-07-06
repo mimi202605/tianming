@@ -476,7 +476,16 @@
     var rawPendingAudiences = Array.isArray(gm._pendingAudiences) ? gm._pendingAudiences : [];
     var pendingAudiences = rawPendingAudiences.filter(function(q){
       if (!q || !q.name) return false;
-      if (!q.isConsort) return true;
+      if (!q.isConsort) {
+        // 阵营闸(2026-07-04)：滤除旧版混入的明确异势力求见者(外邦君主)·使节/剧本预置/空 faction 者放行·与 tm-wendui 渲染清洗同款
+        if (q.isEnvoy || q.fromFaction || q._sid || q._opening) return true;
+        var pc = findPerson(q.name);
+        if (!pc && typeof window.findCharByName === 'function') {
+          try { pc = window.findCharByName(q.name); } catch(_) {}
+        }
+        if (pc && typeof window._tmIsForeignCourtChar === 'function' && window._tmIsForeignCourtChar(pc)) return false;
+        return true;
+      }
       var p = findPerson(q.name);
       if (!p && typeof window.findCharByName === 'function') {
         try { p = window.findCharByName(q.name); } catch(_) {}
@@ -521,7 +530,7 @@
     var mode = state.rightChaoyiMode || 'changchao';
     var modes = [
       { id:'changchao', name:'常朝', sub:'例行朝参', desc:'多事并奏、百官齐集、逐条裁决。', meta:'30-50 人 · 精力 10', img:'chaoyi-changchao-scene-v1.png' },
-      { id:'tinyi', name:'廷议', sub:'集议大政', desc:'一议多轮、辩难立场、共识或乾纲独断。', meta:'15-30 人 · 精力 25', img:'chaoyi-tingyi-scene-v1.png' },
+      { id:'tinyi', name:'廷议', sub:'集议大政', desc:'一议多轮、辩难立场、共识或乾纲独断。', meta:'15-30 人 · 精力 15', img:'chaoyi-tingyi-scene-v1.png' },
       { id:'yuqian', name:'御前会议', sub:'密召心腹', desc:'坦言直陈、君臣密议，可记起居注或不录。', meta:'3-8 人 · 精力 10', img:'chaoyi-yuqian-scene-v1.png' }
     ];
     return '<section class="tmrp-card">' +
@@ -805,6 +814,11 @@
     var commander = rightArmyFirst(a, ['commander','commanderName','commanderDisplayName','commander_name','general','generalName','leader','leaderName','commandingOfficer','chiefCommander','chiefGeneral','mainGeneral'], '未置统帅');
     var location = rightArmyFirst(a, ['location','garrison','station','theater','region'], '未置驻地');
     var activity = rightArmyActivityText(rightArmyFirst(a, ['activity','state','status','currentAction'], '驻防'));
+    // 行军可视化(Wave2·右栏详情卡):在途军队「当前动态」附趋向目的地+进度(取 GM.marchOrders 真进度·同朝野内情抽屉/过回合报告一致)
+    try {
+      var _mo = (typeof GM !== 'undefined' && GM && GM.marchOrders && GM.marchOrders.length) ? GM.marchOrders.find(function(o){ return o && o.status === 'marching' && (o.armyId === a.id || o.armyName === (a.name || '') || o.armyName === rightArmyName(a)); }) : null;
+      if (_mo) { var _mt = _mo.totalTurns || 0, _mp = _mo.progress || 0; activity = '行军 · 趋' + (_mo.to || '？') + ' ' + _mp + '/' + _mt + '回合·余' + Math.max(0, _mt - _mp); }
+    } catch (_me) {}
     var desc = rightArmyFirst(a, ['description','desc','note','memo','reason'], '暂无军情说明');
     return '<section class="tmrp-card tmrp-army-detail ' + (hot ? 'hot' : 'ok') + '">' +
       '<div class="tmrp-card-title"><span>' + esc(rightArmyName(a)) + '</span><small>' + esc(rightArmyType(a)) + ' · ' + esc(rightArmyFmtNum(soldiers)) + ' 兵</small></div>' +
@@ -850,6 +864,38 @@
       return '<div class="tmrp-step"><b>' + esc(r.name || '流寇') + '</b>众 ' + esc(rightArmyFmtNum(str)) + (regs ? ' · 流窜 ' + esc(regs) : '') + tier + '</div>';
     }).join('');
     return '<section class="tmrp-card hot"><div class="tmrp-card-title"><span>流寇警报</span><small>民变啸聚成军·剿耗军饷战损/抚开赦贼恶例</small></div>' + rows + '</section>';
+  }
+
+  // D1 国祚·崩坏临近度（聚合派生·纯读现有信号·治「干瞪眼看数字线性往下掉」）：
+  //   民变最高级(主死因链·5级=亡)/流寇燎原/皇权低(权臣篡位死因)/度支竭/民心地板 → 派生 0-100 + 具名档(安/隐忧/将危/濒亡) + 点明哪根杠杆在塌。
+  //   守 owner 铁律：这是「失败的可读性图层」·非胜利路线·不加逆天手段·仅让下坡可读。承平无危则不显(不制造无谓焦虑)。
+  function rightGuozuoCard(){
+    var G = rightSocGM();
+    var factors = [];
+    var revolts = (G.minxin && Array.isArray(G.minxin.revolts)) ? G.minxin.revolts.filter(function(r){ return r && (Number(r.level)||0) > 0 && !r._suppressed; }) : [];
+    var maxLv = revolts.reduce(function(m,r){ return Math.max(m, Number(r.level)||0); }, 0);
+    if (maxLv > 0) { var LVCN = ['','流言','聚啸','暴动','起义','改朝']; var _lv = Math.max(1, Math.min(5, Math.round(maxLv))); factors.push({ name:'民变', sev:[0,12,28,50,78,100][_lv]||0, note: revolts.length + ' 处·最烈「' + LVCN[_lv] + '」' }); }
+    var rebels = (Array.isArray(G.rovingRebels) ? G.rovingRebels : []).filter(function(r){ return r && !r.disbanded && (Number(r.strength)||0) > 0; });
+    var rebStr = rebels.reduce(function(s,r){ return s + (Number(r.strength)||0); }, 0);
+    if (rebStr > 0) factors.push({ name:'流寇', sev: Math.min(100, Math.round(rebStr/300000*100)), note: rebels.length + ' 股·众 ' + rightArmyFmtNum(rebStr) });
+    var hq = (G.huangquan && typeof G.huangquan.index === 'number') ? G.huangquan.index : (typeof G.huangquan === 'number' ? G.huangquan : null);
+    if (hq != null && hq < 45) factors.push({ name:'皇权', sev: Math.min(100, Math.round((45-hq)/45*100)), note: '皇权 ' + Math.round(hq) + '·权柄下移' });
+    var money = (G.guoku && typeof G.guoku.money === 'number') ? G.guoku.money : null;
+    if (money != null && money < 200000) factors.push({ name:'度支', sev: Math.min(100, Math.round((200000-money)/200000*100)), note: '库银 ' + rightArmyFmtNum(Math.max(0,money)) + '·度支将竭' });
+    var mx = (G.minxin && typeof G.minxin.trueIndex === 'number') ? G.minxin.trueIndex : null;
+    if (mx != null && mx < 40) factors.push({ name:'民心', sev: Math.min(100, Math.round((40-mx)/40*100)), note: '民心 ' + Math.round(mx) + '·离心' });
+    if (!factors.length) return '';
+    factors.sort(function(a,b){ return b.sev - a.sev; });
+    var rest = factors.slice(1).reduce(function(s,f){ return s + f.sev; }, 0);
+    var prox = Math.min(100, Math.round(factors[0].sev + rest * 0.15));
+    var TIERS = [[75,'濒亡','#8c2f26'],[50,'将危','#a85a3a'],[25,'隐忧','#a8833a'],[0,'安','#557f6f']];
+    var tier = null; for (var i=0;i<TIERS.length;i++){ if (prox >= TIERS[i][0]) { tier = TIERS[i]; break; } }
+    var tierName = tier[1], tierColor = tier[2], barW = Math.max(3, prox);
+    var levers = factors.slice(0,3).map(function(f){ return '<div class="tmrp-step"><b>' + esc(f.name) + '</b>' + esc(f.note) + '</div>'; }).join('');
+    return '<section class="tmrp-card hot"><div class="tmrp-card-title"><span>国祚 · ' + esc(tierName) + '</span><small>王朝崩坏临近度·唯延缓·不可逆</small></div>' +
+      '<div style="margin:2px 0 7px;"><div style="height:9px;border-radius:5px;background:rgba(0,0,0,.22);overflow:hidden;"><div style="height:100%;width:' + barW + '%;background:' + tierColor + ';"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--txt-d);margin-top:2px;"><span>崩坏临近度</span><span style="color:' + tierColor + ';font-weight:600;">' + prox + ' / 100 · ' + esc(tierName) + '</span></div></div>' +
+      levers + '</section>';
   }
 
   // 武库卡:国家军备库存(5类)+ 原料库(4类)+ 本回合产/耗(接军工供应链 S6)
@@ -908,6 +954,7 @@
       : '<section class="tmrp-card"><div class="tmrp-card-title"><span>军情概览</span><small>诸军态势</small></div><div class="tmrp-meta">诸军暂无士气、粮饷或兵变之虞，边防大体安稳。点名册中部队，可于左侧展开军情明细。</div></section>';
     return '<div class="tmrp-army-shell">' +
       '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(armies.length) + '</b><span>军队</span></div><div class="tmrp-stat"><b>' + esc(rightArmyFmtNum(total)) + '</b><span>总兵力</span></div><div class="tmrp-stat"><b>' + esc(avgMorale + '/' + avgTraining) + '</b><span>士气/训练</span></div></div>' +
+      rightGuozuoCard() +
       armyOverviewCard +
       rightArmoryCard() +
       rightRovingCard() +

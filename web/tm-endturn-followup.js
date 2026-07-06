@@ -566,7 +566,9 @@
             if (rc.reason && String(rc.reason).trim() && Math.abs(_rcD) >= 4
                 && typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.remember) {
               var _rcEmo = _rcD <= -8 ? '恨' : _rcD < 0 ? '忧' : _rcD >= 8 ? '敬' : '喜';
-              var _rcImp = Math.abs(_rcD) >= 10 ? 5 : 4;
+              // ★2026-07-04 交互双向性·大幅关系变动抬 imp·令自动镜像给对方(B)的记忆(imp-1)也过 <npc-hearts> 推演门槛(6-8)·
+              //   |delta|>=8→A imp7→B 镜像 imp6(两侧推演皆可见);6-7→A imp6(A过·B镜像imp5暂不入);4-5→imp4 只留痕。
+              var _rcImp = Math.abs(_rcD) >= 8 ? 7 : Math.abs(_rcD) >= 6 ? 6 : 4;
               try { NpcMemorySystem.remember(rc.a, String(rc.reason).slice(0, 40), _rcEmo, _rcImp, rc.b, { source: 'intuition', type: 'general', _relShift: true }); } catch(_rcE) {}
             }
           });

@@ -15074,16 +15074,28 @@
       if (!chars[charIndex].wuchang || typeof chars[charIndex].wuchang !== 'object') chars[charIndex].wuchang = {};
       chars[charIndex].wuchang[sub] = Math.max(0, Math.min(100, num));
       recordHistory('列传编辑', (chars[charIndex].name || ('#' + charIndex)) + ' · 五常·' + sub);
-      reRenderModulePrimary();
-      var pnl = document.querySelector('[data-panel="renwu-folio"]'); if (pnl) pnl.innerHTML = renderCharacterFolio();
+      rebuildCharFolioKeepScroll();
       return;
     }
     setEntityProp(chars[charIndex], field, raw, 'characters');
     recordHistory('列传编辑', (chars[charIndex].name || ('#' + charIndex)) + ' · ' + field);
+    rebuildCharFolioKeepScroll();
+  }
+  // 列传字段编辑会整块重建 folio（含左侧名录）；重建前记下名录 scrollTop、重建后复位，
+  // 免得连录多人时每次保存都被弹回名录顶部（右侧详情仍随 selectedCharIndex 走）。
+  function rebuildCharFolioKeepScroll() {
     var html = renderCharacterFolio();
     var hosts = [document.getElementById('module-primary-view'), document.querySelector('[data-panel="renwu-folio"]')];
     var any = false;
-    hosts.forEach(function(h) { if (h) { h.innerHTML = html; any = true; } });
+    hosts.forEach(function(h) {
+      if (!h) return;
+      var prev = h.querySelector('.rwf2-roster');
+      var top = prev ? prev.scrollTop : 0;
+      h.innerHTML = html;
+      var next = h.querySelector('.rwf2-roster');
+      if (next && top) next.scrollTop = top;
+      any = true;
+    });
     if (!any) renderAll();
   }
 
@@ -21991,6 +22003,9 @@
       saveFactionRelationField(Number(rel.dataset.frelEdit), rel.dataset.frelField, rel.value);
     });
     document.addEventListener('input', function(event) {
+      // 输入法组词进行中不重渲染，否则每个拼音键都会重建输入框、打断 IME（搜索框打不了中文）；
+      // compositionend 时下面的监听会补发一次 input（isComposing=false）完成最终渲染。
+      if (event.isComposing) return;
       var csr = event.target && event.target.closest && event.target.closest('[data-roster-search]');
       if (csr) {
         var rkind = csr.getAttribute('data-roster-search');
@@ -22042,6 +22057,12 @@
           if (raw === '' || Number.isFinite(raw)) sibling.value = raw;
         }
       }
+    });
+    // 输入法组词结束后补发一次 input，让上面的 input 处理器（此时 isComposing=false）完成最终渲染，
+    // 收尾搜索框过滤（组词中被 isComposing 门控跳过了）。
+    document.addEventListener('compositionend', function(event) {
+      var t = event.target;
+      if (t && t.dispatchEvent) t.dispatchEvent(new Event('input', { bubbles: true }));
     });
     document.addEventListener('change', function(event) {
       if (event.target && event.target.dataset && event.target.dataset.folioField) {

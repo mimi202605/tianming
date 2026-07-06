@@ -613,17 +613,19 @@
     if (typeof TyrantActivitySystem !== 'undefined' && GM._turnTyrantActivities && GM._turnTyrantActivities.length > 0) {
       tp += TyrantActivitySystem.getAIContext(GM._turnTyrantActivities);
     }
-    // 奏疏批复（让AI知道玩家如何处理大臣上书）
-    var approvedMem = memRes.filter(function(m){return m.status==='approved';});
-    var rejectedMem = memRes.filter(function(m){return m.status==='rejected';});
+    // ★御批处置——皇帝之朱批即处置旨意·须如诏令般处理（结构化落后果 + 叙事记执行）。
+    //   ★奏折全文随朱批一并带过去（否则「批注:着降三级」无根:降谁、因何事全在奏折里·owner 裁定 2026-07-06）。此前只带 from+type+朱批（memRes 无 content）·且仅告知性、非诏令级强制处理。
+    var _dispMems = (GM.memorials||[]).filter(function(m){ return m && m.turn === GM.turn && (m.status==='approved' || m.status==='rejected' || m.status==='annotated'); });
     var reviewMem = memRes.filter(function(m){return m.status==='pending_review';});
-    if(approvedMem.length>0){
-      tp+="\u6279\u51C6\u7684\u594F\u758F:\n";
-      approvedMem.forEach(function(m){ tp+="  "+m.from+"("+m.type+")——准奏"+(m.reply?" 批注:"+m.reply:"")+"\n"; });
-    }
-    if(rejectedMem.length>0){
-      tp+="\u9A73\u56DE\u7684\u594F\u758F:\n";
-      rejectedMem.forEach(function(m){ tp+="  "+m.from+"("+m.type+")——驳回"+(m.reply?" 批注:"+m.reply:"")+"\n"; });
+    if (_dispMems.length > 0) {
+      var _dispLbl = { approved:'准奏·采纳所请', rejected:'驳回·不准所请', annotated:'朱批批示' };
+      tp += '\n【本回合御批处置——皇帝对臣下奏疏之批复即处置旨意·与诏令同等效力·须落实】\n';
+      _dispMems.forEach(function(m){
+        var _t = m.title ? ('题「' + String(m.title).slice(0,40) + '」') : '';
+        var _c = m.content ? ('·所奏"' + String(m.content).slice(0,600) + '"') : '';   // ★带奏折全文(owner「全部带过去」·600 足覆盖真实奏疏·仅病态超长留安全界)
+        tp += '  · ' + (m.from||'某臣') + '(' + (m.type||'奏疏') + ')' + _t + _c + ' → 【' + (_dispLbl[m.status]||m.status) + '】' + (m.reply ? '·朱批"' + String(m.reply).slice(0,400) + '"' : '') + '\n';
+      });
+      tp += '  ※ 皇帝批复即旨意·与诏令同等处理：①据朱批＋所奏内容·将处置后果一条条落入 fiscal_adjustments／office_assignments／personnel_changes（如准弹劾→查办或罢黜被劾者·着降级→降其职·准赈→拨帑·准荐→授官·皆结构化落账·勿只叙事）；②在 shizhengji／shilu／后人戏说中给出对应叙事段·如实记皇帝之批与其执行（如诏令之每道皆有叙事段）；③若与本回合诏令并行·相互呼应·视为君主本回合意志之整体。\n';
     }
     if(reviewMem.length>0){
       tp+="\u7559\u4E2D\u4E0D\u53D1:" + reviewMem.map(function(m){return m.from;}).join("、")+"\n";
@@ -2381,6 +2383,8 @@
 
     // ★ 全局持续规则（国是·风气）注入推演：让倾向所及之事更易推行、新群体渐出，阻力如实体现
     try { if (window.GlobalRules && typeof GlobalRules.promptContext === 'function') sysP += GlobalRules.promptContext(); } catch(_grCtxE){}
+    // ★ 典章·祖制（建构轴双刃）注入：叙事体现既赖累世成宪之稳、亦困于祖制难改之僵
+    try { if (window.TM && TM.Dianzhang && typeof TM.Dianzhang.promptInjection === 'function') { var _dzP = TM.Dianzhang.promptInjection(GM); if (_dzP) sysP += '\n' + _dzP; } } catch(_dzCtxE){}
 
     // ★ 三系统运行时状态（势力 lifePhase·党派 influence/officeCount·军队 mutinyRisk）
     if (TM && TM.EndTurnAIContext && typeof TM.EndTurnAIContext.appendPromptPolicyContext === 'function') {
@@ -4010,6 +4014,27 @@
         sysP += '\n· 下狱/流放/逃亡者：不得上朝、不得上奏题本、不得参与朝议廷议、不得在外任职理事；叙事只可写其身陷囹圄/在流放/在逃之情形，不得写其如常视事。';
         sysP += '\n· 已罢官/致仕者：现无官职，严禁再以旧官衔（如「X尚书」「X巡抚」）称呼或令其行使职权；确需提及只可称其人名或「原任X」。';
         sysP += '\n' + _restLines.join('\n');
+      }
+      // 赴任在途·尚未到任名册·硬约束(玩家报"孙传庭赴任途中·AI叙事却写他已在陕西赈灾")·
+      //   根因:任命当回合即完整就任(设 officialTitle+officeTree holder)→所有确定性名册立刻显示其为在任官员·
+      //   而"仍在途"信号此前只在被 AI 重新概括、后台 race-prone 的长期摘要里·非硬约束。此处列为确定性硬名册。
+      var _enRoute = [];
+      (GM.chars || []).forEach(function(c){
+        if (!c || c.alive === false || !c.name || !c._travelTo) return;
+        var _eta = '';
+        if (typeof c._travelRemainingDays === 'number' && c._travelRemainingDays > 0) _eta = '·约剩' + c._travelRemainingDays + '日抵';
+        else if (typeof c._travelArrival === 'number') _eta = '·预计T' + c._travelArrival + '抵';
+        var _post = c._travelAssignPost ? '·将就任' + String(c._travelAssignPost).replace('/', ' ') : (c.officialTitle ? '·已授' + c.officialTitle : '');
+        _enRoute.push('· ' + c.name + '：自' + (c._travelFrom || '原任所') + '赴' + c._travelTo + _post + _eta + '（在途·尚未到任）');
+      });
+      if (_enRoute.length) {
+        sysP += '\n\n【赴任在途·尚未到任名册·硬约束】';
+        sysP += '\n以下人员已受任命但仍在赴任途中、尚未抵达目的地就任·本回合严格遵守：';
+        sysP += '\n· 不得叙事其已在目的地视事、理政、赈灾、剿抚、坐镇、升堂或参与当地事务——其人尚在路上。';
+        sysP += '\n· 不得令其上朝、出席朝议廷议、在京视事（他不在京也不在任所）。';
+        sysP += '\n· 可叙其旅途见闻、沿途地方迎送、信使追及、抵达前的准备与观望；其治所职事本回合暂由原任者署理或空悬。';
+        sysP += '\n· 若确需其到任理事，须待其行程走满、系统播报"抵达就任"后的回合方可。';
+        sysP += '\n' + _enRoute.join('\n');
       }
       // 有效地名白名单（从行政区划收集）
       if (P.adminHierarchy) {

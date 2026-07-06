@@ -882,7 +882,7 @@ inst._imprisonedTurn = GM.turn||0;
               if (rlChar) {
                 if (typeof AffinityMap !== 'undefined') AffinityMap.add(act.target, act.name, 3, '被拉拢');
                 if (typeof NpcMemorySystem !== 'undefined') {
-                  NpcMemorySystem.remember(act.target, act.name + '暗中拉拢示好', '平', 5, act.name);
+                  NpcMemorySystem.remember(act.target, act.name + '暗中拉拢示好', '平', 6, act.name);  // ★5→6 被拉拢方知情记忆过推演门槛
                   NpcMemorySystem.remember(act.name, '试探' + act.target + '的立场', '平', 4, act.target);
                 }
               }
@@ -914,7 +914,7 @@ inst._imprisonedTurn = GM.turn||0;
               if (typeof AffinityMap !== 'undefined' && act.target) AffinityMap.add(act.name, act.target, 8, '密谋同盟');
               if (typeof NpcMemorySystem !== 'undefined') {
                 NpcMemorySystem.remember(act.name, '暗中串联' + (act.target||''), '平', 6, act.target||'');
-                if (act.target) NpcMemorySystem.remember(act.target, act.name + '来联络密事', '平', 5, act.name);
+                if (act.target) NpcMemorySystem.remember(act.target, act.name + '来联络密事', '平', 6, act.name);  // ★5→6 被联络方知情记忆过推演门槛
               }
               mechanicallyExecuted = true;
             } else if (act.behaviorType === 'petition' || act.behaviorType === 'investigate') {
@@ -1009,8 +1009,8 @@ inst._imprisonedTurn = GM.turn||0;
               if (act.target && typeof AffinityMap !== 'undefined') {
                 var _bondTbl = { master_disciple: 12, guarantee: 8, gift_present: 6, invite_banquet: 6, private_visit: 6, correspond_secret: 6, share_intelligence: 6, duel_poetry: 5, mourn_together: 5, mourn: 5, obey: 5 };
                 var _bd = _bondTbl[act.behaviorType] || 5;
+                // ★2026-07-04 AffinityMap 是对称无向图(key 按名排序)·此前调两次(A→B _bd + B→A 0.6×)落同一条边叠成 1.6×·系"以为有向"之误。单次即双向。
                 AffinityMap.add(act.name, act.target, _bd, _npcBehaviorVerbCN(act.behaviorType));
-                AffinityMap.add(act.target, act.name, Math.round(_bd * 0.6), _npcBehaviorVerbCN(act.behaviorType));
                 if (act.behaviorType === 'master_disciple' || act.behaviorType === 'guarantee' || act.behaviorType === 'obey') {
                   var _bondCh = findCharByName(act.behaviorType === 'obey' ? act.name : act.target);
                   if (_bondCh && typeof adjustCharacterLoyalty === 'function') adjustCharacterLoyalty(_bondCh, act.behaviorType === 'master_disciple' ? 3 : 2, _npcBehaviorVerbCN(act.behaviorType), { source: 'npc-action-bond' });
@@ -1033,7 +1033,7 @@ inst._imprisonedTurn = GM.turn||0;
             } else if (act.behaviorType === 'confront' || act.behaviorType === 'rival_compete') {
               // 对质/争胜——双向交恶·各添压力
               if (act.target) {
-                if (typeof AffinityMap !== 'undefined') { AffinityMap.add(act.name, act.target, -8, _npcBehaviorVerbCN(act.behaviorType)); AffinityMap.add(act.target, act.name, -8, _npcBehaviorVerbCN(act.behaviorType)); }
+                if (typeof AffinityMap !== 'undefined') { AffinityMap.add(act.name, act.target, -8, _npcBehaviorVerbCN(act.behaviorType)); }  // ★对称图·单次即双向交恶(原调两次叠成 -16)
                 var _cfCh = findCharByName(act.target);
                 if (_cfCh) _cfCh.stress = Math.min(100, (_cfCh.stress || 0) + 5);
                 var _cfSelf = findCharByName(act.name);
@@ -1052,8 +1052,7 @@ inst._imprisonedTurn = GM.turn||0;
               // 结党/联姻——缔结强纽带(软亲疏·派系归属仍走 faction_updates·此处不动编册)
               if (act.target && typeof AffinityMap !== 'undefined') {
                 var _alD = act.behaviorType === 'marriage_alliance' ? 15 : 10;
-                AffinityMap.add(act.name, act.target, _alD, _npcBehaviorVerbCN(act.behaviorType));
-                AffinityMap.add(act.target, act.name, _alD, _npcBehaviorVerbCN(act.behaviorType));
+                AffinityMap.add(act.name, act.target, _alD, _npcBehaviorVerbCN(act.behaviorType));  // ★对称图·单次即双向缔结(原调两次叠成 2×)
                 if (act.behaviorType === 'marriage_alliance') {
                   var _maCh = findCharByName(act.target);
                   if (_maCh && typeof adjustCharacterLoyalty === 'function') adjustCharacterLoyalty(_maCh, 3, '联姻之好', { source: 'npc-action-marriage' });
@@ -1065,7 +1064,7 @@ inst._imprisonedTurn = GM.turn||0;
               // 举荐——被荐者感念举主(亲疏+)·记一笔(擢用仍由铨政/功名系统定夺·此处只记人情)
               if (act.target) {
                 if (typeof AffinityMap !== 'undefined') AffinityMap.add(act.target, act.name, 8, '荐拔之恩');
-                if (typeof NpcMemorySystem !== 'undefined') NpcMemorySystem.remember(act.target, act.name + '举荐提携', '喜', 5, act.name);
+                if (typeof NpcMemorySystem !== 'undefined') NpcMemorySystem.remember(act.target, act.name + '举荐提携', '喜', 6, act.name);  // ★5→6 被荐者感念记忆过推演门槛
               }
               mechanicallyExecuted = true;
             } else if (act.behaviorType === 'mediate') {
@@ -1093,9 +1092,37 @@ inst._imprisonedTurn = GM.turn||0;
 
             // NPC行为产生连锁记忆——行动者、被动者、旁观同僚都会记住
             if (typeof NpcMemorySystem !== 'undefined' && act.behaviorType && act.behaviorType !== 'none') {
-              // 行动者自己的记忆
+              // ★2026-07-04 交互双向性·公开互动当事人(B)的知情记忆(B视角措辞+正确情绪)·imp6 过 <npc-hearts> 推演门槛(impMin6-8)·
+              //   治「B 该知情却在朝议/问对/推演失忆穿帮」。此前 B 只拿到自动镜像的 imp4(且情绪被 flipMap 翻成中性)→取不到。
+              //   排除:covert(slander/frame_up/expose_secret/betray·被算计者不该/已按知情边界另处理)与
+              //   已显式强双写者(request_loyalty/conspire/recommend→下方5→6·form_clique/marriage_alliance imp6)。
+              var _bKnow = {
+                appoint:['受'+act.name+'擢任','喜'], dismiss:['遭'+act.name+'罢黜','怒'],
+                reward:['蒙'+act.name+'赏赐','喜'], punish:['受'+act.name+'惩处','怒'],
+                declare_war:['遭'+act.name+'宣战','惧'],
+                petition:['遭'+act.name+'上疏参劾','怒'], investigate:['遭'+act.name+'弹劾查勘','惧'],
+                impeach:['遭'+act.name+'弹劾','怒'], petition_jointly:['遭'+act.name+'联名参劾','怒'],
+                reconcile:['与'+act.name+'冰释前嫌','喜'], mentor:['蒙'+act.name+'提携','敬'],
+                mediate:[act.name+'居中调和','平'], confront:['与'+act.name+'当廷对质','怒'],
+                rival_compete:['与'+act.name+'争锋','怒'],
+                gift_present:['受'+act.name+'馈赠','喜'], invite_banquet:['受'+act.name+'宴请','喜'],
+                private_visit:['受'+act.name+'登门私访','喜'], duel_poetry:['与'+act.name+'诗文唱和','喜'],
+                mourn_together:['与'+act.name+'共哀','平'], mourn:['受'+act.name+'吊唁','平'],
+                master_disciple:['与'+act.name+'结师徒之谊','敬'], guarantee:['蒙'+act.name+'担保','敬'],
+                obey:[act.name+'听命归附','平'],
+                correspond_secret:['与'+act.name+'密信往还','平'], share_intelligence:['得'+act.name+'通风报信','平']
+              };
+              var _hasBKnow = !!(act.target && act.target !== act.name && _bKnow[act.behaviorType]);
+              // ★covert(诽谤/背叛/构陷/揭发)的 actor 记忆也须 _noMirror·否则通用镜像会把 imp4 泄露给被算计者(codex 审)。
+              //   slander 由此真正单向(被中伤者不自动知情);betray/frame_up/expose_secret 的"受害者会发现"由各自 branch 显式 target 写(imp7/8)保留·此处只去掉冗余镜像。
+              var _isCovert = act.behaviorType === 'slander' || act.behaviorType === 'betray' || act.behaviorType === 'frame_up' || act.behaviorType === 'expose_secret';
+              // 行动者自己的记忆(显式写 B 或 covert 时关自动镜像)
               var _actEmo = (act.behaviorType === 'reward' || act.behaviorType === 'appoint') ? '喜' : (act.behaviorType === 'punish' || act.behaviorType === 'dismiss') ? '平' : (act.behaviorType === 'declare_war') ? '怒' : '平';
-              NpcMemorySystem.remember(act.name, act.action, _actEmo, 5, act.target || '');
+              NpcMemorySystem.remember(act.name, act.action, _actEmo, 5, act.target || '', (_hasBKnow || _isCovert) ? { _noMirror: true } : undefined);
+              // 当事人(B)按 B 视角留一条 imp6 知情记忆
+              if (_hasBKnow) {
+                try { NpcMemorySystem.remember(act.target, _bKnow[act.behaviorType][0], _bKnow[act.behaviorType][1], 6, act.name, { _noMirror: true, source: 'witnessed', type: 'general' }); } catch(_bkE) {}
+              }
               // 同势力同僚也会知道这件事（朝堂无秘密）
               if (act.target && GM.chars && (act.behaviorType === 'punish' || act.behaviorType === 'dismiss' || act.behaviorType === 'declare_war')) {
                 var _actChar = findCharByName(act.name);
@@ -3948,23 +3975,39 @@ inst._imprisonedTurn = GM.turn||0;
 
             // 同步写入 adminHierarchy 的 division.buildings（新模式——去结构化，由AI自判效果）
             if (bc.action === 'build' || bc.action === 'custom_build' || bc.action === 'upgrade' || bc.action === 'destroy') {
-              if (P.adminHierarchy) {
+              // 影子根治刀1(2026-07-04)：P/GM 双源搜地块——真机存档 P.adminHierarchy 常为空{}·活树在 GM。
+              // 旧只搜 P 树→他档真记录(名/描述/工期)静默没建·掉进下方旧兼容通道铸「未知建筑」影子。
+              // 镜像 _adminSources 范式：P 先·GM 树非同一对象才补·顶层 divisions||children 都认。
+              if (P.adminHierarchy || GM.adminHierarchy) {
                 var _targetDiv = null;
-                Object.keys(P.adminHierarchy).forEach(function(fk) {
-                  var fh = P.adminHierarchy[fk]; if (!fh || !fh.divisions) return;
-                  (function _walk(ds) {
-                    ds.forEach(function(d) {
-                      if (d.name === bc.territory) _targetDiv = d;
-                      if (d.children) _walk(d.children);
-                      if (d.divisions) _walk(d.divisions);
-                    });
-                  })(fh.divisions);
+                var _bcRoots = [];
+                if (P.adminHierarchy && typeof P.adminHierarchy === 'object') _bcRoots.push(P.adminHierarchy);
+                if (GM.adminHierarchy && typeof GM.adminHierarchy === 'object' && GM.adminHierarchy !== P.adminHierarchy) _bcRoots.push(GM.adminHierarchy);
+                _bcRoots.forEach(function(_ahRoot) {
+                  if (_targetDiv) return;
+                  Object.keys(_ahRoot).forEach(function(fk) {
+                    if (_targetDiv) return;
+                    var fh = _ahRoot[fk]; var _ds0 = fh && (fh.divisions || fh.children); if (!_ds0 || !_ds0.length) return;
+                    (function _walk(ds) {
+                      ds.forEach(function(d) {
+                        if (!d || _targetDiv) return;
+                        if (d.name === bc.territory) { _targetDiv = d; return; }
+                        if (d.children) _walk(d.children);
+                        if (d.divisions) _walk(d.divisions);
+                      });
+                    })(_ds0);
+                  });
                 });
                 if (_targetDiv) {
                   if (!_targetDiv.buildings) _targetDiv.buildings = [];
                   var _bcDisp = ((typeof BUILDING_TYPES !== 'undefined' && BUILDING_TYPES[bc.type] && BUILDING_TYPES[bc.type].name) || bc.type);
-                  // 刀三:标准 build 但该地已有同名建筑 → 规范为 upgrade(扩建意图),不重复新建同名工程
-                  if (bc.action === 'build' && !bc.isCustom) {
+                  // 影子根治刀1b(2026-07-04)：同名工程仍在建 → AI 复报(续修/重申)是常态·静默勿重
+                  // (勿重复立项·也勿走 upgrade 分支——那会 level++ 且 applyCompletion 提前入账未竣之效)。
+                  // bc.action 置 noop 同时令下方旧兼容通道跳过·两本账都不重记。
+                  if ((bc.action === 'build' || bc.action === 'custom_build') && _targetDiv.buildings.some(function(b){ return b && b.name === bc.type && b.status === 'building'; })) {
+                    bc.action = 'noop_inprogress';
+                  } else if (bc.action === 'build' && !bc.isCustom) {
+                    // 刀三:标准 build 但该地已有同名建筑 → 规范为 upgrade(扩建意图),不重复新建同名工程
                     var _sameName = _targetDiv.buildings.find(function(b){ return b && b.name === bc.type; });
                     if (_sameName) bc.action = 'upgrade';
                   }
@@ -3998,8 +4041,8 @@ inst._imprisonedTurn = GM.turn||0;
                       }
                       addEB('\u5EFA\u8BBE', bc.territory + '的' + _bcDisp + '升级至' + _exB.level + '级');
                     }
-                  } else {
-                    // build 或 custom_build
+                  } else if (bc.action === 'build' || bc.action === 'custom_build') {
+                    // build 或 custom_build（显式条件·刀1b 的 noop_inprogress 从此整链穿过不落账）
                     var _isCustom = bc.action === 'custom_build' || bc.isCustom;
                     var _feasibility = bc.feasibility || '合理';
                     if (_feasibility === '不合理') {
@@ -4045,8 +4088,12 @@ inst._imprisonedTurn = GM.turn||0;
                 if (BUILDING_TYPES[_btKeys[_bk]].name === bc.type) { _bcType = _btKeys[_bk]; break; }
               }
             }
+            // 影子根治刀2(2026-07-04)：反查不到类型 = 自拟/未知中文名——真记录已由上方双源通道
+            // 落 div.buildings 新账。旧账 createBuilding(未知type) 只会铸「未知建筑」死影子
+            // (无描述/无 status/无效果·且按键位把营造志真记录挤出)——绝不再铸。
+            var _btResolved = (typeof BUILDING_TYPES !== 'undefined') && !!BUILDING_TYPES[_bcType];
 
-            if (bc.action === 'build' && _bcType) {
+            if (bc.action === 'build' && _bcType && _btResolved) {
               if (typeof createBuilding === 'function') {
                 // 推断势力归属
                 var _bFaction = bc.faction || '';
@@ -5289,6 +5336,8 @@ inst._imprisonedTurn = GM.turn||0;
             });
           } else if (it.type === 'private_visit' || it.type === 'invite_banquet' || it.type === 'duel_poetry') {
             // 私访/宴请/切磋 → 问对（求见队列）
+            // 势力守卫(2026-07-04)：殿外求见=臣候于阶下·须本朝人物。上方弹章/荐表已有 _actorNonCourt 闸·此分支原漏——外邦君主经此入求见队列再喂推演·被放大成「皇太极奏请陛下」级污染。只拦明确标了异势力者(空 faction/无名职衔沿弹章惯例视为本朝放行)。外藩正规往来走 isEnvoy 使节线(_dispatchFactionActionToPlayer)不经此处。
+            if (_actorChDp && typeof _tmIsForeignCourtChar === 'function' && _tmIsForeignCourtChar(_actorChDp)) return;
             if (!GM._pendingAudiences) GM._pendingAudiences = [];
             GM._pendingAudiences.push({ name: actor, reason: desc, turn: turn });
           } else if (it.type === 'gift_present' || it.type === 'correspond_secret' || it.type === 'share_intelligence') {

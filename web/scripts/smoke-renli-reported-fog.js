@@ -45,6 +45,7 @@ ok(rxa && rxa.corveeRate < 0.45, '1·官报役负 ' + (rxa && rxa.corveeRate) + 
 ok(rxa && rxa.conceal === 0.6, '1·李督抚 stress90/loy20/fame60 + 重危情→瞒报封顶0.60·实得 ' + (rxa && rxa.conceal));
 ok(rxa && rxa.governor === '李督抚', '1·官报记奏报者=李督抚');
 ok(rxa && rxa.fugitiveRate < 0.30 && rxa.fallowShare < 0.5 && rxa.deficitRatio < 0.6, '1·逃亡/抛荒/缺粮 全被一并粉饰下去');
+ok(rxa && rxa.trueDing === 100000 && rxa.ding === 40000, '1·据报丁口=真丁口10万×keep0.4=4万（瞒税基/隐户·slice-1b 方志「默认看上报值」消费）');
 
 // ── T2 清官（延安府·王巡抚·几乎不瞒）──
 ok(rya && rya.conceal < 0.2, '2·王巡抚 stress20/loy90/fame0 + 低危情→瞒报<0.2·实得 ' + (rya && rya.conceal));
@@ -86,6 +87,10 @@ var src = fs.readFileSync(path.join(__dirname, '..', 'tm-renli.js'), 'utf8');
 ok(/applyUnrestPressure\(GM, Pp\); \} catch[\s\S]{0,80}refreshReported\(GM, Pp\); \} catch/.test(src), '9·endturnTick 已接 refreshReported（过回合刷官报）');
 var coreSrc = fs.readFileSync(path.join(__dirname, '..', 'tm-endturn-core.js'), 'utf8');
 ok(/TM\.Renli\.formatReportedForPrompt\(GM, \{ limit: 8 \}\)/.test(coreSrc), '9·tm-endturn-core 已挂 formatReportedForPrompt');
+// slice-1b·方志「默认看上报值」pilot 契约（薛定谔奏报范式·真值藏于聚光）
+var mapSrc = fs.readFileSync(path.join(__dirname, '..', 'phase8-formal-map.js'), 'utf8');
+ok(/function _reportedPop\(r\)/.test(mapSrc), '9·方志据报人口读口 _reportedPop 已接（读 GM.renli.reported）');
+ok(/丁口 <small[^>]*>据报<\/small>/.test(mapSrc) && /真丁口/.test(mapSrc), '9·户口志丁口默认显据报·真值藏于聚光 title（默认看上报值）');
 
 // ── T10 中立 ──
 var body = src.slice(src.indexOf('function refreshReported'), src.indexOf('function refreshReported') + 1800);

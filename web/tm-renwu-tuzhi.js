@@ -880,11 +880,29 @@ function _dtTone(bt){var k=String(bt||'').toLowerCase().trim();return _DT_TONE_H
 function _dtVerb(bt){try{if(window.TM&&TM.NPC&&typeof TM.NPC.behaviorVerbCN==='function')return TM.NPC.behaviorVerbCN(bt);}catch(e){}var k=String(bt==null?'':bt).toLowerCase().trim();return _DT_BEHAVIOR_CN[k]||(/[a-z]/i.test(k)?'举动':(bt||'举动'));}
 function _dtLedger(){var L=(_g()&&_g()._npcActionLedger);return Array.isArray(L)?L:[];}
 function _dtRows(){var now=_g().turn||0,win=(state.dtWin==null?6:state.dtWin);return _dtLedger().filter(function(e){return e&&e.actor&&e.status!=='blocked'&&(!e.preflight||e.preflight.ok!==false)&&(win<=0||(now-(e.turn||0))<win);}).slice().sort(function(a,b){return (b.turn||0)-(a.turn||0)||(b.createdAt||0)-(a.createdAt||0);});}
+/* NPC 前瞻计划（_npcPlans·结党/构陷等跨回合谋划·此前算了存了零消费端）→ 图谋前瞻段。读单一真源 TM.NPC.ActionLedger.ensurePlans。 */
+var _DT_STAGE_CN={preparing:'筹备',plotting:'谋划',building:'经营',escalating:'升势',ready:'待发',waiting:'蛰伏'};
+function _dtStageCN(s){return _DT_STAGE_CN[String(s==null?'':s).toLowerCase().trim()]||'';}
+function _dtPlans(){try{var A=window.TM&&TM.NPC&&TM.NPC.ActionLedger;var pl=(A&&A.ensurePlans)?A.ensurePlans(_g()):(_g()&&_g()._npcPlans);return Array.isArray(pl)?pl:[];}catch(e){return [];}}
+function _dtActivePlans(){return _dtPlans().filter(function(p){return p&&p.actor&&p.status==='active'&&(!p.preflight||p.preflight.ok!==false);}).slice().sort(function(a,b){return (b.updatedTurn||b.createdTurn||0)-(a.updatedTurn||a.createdTurn||0)||(b.progress||0)-(a.progress||0);});}
+function _dtPlansHtml(){
+  var plans=_dtActivePlans();if(!plans.length)return '';
+  var now=_g().turn||0;
+  var items=plans.map(function(p){
+    var tone=_dtTone(p.type),dur=Math.max(0,now-(p.createdTurn||now)),st=_dtStageCN(p.stage);
+    var head='<b class="dt-actor" onclick="TMZhi.selectP(\''+oj(p.actor)+'\')">'+esc(p.actor)+'</b> <span class="dt-verb '+tone+'">正谋 '+esc(_dtVerb(p.type))+'</span>';
+    if(p.target){head+=' <span class="dt-arrow">→</span> '+(findP(p.target)?'<b class="dt-actor" onclick="TMZhi.selectP(\''+oj(p.target)+'\')">'+esc(p.target)+'</b>':'<span class="dt-tgt">'+esc(p.target)+'</span>');}
+    var meta=[st,(dur>0?'已'+dur+'回合':'新起')].filter(Boolean).join(' · ');
+    return '<div class="dt-item '+tone+'"><div class="dt-head">'+head+(meta?' <span class="dt-tgt">（'+esc(meta)+'）</span>':'')+'</div>'+(p.intent?'<div class="dt-inner">谋：'+esc(p.intent)+'</div>':'')+'</div>';
+  }).join('');
+  return '<div class="dt-group"><div class="dt-turn">图 谋 前 瞻 <small>'+plans.length+' 桩未竟 · 群臣正在暗中经营</small></div>'+items+'</div>';
+}
 function renderDongtai(){
   var ms=q('#tm-zhi-main');if(!ms)return;
   var now=_g().turn||0,win=(state.dtWin==null?6:state.dtWin),rows=_dtRows();
   var ctrl='<div class="dt-ctrl"><span class="lb">近：</span>'+[3,6,12,0].map(function(w){return '<button class="phb'+(win===w?' active':'')+'" onclick="TMZhi.setDtWin('+w+')">'+(w===0?'全部':w+'回合')+'</button>';}).join('')+'</div>';
-  if(!rows.length){ms.innerHTML='<div class="dongtai"><div class="sec-t" style="margin-bottom:8px">朝 野 动 态 <small>百官私下的招募、构陷、结纳、谋划</small></div>'+ctrl+'<div class="stub">'+(_dtLedger().length?'此窗内朝野无可见动静——可拉宽回合或择「全部」。':'朝野动态尚未生成——满朝文武的自主行动会在过回合后逐条记于此。')+'</div></div>';return;}
+  var plansHtml=_dtPlansHtml();
+  if(!rows.length&&!plansHtml){ms.innerHTML='<div class="dongtai"><div class="sec-t" style="margin-bottom:8px">朝 野 动 态 <small>百官私下的招募、构陷、结纳、谋划</small></div>'+ctrl+'<div class="stub">'+(_dtLedger().length?'此窗内朝野无可见动静——可拉宽回合或择「全部」。':'朝野动态尚未生成——满朝文武的自主行动会在过回合后逐条记于此。')+'</div></div>';return;}
   var groups={},order=[];rows.forEach(function(e){var t=e.turn||0;if(!groups[t]){groups[t]=[];order.push(t);}groups[t].push(e);});
   var body=order.map(function(t){
     var label=(t===now?'本回合':(t===now-1?'上回合':(now-t)+' 回合前'));
@@ -897,14 +915,15 @@ function renderDongtai(){
     }).join('');
     return '<div class="dt-group"><div class="dt-turn">'+esc(label)+' <small>'+groups[t].length+' 桩</small></div>'+items+'</div>';
   }).join('');
-  ms.innerHTML='<div class="dongtai"><div class="sec-t" style="margin-bottom:8px">朝 野 动 态 <small>你诏令之外，群臣各自在动——招募、构陷、结纳、谋划</small></div>'+ctrl+body+'</div>';
+  ms.innerHTML='<div class="dongtai"><div class="sec-t" style="margin-bottom:8px">朝 野 动 态 <small>你诏令之外，群臣各自在动——招募、构陷、结纳、谋划</small></div>'+ctrl+plansHtml+body+'</div>';
 }
 function renderFolioDongtai(){
   var fo=q('#tm-zhi-folio');if(!fo)return;
   var win=(state.dtWin==null?6:state.dtWin),rows=_dtRows(),byActor={};
   rows.forEach(function(e){byActor[e.actor]=(byActor[e.actor]||0)+1;});
   var top=Object.keys(byActor).sort(function(a,b){return byActor[b]-byActor[a];}).slice(0,8);
-  fo.innerHTML='<div class="fcard"><div class="ft">动 态 提 要</div><div class="fnote">近 '+(win<=0?'全部回合':win+' 回合')+'，朝野共 '+rows.length+' 桩可见动静。<span style="color:#a83228">赤</span>者攻讦、<span style="color:#557f6f">绿</span>者结纳。点人物入其列传。</div></div><div class="fcard"><div class="ft">最 活 跃</div><div class="relnet">'+(top.length?top.map(function(n){return '<div class="relrow" onclick="TMZhi.selectP(\''+oj(n)+'\')"><span class="nm">'+esc(n)+'</span><span class="sc">'+byActor[n]+'</span></div>';}).join(''):'<div class="fnote">暂无。</div>')+'</div></div>';
+  var planN=_dtActivePlans().length;
+  fo.innerHTML='<div class="fcard"><div class="ft">动 态 提 要</div><div class="fnote">近 '+(win<=0?'全部回合':win+' 回合')+'，朝野共 '+rows.length+' 桩可见动静。'+(planN?'另有 <b>'+planN+'</b> 桩图谋在酿。':'')+'<span style="color:#a83228">赤</span>者攻讦、<span style="color:#557f6f">绿</span>者结纳。点人物入其列传。</div></div><div class="fcard"><div class="ft">最 活 跃</div><div class="relnet">'+(top.length?top.map(function(n){return '<div class="relrow" onclick="TMZhi.selectP(\''+oj(n)+'\')"><span class="nm">'+esc(n)+'</span><span class="sc">'+byActor[n]+'</span></div>';}).join(''):'<div class="fnote">暂无。</div>')+'</div></div>';
 }
 /* ===================== 逆案录（谋反/政变/弑君·读 GM._conspiracies·display-only） ===================== */
 // action/outcome→中文（镜像 tm-endturn-apply.js conspiracy_events 写入的取值·display-only）
@@ -915,10 +934,28 @@ function _niOutCN(o){var k=String(o==null?'':o).toLowerCase().trim();return _NI_
 function _niSuccess(e){var o=String(e&&e.outcome||'').toLowerCase().trim(),a=String(e&&e.action||'').toLowerCase();if(o==='suppressed'||o==='failed'||o==='exposed'||o==='foiled')return false;if(o==='succeeded'||o==='success')return true;return a==='coup_succeeded'||a==='regicide'||a==='palace_coup'||a==='usurp';}
 function _niLedger(){var L=(_g()&&_g()._conspiracies);return Array.isArray(L)?L:[];}
 function _niRows(){return _niLedger().slice().filter(function(e){return e&&(e.instigator||e.action);}).sort(function(a,b){return (b.turn||0)-(a.turn||0);});}
+/* 暗流酝酿（阴谋引擎 knownPlots·exposure≥55 已露形之活跃阴谋·多回合酝酿→将发·此前 knownPlots 已 export 零渲染器）。
+   镜像 tm-conspiracy.js _kindCN/_heatCN（display-only·同 _NI_ACTION_CN 惯例）。只显 _knownToPlayer 者=天然确定性门（不剧透隐秘阴谋）。 */
+var _NI_PLOT_KIND_CN={coup:'图谋社稷',regicide:'弑君',palace_coup:'宫变',plot:'构陷政敌'};
+function _niKindCN(k){return _NI_PLOT_KIND_CN[k]||'阴谋';}
+function _niHeatCN(p){if(p&&p.stage==='ripe')return '将发';var m=(p&&p.momentum)||0;return m>=70?'酝酿已深':(m>=40?'渐成气候':'初萌');}
+function _niPlots(){try{var CE=window.ConspiracyEngine;if(CE&&typeof CE.knownPlots==='function'){var pl=CE.knownPlots(_g());if(Array.isArray(pl))return pl;}}catch(e){}var A=(_g()&&_g()._activePlots);return Array.isArray(A)?A.filter(function(p){return p&&p._knownToPlayer;}):[];}
+function _niPlotsHtml(){
+  var plots=_niPlots();if(!plots.length)return '';
+  var items=plots.slice().sort(function(a,b){return ((b.stage==='ripe')?1:0)-((a.stage==='ripe')?1:0)||((b.momentum||0)-(a.momentum||0));}).map(function(p){
+    var ripe=(p.stage==='ripe'),heat=_niHeatCN(p),allies=(p.conspirators&&p.conspirators.length)||0;
+    var head='<b class="ni-actor" onclick="TMZhi.selectP(\''+oj(p.ringleader)+'\')">'+esc(p.ringleader||'某人')+'</b> <span class="ni-act '+(ripe?'foiled':'')+'">暗中'+esc(_niKindCN(p.kind))+'</span>';
+    if(p.target){head+=' <span class="ni-arrow">→</span> '+(findP(p.target)?'<b class="ni-actor" onclick="TMZhi.selectP(\''+oj(p.target)+'\')">'+esc(p.target)+'</b>':'<span class="ni-tgt">'+esc(p.target)+'</span>');}
+    var meta='<div class="ni-meta">'+(ripe?'★ ':'')+'热度：'+esc(heat)+(allies?(' · 同谋 '+allies+' 人'):' · 尚无同谋')+'</div>';
+    var con=allies?'<div class="ni-conspir">从党：'+p.conspirators.map(function(n){return findP(n)?'<b onclick="TMZhi.selectP(\''+oj(n)+'\')">'+esc(n)+'</b>':esc(n);}).join('、')+'</div>':'';
+    return '<div class="ni-item '+(ripe?'foiled':'')+'"><div class="ni-head">'+head+'</div>'+meta+con+'</div>';
+  }).join('');
+  return '<div class="sec-t" style="margin:2px 0 8px">暗 流 酝 酿 <small>'+plots.length+' 桩已露形之谋 · 主谋、指向、热度、同谋（隐秘未露者不在此列）</small></div>'+items;
+}
 function renderNian(){
   var ms=q('#tm-zhi-main');if(!ms)return;
-  var now=_g().turn||0,rows=_niRows();
-  if(!rows.length){ms.innerHTML='<div class="nian"><div class="sec-t" style="margin-bottom:8px">逆 案 录 <small>本朝谋逆、政变、弑君诸案及其主谋从党</small></div><div class="stub">本朝尚无逆案——若有谋反、宫变、弑君事发，将逐案记于此，主谋从党、成败缘由皆录。</div></div>';return;}
+  var now=_g().turn||0,rows=_niRows(),plotsHtml=_niPlotsHtml();
+  if(!rows.length&&!plotsHtml){ms.innerHTML='<div class="nian"><div class="sec-t" style="margin-bottom:8px">逆 案 录 <small>本朝谋逆、政变、弑君诸案及其主谋从党</small></div><div class="stub">本朝尚无逆案，亦无已露形之暗流——若有谋反、宫变、弑君事发或阴谋渐显，将逐案记于此，主谋从党、成败缘由皆录。</div></div>';return;}
   var body=rows.map(function(e){
     var succ=_niSuccess(e),cls=succ?'success':'foiled';
     var label=(e.turn===now?'本回合':(e.turn===now-1?'上回合':'第'+(e.turn||0)+'回'));
@@ -931,14 +968,15 @@ function renderNian(){
     var rsn=e.reason?'<div class="ni-reason">缘由：'+esc(e.reason)+'</div>':'';
     return '<div class="ni-item '+cls+'"><div class="ni-head">'+head+'</div>'+meta+con+rsn+'</div>';
   }).join('');
-  ms.innerHTML='<div class="nian"><div class="sec-t" style="margin-bottom:8px">逆 案 录 <small>你视线之外，朝中亦有人谋逆——主谋、从党、成败、缘由</small></div>'+body+'</div>';
+  var past=rows.length?('<div class="sec-t" style="margin:'+(plotsHtml?'16px 0 8px':'0 0 8px')+'">逆 案 录 <small>你视线之外，朝中亦有人谋逆——主谋、从党、成败、缘由</small></div>'+body):'';
+  ms.innerHTML='<div class="nian">'+plotsHtml+past+'</div>';
 }
 function renderFolioNian(){
   var fo=q('#tm-zhi-folio');if(!fo)return;
-  var rows=_niRows(),succ=rows.filter(_niSuccess).length,foiled=rows.length-succ,byInst={};
+  var rows=_niRows(),succ=rows.filter(_niSuccess).length,foiled=rows.length-succ,byInst={},brewN=_niPlots().length;
   rows.forEach(function(e){if(e.instigator)byInst[e.instigator]=(byInst[e.instigator]||0)+1;});
   var top=Object.keys(byInst).sort(function(a,b){return byInst[b]-byInst[a];}).slice(0,8);
-  fo.innerHTML='<div class="fcard"><div class="ft">逆 案 提 要</div><div class="fnote">本朝共 '+rows.length+' 案：<span style="color:#7a1f1a">得逞 '+succ+'</span> · <span style="color:#557f6f">事败 '+foiled+'</span>。点主谋入其列传。</div></div>'+(top.length?'<div class="fcard"><div class="ft">屡 谋 之 人</div><div class="relnet">'+top.map(function(n){return '<div class="relrow" onclick="TMZhi.selectP(\''+oj(n)+'\')"><span class="nm">'+esc(n)+'</span><span class="sc">'+byInst[n]+'</span></div>';}).join('')+'</div></div>':'');
+  fo.innerHTML='<div class="fcard"><div class="ft">逆 案 提 要</div><div class="fnote">本朝共 '+rows.length+' 案：<span style="color:#7a1f1a">得逞 '+succ+'</span> · <span style="color:#557f6f">事败 '+foiled+'</span>。'+(brewN?'另有 <b style="color:#a8833a">'+brewN+'</b> 桩暗流已露形而未发。':'')+'点主谋入其列传。</div></div>'+(top.length?'<div class="fcard"><div class="ft">屡 谋 之 人</div><div class="relnet">'+top.map(function(n){return '<div class="relrow" onclick="TMZhi.selectP(\''+oj(n)+'\')"><span class="nm">'+esc(n)+'</span><span class="sc">'+byInst[n]+'</span></div>';}).join('')+'</div></div>':'');
 }
 /* ===================== 两/三人对参 ===================== */
 function cmpAxes(p){return [{label:'智',value:p.intelligence},{label:'武',value:p.valor},{label:'军',value:p.military},{label:'政',value:p.administration},{label:'管',value:p.management},{label:'交',value:p.diplomacy},{label:'魅',value:p.charisma},{label:'仁',value:p.benevolence}];}
@@ -1122,6 +1160,7 @@ var TMZhi={
       if(kind==='letter'){ if(typeof window.GM!=='undefined'){GM._pendingLetterTo=name;} if(typeof switchGTab==='function'){closePanel();switchGTab(null,'gt-letter');return;} }
       if(kind==='office'){ if(typeof switchGTab==='function'){closePanel();switchGTab(null,'gt-office');return;} }
       if(kind==='mind'){ state.tab='pov'; renderMain(); return; }
+      if(kind==='works'){ state.tab='works'; renderMain(); return; } // 阅其遗著→文事 tab（tabWorks 早已就绪·此前掉入空 toast）
     }catch(e){}
     toast('动作「'+kind+'」入口待接（运行时将路由到对应系统）');
   },

@@ -860,6 +860,16 @@
   function _charStress(c) { return c ? num(c.resources && c.resources.stress != null ? c.resources.stress : c.stress, 30) : 30; }
   function _charFame(c) { return c ? num(c.resources && c.resources.fame != null ? c.resources.fame : c.fame, 0) : 0; }
   function _charLoyalty(c) { return c ? num(c.loyalty, 60) : 60; }
+  // 官报失真通用变换（抽自 refreshReported·纯函数·可供他系统按同律算「据报值」）。
+  //   concealFactor：瞒报幅度 0..0.6——base 由主官 disposition(压力高怕担责/忠低不尽职/名望高要脸面)·danger 放大(坏事越多越想盖)·无主官例行轻度 0.15。
+  //   reportedValue：据报值 = 真值 ×(1−conceal)。督抚往粉饰，报得比实情轻。
+  function concealFactor(disp, danger) {
+    var base = disp ? (0.45 * (num(disp.stress, 0) / 100) + 0.35 * (1 - num(disp.loyalty, 0) / 100) + 0.20 * clamp(num(disp.fame, 0) / 100, 0, 1)) : 0.15;
+    return clamp(base * (1 + 0.5 * clamp(num(danger, 0), 0, 1)), 0, 0.6);
+  }
+  function reportedValue(trueVal, conceal) {
+    return num(trueVal, 0) * (1 - clamp(num(conceal, 0), 0, 0.6));
+  }
   // 区域→主官名（子区继承最近上级 governor·治所/省主官覆盖府县）
   function _governorMap(Pp) {
     Pp = Pp || _P(); var map = {};
@@ -894,16 +904,16 @@
       var fallowShare = (cult + fallow) > 0 ? clamp(fallow / (cult + fallow), 0, 1) : 0;
       var need = num(r.foodNeed, 0), deficitRatio = need > 0 ? clamp(num(r.foodDeficit, 0) / need, 0, 1) : 0;
       var gov = _charByName(GM, govMap[rid]);
-      // 瞒报幅度：督抚 stress 高(怕担责)/loyalty 低(不尽职)/fame 高(要脸面)→粉饰；无主官→例行轻度
-      var base = gov ? (0.45 * (_charStress(gov) / 100) + 0.35 * (1 - _charLoyalty(gov) / 100) + 0.20 * clamp(_charFame(gov) / 100, 0, 1)) : 0.15;
       var danger = clamp(deficitRatio + Math.max(0, corveeRate - CORVEE_LINE) * 2 + fleeRate, 0, 1); // 坏事越多越想盖
-      var conceal = clamp(base * (1 + 0.5 * danger), 0, 0.6);                                        // 封顶 60%·瞒不到天衣无缝
-      var keep = 1 - conceal;
+      // 瞒报幅度走抽出的通用变换（督抚 stress 高/loyalty 低/fame 高→粉饰·danger 放大·无主官例行轻度·封顶 60%）
+      var conceal = concealFactor(gov ? { stress: _charStress(gov), loyalty: _charLoyalty(gov), fame: _charFame(gov) } : null, danger);
       GM.renli.reported[rid] = {
-        corveeRate: Math.round(corveeRate * keep * 10000) / 10000,
-        fallowShare: Math.round(fallowShare * keep * 10000) / 10000,
-        fugitiveRate: Math.round(fleeRate * keep * 10000) / 10000,
-        deficitRatio: Math.round(deficitRatio * keep * 10000) / 10000,
+        corveeRate: Math.round(reportedValue(corveeRate, conceal) * 10000) / 10000,
+        fallowShare: Math.round(reportedValue(fallowShare, conceal) * 10000) / 10000,
+        fugitiveRate: Math.round(reportedValue(fleeRate, conceal) * 10000) / 10000,
+        deficitRatio: Math.round(reportedValue(deficitRatio, conceal) * 10000) / 10000,
+        ding: Math.round(reportedValue(ding, conceal)),   // 据报丁口(督抚瞒报税基·隐户)·slice-1b 方志「默认看上报值」消费
+        trueDing: ding,                                    // 真丁口(供聚光核验揭示·同源)
         conceal: Math.round(conceal * 1000) / 1000,
         governor: (gov && gov.name) || (govMap[rid] || ''),
         turn: num(GM.turn, 0)
@@ -1075,6 +1085,7 @@
     applyReform: applyReform, recognizeEdictReform: recognizeEdictReform,
     applyUnrestPressure: applyUnrestPressure, formatForPrompt: formatForPrompt,
     refreshReported: refreshReported, getReportedVsTruth: getReportedVsTruth, formatReportedForPrompt: formatReportedForPrompt,
+    concealFactor: concealFactor, reportedValue: reportedValue,
     spawnReportedChannels: spawnReportedChannels, applyGrainShortfall: applyGrainShortfall,
     refreshWeather: refreshWeather,
     seededRegionKeySet: seededRegionKeySet, seededDingShare: seededDingShare,

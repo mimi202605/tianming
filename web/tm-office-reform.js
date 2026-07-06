@@ -4,7 +4,7 @@
  *   AI 在 band 约束下裁定 准/部分/拖/驳 + 演"谁怎么抵抗"。owner 拍：AI裁定+机械抵抗分护栏·拟制态两回合(④b)。
  * 代价=皇威(现成 capped 系统)。跨朝代：按抽象 power 与品级算，不认官署/官职专名。
  * band：margin = 抵抗 − authority(皇威皇权均) → <0 准 / <20 部分 / <40 拖 / ≥40 驳。
- * 状态：PoC·纯函数(authority/difficulty 由 opts 传入·④b 接真皇威与难度档)·未接线。
+ * 状态：已接线（computeReformResistance/applyReformToTree 走裁定管线·flag officeReformAdjudicationEnabled·并为典章 abolishFriction 具名祖制源）。注释此前误标「未接线」·已正。
  */
 (function (global) {
   'use strict';
@@ -49,6 +49,18 @@
     return out;
   }
 
+  // ── 典章·祖制 office 源 key（Wave5 slice-2）──
+  // add：改制**创建**的机构 key（增设职位=部/职·增设子部=子部名·增设部=部名）；其余：改制**针对**的现有机构 key。
+  // 供 recordOfficeReform（记种子）与 abolishFriction（改具名祖制阻力）共用同一命名 → 首尾一致对得上。
+  function _officeKey(reform) {
+    if (!reform) return '';
+    var d = reform.dept || '', p = reform.position || '', nd = reform.newDept || '';
+    if (_reformKind(reform) === 'add') { if (p) return d + '/' + p; if (nd) return nd; return d; }
+    return d + (p ? '/' + p : '');
+  }
+  function _recordDz(GM, key, name) { try { if (key && global.TM && global.TM.Dianzhang && global.TM.Dianzhang.recordOfficeReform) global.TM.Dianzhang.recordOfficeReform(GM, key, name); } catch (e) {} }
+  function _abolishDz(GM, key) { try { if (key && global.TM && global.TM.Dianzhang && global.TM.Dianzhang.onInstitutionAbolished) global.TM.Dianzhang.onInstitutionAbolished(GM, key); } catch (e) {} }
+
   /**
    * @param {object} reform { reformDetail:'增设|裁撤|改名|合并', dept, position?, newDept? }
    * @param {object} [opts] { authority?:number=皇威皇权均, difficulty?:'narrative|standard|hardcore', force? }
@@ -73,6 +85,18 @@
         affected.push({ dept: it.dept, pos: p.name, holder: p.holder, weight: w });
       });
     }
+    // 典章·祖制副作用（Wave5 双刃·副作用侧·王朝越僵）：典章越厚→朝野守成·改制普遍阻力↑（count-based·封顶+20）。
+    // 见 tm-dianzhang.rigidityFriction。加在 diffMul 前→难度亦放大守成之惰（愈难之局朝廷愈守旧）。典章空则为 0·不改现有行为。
+    var dzRigid = 0;
+    try { if (global.TM && global.TM.Dianzhang && typeof global.TM.Dianzhang.rigidityFriction === 'function') dzRigid = global.TM.Dianzhang.rigidityFriction(GM) || 0; } catch (e) {}
+    resistance += dzRigid;
+    // 典章·成宪难改（Wave5 slice-2·具名祖制）：改「已成祖制的衙门本身」(裁撤/改名/合并)额外阻力(成宪愈久愈僵·封顶40)。
+    // 见 tm-dianzhang.abolishFriction·key 同 recordOfficeReform 命名。add(增设新机构)不触发(非改现有祖制)。
+    var dzAbolish = 0;
+    if (kind !== 'add') {
+      try { if (global.TM && global.TM.Dianzhang && typeof global.TM.Dianzhang.abolishFriction === 'function') dzAbolish = global.TM.Dianzhang.abolishFriction(GM, 'office', _officeKey(reform)) || 0; } catch (e) {}
+    }
+    resistance += dzAbolish;
     var diffMul = F.difficultyMul[opts.difficulty] || 1;
     resistance = Math.max(0, Math.round(resistance * diffMul));
     var margin = resistance - authority;
@@ -80,8 +104,8 @@
     var costHuangwei = Math.min(F.costCap, Math.round(resistance * F.costFactor));
     return {
       kind: kind, resistance: resistance, authority: authority, margin: margin, band: band,
-      costHuangwei: costHuangwei, affected: affected,
-      reason: '改制[' + kind + ']抵抗' + resistance + ' vs 威权' + authority + ' → ' + band + (affected.length ? '·触动' + affected.map(function (a) { return a.holder; }).join('、') : '')
+      costHuangwei: costHuangwei, affected: affected, dianzhangRigidity: dzRigid, dianzhangAbolish: dzAbolish,
+      reason: '改制[' + kind + ']抵抗' + resistance + ' vs 威权' + authority + ' → ' + band + (dzAbolish ? '·触祖制成宪(+' + dzAbolish + ')' : '') + (affected.length ? '·触动' + affected.map(function (a) { return a.holder; }).join('、') : '')
     };
   }
 
@@ -107,25 +131,30 @@
       if (pos) {
         var added = false;
         _walkTree(tree, function (n) { if (n.name === dept) { if (!n.positions) n.positions = []; n.positions.push({ name: pos, rank: reform.newRank || '', holder: '', desc: reform.reason || '', headCount: 1, actualCount: 0, additionalHolders: [], establishedCount: 1, vacancyCount: 1, actualHolders: [] }); added = true; } });
+        if (added) _recordDz(GM, dept + '/' + pos, dept + '·' + pos);   // 增设职位→典章种子
         return { applied: added, summary: added ? (dept + '增设' + pos) : ('未找到部门' + dept) };
       }
-      if (newDept) { var ok = false; _walkTree(tree, function (n) { if (n.name === dept) { if (!n.subs) n.subs = []; n.subs.push({ name: newDept, desc: reform.reason || '', positions: [], subs: [], functions: [] }); ok = true; } }); return { applied: ok, summary: ok ? (dept + '下增设' + newDept) : ('未找到部门' + dept) }; }
+      if (newDept) { var ok = false; _walkTree(tree, function (n) { if (n.name === dept) { if (!n.subs) n.subs = []; n.subs.push({ name: newDept, desc: reform.reason || '', positions: [], subs: [], functions: [] }); ok = true; } }); if (ok) _recordDz(GM, newDept, newDept); return { applied: ok, summary: ok ? (dept + '下增设' + newDept) : ('未找到部门' + dept) }; }
       tree.push({ name: dept || '新设部门', desc: reform.reason || '', positions: [], subs: [], functions: [] });
+      _recordDz(GM, dept || '新设部门', dept || '新设部门');   // 增设部门→典章种子
       return { applied: true, summary: '增设' + (dept || '新设部门') };
     }
     if (kind === 'abolishPos') {
       var removed = false;
       _walkTree(tree, function (n) { if (n.name === dept && n.positions) { n.positions.filter(function (p) { return p.name === pos && p.holder; }).forEach(function (p) { _vacateHolder(GM, dept, pos, p.holder); }); var before = n.positions.length; n.positions = n.positions.filter(function (p) { return p.name !== pos; }); if (n.positions.length < before) removed = true; } });
+      if (removed) _abolishDz(GM, dept + '/' + pos);   // 裁撤职位→清种子+祖制
       return { applied: removed, summary: removed ? ('裁撤' + dept + pos) : ('未找到' + dept + pos) };
     }
     if (kind === 'abolishDept') {
       _walkTree(tree, function (n) { if (n.name === dept) (function collect(nd) { (nd.positions || []).forEach(function (p) { if (p.holder) _vacateHolder(GM, nd.name, p.name, p.holder); }); (nd.subs || []).forEach(collect); })(n); });
       GM.officeTree = tree.filter(function (d) { return d.name !== dept; });
       (function delSub(ns) { ns.forEach(function (n) { if (n.subs) { n.subs = n.subs.filter(function (s) { return s.name !== dept; }); delSub(n.subs); } }); })(GM.officeTree);
+      _abolishDz(GM, dept);   // 裁撤部门→清种子+祖制
       return { applied: true, summary: '裁撤' + dept };
     }
     if (kind === 'rename') {
       var rn = false; _walkTree(tree, function (n) { if (n.name === dept && newDept) { n.name = newDept; rn = true; } });
+      if (rn) _abolishDz(GM, dept);   // 更名=改这条祖制本身·旧名机构之成宪消亡（新名须另历时间方成祖制）
       return { applied: rn, summary: rn ? (dept + '更名' + newDept) : ('未找到' + dept) };
     }
     if (kind === 'merge') {
@@ -135,6 +164,7 @@
         if (!dst.subs) dst.subs = []; (src.subs || []).forEach(function (s) { dst.subs.push(s); });
         GM.officeTree = tree.filter(function (d) { return d !== src; });
         (function delSub(ns) { ns.forEach(function (n) { if (n.subs) { n.subs = n.subs.filter(function (s) { return s !== src; }); delSub(n.subs); } }); })(GM.officeTree);
+        _abolishDz(GM, dept);   // 源部并入他部→源部之成宪消亡
         return { applied: true, summary: dept + '并入' + newDept };
       }
       return { applied: false, summary: '合并未找到源/的部门' };

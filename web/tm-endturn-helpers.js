@@ -300,6 +300,8 @@ function generateChancellorSuggestions() {
   GM.chars.forEach(function(c) {
     if (c.isPlayer) return;
     if (!c.alive && c.alive !== undefined) return;
+    // 阵营闸(2026-07-04)：宰辅=本朝首臣·外邦君主(皇太极/德川氏等)品级再高也不得为玩家"宰相"进言——其言喂入回合推演会被放大成敌国首脑向玩家奏请的叙事污染。只拦明确标了异势力者·空 faction 朝臣放行
+    if (typeof _tmIsForeignCourtChar === 'function' && _tmIsForeignCourtChar(c)) return;
     if (!chancellor || (c.rankLevel || 99) < (chancellor.rankLevel || 99)) chancellor = c;
   });
   if (!chancellor) return [];
@@ -615,12 +617,44 @@ function _consumeDynastyEndSignal() {
 }
 
 /** 9.4: 统一终局画面（含数据回顾） */
+// A1\u00B7\u6218\u7EE9\u7559\u75D5\uFF1A\u7EC8\u5C40\u65F6\u628A\u672C\u5C40\u901A\u5173\u8BB0\u5F55\u5199\u5165\u672C\u5730 tm_playHistory\u00B7\u4E2A\u4EBA\u53F2\u5B98\u6863\u6848\u300C\u6218\u7EE9\u00B7\u5386\u4EE3\u4EB2\u5386\u300D\u8BFB\u6E32\u67D3(tm-content-manager.js)\u00B7
+//   \u4E00\u5C40\u4E00\u8BB0(\u540C\u5C40\u7EC8\u5C40\u5C4F\u91CD\u5165\u6309 sid/\u56DE\u5408/\u80DC\u8D25/\u7ED3\u5C40\u53BB\u91CD\u00B7\u4E0D\u76F4\u5199 GM \u5B88\u67B6\u6784\u5B88\u536B\u300C\u5199\u8D70\u8D26\u300D)\u00B7\u7EAF\u5BA2\u6237\u7AEF(\u5355\u673A\u901A\u5173\u672C\u5730\u7559\u75D5\u00B7\u670D\u52A1\u5668\u7248\u540E\u7EED\u63A5\u7BA1\u540C\u6B65\u00B7\u540C\u6536\u85CF\u9601\u8303\u5F0F)\u00B7\u5168 try \u515C\u5E95\u4E0D\u963B\u65AD\u7EC8\u5C40\u5C4F
+function _recordPlaythrough(isVictory, completedGoals, failGoal, sc) {
+  try {
+    if (typeof GM === 'undefined' || !GM) return;
+    if (typeof localStorage === 'undefined' || !localStorage) return;
+    var outcome = isVictory
+      ? ((completedGoals && completedGoals.length) ? completedGoals.map(function (g) { return g.title || g.name; }).join('\u3001') : '\u4E2D\u5174')
+      : ((failGoal && (failGoal.title || failGoal.name)) || '\u503E\u8986');
+    var territory = 0;   // \u7586\u57DF best-effort\uFF1A\u73A9\u5BB6\u52BF\u529B\u6240\u8F96\u57CE\u6570
+    try {
+      var _pc = (GM.chars || []).find(function (c) { return c && c.isPlayer; });
+      var _pf = _pc ? (_pc.faction || '') : '';
+      if (_pf && Array.isArray(GM.cities)) territory = GM.cities.filter(function (c) { return c && (c.owner === _pf || c.faction === _pf); }).length;
+    } catch (_te) {}
+    var rec = {
+      ts: (typeof Date !== 'undefined' && Date.now) ? Date.now() : 0,
+      sid: GM.sid || '', scenario: (sc && (sc.name || sc.title)) || (GM.scenarioName || '\u672A\u540D\u5C40'),
+      turns: GM.turn || 0, era: (typeof getTSText === 'function' ? getTSText(GM.turn) : ''),
+      victory: !!isVictory, outcome: String(outcome).slice(0, 60), territory: territory
+    };
+    var arr = [];
+    try { arr = JSON.parse(localStorage.getItem('tm_playHistory') || '[]'); if (!Array.isArray(arr)) arr = []; } catch (_pe) { arr = []; }
+    // 防重：终局屏若被重入·同局(sid/回合/胜败/结局全同)不重记·免直写 GM 加瞬态 flag
+    if (arr.length && arr[0] && arr[0].sid === rec.sid && arr[0].turns === rec.turns && arr[0].victory === rec.victory && arr[0].outcome === rec.outcome) return;
+    arr.unshift(rec);
+    if (arr.length > 50) arr = arr.slice(0, 50);
+    localStorage.setItem('tm_playHistory', JSON.stringify(arr));
+  } catch (_e) {}
+}
+
 function _showEndgameScreen(type, failGoal) {
   var isVictory = type === 'victory';
   var sc = typeof findScenarioById === 'function' ? findScenarioById(GM.sid) : null;
   var _ts = typeof getTSText === 'function' ? getTSText(GM.turn) : '\u7B2C' + GM.turn + '\u56DE\u5408';
   var accentColor = isVictory ? 'var(--gold-400)' : 'var(--vermillion-400)';
   var completedGoals = (P.goals || []).filter(function(g) { return g.completed; });
+  try { _recordPlaythrough(isVictory, completedGoals, failGoal, sc); } catch (_ph) {}
 
   var h = '<div style="position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);animation:fi 0.5s ease;overflow-y:auto;" id="_endgame">';
   h += '<div style="max-width:640px;width:90%;padding:2rem;max-height:90vh;overflow-y:auto;">';

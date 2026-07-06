@@ -3299,6 +3299,105 @@ async function probeModelEvidenceAudit(opts) {
   return report;
 }
 
+// ============================================================
+//  连接快检（2026-07-04·「测试连接」时自动跑·轻量三小调用）
+//  ①连通/延迟/模型回声(防中转偷换)/usage字段 ②流式SSE ③严格JSON mini(天命结算命门)
+//  重项（证据校验6调·实测输出长篇）不自动·由报告卡按钮转交既有探测
+// ============================================================
+async function probeModelQuickCheck(opts) {
+  opts = opts || {};
+  var _prog = opts.onProgress || function(){};
+  var _tier = opts.tier || 'primary';
+  var _aiCfg = _getAITier(_tier);
+  var key = _aiCfg.key;
+  var chatUrl = (typeof _buildAIUrlForTier === 'function') ? _buildAIUrlForTier(_tier) : _buildAIUrl();
+  if (!key || !chatUrl) throw new Error('未配置可用 API');
+  var _hdrs = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key };
+  var _sig = function(ms){ return (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(ms) : undefined; };
+  var report = {
+    tier: _tier, model: _aiCfg.model || '', responseModel: '',
+    latencyMs: 0, usageSeen: false, echo: 'unknown',
+    stream: { ok: false, detail: '' }, json: { ok: false, detail: '' },
+    warnings: [], timestamp: Date.now()
+  };
+
+  // 1/3 连通·延迟·模型回声·usage
+  _prog('快检 1/3：连通与模型回声…');
+  var t0 = Date.now();
+  var r1 = await fetch(chatUrl, { method: 'POST', headers: _hdrs, signal: _sig(20000),
+    body: JSON.stringify({ model: _aiCfg.model || '', messages: [{ role: 'user', content: 'Reply with exactly: OK' }], temperature: 0, max_tokens: 8, stream: false }) });
+  if (!r1.ok) { var _et = ''; try { _et = (await r1.text()).slice(0, 200); } catch(_) {} var _he = new Error('HTTP ' + r1.status + (_et ? ' · ' + _et : '')); _he.httpStatus = r1.status; throw _he; }
+  var d1 = await r1.json();
+  report.latencyMs = Date.now() - t0;
+  report.responseModel = (d1 && d1.model) ? String(d1.model) : '';
+  report.usageSeen = !!(d1 && d1.usage && (d1.usage.total_tokens || d1.usage.completion_tokens || d1.usage.prompt_tokens));
+  if (report.responseModel && report.model) {
+    var _a = report.model.toLowerCase(), _b = report.responseModel.toLowerCase();
+    if (_b.indexOf(_a) >= 0 || _a.indexOf(_b) >= 0) report.echo = 'match';
+    else {
+      var _fa = (typeof _tmProbeFamily === 'function') ? _tmProbeFamily(_a) : '', _fb = (typeof _tmProbeFamily === 'function') ? _tmProbeFamily(_b) : '';
+      report.echo = (_fa && _fb) ? (_fa === _fb ? 'family' : 'mismatch') : 'unknown';
+    }
+  }
+  if (report.echo === 'mismatch') report.warnings.push('响应模型「' + report.responseModel + '」与标称「' + report.model + '」家族不符，疑中转偷换模型');
+  if (!report.usageSeen) report.warnings.push('响应缺 usage 用量字段，成本统计与预算档位可能失准');
+  if (report.latencyMs > 8000) report.warnings.push('单次往返 ' + Math.round(report.latencyMs / 1000) + ' 秒，偏慢，过回合体感会拖长');
+
+  // 2/3 流式 SSE
+  _prog('快检 2/3：流式支持…');
+  try {
+    var t1 = Date.now();
+    var r2 = await fetch(chatUrl, { method: 'POST', headers: _hdrs, signal: _sig(20000),
+      body: JSON.stringify({ model: _aiCfg.model || '', messages: [{ role: 'user', content: 'Count: 1 2 3' }], temperature: 0, max_tokens: 16, stream: true }) });
+    if (r2.ok && r2.body && r2.body.getReader) {
+      var _rd = r2.body.getReader(); var _dec = new TextDecoder(); var _buf = ''; var _saw = false; var _reads = 0;
+      while (_reads < 40) {
+        var _it = await _rd.read();
+        if (_it.done) break;
+        _buf += _dec.decode(_it.value, { stream: true }); _reads++;
+        if (/data:\s*[\[{]/.test(_buf)) { _saw = true; break; }
+      }
+      try { _rd.cancel(); } catch(_) {}
+      report.stream.ok = _saw;
+      report.stream.detail = _saw ? ('首包 ' + (Date.now() - t1) + 'ms') : '未见 SSE 数据帧（或以整包返回）';
+    } else {
+      report.stream.detail = r2.ok ? '环境不支持流式读取' : ('HTTP ' + r2.status);
+    }
+  } catch(_es) { report.stream.detail = _es.message || String(_es); }
+  if (!report.stream.ok) report.warnings.push('流式不可用：' + report.stream.detail + '（不碍推演，问天等逐字显示退化为整段）');
+
+  // 3/3 严格 JSON mini（回合结算依赖结构化输出·此项不过=大雷）
+  _prog('快检 3/3：严格 JSON 遵循…');
+  try {
+    var t2 = Date.now();
+    var r3 = await fetch(chatUrl, { method: 'POST', headers: _hdrs, signal: _sig(25000),
+      body: JSON.stringify({ model: _aiCfg.model || '', messages: [{ role: 'user', content: 'Return ONLY strict JSON. No markdown. Object must be exactly: {"probe":"tm-quick-v1","sum":407,"tags":["shi","nong","gong","shang"],"ok":true}' }], temperature: 0, max_tokens: 120, stream: false }) });
+    if (r3.ok) {
+      var d3 = await r3.json();
+      var _ch = d3 && d3.choices && d3.choices[0];
+      var _tx = (_ch && _ch.message && typeof _ch.message.content === 'string') ? _ch.message.content : ((_ch && typeof _ch.text === 'string') ? _ch.text : '');
+      var _j = (typeof _tmProbeJsonParse === 'function') ? _tmProbeJsonParse(_tx) : null;
+      var _okj = !!(_j && _j.probe === 'tm-quick-v1' && _j.sum === 407 && Array.isArray(_j.tags) && _j.tags.length === 4 && _j.ok === true);
+      report.json.ok = _okj;
+      report.json.detail = _okj ? ('通过 · ' + (Date.now() - t2) + 'ms') : (_tx || '(空响应)').slice(0, 120);
+      if (!_okj) report.warnings.push('严格 JSON 未通过——天命回合结算依赖结构化输出，建议跑深度证据校验或换模型');
+    } else {
+      report.json.detail = 'HTTP ' + r3.status;
+      report.warnings.push('JSON 遵循测试调用失败（HTTP ' + r3.status + '）');
+    }
+  } catch(_ej) {
+    report.json.detail = _ej.message || String(_ej);
+    report.warnings.push('JSON 遵循测试调用异常：' + report.json.detail);
+  }
+
+  try {
+    if (!P.conf._probeHistory) P.conf._probeHistory = {}; // arch-ok 探测史缓存·与既有 selfReport/evidence 同容器同性质
+    P.conf._probeHistory[_tier === 'secondary' ? 'quickCheck_secondary' : 'quickCheck'] = report; // arch-ok 探测史缓存
+    if (typeof _persistProbeConf === 'function') _persistProbeConf();
+  } catch(_) {}
+  return report;
+}
+
 async function listAvailableModels(opts) {
   opts = opts || {};
   var _tier = opts.tier || 'primary';

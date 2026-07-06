@@ -779,10 +779,10 @@ var MilitarySystems = (function(global) {
       attacker: Math.max(0, Math.round(_toNum((br.casualties || {}).attacker, 0))),
       defender: Math.max(0, Math.round(_toNum((br.casualties || {}).defender, 0)))
     };
-    // 确定性战果 (opt-in·P.conf/battleConfig.deterministicCasualties·默认 OFF → 此块整体跳过·零行为变更)
-    // AI 漏报(双方皆0)或离谱(超兵力)伤亡时·用 BattleEngine 按兵力/地形/城防/季节确定性核算·治「战果全凭 AI 自由裁量·机械可信度低」
+    // 确定性战果 (2026-07-05 owner 定·翻默认 ON·P.conf/battleConfig.deterministicCasualties===false 才关)
+    // AI 漏报(双方皆0)或离谱(超兵力)伤亡时·用 BattleEngine 按兵力/地形/城防/季节确定性核算·治「战果全凭 AI 自由裁量·机械可信度低」·正常合理伤亡不干预(仅在 AI 明显出错/地形强矛盾时接管)
     try {
-      var _detOn = (typeof P !== 'undefined' && P) && ((P.conf && P.conf.deterministicCasualties === true) || (P.battleConfig && P.battleConfig.deterministicCasualties === true));
+      var _detOn = (typeof P !== 'undefined' && P) && !((P.conf && P.conf.deterministicCasualties === false) || (P.battleConfig && P.battleConfig.deterministicCasualties === false));
       if (_detOn && attackerArmy && defenderArmy && typeof BattleEngine !== 'undefined' && BattleEngine && typeof BattleEngine.resolve === 'function') {
         var _aSz = _toNum(attackerArmy.soldiers != null ? attackerArmy.soldiers : attackerArmy.strength, 0);
         var _dSz = _toNum(defenderArmy.soldiers != null ? defenderArmy.soldiers : defenderArmy.strength, 0);

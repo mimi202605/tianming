@@ -856,6 +856,11 @@
     for (var i = 0; i < PACK_TYPES.length; i++) if (PACK_TYPES[i].v === t) return PACK_TYPES[i].label;
     return t;
   }
+  // 残局包：搭 type='mod' 载体·靠 tags 含「残局」识别（服务器不留存 packageKind·只可靠留 tags）。
+  // 详见 reference_tianming_workshop_account / tm-resume-point.js。接演走下载→JSON.parse→fullLoadGame 起局。
+  function isResumePack(p) {
+    return !!(p && ((Array.isArray(p.tags) && p.tags.indexOf('残局') >= 0) || p.packageKind === 'resume'));
+  }
 
   // 商城卡片（封面网格）：剪纸封面 + 标题/作者/评分/标签 + 安装；复用现成 install/rate/author 处理器。
   function catalogCardV2(p) {
@@ -881,7 +886,9 @@
         tagHtml +
         rateControl(p) +
         '<div class="tm-actions" style="margin-top:.55rem;">' +
-          action('在线安装', 'TMContentManager.installCatalogPack(' + jsArg(p.packageUrl || '') + ',' + jsArg(p.sha256 || '') + ',' + jsArg(p.id || '') + ')', 'primary', disabled) +
+          (isResumePack(p)
+            ? action('从此接演', 'TMContentManager.resumePlay(' + jsArg(p.packageUrl || '') + ',' + jsArg(p.id || '') + ')', 'primary', disabled)
+            : action('在线安装', 'TMContentManager.installCatalogPack(' + jsArg(p.packageUrl || '') + ',' + jsArg(p.sha256 || '') + ',' + jsArg(p.id || '') + ')', 'primary', disabled)) +
         '</div>' +
       '</div>' +
     '</div>';
@@ -1045,7 +1052,9 @@
               '<div class="dmeta">' + mallStars(p) + '<span>↓' + (p.downloads || 0) + '</span>' + (p.endorsements ? '<span>✦' + p.endorsements + '</span>' : '') + '<span>v' + esc(p.version || '1.0.0') + '</span>' + (p.size ? '<span>' + esc(formatBytes(p.size)) + '</span>' : '') + '</div>' +
               (tags.length ? '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">' + tags.slice(0, 6).map(function(t){ return '<span class="tag">' + esc(t) + '</span>'; }).join('') + '</div>' : '') +
               '<div class="dacts">' +
-                '<button class="btn primary"' + (disabled ? ' disabled' : '') + ' onclick="TMContentManager.installCatalogPack(' + jsArg(p.packageUrl || '') + ',' + jsArg(p.sha256 || '') + ',' + jsArg(p.id || '') + ')">' + esc(packInstallLabel(ptype)) + '</button>' +
+                (isResumePack(p)
+                  ? '<button class="btn primary"' + (disabled ? ' disabled' : '') + ' onclick="TMContentManager.resumePlay(' + jsArg(p.packageUrl || '') + ',' + jsArg(p.id || '') + ')" title="载入这局推演进度，从此接演续写">从此接演</button>'
+                  : '<button class="btn primary"' + (disabled ? ' disabled' : '') + ' onclick="TMContentManager.installCatalogPack(' + jsArg(p.packageUrl || '') + ',' + jsArg(p.sha256 || '') + ',' + jsArg(p.id || '') + ')">' + esc(packInstallLabel(ptype)) + '</button>') +
                 (loggedIn ? '<span style="font-size:12px;color:var(--ink-dim);">评分 ' + rateStars + '</span>' : '') +
               '</div>' +
               '<div class="dacts" style="margin-top:8px;">' +
@@ -2370,8 +2379,7 @@
         '<div class="rail"><h4>下载榜</h4>' + rankList(byDown, function(p){ return '↓' + (p.downloads || 0); }) + '</div>' +
         '<div class="rail"><h4>口碑榜</h4>' + rankList(byRate, function(p){ return '★' + ((p.rating || 0).toFixed ? p.rating.toFixed(1) : p.rating); }) + '</div>' +
         '<div class="rail"><h4>社区推荐榜</h4>' + rankList(byEnd, function(p){ return '✦' + (p.endorsements || 0); }) + '</div>' +
-      '</div>' +
-      renderArenaSection();
+      '</div>';
   }
   function renderArenaSection() {
     if (!state.arenasLoaded && !state.arenasLoading) { try { setTimeout(loadArenas, 0); } catch (e) {} }
@@ -2437,6 +2445,33 @@
     return '<div class="sec-h"><h3>鉴赏家合集</h3></div>' +
       (state.collectionsMsg ? '<div class="status" style="margin-bottom:10px;">' + esc(state.collectionsMsg) + '</div>' : '') +
       creator + cards;
+  }
+  // ===== 我的合集（「我」页策展·服务端 collections(?ownerId) 按主人筛，非 nick 匹配） =====
+  function loadMyCollections() {
+    var uid = selfId();
+    if (uid == null || !(window.TM && TM.OnlineClient && TM.OnlineClient.collections)) return;
+    state.myCollectionsLoading = true;
+    TM.OnlineClient.collections(uid, state.onlineApiUrl || undefined).then(function(res){
+      state.myCollectionList = (res && res.collections) || []; state.myCollectionsLoaded = true; state.myCollectionsLoading = false; render();
+    }).catch(function(){ state.myCollectionsLoading = false; render(); });
+  }
+  function createMyCollectionUI() {
+    var t = document.getElementById('tm-mycol-title'), d = document.getElementById('tm-mycol-desc');
+    var title = t ? t.value.trim() : '';
+    if (!title) { state.myCollectionsMsg = '请填写合集标题。'; render(); return; }
+    TM.OnlineClient.createCollection({ title: title, description: d ? d.value.trim() : '' }, state.onlineApiUrl || undefined).then(function(res){
+      if (res && res.success) { state.myCollectionsMsg = '合集已建。'; state.myCollectionsLoaded = false; loadMyCollections(); }
+      else { state.myCollectionsMsg = '建合集失败：' + ((res && res.error) || ''); render(); }
+    }).catch(function(){ state.myCollectionsMsg = '建合集失败。'; render(); });
+  }
+  function renderMyCollections() {
+    if (!state.myCollectionsLoaded && !state.myCollectionsLoading) { try { setTimeout(loadMyCollections, 0); } catch (e) {} }
+    var cols = state.myCollectionList || [];
+    var cards = cols.length ? '<div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">' + cols.map(function(c){
+      return '<div class="card" style="cursor:pointer;" onclick="TMContentManager.openCollection(' + Number(c.id) + ')"><div class="pad"><h4>' + esc(c.title) + '</h4><div class="au">' + (c.count || 0) + ' 件</div>' + (c.description ? '<div class="rt"><span style="color:var(--ink-faint);">' + esc(c.description) + '</span></div>' : '') + '</div></div>';
+    }).join('') + '</div>' : '<div class="empty"><div class="glyph">集</div><div class="t">还没有合集</div><div>把好作品策成一辑，分享给同好</div></div>';
+    var creator = '<div class="composer" style="margin:10px 0 4px;"><div style="display:flex;gap:8px;flex-wrap:wrap;"><input id="tm-mycol-title" class="input" style="flex:1;min-width:180px;" placeholder="合集标题，如「明末入坑五部曲」"><input id="tm-mycol-desc" class="input" style="flex:1;min-width:160px;" placeholder="一句策展语(可选)"><button class="btn primary sm" onclick="TMContentManager.createMyCollectionUI()">建合集</button></div></div>';
+    return (state.myCollectionsMsg ? '<div class="status" style="margin-bottom:10px;">' + esc(state.myCollectionsMsg) + '</div>' : '') + creator + cards;
   }
   // ===== A 史馆动态流 =====
   var FEED_TYPE_LABEL = { highlight: '局势高光', publish: '新作发布', chronicle: '史册落成', relay: '接龙邀请', milestone: '里程碑' };
@@ -2547,9 +2582,11 @@
     if (pane === 'feed') return renderFeedPane();
     if (pane === 'browse') return renderBrowsePane();
     if (pane === 'ranks') return renderRanksPane();
+    if (pane === 'arenas') return renderArenaSection();
     if (pane === 'topics') return renderTopicsPane();
     if (pane === 'circles') return renderCirclesPane();
     if (pane === 'studio') return renderStudioPane();
+    if (pane === 'commissions') return renderCommissionSection();
     if (pane === 'friends') return renderFriendsPaneMall();
     if (pane === 'updates') return renderUpdatesPaneMall();
     if (pane === 'me') return renderMePane();
@@ -2675,8 +2712,7 @@
           '</section>' +
         '</div>' +
       '</div>' +
-      (state.publishMessage ? '<div class="status" style="margin-top:10px;">' + esc(state.publishMessage) + '</div>' : '') +
-      renderCommissionSection();
+      (state.publishMessage ? '<div class="status" style="margin-top:10px;">' + esc(state.publishMessage) + '</div>' : '');
   }
 
   // 好友（mall）
@@ -2882,6 +2918,35 @@
     }).filter(Boolean);
   }
   // 履历热力图：近 18 周活跃留痕（发布/收藏时间戳·真值，无数据则淡格如实呈现）
+  // A1·战绩·历代亲历：读本地 tm_playHistory(终局屏 _recordPlaythrough 写·一局一记)·渲染每局存续/疆域/结局/胜败·无则诚实空态
+  function renderWarRecords() {
+    var arr = [];
+    try { arr = JSON.parse(localStorage.getItem('tm_playHistory') || '[]'); if (!Array.isArray(arr)) arr = []; } catch (e) { arr = []; }
+    if (!arr.length) return '<div class="empty"><div class="glyph">史</div><div class="t">还没有战绩</div><div>通关后自动留痕：存续年数、疆域、结局。</div></div>';
+    var rows = arr.slice(0, 30).map(function (r) {
+      r = r || {};
+      var vic = !!r.victory;
+      var mark = vic ? '天命已成' : '天命已绝';
+      var markColor = vic ? 'var(--gold-400,#d6b15d)' : 'var(--vermillion-400,#c0563a)';
+      var when = '';
+      try { if (r.ts) { var d = new Date(r.ts); when = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); } } catch (e2) {}
+      var meta = [];
+      if (r.era) meta.push(esc(String(r.era)));
+      if (r.turns) meta.push('存续 ' + r.turns + ' 回合');
+      if (r.territory) meta.push('疆域 ' + r.territory + ' 城');
+      return '<div class="tm-war-row" style="display:flex;justify-content:space-between;gap:10px;padding:.5rem .1rem;border-bottom:1px solid rgba(214,177,93,.12);">' +
+        '<div style="min-width:0;flex:1;">' +
+          '<div style="font-size:.82rem;color:var(--gold-300,#c9a96e);">' + esc(String(r.scenario || '未名局')) + '</div>' +
+          '<div style="font-size:.72rem;color:rgba(234,223,203,.6);margin-top:2px;">' + meta.join(' · ') + '</div>' +
+          (r.outcome ? '<div style="font-size:.72rem;color:rgba(234,223,203,.5);margin-top:1px;">' + esc(String(r.outcome)) + '</div>' : '') +
+        '</div>' +
+        '<div style="text-align:right;flex-shrink:0;"><span style="font-size:.74rem;color:' + markColor + ';font-weight:600;">' + mark + '</span>' +
+          (when ? '<div style="font-size:.66rem;color:rgba(234,223,203,.4);margin-top:2px;">' + when + '</div>' : '') + '</div>' +
+        '</div>';
+    }).join('');
+    return '<div class="tm-war-records">' + rows + '</div>';
+  }
+
   function renderHeatmap(events) {
     var DAY = 86400000, WEEKS = 18;
     var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -3026,8 +3091,8 @@
         '</div>' +
         '<div class="sec-h"><h3>列传 · 我的发布</h3>' + (works.length ? '<span class="more" onclick="TMContentManager.switchPane(\'studio\')">发布新作 ›</span>' : '') + '</div>' + worksHtml +
         '<div class="sec-h"><h3>收藏阁' + (favWorks.length ? ' · ' + favWorks.length : '') + '</h3></div>' + favHtml +
-        '<div class="sec-h"><h3>战绩 · 历代亲历</h3></div>' +
-          '<div class="empty"><div class="glyph">史</div><div class="t">还没有战绩</div><div>通关后自动留痕：存续年数、疆域、结局。</div></div>' +
+        '<div class="sec-h"><h3>策展 · 我的合集</h3></div>' + renderMyCollections() +
+        '<div class="sec-h"><h3>战绩 · 历代亲历</h3></div>' + renderWarRecords() +
         '<div class="sec-h"><h3>功业 · 成就</h3></div>' + renderBadges(works) +
         '<div class="sec-h"><h3>履历 · 近况</h3></div>' + renderHeatmap(activityEvents) +
         '<div class="sec-h"><h3>题跋 · 他人评说</h3></div>' +
@@ -3052,7 +3117,7 @@
     var user = (state.accountSession || {}).user;
     var idLabel = user ? (user.nickname || user.username) : '登录';
     var notifUnread = (state.notifData && state.notifData.unread) || 0;
-    var navItems = [['discover', '发现'], ['feed', '动态'], ['browse', '浏览'], ['ranks', '排行'], ['topics', '专题'], ['circles', '圈子'], ['studio', '创作'], ['friends', '好友'], ['me', '我']];
+    var navItems = [['discover', '发现'], ['feed', '动态'], ['browse', '浏览'], ['ranks', '排行'], ['arenas', '擂台'], ['topics', '专题'], ['circles', '圈子'], ['studio', '创作'], ['commissions', '约稿'], ['friends', '好友'], ['me', '我']];
     var nav = navItems.map(function(it){ return '<a class="' + (pane === it[0] ? 'on' : '') + '" onclick="TMContentManager.switchPane(\'' + it[0] + '\')">' + it[1] + '</a>'; }).join('');
     bg.innerHTML = '<main class="tm-mall tm-mall-page" role="main" aria-label="天命创意工坊" tabindex="-1">' +
       '<div class="topbar">' +
@@ -3578,6 +3643,33 @@
       await loadWorkshopScenarios(true);
     } else {
       state.catalogMessage = '在线安装失败：' + ((res && res.error) || '未知错误');
+      render();
+    }
+  }
+
+  // 残局接演：下载残局包（原始存档 JSON）→ TM.ResumePoint.resume 起局（fullLoadGame·覆盖当前局·保留本地 API key）。
+  // 桌面/网页同路（残局是原始 JSON·非落盘装包）。跨用户真下载受审核门约束：pending 包 403·需管理员审批后可下。
+  async function resumePlay(packageUrl, packId) {
+    if (!packageUrl) { say('无法获取该残局的下载地址。'); return; }
+    if (!(window.TM && TM.ResumePoint && TM.ResumePoint.resume)) { say('残局模块未就绪。'); return; }
+    if (typeof confirm === 'function' && !confirm('从此残局接演？将载入这局的推演进度，覆盖当前进行中的局（若未封存）。')) return;
+    state.catalogMessage = '正在下载残局并起局……';
+    render();
+    var resolvedUrl = packageUrl;
+    try { resolvedUrl = new URL(packageUrl, state.catalogUrl || state.defaultCatalogUrl || location.href).toString(); } catch (e) {}
+    try {
+      var res = await TM.ResumePoint.resume(resolvedUrl);
+      if (res && res.success) {
+        state.catalogMessage = '已接演残局·第' + (res.turn || '?') + '回合，续写这段天命。';
+        // fullLoadGame 已切到游戏界面·关闭工坊层
+        try { var bg = document.getElementById('tm-content-bg'); if (bg) bg.style.display = 'none'; } catch (e2) {}
+        say('已从残局接演·第' + (res.turn || '?') + '回合');
+      } else {
+        state.catalogMessage = '接演失败：' + ((res && res.error) || '未知错误');
+        render();
+      }
+    } catch (e) {
+      state.catalogMessage = '接演失败：' + (e && e.message || '未知错误');
       render();
     }
   }
@@ -4253,6 +4345,7 @@
     uninstallWebPack: uninstallWebPack,
     loadAuthorPacks: loadAuthorPacks,
     installCatalogPack: installCatalogPack,
+    resumePlay: resumePlay,
     openPackDetail: openPackDetail,
     closePackDetail: closePackDetail,
     toggleFavorite: toggleFavorite,
@@ -4289,6 +4382,7 @@
     openCollection: openCollection,
     closeCollection: closeCollection,
     createCollectionUI: createCollectionUI,
+    createMyCollectionUI: createMyCollectionUI,
     openCollectionPicker: openCollectionPicker,
     closeCollectionPicker: closeCollectionPicker,
     pickCollection: pickCollection,

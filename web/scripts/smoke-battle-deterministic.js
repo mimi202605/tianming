@@ -2,7 +2,7 @@
 'use strict';
 // smoke-battle-deterministic — BattleEngine 确定性战果 opt-in(二梯·接通死引擎)
 // 死代码:BattleEngine.resolve(确定性兵力对撞)从不被调(无人写 activeBattles)·战果全凭 AI 自由裁量
-// opt-in:P.conf/battleConfig.deterministicCasualties·默认 OFF=零变更·ON 时 AI 漏报/离谱伤亡→引擎确定性核算
+// 默认 ON(2026-07-05 翻默认·owner 定)·P.conf/battleConfig.deterministicCasualties===false 才关·AI 漏报/离谱伤亡→引擎确定性核算·正常伤亡不干预
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -33,10 +33,16 @@ const atk = () => ctx.GM.armies[0];
 const def = () => ctx.GM.armies[1];
 function brAbsurd() { return { winner: '后金', loser: '明朝廷', attacker: '关宁军', defender: '八旗', terrain: 'plains', casualties: { attacker: 999999, defender: 200 } }; }
 
-// ── ② OFF(默认):离谱伤亡照旧应用·零行为变更 ──
+// ── ② 默认 ON(2026-07-05 翻默认):无 flag → 引擎接管离谱伤亡 ──
 freshGM(); ctx.P = { conf: {}, battleConfig: {} };
+let br2 = brAbsurd();
+MS.applyBattleResult(br2, ctx.GM);
+ok(atk().soldiers > 0 && atk().soldiers < 50000, '② 默认ON:无 flag 即引擎接管→关宁军损失合理(>0 且 <5万·实存 ' + atk().soldiers + ')');
+ok(br2._deterministicCasualties === true, '② 默认ON:br 标记 _deterministicCasualties');
+// ── ②b 显式 false → 关(尊重 opt-out·离谱伤亡照旧应用) ──
+freshGM(); ctx.P = { conf: { deterministicCasualties: false }, battleConfig: {} };
 MS.applyBattleResult(brAbsurd(), ctx.GM);
-ok(atk().soldiers === 0, '② OFF默认:离谱伤亡 999999 照旧应用→关宁军削到 0(零行为变更·开关关时此块整体跳过)');
+ok(atk().soldiers === 0, '②b 显式关(===false):离谱伤亡 999999 照旧应用→关宁军削到 0(尊重 opt-out)');
 
 // ── ③ ON:离谱伤亡 → BattleEngine 确定性替代(损失合理) ──
 freshGM(); ctx.P = { conf: { deterministicCasualties: true }, battleConfig: {} };
@@ -67,11 +73,11 @@ ok(atk().soldiers === 47000, '⑥ ON:合理伤亡 3000 不被覆盖→50000-3000
 ok(def().soldiers === 52000, '⑥ ON:守方合理 8000 保留→60000-8000=52000');
 ok(!brOk._deterministicCasualties, '⑥ ON:合理数不标记替代(不干预)');
 
-// ── ⑦ OFF:双方 0 伤亡照旧 → 兵力不变 ──
-freshGM(); ctx.P = { conf: {}, battleConfig: {} };
+// ── ⑦ 显式关(===false):双方 0 伤亡照旧 → 兵力不变(尊重 opt-out) ──
+freshGM(); ctx.P = { conf: { deterministicCasualties: false }, battleConfig: {} };
 let br0b = { winner: '后金', loser: '明朝廷', attacker: '关宁军', defender: '八旗', casualties: { attacker: 0, defender: 0 } };
 MS.applyBattleResult(br0b, ctx.GM);
-ok(atk().soldiers === 50000 && def().soldiers === 60000, '⑦ OFF:双方 0 伤亡照旧→兵力不变(零行为变更)');
+ok(atk().soldiers === 50000 && def().soldiers === 60000, '⑦ 显式关(===false):双方 0 伤亡照旧→兵力不变(尊重 opt-out·关时整块跳过)');
 
 // ── ⑧ battleConfig 入口同样启用 ──
 freshGM(); ctx.P = { conf: {}, battleConfig: { deterministicCasualties: true } };
@@ -82,8 +88,8 @@ ok(brc._deterministicCasualties === true, '⑧ battleConfig.deterministicCasualt
 // ── ⑨ 源契约 ──
 const mil = fs.readFileSync(path.join(ROOT, 'tm-military.js'), 'utf8');
 ok(/!cfg\.enabled && !\(context && context\.forceCompute\)/.test(mil), '⑨ resolve 加 forceCompute 旁路(不需全引擎 enabled)');
-ok(/deterministicCasualties === true[\s\S]{0,400}BattleEngine\.resolve/.test(mil), '⑨ applyBattleResult opt-in 块接 BattleEngine.resolve');
+ok(/deterministicCasualties === false[\s\S]{0,400}BattleEngine\.resolve/.test(mil), '⑨ applyBattleResult 默认ON块(===false才关)接 BattleEngine.resolve');
 const pat = (fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8'));
-ok(pat.indexOf('确定性战果（默认关）') >= 0 && pat.indexOf('deterministicCasualties') >= 0 && /id="s-det-cas"/.test(pat), '⑨ 设置开关「确定性战果」已加(checkbox 接 _togglePConf deterministicCasualties)');
+ok(pat.indexOf('确定性战果（默认开）') >= 0 && pat.indexOf('deterministicCasualties') >= 0 && /id="s-det-cas"/.test(pat), '⑨ 设置开关「确定性战果（默认开）」已加(checkbox 接 _togglePConf)');
 
 console.log('\n结果: ' + A + ' 通过 / 0 失败');

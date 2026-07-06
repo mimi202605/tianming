@@ -95,6 +95,14 @@ function _renderModelProbePanel(tier) {
     h += '<div style="color:var(--txt-d);font-size:0.7rem;">' + (evidence.passed || 0) + '/' + (evidence.total || 0) + '项通过' + (evidence.responseModel ? '·' + escHtml(String(evidence.responseModel).slice(0,18)) : '') + (evidence.elapsedMs ? '·' + Math.round(evidence.elapsedMs/1000) + '秒' : '') + '</div>';
   }
   h += '</div>';
+  // 2026-07-04 连接快检联动（测试连接自动写入·此处回显最近一次）
+  var _qc = isSec ? probe.quickCheck_secondary : probe.quickCheck;
+  if (_qc) {
+    var _qEcho = _qc.echo === 'match' ? '回声一致' : _qc.echo === 'family' ? '同族异名' : _qc.echo === 'mismatch' ? '回声不符' : '回声未知';
+    h += '<div style="margin-top:0.35rem;font-size:0.72rem;color:var(--txt-d);">连接快检：' + Math.round(_qc.latencyMs || 0) + 'ms · ' +
+      '<span style="color:' + (_qc.echo === 'mismatch' ? 'var(--vermillion-400,#c04030)' : 'inherit') + ';">' + _qEcho + (_qc.responseModel ? '（' + escHtml(_qc.responseModel) + '）' : '') + '</span>' +
+      ' · 流式' + (_qc.stream && _qc.stream.ok ? '✓' : '✕') + ' · 严格JSON' + (_qc.json && _qc.json.ok ? '✓' : '✕') + ' · usage' + (_qc.usageSeen ? '✓' : '✕') + '</div>';
+  }
   if (evidence) h += _renderEvidenceDetails(evidence);
 
   h += '<div style="margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:0.35rem;">';
