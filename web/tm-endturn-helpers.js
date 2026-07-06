@@ -372,7 +372,9 @@ function resolveHeir(deadChar) {
   }
 
   // 2. 根据继承法类型分支
-  if (law === 'primogeniture' && deadChar.childrenIds && deadChar.childrenIds.length > 0) {
+  // 帝制默认嫡长(2026-07-07·国本刀)：未配继承法但有子嗣→按嫡长处理——否则分支2被跳过·
+  //   fallback3「同势力最强者」抢先继统(亲子在而权臣继)。显式配 seniority/elective 的剧本不受影响。
+  if ((law === 'primogeniture' || (!law && deadChar.childrenIds && deadChar.childrenIds.length > 0)) && deadChar.childrenIds && deadChar.childrenIds.length > 0) {
     // 嫡长子继承——年龄最大的符合性别限制的子嗣
     var children = deadChar.childrenIds.map(function(id) { return findCharByName(id); })
       .filter(function(c) { return c && c.alive !== false && _genderOk(c); })

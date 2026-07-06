@@ -308,15 +308,34 @@
           var alive = chance(0.88);  // 12% 流产/夭折
           if (alive) {
             var isPrince = chance(0.5);
-            var babyName = (isPrince ? '皇' : '公主') + (isPrince ? '子' : '') + (c.childCount + 1);
+            // 皇嗣总序命名(2026-07-07·国本刀)：原「皇子N/公主N」按各母 childCount 计数——两妃各得「皇子1」必撞名·
+            //   入宗牒(GM.chars)后 findCharByName 混淆。改全局皇嗣序：皇长子/皇次子…（朝代中立）。
+            if (!Array.isArray(GM.harem.heirs)) GM.harem.heirs = [];
+            var _ord = ['长', '次', '三', '四', '五', '六', '七', '八', '九', '十'];
+            var _seq = GM.harem.heirs.filter(function(h){ return h && h.isPrince === isPrince; }).length;
+            var babyName = '皇' + (_ord[_seq] || String(_seq + 1)) + (isPrince ? '子' : '女');
             // 简单的孩子记录
             c.children.push(babyName);
             c.childCount = (c.childCount || 0) + 1;
-            if (!Array.isArray(GM.harem.heirs)) GM.harem.heirs = [];
             GM.harem.heirs.push({
               name: babyName, mother: c.name, motherRank: c.rank,
               bornTurn: curTurn, isPrince: isPrince, alive: true
             });
+            // 国本接通(2026-07-07)：皇嗣登记为真角色+回填玩家 childrenIds——此前皇嗣只是数据对象·
+            //   resolveHeir(只认 char)永远选不中·驾崩/禅让轮不到亲子·后宫产出被整体丢弃。
+            try {
+              var _pcH = (GM.chars || []).find(function(x){ return x && x.isPlayer; });
+              if (_pcH && !(GM.chars || []).some(function(x){ return x && x.name === babyName; })) {
+                GM.chars.push({ // arch-ok 诞育入宗牒(国本刀2026-07-07·新生皇嗣登记为真角色·resolveHeir 才可及)
+                  name: babyName, age: 0, gender: isPrince ? 'male' : 'female',
+                  faction: _pcH.faction, alive: true, loyalty: 100,
+                  title: isPrince ? '皇子' : '皇女', bio: '生母' + (c.rank || '') + c.name,
+                  father: _pcH.name, mother: c.name, _royalChild: true
+                });
+                if (!Array.isArray(_pcH.childrenIds)) _pcH.childrenIds = [];
+                if (_pcH.childrenIds.indexOf(babyName) < 0) _pcH.childrenIds.push(babyName);
+              }
+            } catch (_ebr) {}
             c.favor = Math.min(100, (c.favor || 0) + (isPrince ? 18 : 10));
             // 诞下皇子可获位分提升
             if (isPrince && c.rank !== '皇后' && c.rank !== '皇贵妃') {
@@ -495,7 +514,13 @@
       html += '<div class="gs-harem-heirs">';
       heirs.slice(0, 12).forEach(function(h){
         var cls = h.isPrince ? 'prince' : 'princess';
-        html += '<div class="gs-harem-heir ' + cls + '" title="母 ' + esc(h.mother||'') + '">' + esc(h.name) + '</div>';
+        var isCP = (GM.harem.crownPrince === h.name);
+        var inChars = (GM.chars || []).some(function(x){ return x && x.name === h.name && x.alive !== false; });
+        var nmJs = String(h.name || '').replace(/'/g, '&#39;');
+        var canCrown = h.isPrince && !isCP && inChars;
+        html += '<div class="gs-harem-heir ' + cls + (isCP ? ' crown' : '') + '"'
+          + (canCrown ? ' style="cursor:pointer;" onclick="TM.hougong.crownPrince(\'' + nmJs + '\')" title="母 ' + esc(h.mother||'') + '·点击册立为皇太子"' : ' title="母 ' + esc(h.mother||'') + '"')
+          + '>' + (isCP ? '储·' : '') + esc(h.name) + '</div>';
       });
       html += '</div>';
       html += '</div>';
@@ -520,6 +545,34 @@
       toastSafe('选秀：' + c.name + '·' + c.rank);
       refreshPanel();
     }
+  }
+
+  // ─── 册立皇太子(2026-07-07·国本刀)：写玩家 designatedHeirId=resolveHeir 最高优先级——
+  //     驾崩/禅让由储君继统·不再被「同势力最强者」fallback 抢先 ───
+  function crownPrince(name) {
+    var h = ((GM.harem && GM.harem.heirs) || []).find(function(x){ return x && x.name === name && x.alive !== false && x.isPrince; });
+    if (!h) { toastSafe('查无此皇子'); return false; }
+    var pc = (GM.chars || []).find(function(x){ return x && x.isPlayer; });
+    if (!pc) { toastSafe('未找到玩家角色'); return false; }
+    var heirChar = (GM.chars || []).find(function(x){ return x && x.name === name && x.alive !== false; });
+    if (!heirChar) { toastSafe('皇子未入宗牒（旧档所生），恕不可立'); return false; }
+    if (GM.harem.crownPrince === name) { toastSafe(name + '已正位东宫'); return false; }
+    if (typeof confirm === 'function' && !confirm('册立 ' + name + ' 为皇太子？国本一定，中外瞩目。')) return false;
+    GM.harem.crownPrince = name; // arch-ok 册立太子写口本体(harem 子树·本模块即后宫写主)
+    pc.designatedHeirId = name;
+    heirChar.title = '皇太子';
+    if (typeof addEB === 'function') { try { addEB('国本', '册立' + name + '为皇太子·告庙颁诏·国本以定', { credibility: 'high' }); } catch(_){} }
+    // 立储乃朝局大事：要臣入记忆(cap12·全朝反应交叙事)
+    if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.addMemory) {
+      try {
+        (GM.chars || []).filter(function(c2){ return c2 && c2.alive !== false && !c2.isPlayer && !c2._royalChild && c2.officialTitle; })
+          .slice(0, 12).forEach(function(c2){ NpcMemorySystem.addMemory(c2.name, '天子册立' + name + '为皇太子，国本已定', 7, 'political'); });
+      } catch(_){}
+    }
+    logChronicle('册立：' + name + ' 正位东宫。');
+    refreshPanel();
+    toastSafe('已册立' + name + '为皇太子');
+    return true;
   }
 
   // ─── 注入 CSS ────────────────────────────────────────
@@ -569,6 +622,7 @@
       + '.p-harem .gs-harem-heir{padding:2px 6px;font-size:0.7rem;border-radius:1px;border:1px solid rgba(201,168,76,0.3);background:rgba(184,154,83,0.08);color:#cbb98a;}'
       + '.p-harem .gs-harem-heir.prince{border-color:rgba(200,55,55,0.5);color:#f3c0a8;background:rgba(200,55,55,0.1);}'
       + '.p-harem .gs-harem-heir.princess{border-color:rgba(142,106,168,0.5);color:#c9b0d8;background:rgba(142,106,168,0.1);}'
+      + '.p-harem .gs-harem-heir.crown{border-color:rgba(240,216,147,0.85);color:#f0d893;background:rgba(201,168,76,0.22);font-weight:700;}'
       + '.gs-rail-btn.c-harem{color:#e8d49a;}'
       ;
     document.head.appendChild(s);
@@ -611,6 +665,7 @@
     demote: demote,
     depose: depose,
     visitWithEmpress: visitWithEmpress,
+    crownPrince: crownPrince,
     processTurn: processTurn,
     findConsort: findConsort,
     renderPanel: renderPanelInto,

@@ -226,9 +226,16 @@ function applyCharacterDeaths(p1) {
               }
             }
             // 级联清理：继承人死亡→从继承人列表中移除
-            if (GM.harem && GM.harem.heirs && GM.harem.heirs.indexOf(cd.name) !== -1) {
+            if (GM.harem && Array.isArray(GM.harem.heirs) && GM.harem.heirs.some(function(h) { return h === cd.name || (h && h.name === cd.name); })) {
+              GM.harem.heirs.forEach(function(h) { if (h && h.name === cd.name) h.alive = false; });
               GM.harem.heirs = GM.harem.heirs.filter(function(h) { return h !== cd.name; });
               addEB('\u7EE7\u627F', cd.name + '\u53BB\u4E16\uFF0C\u5DF2\u4ECE\u7EE7\u627F\u4EBA\u5E8F\u5217\u4E2D\u79FB\u9664');
+            }
+            if (GM.harem && GM.harem.crownPrince === cd.name) {
+              GM.harem.crownPrince = ''; // arch-ok 储君薨级联清理(国本刀2026-07-07·与本文件既有 harem 级联同区)
+              var _pcCP = (GM.chars || []).find(function(x) { return x && x.isPlayer; });
+              if (_pcCP && _pcCP.designatedHeirId === cd.name) _pcCP.designatedHeirId = '';
+              addEB('国本', '皇太子' + cd.name + '薨·东宫虚位，国本动摇');
             }
             _dbg('[AI Death] ' + cd.name + ': ' + cd.reason);
             // 1.4→2.6: 叙事事实已由 GameEventBus character:death 监听器自动添加

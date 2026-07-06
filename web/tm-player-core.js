@@ -68,10 +68,18 @@ function closePause(){_$("pause-bg").classList.remove("show");}
 function openAbdication() {
   var pc = GM.chars && GM.chars.find(function(c){ return c.isPlayer; });
   if (!pc) { toast('未找到玩家角色'); return; }
-  // 候选继承人：同势力存活角色
+  // 候选继承人：同势力存活角色——国本刀(2026-07-07)：储君/皇嗣置顶(此前只按官阶·亲子沉底甚至挤出前十)
+  var _cpName = pc.designatedHeirId || (GM.harem && GM.harem.crownPrince) || '';
+  var _kidSet = {};
+  (pc.childrenIds || []).forEach(function(n){ _kidSet[n] = true; });
+  function _abdRank(c) { return c.name === _cpName ? 2 : (_kidSet[c.name] || c._royalChild) ? 1 : 0; }
   var candidates = (GM.chars || []).filter(function(c) {
     return c.alive !== false && !c.isPlayer && c.faction === pc.faction;
-  }).sort(function(a, b) { return (b.rankLevel || 9) - (a.rankLevel || 9); });
+  }).sort(function(a, b) {
+    var _d = _abdRank(b) - _abdRank(a);
+    if (_d) return _d;
+    return (b.rankLevel || 9) - (a.rankLevel || 9);
+  });
   var html = '<div style="padding:1.5rem;max-width:480px;">';
   html += '<div style="text-align:center;margin-bottom:1rem;"><div style="font-size:1.2rem;color:var(--gold);font-weight:700;">\u7985\u8BA9\u9000\u4F4D</div>';
   html += '<div style="font-size:0.8rem;color:var(--txt-d);margin-top:0.3rem;">\u5C06\u5929\u5B50\u4E4B\u4F4D\u4F20\u4E88\u540E\u4EBA\uFF0C\u6B64\u4E3E\u4E0D\u53EF\u9006</div></div>';
@@ -83,7 +91,8 @@ function openAbdication() {
       var intel = c.intelligence || 50, admin = c.administration || 50;
       var _safeName = escHtml(c.name).replace(/'/g, '&#39;').replace(/\\/g, '\\\\');
       html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem;margin-bottom:0.3rem;background:var(--bg-2);border-radius:6px;cursor:pointer;" onclick="_confirmAbdication(\'' + _safeName + '\')">';
-      html += '<div><div style="font-size:0.85rem;font-weight:700;">' + escHtml(c.name) + '</div><div style="font-size:0.7rem;color:var(--txt-d);">' + escHtml(c.title || '') + ' \u667A' + intel + ' \u653F' + admin + '</div></div>';
+      var _kinTag = c.name === _cpName ? '<span style="color:var(--gold);font-size:0.7rem;margin-left:4px;">\u3010\u50A8\u541B\u3011</span>' : (_kidSet[c.name] || c._royalChild) ? '<span style="color:var(--gold);font-size:0.7rem;margin-left:4px;">\u3010\u7687\u55E3\u3011</span>' : '';
+      html += '<div><div style="font-size:0.85rem;font-weight:700;">' + escHtml(c.name) + _kinTag + '</div><div style="font-size:0.7rem;color:var(--txt-d);">' + escHtml(c.title || '') + ' \u667A' + intel + ' \u653F' + admin + '</div></div>';
       html += '<span style="font-size:0.75rem;color:var(--gold);">\u9009\u62E9</span></div>';
     });
     html += '</div>';
