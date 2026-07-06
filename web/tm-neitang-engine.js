@@ -1277,6 +1277,42 @@
   };
 
   // ═════════════════════════════════════════════════════════════
+  // ★宦官专权 S2a·内帑寄生（2026-07-06·方向五机制线·承 S1 内竖入权臣弧）
+  // 内廷近侍坐大为权臣（pm.innerCourt·tm-authority-complete 判定）→掌内库者监守自盗·逐月截留内帑。
+  // 外朝权臣无内库之手·不寄生。窃柄愈深截留愈重：月截留=balance×(1%+3%×controlLevel)·封顶8%·
+  // 初窃柄(controlLevel<0.35)未及内库不刮·穷账(balance<1000)不刮免负数噪音。
+  // 记账走本引擎（balance 真源·sinks[内侍截留]留痕·tick 内 syncCashMirrors 对齐 stock）·
+  // 累账记 pm.embezzled 供诛除时籍没追赃（S2c·Actions.recordConfiscation 现成入口）。
+  // 可见性：首笔+每跨2万两 addEB 一报（不逐月刷屏·账本沉底可查=有据可查非玄幻）。
+  // ═════════════════════════════════════════════════════════════
+
+  function applyInnerCourtParasitism(mr) {
+    var pm = GM.huangquan && GM.huangquan.powerMinister;
+    if (!pm || !pm.innerCourt || !pm.name) return;
+    if (!GM.neitang || typeof GM.neitang.balance !== 'number') return;
+    var bal = GM.neitang.balance;
+    if (bal < 1000) return;
+    var cl = Math.max(0, Math.min(1, Number(pm.controlLevel) || 0));
+    if (cl < 0.35) return;
+    var rate = Math.min(0.08, 0.01 + 0.03 * cl);
+    var drain = Math.round(bal * rate * (mr || 1));
+    if (drain <= 0) return;
+    GM.neitang.balance = bal - drain;
+    GM.neitang.money = GM.neitang.balance;
+    try {
+      var ledger = _ensureLedger(GM.neitang, 'money');
+      ledger.sinks['内侍截留'] = (Number(ledger.sinks['内侍截留']) || 0) + drain;
+      ledger.thisTurnOut = (Number(ledger.thisTurnOut) || 0) + drain;
+    } catch (_le) {}
+    var before = Number(pm.embezzled) || 0;
+    pm.embezzled = before + drain;
+    var STEP = 20000;
+    if (before <= 0 || Math.floor(pm.embezzled / STEP) > Math.floor(before / STEP)) {
+      if (typeof addEB === 'function') addEB('朝代', pm.name + ' 掌内库·内帑岁入有截留之象（累计约 ' + (Math.round(pm.embezzled / 1000) / 10) + ' 万两）', { credibility: 'high' });
+    }
+  }
+
+  // ═════════════════════════════════════════════════════════════
   // 接入 tick
   // ═════════════════════════════════════════════════════════════
 
@@ -1288,6 +1324,7 @@
 
     try { processIncidentalSources(mr); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'neitang-p2] incidental:') : console.error('[neitang-p2] incidental:', e); }
     try { applyRoyalClanPressure(mr); }   catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'neitang-p2] royalClan:') : console.error('[neitang-p2] royalClan:', e); }
+    try { applyInnerCourtParasitism(mr); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'neitang-p2] parasitism:') : console.error('[neitang-p2] parasitism:', e); }
 
     function isNeitangMoneyPath(path) {
       return path === 'neitang.money' || path === 'neicang.money';

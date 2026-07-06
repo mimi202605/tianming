@@ -609,6 +609,7 @@ function _consumeDynastyEndSignal() {
     var t = fresh.type || fresh.reason || '';
     var title, desc;
     if (t === 'dynasty_change') { title = '民变席卷 · 改朝换代'; desc = '烽火燎原，义军问鼎中原。旧朝天命已移，社稷倾覆。'; }
+    else if (t === 'usurped_by_power_minister' && fresh.innerCourt) { title = '内竖劫主 · 废立之变'; desc = (fresh.name ? fresh.name + ' ' : '') + '劫主废立，天子为傀儡，政令皆出私门——天命名存实亡。'; }
     else if (t === 'usurped_by_power_minister') { title = '权臣篡位 · 神器易主'; desc = (fresh.name ? fresh.name + ' ' : '') + '窃据大宝，禅代之局已成。'; }
     else if (t === 'dynasty_replaced_by_revolt') { title = '义军颠覆 · 鼎革之变'; desc = fresh.narrative || ((fresh.newDynasty || '新朝') + ' 立，旧朝祚终。'); }
     else { title = '天命已移'; desc = fresh.narrative || fresh.reason || '社稷倾覆，国祚告终。'; }

@@ -209,7 +209,15 @@
     // controlLevel 随时间上升（若皇权弱）
     // ③·D2 余级联：缙绅离心（clout 加权合法性崩·权贵弃君）→ 权贵倒向强人·权臣坐大加速（+50%·默认 1 回归安全·纯读 _legitimacy·不碰皇权）
     var _pmLegBoost = (G._legitimacy && G._legitimacy.flag === '缙绅离心') ? 1.5 : 1;
-    if (G.huangquan.index < 60) pm.controlLevel = Math.min(1.0, pm.controlLevel + 0.01 * mr * _pmLegBoost);
+    // ★宦官专权 S2b·政柄耦合（2026-07-06）：权臣所属党派秉政（V3 standing·three-systems-ext 派生）→朝中有人·
+    //   坐大再加速（×1.4）；边缘党孤竖难久（×0.75）。内外朝权臣通用（外朝有秉政党撑腰同理）·纯读党账不写。
+    var _pmPartyBoost = 1;
+    try {
+      var _pmPs = ch.party && G.partyState && G.partyState[ch.party];
+      if (_pmPs && _pmPs.standing === 'governing') _pmPartyBoost = 1.4;
+      else if (_pmPs && _pmPs.standing === 'marginal') _pmPartyBoost = 0.75;
+    } catch (_ppE) {}
+    if (G.huangquan.index < 60) pm.controlLevel = Math.min(1.0, pm.controlLevel + 0.01 * mr * _pmLegBoost * _pmPartyBoost);
     else if (G.huangquan.index > 80) pm.controlLevel = Math.max(0, pm.controlLevel - 0.02 * mr);
     // 招揽党羽
     var allies = G.chars.filter(function(c) {
@@ -262,15 +270,26 @@
   function _powerMinisterEndgame(pm, mode, ctx) {
     var G = global.GM;
     if (mode === 'usurpation') {
-      // 篡位
-      if (global.addEB) global.addEB('权臣', pm.name + ' 篡位大逆！天命倾移');
+      // ★宦官专权 S2c·劫主废立（2026-07-06）：内竖终局与外朝篡位分流——内竖无以自立·挟幼主废立而令天下·
+      //   _gameOver 带 innerCourt 供终局屏具名消费（tm-endturn-helpers._consumeDynastyEndSignal 同步接）。
+      var _pmInner = !!pm.innerCourt;
+      if (global.addEB) global.addEB('权臣', _pmInner ? (pm.name + ' 劫主废立！挟傀儡而令天下·天命名存实亡') : (pm.name + ' 篡位大逆！天命倾移'));
       if (typeof global.AuthorityEngines !== 'undefined' && global.AuthorityEngines.setHuangquan) {
-        global.AuthorityEngines.setHuangquan(5, '\u6743\u81e3\u7be1\u4f4d', { source:'power-minister-usurpation' });
+        global.AuthorityEngines.setHuangquan(5, _pmInner ? '\u5185\u7ad6\u52ab\u4e3b\u5e9f\u7acb' : '\u6743\u81e3\u7be1\u4f4d', { source:'power-minister-usurpation' });
       } else if (typeof G.huangquan === 'object') G.huangquan.index = 5;
       if (typeof G.huangwei === 'object') G.huangwei.index = 10;
       if (typeof G.minxin === 'object') G.minxin.trueIndex = Math.max(0, G.minxin.trueIndex - 30);
-      G._gameOver = { type: 'usurped_by_power_minister', name: pm.name, turn: ctx.turn };
+      G._gameOver = { type: 'usurped_by_power_minister', name: pm.name, turn: ctx.turn, innerCourt: _pmInner };
     } else if (mode === 'purged') {
+      // ★S2c·籍没追赃：诛权臣抄其家·内竖截留内帑者追回六成（走 NeitangEngine.Actions.recordConfiscation
+      //   现成抄家入口·写账留在内帑引擎）——闭合「寄生累账→诛除追赃」环。
+      try {
+        var _emb = Number(pm.embezzled) || 0;
+        if (_emb > 0 && global.NeitangEngine && global.NeitangEngine.Actions && typeof global.NeitangEngine.Actions.recordConfiscation === 'function') {
+          var _back = Math.floor(_emb * 0.6);
+          if (_back > 0) global.NeitangEngine.Actions.recordConfiscation(_back);
+        }
+      } catch (_cfE) {}
       if (typeof global.AuthorityEngines !== 'undefined') global.AuthorityEngines.executePurge(pm.name);
       G.huangquan.powerMinister = null;
     }

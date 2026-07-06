@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-06T05:32:41.073Z",
+  "updatedAt": "2026-07-06T15:34:30.879Z",
   "totals": {
-    "gm": 4575,
+    "gm": 4577,
     "p": 739
   },
   "files": {
@@ -407,6 +407,13 @@
         "gm:_officeViewModeExplicit": 1,
         "gm:_officeSearchKw": 1,
         "gm:officeTree": 1
+      }
+    },
+    "tm-office-runtime-summary-appoint.js": {
+      "gm": 2,
+      "p": 0,
+      "roots": {
+        "gm:_edictSuggestions": 2
       }
     },
     "tm-office-panel.js": {
@@ -2307,10 +2314,10 @@
       }
     },
     "tm-neitang-engine.js": {
-      "gm": 132,
+      "gm": 134,
       "p": 0,
       "roots": {
-        "gm:neitang": 120,
+        "gm:neitang": 122,
         "gm:corruption": 3,
         "gm:huangwei": 6,
         "gm:huangquan": 2,
@@ -2942,13 +2949,6 @@
         "gm:_pendingTinyiTopics": 3,
         "gm:qijuHistory": 1,
         "gm:_phase8ChaoyiNoRecord": 1
-      }
-    },
-    "tm-office-runtime-summary-appoint.js": {
-      "gm": 2,
-      "p": 0,
-      "roots": {
-        "gm:_edictSuggestions": 2
       }
     }
   }
