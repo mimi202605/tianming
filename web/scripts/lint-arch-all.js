@@ -18,6 +18,7 @@ const CHECKS = [
   { name: 'lint-file-size', file: 'lint-file-size.js' },
   { name: 'lint-control-bytes', file: 'lint-control-bytes.js' },
   { name: 'lint-split-contracts', file: 'lint-split-contracts.js' },
+  { name: 'lint-split-stamps', file: 'lint-split-stamps.js' },
   { name: 'ref-check', file: 'ref-check.js' }
 ];
 
