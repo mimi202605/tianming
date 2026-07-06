@@ -63,13 +63,19 @@ const EDITOR_CONTRACTS = [
   ['tm-feudal.js', 'tm-feudal-warfare.js'],
 ];
 
-// 提取 <script src="X.js?v=..."> 的有序文件名列表（裸文件名·忽略 query）
+/** preview/scenario-editor-reset-preview.html 入口的拆分家族（Codex 复审指出的覆盖缺口·2026-07-06 补） */
+const PREVIEW_CONTRACTS = [
+  // 第十八拆：preview 只载 agent→ui 三片(不载 provider=既有不对称)·三片序须与 editor.html 一致
+  ['editor-authoring-agent-ui-icons.js', 'editor-authoring-agent-ui.js', 'editor-authoring-agent-ui-render.js'],
+];
+
+// 提取 <script src="X.js?v=..."> 的有序文件名列表（裸文件名·忽略 query 与 ../ 类路径前缀——preview 子目录用 ../ 引根级脚本）
 function loadOrder(file) {
   const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
   const order = [];
   const re = /<script[^>]+src="([^"?]+)(?:\?[^"]*)?"/g;
   let m;
-  while ((m = re.exec(html)) !== null) order.push(m[1]);
+  while ((m = re.exec(html)) !== null) order.push(m[1].replace(/^(\.\.\/)+/, ''));
   return order;
 }
 
@@ -103,10 +109,11 @@ function checkContracts(order, contracts, entry) {
 let failed = 0;
 failed += checkContracts(loadOrder('index.html'), CONTRACTS, 'index.html');
 failed += checkContracts(loadOrder('editor.html'), EDITOR_CONTRACTS, 'editor.html');
+failed += checkContracts(loadOrder('preview/scenario-editor-reset-preview.html'), PREVIEW_CONTRACTS, 'preview/scenario-editor-reset-preview.html');
 
-const total = CONTRACTS.length + EDITOR_CONTRACTS.length;
+const total = CONTRACTS.length + EDITOR_CONTRACTS.length + PREVIEW_CONTRACTS.length;
 if (failed === 0) {
-  console.log(`[lint-split-contracts] PASS · ${total} 座拆分家族装载序契约全部成立（index.html ${CONTRACTS.length} + editor.html ${EDITOR_CONTRACTS.length}）`);
+  console.log(`[lint-split-contracts] PASS · ${total} 座拆分家族装载序契约全部成立（index.html ${CONTRACTS.length} + editor.html ${EDITOR_CONTRACTS.length} + preview ${PREVIEW_CONTRACTS.length}）`);
   process.exit(0);
 }
 process.exit(1);
