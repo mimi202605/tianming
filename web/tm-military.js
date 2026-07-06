@@ -1428,7 +1428,9 @@ var MarchSystem = (function() {
   function _getConfig() {
     var mc = (P && P.battleConfig && P.battleConfig.marchConfig) || {};
     return {
-      enabled: mc.enabled === true,
+      // ★Wave2·军令移防(2026-07-07)：设置面板「玩法机制·深化」开关(P.conf.marchSystemEnabled)可开行军系统·
+      //   与剧本 battleConfig.marchConfig.enabled 任一为真即开(默认双关=零回归)
+      enabled: mc.enabled === true || !!(typeof P !== 'undefined' && P && P.conf && P.conf.marchSystemEnabled),
       baseSpeeds: mc.baseSpeeds || { infantry: 1, cavalry: 2, siege: 0.5 },
       postRoadBonus: mc.postRoadBonus || 0.5,
       winterPenalty: mc.winterPenalty || 0.7,
@@ -1613,8 +1615,41 @@ var MarchSystem = (function() {
     return 1.0;
   }
 
+  // ★Wave2·军令移防(2026-07-07·玩家侧军令动词)：玩家对自家驻防军队下移防令·复用整套行军机器
+  //   (A*寻路/无图估算·advanceAll 逐回合推进·抵达自动接防·抽屉/过回合报告/部队详情三面已可视)。
+  //   校验后拒单诚实给因：闸关/查无此军/非我军/驻地不明/已在途/同地/地图模式无路可达(勿造瞬移单)。
+  function orderMarch(armyRef, to) {
+    var cfg = _getConfig();
+    if (!cfg.enabled) return { ok: false, reason: '行军系统未启用（设置→玩法机制·深化可开）' };
+    to = String(to == null ? '' : to).trim();
+    if (!to) return { ok: false, reason: '未指明目的地' };
+    var army = null;
+    (GM.armies || []).some(function (a) { if (a && (a.id === armyRef || a.name === armyRef)) { army = a; return true; } return false; });
+    if (!army) return { ok: false, reason: '查无此军' };
+    var pf = '';
+    try { (GM.chars || []).some(function (c) { if (c && c.isPlayer) { pf = c.faction || ''; return true; } return false; }); } catch (_pfE) {}
+    if (pf && army.faction && army.faction !== pf) return { ok: false, reason: '非我王师·不受节制' };
+    var from = army.garrison || army.location || '';
+    if (!from) return { ok: false, reason: '此军驻地不明' };
+    if (from === to) return { ok: false, reason: '此军已驻' + to };
+    var inTransit = army.state === 'marching' || (GM.marchOrders || []).some(function (o) {
+      return o && o.status === 'marching' && (o.armyId === army.id || o.armyName === army.name);
+    });
+    if (inTransit) return { ok: false, reason: '此军已在途中·未可再令' };
+    var mapEnabled = P && P.map && P.map.enabled && GM.mapData && GM.mapData.adjacencyGraph;
+    if (mapEnabled && typeof findPath === 'function') {
+      var pr = null;
+      try { pr = findPath(from, to, { avoidEnemy: true, faction: army.faction }); } catch (_prE) { pr = null; }
+      if (!pr || !pr.path || !pr.path.length) return { ok: false, reason: '无路可达' + to + '（道路不通或为敌境所阻）' };
+    }
+    var order = createMarchOrder(army, from, to, null);
+    if (!order) return { ok: false, reason: '军令未能成行' };
+    return { ok: true, order: order };
+  }
+
   return {
     createMarchOrder: createMarchOrder,
+    orderMarch: orderMarch,
     advanceAll: advanceAll,
     getPromptInjection: getPromptInjection,
     _getConfig: _getConfig

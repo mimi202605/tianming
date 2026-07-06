@@ -169,14 +169,31 @@
         } else {
           _locLine = (_locBase ? esc(_locBase)+' · ' : '') + _cmHtml;
         }
+        // ★Wave2·军令移防(2026-07-07)：行军系统开+我军+未在途→行内「移防」钮(确定性军令·目的地模态见文件尾模块)
+        var _mvBtn = '';
+        try {
+          if (!_march && _myFac && (a.faction || '') === _myFac
+              && typeof MarchSystem !== 'undefined' && MarchSystem._getConfig && MarchSystem._getConfig().enabled
+              && typeof MarchSystem.orderMarch === 'function') {
+            _mvBtn = '<button type="button" data-march-army="'+esc(String(a.id||a.name||''))+'" style="margin-top:3px;font-size:0.66rem;padding:1px 7px;background:rgba(184,154,83,0.18);border:1px solid rgba(184,154,83,0.45);border-radius:4px;color:var(--gold-300,#d9c08a);cursor:pointer;">移防</button>';
+          }
+        } catch(_mvE){}
         _mHtml += '<div class="gs-army-row" onclick="if(typeof openMilitaryDetailPanel===\'function\')openMilitaryDetailPanel();">'
           + '<span class="gs-army-icon">⚔</span>'
           + '<div class="gs-army-info"><div class="gs-army-name">'+esc(a.name||'军')+_facChip+'</div>'
           + '<div class="gs-army-loc">'+_locLine+'</div></div>'
           + '<div style="text-align:right;"><div class="gs-army-size">'+num(size)+'</div>'
-          + '<div class="gs-army-morale"><div class="gs-army-morale-fill" style="width:'+Math.min(100,morale)+'%;background:'+mColor+';"></div></div></div></div>';
+          + '<div class="gs-army-morale"><div class="gs-army-morale-fill" style="width:'+Math.min(100,morale)+'%;background:'+mColor+';"></div></div>'
+          + _mvBtn + '</div></div>';
       });
       mp2.innerHTML=_mHtml;
+      // 移防钮·capture 段拦截(行有整行 onclick·冒泡会连开部队详情)·guard=headless harness 的 DOM stub 无此方法
+      if (typeof mp2.addEventListener === 'function') mp2.addEventListener('click', function(ev){
+        var b = ev.target && ev.target.closest ? ev.target.closest('[data-march-army]') : null;
+        if (!b) return;
+        ev.stopPropagation(); ev.preventDefault();
+        if (typeof window._tmShellMarchPrompt === 'function') window._tmShellMarchPrompt(b.getAttribute('data-march-army'));
+      }, true);
       gl.appendChild(mp2);
     }
 
@@ -1178,4 +1195,73 @@
   } else {
     bind();
   }
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// ★Wave2·军令移防(2026-07-07)：军事要务面板「移防」钮的目的地选择模态。
+//   全叶级政区 datalist(可输可选)→MarchSystem.orderMarch 确定性下单·拒单诚实给因。
+//   自包含小模块(esc 自带)·仅 MarchSystem 开闸时按钮才渲染(见 §2.8)。
+// ═══════════════════════════════════════════════════════════════
+(function(){
+  'use strict';
+  function _e(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function _leafDivisions(){
+    var names = [], seen = {};
+    try {
+      var G = window.GM || {};
+      var roots = G.adminHierarchy || {};
+      Object.keys(roots).forEach(function(fk){
+        var list = roots[fk] && (roots[fk].divisions || roots[fk].children);
+        (function walk(arr){
+          if (!Array.isArray(arr)) return;
+          arr.forEach(function(d){
+            if (!d) return;
+            var kids = d.divisions || d.children;
+            if (kids && kids.length) walk(kids);
+            else if (d.name && !seen[d.name]) { seen[d.name] = 1; names.push(d.name); }
+          });
+        })(list);
+      });
+    } catch(_) {}
+    return names.slice(0, 400);
+  }
+  window._tmShellMarchPrompt = function(armyRef){
+    if (typeof MarchSystem === 'undefined' || typeof MarchSystem.orderMarch !== 'function') return;
+    var G = window.GM || {};
+    var army = null;
+    (G.armies || []).some(function(a){ if (a && (a.id === armyRef || a.name === armyRef)) { army = a; return true; } return false; });
+    var aName = (army && army.name) || armyRef || '此军';
+    var old = document.getElementById('tm-march-dest-modal');
+    if (old) old.remove();
+    var wrap = document.createElement('div');
+    wrap.id = 'tm-march-dest-modal';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:1600;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;';
+    var opts = _leafDivisions().map(function(n){ return '<option value="' + _e(n) + '"></option>'; }).join('');
+    wrap.innerHTML = '<div style="background:var(--color-elevated,#20232a);border:1px solid var(--color-border-subtle,#4a4436);border-radius:10px;padding:1rem 1.2rem;max-width:340px;width:88%;">'
+      + '<div style="font-weight:700;margin-bottom:0.5rem;">军令 · ' + _e(aName) + ' 移防</div>'
+      + '<div style="font-size:0.75rem;opacity:0.75;margin-bottom:0.5rem;">现驻：' + _e((army && (army.garrison || army.location)) || '不明') + '。指定目的地（可输可选）：</div>'
+      + '<input id="tm-march-dest-input" list="tm-march-dest-list" style="width:100%;padding:0.4rem 0.5rem;margin-bottom:0.7rem;box-sizing:border-box;" placeholder="目的地">'
+      + '<datalist id="tm-march-dest-list">' + opts + '</datalist>'
+      + '<div style="display:flex;gap:0.5rem;justify-content:flex-end;">'
+      + '<button type="button" class="bt bs bsm" data-march-cancel="1">罢</button>'
+      + '<button type="button" class="bt bs bsm" data-march-go="1" style="font-weight:700;">发军令</button>'
+      + '</div></div>';
+    wrap.addEventListener('click', function(e){
+      if (e.target === wrap || (e.target.closest && e.target.closest('[data-march-cancel]'))) { wrap.remove(); return; }
+      var go = e.target.closest && e.target.closest('[data-march-go]');
+      if (!go) return;
+      var inp = document.getElementById('tm-march-dest-input');
+      var to = (inp && inp.value) || '';
+      var res = MarchSystem.orderMarch((army && (army.id || army.name)) || armyRef, to);
+      if (res && res.ok) {
+        if (typeof toast === 'function') toast('军令已发：' + aName + ' 移防 ' + to + '（约 ' + ((res.order && res.order.totalTurns) || '?') + ' 回合）');
+        wrap.remove();
+        try { if (typeof renderLeftPanel === 'function') renderLeftPanel(); } catch(_) {}
+      } else {
+        if (typeof toast === 'function') toast((res && res.reason) || '军令未能成行');
+      }
+    });
+    document.body.appendChild(wrap);
+    try { var i2 = document.getElementById('tm-march-dest-input'); if (i2) i2.focus(); } catch(_) {}
+  };
 })();
