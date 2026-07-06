@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-06T17:04:33.711Z",
+  "updatedAt": "2026-07-06T17:26:35.001Z",
   "totals": {
-    "gm": 4583,
+    "gm": 4585,
     "p": 739
   },
   "files": {
@@ -946,7 +946,7 @@
       }
     },
     "tm-endturn-prep.js": {
-      "gm": 24,
+      "gm": 26,
       "p": 0,
       "roots": {
         "gm:_pendingAudiences": 2,
@@ -963,7 +963,8 @@
         "gm:letters": 2,
         "gm:_turnMoveCommands": 2,
         "gm:_turnFiscalReforms": 2,
-        "gm:_turnFiscalActions": 2
+        "gm:_turnFiscalActions": 2,
+        "gm:_turnDiploActions": 2
       }
     },
     "tm-endturn-prompt.js": {

@@ -1033,3 +1033,88 @@ function processEdictEffects(allEdictText, edictCategory) {
 
   return { summary: '', executionSummary: execResult.summary };
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// 诏令·外交动词（2026-07-07·flag edictDiplomacyEnabled 默认关·深挖第五轮⑤）
+//   病灶：外交后端全齐（CasusBelliSystem.declareWar/endWar、setFactionRelation、
+//   applyFactionInteraction 岁币互市真金入出账——AI 侧全在调用），玩家侧零发起端：
+//   只能被动等敌使上门问对。诏令是皇帝对外发意志的正道（五渠道），此处解析
+//   遣使议和/宣战征讨/开互市/纳岁币四动词→prep 落效调既有后端。
+//   朝代中立：势力名来自剧本 GM.facs·战争名义走 P.warConfig CB 表（剧本可覆盖）。
+// ═══════════════════════════════════════════════════════════════════
+function _edPlayerFacName() {
+  return (typeof P !== 'undefined' && P && (P.playerFactionName || (P.playerInfo && P.playerInfo.factionName)))
+    || (typeof GM !== 'undefined' && GM && (GM.playerFactionName || GM.playerFaction)) || '本朝';
+}
+function _edFindTargetFaction(text) {
+  var pf = _edPlayerFacName();
+  var best = null;
+  ((typeof GM !== 'undefined' && GM && GM.facs) || []).forEach(function (f) {
+    if (!f || !f.name || f.name === pf) return;
+    var i = text.indexOf(f.name);
+    if (i >= 0 && (!best || i < best.idx)) best = { name: f.name, idx: i };
+  });
+  return best ? best.name : '';
+}
+function extractEdictDiplomacy(edictText) {
+  if (typeof P === 'undefined' || !P || !P.conf || P.conf.edictDiplomacyEnabled !== true) return [];  // flag 默认关
+  if (!edictText || edictText.length < 4) return [];
+  if (typeof GM === 'undefined' || !GM) return [];
+  var text = String(edictText).replace(/\s+/g, '');
+  var out = [], seen = {};
+  // 每条 {type, re, neg}·否定门防「不许议和/罢互市/停岁币」被裸关键词反向执行（加派否定门同款教训）
+  var RULES = [
+    { type: 'peace',       re: /议和|求和|媾和|罢兵|息兵|休兵|停战|讲和/,   neg: /(不|勿|毋|莫|休要|不可|不得|不许|岂可|决不|绝不|拒)[^。；！\n]{0,6}(议和|求和|媾和|罢兵|息兵|停战|讲和)/ },
+    { type: 'declare_war', re: /宣战|征讨|讨伐|挞伐|兴师伐|发兵攻|大军进剿/, neg: /(不|勿|毋|莫|休|罢|停|缓)[^。；！\n]{0,6}(宣战|征讨|讨伐|兴师|发兵|进剿)/ },
+    { type: 'open_market', re: /互市|开市|榷场|马市/,                      neg: /(罢|停|禁|闭|绝|断)[^。；！\n]{0,5}(互市|开市|榷场|马市|通商)/ },
+    { type: 'pay_tribute', re: /岁币|岁赐|纳币/,                           neg: /(罢|停|拒|免|裁|绝|不纳|不予|不给)[^。；！\n]{0,5}(岁币|岁赐|纳币)/ }
+  ];
+  RULES.forEach(function (rule) {
+    if (seen[rule.type]) return;
+    var m = rule.re.exec(text);
+    if (!m || (rule.neg && rule.neg.test(text))) return;
+    var target = _edFindTargetFaction(text);
+    if (!target) return;   // 诏令须点名对象势力·未点名不瞎猜（交 AI 推演斟酌）
+    seen[rule.type] = 1;
+    out.push({ type: rule.type, target: target, raw: String(m[0]).slice(0, 12) });
+  });
+  // 战和同现=文意有条件（如「若不受抚则征讨」）·两头都撤·交 AI 推演
+  if (seen.peace && seen.declare_war) out = out.filter(function (a) { return a.type !== 'peace' && a.type !== 'declare_war'; });
+  return out;
+}
+function applyEdictDiplomacy(actions) {
+  if (!Array.isArray(actions) || !actions.length) return;
+  var pf = _edPlayerFacName();
+  actions.forEach(function (a) {
+    try {
+      if (a.type === 'peace') {
+        var w = ((typeof GM !== 'undefined' && GM.activeWars) || []).find(function (x) { return x && ((x.attacker === pf && x.defender === a.target) || (x.attacker === a.target && x.defender === pf)); });
+        if (w && typeof CasusBelliSystem !== 'undefined' && CasusBelliSystem.endWar) {
+          CasusBelliSystem.endWar(w.id);   // 真止战上停战期（镜像问对 sue_for_peace 准奏路径）
+          if (typeof _adjAuthority === 'function') _adjAuthority('huangwei', -4, '主动请和·屈己安边', { source: 'diplomacy' });
+          if (typeof setFactionRelation === 'function') setFactionRelation(pf, a.target, { delta: 12, desc: '罢兵议和' });
+          if (typeof addEB === 'function') addEB('外交', '奉诏遣使赴' + a.target + '议和·罢兵息争');
+        } else if (typeof setFactionRelation === 'function') {
+          setFactionRelation(pf, a.target, { delta: 8, desc: '遣使通好' });   // 无战事:通好
+          if (typeof addEB === 'function') addEB('外交', '奉诏遣使通好' + a.target);
+        }
+      } else if (a.type === 'declare_war') {
+        if (typeof CasusBelliSystem !== 'undefined' && CasusBelliSystem.declareWar) {
+          var r = CasusBelliSystem.declareWar(pf, a.target, 'holy');   // 天子讨不臣（CB 表剧本可覆盖·停战期内后端自拒）
+          if (typeof addEB === 'function') addEB('外交', (r && r.success === false) ? ('征讨' + a.target + '之诏未克行（' + ((r && r.message) || '停战期内') + '）') : ('奉诏兴师·征讨' + a.target));
+        }
+      } else if (a.type === 'open_market') {
+        if (typeof applyFactionInteraction === 'function') {
+          applyFactionInteraction(pf, a.target, 'open_market', { description: '诏开互市·' + a.target });   // 资源红利内部真入账
+          if (typeof addEB === 'function') addEB('外交', '诏开与' + a.target + '互市·商旅通行');
+        }
+      } else if (a.type === 'pay_tribute') {
+        if (typeof applyFactionInteraction === 'function') {
+          applyFactionInteraction(pf, a.target, 'pay_tribute', { description: '纳岁币·' + a.target });   // 玩家侧真扣国库（strength 派生额）
+          if (typeof _adjAuthority === 'function') _adjAuthority('huangwei', -6, '纳币请和·屈己安边', { source: 'diplomacy' });   // 问对准索贡同款
+          if (typeof addEB === 'function') addEB('外交', '诏许岁币予' + a.target + '·出帑安边');
+        }
+      }
+    } catch (_da) { try { console.warn('[诏令外交] 落效失败:', a && a.type, _da && _da.message); } catch (_) {} }
+  });
+}

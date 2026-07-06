@@ -619,6 +619,18 @@ function _endTurn_collectInput() {
     }
   } catch(_faErr) { GM._turnFiscalActions = []; try { window.TM && TM.errors && TM.errors.captureSilent(_faErr, 'prep·extractEdictFiscalActions'); } catch(_){} }
 
+  // 诏令·外交动词（2026-07-07·flag edictDiplomacyEnabled 默认关）——遣使议和/宣战征讨/开互市/纳岁币·
+  //   点名势力的诏书确定性调既有外交后端（declareWar/endWar/applyFactionInteraction）·关闸时 extract 返回空零行为
+  try {
+    var _diploActs = (typeof extractEdictDiplomacy === 'function') ? extractEdictDiplomacy(allEdictText) : [];
+    GM._turnDiploActions = _diploActs;
+    if (_diploActs.length > 0) {
+      if (typeof applyEdictDiplomacy === 'function') applyEdictDiplomacy(_diploActs);
+      _diploActs.forEach(function(da) { addEB('诏令意图', '外交·' + da.raw + '·' + da.target); });
+      _dbg('[外交动作] 诏令落效 ' + _diploActs.length + ' 条', _diploActs);
+    }
+  } catch(_dpErr) { GM._turnDiploActions = []; try { window.TM && TM.errors && TM.errors.captureSilent(_dpErr, 'prep·extractEdictDiplomacy'); } catch(_){} }
+
   // 收集昏君活动
   if (typeof TyrantActivitySystem !== 'undefined') {
     input.tyrantActivities = TyrantActivitySystem.collectActivities();
