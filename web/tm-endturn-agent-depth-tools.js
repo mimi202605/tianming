@@ -379,8 +379,11 @@
     if (!Array.isArray(gm._pendingAudiences)) gm._pendingAudiences = [];
     var names = {}; (gm.chars || []).forEach(function (c) { if (c && c.name && c.alive !== false) names[c.name] = c; });
     var audN = 0;
+    // 朝堂噤声(廷杖/大狱后≤3回合·GM._courtSilenced 写于 apply 噤声分支)：百官寒蝉·至多一人敢冒进求见
+    var _silencedRecently = (typeof gm._courtSilenced === 'number' && (turn - gm._courtSilenced) >= 0 && (turn - gm._courtSilenced) <= 3);
     ((p && Array.isArray(p.audiences)) ? p.audiences : []).forEach(function (a) {
       if (!a || !a.name || !names[a.name]) return;                                        // 须真实存活人物
+      if (_silencedRecently && audN >= 1) return;
       // 阵营闸(2026-07-04)：求见=臣候阶下·须本朝人物·外邦君主/异势力不入(镜像 apply 私访分支同款守卫·只拦明确标了异势力者)
       if (typeof root._tmIsForeignCourtChar === 'function' && root._tmIsForeignCourtChar(names[a.name])) return;
       if (gm._pendingAudiences.some(function (q) { return q && q.name === a.name; })) return; // 去重(已在队列不重复)

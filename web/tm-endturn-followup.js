@@ -825,11 +825,11 @@
           });
         }
         // 势力叙事（记忆上文）
-        if (GM._factionNarratives) {
-          var _fnKeys = Object.keys(GM._factionNarratives);
+        if (GM._factionNarrative && typeof GM._factionNarrative === 'object') {
+          var _fnKeys = Object.keys(GM._factionNarrative);
           if (_fnKeys.length > 0) {
             tp16 += '【势力发展记忆】\n';
-            _fnKeys.forEach(function(k) { tp16 += '  ' + k + '\uFF1A' + (GM._factionNarratives[k]||'') + '\n'; });
+            _fnKeys.forEach(function(k) { tp16 += '  ' + k + '\uFF1A' + (GM._factionNarrative[k]||'') + '\n'; });
           }
         }
         try {
@@ -1716,6 +1716,7 @@
           }
           // 额外上下文
           if (GM._energy !== undefined && GM._energy < 40) _ps += '【君主疲态】精力' + Math.round(GM._energy) + '%——应暗示倦容\n';
+          if (typeof GM._courtSilenced === 'number' && (GM.turn - GM._courtSilenced) >= 0 && (GM.turn - GM._courtSilenced) <= 3) _ps += '【朝堂噤声】近经威压（廷杖/诏狱），百官噤若寒蝉——进谏者稀·言路暂塞，群臣言行应见忌惮\n';
           if (GM._successionEvent) _ps += '【帝位更迭】' + GM._successionEvent.from + '→' + GM._successionEvent.to + '（重点描写）\n';
           if (GM._kejuPendingAssignment && GM._kejuPendingAssignment.length > 0) _ps += '【待铨】' + GM._kejuPendingAssignment.length + '名进士等待授官\n';
         }

@@ -390,7 +390,7 @@ function showChaoyiSetup(){
     + '<div style="text-align:center;font-size:1rem;color:var(--gold);letter-spacing:0.12em;margin-bottom:1.2rem;">〔 今 日 朝 议 〕</div>'
     + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;">'
     + _cy_modeCardHtml('changchao', '📜 常 朝', '例行朝参', '多事并奏·百官齐集·逐条裁决', '30-50 人', '精力 10')
-    + _cy_modeCardHtml('tinyi',    '🏛 廷 议', '集议大政', '一议多轮·辩难立场·共识或独断', '15-30 人', '精力 25')
+    + _cy_modeCardHtml('tinyi',    '🏛 廷 议', '集议大政', '一议多轮·辩难立场·共识或独断', '15-30 人', '精力 15')
     + _cy_modeCardHtml('yuqian',   '👑 御前会议', '密召心腹', '坦言直陈·君臣密议·可不录', '3-8 人',   '精力 10')
     + '</div>'
     + '<div style="text-align:center;margin-top:1rem;"><button class="bt" onclick="closeChaoyi()">取消</button></div>'
@@ -425,6 +425,8 @@ function _cy_pickMode(mode) {
   if (mode === 'changchao') {
     // CC 迁移波 5+ → Phase 3 (2026-05-03)·v2 §1 物理删除·常朝唯一入口为 _cc3_open（tm-chaoyi-changchao.js）
     if (typeof _cc3_open === 'function') {
+      // 卡片承诺「精力 10」·此前从未实扣（廷议15/御前10均扣·唯常朝漏接）——post-turn 自动早朝不经此路不扣
+      if (typeof _spendEnergy === 'function' && !_spendEnergy(10, '常朝')) return;
       _cc3_open({ isPostTurn: false, source: 'in-turn-picker' });
     } else if (typeof toast === 'function') {
       toast('常朝 v3 未加载·请刷新页面');

@@ -1646,6 +1646,7 @@ async function _chooseIssueOption(issueId, choiceIdx) {
         // 作为特殊变量挂在 GM._issueEffects
         if (!GM._issueEffects) GM._issueEffects = {};
         GM._issueEffects[k] = (GM._issueEffects[k] || 0) + v;
+        try { console.warn('[要务·效果] 未识别的效果键「' + k + '」落入 _issueEffects 暂存桶（无消费端）——请核对 key 或补路由'); } catch (_) {}
       }
     });
   }
