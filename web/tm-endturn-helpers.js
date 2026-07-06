@@ -648,6 +648,32 @@ function _recordPlaythrough(isVictory, completedGoals, failGoal, sc) {
   } catch (_e) {}
 }
 
+// ★D3·史上国祚对照（2026-07-06·深挖程序已批「多延N月」）：剧本可选字段 historicalFallYear（公元年·
+//   可配 historicalFallMonth 1-12 / historicalFallNote 一句注·亡年属剧本数据不进引擎=朝代中立）
+//   vs 亡局时游戏内公历年月（calcDateFromTurn 真源）。无字段/无时间系统静默返 ''（自定义剧本不受扰）。
+//   月为近似口径（游戏内取农历月与公历月混算·年月粒度足矣）。
+function _histFallCompareHtml(sc) {
+  try {
+    if (!sc || !isFinite(Number(sc.historicalFallYear))) return '';
+    if (typeof calcDateFromTurn !== 'function' || typeof P === 'undefined' || !P.time) return '';
+    var di = calcDateFromTurn(GM.turn);
+    if (!di || !isFinite(Number(di.adYear))) return '';
+    var fy = Math.round(Number(sc.historicalFallYear));
+    var hasFm = isFinite(Number(sc.historicalFallMonth));
+    var fm = hasFm ? Math.max(1, Math.min(12, Math.round(Number(sc.historicalFallMonth)))) : 6;  // 未注月按年中折算
+    var d = (Number(di.adYear) * 12 + (Number(di.lunarMonth) || 6)) - (fy * 12 + fm);  // 正=多延·负=早倾
+    var ay = Math.abs(d), yy = Math.floor(ay / 12), mm = ay % 12;
+    var span = (yy > 0 ? yy + '年' : '') + ((mm > 0 || yy === 0) ? mm + '月' : '');
+    var histStr = (fy < 0 ? '公元前' + Math.abs(fy) : '公元' + fy) + '年' + (hasFm ? fm + '月' : '');
+    var note = sc.historicalFallNote ? '（' + escHtml(String(sc.historicalFallNote).slice(0, 24)) + '）' : '';
+    var line, col;
+    if (ay === 0) { line = '史上此祚终于' + histStr + note + '——今亦于此际而倾·岂天数耶'; col = 'var(--color-foreground-muted)'; }
+    else if (d > 0) { line = '史上此祚终于' + histStr + note + '——今上力挽·延祚' + span + '·已胜史册'; col = 'var(--gold-400)'; }
+    else { line = '史上此祚延至' + histStr + note + '——今提前' + span + '而倾'; col = 'var(--color-foreground-muted)'; }
+    return '<div style="text-align:center;font-size:0.78rem;color:' + col + ';margin-bottom:1rem;">' + line + '</div>';
+  } catch (_hfE) { return ''; }
+}
+
 function _showEndgameScreen(type, failGoal) {
   var isVictory = type === 'victory';
   var sc = typeof findScenarioById === 'function' ? findScenarioById(GM.sid) : null;
@@ -674,6 +700,11 @@ function _showEndgameScreen(type, failGoal) {
   if (!isVictory && failGoal) {
     h += '<div style="text-align:center;font-size:0.9rem;color:var(--vermillion-300);margin-bottom:0.5rem;">' + escHtml(failGoal.title || failGoal.name || '\u5931\u8D25') + '</div>';
     if (failGoal.description) h += '<div style="text-align:center;font-size:0.78rem;color:var(--color-foreground-muted);margin-bottom:1rem;">' + escHtml(failGoal.description) + '</div>';
+  }
+  // \u2605D3\u00B7\u53F2\u4E0A\u56FD\u795A\u5BF9\u7167\uFF08\u591A\u5EF6/\u65E9\u503E\uFF09\u2014\u2014\u8D25\u5C40\u624D\u663E\u00B7\u5267\u672C\u65E0 historicalFallYear \u5219\u9759\u9ED8\u7701\u7565
+  if (!isVictory) {
+    var _hfLine = _histFallCompareHtml(sc);
+    if (_hfLine) h += _hfLine;
   }
 
   // 太史公三段评语
