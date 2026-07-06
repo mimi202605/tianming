@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-06T04:16:41.549Z",
+  "updatedAt": "2026-07-06T05:10:31.553Z",
   "totals": {
     "gm": 4575,
     "p": 739
@@ -515,7 +515,7 @@
       }
     },
     "tm-hongyan-office.js": {
-      "gm": 72,
+      "gm": 66,
       "p": 0,
       "roots": {
         "gm:_ltFilter": 1,
@@ -525,10 +525,10 @@
         "gm:_pendingLetterTo": 2,
         "gm:_letterSuspects": 2,
         "gm:_ltReplyingTo": 2,
-        "gm:_edictSuggestions": 5,
+        "gm:_edictSuggestions": 4,
         "gm:letters": 11,
         "gm:_edictTracker": 2,
-        "gm:_ltMultiMode": 2,
+        "gm:_ltMultiMode": 1,
         "gm:_pendingNpcLetters": 6,
         "gm:_courierStatus": 9,
         "gm:_npcCorrespondence": 2,
@@ -537,7 +537,21 @@
         "gm:_pendingNpcCorrespondence": 1,
         "gm:_pendingMemorialDeliveries": 1,
         "gm:memorials": 2,
-        "gm:_hongyanPolicyActions": 3,
+        "gm:_hongyanPolicyActions": 3
+      }
+    },
+    "tm-game-ui-shell.js": {
+      "gm": 1,
+      "p": 0,
+      "roots": {
+        "gm:_ltMultiMode": 1
+      }
+    },
+    "tm-hongyan-edict-ui.js": {
+      "gm": 5,
+      "p": 0,
+      "roots": {
+        "gm:_edictSuggestions": 1,
         "gm:edicts": 3,
         "gm:qijuHistory": 1
       }

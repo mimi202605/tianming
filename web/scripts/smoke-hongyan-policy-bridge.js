@@ -137,7 +137,7 @@ function makeContext() {
 
 function loadRuntime(ctx) {
   vm.createContext(ctx);
-  ['tm-edict-parser.js', 'tm-hongyan-office.js'].forEach(function(file) {
+  ['tm-edict-parser.js', 'tm-hongyan-office.js', 'tm-game-ui-shell.js', 'tm-hongyan-edict-ui.js'].forEach(function(file) {
     const fp = path.join(ROOT, file);
     vm.runInContext(fs.readFileSync(fp, 'utf8'), ctx, { filename: fp });
   });

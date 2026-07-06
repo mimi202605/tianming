@@ -18,7 +18,7 @@ const shijiList = read('tm-shiji-qiju-ui.js');
 const playerCore = read('tm-player-core.js');
 const tinYi = (read('tm-tinyi-v3-persona.js') + (read('tm-tinyi-v3.js') + '\n' + read('tm-tinyi-v3-edict-personnel.js')) + read('tm-tinyi-v3-parties.js'));
 const topbarVars = read('tm-topbar-vars.js');
-const office = read('tm-hongyan-office.js');
+const office = read('tm-hongyan-office.js') + '\n' + read('tm-game-ui-shell.js') + '\n' + read('tm-hongyan-edict-ui.js');
 const ceming = read('tm-ceming.js');
 const keju = read('tm-keju.js');
 

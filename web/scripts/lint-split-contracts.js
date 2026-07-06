@@ -38,6 +38,9 @@ const CONTRACTS = [
   ['tm-feudal.js', 'tm-feudal-warfare.js'],
   // 第十四拆(顶层函数型中段切)：tm-game-loop §5b 问天直改引擎·紧挨 origin
   ['tm-game-loop.js', 'tm-game-loop-wentian-hardchange.js'],
+  // 第十五拆(顶层函数型中段切)：tm-hongyan-office letter 主域留守·中段切出 renderGameState(game-ui-shell)+edict UI(edict-ui)
+  //   letter 夹在两片外侧(head=letter part1·tail=register('letters')/doctor/diag)·origin=head+tail·三片须连序
+  ['tm-hongyan-office.js', 'tm-game-ui-shell.js', 'tm-hongyan-edict-ui.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

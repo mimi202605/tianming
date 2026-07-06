@@ -16,7 +16,7 @@ const utils = read('tm-utils.js');
 const edictLifecycle = read('tm-edict-lifecycle.js');
 const phase8Bridge = read('phase8-formal-bridge.js');
 const playerCore = read('tm-player-core.js');
-const hongyanOffice = read('tm-hongyan-office.js');
+const hongyanOffice = read('tm-hongyan-office.js') + '\n' + read('tm-game-ui-shell.js') + '\n' + read('tm-hongyan-edict-ui.js');
 
 assert(memorials.includes('TM_RETENTION_GUARD: generateMemorials-origin-wrapped-not-dead'),
   'generateMemorials original must be marked as wrapped-not-dead');
