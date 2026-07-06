@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-06T15:55:29.437Z",
+  "updatedAt": "2026-07-06T17:04:33.711Z",
   "totals": {
-    "gm": 4579,
+    "gm": 4583,
     "p": 739
   },
   "files": {
@@ -2286,7 +2286,7 @@
       }
     },
     "tm-guoku-engine.js": {
-      "gm": 213,
+      "gm": 217,
       "p": 0,
       "roots": {
         "gm:guoku": 149,
@@ -2295,9 +2295,11 @@
         "gm:military": 1,
         "gm:huangwei": 12,
         "gm:huangquan": 3,
+        "gm:activeDisasters": 3,
+        "gm:_lastSimDisasterTurn": 1,
         "gm:vars": 5,
         "gm:activeFamine": 2,
-        "gm:activeDisasters": 1,
+        "gm:_grainReleaseTurn": 1,
         "gm:population": 2,
         "gm:totalOfficials": 2,
         "gm:hukou": 5,

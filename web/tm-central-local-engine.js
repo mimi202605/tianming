@@ -134,6 +134,7 @@
       if (global.GM.currency && global.GM.currency.market) {
         global.GM.currency.market.grainPrice *= Math.max(0.85, 1 - amount / 200000);
       }
+      global.GM._grainReleaseTurn = global.GM.turn || 0;   // 放粮入市信号→GM.prices.grain 指数亦吃到(双轨补齐·guoku updatePriceIndex 消费)
       region.marketTrust = Math.min(100, (region.marketTrust || 50) + amount / 50000);
       return { 平粜: +(amount / 50000).toFixed(1) };
     }

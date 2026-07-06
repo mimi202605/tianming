@@ -1073,6 +1073,94 @@
     t = Math.round(t);
     return Math.max(1, Math.min(12, t || 1));
   }
+  // ═══ 天时·灾异推演(2026-07-07·flag disasterSimEnabled 默认关)：环境状态自生天灾 ═══
+  //   此前 GM.activeDisasters 唯一生产者=AI 叙事一致性补录(apply)——天灾是否发生取决于 LLM 本回合
+  //   是否恰好叙及，而非游戏自身环境。此发生器读 climatePhase(小冰河)/nationalLoad/region.disasterLevel
+  //   (区域准灾上卷·双轨互认)·确定性 hash 掷灾(不触全局 rng 序列·同局同回合同果·存档重载不漂)·
+  //   产出走既有 schema→下游整条灾荒机器(disasterLevel 派生/粮价/饥荒流民/民变归因/税基折减/赈灾闭环)
+  //   原样消费。灾种随季节物候(农业社会通用·朝代中立)。
+  function _dsimHash(a, b) {
+    var h = 2166136261 >>> 0, s = String(a) + '\u0001' + String(b);
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return (h % 100000) / 100000;
+  }
+  function _dsimRegions() {
+    var rs = GM.regions;
+    if (Array.isArray(rs)) return rs.filter(Boolean);
+    if (rs && typeof rs === 'object') return Object.keys(rs).map(function (k) { var o = rs[k]; if (o && typeof o === 'object') { if (!o.id) o.id = k; return o; } return null; }).filter(Boolean);
+    return [];
+  }
+  function _dsimMonth() {
+    try { if (typeof calcDateFromTurn === 'function') { var d = calcDateFromTurn(GM.turn || 0); if (d && d.month) return d.month; } } catch (_) {}
+    return ((GM.turn || 0) % 12) + 1;
+  }
+  // 灾种季节权重(通用物候)：春夏旱·盛夏洪·夏秋蝗·冬春疫·震极罕
+  function _dsimPickCategory(m, rnd) {
+    var w = [
+      ['drought', (m >= 3 && m <= 7) ? 3 : 1],
+      ['flood', (m >= 6 && m <= 8) ? 3 : (m === 5 || m === 9) ? 1.5 : 0.5],
+      ['locust', (m >= 6 && m <= 9) ? 2.5 : 0.3],
+      ['plague', (m <= 3 || m >= 11) ? 2 : 1],
+      ['quake', 0.25]
+    ];
+    var tot = 0; w.forEach(function (x) { tot += x[1]; });
+    var t = rnd * tot;
+    for (var i = 0; i < w.length; i++) { t -= w[i][1]; if (t <= 0) return w[i][0]; }
+    return 'drought';
+  }
+  function simulateDisasterGenesis() {
+    if (typeof GM === 'undefined' || !GM) return null;
+    var _pc = (typeof P !== 'undefined' && P && P.conf) || {};
+    if (_pc.disasterSimEnabled !== true) return null;              // flag 默认关(设置·玩法机制深化)
+    var now = GM.turn || 0;
+    if (!Array.isArray(GM.activeDisasters)) GM.activeDisasters = [];
+    var simActive = GM.activeDisasters.filter(function (d) { return d && d._simGen; }).length;
+    if (simActive >= 2) return null;                               // 自然灾并发封顶 2(AI 叙事灾不占口)
+    var cdTurns = (typeof turnsForMonths === 'function') ? Math.max(1, Math.round(turnsForMonths(3))) : 3;
+    if (typeof GM._lastSimDisasterTurn === 'number' && (now - GM._lastSimDisasterTurn) < cdTurns) return null;  // 冷却≈3月
+
+    var E = GM.environment || {};
+    var tpy = (typeof turnsForMonths === 'function') ? Math.max(1, turnsForMonths(12)) : 12;
+    var climateMul = E.climatePhase === 'little_ice_age' ? 1.7 : E.climatePhase === 'medieval_warm' ? 0.6 : 1.0;
+    var loadMul = 1 + Math.max(0, (typeof E.nationalLoad === 'number' ? E.nationalLoad : 1) - 1) * 0.8;
+    var pTurn = Math.min(0.45, (1.1 / tpy) * climateMul * loadMul);   // 平年≈1.1起/年·小冰河≈1.9起/年
+    if (_dsimHash('dsim-gate', now) >= pTurn) return null;
+
+    // 选区域：区域准灾信号(region.disasterLevel·经济模拟侧产出)加权——「准灾」在此上卷为国家级天灾(双轨互认)
+    var regs = _dsimRegions();
+    var regionName = '', regionBoost = 0;
+    if (regs.length) {
+      var weights = regs.map(function (r) { return 1 + (typeof r.disasterLevel === 'number' ? r.disasterLevel * 3 : 0); });
+      var wtot = 0; weights.forEach(function (x) { wtot += x; });
+      var t2 = _dsimHash('dsim-region', now) * wtot;
+      var pick = regs[0];
+      for (var j = 0; j < regs.length; j++) { t2 -= weights[j]; if (t2 <= 0) { pick = regs[j]; break; } }
+      regionName = String(pick.name || pick.id || '');
+      regionBoost = (typeof pick.disasterLevel === 'number') ? pick.disasterLevel : 0;
+    }
+    if (!regionName) regionName = '京畿';   // 区划缺位兜底(朝代中立泛称)
+
+    var mo = _dsimMonth();
+    var cat = _dsimPickCategory(mo, _dsimHash('dsim-cat', now));
+    // 烈度合成：气候恶化+国土过载+区域准灾+定差扰动
+    var sevScore = (climateMul - 1) * 0.5 + Math.max(0, loadMul - 1) * 0.6 + regionBoost * 0.5 + _dsimHash('dsim-sev', now) * 0.45;
+    var severity = sevScore >= 0.75 ? 'severe' : sevScore >= 0.35 ? 'moderate' : 'minor';
+    var nd = {
+      type: cat, category: cat, region: regionName, severity: severity, casualties: 0,
+      startedTurn: now, duration: _disasterDurationTurns(cat),
+      reason: '天时不济·灾异自生', _simGen: true
+    };
+    GM.activeDisasters.push(nd);
+    GM._lastSimDisasterTurn = now;
+    // 区域准灾释放：上卷成真灾后该区灾级回落(避免同区连环加权)
+    if (regionBoost > 0 && regs.length) {
+      regs.forEach(function (r) { if (String(r.name || r.id || '') === regionName) r.disasterLevel = Math.max(0, (r.disasterLevel || 0) * 0.4); });
+    }
+    if (typeof addEB === 'function') {
+      try { addEB('朝代', regionName + '·' + _disasterCatCN(cat) + '起（' + ({ minor: '轻', moderate: '中', severe: '重' })[severity] + '）——' + (E.climatePhase === 'little_ice_age' ? '天时严酷，' : '') + '有司当速议赈济', { credibility: 'high' }); } catch (_e) {}
+    }
+    return nd;
+  }
   // 灾害派生信号:从在册天灾聚合 GM.vars.disasterLevel(0-1)/disasterType + GM.activeFamine —— 盘活 8+ 处既有【死输入】消费方
   //   (人口死亡率 huji:459·自耕农满意度 authority-complete:106·粮价 economy:570/992·水/旱赈济疏 edict-complete·
   //    饥荒迁移 huji-deep-fill:123·民变归因 prophecy·治安 edict-parser)·全代码零生产者→此前恒 0·各消费方自有阈值/夹幅(无新涟漪代码·忠于原设计)
@@ -1104,6 +1192,7 @@
   // 每回合一次：到期灾害出队(已赈灾者寿命减半·更快平息)·返回平息数。治本"永不消除"。
   function tickDisasters() {
     if (typeof GM === 'undefined' || !GM) return 0;
+    try { simulateDisasterGenesis(); } catch (_eg) {}   // 天时·灾异推演(flag 内自检·默认关零行为·新灾当回合即入派生信号)
     if (!Array.isArray(GM.activeDisasters) || !GM.activeDisasters.length) { _syncDisasterSignals([]); return 0; }  // 无灾:清陈旧派生信号(原早返回致 disasterLevel 永不归零)
     var now = GM.turn || 0, kept = [], passed = 0;
     GM.activeDisasters.forEach(function(d) {
@@ -1157,6 +1246,7 @@
           if (hit && !d._relieved) { d._relieved = true; d._reliefTurn = GM.turn || 0; relieved++; }
         });
       }
+      GM._grainReleaseTurn = GM.turn || 0;   // 放粮入市信号→updatePriceIndex 平抑粮价指数(央地平粜同写此信号)
       // 民心回升：有灾可赈按 scale·无灾空赈减半(避免无灾刷民心)
       var minxinGain = scale === 'national' ? 15 :
                        scale === 'regional' ? 8 : 3;
@@ -1648,6 +1738,10 @@
     if (GM.currency && GM.currency.inflationPressure) inflationFactor = 1 + GM.currency.inflationPressure * 0.2;
     if (GM.activeDisasters && GM.activeDisasters.length > 0) stockFactor *= (1 + GM.activeDisasters.length * 0.15);
     var targetGrain = stockFactor * inflationFactor;
+    // 平粜/开仓入市压价(2026-07-07)：近期放粮(玩家 openGranary/央地平粜稳价)→指数目标折 0.85·约两月窗——
+    //   治「平粜名义结算·GM.prices.grain 指数公式不吃放粮信号」(currency 那套粮价早有平粜项·此处补齐双轨)
+    var _grWin = (typeof turnsForMonths === 'function') ? Math.max(1, Math.round(turnsForMonths(2))) : 2;
+    if (typeof GM._grainReleaseTurn === 'number' && (GM.turn - GM._grainReleaseTurn) >= 0 && (GM.turn - GM._grainReleaseTurn) <= _grWin) targetGrain *= 0.85;
     GM.prices.grain = GM.prices.grain * 0.8 + targetGrain * 0.2;
     GM.prices.cloth = GM.prices.cloth * 0.9 + inflationFactor * 0.1;
     GM.prices.general = (GM.prices.grain + GM.prices.cloth) / 2;
@@ -2223,6 +2317,7 @@
     Expenses: Expenses,
     Actions: Actions,
     tickDisasters: tickDisasters,
+    simulateDisasterGenesis: simulateDisasterGenesis,
     computeTaxFlow: computeTaxFlow,
     monthlySettle: monthlySettle,
     yearlySettle: yearlySettle,
