@@ -31,7 +31,8 @@ ok(outNorm.indexOf('35.0%') >= 0 && outNorm.indexOf('55.0%') >= 0 && outNorm.ind
 const mapS = read('tm-map-system.js');
 ok(/\(city\.population\|\|0\)\.toLocaleString\(\)/.test(mapS), '★城市人口 ||0 守卫(防 undefined.toLocaleString 崩)');
 ok(/\(city\.income\|\|0\)\.toLocaleString\(\)/.test(mapS), '城市收入 ||0 守卫');
-ok(/\(city\.garrison\|\|0\)\.toLocaleString\(\)/.test(mapS), '城市驻军 ||0 守卫');
+// 2026-07-06 驻军守卫被并行会话重构为 Number(city.garrison||0) 中转变量形(游牧机动兵力兜底改造)·断言随语义锚两形通吃
+ok(/Number\(city\.garrison \|\| 0\)/.test(mapS) || /\(city\.garrison\|\|0\)\.toLocaleString\(\)/.test(mapS), '城市驻军 ||0 守卫(直用或 Number 中转形)');
 ok(/if \(\(city\.neighbors\|\|\[\]\)\.length > 0\)/.test(mapS), '★相邻城市 ||[] 守卫(防 .length 崩)');
 ok(/\(city\.neighbors\|\|\[\]\)\.forEach/.test(mapS), '相邻城市遍历 ||[] 守卫');
 
@@ -74,7 +75,7 @@ const calib = read('tm-party-class-llm-calibrator.js');
 ok(/partyOutcomeHistory[\s\S]{0,80}\.slice\(-5\)/.test(calib), '校准器只读 partyOutcomeHistory 的 tail-5');
 ok(80 > 5, '封顶80 >> 校准器窗口5(裁剪不伤逻辑消费)');
 
-const corr = read('tm-corruption-engine.js');
+const corr = read('tm-corruption-engine.js') + read('tm-corruption-cases.js') + read('tm-corruption-extras.js');
 ok((corr.match(/if \(GM\.corruption\.history\.exposedCases\.length > 160\)/g) || []).length === 2, '★exposedCases 两个 push 点各封顶160(单条体积最大)');
 ok(/if \(GM\.corruption\.history\.purgeCampaigns\.length > 200\)/.test(corr), 'purgeCampaigns 封顶200');
 ok(/if \(GM\.corruption\.history\.backlash\.length > 200\)/.test(corr), 'backlash 封顶200');
