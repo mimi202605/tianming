@@ -18,7 +18,7 @@ const assert = makeAssert(passed);
 
 // ── ① 真模块 API:两单例暴露 snapshot/restore ──
 const cqSrc = fs.readFileSync(path.join(ROOT, 'tm-change-queue.js'), 'utf8');
-const mechSrc = fs.readFileSync(path.join(ROOT, 'tm-mechanics.js'), 'utf8');
+const mechSrc = (fs.readFileSync(path.join(ROOT, 'tm-mechanics.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tm-mechanics-memory.js'), 'utf8'));
 assert(/function restoreLedger\(snap\)/.test(cqSrc) && /restoreLedger: restoreLedger/.test(cqSrc), '① AccountingSystem 加 restoreLedger 并暴露');
 assert(/function getPreviousValues\(\)/.test(mechSrc) && /getPreviousValues: getPreviousValues/.test(mechSrc), '① StateCouplingSystem 加 getPreviousValues 并暴露');
 assert(/function restorePreviousValues\(snap\)/.test(mechSrc) && /restorePreviousValues: restorePreviousValues/.test(mechSrc), '① StateCouplingSystem 加 restorePreviousValues 并暴露');

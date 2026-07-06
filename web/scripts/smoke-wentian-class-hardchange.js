@@ -43,6 +43,7 @@ sb.GM = {
 vm.createContext(sb);
 try {
   vm.runInContext(fs.readFileSync(path.join(WEB, 'tm-game-loop.js'), 'utf8'), sb, { filename: 'tm-game-loop.js' });
+  vm.runInContext(fs.readFileSync(path.join(WEB, 'tm-game-loop-wentian-hardchange.js'), 'utf8'), sb, { filename: 'tm-game-loop-wentian-hardchange.js' });
 } catch (e) {
   console.log('  ✗ 加载 tm-game-loop.js 失败: ' + e.message);
   process.exit(1);
@@ -85,7 +86,7 @@ ok(sb._wtResolveClassHardChange(['guoku', 'money']) === null, '⑧ 解析器:非
 ok(sb._wtResolveClassHardChange(['classes', '农户', 'location']) === null, '⑧ 解析器:阶层无 location 字段→不接管(避免乱写)');
 
 // ── ⑨ 源契约:prompt 含阶层路径 + 接入点 ──
-const src = fs.readFileSync(path.join(WEB, 'tm-game-loop.js'), 'utf8');
+const src = (fs.readFileSync(path.join(WEB, 'tm-game-loop.js'), 'utf8') + fs.readFileSync(path.join(WEB, 'tm-game-loop-wentian-hardchange.js'), 'utf8'));
 ok(/classes\[阶层名\]\.satisfaction/.test(src) && /classes\[阶层名\]\.influence/.test(src), '⑨ 问天 prompt 常见路径含阶层满意度/影响力');
 ok(/var classChange = _wtResolveClassHardChange\(parts\)/.test(src), '⑨ _wtApplyHardChange 已接入阶层解析');
 

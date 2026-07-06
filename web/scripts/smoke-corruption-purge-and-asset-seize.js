@@ -45,6 +45,8 @@ const h = createHarness({
 h.load('tm-minxin-ledger.js');   // 民心已收口走总闸(2026-07-04)·沙箱须与运行时同形态
 h.load('tm-fiscal-engine.js');   // 国库出入已收口走真账(2026-07-04)
 h.load('tm-corruption-engine.js');
+h.load('tm-corruption-cases.js');
+h.load('tm-corruption-extras.js');
 
 const CE = h.context.CorruptionEngine;
 CE.ensureModel();

@@ -16,7 +16,7 @@ const h = createHarness({
   random: function() { return 0.0; }
 });
 
-h.loadMany(['tm-corruption-engine.js']);
+h.loadMany(['tm-corruption-engine.js', 'tm-corruption-cases.js', 'tm-corruption-extras.js']);
 
 const CE = h.context.CorruptionEngine;
 CE.ensureModel();

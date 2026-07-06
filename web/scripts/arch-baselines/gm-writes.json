@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-04T09:14:32.601Z",
+  "updatedAt": "2026-07-06T04:16:41.549Z",
   "totals": {
-    "gm": 4574,
+    "gm": 4575,
     "p": 739
   },
   "files": {
@@ -184,7 +184,7 @@
       }
     },
     "tm-mechanics.js": {
-      "gm": 25,
+      "gm": 18,
       "p": 0,
       "roots": {
         "gm:offendGroupScores": 6,
@@ -193,7 +193,13 @@
         "gm:memorials": 1,
         "gm:activeRebounds": 3,
         "gm:_deathRiskChars": 2,
-        "gm:_legitimacyAlerts": 1,
+        "gm:_legitimacyAlerts": 1
+      }
+    },
+    "tm-mechanics-memory.js": {
+      "gm": 7,
+      "p": 0,
+      "roots": {
         "gm:_charInteractionCount": 4,
         "gm:_charInteractionCountTurn": 1,
         "gm:_memoryArchiveFull": 2
@@ -537,7 +543,7 @@
       }
     },
     "tm-game-loop.js": {
-      "gm": 83,
+      "gm": 53,
       "p": 0,
       "roots": {
         "gm:_corruptionPresetDone": 1,
@@ -545,20 +551,30 @@
         "gm:_neitangPresetDone": 1,
         "gm:_cascadePreviewDone": 1,
         "gm:_fixedExpensePreviewDone": 1,
-        "gm:guoku": 7,
+        "gm:guoku": 5,
         "gm:_lastFixedExpense": 1,
         "gm:_historicalCharsLoaded": 1,
         "gm:population": 7,
         "gm:regentSignal": 1,
         "gm:regentState": 5,
         "gm:_diplomaticMissions": 2,
-        "gm:_playerDirectives": 12,
-        "gm:_importedMemories": 6,
-        "gm:_wentianHistory": 22,
+        "gm:_playerDirectives": 11,
+        "gm:_importedMemories": 2,
+        "gm:_wentianHistory": 12,
+        "gm:_pendingWenduiChar": 1
+      }
+    },
+    "tm-game-loop-wentian-hardchange.js": {
+      "gm": 30,
+      "p": 0,
+      "roots": {
         "gm:corruption": 10,
+        "gm:guoku": 2,
         "gm:neitang": 2,
         "gm:minxin": 1,
-        "gm:_pendingWenduiChar": 1
+        "gm:_wentianHistory": 10,
+        "gm:_importedMemories": 4,
+        "gm:_playerDirectives": 1
       }
     },
     "tm-map-system.js": {
@@ -640,17 +656,25 @@
       }
     },
     "tm-feudal.js": {
-      "gm": 27,
+      "gm": 7,
       "p": 0,
       "roots": {
-        "gm:armies": 2,
-        "gm:activeWars": 6,
+        "gm:armies": 1,
+        "gm:activeWars": 2,
         "gm:_turnRebellionResults": 2,
-        "gm:supplyRoutes": 2,
+        "gm:supplyRoutes": 2
+      }
+    },
+    "tm-feudal-warfare.js": {
+      "gm": 20,
+      "p": 0,
+      "roots": {
+        "gm:activeWars": 4,
         "gm:treaties": 4,
         "gm:schemeCooldowns": 3,
         "gm:activeSchemes": 3,
         "gm:_turnSchemeResults": 2,
+        "gm:armies": 1,
         "gm:_marchReport": 1,
         "gm:stateTreasury": 1,
         "gm:eraState": 1
@@ -769,6 +793,13 @@
         "gm:_pendingShijiModal": 9,
         "gm:_isPostTurnCourt": 6,
         "gm:_chaoyiCount": 2
+      }
+    },
+    "tm-dianzhang.js": {
+      "gm": 1,
+      "p": 0,
+      "roots": {
+        "gm:_dianzhang": 1
       }
     },
     "tm-endturn-systems.js": {
@@ -2189,21 +2220,39 @@
       }
     },
     "tm-corruption-engine.js": {
-      "gm": 147,
+      "gm": 105,
       "p": 0,
       "roots": {
-        "gm:corruption": 88,
+        "gm:corruption": 67,
         "gm:guoku": 1,
-        "gm:_corrStats": 6,
-        "gm:neitang": 2,
+        "gm:_corrStats": 4,
+        "gm:neitang": 1,
         "gm:turnChanges": 3,
         "gm:officialSalary": 2,
         "gm:_corrDeptLongTerm": 4,
         "gm:_corrBacklashCounters": 10,
-        "gm:huangwei": 7,
-        "gm:huangquan": 8,
-        "gm:hukou": 3,
+        "gm:huangwei": 4,
+        "gm:huangquan": 6,
+        "gm:hukou": 3
+      }
+    },
+    "tm-corruption-cases.js": {
+      "gm": 24,
+      "p": 0,
+      "roots": {
+        "gm:corruption": 16,
         "gm:partyStrife": 2,
+        "gm:huangquan": 2,
+        "gm:huangwei": 3,
+        "gm:neitang": 1
+      }
+    },
+    "tm-corruption-extras.js": {
+      "gm": 18,
+      "p": 0,
+      "roots": {
+        "gm:_corrStats": 2,
+        "gm:corruption": 5,
         "gm:juanna": 8,
         "gm:minxin": 1,
         "gm:mapData": 2

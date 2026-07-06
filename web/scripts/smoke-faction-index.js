@@ -197,7 +197,7 @@ function testEmptyGM() {
 
 function testHookPresence() {
   // 静态检查·startGame + pipeline render-finalize step 必须 call rebuild
-  const gameLoop = fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8');
+  const gameLoop = (fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tm-game-loop-wentian-hardchange.js'), 'utf8'));
   assert(/TM\.FactionIndex\.rebuild\s*\(\s*\)/.test(gameLoop), 'startGame missing TM.FactionIndex.rebuild()');
   assert(/_facIndex 构建完成/.test(gameLoop), 'startGame missing console.log marker');
 
@@ -317,7 +317,7 @@ function testDerivedHealthFromIndex() {
 }
 
 function testLayer3HookPresence() {
-  const gameLoop = fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8');
+  const gameLoop = (fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tm-game-loop-wentian-hardchange.js'), 'utf8'));
   assert(/TM\.FactionDerived\.compute\s*\(\s*\)/.test(gameLoop), 'startGame missing TM.FactionDerived.compute()');
   const pipeline = fs.readFileSync(path.join(ROOT, 'tm-endturn-pipeline-steps.js'), 'utf8');
   assert(/TM\.FactionDerived\.compute\s*\(\s*\)/.test(pipeline), 'pipeline missing TM.FactionDerived.compute()');

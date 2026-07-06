@@ -14,7 +14,7 @@ function sliceFn(src, marker){ const a=src.indexOf(marker); if(a<0) return null;
 console.log('smoke-war-closure');
 
 const mil = fs.readFileSync(path.join(ROOT,'tm-military.js'),'utf8');
-const feu = fs.readFileSync(path.join(ROOT,'tm-feudal.js'),'utf8');
+const feu = (fs.readFileSync(path.join(ROOT,'tm-feudal.js'),'utf8') + fs.readFileSync(path.join(ROOT,'tm-feudal-warfare.js'),'utf8'));
 const f_uw = sliceFn(mil,'function _ty_updateWarFromBattle(');
 const f_ca = sliceFn(feu,'function _ty_callAlliesToWar(');
 ok(!!f_uw && !!f_ca, '两战争闭环函数抽取成功');

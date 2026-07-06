@@ -37,7 +37,7 @@ function assert(c, m) { if (c) pass++; else { fail++; console.error('  ✗ ' + m
   ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx; vm.createContext(ctx);
   ctx.GM = { turn: 5, chars: [{ name: '甲', alive: true, _memory: [] }] };
   ctx.P = {}; ctx._tmMemoryCanonName = (n) => n; ctx._tmMemoryCanonNameArray = (x) => x; ctx._tmMemoryFindChar = (n) => ctx.GM.chars.find(c => c.name === n);
-  const src = fs.readFileSync(path.join(ROOT, 'tm-mechanics.js'), 'utf8');
+  const src = (fs.readFileSync(path.join(ROOT, 'tm-mechanics.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tm-mechanics-memory.js'), 'utf8'));
   const i = src.indexOf('var NpcMemorySystem = {');
   const j = src.indexOf('\n};', i) + 3;
   vm.runInContext(src.slice(i, j), ctx, { filename: 'npcmem.js' });

@@ -4,7 +4,7 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
-const src = fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8');
+const src = (fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tm-game-loop-wentian-hardchange.js'), 'utf8'));
 
 function assert(cond, msg) {
   if (!cond) throw new Error('[assert] ' + msg);

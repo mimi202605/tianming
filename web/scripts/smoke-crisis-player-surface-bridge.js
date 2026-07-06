@@ -81,6 +81,8 @@ const harness = createHarness({
 harness.load('tm-authority-engines.js');
 harness.load('tm-authority-complete.js');
 harness.load('tm-corruption-engine.js');
+harness.load('tm-corruption-cases.js');
+harness.load('tm-corruption-extras.js');
 
 const AC = harness.context.AuthorityComplete;
 const CE = harness.context.CorruptionEngine;

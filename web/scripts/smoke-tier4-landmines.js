@@ -85,7 +85,7 @@ const off = read('tm-office-system.js');
 ok(/\(GM\.chars \|\| \[\]\)\.length \+ '\|' \+ \(GM\.playerFaction \|\| ''\)/.test(off), '★官制派生签名纳入 GM.playerFaction(阵营切换触发重派生)');
 
 // ── #7 game-loop capture ──
-const gl = read('tm-game-loop.js');
+const gl = (read('tm-game-loop.js') + read('tm-game-loop-wentian-hardchange.js'));
 ok(/catch\(_eR\)\{ if \(window\.TM && TM\.errors/.test(gl), '★ensureCharResources 空 catch 改 capture');
 ok(/catch\(_eM\)\{ if \(window\.TM && TM\.errors/.test(gl), '★updatePublicTreasuryMirror 空 catch 改 capture');
 

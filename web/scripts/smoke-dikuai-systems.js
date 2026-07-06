@@ -56,6 +56,8 @@ console.log('— D2 · 叶级吏治连账(行为) —');
   if (!harness) { ok(false, 'corruption harness 可用'); return; }
   var h = harness.createHarness({ GM: harness.makeBaseGM({ turn: 8 }), P: harness.makeBaseP({}), random: function () { return 0.5; } });
   h.load('tm-corruption-engine.js');
+  h.load('tm-corruption-cases.js');
+  h.load('tm-corruption-extras.js');
   var CE = h.context.CorruptionEngine;
   CE.ensureModel();
   var GMx = h.context.GM;

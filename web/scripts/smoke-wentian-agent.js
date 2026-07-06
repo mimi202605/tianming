@@ -16,7 +16,7 @@ console.log('smoke-wentian-agent');
 /* ── §A 区划/官职解析器(行为) ─────────────────────────────────── */
 console.log('— §A · 区划/官职按名直改(行为) —');
 (function () {
-  var src = read('tm-game-loop.js');
+  var src = (read('tm-game-loop.js') + read('tm-game-loop-wentian-hardchange.js'));
   var start = src.indexOf('function _wtCanonicalDivisionHardChangeField');
   var end = src.indexOf('function _wtReviseFromPending');
   ok(start >= 0 && end > start, '切片边界在(新解析器位于 hardChange 块内)');
@@ -112,7 +112,7 @@ console.log('— §B · agent 循环(行为) —');
 })().then(function () {
   /* ── §C 接线契约 ──────────────────────────────────────────── */
   console.log('— §C · 接线契约 —');
-  var gl = read('tm-game-loop.js');
+  var gl = (read('tm-game-loop.js') + read('tm-game-loop-wentian-hardchange.js'));
   ok(/function _wtParseTeachingText\(\)/.test(gl) && (gl.match(/_wtParseTeachingText\(\)/g) || []).length >= 3, '解析教学共源(单发与 agent 同一份·防漂移)');
   ok(/TM\.WentianAgent\.enabled\(\)/.test(gl) && /TM\.WentianAgent\.run\(content/.test(gl), '_wtSend 接 agent 分支·失败落回单发');
   ok(/divisions\[府州名\]\.economyBase\.farmland/.test(gl) && /office\[官职名\]\.publicTreasury/.test(gl), '教学补区划/官职常见路径');

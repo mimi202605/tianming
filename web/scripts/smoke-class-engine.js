@@ -243,7 +243,7 @@ assert(endturnText.indexOf('TM.ClassEngine.applyClassPartyCoupling') >= 0, 'endt
 assert(endturnText.indexOf('class_alert_responses') >= 0, 'endturn infer missing class alert response schema prompt');
 assert(endturnText.indexOf('supportingParties:[{class:"倾向支持的党派",affinity:0.5-1}]') >= 0, 'endturn infer missing structured supportingParties prompt');
 
-const loopText = fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8');
+const loopText = (fs.readFileSync(path.join(ROOT, 'tm-game-loop.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tm-game-loop-wentian-hardchange.js'), 'utf8'));
 assert(loopText.indexOf('TM.ClassEngine.bootstrap') >= 0, 'game loop missing class bridge bootstrap');
 
 console.log('[smoke-class-engine] pass assertions=82');

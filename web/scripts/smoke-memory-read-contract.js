@@ -27,7 +27,7 @@ assert(/T' \+ m\.turn \+ ': ' \+ _memText\(m\)/.test(world), 'AI memory context 
 assert(!/T' \+ f\.turn \+ ': ' \+ f\.text/.test(world), 'foreshadow context must not read only .text');
 assert(!/T' \+ m\.turn \+ ': ' \+ m\.text/.test(world), 'AI memory context must not read only .text');
 
-const mechanics = read('tm-mechanics.js');
+const mechanics = (read('tm-mechanics.js') + read('tm-mechanics-memory.js'));
 assert(/recallMemory:\s*function\(query,\s*opts\)/.test(mechanics), 'NpcMemorySystem.recallMemory should exist');
 assert(/recall:\s*function\(charName,\s*limit\)/.test(mechanics), 'NpcMemorySystem.recall compatibility alias should exist');
 assert(/GM\._memoryArchiveFull/.test(mechanics), 'recall compatibility alias should read the full memory archive first');

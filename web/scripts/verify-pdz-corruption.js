@@ -78,6 +78,8 @@ function assert(cond, label) { if (!cond) throw new Error('[assert] ' + label); 
   };
   vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-corruption-engine.js'), 'utf8'), sandbox, { filename: 'tm-corruption-engine.js' });
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-corruption-cases.js'), 'utf8'), sandbox, { filename: 'tm-corruption-cases.js' });
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-corruption-extras.js'), 'utf8'), sandbox, { filename: 'tm-corruption-extras.js' });
   const CE = sandbox.CorruptionEngine;
   assert(CE && CE.Consequences && typeof CE.Consequences.calcActualTaxRate === 'function', 'B·calcActualTaxRate 已导出');
   const c = sandbox.GM.corruption;

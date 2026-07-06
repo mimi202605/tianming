@@ -26,7 +26,7 @@ function mkMood(src, turn) {
   return function (ch) { ctx._updateMood(ch); return ch._mood; };
 }
 
-const SRC = fs.readFileSync(path.join(ROOT, 'tm-mechanics.js'), 'utf8');
+const SRC = (fs.readFileSync(path.join(ROOT, 'tm-mechanics.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'tm-mechanics-memory.js'), 'utf8'));
 const mood = mkMood(SRC, 40); // 当前回合 40
 
 // ── 源契约 ──

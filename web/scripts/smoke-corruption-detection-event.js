@@ -22,6 +22,8 @@ const h = createHarness({
 });
 
 h.load('tm-corruption-engine.js');
+h.load('tm-corruption-cases.js');
+h.load('tm-corruption-extras.js');
 
 const CE = h.context.CorruptionEngine;
 CE.ensureModel();

@@ -42,7 +42,7 @@ const h = createHarness({
   random: function() { return 0.42; }
 });
 
-h.loadMany(['tm-corruption-engine.js', 'tm-guoku-engine.js']);
+h.loadMany(['tm-corruption-engine.js', 'tm-corruption-cases.js', 'tm-corruption-extras.js', 'tm-guoku-engine.js']);
 
 const CE = h.context.CorruptionEngine;
 const GE = h.context.GuokuEngine;

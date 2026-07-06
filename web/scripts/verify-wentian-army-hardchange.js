@@ -6,7 +6,7 @@
 var fs = require('fs');
 var path = require('path');
 
-var src = fs.readFileSync(path.join(__dirname, '..', 'tm-game-loop.js'), 'utf8');
+var src = (fs.readFileSync(path.join(__dirname, '..', 'tm-game-loop.js'), 'utf8') + fs.readFileSync(path.join(__dirname, '..', 'tm-game-loop-wentian-hardchange.js'), 'utf8'));
 function slice(from, to) {
   var i = src.indexOf(from);
   var j = src.indexOf(to, i + from.length);

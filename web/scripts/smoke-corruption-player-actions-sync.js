@@ -39,6 +39,8 @@ const harness = createHarness({
 });
 
 harness.load('tm-corruption-engine.js');
+harness.load('tm-corruption-cases.js');
+harness.load('tm-corruption-extras.js');
 
 const CE = harness.context.CorruptionEngine;
 assert(CE && CE.Actions, 'CorruptionEngine.Actions should exist');

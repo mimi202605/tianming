@@ -23,7 +23,7 @@ function sliceBetween(src, start, end) {
   return src.slice(a, b);
 }
 
-const gameLoop = read('tm-game-loop.js');
+const gameLoop = (read('tm-game-loop.js') + read('tm-game-loop-wentian-hardchange.js'));
 const renwuUi = read('tm-renwu-ui.js');
 const playerCore = read('tm-player-core.js');
 const formalModules = read('phase8-formal-modules.js');
