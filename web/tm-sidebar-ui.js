@@ -456,7 +456,11 @@ function renderSidePanels(){
     var typeIcons={win:'\u2605',lose:'\u2716',milestone:'\u25C6',npc_goal:'\u25CB'};
     var typeColors={win:'var(--gold)',lose:'var(--red)',milestone:'var(--blue)',npc_goal:'var(--txt-s)'};
     gp.innerHTML="<div class=\"pt\">\uD83C\uDFAF \u76EE\u6807\u6761\u4EF6</div>"+P.goals.map(function(g){
-      return "<div style=\"padding:0.2rem 0;font-size:0.75rem;display:flex;gap:0.3rem;\"><span style=\"color:"+(typeColors[g.type]||'var(--txt-s)')+";\">"+( typeIcons[g.type]||'\u25CB')+"</span><span>"+(g.name||'')+"</span></div>";
+      // \u26052026-07-06 \u76EE\u6807\u8F74\u4FEE\u590D\uFF1A\u63A5\u4E0A\u5F15\u64CE\u5DF2\u7B97\u597D\u7684\u8FDB\u5EA6(checkGoals \u6BCF\u56DE\u5408\u5199 g.progress)\u2014\u2014\u65E7\u7248\u53EA\u663E\u540D\u00B7\u76EE\u6807\u770B\u7740\u6C38\u4E0D\u52A8
+      var pct = g.completed ? 100 : (typeof g.progress === 'number' ? g.progress : (typeof _calcGoalProgress === 'function' ? (function(){ try { return _calcGoalProgress(g); } catch(_e) { return 0; } })() : 0));
+      var done = !!g.completed;
+      var tip = String(g.description || g.desc || '').replace(/"/g, '&quot;');
+      return "<div style=\"padding:0.2rem 0;font-size:0.75rem;display:flex;gap:0.3rem;align-items:center;\" title=\""+tip+"\"><span style=\"color:"+(done?'var(--gold)':(typeColors[g.type]||'var(--txt-s)'))+";\">"+(done?'\u2713':(typeIcons[g.type]||'\u25CB'))+"</span><span style=\"flex:1;\">"+(g.name||'')+"</span><span style=\"color:"+(done?'var(--gold)':'var(--txt-s)')+";font-size:0.68rem;\">"+(done?'\u6210':pct+'%')+"</span></div>";
     }).join("");
     gl.appendChild(gp);
   }

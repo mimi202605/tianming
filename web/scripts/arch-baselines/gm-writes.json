@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-06T15:34:30.879Z",
+  "updatedAt": "2026-07-06T15:48:43.933Z",
   "totals": {
-    "gm": 4577,
+    "gm": 4578,
     "p": 739
   },
   "files": {
@@ -714,11 +714,11 @@
       }
     },
     "tm-endturn-helpers.js": {
-      "gm": 50,
+      "gm": 51,
       "p": 0,
       "roots": {
         "gm:_annualReviewHistory": 3,
-        "gm:biannianItems": 1,
+        "gm:biannianItems": 2,
         "gm:_mutableFacts": 3,
         "gm:_chronicle": 2,
         "gm:_edictTracker": 4,

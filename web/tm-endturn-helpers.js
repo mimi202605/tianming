@@ -513,6 +513,10 @@ function _evalGoalCondition(cond) {
     if (t === 'variable_gte') return GM.vars[cond.variable] && GM.vars[cond.variable].value >= cond.value;
     if (t === 'variable_lte') return GM.vars[cond.variable] && GM.vars[cond.variable].value <= cond.value;
     if (t === 'turn_reached') return GM.turn >= (cond.value || 1);
+    // ★2026-07-06 目标轴修复：turn_before/turn_between——官方剧本(天启五目标)早在用 turn_before·引擎却无此分支
+    //   →conditions.every 恒 false·目标永不达成。语义=限期内(含当回合)与其余条件同时成立才算达成。
+    if (t === 'turn_before') return GM.turn <= (cond.value || 1);
+    if (t === 'turn_between') return GM.turn >= (cond.from || 1) && GM.turn <= (cond.to || 999999);
     if (t === 'character_alive') return GM.chars && GM.chars.some(function(c) { return c.name === cond.character && c.alive !== false; });
     if (t === 'character_dead') return !GM.chars || !GM.chars.some(function(c) { return c.name === cond.character && c.alive !== false; });
     if (t === 'faction_destroyed') return !GM.facs || !GM.facs.some(function(f) { return f.name === cond.faction && (f.strength || 0) > 0; });
@@ -559,18 +563,20 @@ function checkGoals() {
       goal.completedTurn = GM.turn;
       goal.progress = 100;
 
-      if (goal.type === 'milestone' || (!goal.winCondition && !goal.loseCondition)) {
-        // 里程碑：记入编年+起居注
+      // 达成一律记里程碑（编年+起居注）——loseCondition 目标除外（那是败因非功业）
+      if (!goal.loseCondition) {
         addEB('里程碑', '达成：' + (goal.title || goal.name));
-        if (GM.biannianItems) GM.biannianItems.unshift({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', title: '里程碑：' + (goal.title || goal.name), content: goal.description || '', importance: 'high' });
+        if (GM.biannianItems) GM.biannianItems.unshift({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', title: '里程碑：' + (goal.title || goal.name), content: goal.description || goal.desc || '', importance: 'high' });
       }
 
+      // ★2026-07-06 目标轴修复·拆通关哑弹（守「无胜利判定·帝业只有守成与倾覆」铁律）：旧码全部 winCondition
+      //   目标达成→_showVictoryScreen 通关弹屏·违铁律（因目标此前从未能被评估而从未触发·本轮修复后会真触发·必拆）。
+      //   改聚合里程碑：诸大业俱成只入编年作中兴之象·不弹终局·江山还得继续守。
       if (goal.winCondition) {
         var allWinsMet = P.goals.filter(function(g) { return g.winCondition; }).every(function(g) { return g.completed; });
         if (allWinsMet) {
-          addEB('胜利', '所有胜利条件已达成！');
-          // 延迟弹出终局画面
-          setTimeout(function() { _showVictoryScreen(); }, 1000);
+          addEB('里程碑', '剧本诸大业俱成——中兴之象，然守成之路无终点');
+          if (GM.biannianItems) GM.biannianItems.unshift({ turn: GM.turn, date: typeof getTSText === 'function' ? getTSText(GM.turn) : '', title: '中兴之象：剧本诸大业俱成', content: '', importance: 'high' });
         }
       }
       if (goal.loseCondition) {
