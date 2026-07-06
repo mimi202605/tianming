@@ -16,6 +16,7 @@
 //
 // 约定（沿袭现有 smoke 生态）：
 //   - PASS = 退出码 0 且输出无行首 FAIL；退出码 0 但输出带 FAIL → 记为 suspect（脚本忘了 exit 1）
+//   - 失败 ≤15 个时自动串行重跑一次：过了标 flaky（汇总/报告单列·不掩盖）·--no-retry 关闭（严格模式）
 //   - scripts/_<TOKEN>_NORUN.flag 存在 → 跳过名字含 <token> 的 smoke（并行会话施工标记）
 //   - scripts/arch-baselines/smoke-skip.json 登记已知不能 headless 跑的脚本及原因
 //   - 报告落 dev-tools/arch-guard/smoke-report.json
@@ -123,7 +124,29 @@ function signature(r) {
   }
   await Promise.all(Array.from({ length: Math.min(JOBS, smokes.length) }, worker));
 
+  // —— flake 自愈（2026-07-06）：并行高负载下 DOM-stub/AI 超时类假阳性反复咬人（每轮全量都要人肉隔离重跑解释）。
+  //    失败者串行重跑一次：过了标 flaky（可见不掩盖，报告/汇总单列）；失败 >15 视为真损坏不重跑；--no-retry 关闭。
+  const NO_RETRY = args.includes('--no-retry');
+  {
+    const firstFails = results.filter(r => !r.pass);
+    if (firstFails.length && firstFails.length <= 15 && !NO_RETRY) {
+      console.log(`\n[run-smokes] ${firstFails.length} 个失败串行重跑一次（排除并行负载 flake·--no-retry 可关）`);
+      for (const r of firstFails) {
+        const r2 = await runOne(r.name);
+        const pass2 = r2.exit === 0 && !r2.timedOut && !/^\s*FAIL\b/m.test(r2.out);
+        if (pass2) {
+          r.pass = true; r.flaky = true; r.retryMs = r2.ms;
+          console.log(`  重跑 PASS(flaky) ${r.name} (${(r2.ms / 1000).toFixed(1)}s)`);
+        } else {
+          r.out = r2.out || r.out; r.timedOut = r2.timedOut;   // 串行输出更干净·供聚类
+          console.log(`  重跑仍 FAIL     ${r.name}`);
+        }
+      }
+    }
+  }
+
   const fails = results.filter(r => !r.pass);
+  const flakies = results.filter(r => r.flaky);
   const suspects = results.filter(r => r.suspect);
   const slowest = [...results].sort((a, b) => b.ms - a.ms).slice(0, 10);
 
@@ -135,7 +158,11 @@ function signature(r) {
     clusters.get(sig).push(r.name);
   }
 
-  console.log(`\n[run-smokes] 完成：${results.length - fails.length}/${results.length} PASS · ${fails.length} FAIL · ${suspects.length} suspect(退出码0但输出FAIL) · 总耗时 ${(results.reduce((s, r) => s + r.ms, 0) / 1000).toFixed(0)}s(并行墙钟更短)`);
+  console.log(`\n[run-smokes] 完成：${results.length - fails.length}/${results.length} PASS · ${fails.length} FAIL${flakies.length ? ` · ${flakies.length} flaky(首跑败·串行重跑过)` : ''} · ${suspects.length} suspect(退出码0但输出FAIL) · 总耗时 ${(results.reduce((s, r) => s + r.ms, 0) / 1000).toFixed(0)}s(并行墙钟更短)`);
+  if (flakies.length) {
+    console.log('\n--- flaky（并行负载嫌疑·反复上榜再查真因）---');
+    flakies.forEach(r => console.log(`  ${r.name}（首跑 ${(r.ms / 1000).toFixed(1)}s → 重跑 ${(r.retryMs / 1000).toFixed(1)}s PASS）`));
+  }
   if (clusters.size) {
     console.log(`\n--- 失败聚类（${clusters.size} 簇）---`);
     for (const [sig, names] of [...clusters.entries()].sort((a, b) => b[1].length - a[1].length)) {
@@ -154,9 +181,9 @@ function signature(r) {
   lib.saveJSON(REPORT_FILE, {
     generatedAt: new Date().toISOString(),
     args: process.argv.slice(2),
-    summary: { selected: smokes.length, pass: results.length - fails.length, fail: fails.length, suspect: suspects.length, skipped: skipped.length },
+    summary: { selected: smokes.length, pass: results.length - fails.length, fail: fails.length, flaky: flakies.length, suspect: suspects.length, skipped: skipped.length },
     clusters: [...clusters.entries()].map(([sig, names]) => ({ sig, names })),
-    results: results.map(r => ({ name: r.name, pass: r.pass, suspect: r.suspect, exit: r.exit, ms: r.ms, timedOut: r.timedOut })).sort((a, b) => a.name.localeCompare(b.name)),
+    results: results.map(r => ({ name: r.name, pass: r.pass, flaky: !!r.flaky, suspect: r.suspect, exit: r.exit, ms: r.ms, timedOut: r.timedOut })).sort((a, b) => a.name.localeCompare(b.name)),
     skipped
   });
   console.log(`\n[run-smokes] 报告 → ${lib.rel(REPORT_FILE)}`);

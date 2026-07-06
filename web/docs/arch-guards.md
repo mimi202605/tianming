@@ -159,7 +159,18 @@ editor-authoring-agent 两件·已 grep 逐一确认皆单只)→alias 范式专
 纪律：**改拆分家族的任何一片，整族 bump 同一新戳**。历史分歧走豁免基线
 `split-stamps.json`（棘轮只减不增·当前=空）。附带全入口重复装载检测（零基线）。
 
+### ⑧ smoke 拼接序 `lint-smoke-family-order.js`（2026-07-06）
+scripts/ 下任何脚本以字符串提及同一拆分家族 ≥2 个成员时，首次提及顺序必须与契约序
+一致（read 拼接/readFileSync/vm/loadMany 各形通吃）。病根：拼接序错的 smoke 纯正则
+断言照样全绿，但作为装载序防腐测试不可信（Codex 复审第十八拆曾抓 15 处）。
+豁免基线 `smoke-family-order.json`（棘轮·当前=空）。
+
+### runner 附注：flake 自愈（2026-07-06）
+`run-smokes.js` 全量并行下 DOM-stub/AI 超时类假阳性反复出现——失败 ≤15 个时自动
+**串行重跑一次**，过了标 `flaky`（汇总/报告单列，不静默掩盖；反复上榜的去查真因）。
+`--no-retry` 恢复严格单跑。失败 >15 视为真损坏不重跑。
+
 ## 基线文件（要进 git）
 
-`scripts/arch-baselines/{gm-writes,dep-dangling,file-size,smoke-skip,split-stamps}.json` —— 棘轮的账本，删了守卫就瞎。
+`scripts/arch-baselines/{gm-writes,dep-dangling,file-size,smoke-skip,split-stamps,smoke-family-order}.json` —— 棘轮的账本，删了守卫就瞎。
 `dev-tools/arch-guard/` 下是生成物（依赖清单/smoke报告），不进安装包，可随时重生成。
