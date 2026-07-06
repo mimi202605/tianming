@@ -49,12 +49,18 @@
     },
     "tm-ai-infra.js": {
       "gm": 2,
-      "p": 18,
+      "p": 1,
       "roots": {
         "p:time": 1,
-        "p:conf": 17,
         "gm:_lastSysPHash": 1,
         "gm:_sysCacheInvalidatedAt": 1
+      }
+    },
+    "tm-ai-infra-model-detect.js": {
+      "gm": 0,
+      "p": 17,
+      "roots": {
+        "p:conf": 17
       }
     },
     "tm-memory-trace.js": {

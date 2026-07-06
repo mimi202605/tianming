@@ -486,7 +486,9 @@ console.log('天命游戏脚本开始加载...');
 <!-- 2026-07-04 起居注单一写口(gm:qijuHistory 收口)·须在所有写手之前 -->
 <script src="tm-qiju-ledger.js?v=2026070401"></script>
 <script src="tm-prompt-composer.js?v=2026052201"></script>
-<script src="tm-ai-infra.js?v=2026052201"></script>
+<script src="tm-ai-infra.js?v=20260706-split23"></script>
+<!-- 勿动位置·第二十三拆：tm-ai-infra-model-detect.js 必须紧接 tm-ai-infra.js 之后装载(顶层函数型中段切·保序切割) -->
+<script src="tm-ai-infra-model-detect.js?v=20260706-split23"></script>
 <script src="tm-memory-trace.js?v=20260531-traceonly"></script>
 <script src="tm-memory-evidence-registry.js?v=20260531-evidence"></script>
 <script src="tm-memory-source-bound.js?v=20260601-sourcebound"></script>

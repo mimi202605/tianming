@@ -14,7 +14,8 @@ function assert(cond, msg) {
   if (!cond) throw new Error('[assert] ' + msg);
 }
 
-const infra = read('tm-ai-infra.js');
+// 第二十三拆：快检引擎(probeModelQuickCheck 等)迁 tm-ai-infra-model-detect.js·拼接(origin 先·契约随人走)
+const infra = read('tm-ai-infra.js') + '\n' + read('tm-ai-infra-model-detect.js');
 const patches = read('tm-patches.js');
 const settings = read('tm-player-settings.js');
 

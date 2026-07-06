@@ -48,6 +48,9 @@ const CONTRACTS = [
   // 第二十拆(IIFE 型·origin-first bucket)：tm-content-manager §2-§5 社区/商城 UI 中段切出·community 须【紧随 origin 之后】
   //   origin 装载期向 bucket TM.__cmParts 导出 kept 成员→community 闭包捕获；community 回填 §2-§5 函数→origin 委托 shim 调用期解析·错序即崩
   ['tm-content-manager.js', 'tm-content-manager-community.js'],
+  // 第二十三拆(顶层函数型中段切·保序切割)：tm-ai-infra 模型探测系统 中段切出·model-detect 须【紧随 origin 之后】
+  //   经典 <script>(非 module)·顶层 var/function 全局互见·无 bucket；origin 对本片函数引用全在函数体内(运行时·typeof 守卫)·故本片载于 origin 之后安全
+  ['tm-ai-infra.js', 'tm-ai-infra-model-detect.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */
