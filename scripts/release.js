@@ -23,6 +23,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { mapBuildToSemver } = require('./version-map');
 const os = require('os');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
@@ -162,7 +163,10 @@ function fanOutVersions(code) {
     const file = P.pkg();
     const pkg = readJson(file);
     backup(file);
-    pkg.version = CFG.version.split('.').slice(0, 3).join('.');
+    // ★2026-07-04·根治「新安装包打开仍旧版」：旧实现 `CFG.version.split('.').slice(0,3)` 把四段
+    //   1.3.4.5/1.3.4.6 一律截成 "1.3.4" → electron-builder/NSIS/electron-updater 认它·连续版同版本号
+    //   → 新安装包不当升级。改用映射 a.b.(c*100+d)·每版随 buildVersion 递增(见 scripts/version-map.js)。
+    pkg.version = mapBuildToSemver(CFG.version);
     pkg.build = pkg.build || {};
     pkg.build.buildVersion = CFG.version;
     if (pkg.build.directories && /测试版[\d.]+$/.test(String(pkg.build.directories.output || ''))) {
@@ -405,7 +409,7 @@ function selfTest() {
   gateChangelog();
   fanOutVersions(code);
   const pkg = readJson(path.join(tmp, 'package.json'));
-  ok(pkg.version === '9.9.9', 'pkg.version 3 段');
+  ok(pkg.version === '9.9.909', 'pkg.version 三段 semver·映射自四段(9.9.9.9→9.9.909·每版递增·不再截断冻结)');
   ok(pkg.build.buildVersion === '9.9.9.9', 'buildVersion 4 段');
   ok(pkg.build.directories.output.endsWith('测试版9.9.9.9'), 'output 目录');
   ok(pkg.build.artifactName === '天命-9.9.9.9-${arch}.${ext}', 'artifactName');

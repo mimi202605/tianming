@@ -316,14 +316,20 @@ function getDefaultUpdateFeedUrl() {
   }
 }
 
+// 展示/热更门基线的权威版本 = 四段 buildVersion(玩家可见·index.html <meta tm-version> 亦四段)。
+// 2026-07-04·不再 max(buildVersion, appVersion)：package.json `version` 现为独立递增的三段 semver
+//   (仅供 electron-updater/NSIS/Windows 认版本·数值上可能高于 buildVersion·如 1.3.405 映射自显示 1.3.4.5)·
+//   若再喂进 max 会把显示与热更门基线错误抬到那个 semver 上。buildVersion 是四段版本的唯一真相。
 function getCurrentComparableVersion() {
-  const appVersion = app.getVersion();
-  const buildVersion = getPackageBuildVersion();
-  return compareVersions(buildVersion, appVersion) >= 0 ? buildVersion : appVersion;
+  return getPackageBuildVersion();
 }
 
+// 整包(electron-updater)更新比较·必须 semver↔semver：latest.yml 的 version 与 app.getVersion()
+//   同为 package.json `version`(三段 semver·electron-builder 打包时写入 latest.yml)。不能拿四段
+//   buildVersion 去比(数字体系不同→compareVersions 误判)。★热更路径另有 isStrictRendererUpgrade
+//   (按四段 buildVersion 比)·两条勿混。
 function isStrictUpgrade(remoteVersion) {
-  return compareVersions(remoteVersion, getCurrentComparableVersion()) > 0;
+  return compareVersions(remoteVersion, app.getVersion()) > 0;
 }
 
 function getHotUpdateState() {
@@ -619,12 +625,14 @@ const BLOCKED_PACK_EXTS = new Set([
 ]);
 const ALLOWED_PACK_EXTS = new Set([
   '.json', '.geojson', '.png', '.jpg', '.jpeg', '.webp', '.bmp', '.mp3', '.ogg', '.wav',
-  '.md', '.txt', '.csv'
+  '.md', '.txt', '.csv',
+  '.glb', '.gltf' // 工坊 3D 资产（不收 .bin：玩家互传的包不放行无法识别的裸二进制）
 ]);
 const ALLOWED_HOT_UPDATE_EXTS = new Set([
   '.html', '.htm', '.js', '.mjs', '.css', '.json', '.geojson', '.png', '.jpg', '.jpeg', '.webp',
   '.bmp', '.svg', '.ico', '.mp3', '.ogg', '.wav', '.md', '.txt', '.csv', '.woff', '.woff2',
-  '.ttf', '.wasm', '.map'
+  '.ttf', '.wasm', '.map',
+  '.glb', '.gltf', '.bin' // 3D 资产（御驾亲征兵模等）。此名单在壳层、热更改不到，放宽只能随安装包发布
 ]);
 
 function walkPackFiles(root) {
@@ -2945,6 +2953,10 @@ app.on('activate', () => {
 if (process.env.TIANMING_TEST_EXPORTS) {
   module.exports.__test = {
     compareVersions,
+    getCurrentComparableVersion,
+    getPackageBuildVersion,
+    isStrictUpgrade,
+    isStrictRendererUpgrade,
     sanitize,
     downloadRemoteFile,
     sha256FileStream,
