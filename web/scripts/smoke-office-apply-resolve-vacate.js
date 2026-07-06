@@ -13,7 +13,7 @@ const ctx = {
 };
 ctx.window = ctx; ctx.globalThis = ctx; vm.createContext(ctx);
 function load(f) { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }); }
-load('tm-office-runtime.js');
+load('tm-office-runtime.js'); load('tm-office-runtime-summary-appoint.js');
 load('tm-office-system.js');
 
 function freshState() {

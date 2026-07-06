@@ -13,7 +13,7 @@ const ROOT = path.resolve(__dirname, '..');
 let pass = 0, fail = 0;
 function ok(c, m) { if (c) pass++; else { fail++; console.log('  ✗ FAIL: ' + m); } }
 
-const src = fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8');
+const src = (fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-office-runtime-summary-appoint.js'), 'utf8'));
 
 // 源契约
 ok(/人才流失预警/.test(src), 'tm-office-runtime.js 含「人才流失预警」');

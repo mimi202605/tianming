@@ -9,7 +9,7 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-06T05:10:31.553Z",
+  "updatedAt": "2026-07-06T05:32:41.073Z",
   "totals": {
     "gm": 4575,
     "p": 739
@@ -389,7 +389,7 @@
       }
     },
     "tm-office-runtime.js": {
-      "gm": 28,
+      "gm": 26,
       "p": 0,
       "roots": {
         "gm:_officeCourt": 2,
@@ -400,8 +400,7 @@
         "gm:_officeViewMode": 3,
         "gm:_officeViewModeExplicit": 1,
         "gm:_officeSearchKw": 1,
-        "gm:officeTree": 1,
-        "gm:_edictSuggestions": 2
+        "gm:officeTree": 1
       }
     },
     "tm-office-panel.js": {
@@ -2937,6 +2936,13 @@
         "gm:_pendingTinyiTopics": 3,
         "gm:qijuHistory": 1,
         "gm:_phase8ChaoyiNoRecord": 1
+      }
+    },
+    "tm-office-runtime-summary-appoint.js": {
+      "gm": 2,
+      "p": 0,
+      "roots": {
+        "gm:_edictSuggestions": 2
       }
     }
   }

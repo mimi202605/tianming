@@ -93,7 +93,7 @@ function assertEq(actual, expected, msg) {
 }
 
 load('tm-engine-constants.js');
-load('tm-office-runtime.js');
+load('tm-office-runtime.js'); load('tm-office-runtime-summary-appoint.js');
 load('tm-feudal.js');
 load('tm-feudal-warfare.js');
 

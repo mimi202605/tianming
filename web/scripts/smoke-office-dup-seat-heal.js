@@ -20,7 +20,7 @@ function makeCtx(officeSrcOverride) {
   };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8'), ctx, { filename: 'tm-office-runtime.js' });
+  vm.runInContext((fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-office-runtime-summary-appoint.js'), 'utf8')), ctx, { filename: 'tm-office-runtime.js' });
   const src = officeSrcOverride != null ? officeSrcOverride : fs.readFileSync(path.join(ROOT, 'tm-office-system.js'), 'utf8');
   vm.runInContext(src, ctx, { filename: 'tm-office-system.js' });
   return ctx;

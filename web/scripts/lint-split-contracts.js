@@ -41,6 +41,8 @@ const CONTRACTS = [
   // 第十五拆(顶层函数型中段切)：tm-hongyan-office letter 主域留守·中段切出 renderGameState(game-ui-shell)+edict UI(edict-ui)
   //   letter 夹在两片外侧(head=letter part1·tail=register('letters')/doctor/diag)·origin=head+tail·三片须连序
   ['tm-hongyan-office.js', 'tm-game-ui-shell.js', 'tm-hongyan-edict-ui.js'],
+  // 第十六拆(顶层函数型尾切)：tm-office-runtime §3 摘要/预警+中推/荐举+选任器片·紧挨 origin(排其后)
+  ['tm-office-runtime.js', 'tm-office-runtime-summary-appoint.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

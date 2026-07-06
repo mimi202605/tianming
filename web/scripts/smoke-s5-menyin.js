@@ -22,7 +22,7 @@ ok(/CharFullSchema[\s\S]{0,40}ensureFullFields\(son\)/.test(panel), '建角色�
 ok(/_menyinGranted/.test(panel), '一官一荫 _menyinGranted 守');
 ok(/lv > 0 && lv <= 6/.test(panel), '品级门槛 level≤6(三品以上)');
 ok(/window\._offMenyin = _offMenyin/.test(panel), '导出 window._offMenyin 供 onclick');
-const runtime = fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8');
+const runtime = (fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-office-runtime-summary-appoint.js'), 'utf8'));
 ok(/_offMenyin\(\\'' \+ _safeHolder/.test(runtime) || /_offMenyin\('/.test(runtime), '职位卡荫子按钮接 _offMenyin');
 ok(/_menyinLv > 0 && _menyinLv <= 6/.test(runtime), '荫子按钮条件 level≤6');
 

@@ -13,7 +13,7 @@ function assert(c, m) { if (c) pass++; else { fail++; console.error('  ✗ ' + m
 
 // ── ① 源码契约:两个官制树渲染点·角色有officialTitle时force重派生 ──
 (function () {
-  const rt = fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8');
+  const rt = (fs.readFileSync(path.join(ROOT, 'tm-office-runtime.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-office-runtime-summary-appoint.js'), 'utf8'));
   const rr = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8');
   // 渲染点不再裸用 {ifChanged:true}·改为 officialTitle 决策 force/ifChanged
   assert(/c\.alive!==false&&c\.officialTitle;\}\)\?\{ force: true \}:\{ ifChanged: true \}/.test(rt), '① office-runtime:renderOfficeTree 角色有职则force');

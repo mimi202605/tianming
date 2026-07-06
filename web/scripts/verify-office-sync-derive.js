@@ -17,7 +17,7 @@ const ctx = {
 ctx.window = ctx; ctx.globalThis = ctx;
 vm.createContext(ctx);
 function load(f) { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }); }
-load('tm-office-runtime.js');  // 分类器 _officeGetClassifierPatterns / _OFFICE_CLASSIFIER_PATTERNS
+load('tm-office-runtime.js'); load('tm-office-runtime-summary-appoint.js');  // 分类器 _officeGetClassifierPatterns / _OFFICE_CLASSIFIER_PATTERNS
 load('tm-office-system.js');   // 被测
 
 // 载入真存档

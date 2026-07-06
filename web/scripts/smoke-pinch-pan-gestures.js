@@ -91,7 +91,7 @@ ok(el._count('touchmove') === 0 && el._count('touchstart') === 0, '⑤ detach() 
 
 // ════ 源契约 ════
 const mapSrc = fs.readFileSync(path.join(WEB, 'phase8-formal-map.js'), 'utf8');
-const offSrc = fs.readFileSync(path.join(WEB, 'tm-office-runtime.js'), 'utf8');
+const offSrc = (fs.readFileSync(path.join(WEB, 'tm-office-runtime.js'), 'utf8') + '\n' + fs.readFileSync(path.join(WEB, 'tm-office-runtime-summary-appoint.js'), 'utf8'));
 const cssSrc = fs.readFileSync(path.join(WEB, 'tm-touch.css'), 'utf8');
 const htmlSrc = fs.readFileSync(path.join(WEB, 'index.html'), 'utf8');
 
