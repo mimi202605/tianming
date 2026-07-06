@@ -807,6 +807,9 @@ function sc16BridgeContextTest() {
   assert(bridge.indexOf('npc-in-turn-llm') >= 0, 'sc16 bridge should include in-turn precision news');
   assert(bridge.indexOf('npc-bridge') >= 0, 'sc16 bridge should include post-endturn precision news');
 
+  // 第十九拆：followup 顶层 helper+ns 导出(含 _storeSc16DirectiveLedger)迁 tm-endturn-followup-helpers.js·须先载入同一 context
+  var followupHelpersSrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-followup-helpers.js'), 'utf8');
+  vm.runInContext(followupHelpersSrc, ctx, { filename: 'tm-endturn-followup-helpers.js' });
   var followupSrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-followup.js'), 'utf8');
   vm.runInContext(followupSrc, ctx, { filename: 'tm-endturn-followup.js' });
   assert(ctx.TM.Endturn && ctx.TM.Endturn.AI && ctx.TM.Endturn.AI.followup,

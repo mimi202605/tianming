@@ -222,7 +222,8 @@ console.log('— §B3 · 目击者传播 —');
   ok(remembered.filter(function(r) { return r.source === 'witnessed'; }).length === 1 && box.n === 12, '每批封顶12(11起步只进1条)');
   ok(Math.max(3, 4 - 2) === 3, '重要度地板3');
 
-  var src = read('tm-endturn-followup.js');
+  // 第十九拆：_applyMwList 迁 tm-endturn-followup-helpers.js·读 helper+origin 拼接(契约随人走)
+  var src = read('tm-endturn-followup-helpers.js') + '\n' + read('tm-endturn-followup.js');
   ok(/目击者传播/.test(src) && /亲见：' \+ String\(mw\.event\)\.slice\(0, 60\)/.test(src), '契约:传播段在 _applyMwList 内');
   ok(/witTotal < 12/.test(src) && /slice\(0, 3\)/.test(src), '契约:双封顶(3/条·12/批)');
   ok(/source: 'witnessed'/.test(src) && !/covered\[wn\]/.test(src), '契约:witnessed 源·不占 covered(续写去重语义只属当事人)');

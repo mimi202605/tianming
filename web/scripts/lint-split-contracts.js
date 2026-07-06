@@ -43,6 +43,8 @@ const CONTRACTS = [
   ['tm-hongyan-office.js', 'tm-game-ui-shell.js', 'tm-hongyan-edict-ui.js'],
   // 第十六拆(顶层函数型尾切)：tm-office-runtime §3 摘要/预警+中推/荐举+选任器片·紧挨 origin(排其后)
   ['tm-office-runtime.js', 'tm-office-runtime-summary-appoint.js'],
+  // 第十九拆(IIFE 型·alias 范式)：tm-endturn-followup 27 顶层纯 helper+6 ns 导出迁出·helpers 须在 origin【之前】装载(填 TM.__etFollowupParts bucket·origin 顶部 alias 回绑)
+  ['tm-endturn-followup-helpers.js', 'tm-endturn-followup.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

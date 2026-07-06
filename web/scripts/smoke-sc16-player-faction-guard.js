@@ -36,6 +36,10 @@ ctx.global = ctx;
 ctx.globalThis = ctx;
 vm.createContext(ctx);
 
+// 第十九拆：followup 顶层 helper+ns 导出迁 tm-endturn-followup-helpers.js·须在 origin 之前载入同一 context(填 bucket+ns 导出)
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-followup-helpers.js'), 'utf8'), ctx, {
+  filename: 'tm-endturn-followup-helpers.js'
+});
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-followup.js'), 'utf8'), ctx, {
   filename: 'tm-endturn-followup.js'
 });

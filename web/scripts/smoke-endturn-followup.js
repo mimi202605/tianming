@@ -101,7 +101,8 @@ assert(followupSrc.indexOf('ctx.record.suggestions') >= 0,
   'p2 suggestions are copied to ctx.record.suggestions');
 assert(followupSrc.indexOf('msCh._mood = ms.mood.trim()') >= 0,
   'sc15 mood_shifts write back character _mood');
-assert(followupSrc.indexOf('function _tmHiddenMoveForMemory') >= 0 &&
+// 第十九拆：_tmHiddenMoveForMemory 定义迁 tm-endturn-followup-helpers.js(family concat src 可见)·run 仍调用(followupSrc)
+assert(src.indexOf('function _tmHiddenMoveForMemory') >= 0 &&
        followupSrc.indexOf('_tmHiddenMoveForMemory(h)') >= 0,
   'sc_memwrite normalizes string/object hidden_moves before memory prompt');
 assert(followupSrc.indexOf('_parseOrRepairJsonResult = ctx.subcalls._parseOrRepairJsonResult') >= 0,

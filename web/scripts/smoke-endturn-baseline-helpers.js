@@ -20,6 +20,7 @@ const ENDTURN_FAMILY = [
   'tm-endturn-prompt.js',       // P7-γ
   'tm-endturn-ai.js',           // P7-δ
   'tm-endturn-apply.js',        // P7-ε
+  'tm-endturn-followup-helpers.js', // 第十九拆·alias 范式·顶层纯 helper 族(载于 followup 之前)
   'tm-endturn-followup.js',     // P7-ζ
   'tm-endturn-record.js'        // P7-η
 ];
