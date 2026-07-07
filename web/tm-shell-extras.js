@@ -315,6 +315,29 @@
       gl.appendChild(dz);
     }
 
+    // 2.937 气运·若不干预之趋势（第七轮C·2026-07-07·WorldDigest.previewData 上屏）
+    //   「逆天改命」招牌此前只有 AI 看得到(previewBlock 唯一消费=prompt)·玩家零可见。
+    //   确定性警兆·承平无警自然隐藏(previewData 返空)·明细行本为文言短句直用·prompt 框头不上屏。
+    if (window.WorldDigest && typeof WorldDigest.previewData === 'function') {
+      var _qyWarns = [];
+      try { _qyWarns = WorldDigest.previewData(GM) || []; } catch (_qyE) { _qyWarns = []; }
+      if (_qyWarns.length) {
+        var qy = document.createElement('div');
+        qy.className = 'gs-panel p-qiyun';
+        qy.setAttribute('data-panel-key', 'qiyun');
+        var _qyHtml = '<div class="gs-panel-hdr"><div class="gs-panel-title">气 运 · 趋 势</div><span class="gs-panel-cnt">'+_qyWarns.length+'</span></div>';
+        _qyHtml += '<div style="font-size:.68rem;color:rgba(234,223,203,.55);padding:0 .1rem .35rem;line-height:1.5;">若不干预·势将如此牵动——逆之即改命</div>';
+        _qyWarns.slice(0, 4).forEach(function (w) {
+          _qyHtml += '<div class="gs-class-row">'
+            + '<span class="gs-class-icon" style="--c-c:var(--vermillion-400);">兆</span>'
+            + '<span class="gs-class-name" style="white-space:normal;line-height:1.45;">' + esc(w.line || '') + '</span>'
+            + '<span class="gs-class-pop" style="color:rgba(234,223,203,.5);">' + esc(w.domain || '') + '</span></div>';
+        });
+        qy.innerHTML = _qyHtml;
+        gl.appendChild(qy);
+      }
+    }
+
     // 2.94 文物奇珍
     if (GM.items && GM.items.length){
       var _items = GM.items.slice(0,8);

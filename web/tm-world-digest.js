@@ -125,8 +125,11 @@
   //   势将如此牵动"的默认命运轨迹摆给 AI（与玩家），让玩家「逆之即改命」。**不翻管线时序**（仍只是 prompt
   //   前置的一块·读现有 GM 态/phase·确定性无 random），只在真·危机边缘触发，否则返空不污染。
   function _num(v) { return (typeof v === 'number' && isFinite(v)) ? v : null; }
-  function previewBlock(GM, opts) {
-    GM = GM || _gm(); if (!GM) return '';
+  // 第七轮C(2026-07-07)：警兆采集抽成 previewData(结构化 {sev,domain,line}[]·已排序截断)——
+  //   previewBlock 调它再套 prompt 框头(喂 AI 原样不变)；朝野抽屉「气运·趋势」面板直接消费
+  //   previewData 用玩家语域渲染(明细行本为文言短句可直用·prompt 框头不上屏)。
+  function previewData(GM, opts) {
+    GM = GM || _gm(); if (!GM) return [];
     opts = opts || {};
     var warns = [];   // {sev, domain, line}
 
@@ -161,15 +164,19 @@
     var plots = Array.isArray(GM._activePlots) ? GM._activePlots.filter(function (p) { return p && p.stage === 'ripe'; }) : [];
     plots.slice(0, 2).forEach(function (p) { warns.push({ sev: 88, domain: '阴谋', line: (p.ringleader || '某人') + ' 之谋将发，若不查办，本回合恐酿大变' }); });
 
-    if (!warns.length) return '';
+    if (!warns.length) return [];
     warns.sort(function (a, b) { return b.sev - a.sev; });
-    var top = warns.slice(0, (opts.limit != null ? opts.limit : 4));
+    return warns.slice(0, (opts.limit != null ? opts.limit : 4));
+  }
+  function previewBlock(GM, opts) {
+    var top = previewData(GM, opts);
+    if (!top.length) return '';
     var s = '\n【天下气运·若不干预之趋势】（按当前态势前瞻：君上本回合若不出手，势将如此牵动；逆之即「改命」。仅前瞻参考·实际由本回合作为与推演定）\n';
     top.forEach(function (w) { s += '· [' + w.domain + '] ' + w.line + '\n'; });
     return s;
   }
 
-  var api = { collect: collect, promptBlock: promptBlock, previewBlock: previewBlock, _domainOf: _domainOf };
+  var api = { collect: collect, promptBlock: promptBlock, previewBlock: previewBlock, previewData: previewData, _domainOf: _domainOf };
   if (typeof window !== 'undefined') window.WorldDigest = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();
