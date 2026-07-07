@@ -1997,3 +1997,109 @@ function _tickDeptTasksReply() {
   }
 }
 SettlementPipeline.register('deptTasksReply', '部议限期回奏', function() { _tickDeptTasksReply(); }, 46, 'perturn');
+
+// ───────────────────────────────────────────────────────────────
+// 百官有事·主动上奏（深挖第六轮②·2026-07-07·flag zoushuGenEnabled 默认关）
+// GM.zoushuPool 是常朝的「百官奏疏」来源池（tm-chaoyi.js _cc2_collectAgendaSources 合流消费·
+// adapter _cc3_aiGenReact 以其为 NPC「已上之奏」防重）——但全库零写点，池子生来就空。
+// 此处补唯一缺失的确定性生产端：每回合按真实局面（民变/灾异/部门积弊/部务逾期）
+// 由对口衙门主官具疏入池，0-2 条/回合，同一事由 6 回合窗内不重奏，池容 8 条。
+// 消费端零改动即活。无对口主官（衙门虚悬）则该事无人奏——诚实缺员后果。
+function _zsPickOfficial(keywords) {
+  if (typeof findOfficeByFunction !== 'function') return null;
+  for (var i = 0; i < keywords.length; i++) {
+    var off = null;
+    try { off = findOfficeByFunction(keywords[i]); } catch (_) {}
+    if (off && off.holder) return off;
+  }
+  return null;
+}
+function _tickZoushuPool() {
+  if (typeof P === 'undefined' || !P || !P.conf || P.conf.zoushuGenEnabled !== true) return;
+  if (typeof GM === 'undefined' || !GM || !GM.running) return;
+  var turn = GM.turn || 0;
+  if (!Array.isArray(GM.zoushuPool)) GM.zoushuPool = [];
+  var pool = GM.zoushuPool;
+  // 池子生命周期：逾 6 回合的旧奏出池（同一事由此后可再奏）·池容 8 条（溢出弃最旧）
+  for (var _zi = pool.length - 1; _zi >= 0; _zi--) {
+    var _ze = pool[_zi];
+    if (!_ze || turn - (_ze.turn || 0) > 6) pool.splice(_zi, 1);
+  }
+  while (pool.length > 8) pool.shift();
+  var has = function (key) { return pool.some(function (z) { return z && z._sigKey === key; }); };
+  // 候选信号按急缓聚合（全确定性·不掷骰）
+  var cands = [];
+  // ① 民变（level 降序·兵事口）
+  if (GM.minxin && Array.isArray(GM.minxin.revolts)) {
+    GM.minxin.revolts.filter(function (r) { return r && r.status === 'ongoing' && (r.level || 0) >= 2; })
+      .sort(function (a, b) { return (b.level || 0) - (a.level || 0); })
+      .forEach(function (r) {
+        var region = r.region || '地方';
+        cands.push({
+          key: 'revolt:' + region, kw: ['兵', '军'], type: '军务', urgency: (r.level || 0) >= 4 ? 8 : 6,
+          title: '奏为' + region + '民变事',
+          body: '臣闻' + region + '乱民啸聚，势已' + ((r.level || 0) >= 4 ? '燎原' : '滋蔓') + '，若不早图，恐成大患。伏乞圣裁，速定剿抚之策。'
+        });
+      });
+  }
+  // ② 灾异（钱谷赈济口）
+  if (Array.isArray(GM.activeDisasters)) {
+    GM.activeDisasters.filter(function (d) { return d && turn - (d.startedTurn || 0) <= 3; })
+      .sort(function (a, b) { return (b.severity || 0) - (a.severity || 0); })
+      .forEach(function (d) {
+        var region = d.region || '地方';
+        var dtype = d.type || d.category || '灾异';
+        cands.push({
+          key: 'dis:' + region + ':' + dtype, kw: ['赈', '户', '财', '民政'], type: '政务', urgency: 6,
+          title: '奏为' + region + dtype + '请赈事',
+          body: '臣查' + region + '新罹' + dtype + '，田庐荡析，民不聊生。请发帑赈济、酌蠲税粮，以安民心而弭乱萌。'
+        });
+      });
+  }
+  // ③ 部门积弊（>60 高位·风宪纠劾口）
+  if (GM.corruption && (GM.corruption.byDept || GM.corruption.subDepts)) {
+    var _src = GM.corruption.byDept || GM.corruption.subDepts || {};
+    var _cnMap = { central: '中枢', provincial: '地方有司', military: '军中', fiscal: '财计', judicial: '刑名', imperial: '内廷' };
+    Object.keys(_src).map(function (k) {
+      var v = _src[k];
+      if (v && typeof v === 'object') v = v.true || v.overall;
+      return { k: k, v: (typeof v === 'number' ? v : 0) };
+    }).filter(function (e) { return e.v > 60; })
+      .sort(function (a, b) { return b.v - a.v; })
+      .forEach(function (e) {
+        var cn = _cnMap[e.k] || e.k;
+        cands.push({
+          key: 'corr:' + e.k, kw: ['监察', '御史', '风宪', '纠'], type: '吏治', urgency: 5,
+          title: '奏为纠劾' + cn + '积弊事',
+          body: '臣风闻' + cn + '贪弊已深，吏习因循，蠹国病民。请敕有司清查整饬，以肃纲纪而振颓风。'
+        });
+      });
+  }
+  // ④ 部务逾期（承 6.20 回奏闭环 overdue·科道催督口）
+  if (Array.isArray(GM.deptTasks)) {
+    GM.deptTasks.filter(function (t) { return t && t.status === 'overdue'; }).slice(0, 2).forEach(function (t) {
+      cands.push({
+        key: 'due:' + (t.task || ''), kw: ['监察', '御史', '风宪'], type: '吏治', urgency: 5,
+        title: '奏为催督部务事',
+        body: '臣查' + (t.dept || '有司') + '承办之「' + (t.task || '部议事项') + '」逾期未奏，玩愒若此。请下诏催督，并议处怠职之咎。'
+      });
+    });
+  }
+  // 依序落池：每回合至多 2 条（按池内本回合已奏计数·结算重入安全）·
+  // 同事由窗内不重奏·无对口主官（虚悬）则此事无人奏
+  var added = pool.filter(function (z) { return z && z.turn === turn; }).length;
+  for (var _ci = 0; _ci < cands.length && added < 2; _ci++) {
+    var c = cands[_ci];
+    if (has(c.key)) continue;
+    var off = _zsPickOfficial(c.kw);
+    if (!off) continue;
+    added++;
+    pool.push({
+      id: 'zs_' + turn + '_' + added, _sigKey: c.key,
+      from: off.holder, dept: off.dept, title: c.title,
+      content: off.holder + '谨奏：' + c.body, summary: c.body.slice(0, 40),
+      type: c.type, urgency: c.urgency, status: 'pending', turn: turn
+    });
+  }
+}
+SettlementPipeline.register('zoushuGen', '百官主动上奏', function() { _tickZoushuPool(); }, 47, 'perturn');

@@ -9,9 +9,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-07T04:59:20.483Z",
+  "updatedAt": "2026-07-07T05:03:03.958Z",
   "totals": {
-    "gm": 4507,
+    "gm": 4508,
     "p": 739
   },
   "files": {
@@ -714,7 +714,7 @@
       }
     },
     "tm-endturn-helpers.js": {
-      "gm": 51,
+      "gm": 52,
       "p": 0,
       "roots": {
         "gm:_annualReviewHistory": 3,
@@ -740,7 +740,8 @@
         "gm:_diplomaticMissions": 1,
         "gm:_tensionHistory": 3,
         "gm:_historyIndex": 6,
-        "gm:_historyIndexCursor": 1
+        "gm:_historyIndexCursor": 1,
+        "gm:zoushuPool": 1
       }
     },
     "tm-border-risk.js": {
