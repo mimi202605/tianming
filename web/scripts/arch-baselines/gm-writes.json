@@ -11,7 +11,7 @@
   },
   "updatedAt": "2026-07-07T05:05:41.507Z",
   "totals": {
-    "gm": 4505,
+    "gm": 4510,
     "p": 739
   },
   "files": {
@@ -2328,14 +2328,15 @@
       }
     },
     "tm-neitang-engine.js": {
-      "gm": 134,
+      "gm": 139,
       "p": 0,
       "roots": {
         "gm:neitang": 122,
         "gm:corruption": 3,
         "gm:huangwei": 6,
         "gm:huangquan": 2,
-        "gm:fiscal": 1
+        "gm:fiscal": 1,
+        "gm:imperialClan": 5
       }
     },
     "tm-char-economy-engine.js": {

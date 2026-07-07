@@ -1143,6 +1143,30 @@
     var monthlyGrowth = Math.pow(1 + (rcp.growthRatePerYear || 0.015), 1/12) - 1;
     rc.population = Math.round(rc.population * Math.pow(1 + monthlyGrowth, mr));
 
+    // 宗藩世禄联动（深挖第六轮⑤·2026-07-07·flag clanGrowthEnabled 默认关）：
+    // guoku「宗藩世禄」岁支读 GM.imperialClan.princeCount——此前全库零写点·恒为剧本静态值或
+    // 兜底常数；宗室人口(rc.population)在上面逐年繁衍而王爵岁支账纹丝不动=叙事说繁衍·账上不繁衍。
+    // 此处按初始比率把王爵宗支数随宗室人口同步复利（确定性·整数示人·开闸不跳变=种子与 guoku
+    // fenglu 兜底同式）·「宗禄之螺旋」随世代在度支明细里显形。
+    if (typeof P !== 'undefined' && P && P.conf && P.conf.clanGrowthEnabled === true) {
+      if (!GM.imperialClan) GM.imperialClan = {};
+      var _ic = GM.imperialClan;
+      if (_ic._princeRatio == null) {
+        var _seedPrinces = _ic.princeCount;
+        if (!_seedPrinces) {
+          var _officials = (GM.totalOfficials != null && isFinite(GM.totalOfficials)) ? GM.totalOfficials : ((GM.chars || []).length * 3);
+          _seedPrinces = Math.max(20, Math.floor(_officials * 0.05));
+        }
+        _ic._princeRatio = _seedPrinces / Math.max(1, rc.population);
+        _ic._princeReported = _seedPrinces;
+      }
+      _ic.princeCount = Math.max(1, Math.round(rc.population * _ic._princeRatio));
+      if (_ic.princeCount >= (_ic._princeReported || 0) + 5) {
+        _ic._princeReported = _ic.princeCount;
+        try { if (typeof addEB === 'function') addEB('宗禄', '宗室蕃衍，享世禄之王爵宗支已至' + _ic.princeCount + '家，岁支宗藩世禄随之日增'); } catch (_) {}
+      }
+    }
+
     // 宗室俸禄（每月）
     var stipendPerCapita = rcp.stipendPerCapita || 50;
     var monthlyCost = rc.population * stipendPerCapita / 12 * mr;  // 年折月
