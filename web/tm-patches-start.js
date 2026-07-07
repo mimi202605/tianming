@@ -91,6 +91,11 @@ function _tmStartLoadVars(sid, sc) {
     gv.value = parseFloat(gv.value) || 0;
     if (gv.min === undefined && gv.minimum !== undefined) gv.min = gv.minimum;
     if (gv.max === undefined && gv.maximum !== undefined) gv.max = gv.maximum;
+    // range:[min,max] 数组写法此前被忽略(如绍宋「金军威胁等级」range:[0,100]→max 兜底成750·clamp 界失真)
+    if (Array.isArray(gv.range) && gv.range.length >= 2) {
+      if (gv.min === undefined) gv.min = gv.range[0];
+      if (gv.max === undefined) gv.max = gv.range[1];
+    }
     if (gv.min === undefined) gv.min = 0;
     if (gv.max === undefined) gv.max = Math.max(100, Math.abs(gv.value) * 10);
     gv.min = parseFloat(gv.min) || 0;

@@ -46,6 +46,75 @@
     return (isFinite(t) && t >= 0) ? t : 0;
   }
 
+  // ───────────────────────────────────────────────────────────
+  // 剧本威胁变量↔敌势力 联动（深挖第六轮④·2026-07-07·flag threatVarLinkEnabled 默认关）
+  //   通用机制·朝代中立：剧本可在任意变量上声明 linkedFaction:'<势力id或名>'（绍宋「金军威胁等级」首用）。
+  //   此前该类变量三缺：无系统性更新(只有史事分支小幅拨动)·无军事消费(desc 承诺的「威胁高→南侵」
+  //   纯空头)·loader 不认 range 界。目标里程碑(金威≤40)读的就是它——接活后可经真实战和达成。
+  //   更新端 tickThreatVarLink：变量向该势力实际态势(实力/战和/敌意)缓慢漂移(±2/回合)——
+  //     史事抉择冲击(±N)保留为渐衰偏离而非被硬覆写。
+  //   消费端 _threatVarOf：borderRisk 里该势力压强按变量调制(0.6~1.4)——「大南侵」冲击有真机械后果；
+  //     变量值本亦随 GM.vars 全量入 AI prompt(genMemorialsAI 等)·叙事同感知。
+  // ───────────────────────────────────────────────────────────
+  function _threatVarOf(G, facName, facId) {
+    var P = global.P || {};
+    if (!P.conf || P.conf.threatVarLinkEnabled !== true) return null;
+    var vars = (G && G.vars) || {};
+    for (var k in vars) {
+      var v = vars[k];
+      if (v && v.linkedFaction && (v.linkedFaction === facName || v.linkedFaction === facId) && v.value != null) {
+        return Math.max(0, Math.min(100, Number(v.value) || 0));
+      }
+    }
+    return null;
+  }
+
+  function _isAtWarWithPlayer(G, facName) {
+    var P = global.P || {};
+    var playerFacName = (P.playerInfo && P.playerInfo.factionName) || 'player';
+    var rels = G.factionRelations || [];
+    for (var i = 0; i < rels.length; i++) {
+      var r = rels[i];
+      if (!r || !r.type) continue;
+      var hit = (r.from === facName && r.to === playerFacName) || (r.from === playerFacName && r.to === facName);
+      if (hit && ['战争', '交战', 'war'].indexOf(r.type) >= 0) return true;
+    }
+    if (Array.isArray(G.activeWars)) {
+      for (var j = 0; j < G.activeWars.length; j++) {
+        var w = G.activeWars[j];
+        if (!w) continue;
+        if (w.enemy === facName || w.attacker === facName || w.defender === facName ||
+            (w.name && String(w.name).indexOf(facName) >= 0)) return true;
+      }
+    }
+    return false;
+  }
+
+  function tickThreatVarLink() {
+    var P = global.P || {};
+    if (!P.conf || P.conf.threatVarLinkEnabled !== true) return;
+    var G = global.GM;
+    if (!G || !G.vars) return;
+    Object.keys(G.vars).forEach(function (k) {
+      var v = G.vars[k];
+      if (!v || !v.linkedFaction) return;
+      var fac = (G.facs || []).find(function (f) {
+        return f && (f.name === v.linkedFaction || f.id === v.linkedFaction);
+      });
+      if (!fac) return;
+      var strength = Math.max(0, Math.min(100, Number(fac.strength) || 50));
+      var atWar = _isAtWarWithPlayer(G, fac.name);
+      var hostile = (Number(fac.playerRelation) || 0) < -50;
+      var target = Math.max(0, Math.min(100, Math.round(strength * 0.7 + (atWar ? 25 : 0) + (!atWar && hostile ? 10 : 0))));
+      var cur = Number(v.value) || 0;
+      var drift = Math.max(-2, Math.min(2, target - cur));           // 缓漂·史事冲击渐衰不硬覆写
+      var lo = (v.min != null && isFinite(Number(v.min))) ? Number(v.min) : 0;
+      var hi = (v.max != null && isFinite(Number(v.max))) ? Number(v.max) : 100;
+      v.value = Math.max(lo, Math.min(hi, cur + drift));
+      v._linkTarget = target;                                        // 诊断可见·非存档契约
+    });
+  }
+
   function tickBorderRisk() {
     var P = global.P || {};
     if (P.conf && P.conf.borderRiskEnabled === false) return;        // 默认开·显式 false 才关(owner 拍板·活化修复直接生效)
@@ -63,7 +132,12 @@
       var threatScore = 0;
       if (hostiles.length) {
         var sum = 0;
-        hostiles.forEach(function (f) { sum += (Number(f.strength) || 50); });
+        hostiles.forEach(function (f) {
+          var s = (Number(f.strength) || 50);
+          var tv = _threatVarOf(G, f.name, f.id);                    // 剧本威胁变量调制(第六轮④·flag 关返 null=字节级旧行为)
+          if (tv != null) s = s * (0.6 + 0.8 * tv / 100);
+          sum += s;
+        });
         threatScore = Math.min(100, Math.round(sum / hostiles.length));
       }
       var leaves = IB.getLeafDivisions(ah, facId) || [];
@@ -129,10 +203,12 @@
     });
   }
 
-  global.BorderRisk = { tick: tickBorderRisk, tickArmyPressure: tickArmyPressure, _hostileFactionsOf: _hostileFactionsOf };
+  global.BorderRisk = { tick: tickBorderRisk, tickArmyPressure: tickArmyPressure, _hostileFactionsOf: _hostileFactionsOf,
+    tickThreatVarLink: tickThreatVarLink, _threatVarOf: _threatVarOf, _isAtWarWithPlayer: _isAtWarWithPlayer };
 
-  // 挂 SettlementPipeline·边患聚合(17) → 边境风险(18) → 军费负担(19)
+  // 挂 SettlementPipeline·边患聚合(17) → 威胁变量联动(17.5·须先于边境风险取值) → 边境风险(18) → 军费负担(19)
   if (global.SettlementPipeline && typeof global.SettlementPipeline.register === 'function') {
+    global.SettlementPipeline.register('threatVarLink', '威胁变量联动', tickThreatVarLink, 17.5, 'perturn');
     global.SettlementPipeline.register('borderRiskLeaf', '边境风险结算', tickBorderRisk, 18, 'perturn');
     global.SettlementPipeline.register('armyPressureLeaf', '军费负担结算', tickArmyPressure, 19, 'perturn');
   }
