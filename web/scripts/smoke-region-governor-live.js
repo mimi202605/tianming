@@ -6,7 +6,9 @@
  * (权威·活)+ data.governorVacant(出缺);死亡/改任→自动出缺。pill/bkRow 渲染空缺·待补红标。
  * 抽源跑匹配逻辑(真实绑定:char.title「顺天巡抚」==div.officialPosition·officialTitle「顺天巡抚·都察院右副都御史」起头匹配)。 */
 const fs = require('fs'), path = require('path');
-const src = fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-map.js'), 'utf8');
+// 第二十五拆：regionBundle 主官派生已迁出至 dossier sibling·源码契约需并检两片(origin 先·sibling 后·合装载序)
+const src = fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-map.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-map-dossier.js'), 'utf8');
 let A = 0, F = 0; function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 console.log('smoke-region-governor-live');
 

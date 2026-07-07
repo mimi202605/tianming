@@ -113,7 +113,7 @@ srcHas('tm-ai-change-army.js', /capRecruitDelta/, 'army：募兵硬上限接线'
 srcHas('tm-endturn-core.js', /TM\.FieldPipes\.tick/, 'endturn-core：FieldPipes.tick 挂载（aggregate 前）');
 srcHas('index.html', /tm-field-pipelines\.js/, 'index.html：模块已挂载');
 srcHas('tm-building-works.js', /ledgerPush/, 'building-works：完工写近账');
-srcHas('phase8-formal-map.js', /bkCauseLedgerHtml/, '因果签：近账渲染接线');
+srcHas('phase8-formal-map-dossier.js', /bkCauseLedgerHtml/, '因果签：近账渲染接线（第二十五拆迁至 dossier sibling）');
 srcHas('phase8-formal-bridge.js', /cp-led-row/, '因果签：近账样式注入');
 
 console.log('\n[smoke-field-pipelines] ' + (failed === 0 ? 'PASS' : 'FAIL') + ' — ' + passed + ' passed, ' + failed + ' failed');

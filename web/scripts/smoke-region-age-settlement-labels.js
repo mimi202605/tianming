@@ -5,7 +5,9 @@
  *      fieldLabel 兜底 readableUnknownField 把 old→"旧值"(年龄语境错)、count/ratio/fang/shi/zhen 吐原文)。
  * 修:byAge/bySettlement 走专用格式化器 fmtByAge/fmtBySettlement(显式键→中文·朝代中立·绕开泛型 dump)。 */
 const fs = require('fs'), path = require('path');
-const src = fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-map.js'), 'utf8');
+// 第二十五拆：fmtByAge/fmtBySettlement 及其渲染调用已迁出至 dossier sibling·源码契约需并检两片(origin 先·sibling 后·合装载序)
+const src = fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-map.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-map-dossier.js'), 'utf8');
 let A = 0, F = 0;
 function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 console.log('smoke-region-age-settlement-labels');

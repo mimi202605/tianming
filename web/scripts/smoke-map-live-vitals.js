@@ -10,7 +10,9 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const SRC = fs.readFileSync(path.join(__dirname, '..', 'phase8-formal-map.js'), 'utf8');
+// 第二十五拆：regionBundle 等已迁出至 dossier sibling·源码契约需并检两片(origin 先·sibling 后·合装载序)
+const SRC = fs.readFileSync(path.join(__dirname, '..', 'phase8-formal-map.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.join(__dirname, '..', 'phase8-formal-map-dossier.js'), 'utf8');
 
 let passed = 0, failed = 0;
 function ok(cond, msg) {
