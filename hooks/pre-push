@@ -1,0 +1,9 @@
+#!/bin/sh
+# push 前守卫：8 项架构 lint（~12s）。
+# 安装（每个 clone 一次）：git config core.hooksPath hooks
+# 紧急跳过：git push --no-verify（事后必须补跑并 fix-forward）
+cd "$(git rev-parse --show-toplevel)/web" || exit 1
+node scripts/lint-arch-all.js || {
+  echo "[pre-push] 架构守卫红——修复后再推。"
+  exit 1
+}

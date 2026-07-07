@@ -1,0 +1,23 @@
+name: guards
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 架构守卫 8 项（棘轮）
+        working-directory: web
+        run: node scripts/lint-arch-all.js
+      - name: 全量 smoke（--no-retry 严格模式·缺资产白名单豁免）
+        working-directory: web
+        run: node scripts/ci-smokes.js

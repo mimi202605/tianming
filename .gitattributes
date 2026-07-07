@@ -1,0 +1,27 @@
+# 行尾字节冻结：本仓 CRLF/LF 混居系历史事实，协作各端一律按仓储字节原样 checkout/commit。
+# 字节保真高于风格统一——守恒审计、热更 diff、CJK 计数比对都依赖字节不变。
+# 任何人不得开启 autocrlf 转换或做全仓行尾统一（会制造万行假 diff 并毁掉逐字节校验基线）。
+* -text
+
+# 明确二进制（防 diff/merge 误处理）
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.mp3 binary
+*.ogg binary
+*.wav binary
+*.zip binary
+*.apk binary
+*.glb binary
+*.gltf binary
+*.exe binary
+*.dll binary
+*.pdf binary
+*.save.json binary
