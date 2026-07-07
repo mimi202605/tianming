@@ -251,6 +251,7 @@ function load(file) {
   load('tm-social-political-signals.js');
   load('tm-player-action-signals.js');
   load('phase8-formal-drafts.js');
+  load('phase8-formal-drafts-message-panels.js'); // 第二十六拆：奏疏/鸿雁面板迁出·须紧随 origin 装载(origin-first 双向 bucket)
 
   assert(bridge.drafts && typeof bridge.drafts.handleDeskAction === 'function', 'formal desk should expose handleDeskAction for integration and smoke coverage');
 

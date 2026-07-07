@@ -57,6 +57,9 @@ const CONTRACTS = [
   // 第二十五拆(IIFE 型·②b origin-first 双向 bucket)：phase8-formal-map 军队对账+regionBundle 数据装配层[orig 2235-2675]+方志谱牒册页 UI[orig 2881-3893]双段切出·dossier 须【紧随 origin 之后】
   //   origin 装载末向 bridge.__p8MapParts 导出 45 kept 成员→dossier 闭包捕获；dossier 回填 5 函数→origin forward shim 调用期解析。§5 计分带(GRADE_BANDS 直读)留守·错序即崩
   ['phase8-formal-map.js', 'phase8-formal-map-dossier.js'],
+  // 第二十六拆(真 IIFE·origin-first 双向 bucket)：phase8-formal-drafts 御案奏疏(zou-yuan)+鸿雁(yan-yuan)面板中段切出·message-panels 须【紧随 origin 之后】
+  //   origin 装载期向 bucket TM.__p8DraftsMsgPanels 导出 18 个捕获成员→message-panels 闭包捕获；sibling 回填 9 个函数→origin forward shim 调用期解析·错序即崩
+  ['phase8-formal-drafts.js', 'phase8-formal-drafts-message-panels.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

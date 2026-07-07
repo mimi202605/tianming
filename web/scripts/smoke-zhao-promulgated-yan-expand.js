@@ -14,7 +14,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const src = fs.readFileSync(path.join(ROOT, 'phase8-formal-drafts.js'), 'utf8');
+// 第二十六拆：鸿雁(yan)面板迁出 phase8-formal-drafts-message-panels.js·并入源以便展阅/letter-read 断言可达
+const src = fs.readFileSync(path.join(ROOT, 'phase8-formal-drafts.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'phase8-formal-drafts-message-panels.js'), 'utf8');
 
 let passed = 0;
 function assert(cond, msg) { if (!cond) throw new Error('FAIL: ' + msg); passed += 1; }
