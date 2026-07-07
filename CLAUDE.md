@@ -19,8 +19,15 @@
 - 遇 GBK→UTF-8 乱码：**禁 ASCII-safe 替换**，从 1.1.6 备份做参考还原。
 - 对齐 schema 以**运行时渲染器**（`_peRender*` / `_render*Panel`）为权威，preview-*.html 只是 mockup。
 
-## 发版（ship / 热更 / git）
-- ship 热更、commit、push 都是**用户显式触发**的动作，别自作主张；进行中的大功能（如科举大改）整套完工前不 ship、不 commit。
+## 协作·推送（2026-07-07 起 · 双人 trunk-based · 详见 CONTRIBUTING.md）
+- 主干 = `main`，**远端为唯一真相源**。每把刀开工前必 `git pull --rebase`。
+- **刀成即推**：一把刀验证全绿（`lint-arch-all` 8/8 + 定向 smoke）并 commit 后随手 push——不憋、不攒、不等指令。push 被拒（对方先推了）→ `pull --rebase` → 重跑 lint → 再推。
+- 禁：force-push（分支保护也拦）；守卫红着推；半成品占坑式提交；`--no-verify` 绕 hook（仅急救，事后必补账）。
+- PR 只走两类：大范式重构、跨对方领地的改动。其余直推 main。
+- 磁铁文件（`arch-baselines/*.json`）rebase 冲突时**不手合**，取一侧后重跑对应 lint `--update` 重生成。
+
+## 发版（ship / 热更）
+- **ship / 热更 / 发版仍只由仓主显式触发**，合进 main ≠ 发版；进行中的大功能（如科举大改）整套完工前不 ship。
 - 发热更走 **server-side SSH `python3` 解 zip**，不走 SFTP per-file。
 - `changelog.json` 要 `/tianming` 与 `/hot` 两处同步（skill `upload-hot.py` 已自动同步）。
 - 发增量包前确认基线对齐，避免「版本号跳最新但 UI 退版」的假更新。
