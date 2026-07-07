@@ -247,27 +247,14 @@ function applyOneDeath(cd) {
   }
   _dbg('[AI Death] ' + cd.name + ': ' + cd.reason);
   // 1.4→2.6: 叙事事实已由 GameEventBus character:death 监听器自动添加
-  // E10: 玩家角色死亡 → 尝试世代传承，否则游戏结束
+// E10: 玩家角色死亡 → 统一走玩家之死裁决器（鼎革R1a·2026-07-07）：
+  //   原地内联的世代传承镜像已收拢进 adjudicatePlayerDeath@tm-endturn-helpers
+  //   （行为等价：有嗣继统续玩/无嗣 _playerDead 终局/异常回落）。
   if (ch.isPlayer || (P.playerInfo && P.playerInfo.characterName === cd.name)) {
-    var _heir = (typeof resolveHeir === 'function') ? resolveHeir(ch) : null;
-    if (_heir && _heir.alive !== false) {
-      // 世代传承——继承人自动继位
-      ch.isPlayer = false;
-      _heir.isPlayer = true;
-      P.playerInfo.characterName = _heir.name;
-      addEB('\u7EE7\u627F', cd.name + '\u9A7E\u5D29\uFF0C' + _heir.name + '\u7EE7\u4F4D');
-      if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.addMemory) {
-        NpcMemorySystem.addMemory(_heir.name, '\u5148\u5E1D\u9A7E\u5D29\uFF0C\u7EE7\u627F\u5927\u7EDF', 10, 'career');
-      }
-      // 全部NPC记忆先帝驾崩
-      (GM.chars || []).forEach(function(c2) {
-        if (c2.alive !== false && !c2.isPlayer && typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.addMemory) {
-          NpcMemorySystem.addMemory(c2.name, '\u5148\u5E1D' + cd.name + '\u9A7E\u5D29\uFF0C\u65B0\u541B' + _heir.name + '\u7EE7\u4F4D', 8, 'political');
-        }
-      });
-      GM._successionEvent = { from: cd.name, to: _heir.name, reason: cd.reason };
-      if (typeof GameEventBus !== 'undefined') GameEventBus.emit('succession', { from: cd.name, to: _heir.name, reason: cd.reason });
+    if (typeof adjudicatePlayerDeath === 'function') {
+      adjudicatePlayerDeath(ch, cd.reason, { kind: 'narrative' });
     } else {
+      // 沙箱/极端缺位回落：宁终局勿尸政
       GM._playerDead = true;
       GM._playerDeathReason = cd.reason;
     }

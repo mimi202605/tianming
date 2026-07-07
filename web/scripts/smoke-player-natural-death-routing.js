@@ -4,6 +4,8 @@
  * 病灶：经济 tick 老化扣血 health≤0 → triggerCharacterDeath 只标 dead·不特判 isPlayer——
  * 皇帝被静默标尸照常执政（终局屏只认 AI 死亡路径的 _playerDead）。
  * 修：isPlayer 分支镜像 tm-ai-apply-deaths E10（resolveHeir 世代传承→无嗣 _playerDead）。
+ * 鼎革R1a(2026-07-07)：两份镜像收拢进 adjudicatePlayerDeath@tm-endturn-helpers·
+ * 本 smoke harness 注入真裁决器切片(整合真验)·静态契约改钉「两产地皆委托统一收口」。
  * §a vm 切片实跑 triggerCharacterDeath  §b 接线契约 */
 var fs = require('fs');
 var path = require('path');
@@ -19,6 +21,16 @@ var s = src.indexOf('function triggerCharacterDeath(ch, cause) {');
 var e = src.indexOf('function distributeInheritance(');
 ok(s > 0 && e > s, '切片边界在(triggerCharacterDeath)');
 var code = src.slice(s, e);
+
+// R1a：裁决器真身切片(来自 tm-endturn-helpers·整合真验·而非 stub)
+var hsrc = read('tm-endturn-helpers.js');
+var ha = hsrc.indexOf('function adjudicatePlayerDeath(ch, cause, opts) {');
+(function () {
+  var j = hsrc.indexOf('{', ha), d = 0;
+  for (; j < hsrc.length; j++) { var c = hsrc[j]; if (c === '{') d++; else if (c === '}') { d--; if (d === 0) { j++; break; } } }
+  var adjCode = hsrc.slice(ha, j);
+  mk._adjCode = adjCode;
+})();
 
 function mk(opts) {
   opts = opts || {};
@@ -36,6 +48,7 @@ function mk(opts) {
   if (opts.noResolve) delete ctx.resolveHeir;
   ctx.window = ctx; ctx.global = ctx;
   vm.createContext(ctx);
+  if (!opts.noAdjudicator) vm.runInContext(mk._adjCode, ctx, { filename: 'adjudicator-slice.js' });
   vm.runInContext(code, ctx, { filename: 'death-slice.js' });
   ctx._ebs = ebs; ctx._mems = mems; ctx._emits = emits;
   return ctx;
@@ -96,11 +109,11 @@ console.log('— §b · 接线契约 —');
 (function () {
   ok(/if \(ch\.health <= 0 && !ch\.dead\) \{\s*\n\s*triggerCharacterDeath\(ch, '疾'\);/.test(src), '老化扣血→触死路径原样在(上游未动)');
   ok(/if \(ch\.isPlayer\) \{/.test(src.slice(s, s + 3000)), 'triggerCharacterDeath 内 isPlayer 分支在');
-  ok(/resolveHeir/.test(src.slice(s, e)), '先试世代传承(resolveHeir)再终局');
+  ok(/adjudicatePlayerDeath/.test(src.slice(s, e)), 'isPlayer 分支委托玩家之死裁决器(R1a 统一收口)');
   var core = read('tm-endturn-core.js');
   ok(/_playerDead/.test(core), 'endturn-core 终局消费点在(下游未动)');
   var aid = read('tm-ai-apply-deaths.js');
-  ok(/resolveHeir/.test(aid) && /_playerDead/.test(aid), 'AI 死亡路径(镜像源)原样未动');
+  ok(/adjudicatePlayerDeath/.test(aid), 'AI 死亡路径 E10 同委托裁决器(两产地一口)');
 })();
 
 console.log('\nsmoke-player-natural-death-routing ' + (F0 === 0 ? 'PASS' : 'FAIL') + ' ' + P0 + '/' + (P0 + F0));

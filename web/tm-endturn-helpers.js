@@ -417,6 +417,48 @@ function resolveHeir(deadChar) {
   return null; // 交给 AI 推演
 }
 
+// ═══ 玩家之死裁决器（鼎革R1a·2026-07-07·owner 铁律「终局=玩家角色被杀·被杀有储君=继统续玩」）═══
+// 一切玩家角色死亡产地（AI 叙事杀/自然老死/战殁/弑君…）统一只调此一口——
+// 吸收此前两份各自为政的世代传承镜像（tm-ai-apply-deaths E10 / tm-char-economy-engine
+// triggerCharacterDeath isPlayer 分支·行为等价·两处改委托）：
+//   resolveHeir 有继承人 → 世代传承（isPlayer 转移+playerInfo 改写+继承事件+全朝记忆）续玩；
+//   无嗣 → GM._playerDead 交 endturn-core 终局；异常回落终局（宁终局勿尸政）。
+// opts.kind 死因分类（natural|narrative|battle|regicide…·供终局屏/本纪据实而书）；
+// opts.deadReason 终局文案覆写（econ 侧「疾→圣躬不豫」映射由调用方传入·保字节级旧行为）。
+function adjudicatePlayerDeath(ch, cause, opts) {
+  opts = opts || {};
+  if (!ch) return { outcome: 'noop' };
+  try {
+    var heir = (typeof resolveHeir === 'function') ? resolveHeir(ch) : null;
+    if (heir && heir.alive !== false && !heir.dead) {
+      ch.isPlayer = false;
+      heir.isPlayer = true; // arch-ok: 世代传承唯一裁决口(R1a 收拢两镜像·2026-07-07)
+      if (typeof P !== 'undefined' && P && P.playerInfo) P.playerInfo.characterName = heir.name; // arch-ok: 同上
+      if (typeof addEB === 'function') { try { addEB('继承', ch.name + '驾崩，' + heir.name + '继位'); } catch (_) {} }
+      if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.addMemory) {
+        try {
+          NpcMemorySystem.addMemory(heir.name, '先帝驾崩，继承大统', 10, 'career');
+          (GM.chars || []).forEach(function (c2) {
+            if (c2 && c2.alive !== false && !c2.isPlayer) NpcMemorySystem.addMemory(c2.name, '先帝' + ch.name + '驾崩，新君' + heir.name + '继位', 8, 'political');
+          });
+        } catch (_) {}
+      }
+      GM._successionEvent = { from: ch.name, to: heir.name, reason: cause || '', causeKind: opts.kind || '' }; // arch-ok: 帝位更迭事件唯一裁决口(既有叙事消费点)
+      if (typeof GameEventBus !== 'undefined' && GameEventBus.emit) { try { GameEventBus.emit('succession', { from: ch.name, to: heir.name, reason: cause }); } catch (_) {} }
+      return { outcome: 'succession', heir: heir.name };
+    }
+    GM._playerDead = true; // arch-ok: 玩家死亡信号唯一裁决口(R1a·2026-07-07)
+    GM._playerDeathReason = opts.deadReason || cause || ''; // arch-ok: 同上·死因文案唯一裁决口
+    GM._playerDeathKind = opts.kind || ''; // arch-ok: 同上·死因分类供终局屏/本纪
+    return { outcome: 'gameover' };
+  } catch (ePD) {
+    GM._playerDead = true; // arch-ok: 异常回落·宁终局勿尸政
+    GM._playerDeathReason = opts.deadReason || cause || ''; // arch-ok: 同上·异常回落
+    try { console.warn('[玩家之死裁决] 继承路由异常·回落终局:', ePD && ePD.message); } catch (_) {}
+    return { outcome: 'gameover', error: true };
+  }
+}
+
 SettlementPipeline.register('annualReview', '年度考课', function() { runAnnualReview(); }, 50, 'monthly');
 
 // ============================================================
