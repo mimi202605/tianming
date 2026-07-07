@@ -302,7 +302,8 @@
 
     var r = ch.resources;
     var canSeeHidden = (GM.corruption && GM.corruption.supervision &&
-                        GM.corruption.supervision.level >= 60) || ch.isPlayer;
+                        GM.corruption.supervision.level >= 60) || ch.isPlayer ||
+                       ch._hiddenWealthKnown === true;   // 派员查案结案后·其家产底细入案卷(第六轮③)
 
     var html = '<div class="char-detail-section">'+
       '<div class="char-detail-section-title">资源 · 六柄 ' + renderCourtesyName(ch) + '</div>';
@@ -441,11 +442,16 @@
   }
 
   function _charInspect(charName) {
-    if (typeof toast === 'function') toast('派员查案：' + charName + ' 数回合后返回');
-    // Hook: 创建一个 investigation event
     if (!GM._charInvestigations) GM._charInvestigations = [];
+    // 同一案主已有查案之员在途则不重派（结案由 CharEconEngine.tickInvestigations 到期回报）
+    var _pending = GM._charInvestigations.some(function (v) { return v && v.target === charName && (!v.status || v.status === 'pending'); });
+    if (_pending) {
+      if (typeof toast === 'function') toast('已有查案之员在途：' + charName);
+      return;
+    }
+    if (typeof toast === 'function') toast('派员查案：' + charName + ' 数回合后返回');
     GM._charInvestigations.push({
-      target: charName, startTurn: GM.turn, returnTurn: GM.turn + _turnsForMonthsLocal(3)
+      target: charName, startTurn: GM.turn, returnTurn: GM.turn + _turnsForMonthsLocal(3), status: 'pending'
     });
   }
 

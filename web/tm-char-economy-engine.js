@@ -1594,6 +1594,67 @@
   // 主 tick（每回合调用）
   // ═════════════════════════════════════════════════════════════
 
+  // ─── 派员查案·到期结案（深挖第六轮③·2026-07-07）───
+  // _charInspect(tm-char-economy-ui.js)「数回合后返回」的承诺此前是空头支票：
+  // GM._charInvestigations 只写 returnTurn 全库无人查·查案永不返回。此处补结案闭环：
+  //   到期 → 揭该员隐匿家赀（ch._hiddenWealthKnown·「隐匿藏款」与抄家按钮自此对其可见）·
+  //   按 integrity 三档具报入御案时政（贪迹昭著/微有不谨/查无实据·全确定性取自真值）·
+  //   案主已殁/查无此人则人亡事息。属兑现既有按钮承诺·无新 flag。
+  function tickInvestigations() {
+    if (!GM || !GM.running || !Array.isArray(GM._charInvestigations) || GM._charInvestigations.length === 0) return;
+    var turn = GM.turn || 0;
+    GM._charInvestigations.forEach(function (inv) {
+      if (!inv || (inv.status && inv.status !== 'pending')) return;
+      if (turn < (inv.returnTurn || 0)) return;
+      var ch = (GM.chars || []).find(function (c) { return c && c.name === inv.target; });
+      var title, desc;
+      inv.resolvedTurn = turn;
+      if (!ch || ch.dead || ch.alive === false) {
+        inv.status = 'closed'; inv.result = 'dead_or_missing';
+        title = '查案回报 · ' + (inv.target || '') + '案';
+        desc = '前遣查案之员回报：所查之人' + (ch ? '已殁' : '查无踪迹') + '，人亡事息，案卷封存。';
+      } else {
+        try { ensureCharComplete(ch); } catch (_) {}
+        var hidden = num(ch.resources && ch.resources.hiddenWealth);
+        var integ = num(firstDefined(ch.integrity, 50));
+        ch._hiddenWealthKnown = true;   // 家产底细入案卷·per-char 揭示（canSeeHidden 读点）
+        var wan = Math.round(hidden / 10000);
+        var wealthTxt = hidden < 10000 ? '家无藏镪之迹' : '隐匿家赀约' + wan + '万两，已入案卷';
+        inv.status = 'done';
+        if (integ < 40) {
+          inv.result = 'guilty';
+          title = '查案回报 · ' + ch.name + '贪迹昭著';
+          desc = '前遣查案之员回报：' + ch.name + '赃私有据，' + wealthTxt + '。其人家产底细自此可稽。若欲穷治，可下诏下狱、抄没其家。';
+        } else if (integ < 70) {
+          inv.result = 'minor';
+          title = '查案回报 · ' + ch.name + '微有不谨';
+          desc = '前遣查案之员回报：' + ch.name + '用度稍逾其禄，馈遗往来微有不谨，然未见大赃。' + wealthTxt + '。';
+        } else {
+          inv.result = 'clean';
+          title = '查案回报 · ' + ch.name + '查无实据';
+          desc = '前遣查案之员回报：' + ch.name + '操守清慎，查无实据。' + (hidden >= 10000 ? '唯其' + wealthTxt + '。' : '') + '妄兴大狱恐伤善类，惟圣裁。';
+        }
+      }
+      if (Array.isArray(GM.currentIssues)) {
+        GM.currentIssues.push({ // arch-ok: 查案回报入御案时政·S2 密探回禀同款信息条(第六轮③·2026-07-07)
+          id: 'iss_inspect_' + turn + '_' + (inv.target || ''),
+          title: title, description: desc,
+          category: '朝局', status: 'pending', raisedTurn: turn, _info: true, _inspectReport: true
+        });
+      }
+      try { if (typeof addEB === 'function') addEB('查案', title); } catch (_) {}
+    });
+    // 案卷瘦身：已结留 12 条备查（pending 一律保留）
+    var _cvClosed = [];
+    for (var _cvi = 0; _cvi < GM._charInvestigations.length; _cvi++) {
+      var _cv = GM._charInvestigations[_cvi];
+      if (_cv && _cv.status && _cv.status !== 'pending') _cvClosed.push(_cvi);
+    }
+    for (var _cvj = 0; _cvj < _cvClosed.length - 12; _cvj++) {
+      GM._charInvestigations.splice(_cvClosed[_cvj] - _cvj, 1); // arch-ok: 案卷瘦身·_charInvestigations 写主(tm-char-economy-ui)之第二写点(第六轮③·2026-07-07)
+    }
+  }
+
   function tick(context) {
     var mr = (context && context._monthRatio) || getMonthRatio();
     if (context) context._charEconMonthRatio = mr;
@@ -1610,6 +1671,9 @@
 
     // 家族共财两层
     try { tickClanPool(mr); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'charEcon] clanPool:') : console.error('[charEcon] clanPool:', e); }
+
+    // 派员查案到期结案（第六轮③·兑现「数回合后返回」）
+    try { tickInvestigations(); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'charEcon] investigations:') : console.error('[charEcon] investigations:', e); }
   }
 
   // ═════════════════════════════════════════════════════════════
@@ -1815,6 +1879,7 @@
     buildEconomySnapshot: buildEconomySnapshot,
     computeBehaviorWeights: computeBehaviorWeights,
     calcPrivateSummary: _calcPrivateSummary,
+    tickInvestigations: tickInvestigations,
     inferSocialClass: inferSocialClass,
     reconcileSocialClassOnAppointment: reconcileSocialClassOnAppointment,
     setSocialClass: setSocialClass,
