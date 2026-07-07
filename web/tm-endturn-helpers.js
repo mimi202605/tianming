@@ -881,6 +881,14 @@ function _showEndgameScreen(type, failGoal) {
 
   document.body.insertAdjacentHTML('beforeend', h);
 
+  // 鼎革R1g·帝王本纪(2026-07-07)：终局回顾式修史——每12回合一卷串行修纂·逐卷上屏(#_endgame 内追加)·
+  //   flag benjiEnabled+有 key 才动·「玩家死或亡国都走太史公」的收官件(素材=起居注/实录/时政记/编年)。
+  try {
+    if (typeof TM !== 'undefined' && TM.Benji && typeof TM.Benji.composeForEndgame === 'function') {
+      TM.Benji.composeForEndgame(GM, { failGoal: failGoal, isVictory: isVictory });
+    }
+  } catch (_bjE) { try { console.warn('[benji] composeForEndgame:', _bjE && _bjE.message); } catch (_) {} }
+
   // AI生成太史公三段评语
   if (P.ai && P.ai.key && typeof callAI === 'function') {
     // 收集核心指标最终值

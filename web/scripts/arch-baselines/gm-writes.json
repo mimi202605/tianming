@@ -922,6 +922,13 @@
         "gm:memoryArchive": 2
       }
     },
+    "tm-benji.js": {
+      "gm": 2,
+      "p": 0,
+      "roots": {
+        "gm:_benji": 2
+      }
+    },
     "tm-endturn-edict.js": {
       "gm": 8,
       "p": 0,
