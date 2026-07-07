@@ -3,13 +3,14 @@
 //  release.js — 天命一键发版工具（dev 侧）
 //  2026-06-11·更新功能全面升级 S10·取代「每版手改 6 处版本号 + 手跑两个构建器 + 手传 gh」
 //
-//  一条命令：版本扇出盖戳 → 双端构建 → 独立复验闸 → 基线刷新 → staging →
-//            gh release 上传（含按版补好的 deploy.py）→ 打印 owner 服务器一行命令
+//  一条命令：版本扇出盖戳 → 双端构建 → 独立复验闸 → 基线刷新 → staging(仅小件) →
+//            gh release 直传（大件从构建位·含按版补好的 deploy.py）→ 打印 owner 服务器一行命令
+//  2026-07-07·大制品不再复制进 staging（旧法多拷 ~3.4GB·两度双盘满 ENOSPC）
 //
 //  用法：
 //    node scripts/release.js --version 1.3.4.0 --notes "本版说明" [选项]
 //  选项：
-//    --with-installer        把 E:\版本\测试版<V> 的 latest.yml/exe/blockmap 也staging（ASCII 别名上传）
+//    --with-installer        把 E:\版本\测试版<V> 的 latest.yml/exe/blockmap 一起发（exe 同卷别名零拷贝直传）
 //    --min-app-version X     热更 feed 标注所需最低本体版本（触发客户端「需更新本体」流程）
 //    --no-delta              capgo 只出全量（不出差量 manifest/对象包）
 //    --no-upload             只构建+staging·不动 GitHub
@@ -281,7 +282,94 @@ function composeAndGate() {
   return { latestJson };
 }
 
-// ── ⑨ 安装包 staging（可选） ──────────────────────────────────────────────────
+// ── ⑧½ 发版预检对账（2026-07-07·「打进去的就是想发的」）──────────────────────
+//   a) 与上一版 manifest 的变更摘要（增/改/删·按顶层目录分桶·owner 发前一眼确认·
+//      堵「改了 30 个文件只打进 3 个」1.3.3.4 假更新事故类）
+//   b) 双端同树闸：hot 与 capgo manifest 共有路径的 sha 必须全等·
+//      不等 = 两端不是同一棵树打的（构建间隙改过文件）→ die
+//   c) 零变更警告（大概率打错树/改动没落盘）
+//   报告落 staging 并随 release 上传存档（RELEASE-REPORT-<V>.txt）
+function computePreflight() {
+  const out = { prevVersion: null, added: [], changed: [], removed: [], buckets: {},
+    parityMismatches: [], parityCommon: 0, hotOnly: 0, capgoOnly: 0, capgoChecked: false };
+  const newMan = readJson(path.join(P.releaseHot(), 'manifests', CFG.version + '.json'));
+  const newBySha = new Map(newMan.files.map(f => [f.path, String(f.sha256 || '').toLowerCase()]));
+  // a) 上一版 = 本地 manifests/ 里低于本版的最高版
+  const manDir = path.join(P.releaseHot(), 'manifests');
+  const prevs = (fs.existsSync(manDir) ? fs.readdirSync(manDir) : [])
+    .map(n => n.replace(/\.json$/, ''))
+    .filter(v => /^\d+\.\d+\.\d+\.\d+$/.test(v) && cmpVersions(v, CFG.version) < 0)
+    .sort(cmpVersions);
+  if (prevs.length) {
+    out.prevVersion = prevs[prevs.length - 1];
+    const prevMan = readJson(path.join(manDir, out.prevVersion + '.json'));
+    const prevBySha = new Map(prevMan.files.map(f => [f.path, String(f.sha256 || '').toLowerCase()]));
+    for (const [p, sha] of newBySha) {
+      if (!prevBySha.has(p)) out.added.push(p);
+      else if (prevBySha.get(p) !== sha) out.changed.push(p);
+    }
+    for (const p of prevBySha.keys()) if (!newBySha.has(p)) out.removed.push(p);
+    out.changed.concat(out.added).forEach(p => {
+      const top = p.indexOf('/') >= 0 ? p.split('/')[0] : '(根)';
+      out.buckets[top] = (out.buckets[top] || 0) + 1;
+    });
+  }
+  // b) 双端同树闸
+  const capPath = path.join(P.capgoDist(), CFG.version + '-manifest.json');
+  if (fs.existsSync(capPath)) {
+    out.capgoChecked = true;
+    const cap = readJson(capPath);
+    const capBySha = new Map((cap.manifest || []).map(m => [m.file_name, String(m.file_hash || '').toLowerCase()]));
+    for (const [p, sha] of newBySha) {
+      if (capBySha.has(p)) {
+        out.parityCommon++;
+        if (capBySha.get(p) !== sha) out.parityMismatches.push(p);
+      } else out.hotOnly++;
+    }
+    out.capgoOnly = Math.max(0, capBySha.size - out.parityCommon);
+  }
+  return out;
+}
+
+function preflightReport() {
+  const pf = computePreflight();
+  const L = [];
+  L.push('═══ 发版预检对账·v' + CFG.version + '（自动生成·「打进去的就是想发的」）═══');
+  if (pf.prevVersion) {
+    L.push('对比基线：上一版 ' + pf.prevVersion + '·变更：改 ' + pf.changed.length + ' · 增 ' + pf.added.length + ' · 删 ' + pf.removed.length);
+    const buckets = Object.entries(pf.buckets).sort((a, b) => b[1] - a[1]);
+    if (buckets.length) L.push('分布：' + buckets.map(([k, v]) => k + '×' + v).join(' · '));
+    const addedSet = new Set(pf.added);
+    const listed = pf.changed.concat(pf.added).slice(0, 40);
+    listed.forEach(p => L.push('  ' + (addedSet.has(p) ? '+ ' : '~ ') + p));
+    const more = pf.changed.length + pf.added.length - listed.length;
+    if (more > 0) L.push('  …另 ' + more + ' 个');
+    pf.removed.slice(0, 10).forEach(p => L.push('  - ' + p));
+    if (pf.changed.length + pf.added.length + pf.removed.length === 0) {
+      L.push('⚠⚠ 本版与上一版内容零差异——大概率打错树/改动没落盘·请确认后再发！');
+    }
+  } else {
+    L.push('（本地无上一版 manifest·跳过变更摘要）');
+  }
+  if (pf.capgoChecked) {
+    L.push(pf.parityMismatches.length === 0
+      ? ('双端同树闸：共有 ' + pf.parityCommon + ' 文件 sha 全等 ✓（hot 独有 ' + pf.hotOnly + '·capgo 独有 ' + pf.capgoOnly + '=打包器排除口径差·正常）')
+      : ('双端同树闸：✗ ' + pf.parityMismatches.length + '/' + pf.parityCommon + ' 个共有文件 sha 不等'));
+  } else {
+    L.push('（capgo manifest 缺·跳过双端同树闸）');
+  }
+  const text = L.join('\n') + '\n';
+  log(text);
+  if (pf.parityMismatches.length) {
+    pf.parityMismatches.slice(0, 20).forEach(p => console.error('  ✗ 双端 sha 不等·' + p));
+    die('双端同树闸失败·hot 与 capgo 不是同一棵树打的（构建间隙改过 web/ ？）·重跑 release.js 让两端重建');
+  }
+  return text;
+}
+
+// ── ⑨ 安装包就位（可选）─────────────────────────────────────────────────────
+//   2026-07-07·不再把 ~950MB exe 拷进 staging——ASCII 别名在安装包目录原地建
+//   同卷硬链接（零磁盘占用）·上传直接从 E:\版本\测试版<V> 出
 function stageInstaller(stagingDir) {
   if (!CFG.withInstaller) return [];
   const dir = P.installerDir();
@@ -298,48 +386,70 @@ function stageInstaller(stagingDir) {
   if (actual !== ysha.trim()) die('安装包 sha512 与 latest.yml 不符（构建后被改动？）');
   const alias = 'tianming-setup-' + CFG.version + '-x64.exe';   // gh 资产 ASCII 别名·deploy.py 按 yml path 还原中文名
   fs.copyFileSync(path.join(dir, 'latest.yml'), path.join(stagingDir, 'latest.yml'));
-  fs.copyFileSync(exe, path.join(stagingDir, alias));
+  const out = [
+    { name: 'latest.yml', path: path.join(stagingDir, 'latest.yml') },
+    { name: alias, path: ensureAlias(exe, path.join(dir, alias)) }
+  ];
   const bm = exe + '.blockmap';
-  const out = ['latest.yml', alias];
-  if (fs.existsSync(bm)) { fs.copyFileSync(bm, path.join(stagingDir, alias + '.blockmap')); out.push(alias + '.blockmap'); }
-  log('⑨ 安装包 staging·' + ypath.trim() + ' → ' + alias + '（sha512 ✓）');
+  if (fs.existsSync(bm)) out.push({ name: alias + '.blockmap', path: ensureAlias(bm, path.join(dir, alias + '.blockmap')) });
+  log('⑨ 安装包就位·' + ypath.trim() + ' → ' + alias + '（sha512 ✓·同卷别名零拷贝）');
   return out;
 }
 
+// ASCII 别名·同卷硬链接（零磁盘）·不支持硬链接的卷退化为拷贝
+function ensureAlias(src, aliasPath) {
+  if (fs.existsSync(aliasPath)) fs.rmSync(aliasPath, { force: true });
+  try { fs.linkSync(src, aliasPath); }
+  catch (e) { log('  （硬链接失败·退化为拷贝·' + ((e && e.code) || e) + '）'); fs.copyFileSync(src, aliasPath); }
+  return aliasPath;
+}
+
 // ── ⑩ staging 汇总 + deploy.py 按版补丁 + runbook ────────────────────────────
-function stageRelease(latestJson) {
+//   2026-07-07·staging 只收小合成件（feed/deploy.py/runbook·<5MB）·
+//   三个大 zip 的 basename 即资产名·从构建位直传不再复制——
+//   1.3.4.6 双盘满 ENOSPC 的手工绕法转正·staging 从 ~3.4GB 复制降到忽略不计
+function stageRelease(latestJson, preflightText) {
   const dir = P.staging();
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
-  const files = [];
-  function put(src, name) { fs.copyFileSync(src, path.join(dir, name)); files.push(name); }
-  put(path.join(P.releaseHot(), 'tianming-hot-' + CFG.version + '.zip'), 'tianming-hot-' + CFG.version + '.zip');
-  put(path.join(P.releaseHot(), 'hot-latest.json'), 'hot-latest.json');
-  put(P.changelog(), 'changelog.json');
-  put(path.join(P.capgoDist(), CFG.version + '.zip'), CFG.version + '.zip');
-  fs.writeFileSync(path.join(dir, 'latest.json'), JSON.stringify(latestJson, null, 2), 'utf-8');
-  files.push('latest.json');
+  const entries = [];
+  function putSmall(src, name) { fs.copyFileSync(src, path.join(dir, name)); entries.push({ name, path: path.join(dir, name) }); }
+  function putText(name, text) { fs.writeFileSync(path.join(dir, name), text, 'utf-8'); entries.push({ name, path: path.join(dir, name) }); }
+  function refBig(src) {
+    if (!fs.existsSync(src)) die('大制品缺失·' + src);
+    entries.push({ name: path.basename(src), path: src });
+  }
+  refBig(path.join(P.releaseHot(), 'tianming-hot-' + CFG.version + '.zip'));
+  putSmall(path.join(P.releaseHot(), 'hot-latest.json'), 'hot-latest.json');
+  putSmall(P.changelog(), 'changelog.json');
+  refBig(path.join(P.capgoDist(), CFG.version + '.zip'));
+  putText('latest.json', JSON.stringify(latestJson, null, 2));
   const pack = path.join(P.capgoDist(), 'capgo-files-' + CFG.version + '.zip');
-  if (fs.existsSync(pack)) put(pack, 'capgo-files-' + CFG.version + '.zip');
+  if (fs.existsSync(pack)) refBig(pack);
   // deploy.py·补 DEFAULT_TAG → owner 一行命令零参数
   const dp = fs.readFileSync(P.deployPy(), 'utf-8');
   if (!/DEFAULT_TAG = ""/.test(dp)) die('deploy.py 缺 DEFAULT_TAG 锚点');
-  fs.writeFileSync(path.join(dir, 'deploy.py'), dp.replace('DEFAULT_TAG = ""', 'DEFAULT_TAG = "ship-' + CFG.version + '"'), 'utf-8');
-  files.push('deploy.py');
-  const installerFiles = stageInstaller(dir);
+  putText('deploy.py', dp.replace('DEFAULT_TAG = ""', 'DEFAULT_TAG = "ship-' + CFG.version + '"'));
+  const installerEntries = stageInstaller(dir);
+  if (preflightText) putText('RELEASE-REPORT-' + CFG.version + '.txt', preflightText);
   // runbook
-  const runbook = buildRunbookText(installerFiles.length > 0);
-  fs.writeFileSync(path.join(dir, 'OWNER-RUNBOOK-' + CFG.version + '.txt'), runbook, 'utf-8');
-  files.push('OWNER-RUNBOOK-' + CFG.version + '.txt');
-  log('⑩ staging 完成·' + dir + '·' + (files.length + installerFiles.length) + ' 个资产');
-  return { dir, files: files.concat(installerFiles) };
+  const runbook = buildRunbookText(installerEntries.length > 0);
+  putText('OWNER-RUNBOOK-' + CFG.version + '.txt', runbook);
+  const all = entries.concat(installerEntries);
+  const bigCount = all.filter(e => !e.path.startsWith(dir + path.sep)).length;
+  log('⑩ staging 完成·' + dir + '·' + all.length + ' 个资产（其中 ' + bigCount + ' 个大件从构建位直传·零复制）');
+  return { dir, entries: all };
 }
 
 function buildRunbookText(hasInstaller) {
   const L = [];
   L.push('═══ 天命 v' + CFG.version + ' 发版 runbook（自动生成）═══', '');
-  L.push('1) 服务器一行（1Panel 终端·发布双端热更+邸报' + (hasInstaller ? '+本体通道' : '') + '）：');
-  L.push('   curl -sL https://github.com/misfit-user/tianming/releases/download/ship-' + CFG.version + '/deploy.py -o /tmp/d.py && python3 /tmp/d.py');
+  L.push('1) 服务器发布（双端热更+邸报' + (hasInstaller ? '+本体通道' : '') + '）：');
+  L.push('   · 已装自动部署 → 无需任何操作·≤5 分钟自动上线（状态：python3 /usr/local/bin/tianming-autodeploy.py --status）');
+  L.push('   · 未装（一次性安装·此后永久免手动·1Panel 终端）：');
+  L.push('     curl -sL https://github.com/misfit-user/tianming/releases/download/autodeploy/server-autodeploy.py -o /usr/local/bin/tianming-autodeploy.py && python3 /usr/local/bin/tianming-autodeploy.py --install');
+  L.push('   · 手动兜底（自动部署故障时）：');
+  L.push('     curl -sL https://github.com/misfit-user/tianming/releases/download/ship-' + CFG.version + '/deploy.py -o /tmp/d.py && python3 /tmp/d.py');
   L.push('   · capgo 默认发「全量兜底」（latest.json 不带 manifest·与现状一致·绝对安全）');
   L.push('');
   L.push('2) 安卓差量灰度（自愿·建议在自己设备全量更新验证本版正常后再开）：');
@@ -359,7 +469,11 @@ function buildRunbookText(hasInstaller) {
 
 // ── ⑪ gh release 上传 + 资产审计 ─────────────────────────────────────────────
 function uploadRelease(staging) {
-  if (CFG.noUpload) { log('⑪ --no-upload·跳过 GitHub 上传（staging 已就绪·' + staging.dir + '）'); return; }
+  if (CFG.noUpload) {
+    log('⑪ --no-upload·跳过 GitHub 上传·直传清单（小件在 staging·大件在构建位）：');
+    staging.entries.forEach(e => log('    ' + e.name + ' ← ' + e.path));
+    return;
+  }
   const tag = 'ship-' + CFG.version;
   let r = spawnSync('gh', ['release', 'view', tag, '--repo', 'misfit-user/tianming'], { encoding: 'utf-8' });
   if (r.status !== 0) {
@@ -368,23 +482,48 @@ function uploadRelease(staging) {
       '--title', '天命 ' + CFG.version, '--notes', CFG.notes || ('天命 ' + CFG.version)], { encoding: 'utf-8' });
     if (r.status !== 0) die('gh release create 失败·' + (r.stderr || r.stdout));
   }
-  for (const name of staging.files) {
-    log('  上传 ' + name + ' ...');
-    r = spawnSync('gh', ['release', 'upload', tag, path.join(staging.dir, name), '--clobber', '--repo', 'misfit-user/tianming'],
+  for (const e of staging.entries) {
+    log('  上传 ' + e.name + ' ...');
+    r = spawnSync('gh', ['release', 'upload', tag, e.path, '--clobber', '--repo', 'misfit-user/tianming'],
       { encoding: 'utf-8' });
-    if (r.status !== 0) die('上传失败·' + name + '·' + (r.stderr || r.stdout) + '\n（网络断点可重跑·已传资产 --clobber 覆盖）');
+    if (r.status !== 0) die('上传失败·' + e.name + '·' + (r.stderr || r.stdout) + '\n（网络断点可重跑·已传资产 --clobber 覆盖）');
   }
   // 上传审计·每个资产名+大小核对（老流程曾 warn-and-continue 漏传·这里漏一个就报死）
   r = spawnSync('gh', ['release', 'view', tag, '--repo', 'misfit-user/tianming', '--json', 'assets'], { encoding: 'utf-8' });
   if (r.status !== 0) die('gh release view --json assets 失败');
   const assets = JSON.parse(r.stdout).assets || [];
   const byName = new Map(assets.map(a => [a.name, a.size]));
-  for (const name of staging.files) {
-    const localSize = fs.statSync(path.join(staging.dir, name)).size;
-    if (!byName.has(name)) die('审计失败·release 缺资产 ' + name);
-    if (byName.get(name) !== localSize) die('审计失败·' + name + ' 大小不符·release=' + byName.get(name) + ' local=' + localSize);
+  for (const e of staging.entries) {
+    const localSize = fs.statSync(e.path).size;
+    if (!byName.has(e.name)) die('审计失败·release 缺资产 ' + e.name);
+    if (byName.get(e.name) !== localSize) die('审计失败·' + e.name + ' 大小不符·release=' + byName.get(e.name) + ' local=' + localSize);
   }
-  log('⑪ 上传完成 + 审计通过·' + staging.files.length + ' 个资产');
+  log('⑪ 上传完成 + 审计通过·' + staging.entries.length + ' 个资产');
+}
+
+// ── ⑫ 自动部署指针（2026-07-07·发版零人工的 dev 半边）────────────────────────
+//   固定 release `autodeploy` 上的 latest-ship.txt 是服务器 poller 的唯一信号源。
+//   只在 ⑪ 上传+审计全部通过后才动它 → poller 永远看不到资产不全的半成品发版。
+function updateAutodeployPointer() {
+  if (CFG.noUpload) return;
+  const tag = 'ship-' + CFG.version;
+  let r = spawnSync('gh', ['release', 'view', 'autodeploy', '--repo', 'misfit-user/tianming'], { encoding: 'utf-8' });
+  if (r.status !== 0) {
+    r = spawnSync('gh', ['release', 'create', 'autodeploy', '--repo', 'misfit-user/tianming', '--prerelease',
+      '--title', '自动部署通道（勿删）', '--notes',
+      'latest-ship.txt = 最新已审计发版 tag（release.js 每版自动更新）\nserver-autodeploy.py = 服务器 poller（安装见文件头注释）'],
+      { encoding: 'utf-8' });
+    if (r.status !== 0) { log('⑫ ⚠ autodeploy release 创建失败·本版服务器需手动跑 runbook 第 1 步·' + (r.stderr || r.stdout)); return; }
+  }
+  // poller 本体随手同步（服务器装/升级都从这拿·内容不变时 clobber 无害）
+  r = spawnSync('gh', ['release', 'upload', 'autodeploy', path.join(REAL_ROOT, 'scripts', 'server-autodeploy.py'),
+    '--clobber', '--repo', 'misfit-user/tianming'], { encoding: 'utf-8' });
+  if (r.status !== 0) log('⑫ ⚠ server-autodeploy.py 同步失败（不影响本版）·' + (r.stderr || r.stdout));
+  const tmp = path.join(os.tmpdir(), 'latest-ship.txt');
+  fs.writeFileSync(tmp, tag + '\n', 'utf-8');
+  r = spawnSync('gh', ['release', 'upload', 'autodeploy', tmp, '--clobber', '--repo', 'misfit-user/tianming'], { encoding: 'utf-8' });
+  if (r.status !== 0) { log('⑫ ⚠⚠ latest-ship.txt 指针更新失败·服务器不会自动部署本版·必须手动跑 runbook 第 1 步·' + (r.stderr || r.stdout)); return; }
+  log('⑫ 自动部署指针 → ' + tag + '（服务器 poller ≤5 分钟自动发布·未装 poller 则按 runbook 手动）');
 }
 
 // ── self-test·fanOut 对合成副本自测 ──────────────────────────────────────────
@@ -421,6 +560,35 @@ function selfTest() {
   ok(fs.readdirSync(tmp).some(f => f.indexOf('package.json.bak-release-') === 0), '.bak 备份在');
   // 重跑同版本必被单调闸拒·buildVersion 已盖成目标值 → gateVersion 的 ≤ 判定必触发
   ok(cmpVersions('9.9.9.9', readJson(path.join(tmp, 'package.json')).build.buildVersion) === 0, '重跑同版本会被单调闸拒（buildVersion 已盖戳等值）');
+  // ensureAlias·同卷零拷贝别名（2026-07-07 直传改造）
+  const aSrc = path.join(tmp, 'alias-src.bin');
+  fs.writeFileSync(aSrc, 'alias-payload');
+  const aDst = ensureAlias(aSrc, path.join(tmp, 'alias-dst.bin'));
+  ok(fs.readFileSync(aDst, 'utf-8') === 'alias-payload', 'ensureAlias 别名内容一致');
+  const aDst2 = ensureAlias(aSrc, path.join(tmp, 'alias-dst.bin'));
+  ok(fs.readFileSync(aDst2, 'utf-8') === 'alias-payload', 'ensureAlias 幂等重跑（已存在先清）');
+  // computePreflight·变更摘要 + 双端同树闸（2026-07-07 预检对账）
+  fs.mkdirSync(path.join(tmp, 'release-hot', 'manifests'), { recursive: true });
+  fs.mkdirSync(path.join(tmp, 'mobile', 'capgo-dist'), { recursive: true });
+  const man = files => JSON.stringify({ type: 'tianming-hot-update', files });
+  fs.writeFileSync(path.join(tmp, 'release-hot', 'manifests', '9.9.9.8.json'),
+    man([{ path: 'a.js', sha256: 'aa', size: 1 }, { path: 'b.js', sha256: 'bb', size: 1 }, { path: 'gone.js', sha256: 'gg', size: 1 }]));
+  fs.writeFileSync(path.join(tmp, 'release-hot', 'manifests', '9.9.9.9.json'),
+    man([{ path: 'a.js', sha256: 'a2', size: 1 }, { path: 'b.js', sha256: 'bb', size: 1 }, { path: 'c.js', sha256: 'cc', size: 1 }]));
+  fs.writeFileSync(path.join(tmp, 'mobile', 'capgo-dist', '9.9.9.9-manifest.json'), JSON.stringify({
+    version: '9.9.9.9',
+    manifest: [{ file_name: 'a.js', file_hash: 'a2' }, { file_name: 'b.js', file_hash: 'bb' }, { file_name: 'c.js', file_hash: 'cc' }, { file_name: 'capgo-extra.js', file_hash: 'xx' }]
+  }));
+  const pf = computePreflight();
+  ok(pf.prevVersion === '9.9.9.8', 'preflight·上一版定位 9.9.9.8');
+  ok(pf.changed.length === 1 && pf.changed[0] === 'a.js', 'preflight·改动清单 a.js');
+  ok(pf.added.length === 1 && pf.added[0] === 'c.js' && pf.removed.length === 1 && pf.removed[0] === 'gone.js', 'preflight·增删清单');
+  ok(pf.parityCommon === 3 && pf.parityMismatches.length === 0 && pf.capgoOnly === 1, 'preflight·双端同树全等（capgo 独有不计罪）');
+  fs.writeFileSync(path.join(tmp, 'mobile', 'capgo-dist', '9.9.9.9-manifest.json'), JSON.stringify({
+    version: '9.9.9.9', manifest: [{ file_name: 'a.js', file_hash: 'DIFFERENT' }, { file_name: 'b.js', file_hash: 'bb' }, { file_name: 'c.js', file_hash: 'cc' }]
+  }));
+  const pf2 = computePreflight();
+  ok(pf2.parityMismatches.length === 1 && pf2.parityMismatches[0] === 'a.js', 'preflight·两端不同树被逮住（sha 不等）');
   console.log('PASS assertions=' + n);
   fs.rmSync(tmp, { recursive: true, force: true });
   process.exit(0);
@@ -445,8 +613,10 @@ function selfTest() {
   refreshBaseline();
   buildAndroid(live.capgoManifest);
   const { latestJson } = composeAndGate();
-  const staging = stageRelease(latestJson);
+  const report = preflightReport();
+  const staging = stageRelease(latestJson, report);
   uploadRelease(staging);
+  updateAutodeployPointer();
   log('');
   log(fs.readFileSync(path.join(staging.dir, 'OWNER-RUNBOOK-' + CFG.version + '.txt'), 'utf-8'));
 })().catch(e => { console.error('✗ 发版中断·', e && e.stack || e); process.exit(1); });

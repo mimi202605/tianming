@@ -483,6 +483,11 @@ function main() {
   // 2026-06-11·minAppVersion 提升到 feed 层·客户端「下载前」即可判定要不要先升本体（needsInstaller）
   //   旧客户端忽略未知字段·manifest 内同名字段仍是装前最后防线
   if (minAppVersion) feed.minAppVersion = minAppVersion;
+  // 2026-07-07·整包备用下载源·发版管线本就把 zip 传 gh release（tag=ship-<V>·资产名=basename）·
+  //   主源(自服/CDN)失败客户端自动换·旧客户端忽略未知字段
+  feed.packageUrlMirrors = [
+    'https://github.com/misfit-user/tianming/releases/download/ship-' + version + '/' + packageName
+  ];
   fs.writeFileSync(path.join(outDir, 'hot-latest.json'), JSON.stringify(feed, null, 2), 'utf-8');
   // 同步把 manifest 单独写到 outDir·upload-hot.py 直接拾·SCP 到 server hot/manifests/<ver>.json
   fs.mkdirSync(path.join(outDir, 'manifests'), { recursive: true });

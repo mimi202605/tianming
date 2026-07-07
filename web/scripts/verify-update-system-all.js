@@ -18,7 +18,8 @@ const SCRIPTS = [
   ['S6 在线版提示',     'web/scripts/verify-online-update.js'],
   ['S7 构建器闸门',     'web/scripts/verify-hot-builder-gates.js'],
   ['S8 安卓差量',       'web/scripts/verify-capgo-delta.js'],
-  ['S9 通用部署',       'web/scripts/verify-deploy-local.js']
+  ['S9 通用部署',       'web/scripts/verify-deploy-local.js'],
+  ['S11 自基线重建',    'web/scripts/verify-hotupdate-rebaseline.js']
 ];
 
 let totalAssert = 0, failed = 0;

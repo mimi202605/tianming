@@ -1562,11 +1562,22 @@
       var acts = avail
         ? '<button class="btn primary sm" onclick="TMContentManager.installHotUpdate()">下载并安装</button><button class="btn sm" onclick="TMContentManager.checkHotUpdate()">重新检查</button>'
         : '<button class="btn primary sm" onclick="TMContentManager.checkHotUpdate()">检查热更</button>';
+      // 2026-07-07·实时进度条（下载整包/增量/校验本地）·御案锚金里透朱·此前大包下载只有一行文案
+      var prog = state.hotProgress;
+      var progPct = prog ? Math.max(0, Math.min(100, Math.round(prog.pct || 0))) : 0;
+      var progHtml = prog
+        ? '<div class="uh-prog" style="margin:10px 0 2px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--ink-faint,#9a8f7d);margin-bottom:4px;"><span>' + esc(prog.label || '更新中') + '</span><span>' + progPct + '%</span></div>' +
+            '<div style="height:6px;border:1px solid rgba(201,160,69,.35);background:rgba(0,0,0,.28);border-radius:3px;overflow:hidden;">' +
+              '<div style="height:100%;width:' + progPct + '%;background:linear-gradient(90deg,rgba(201,160,69,.85),rgba(150,59,41,.92));transition:width .2s;"></div>' +
+            '</div>' +
+          '</div>'
+        : '';
       hero = '<div class="update-hero ' + (avail ? 'avail' : (checked ? 'ok' : '')) + '"><div class="uh-top">' +
           '<div class="uh-ic">⇪</div>' +
           '<div class="uh-id"><b>前端热更</b><small>不重装安装包即可收到 UI / 剧本 / 立绘 / 音乐更新</small>' + stateLine + '</div>' +
           '<div class="uh-acts">' + acts + '</div>' +
-        '</div>' +
+        '</div>' + progHtml +
         '<div class="uh-sub"><span>当前加载 <b>' + esc(loaded) + '</b></span><span>基础版 <b>' + esc(base) + '</b></span>' +
           '<span class="s-spacer" style="flex:1;"></span>' +
           '<span class="lk" style="color:var(--gold);" onclick="TMContentManager.reloadAfterHotUpdate()">立即重载</span>' +

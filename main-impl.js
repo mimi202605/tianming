@@ -1128,30 +1128,94 @@ function _finalizeStagingInstall(staging, hot, sourceInfo) {
 // 2026-05-23·incremental install·feed 有 manifestUrl + filesBaseUrl 且 local 有 manifest·diff + 按需下载
 //   ·unchanged 文件从 currentDir hardlink (NTFS 支持·跨盘 fallback copy)
 //   ·changed 文件按 sha-addressed URL 拉·sha 验证后入 staging
-//   ·失败 throw·caller fallback 全 zip
-async function installHotUpdate_incremental(feedInfo, currentState) {
+//   ·失败 throw·caller fallback 自基线重建 → 全 zip
+// 2026-07-07·拆出 _fetchIncrementalManifest / _incrementalSyncFromReuseMap·
+//   与「自基线重建」(installHotUpdate_rebaseline) 共用同一套 staging/下载/验证内核
+async function _fetchIncrementalManifest(feedInfo) {
   const manifestUrl = resolveRemoteUrl(feedInfo.feed.manifestUrl, feedInfo.feedUrl);
   const filesBaseUrlRaw = String(feedInfo.feed.filesBaseUrl || '');
   if (!filesBaseUrlRaw) throw new Error('feed.filesBaseUrl missing');
   // resolveRemoteUrl 把相对路径解析到 feed 同一目录·确保结尾 /
   let filesBaseUrl = resolveRemoteUrl(filesBaseUrlRaw, feedInfo.feedUrl);
   if (!filesBaseUrl.endsWith('/')) filesBaseUrl += '/';
-
-  sendHotUpdateStatus('incremental-start', { version: feedInfo.version });
   const newManifest = await fetchJsonRemote(manifestUrl, 5 * 1024 * 1024);
   if (newManifest.type !== 'tianming-hot-update') throw new Error('manifest type mismatch');
   if (String(newManifest.version || '').trim() !== feedInfo.version) throw new Error('manifest version != feed version');
   const newFiles = Array.isArray(newManifest.files) ? newManifest.files : [];
   if (!newFiles.length) throw new Error('manifest.files 空');
+  return { manifestUrl, filesBaseUrl, newManifest, newFiles };
+}
+
+async function installHotUpdate_incremental(feedInfo, currentState) {
+  sendHotUpdateStatus('incremental-start', { version: feedInfo.version });
+  const plan = await _fetchIncrementalManifest(feedInfo);
 
   const localManifest = readJsonSafe(path.join(currentState.currentDir, '.hot-update-manifest.json'), null);
-  if (!localManifest || !Array.isArray(localManifest.files)) throw new Error('local manifest 缺失或损坏·走全 zip 兜底');
+  if (!localManifest || !Array.isArray(localManifest.files)) throw new Error('local manifest 缺失或损坏·走自基线重建/全 zip 兜底');
   const localShaByPath = Object.create(null);
   localManifest.files.forEach(f => { if (f && f.path) localShaByPath[String(f.path)] = String(f.sha256 || '').toLowerCase(); });
 
+  // 本地 manifest 声称 sha 相同的文件从 currentDir 复用·manifest 说谎由末端 validate sha 终检兜住
+  const reuseSrcByPath = Object.create(null);
+  plan.newFiles.forEach(f => {
+    const sha = String(f.sha256 || '').toLowerCase();
+    if (sha && localShaByPath[String(f.path)] === sha) {
+      reuseSrcByPath[String(f.path)] = path.resolve(currentState.currentDir, String(f.path).replace(/\\/g, '/'));
+    }
+  });
+  return await _incrementalSyncFromReuseMap(feedInfo, plan, reuseSrcByPath, 'incremental-hot-update');
+}
+
+// 2026-07-07·自基线重建·第二道增量（介于 manifest 增量与全 zip 之间）：
+//   老安装无 .hot-update-manifest.json / 本地 manifest 失真 / manifest 增量中途失败时·
+//   不信任何本地账本·对着新 manifest 逐文件现算本地 sha（currentDir 优先·安装包内 web/ 兜底）·
+//   命中=复用·未命中/缺失=按 sha 仓下载。全树 hash 数秒级·换掉动辄数百 MB 的全 zip 兜底。
+//   kill-switch：feed flags.disableRebaseline（改服务器 JSON 即时生效·同 forceFullZip 家族）。
+async function installHotUpdate_rebaseline(feedInfo, currentState) {
+  sendHotUpdateStatus('rebaseline-start', { version: feedInfo.version });
+  const plan = await _fetchIncrementalManifest(feedInfo);
+
+  const baseDirs = [];
+  const curDir = currentState && currentState.currentDir ? path.resolve(currentState.currentDir) : '';
+  if (curDir && fs.existsSync(curDir)) baseDirs.push(curDir);
+  const bundledWeb = path.resolve(bundledAppRoot(), 'web');
+  if (fs.existsSync(bundledWeb) && !baseDirs.includes(bundledWeb)) baseDirs.push(bundledWeb);
+  if (!baseDirs.length) throw new Error('rebaseline·无可用本地基线目录');
+
+  const reuseSrcByPath = Object.create(null);
+  let scanned = 0, matched = 0, lastScanEvt = 0;
+  for (const f of plan.newFiles) {
+    const rel = String(f.path || '').replace(/\\/g, '/');
+    const want = String(f.sha256 || '').toLowerCase();
+    scanned++;
+    if (rel && want && !rel.startsWith('/') && !rel.includes('..')) {
+      for (const base of baseDirs) {
+        const cand = path.resolve(base, rel);
+        if (!isInsideDir(base, cand)) break;
+        let st = null;
+        try { st = fs.statSync(cand); } catch (_) { continue; }
+        if (!st.isFile()) continue;
+        if (f.size != null && Number(f.size) !== st.size) continue; // 尺寸不符免 hash
+        let got = '';
+        try { got = (await sha256FileStream(cand)).toLowerCase(); } catch (_) { continue; }
+        if (got === want) { reuseSrcByPath[String(f.path)] = cand; matched++; break; }
+      }
+    }
+    const nowTs = Date.now();
+    if (nowTs - lastScanEvt >= 200 || scanned === plan.newFiles.length) {
+      lastScanEvt = nowTs;
+      sendHotUpdateStatus('rebaseline-scan', { version: feedInfo.version, scanned, total: plan.newFiles.length, matched });
+    }
+  }
+  console.log('[hot-update-rb] 自基线重建·' + matched + '/' + plan.newFiles.length + ' 文件本地命中可复用');
+  return await _incrementalSyncFromReuseMap(feedInfo, plan, reuseSrcByPath, 'rebaseline-hot-update');
+}
+
+async function _incrementalSyncFromReuseMap(feedInfo, plan, reuseSrcByPath, installedFrom) {
+  const { manifestUrl, filesBaseUrl, newManifest, newFiles } = plan;
   const toFetch = newFiles.filter(f => {
     const sha = String(f.sha256 || '').toLowerCase();
-    return !sha || localShaByPath[String(f.path)] !== sha;
+    return !sha || !reuseSrcByPath[String(f.path)];
   });
   const toFetchBytes = toFetch.reduce((s, f) => s + (Number(f.size) || 0), 0);
   console.log('[hot-update-inc] ' + toFetch.length + '/' + newFiles.length + ' files need fetch·' + (toFetchBytes/1024/1024).toFixed(2) + ' MB');
@@ -1160,16 +1224,20 @@ async function installHotUpdate_incremental(feedInfo, currentState) {
     total: newFiles.length,
     fetch: toFetch.length,
     reuse: newFiles.length - toFetch.length,
-    fetchBytes: toFetchBytes
+    fetchBytes: toFetchBytes,
+    mode: installedFrom
   });
 
-  // 2026-06-10·磁盘空间预检·复用走 hardlink（同卷不占空间）·首装基线在安装包内 → 全量拷贝须按总量算
-  const totalNewBytes = newFiles.reduce((s, f) => s + (Number(f.size) || 0), 0);
-  const reuseByLink = isInsideDir(HOT_UPDATE_VERSIONS_DIR, path.resolve(currentState.currentDir || ''));
-  const requiredBytes = reuseByLink
-    ? (toFetchBytes * 2 + 200 * 1024 * 1024)
-    : (totalNewBytes + toFetchBytes + 200 * 1024 * 1024);
-  await ensureDiskSpace(HOT_UPDATE_DIR, requiredBytes, '增量更新');
+  // 2026-06-10·磁盘空间预检·复用源在 versions 目录内=hardlink（同卷不占空间）·
+  //   其它来源（安装包内 web/ 等）linkSync 会失败落 copy·按拷贝体积计
+  const fetchPathSet = new Set(toFetch.map(f => f.path));
+  let reuseCopyBytes = 0;
+  for (const f of newFiles) {
+    if (fetchPathSet.has(f.path)) continue;
+    const src = reuseSrcByPath[String(f.path)];
+    if (!src || !isInsideDir(HOT_UPDATE_VERSIONS_DIR, path.resolve(src))) reuseCopyBytes += Number(f.size) || 0;
+  }
+  await ensureDiskSpace(HOT_UPDATE_DIR, toFetchBytes * 2 + reuseCopyBytes + 200 * 1024 * 1024, '增量更新');
 
   ensureSaveDir();
   const staging = path.join(HOT_UPDATE_DIR, '__staging_inc_' + Date.now());
@@ -1179,15 +1247,14 @@ async function installHotUpdate_incremental(feedInfo, currentState) {
   try {
     // hardlink unchanged·fallback copy
     let linked = 0, copied = 0;
-    const fetchPathSet = new Set(toFetch.map(f => f.path));
     for (const f of newFiles) {
       if (fetchPathSet.has(f.path)) continue;
       const rel = String(f.path || '').replace(/\\/g, '/');
-      const src = path.resolve(currentState.currentDir, rel);
+      const src = reuseSrcByPath[String(f.path)];
       const dst = path.resolve(staging, rel);
       if (!isInsideDir(staging, dst)) throw new Error('illegal staging path: ' + rel);
-      if (!fs.existsSync(src)) {
-        throw new Error('local source missing·' + rel + ' (currentDir may have been corrupted·走 zip 兜底)');
+      if (!src || !fs.existsSync(src)) {
+        throw new Error('local source missing·' + rel + ' (currentDir may have been corrupted·走下一级兜底)');
       }
       fs.mkdirSync(path.dirname(dst), { recursive: true });
       try { fs.linkSync(src, dst); linked++; }
@@ -1241,7 +1308,7 @@ async function installHotUpdate_incremental(feedInfo, currentState) {
       filesBaseUrl,
       sha256: feedInfo.sha256,
       notes: feedInfo.notes,
-      installedFrom: 'incremental-hot-update',
+      installedFrom,
       reusedFiles: newFiles.length - toFetch.length,
       fetchedFiles: toFetch.length,
       fetchedBytes: toFetchBytes
@@ -1270,6 +1337,10 @@ async function readHotUpdateFeed(options = {}) {
     feedUrl,
     packageUrl,
     version,
+    // 2026-07-07·zip 整包备用下载源（gh release 等）·主源失败逐个换·旧客户端忽略
+    packageUrlMirrors: (Array.isArray(feed.packageUrlMirrors) ? feed.packageUrlMirrors : [])
+      .map(u => { try { return resolveRemoteUrl(String(u), feedUrl); } catch (_) { return ''; } })
+      .filter(Boolean),
     sha256: String(feed.sha256 || feed.hash || '').toLowerCase(),
     size: Number(feed.size || feed.bytes || 0) || 0,
     notes: feed.notes || feed.releaseNotes || feed.description || '',
@@ -1307,11 +1378,11 @@ async function installHotUpdateFromFeed(options = {}) {
     };
   }
   // 2026-05-23·incremental 优先·feed 有 manifestUrl + filesBaseUrl 且本地有装过 → diff + per-file fetch
-  //   失败 throw → 落到 zip 全包 fallback·不阻塞玩家
+  //   失败 throw → 落到自基线重建 → zip 全包 fallback·不阻塞玩家
   const currentState = getHotUpdateState();
   // 2026-06-02·首装也能增量·currentDir 空(从未装过热更)时回退到打包内 web/ 作 diff 基线·
   //   需 web/.hot-update-manifest.json 一起打包·incremental 从 asar 内 web/ copy 未变文件·
-  //   任何失败 throw → 优雅回退全 zip (见下 catch)·零倒退风险。
+  //   任何失败 throw → 优雅回退下一级兜底·零倒退风险。
   const incState = (currentState && currentState.currentDir)
     ? currentState
     : Object.assign({}, currentState, { currentDir: path.join(bundledAppRoot(), 'web') });
@@ -1320,18 +1391,35 @@ async function installHotUpdateFromFeed(options = {}) {
     && fs.existsSync(path.join(incState.currentDir, '.hot-update-manifest.json'));
   // 2026-06-10·feed flags.forceFullZip = 服务器端 kill-switch·增量链路出问题时一键全员回全 zip
   const feedForceFullZip = !!(feedInfo.flags && feedInfo.flags.forceFullZip);
-  if (canIncremental && hasLocalManifest && !options.forceFullZip && !feedForceFullZip) {
-    try {
-      const installed = await installHotUpdate_incremental(feedInfo, incState);
-      sendHotUpdateStatus('installed', { version: installed.version, status: getHotUpdatePublicStatus(), mode: 'incremental' });
-      return { success: true, installed, status: getHotUpdatePublicStatus(), notes: feedInfo.notes, mode: 'incremental' };
-    } catch (incErr) {
-      console.warn('[hot-update] incremental 失败·fallback 全 zip·' + (incErr && incErr.message || incErr));
-      sendHotUpdateStatus('incremental-fallback', { version: feedInfo.version, reason: String(incErr && incErr.message || incErr) });
-      // fall through
+  // 2026-07-07·feed flags.disableRebaseline = 自基线重建的独立 kill-switch
+  const feedDisableRebaseline = !!(feedInfo.flags && feedInfo.flags.disableRebaseline);
+  if (canIncremental && !options.forceFullZip && !feedForceFullZip) {
+    if (hasLocalManifest) {
+      try {
+        const installed = await installHotUpdate_incremental(feedInfo, incState);
+        sendHotUpdateStatus('installed', { version: installed.version, status: getHotUpdatePublicStatus(), mode: 'incremental' });
+        return { success: true, installed, status: getHotUpdatePublicStatus(), notes: feedInfo.notes, mode: 'incremental' };
+      } catch (incErr) {
+        console.warn('[hot-update] incremental 失败·转自基线重建·' + (incErr && incErr.message || incErr));
+        sendHotUpdateStatus('incremental-fallback', { version: feedInfo.version, reason: String(incErr && incErr.message || incErr) });
+        // fall through → rebaseline
+      }
+    }
+    // 2026-07-07·自基线重建·老安装(无本地 manifest)/manifest 增量失败 → 现算本地 sha 只补差·
+    //   把「一失手就整包全下」改成「最多多花几秒 hash」。
+    if (!feedDisableRebaseline && !options.skipRebaseline) {
+      try {
+        const installed = await installHotUpdate_rebaseline(feedInfo, incState);
+        sendHotUpdateStatus('installed', { version: installed.version, status: getHotUpdatePublicStatus(), mode: 'rebaseline' });
+        return { success: true, installed, status: getHotUpdatePublicStatus(), notes: feedInfo.notes, mode: 'rebaseline' };
+      } catch (rbErr) {
+        console.warn('[hot-update] rebaseline 失败·fallback 全 zip·' + (rbErr && rbErr.message || rbErr));
+        sendHotUpdateStatus('rebaseline-fallback', { version: feedInfo.version, reason: String(rbErr && rbErr.message || rbErr) });
+        // fall through → zip
+      }
     }
   }
-  // 兜底·原 zip 全包路径 (首装·local manifest 缺·或 incremental 失败)
+  // 兜底·原 zip 全包路径 (增量与自基线均不可用或失败)
   return await installHotUpdateFromFeed_zipFallback(feedInfo, options);
 }
 
@@ -1353,16 +1441,34 @@ async function installHotUpdateFromFeed_zipFallback(feedInfo, options = {}) {
     // 2026-06-10·磁盘预检（zip + 解压临时 + staging ≈ 3 倍）·路径去掉 Date.now() → .part 可跨次续传
     await ensureDiskSpace(HOT_UPDATE_DIR, (feedInfo.size || 0) * 3 + 300 * 1024 * 1024, '完整更新包');
     zipPath = path.join(HOT_UPDATE_DIR, 'downloads', 'tianming-hot-' + sanitize(feedInfo.version) + '.zip');
-    const fileInfo = await downloadRemoteFile(feedInfo.packageUrl, zipPath, 2 * 1024 * 1024 * 1024, progress => {
-      sendHotUpdateStatus('download-progress', {
-        version: feedInfo.version,
-        feedUrl: feedInfo.feedUrl,
-        packageUrl: feedInfo.packageUrl,
-        size: progress.total || feedInfo.size || 0,
-        transferred: progress.received || 0,
-        percent: progress.percent || 0
-      });
-    }, { retries: 3, resume: true });
+    // 2026-07-07·多源下载·主源(自服/CDN)失败逐个换镜像（feed packageUrlMirrors·如 gh release）·
+    //   .part 跨源续传安全：内容同一·装前 sha 终检兜底
+    const candidates = [feedInfo.packageUrl].concat(feedInfo.packageUrlMirrors || []).filter(Boolean);
+    let fileInfo = null;
+    let lastDlErr = null;
+    for (let ci = 0; ci < candidates.length; ci++) {
+      const srcUrl = candidates[ci];
+      try {
+        fileInfo = await downloadRemoteFile(srcUrl, zipPath, 2 * 1024 * 1024 * 1024, progress => {
+          sendHotUpdateStatus('download-progress', {
+            version: feedInfo.version,
+            feedUrl: feedInfo.feedUrl,
+            packageUrl: srcUrl,
+            size: progress.total || feedInfo.size || 0,
+            transferred: progress.received || 0,
+            percent: progress.percent || 0
+          });
+        }, { retries: ci === 0 ? 3 : 2, resume: true });
+        break;
+      } catch (dlErr) {
+        lastDlErr = dlErr;
+        if (ci < candidates.length - 1) {
+          console.warn('[hot-update] 下载源失败·换备用源·' + srcUrl + '·' + (dlErr && dlErr.message || dlErr));
+          sendHotUpdateStatus('mirror-switch', { version: feedInfo.version, from: srcUrl, to: candidates[ci + 1] });
+        }
+      }
+    }
+    if (!fileInfo) throw (lastDlErr || new Error('全部下载源失败'));
     if (feedInfo.sha256 && feedInfo.sha256 !== fileInfo.sha256.toLowerCase()) {
       throw new Error('hot update package sha256 mismatch');
     }
@@ -2971,6 +3077,7 @@ if (process.env.TIANMING_TEST_EXPORTS) {
     writeJsonAtomic,
     getHotUpdatePublicStatus,
     installHotUpdateFromFeed,
+    installHotUpdate_rebaseline,
     validateHotUpdateBundle,
     bundledAppRoot,
     repairHotUpdateState,

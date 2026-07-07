@@ -487,6 +487,15 @@
     if (evt.kind === 'verifying') return '正在校验热更新清单与文件哈希。';
     if (evt.kind === 'installed') return '热更新已安装，点击“立即重载前端”即可生效。';
     if (evt.kind === 'error') return '热更新失败：' + (evt.error || '未知错误');
+    // 2026-07-07·增量 / 自基线重建 / 换源事件（老事件语义不动）
+    if (evt.kind === 'incremental-start') return '正在读取增量更新清单...';
+    if (evt.kind === 'incremental-plan') return '增量更新：共 ' + (evt.total || 0) + ' 个文件·只需下载 ' + (evt.fetch || 0) + ' 个（' + formatBytes(evt.fetchBytes || 0) + '）·其余本地复用。';
+    if (evt.kind === 'incremental-progress') return '增量下载 ' + (evt.done || 0) + '/' + (evt.total || 0) + ' 个文件（' + formatBytes(evt.bytesDone || 0) + ' / ' + formatBytes(evt.fetchBytes || 0) + '）';
+    if (evt.kind === 'incremental-fallback') return '增量更新不可用，转为校验本地文件补差...';
+    if (evt.kind === 'rebaseline-start') return '正在校验本地文件（只补差异，无需下载整包）...';
+    if (evt.kind === 'rebaseline-scan') return '校验本地文件 ' + (evt.scanned || 0) + '/' + (evt.total || 0) + '·可复用 ' + (evt.matched || 0) + ' 个';
+    if (evt.kind === 'rebaseline-fallback') return '本地校验补差不可用，回退整包下载...';
+    if (evt.kind === 'mirror-switch') return '主下载源失败，已切换备用下载源...';
     return evt.message || evt.error || '';
   }
 
@@ -2350,12 +2359,34 @@
       window.tianming.onHotUpdateStatus(function(status){
         state.hotMessage = hotStatusText(status) || state.hotMessage;
         if (status && status.status) state.hotStatus = status.status;
+        // 2026-07-07·结构化进度·更新中心 hero 进度条用（此前只有一行文案·大包下载无进度观感差）
+        if (status) {
+          var pk = status.kind;
+          if (pk === 'download-start') state.hotProgress = { label: '下载更新包', pct: 0 };
+          else if (pk === 'download-progress') state.hotProgress = { label: '下载更新包', pct: Math.round(status.percent || 0) };
+          else if (pk === 'incremental-plan') state.hotProgress = { label: '增量下载', pct: 0 };
+          else if (pk === 'incremental-progress') state.hotProgress = { label: '增量下载', pct: status.fetchBytes ? Math.round((status.bytesDone || 0) * 100 / status.fetchBytes) : Math.round((status.done || 0) * 100 / Math.max(1, status.total || 1)) };
+          else if (pk === 'rebaseline-start') state.hotProgress = { label: '校验本地文件', pct: 0 };
+          else if (pk === 'rebaseline-scan') state.hotProgress = { label: '校验本地文件', pct: Math.round((status.scanned || 0) * 100 / Math.max(1, status.total || 1)) };
+          else if (pk === 'downloaded' || pk === 'verifying') state.hotProgress = { label: '校验', pct: 96 };
+          else if (pk === 'installed' || pk === 'error') state.hotProgress = null;
+        }
         if (state.applyUpdate && state.applyUpdate.open && status) {
           if (status.kind === 'download-start') {
             updateApplyState({ progress: 18, message: '正在下载前端热更...', size: status.size || state.applyUpdate.size || 0 }, '开始下载前端热更。');
           } else if (status.kind === 'download-progress') {
             var pct = Math.max(0, Math.min(100, Math.round(status.percent || 0)));
             updateApplyState({ progress: Math.max(18, Math.min(70, pct)), message: '正在下载前端热更 ' + pct + '%', size: status.size || state.applyUpdate.size || 0 });
+          } else if (status.kind === 'rebaseline-start' || status.kind === 'incremental-start') {
+            updateApplyState({ progress: 20, message: hotStatusText(status) }, hotStatusText(status));
+          } else if (status.kind === 'rebaseline-scan') {
+            var spct = Math.round((status.scanned || 0) * 100 / Math.max(1, status.total || 1));
+            updateApplyState({ progress: Math.max(20, Math.min(40, 20 + spct / 5)), message: '校验本地文件 ' + spct + '%（只补差异）' });
+          } else if (status.kind === 'incremental-plan') {
+            updateApplyState({ progress: 42, message: hotStatusText(status) }, hotStatusText(status));
+          } else if (status.kind === 'incremental-progress') {
+            var ipct = status.fetchBytes ? Math.round((status.bytesDone || 0) * 100 / status.fetchBytes) : 0;
+            updateApplyState({ progress: Math.max(42, Math.min(70, 42 + ipct * 0.28)), message: '增量下载 ' + ipct + '%（' + (status.done || 0) + '/' + (status.total || 0) + ' 文件）' });
           } else if (status.kind === 'downloaded') {
             updateApplyState({ progress: 72, message: '热更包已下载，正在校验。' }, '热更包下载完成。');
           } else if (status.kind === 'verifying') {
