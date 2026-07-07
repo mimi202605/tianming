@@ -711,8 +711,8 @@ async function aiGenVar(){
     "\"relations\":[{\"name\":\"...\",\"from\":\"...\",\"to\":\"...\",\"type\":\"...\",\"value\":50},...]}";
   showLoading("\u751f\u6210\u53d8\u91cf\u4e0e\u5173\u7cfb...");
   try{
-    var existVar=P.variables.filter(function(x){return x.sid===editingScenarioId;}).map(function(x){return x.name;});var existNoteV=existVar.length?"\u5df2\u6709\u53d8\u91cf\uff08\u4e0d\u5f97\u91cd\u590d\uff09\uff1a"+existVar.join("\u3001")+"\n":"";var raw=await callAISmart(prompt+existNoteV,2000,{minLength:100,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return j.variables&&Array.isArray(j.variables)&&j.variables.length>=Math.min(vc,2);}catch(e){return false;}}});
-    var j=JSON.parse(raw.replace(/```json|```/g,"").trim());
+    var existVar=P.variables.filter(function(x){return x.sid===editingScenarioId;}).map(function(x){return x.name;});var existNoteV=existVar.length?"\u5df2\u6709\u53d8\u91cf\uff08\u4e0d\u5f97\u91cd\u590d\uff09\uff1a"+existVar.join("\u3001")+"\n":"";var raw=await callAISmart(prompt+existNoteV,2000,{minLength:100,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return j.variables&&Array.isArray(j.variables)&&j.variables.length>=Math.min(vc,2);}catch(e){return false;}}});
+    var j=JSON.parse(_stripJsonFence(raw));
     var added=0;
     if(j.variables&&Array.isArray(j.variables))j.variables.forEach(function(v){
       P.variables.push({id:uid(),sid:sid,name:v.name||"",value:v.value!=null?v.value:50,min:v.min!=null?v.min:0,max:v.max!=null?v.max:100,color:"#c9a84c",icon:"",cat:"",visible:true,desc:v.desc||""});
@@ -891,7 +891,7 @@ async function execFullGen(){
     var r1=await _fgFire(prompt1,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3});   // 3a · API/网络错误降级为''(走下面 JSON 兜底)·不再让单次 AI 故障整体失败
     var ctxScn="";
     try{
-      var j1=JSON.parse(r1.replace(/```json|```/g,"").trim());
+      var j1=JSON.parse(_stripJsonFence(r1));
       scn.era=j1.era||dynasty;scn.name=j1.name||(dynasty+"\u5267\u672c");scn.role=j1.role||"";scn.background=j1.background||"";scn.opening=j1.opening||"";scn.suggestions=j1.suggestions||[];
       ctxScn="\u5267\u672C\u300A"+scn.name+"\u300B\uFF0C\u65F6\u4EE3\uFF1A"+scn.era+"\uFF0C\u73A9\u5BB6\u89D2\u8272\uFF1A"+scn.role+"\u3002\u80CC\u666F\uFF1A"+scn.background;
     }catch(e){scn.era=dynasty;scn.name=dynasty+"\u5267\u672c";ctxScn="\u671d\u4ee3\uff1a"+dynasty;}
@@ -903,10 +903,10 @@ async function execFullGen(){
       "\u80cc\u666f\uff1a"+ctxScn+
       "\n\u8bf7\u751f\u6210"+chrCount+"\u4e2a\u771f\u5b9e\u5386\u53f2\u4eba\u7269\u3002\u6bcf\u4e2a\u5305\u542b: name(\u771f\u5b9e\u59d3\u540d), role(\u5b98\u804c), faction(\u9635\u8425), personality(\u6027\u683c\u63cf\u8ff0), loyalty(0-100), ambition(0-100), benevolence(0-100), intelligence(0-100), valor(0-100), morale(0-100)\u3002"+
       "\n\u8fd4\u56de\u7eefJSON\u6570\u7ec4: [{\"name\":\"...\",\"role\":\"...\",\"faction\":\"...\",\"personality\":\"...\",\"loyalty\":70,\"ambition\":60,\"benevolence\":50,\"intelligence\":80,\"valor\":65,\"morale\":75},...]";
-    var r2=await _fgFire(prompt2,3000,{signal:_fgAbortCtrl.signal,minLength:500,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(chrCount,3);}catch(e){return false;}}});   // 3a · 降级为''·不整体失败
+    var r2=await _fgFire(prompt2,3000,{signal:_fgAbortCtrl.signal,minLength:500,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return Array.isArray(j)&&j.length>=Math.min(chrCount,3);}catch(e){return false;}}});   // 3a · 降级为''·不整体失败
     var chrs=[];var ctxChrs="";
     try{
-      var j2=JSON.parse(r2.replace(/```json|```/g,"").trim());
+      var j2=JSON.parse(_stripJsonFence(r2));
       if(Array.isArray(j2))chrs=j2;
     }catch(e){ console.warn("[catch] 静默异常:", e.message || e); }
     chrs.forEach(function(c){
@@ -969,41 +969,41 @@ async function execFullGen(){
       "\n请生成"+classCount+"个该世界的社会阶层（如士绅/农户/工匠/商贾/军户等；虚构世界按其设定自拟阶层）。每个包含: name(阶层名), desc(简述其处境与诉求), satisfaction(0-100当前满意度), influence(0-100对局势的影响力), population(人口规模描述)。"+
       "\n返回纯JSON数组: [{\"name\":\"...\",\"desc\":\"...\",\"satisfaction\":50,\"influence\":40,\"population\":\"...\"},...] 共"+classCount+"个。";
     var _fgR=await Promise.all([
-      _fgFire(prompt3,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return j.variables&&Array.isArray(j.variables)&&j.variables.length>=Math.min(varCount,3);}catch(e){return false;}}}),
-      _fgFire(prompt4,1500,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(facCount,3);}catch(e){return false;}}}),
-      _fgFire(prompt5,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(evtCount,2);}catch(e){return false;}}}),
-      _fgFire(prompt6,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=Math.min(itemCount,2);}catch(e){return false;}}}),
+      _fgFire(prompt3,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return j.variables&&Array.isArray(j.variables)&&j.variables.length>=Math.min(varCount,3);}catch(e){return false;}}}),
+      _fgFire(prompt4,1500,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return Array.isArray(j)&&j.length>=Math.min(facCount,3);}catch(e){return false;}}}),
+      _fgFire(prompt5,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return Array.isArray(j)&&j.length>=Math.min(evtCount,2);}catch(e){return false;}}}),
+      _fgFire(prompt6,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return Array.isArray(j)&&j.length>=Math.min(itemCount,2);}catch(e){return false;}}}),
       _fgFire(prompt7,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3}),
-      _fgFire(prompt8,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}}),
+      _fgFire(prompt8,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}}),
       _fgFire(prompt9,2000,{signal:_fgAbortCtrl.signal,minLength:300,maxRetries:3}),
-      _fgFire(prompt10,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}}),
-      _fgFire(prompt11,1500,{signal:_fgAbortCtrl.signal,minLength:150,maxRetries:3,validator:function(c){try{var j=JSON.parse(c.replace(/```json|```/g,"").trim());return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}})
+      _fgFire(prompt10,1500,{signal:_fgAbortCtrl.signal,minLength:200,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}}),
+      _fgFire(prompt11,1500,{signal:_fgAbortCtrl.signal,minLength:150,maxRetries:3,validator:function(c){try{var j=JSON.parse(_stripJsonFence(c));return Array.isArray(j)&&j.length>=2;}catch(e){return false;}}})
     ]);
     var r3=_fgR[0],r4=_fgR[1],r5=_fgR[2],r6=_fgR[3],r7=_fgR[4],r8=_fgR[5],r9=_fgR[6],r10=_fgR[7],r11=_fgR[8];
     // \u89e3\u6790\u5165\u5e93(\u987a\u5e8f\u00b7\u7eaf JSON \u65e0 AI\u00b7\u4e0e\u539f\u9010\u6b65\u7b49\u4ef7\u00b7\u5404\u81ea try/catch + done.push)
     try{
-      var j3=JSON.parse(r3.replace(/```json|```/g,"").trim());
+      var j3=JSON.parse(_stripJsonFence(r3));
       if(j3.variables&&Array.isArray(j3.variables))j3.variables.forEach(function(v){P.variables.push({id:uid(),sid:sid,name:v.name||"",value:v.value!=null?v.value:50,min:v.min!=null?v.min:0,max:v.max!=null?v.max:100,desc:v.desc||""});});
       if(j3.relations&&Array.isArray(j3.relations))j3.relations.forEach(function(r){P.relations.push({id:uid(),sid:sid,from:r.from||"",to:r.to||"",type:r.type||"",value:r.value!=null?r.value:50});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 3 (variables/relations) parse failed:') : console.warn('Step 3 (variables/relations) parse failed:', e); }
     done.push("\u53d8\u91cf\u4e0e\u5173\u7cfb");
     try{
-      var j4=JSON.parse(r4.replace(/```json|```/g,"").trim());
+      var j4=JSON.parse(_stripJsonFence(r4));
       if(Array.isArray(j4))j4.forEach(function(d){P.officeTree.push({id:uid(),sid:sid,name:d.name||"",desc:d.desc||"",headRole:d.headRole||"",slots:d.slots||3,members:[]});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 4 (officeTree) parse failed:') : console.warn('Step 4 (officeTree) parse failed:', e); }
     done.push("\u5b98\u5236\u6811");
     try{
-      var j5=JSON.parse(r5.replace(/```json|```/g,"").trim());
+      var j5=JSON.parse(_stripJsonFence(r5));
       if(Array.isArray(j5))j5.forEach(function(t){P.techTree.push({id:uid(),sid:sid,name:t.name||"",desc:t.desc||"",effect:t.effect||"",era:t.era||scn.era,prereqs:t.prereqs||[],costs:t.costs||{},unlocked:false});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 5 (techTree) parse failed:') : console.warn('Step 5 (techTree) parse failed:', e); }
     done.push("\u79d1\u6280\u6811");
     try{
-      var j6=JSON.parse(r6.replace(/```json|```/g,"").trim());
+      var j6=JSON.parse(_stripJsonFence(r6));
       if(Array.isArray(j6))j6.forEach(function(c){P.civicTree.push({id:uid(),sid:sid,name:c.name||"",desc:c.desc||"",effect:c.effect||"",era:c.era||scn.era,prereqs:c.prereqs||[],costs:c.costs||{},adopted:false});});
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 6 (civicTree) parse failed:') : console.warn('Step 6 (civicTree) parse failed:', e); }
     done.push("\u5e02\u653f\u6811");
     try{
-      var j7=JSON.parse(r7.replace(/```json|```/g,"").trim());
+      var j7=JSON.parse(_stripJsonFence(r7));
       ["troops","facilities","organization","campaigns"].forEach(function(k){
         if(j7[k]&&Array.isArray(j7[k]))j7[k].forEach(function(m){
           P.military[k].push({id:uid(),sid:sid,name:m.name||"",type:m.type||k,description:m.description||""});
@@ -1012,21 +1012,21 @@ async function execFullGen(){
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 7 (military) parse failed:') : console.warn('Step 7 (military) parse failed:', e); }
     done.push("\u519b\u4e8b\u4f53\u7cfb");
     try{
-      var j8=JSON.parse(r8.replace(/```json|```/g,"").trim());
+      var j8=JSON.parse(_stripJsonFence(r8));
       if(Array.isArray(j8))j8.forEach(function(fc){
         P.factions.push({id:uid(),sid:sid,name:fc.name||"",leader:fc.leader||"",desc:fc.desc||"",color:"#888",traits:[],strength:fc.strength||50,territory:"",ideology:fc.ideology||"",courtInfluence:fc.courtInfluence||50,popularInfluence:fc.popularInfluence||50});
       });
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 8 (factions) parse failed:') : console.warn('Step 8 (factions) parse failed:', e); }
     done.push("\u52bf\u529b\u6d3e\u7cfb");
     try{
-      var j9=JSON.parse(r9.replace(/```json|```/g,"").trim());
+      var j9=JSON.parse(_stripJsonFence(r9));
       if(Array.isArray(j9))j9.forEach(function(ev){
         P.events.push({id:uid(),sid:sid,name:ev.name||"",trigger:ev.trigger||"",effect:ev.effect||"",era:ev.era||scn.era,options:[],conditions:[],fired:false});
       });
     }catch(e){(window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'Step 9 (events) parse failed:') : console.warn('Step 9 (events) parse failed:', e); }
     done.push("\u5386\u53f2\u4e8b\u4ef6");
     try{
-      var j10=JSON.parse(r10.replace(/```json|```/g,"").trim());
+      var j10=JSON.parse(_stripJsonFence(r10));
       if(Array.isArray(j10))j10.forEach(function(it){
         if(!P.items)P.items=[];
         P.items.push({id:uid(),sid:sid,name:it.name||"",type:it.type||"",desc:it.desc||"",effect:it.effect||"",rarity:it.rarity||"common",owner:"",quantity:1});
@@ -1035,7 +1035,7 @@ async function execFullGen(){
     done.push("\u5386\u53f2\u7269\u54c1");
     // 3c \u00b7 \u73b0\u4ee3\u5316\uff1a\u793e\u4f1a\u9636\u5c42\u5165\u5e93(P.classes)
     try{
-      var j11=JSON.parse((r11||"").replace(/```json|```/g,"").trim());
+      var j11=JSON.parse(_stripJsonFence(r11||""));
       if(Array.isArray(j11))j11.forEach(function(cl){
         if(!P.classes)P.classes=[];
         P.classes.push({id:uid(),sid:sid,name:cl.name||"",desc:cl.desc||"",satisfaction:cl.satisfaction!=null?cl.satisfaction:50,influence:cl.influence!=null?cl.influence:40,population:cl.population||""});
@@ -1167,3 +1167,9 @@ GameHooks.on('backToLaunch:after', function() {
     if(desc){var sc=findScenarioById(GM.sid);desc.textContent=(sc?sc.name:"")+" T"+GM.turn+" "+getTSText(GM.turn);}
   }
 });
+
+// N4 nesting knife: single-point collapse of the fenced-JSON strip expression.
+// Byte-equivalent to the previous inline replace(...).trim() at every call site.
+function _stripJsonFence(s){
+  return s.replace(/```json|```/g,"").trim();
+}
