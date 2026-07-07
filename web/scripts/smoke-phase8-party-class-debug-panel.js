@@ -181,6 +181,7 @@ vm.createContext(sandbox);
 
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-class-minxin-bridge.js'), 'utf8'), sandbox, { filename: 'tm-class-minxin-bridge.js' });
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8'), sandbox, { filename: 'phase8-formal-rightrail.js' });
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail-social.js'), 'utf8'), sandbox, { filename: 'phase8-formal-rightrail-social.js' });
 
 assert(sandbox.TM.ClassMinxinBridge && typeof sandbox.TM.ClassMinxinBridge.diagnosticsText === 'function', 'ClassMinxinBridge should expose diagnosticsText for copy/debug');
 assert(bridge.rightrail && bridge.rightrail.renderers && typeof bridge.rightrail.renderers.pcdebug === 'function', 'right rail should export pcdebug renderer');

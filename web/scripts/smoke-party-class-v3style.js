@@ -82,7 +82,7 @@ console.log('— 曝光面(契约) —');
 var _aic = read('tm-endturn-ai-context.js');
 ok(/政柄=/.test(_aic), '党派数值行带政柄');
 ok(/运动:/.test(_aic) && /_politicalMovements/.test(_aic), '阶层正册带运动');
-var _rr = read('phase8-formal-rightrail.js');
+var _rr = read('phase8-formal-rightrail.js') + read('phase8-formal-rightrail-social.js');
 ok(/rightPartyStandingTag/.test(_rr) && /秉政/.test(_rr), 'UI 党派卡政柄徽');
 ok(/rightClassMovementChips/.test(_rr), 'UI 阶层详情运动 chips');
 var _cal2 = read('tm-party-class-llm-calibrator.js');

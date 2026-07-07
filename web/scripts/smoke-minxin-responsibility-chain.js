@@ -172,9 +172,9 @@ assert(index.indexOf('tm-minxin-commitment-tracker.js') < index.indexOf('tm-minx
 assert(index.indexOf('tm-minxin-responsibility-chain.js') < index.indexOf('tm-endturn-core.js'), 'responsibility chain should load before endturn core');
 assert(/MinxinResponsibilityChain\.tick/.test(src('tm-endturn-core.js')), 'endturn should tick responsibility chain');
 assert(/MinxinResponsibilityChain\.formatForPrompt/.test(src('tm-endturn-core.js')), 'endturn prompt should include responsibility chain');
-assert(/MinxinResponsibilityChain\.recordPlayerIntervention/.test(src('phase8-formal-rightrail.js')), 'wendui should feed responsibility intervention');
+assert(/MinxinResponsibilityChain\.recordPlayerIntervention/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'wendui should feed responsibility intervention');
 assert(/MinxinResponsibilityChain\.recordPlayerIntervention/.test(src('phase8-formal-drafts.js')), 'hongyan should feed responsibility intervention');
-assert(/Minxin Responsibility Chain/.test(src('phase8-formal-rightrail.js')), 'right rail debug should expose responsibility chain');
+assert(/Minxin Responsibility Chain/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'right rail debug should expose responsibility chain');
 assert(/_renderMinxinResponsibility/.test(src('tm-topbar-vars.js')), 'topbar minxin panel should expose responsibility chain');
 
 console.log('[smoke-minxin-responsibility-chain] PASS minxin responsibility chain');

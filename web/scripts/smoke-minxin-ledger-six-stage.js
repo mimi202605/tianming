@@ -137,7 +137,7 @@ assert(index.indexOf('tm-minxin-ledger.js') < index.indexOf('tm-authority-engine
 const authSource = fs.readFileSync(path.join(ROOT, 'tm-authority-engines.js'), 'utf8');
 assert(/TM\.MinxinLedger\.recordAndApply/.test(authSource), 'AuthorityEngines.adjustMinxin should route through MinxinLedger');
 
-const railSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8');
+const railSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail-social.js'), 'utf8');
 assert(/Minxin Ledger/.test(railSource), 'right rail debug panel should expose Minxin Ledger');
 
 const topbarSource = fs.readFileSync(path.join(ROOT, 'tm-topbar-vars.js'), 'utf8');

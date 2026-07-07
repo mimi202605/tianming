@@ -269,6 +269,7 @@ function load(file) {
   assert(/Canal Ward/.test(drawerHtml), 'minxin drawer should render affected region');
 
   load('phase8-formal-rightrail.js');
+  load('phase8-formal-rightrail-social.js');
   assert(bridgeShell.rightrail && bridgeShell.rightrail.renderers && typeof bridgeShell.rightrail.renderers.ol === 'function', 'right rail renderer should load');
   const rightHtml = bridgeShell.rightrail.renderers.ol();
   assert(!/阶层民心/.test(rightHtml), 'right rail card should not render class-minxin block inline');

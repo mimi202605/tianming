@@ -312,7 +312,7 @@ const endturnSource = fs.readFileSync(path.join(ROOT, 'tm-endturn-core.js'), 'ut
 assert(/ClassMinxinBridge\.formatForPrompt/.test(endturnSource), 'endturn prompt should include class-minxin bridge evidence');
 const drawerSource = fs.readFileSync(path.join(ROOT, 'tm-var-drawers.js'), 'utf8');
 assert(/_classMinxinBridgeLedger/.test(drawerSource) && /lastPressure/.test(drawerSource), 'minxin drawer should show class-minxin bridge near causes');
-const rightRailSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8');
+const rightRailSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail-social.js'), 'utf8');
 const classHeadMatch = rightRailSource.match(/function rightSocialClassHead[\s\S]*?function rightSocialClassDetail/);
 const classDetailMatch = rightRailSource.match(/function rightSocialClassDetail[\s\S]*?function renderRightClassPanel/);
 assert(classDetailMatch && /rightClassMinxinBridgeRows/.test(classDetailMatch[0]) && /minxin\.byClass/.test(rightRailSource), 'right rail class detail should show class-minxin bridge rows');

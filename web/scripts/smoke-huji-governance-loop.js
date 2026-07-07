@@ -198,7 +198,7 @@ assert(index.indexOf('tm-huji-governance-loop.js') < index.indexOf('tm-namespace
 assert(/HujiGovernanceLoop\.ingestPlayerSignals/.test(src('tm-endturn-core.js')), 'pre-submit should ingest governance signals');
 assert(/HujiGovernanceLoop\.formatForPrompt/.test(src('tm-endturn-core.js')), 'LLM prompt should include governance loop');
 assert(/HujiGovernanceLoop\.tick/.test(src('tm-endturn-systems.js')), 'turn systems should settle governance loop');
-assert(/Huji Governance Loop/.test(src('phase8-formal-rightrail.js')), 'right rail diagnostics should expose governance loop');
+assert(/Huji Governance Loop/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'right rail diagnostics should expose governance loop');
 assert(/_renderHujiGovernanceLoop/.test(src('tm-topbar-vars.js')), 'topbar hukou/minxin surfaces should expose governance loop');
 
 console.log('[smoke-huji-governance-loop] PASS huji governance loop');

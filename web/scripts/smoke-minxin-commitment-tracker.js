@@ -159,7 +159,7 @@ assert(index.indexOf('tm-minxin-commitment-tracker.js') < index.indexOf('tm-endt
 assert(/MinxinCommitmentTracker\.recordFromPressureResponse/.test(src('tm-minxin-pressure-actions.js')), 'pressure response should create commitments');
 assert(/MinxinCommitmentTracker\.tick/.test(src('tm-endturn-core.js')), 'endturn pre-submit should tick commitments');
 assert(/MinxinCommitmentTracker\.formatForPrompt/.test(src('tm-endturn-core.js')), 'endturn prompt should include commitments');
-assert(/Minxin Commitments/.test(src('phase8-formal-rightrail.js')), 'right rail debug should expose commitments');
+assert(/Minxin Commitments/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'right rail debug should expose commitments');
 assert(/_renderMinxinCommitments/.test(src('tm-topbar-vars.js')), 'topbar minxin panel should expose commitments');
 
 console.log('[smoke-minxin-commitment-tracker] PASS minxin governance commitment loop');

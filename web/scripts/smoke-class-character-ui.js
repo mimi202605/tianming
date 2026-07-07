@@ -189,6 +189,7 @@ function load(file) {
 }
 
 load('phase8-formal-rightrail.js');
+load('phase8-formal-rightrail-social.js');
 load('phase8-formal-modules.js');
 
 const bridge = sandbox.TMPhase8FormalBridge;

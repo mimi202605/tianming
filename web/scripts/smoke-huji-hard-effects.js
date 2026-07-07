@@ -194,7 +194,7 @@ assert(snap.hardEffects && snap.hardEffects.tinyi.created >= 3, 'snapshot should
 const src = name => fs.readFileSync(path.join(ROOT, name), 'utf8');
 assert(/HujiRuntimeBridge\.maintain\(GM/.test(src('tm-endturn-systems.js')), 'turn systems should call bridge maintain');
 assert(/HujiRuntimeBridge\.enforceAfterFiscalTick/.test(src('tm-endturn-systems.js')), 'turn systems should enforce bridge after guoku tick');
-assert(/hujiHardEffects/.test(src('phase8-formal-rightrail.js')), 'right rail should expose hard-effect diagnostics');
+assert(/hujiHardEffects/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'right rail should expose hard-effect diagnostics');
 assert(/hujiHardEffects/.test(src('tm-topbar-vars.js')), 'topbar should expose hard-effect diagnostics');
 
 console.log('[smoke-huji-hard-effects] PASS huji hard effects');

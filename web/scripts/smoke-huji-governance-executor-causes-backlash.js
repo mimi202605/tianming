@@ -164,7 +164,7 @@ assert(Loop.getCauseLedger(sandbox.GM, { limit: 20 }).items.some(x => x.type ===
 assert(sandbox.GM._socialPoliticalSignals.items.some(s => s.sourceSystem === 'huji-governance-backlash'), 'backlash should write social/political signal');
 
 const src = name => fs.readFileSync(path.join(ROOT, name), 'utf8');
-assert(/executorHolder|executorOffice/.test(src('phase8-formal-rightrail.js')), 'right rail should expose commitment executor');
+assert(/executorHolder|executorOffice/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'right rail should expose commitment executor');
 assert(/hujiGovernanceCauses/.test(src('tm-huji-governance-loop.js')), 'governance loop should prompt near causes');
 
 console.log('[smoke-huji-governance-executor-causes-backlash] PASS executor causes backlash');

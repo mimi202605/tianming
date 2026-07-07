@@ -156,7 +156,7 @@ assert(index.indexOf('tm-minxin-hard-links.js') < index.indexOf('tm-minxin-hard-
 assert(index.indexOf('tm-minxin-hard-link-consumers.js') < index.indexOf('tm-endturn-core.js'), 'consumers should load before endturn core');
 assert(/MinxinHardLinkConsumers\.consume/.test(src('tm-endturn-core.js')), 'endturn should consume hard links before LLM');
 assert(/MinxinHardLinkConsumers\.formatForPrompt/.test(src('tm-endturn-core.js')), 'endturn prompt should include consumers');
-assert(/Minxin Hard Link Consumers/.test(src('phase8-formal-rightrail.js')), 'right rail debug should expose consumers');
+assert(/Minxin Hard Link Consumers/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'right rail debug should expose consumers');
 assert(/_renderMinxinHardLinkConsumers/.test(src('tm-topbar-vars.js')), 'topbar minxin panel should expose consumers');
 
 console.log('[smoke-minxin-hard-link-consumers] PASS hard-link consumers');

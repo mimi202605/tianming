@@ -211,6 +211,7 @@ sandbox.document = {
 sandbox.window.document = sandbox.document;
 
 load('phase8-formal-rightrail.js');
+load('phase8-formal-rightrail-social.js');
 assert(bridge.rightrail && bridge.rightrail.renderers && typeof bridge.rightrail.renderers.ol === 'function', 'right rail outline renderer should load');
 
 let html = bridge.rightrail.renderers.ol();

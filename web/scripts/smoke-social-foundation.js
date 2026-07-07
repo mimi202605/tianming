@@ -182,8 +182,8 @@ srcHas('tm-endturn-prompt.js', /·议程:/, 'prompt：党派数值行带议程')
 srcHas('tm-endturn-apply.js', /_agendaTurn = GM\.turn/, 'apply：new_agenda 保鲜戳');
 srcHas('tm-endturn-apply.js', /_synced_influence = party\.influence/, 'apply：AI 写党势即时镜像 partyState');
 srcHas('tm-class-engine.js', /SF\.setAiDemand|setAiDemand === 'function'/, 'class-engine：new_demands 走议程槽');
-srcHas('phase8-formal-rightrail.js', /rightSatLedgerRows/, 'UI：满意近账');
-srcHas('phase8-formal-rightrail.js', /rightClassRegionRows/, 'UI：地域分账');
+srcHas('phase8-formal-rightrail-social.js', /rightSatLedgerRows/, 'UI：满意近账');
+srcHas('phase8-formal-rightrail-social.js', /rightClassRegionRows/, 'UI：地域分账');
 srcHas('tm-class-engine.js', /applyRegionalDelta/, 'class-engine：cc.region 指域转发');
 srcHas('tm-endturn-prompt.js', /最艰:/, 'prompt：正册带最艰地域');
 srcHas('tm-endturn-prompt.js', /party_relation_changes/, 'prompt：党派关系通道教学');
@@ -194,8 +194,8 @@ srcHas('phase8-formal-map.js', /localityLayer/, '军绑：聚落层名册');
 srcHas('phase8-formal-map.js', /regionHint/, '军绑：剧本 regionHint 扩展点');
 srcHas('phase8-formal-map.js', /分驻/, '军绑：散驻分摊');
 srcHas('scenarios/tianqi7-1627.js', /regionHint"?:\s*['"]北直隶['"]/, '剧本：京营/蓟州 regionHint');
-srcHas('phase8-formal-rightrail.js', /rightAgendaChips/, 'UI：议程条目徽');
-srcHas('phase8-formal-rightrail.js', /rightPartyLedgerRows/, 'UI：党势近账');
+srcHas('phase8-formal-rightrail-social.js', /rightAgendaChips/, 'UI：议程条目徽');
+srcHas('phase8-formal-rightrail-social.js', /rightPartyLedgerRows/, 'UI：党势近账');
 srcHas('phase8-formal-bridge.js', /tmrp-ledger-row/, 'CSS：近账行样式');
 
 console.log('\n[smoke-social-foundation] ' + (failed === 0 ? 'PASS' : 'FAIL') + ' — ' + passed + ' passed, ' + failed + ' failed');

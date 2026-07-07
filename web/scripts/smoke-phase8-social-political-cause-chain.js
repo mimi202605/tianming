@@ -183,6 +183,7 @@ assert(classCauses.some(c => c.sourceLabel === '玩家操作' && /memorial/i.tes
 assert(classCauses.some(c => /满意/.test(c.summary || '') && /诉求/.test(c.summary || '')), 'class cause summary should expose numeric and demand impact');
 
 load('phase8-formal-rightrail.js');
+load('phase8-formal-rightrail-social.js');
 assert(bridge.rightrail && bridge.rightrail.renderers && typeof bridge.rightrail.renderers.ol === 'function', 'right rail outline renderer should load');
 
 let html = bridge.rightrail.renderers.ol();
@@ -217,7 +218,7 @@ assert(!/data-relation-command=/.test(detailHtml), 'party detail should not expo
 visibleDetail = detailHtml.replace(/\sdata-[a-z0-9-]+="[^"]*"/gi, '');
 assert(!/player-action|memorial approval/.test(visibleDetail), 'party detail should not leak raw visible English signal text');
 
-const rightrailSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8');
+const rightrailSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail-social.js'), 'utf8');
 assert(/SocialPoliticalSignals\.getRecentCauses/.test(rightrailSource), 'right rail should call SocialPoliticalSignals.getRecentCauses');
 
 console.log('[smoke-phase8-social-political-cause-chain] PASS phase8 social/political cause chain');

@@ -144,6 +144,7 @@ vm.createContext(sandbox);
   };
 
   load(sandbox, 'phase8-formal-rightrail.js');
+  load(sandbox, 'phase8-formal-rightrail-social.js');
   assert(bridge.rightrail && bridge.rightrail.renderers && typeof bridge.rightrail.renderers.pcdebug === 'function', 'right rail should export pcdebug renderer');
 
   const html = bridge.rightrail.renderers.pcdebug();

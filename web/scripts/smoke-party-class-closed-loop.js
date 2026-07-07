@@ -332,6 +332,7 @@ function load(file) {
   assert(Array.isArray(sandbox.GM._courtRecords) && sandbox.GM._courtRecords.some(r => r && r.topic === queued.topic && r.sourceParty === 'Relief Party' && r.sourceClass === 'Farmers'), 'tinyi result should write a UI-readable court record for the cause chain');
 
   load('phase8-formal-rightrail.js');
+  load('phase8-formal-rightrail-social.js');
   assert(bridge.rightrail && bridge.rightrail.renderers && typeof bridge.rightrail.renderers.ol === 'function', 'right rail outline renderer should load');
   let html = bridge.rightrail.renderers.ol();
   assert(!/tmrp-social-chain/.test(html), 'class outline should not render social cause chain inline');

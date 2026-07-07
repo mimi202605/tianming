@@ -152,7 +152,7 @@ assert(index.indexOf('tm-minxin-responsibility-chain.js') < index.indexOf('tm-mi
 assert(index.indexOf('tm-minxin-hard-links.js') < index.indexOf('tm-endturn-core.js'), 'hard links should load before endturn core');
 assert(/MinxinHardLinks\.tick/.test(src('tm-endturn-core.js')), 'endturn should tick hard links before LLM');
 assert(/MinxinHardLinks\.formatForPrompt/.test(src('tm-endturn-core.js')), 'endturn prompt should include hard links');
-assert(/Minxin Hard Links/.test(src('phase8-formal-rightrail.js')), 'right rail debug should expose hard links');
+assert(/Minxin Hard Links/.test((src('phase8-formal-rightrail.js') + src('phase8-formal-rightrail-social.js'))), 'right rail debug should expose hard links');
 assert(/_renderMinxinHardLinks/.test(src('tm-topbar-vars.js')), 'topbar minxin panel should expose hard links');
 
 console.log('[smoke-minxin-hard-links] PASS minxin hard links');
