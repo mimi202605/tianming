@@ -890,8 +890,38 @@
       wrap.appendChild(np);
     }
 
-    // 8. 风闻坊录
+    // 8. 风闻坊录（第七轮E·2026-07-07·死壳聚合）：GM.rumors/_rumors 全库零写入端·坊录生来常空。
+    //   改读时聚合三活源（不新增写入端·不碰在飞 followup 文件·只读其落点子树）：
+    //   ①责任链坊间风闻(_minxinResponsibilityChain.rumors·有 text/severity 直用)
+    //   ②一级民变=流言(minxin.revolts level1·坊间口风)
+    //   ③AI 推演流言(_turnAiResults.subcall15n.extended.rumors·字符串切条)
+    //   GM.rumors 若真有人写（未来/模组）仍优先直用。
     var rumors = (GM.rumors||GM._rumors||[]).slice(0,4);
+    if (!rumors.length) {
+      var _rAgg = [];
+      try {
+        var _rcR = (GM._minxinResponsibilityChain && Array.isArray(GM._minxinResponsibilityChain.rumors)) ? GM._minxinResponsibilityChain.rumors : [];
+        _rcR.slice(-3).forEach(function (r) {
+          if (r && r.text) _rAgg.push({ text: r.text, credibility: r.severity === 'hot' ? '沸' : '中' });
+        });
+      } catch (_eR1) {}
+      try {
+        ((GM.minxin && GM.minxin.revolts) || []).forEach(function (r) {
+          if (!r || r._suppressed) return;
+          if ((Number(r.level) || 0) === 1) _rAgg.push({ text: '坊间传' + (r.region || '某地') + '有不稳之风，人心浮动', credibility: '低' });
+        });
+      } catch (_eR2) {}
+      try {
+        var _aiR = GM._turnAiResults && GM._turnAiResults.subcall15n && GM._turnAiResults.subcall15n.extended && GM._turnAiResults.subcall15n.extended.rumors;
+        if (typeof _aiR === 'string' && _aiR.trim()) {
+          _aiR.split(/[\n；;]/).map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 2)
+            .forEach(function (s) { _rAgg.push({ text: s.slice(0, 60), credibility: '风闻' }); });
+        } else if (Array.isArray(_aiR)) {
+          _aiR.slice(0, 2).forEach(function (s) { if (s) _rAgg.push({ text: String((s && s.text) || s).slice(0, 60), credibility: '风闻' }); });
+        }
+      } catch (_eR3) {}
+      rumors = _rAgg.slice(0, 4);
+    }
     if (rumors.length) {
       var rp = document.createElement('div');
       rp.className = 'gs-panel p-rumor';
