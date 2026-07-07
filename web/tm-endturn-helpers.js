@@ -616,12 +616,20 @@ function _consumeDynastyEndSignal() {
     fresh._shown = true;
     var t = fresh.type || fresh.reason || '';
     var title, desc;
-    if (t === 'dynasty_change') { title = '民变席卷 · 改朝换代'; desc = '烽火燎原，义军问鼎中原。旧朝天命已移，社稷倾覆。'; }
+    if (t === 'dynasty_change') {
+      // 真亡因(第七轮·2026-07-07)：信号已带 region/levelName/leader(tm-authority-complete 写)·
+      // 不再写死套话——亡在何省、何人举义、至何级，终局屏与太史公据实而书。旧信号无字段则回落通稿。
+      title = '民变席卷 · 改朝换代';
+      var _dcWhere = fresh.region ? '事起' + fresh.region + '，' : '';
+      var _dcWho = fresh.leader ? fresh.leader + '举义旗，' : '义军';
+      desc = '烽火燎原，' + _dcWhere + _dcWho + '问鼎中原。旧朝天命已移，社稷倾覆。';
+    }
     else if (t === 'usurped_by_power_minister' && fresh.innerCourt) { title = '内竖劫主 · 废立之变'; desc = (fresh.name ? fresh.name + ' ' : '') + '劫主废立，天子为傀儡，政令皆出私门——天命名存实亡。'; }
     else if (t === 'usurped_by_power_minister') { title = '权臣篡位 · 神器易主'; desc = (fresh.name ? fresh.name + ' ' : '') + '窃据大宝，禅代之局已成。'; }
     else if (t === 'dynasty_replaced_by_revolt') { title = '义军颠覆 · 鼎革之变'; desc = fresh.narrative || ((fresh.newDynasty || '新朝') + ' 立，旧朝祚终。'); }
     else { title = '天命已移'; desc = fresh.narrative || fresh.reason || '社稷倾覆，国祚告终。'; }
-    return { title: title, description: desc, _dynastyEnd: true, _signal: t };
+    return { title: title, description: desc, _dynastyEnd: true, _signal: t,
+      region: fresh.region || '', levelName: fresh.levelName || '', leader: fresh.leader || fresh.name || '' };
   } catch (e) { return null; }
 }
 
@@ -819,9 +827,19 @@ function _showEndgameScreen(type, failGoal) {
     var _deadCount = (GM.chars || []).filter(function(c) { return c.alive === false; }).length;
     var _warCount = (GM.evtLog || []).filter(function(e) { return /\u6218|\u5BA3\u6218/.test(e.text); }).length;
 
+    // \u771F\u4EA1\u56E0\u5165\u592A\u53F2\u516C\u8BC4\u8BED(\u7B2C\u4E03\u8F6E\u00B72026-07-07)\uFF1A\u7EC8\u5C40\u4FE1\u53F7\u5E26\u7684\u4EA1\u7701/\u4E3E\u4E49\u8005/\u4E71\u7EA7\u6B64\u524D\u4E0D\u8FDB prompt\u00B7\u8BC4\u8BED\u53EA\u77E5 title \u5957\u8BDD
+    var _fgDetail = '';
+    if (failGoal && failGoal._dynastyEnd) {
+      var _fgBits = [];
+      if (failGoal.region) _fgBits.push('\u4E8B\u8D77' + failGoal.region);
+      if (failGoal.leader) _fgBits.push(failGoal.leader + '\u4E3E\u4E49');
+      if (failGoal.levelName) _fgBits.push('\u4E71\u81F3\u300C' + failGoal.levelName + '\u300D');
+      if (_fgBits.length) _fgDetail = '\uFF08' + _fgBits.join('\u00B7') + '\uFF09';
+    }
+
     var prompt = '\u4F60\u662F\u592A\u53F2\u516C\u3002\u8BF7\u7528\u6587\u8A00\u6587\u8BC4\u4EF7\u8FD9\u4F4D\u541B\u4E3B\u7684\u529F\u8FC7\u3002' +
       '\u5728\u4F4D' + GM.turn + '\u56DE\u5408' + (sc ? '\uFF0C\u5267\u672C\uFF1A' + sc.name : '') + '\u3002' +
-      (isVictory ? '\u5B8C\u6210\u76EE\u6807\uFF1A' + completedGoals.map(function(g){return g.title||g.name;}).join('\u3001') : '\u5931\u8D25\uFF1A' + (failGoal ? failGoal.title || failGoal.name : '')) + '\u3002' +
+      (isVictory ? '\u5B8C\u6210\u76EE\u6807\uFF1A' + completedGoals.map(function(g){return g.title||g.name;}).join('\u3001') : '\u5931\u8D25\uFF1A' + (failGoal ? (failGoal.title || failGoal.name) + _fgDetail : '')) + '\u3002' +
       '\u6838\u5FC3\u6307\u6807\uFF1A' + _finalStats.join('\u3001') + '\u3002' +
       '\u6B7B\u4EA1' + _deadCount + '\u4EBA\uFF0C\u6218\u4E89\u4E8B\u4EF6' + _warCount + '\u6B21\u3002' +
       '\n\u8BF7\u5206\u4E09\u6BB5\u8BC4\u4EF7\uFF0C\u6BCF\u6BB5\u7528\u3010\u3011\u6807\u6CE8\u4E3B\u9898\uFF1A\n' +

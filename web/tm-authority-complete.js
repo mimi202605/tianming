@@ -356,7 +356,14 @@
             } else if (typeof global.GM.huangwei === 'object') global.GM.huangwei.index = Math.max(0, global.GM.huangwei.index - 8);
           }
           if (r.level === 5) {
-            global.GM._gameOver = { type: 'dynasty_change', revolt: r.id, turn: ctx.turn };
+            // 真亡因随信号走(第七轮·2026-07-07)：此前只带 type/revolt-id/turn·消费端(_consumeDynastyEndSignal)
+            // 拿不到亡在何省何级·终局屏与太史公评语只能写套话。region/level/levelName 皆 revolt 真数据。
+            global.GM._gameOver = {
+              type: 'dynasty_change', revolt: r.id, turn: ctx.turn,
+              region: r.region || '', level: r.level,
+              levelName: (REVOLT_LEVELS[r.level - 1] || {}).name || '',
+              leader: r.leader || r.leaderName || ''
+            };
             if (global.addEB) global.addEB('民变', '改朝换代！天命已移');
           }
         }
