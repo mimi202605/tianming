@@ -1928,3 +1928,72 @@ var HistoryIndex = {
 SettlementPipeline.register('historyIndex', '历史索引', function() {
   HistoryIndex.buildIndex();
 }, 91, 'perturn');
+
+// ───────────────────────────────────────────────────────────────
+// 事下有司·限期回奏（深挖第六轮①·2026-07-07·flag deptReplyEnabled 默认关）
+// 常朝「发部议」把事项交办承办衙门（tm-chaoyi-changchao.js 写 GM.deptTasks·dueIn:3/status:'pending'），
+// 此前全库无人查限期——只发不收，任务永远挂在常朝议程。此处补齐闭环：
+//   · dueIn 逐回合递减（常朝议程 dueIn<=1 的临期加权由此激活）；
+//   · 限满按衙门解析主官（findOfficeByFunction）具本回奏，入御案时政
+//     （GM.memorials 每回合被 genMemorialsAI 整批重生成·机械直推必被冲掉·故走 S2 密探回禀同款通道）；
+//   · 回奏语气取自真实衙门状况：主官虚悬→逾期未奏（可补官/申饬）·主官离心(loyalty<40)→敷衍塞责·否则办讫覆奏。
+function _tickDeptTasksReply() {
+  if (typeof P === 'undefined' || !P || !P.conf || P.conf.deptReplyEnabled !== true) return;
+  if (typeof GM === 'undefined' || !GM || !GM.running || !Array.isArray(GM.deptTasks) || GM.deptTasks.length === 0) return;
+  var turn = GM.turn || 0;
+  var replied = 0;
+  GM.deptTasks.forEach(function(t) {
+    if (!t || (t.status || 'pending') !== 'pending') return;
+    if (t._replyTickTurn === turn) return; // 同回合幂等·防结算重入
+    t._replyTickTurn = turn;
+    if (t.dueIn == null) t.dueIn = 3;
+    t.dueIn -= 1;
+    if (t.dueIn > 0) return;
+    if (replied >= 3) return; // 每回合至多回奏3件·防旧档积压齐爆（余者下回合续报）
+    replied++;
+    var off = null;
+    try { off = (typeof findOfficeByFunction === 'function') ? findOfficeByFunction(t.dept || '') : null; } catch (_) {}
+    var holder = off && off.holder ? String(off.holder) : '';
+    var deptName = (off && off.dept) || t.dept || '有司';
+    var offTitle = (off && off.official) ? off.official : '主官';
+    var taskName = t.task || '部议事项';
+    var brief = String(t.detail || '').slice(0, 60);
+    var title, desc;
+    if (!holder) {
+      t.status = 'overdue';
+      title = '有司逾期未奏 · ' + taskName;
+      desc = '前交' + deptName + '部议之「' + taskName + '」限期已满，而该衙门主官虚悬，竟无人具本回奏。部务积压若此，可补授主官，或下诏申饬督办。';
+    } else {
+      var ch = (typeof findCharByName === 'function') ? findCharByName(holder) : null;
+      var slack = !!(ch && typeof ch.loyalty === 'number' && ch.loyalty < 40);
+      t.status = 'replied';
+      if (slack) {
+        title = '有司回奏 · ' + taskName + '（辞气含混）';
+        desc = deptName + offTitle + holder + '就「' + taskName + '」具本回奏，然辞气含混，语多敷衍，所报难征。' + (brief ? '（原议：' + brief + '）' : '') + '若欲穷究其实，可下诏督办，或命科道核查。';
+      } else {
+        title = '有司回奏 · ' + taskName;
+        desc = deptName + offTitle + holder + '就「' + taskName + '」具本回奏：所议已按部议定，覆奏御前。' + (brief ? '（原议：' + brief + '）' : '');
+      }
+    }
+    t.repliedAtTurn = turn;
+    if (Array.isArray(GM.currentIssues)) {
+      GM.currentIssues.push({ // arch-ok: 有司回奏入御案时政·S2 密探回禀同款信息条(第六轮①·2026-07-07)
+        id: 'iss_deptreply_' + turn + '_' + replied,
+        title: title,
+        description: desc,
+        category: '部务', status: 'pending', raisedTurn: turn, _info: true, _deptReply: true
+      });
+    }
+    try { if (typeof addEB === 'function') addEB('部务', deptName + (holder ? offTitle + holder : '') + (t.status === 'overdue' ? '逾期未奏' : '限满回奏') + '「' + taskName + '」'); } catch (_) {}
+  });
+  // 台账瘦身：已结（replied/overdue）条目留 12 条备查·防无界增长（pending 一律保留）
+  var _closedIdx = [];
+  for (var _di = 0; _di < GM.deptTasks.length; _di++) {
+    var _dt = GM.deptTasks[_di];
+    if (_dt && _dt.status && _dt.status !== 'pending') _closedIdx.push(_di);
+  }
+  for (var _dj = 0; _dj < _closedIdx.length - 12; _dj++) {
+    GM.deptTasks.splice(_closedIdx[_dj] - _dj, 1); // arch-ok: 回奏闭环台账瘦身·deptTasks 写主(tm-chaoyi-changchao)之第二写点(第六轮①·2026-07-07)
+  }
+}
+SettlementPipeline.register('deptTasksReply', '部议限期回奏', function() { _tickDeptTasksReply(); }, 46, 'perturn');
