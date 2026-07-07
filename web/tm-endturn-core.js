@@ -497,24 +497,38 @@ async function _endTurnCore(){
     delete GM._turnAiResults;
   }
 
-  // 玩家角色死亡 → 显示游戏结束画面
+  // 玩家角色死亡 → 终局（鼎革R1e·2026-07-07·两套终局屏合一）：此前走简版「天命已尽」屏——
+  // 无太史公评语/指标回顾/时间轴。今统一走 _showEndgameScreen 富屏（与亡国/败局目标同屏·
+  // 「玩家死或亡国都走太史公」owner 裁定）。绝嗣才到此（有嗣已由 R1a 裁决器继统续玩不触 _playerDead）。
   if (GM._playerDead) {
     GM.busy = false;
     GM.running = false;
     var _pdName = P.playerInfo ? P.playerInfo.characterName : '玩家';
     var _pdReason = GM._playerDeathReason || '不明原因';
-    var _pdHtml = '<div style="text-align:center;padding:3rem 2rem;">';
-    _pdHtml += '<div style="font-size:2.5rem;color:var(--red,#c44);margin-bottom:1rem;">天命已尽</div>';
-    _pdHtml += '<div style="font-size:1.1rem;color:var(--txt-s);margin-bottom:0.5rem;">' + escHtml(_pdName) + ' 薨逝</div>';
-    _pdHtml += '<div style="font-size:0.9rem;color:var(--txt-d);margin-bottom:2rem;">' + escHtml(_pdReason) + '</div>';
-    _pdHtml += '<div style="font-size:0.85rem;color:var(--txt-d);margin-bottom:2rem;">历经 ' + GM.turn + ' 回合 · ' + getTSText(GM.turn) + '</div>';
-    _pdHtml += '<div style="display:flex;gap:1rem;justify-content:center;">';
-    _pdHtml += '<button class="bt bp" onclick="doSaveGame()">保存存档</button>';
-    _pdHtml += '<button class="bt bs" onclick="showMain()">返回主菜单</button>';
-    _pdHtml += '</div></div>';
-    showTurnResult(_pdHtml);
+    var _pdKind = GM._playerDeathKind || '';
     delete GM._playerDead;
     delete GM._playerDeathReason;
+    delete GM._playerDeathKind; // arch-ok: 终局信号消费即清·与上两行同席(写主=R1a 裁决器·此为唯一消费口·R1e)
+    if (typeof _showEndgameScreen === 'function') {
+      var _pdGoal = {
+        title: '天命已尽 · ' + _pdName + ({ battle: '崩于军中', regicide: '遇弑', narrative: '崩逝', natural: '崩逝' }[_pdKind] || '崩逝'),
+        description: _pdReason + '。国无嗣君，社稷无主，天命遂绝。',
+        _dynastyEnd: true, _signal: 'player_death', _deathKind: _pdKind
+      };
+      setTimeout(function () { _showEndgameScreen('defeat', _pdGoal); }, 400);
+    } else {
+      // 富屏缺位回落（沙箱/极端）：保留原简版屏
+      var _pdHtml = '<div style="text-align:center;padding:3rem 2rem;">';
+      _pdHtml += '<div style="font-size:2.5rem;color:var(--red,#c44);margin-bottom:1rem;">天命已尽</div>';
+      _pdHtml += '<div style="font-size:1.1rem;color:var(--txt-s);margin-bottom:0.5rem;">' + escHtml(_pdName) + ' 薨逝</div>';
+      _pdHtml += '<div style="font-size:0.9rem;color:var(--txt-d);margin-bottom:2rem;">' + escHtml(_pdReason) + '</div>';
+      _pdHtml += '<div style="font-size:0.85rem;color:var(--txt-d);margin-bottom:2rem;">历经 ' + GM.turn + ' 回合 · ' + getTSText(GM.turn) + '</div>';
+      _pdHtml += '<div style="display:flex;gap:1rem;justify-content:center;">';
+      _pdHtml += '<button class="bt bp" onclick="doSaveGame()">保存存档</button>';
+      _pdHtml += '<button class="bt bs" onclick="showMain()">返回主菜单</button>';
+      _pdHtml += '</div></div>';
+      showTurnResult(_pdHtml);
+    }
     return;
   }
 
