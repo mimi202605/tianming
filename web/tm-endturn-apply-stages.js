@@ -572,6 +572,27 @@
 inst._imprisonedTurn = GM.turn||0;
                   inst._imprisonReason = '谋逆事发·下诏狱待勘';
                 }
+                // 鼎革R1c(2026-07-07)：弑君得逞不再只记史册(勘察D静默杀漏洞②——AI 判 regicide
+                //   succeeded 此前只 push 一条史录·玩家角色照活照玩)。过 P-QAM 硬门的弑君是
+                //   「玩家角色被杀」这一具体事件：标死+走 R1a 裁决器(有储君继统续玩/绝嗣终局)。
+                //   palace_coup/coup_succeeded 得逞≠必弑君(废立/挟持)·归 R1d 废帝态·此处不越界。
+                if (!_qamGated && _action === 'regicide' && _outcome === 'succeeded') {
+                  var _pcName = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.characterName) || '';
+                  var _sov = (GM.chars || []).find(function (c) { return c && (c.isPlayer || (_pcName && c.name === _pcName)); });
+                  if (_sov && _sov.alive !== false && !_sov.dead) {
+                    _sov.alive = false;
+                    _sov.dead = true;
+                    _sov.deathTurn = GM.turn || 0;
+                    _sov.deathReason = '为' + (e.instigator || '逆党') + '所弑';
+                    if (typeof addEB === 'function') addEB('国变', (_sov.name || '天子') + '为' + (e.instigator || '逆党') + '所弑·大行崩逝，天下震动', { credibility: 'high' });
+                    if (typeof adjudicatePlayerDeath === 'function') {
+                      adjudicatePlayerDeath(_sov, '为' + (e.instigator || '逆党') + '所弑', { kind: 'regicide' });
+                    } else {
+                      GM._playerDead = true; // arch-ok: 裁决器缺位回落·宁终局勿尸政(R1c)
+                      GM._playerDeathReason = _sov.deathReason; // arch-ok: 同上
+                    }
+                  }
+                }
                 if (!GM.turnChanges) GM.turnChanges = {};
                 if (!GM.turnChanges.variables) GM.turnChanges.variables = [];
                 GM.turnChanges.variables.push({ path: '_conspiracies', label: '谋反·' + e.instigator + '·' + _action + '/' + _outcome, delta: 1, reason: e.reason || '一致性补录' });
