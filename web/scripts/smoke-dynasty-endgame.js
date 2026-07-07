@@ -89,7 +89,7 @@ ok(coreSrc.indexOf('_consumeDynastyEndSignal') >= 0, '⑩ endturn-core 已接消
 ok(/_showEndgameScreen\('defeat',\s*_dynEnd\)/.test(coreSrc), '⑩ 消费点复用 _showEndgameScreen(defeat)');
 const authSrc = fs.readFileSync(path.join(W, 'tm-authority-complete.js'), 'utf8');
 ok(authSrc.indexOf("type: 'dynasty_change', revolt: r.id") >= 0, '⑪ 民变5级写入点仍在(authority-complete·第七轮起多行带真亡因字段)');
-ok(authSrc.indexOf("type: 'usurped_by_power_minister'") >= 0, '⑪ 权臣篡位写入点仍在');
+ok(authSrc.indexOf('G._playerDeposed = {') >= 0 && authSrc.indexOf("type: 'usurped_by_power_minister'") < 0, '⑪ 权臣篡位已反转失位态(鼎革R1d·终局信号退役·消费分支留旧档兼容)');
 const applySrc = fs.readFileSync(path.join(W, 'tm-endturn-apply.js'), 'utf8');
 ok(applySrc.indexOf("_gameOverPending = { reason: 'dynasty_replaced_by_revolt'") >= 0, '⑪ 起义颠覆写入点仍在(endturn-apply)');
 

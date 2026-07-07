@@ -270,16 +270,34 @@
   function _powerMinisterEndgame(pm, mode, ctx) {
     var G = global.GM;
     if (mode === 'usurpation') {
-      // ★宦官专权 S2c·劫主废立（2026-07-06）：内竖终局与外朝篡位分流——内竖无以自立·挟幼主废立而令天下·
-      //   _gameOver 带 innerCourt 供终局屏具名消费（tm-endturn-helpers._consumeDynastyEndSignal 同步接）。
+      // ★宦官专权 S2c·劫主废立（2026-07-06）：内竖与外朝篡位分流·innerCourt 具名。
+      // 鼎革R1d（2026-07-07·owner 铁律「禅代不死则游戏未终」）：篡位/劫主废立不再是终局阈值弹屏——
+      //   玩家角色未被杀则游戏继续（CK3 化第一砖）：内竖=挟为傀儡（名义犹在位·政令出私门）·
+      //   外朝=禅代废帝（迁居别宫）。原 _gameOver 信号退役（helpers 消费分支留作旧档兼容）；
+      //   弑君才是终局事件·走 R1a 裁决器（R1c 已接·阴谋引擎/AI 仍可对废帝下手）。
+      //   数值面（皇权压5/皇威10/民心-30）照旧=巨变的真实代价。复辟线玩法为 CK3 阶段1 后续刀。
       var _pmInner = !!pm.innerCourt;
-      if (global.addEB) global.addEB('权臣', _pmInner ? (pm.name + ' 劫主废立！挟傀儡而令天下·天命名存实亡') : (pm.name + ' 篡位大逆！天命倾移'));
+      if (global.addEB) global.addEB('国变', _pmInner ? (pm.name + ' 劫主废立！挟傀儡而令天下·主上名存实亡') : (pm.name + ' 篡位夺鼎！禅代之局成·废帝迁居别宫'));
       if (typeof global.AuthorityEngines !== 'undefined' && global.AuthorityEngines.setHuangquan) {
         global.AuthorityEngines.setHuangquan(5, _pmInner ? '\u5185\u7ad6\u52ab\u4e3b\u5e9f\u7acb' : '\u6743\u81e3\u7be1\u4f4d', { source:'power-minister-usurpation' });
       } else if (typeof G.huangquan === 'object') G.huangquan.index = 5;
       if (typeof G.huangwei === 'object') G.huangwei.index = 10;
       if (typeof G.minxin === 'object') G.minxin.trueIndex = Math.max(0, G.minxin.trueIndex - 30);
-      G._gameOver = { type: 'usurped_by_power_minister', name: pm.name, turn: ctx.turn, innerCourt: _pmInner };
+      var _pdName = (typeof global.P !== 'undefined' && global.P && global.P.playerInfo && global.P.playerInfo.characterName) || '';
+      var _pdSov = (G.chars || []).find(function (c) { return c && (c.isPlayer || (_pdName && c.name === _pdName)); });
+      if (_pdSov) {
+        if (_pmInner) _pdSov._puppet = true;
+        else { _pdSov._deposed = true; _pdSov._deposedTurn = ctx.turn; }
+      }
+      G._playerDeposed = { by: pm.name, mode: _pmInner ? 'puppet' : 'deposed', turn: ctx.turn, innerCourt: _pmInner }; // arch-ok: 失位态全局信号·R1d 新子树(复辟/摄政后续刀读)
+      if (Array.isArray(G.currentIssues)) {
+        G.currentIssues.push({ // arch-ok: 国变告警入御案时政·信息条(R1d)
+          id: 'iss_deposed_' + ctx.turn,
+          title: _pmInner ? '主上蒙尘 · 政出私门' : '禅代之变 · 废居别宫',
+          description: (_pdSov && _pdSov.name ? _pdSov.name : '主上') + (_pmInner ? ('为' + pm.name + '所挟，名为天子实同傀儡，诏令皆出私门。') : ('为' + pm.name + '所废，禅代之局已成，迁居别宫。')) + '身犹存则志不可夺——潜结忠义，待时而动，社稷未必无光复之日。',
+          category: '国变', status: 'pending', raisedTurn: ctx.turn, _info: true, _deposed: true
+        });
+      }
     } else if (mode === 'purged') {
       // ★S2c·籍没追赃：诛权臣抄其家·内竖截留内帑者追回六成（走 NeitangEngine.Actions.recordConfiscation
       //   现成抄家入口·写账留在内帑引擎）——闭合「寄生累账→诛除追赃」环。

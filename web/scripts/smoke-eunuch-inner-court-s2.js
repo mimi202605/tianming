@@ -121,11 +121,11 @@ console.log('— §c · 劫主废立+籍没追赃 —');
   }
   var a = mk();
   a.ctx._powerMinisterEndgame({ name: '某珰', innerCourt: true, controlLevel: 0.95 }, 'usurpation', { turn: 20 });
-  ok(a.log.ebs[0].indexOf('劫主废立') >= 0 && a.G._gameOver.innerCourt === true, '内竖终局=劫主废立·信号带 innerCourt');
+  ok(a.log.ebs[0].indexOf('劫主废立') >= 0 && !a.G._gameOver && a.G._playerDeposed && a.G._playerDeposed.mode === 'puppet', '内竖劫主=傀儡态(鼎革R1d·终局信号退役·游戏未终)');
   ok(a.log.hq === '内竖劫主废立', 'setHuangquan 事由分流');
   var b = mk();
   b.ctx._powerMinisterEndgame({ name: '外相', innerCourt: false, controlLevel: 0.95 }, 'usurpation', { turn: 20 });
-  ok(b.log.ebs[0].indexOf('篡位大逆') >= 0 && b.G._gameOver.innerCourt === false, '外朝终局仍=篡位（零回归）');
+  ok(b.log.ebs[0].indexOf('篡位夺鼎') >= 0 && !b.G._gameOver && b.G._playerDeposed && b.G._playerDeposed.mode === 'deposed', '外朝篡位=禅代废帝态(R1d·owner「禅代不死游戏未终」)');
   var c = mk();
   c.ctx._powerMinisterEndgame({ name: '某珰', innerCourt: true, embezzled: 10000 }, 'purged', { turn: 20 });
   ok(c.log.confiscated === 6000 && c.log.purged === '某珰' && c.G.huangquan.powerMinister === null, '诛除→籍没追赃六成(10000→6000)·走 recordConfiscation');
