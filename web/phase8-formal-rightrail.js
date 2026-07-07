@@ -903,6 +903,10 @@
     if (money != null && money < 200000) factors.push({ name:'度支', sev: Math.min(100, Math.round((200000-money)/200000*100)), note: '库银 ' + rightArmyFmtNum(Math.max(0,money)) + '·度支将竭' });
     var mx = (G.minxin && typeof G.minxin.trueIndex === 'number') ? G.minxin.trueIndex : null;
     if (mx != null && mx < 40) factors.push({ name:'民心', sev: Math.min(100, Math.round((40-mx)/40*100)), note: '民心 ' + Math.round(mx) + '·离心' });
+    // D4 补权臣因子(第七轮B·2026-07-07)：篡位死因链此前卡上只读皇权指数不读 controlLevel——权柄将逾而皇权未低时全无预警。
+    var pm = (G.huangquan && G.huangquan.powerMinister) || null;
+    var cl = pm ? (Number(pm.controlLevel) || 0) : 0;
+    if (pm && cl > 0.75) factors.push({ name:'权臣', sev: Math.min(100, Math.round((cl - 0.5) * 160)), note: (pm.name || '权臣') + '权柄' + Math.round(cl * 100) + '分·柄移私门' });
     if (!factors.length) return '';
     factors.sort(function(a,b){ return b.sev - a.sev; });
     var rest = factors.slice(1).reduce(function(s,f){ return s + f.sev; }, 0);
@@ -911,10 +915,21 @@
     var tier = null; for (var i=0;i<TIERS.length;i++){ if (prox >= TIERS[i][0]) { tier = TIERS[i]; break; } }
     var tierName = tier[1], tierColor = tier[2], barW = Math.max(3, prox);
     var levers = factors.slice(0,3).map(function(f){ return '<div class="tmrp-step"><b>' + esc(f.name) + '</b>' + esc(f.note) + '</div>'; }).join('');
+    // D4 一步之遥(第七轮B)：三处终局临界此前全静默骰点(民变4→5/篡位 cl>0.9/流寇建制)——可升级而未骰中·
+    //   玩家全然不知有多险。此处读侧具名告警(带省份/权臣名/巨寇名真数据)·纯读零改判定逻辑·守「失败可读性图层」铁律。
+    var junctures = [];
+    if (maxLv >= 4) {
+      var _lv4regs = revolts.filter(function(r){ return (Number(r.level)||0) >= 4; }).map(function(r){ return r.region || '某地'; }).slice(0, 2).join('、');
+      junctures.push('民变已至「起义」' + (_lv4regs ? '（' + _lv4regs + '）' : '') + '·距改朝只欠一线——剿抚迟则天命移');
+    }
+    if (pm && cl > 0.9) junctures.push((pm.name || '权臣') + '权柄已逾九分·距废立篡夺只欠一线——制衡迟则神器易主');
+    var _builtRebs = (Array.isArray(G._activeRevolts) ? G._activeRevolts : []).filter(function(r){ return r && r.organizationType === 'builtState'; });
+    if (_builtRebs.length) junctures.push((_builtRebs[0].leaderName || _builtRebs[0].name || '巨寇') + '已成建制立国之势·问鼎只在旦夕');
+    var juncHtml = junctures.slice(0, 3).map(function(t){ return '<div class="tmrp-step" style="color:#c9645a;"><b>一步之遥</b>' + esc(t) + '</div>'; }).join('');
     return '<section class="tmrp-card hot"><div class="tmrp-card-title"><span>国祚 · ' + esc(tierName) + '</span><small>王朝崩坏临近度·唯延缓·不可逆</small></div>' +
       '<div style="margin:2px 0 7px;"><div style="height:9px;border-radius:5px;background:rgba(0,0,0,.22);overflow:hidden;"><div style="height:100%;width:' + barW + '%;background:' + tierColor + ';"></div></div>' +
       '<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--txt-d);margin-top:2px;"><span>崩坏临近度</span><span style="color:' + tierColor + ';font-weight:600;">' + prox + ' / 100 · ' + esc(tierName) + '</span></div></div>' +
-      levers + '</section>';
+      juncHtml + levers + '</section>';
   }
 
   // 武库卡:国家军备库存(5类)+ 原料库(4类)+ 本回合产/耗(接军工供应链 S6)
