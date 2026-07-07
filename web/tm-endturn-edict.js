@@ -170,6 +170,15 @@ function extractEdictActions(edictText) {
     actions.pardons[0].restore = true;
   }
 
+  // ═══ 大赦天下·全域赦语（第七轮G·2026-07-07·flag massAmnestyEnabled 默认关）═══
+  //   「大赦」早是 EDICT_TYPE(恩诏·immediate·囚犯+30 阈值档)·个体赦免也刻意排除"天下"当人——
+  //   但群体放归通道全库没有：下「大赦天下」除阈值档外一个囚犯放不出=高可见空转。
+  //   识别须带天下/海内之属的全域语(个体点名赦免走上面 pardons 不受此扰)·否定门不误执行。
+  if (/(大赦|恩赦|肆赦)(天下|海内|中外|四海|寰宇)/.test(text) &&
+      !/(不|毋|勿|莫|非|不得|不可|不宜|岂可|岂能|无庸|安可|何以|妄言|妄议)[^。；！？]{0,8}(大赦|恩赦|肆赦)/.test(text)) {
+    actions.massAmnesty = { scope: 'realm' };
+  }
+
   // ═══ 赏赐/犒赏/封赏/加俸 模式（玩家亲自施恩·确定性抬该员 loyalty+affinity·不靠 AI 心情）═══
   //   动词避开"赐死/赐自尽"等致死语(那是 deaths)·只认明确的恩赏词；名靠 knownChars salvage 兜回主名
   var rewardVerbs = '(?:犒赏|犒劳|犒军|赏赐|赐赏|颁赏|封赏|加俸|增俸|厚俸|进秩|进阶|加衔|加官进爵|恩赏|厚赏|优叙|嘉奖|褒奖|嘉勉|赉|赍)';
@@ -633,6 +642,34 @@ function applyEdictActions(actions) {
     if (typeof addEB === 'function') addEB('人事', a.character + '·' + char._releaseReason + (_restoredTitle ? '（复任' + _restoredTitle + '）' : ''), { credibility: 'high' });
     if (typeof AffinityMap !== 'undefined') { try { AffinityMap.add(a.character, P.playerInfo.characterName || '玩家', 12, a.restore ? '被起复复职·感恩' : '蒙赦释放·感恩'); } catch(_afE){} }
   });
+  // 大赦天下·群体放归（第七轮G·flag massAmnestyEnabled 默认关·个体赦免不受此闸影响）
+  //   在押人犯尽数放归田里(不复官·与个体"起复"有别)·谋逆/通敌/已定罪逆党十恶不赦·
+  //   蒙赦者感念·恩诏入编年+御案时政。数值面不另写(EDICT_TYPE 恩诏的阈值档既有机制照走)。
+  if (actions.massAmnesty && typeof P !== 'undefined' && P && P.conf && P.conf.massAmnestyEnabled === true) {
+    var _amReleased = [], _amHeld = [];
+    (GM.chars || []).forEach(function(ch) {
+      if (!ch || ch.alive === false || ch._imprisoned !== true) return;
+      var _amWhy = String(ch._imprisonReason || '');
+      if (ch._conspiracyConvicted || /谋逆|弑|篡|逆案|通敌|叛/.test(_amWhy)) { _amHeld.push(ch.name); return; }
+      ch._imprisoned = false; ch.imprisoned = false; ch._inPrison = false;
+      ch._releasedTurn = GM.turn;
+      ch._recalledTurn = GM.turn;
+      ch._releaseReason = '恩诏大赦·放归田里';
+      if (!ch.careerHistory) ch.careerHistory = [];
+      ch.careerHistory.push({ turn: GM.turn, event: '蒙恩诏大赦放归' });
+      if (typeof AffinityMap !== 'undefined') { try { AffinityMap.add(ch.name, P.playerInfo.characterName || '玩家', 8, '蒙大赦放归·感恩'); } catch(_amAf){} }
+      _amReleased.push(ch.name);
+    });
+    if (typeof addEB === 'function') addEB('恩诏', '大赦天下：放归' + _amReleased.length + '人' + (_amHeld.length ? '·谋逆重犯' + _amHeld.length + '人不在赦列' : ''), { credibility: 'high' });
+    if (Array.isArray(GM.currentIssues)) {
+      GM.currentIssues.push({ // arch-ok: 恩诏昭告入御案时政·S2 密探回禀同款信息条(第七轮G·2026-07-07)
+        id: 'iss_amnesty_' + GM.turn,
+        title: '恩诏大赦 · 与民更始',
+        description: '大赦恩诏颁行天下' + (_amReleased.length ? '，' + _amReleased.slice(0, 4).join('、') + (_amReleased.length > 4 ? '等' : '') + '凡' + _amReleased.length + '人放归田里' : '，然狱中无可赦之囚') + (_amHeld.length ? '；' + _amHeld.slice(0, 2).join('、') + (_amHeld.length > 2 ? '等' : '') + '坐谋逆通敌，不在赦列' : '') + '。四方观德，狱空为瑞。',
+        category: '刑名', status: 'pending', raisedTurn: GM.turn, _info: true, _amnesty: true
+      });
+    }
+  }
   // 赐死
   actions.deaths.forEach(function(a) {
     var char = findCharByName(a.character);
