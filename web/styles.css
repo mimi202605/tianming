@@ -3336,8 +3336,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;o
 .tr-cg-vals .delta.up{color:var(--celadon-400);background:rgba(106,154,127,0.1);border:1px solid var(--celadon-400);}
 .tr-cg-vals .delta.dn{color:var(--vermillion-400);background:rgba(192,64,48,0.1);border:1px solid var(--vermillion-400);}
 .tr-cg-vals .delta.flat{color:var(--ink-300,#6b5d47);background:rgba(107,93,71,0.08);border:1px solid var(--ink-300,#6b5d47);}
-.tr-cg-vals .delta.up::before{content:"▲ ";font-size:9px;}
-.tr-cg-vals .delta.dn::before{content:"▼ ";font-size:9px;}
+/* 2026-07-06 去符号图标：涨跌由 +/− 号与配色承担·▲▼ 前缀退役 */
 .tr-cg-reasons{font-size:15.5px;color:var(--color-foreground-muted);font-family:var(--font-serif);line-height:1.6;letter-spacing:0.02em;display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
 .tr-reason-chip{display:inline-flex;align-items:center;gap:3px;font-size:14.5px;padding:1px 7px;border-radius:2px;font-family:var(--font-serif);letter-spacing:0.05em;border:1px solid var(--r-c,var(--gold-d));color:var(--r-c,var(--gold-400));background:rgba(var(--r-rgb,184,154,83),0.05);white-space:nowrap;}
 .tr-reason-chip.pos{--r-c:var(--celadon-400);--r-rgb:106,154,127;}
@@ -3432,7 +3431,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;o
 .tr-critical-tag.scheme{--tag-color:var(--indigo-400,#5a6fa8);--tag-rgb:90,111,168;}
 .tr-critical-tag.faction{--tag-color:var(--purple-400,#8e6aa8);--tag-rgb:142,106,168;}
 .tr-critical-tag.calamity{--tag-color:var(--amber-400,#c9a045);--tag-rgb:201,160,69;}
-.tr-critical-tag::before{content:"◆";font-size:13px;opacity:0.7;}
+.tr-critical-tag::before{content:"";width:5px;height:5px;background:currentColor;border-radius:1px;display:inline-block;opacity:0.7;}
 
 /* 主体 */
 .tr-body-wrap{flex:1;overflow-y:auto;padding:18px 28px 16px;}
@@ -3513,6 +3512,327 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;o
 .tr-btn.primary{background:linear-gradient(to bottom,var(--vermillion-400),var(--vermillion-600,#8f3428));color:#f4eadd;border:1px solid var(--vermillion-600,#8f3428);padding:8px 28px;font-size:14px;letter-spacing:0.4em;box-shadow:0 1px 3px rgba(140,40,30,0.4),inset 0 1px 0 rgba(255,255,255,0.1);}
 .tr-btn.primary:hover{background:linear-gradient(to bottom,var(--vermillion-400),var(--vermillion-400));box-shadow:0 2px 6px rgba(140,40,30,0.5);}
 .tr-btn.primary::before{content:"❖";margin-right:6px;opacity:0.75;}
+
+/* ═════════ 史记弹窗·御览分卷（.sjc-*·2026-07-06 重做）═════════
+   旧结构类（.tr-detail-toggle/.turn-section 等）保留——旧存档 html 历史回放仍走旧类。
+   新结构：.sjc-frame = 左卷目(spine) + 右卷体(pages)·默认落总览卷。 */
+.tr-body-wrap:has(> .sjc-frame){overflow:hidden;padding:0;}
+.sjc-frame{display:flex;height:100%;min-height:0;position:relative;}
+/* 弹窗开卷入场（wrap 级·一次编排·reduced-motion 关） */
+.turn-modal.show .tr-modal-wrap{animation:sjcWrapIn 0.32s cubic-bezier(0.22,0.8,0.3,1);}
+@keyframes sjcWrapIn{from{opacity:0;transform:translateY(14px) scale(0.988);}to{opacity:1;transform:none;}}
+/* 卷目——古籍函套题签形制：窄栏竖排签条·字印居顶·卷名竖读·计数坠底 */
+.sjc-spine{display:flex;flex-direction:column;gap:5px;padding:46px 10px 10px 12px;border-right:1px solid var(--color-border-subtle);background:linear-gradient(to right,rgba(0,0,0,0.22),rgba(0,0,0,0.06));flex-shrink:0;width:86px;position:sticky;top:0;align-self:flex-start;max-height:100%;overflow-y:auto;align-items:center;}
+.sjc-tab{display:flex;flex-direction:column;align-items:center;gap:4px;width:56px;padding:5px 0 5px;background:linear-gradient(to bottom,rgba(184,154,83,0.07),rgba(184,154,83,0.02));border:1px solid var(--color-border-subtle);border-top:3px solid rgba(107,90,48,0.4);border-radius:0 0 2px 2px;cursor:pointer;font-family:var(--font-serif);color:var(--color-foreground-secondary);transition:all 0.18s;position:relative;}
+.sjc-tab:hover{background:linear-gradient(to bottom,rgba(184,154,83,0.14),rgba(184,154,83,0.04));border-color:var(--gold-d);border-top-color:var(--gold-d);color:var(--gold-300,#c9a85f);}
+.sjc-tab.on{background:linear-gradient(to bottom,rgba(184,154,83,0.2),rgba(184,154,83,0.05));border-color:var(--gold-400);border-top-color:var(--vermillion-400);color:var(--gold-300,#c9a85f);box-shadow:0 2px 10px rgba(0,0,0,0.35),inset 0 0 14px rgba(184,154,83,0.07);}
+.sjc-tab.hollow{opacity:0.42;}
+.sjc-tab.hollow:hover{opacity:0.8;}
+.sjc-tab-g{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,rgba(184,154,83,0.35),rgba(61,52,42,0.9));border:1px solid var(--gold-d);color:#f4eadd;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-serif);position:relative;}
+.sjc-tab.on .sjc-tab-g{background:radial-gradient(circle at 35% 35%,rgba(192,64,48,0.9),rgba(140,40,30,0.85));border-color:var(--vermillion-400);box-shadow:0 1px 4px rgba(140,40,30,0.5);}
+.sjc-tab-t{writing-mode:vertical-rl;font-size:14px;letter-spacing:0.22em;line-height:1;white-space:nowrap;padding:1px 0;}
+/* 计数改印章右上角标（竖签空间金贵·徽章不再占纵向格） */
+.sjc-tab-n{position:absolute;top:2px;right:3px;font-size:10.5px;color:var(--ink-300,#9d917d);background:rgba(20,16,12,0.92);border:1px solid var(--color-border-subtle);border-radius:7px;padding:0 4px;line-height:12px;}
+.sjc-tab.on .sjc-tab-n{color:var(--gold-400);border-color:var(--gold-d);}
+.sjc-tab.alert::after{content:"";position:absolute;top:-2px;left:-2px;width:8px;height:8px;border-radius:50%;background:var(--vermillion-400);box-shadow:0 0 6px rgba(192,64,48,0.8);}
+/* 骑缝章——盖在卷目与卷体接缝顶端（封口之制·签名元素）·印面右起竖读「天命史宝」 */
+.sjc-seam-seal{position:absolute;left:56px;top:8px;transform:rotate(-7deg);width:46px;height:46px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;place-items:center;background:linear-gradient(145deg,rgba(178,52,40,0.92),rgba(126,32,26,0.9));border:1px solid rgba(240,200,160,0.35);border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,0.5),inset 0 0 8px rgba(255,220,190,0.14);color:#f6e8d4;font-family:var(--font-serif);font-size:14.5px;font-weight:700;line-height:1;z-index:4;pointer-events:none;opacity:0.9;}
+.sjc-seam-seal span{transform:rotate(0.5deg);}
+/* 卷体 */
+.sjc-pages{flex:1;min-width:0;overflow-y:auto;padding:18px 26px 20px;}
+.sjc-vol{display:none;position:relative;}
+.sjc-vol.on{display:block;animation:sjcVolIn 0.22s ease;}
+/* 卷首巨字水印（描边淡显·同过回合加载层 v3 阶段水印手法） */
+.sjc-vol::before{content:attr(data-glyph);position:absolute;top:-38px;right:-6px;font-family:var(--font-serif);font-size:210px;font-weight:700;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(201,168,95,0.075);pointer-events:none;user-select:none;z-index:0;}
+.sjc-vol>*{position:relative;z-index:1;}
+@keyframes sjcVolIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+@media (prefers-reduced-motion: reduce){.sjc-vol.on{animation:none;}.turn-modal.show .tr-modal-wrap{animation:none;}}
+/* 空态 */
+.sjc-empty{text-align:center;padding:64px 20px;color:var(--ink-300,#9d917d);}
+.sjc-empty-glyph{font-size:28px;color:var(--gold-d);opacity:0.5;margin-bottom:14px;}
+.sjc-empty-line{font-family:var(--font-serif);font-size:16px;letter-spacing:0.3em;color:var(--color-foreground-secondary);}
+.sjc-empty-sub{font-size:13px;font-style:italic;margin-top:8px;letter-spacing:0.12em;}
+/* 单字印 */
+.sjc-glyph{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:2px;background:rgba(184,154,83,0.18);border:1px solid var(--gold-d);color:var(--gold-300,#c9a85f);font-size:12px;font-family:var(--font-serif);vertical-align:-3px;margin-right:2px;}
+/* 总览卷·头版制大题（szjTitle 升头版·楷体大字） */
+.sjc-ov-head{text-align:center;padding:10px 0 18px;position:relative;}
+.sjc-ov-head::after{content:"";position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:220px;height:1px;background:linear-gradient(to right,transparent,var(--gold-400),transparent);}
+.sjc-ov-title{font-family:var(--font-serif);font-size:clamp(30px,3.2vw,44px);font-weight:700;letter-spacing:0.22em;line-height:1.25;color:transparent;background:linear-gradient(180deg,#f0dca6 0%,#d4be7a 45%,#9a7a35 85%,#e8d49a 100%);-webkit-background-clip:text;background-clip:text;text-shadow:0 10px 30px rgba(0,0,0,0.4);}
+.sjc-ov-subtitle{margin-top:10px;font-family:var(--font-serif);font-size:14px;color:var(--color-foreground-muted);font-style:italic;letter-spacing:0.28em;}
+.sjc-ov-subtitle::before,.sjc-ov-subtitle::after{content:"·";color:var(--gold-d);margin:0 10px;}
+/* 总览卷·国势水位（核心指标条+前值刻度+近势 spark） */
+.sjc-core-bars{display:flex;flex-direction:column;gap:8px;}
+.sjc-core-row{display:grid;grid-template-columns:3.2em minmax(0,1fr) 2.4em 2.8em 78px;align-items:center;gap:10px;padding:5px 10px;background:rgba(0,0,0,0.14);border:1px solid var(--color-border-subtle);border-radius:2px;}
+.sjc-core-row .n{font-family:var(--font-serif);font-size:13.5px;letter-spacing:0.12em;color:var(--color-foreground-secondary);white-space:nowrap;}
+.sjc-core-row .track{position:relative;height:9px;background:rgba(0,0,0,0.32);border:1px solid rgba(107,93,71,0.35);border-radius:1px;overflow:visible;}
+/* 空槽用同 hue 浅档（dataviz meter 规格：state reads across whole bar·:has 不支持时回落上行黑槽） */
+.sjc-core-row .track:has(.fill.high){background:rgba(106,154,127,0.12);}
+.sjc-core-row .track:has(.fill.mid){background:rgba(184,154,83,0.12);}
+.sjc-core-row .track:has(.fill.low){background:rgba(192,64,48,0.12);}
+.sjc-ef-dim .bar:has(.fill.good){background:rgba(106,154,127,0.12);}
+.sjc-ef-dim .bar:has(.fill.mid){background:rgba(184,154,83,0.12);}
+.sjc-ef-dim .bar:has(.fill.bad){background:rgba(192,64,48,0.12);}
+/* 战役时间线（sjc 卷内增强）：点带 2px 底色环·底衬 hairline 时间线·对齐修正 */
+.sjc-vol .battle-timeline-track{position:relative;padding:4px 0;gap:8px;}
+.sjc-vol .battle-timeline-track::before{content:"";position:absolute;left:2px;right:2px;top:50%;height:1px;background:rgba(107,93,71,0.4);}
+.sjc-vol .timeline-dot{margin-top:0;position:relative;box-shadow:0 0 0 2px var(--color-surface,#2a2218);}
+.sjc-core-row .fill{height:100%;border-radius:1px;transition:width 0.5s ease;}
+.sjc-core-row .fill.high{background:linear-gradient(to right,rgba(106,154,127,0.4),var(--celadon-400));}
+.sjc-core-row .fill.mid{background:linear-gradient(to right,rgba(184,154,83,0.35),var(--gold-400));}
+.sjc-core-row .fill.low{background:linear-gradient(to right,rgba(192,64,48,0.4),var(--vermillion-400));}
+.sjc-core-row .tick{position:absolute;top:-3px;bottom:-3px;width:1.5px;background:rgba(244,234,221,0.65);box-shadow:0 0 3px rgba(0,0,0,0.8);}
+.sjc-core-row .v{font-family:var(--font-serif);font-size:16px;font-weight:700;color:var(--color-foreground);text-align:right;font-feature-settings:"tnum";}
+.sjc-core-row .d{font-size:12.5px;text-align:left;font-family:var(--font-serif);}
+.sjc-core-row .d.good{color:var(--celadon-400);}
+.sjc-core-row .d.bad{color:var(--vermillion-400);}
+.sjc-core-row .d.flat{color:var(--ink-300,#6b5d47);opacity:0.6;}
+.sjc-spark{display:block;justify-self:end;opacity:0.9;}
+/* 卷首行（非总览卷开卷仪式：卷之N·卷名大字·装裱线·提要注） */
+.sjc-vol-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;padding:0 0 10px 24px;position:relative;}
+.sjc-vol-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(to right,var(--gold-400) 0,rgba(184,154,83,0.35) 30%,transparent 90%);}
+.sjc-vol-head .vh-no{font-family:var(--font-serif);font-size:13px;color:var(--gold-d);letter-spacing:0.3em;white-space:nowrap;}
+.sjc-vol-head .vh-name{font-family:var(--font-serif);font-size:26px;font-weight:700;letter-spacing:0.4em;color:var(--gold-300,#c9a85f);line-height:1;white-space:nowrap;text-shadow:0 0 18px rgba(201,168,95,0.2);}
+.sjc-vol-head .vh-rule{flex:1;}
+.sjc-vol-head .vh-note{font-size:12.5px;color:var(--ink-300,#9d917d);font-style:italic;letter-spacing:0.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%;}
+/* 开卷编排：卷内容依次浮现（transform/opacity only·前八子元素 stagger） */
+.sjc-vol.on>*{animation:sjcRise 0.32s cubic-bezier(0.22,0.8,0.3,1) both;}
+.sjc-vol.on>*:nth-child(1){animation-delay:0.02s;}
+.sjc-vol.on>*:nth-child(2){animation-delay:0.07s;}
+.sjc-vol.on>*:nth-child(3){animation-delay:0.12s;}
+.sjc-vol.on>*:nth-child(4){animation-delay:0.17s;}
+.sjc-vol.on>*:nth-child(5){animation-delay:0.22s;}
+.sjc-vol.on>*:nth-child(6){animation-delay:0.26s;}
+.sjc-vol.on>*:nth-child(7){animation-delay:0.30s;}
+.sjc-vol.on>*:nth-child(n+8){animation-delay:0.34s;}
+@keyframes sjcRise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+/* 骑缝章落印（开卷后 0.28s 盖下） */
+.turn-modal.show .sjc-seam-seal{animation:sjcSealStamp 0.4s cubic-bezier(0.2,1.5,0.4,1) 0.28s both;}
+@keyframes sjcSealStamp{from{opacity:0;transform:rotate(-7deg) scale(1.65);}65%{opacity:1;transform:rotate(-7deg) scale(0.94);}to{opacity:0.9;transform:rotate(-7deg) scale(1);}}
+@media (prefers-reduced-motion: reduce){.sjc-vol.on>*{animation:none;}.turn-modal.show .sjc-seam-seal{animation:none;}}
+/* 键盘焦点环（弹窗全交互件·金环不遮内容） */
+.sjc-tab:focus-visible,.sjc-ov-nav:focus-visible,.turn-modal .tr-btn:focus-visible,.turn-modal .tr-nav-btn:focus-visible,.turn-modal .tr-close-x:focus-visible{outline:2px solid var(--gold-400);outline-offset:2px;}
+/* 按压反馈（transform 不移布局） */
+.sjc-tab:active{transform:scale(0.96);}
+.sjc-ov-nav:active{transform:scale(0.985);}
+/* 提要卡改真按钮后的 UA 样式复位 */
+.sjc-ov-nav{font:inherit;text-align:left;color:inherit;}
+/* 实录卷长文限宽（80+ 字/行超可读上限·限 46em 居中如奏疏页宽） */
+.sjc-vol[data-vol="annals"] .tr-szj-content{max-width:46em;margin:0 auto;}
+.sjc-vol[data-vol="misc"] .tr-houren-box{max-width:52em;}
+/* 卷首行次要文字对比微调（ink-300 于 12.5px 小字对比不足） */
+.sjc-vol-head .vh-note{color:var(--ink-200,#d4c9b2);opacity:0.75;}
+/* 总览卷 */
+.sjc-ov-sec{margin-bottom:20px;}
+.sjc-ov-sec-hd{font-family:var(--font-serif);font-size:14px;letter-spacing:0.3em;color:var(--gold-300,#c9a85f);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.sjc-ov-sec-hd::before{content:"❖";color:var(--gold-400);font-size:12px;opacity:0.65;}
+.sjc-ov-sec-hd::after{content:"";flex:1;height:1px;background:linear-gradient(to right,rgba(184,154,83,0.3),transparent);}
+.sjc-ov-chips{display:flex;flex-wrap:wrap;gap:7px;}
+/* 账签形制：方角·左缘色线·如账册红黑记项 */
+.sjc-ov-chip{font-family:var(--font-serif);font-size:13.5px;padding:4px 12px 4px 10px;border-radius:0;letter-spacing:0.08em;border:1px solid rgba(107,93,71,0.5);border-left:3px solid var(--ink-300,#6b5d47);color:var(--color-foreground-secondary);background:rgba(0,0,0,0.14);}
+.sjc-ov-chip.good{border-left-color:var(--celadon-400);color:var(--celadon-400);}
+.sjc-ov-chip.bad{border-left-color:var(--vermillion-400);color:var(--vermillion-400);}
+.sjc-ov-hls{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:6px 10px;}
+.sjc-ov-hl{display:flex;align-items:baseline;gap:10px;padding:7px 12px;background:linear-gradient(to right,rgba(201,168,95,0.07),rgba(184,154,83,0.015));border:1px solid var(--color-border-subtle);border-left:3px solid var(--gold-300,#c9a85f);border-radius:2px;font-size:13px;flex-wrap:wrap;}
+.sjc-ov-hl.warn{border-left-color:var(--amber-400,#c9a045);}
+.sjc-ov-hl.danger{border-left-color:var(--vermillion-400);}
+.sjc-ov-hl .n{font-family:var(--font-serif);color:var(--color-foreground);letter-spacing:0.1em;font-weight:500;white-space:nowrap;}
+.sjc-ov-hl .s{font-family:var(--font-serif);color:var(--gold-400);font-size:12.5px;white-space:nowrap;}
+.sjc-ov-hl.warn .s{color:var(--amber-400,#c9a045);}
+.sjc-ov-hl.danger .s{color:var(--vermillion-400);}
+.sjc-ov-hl .r{color:var(--color-foreground-muted);font-size:12.5px;font-style:italic;flex:1;min-width:0;}
+.sjc-ov-navs{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px;}
+.sjc-ov-nav{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(184,154,83,0.045);border:1px solid var(--color-border-subtle);border-radius:3px;cursor:pointer;transition:all 0.18s;position:relative;}
+.sjc-ov-nav:hover{background:rgba(184,154,83,0.11);border-color:var(--gold-400);transform:translateY(-1px);}
+.sjc-ov-nav.hollow{opacity:0.5;}
+.sjc-ov-nav.alert{border-color:rgba(192,64,48,0.4);}
+.sjc-ov-nav.alert::before{content:"";position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--vermillion-400);box-shadow:0 0 6px rgba(192,64,48,0.8);}
+.sjc-ov-nav .g{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,rgba(184,154,83,0.4),rgba(61,52,42,0.95));border:1px solid var(--gold-d);color:#f4eadd;font-family:var(--font-serif);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sjc-ov-nav .t{font-family:var(--font-serif);font-size:14px;letter-spacing:0.2em;color:var(--color-foreground);white-space:nowrap;}
+.sjc-ov-nav .d{flex:1;min-width:0;font-size:12.5px;color:var(--color-foreground-muted);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sjc-ov-nav .c{font-size:12px;color:var(--gold-400);background:rgba(0,0,0,0.22);border:1px solid var(--gold-d);border-radius:8px;padding:0 7px;line-height:17px;flex-shrink:0;}
+.sjc-ov-nav .go{color:var(--gold-d);font-size:16px;flex-shrink:0;}
+.sjc-ov-now{margin-top:18px;text-align:center;font-family:var(--font-serif);font-size:13px;color:var(--gold-d);letter-spacing:0.2em;font-style:italic;}
+.sjc-ov-now::before,.sjc-ov-now::after{content:"——";opacity:0.5;margin:0 10px;}
+/* 时政记段落 */
+.sjc-szj-para{margin-bottom:10px;text-indent:2em;}
+.sjc-szj-para.tagged{padding-left:0.5rem;border-left:2px solid var(--gold-d);}
+.sjc-para-tag{display:inline-flex;align-items:center;gap:2px;font-size:11.5px;color:var(--ink-300,#9d917d);margin-right:6px;letter-spacing:0.08em;text-indent:0;}
+.sjc-src{font-weight:bold;}
+.sjc-src.guan{color:var(--gold-400);}
+.sjc-src.mi{color:var(--indigo-400,#7986cb);}
+.sjc-src.fang{color:var(--ink-300,#9d917d);font-style:italic;font-weight:normal;}
+.sjc-src.cha{color:var(--celadon-400);}
+.sjc-place{color:var(--celadon-400);text-decoration:underline dotted;cursor:help;}
+/* 角色状态 */
+.sjc-status-row{display:flex;gap:10px;padding:8px 12px;margin-bottom:8px;background:rgba(184,154,83,0.03);border:1px solid var(--color-border-subtle);border-left:3px solid var(--gold-d);border-radius:2px;}
+.sjc-status-row.nei{border-left-color:var(--purple-400,#8e6aa8);}
+.sjc-status-lab{font-family:var(--font-serif);font-size:12px;color:var(--gold-d);letter-spacing:0.15em;flex-shrink:0;padding-top:2px;}
+.sjc-status-row.nei .sjc-status-lab{color:var(--purple-400,#8e6aa8);}
+.sjc-status-txt{flex:1;line-height:1.8;color:var(--color-foreground-secondary);font-size:13px;}
+.sjc-status-txt.inner{font-style:italic;}
+/* 帝王私行 */
+.sjc-tyrant-efx{font-size:12px;text-align:center;color:var(--color-foreground-muted);margin-top:0.3rem;}
+.sjc-tyrant-react{margin-top:0.5rem;padding:0.4rem 0.6rem;background:rgba(0,0,0,0.14);border-radius:3px;font-size:12.5px;line-height:1.8;}
+.sjc-tyrant-react-hd{color:var(--ink-300,#9d917d);margin-bottom:0.2rem;font-family:var(--font-serif);letter-spacing:0.12em;}
+.sjc-tyrant-milestone{margin-top:0.5rem;padding:0.6rem 0.8rem;background:linear-gradient(135deg,rgba(142,68,173,0.08),rgba(44,62,80,0.1));border-radius:4px;font-size:13px;color:var(--color-foreground-secondary);text-align:center;line-height:1.7;font-style:italic;}
+/* 势力动态 */
+.sjc-facevt-row{padding:0.4rem 0.7rem;margin-bottom:0.35rem;background:rgba(138,109,27,0.06);border-radius:3px;font-size:13px;border-left:3px solid var(--gold-d);line-height:1.7;}
+.sjc-facevt-actor{color:var(--gold-400);font-weight:700;font-family:var(--font-serif);}
+.sjc-facevt-row .arr{color:var(--gold-d);}
+.sjc-facevt-target{color:var(--color-foreground-secondary);}
+.sjc-facevt-result{color:var(--color-foreground-muted);}
+/* 战况详情表 */
+.sjc-battle-detail,.sjc-army-roster{margin-top:10px;padding:7px 9px;background:rgba(0,0,0,0.18);border:1px solid var(--color-border-subtle);border-radius:3px;}
+.sjc-battle-detail>summary,.sjc-army-roster>summary{cursor:pointer;font-size:13px;color:var(--gold-300,#c9a96e);font-family:var(--font-serif);letter-spacing:0.06em;}
+.sjc-battle-detail>summary:hover,.sjc-army-roster>summary:hover{color:var(--gold-400);}
+.sjc-battle-table{width:100%;font-size:12.5px;margin-top:8px;border-collapse:collapse;}
+.sjc-battle-table th{text-align:left;padding:4px 6px;color:var(--ink-300,#9d917d);font-weight:normal;font-family:var(--font-serif);letter-spacing:0.1em;border-bottom:1px solid var(--color-border-subtle);}
+.sjc-battle-table td{padding:4px 6px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.sjc-battle-table td.dim{color:var(--ink-300,#9d917d);}
+.sjc-attr-tag{padding:2px 7px;border-radius:2px;font-size:11.5px;background:rgba(150,150,150,0.16);letter-spacing:0.05em;}
+.sjc-attr-tag.cmd{background:rgba(220,80,80,0.2);}
+.sjc-attr-tag.ldr{background:rgba(220,180,80,0.2);}
+.sjc-attr-tag.loc{background:rgba(120,180,120,0.2);}
+.sjc-attr-tag.thr{background:rgba(220,180,80,0.3);}
+.sjc-attr-tag.ban{background:rgba(180,120,180,0.2);}
+.sjc-attr-tag.sta{background:rgba(120,120,180,0.2);}
+.sjc-army-warn{margin-top:7px;padding:6px 9px;background:rgba(220,80,80,0.14);border-left:3px solid var(--vermillion-500,#dc2626);font-size:12.5px;color:var(--vermillion-300,#fca5a5);border-radius:2px;}
+/* 数值卷·帑廪赤字/岁计流水 */
+.tr-cg-hdr.sjc-deficit{background:linear-gradient(to right,rgba(192,64,48,0.15),transparent);border-left:3px solid var(--vermillion-400);border-bottom:none;padding:6px 8px;margin-bottom:4px;border-radius:2px;}
+.tr-cg-hdr.sjc-deficit .ic{background:var(--vermillion-400);color:#fef4e8;}
+.tr-cg-hdr.sjc-deficit .lab{color:#d4706a;}
+.tr-cg-hdr.sjc-deficit .sub{color:var(--vermillion-400);}
+.tr-cg-ledger{--cg-c:var(--gold-300,#c9a85f);}
+.sjc-ledger-grp{margin-bottom:10px;}
+.sjc-ledger-grp-hd{font-family:var(--font-serif);font-size:13px;font-weight:700;letter-spacing:0.15em;margin-bottom:4px;}
+.sjc-ledger-grp-hd.pos{color:var(--celadon-400);}
+.sjc-ledger-grp-hd.neg{color:var(--vermillion-400);}
+.sjc-ledger-row{display:flex;justify-content:space-between;padding:3px 4px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12.5px;}
+.sjc-ledger-row .n{color:var(--color-foreground-secondary);}
+.sjc-ledger-row .v.pos{color:var(--celadon-400);}
+.sjc-ledger-row .v.neg{color:var(--vermillion-400);}
+.sjc-ledger-row.total{font-weight:700;border-bottom:none;border-top:2px solid var(--celadon-400);padding-top:4px;}
+.sjc-ledger-row.total.neg{border-top-color:var(--vermillion-400);}
+.sjc-ledger-net{display:flex;justify-content:space-between;padding:7px 10px;background:rgba(0,0,0,0.16);border-radius:3px;font-weight:700;font-size:14px;font-family:var(--font-serif);letter-spacing:0.08em;}
+.sjc-ledger-net.pos{color:var(--celadon-400);}
+.sjc-ledger-net.neg{color:var(--vermillion-400);}
+.tr-reason-chip.stop{border-color:rgba(160,150,130,0.45);color:var(--color-foreground-secondary);}
+.tr-reason-chip.blocked{background:rgba(192,64,48,0.18);border:1px solid var(--vermillion-400);color:#fef4e8;}
+.tr-reason-chip.shortfall{border-color:var(--vermillion-400);color:#d4706a;}
+.tr-reason-chip.shortfall .short{color:var(--vermillion-400);margin-left:4px;font-size:0.85em;}
+/* 御批回听 */
+.sjc-ef{padding:0.2rem 0 0;}
+.sjc-ef-overall.good{color:var(--celadon-400);}
+.sjc-ef-overall.mid{color:var(--gold-400);}
+.sjc-ef-overall.bad{color:var(--vermillion-400);}
+.sjc-ef-dims{display:grid;grid-template-columns:1fr 1fr;gap:0.3rem 0.9rem;margin-bottom:0.7rem;padding:0.5rem 0.7rem;background:rgba(0,0,0,0.12);border-radius:3px;}
+.sjc-ef-dim{display:flex;align-items:center;gap:7px;font-size:12px;}
+.sjc-ef-dim .n{width:2.6em;color:var(--ink-300,#9d917d);font-family:var(--font-serif);}
+.sjc-ef-dim .bar{flex:1;height:4px;background:rgba(0,0,0,0.25);border-radius:2px;overflow:hidden;}
+.sjc-ef-dim .fill{height:100%;}
+.sjc-ef-dim .fill.good{background:var(--celadon-400);}
+.sjc-ef-dim .fill.mid{background:var(--gold-400);}
+.sjc-ef-dim .fill.bad{background:var(--vermillion-400);}
+.sjc-ef-dim .v{width:2em;text-align:right;}
+.sjc-ef-dim .v.good{color:var(--celadon-400);}
+.sjc-ef-dim .v.mid{color:var(--gold-400);}
+.sjc-ef-dim .v.bad{color:var(--vermillion-400);}
+.sjc-ef-report{margin-bottom:0.6rem;padding:0.55rem 0.75rem;background:rgba(0,0,0,0.12);border-radius:3px;border-left:2px solid var(--ef-c,var(--gold-d));font-size:12.5px;}
+.sjc-ef-report.executed{--ef-c:var(--celadon-400);}
+.sjc-ef-report.partial{--ef-c:var(--gold-400);}
+.sjc-ef-report.delayed{--ef-c:var(--amber-400,#c9a045);}
+.sjc-ef-report.ignored{--ef-c:var(--vermillion-400);}
+.sjc-ef-report-hd{display:flex;justify-content:space-between;margin-bottom:0.25rem;}
+.sjc-ef-report-hd .st{color:var(--ef-c,var(--gold-d));font-weight:600;font-family:var(--font-serif);letter-spacing:0.08em;}
+.sjc-ef-report-hd .lv{color:var(--ink-300,#9d917d);font-size:11.5px;}
+.sjc-ef-content{color:var(--color-foreground-secondary);margin-bottom:0.3rem;line-height:1.7;}
+.sjc-ef-line{font-size:12px;line-height:1.6;margin-top:0.2rem;color:var(--color-foreground-secondary);}
+.sjc-ef-line.dim{color:var(--ink-300,#9d917d);}
+.sjc-ef-line.far{color:var(--purple-300,#b89ec8);}
+.sjc-ef-line.cost{color:var(--amber-400,#c9a045);}
+.sjc-ef-line.opp{color:var(--vermillion-400);}
+.sjc-ef-line.missed{color:var(--ef-c,var(--vermillion-400));}
+.sjc-ef-line.advice{color:var(--gold-400);margin-top:0.3rem;}
+.sjc-ef-line.pop{color:var(--amber-400,#c9a045);}
+.sjc-ef-sub-hd{font-size:12.5px;color:var(--gold-d);margin-bottom:0.4rem;font-family:var(--font-serif);letter-spacing:0.2em;}
+.sjc-ef-unexpected{margin-top:0.6rem;border-top:1px dashed rgba(255,255,255,0.12);padding-top:0.5rem;}
+.sjc-ef-uevt{margin-top:0.3rem;padding:0.4rem 0.6rem;background:rgba(0,0,0,0.1);border-radius:3px;font-size:12px;border-left:2px solid var(--uv-c,var(--ink-300,#9d917d));}
+.sjc-ef-uevt.sev-wei{--uv-c:var(--red,#c03030);}
+.sjc-ef-uevt.sev-zhong{--uv-c:var(--vermillion-400);}
+.sjc-ef-uevt.sev-mid{--uv-c:var(--amber-400,#c9a045);}
+.sjc-ef-uevt .hd{display:flex;gap:6px;align-items:center;margin-bottom:0.15rem;}
+.sjc-ef-uevt .sev{color:var(--uv-c,var(--ink-300));font-weight:600;}
+.sjc-ef-uevt .cat{color:var(--ink-300,#9d917d);font-size:11px;}
+.sjc-ef-uevt .t{color:var(--color-foreground-secondary);font-weight:500;}
+.sjc-ef-react{margin-top:0.6rem;padding:0.45rem 0.65rem;background:rgba(142,106,168,0.08);border-radius:3px;font-size:12px;}
+.sjc-ef-react .fac-clear{color:var(--celadon-400);}
+.sjc-ef-react .fac-eunuch{color:var(--vermillion-400);}
+.sjc-ef-react .fac-neutral{color:var(--color-foreground-secondary);}
+.sjc-ef-oppsum{margin-top:0.4rem;padding:0.35rem 0.65rem;background:rgba(176,64,48,0.08);border-left:2px solid var(--vermillion-400);border-radius:2px;font-size:12px;color:var(--vermillion-400);}
+.sjc-ef-insight{margin-top:0.4rem;padding:0.45rem 0.65rem;background:rgba(74,154,74,0.08);border-left:2px solid var(--celadon-400);border-radius:2px;font-size:12.5px;color:var(--celadon-400);}
+.sjc-ef-priority{margin-top:0.4rem;padding:0.45rem 0.65rem;background:rgba(201,168,76,0.15);border-radius:3px;font-size:13px;color:var(--gold-400);}
+/* 前议追责 */
+.sjc-ty-case{margin-bottom:0.5rem;padding:0.5rem 0.7rem;background:rgba(0,0,0,0.12);border-radius:3px;border-left:2px solid var(--ty-c,var(--ink-300,#9d917d));font-size:12.5px;}
+.sjc-ty-case.ok{--ty-c:var(--celadon-400);}
+.sjc-ty-case.part{--ty-c:var(--ink-300,#9d917d);}
+.sjc-ty-case.un{--ty-c:var(--amber-400,#c9a045);}
+.sjc-ty-case.back{--ty-c:var(--vermillion-400);}
+.sjc-ty-hd{display:flex;align-items:center;gap:8px;margin-bottom:0.25rem;flex-wrap:wrap;}
+.sjc-ty-hd .oc{color:var(--ty-c,var(--ink-300));font-weight:600;font-family:var(--font-serif);}
+.sjc-ty-hd .venue{padding:1px 6px;background:rgba(0,0,0,0.18);border-radius:2px;font-size:11px;color:var(--gold-400);border:1px solid var(--gold-d);}
+.sjc-ty-hd .delay{margin-left:auto;color:var(--ink-300,#9d917d);font-size:11.5px;}
+.sjc-ty-edict{color:var(--color-foreground-secondary);margin-bottom:0.3rem;line-height:1.7;}
+.sjc-ty-actors{font-size:12px;color:var(--ink-300,#9d917d);}
+.sjc-ty-actors .party{color:var(--gold-400);}
+/* 一致性附录 */
+.sjc-cnst{margin-top:1.2rem;}
+.sjc-cnst-fold{border:1px solid rgba(192,64,48,0.25);border-radius:4px;background:linear-gradient(to bottom,rgba(192,64,48,0.04),rgba(20,15,10,0.02));overflow:hidden;}
+.sjc-cnst-fold>summary{cursor:pointer;padding:8px 14px;display:flex;align-items:center;gap:10px;background:rgba(192,64,48,0.08);user-select:none;list-style-position:inside;flex-wrap:wrap;}
+.sjc-cnst-t{color:var(--vermillion-400);font-weight:bold;font-size:13px;font-family:var(--font-serif);letter-spacing:0.06em;}
+.sjc-cnst-meta{color:var(--color-foreground-secondary);font-size:12px;}
+.sjc-cnst-mode{padding:2px 8px;border-radius:10px;font-size:11px;}
+.sjc-cnst-mode.strict{background:rgba(80,160,80,0.15);color:#7ab07a;}
+.sjc-cnst-mode.fb{background:rgba(184,154,83,0.15);color:var(--gold-400);}
+.sjc-cnst-body{padding:12px 16px;font-size:12.5px;color:var(--color-foreground-secondary);}
+.sjc-cnst-cap{color:var(--ink-300,#9d917d);margin-bottom:4px;font-size:12px;}
+.sjc-cnst-pill{display:inline-block;padding:2px 8px;margin:2px;background:rgba(192,64,48,0.12);border:1px solid rgba(192,64,48,0.3);border-radius:10px;font-size:11.5px;color:var(--vermillion-400);}
+.sjc-cnst-dom{margin:6px 0;padding:6px 10px;background:rgba(184,154,83,0.05);border-left:2px solid var(--gold-400);font-size:12.5px;}
+.sjc-cnst-dom-hd{color:var(--gold-400);font-weight:bold;margin-bottom:3px;}
+.sjc-cnst-row{color:var(--color-foreground-secondary);padding:2px 0;}
+.sjc-cnst-more{color:var(--ink-300,#9d917d);font-size:11.5px;padding:2px 0;}
+.sjc-cnst-none{color:var(--ink-300,#9d917d);font-style:italic;}
+.sjc-cnst-foot{margin-top:10px;padding-top:8px;border-top:1px dashed rgba(184,154,83,0.2);color:var(--ink-300,#9d917d);font-size:11.5px;line-height:1.6;}
+.sjc-cnst-foot code{color:var(--gold-400);}
+/* 新卷体内·后人戏说印章让位（「弘」印 absolute 压正文首字·截图自审定罪） */
+.sjc-vol .tr-houren-box{padding-left:46px;}
+/* 矮视口（笔记本 768 高等）：竖排题签纵向放不下·签转紧凑横条·骑缝章缩位 */
+@media (max-height:900px){
+  .sjc-spine{padding-top:40px;gap:4px;width:96px;}
+  .sjc-tab{flex-direction:row;width:76px;padding:4px 6px;gap:5px;border-top:1px solid var(--color-border-subtle);border-left:3px solid transparent;border-radius:2px;justify-content:flex-start;}
+  .sjc-tab.on{border-left-color:var(--vermillion-400);border-top-color:var(--gold-400);}
+  .sjc-tab-t{writing-mode:horizontal-tb;font-size:12.5px;letter-spacing:0.06em;padding:0;}
+  .sjc-tab-g{width:18px;height:18px;font-size:10.5px;}
+  .sjc-tab-n{top:auto;bottom:-4px;right:-2px;}
+  .sjc-seam-seal{width:38px;height:38px;font-size:12px;left:74px;top:4px;}
+}
+/* 移动端：卷目转顶部横滚签（竖排题签属性全部重置回横排） */
+@media (max-width:900px){
+  .sjc-frame{flex-direction:column;}
+  .tr-footer-hint{display:none;}
+  .sjc-seam-seal{display:none;}
+  .sjc-vol::before{font-size:120px;top:-20px;}
+  .sjc-spine{flex-direction:row;width:100%;max-height:none;overflow-x:auto;overflow-y:hidden;padding:8px 10px;border-right:none;border-bottom:1px solid var(--color-border-subtle);position:static;gap:6px;align-items:stretch;}
+  .sjc-tab{width:auto;flex-shrink:0;flex-direction:row;align-items:center;min-height:44px;padding:5px 12px;gap:6px;border-top:1px solid var(--color-border-subtle);border-left:3px solid transparent;border-radius:2px;}
+  .sjc-tab.on{border-left-color:var(--vermillion-400);border-top-color:var(--gold-400);}
+  .sjc-tab-t{writing-mode:horizontal-tb;font-size:12.5px;letter-spacing:0.08em;padding:0;}
+  .sjc-tab-g{width:20px;height:20px;font-size:11px;}
+  .sjc-tab-n{display:none;}
+  .sjc-tab.alert::after{top:2px;right:2px;}
+  .sjc-pages{padding:12px 12px 16px;}
+  .sjc-ov-navs{grid-template-columns:1fr;}
+  .sjc-ov-hls{grid-template-columns:1fr;}
+  .sjc-ef-dims{grid-template-columns:1fr;}
+}
 
 /* ═════════ 地方舆情标签页（.df-*）═════════ */
 .df-panel-wrap{background-color:var(--color-surface,#241e18);background-image:repeating-linear-gradient(90deg,transparent 0,transparent 2.5em,rgba(107,93,71,0.04) 2.5em,rgba(107,93,71,0.04) calc(2.5em + 1px)),repeating-linear-gradient(0deg,transparent 0,transparent 3em,rgba(107,93,71,0.02) 3em,rgba(107,93,71,0.02) calc(3em + 1px)),linear-gradient(to bottom,rgba(184,154,83,0.05) 0%,transparent 80px);position:relative;padding:var(--space-4) var(--space-5);min-height:500px;width:100%;box-sizing:border-box;}

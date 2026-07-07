@@ -125,6 +125,10 @@ sandbox.document = {
 };
 
 vm.createContext(sandbox);
+// 2026-07-06 弹窗组装拆至 sibling·须先加载（_composeShijiHtml/_renderUnifiedChanges alias 在此）
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-shiji-compose.js'), 'utf8'), sandbox, {
+  filename: 'tm-endturn-shiji-compose.js'
+});
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-render.js'), 'utf8'), sandbox, {
   filename: 'tm-endturn-render.js'
 });

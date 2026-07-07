@@ -63,11 +63,11 @@ assert(a2Idx >= 0, '⑧ 驻守军队 a2 已渲染');
 const a2Seg = html.slice(a2Idx);
 assert(a2Seg.indexOf('途中') < 0, '⑨ 驻守军队 a2 不误显行军指示');
 
-// ── slice-1b：过回合军务总览表(tm-endturn-render.js)marching 军队附进度 ──
-// (过回合 render 是超大函数·难 harness·此处静态守卫·渲染逻辑同抽屉已 runtime 验)
-const renderSrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-render.js'), 'utf8');
+// ── slice-1b：过回合军务总览表(2026-07-06 迁 tm-endturn-shiji-compose.js)marching 军队附进度 ──
+// (静态守卫·渲染逻辑同抽屉已 runtime 验)
+const renderSrc = fs.readFileSync(path.join(ROOT, 'tm-endturn-shiji-compose.js'), 'utf8');
 assert(/a\.state === 'marching' && GM\.marchOrders/.test(renderSrc), '⑩ 过回合军务表接 GM.marchOrders 真进度');
-assert(renderSrc.indexOf("'行军中 ' + _mp + '/' + _mt + '回合·余'") >= 0, '⑪ 过回合行军进度格式');
+assert(renderSrc.indexOf("'行军中 ' + mp + '/' + mt + '回合·余'") >= 0, '⑪ 过回合行军进度格式');
 
 // ── slice-1d：右栏军队详情卡(phase8-formal-rightrail.js)marching 军队「当前动态」附进度 ──
 const rrSrc = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8');

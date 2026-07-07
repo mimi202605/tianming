@@ -1678,6 +1678,8 @@ function _trNavTurn(dir){
   var newIdx = GM._trCurrentIdx + dir;
   if (newIdx < 0 || newIdx >= GM.shijiHistory.length) return;
   showTurnResult(GM.shijiHistory[newIdx].html || '', newIdx);
+  // 翻历史保持所在卷（连续对比同一卷不被重置回总览·tm-endturn-shiji-compose 提供·旧结构 html 内部自动 no-op）
+  if (typeof _sjcRestoreVol === 'function') _sjcRestoreVol();
 }
 
 /** 导出本回 */

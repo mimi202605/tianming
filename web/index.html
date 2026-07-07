@@ -59,7 +59,7 @@
   };
 })();
 </script>
-<link id="tm-main-css" rel="stylesheet" href="styles.css?v=20260621-beautify" data-css-base="styles.css?v=20260621-beautify" data-css-fallback="https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/styles.css?v=20260621-beautify" onload="window.TM_CSS_LOADED&&window.TM_CSS_LOADED(this)" onerror="window.TM_CSS_RETRY&&window.TM_CSS_RETRY(this)">
+<link id="tm-main-css" rel="stylesheet" href="styles.css?v=20260706-shijivolumes" data-css-base="styles.css?v=20260706-shijivolumes" data-css-fallback="https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/styles.css?v=20260706-shijivolumes" onload="window.TM_CSS_LOADED&&window.TM_CSS_LOADED(this)" onerror="window.TM_CSS_RETRY&&window.TM_CSS_RETRY(this)">
 <link rel="stylesheet" href="tm-keju-paradigm-panel.css?v=20260524-L2">
 <script src="map-converter.js"></script>
 <script src="map-integration.js"></script>
@@ -357,7 +357,7 @@
     <div class="tr-critical-bar" id="tr-critical" style="display:none;"></div>
     <div class="tr-body-wrap" id="turn-body" role="article" aria-label="回合结果"></div>
     <div class="tr-footer">
-      <span class="tr-footer-hint">※ 展开/收起详情折叠次要内容 · 前后箭头翻阅历次</span>
+      <span class="tr-footer-hint">※ 左侧卷目分览诸事 · ←→ 翻阅历次 · Esc 掩卷</span>
       <div class="tr-footer-actions">
         <button class="tr-btn" onclick="TM.UI.turnResult.exportCurrent()">导 出 本 回</button>
         <button class="tr-btn primary" onclick="TM.UI.turnResult.closeTurnResult()" aria-label="关闭回合结果">朕 已 阅</button>
@@ -482,7 +482,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-ui-foundation.js?v=2026050401"></script>
 <script src="tm-data-model.js"></script>
 <!-- R135 (2026-04-25) tm-utils 拆分 → utils + ai-infra -->
-<script src="tm-utils.js?v=2026050702"></script>
+<script src="tm-utils.js?v=20260706-shijivolumes"></script>
 <!-- 2026-07-04 起居注单一写口(gm:qijuHistory 收口)·须在所有写手之前 -->
 <script src="tm-qiju-ledger.js?v=2026070401"></script>
 <script src="tm-prompt-composer.js?v=2026052201"></script>
@@ -674,7 +674,8 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-wentian-agent.js?v=20260703-wtagent"></script><!-- 问天 agent 模式·先查证后裁定(复用只读工具+callAIWithTools)·默认开可关 -->
 <script src="tm-endturn-agent-write-tools.js?v=20260622-geo2"></script>
 <script src="tm-endturn-agent-depth-tools.js?v=20260623-narrparallel"></script>
-<script src="tm-endturn-render.js?v=20260623-guokualign"></script>
+<script src="tm-endturn-shiji-compose.js?v=20260706-shijivolumes"></script><!-- 史记弹窗·御览分卷组装·须先于 render 加载（render 调 _composeShijiHtml·alias _renderUnifiedChanges 在此） -->
+<script src="tm-endturn-render.js?v=20260706-shijivolumes"></script>
 <!-- 过回合进度拍表引擎 + 电影化加载层·2026-06-10·见 web/docs/endturn-progress-precision-backlog.md·agent 拍表 2026-06-20 -->
 <script src="tm-endturn-progress.js?v=20260620-agentbeats"></script>
 <script src="tm-endturn-loading.js?v=20260620-agentbeats"></script>

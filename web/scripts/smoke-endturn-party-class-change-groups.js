@@ -32,7 +32,7 @@ const sandbox = {
   Array, Object, String, Number, Boolean,
   parseInt, parseFloat, isNaN, isFinite,
   escHtml,
-  window: { TM: { errors: { capture() {}, captureSilent() {} } } },
+  TM: { errors: { capture() {}, captureSilent() {} } },
   GM: {
     turn: 9,
     turnChanges: {
@@ -64,11 +64,13 @@ const sandbox = {
     }
   }
 };
-sandbox.window.window = sandbox.window;
-sandbox.window.GM = sandbox.GM;
-sandbox.TM = sandbox.window.TM;
+sandbox.window = sandbox;  // 浏览器语义：window 即全局（compose IIFE 挂 window·alias 直达 sandbox 顶层）
 vm.createContext(sandbox);
 
+// 2026-07-06 弹窗组装拆至 sibling·须先加载（_renderUnifiedChanges alias 在此）
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-shiji-compose.js'), 'utf8'), sandbox, {
+  filename: 'tm-endturn-shiji-compose.js'
+});
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-render.js'), 'utf8'), sandbox, {
   filename: 'tm-endturn-render.js'
 });

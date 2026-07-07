@@ -139,14 +139,14 @@ check(endturnSource.indexOf('lastInteractionMemory') >= 0 && endturnSource.index
 check(endturnSource.indexOf('lastInteractionMemory/recognitionState') >= 0, 'sc07 dynamic info rule missing');
 
 const militarySource = fs.readFileSync(path.join(ROOT, 'tm-military.js'), 'utf8');
-const renderSource = fs.readFileSync(path.join(ROOT, 'tm-endturn-render.js'), 'utf8');
+const renderSource = fs.readFileSync(path.join(ROOT, 'tm-endturn-shiji-compose.js'), 'utf8');  // 2026-07-06 诸军总览迁 compose
 const applierSource = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8');
 // 2026-05-21·Slice 2·applyAIArmyChange 已拆到 tm-ai-change-army.js
 const armySource = fs.readFileSync(path.join(ROOT, 'tm-ai-change-army.js'), 'utf8');
 const phase8FormalSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-bridge.js'), 'utf8') +
   '\n' + fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8');
 check(militarySource.indexOf('a.armyType') >= 0, 'syncMilitarySources should preserve scenario armyType buckets');
-check(renderSource.indexOf("['军','势力','统帅','驻地'") >= 0, 'military risk table should show faction column');
+check(renderSource.indexOf("['军', '势力', '统帅', '驻地'") >= 0, 'military risk table should show faction column');
 check(renderSource.indexOf('欠饷≥3月') >= 0, 'military risk warning should use 欠饷 wording');
 check(armySource.indexOf('function applyAIArmyChange') >= 0, 'AI army module should expose shared army writeback helper');
 check(applierSource.indexOf('military_changes') >= 0 && applierSource.indexOf('army_changes') >= 0,

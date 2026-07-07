@@ -138,17 +138,31 @@ tm-endturn-core (调 / 间接·tm-player-core (endTurn 按钮)
 
 ---
 
-## 6·tm-endturn-render.js (回合·结果展示)
+## 6·tm-endturn-render.js (回合·结果收尾编排)
 
 | 项 | 内容 |
 |---|---|
-| owns | _endTurn_render 主入口·财务报表·宰辅进言·主角状态·朝野反应·Delta 面板·起居→ 编年史时政记 panel·affectedArmies expanded details·militarySystems 总览（R5 添加） |
-| does not own | AI 推演 (→ tm-endturn-ai-infer)·业务结算 (→ tm-endturn-systems)·battle 数据 (→ tm-military) |
+| owns | _endTurn_render 主入口·渲染前清洗（_unescNarr/死亡过滤/年号）·全部副作用（worldChangeDigest·风闻转录·shijiHistory 落账·起居注·清输入·快照·自动存档·回合收尾） |
+| does not own | 弹窗 HTML 组装 (→ tm-endturn-shiji-compose·2026-07-06 迁)·AI 推演 (→ tm-endturn-ai-infer)·业务结算 (→ tm-endturn-systems)·battle 数据 (→ tm-military) |
 | public API | `_endTurn_render` (内部由 ai-infer 末尾调用) |
-| depends on | tm-endturn-helpers / tm-utils·间接·tm-military.armies / GM.affectedArmies |
+| depends on | tm-endturn-shiji-compose (`_composeShijiHtml`·**必须先加载**)·tm-endturn-helpers / tm-utils |
 | used by | tm-endturn-ai-infer (Region 5 末尾·由 core 末尾) |
-| 新功能加哪 | 战况 / 兵备 / 财政 / 起居 等结果展示 → 加这里·**Codex own·Claude review at merge**（R5 添加 affectedArmies + militarySystems） |
+| 新功能加哪 | 回合收尾副作用 → 加这里；结果展示 → tm-endturn-shiji-compose |
 | smoke | `render-smoke` (7 targets·13 pass) |
+
+---
+
+## 6b·tm-endturn-shiji-compose.js (史记弹窗·御览分卷组装·2026-07-06 重做)
+
+| 项 | 内容 |
+|---|---|
+| owns | 弹窗全部 HTML 组装（纯函数·读 GM/P 零写入）：七卷结构（总览/实录/军务/数值/问责/人事/杂录）·各板块（实录/时政记/战况/数值 9 卡+岁计流水/御批回听/前议追责/人事/后人戏说/角色状态/帝王私行/势力动态/一致性附录）·卷切换 `_sjcSwitchVol`·弹窗键盘（Esc/←→） |
+| does not own | 数据生产（各账本 GM.turnChanges/_turnReport/_edictEfficacyReport 等）·弹窗骨架 DOM（index.html #turn-modal）·头部填充 (→ tm-utils `_trPopulateHead`)·落账副作用 (→ tm-endturn-render) |
+| public API | `_composeShijiHtml`·`_sjcSwitchVol`·兼容 alias `_renderUnifiedChanges`/`_renderPersonnelChanges`（pipeline-steps:544 typeof 开关依赖）·`TM.Endturn.ShijiCompose`（含 smoke 可测内核） |
+| depends on | tm-utils (escHtml/showCharPopup/_barAccountStock)·CORE_METRIC_LABELS·AccountingSystem（皆 typeof 守卫） |
+| used by | tm-endturn-render (`_endTurn_render`)·历史回放（shijiHistory[].html 自包含） |
+| 新功能加哪 | 弹窗新板块 → 归入对应卷的生成函数·新卷慎加（卷目七席已满） |
+| smoke | `smoke-shiji-volumes` (38 断言·verify-all 注册)·`smoke-endturn-battle-detail-fallback`·`smoke-endturn-party-class-change-groups`·`smoke-endturn-cause-legibility` |
 
 ---
 

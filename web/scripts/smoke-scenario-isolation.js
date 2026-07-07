@@ -131,7 +131,7 @@ globalThis.GM = { sid: null, vars: {} };
 assert(globalThis._tmActiveVars().some(v => v.name === '阉党权势'), '无局时回退 P.variables(预览/编辑不变)');
 const varContracts = [
   ['tm-utils.js', /_tmActiveVars\(\)/, 'buildCoreMetricLabels 读 GM.vars'],
-  ['tm-endturn-render.js', /_tmActiveVars\(\)/, 'inversed 升降方向读 GM.vars'],
+  ['tm-endturn-shiji-compose.js', /_tmActiveVars\(\)/, 'inversed 升降方向读 GM.vars'],  // 2026-07-06 delta 判向迁 compose 总览卷
   ['tm-endturn-helpers.js', /_tmActiveVars\(\)/, '核心指标建议读 GM.vars']
 ];
 varContracts.forEach(([f, re, why]) => assert(re.test(read(f)), '根治: ' + f + ' 必须 ' + why));

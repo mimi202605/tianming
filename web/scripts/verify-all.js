@@ -230,6 +230,7 @@ const checks = [
   { name: 'hougong-module-load', file: 'smoke-houguong-module-load.js', estSec: 1, expectExit: 0 },
   { name: 'military-systems', file: 'smoke-military-systems.js', estSec: 1, expectExit: 0 },
   { name: 'endturn-battle-detail-fallback', file: 'smoke-endturn-battle-detail-fallback.js', estSec: 1, expectExit: 0 },
+  { name: 'shiji-volumes', file: 'smoke-shiji-volumes.js', estSec: 1, expectExit: 0 },
   { name: 'influence-groups', file: 'smoke-influence-groups.js', estSec: 1, expectExit: 0 },
   { name: 'class-engine', file: 'smoke-class-engine.js', estSec: 1, expectExit: 0 },
   { name: 'class-party-bidi', file: 'smoke-class-party-bidirectional.js', estSec: 1, expectExit: 0 },
