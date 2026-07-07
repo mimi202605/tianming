@@ -425,11 +425,36 @@ function resolveHeir(deadChar) {
 //   无嗣 → GM._playerDead 交 endturn-core 终局；异常回落终局（宁终局勿尸政）。
 // opts.kind 死因分类（natural|narrative|battle|regicide…·供终局屏/本纪据实而书）；
 // opts.deadReason 终局文案覆写（econ 侧「疾→圣躬不豫」映射由调用方传入·保字节级旧行为）。
+// R1f 合法性分类器：镜像 resolveHeir 各分支判「继承人从何而来」——储君(designated)/血胤(childrenIds)/
+//   法定(seniority同族·elective同势力)=合法；「同势力最强者」兜底=fallback。只作分类不作选择·
+//   resolveHeir 演进时最坏退化为 fallback(在非命门下=多拦·保守方向)。
+function _heirBasisOf(deadChar, heir) {
+  if (!deadChar || !heir) return 'none';
+  if (deadChar.designatedHeirId && (heir.name === deadChar.designatedHeirId || heir.id === deadChar.designatedHeirId)) return 'designated';
+  if (Array.isArray(deadChar.childrenIds) && (deadChar.childrenIds.indexOf(heir.name) >= 0 || deadChar.childrenIds.indexOf(heir.id) >= 0)) return 'blood';
+  var law = deadChar.successionLaw || '';
+  if (!law && deadChar.faction && GM.facs) {
+    var _bf = GM.facs.find(function (f) { return f && f.name === deadChar.faction; });
+    if (_bf) law = _bf.successionLaw || '';
+  }
+  if (law === 'seniority' && heir.family && heir.family === deadChar.family) return 'law';
+  if (law === 'elective' && heir.faction === deadChar.faction) return 'law';
+  return 'fallback';
+}
 function adjudicatePlayerDeath(ch, cause, opts) {
   opts = opts || {};
   if (!ch) return { outcome: 'noop' };
   try {
     var heir = (typeof resolveHeir === 'function') ? resolveHeir(ch) : null;
+    // R1f 合法性门(2026-07-07)：君死于非命(弑君/战殁)时·继承人若仅系「同势力最强者」兜底
+    //   (非储君/血胤/法定)→不算合法继统——防弑君者/权臣借兜底自继。自然死/叙事死照旧(既有行为)。
+    if (heir && (opts.kind === 'regicide' || opts.kind === 'battle') && _heirBasisOf(ch, heir) === 'fallback') {
+      GM._playerDead = true; // arch-ok: R1f 无合法继统=终局·与裁决口同席
+      GM._playerDeathReason = opts.deadReason || cause || ''; // arch-ok: 同上
+      GM._playerDeathKind = opts.kind || ''; // arch-ok: 同上
+      if (typeof addEB === 'function') { try { addEB('国祚', ch.name + '死于非命而储位虚悬·强臣环伺，无合法嗣君，天命遂绝'); } catch (_) {} }
+      return { outcome: 'gameover', blockedFallback: true };
+    }
     if (heir && heir.alive !== false && !heir.dead) {
       ch.isPlayer = false;
       heir.isPlayer = true; // arch-ok: 世代传承唯一裁决口(R1a 收拢两镜像·2026-07-07)

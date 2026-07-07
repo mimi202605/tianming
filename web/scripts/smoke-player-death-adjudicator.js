@@ -65,6 +65,26 @@ assert(r4.outcome === 'gameover', '⑪ 储君已殁不传死人→终局');
 var c5 = mkCtx([]);
 assert(c5.adjudicatePlayerDeath(null, 'x', {}).outcome === 'noop' && !c5.GM._playerDead, '⑫ 空入参 noop 不误终局');
 
+// ── R1f 合法性门：死于非命+仅兜底继承人(同势力最强者)→不算合法继统 ──
+var emp7 = { id: 'p7', name: '天子', isPlayer: true, faction: '明朝廷' };   // 无储君无子嗣
+var c7 = mkCtx([emp7, { name: '权奸', alive: true, faction: '明朝廷', intelligence: 99, valor: 99, loyalty: 10 }]);
+var r7 = c7.adjudicatePlayerDeath(emp7, '为权奸所弑', { kind: 'regicide' });
+assert(r7.outcome === 'gameover' && r7.blockedFallback === true, '⑰ 遇弑+仅兜底强臣→无合法继统=终局(防弑君者自继)');
+assert(c7.GM.chars[1].isPlayer !== true, '⑱ 权奸未借兜底自继');
+assert(c7._ebs.some(e => e.indexOf('无合法嗣君') > 0), '⑲ 国祚绝嗣入编年');
+
+// ── 自然死+兜底继承人：照旧继统(既有行为零回归) ──
+var emp8 = { id: 'p8', name: '天子', isPlayer: true, faction: '明朝廷' };
+var c8 = mkCtx([emp8, { name: '贤王', alive: true, faction: '明朝廷', intelligence: 80, valor: 60, loyalty: 90 }]);
+var r8 = c8.adjudicatePlayerDeath(emp8, '疾', { kind: 'natural' });
+assert(r8.outcome === 'succession' && r8.heir === '贤王', '⑳ 自然死兜底继统照旧(零回归·非命才设门)');
+
+// ── 遇弑+有储君：合法继统不受门拦(owner「被杀有储君=继统续玩」) ──
+var emp9 = { id: 'p9', name: '天子', isPlayer: true, faction: '明朝廷', designatedHeirId: '皇长子', childrenIds: ['皇长子'] };
+var c9 = mkCtx([emp9, { id: 'h9', name: '皇长子', alive: true, faction: '明朝廷' }]);
+var r9 = c9.adjudicatePlayerDeath(emp9, '为乱兵所弑', { kind: 'regicide' });
+assert(r9.outcome === 'succession' && r9.heir === '皇长子', '⑴ 遇弑+储君在→继统续玩不受门拦');
+
 // ── 静态契约：两产地皆委托·旧内联镜像已拆 ──
 const econ = fs.readFileSync(path.join(ROOT, 'tm-char-economy-engine.js'), 'utf8');
 const aid = fs.readFileSync(path.join(ROOT, 'tm-ai-apply-deaths.js'), 'utf8');
