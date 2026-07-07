@@ -144,6 +144,8 @@ function main() {
   runFile(ctx, 'tm-ai-change-army.js');
   runFile(ctx, 'tm-ai-change-narrative.js');
   runFile(ctx, 'tm-ai-change-applier.js');
+  runFile(ctx, 'tm-ai-change-applier-validators.js');
+  runFile(ctx, 'tm-ai-change-applier-reconcile.js');
 
   // [A] structural ─────
   assert(ctx.AIChangeApplier, 'global.AIChangeApplier missing');

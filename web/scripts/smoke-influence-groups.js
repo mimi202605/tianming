@@ -71,7 +71,7 @@ load('tm-corruption-cases.js');
 load('tm-corruption-extras.js');
 load('tm-ai-schema.js');
 load('tm-ai-output-validator.js');
-load('tm-ai-change-pathutils.js'); load('tm-ai-change-army.js'); load('tm-ai-change-narrative.js'); load('tm-ai-change-applier.js');
+load('tm-ai-change-pathutils.js'); load('tm-ai-change-army.js'); load('tm-ai-change-narrative.js'); load('tm-ai-change-applier.js'); load('tm-ai-change-applier-validators.js'); load('tm-ai-change-applier-reconcile.js');
 
 const EC = context.TM.EngineConstants;
 const IG = context.TM.InfluenceGroups;

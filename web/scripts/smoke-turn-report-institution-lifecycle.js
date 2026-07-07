@@ -56,6 +56,8 @@ vm.createContext(ctx);
   load(ctx, 'tm-ai-change-army.js');
   load(ctx, 'tm-ai-change-narrative.js');
   load(ctx, 'tm-ai-change-applier.js');
+  load(ctx, 'tm-ai-change-applier-validators.js');
+  load(ctx, 'tm-ai-change-applier-reconcile.js');
 
   assert(ctx.AIChangeApplier && typeof ctx.AIChangeApplier.generateTurnReport === 'function', 'AIChangeApplier.generateTurnReport should load');
   assert(typeof ctx.AIChangeApplier.renderTurnReport === 'function', 'AIChangeApplier.renderTurnReport should load');

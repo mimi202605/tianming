@@ -69,6 +69,8 @@ vm.runInContext(pathutilsSrc, context, { filename: 'tm-ai-change-pathutils.js' }
 vm.runInContext(armySrc, context, { filename: 'tm-ai-change-army.js' });
 vm.runInContext(narrativeSrc, context, { filename: 'tm-ai-change-narrative.js' });
 vm.runInContext(src, context, { filename: 'tm-ai-change-applier.js' });
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-validators.js'), 'utf8'), context, { filename: 'tm-ai-change-applier-validators.js' });
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-reconcile.js'), 'utf8'), context, { filename: 'tm-ai-change-applier-reconcile.js' });
 
 const result = context.applyAITurnChanges({
   changes: [

@@ -11,7 +11,7 @@ let pass = 0, fail = 0;
 function ok(c, m) { if (c) pass++; else { fail++; console.error('  ✗ ' + m); } }
 
 const SRC = fs.readFileSync(path.join(ROOT, 'tm-endturn-helpers.js'), 'utf8');
-const APPLIER = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8');
+const APPLIER = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-validators.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-reconcile.js'), 'utf8');
 
 // ── 源契约:战败标记 + 两 ripple ──
 ok(/_cfChBR\.alive !== false\) \{ _cfChBR\._defeatTurn = G\.turn/.test(APPLIER), '契约:_applyBattleResult 给幸存败将打 _defeatTurn(alive 守卫·阵亡走死亡涟漪)');

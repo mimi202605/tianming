@@ -15,7 +15,7 @@ const ctx = {
 };
 ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
 vm.createContext(ctx);
-['tm-ai-change-pathutils.js', 'tm-ai-change-army.js', 'tm-ai-change-narrative.js', 'tm-ai-change-applier.js'].forEach(f =>
+['tm-ai-change-pathutils.js', 'tm-ai-change-army.js', 'tm-ai-change-narrative.js', 'tm-ai-change-applier.js', 'tm-ai-change-applier-validators.js', 'tm-ai-change-applier-reconcile.js'].forEach(f =>
   vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }));
 ctx.GM = { turn: 8, chars: [], facs: [{ name: '明朝廷' }], officeTree: [], _turnReport: [], publicTreasury: {} };
 ctx.P = { playerInfo: { factionName: '明朝廷' } };
@@ -64,7 +64,7 @@ assert(!c2._imprisoned, 'onDismissal「幸免诏狱」不应设 _imprisoned');
 console.log('===== F·单一真源 + 确定性 reason =====');
 const mig = fs.readFileSync(path.join(ROOT, 'tm-migration.js'), 'utf8');
 assert(/global\._TM_IMPRISON_RE/.test(mig), 'migration v3 应运行时取导出的 _TM_IMPRISON_RE(单一真源)');
-const applierSrc = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8');
+const applierSrc = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-validators.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-reconcile.js'), 'utf8');
 assert(/imprison:\s*\[[^\]]*诏狱/.test(applierSrc), '叙事扫描器 imprison 列表应含诏狱');
 // 确定性 reason 必含关键词(否则 migration 清洗器会误放)
 assert(ctx._TM_IMPRISON_RE.test('廷杖下诏狱·重伤候勘'), '廷杖入狱 reason 应被单一真源识别(防 migration 误清)');

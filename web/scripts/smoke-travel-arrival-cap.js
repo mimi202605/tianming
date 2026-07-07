@@ -24,6 +24,8 @@ function mkCtx() {
   sb.buildIndices = function () {}; sb.renderGameState = function () {};
   vm.createContext(sb);
   vm.runInContext(fs.readFileSync(path.join(WEB, 'tm-ai-change-applier.js'), 'utf8'), sb, { filename: 'aca.js' });
+  vm.runInContext(fs.readFileSync(path.join(WEB, 'tm-ai-change-applier-validators.js'), 'utf8'), sb, { filename: 'tm-ai-change-applier-validators.js' });
+  vm.runInContext(fs.readFileSync(path.join(WEB, 'tm-ai-change-applier-reconcile.js'), 'utf8'), sb, { filename: 'tm-ai-change-applier-reconcile.js' });
   return sb;
 }
 

@@ -9,7 +9,7 @@ function ok(c, m){ if(!c) throw new Error('FAIL: '+m); A++; console.log('  ✓ '
 function read(f){ return fs.readFileSync(path.join(ROOT,f),'utf8'); }
 
 console.log('smoke-tier2-l10n');
-const applier = read('tm-ai-change-applier.js');
+const applier = read('tm-ai-change-applier.js') + '\n' + read('tm-ai-change-applier-validators.js') + '\n' + read('tm-ai-change-applier-reconcile.js');
 const hist = read('tm-history-events.js');
 const ea = read('tm-endturn-apply.js');
 const fm = read('phase8-formal-modules.js');

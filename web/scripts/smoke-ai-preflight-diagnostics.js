@@ -13,7 +13,7 @@ function assert(cond, msg) {
 const infra = read('tm-ai-infra.js');
 const ai = read('tm-endturn-ai.js');
 const followup = read('tm-endturn-followup.js');
-const apply = read('tm-ai-change-applier.js');
+const apply = read('tm-ai-change-applier.js') + '\n' + read('tm-ai-change-applier-validators.js') + '\n' + read('tm-ai-change-applier-reconcile.js');
 const endApply = read('tm-endturn-apply.js');
 const render = read('tm-endturn-render.js');
 

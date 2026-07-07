@@ -138,6 +138,8 @@ async function main() {
   load(ctx, 'tm-ai-change-army.js');
   load(ctx, 'tm-ai-change-narrative.js');
   load(ctx, 'tm-ai-change-applier.js');
+  load(ctx, 'tm-ai-change-applier-validators.js');
+  load(ctx, 'tm-ai-change-applier-reconcile.js');
   load(ctx, 'tm-npc-engine.js');
   load(ctx, 'tm-npc-action-ledger.js');
   load(ctx, 'tm-npc-decision.js'); load(ctx, 'tm-npc-decision-ai-driven.js');

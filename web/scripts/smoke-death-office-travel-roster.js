@@ -89,7 +89,7 @@ console.log('===== Slice 3·源码契约 =====');
 
 // 校验器仍拼 zhengwen(Slice 1 契约·防回退)
 (function(){
-  const src = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8');
+  const src = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-validators.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-reconcile.js'), 'utf8');
   assert(/aiOutput\.zhengwen\) narrativeText \+=/.test(src), '人事校验器叙事文本已含 zhengwen 字段(Slice 1)');
 })();
 

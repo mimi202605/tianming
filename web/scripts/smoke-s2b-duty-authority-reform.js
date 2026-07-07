@@ -17,7 +17,7 @@ let pass = 0, fail = 0;
 function ok(c, m) { if (c) pass++; else { fail++; console.log('  ✗ FAIL: ' + m); } }
 
 // ════════ 一·②③④ 接线源契约（flag 门控 + 真被调用·非仅定义）════════
-const applierSrc = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8');
+const applierSrc = fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-validators.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-ai-change-applier-reconcile.js'), 'utf8');
 ok(/officeFlagOn\('officeDutyStateEnabled'\)[\s\S]{0,200}tickOfficeDutyState\(G\)/.test(applierSrc), '②_applyOfficeDutyTick flag门控调 tickOfficeDutyState');
 ok(/try \{ _applyOfficeDutyTick\(G\); \}/.test(applierSrc), '②_applyOfficeDutyTick 每回合被调用(非仅定义)');
 ok(/adjustPlayerCompliance\(pFac, agg\.compliance/.test(applierSrc) && /adjustPlayerDivisionCorruption\(pFac, agg\.corruption/.test(applierSrc), '②delta 真施加到 FE 实征率/腐败');

@@ -63,6 +63,9 @@ const CONTRACTS = [
   // 第二十七拆(IIFE 型·②a alias/bucket)：phase8-formal-bridge 4 样式注入函数(installStyles/installTopbarExactStyles/installActionEntryExactStyles/installFormalVisibilityStyles)迁出·styles 须在 origin【之前】装载(填 bucket TM.__p8BridgeParts·origin 顶部 alias 回绑)
   //   纯 CSS 注入·零闭包依赖；origin 装载期 installFormalShell 同步调用 installStyles 等·错序即别名 undefined 崩
   ['phase8-formal-bridge-styles.js', 'phase8-formal-bridge.js'],
+  // 第二十二拆(IIFE 型·origin-first 双向 bucket)：tm-ai-change-applier 一致性校验器族(validators)+复核/善后族(reconcile) 两分片须【紧随 origin 之后】按序连续
+  //   origin 装载末尾向 bucket TM.__acaParts 导出 12 个 kept helper→两分片闭包捕获；两分片回填校验/复核函数→origin 32 委托 shim 调用期解析·错序即崩
+  ['tm-ai-change-applier.js', 'tm-ai-change-applier-validators.js', 'tm-ai-change-applier-reconcile.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

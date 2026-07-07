@@ -69,6 +69,8 @@ function callByAction(calls, action) {
   runFile(ctx, 'tm-ai-change-army.js');
   runFile(ctx, 'tm-ai-change-narrative.js');
   runFile(ctx, 'tm-ai-change-applier.js');
+  runFile(ctx, 'tm-ai-change-applier-validators.js');
+  runFile(ctx, 'tm-ai-change-applier-reconcile.js');
 
   const result = ctx.AIChangeApplier.applyAITurnChanges({
     currency_adjustments: [
