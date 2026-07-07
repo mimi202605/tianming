@@ -123,26 +123,6 @@
     return best;
   }
 
-  // 找最近边·返回 {edge:[i,j], t} 用于 add vertex on segment
-  function findEdgeNear(d, wx, wy, snapPxWorld){
-    var best = null;
-    var bestD = snapPxWorld * snapPxWorld;
-    var n = d.polygon.length;
-    for (var i = 0; i < n; i++){
-      var j = (i + 1) % n;
-      var a = d.polygon[i], b = d.polygon[j];
-      var dx = b[0] - a[0], dy = b[1] - a[1];
-      var len2 = dx*dx + dy*dy;
-      if (len2 < 1e-6) continue;
-      var t = ((wx - a[0]) * dx + (wy - a[1]) * dy) / len2;
-      if (t < 0 || t > 1) continue;
-      var px = a[0] + dx * t, py = a[1] + dy * t;
-      var d2 = (px - wx) * (px - wx) + (py - wy) * (py - wy);
-      if (d2 < bestD){ bestD = d2; best = { edge: [i, j], t: t, point: [px, py] }; }
-    }
-    return best;
-  }
-
   // ring-aware·  返回 { kind, polyIdx, idx } | null
   function findRingVertexNear(d, wx, wy, snapPxWorld){
     var rings = ME.getAllRings ? ME.getAllRings(d) : null;
@@ -229,30 +209,6 @@
         });
       }
     }
-  }
-
-  // 多 polygon 版·返回 { polyIdx, edge, t, point }
-  function findEdgeNearMulti(d, wx, wy, snapPxWorld){
-    var allPs = ME.getAllPolygons(d);
-    var best = null;
-    var bestD = snapPxWorld * snapPxWorld;
-    for (var p = 0; p < allPs.length; p++){
-      var poly = allPs[p];
-      var n = poly.length;
-      for (var i = 0; i < n; i++){
-        var j = (i + 1) % n;
-        var a = poly[i], b = poly[j];
-        var dx = b[0] - a[0], dy = b[1] - a[1];
-        var len2 = dx*dx + dy*dy;
-        if (len2 < 1e-6) continue;
-        var t = ((wx - a[0]) * dx + (wy - a[1]) * dy) / len2;
-        if (t < 0 || t > 1) continue;
-        var px = a[0] + dx * t, py = a[1] + dy * t;
-        var d2 = (px - wx) * (px - wx) + (py - wy) * (py - wy);
-        if (d2 < bestD){ bestD = d2; best = { polyIdx: p, edge: [i, j], t: t, point: [px, py] }; }
-      }
-    }
-    return best;
   }
 
   // ─── tool handlers ─────────────────────────────────────────

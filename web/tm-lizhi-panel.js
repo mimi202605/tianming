@@ -452,30 +452,6 @@ function _escHtml(s) {
   });
 }
 
-// ─── 点击风闻条目（查看详情）───
-function _lizhi_handleCase(idx) {
-  var e = (GM.evtLog || [])[idx];
-  if (!e) return;
-
-  // 若关联到 activeCase，直接跳转处置界面
-  if (e.ref && GM.corruption && GM.corruption.activeCases) {
-    var ac = GM.corruption.activeCases.find(function(a) { return a.id === e.ref; });
-    if (ac) { _lizhi_handleActiveCase(ac.id); return; }
-  }
-
-  // 否则显示历史信息
-  var html = '<div style="padding:1rem;">'+
-    '<h4 style="color:var(--gold);margin-bottom:0.5rem;">' + (e.type || '风闻') + '</h4>'+
-    '<p style="font-size:0.88rem;line-height:1.6;color:var(--txt);margin-bottom:0.8rem;">' + _escHtml(e.text || '') + '</p>'+
-    '<div style="font-size:0.72rem;color:var(--txt-d);margin-bottom:1rem;">时日：' + (e.time || 'T' + e.turn) + '</div>'+
-    '<div style="font-size:0.7rem;color:var(--txt-d);font-style:italic;border-top:1px dashed var(--color-border-subtle);padding-top:0.6rem;">'+
-      '此为一般风闻，无具体处置选项。仅可参考。' +
-    '</div></div>';
-  if (typeof openGenericModal === 'function') {
-    openGenericModal('风闻详情', html, null);
-  }
-}
-
 // ─── 点击待决案件 → 处置界面 ───
 function _lizhi_handleActiveCase(caseId) {
   if (!GM.corruption || !GM.corruption.activeCases) return;

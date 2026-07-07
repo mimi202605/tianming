@@ -1012,33 +1012,6 @@
     return b;
   }
 
-  function triggerBankruptcyEvent() {
-    _setBankruptcyStage(GM.guoku, Math.max(1, (GM.guoku.bankruptcy && GM.guoku.bankruptcy.stage) || 1));
-    if (typeof addEB === 'function') {
-      addEB('朝代', '帑廪亏空，岁入不敷所出，财政危机!', { credibility: 'high' });
-    }
-    // 七连锁反应（见 设计方案-财政系统.md §21.10）
-    if (GM.huangquan) {
-      if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangquan) {
-        global.AuthorityEngines.adjustHuangquan('idleGovern', -10, '\u56fd\u5e93\u7834\u4ea7\u52a8\u6447\u7687\u6743');
-      } else {
-        GM.huangquan.index = Math.max(0, GM.huangquan.index - 10);
-      }
-    }
-    if (global.AuthorityEngines && global.AuthorityEngines.adjustHuangwei) {
-      global.AuthorityEngines.adjustHuangwei('brokenPromise', -15, '国库破产·朝廷失信天下');
-    } else if (GM.huangwei) GM.huangwei.index = Math.max(0, GM.huangwei.index - 15); // 沙箱回退
-    if (GM.corruption && GM.corruption.sources) {
-      GM.corruption.sources.lowSalary = (GM.corruption.sources.lowSalary || 0) + 15;
-    }
-    if (GM.huangwei && GM.huangwei.subDims && GM.huangwei.subDims.foreign) {
-      GM.huangwei.subDims.foreign.value = Math.max(0, GM.huangwei.subDims.foreign.value - 15);
-    }
-    GM.guoku.history.events.push({
-      turn: GM.turn, type: 'bankruptcy', severity: GM.guoku.bankruptcy.severity
-    });
-  }
-
   function triggerMutinyOrFamine() {
     if (GM.activeWars && GM.activeWars.length > 0) {
       if (typeof addEB === 'function') addEB('军事', '军饷断绝，兵变四起', { credibility: 'high' });

@@ -1955,8 +1955,6 @@ function _officeDelPos(path, pi) {
   dept.positions.splice(pi, 1);
   renderEdTab('t-office');
 }
-function _addOfficeDept() { _officeAddTopDept(); }
-function _addOfficePos(di) { _officeAddPos([di]); }
 
 // AI生成官制——三阶段：A完整骨架 B关键角色 C可选补充
 function aiGenOfficeEd() {

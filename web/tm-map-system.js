@@ -1046,61 +1046,6 @@ function calculateCircumcenter(triangle) {
 }
 
 /**
- * 按角度排序顶点
- */
-function sortVerticesByAngle(vertices, center) {
-  return vertices.sort(function(a, b) {
-    var angleA = Math.atan2(a.y - center.y, a.x - center.x);
-    var angleB = Math.atan2(b.y - center.y, b.x - center.x);
-    return angleA - angleB;
-  });
-}
-
-/**
- * 裁剪多边形到矩形边界（Sutherland-Hodgman算法）
- */
-function clipPolygonToBounds(polygon, bounds) {
-  var output = polygon;
-
-  // 依次对四条边界进行裁剪
-  var edges = [
-    { x: bounds.minX, y: 0, dx: 0, dy: 1 },  // 左边界
-    { x: 0, y: bounds.maxY, dx: 1, dy: 0 },  // 上边界
-    { x: bounds.maxX, y: 0, dx: 0, dy: -1 }, // 右边界
-    { x: 0, y: bounds.minY, dx: -1, dy: 0 }  // 下边界
-  ];
-
-  edges.forEach(function(edge) {
-    var input = output;
-    output = [];
-
-    if (input.length === 0) return;
-
-    var prevVertex = input[input.length - 1];
-
-    input.forEach(function(vertex) {
-      var prevInside = isInsideBoundary(prevVertex, edge, bounds);
-      var vertexInside = isInsideBoundary(vertex, edge, bounds);
-
-      if (vertexInside) {
-        if (!prevInside) {
-          var intersection = computeIntersection(prevVertex, vertex, edge, bounds);
-          if (intersection) output.push(intersection);
-        }
-        output.push(vertex);
-      } else if (prevInside) {
-        var intersection = computeIntersection(prevVertex, vertex, edge, bounds);
-        if (intersection) output.push(intersection);
-      }
-
-      prevVertex = vertex;
-    });
-  });
-
-  return output;
-}
-
-/**
  * 判断点是否在边界内侧
  */
 function isInsideBoundary(point, edge, bounds) {

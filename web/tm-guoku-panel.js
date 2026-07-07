@@ -1031,35 +1031,6 @@ function _guoku_doLightCoin(r) {
   renderGuokuPanel();
   if (typeof renderTopBarVars === 'function') renderTopBarVars();
 }
-function _guoku_banPrivate() {
-  _guoku_confirm('严禁私铸',
-    '颁诏严法诛私铸。钱法肃然，但监察负担重。',
-    '代价：税司腐败 +3（寻租空间）',
-    '立法', function() { return GuokuEngine.MintingActions.banPrivateMint(); });
-}
-function _guoku_newCoin() {
-  var html = '<div style="padding:1rem;">'+
-    '<h4 style="color:var(--gold);margin-bottom:0.6rem;">新铸通宝</h4>'+
-    '<p style="font-size:0.82rem;line-height:1.6;color:var(--txt);margin-bottom:0.8rem;">'+
-      '新铸钱号。成色精良 → 通胀消退、民信渐复、皇威 +5'+
-    '</p>'+
-    '<div class="form-group" style="margin-bottom:0.8rem;">'+
-      '<label style="font-size:0.78rem;display:block;margin-bottom:2px;">钱号</label>'+
-      '<input id="newCoinName" type="text" value="通宝" style="width:100%;padding:5px 8px;" placeholder="如开元通宝、乾隆通宝">'+
-    '</div>'+
-    '<div style="font-size:0.72rem;color:var(--txt-d);padding:0.4rem 0.6rem;background:var(--bg-2);border-radius:3px;">'+
-      '代价：帑廪 -10 万两'+
-    '</div></div>';
-  if (typeof openGenericModal === 'function') {
-    openGenericModal('新铸通宝', html, function() {
-      var n = (document.getElementById('newCoinName')||{}).value || '通宝';
-      var r = GuokuEngine.MintingActions.newCoining(n);
-      if (typeof toast === 'function') toast('已新铸：' + n);
-      if (typeof closeGenericModal === 'function') closeGenericModal();
-      renderGuokuPanel();
-    });
-  }
-}
 
 // ─── AI 自拟诏令 ───
 function _guoku_aiDecreeOpen() {

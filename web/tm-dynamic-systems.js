@@ -78,51 +78,6 @@
 //   status: string             // 状态：'active', 'vacant', 'suspended'
 // }
 
-/** @param {string} name @param {string} territoryId @param {string} territoryName @param {number} [rank=5] @param {string[]} [authority] @returns {Object} 岗位对象 */
-function createPost(name, territoryId, territoryName, rank, authority) {
-  if (!GM.postSystem) {
-    GM.postSystem = { enabled: false, posts: [] };
-  }
-
-  var post = {
-    id: uid(),
-    name: name,
-    territoryId: territoryId,
-    territoryName: territoryName,
-    holder: '',
-    rank: rank || 5,
-    salary: calculateSalary(rank || 5),
-    authority: authority || [],
-    requirements: {
-      minIntelligence: 30,
-      minValor: 20,
-      minLoyalty: 50
-    },
-    appointedTurn: 0,
-    term: 0,
-    performance: 50,
-    status: 'vacant'
-  };
-
-  GM.postSystem.posts.push(post);
-
-  // 添加到索引
-  if (GM.postSystem.enabled) {
-    addToIndex('post', post.id, post);
-
-    // 添加到领地索引
-    if (!GM._indices.postByTerritory) {
-      GM._indices.postByTerritory = new Map();
-    }
-    if (!GM._indices.postByTerritory.has(territoryId)) {
-      GM._indices.postByTerritory.set(territoryId, []);
-    }
-    GM._indices.postByTerritory.get(territoryId).push(post);
-  }
-
-  return post;
-}
-
 // 计算俸禄（根据品级）
 function calculateSalary(rank) {
   var salaries = [5000, 3000, 2000, 1500, 1000, 800, 600, 400, 200];
@@ -293,32 +248,6 @@ var PostTransfer = {
   }
 };
 
-// 转任（从一个岗位转到另一个岗位）
-function transferPost(characterName, fromPostId, toPostId) {
-  var fromPost = findPostById(fromPostId);
-  var toPost = findPostById(toPostId);
-
-  if (!fromPost || !toPost) {
-    return { success: false, reason: '岗位不存在' };
-  }
-
-  if (fromPost.holder !== characterName) {
-    return { success: false, reason: '角色不在原岗位' };
-  }
-
-  // 罢免原岗位
-  dismissFromPost(fromPostId);
-
-  // 任命新岗位
-  var result = appointToPost(toPostId, characterName);
-
-  if (result.success) {
-    addEB('转任', characterName + ' 从 ' + fromPost.name + ' 转任 ' + toPost.name);
-  }
-
-  return result;
-}
-
 /** @param {string} postId @returns {Object|null} */
 function findPostById(postId) {
   if (GM._indices && GM._indices.postById) {
@@ -330,26 +259,6 @@ function findPostById(postId) {
   }
 
   return null;
-}
-
-// 查找领地的所有岗位
-function findPostsByTerritory(territoryId) {
-  if (GM._indices && GM._indices.postByTerritory) {
-    return GM._indices.postByTerritory.get(territoryId) || [];
-  }
-
-  if (GM.postSystem && GM.postSystem.posts) {
-    return GM.postSystem.posts.filter(function(p) { return p.territoryId === territoryId; });
-  }
-
-  return [];
-}
-
-// 查找角色的岗位
-function findPostByHolder(characterName) {
-  if (!GM.postSystem || !GM.postSystem.posts) return null;
-
-  return GM.postSystem.posts.find(function(p) { return p.holder === characterName; });
 }
 
 // 更新岗位政绩（每回合调用）
@@ -393,35 +302,6 @@ function updatePostPerformance() {
       }
     }
   });
-}
-
-// 获取岗位统计信息
-function getPostStatistics() {
-  if (!GM.postSystem || !GM.postSystem.posts) {
-    return { total: 0, active: 0, vacant: 0, avgPerformance: 0 };
-  }
-
-  var total = GM.postSystem.posts.length;
-  var active = GM.postSystem.posts.filter(function(p) { return p.status === 'active'; }).length;
-  var vacant = GM.postSystem.posts.filter(function(p) { return p.status === 'vacant'; }).length;
-
-  var totalPerformance = 0;
-  var activeCount = 0;
-  GM.postSystem.posts.forEach(function(p) {
-    if (p.status === 'active') {
-      totalPerformance += p.performance;
-      activeCount++;
-    }
-  });
-
-  var avgPerformance = activeCount > 0 ? Math.round(totalPerformance / activeCount) : 0;
-
-  return {
-    total: total,
-    active: active,
-    vacant: vacant,
-    avgPerformance: avgPerformance
-  };
 }
 
 // ============================================================
@@ -923,32 +803,6 @@ function updateRelations() {
   }
 }
 
-// 检查是否存在上下级关系
-function checkHierarchy(title1, title2) {
-  // 动态从品级判断层级（不硬编码官职名，适配全朝代）
-  if (!title1 || !title2) return 0;
-  // 优先用 rankLevel
-  var char1 = findCharByName(title1);
-  var char2 = findCharByName(title2);
-  if (char1 && char2 && char1.rankLevel && char2.rankLevel) {
-    return char2.rankLevel - char1.rankLevel; // rankLevel 越高=品级越高
-  }
-  // 回退：从官制树查找
-  if (typeof findNpcOffice === 'function') {
-    var off1 = findNpcOffice(title1);
-    var off2 = findNpcOffice(title2);
-    if (off1 && off2) {
-      var rank1 = parseInt(off1.rank) || 0;
-      var rank2 = parseInt(off2.rank) || 0;
-      return rank2 - rank1;
-    }
-  }
-  return 0; // 无法判断
-}
-
-// 成就系统已移除（暂不实现）
-function checkAchievements() {}
-function openAchievements() { toast('\u6682\u672A\u5F00\u653E'); }
 
 // AI 调度监控面板（基于_runSubcall实际统计）
 function openAIPerformance() {
@@ -1034,17 +888,4 @@ function closeAIPerformance() {
   var ov = document.getElementById('ai-performance-overlay');
   if (ov) ov.remove();
 }
-
-function clearAICache() {
-  AICache.clear();
-  toast('AI 缓存已清空');
-  closeAIPerformance();
-  openAIPerformance(); // 重新打开以刷新显示
-}
-
-function resetAIStats() {
-  AICache.resetStats();
-  toast('AI 统计已重置');
-  closeAIPerformance();
-  openAIPerformance(); // 重新打开以刷新显示
-}
+

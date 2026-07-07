@@ -757,14 +757,6 @@
     return Math.round(clamp(48 + influence * 0.25 + Math.max(0, 50 - sat) * 0.45 + unrest, 45, 100));
   }
 
-  function supportingPartyNamesForClass(root, cls) {
-    var source = pickRoot(root);
-    var index = buildScenarioRelationIndex(source);
-    var className = classNameOf(cls);
-    if (index.classParties[className]) return index.classParties[className].slice();
-    return [];
-  }
-
   function addRelation(index, className, partyName, source, detail) {
     if (!className || !partyName) return;
     if (!index.classParties[className]) index.classParties[className] = [];

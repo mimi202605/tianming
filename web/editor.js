@@ -56,37 +56,6 @@
     updateBadge('map', items.length);
   }
 
-  function addMapItem() {
-    var typeOpts = '<option value="city">\u57ce\u5e02</option><option value="strategic">\u6218\u7565\u8981\u5730</option><option value="geo">\u5730\u7406\u73af\u5883</option>';
-    var body = '<div class="form-group"><label>\u7c7b\u578b</label>' +
-      '<select id="gm_type" onchange="window._mapFormUpdate()">' + typeOpts + '</select></div>' +
-      '<div class="form-group"><label>\u540d\u79f0</label><input id="gm_name" placeholder="\u5982\uff1a\u957f\u5b89\u57ce"></div>' +
-      '<div id="gm_extra"></div>' +
-      '<div class="form-group"><label>\u63cf\u8ff0</label><textarea id="gm_desc" rows="3"></textarea></div>';
-    openGenericModal('\u6dfb\u52a0\u5730\u56fe\u6761\u76ee', body, function() {
-      var t = gv('gm_type');
-      var item = { type: t, name: gv('gm_name').trim(), description: gv('gm_desc').trim() };
-      if (t === 'city') {
-        item.owner = gv('gm_owner') || '';
-        item.population = gv('gm_population') || '';
-        item.resources = gv('gm_resources') || '';
-        item.defenses = gv('gm_defenses') || '';
-      } else if (t === 'strategic') {
-        item.controller = gv('gm_controller') || '';
-        item.significance = gv('gm_significance') || '';
-      } else if (t === 'geo') {
-        item.climate = gv('gm_climate') || '';
-      }
-      if (!item.name) { showToast('\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a'); return; }
-      if (!scriptData.map) scriptData.map = { items: [] };
-      if (!scriptData.map.items) scriptData.map.items = [];
-      scriptData.map.items.push(item);
-      renderMap();
-      autoSave();
-    });
-    setTimeout(function() { window._mapFormUpdate(); }, 50);
-  }
-
   window._mapFormUpdate = function() {
     var t = gv('gm_type');
     var ex = document.getElementById('gm_extra');
@@ -1040,44 +1009,6 @@
     }
 
     return [];
-  }
-
-  /**
-   * 检查官职与封臣类型是否匹配
-   * @param {string} officialTitle - 官职名称
-   * @param {string} vassalTypeName - 封臣类型名称
-   * @returns {object} - 返回匹配结果 { matched: boolean, confidence: number, reason: string }
-   */
-  function checkOfficialVassalMatch(officialTitle, vassalTypeName) {
-    if (!officialTitle || !vassalTypeName) {
-      return { matched: true, confidence: 1.0, reason: '无需检查' };
-    }
-
-    // 方法1：通过封臣类型的relatedOfficials字段检查
-    var relatedOfficials = getRelatedOfficialsForVassalType(vassalTypeName);
-    for (var i = 0; i < relatedOfficials.length; i++) {
-      if (officialTitle.indexOf(relatedOfficials[i]) !== -1 || relatedOfficials[i].indexOf(officialTitle) !== -1) {
-        return { matched: true, confidence: 0.9, reason: '封臣类型定义的关联官职' };
-      }
-    }
-
-    // 方法2：通过官爵对应表检查
-    var inferred = inferVassalTypeFromOfficial(officialTitle);
-    if (inferred) {
-      if (inferred.vassalType === vassalTypeName) {
-        return { matched: true, confidence: inferred.confidence, reason: '官爵对应表精确匹配' };
-      } else {
-        return { matched: false, confidence: inferred.confidence, reason: '官职应对应封臣类型：' + inferred.vassalType };
-      }
-    }
-
-    // 方法3：模糊匹配（官职名包含封臣类型名或反之）
-    if (officialTitle.indexOf(vassalTypeName) !== -1 || vassalTypeName.indexOf(officialTitle) !== -1) {
-      return { matched: true, confidence: 0.6, reason: '名称模糊匹配' };
-    }
-
-    // 无法判断，返回警告
-    return { matched: false, confidence: 0.3, reason: '官职与封臣类型可能不匹配' };
   }
 
   async function aiGenerateVassalTypes() {

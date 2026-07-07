@@ -627,14 +627,6 @@
       });
   }
 
-  function _govFnDel(path, fi) {
-    var dept = _govGetByPath(path);
-    if (!dept || !dept.functions) return;
-    dept.functions.splice(fi, 1);
-    renderGovernment();
-    autoSave();
-  }
-
   function _govAddPos(path) {
     var dept = _govGetByPath(path);
     if (!dept) return;

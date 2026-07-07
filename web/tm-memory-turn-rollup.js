@@ -59,11 +59,6 @@
     return out.slice(0, 16);
   }
 
-  function pushRef(list, ref) {
-    if (!ref) return;
-    list.push(ref);
-  }
-
   function archiveBundles(GM) {
     return arr(GM && GM._turnMemoryArchive).filter(function(bundle) {
       return bundle && bundle.schemaVersion === 'memory-turn-archive/v0';

@@ -569,11 +569,6 @@ function buildIndices() {
 // initAchievements 在 tm-dynamic-systems.js 中定义，此处不能直接调用（尚未加载）
 // 改为在 startGame() 中调用
 
-// 重建索引（在数据变化后调用）
-function rebuildIndices() {
-  buildIndices();
-}
-
 // ============================================================
 //  索引维护函数（动态添加/删除/更新数据时使用）
 // ============================================================
@@ -630,12 +625,6 @@ function removeFromIndex(type, key) {
   GM._indices[indexName].delete(key);
 }
 
-// 更新索引（当 key 改变时）
-function updateIndex(type, oldKey, newKey, value) {
-  removeFromIndex(type, oldKey);
-  addToIndex(type, newKey, value);
-}
-
 // 场景索引维护（全局 P 对象）
 function addScenarioToIndex(id, scenario) {
   if (!P._indices) {
@@ -650,11 +639,6 @@ function addScenarioToIndex(id, scenario) {
 function removeScenarioFromIndex(id) {
   if (!P._indices || !P._indices.scenarioById) return;
   P._indices.scenarioById.delete(id);
-}
-
-function updateScenarioIndex(oldId, newId, scenario) {
-  removeScenarioFromIndex(oldId);
-  addScenarioToIndex(newId, scenario);
 }
 
 // 快速查询函数（O(1) 复杂度）

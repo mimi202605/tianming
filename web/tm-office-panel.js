@@ -1263,27 +1263,8 @@ function getOffNode(path,tree){
   }
   return node;
 }
-function updOffNode(path,field,value){var node=null;var list=GM.officeTree;var parentDept=null;for(var i=0;i<path.length;i++){if(path[i]==="s"){i++;if(!node||!node.subs)return;parentDept=node;list=node.subs;node=list[path[i]];}else if(path[i]==="p"){i++;if(!node||!node.positions)return;parentDept=node;node=node.positions[path[i]];}else{node=list[path[i]];}}if(!node)return;
-  // 如果修改了部门名或职位名，迁移NPC的任职记录
-  if(field==='name'&&node[field]&&node[field]!==value&&GM.chars){
-    var oldName=node[field];
-    GM.chars.forEach(function(c){
-      if(!c._tenure)return;
-      // 迁移包含旧名的tenure key
-      var keysToMigrate=Object.keys(c._tenure).filter(function(k){return k.indexOf(oldName)>=0;});
-      keysToMigrate.forEach(function(k){
-        var newKey=k.replace(oldName,value);
-        c._tenure[newKey]=(c._tenure[newKey]||0)+c._tenure[k];
-        delete c._tenure[k];
-      });
-    });
-    _dbg('[OfficeRename] '+oldName+'→'+value+'，已迁移'+GM.chars.filter(function(c){return c._tenure;}).length+'人的任职记录');
-  }
-  var _oldVal=node[field];node[field]=value;if(GM.officeChanges)GM.officeChanges.push({action:"update",field:field,value:value,oldValue:_oldVal});}
-function addGameDept(){showPrompt("\u90E8\u95E8:","",function(n){if(!n)return;GM.officeTree.push({name:n,positions:[],subs:[]});renderOfficeTree();});}
 function addOffPos(path){showPrompt("\u5B98\u804C:","",function(n){if(!n)return;var nd=getOffNode(path);if(nd){if(!nd.positions)nd.positions=[];nd.positions.push({name:n,holder:"",desc:"",rank:""});renderOfficeTree();}});}
 function addOffSub(path){showPrompt("\u4E0B\u5C5E:","",function(n){if(!n)return;var nd=getOffNode(path);if(nd){if(!nd.subs)nd.subs=[];nd.subs.push({name:n,positions:[],subs:[]});renderOfficeTree();}});}
-async function submitOfficeCh(){if(!GM.officeChanges)GM.officeChanges=[];if(GM.officeChanges.length===0){toast("\u65E0\u53D8\u66F4");return;}toast("\u5DF2\u63D0\u4EA4\uFF0C\u4E0B\u56DE\u5408\u751F\u6548");GM.officeChanges=[];P.officeTree=deepClone(GM.officeTree);}
 
 // ============================================================
 //  编年

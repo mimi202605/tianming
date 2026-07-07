@@ -816,35 +816,5 @@ function makeEntitiesReactive() {
   }
 }
 
-// 安全更新属性（支持响应式和非响应式）
-function safeUpdateProperty(entity, propertyName, newValue) {
-  if (!entity) return;
-
-  var internalKey = '_' + propertyName;
-
-  // 如果是响应式属性，使用内部键
-  if (entity.hasOwnProperty(internalKey)) {
-    entity[propertyName] = newValue; // 触发 setter
-  } else {
-    // 非响应式属性，直接赋值
-    entity[propertyName] = newValue;
-  }
-}
-
-// 为新创建的实体添加响应式属性
-function makeNewEntityReactive(entity, entityType) {
-  var properties = {
-    'character': ['loyalty', 'ambition', 'intelligence', 'valor', 'benevolence', 'age', 'health', 'position', 'money', 'power'],
-    'faction': ['money', 'food', 'popularity', 'territory', 'military'],
-    'post': ['holder', 'performance', 'salary'],
-    'army': ['morale', 'soldiers', 'supplies', 'location']
-  };
-
-  var props = properties[entityType];
-  if (props) {
-    makeEntityReactive(entity, entityType, props);
-  }
-}
-
 var editingScenarioId=null;
 

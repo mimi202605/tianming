@@ -27,19 +27,6 @@
     catch(_) { return fallback || ''; }
   }
 
-  function _readJsonField(id, currentValue, emptyValue) {
-    var el = document.getElementById(id);
-    if (!el) return currentValue;
-    var raw = (el.value || '').trim();
-    if (!raw) return emptyValue;
-    try {
-      return JSON.parse(raw);
-    } catch(e) {
-      if (console && console.warn) console.warn('[editor-crud] invalid JSON in #' + id + ':', e);
-      return currentValue;
-    }
-  }
-
   // B1-B3: 角色列表状态
   var _charFilter = 'all'; // all/historical/fictional
   var _charSort = 'default'; // default/loyalty/intelligence/faction

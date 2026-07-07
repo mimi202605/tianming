@@ -688,16 +688,6 @@
   //  D6 · 京畿虹吸四因子
   // ═══════════════════════════════════════════════════════════════════
 
-  function _computeCapitalPullRate() {
-    var G = global.GM;
-    // 四因子
-    var officeJobs = (G.chars || []).filter(function(c) { return c.alive !== false && c.officialTitle; }).length / 1000;
-    var commercialCenter = (G.guoku && G.guoku.money > 1000000) ? 0.0003 : 0.0001;
-    var safetyFactor = ((100 - (G.unrest || 30)) / 100) * 0.0002;
-    var culturalMagnetism = ((G.huangwei || 50) / 100) * 0.0001;
-    return officeJobs * 0.00005 + commercialCenter + safetyFactor + culturalMagnetism;
-  }
-
   // ═══════════════════════════════════════════════════════════════════
   //  F-I 历史模拟 10 项
   // ═══════════════════════════════════════════════════════════════════

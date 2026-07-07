@@ -1085,15 +1085,6 @@ function _renderOfficeTreeSVG(container) {
     return true;
   }
 
-  // 包装旧版 _ogCardHeight/_ogRenderDeptCard/_ogRenderPosCard 以接 v10 节点（添加 isPos 字段）
-  function _adaptForOld(fi) {
-    fi.isPos = (fi.type === 'pos');
-    if (fi.type === 'dept') {
-      fi.depth = 1; // 旧版期望 depth 字段存在（部门=1）
-    }
-    return fi;
-  }
-
   // SVG 连线：主干 + Group→Dept elbow + Dept→Pos elbow
   var svgLines = '';
   var themeCol = courtKey === 'inner' ? 'var(--purple-400)' : (courtKey === 'region' ? 'var(--indigo-400)' : 'var(--gold-500)');

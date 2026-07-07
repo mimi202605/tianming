@@ -1,5 +1,7 @@
 # 科举·Stage 2·Phase G·**G3·武举 mini-keju** (max-scope·14 sub-slice·文武呈现差异化)
 
+> ⚠ 死码清除（2026-07-07）：本文提及的 _kjG3DeriveStance 已删除（全仓零引用）。
+
 **date**·2026-05-25
 **status**·**v3·RAA 18 项 + RBB 14 项全修·ship-ready** (1 G3 + 4 BB·HIGH + 7 M·MID + 3 L·LOW + 18 RAA 全过 smoke 135 PASS / 0 FAIL)
 **smoke**·`smoke-g3-wuju.js` 135 PASS·**G2 enke main 155 / G1 51 / L1-L12 共 1000+ PASS 全 0 FAIL·零回归**

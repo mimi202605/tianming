@@ -39,25 +39,6 @@
     }, {});
   }
 
-  function formalRecordRows(){
-    return collectRecentEvents(80).map(function(e, i){
-      var turn = Number(e.turn || ((window.GM && GM.turn) || 1));
-      var text = e.detail || e.text || e.body || e.summary || '';
-      return {
-        id: e.id || ('rec-' + i),
-        kind: 'event',
-        turn: turn,
-        date: e.date || e.time || getTurnText(turn),
-        type: e.type || e.category || '近事',
-        title: e.title || e.name || '未题',
-        text: text,
-        tags: e.tags || [e.type || '近事'],
-        source: e.source || e.type || '近事',
-        seal: '事'
-      };
-    });
-  }
-
   function formalRecordText(x){
     if (!x) return '';
     if (typeof x === 'string') return x;
@@ -366,11 +347,6 @@
     return '<div class="records-filter-v5">' + options.map(function(t){
       return '<button type="button" class="' + (current === t ? 'active' : '') + '" data-desk-action="record-filter-desk" data-key="' + attr(key) + '" data-value="' + attr(t) + '">' + esc(t) + '</button>';
     }).join('') + '</div>';
-  }
-
-  function renderRecordExportButton(tab){
-    var fn = tab === 'qiju' ? '_qijuExport' : tab === 'jishi' ? '_jishiExport' : tab === 'biannian' ? '_bnExport' : '_sjlExport';
-    return '<button type="button" class="tm-mini-btn" onclick="if(window.' + fn + ')window.' + fn + '()">导出本卷</button>';
   }
 
   function renderFormalRecordShiji(){

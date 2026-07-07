@@ -537,26 +537,6 @@ function getAllVassals(factionName, _visited) {
   return allVassals;
 }
 
-// 获取势力的封建层级（带环检测）
-function getFeudalLevel(factionName) {
-  var faction = GM._indices.facByName ? GM._indices.facByName.get(factionName) : null;
-  if (!faction) return 0;
-
-  var level = 0;
-  var current = faction;
-  var seen = {};
-
-  while (current.liege) {
-    if (seen[current.liege]) break; // 环检测
-    seen[current.liege] = true;
-    level++;
-    current = GM._indices.facByName ? GM._indices.facByName.get(current.liege) : null;
-    if (!current) break;
-  }
-
-  return level;
-}
-
 // ============================================================
 // 头衔系统 - 借鉴 KingOfIreland Title 系统
 // ============================================================

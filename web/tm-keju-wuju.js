@@ -295,12 +295,6 @@
     return COMMON[archetype] || COMMON.mercenary;
   }
 
-  function _kjG3DeriveStance(archetype) {
-    if (archetype === 'brave_brash' || archetype === 'loyalist') return '保边';
-    if (archetype === 'tactician') return '建功';
-    return '安平';
-  }
-
   function _kjG3DeriveClass(martialOrigin) {
     var MAP = {
       'commoner-warrior': '寒门',

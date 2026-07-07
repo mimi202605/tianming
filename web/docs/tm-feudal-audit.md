@@ -1,5 +1,7 @@
 # tm-feudal.js audit (Phase 3·Codex 建议·Claude own)
 
+> ⚠ 死码清除（2026-07-07）：本文提及的 getFeudalLevel 已删除（全仓零引用）。
+
 date·2026-05-03 · status·**audit done·non-destructive·recommendation = 保留 + head note correct**
 
 ## 0·概览

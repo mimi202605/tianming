@@ -1,5 +1,7 @@
 # tm-endturn-province.js audit (Phase 3·Claude own·R7)
 
+> ⚠ 死码清除（2026-07-07）：本文提及的 executeProvincePolicy / appointProvinceGovernor / formatNumberComma 已删除（全仓零引用）。
+
 date·2026-05-04 · status·**audit done + R7 destructive (qiaozhi carve out + tail dead 删)**
 
 ## 0·概览

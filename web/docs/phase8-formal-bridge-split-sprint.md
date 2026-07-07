@@ -1,5 +1,7 @@
 # phase8-formal-bridge.js·拆分 + 死码清理 sprint
 
+> ⚠ 死码清除（2026-07-07）：本文提及的 renderRecordExportButton 已删除（全仓零引用）。
+
 **date**·2026-05-26·**owner**·Claude·**scope**·拆 864 KB / 10603 行 IIFE + 清 V0 死码 + 收 4 处重复定义·**不动**视觉 / 交互 / 老 sidebar-ui+shell-extras
 
 **paradigm 锚**·复用 `tm-ai-change-applier` 拆分 paradigm (memory `feedback_large_file_split_paradigm`·`project_ai_change_applier_split`)·头部 alias 块·body 0 改动·跨闭包 pure helper 复制别抽象

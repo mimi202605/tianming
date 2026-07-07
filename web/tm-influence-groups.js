@@ -172,12 +172,6 @@
     return g === 'female' || g === '\u5973' || g === 'f';
   }
 
-  function isMale(ch) {
-    var g = String((ch && ch.gender) || '').toLowerCase();
-    if (!g) return true;
-    return g === 'male' || g === '\u7537' || g === 'm';
-  }
-
   function isEmperorLike(ch, text) {
     if (!ch) return false;
     if (ch.isEmperor || ch.isRuler || ch.role === 'emperor') return true;

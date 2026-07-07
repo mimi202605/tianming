@@ -1036,13 +1036,6 @@
     return null;
   }
 
-  function suppressSupersededHits(hits, opts) {
-    if (!Array.isArray(hits)) return [];
-    return hits.filter(function(hit) {
-      return !supersededEdgeForHit(hit, opts);
-    });
-  }
-
   function cloneHit(hit) {
     var out = {};
     hit = hit || {};

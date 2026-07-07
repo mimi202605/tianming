@@ -479,80 +479,6 @@
     return '<span class="tm-pill ' + (cls || '') + '">' + esc(label) + '</span>';
   }
 
-  function renderUpdateTab() {
-    var s = state.status || {};
-    var url = state.feedUrl || '';
-    var status = s.message || s.error || '';
-    var progressHtml = '';
-    var notes = releaseNotes(s.info);
-    if (s.kind === 'checking') status = '正在检查更新...';
-    else if (s.kind === 'available' && s.info) status = '发现新版本 ' + s.info.version + '，当前版本 ' + (s.currentVersion || '');
-    else if (s.kind === 'not-available') status = '当前已是最新版本。';
-    else if (s.kind === 'blocked-downgrade') status = s.message || '远端版本不高于当前版本，已拒绝下载。';
-    else if (s.kind === 'download-progress' && s.progress) {
-      var pct = Math.max(0, Math.min(100, Math.round(s.progress.percent || 0)));
-      status = '正在下载更新 ' + pct + '%';
-      progressHtml = '<div style="height:6px;background:rgba(255,255,255,.08);border:1px solid var(--bdr);margin-top:.4rem;"><div style="height:100%;width:' + pct + '%;background:var(--gold);"></div></div>';
-    } else if (s.kind === 'downloaded') status = '更新已下载，可以安装并重启。';
-    if (s.hasUpdate) status = '发现新版本 ' + s.remoteVersion + '，当前版本 ' + s.currentVersion;
-    else if (s.blockedDowngrade) status = '远端版本 ' + s.remoteVersion + ' 不高于当前版本 ' + s.currentVersion + '，已拒绝。';
-    else if (s.currentVersion && !status) status = '当前版本 ' + s.currentVersion + '，未发现新版本。';
-    return '' +
-      '<div class="tm-grid-2">' +
-        '<section class="tm-panel">' +
-          '<h4>本体在线更新</h4>' +
-          '<div class="tm-copy">用于更新 Electron 外壳、主进程、preload、依赖和安装器。本体更新会下载完整安装包，安装后重启生效；低版本会被拒绝。</div>' +
-          '<div class="tm-field"><label for="tm-update-feed">安装包更新源</label><input class="tm-input" id="tm-update-feed" value="' + esc(url) + '" placeholder="https://example.com/tianming/releases/win/"></div>' +
-          '<div class="tm-actions">' +
-            action('检查本体更新', 'TMContentManager.checkUpdate()', 'primary') +
-            action('下载更新包', 'TMContentManager.downloadUpdate()') +
-            action('安装并重启', 'TMContentManager.installUpdate()', 'danger') +
-          '</div>' +
-          '<div id="tm-update-status" class="tm-status ' + (s.error ? 'warn' : '') + '">' + esc(status || '尚未检查本体更新。') + progressHtml + '</div>' +
-          (notes ? '<details class="tm-copy" style="margin-top:.7rem;"><summary style="cursor:pointer;color:var(--gold);">发布说明</summary><pre style="white-space:pre-wrap;font-family:inherit;margin:.45rem 0 0;">' + esc(notes) + '</pre></details>' : '') +
-        '</section>' +
-        '<aside class="tm-panel">' +
-          '<h4>更新账本</h4>' +
-          '<div class="tm-kv">' +
-            '<div><small>当前版本</small><b>' + esc(s.currentVersion || state.status && state.status.currentVersion || '未读取') + '</b></div>' +
-            '<div><small>远端版本</small><b>' + esc(s.remoteVersion || (s.info && s.info.version) || '未检查') + '</b></div>' +
-            '<div><small>更新类型</small><b>本体安装包</b></div>' +
-            '<div><small>安全策略</small><b>只允许升版本</b></div>' +
-          '</div>' +
-          '<div class="tm-status">本体更新负责“底层能力”；UI、剧本、地图、立绘、音乐等前端资源优先使用“前端热更”，速度更快，也可回滚。</div>' +
-        '</div>' +
-      '</div>' +
-      '<section class="tm-panel" style="margin-top:.8rem;"><h4>官方内容策略</h4><div class="tm-copy">官方剧本、地图、立绘、语义检索包可以随安装包发布，也可以通过热更/官方内容包分发。玩家自制内容则进入创意工坊，避免覆盖官方资产。</div></section>';
-  }
-
-  function renderOnlineTab() {
-    var h = state.onlineStatus || {};
-    var features = h.features || {};
-    var endpoints = h.endpoints || {};
-    var msg = state.onlineMessage || (h.ok ? '在线服务可用。' : '尚未检查在线服务。');
-    return '' +
-      '<div class="settings-section">' +
-        '<h4>游戏在线服务</h4>' +
-        '<div style="font-size:.76rem;color:var(--txt-d);line-height:1.6;margin-bottom:.55rem;">这里不是让玩家跳转网页，而是游戏内联网功能的后端入口。热更新、在线工坊和未来账号系统都通过这组 API 工作；服务器不可用时，本地游戏、存档和本地工坊仍可使用。</div>' +
-        '<div class="fd full"><label>在线服务地址</label><input id="tm-online-api" value="' + esc(state.onlineApiUrl || state.defaultOnlineApiUrl || '') + '" placeholder="https://api.example.com/tianming-api/"></div>' +
-        '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.55rem 0 .7rem;">' +
-          btn('检查在线服务', 'TMContentManager.checkOnlineService()', 'bt bp bsm') +
-        '</div>' +
-        '<div style="margin-bottom:.6rem;font-size:.78rem;color:var(--gold-d);line-height:1.6;">' + esc(msg) + '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;font-size:.76rem;color:var(--txt-d);">' +
-          '<div>服务：' + esc(h.service || '未知') + '</div>' +
-          '<div>版本：' + esc(h.version || '未知') + '</div>' +
-          '<div>热更新：' + (features.hotUpdate ? '可用' : '未启用') + '</div>' +
-          '<div>在线工坊：' + (features.workshop ? '可用' : '未启用') + '</div>' +
-          '<div>账号系统：' + (features.accounts ? '可用' : '未启用') + '</div>' +
-          '<div>服务器时间：' + esc(h.serverTime || '') + '</div>' +
-        '</div>' +
-        '<details style="margin-top:.7rem;color:var(--txt-d);font-size:.72rem;line-height:1.5;"><summary style="cursor:pointer;color:var(--gold);">联网端点</summary>' +
-          '<pre style="white-space:pre-wrap;font-family:inherit;">' + esc(JSON.stringify(endpoints, null, 2)) + '</pre>' +
-        '</details>' +
-      '</div>';
-  }
-
   function hotStatusText(evt) {
     if (!evt) return '';
     if (evt.kind === 'download-start') return '正在下载热更新 ' + (evt.version || '');
@@ -562,42 +488,6 @@
     if (evt.kind === 'installed') return '热更新已安装，点击“立即重载前端”即可生效。';
     if (evt.kind === 'error') return '热更新失败：' + (evt.error || '未知错误');
     return evt.message || evt.error || '';
-  }
-
-  function renderHotUpdateTab() {
-    var h = state.hotStatus || {};
-    var url = state.hotFeedUrl || state.defaultHotFeedUrl || '';
-    var enabled = h.enabled !== false;
-    var mode = h.activeHot ? ('热更版 ' + (h.currentVersion || h.rendererVersion || '')) : '安装包内置前端';
-    var msg = state.hotMessage || '';
-    if (!msg) {
-      msg = '当前加载：' + mode + '；基础版本 ' + (h.baseVersion || '') + '；前端版本 ' + (h.rendererVersion || h.baseVersion || '') + '。';
-    }
-    return '' +
-      '<div class="settings-section">' +
-        '<h4>热更新（无需安装包）</h4>' +
-        '<div style="font-size:.76rem;color:var(--txt-d);line-height:1.6;margin-bottom:.55rem;">热更新会替换游戏前端 web 代码、样式、剧本、地图、立绘和音乐等静态资源。主进程、preload、Electron、原生依赖和安装器自身仍必须通过“本体在线更新”发布。</div>' +
-        '<div class="fd full"><label>热更新清单地址</label><input id="tm-hot-feed" value="' + esc(url) + '" placeholder="https://example.com/tianming/hot/hot-latest.json"></div>' +
-        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;margin-top:.6rem;font-size:.76rem;color:var(--txt-d);">' +
-          '<div>启用状态：<b style="color:var(--gold);">' + (enabled ? '已启用' : '已暂停') + '</b></div>' +
-          '<div>当前加载：<b style="color:var(--gold);">' + esc(mode) + '</b></div>' +
-          '<div>基础版本：' + esc(h.baseVersion || '') + '</div>' +
-          '<div>前端版本：' + esc(h.rendererVersion || h.baseVersion || '') + '</div>' +
-          '<div>上个热更：' + esc(h.previousVersion || '无') + '</div>' +
-          '<div>安装时间：' + esc(h.installedAt || '无') + '</div>' +
-        '</div>' +
-        '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.65rem;">' +
-          btn('检查热更新', 'TMContentManager.checkHotUpdate()', 'bt bp bsm') +
-          btn('下载并安装热更', 'TMContentManager.installHotUpdate()', 'bt bd bsm') +
-          btn('立即重载前端', 'TMContentManager.reloadAfterHotUpdate()') +
-          btn(enabled ? '暂停热更' : '启用热更', 'TMContentManager.toggleHotUpdate(' + (!enabled) + ')') +
-          btn('回滚上个热更', 'TMContentManager.rollbackHotUpdate()') +
-          btn('打开热更目录', 'TMContentManager.openHotUpdateDir()') +
-          btn('热更包格式', 'TMContentManager.openHotFormatDoc()') +
-        '</div>' +
-        '<div style="margin-top:.6rem;font-size:.78rem;color:var(--gold-d);line-height:1.6;">' + esc(msg || '尚未检查热更新。') + '</div>' +
-        '<div style="margin-top:.45rem;font-size:.7rem;color:var(--txt-d);line-height:1.5;">活动目录：' + esc(h.activeWebRoot || '') + '</div>' +
-      '</div>';
   }
 
   function packRow(p) {
@@ -633,33 +523,6 @@
     '</div>';
   }
 
-  function renderWorkshopTab() {
-    var rows = state.packs.length ? state.packs.map(packRow).join('') : '<div style="color:var(--txt-d);padding:1rem 0;">暂无工坊包。</div>';
-    var c = state.catalog || {};
-    var catalogRows = c.packs && c.packs.length ? c.packs.map(catalogPackRow).join('') : '<div style="color:var(--txt-d);padding:.5rem 0;">尚未载入在线目录。</div>';
-    return '<div class="settings-section">' +
-      '<h4>创意工坊</h4>' +
-      '<div style="font-size:.76rem;color:var(--txt-d);line-height:1.6;margin-bottom:.55rem;">支持 .tm-pack / .zip / 单个剧本 JSON。导入前会校验 manifest、路径越界、危险文件类型和大小上限；启用的剧本包会在开卷前合入剧本列表。</div>' +
-      '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.7rem;">' +
-        btn('导入工坊包', 'TMContentManager.importPack()', 'bt bp bsm') +
-        btn('刷新列表', 'TMContentManager.refreshPacks()') +
-        btn('打开目录', 'TMContentManager.openWorkshopDir()') +
-        btn('包格式说明', 'TMContentManager.openFormatDoc()') +
-      '</div>' +
-      rows +
-    '</div>' +
-    '<div class="settings-section">' +
-      '<h4>在线工坊目录</h4>' +
-      '<div style="font-size:.76rem;color:var(--txt-d);line-height:1.6;margin-bottom:.55rem;">服务器可发布 catalog.json，玩家在这里刷新后直接安装目录中的 .tm-pack。目录和包地址同样要求 HTTPS；本地调试允许 localhost HTTP。</div>' +
-      '<div class="fd full"><label>工坊目录地址</label><input id="tm-workshop-catalog" value="' + esc(state.catalogUrl || state.defaultCatalogUrl || '') + '" placeholder="https://example.com/tianming/workshop/catalog.json"></div>' +
-      '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.55rem 0 .7rem;">' +
-        btn('刷新在线目录', 'TMContentManager.loadWorkshopCatalog()', 'bt bp bsm') +
-      '</div>' +
-      '<div style="margin-bottom:.45rem;font-size:.76rem;color:var(--gold-d);">' + esc(state.catalogMessage || (c.title ? (c.title + (c.updatedAt ? ' · ' + c.updatedAt : '')) : '')) + '</div>' +
-      catalogRows +
-    '</div>';
-  }
-
   function jsArg(value) {
     return JSON.stringify(String(value == null ? '' : value)).replace(/"/g, '&quot;');
   }
@@ -688,47 +551,6 @@
     '</div>';
   }
 
-  function renderOnlineTabV2() {
-    var h = state.onlineStatus || {};
-    var features = h.features || {};
-    var endpoints = h.endpoints || {};
-    var ok = !!h.ok;
-    var msg = state.onlineMessage || (ok ? '在线服务可用。' : '尚未检查在线服务。');
-    var apiUrl = state.onlineApiUrl || state.defaultOnlineApiUrl || '';
-    return '' +
-      '<div class="tm-grid-2">' +
-        '<section class="tm-panel">' +
-          '<h4>联网总览</h4>' +
-          '<div class="tm-copy">这里是游戏内的联网中枢。热更新、在线创意工坊和未来账号系统都从这里接入；网络不可用时，不影响本地开局、读档和离线游玩。</div>' +
-          '<div class="tm-field"><label for="tm-online-api">在线服务地址</label><input class="tm-input" id="tm-online-api" value="' + esc(apiUrl) + '" placeholder="https://api.example.com/tianming-api/"></div>' +
-          '<div class="tm-actions">' +
-            action('检查在线服务', 'TMContentManager.checkOnlineService()', 'primary') +
-          '</div>' +
-          '<div class="tm-status ' + (ok ? '' : 'warn') + '" role="status" aria-live="polite">' + esc(msg) + '</div>' +
-          '<div class="tm-grid-3" style="margin-top:.8rem;">' +
-            featureCard('前端热更新', !!features.hotUpdate, '用于无安装包更新 UI、脚本、剧本、地图、立绘和音乐等前端资源。') +
-            featureCard('在线创意工坊', !!features.workshop, '用于从官方目录浏览并安装玩家内容包，同时保留本地导入能力。') +
-            featureCard('账号身份', !!features.accounts, '用于未来云存档、作者身份、订阅与跨设备同步；当前不会阻挡离线游戏。') +
-          '</div>' +
-        '</section>' +
-        '<aside class="tm-panel">' +
-          '<h4>服务账本</h4>' +
-          '<div class="tm-kv">' +
-            kv('服务', h.service || '未连接') +
-            kv('接口版本', h.version || '未连接') +
-            kv('服务器时间', h.serverTime || '未返回') +
-            kv('离线策略', h.offlineMode || '本地游戏可离线运行') +
-          '</div>' +
-          '<div class="tm-status">服务正常时，进入工坊或账号页；服务不可用时，当前局与本地内容照常，不会被锁死。</div>' +
-          '<div class="tm-actions">' +
-            action('进入创意工坊', 'TMContentManager.switchTab(\'workshop\')', 'primary') +
-            action('账号登录', 'TMContentManager.switchTab(\'account\')') +
-          '</div>' +
-          '<details class="tm-copy" style="margin-top:.75rem;"><summary style="cursor:pointer;color:var(--gold);">联网端点</summary><pre style="white-space:pre-wrap;font-family:inherit;margin:.45rem 0 0;">' + esc(JSON.stringify(endpoints, null, 2)) + '</pre></details>' +
-        '</aside>' +
-      '</div>';
-  }
-
   function renderWebUpdateNotice() {
     var ver = (state.onlineStatus && state.onlineStatus.version) || '';
     return '' +
@@ -754,123 +576,6 @@
         '</aside>' +
       '</div>' +
       '<section class="tm-panel" style="margin-top:.8rem;"><h4>游戏公告摘要</h4><div class="tm-pack-list">' + changelogSummary(3) + '</div></section>';
-  }
-
-  function renderUpdateTabV2() {
-    if (!desktop()) return renderWebUpdateNotice();
-    var s = state.status || {};
-    var url = state.feedUrl || state.defaultFeedUrl || '';
-    var h = state.hotStatus || {};
-    var hc = state.hotCheck || {};
-    var hotUrl = state.hotFeedUrl || state.defaultHotFeedUrl || '';
-    var enabled = h.enabled !== false;
-    var mode = h.activeHot ? ('热更版本 ' + (h.currentVersion || h.rendererVersion || '')) : '安装包内置前端';
-    var status = s.message || s.error || '';
-    var progressHtml = '';
-    var notes = releaseNotes(s.info);
-    if (s.kind === 'checking') status = '正在检查本体更新...';
-    else if (s.kind === 'available' && s.info) status = '发现新版本 ' + s.info.version + '，当前版本 ' + (s.currentVersion || '');
-    else if (s.kind === 'not-available') status = '当前已经是最新本体版本。';
-    else if (s.kind === 'blocked-downgrade') status = s.message || '远端版本不高于当前版本，已拒绝下载。';
-    else if (s.kind === 'download-progress' && s.progress) {
-      var pct = Math.max(0, Math.min(100, Math.round(s.progress.percent || 0)));
-      status = '正在下载本体更新 ' + pct + '%';
-      progressHtml = '<div class="tm-progress"><i style="width:' + pct + '%;"></i></div>';
-    } else if (s.kind === 'downloaded') status = '本体更新已下载，可以安装并重启。';
-    if (s.hasUpdate) status = '发现新版本 ' + s.remoteVersion + '，当前版本 ' + s.currentVersion;
-    else if (s.blockedDowngrade) status = '远端版本 ' + s.remoteVersion + ' 不高于当前版本 ' + s.currentVersion + '，已拒绝。';
-    else if (s.currentVersion && !status) status = '当前版本 ' + s.currentVersion + '，尚未发现新版本。';
-    var hotHasUpdate = !!hc.hasUpdate;
-    var installerHasUpdate = !!s.hasUpdate;
-    var hotText = state.hotMessage || (hotHasUpdate ? ('发现前端热更 ' + hc.remoteVersion + '，大小 ' + formatBytes(hc.size) + '。') : '尚未检查前端热更。');
-    return '' +
-      '<div class="tm-grid-2">' +
-        '<section class="tm-panel">' +
-          '<h4>游戏更新</h4>' +
-          '<div class="tm-copy">这里把“前端热更”和“本体安装包更新”合在一起展示。普通 UI、剧本、地图、立绘、音乐和脚本优先走前端热更；Electron 外壳、preload、主进程和安装器才走本体更新。</div>' +
-          '<div class="tm-grid-2" style="margin-top:.75rem;">' +
-            '<div class="tm-card">' +
-              '<div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center;"><b style="color:#f2d487;">前端热更</b>' + pill(enabled ? '启用' : '暂停', enabled ? 'good' : 'off') + '</div>' +
-              '<div class="tm-copy" style="margin-top:.35rem;">当前加载：' + esc(mode) + '</div>' +
-              '<div class="tm-pack-meta">远端版本：' + esc(hc.remoteVersion || '未检查') + ' / 大小：' + esc(formatBytes(hc.size)) + '</div>' +
-              '<div class="tm-status ' + (hc.success === false ? 'warn' : '') + '">' + esc(hotText) + '</div>' +
-            '</div>' +
-            '<div class="tm-card">' +
-              '<div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center;"><b style="color:#f2d487;">本体安装包</b>' + pill(installerHasUpdate ? '可下载' : '未发现', installerHasUpdate ? 'good' : '') + '</div>' +
-              '<div class="tm-copy" style="margin-top:.35rem;">当前版本：' + esc(s.currentVersion || '未读取') + '</div>' +
-              '<div class="tm-pack-meta">远端版本：' + esc(s.remoteVersion || (s.info && s.info.version) || '未检查') + ' / 大小：' + esc(formatBytes(s.size || updateInfoSize(s.info))) + '</div>' +
-              '<div class="tm-status ' + (s.error ? 'warn' : '') + '">' + esc(status || '尚未检查本体更新。') + progressHtml + '</div>' +
-            '</div>' +
-          '</div>' +
-          '<div class="tm-field"><label for="tm-hot-feed">前端热更清单</label><input class="tm-input" id="tm-hot-feed" value="' + esc(hotUrl) + '" placeholder="https://example.com/tianming/hot/hot-latest.json"></div>' +
-          '<div class="tm-field"><label for="tm-update-feed">安装包更新源</label><input class="tm-input" id="tm-update-feed" value="' + esc(url) + '" placeholder="https://example.com/tianming/releases/win/"></div>' +
-          '<div class="tm-actions">' +
-            action('检查全部更新', 'TMContentManager.checkGameUpdate()', 'primary') +
-            action('下载并安装前端热更', 'TMContentManager.installHotUpdate()', '', !hotHasUpdate) +
-            action('下载本体更新包', 'TMContentManager.downloadUpdate()', '', !installerHasUpdate) +
-            action('安装本体并重启', 'TMContentManager.installUpdate()', 'danger') +
-            action('立即重载前端', 'TMContentManager.reloadAfterHotUpdate()') +
-          '</div>' +
-          '<div class="tm-actions">' +
-            action(enabled ? '暂停热更' : '启用热更', 'TMContentManager.toggleHotUpdate(' + (!enabled) + ')') +
-            action('回滚上个热更', 'TMContentManager.rollbackHotUpdate()', 'danger') +
-            action('打开热更目录', 'TMContentManager.openHotUpdateDir()') +
-          '</div>' +
-        '</section>' +
-        '<aside class="tm-panel">' +
-          '<h4>本次下载内容</h4>' +
-          '<div class="tm-kv">' +
-            kv('前端热更大小', formatBytes(hc.size)) +
-            kv('本体更新大小', formatBytes(s.size || updateInfoSize(s.info))) +
-            kv('前端版本', h.rendererVersion || h.baseVersion || '未读取') +
-            kv('本体版本', s.currentVersion || '未读取') +
-          '</div>' +
-          '<div class="tm-status">下载前会先展示远端版本、包体大小和更新说明。若只发现前端热更，玩家无需重装；若发现本体更新，则下载完整安装包并重启安装。</div>' +
-          (hc.notes ? '<details class="tm-copy" style="margin-top:.75rem;" open><summary style="cursor:pointer;color:var(--gold);">热更说明</summary><pre style="white-space:pre-wrap;font-family:inherit;margin:.45rem 0 0;">' + esc(hc.notes) + '</pre></details>' : '') +
-          (notes ? '<details class="tm-copy" style="margin-top:.75rem;"><summary style="cursor:pointer;color:var(--gold);">本体发布说明</summary><pre style="white-space:pre-wrap;font-family:inherit;margin:.45rem 0 0;">' + esc(notes) + '</pre></details>' : '') +
-        '</aside>' +
-      '</div>' +
-      '<section class="tm-panel" style="margin-top:.8rem;"><h4>游戏公告摘要</h4><div class="tm-pack-list">' + changelogSummary(3) + '</div></section>';
-  }
-
-  function renderHotUpdateTabV2() {
-    var h = state.hotStatus || {};
-    var url = state.hotFeedUrl || state.defaultHotFeedUrl || '';
-    var enabled = h.enabled !== false;
-    var mode = h.activeHot ? ('热更版本 ' + (h.currentVersion || h.rendererVersion || '')) : '安装包内置前端';
-    var msg = state.hotMessage || ('当前加载：' + mode + '；基础版本 ' + (h.baseVersion || '未读取') + '；前端版本 ' + (h.rendererVersion || h.baseVersion || '未读取') + '。');
-    return '' +
-      '<div class="tm-grid-2">' +
-        '<section class="tm-panel">' +
-          '<h4>前端热更</h4>' +
-          '<div class="tm-copy">热更用于替换游戏前端 web 资源，让玩家不重新下载安装包也能收到 UI、剧本、地图、立绘、音乐和规则脚本更新。每个包都需要清单与哈希校验。</div>' +
-          '<div class="tm-field"><label for="tm-hot-feed">热更清单地址</label><input class="tm-input" id="tm-hot-feed" value="' + esc(url) + '" placeholder="https://example.com/tianming/hot/hot-latest.json"></div>' +
-          '<div class="tm-actions">' +
-            action('检查热更', 'TMContentManager.checkHotUpdate()', 'primary') +
-            action('下载并安装', 'TMContentManager.installHotUpdate()') +
-            action('立即重载前端', 'TMContentManager.reloadAfterHotUpdate()') +
-            action(enabled ? '暂停热更' : '启用热更', 'TMContentManager.toggleHotUpdate(' + (!enabled) + ')') +
-            action('回滚上个热更', 'TMContentManager.rollbackHotUpdate()', 'danger') +
-          '</div>' +
-          '<div class="tm-status">' + esc(msg || '尚未检查热更。') + '</div>' +
-        '</section>' +
-        '<aside class="tm-panel">' +
-          '<h4>热更状态</h4>' +
-          '<div class="tm-kv">' +
-            kv('启用状态', enabled ? '已启用' : '已暂停') +
-            kv('当前加载', mode) +
-            kv('基础版本', h.baseVersion || '未读取') +
-            kv('前端版本', h.rendererVersion || h.baseVersion || '未读取') +
-            kv('上个热更', h.previousVersion || '无') +
-            kv('安装时间', h.installedAt || '无') +
-          '</div>' +
-          '<div class="tm-actions">' +
-            action('打开热更目录', 'TMContentManager.openHotUpdateDir()') +
-            action('热更包格式', 'TMContentManager.openHotFormatDoc()') +
-          '</div>' +
-          '<div class="tm-status">活动目录：' + esc(h.activeWebRoot || '未读取') + '</div>' +
-        '</aside>' +
-      '</div>';
   }
 
   function packRowV2(p) {

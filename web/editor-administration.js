@@ -514,19 +514,6 @@ function editAdminDivision(node) {
   });
 }
 
-// 删除行政单位确认
-function deleteAdminDivisionConfirm(nodeId) {
-  // 关闭编辑模态框
-  var modal = document.querySelector('.modal-overlay[style*="display: flex"]');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-
-  if (confirm('确定要删除此行政单位及其所有下级单位吗？')) {
-    deleteAdminDivision(nodeId);
-  }
-}
-
 // 删除行政单位
 function deleteAdminDivision(nodeId) {
   var adminHierarchy = getCurrentAdminHierarchy();
@@ -865,125 +852,6 @@ function quickEditRegion(regionId) {
   });
 }
 
-// 导出地块归属数据
-function exportRegionsData() {
-  if (!scriptData.map || !scriptData.map.regions) {
-    alert('暂无地块数据');
-    return;
-  }
-
-  const data = {
-    regions: scriptData.map.regions.map(r => ({
-      id: r.id,
-      name: r.name,
-      owner: r.owner,
-      color: r.color,
-      center: r.center,
-      neighbors: r.neighbors
-    }))
-  };
-
-  const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'regions_' + Date.now() + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// 导出地理数据
-function exportGeographyData() {
-  if (!scriptData.map) {
-    alert('暂无地理数据');
-    return;
-  }
-
-  const data = {
-    regions: scriptData.map.regions || [],
-    roads: scriptData.map.roads || [],
-    cities: scriptData.cities || []
-  };
-
-  const json = JSON.stringify(data, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'geography_' + Date.now() + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// 批量分配地块
-function batchAssignRegions() {
-  const factions = scriptData.factions || [];
-  if (factions.length === 0) {
-    alert('请先在剧本中添加势力！');
-    return;
-  }
-
-  if (!scriptData.map || !scriptData.map.regions) {
-    alert('请先导入地图！');
-    return;
-  }
-
-  const factionOptions = [
-    '<option value="">无主荒地</option>',
-    '<option value="player">玩家势力</option>',
-    ...factions.map(f => `<option value="${f.id}">${f.name}</option>`)
-  ].join('');
-
-  const html = `
-    <div style="padding: 16px;">
-      <div class="form-group">
-        <label>选择势力</label>
-        <select id="batch-faction" style="width: 100%; padding: 8px; background: #1a1a1a; border: 1px solid #444; color: #e0e0e0; border-radius: 4px;">
-          ${factionOptions}
-        </select>
-      </div>
-      <div class="form-group">
-        <label>分配范围</label>
-        <select id="batch-range" style="width: 100%; padding: 8px; background: #1a1a1a; border: 1px solid #444; color: #e0e0e0; border-radius: 4px;">
-          <option value="all">所有地块</option>
-          <option value="unassigned">仅无主地块</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label style="display: flex; align-items: center; cursor: pointer;">
-          <input type="checkbox" id="batch-auto-color" checked style="margin-right: 6px;">
-          自动配色
-        </label>
-      </div>
-      <div style="font-size: 11px; color: #666; line-height: 1.4;">
-        提示：批量分配会覆盖现有归属（如果选择"所有地块"）
-      </div>
-    </div>
-  `;
-
-  openGenericModal('批量分配势力', html, () => {
-    const factionId = document.getElementById('batch-faction').value;
-    const range = document.getElementById('batch-range').value;
-    const autoColor = document.getElementById('batch-auto-color').checked;
-
-    let count = 0;
-    scriptData.map.regions.forEach(region => {
-      if (range === 'all' || !region.owner) {
-        region.owner = factionId;
-        if (autoColor) {
-          region.color = factionId ? getAdminFactionColor(factionId) : '#808080';
-        }
-        count++;
-      }
-    });
-
-    renderRegionsList();
-    if(typeof autoSave==="function")autoSave();
-    alert(`已为 ${count} 个地块分配势力`);
-  });
-}
-
 // 获取势力颜色（行政区划模块专用）
 function getAdminFactionColor(factionId) {
   if (factionId === 'player') {
@@ -1001,100 +869,6 @@ function getAdminFactionColor(factionId) {
   const saturation = 60 + Math.floor(_rnd() * 20);
   const lightness = 50 + Math.floor(_rnd() * 10);
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
-
-// 渲染地理关系信息
-function renderGeographyInfo() {
-  const container = document.getElementById('geography-info');
-
-  if (!scriptData.map || !scriptData.map.regions) {
-    container.innerHTML = '<div style="text-align: center; color: #888; padding: 40px; font-size: 13px;">暂无地图数据</div>';
-    return;
-  }
-
-  const regionCount = scriptData.map.regions.length;
-  const roadCount = scriptData.map.roads ? scriptData.map.roads.length : 0;
-
-  // 计算平均邻居数
-  let totalNeighbors = 0;
-  scriptData.map.regions.forEach(r => {
-    if (r.neighbors) {
-      totalNeighbors += r.neighbors.length;
-    }
-  });
-  const avgNeighbors = regionCount > 0 ? (totalNeighbors / regionCount).toFixed(1) : 0;
-
-  let html = `
-    <div style="background: #2a2a2a; border: 1px solid #444; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-      <div style="font-size: 13px; color: #ffd700; font-weight: 600; margin-bottom: 12px;">地理统计</div>
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 12px; color: #ccc;">
-        <div>地块总数: <span style="color: #ffd700;">${regionCount}</span></div>
-        <div>道路总数: <span style="color: #ffd700;">${roadCount}</span></div>
-        <div>平均邻居数: <span style="color: #ffd700;">${avgNeighbors}</span></div>
-        <div>城市总数: <span style="color: #ffd700;">${scriptData.cities ? scriptData.cities.length : 0}</span></div>
-      </div>
-    </div>
-  `;
-
-  // 显示城市地理分布
-  if (scriptData.cities && scriptData.cities.length > 0) {
-    html += `
-      <div style="background: #2a2a2a; border: 1px solid #444; border-radius: 8px; padding: 16px;">
-        <div style="font-size: 13px; color: #ffd700; font-weight: 600; margin-bottom: 12px;">城市地理分布</div>
-        <div style="max-height: 300px; overflow-y: auto;">
-    `;
-
-    scriptData.cities.forEach(city => {
-      const region = scriptData.map.regions.find(r => r.id === city.regionId);
-      html += `
-        <div style="padding: 8px; border-bottom: 1px solid #333; font-size: 12px; color: #ccc;">
-          <span style="color: #ffd700;">${city.name}</span> →
-          ${region ? `地块${region.id} (${city.position || '中部'})` : '未分配地块'}
-        </div>
-      `;
-    });
-
-    html += '</div></div>';
-  }
-
-  container.innerHTML = html;
-}
-
-// AI生成城市
-function aiGenerateCities() {
-  alert('AI生成城市功能开发中...');
-}
-
-// 导入城市文件
-function importCitiesFromFile() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      try {
-        const data = JSON.parse(event.target.result);
-        if (Array.isArray(data)) {
-          scriptData.cities = data;
-        } else if (data.cities && Array.isArray(data.cities)) {
-          scriptData.cities = data.cities;
-        } else {
-          throw new Error('无效的城市数据格式');
-        }
-        renderCitiesList();
-        if(typeof autoSave==="function")autoSave();
-        alert(`已导入 ${scriptData.cities.length} 个城市`);
-      } catch (err) {
-        alert('导入失败: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
 }
 
 // ====== CK3-style interactive tree visualization (identical to government tree) ======
@@ -1566,17 +1340,6 @@ function _adminDelNode(path) {
   }
 }
 
-// AI生成行政区划 — 委托给 editor.js 中的实现
-function aiGenerateAdminHierarchyDelegate() {
-  if (typeof window._editorAiGenerateAdminHierarchy === 'function') {
-    window._editorAiGenerateAdminHierarchy();
-  } else if (typeof window.aiGenerateAdminHierarchy === 'function') {
-    window.aiGenerateAdminHierarchy();
-  } else {
-    alert('AI生成功能未加载，请刷新页面重试');
-  }
-}
-
 // 导出行政层级
 function exportAdminHierarchy() {
   var adminHierarchy = getCurrentAdminHierarchy();
@@ -1851,19 +1614,6 @@ function getTierRule(level) {
 }
 
 /**
- * 检查某行政区主官是否有特定权限
- * @param {string} divisionId - 行政区划ID
- * @param {string} permission - 'canAppoint'|'canLevy'|'canDeclareWar'
- * @returns {boolean}
- */
-function checkDivisionPermission(divisionId, permission) {
-  var div = findDivisionById(divisionId);
-  if (!div) return false;
-  var rule = getTierRule(div.level);
-  return !!rule[permission];
-}
-
-/**
  * 递归查找行政区划节点
  */
 function findDivisionById(divId) {
@@ -1881,21 +1631,6 @@ function findDivisionById(divId) {
 // ============================================================
 // M6: 治所联动
 // ============================================================
-
-/**
- * 同步上级行政区的governor到其首府
- * @param {Object} parentDiv - 上级行政区划节点
- */
-function syncCapitalLinkage(parentDiv) {
-  if (!P.adminConfig || !P.adminConfig.capitalLinkage) return;
-  if (!parentDiv || !parentDiv.capitalChildId) return;
-
-  var capitalDiv = findDivisionById(parentDiv.capitalChildId);
-  if (capitalDiv) {
-    capitalDiv.governor = parentDiv.governor;
-    capitalDiv.taxLevel = parentDiv.taxLevel;
-  }
-}
 
 // ============================================================
 // M7: 法理领地检查

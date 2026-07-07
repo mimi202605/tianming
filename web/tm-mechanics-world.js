@@ -392,38 +392,6 @@ function getFamilyOf(charName) {
   return GM.families[ch.family] || null;
 }
 
-/** 获取角色所在家支 */
-function getFamilyBranch(charName) {
-  var fam = getFamilyOf(charName);
-  if (!fam || !Array.isArray(fam.branches)) return null;   // 分发(renown 兜底)创建的家族可能无 branches
-  for (var i = 0; i < fam.branches.length; i++) {
-    if (fam.branches[i] && (fam.branches[i].members || []).indexOf(charName) >= 0) return fam.branches[i];
-  }
-  return fam.branches[0] || null;
-}
-
-/** 添加角色到家族 */
-function addToFamily(charName, familyName, branchId) {
-  if (!GM.families) GM.families = {};
-  if (!GM.families[familyName]) {
-    var ch = findCharByName(charName);
-    GM.families[familyName] = {
-      name: familyName, tier: (ch && ch.familyTier) || 'common', renown: 15,
-      founder: charName, motto: '',
-      branches: [{ id: 'main', name: '\u5AE1\u7CFB', head: charName, members: [charName] }],
-      history: [{ turn: GM.turn, event: '\u5BB6\u65CF\u5EFA\u7ACB', desc: familyName }],
-      relations: {}
-    };
-    return;
-  }
-  var fam = GM.families[familyName];
-  var branch = branchId ? fam.branches.find(function(b) { return b.id === branchId; }) : fam.branches[0];
-  if (!branch) branch = fam.branches[0];
-  if (branch && branch.members.indexOf(charName) < 0) {
-    branch.members.push(charName);
-  }
-}
-
 /** 设置家族内血缘关系 */
 function setFamilyRelation(familyName, nameA, nameB, relType) {
   if (!GM.families || !GM.families[familyName] || !nameA || !nameB || nameA === nameB) return;
@@ -515,24 +483,6 @@ function inferBloodRelations(familyName) {
       });
     });
   });
-}
-
-/** 创建家族分支 */
-function createBranch(familyName, branchName, headName, memberNames) {
-  var fam = GM.families[familyName];
-  if (!fam) return;
-  if (!Array.isArray(fam.branches)) fam.branches = [];   // 分发家族可能无 branches·下方 forEach/push 需数组
-  var newBranch = { id: 'branch_' + uid(), name: branchName, head: headName, members: [] };
-  memberNames.forEach(function(name) {
-    // 从旧分支中移除
-    fam.branches.forEach(function(b) {
-      var idx = (b && b.members) ? b.members.indexOf(name) : -1;
-      if (idx >= 0) b.members.splice(idx, 1);
-    });
-    newBranch.members.push(name);
-  });
-  fam.branches.push(newBranch);
-  fam.history.push({ turn: GM.turn, event: '\u5206\u652F', desc: branchName + '\u7ACB' });
 }
 
 /** 更新家族声望 */
@@ -1568,17 +1518,6 @@ function getFamilyStatusText(character) {
   if (fs.郡望) text += '(' + fs.郡望 + ')';
   if (fs.声望) text += '声望' + fs.声望;
   return text;
-}
-
-/**
- * 计算家世对出仕的门槛修正
- * @param {Object} character
- * @returns {number} 乘数（1.0=无修正，>1=更难）
- */
-function getFamilyBarrierMultiplier(character) {
-  if (!character || !character.familyStatus) return 1.0;
-  var level = (FAMILY_STATUS_LEVELS[character.familyStatus.门第] || {}).level || 4;
-  return 1 + (level - 1) * 0.12; // imperial=1.0, noble=1.12, scholar=1.24, commoner=1.36, peasant=1.48, outcast=1.60
 }
 
 // ============================================================

@@ -397,92 +397,6 @@ function updateProvinceEconomy() {
   });
 }
 
-/**
- * 省级政策执行（玩家可对特定省份执行政策）
- */
-function executeProvincePolicy(provinceName, policyType) {
-  var province = GM.provinceStats[provinceName];
-  if (!province) return;
-
-  switch(policyType) {
-    case 'reduce_tax':
-      // 减税
-      province.unrest = Math.max(0, province.unrest - 10);
-      province.wealth += 5;
-      addEB('省级政策', provinceName + '：减税惠民');
-      break;
-
-    case 'increase_tax':
-      // 增税
-      province.unrest = Math.min(100, province.unrest + 10);
-      province.taxRevenue = Math.floor(province.taxRevenue * 1.2);
-      addEB('省级政策', provinceName + '：增加税收');
-      break;
-
-    case 'anti_corruption':
-      // 反腐
-      province.corruption = Math.max(0, province.corruption - 20);
-      province.stability += 5;
-      addEB('省级政策', provinceName + '：整治贪腐');
-      break;
-
-    case 'develop_economy':
-      // 发展经济
-      province.development += 5;
-      province.wealth += 3;
-      addEB('省级政策', provinceName + '：发展经济');
-      break;
-
-    case 'recruit_troops':
-      // 征兵
-      province.unrest = Math.min(100, province.unrest + 5);
-      province.militaryRecruits = Math.floor(province.militaryRecruits * 1.3);
-      addEB('省级政策', provinceName + '：征募士兵');
-      break;
-
-    case 'disaster_relief':
-      // 赈灾
-      province.unrest = Math.max(0, province.unrest - 15);
-      province.stability += 10;
-      addEB('省级政策', provinceName + '：赈灾救济');
-      break;
-  }
-}
-
-/**
- * 任命省份主官（玩家操作）
- */
-function appointProvinceGovernor(provinceName) {
-  var province = GM.provinceStats ? GM.provinceStats[provinceName] : null;
-  if (!province) { toast('\u7701\u4EFD\u4E0D\u5B58\u5728'); return; }
-
-  // 收集可任命的角色（同势力、活着、无地方官职务的）
-  var candidates = (GM.chars || []).filter(function(c) {
-    if (c.alive === false || c.dead) return false;
-    if (c.isPlayer) return false;
-    // 优先同势力
-    if (province.owner && c.faction !== province.owner) return false;
-    return true;
-  });
-
-  if (candidates.length === 0) { toast('\u65E0\u53EF\u4EFB\u547D\u7684\u89D2\u8272'); return; }
-
-  var html = '<div style="max-height:60vh;overflow-y:auto;">';
-  html += '<div style="margin-bottom:0.5rem;color:var(--txt-d);font-size:0.82rem;">\u4E3A ' + provinceName + ' \u4EFB\u547D\u4E3B\u5B98\uFF1A</div>';
-  candidates.slice(0, 20).forEach(function(c) {
-    var adm = c.administration || 50;
-    var loy = c.loyalty || 50;
-    var loyClr = loy > 70 ? 'var(--green)' : loy < 30 ? 'var(--red)' : 'var(--txt-s)';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-bottom:1px solid var(--bg-4);cursor:pointer;" onclick="doAppointGovernor(\'' + provinceName.replace(/'/g, '') + '\',\'' + c.name.replace(/'/g, '') + '\')">';
-    html += '<span>' + c.name + (c.title ? ' <span style="font-size:0.7rem;color:var(--txt-d);">' + c.title + '</span>' : '') + '</span>';
-    html += '<span style="font-size:0.75rem;">\u653F' + adm + ' <span style="color:' + loyClr + ';">\u5FE0' + loy + '</span></span>';
-    html += '</div>';
-  });
-  html += '</div>';
-
-  openGenericModal('\u4EFB\u547D\u4E3B\u5B98', html, null);
-}
-
 function doAppointGovernor(provinceName, charName) {
   var province = GM.provinceStats ? GM.provinceStats[provinceName] : null;
   if (!province) return;
@@ -1338,19 +1252,6 @@ function _peRenderQuickStats(div) {
        + '<div class="tm-div-qs-sub">/100</div></div>';
   html += '</div>';
   return html;
-}
-
-/** 升级版 section 容器（支持 aside） */
-function _peSectionV2(icon, title, bodyHtml, aside) {
-  var h = '<div class="tm-div-section">';
-  h += '<div class="tm-div-section-title">';
-  h += '<span class="tm-div-section-icon">' + icon + '</span>';
-  h += '<span class="tm-div-section-name">' + title + '</span>';
-  if (aside) h += '<span class="tm-div-section-aside">' + aside + '</span>';
-  h += '</div>';
-  h += bodyHtml;
-  h += '</div>';
-  return h;
 }
 
 /** 渲染单条核算行（name | formula | amount） */
@@ -2314,11 +2215,4 @@ function openProvinceEconomy() {
     + _peBuiltContent()
     + '</div></div></div>';
   document.body.appendChild(ov);
-}
-
-/**
- * 格式化数字（添加千位分隔符）— 用于需要精确数字的场景
- */
-function formatNumberComma(num) {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }

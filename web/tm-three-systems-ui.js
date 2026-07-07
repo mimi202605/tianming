@@ -629,20 +629,6 @@
       + '</details>';
   }
 
-  function _aiDbgCounts(rows) {
-    var out = {};
-    (Array.isArray(rows) ? rows : []).forEach(function(r){
-      var k = (r && r.status) || 'unknown';
-      out[k] = (out[k] || 0) + 1;
-    });
-    return out;
-  }
-
-  function _aiDbgPairs(obj) {
-    if (!obj || typeof obj !== 'object') return '';
-    return Object.keys(obj).map(function(k){ return esc(k) + ':' + esc(obj[k]); }).join(' / ');
-  }
-
   function _tsInspectFactionAiDebug(facName) {
     if (!global.GM || !Array.isArray(GM.facs)) { _toast('暂无势力数据'); return; }
     var fac = GM.facs.find(function(x){ return x && x.name === facName; });

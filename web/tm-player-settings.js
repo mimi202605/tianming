@@ -395,35 +395,6 @@ async function _testSecondaryAPI() {
   }
 }
 
-// M2·保存 API 配置后自动跑一次上下文探测（轻量层 0-3·不跑实测以免烧钱）
-async function _saveAPIAndAutoProbe() {
-  var newKey = (_$('s-key')||{}).value||'';
-  var newUrl = (_$('s-url')||{}).value||'';
-  var newModel = (_$('s-model')||{}).value||'';
-  var _changed = (P.ai.key !== newKey) || (P.ai.url !== newUrl) || (P.ai.model !== newModel);
-  P.ai.key = newKey; P.ai.url = newUrl; P.ai.model = newModel;
-  try { localStorage.setItem('tm_api', JSON.stringify(P.ai)); } catch(_) {}
-  if (typeof saveP === 'function') saveP();
-  if (window.tianming && window.tianming.isDesktop) { try { window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(){}); } catch(_){} }
-  if (!_changed) { toast('\u2705 \u5DF2\u4FDD\u5B58\uFF08\u914D\u7F6E\u672A\u53D8\uFF09'); return; }
-  // 配置变化·清旧缓存·跑新探测
-  delete P.conf._detectedContextK; delete P.conf._detectedMaxOutput; delete P.conf._measuredMaxOutput; delete P.conf._ctxCacheKey; delete P.conf._ctxDetectLayer;
-  // _probeHistory 按 model@url 键存档·主API换配置无须整删——整删曾把次API烧真金跑出的证据一并销毁(2026-07-04 审查定罪)
-  if (!newKey) { toast('\u2705 \u5DF2\u4FDD\u5B58\uFF08\u672A\u914D key\u00B7\u8DF3\u8FC7\u81EA\u52A8\u6821\u9A8C\uFF09'); return; }
-  toast('\u2705 \u5DF2\u4FDD\u5B58\u00B7\u6B63\u5728\u81EA\u52A8\u6821\u9A8C\u6A21\u578B\u00B7\u7A0D\u5019\u2026');
-  try {
-    if (typeof showLoading === 'function') showLoading('\u81EA\u52A8\u6821\u9A8C\u6A21\u578B\u80FD\u529B\u2026', 30);
-    if (typeof detectModelContextSize === 'function') await detectModelContextSize({ force: true, onProgress: function(m){ if (typeof showLoading === 'function') showLoading(m, 50); } });
-    if (typeof hideLoading === 'function') hideLoading();
-    if (typeof saveP === 'function') saveP();
-    _refreshBothProbePanels();
-    var wlCtx = (typeof _matchModelCtx === 'function') ? _matchModelCtx(newModel) : 0;
-    var wlOut = (typeof _matchModelOutput === 'function') ? _matchModelOutput(newModel) : 0;
-    if (wlCtx && wlOut) toast('\u2705 \u6A21\u578B\u5DF2\u8BC6\u522B\uFF1A\u4E0A\u4E0B\u6587 ' + wlCtx + 'K\u00B7\u8F93\u51FA ' + wlOut + 'K');
-    else toast('\u26A0 \u672A\u5728\u767D\u540D\u5355\u00B7\u5DF2\u8FD4\u56DE\u63A2\u6D4B\u7ED3\u679C\u00B7\u5EFA\u8BAE\u624B\u52A8\u8DD1"\u5B9E\u6D4B\u8F93\u51FA\u4E0A\u9650"');
-  } catch(e) { if (typeof hideLoading === 'function') hideLoading(); toast('\u26A0 \u81EA\u52A8\u6821\u9A8C\u5931\u8D25\uFF1A' + (e.message||e)); }
-}
-
 function _probeClearCache() {
   if (!confirm('\u6E05\u9664\u6240\u6709\u63A2\u6D4B\u7F13\u5B58\uFF1F\u4E0B\u6B21\u5C06\u91CD\u65B0\u63A2\u6D4B\u3002')) return;
   delete P.conf._detectedContextK;

@@ -620,35 +620,6 @@ function floodFillRegion(startX, startY, width, height, borderMap, visited) {
 
 
 
-/**
- * 对边界点排序（顺时针）
- */
-function sortBoundaryPoints(points) {
-    if (points.length === 0) return [];
-
-    // 计算中心点
-    let centerX = 0, centerY = 0;
-    for (const [x, y] of points) {
-        centerX += x;
-        centerY += y;
-    }
-    centerX /= points.length;
-    centerY /= points.length;
-
-    // 按极角排序
-    points.sort((a, b) => {
-        const angleA = Math.atan2(a[1] - centerY, a[0] - centerX);
-        const angleB = Math.atan2(b[1] - centerY, b[0] - centerX);
-        return angleA - angleB;
-    });
-
-    return points;
-}
-
-
-
-
-
 // ============================================================
 // 增强的识别函数（自动选择算法）
 // ============================================================
@@ -1267,46 +1238,6 @@ function getBounds(pixels) {
     }
 
     return { minX, minY, maxX, maxY };
-}
-
-/**
- * 填充边界线间隙（形态学闭运算）
- */
-function closeBorderGaps(borderMap, width, height) {
-    const temp = new Uint8Array(borderMap);
-
-    // 膨胀操作
-    for (let y = 1; y < height - 1; y++) {
-        for (let x = 1; x < width - 1; x++) {
-            const idx = y * width + x;
-            if (borderMap[idx] === 1) {
-                // 膨胀到8邻域
-                temp[idx - 1] = 1;
-                temp[idx + 1] = 1;
-                temp[idx - width] = 1;
-                temp[idx + width] = 1;
-            }
-        }
-    }
-
-    // 腐蚀操作
-    for (let y = 1; y < height - 1; y++) {
-        for (let x = 1; x < width - 1; x++) {
-            const idx = y * width + x;
-            if (temp[idx] === 1) {
-                let count = 0;
-                // 检查8邻域
-                if (temp[idx - 1] === 1) count++;
-                if (temp[idx + 1] === 1) count++;
-                if (temp[idx - width] === 1) count++;
-                if (temp[idx + width] === 1) count++;
-
-                if (count >= 2) {
-                    borderMap[idx] = 1;
-                }
-            }
-        }
-    }
 }
 
 /**

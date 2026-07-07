@@ -750,25 +750,6 @@ async function processNPCWithCache(npc, context) {
   return result;
 }
 
-// 批量处理 NPC 行为（优化版）
-async function batchProcessNPCs(npcs, context) {
-  var results = [];
-
-  // 将所有 NPC 添加到批处理队列
-  npcs.forEach(function(npc) {
-    AIBatchQueue.add(npc, context, function(result) {
-      if (result) {
-        results.push({npc: npc, behavior: result});
-      }
-    });
-  });
-
-  // 处理队列
-  await AIBatchQueue.process();
-
-  return results;
-}
-
 // 性能监控
 var AIPerformanceMonitor = {
   stats: {

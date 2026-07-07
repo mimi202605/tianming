@@ -380,4 +380,49 @@ assert(!/_buildWindowRefGroup\('NPC\.legacy'/.test(read('tm-namespaces.js')), 'd
   });
 });
 
+// ── 2026-07-07 死代码清除刀:76 个零引用死函数已删除(全语料 token 零引用+逐个动态拼名/JSON 复核)·锁定防回潮 ──
+[
+  ['editor-administration.js', ['deleteAdminDivisionConfirm','exportRegionsData','exportGeographyData','batchAssignRegions','renderGeographyInfo','aiGenerateCities','importCitiesFromFile','aiGenerateAdminHierarchyDelegate','checkDivisionPermission','syncCapitalLinkage']],
+  ['editor-crud.js', ['_readJsonField']],
+  ['editor-government.js', ['_govFnDel']],
+  ['editor.js', ['addMapItem','checkOfficialVassalMatch']],
+  ['map-editor-tools.js', ['findEdgeNear','findEdgeNearMulti']],
+  ['map-recognition.js', ['sortBoundaryPoints','closeBorderGaps']],
+  ['phase8-formal-records.js', ['formalRecordRows','renderRecordExportButton']],
+  ['tm-ai-infra-model-detect.js', ['probeModelEvidenceAuditLegacy']],
+  ['tm-change-queue.js', ['safeUpdateProperty','makeNewEntityReactive']],
+  ['tm-content-manager.js', ['renderUpdateTab','renderOnlineTab','renderHotUpdateTab','renderWorkshopTab','renderOnlineTabV2','renderUpdateTabV2','renderHotUpdateTabV2']],
+  ['tm-dynamic-systems.js', ['createPost','transferPost','findPostsByTerritory','findPostByHolder','getPostStatistics','checkHierarchy','checkAchievements','openAchievements','clearAICache','resetAIStats']],
+  ['tm-endturn-province.js', ['executeProvincePolicy','appointProvinceGovernor','_peSectionV2','formatNumberComma']],
+  ['tm-feudal.js', ['getFeudalLevel']],
+  ['tm-guoku-engine.js', ['triggerBankruptcyEvent']],
+  ['tm-guoku-panel.js', ['_guoku_banPrivate','_guoku_newCoin']],
+  ['tm-help-social.js', ['batchProcessNPCs']],
+  ['tm-huji-deep-fill.js', ['_computeCapitalPullRate']],
+  ['tm-indices.js', ['rebuildIndices','updateIndex','updateScenarioIndex']],
+  ['tm-influence-groups.js', ['isMale']],
+  ['tm-keju-wuju.js', ['_kjG3DeriveStance']],
+  ['tm-lizhi-panel.js', ['_lizhi_handleCase']],
+  ['tm-map-system.js', ['sortVerticesByAngle','clipPolygonToBounds']],
+  ['tm-mechanics-world.js', ['getFamilyBranch','addToFamily','createBranch','getFamilyBarrierMultiplier']],
+  ['tm-memory-retrieval.js', ['suppressSupersededHits']],
+  ['tm-memory-turn-rollup.js', ['pushRef']],
+  ['tm-office-editor.js', ['_addOfficeDept','_addOfficePos']],
+  ['tm-office-panel.js', ['updOffNode','addGameDept','submitOfficeCh']],
+  ['tm-office-runtime.js', ['_adaptForOld']],
+  ['tm-party-goals.js', ['supportingPartyNamesForClass']],
+  ['tm-player-settings.js', ['_saveAPIAndAutoProbe']],
+  ['tm-renwu-tuzhi.js', ['tabStub']],
+  ['tm-three-systems-ui.js', ['_aiDbgCounts','_aiDbgPairs']],
+  ['tm-topbar-vars.js', ['_showStubPanel']]
+].forEach((entry) => {
+  const src = read(entry[0]);
+  entry[1].forEach((name) => {
+    assert(
+      !new RegExp('function\\s+' + name + '\\s*\\(').test(src),
+      '[死代码清除2026-07-07] ' + entry[0] + ' 的零引用死函数应保持删除: ' + name
+    );
+  });
+});
+
 console.log('smoke-dead-code-removal-guards ok');

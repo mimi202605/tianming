@@ -728,7 +728,6 @@ function tabIdentity(p){
     +'<div class="dualbox" style="--dc:var(--purple)"><div class="lb">私 人 身 份</div><div class="v">'+esc(p.name)+(p.age?'，'+p.age+'岁':'')+'</div><div class="s">'+esc(p.personality||'—')+'</div></div></div>'
     +'<section class="sec full"><div class="sec-t">形 貌 与 传 略</div>'+(p.appearance?'<div class="prose" style="font-style:italic;margin-bottom:9px">'+esc(p.appearance)+'</div>':'')+'<div class="prose indent prose-paper">'+esc(p.bio||'传略未录。')+'</div></section>';
 }
-function tabStub(label){return '<section class="sec full"><div class="sec-t">'+esc(label)+'</div><div class="stub">此页签真数据接线中。</div></section>';}
 function oj(s){return esc(s).replace(/'/g,"\\'");}
 function relLabel(s){return s>=50?['莫逆','good']:s>=25?['亲近','good']:s<=-50?['死敌','bad']:s<=-25?['不睦','bad']:['一般','neu'];}
 function relMeter(s){s=Math.max(-100,Math.min(100,s));var col=s>=0?'#6fa291':'#a83228',w=Math.abs(s)/2,left=s>=0?50:50-w;return '<b style="left:'+left+'%;width:'+w+'%;background:'+col+'"></b>';}

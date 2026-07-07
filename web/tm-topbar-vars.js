@@ -1384,19 +1384,6 @@ function _renderHuangweiFullPanel() {
   return h;
 }
 
-function _showStubPanel(varName, designDoc) {
-  var html = '<div style="padding:1.5rem;">'+
-    '<h3 style="color:var(--gold);margin-bottom:0.8rem;">' + varName + ' · 详情面板</h3>'+
-    '<p style="color:var(--txt-s);line-height:1.6;">详细的 UI 面板将按 <code style="color:var(--gold-l);">' + designDoc + '</code> 中的设计实现。</p>'+
-    '<p style="color:var(--txt-d);font-size:0.82rem;margin-top:0.6rem;font-style:italic;">当前为占位，完整面板含分项雷达图、历史趋势、可选政策等。</p>'+
-    '</div>';
-  if (typeof openGenericModal === 'function') {
-    openGenericModal(varName + '（占位）', html, null);
-  } else {
-    alert(varName + ' 详情面板待实现（见 ' + designDoc + '）');
-  }
-}
-
 // ─────────────────────────────────────────────
 // 全部变量模态弹窗
 // ─────────────────────────────────────────────
