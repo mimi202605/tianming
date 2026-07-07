@@ -480,6 +480,39 @@ function renderGuokuPanel() {
   // ─── § 历史趋势 ───
   html += _guoku_renderTrendSection();
 
+  // ─── § 铸局（第七轮D·2026-07-07·铸币局逐局显账）───
+  //   CurrencyEngine._mintCycle 每回合逐局产币/成色/铸息·mintHistory 落账保 40 条——此前玩家只见
+  //   聚合通胀词·逐局产能/近铸/成色/私铸对冲全在引擎里躺着。纯读渲染·复用 tr-* 样式零碰 styles.css。
+  var _mintCur = GM.currency || {};
+  var _mints = Array.isArray(_mintCur.mintAgencies) ? _mintCur.mintAgencies.filter(function(a){ return a; }) : [];
+  if (_mints.length) {
+    var _coinCN = { copper: '铜钱', silver: '银', iron: '铁钱', gold: '金', shell: '贝' };
+    html += '<section class="tr-section">';
+    html +=   '<div class="tr-section-head"><span class="tr-section-name">铸局</span><span class="tr-section-badge">' + _mints.length + ' 局 · 钱法</span></div>';
+    _mints.slice(0, 6).forEach(function(a) {
+      var led = (_mintCur.coins && _mintCur.coins[a.coinType]) || {};
+      var hist = Array.isArray(led.mintHistory) ? led.mintHistory : [];
+      var last = null;
+      for (var _mi = hist.length - 1; _mi >= 0; _mi--) {
+        var _h = hist[_mi];
+        if (_h && (_h.agency || '') === (a.name || '')) { last = _h; break; }
+      }
+      var _purity = (last && last.purity != null) ? last.purity : (a.purityStandard != null ? a.purityStandard : (led.purity != null ? led.purity : 1));
+      html += '<div style="margin:5px 0 2px;font-size:0.82rem;color:var(--gold-l);">' + _escHtml(a.name || '铸局')
+        + (a.enabled === false ? ' <span style="color:var(--txt-d);font-size:0.72rem;">（停炉）</span>' : '') + '</div>';
+      html += '<div class="tr-cao-grid">';
+      html +=   '<span>所铸</span><span>' + _escHtml(_coinCN[a.coinType] || a.coinType || '') + '</span>';
+      html +=   '<span>岁能</span><span>' + _guokuFmt(a.capacity || 0) + '</span>';
+      html +=   '<span>' + (last ? '近铸 T' + last.turn : '炉况') + '</span><span style="color:var(--celadon-300);">' + (last ? _guokuFmt(last.amount) : '尚未开铸') + '</span>';
+      html +=   '<span>成色</span><span style="color:' + (_purity < 0.8 ? 'var(--vermillion-300)' : 'var(--txt)') + ';">' + Math.round(_purity * 100) + '%</span>';
+      if (led.privateMintShare != null && led.privateMintShare > 0) {
+        html += '<span>私铸侵市</span><span style="color:' + (led.privateMintShare > 0.3 ? 'var(--vermillion-300)' : 'var(--txt-d)') + ';">' + Math.round(led.privateMintShare * 100) + '%</span>';
+      }
+      html += '</div>';
+    });
+    html += '</section>';
+  }
+
   // ─── § 财政改革 ───
   if (typeof GuokuEngine !== 'undefined' && GuokuEngine.FISCAL_REFORMS) {
     html += '<section class="tr-section">';
