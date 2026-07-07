@@ -113,11 +113,26 @@
       .slice(0, limit);
   }
 
+  // 只增不裁治理（第七轮F·2026-07-07）：此映射 ~159 键/回合永不清·T500 长局十余万键=存档/内存漏。
+  // 键值从 true 改存写入回合号（truthy 判重语义不变）·逾 48 回合按龄清（源信号早出 recent 窗·
+  // 重放风险仅为一条重复记忆且窗足够宽）·旧档 true 值清理时补戳当前回合从今起龄·每回合首写清一趟。
+  function _pruneSeenKeys(seen, nowTurn) {
+    if (seen._prunedAtTurn === nowTurn) return;
+    seen._prunedAtTurn = nowTurn;
+    for (var k in seen) {
+      if (k === '_prunedAtTurn') continue;
+      var v = seen[k];
+      if (v === true) { seen[k] = nowTurn; continue; }
+      if (typeof v === 'number' && v < nowTurn - 48) delete seen[k];
+    }
+  }
   function rememberOnce(root, key, payload) {
     var seen = ensureMap(root, '_partyClassActionSchedulerMemoryKeys');
+    var _nowTurn = Math.max(1, Number(root && root.turn) || 1);
+    _pruneSeenKeys(seen, _nowTurn);
     if (!key || seen[key]) return false;
     if (!TM.PartyClassActors || typeof TM.PartyClassActors.remember !== 'function') return false;
-    seen[key] = true;
+    seen[key] = _nowTurn;
     try {
       TM.PartyClassActors.remember(root, payload);
       return true;

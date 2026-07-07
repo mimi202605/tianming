@@ -372,7 +372,23 @@
   function ensureLedger(root) {
     if (!Array.isArray(root._classMinxinBridgeLedger)) root._classMinxinBridgeLedger = [];
     if (!root._classMinxinBridgeKeys || typeof root._classMinxinBridgeKeys !== 'object') root._classMinxinBridgeKeys = {};
+    _pruneBridgeKeys(root);
     return root._classMinxinBridgeLedger;
+  }
+
+  // 只增不裁治理（第七轮F·2026-07-07）：去重键 ~80/回合永不清=长局存档/内存漏。
+  // pressureKey 尾段恒为写入回合号(|<turn>)→按龄精确清·逾 48 回合出窗（同源信号重放窗远短于此）·
+  // 尾段非数字的异形键保留不动·每回合首次 ensure 清一趟。
+  function _pruneBridgeKeys(root) {
+    var keys = root._classMinxinBridgeKeys;
+    var nowTurn = Number(root.turn) || 0;
+    if (!keys || keys._prunedAtTurn === nowTurn) return;
+    keys._prunedAtTurn = nowTurn;
+    for (var k in keys) {
+      if (k === '_prunedAtTurn') continue;
+      var m = /\|(\d+)$/.exec(k);
+      if (m && Number(m[1]) < nowTurn - 48) delete keys[k];
+    }
   }
 
   function addMinxinSource(root, source, delta) {
