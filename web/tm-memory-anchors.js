@@ -4,11 +4,13 @@
 // tm-memory-anchors.js — 记忆锚点系统（借鉴 HistorySimAI）
 //
 // R90 从 tm-endturn.js 抽出·原 L1902-2266 (365 行)
-// 9 函数：createMemoryAnchor / createExecutionConstraint /
+// 8 函数：createMemoryAnchor /
 //        calculateTotalMilitaryStrength / calculateEconomicLevel /
 //        buildContextDescription / calculateAnchorImportance /
 //        getMemoryAnchorsForAI / archiveOldMemories /
 //        _ensureMemoryFreshness
+// (createExecutionConstraint 已删·2026-07-07 第六轮⑥：HistorySimAI 移植残留·
+//  全库零调用零读取·其意图「诏令执行受约打折」已由 tm-edict-oversight 结构化实现)
 //
 // 外部调用：0（全部内部调用自 tm-endturn.js·搬走后经 window 全局仍可访问）
 // 依赖外部：GM / P / _dbg / callAI / extractJSON（均为 window 全局）
@@ -69,35 +71,6 @@ function createMemoryAnchor(type, title, content, context) {
   }
 
   return anchor;
-}
-
-/**
- * 创建执行约束记录（记录决策执行的详细信息）
- * 借鉴 HistorySimAI 的 Execution Constraint Recording 系统
- */
-function createExecutionConstraint(decision, constraints, outcome) {
-  if (!GM.executionConstraints) GM.executionConstraints = [];
-
-  var record = {
-    id: uid(),
-    turn: GM.turn,
-    year: getCurrentYear(),
-    month: getCurrentMonth(),
-    decision: decision, // 决策内容
-    constraints: constraints || [], // 执行约束（如：资源不足、人员缺乏）
-    outcome: outcome || '', // 执行结果
-    timestamp: Date.now()
-  };
-
-  GM.executionConstraints.push(record);
-
-  // 限制数量（使用玩家决策保留数配置）
-  var constraintLimit = (P.conf && P.conf.playerDecisionKeep) || 30;
-  if (GM.executionConstraints.length > constraintLimit) {
-    GM.executionConstraints = GM.executionConstraints.slice(-constraintLimit);
-  }
-
-  return record;
 }
 
 /**

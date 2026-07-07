@@ -1583,7 +1583,7 @@ async function aiPlanFactionMatrix() {
 // ═══════════════════════════════════════════════════════
 
 // ══════ 记忆锚点系统已迁移到 tm-memory-anchors.js (R90) ══════
-// - createMemoryAnchor / createExecutionConstraint
+// - createMemoryAnchor (createExecutionConstraint 已删·2026-07-07·零调用移植残留)
 // - calculateTotalMilitaryStrength / calculateEconomicLevel
 // - buildContextDescription / calculateAnchorImportance
 // - getMemoryAnchorsForAI / archiveOldMemories / _ensureMemoryFreshness

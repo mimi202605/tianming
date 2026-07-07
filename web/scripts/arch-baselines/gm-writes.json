@@ -11,7 +11,7 @@
   },
   "updatedAt": "2026-07-07T05:05:41.507Z",
   "totals": {
-    "gm": 4508,
+    "gm": 4505,
     "p": 739
   },
   "files": {
@@ -915,11 +915,10 @@
       }
     },
     "tm-memory-anchors.js": {
-      "gm": 10,
+      "gm": 7,
       "p": 0,
       "roots": {
         "gm:memoryAnchors": 5,
-        "gm:executionConstraints": 3,
         "gm:memoryArchive": 2
       }
     },

@@ -2363,6 +2363,7 @@ function executeObstructBehavior(npc, target, decision, context) {
     _npcAutonomous: true
   };
   moves.push(rec);
+  if (moves.length > 40) moves.splice(0, moves.length - 40); // 封顶：此前只增不裁·长局无界增长(读点均为4回合窗/条数计·40绰绰有余)(第六轮⑥)
   _recordNpcInternalAction('hidden_move', rec);
   addEB('阻挠', npc.name + '私下阻挠' + (target ? '·' + target : ''));
   _npcRemember(npc.name, '私下阻挠：' + _npcShortText(decision.intent, target, 50), '密', 5, target || '局中人');
@@ -2378,14 +2379,21 @@ function executeSlanderBehavior(npc, target, decision, context) {
   if (typeof AffinityMap !== 'undefined' && target) {
     try { AffinityMap.add(target, npc.name, -8, '遭谗言'); } catch (_) {}
   }
-  _recordNpcInternalAction('hidden_move', {
+  // 与 obstruct 对齐双落账(第六轮⑥)：此前 slander 只进 _npcInternalActionHistory(cap80 高活跃局
+  // 4回合窗内可被挤出)不进 _npcHiddenMoves——同人反复攻讦的 recency 惩罚与密探暗流计数漏 slander。
+  var _slRec = {
     id: _npcGeneratedId('slander', npc),
     actor: npc.name,
     target: target || '',
     intent: decision.intent || '谗言攻讦',
     turn: GM.turn,
-    visibility: 'hidden'
-  });
+    visibility: 'hidden',
+    _npcAutonomous: true
+  };
+  var _slMoves = _npcEnsureArray(GM, '_npcHiddenMoves');
+  _slMoves.push(_slRec);
+  if (_slMoves.length > 40) _slMoves.splice(0, _slMoves.length - 40);
+  _recordNpcInternalAction('hidden_move', _slRec);
   addEB('谗言', npc.name + '议及' + (target || '他人'));
   _npcRemember(npc.name, '攻讦' + (target || '他人') + '：' + _npcShortText(decision.intent, '', 50), '密', 5, target || '他人');
   // ★2026-07-01 W3·走漏:谗言天然扩散·slander者的同党圈会听到并附和→对 target 的恶评传开(经记恨者转述更走样)
