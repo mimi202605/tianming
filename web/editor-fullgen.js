@@ -382,7 +382,7 @@
     function _robustParseArray(raw) {
       var cl = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
       try { var p = JSON.parse(cl); if (Array.isArray(p)) return p; if (typeof p === 'object') { for (var k in p) { if (Array.isArray(p[k])) return p[k]; } } } catch(e) {}
-      var m = cl.match(/\[\s*\{[\s\S]*\]/); if (m) try { return JSON.parse(m[0]); } catch(e) {}
+      var m = _reArr(cl); if (m) try { return JSON.parse(m[0]); } catch(e) {}
       var om = cl.match(/\{[\s\S]*\}/); if (om) try { var o = JSON.parse(om[0]); for (var k2 in o) { if (Array.isArray(o[k2])) return o[k2]; } if (o.name) return [o]; } catch(e) {}
       return null;
     }
@@ -593,28 +593,7 @@
               console.log('[FullGen] \u5C97\u4F4D\u7CFB\u7EDF\u751F\u6210\u6210\u529F\uFF0C\u5171', ps.postRules.length, '\u4E2A\u89C4\u5219');
             }
           } else if (s.key === 'vassalSystem') {
-            var mvs = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim().match(/\{[\s\S]*\}/);
-            var vs = JSON.parse(mvs ? mvs[0] : raw);
-            if (!scriptData.vassalSystem) scriptData.vassalSystem = { enabled: false, vassalTypes: [], officialVassalMapping: {} };
-            if (!scriptData.vassalSystem.officialVassalMapping) scriptData.vassalSystem.officialVassalMapping = {};
-            if (vs.vassalTypes && Array.isArray(vs.vassalTypes)) {
-              scriptData.vassalSystem.vassalTypes = vs.vassalTypes;
-
-              // Auto-build officialVassalMapping from relatedOfficials
-              vs.vassalTypes.forEach(function(vt) {
-                if (vt.relatedOfficials) {
-                  var officials = vt.relatedOfficials.split(/[,，、]/);
-                  officials.forEach(function(official) {
-                    var trimmed = official.trim();
-                    if (trimmed) {
-                      scriptData.vassalSystem.officialVassalMapping[trimmed] = vt.name;
-                    }
-                  });
-                }
-              });
-
-              console.log('[FullGen] 封臣系统生成成功，共', vs.vassalTypes.length, '个封臣类型');
-            }
+            _applyVassalSystem(raw);
           } else if (s.key === 'titleSystem') {
             var _tsClean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
             var mts = _tsClean.match(/\{[\s\S]*\}/);
@@ -626,7 +605,7 @@
               console.log('[FullGen] 头衔系统生成成功，共', ts.titleRanks.length, '个头衔等级');
             }
           } else if (s.key === 'officeTree') {
-            var mot = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mot = _reArr(raw);
             var ot = JSON.parse(mot ? mot[0] : raw);
             if (Array.isArray(ot)) {
               if (!Array.isArray(scriptData.officeTree)) scriptData.officeTree = [];
@@ -640,48 +619,9 @@
               });
             }
           } else if (s.key === 'military') {
-            var mmil = raw.match(/\{[\s\S]*\}/);
-            var mil = JSON.parse(mmil ? mmil[0] : raw);
-            if (!scriptData.military) scriptData.military = {troops:[],facilities:[],organization:[],campaigns:[],initialTroops:[],militarySystem:[]};
-            var addedTroops = 0, addedSystems = 0;
-            if (mil.initialTroops && Array.isArray(mil.initialTroops)) {
-              mil.initialTroops.forEach(function(item) {
-                // 确保必要字段存在
-                if (!item.equipment) item.equipment = [];
-                if (!item.size || item.size === 0) {
-                  // 如果 size 为 0 或未定义，根据部队类型设置默认值
-                  if (item.type && (item.type.includes('禁军') || item.type.includes('精锐'))) {
-                    item.size = 10000;
-                  } else if (item.type && item.type.includes('主力')) {
-                    item.size = 25000;
-                  } else {
-                    item.size = 5000;
-                  }
-                  console.warn('[FullGen] 部队', item.name, 'size为0，已设置默认值:', item.size);
-                }
-                if (!item.morale) item.morale = 70;
-                if (!item.commander) item.commander = '待任命';
-                if (!item.location) item.location = '待部署';
-
-                var exists = scriptData.military.initialTroops.some(function(x){return x.name===item.name;});
-                if (!exists) {
-                  scriptData.military.initialTroops.push(item);
-                  addedTroops++;
-                }
-              });
-            }
-            if (mil.militarySystem && Array.isArray(mil.militarySystem)) {
-              mil.militarySystem.forEach(function(item) {
-                var exists = scriptData.military.militarySystem.some(function(x){return x.name===item.name;});
-                if (!exists) {
-                  scriptData.military.militarySystem.push(item);
-                  addedSystems++;
-                }
-              });
-            }
-            console.log('[FullGen] 军事系统生成成功，新增部队', addedTroops, '个，新增军制', addedSystems, '个');
+            _applyMilitary(raw);
           } else if (s.key === 'variables_base' || s.key === 'variables_other') {
-            var mvar = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mvar = _reArr(raw);
             var varArr = JSON.parse(mvar ? mvar[0] : raw);
             if (Array.isArray(varArr)) {
               if (!scriptData.variables) scriptData.variables = {base:[],other:[],formulas:[]};
@@ -694,7 +634,7 @@
               console.log('[FullGen] 变量生成成功:', varType, '新增', varArr.length, '个，总计', scriptData.variables[varType].length, '个');
             }
           } else if (s.key === 'adminHierarchy') {
-            var madmin = raw.match(/\[\s*\{[\s\S]*\]/);
+            var madmin = _reArr(raw);
             var adminArr = JSON.parse(madmin ? madmin[0] : raw);
             if (Array.isArray(adminArr)) {
               if (!scriptData.adminHierarchy) scriptData.adminHierarchy = {};
@@ -719,7 +659,7 @@
               console.log('[FullGen] 行政区划生成成功，新增', adminArr.length, '个，总计', scriptData.adminHierarchy.player.divisions.length, '个');
             }
           } else if (s.key === 'techTree') {
-            var mtch = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mtch = _reArr(raw);
             var techArr = JSON.parse(mtch ? mtch[0] : raw);
             if (Array.isArray(techArr)) {
               if (!scriptData.techTree) scriptData.techTree = {military:[], civil:[]};
@@ -737,7 +677,7 @@
               });
             }
           } else if (s.key === 'civicTree') {
-            var mciv = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mciv = _reArr(raw);
             var civArr = JSON.parse(mciv ? mciv[0] : raw);
             if (Array.isArray(civArr)) {
               if (!scriptData.civicTree) scriptData.civicTree = {city:[], policy:[], resource:[], corruption:[]};
@@ -754,7 +694,7 @@
               });
             }
           } else if (s.key === 'rules') {
-            var mrul = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mrul = _reArr(raw);
             var rulArr = JSON.parse(mrul ? mrul[0] : raw);
             if (Array.isArray(rulArr)) {
               if (!scriptData.rules) scriptData.rules = {base:'',combat:'',economy:'',diplomacy:''};
@@ -765,14 +705,14 @@
               });
             }
           } else if (s.key === 'goals') {
-            var mgol = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mgol = _reArr(raw);
             var golArr = JSON.parse(mgol ? mgol[0] : raw);
             if (Array.isArray(golArr)) {
               if (!scriptData.goals) scriptData.goals = [];
               scriptData.goals = scriptData.goals.concat(golArr);
             }
           } else if (s.key === 'externalForces') {
-            var mef = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mef = _reArr(raw);
             var efArr = JSON.parse(mef ? mef[0] : raw);
             if (Array.isArray(efArr)) {
               if (!scriptData.externalForces) scriptData.externalForces = [];
@@ -782,7 +722,7 @@
               });
             }
           } else if (s.key === 'relations') {
-            var mrl = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mrl = _reArr(raw);
             var rlArr = JSON.parse(mrl ? mrl[0] : raw);
             if (Array.isArray(rlArr)) {
               if (!scriptData.relations) scriptData.relations = [];
@@ -792,7 +732,7 @@
               });
             }
           } else if (s.key === 'variables_formulas') {
-            var mvf = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mvf = _reArr(raw);
             var vfArr = JSON.parse(mvf ? mvf[0] : raw);
             if (Array.isArray(vfArr)) {
               if (!scriptData.variables) scriptData.variables = {base:[],other:[],formulas:[]};
@@ -835,7 +775,7 @@
             }
           } else if (s.key === 'timeline') {
             // 时间线特殊处理：按type分流到past/future
-            var mtl = raw.match(/\[\s*\{[\s\S]*\]/);
+            var mtl = _reArr(raw);
             var tlArr = JSON.parse(mtl ? mtl[0] : raw);
             if (Array.isArray(tlArr)) {
               if (!scriptData.timeline) scriptData.timeline = {past:[], future:[]};
@@ -857,66 +797,18 @@
             var _cl = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
             var arr = null;
             try { var _pp = JSON.parse(_cl); if (Array.isArray(_pp)) arr = _pp; else if (typeof _pp === 'object') { for (var _ww in _pp) { if (Array.isArray(_pp[_ww])) { arr = _pp[_ww]; break; } } } } catch(e0) {}
-            if (!arr) { var m2 = _cl.match(/\[\s*\{[\s\S]*\]/); if (m2) try { arr = JSON.parse(m2[0]); } catch(e1) {} }
+            if (!arr) { var m2 = _reArr(_cl); if (m2) try { arr = JSON.parse(m2[0]); } catch(e1) {} }
             if (!arr) { var _om = _cl.match(/\{[\s\S]*\}/); if (_om) try { var _oo = JSON.parse(_om[0]); for (var _kk in _oo) { if (Array.isArray(_oo[_kk])) { arr = _oo[_kk]; break; } } if (!arr && _oo.name) arr = [_oo]; } catch(e2) {} }
             if (Array.isArray(arr)) {
               if (!Array.isArray(scriptData[s.key])) scriptData[s.key] = [];
 
               // 角色后处理：确保数值字段+新字段
               if (s.key === 'characters') {
-                var _pi = scriptData.playerInfo || {};
-                arr.forEach(function(ch) {
-                  ['loyalty','ambition','intelligence','valor','administration','charisma','diplomacy','benevolence','age'].forEach(function(f) {
-                    if (ch[f] !== undefined) ch[f] = parseInt(ch[f]) || (f === 'age' ? 30 : 50);
-                  });
-                  if (!ch.loyalty) ch.loyalty = 50;
-                  if (!ch.ambition) ch.ambition = 50;
-                  if (!ch.intelligence) ch.intelligence = 50;
-                  if (!ch.valor) ch.valor = 50;
-                  if (!ch.administration) ch.administration = 50;
-                  if (!ch.charisma) ch.charisma = 50;
-                  if (!ch.diplomacy) ch.diplomacy = 50;
-                  if (!ch.benevolence) ch.benevolence = 50;
-                  if (!ch.familyTier) ch.familyTier = 'common';
-                  if (ch.spouse === 'true' || ch.spouse === true) ch.spouse = true; else ch.spouse = false;
-                  if (ch.officialTitle && !ch.vassalType && typeof inferVassalTypeFromOfficial === 'function') {
-                    var _ivt = inferVassalTypeFromOfficial(ch.officialTitle);
-                    ch.vassalType = _ivt ? _ivt.vassalType : '';
-                  }
-                  // D2: 势力名交叉验证
-                  if (ch.faction && scriptData.factions && scriptData.factions.length > 0) {
-                    if (!scriptData.factions.some(function(f) { return f.name === ch.faction; })) {
-                      var _best = null, _bs = 0;
-                      scriptData.factions.forEach(function(f) {
-                        if (f.name && (ch.faction.indexOf(f.name) >= 0 || f.name.indexOf(ch.faction) >= 0)) {
-                          var sc = Math.min(f.name.length, ch.faction.length);
-                          if (sc > _bs) { _bs = sc; _best = f.name; }
-                        }
-                      });
-                      if (_best) ch.faction = _best;
-                    }
-                  }
-                  // D3: 自动标记玩家角色
-                  if (_pi.characterName && ch.name === _pi.characterName) ch.isPlayer = true;
-                });
+                _ppCharacters(arr);
               }
               // 势力后处理
               if (s.key === 'factions') {
-                var _pfn = (scriptData.playerInfo || {}).factionName || '';
-                arr = arr.filter(function(f) {
-                  // D4: 过滤与玩家势力同名的
-                  if (_pfn && f.name === _pfn) return false;
-                  return true;
-                });
-                arr.forEach(function(f) {
-                  if (f.strength && typeof f.strength === 'string') {
-                    if (f.strength.indexOf('\u5F3A') >= 0) f.strength = 80;
-                    else if (f.strength.indexOf('\u5F31') >= 0) f.strength = 30;
-                    else f.strength = parseInt(f.strength) || 50;
-                  } else { f.strength = parseInt(f.strength) || 50; }
-                  if (f.militaryStrength) f.militaryStrength = parseInt(f.militaryStrength) || 10000;
-                  if (!f.color) f.color = '#' + Math.floor((typeof random === 'function' ? random() : Math.random()) * 16777215).toString(16).padStart(6, '0');
-                });
+                arr = _ppFactions(arr);
               }
 
               if (s.key === 'factionRelations') {
@@ -1005,6 +897,131 @@
         finishGeneration();
       }
     }
+  }
+
+  function _applyVassalSystem(raw) {
+    var mvs = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim().match(/\{[\s\S]*\}/);
+    var vs = JSON.parse(mvs ? mvs[0] : raw);
+    if (!scriptData.vassalSystem) scriptData.vassalSystem = { enabled: false, vassalTypes: [], officialVassalMapping: {} };
+    if (!scriptData.vassalSystem.officialVassalMapping) scriptData.vassalSystem.officialVassalMapping = {};
+    if (vs.vassalTypes && Array.isArray(vs.vassalTypes)) {
+      scriptData.vassalSystem.vassalTypes = vs.vassalTypes;
+
+      // Auto-build officialVassalMapping from relatedOfficials
+      vs.vassalTypes.forEach(function(vt) {
+        if (vt.relatedOfficials) {
+          var officials = vt.relatedOfficials.split(/[,，、]/);
+          officials.forEach(function(official) {
+            var trimmed = official.trim();
+            if (trimmed) {
+              scriptData.vassalSystem.officialVassalMapping[trimmed] = vt.name;
+            }
+          });
+        }
+      });
+
+      console.log('[FullGen] 封臣系统生成成功，共', vs.vassalTypes.length, '个封臣类型');
+    }
+  }
+
+  function _applyMilitary(raw) {
+    var mmil = raw.match(/\{[\s\S]*\}/);
+    var mil = JSON.parse(mmil ? mmil[0] : raw);
+    if (!scriptData.military) scriptData.military = {troops:[],facilities:[],organization:[],campaigns:[],initialTroops:[],militarySystem:[]};
+    var addedTroops = 0, addedSystems = 0;
+    if (mil.initialTroops && Array.isArray(mil.initialTroops)) {
+      mil.initialTroops.forEach(function(item) {
+        // 确保必要字段存在
+        if (!item.equipment) item.equipment = [];
+        if (!item.size || item.size === 0) {
+          // 如果 size 为 0 或未定义，根据部队类型设置默认值
+          if (item.type && (item.type.includes('禁军') || item.type.includes('精锐'))) {
+            item.size = 10000;
+          } else if (item.type && item.type.includes('主力')) {
+            item.size = 25000;
+          } else {
+            item.size = 5000;
+          }
+          console.warn('[FullGen] 部队', item.name, 'size为0，已设置默认值:', item.size);
+        }
+        if (!item.morale) item.morale = 70;
+        if (!item.commander) item.commander = '待任命';
+        if (!item.location) item.location = '待部署';
+
+        var exists = scriptData.military.initialTroops.some(function(x){return x.name===item.name;});
+        if (!exists) {
+          scriptData.military.initialTroops.push(item);
+          addedTroops++;
+        }
+      });
+    }
+    if (mil.militarySystem && Array.isArray(mil.militarySystem)) {
+      mil.militarySystem.forEach(function(item) {
+        var exists = scriptData.military.militarySystem.some(function(x){return x.name===item.name;});
+        if (!exists) {
+          scriptData.military.militarySystem.push(item);
+          addedSystems++;
+        }
+      });
+    }
+    console.log('[FullGen] 军事系统生成成功，新增部队', addedTroops, '个，新增军制', addedSystems, '个');
+  }
+
+  function _ppCharacters(arr) {
+    var _pi = scriptData.playerInfo || {};
+    arr.forEach(function(ch) {
+      ['loyalty','ambition','intelligence','valor','administration','charisma','diplomacy','benevolence','age'].forEach(function(f) {
+        if (ch[f] !== undefined) ch[f] = parseInt(ch[f]) || (f === 'age' ? 30 : 50);
+      });
+      if (!ch.loyalty) ch.loyalty = 50;
+      if (!ch.ambition) ch.ambition = 50;
+      if (!ch.intelligence) ch.intelligence = 50;
+      if (!ch.valor) ch.valor = 50;
+      if (!ch.administration) ch.administration = 50;
+      if (!ch.charisma) ch.charisma = 50;
+      if (!ch.diplomacy) ch.diplomacy = 50;
+      if (!ch.benevolence) ch.benevolence = 50;
+      if (!ch.familyTier) ch.familyTier = 'common';
+      if (ch.spouse === 'true' || ch.spouse === true) ch.spouse = true; else ch.spouse = false;
+      if (ch.officialTitle && !ch.vassalType && typeof inferVassalTypeFromOfficial === 'function') {
+        var _ivt = inferVassalTypeFromOfficial(ch.officialTitle);
+        ch.vassalType = _ivt ? _ivt.vassalType : '';
+      }
+      // D2: 势力名交叉验证
+      if (ch.faction && scriptData.factions && scriptData.factions.length > 0) {
+        if (!scriptData.factions.some(function(f) { return f.name === ch.faction; })) {
+          var _best = null, _bs = 0;
+          scriptData.factions.forEach(function(f) {
+            if (f.name && (ch.faction.indexOf(f.name) >= 0 || f.name.indexOf(ch.faction) >= 0)) {
+              var sc = Math.min(f.name.length, ch.faction.length);
+              if (sc > _bs) { _bs = sc; _best = f.name; }
+            }
+          });
+          if (_best) ch.faction = _best;
+        }
+      }
+      // D3: 自动标记玩家角色
+      if (_pi.characterName && ch.name === _pi.characterName) ch.isPlayer = true;
+    });
+  }
+
+  function _ppFactions(arr) {
+    var _pfn = (scriptData.playerInfo || {}).factionName || '';
+    arr = arr.filter(function(f) {
+      // D4: 过滤与玩家势力同名的
+      if (_pfn && f.name === _pfn) return false;
+      return true;
+    });
+    arr.forEach(function(f) {
+      if (f.strength && typeof f.strength === 'string') {
+        if (f.strength.indexOf('\u5F3A') >= 0) f.strength = 80;
+        else if (f.strength.indexOf('\u5F31') >= 0) f.strength = 30;
+        else f.strength = parseInt(f.strength) || 50;
+      } else { f.strength = parseInt(f.strength) || 50; }
+      if (f.militaryStrength) f.militaryStrength = parseInt(f.militaryStrength) || 10000;
+      if (!f.color) f.color = '#' + Math.floor((typeof random === 'function' ? random() : Math.random()) * 16777215).toString(16).padStart(6, '0');
+    });
+    return arr;
   }
 
   function importFullGenFile() {
@@ -2253,3 +2270,7 @@
 
   // 监听scriptData变化——定时刷新预览 (timer-leak-ok·文件顶层一次性·随编辑器页生命周期)
   setInterval(function() { if (_previewOpen) updateEditorPreview(); }, 3000);
+
+  // R140-nestflat: single exit for the array-JSON extraction regex; keeps the
+  // /[...]/ brace out of doFullGenerate. Pure behavior-equivalent expression extraction.
+  function _reArr(s) { return s.match(/\[\s*\{[\s\S]*\]/); }
