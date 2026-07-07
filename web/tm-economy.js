@@ -467,33 +467,149 @@ function calculateInheritanceScore(candidate, eraState, deadChar) {
   return totalScore;
 }
 
+// N2 nest-flatten: dead-char office lookup lifted verbatim from handleInheritance() nested findOffices (behavior-identical; deadChar read via param, deadCharOffices carried by reference, recursion re-pointed).
+function collectDeadCharOffices(nodes, deadChar, deadCharOffices) {
+  nodes.forEach(function(node) {
+    if (node.positions) {
+      node.positions.forEach(function(pos) {
+        if (pos.holder === deadChar.name) {
+          deadCharOffices.push({
+            deptName: node.name,
+            posName: pos.name,
+            rank: pos.rank || '',
+            node: node,
+            position: pos
+          });
+        }
+      });
+    }
+    if (node.subs && node.subs.length > 0) {
+      collectDeadCharOffices(node.subs, deadChar, deadCharOffices);
+    }
+  });
+}
+
+// N2 nest-flatten: inheritance-outcome application extracted verbatim from handleInheritance() if(jsonMatch) body (behavior-identical, synchronous; no await).
+function applyInheritanceOutcome(inheritanceData, deadChar, deadCharOffices, officeList) {
+  // 自动执行推荐的继承方案
+  var heir = inheritanceData.recommendation;
+  if (heir) {
+    deadCharOffices.forEach(function(office) {
+      office.position.holder = heir;
+    });
+
+    // 记录继承事件
+    addEB('继承', deadChar.name + '去世，' + heir + '继任' + officeList + '。');
+    if (typeof recordCharacterArc === 'function') recordCharacterArc(heir, 'inheritance', heir + '继承' + deadChar.name + '的地位');
+    if (inheritanceData.reasoning) {
+      addEB('推荐理由', inheritanceData.reasoning);
+    }
+    addEB('后果', inheritanceData.consequence);
+
+    // 处理其他候选人的反应（继承冲突）
+    if (inheritanceData.candidates && inheritanceData.candidates.length > 1) {
+      inheritanceData.candidates.forEach(function(candidate) {
+        if (candidate.name === heir) return;
+        var candidateChar = findCharByName(candidate.name);
+        if (candidateChar) {
+          // 落选候选人的忠诚度下降
+          var oldLoyalty = (typeof candidateChar.loyalty === 'number' && isFinite(candidateChar.loyalty)) ? candidateChar.loyalty : 50;
+          var heirLegitimacy = (inheritanceData.candidates.find(function(c) { return c.name === heir; }) || {legitimacy: 0.5}).legitimacy;
+          var legitimacyGap = (candidate.legitimacy || 0.5) - heirLegitimacy;
+          var loyaltyDrop = -Math.max(1, Math.round((0.2 + Math.max(0, legitimacyGap)) * 20)); // 资格越强却落选，不满越大
+          if (typeof adjustCharacterLoyalty === 'function') {
+            adjustCharacterLoyalty(candidateChar, loyaltyDrop, '\u7EE7\u627F\u843D\u9009\u4E0D\u6EE1\uFF1A' + deadChar.name, { source:'inheritance-candidate-lost' });
+          } else {
+            candidateChar.loyalty = Math.max(0, oldLoyalty + loyaltyDrop);
+          }
+
+          if (loyaltyDrop < -10) {
+            if (typeof adjustCharacterLoyalty !== 'function') recordChange('characters', candidate.name, 'loyalty', oldLoyalty, candidateChar.loyalty, '继承落选不满');
+            addEB('不满', candidate.name + '对继承结果不满，忠诚度下降。');
+
+            // 如果不满严重且有反对者支持，可能引发叛乱
+            if (candidateChar.loyalty < 30 && candidate.opposition && candidate.opposition.length > 0) {
+              addEB('警告', candidate.name + '可能联合' + candidate.opposition.join('、') + '发动叛乱！');
+            }
+          }
+        }
+      });
+    }
+
+    // 更新继承人忠诚度
+    var heirChar = findCharByName(heir);
+    if (heirChar) {
+      var oldLoyalty = (typeof heirChar.loyalty === 'number' && isFinite(heirChar.loyalty)) ? heirChar.loyalty : 50;
+      // 继承后的忠诚变化改为可解释：正统性越高越感激，野心过高则转为自恃。
+      var heirCandidate = inheritanceData.candidates.find(function(c) { return c.name === heir; }) || {legitimacy: 0.5};
+      var ambition = (typeof heirChar.ambition === 'number' && isFinite(heirChar.ambition)) ? heirChar.ambition : 50;
+      var loyaltyChange = Math.round(((heirCandidate.legitimacy || 0.5) - 0.5) * 16) + (ambition > 75 ? -4 : (ambition < 35 ? 4 : 1));
+      loyaltyChange = Math.max(-6, Math.min(12, loyaltyChange));
+      if (typeof adjustCharacterLoyalty === 'function') {
+        adjustCharacterLoyalty(heirChar, loyaltyChange, '\u7EE7\u627F' + deadChar.name + '\u9057\u7F3A', { source:'inheritance-heir-result' });
+      } else {
+        heirChar.loyalty = Math.max(0, Math.min(100, oldLoyalty + loyaltyChange));
+      }
+      if (loyaltyChange !== 0 && typeof adjustCharacterLoyalty !== 'function') {
+        recordChange('characters', heir, 'loyalty', oldLoyalty, heirChar.loyalty, '\u7EE7\u627F\u5F71\u54CD');
+      }
+
+      // 头衔继承：如果死者有世袭头衔，继承人自动继承
+      if (deadChar.titles && deadChar.titles.length > 0 && typeof inheritTitle === 'function') {
+        deadChar.titles.forEach(function(title) {
+          if (title.hereditary) {
+            inheritTitle(deadChar.name, heir, title.type);
+          }
+        });
+      }
+    } else {
+      // 继承人不在当前角色列表中，可能需要创建新角色
+      var candidate = inheritanceData.candidates.find(function(c) { return c.name === heir; });
+      if (candidate) {
+        var newHeir = {
+          name: heir,
+          title: candidate.relation || '',
+          desc: candidate.note || '',
+          stats: {},
+          stance: "",
+          playable: false,
+          personality: "",
+          appearance: "",
+          skills: [],
+          loyalty: Math.floor(candidate.legitimacy * 100),
+          morale: 70,
+          dialogues: [],
+          secret: "",
+          faction: deadChar.faction || "",
+          aiPersonaText: "",
+          behaviorMode: "",
+          valueSystem: "",
+          speechStyle: "",
+          rels: []
+        };
+        (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(newHeir);
+        // 维护索引
+        addToIndex('char', newHeir.name, newHeir);
+        addEB('\u4EBA\u7269', heir + '\u51FA\u73B0\uFF0C\u7EE7\u627F' + deadChar.name + '\u7684\u5B98\u804C\u3002');
+      }
+    }
+  } else {
+    // 无人继承，官职空缺
+    deadCharOffices.forEach(function(office) {
+      office.position.holder = '';
+    });
+    addEB('\u7EDD\u5F7C', deadChar.name + '\u53BB\u4E16\uFF0C' + officeList + '\u51FA\u7F3A\u3002');
+    addEB('\u540E\u679C', inheritanceData.consequence);
+  }
+}
+
 async function handleInheritance(deadChar) {
   if (!deadChar || !deadChar.name) return;
 
   // 查找死者的官职
   var deadCharOffices = [];
   if (GM.officeTree && GM.officeTree.length > 0) {
-    function findOffices(nodes) {
-      nodes.forEach(function(node) {
-        if (node.positions) {
-          node.positions.forEach(function(pos) {
-            if (pos.holder === deadChar.name) {
-              deadCharOffices.push({
-                deptName: node.name,
-                posName: pos.name,
-                rank: pos.rank || '',
-                node: node,
-                position: pos
-              });
-            }
-          });
-        }
-        if (node.subs && node.subs.length > 0) {
-          findOffices(node.subs);
-        }
-      });
-    }
-    findOffices(GM.officeTree);
+    collectDeadCharOffices(GM.officeTree, deadChar, deadCharOffices);
   }
 
   // 如果死者没有官职，只记录死亡事件
@@ -602,116 +718,7 @@ async function handleInheritance(deadChar) {
       if (jsonMatch) {
         var inheritanceData = JSON.parse(jsonMatch[0]);
 
-        // 自动执行推荐的继承方案
-        var heir = inheritanceData.recommendation;
-        if (heir) {
-          deadCharOffices.forEach(function(office) {
-            office.position.holder = heir;
-          });
-
-          // 记录继承事件
-          addEB('继承', deadChar.name + '去世，' + heir + '继任' + officeList + '。');
-          if (typeof recordCharacterArc === 'function') recordCharacterArc(heir, 'inheritance', heir + '继承' + deadChar.name + '的地位');
-          if (inheritanceData.reasoning) {
-            addEB('推荐理由', inheritanceData.reasoning);
-          }
-          addEB('后果', inheritanceData.consequence);
-
-          // 处理其他候选人的反应（继承冲突）
-          if (inheritanceData.candidates && inheritanceData.candidates.length > 1) {
-            inheritanceData.candidates.forEach(function(candidate) {
-              if (candidate.name === heir) return;
-              var candidateChar = findCharByName(candidate.name);
-              if (candidateChar) {
-                // 落选候选人的忠诚度下降
-                var oldLoyalty = (typeof candidateChar.loyalty === 'number' && isFinite(candidateChar.loyalty)) ? candidateChar.loyalty : 50;
-                var heirLegitimacy = (inheritanceData.candidates.find(function(c) { return c.name === heir; }) || {legitimacy: 0.5}).legitimacy;
-                var legitimacyGap = (candidate.legitimacy || 0.5) - heirLegitimacy;
-                var loyaltyDrop = -Math.max(1, Math.round((0.2 + Math.max(0, legitimacyGap)) * 20)); // 资格越强却落选，不满越大
-                if (typeof adjustCharacterLoyalty === 'function') {
-                  adjustCharacterLoyalty(candidateChar, loyaltyDrop, '\u7EE7\u627F\u843D\u9009\u4E0D\u6EE1\uFF1A' + deadChar.name, { source:'inheritance-candidate-lost' });
-                } else {
-                  candidateChar.loyalty = Math.max(0, oldLoyalty + loyaltyDrop);
-                }
-
-                if (loyaltyDrop < -10) {
-                  if (typeof adjustCharacterLoyalty !== 'function') recordChange('characters', candidate.name, 'loyalty', oldLoyalty, candidateChar.loyalty, '继承落选不满');
-                  addEB('不满', candidate.name + '对继承结果不满，忠诚度下降。');
-
-                  // 如果不满严重且有反对者支持，可能引发叛乱
-                  if (candidateChar.loyalty < 30 && candidate.opposition && candidate.opposition.length > 0) {
-                    addEB('警告', candidate.name + '可能联合' + candidate.opposition.join('、') + '发动叛乱！');
-                  }
-                }
-              }
-            });
-          }
-
-          // 更新继承人忠诚度
-          var heirChar = findCharByName(heir);
-          if (heirChar) {
-            var oldLoyalty = (typeof heirChar.loyalty === 'number' && isFinite(heirChar.loyalty)) ? heirChar.loyalty : 50;
-            // 继承后的忠诚变化改为可解释：正统性越高越感激，野心过高则转为自恃。
-            var heirCandidate = inheritanceData.candidates.find(function(c) { return c.name === heir; }) || {legitimacy: 0.5};
-            var ambition = (typeof heirChar.ambition === 'number' && isFinite(heirChar.ambition)) ? heirChar.ambition : 50;
-            var loyaltyChange = Math.round(((heirCandidate.legitimacy || 0.5) - 0.5) * 16) + (ambition > 75 ? -4 : (ambition < 35 ? 4 : 1));
-            loyaltyChange = Math.max(-6, Math.min(12, loyaltyChange));
-            if (typeof adjustCharacterLoyalty === 'function') {
-              adjustCharacterLoyalty(heirChar, loyaltyChange, '\u7EE7\u627F' + deadChar.name + '\u9057\u7F3A', { source:'inheritance-heir-result' });
-            } else {
-              heirChar.loyalty = Math.max(0, Math.min(100, oldLoyalty + loyaltyChange));
-            }
-            if (loyaltyChange !== 0 && typeof adjustCharacterLoyalty !== 'function') {
-              recordChange('characters', heir, 'loyalty', oldLoyalty, heirChar.loyalty, '\u7EE7\u627F\u5F71\u54CD');
-            }
-
-            // 头衔继承：如果死者有世袭头衔，继承人自动继承
-            if (deadChar.titles && deadChar.titles.length > 0 && typeof inheritTitle === 'function') {
-              deadChar.titles.forEach(function(title) {
-                if (title.hereditary) {
-                  inheritTitle(deadChar.name, heir, title.type);
-                }
-              });
-            }
-          } else {
-            // 继承人不在当前角色列表中，可能需要创建新角色
-            var candidate = inheritanceData.candidates.find(function(c) { return c.name === heir; });
-            if (candidate) {
-              var newHeir = {
-                name: heir,
-                title: candidate.relation || '',
-                desc: candidate.note || '',
-                stats: {},
-                stance: "",
-                playable: false,
-                personality: "",
-                appearance: "",
-                skills: [],
-                loyalty: Math.floor(candidate.legitimacy * 100),
-                morale: 70,
-                dialogues: [],
-                secret: "",
-                faction: deadChar.faction || "",
-                aiPersonaText: "",
-                behaviorMode: "",
-                valueSystem: "",
-                speechStyle: "",
-                rels: []
-              };
-              (typeof TM !== 'undefined' && TM.Roster ? TM.Roster.addChar : function(_c){ GM.chars.push(_c); })(newHeir);
-              // 维护索引
-              addToIndex('char', newHeir.name, newHeir);
-              addEB('\u4EBA\u7269', heir + '\u51FA\u73B0\uFF0C\u7EE7\u627F' + deadChar.name + '\u7684\u5B98\u804C\u3002');
-            }
-          }
-        } else {
-          // 无人继承，官职空缺
-          deadCharOffices.forEach(function(office) {
-            office.position.holder = '';
-          });
-          addEB('\u7EDD\u5F7C', deadChar.name + '\u53BB\u4E16\uFF0C' + officeList + '\u51FA\u7F3A\u3002');
-          addEB('\u540E\u679C', inheritanceData.consequence);
-        }
+        applyInheritanceOutcome(inheritanceData, deadChar, deadCharOffices, officeList);
       }
 
     } catch (error) {

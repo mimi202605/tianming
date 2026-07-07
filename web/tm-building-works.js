@@ -487,6 +487,71 @@
     try { RS.remove(div, '「' + bld.name + '」之利', 'building:' + bld.name, GM); } catch (_) {}
   }
 
+  // N2 nest-flatten: per-building tick body extracted verbatim from tick() div.buildings.forEach (behavior-identical).
+  function tickBuilding(div, bld, money, _freshSev, P, GM, stat) {
+    if (!bld) return;
+    if (bld.status === 'building') {
+      bld.remainingTurns = Math.max(0, num(bld.remainingTurns, 1) - 1);
+      if (bld.remainingTurns <= 0) {
+        bld.status = 'completed';
+        var booked = applyCompletion(div, bld, P, GM);
+        var labels = fxLabels(bld, typeDefFor(bld.name, P));
+        bld.effectSummary = booked && labels.length ? labels.join('；') : (bld.effectSummary || '');
+        grantBuildingStatus(div, bld, P, GM); // 工成之利（流量小加成·状态系统）
+        stat.completed += 1;
+        eb('建设', div.name + '的「' + bld.name + '」工成' + (booked && labels.length ? '——' + labels[0] : ''));
+      } else {
+        stat.building += 1;
+      }
+      return;
+    }
+    // S6·灾损：完工建筑遇本回合灾异·按烈度概率半损（效用减半·待修缮）
+    if (bld.status === 'completed' && _freshSev > 0 && _disasterDamageRoll(_freshSev)) {
+      damageBuilding(div, bld);
+      revokeBuildingStatus(div, bld, GM);                 // 半损 → 工成之利撤
+      stat.damaged += 1;
+      eb('建设', div.name + '的「' + bld.name + '」遭' + (_freshSev >= 3 ? '大灾' : '灾') + '·半损（效用减半，待修缮）');
+      return;                                            // 本回合不再走常维护
+    }
+    // S6·修缮：半损建筑·地方库银可支半费(造价 30%)则葺治复完
+    if (bld.status === 'damaged') {
+      var _rcost = Math.max(20, Math.round(num(bld.costActual, num((typeDefFor(bld.name, P) || {}).baseCost, 0)) * 0.3));
+      if (money && num(money.stock) >= _rcost) {
+        money.stock = num(money.stock) - _rcost;
+        if (money.available != null) money.available = Math.max(0, num(money.available) - _rcost);
+        stat.upkeepPaid += _rcost;
+        repairBuilding(div, bld);
+        grantBuildingStatus(div, bld, P, GM);            // 复完 → 之利复挂
+        stat.repaired += 1;
+        eb('建设', div.name + '的「' + bld.name + '」葺治复完（费 ' + _rcost + ' 两）');
+      }
+      return;                                            // 半损态不走常维护(库银不继则续损待修)
+    }
+    if (bld.status === 'completed' || bld.status === 'neglected') {
+      var up = upkeepFor(bld, typeDefFor(bld.name, P));
+      if (up <= 0) return;
+      if (money && num(money.stock) >= up) {
+        money.stock = num(money.stock) - up;
+        if (money.available != null) money.available = Math.max(0, num(money.available) - up);
+        stat.upkeepPaid += up;
+        if (bld.status === 'neglected') {
+          bld.status = 'completed'; bld.arrears = 0;
+          grantBuildingStatus(div, bld, P, GM); // 修缮复用 → 之利复挂
+          eb('建设', div.name + '的「' + bld.name + '」修缮复用');
+        }
+        else bld.arrears = 0;
+      } else {
+        bld.arrears = num(bld.arrears, 0) + 1;
+        if (bld.arrears >= 3 && bld.status !== 'neglected') {
+          bld.status = 'neglected';
+          stat.neglected += 1;
+          revokeBuildingStatus(div, bld, GM); // 失修 → 之利撤
+          eb('建设', div.name + '库银匮乏，「' + bld.name + '」年久失修');
+        }
+      }
+    }
+  }
+
   // 每回合确定性步（挂 endTurn 收尾、final aggregate 之前·恰一次）：
   // 在建递减→完工入账；完好扣维护；连欠 3 回合失修（效果存量不动·由叙事与玩家整修接手）。
   function tick(GM, P) {
@@ -514,67 +579,7 @@
             var money = div.publicTreasury && div.publicTreasury.money;
             var _freshSev = _hazardOn ? _freshDisasterSeverity(div, GM && GM.turn) : 0;   // S6·本回合该叶灾情(0/1/2/3·读 disasterRecord)
             div.buildings.forEach(function (bld) {
-              if (!bld) return;
-              if (bld.status === 'building') {
-                bld.remainingTurns = Math.max(0, num(bld.remainingTurns, 1) - 1);
-                if (bld.remainingTurns <= 0) {
-                  bld.status = 'completed';
-                  var booked = applyCompletion(div, bld, P, GM);
-                  var labels = fxLabels(bld, typeDefFor(bld.name, P));
-                  bld.effectSummary = booked && labels.length ? labels.join('；') : (bld.effectSummary || '');
-                  grantBuildingStatus(div, bld, P, GM); // 工成之利（流量小加成·状态系统）
-                  stat.completed += 1;
-                  eb('建设', div.name + '的「' + bld.name + '」工成' + (booked && labels.length ? '——' + labels[0] : ''));
-                } else {
-                  stat.building += 1;
-                }
-                return;
-              }
-              // S6·灾损：完工建筑遇本回合灾异·按烈度概率半损（效用减半·待修缮）
-              if (bld.status === 'completed' && _freshSev > 0 && _disasterDamageRoll(_freshSev)) {
-                damageBuilding(div, bld);
-                revokeBuildingStatus(div, bld, GM);                 // 半损 → 工成之利撤
-                stat.damaged += 1;
-                eb('建设', div.name + '的「' + bld.name + '」遭' + (_freshSev >= 3 ? '大灾' : '灾') + '·半损（效用减半，待修缮）');
-                return;                                            // 本回合不再走常维护
-              }
-              // S6·修缮：半损建筑·地方库银可支半费(造价 30%)则葺治复完
-              if (bld.status === 'damaged') {
-                var _rcost = Math.max(20, Math.round(num(bld.costActual, num((typeDefFor(bld.name, P) || {}).baseCost, 0)) * 0.3));
-                if (money && num(money.stock) >= _rcost) {
-                  money.stock = num(money.stock) - _rcost;
-                  if (money.available != null) money.available = Math.max(0, num(money.available) - _rcost);
-                  stat.upkeepPaid += _rcost;
-                  repairBuilding(div, bld);
-                  grantBuildingStatus(div, bld, P, GM);            // 复完 → 之利复挂
-                  stat.repaired += 1;
-                  eb('建设', div.name + '的「' + bld.name + '」葺治复完（费 ' + _rcost + ' 两）');
-                }
-                return;                                            // 半损态不走常维护(库银不继则续损待修)
-              }
-              if (bld.status === 'completed' || bld.status === 'neglected') {
-                var up = upkeepFor(bld, typeDefFor(bld.name, P));
-                if (up <= 0) return;
-                if (money && num(money.stock) >= up) {
-                  money.stock = num(money.stock) - up;
-                  if (money.available != null) money.available = Math.max(0, num(money.available) - up);
-                  stat.upkeepPaid += up;
-                  if (bld.status === 'neglected') {
-                    bld.status = 'completed'; bld.arrears = 0;
-                    grantBuildingStatus(div, bld, P, GM); // 修缮复用 → 之利复挂
-                    eb('建设', div.name + '的「' + bld.name + '」修缮复用');
-                  }
-                  else bld.arrears = 0;
-                } else {
-                  bld.arrears = num(bld.arrears, 0) + 1;
-                  if (bld.arrears >= 3 && bld.status !== 'neglected') {
-                    bld.status = 'neglected';
-                    stat.neglected += 1;
-                    revokeBuildingStatus(div, bld, GM); // 失修 → 之利撤
-                    eb('建设', div.name + '库银匮乏，「' + bld.name + '」年久失修');
-                  }
-                }
-              }
+              tickBuilding(div, bld, money, _freshSev, P, GM, stat);
             });
           }
           var kids = div.children || div.divisions;
