@@ -5,7 +5,8 @@
  *      轨道 min=内容宽·不缩→5卡累加超面板宽)。修:①grid 列 minmax(0,1fr)(轨道最小值显式=0·强制五列塞进面板)
  *      ②.bk-stat min-width:0 ③.bk-stats overflow:hidden+max-width:100%(硬兜底·任何引擎都不溢出到地图)。 */
 const fs = require('fs'), path = require('path');
-const src = fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-bridge.js'), 'utf8');
+// 第二十七拆：.bk-stats/.bk-stat 等样式已迁出至 phase8-formal-bridge-styles.js
+const src = fs.readFileSync(path.resolve(__dirname, '..', 'phase8-formal-bridge-styles.js'), 'utf8');
 let A = 0, F = 0;
 function ok(c, m) { if (c) { A++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 console.log('smoke-faction-stats-nooverflow');

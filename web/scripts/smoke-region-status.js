@@ -131,8 +131,8 @@ srcHas('tm-ai-schema.js', /region_status_changes/, 'schema：状态通道声明'
 srcHas('tm-ai-output-validator.js', /region_status_changes/, 'validator：状态通道白名单');
 srcHas('phase8-formal-map-dossier.js', /bk-zhuangkuang/, '方志：状态卷接线（第二十五拆迁至 dossier sibling）');
 srcHas('phase8-formal-map-dossier.js', /armyRegionIndex/, '方志：军地绑定索引接线（第二十五拆迁至 dossier sibling）');
-srcHas('phase8-formal-bridge.js', /bk-zt-list/, 'CSS：状态卡样式注入');
-srcHas('phase8-formal-bridge.js', /bk-jun-list/, 'CSS：活军卡样式注入');
+srcHas('phase8-formal-bridge-styles.js', /bk-zt-list/, 'CSS：状态卡样式注入'); // 第二十七拆·CSS迁出至 -styles 片
+srcHas('phase8-formal-bridge-styles.js', /bk-jun-list/, 'CSS：活军卡样式注入'); // 第二十七拆·CSS迁出至 -styles 片
 
 console.log('\n[smoke-region-status] ' + (failed === 0 ? 'PASS' : 'FAIL') + ' — ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed === 0 ? 0 : 1);

@@ -7,7 +7,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const formal = fs.readFileSync(path.join(ROOT, 'phase8-formal-bridge.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'phase8-formal-drafts.js'), 'utf8');
+// 第二十七拆：tmf-module 等样式已迁出至 phase8-formal-bridge-styles.js·补装该片(装载序：styles 先于 bridge)
+const formal = fs.readFileSync(path.join(ROOT, 'phase8-formal-bridge-styles.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'phase8-formal-bridge.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'phase8-formal-drafts.js'), 'utf8');
 const styles = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
 
 let passed = 0;

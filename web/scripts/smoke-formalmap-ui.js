@@ -11,7 +11,8 @@ var ROOT = path.resolve(__dirname, '..');
 var P = 0, F = 0;
 function ok(c, m) { if (c) { P++; console.log('  ✓ ' + m); } else { F++; console.log('  ✗ FAIL: ' + m); } }
 var mapSrc = fs.readFileSync(path.join(ROOT, 'phase8-formal-map.js'), 'utf8');
-var bridgeSrc = fs.readFileSync(path.join(ROOT, 'phase8-formal-bridge.js'), 'utf8');
+// 第二十七拆：.map-alert 等样式已迁出至 phase8-formal-bridge-styles.js·补装该片
+var bridgeSrc = fs.readFileSync(path.join(ROOT, 'phase8-formal-bridge-styles.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'phase8-formal-bridge.js'), 'utf8');
 console.log('smoke-formalmap-ui');
 
 console.log('— Y1 · 视口收口 —');

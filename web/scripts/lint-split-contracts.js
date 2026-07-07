@@ -60,6 +60,9 @@ const CONTRACTS = [
   // 第二十六拆(真 IIFE·origin-first 双向 bucket)：phase8-formal-drafts 御案奏疏(zou-yuan)+鸿雁(yan-yuan)面板中段切出·message-panels 须【紧随 origin 之后】
   //   origin 装载期向 bucket TM.__p8DraftsMsgPanels 导出 18 个捕获成员→message-panels 闭包捕获；sibling 回填 9 个函数→origin forward shim 调用期解析·错序即崩
   ['phase8-formal-drafts.js', 'phase8-formal-drafts-message-panels.js'],
+  // 第二十七拆(IIFE 型·②a alias/bucket)：phase8-formal-bridge 4 样式注入函数(installStyles/installTopbarExactStyles/installActionEntryExactStyles/installFormalVisibilityStyles)迁出·styles 须在 origin【之前】装载(填 bucket TM.__p8BridgeParts·origin 顶部 alias 回绑)
+  //   纯 CSS 注入·零闭包依赖；origin 装载期 installFormalShell 同步调用 installStyles 等·错序即别名 undefined 崩
+  ['phase8-formal-bridge-styles.js', 'phase8-formal-bridge.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

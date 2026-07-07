@@ -952,7 +952,9 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-content-manager.js?v=20260706-splitsync"></script>
 <script src="tm-content-manager-community.js?v=20260706-splitsync"></script><!-- 第二十拆·community须紧随origin(origin装载期导出bucket→community捕获·错序即崩)·勿动位置 -->
 <script src="preview/img/east-asia-basemap-data.js?v=20260514-formal-map"></script>
-<script src="phase8-formal-bridge.js?v=20260705-noframe"></script>
+<!-- 勿动位置·第二十七拆：phase8-formal-bridge-styles.js 必须紧接 phase8-formal-bridge.js【之前】装载(②a alias/bucket·装载期填 TM.__p8BridgeParts→origin 顶部 alias 回绑·错序即 installStyles=undefined·installFormalShell 同步调用崩) -->
+<script src="phase8-formal-bridge-styles.js?v=20260706-split27"></script>
+<script src="phase8-formal-bridge.js?v=20260706-split27"></script>
 <!-- phase8-formal·按 surface family 拆 6 module·主 bridge 必先 load·skeleton + alias 块·body 0 改动·2026-05-26 -->
 <script src="phase8-formal-topbar.js?v=20260621-optland"></script>
 <script src="tm-map-label-geo.js?v=20260705-noframe"></script>

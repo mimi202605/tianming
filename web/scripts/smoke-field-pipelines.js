@@ -114,7 +114,7 @@ srcHas('tm-endturn-core.js', /TM\.FieldPipes\.tick/, 'endturn-core：FieldPipes.
 srcHas('index.html', /tm-field-pipelines\.js/, 'index.html：模块已挂载');
 srcHas('tm-building-works.js', /ledgerPush/, 'building-works：完工写近账');
 srcHas('phase8-formal-map-dossier.js', /bkCauseLedgerHtml/, '因果签：近账渲染接线（第二十五拆迁至 dossier sibling）');
-srcHas('phase8-formal-bridge.js', /cp-led-row/, '因果签：近账样式注入');
+srcHas('phase8-formal-bridge-styles.js', /cp-led-row/, '因果签：近账样式注入'); // 第二十七拆·CSS迁出至 -styles 片
 
 console.log('\n[smoke-field-pipelines] ' + (failed === 0 ? 'PASS' : 'FAIL') + ' — ' + passed + ' passed, ' + failed + ' failed');
 process.exit(failed === 0 ? 0 : 1);

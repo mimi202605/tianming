@@ -10,7 +10,6 @@
     "tm-ai-change-applier.js": 4699,
     "tm-endturn-prompt.js": 4162,
     "tm-endturn-followup.js": 3992,
-    "tm-player-core.js": 3411,
-    "phase8-formal-bridge.js": 3115
+    "tm-player-core.js": 3411
   }
 }
