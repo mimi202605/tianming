@@ -64,6 +64,7 @@ assert.strictEqual(GM._memoryQuarantine[0].status, 'quarantined', 'hard_state do
 assert(GM._memoryQuarantine[0].reasons.some((reason) => reason.code === 'unauthorized_hard_state'), 'hard_state quarantine cites authority issue');
 
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8'), sandbox, { filename: 'tm-endturn-apply.js' });
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-endturn-apply-stages.js'), 'utf8'), sandbox, { filename: 'tm-endturn-apply-stages.js' }); // apply解构S2·stages紧随origin(writeBack dispatcher运行时调ns.stages)
 
 (async function testEndturnIntegration() {
   const GM2 = { turn: 10, chars: [] };

@@ -510,6 +510,232 @@
     return ctx;
   };
 
+  // ── SC schema builders（2026-07-06 ai暖身刀·自 runMain 外提至 IIFE 顶层·closure-free 纯函数·runMain 内调用点不动沿作用域链上移解析）──
+  // Phase 2 A1·SC1_SCHEMA_TIERS·真 3 层 dispatcher·by modelCap·必含 10 / 高频 10 / 可选 5
+  var SC1_SCHEMA_TIERS = {
+    // tier 1·必含·任何 model cap 都包含·核心账本与叙事 (10 字段)
+    core: ['turn_summary', 'shizhengji_basis', 'shilu_text', 'szj_title', 'shizhengji', 'szj_summary', 'player_status', 'events', 'char_updates', 'edict_feedback'],
+    // tier 2·高频·standard+·常用业务字段 (10 字段)
+    common: ['fiscal_adjustments', 'currency_adjustments', 'population_adjustments', 'central_local_actions', 'environment_actions', 'institution_changes', 'personnel_changes', 'office_changes', 'faction_relation_changes', 'faction_relation_shift', 'army_changes', 'armory_procurement', 'province_changes', 'character_deaths', 'npc_actions', 'edict_lifecycle_update', 'character_memory_updates'],
+    // tier 3·可选·full·高级业务 (5 字段)
+    extended: ['party_changes', 'class_changes', 'class_alert_responses', 'economic_advice', 'table_updates']
+  };
+  // _buildSc1Schema(tier, modelCap)·按 modelCap 决定 tier·返回 SC1 schema 字段子集
+  function _buildSc1Schema(tier, modelCap) {
+    if (!tier) {
+      // 推断 tier·按 modelCap (effective output cap K)
+      var capK = (typeof modelCap === 'number' && modelCap > 0) ? Math.round(modelCap / 1024) : 16;
+      if (capK <= 4) tier = 'core';
+      else if (capK <= 8) tier = 'common';
+      else tier = 'extended';
+    }
+    var fields = SC1_SCHEMA_TIERS.core.slice();
+    if (tier === 'common' || tier === 'extended') fields = fields.concat(SC1_SCHEMA_TIERS.common);
+    if (tier === 'extended') fields = fields.concat(SC1_SCHEMA_TIERS.extended);
+    return { tier: tier, fields: fields };
+  }
+  // 暴露 tier 配置·smoke 可锁·调试可调
+  if (ns) {
+    ns.SC1_SCHEMA_TIERS = SC1_SCHEMA_TIERS;
+    ns.buildSc1Schema = _buildSc1Schema;
+  }
+
+  // Phase 6 Q1·OpenAI strict json_schema builder·sc1 / sc1b / sc1c / sc1q 各一份·宽松字段长度·nullable 可选·enum 列全
+  // 开关·P.ai.openaiStrict===true 才走 strict·失败 fallback to json_object (见 Q1-3)
+  function _buildSc1JsonSchema() {
+    return {
+      name: 'sc1_main',
+      strict: true,
+      schema: {
+        type: 'object',
+        additionalProperties: true,
+        properties: {
+          turn_summary: { type: 'string' },
+          shizhengji_basis: { type: 'string' },
+          shilu_text: { type: 'string' },
+          szj_title: { type: 'string' },
+          shizhengji: { type: 'string' },
+          szj_summary: { type: 'string' },
+          player_status: { type: 'string' },
+          player_inner: { type: 'string' },
+          events: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          resource_changes: { type: 'object', additionalProperties: true },
+          variable_changes: { type: 'object', additionalProperties: true },
+          char_updates: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          character_deaths: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          npc_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          character_memory_updates: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          edict_feedback: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          dialogue_commitment_feedback: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          court_resolution_feedback: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          fiscal_adjustments: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          currency_adjustments: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          population_adjustments: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          central_local_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          environment_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          institution_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          personnel_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          office_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          faction_ai_outcomes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          faction_relation_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          faction_relation_shift: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          party_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          army_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          armory_procurement: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          province_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          economic_advice: { type: 'string' },
+          table_updates: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          suggestions: { type: 'array', items: { type: 'string' } }
+        },
+        required: ['turn_summary']
+      }
+    };
+  }
+  function _buildSc1bJsonSchema() {
+    return {
+      name: 'sc1b_letters',
+      strict: true,
+      schema: {
+        type: 'object',
+        additionalProperties: true,
+        properties: {
+          cultural_works: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          npc_letters: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          npc_correspondence: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          npc_interactions: { type: 'array', items: { type: 'object', additionalProperties: true } }
+        },
+        required: []
+      }
+    };
+  }
+  function _buildSc1cJsonSchema() {
+    return {
+      name: 'sc1c_factions',
+      strict: true,
+      schema: {
+        type: 'object',
+        additionalProperties: true,
+        properties: {
+          faction_events: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          faction_ai_outcomes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          faction_interactions_advanced: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          faction_relation_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          faction_succession: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          npc_schemes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          hidden_moves: { type: 'array', items: { type: 'string' } },
+          scheme_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          fengwen_snippets: { type: 'array', items: { type: 'object', additionalProperties: true } }
+        },
+        required: []
+      }
+    };
+  }
+  function _buildSc1qJsonSchema() {
+    return {
+      name: 'sc1q_dialogue',
+      strict: true,
+      schema: {
+        type: 'object',
+        additionalProperties: true,
+        properties: {
+          dialogue_commitments: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          collective_resolutions: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          npc_dialogue_intent: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          required_sc1_actions: { type: 'array', items: { type: 'string' } }
+        },
+        required: []
+      }
+    };
+  }
+  // Phase 6 Q1-4·扩 11 个子调用 schema·sc1d/sc15/sc15n/sc16/sc17/sc18/sc2/sc25/sc25c/sc27/sc28
+  function _buildGenericArrayObjectSchema(name, fieldNames) {
+    var props = {};
+    fieldNames.forEach(function(f) { props[f] = { type: 'array', items: { type: 'object', additionalProperties: true } }; });
+    return { name: name, strict: true, schema: { type: 'object', additionalProperties: true, properties: props, required: [] } };
+  }
+  function _buildSc1dJsonSchema() {
+    return { name: 'sc1d_record', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      shilu_text: { type: 'string' }, szj_title: { type: 'string' }, shizhengji: { type: 'string' }, szj_summary: { type: 'string' },
+      basis_refs: { type: 'array', items: { type: 'object', additionalProperties: true } }
+    }, required: [] } };
+  }
+  function _buildSc15JsonSchema() {
+    return { name: 'sc15_npc_deep', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      hidden_moves: { type: 'array', items: { type: 'string' } },
+      mood_shifts: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      relationship_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      faction_undercurrents: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      npc_schemes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      rumors: { type: 'string' }, contradiction_shift: { type: 'string' }
+    }, required: [] } };
+  }
+  function _buildSc15nJsonSchema() {
+    return { name: 'sc15n_3tier', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      mood_shifts: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      relationship_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      hidden_moves: { type: 'array', items: { type: 'string' } },
+      faction_undercurrents: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      npc_schemes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      rumors: { type: 'string' },
+      npc_cognition: { type: 'array', items: { type: 'object', additionalProperties: true } }
+    }, required: [] } };
+  }
+  function _buildSc16JsonSchema() {
+    return _buildGenericArrayObjectSchema('sc16_faction', ['faction_priorities', 'faction_actions', 'faction_directives', 'diplomatic_shifts']);
+  }
+  function _buildSc17JsonSchema() {
+    return { name: 'sc17_fiscal', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      fiscal_analysis: { type: 'string' }, trade_dynamics: { type: 'string' }, inflation_pressure: { type: 'string' },
+      resource_forecast: { type: 'string' }, economic_advice: { type: 'string' },
+      supplementary_resource_changes: { type: 'object', additionalProperties: true }
+    }, required: [] } };
+  }
+  function _buildSc18JsonSchema() {
+    return { name: 'sc18_military', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      military_situation: { type: 'string' }, war_probability: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      supplementary_army_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      faction_military_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      battleResult: { type: 'object', additionalProperties: true }, power_balance_shift: { type: 'string' }
+    }, required: [] } };
+  }
+  function _buildSc2JsonSchema() {
+    return { name: 'sc2_narrative', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      zhengwen: { type: 'string' }, houren_xishuo: { type: 'string' }
+    }, required: [] } };
+  }
+  function _buildSc25JsonSchema() {
+    return _buildGenericArrayObjectSchema('sc25_foreshadow', ['immediate_foreshadow', 'turn_memory', 'imperial_candidates']);
+  }
+  function _buildSc25cJsonSchema() {
+    return { name: 'sc25c_synth', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      immediate_foreshadow: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      turn_memory: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      state_board: { type: 'object', additionalProperties: true },
+      consolidated: { type: 'string' },
+      key_threads: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      npc_trajectories: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      faction_vectors: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      unresolved_tensions: { type: 'array', items: { type: 'string' } },
+      player_reputation_drift: { type: 'array', items: { type: 'object', additionalProperties: true } },
+      next_turn_focus: { type: 'array', items: { type: 'string' } }
+    }, required: [] } };
+  }
+  function _buildSc27JsonSchema() {
+    return { name: 'sc27_review', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      anachronisms: { type: 'array', items: { type: 'string' } },
+      name_errors: { type: 'array', items: { type: 'string' } },
+      missing_beats: { type: 'array', items: { type: 'string' } },
+      tone_guidance: { type: 'string' },
+      rewritten_passages: { type: 'string' },
+      added_details: { type: 'string' }
+    }, required: [] } };
+  }
+  function _buildSc28JsonSchema() {
+    return { name: 'sc28_world', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
+      world_snapshot: { type: 'string' }, next_turn_seeds: { type: 'string' }, tension_level: { type: 'string' }
+    }, required: [] } };
+  }
+
   ns.runMain = async function(ctx, afterSc1) {
     ensureGroups(ctx);
     ns.setupInfra(ctx);
@@ -600,230 +826,6 @@
       // 兼容性：OpenAI/GPT/Gemini/DeepSeek/OpenRouter/国内中转站等所有走 /chat/completions 的接口
       //         一律返回原字符串·完全 no-op·因为 (1) provider 不是 anthropic 或 (2) URL 不是 api.anthropic.com
       // 使用：messages:[{role:"system",content:_maybeCacheSys(sysP)},{role:"user",content:tpX}]
-      // Phase 2 A1·SC1_SCHEMA_TIERS·真 3 层 dispatcher·by modelCap·必含 10 / 高频 10 / 可选 5
-      var SC1_SCHEMA_TIERS = {
-        // tier 1·必含·任何 model cap 都包含·核心账本与叙事 (10 字段)
-        core: ['turn_summary', 'shizhengji_basis', 'shilu_text', 'szj_title', 'shizhengji', 'szj_summary', 'player_status', 'events', 'char_updates', 'edict_feedback'],
-        // tier 2·高频·standard+·常用业务字段 (10 字段)
-        common: ['fiscal_adjustments', 'currency_adjustments', 'population_adjustments', 'central_local_actions', 'environment_actions', 'institution_changes', 'personnel_changes', 'office_changes', 'faction_relation_changes', 'faction_relation_shift', 'army_changes', 'armory_procurement', 'province_changes', 'character_deaths', 'npc_actions', 'edict_lifecycle_update', 'character_memory_updates'],
-        // tier 3·可选·full·高级业务 (5 字段)
-        extended: ['party_changes', 'class_changes', 'class_alert_responses', 'economic_advice', 'table_updates']
-      };
-      // _buildSc1Schema(tier, modelCap)·按 modelCap 决定 tier·返回 SC1 schema 字段子集
-      function _buildSc1Schema(tier, modelCap) {
-        if (!tier) {
-          // 推断 tier·按 modelCap (effective output cap K)
-          var capK = (typeof modelCap === 'number' && modelCap > 0) ? Math.round(modelCap / 1024) : 16;
-          if (capK <= 4) tier = 'core';
-          else if (capK <= 8) tier = 'common';
-          else tier = 'extended';
-        }
-        var fields = SC1_SCHEMA_TIERS.core.slice();
-        if (tier === 'common' || tier === 'extended') fields = fields.concat(SC1_SCHEMA_TIERS.common);
-        if (tier === 'extended') fields = fields.concat(SC1_SCHEMA_TIERS.extended);
-        return { tier: tier, fields: fields };
-      }
-      // 暴露 tier 配置·smoke 可锁·调试可调
-      if (ns) {
-        ns.SC1_SCHEMA_TIERS = SC1_SCHEMA_TIERS;
-        ns.buildSc1Schema = _buildSc1Schema;
-      }
-
-      // Phase 6 Q1·OpenAI strict json_schema builder·sc1 / sc1b / sc1c / sc1q 各一份·宽松字段长度·nullable 可选·enum 列全
-      // 开关·P.ai.openaiStrict===true 才走 strict·失败 fallback to json_object (见 Q1-3)
-      function _buildSc1JsonSchema() {
-        return {
-          name: 'sc1_main',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: true,
-            properties: {
-              turn_summary: { type: 'string' },
-              shizhengji_basis: { type: 'string' },
-              shilu_text: { type: 'string' },
-              szj_title: { type: 'string' },
-              shizhengji: { type: 'string' },
-              szj_summary: { type: 'string' },
-              player_status: { type: 'string' },
-              player_inner: { type: 'string' },
-              events: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              resource_changes: { type: 'object', additionalProperties: true },
-              variable_changes: { type: 'object', additionalProperties: true },
-              char_updates: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              character_deaths: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              npc_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              character_memory_updates: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              edict_feedback: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              dialogue_commitment_feedback: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              court_resolution_feedback: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              fiscal_adjustments: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              currency_adjustments: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              population_adjustments: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              central_local_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              environment_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              institution_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              personnel_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              office_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              faction_ai_outcomes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              faction_relation_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              faction_relation_shift: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              party_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              army_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              armory_procurement: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              province_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              economic_advice: { type: 'string' },
-              table_updates: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              suggestions: { type: 'array', items: { type: 'string' } }
-            },
-            required: ['turn_summary']
-          }
-        };
-      }
-      function _buildSc1bJsonSchema() {
-        return {
-          name: 'sc1b_letters',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: true,
-            properties: {
-              cultural_works: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              npc_letters: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              npc_correspondence: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              npc_interactions: { type: 'array', items: { type: 'object', additionalProperties: true } }
-            },
-            required: []
-          }
-        };
-      }
-      function _buildSc1cJsonSchema() {
-        return {
-          name: 'sc1c_factions',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: true,
-            properties: {
-              faction_events: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              faction_ai_outcomes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              faction_interactions_advanced: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              faction_relation_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              faction_succession: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              npc_schemes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              hidden_moves: { type: 'array', items: { type: 'string' } },
-              scheme_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              fengwen_snippets: { type: 'array', items: { type: 'object', additionalProperties: true } }
-            },
-            required: []
-          }
-        };
-      }
-      function _buildSc1qJsonSchema() {
-        return {
-          name: 'sc1q_dialogue',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: true,
-            properties: {
-              dialogue_commitments: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              collective_resolutions: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              npc_dialogue_intent: { type: 'array', items: { type: 'object', additionalProperties: true } },
-              required_sc1_actions: { type: 'array', items: { type: 'string' } }
-            },
-            required: []
-          }
-        };
-      }
-      // Phase 6 Q1-4·扩 11 个子调用 schema·sc1d/sc15/sc15n/sc16/sc17/sc18/sc2/sc25/sc25c/sc27/sc28
-      function _buildGenericArrayObjectSchema(name, fieldNames) {
-        var props = {};
-        fieldNames.forEach(function(f) { props[f] = { type: 'array', items: { type: 'object', additionalProperties: true } }; });
-        return { name: name, strict: true, schema: { type: 'object', additionalProperties: true, properties: props, required: [] } };
-      }
-      function _buildSc1dJsonSchema() {
-        return { name: 'sc1d_record', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          shilu_text: { type: 'string' }, szj_title: { type: 'string' }, shizhengji: { type: 'string' }, szj_summary: { type: 'string' },
-          basis_refs: { type: 'array', items: { type: 'object', additionalProperties: true } }
-        }, required: [] } };
-      }
-      function _buildSc15JsonSchema() {
-        return { name: 'sc15_npc_deep', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          hidden_moves: { type: 'array', items: { type: 'string' } },
-          mood_shifts: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          relationship_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          faction_undercurrents: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          npc_schemes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          rumors: { type: 'string' }, contradiction_shift: { type: 'string' }
-        }, required: [] } };
-      }
-      function _buildSc15nJsonSchema() {
-        return { name: 'sc15n_3tier', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          mood_shifts: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          relationship_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          hidden_moves: { type: 'array', items: { type: 'string' } },
-          faction_undercurrents: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          npc_schemes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          rumors: { type: 'string' },
-          npc_cognition: { type: 'array', items: { type: 'object', additionalProperties: true } }
-        }, required: [] } };
-      }
-      function _buildSc16JsonSchema() {
-        return _buildGenericArrayObjectSchema('sc16_faction', ['faction_priorities', 'faction_actions', 'faction_directives', 'diplomatic_shifts']);
-      }
-      function _buildSc17JsonSchema() {
-        return { name: 'sc17_fiscal', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          fiscal_analysis: { type: 'string' }, trade_dynamics: { type: 'string' }, inflation_pressure: { type: 'string' },
-          resource_forecast: { type: 'string' }, economic_advice: { type: 'string' },
-          supplementary_resource_changes: { type: 'object', additionalProperties: true }
-        }, required: [] } };
-      }
-      function _buildSc18JsonSchema() {
-        return { name: 'sc18_military', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          military_situation: { type: 'string' }, war_probability: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          supplementary_army_changes: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          faction_military_actions: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          battleResult: { type: 'object', additionalProperties: true }, power_balance_shift: { type: 'string' }
-        }, required: [] } };
-      }
-      function _buildSc2JsonSchema() {
-        return { name: 'sc2_narrative', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          zhengwen: { type: 'string' }, houren_xishuo: { type: 'string' }
-        }, required: [] } };
-      }
-      function _buildSc25JsonSchema() {
-        return _buildGenericArrayObjectSchema('sc25_foreshadow', ['immediate_foreshadow', 'turn_memory', 'imperial_candidates']);
-      }
-      function _buildSc25cJsonSchema() {
-        return { name: 'sc25c_synth', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          immediate_foreshadow: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          turn_memory: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          state_board: { type: 'object', additionalProperties: true },
-          consolidated: { type: 'string' },
-          key_threads: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          npc_trajectories: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          faction_vectors: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          unresolved_tensions: { type: 'array', items: { type: 'string' } },
-          player_reputation_drift: { type: 'array', items: { type: 'object', additionalProperties: true } },
-          next_turn_focus: { type: 'array', items: { type: 'string' } }
-        }, required: [] } };
-      }
-      function _buildSc27JsonSchema() {
-        return { name: 'sc27_review', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          anachronisms: { type: 'array', items: { type: 'string' } },
-          name_errors: { type: 'array', items: { type: 'string' } },
-          missing_beats: { type: 'array', items: { type: 'string' } },
-          tone_guidance: { type: 'string' },
-          rewritten_passages: { type: 'string' },
-          added_details: { type: 'string' }
-        }, required: [] } };
-      }
-      function _buildSc28JsonSchema() {
-        return { name: 'sc28_world', strict: true, schema: { type: 'object', additionalProperties: true, properties: {
-          world_snapshot: { type: 'string' }, next_turn_seeds: { type: 'string' }, tension_level: { type: 'string' }
-        }, required: [] } };
-      }
       // 选 response_format·strict (json_schema) 优先·失败 fallback json_object
       function _selectResponseFormat(modelFamily, schemaBuilder) {
         if (modelFamily !== 'openai') return null;

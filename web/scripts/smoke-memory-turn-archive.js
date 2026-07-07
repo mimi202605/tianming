@@ -121,6 +121,7 @@ assert(compiled.text.includes('river repair backlog'), 'compiled context include
 assert(compiled.text.includes('payroll fraud'), 'compiled context includes archived character event');
 
 load('tm-endturn-apply.js');
+load('tm-endturn-apply-stages.js'); // apply解构S2·stages紧随origin(writeBack dispatcher运行时调ns.stages)
 
 (async function testEndturnArchiveIntegration() {
   const GM2 = { turn: 19, chars: [], currentIssues: [] };

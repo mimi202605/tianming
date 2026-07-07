@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..');
 let pass = 0, fail = 0;
 function assert(c, m) { if (c) pass++; else { fail++; console.error('  ✗ ' + m); } }
 
-const APPLY = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8');
+const APPLY = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-endturn-apply-stages.js'), 'utf8'); // apply解构S2·奏疏代拟块迁 stages·拼接 origin→stages
 const PRESS = fs.readFileSync(path.join(ROOT, 'tm-minxin-pressure-actions.js'), 'utf8');
 
 // ── ① 源码契约 ──

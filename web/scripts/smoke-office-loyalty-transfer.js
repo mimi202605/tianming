@@ -88,6 +88,7 @@ function load(file) {
 
 load('tm-utils.js');
 load('tm-endturn-apply.js');
+load('tm-endturn-apply-stages.js'); // apply解构S2·stages紧随origin(writeBack dispatcher运行时调ns.stages)
 
 (async function main() {
   const ctx = {

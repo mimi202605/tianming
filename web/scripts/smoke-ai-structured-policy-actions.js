@@ -69,7 +69,7 @@ function buildContext() {
   const aiSchemaSource = fs.readFileSync(path.join(ROOT, 'tm-ai-schema.js'), 'utf8');
   const validatorSource = fs.readFileSync(path.join(ROOT, 'tm-ai-output-validator.js'), 'utf8');
   const endturnAiSource = fs.readFileSync(path.join(ROOT, 'tm-endturn-ai.js'), 'utf8');
-  const endturnApplySource = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8');
+  const endturnApplySource = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-endturn-apply-stages.js'), 'utf8'); // apply解构S2·主应用透传等迁 stages·拼接 origin→stages
 
   [
     'currency_adjustments',

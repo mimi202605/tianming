@@ -71,7 +71,7 @@ assert(ctx._TM_IMPRISON_RE.test('廷杖下诏狱·重伤候勘'), '廷杖入狱 
 assert(ctx._TM_IMPRISON_RE.test('谋逆事发·下诏狱待勘'), '谋反下狱 reason 应被单一真源识别(防 migration 误清)');
 const tinyi = (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-persona.js'), 'utf8') + '\n' + (fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-edict-personnel.js'), 'utf8')) + '\n' + fs.readFileSync(path.join(ROOT, 'tm-tinyi-v3-parties.js'), 'utf8'));
 assert(/廷杖下诏狱/.test(tinyi), '廷杖路径 reason 应含诏狱');
-const endturn = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8');
+const endturn = fs.readFileSync(path.join(ROOT, 'tm-endturn-apply.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'tm-endturn-apply-stages.js'), 'utf8'); // apply解构S2·_imprisonReason 等迁 stages·拼接 origin→stages
 assert(/谋逆事发[^']*下诏狱/.test(endturn), '谋反路径应设含诏狱的 _imprisonReason');
 
 console.log('');

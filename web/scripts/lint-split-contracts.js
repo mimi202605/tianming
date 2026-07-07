@@ -66,6 +66,10 @@ const CONTRACTS = [
   // 第二十二拆(IIFE 型·origin-first 双向 bucket)：tm-ai-change-applier 一致性校验器族(validators)+复核/善后族(reconcile) 两分片须【紧随 origin 之后】按序连续
   //   origin 装载末尾向 bucket TM.__acaParts 导出 12 个 kept helper→两分片闭包捕获；两分片回填校验/复核函数→origin 32 委托 shim 调用期解析·错序即崩
   ['tm-ai-change-applier.js', 'tm-ai-change-applier-validators.js', 'tm-ai-change-applier-reconcile.js'],
+  // apply解构S2(类③巨石·IIFE 型·origin-first)：tm-endturn-apply writeBack 两端最独立 stage(AP-1 _applyCore_reconcile
+  //   + AP-6 _applyPostValidateAssemble)迁出·stages 须【紧随 origin 之后】。origin writeBack 变薄为 dispatcher·
+  //   运行时(回合推演调用期)调 ns.stages.<stage>(ctx)——两片装载期不互调仅定义·故 sibling 载于 origin 之后安全
+  ['tm-endturn-apply.js', 'tm-endturn-apply-stages.js'],
 ];
 
 /** editor.html 入口的拆分家族（编辑器侧巨石） */

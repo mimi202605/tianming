@@ -1,0 +1,2817 @@
+{
+  "note": "endturn writeBack 行为金样·apply解构 命门·canonical(GM)+addEB序+ctx发布面·双路(A确定性核心/B含await)",
+  "pathA": {
+    "gm": {
+      "_memoryAccepted": [
+        {
+          "acceptedAtTurn": 24,
+          "acceptedBy": "auto-trusted",
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "韩旷记下帝许三日复奏河工。",
+          "confidence": null,
+          "contentHash": "2e6e768b",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "韩旷"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "韩旷",
+            "confidence": 0.7,
+            "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+            "memoryType": "memory",
+            "private": false,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+          "factStatus": "",
+          "id": "char-memory-24-0--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:韩旷",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "accepted",
+          "reviewedAtTurn": 24,
+          "reviewedBy": "auto-trusted",
+          "role": "",
+          "safeBody": "韩旷记下帝许三日复奏河工。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "jr-he",
+              "type": "jishiRecords"
+            },
+            {
+              "hash": "2e6e768b",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        }
+      ],
+      "_memoryAuditEvents": [
+        {
+          "action": "enqueue",
+          "id": "turn-inference-summary-24-SC1",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "enqueue",
+          "id": "turn-issue-24-0-issue-he",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "enqueue",
+          "id": "char-memory-24-0--",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "enqueue",
+          "id": "char-memory-24-1--",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "accept",
+          "id": "char-memory-24-0--",
+          "reviewer": "auto-trusted",
+          "turn": 24
+        },
+        {
+          "action": "flush_accepted",
+          "id": "char-memory-24-0--",
+          "reviewer": "auto-trusted",
+          "turn": 24
+        },
+        {
+          "action": "archive_turn",
+          "counts": {
+            "characterEvents": 2,
+            "chronicle": 1,
+            "stateAffairs": 1
+          },
+          "id": "turn-archive-24-SC1",
+          "sourceId": "SC1",
+          "turn": 24
+        },
+        {
+          "action": "rebuild_turn_rollup",
+          "counts": {
+            "characterDossiers": 4,
+            "chronicleRollups": 1,
+            "issueChains": 1
+          },
+          "id": "memory-turn-rollup-24",
+          "turn": 24
+        }
+      ],
+      "_memoryCharacterDossiers": [
+        {
+          "actor": "东林",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "东林 character dossier: T24 东林 浙党 relationship 争河工主导",
+          "endTurn": 24,
+          "entities": [
+            "东林"
+          ],
+          "extra": {
+            "actor": "东林",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:东林",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        },
+        {
+          "actor": "周延儒",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "周延儒 character dossier: T24 温体仁 周延儒 impeach 劾周延儒",
+          "endTurn": 24,
+          "entities": [
+            "周延儒"
+          ],
+          "extra": {
+            "actor": "周延儒",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:周延儒",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        },
+        {
+          "actor": "浙党",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "浙党 character dossier: T24 东林 浙党 relationship 争河工主导",
+          "endTurn": 24,
+          "entities": [
+            "浙党"
+          ],
+          "extra": {
+            "actor": "浙党",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:浙党",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        },
+        {
+          "actor": "温体仁",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "温体仁 character dossier: T24 温体仁 周延儒 impeach 劾周延儒",
+          "endTurn": 24,
+          "entities": [
+            "温体仁"
+          ],
+          "extra": {
+            "actor": "温体仁",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:温体仁",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        }
+      ],
+      "_memoryChronicleRollups": [
+        {
+          "authority": "structured_chronicle",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "1627 chronicle rollup: T24 河工之议 河工与边饷成为朝堂主压力。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。 实录：帝御文华殿，议河工。",
+          "endTurn": 24,
+          "extra": {
+            "bundleCount": 1,
+            "itemCount": 1,
+            "stream": "chronicleRollup"
+          },
+          "factStatus": "historiography_summary",
+          "id": "chronicle-rollup-1627",
+          "lane": "L7_chronicle_context",
+          "projectionVersion": 1,
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "turn": 24,
+          "type": "historiography_summary",
+          "visibility": "public",
+          "yearKey": "1627"
+        }
+      ],
+      "_memoryDraftInbox": [
+        {
+          "audience": [],
+          "authority": "ai_summary",
+          "authorityRank": 30,
+          "basisRefs": [],
+          "body": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "confidence": null,
+          "contentHash": "5a948cb9",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "factKey": "chronicle:turn:24:SC1",
+            "sourceId": "SC1",
+            "stream": "chronicle",
+            "title": "河工之议"
+          },
+          "factKey": "chronicle:turn:24:SC1",
+          "factStatus": "",
+          "id": "turn-inference-summary-24-SC1",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L7_chronicle_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:chronicle-summary",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "5a948cb9",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "turn_inference_summary",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_analysis",
+          "authorityRank": 40,
+          "basisRefs": [],
+          "body": "河工待修 决口扩大，急待钱粮。",
+          "confidence": 0.6,
+          "contentHash": "f1f6bb3d",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "action": "update",
+            "category": "",
+            "factKey": "state-affair:issue-he",
+            "issueId": "issue-he",
+            "severity": "",
+            "stream": "stateAffairs"
+          },
+          "factKey": "state-affair:issue-he",
+          "factStatus": "",
+          "id": "turn-issue-24-0-issue-he",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "issueId": "issue-he",
+          "lane": "L5_advisory_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:current-issue:update",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工待修 决口扩大，急待钱粮。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "f1f6bb3d",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "issue_update",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "acceptedAtTurn": 24,
+          "acceptedBy": "auto-trusted",
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "韩旷记下帝许三日复奏河工。",
+          "confidence": null,
+          "contentHash": "2e6e768b",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "韩旷"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "韩旷",
+            "confidence": 0.7,
+            "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+            "memoryType": "memory",
+            "private": false,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+          "factStatus": "",
+          "id": "char-memory-24-0--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:韩旷",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "accepted",
+          "reviewedAtTurn": 24,
+          "reviewedBy": "auto-trusted",
+          "role": "",
+          "safeBody": "韩旷记下帝许三日复奏河工。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "jr-he",
+              "type": "jishiRecords"
+            },
+            {
+              "hash": "2e6e768b",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "温体仁私忖党争难解。",
+          "confidence": null,
+          "contentHash": "e8ce5e99",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "温体仁"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "温体仁",
+            "confidence": 0.72,
+            "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+            "memoryType": "memory",
+            "private": true,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+          "factStatus": "",
+          "id": "char-memory-24-1--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:温体仁",
+          "projectionVersion": 1,
+          "readScope": "npc:温体仁",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "温体仁私忖党争难解。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "cr-wen",
+              "type": "courtRecords"
+            },
+            {
+              "hash": "e8ce5e99",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "character_belief",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        }
+      ],
+      "_memoryEraRollups": [],
+      "_memoryIssueChains": [
+        {
+          "authority": "ai_analysis",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "issue-he issue chain: T24 河工待修 决口扩大，急待钱粮。",
+          "endTurn": 24,
+          "entities": [],
+          "extra": {
+            "issueStatus": "active",
+            "itemCount": 1,
+            "stream": "issueChain"
+          },
+          "factStatus": "issue_chain_active",
+          "id": "issue-chain-issue-he",
+          "issueId": "issue-he",
+          "lane": "L3_long_term_affair",
+          "projectionVersion": 1,
+          "role": "active_chain",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "ongoing_affair",
+          "visibility": "public"
+        }
+      ],
+      "_memoryQuarantine": [],
+      "_memoryWriteQueue": [
+        {
+          "audience": [],
+          "authority": "ai_summary",
+          "authorityRank": 30,
+          "basisRefs": [],
+          "body": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "confidence": null,
+          "contentHash": "5a948cb9",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "factKey": "chronicle:turn:24:SC1",
+            "sourceId": "SC1",
+            "stream": "chronicle",
+            "title": "河工之议"
+          },
+          "factKey": "chronicle:turn:24:SC1",
+          "factStatus": "",
+          "id": "turn-inference-summary-24-SC1",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L7_chronicle_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:chronicle-summary",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "5a948cb9",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "turn_inference_summary",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_analysis",
+          "authorityRank": 40,
+          "basisRefs": [],
+          "body": "河工待修 决口扩大，急待钱粮。",
+          "confidence": 0.6,
+          "contentHash": "f1f6bb3d",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "action": "update",
+            "category": "",
+            "factKey": "state-affair:issue-he",
+            "issueId": "issue-he",
+            "severity": "",
+            "stream": "stateAffairs"
+          },
+          "factKey": "state-affair:issue-he",
+          "factStatus": "",
+          "id": "turn-issue-24-0-issue-he",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "issueId": "issue-he",
+          "lane": "L5_advisory_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:current-issue:update",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工待修 决口扩大，急待钱粮。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "f1f6bb3d",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "issue_update",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "acceptedAtTurn": 24,
+          "acceptedBy": "auto-trusted",
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "韩旷记下帝许三日复奏河工。",
+          "confidence": null,
+          "contentHash": "2e6e768b",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "韩旷"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "韩旷",
+            "confidence": 0.7,
+            "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+            "memoryType": "memory",
+            "private": false,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+          "factStatus": "",
+          "id": "char-memory-24-0--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:韩旷",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "accepted",
+          "reviewedAtTurn": 24,
+          "reviewedBy": "auto-trusted",
+          "role": "",
+          "safeBody": "韩旷记下帝许三日复奏河工。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "jr-he",
+              "type": "jishiRecords"
+            },
+            {
+              "hash": "2e6e768b",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "温体仁私忖党争难解。",
+          "confidence": null,
+          "contentHash": "e8ce5e99",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "温体仁"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "温体仁",
+            "confidence": 0.72,
+            "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+            "memoryType": "memory",
+            "private": true,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+          "factStatus": "",
+          "id": "char-memory-24-1--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:温体仁",
+          "projectionVersion": 1,
+          "readScope": "npc:温体仁",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "温体仁私忖党争难解。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "cr-wen",
+              "type": "courtRecords"
+            },
+            {
+              "hash": "e8ce5e99",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "character_belief",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        }
+      ],
+      "_narrativeDigest": [],
+      "_npcCommitments": {
+        "韩旷": [
+          {
+            "_sc1qPlayerEmphasis": "",
+            "_sc1qSource": "",
+            "_sc1qSourceConvId": "",
+            "_sc1qTarget": "",
+            "assignedTurn": 24,
+            "basisRefs": [
+              {
+                "authority": "court_report",
+                "id": "sc1q-24-韩旷-0",
+                "role": "commitment_source",
+                "turn": 24,
+                "type": "dialogueCommitment"
+              }
+            ],
+            "category": "dialogue",
+            "deadline": 3,
+            "feedback": "",
+            "id": "sc1q_24_韩旷_0",
+            "lastUpdateTurn": 24,
+            "npcPromise": "",
+            "progress": 0,
+            "sourceRefs": [
+              {
+                "authority": "court_report",
+                "id": "sc1q-24-韩旷-0",
+                "role": "commitment_source",
+                "turn": 24,
+                "type": "dialogueCommitment"
+              }
+            ],
+            "status": "progress",
+            "task": "",
+            "willingness": 0.5
+          }
+        ]
+      },
+      "_recentNarrative": [
+        {
+          "shilu": "实录：帝御文华殿，议河工。",
+          "shizhengji": "本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "summary": "河工待修，边饷吃紧。",
+          "turn": 24
+        }
+      ],
+      "_revoltPrecursors": [],
+      "_turnMemoryArchive": [
+        {
+          "characterEvents": [
+            {
+              "authority": "event_log",
+              "basisRefs": [],
+              "body": "温体仁 周延儒 impeach 劾周延儒",
+              "confidence": 0.68,
+              "entities": [
+                "温体仁",
+                "周延儒"
+              ],
+              "extra": {
+                "actor": "温体仁",
+                "kind": "impeach",
+                "stream": "characterEvents",
+                "target": "周延儒"
+              },
+              "factStatus": "turn_archive_event",
+              "id": "npc-action-24-0-impeach",
+              "lane": "L4_dialogue_evidence",
+              "ownerScope": "npc:温体仁",
+              "readScope": "public",
+              "role": "record",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "relationship_event",
+              "visibility": "internal"
+            },
+            {
+              "authority": "event_log",
+              "basisRefs": [],
+              "body": "东林 浙党 relationship 争河工主导",
+              "confidence": 0.72,
+              "entities": [
+                "东林",
+                "浙党"
+              ],
+              "extra": {
+                "actor": "东林",
+                "delta": null,
+                "kind": "relationship",
+                "stream": "characterEvents",
+                "target": "浙党"
+              },
+              "factStatus": "relationship_delta",
+              "id": "affinity-24-0-relationship",
+              "lane": "L4_dialogue_evidence",
+              "ownerScope": "npc:东林",
+              "readScope": "public",
+              "role": "record",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "relationship_event",
+              "visibility": "internal"
+            }
+          ],
+          "chronicle": [
+            {
+              "authority": "structured_chronicle",
+              "basisRefs": [],
+              "body": "河工之议 河工与边饷成为朝堂主压力。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。 实录：帝御文华殿，议河工。",
+              "extra": {
+                "stream": "chronicle",
+                "summary": "河工与边饷成为朝堂主压力。",
+                "title": "河工之议"
+              },
+              "factStatus": "recorded_event",
+              "id": "turn-archive-24-SC1:chronicle",
+              "lane": "L7_chronicle_context",
+              "role": "record",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "chronicle_event",
+              "visibility": "public"
+            }
+          ],
+          "createdAt": 1700000000000,
+          "dateLabel": "天启24年",
+          "id": "turn-archive-24-SC1",
+          "projectionVersion": 1,
+          "schemaVersion": "memory-turn-archive/v0",
+          "sourceId": "SC1",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "sourceType": "aiTurnResult",
+          "stateAffairs": [
+            {
+              "authority": "ai_analysis",
+              "basisRefs": [],
+              "body": "河工待修 决口扩大，急待钱粮。",
+              "confidence": 0.6,
+              "entities": [],
+              "extra": {
+                "action": "update",
+                "category": "",
+                "severity": "",
+                "stream": "stateAffairs"
+              },
+              "factStatus": "advisory_unverified",
+              "id": "issue_update-issue-he-t24",
+              "issueId": "issue-he",
+              "lane": "L5_advisory_context",
+              "role": "update",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "issue_update",
+              "visibility": "public"
+            }
+          ],
+          "turn": 24,
+          "year": "1627"
+        }
+      ],
+      "_unappliedChanges": [
+        {
+          "reason": "target not found: 幽灵",
+          "source": "sc1主应用",
+          "target": "幽灵",
+          "turn": 24
+        },
+        {
+          "count": 2,
+          "reason": "province_changes 无 apply handler(省级变化请走 population_adjustments/central_local_actions)",
+          "sample": [
+            {
+              "province": "河南",
+              "reason": "灾情",
+              "sentiment_delta": -5
+            },
+            {
+              "note": "盐课紧",
+              "province": "山东"
+            }
+          ],
+          "source": "province_changes",
+          "turn": 24
+        }
+      ],
+      "chars": [
+        {
+          "alive": true,
+          "faction": "东林",
+          "loyalty": 63,
+          "name": "韩旷",
+          "stress": 10,
+          "title": "尚书"
+        },
+        {
+          "alive": true,
+          "faction": "浙党",
+          "loyalty": 40,
+          "name": "温体仁",
+          "stress": 30
+        },
+        {
+          "alive": true,
+          "loyalty": 50,
+          "name": "周延儒",
+          "officialTitle": "侍郎",
+          "stress": 28,
+          "title": "礼部侍郎"
+        }
+      ],
+      "classes": [
+        {
+          "name": "士绅",
+          "population": 1200,
+          "satisfaction": 48
+        }
+      ],
+      "currentIssues": [
+        {
+          "authorityLevel": "ai_analysis",
+          "basisRefs": [],
+          "confidence": 0.45,
+          "description": "决口扩大，急待钱粮。",
+          "evidenceRefs": [],
+          "factStatus": "advisory_unverified",
+          "id": "issue-he",
+          "sourceType": "ai_analysis",
+          "status": "pending",
+          "title": "河工待修"
+        }
+      ],
+      "currentYear": 1627,
+      "events": [],
+      "facs": [
+        {
+          "historicalEvents": [],
+          "leader": "韩旷",
+          "leaderInfo": {
+            "name": "韩旷"
+          },
+          "name": "东林",
+          "strength": 71,
+          "succession": {
+            "stability": 60
+          }
+        },
+        {
+          "historicalEvents": [],
+          "leader": "温体仁",
+          "name": "浙党",
+          "strength": 45
+        }
+      ],
+      "factionRelations": [
+        {
+          "desc": "",
+          "from": "东林",
+          "to": "浙党",
+          "type": "敌对",
+          "value": -40
+        },
+        {
+          "desc": "",
+          "from": "浙党",
+          "to": "东林",
+          "type": "中立",
+          "value": 0
+        }
+      ],
+      "memorials": [
+        {
+          "_emptyFallbackDone": true,
+          "content": "臣韩旷谨奏，为请修河工事：事由如题，谨具题上闻，所陈缘由轻重，伏乞圣鉴裁夺。",
+          "from": "韩旷",
+          "id": "m1",
+          "status": "pending",
+          "subtype": "",
+          "text": "臣韩旷谨奏，为请修河工事：事由如题，谨具题上闻，所陈缘由轻重，伏乞圣鉴裁夺。",
+          "title": "请修河工",
+          "type": "奏疏"
+        },
+        {
+          "from": "温体仁",
+          "id": "m2",
+          "status": "pending",
+          "text": "密陈周延儒结党",
+          "title": "劾周延儒",
+          "type": "密折"
+        }
+      ],
+      "officeTree": [
+        {
+          "name": "吏部",
+          "positions": [
+            {
+              "holder": "韩旷",
+              "name": "尚书"
+            },
+            {
+              "holder": "",
+              "name": "侍郎"
+            }
+          ],
+          "subs": []
+        }
+      ],
+      "parties": [
+        {
+          "agenda": "澄清吏治",
+          "members": [
+            "韩旷"
+          ],
+          "name": "清流",
+          "strength": 55
+        }
+      ],
+      "religions": {},
+      "sid": "golden-writeback",
+      "turn": 24,
+      "turnChanges": {
+        "variables": []
+      },
+      "vars": {
+        "guoku": {
+          "max": 999999,
+          "min": 0,
+          "unit": "两",
+          "value": 3200
+        },
+        "junliang": {
+          "max": 9999,
+          "min": 0,
+          "unit": "",
+          "value": 3
+        },
+        "minxin": {
+          "max": 100,
+          "min": 0,
+          "unit": "",
+          "value": 54
+        }
+      },
+      "worldId": "world-golden"
+    },
+    "eb": [
+      [
+        "⚠落地核对",
+        "sc1主应用·1 项 AI 声明未能落地(target not found: 幽灵×1)·详见控制台 GM._unappliedChanges"
+      ],
+      [
+        "⚠落地核对",
+        "province_changes·2 项省级变化无 handler 未落地·详见 GM._unappliedChanges"
+      ],
+      [
+        "NPC自主",
+        "温体仁：劾周延儒（对象：周延儒）"
+      ],
+      [
+        "NPC自主",
+        "不存在的幽灵：密谋"
+      ],
+      [
+        "任命",
+        "周延儒任礼部侍郎(资序当迁)"
+      ]
+    ],
+    "ctxRecord": {
+      "hourenXishuo": "",
+      "personnelChanges": [
+        {
+          "change": "升礼部侍郎",
+          "name": "周延儒"
+        }
+      ],
+      "playerInner": "",
+      "playerStatus": "",
+      "shiluText": "实录：帝御文华殿，议河工。",
+      "shizhengji": "本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+      "szjSummary": "河工待修，边饷吃紧。",
+      "szjTitle": "河工之议",
+      "turnSummary": "河工与边饷成为朝堂主压力。",
+      "zhengwen": "后人析曰：党争积重。"
+    },
+    "ctxApply": {
+      "applied": {
+        "admin": {
+          "admin_changes": 0
+        },
+        "chars": {
+          "char_updates": 1,
+          "character_deaths": 0
+        },
+        "events": {
+          "events": 1
+        },
+        "factions": {
+          "faction_ai_outcomes": 0,
+          "faction_changes": 1,
+          "faction_events": 0,
+          "faction_relation_changes": 1
+        },
+        "fiscal": {
+          "fiscal_adjustments": 1
+        },
+        "harem": {
+          "harem_events": 0
+        },
+        "offices": {
+          "office_aggregate": 0,
+          "office_assignments": 1,
+          "office_changes": 1
+        }
+      }
+    },
+    "ctxMeta": {
+      "errors": [],
+      "memoryArchive": {
+        "archived": true,
+        "characterEvents": 2,
+        "chronicle": 1,
+        "edges": 0,
+        "id": "turn-archive-24-SC1",
+        "pruned": 0,
+        "replaced": false,
+        "stateAffairs": 1
+      },
+      "memoryRollup": {
+        "archiveBundles": 1,
+        "characterDossiers": 4,
+        "chronicleRollups": 1,
+        "eraRollups": 0,
+        "issueChains": 1,
+        "projectionVersion": 1,
+        "rebuilt": true,
+        "schemaVersion": "memory-turn-rollup/v0"
+      },
+      "memoryWriteback": {
+        "accepted": 1,
+        "added": 4,
+        "archived": 0,
+        "autoAccepted": 1,
+        "candidates": 4,
+        "drafts": 4,
+        "ids": [
+          "turn-inference-summary-24-SC1",
+          "turn-issue-24-0-issue-he",
+          "char-memory-24-0--",
+          "char-memory-24-1--"
+        ],
+        "quarantined": 0,
+        "status": "drafted"
+      },
+      "retries": {},
+      "timing": {
+        "apply": 0
+      },
+      "warnings": []
+    }
+  },
+  "pathB": {
+    "gm": {
+      "_aiAuthAcc": {
+        "huangquan": 0,
+        "huangwei": 0
+      },
+      "_aiAuthCapTurn": 24,
+      "_memoryAccepted": [
+        {
+          "acceptedAtTurn": 24,
+          "acceptedBy": "auto-trusted",
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "韩旷记下帝许三日复奏河工。",
+          "confidence": null,
+          "contentHash": "2e6e768b",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "韩旷"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "韩旷",
+            "confidence": 0.7,
+            "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+            "memoryType": "memory",
+            "private": false,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+          "factStatus": "",
+          "id": "char-memory-24-0--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:韩旷",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "accepted",
+          "reviewedAtTurn": 24,
+          "reviewedBy": "auto-trusted",
+          "role": "",
+          "safeBody": "韩旷记下帝许三日复奏河工。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "jr-he",
+              "type": "jishiRecords"
+            },
+            {
+              "hash": "2e6e768b",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        }
+      ],
+      "_memoryAuditEvents": [
+        {
+          "action": "enqueue",
+          "id": "turn-inference-summary-24-SC1",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "enqueue",
+          "id": "turn-issue-24-0-issue-he",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "enqueue",
+          "id": "char-memory-24-0--",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "enqueue",
+          "id": "char-memory-24-1--",
+          "status": "draft",
+          "turn": 24
+        },
+        {
+          "action": "accept",
+          "id": "char-memory-24-0--",
+          "reviewer": "auto-trusted",
+          "turn": 24
+        },
+        {
+          "action": "flush_accepted",
+          "id": "char-memory-24-0--",
+          "reviewer": "auto-trusted",
+          "turn": 24
+        },
+        {
+          "action": "archive_turn",
+          "counts": {
+            "characterEvents": 2,
+            "chronicle": 1,
+            "stateAffairs": 1
+          },
+          "id": "turn-archive-24-SC1",
+          "sourceId": "SC1",
+          "turn": 24
+        },
+        {
+          "action": "rebuild_turn_rollup",
+          "counts": {
+            "characterDossiers": 4,
+            "chronicleRollups": 1,
+            "issueChains": 1
+          },
+          "id": "memory-turn-rollup-24",
+          "turn": 24
+        }
+      ],
+      "_memoryCharacterDossiers": [
+        {
+          "actor": "东林",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "东林 character dossier: T24 东林 浙党 relationship 争河工主导",
+          "endTurn": 24,
+          "entities": [
+            "东林"
+          ],
+          "extra": {
+            "actor": "东林",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:东林",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        },
+        {
+          "actor": "周延儒",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "周延儒 character dossier: T24 温体仁 周延儒 impeach 劾周延儒",
+          "endTurn": 24,
+          "entities": [
+            "周延儒"
+          ],
+          "extra": {
+            "actor": "周延儒",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:周延儒",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        },
+        {
+          "actor": "浙党",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "浙党 character dossier: T24 东林 浙党 relationship 争河工主导",
+          "endTurn": 24,
+          "entities": [
+            "浙党"
+          ],
+          "extra": {
+            "actor": "浙党",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:浙党",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        },
+        {
+          "actor": "温体仁",
+          "authority": "event_log",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "温体仁 character dossier: T24 温体仁 周延儒 impeach 劾周延儒",
+          "endTurn": 24,
+          "entities": [
+            "温体仁"
+          ],
+          "extra": {
+            "actor": "温体仁",
+            "itemCount": 1,
+            "stream": "characterDossier"
+          },
+          "factStatus": "character_event_rollup",
+          "id": "character-dossier-actor",
+          "lane": "L6_retrieved_evidence",
+          "ownerScope": "npc:温体仁",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "visibility": "internal"
+        }
+      ],
+      "_memoryChronicleRollups": [
+        {
+          "authority": "structured_chronicle",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "1627 chronicle rollup: T24 河工之议 河工与边饷成为朝堂主压力。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。 实录：帝御文华殿，议河工。",
+          "endTurn": 24,
+          "extra": {
+            "bundleCount": 1,
+            "itemCount": 1,
+            "stream": "chronicleRollup"
+          },
+          "factStatus": "historiography_summary",
+          "id": "chronicle-rollup-1627",
+          "lane": "L7_chronicle_context",
+          "projectionVersion": 1,
+          "role": "rollup",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "turn": 24,
+          "type": "historiography_summary",
+          "visibility": "public",
+          "yearKey": "1627"
+        }
+      ],
+      "_memoryDraftInbox": [
+        {
+          "audience": [],
+          "authority": "ai_summary",
+          "authorityRank": 30,
+          "basisRefs": [],
+          "body": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "confidence": null,
+          "contentHash": "5a948cb9",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "factKey": "chronicle:turn:24:SC1",
+            "sourceId": "SC1",
+            "stream": "chronicle",
+            "title": "河工之议"
+          },
+          "factKey": "chronicle:turn:24:SC1",
+          "factStatus": "",
+          "id": "turn-inference-summary-24-SC1",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L7_chronicle_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:chronicle-summary",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "5a948cb9",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "turn_inference_summary",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_analysis",
+          "authorityRank": 40,
+          "basisRefs": [],
+          "body": "河工待修 决口扩大，急待钱粮。",
+          "confidence": 0.6,
+          "contentHash": "f1f6bb3d",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "action": "update",
+            "category": "",
+            "factKey": "state-affair:issue-he",
+            "issueId": "issue-he",
+            "severity": "",
+            "stream": "stateAffairs"
+          },
+          "factKey": "state-affair:issue-he",
+          "factStatus": "",
+          "id": "turn-issue-24-0-issue-he",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "issueId": "issue-he",
+          "lane": "L5_advisory_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:current-issue:update",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工待修 决口扩大，急待钱粮。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "f1f6bb3d",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "issue_update",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "acceptedAtTurn": 24,
+          "acceptedBy": "auto-trusted",
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "韩旷记下帝许三日复奏河工。",
+          "confidence": null,
+          "contentHash": "2e6e768b",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "韩旷"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "韩旷",
+            "confidence": 0.7,
+            "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+            "memoryType": "memory",
+            "private": false,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+          "factStatus": "",
+          "id": "char-memory-24-0--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:韩旷",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "accepted",
+          "reviewedAtTurn": 24,
+          "reviewedBy": "auto-trusted",
+          "role": "",
+          "safeBody": "韩旷记下帝许三日复奏河工。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "jr-he",
+              "type": "jishiRecords"
+            },
+            {
+              "hash": "2e6e768b",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "温体仁私忖党争难解。",
+          "confidence": null,
+          "contentHash": "e8ce5e99",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "温体仁"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "温体仁",
+            "confidence": 0.72,
+            "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+            "memoryType": "memory",
+            "private": true,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+          "factStatus": "",
+          "id": "char-memory-24-1--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:温体仁",
+          "projectionVersion": 1,
+          "readScope": "npc:温体仁",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "温体仁私忖党争难解。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "cr-wen",
+              "type": "courtRecords"
+            },
+            {
+              "hash": "e8ce5e99",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "character_belief",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        }
+      ],
+      "_memoryEraRollups": [],
+      "_memoryIssueChains": [
+        {
+          "authority": "ai_analysis",
+          "basisRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "body": "issue-he issue chain: T24 河工待修 决口扩大，急待钱粮。",
+          "endTurn": 24,
+          "entities": [],
+          "extra": {
+            "issueStatus": "active",
+            "itemCount": 1,
+            "stream": "issueChain"
+          },
+          "factStatus": "issue_chain_active",
+          "id": "issue-chain-issue-he",
+          "issueId": "issue-he",
+          "lane": "L3_long_term_affair",
+          "projectionVersion": 1,
+          "role": "active_chain",
+          "schemaVersion": "memory-turn-rollup/v0",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            }
+          ],
+          "startTurn": 24,
+          "status": "active",
+          "turn": 24,
+          "type": "ongoing_affair",
+          "visibility": "public"
+        }
+      ],
+      "_memoryQuarantine": [],
+      "_memoryWriteQueue": [
+        {
+          "audience": [],
+          "authority": "ai_summary",
+          "authorityRank": 30,
+          "basisRefs": [],
+          "body": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "confidence": null,
+          "contentHash": "5a948cb9",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "factKey": "chronicle:turn:24:SC1",
+            "sourceId": "SC1",
+            "stream": "chronicle",
+            "title": "河工之议"
+          },
+          "factKey": "chronicle:turn:24:SC1",
+          "factStatus": "",
+          "id": "turn-inference-summary-24-SC1",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L7_chronicle_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:chronicle-summary",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工与边饷成为朝堂主压力。 河工待修，边饷吃紧。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "5a948cb9",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "turn_inference_summary",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_analysis",
+          "authorityRank": 40,
+          "basisRefs": [],
+          "body": "河工待修 决口扩大，急待钱粮。",
+          "confidence": 0.6,
+          "contentHash": "f1f6bb3d",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [],
+          "expiredAtTurn": null,
+          "extra": {
+            "action": "update",
+            "category": "",
+            "factKey": "state-affair:issue-he",
+            "issueId": "issue-he",
+            "severity": "",
+            "stream": "stateAffairs"
+          },
+          "factKey": "state-affair:issue-he",
+          "factStatus": "",
+          "id": "turn-issue-24-0-issue-he",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "issueId": "issue-he",
+          "lane": "L5_advisory_context",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "world",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:current-issue:update",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "河工待修 决口扩大，急待钱粮。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "hash": "f1f6bb3d",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "issue_update",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "public",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "acceptedAtTurn": 24,
+          "acceptedBy": "auto-trusted",
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "韩旷记下帝许三日复奏河工。",
+          "confidence": null,
+          "contentHash": "2e6e768b",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "韩旷"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "韩旷",
+            "confidence": 0.7,
+            "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+            "memoryType": "memory",
+            "private": false,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:韩旷:memory:韩旷记下帝许三日复奏河工",
+          "factStatus": "",
+          "id": "char-memory-24-0--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:韩旷",
+          "projectionVersion": 1,
+          "readScope": "public",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "accepted",
+          "reviewedAtTurn": 24,
+          "reviewedBy": "auto-trusted",
+          "role": "",
+          "safeBody": "韩旷记下帝许三日复奏河工。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "jr-he",
+              "type": "jishiRecords"
+            },
+            {
+              "hash": "2e6e768b",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "active",
+          "turn": 24,
+          "type": "character_memory",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        },
+        {
+          "audience": [],
+          "authority": "ai_extracted",
+          "authorityRank": 45,
+          "basisRefs": [],
+          "body": "温体仁私忖党争难解。",
+          "confidence": null,
+          "contentHash": "e8ce5e99",
+          "derivedFrom": [],
+          "enqueuedAtTurn": 24,
+          "entities": [
+            "温体仁"
+          ],
+          "expiredAtTurn": null,
+          "extra": {
+            "actor": "温体仁",
+            "confidence": 0.72,
+            "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+            "memoryType": "memory",
+            "private": true,
+            "qualityStatus": "draftable"
+          },
+          "factKey": "character:温体仁:memory:温体仁私忖党争难解",
+          "factStatus": "",
+          "id": "char-memory-24-1--",
+          "invalidationReason": "",
+          "invalidationRefs": [],
+          "lane": "L6_retrieved_evidence",
+          "learnedAtTurn": null,
+          "ownerId": "",
+          "ownerKind": "",
+          "ownerScope": "npc:温体仁",
+          "projectionVersion": 1,
+          "readScope": "npc:温体仁",
+          "reason": "turn-inference:character-memory:memory",
+          "reasons": [],
+          "reviewStatus": "pending_review",
+          "role": "",
+          "safeBody": "温体仁私忖党争难解。",
+          "saveId": "",
+          "schemaVersion": "memory-envelope/v0",
+          "sourceRefs": [
+            {
+              "id": "cr-wen",
+              "type": "courtRecords"
+            },
+            {
+              "hash": "e8ce5e99",
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "status": "draft",
+          "turn": 24,
+          "type": "character_belief",
+          "validFromTurn": null,
+          "validToTurn": null,
+          "visibility": "player_known",
+          "worldId": "",
+          "writeScope": ""
+        }
+      ],
+      "_narrativeDigest": [],
+      "_needsReconcile": null,
+      "_npcCommitments": {
+        "韩旷": [
+          {
+            "_sc1qPlayerEmphasis": "",
+            "_sc1qSource": "",
+            "_sc1qSourceConvId": "",
+            "_sc1qTarget": "",
+            "assignedTurn": 24,
+            "basisRefs": [
+              {
+                "authority": "court_report",
+                "id": "sc1q-24-韩旷-0",
+                "role": "commitment_source",
+                "turn": 24,
+                "type": "dialogueCommitment"
+              }
+            ],
+            "category": "dialogue",
+            "deadline": 3,
+            "feedback": "",
+            "id": "sc1q_24_韩旷_0",
+            "lastUpdateTurn": 24,
+            "npcPromise": "",
+            "progress": 0,
+            "sourceRefs": [
+              {
+                "authority": "court_report",
+                "id": "sc1q-24-韩旷-0",
+                "role": "commitment_source",
+                "turn": 24,
+                "type": "dialogueCommitment"
+              }
+            ],
+            "status": "progress",
+            "task": "",
+            "willingness": 0.5
+          }
+        ]
+      },
+      "_recentNarrative": [
+        {
+          "shilu": "实录：帝御文华殿，议河工。",
+          "shizhengji": "本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+          "summary": "河工待修，边饷吃紧。",
+          "turn": 24
+        }
+      ],
+      "_revoltPrecursors": [],
+      "_turnMemoryArchive": [
+        {
+          "characterEvents": [
+            {
+              "authority": "event_log",
+              "basisRefs": [],
+              "body": "温体仁 周延儒 impeach 劾周延儒",
+              "confidence": 0.68,
+              "entities": [
+                "温体仁",
+                "周延儒"
+              ],
+              "extra": {
+                "actor": "温体仁",
+                "kind": "impeach",
+                "stream": "characterEvents",
+                "target": "周延儒"
+              },
+              "factStatus": "turn_archive_event",
+              "id": "npc-action-24-0-impeach",
+              "lane": "L4_dialogue_evidence",
+              "ownerScope": "npc:温体仁",
+              "readScope": "public",
+              "role": "record",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "relationship_event",
+              "visibility": "internal"
+            },
+            {
+              "authority": "event_log",
+              "basisRefs": [],
+              "body": "东林 浙党 relationship 争河工主导",
+              "confidence": 0.72,
+              "entities": [
+                "东林",
+                "浙党"
+              ],
+              "extra": {
+                "actor": "东林",
+                "delta": null,
+                "kind": "relationship",
+                "stream": "characterEvents",
+                "target": "浙党"
+              },
+              "factStatus": "relationship_delta",
+              "id": "affinity-24-0-relationship",
+              "lane": "L4_dialogue_evidence",
+              "ownerScope": "npc:东林",
+              "readScope": "public",
+              "role": "record",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "relationship_event",
+              "visibility": "internal"
+            }
+          ],
+          "chronicle": [
+            {
+              "authority": "structured_chronicle",
+              "basisRefs": [],
+              "body": "河工之议 河工与边饷成为朝堂主压力。 本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。 实录：帝御文华殿，议河工。",
+              "extra": {
+                "stream": "chronicle",
+                "summary": "河工与边饷成为朝堂主压力。",
+                "title": "河工之议"
+              },
+              "factStatus": "recorded_event",
+              "id": "turn-archive-24-SC1:chronicle",
+              "lane": "L7_chronicle_context",
+              "role": "record",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "chronicle_event",
+              "visibility": "public"
+            }
+          ],
+          "createdAt": 1700000000000,
+          "dateLabel": "天启24年",
+          "id": "turn-archive-24-SC1",
+          "projectionVersion": 1,
+          "schemaVersion": "memory-turn-archive/v0",
+          "sourceId": "SC1",
+          "sourceRefs": [
+            {
+              "id": "turn-archive-24-SC1",
+              "turn": 24,
+              "type": "turnArchive"
+            },
+            {
+              "id": "SC1",
+              "turn": 24,
+              "type": "aiTurnResult"
+            }
+          ],
+          "sourceType": "aiTurnResult",
+          "stateAffairs": [
+            {
+              "authority": "ai_analysis",
+              "basisRefs": [],
+              "body": "河工待修 决口扩大，急待钱粮。",
+              "confidence": 0.6,
+              "entities": [],
+              "extra": {
+                "action": "update",
+                "category": "",
+                "severity": "",
+                "stream": "stateAffairs"
+              },
+              "factStatus": "advisory_unverified",
+              "id": "issue_update-issue-he-t24",
+              "issueId": "issue-he",
+              "lane": "L5_advisory_context",
+              "role": "update",
+              "sourceRefs": [
+                {
+                  "id": "turn-archive-24-SC1",
+                  "turn": 24,
+                  "type": "turnArchive"
+                },
+                {
+                  "id": "SC1",
+                  "turn": 24,
+                  "type": "aiTurnResult"
+                }
+              ],
+              "turn": 24,
+              "type": "issue_update",
+              "visibility": "public"
+            }
+          ],
+          "turn": 24,
+          "year": "1627"
+        }
+      ],
+      "_unappliedChanges": [
+        {
+          "reason": "target not found: 幽灵",
+          "source": "sc1主应用",
+          "target": "幽灵",
+          "turn": 24
+        },
+        {
+          "count": 2,
+          "reason": "province_changes 无 apply handler(省级变化请走 population_adjustments/central_local_actions)",
+          "sample": [
+            {
+              "province": "河南",
+              "reason": "灾情",
+              "sentiment_delta": -5
+            },
+            {
+              "note": "盐课紧",
+              "province": "山东"
+            }
+          ],
+          "source": "province_changes",
+          "turn": 24
+        }
+      ],
+      "chars": [
+        {
+          "alive": true,
+          "faction": "东林",
+          "loyalty": 63,
+          "name": "韩旷",
+          "stress": 10,
+          "title": "尚书"
+        },
+        {
+          "alive": true,
+          "faction": "浙党",
+          "loyalty": 40,
+          "name": "温体仁",
+          "stress": 30
+        },
+        {
+          "alive": true,
+          "loyalty": 50,
+          "name": "周延儒",
+          "officialTitle": "侍郎",
+          "stress": 28,
+          "title": "礼部侍郎"
+        }
+      ],
+      "classes": [
+        {
+          "name": "士绅",
+          "population": 1200,
+          "satisfaction": 48
+        }
+      ],
+      "currentIssues": [
+        {
+          "authorityLevel": "ai_analysis",
+          "basisRefs": [],
+          "confidence": 0.45,
+          "description": "决口扩大，急待钱粮。",
+          "evidenceRefs": [],
+          "factStatus": "advisory_unverified",
+          "id": "issue-he",
+          "sourceType": "ai_analysis",
+          "status": "pending",
+          "title": "河工待修"
+        }
+      ],
+      "currentYear": 1627,
+      "events": [],
+      "facs": [
+        {
+          "historicalEvents": [],
+          "leader": "韩旷",
+          "leaderInfo": {
+            "name": "韩旷"
+          },
+          "name": "东林",
+          "strength": 71,
+          "succession": {
+            "stability": 60
+          }
+        },
+        {
+          "historicalEvents": [],
+          "leader": "温体仁",
+          "name": "浙党",
+          "strength": 45
+        }
+      ],
+      "factionRelations": [
+        {
+          "desc": "",
+          "from": "东林",
+          "to": "浙党",
+          "type": "敌对",
+          "value": -40
+        },
+        {
+          "desc": "",
+          "from": "浙党",
+          "to": "东林",
+          "type": "中立",
+          "value": 0
+        }
+      ],
+      "memorials": [
+        {
+          "_emptyFallbackDone": true,
+          "_fuchenNiyi": "依议·先勘河工",
+          "content": "臣韩旷谨奏，为请修河工事：事由如题，谨具题上闻，所陈缘由轻重，伏乞圣鉴裁夺。",
+          "from": "韩旷",
+          "id": "m1",
+          "status": "pending",
+          "subtype": "",
+          "text": "臣韩旷谨奏，为请修河工事：事由如题，谨具题上闻，所陈缘由轻重，伏乞圣鉴裁夺。",
+          "title": "请修河工",
+          "type": "奏疏"
+        },
+        {
+          "_fuchenNiyi": "下有司核议",
+          "from": "温体仁",
+          "id": "m2",
+          "status": "pending",
+          "text": "密陈周延儒结党",
+          "title": "劾周延儒",
+          "type": "密折"
+        }
+      ],
+      "officeTree": [
+        {
+          "name": "吏部",
+          "positions": [
+            {
+              "holder": "韩旷",
+              "name": "尚书"
+            },
+            {
+              "holder": "",
+              "name": "侍郎"
+            }
+          ],
+          "subs": []
+        }
+      ],
+      "parties": [
+        {
+          "agenda": "澄清吏治",
+          "members": [
+            "韩旷"
+          ],
+          "name": "清流",
+          "strength": 55
+        }
+      ],
+      "religions": {},
+      "sid": "golden-writeback",
+      "turn": 24,
+      "turnChanges": {
+        "variables": []
+      },
+      "vars": {
+        "guoku": {
+          "max": 999999,
+          "min": 0,
+          "unit": "两",
+          "value": 3200
+        },
+        "junliang": {
+          "max": 9999,
+          "min": 0,
+          "unit": "",
+          "value": 3
+        },
+        "minxin": {
+          "max": 100,
+          "min": 0,
+          "unit": "",
+          "value": 54
+        }
+      },
+      "worldId": "world-golden"
+    },
+    "eb": [
+      [
+        "⚠落地核对",
+        "sc1主应用·1 项 AI 声明未能落地(target not found: 幽灵×1)·详见控制台 GM._unappliedChanges"
+      ],
+      [
+        "⚠落地核对",
+        "province_changes·2 项省级变化无 handler 未落地·详见 GM._unappliedChanges"
+      ],
+      [
+        "NPC自主",
+        "温体仁：劾周延儒（对象：周延儒）"
+      ],
+      [
+        "NPC自主",
+        "不存在的幽灵：密谋"
+      ],
+      [
+        "任命",
+        "周延儒任礼部侍郎(资序当迁)"
+      ]
+    ],
+    "ctxRecord": {
+      "hourenXishuo": "",
+      "personnelChanges": [
+        {
+          "change": "升礼部侍郎",
+          "name": "周延儒"
+        }
+      ],
+      "playerInner": "",
+      "playerStatus": "",
+      "shiluText": "实录：帝御文华殿，议河工。",
+      "shizhengji": "本回合朝议以河工、盐课、边饷为要，东林与浙党争执不下。",
+      "szjSummary": "河工待修，边饷吃紧。",
+      "szjTitle": "河工之议",
+      "turnSummary": "河工与边饷成为朝堂主压力。",
+      "zhengwen": "后人析曰：党争积重。"
+    },
+    "ctxApply": {
+      "applied": {
+        "admin": {
+          "admin_changes": 0
+        },
+        "chars": {
+          "char_updates": 1,
+          "character_deaths": 0
+        },
+        "events": {
+          "events": 1
+        },
+        "factions": {
+          "faction_ai_outcomes": 0,
+          "faction_changes": 1,
+          "faction_events": 0,
+          "faction_relation_changes": 1
+        },
+        "fiscal": {
+          "fiscal_adjustments": 1
+        },
+        "harem": {
+          "harem_events": 0
+        },
+        "offices": {
+          "office_aggregate": 0,
+          "office_assignments": 1,
+          "office_changes": 1
+        }
+      }
+    },
+    "ctxMeta": {
+      "errors": [],
+      "memoryArchive": {
+        "archived": true,
+        "characterEvents": 2,
+        "chronicle": 1,
+        "edges": 0,
+        "id": "turn-archive-24-SC1",
+        "pruned": 0,
+        "replaced": false,
+        "stateAffairs": 1
+      },
+      "memoryRollup": {
+        "archiveBundles": 1,
+        "characterDossiers": 4,
+        "chronicleRollups": 1,
+        "eraRollups": 0,
+        "issueChains": 1,
+        "projectionVersion": 1,
+        "rebuilt": true,
+        "schemaVersion": "memory-turn-rollup/v0"
+      },
+      "memoryWriteback": {
+        "accepted": 1,
+        "added": 4,
+        "archived": 0,
+        "autoAccepted": 1,
+        "candidates": 4,
+        "drafts": 4,
+        "ids": [
+          "turn-inference-summary-24-SC1",
+          "turn-issue-24-0-issue-he",
+          "char-memory-24-0--",
+          "char-memory-24-1--"
+        ],
+        "quarantined": 0,
+        "status": "drafted"
+      },
+      "retries": {},
+      "timing": {
+        "apply": 0
+      },
+      "warnings": []
+    }
+  },
+  "hashes": {
+    "A": "eec53a612a7c22818e774ab6342b3eaec55ee9d9be790cb7a3e593827aa3652c",
+    "B": "2d07f90fee1c8ad7915d0087f964d1d11b7c0249f30724a9de34680253930059"
+  }
+}

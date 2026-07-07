@@ -1,0 +1,1255 @@
+{
+ "afterSc1Calls": 1,
+ "callOrder": [
+  "sc0",
+  "sc1q",
+  "sc05",
+  "sc1",
+  "sc1b",
+  "sc1c",
+  "sc1d"
+ ],
+ "calls": [
+  {
+   "expectedKeys": [],
+   "id": "sc0",
+   "label": "局势分析",
+   "max_tokens": 8192,
+   "model": "gpt-4o",
+   "response_format": "json_object",
+   "seq": 1,
+   "system": "【金样sysP】你是天命回合推演引擎·本串为金样网固定系统提示·不代表真实 prompt 面。",
+   "systemLen": 47,
+   "systemSha256": "18430d98b2b67350aa8b7f11c03eec8bd49f49eb4c9ef66e70d79a06413faab9",
+   "temperature": 0.6,
+   "user": "【金样tp】T5·本回合玩家颁诏：减江南赋税一成。行录：巡视太学。\n\n请极其深入地分析当前局势，返回JSON：\n{\"tensions\":\"当前5个最大矛盾/危机及其严重程度(150字)\",\"consequences\":\"玩家本回合每个行动的详细后果分析(150字)\",\"npc_spotlight\":\"本回合最可能有动作的5个NPC及其动机和行动方式(200字)\",\"faction_dynamics\":\"非玩家势力本回合的自主行动详细推演(200字)\",\"family_dynamics\":\"家族/后宫/婚姻层面的潜在变化(100字)\",\"class_unrest\":\"各阶层的不满情绪和可能的民变(100字)\",\"economic_pressure\":\"财政压力和经济走向(80字)\",\"foreshadow\":\"应埋下的3个伏笔及其将在何时引爆(100字)\",\"mood\":\"本回合叙事应营造的情感基调(50字)\",\"memoryQueries\":[{\"keywords\":[\"关键词1\",\"关键词2\"],\"turnRange\":[起始回合,结束回合],\"participant\":\"相关人物名(可空)\",\"minImportance\":5,\"purpose\":\"为何要检索\"}]}\n这是你的深度思考过程，不显示给玩家。请充分思考，不要吁惜字数。\n【memoryQueries】如需要回忆更早的具体事件·在此列出 1-4 条检索查询·系统将从四源永久档案中检索并注入后续推演·否则留空数组。\n  · 四个检索源：(1) NPC 个人记忆 (2) 长期事势(ChronicleTracker) (3) 史记本传(shijiHistory) (4) 已埋伏笔(_foreshadows)\n  · 适合查询的场景：「此人是否真在那回合背叛过」「某改革当年具体推进到哪里」「玩家曾埋下何种伏笔」「某事件距今多少回合」\n  · keywords 用具体名词(角色名/事件关键词/政策名)·turnRange 可选(若不填则全档案)·participant 仅 NPC 记忆源使用·minImportance 仅 NPC 记忆源使用",
+   "userLen": 913,
+   "userSha256": "3be8b6c1e762893496ba4d7eb002a416f0288b283efe1637492afba82b8988ad"
+  },
+  {
+   "expectedKeys": [],
+   "id": "sc1q",
+   "label": "对话承诺推演",
+   "max_tokens": 3500,
+   "model": "gpt-4o",
+   "response_format": "json_object",
+   "seq": 2,
+   "system": "【金样sysP】你是天命回合推演引擎·本串为金样网固定系统提示·不代表真实 prompt 面。",
+   "systemLen": 47,
+   "systemSha256": "18430d98b2b67350aa8b7f11c03eec8bd49f49eb4c9ef66e70d79a06413faab9",
+   "temperature": 0.3,
+   "user": "【对话承诺推演·sc1q】\n本回合 T5·从 7 渠道 (问对/朝议/常朝/廷议/御前/鸿雁/朱批) 提取对话型决策·让 SC1 主推演视它们为\"和诏书等同的输入\"。\n\n【输入 1·问对/常朝/御前公开 (jishiRecords·近 3 回合)】[{\"t\":5,\"char\":\"张丞相\",\"mode\":\"问对\",\"said\":\"朕欲减江南赋税一成·卿以为如何\",\"npcSaid\":\"臣领旨·当即督办江南减赋\",\"loyDelta\":2}]\n\n【输入 2·朝议+常朝+廷议 决议 (_courtRecords·近 2 回合)】[]\n\n【输入 3·御前密议 (_secretMeetings·本回合)】[]\n\n【输入 4·跨回合未完承诺 (_npcCommitments)】[]\n\n【输入 5·玩家发出私信 (letters from=玩家·本回合)】[]\n\n【输入 6·奏疏朱批 (approvedMemorials·本回合·reply 含具体命令)】[]\n\n【输出严格 JSON·只包含 4 字段】\n{\n  \"dialogue_commitments\":[{\"npc\":\"承诺NPC名\",\"task\":\"具体动作 (40字内·必须有动词+对象·禁泛泛表态)\",\"category\":\"query/finance/intel/dispatch/diplomacy/write/other 之一 (查办肃贪=query·财赋征税=finance·侦查密探=intel·出兵调度=dispatch·外交邦交=diplomacy·撰拟文书=write·其余=other·据 task 性质定·决定履成后的结构化后果)\",\"deadline\":\"3回合内/秋季前等\",\"source_type\":\"问对/朝议/常朝/廷议/御前/鸿雁/朱批 之一\",\"source_conv_id\":\"jishiRecords[i] 的 turn-char-mode 联合标识·或 courtRecords[i].turn\",\"willingness\":0.5,\"player_emphasis\":\"明命/暗示/试探\",\"required_npc_action\":\"NPC 在 SC1 npc_actions 中必须出现的行动 (30字内)\"}],\n  \"collective_resolutions\":[{\"topic\":\"议题\",\"forum\":\"朝议/常朝/廷议\",\"decision\":\"决议内容\",\"adopted_by_emperor\":true,\"required_actions\":[\"承办者必做的 1-3 项\"],\"source_court_id\":\"courtRecords[i].turn\"}],\n  \"npc_dialogue_intent\":[{\"npc\":\"NPC名\",\"mood\":\"unenthused/eager/resentful/sincere/sycophant\",\"subtext\":\"潜台词 (40字)\",\"next_likely_move\":\"下一步可能动作 (40字)\"}],\n  \"required_sc1_actions\":[\"SC1 必须在 npc_actions/edict_feedback/char_updates 中出现的硬性条目 (每条 40字内·≤5 条)\"]\n}\n\n★ 严格约束·\n  · 宁可不写不可编造·只算\"具体动作+时限+目标\"·客套话 (\"臣愿效死力\"\"敢不奉诏\") 不算\n  · 不可凭空生成新人物·只能引用 jishiRecords/courtRecords 中真出现的 NPC 名\n  · source_type/source_conv_id 必填·apply 时按此 dedup\n  · willingness∈[0,1]·根据 NPC 答话语气推断·拒绝/敷衍 < 0.4·热情 > 0.7",
+   "userLen": 1627,
+   "userSha256": "05726db8293c05ee7f66df24146f9e51c367f5aec268941462da07cc2a281892"
+  },
+  {
+   "expectedKeys": [],
+   "id": "sc05",
+   "label": "因果合成",
+   "max_tokens": 5000,
+   "model": "gpt-4o",
+   "response_format": null,
+   "seq": 3,
+   "system": "【金样sysP】你是天命回合推演引擎·本串为金样网固定系统提示·不代表真实 prompt 面。",
+   "systemLen": 47,
+   "systemSha256": "18430d98b2b67350aa8b7f11c03eec8bd49f49eb4c9ef66e70d79a06413faab9",
+   "temperature": 0.5,
+   "user": "以下是近期的完整事件记录、已埋伏笔、AI记忆和玩家决策：\n\n=== 近 1 回合·完整记录（不截断） ===\n\n────── T4·四年春 ──────\n【时政记】\n江南水患初平·诏修圩田·民力渐苏\n【实录】\n四年春·江南水退·修圩田\n【正文/后人戏说】\n水患既平·江南始安\n【玩家诏令】\n[内政] 修江南圩田\n【政局摘要】忧劳\n\n=== 近端完整记录结束 ===\n\n\nT4 [灾异] 江南大水·圩田尽没\n<recall-disclaimer>以下 memory-context 来自历史档案·已按权威、时间、范围与预算编排·若与当前回合硬状态冲突，以当前回合推演为准。</recall-disclaimer>\n<memory-context schema-version=\"memory-context/v0\">\n  <core-facts label=\"core facts\">\n    <memory id=\"hard-char-张丞相\" source=\"hard_state\" turn=\"5\" authority=\"engine_state\" authority-rank=\"100\" lane=\"L1_world_truth\" visibility=\"world_truth\" source-refs=\"char:张丞相\">张丞相 alive 京城 丞相 朝廷</memory>\n    <memory id=\"5-张丞相-问对\" source=\"commitment\" turn=\"5\" authority=\"rule_validated\" authority-rank=\"80\" lane=\"L2_active_law_commitment\" visibility=\"world_truth\" source-refs=\"dialogueCommitment:5-张丞相-问对\">张丞相 督办江南减赋一成并核实各州落地 张丞相行文江南各州减赋并回奏 3回合内 问对 明命</memory>\n  </core-facts>\n</memory-context>\n\n\n请返回JSON：\n{\"causal_chains\":\"近期事件之间的完整因果关系链(200字)\",\"unresolved\":\"尚未解决的线索和悬念——哪些伏笔应该引爆(150字)\",\"patterns\":\"反复出现的模式和加速的趋势(100字)\",\"player_impact\":\"玩家近期决策的累积影响——哪些后果即将显现(150字)\",\"npc_memories\":\"各NPC对近期事件的记忆和情绪变化(100字)\",\"momentum\":\"当前世界的惯性方向——如果没有干预，事情会往哪个方向发展(80字)\"}\n这是你的深度内部分析。请充分思考每一条因果链。",
+   "userLen": 1170,
+   "userSha256": "6784df2e4e7007435421a7f4b5395774e7380ede7b32fc15758f725dfa4761d6"
+  },
+  {
+   "expectedKeys": [
+    "turn_summary",
+    "shizhengji_basis",
+    "events",
+    "resource_changes",
+    "char_updates",
+    "edict_feedback",
+    "fiscal_adjustments",
+    "changes"
+   ],
+   "id": "sc1",
+   "label": "结构化数据",
+   "max_tokens": 8192,
+   "model": "gpt-4o",
+   "response_format": "json_object",
+   "seq": 4,
+   "system": "【金样sysP】你是天命回合推演引擎·本串为金样网固定系统提示·不代表真实 prompt 面。",
+   "systemLen": 47,
+   "systemSha256": "18430d98b2b67350aa8b7f11c03eec8bd49f49eb4c9ef66e70d79a06413faab9",
+   "temperature": 0.7,
+   "user": "=== 时间参考（防止 AI 把\"3 天前\"说成\"昨天\"） ===\n[当前] T5 = 1901年腊月·辛丑年·冬季\n[上回合] T4 = 1901年九月·辛丑年·秋季\n[三回合前] T2 = 1901年四月·辛丑年·春季\n[一年前] T1 = 1901年正月·辛丑年·冬季\n=== 此后引用任何过去事件·必须用相对时间括号（如\"三年前\"·\"上月\"·\"去岁春\"） ===\n\n=== 当前世界状态快照（一眼看懂客观局势·叙事必须与之一致） ===\n[玩家] 皇帝·临朝 T1-T5（约 1.2 年）\n[国势] 皇权50 皇威50 民心50 吏治50\n=== 以上为客观事实·矛盾即视为推演错误 ===\n\n\n=== 上回合 → 本回合 Brief（前情提要·本回合应延续） ===\n· 四年春·江南水退·修圩田\n=== 本回合推演必须延续上述线索·不可遗忘 ===\n\n\n=== 关键 NPC 当下状态（2 人·非纯数值·体现\"此刻在做什么/想什么\"） ===\n· 张丞相·丞相·[朝廷]\n· 李将军·大将军·[朝廷]\n=== NPC 推演行为应与此当下状态一致 ===\n<dataTable>\n以下是当前推演必须基于的结构化记忆表（共 12 张）：\n\n[0:当前局势]\n  Columns: [0:国号], [1:帝号], [2:当前年号], [3:当前回合], [4:主要矛盾], [5:态势]\n  - Note: 记录大局摘要·有且仅有一行·每回合更新\n  - Insert: 禁止操作·此表只允许唯一一行\n  - Update: 每回合必更新当前回合数·态势随国势变迁更新·主要矛盾随局势变化\n  - Delete: 禁止删除\n  [0]  | 皇帝 |  | 5 |  | \n\n[1:在朝NPC]\n  Columns: [0:姓名], [1:品级], [2:官职], [3:党派], [4:势力], [5:忠诚], [6:地位]\n  - Note: 记录现任在朝官员·一二三品按品级排序·致仕/死亡/罢黜则删除\n  - Insert: 新晋拜相/拜将/任命入朝时插入\n  - Update: 升迁/降职/换党/忠诚变化时更新对应行\n  - Delete: 致仕/死亡/罢黜出朝时删除\n  [0] 张丞相 |  | 丞相 |  | 朝廷 | 78 | \n  [1] 李将军 |  | 大将军 |  | 朝廷 | 70 | \n\n[2:角色档案]\n  Columns: [0:姓名], [1:性别年龄], [2:出身], [3:历职], [4:性格], [5:能力素描], [6:生平要事], [7:死亡说明]\n  - Note: 所有重要角色的稳定档案·区别于在朝NPC（流动）·此表是长期身份\n  - Insert: 出现新重要角色（例：某皇子成年、外族首领崭露头角）时插入\n  - Update: 历职新增/重要事件后追加生平要事·死后填死亡说明\n  - Delete: 禁止删除·死亡角色保留档案并标注死亡说明\n  (该表为空·请按 Init 策略进行初始化：游戏开始第一回合·根据剧本生成所有 importance>=60 角色档案)\n\n[3:进行中诏令]\n  Columns: [0:编码], [1:诏令名], [2:颁布回合], [3:类型], [4:当前阶段], [5:阻力], [6:关键人物], [7:预计完成]\n  - Note: 诏令生命周期跟踪·完成/废止后归档到大事记摘要表并从此表删除\n  - Insert: 玩家颁布新诏令时·sc1 同步插入\n  - Update: 阶段推进/阻力变化/关键人物变化时更新\n  - Delete: 诏令完成/废止/搁置时·先归档到大事记摘要再删除\n  (该表为空·请按 Init 策略进行初始化：游戏开始时此表通常为空·除非剧本有未完成诏令)\n\n[4:特殊能力/手段]\n  Columns: [0:能力名], [1:拥有人], [2:类型], [3:作用], [4:限制], [5:获得回合]\n  - Note: 记录角色掌握的特殊手段（密谍网/兵权/绝技/秘传）·区别于素质点\n  - Insert: 获得新能力/手段时插入\n  - Update: 能力增强/受限/转移持有人时更新\n  - Delete: 失去/解除/能力终止时删除\n  (该表为空·请按 Init 策略进行初始化：游戏开始时根据剧本生成（如锦衣卫指挥使掌缇骑、督师有节钺）)\n\n[5:重要物品]\n  Columns: [0:物品名], [1:当前持有人], [2:所在地], [3:类型], [4:作用], [5:来源]\n  - Note: 记录传国玉玺/虎符/密信/宝器等关键物品流转\n  - Insert: 新物品出现（贡品/铸造/出土/赏赐）时插入\n  - Update: 物品流转时更新持有人/所在地·状态变化时更新\n  - Delete: 物品被毁/遗失/化整为零时删除\n  (该表为空·请按 Init 策略进行初始化：游戏开始时根据剧本生成传国宝器、信物)\n\n[6:重要组织]\n  Columns: [0:组织名], [1:类型], [2:首领], [3:已知核心成员], [4:宗旨], [5:影响范围]\n  - Note: 党派/学派/秘社/教派/帮会等组织的稳定档案\n  - Insert: 新组织成立/秘社显形时插入\n  - Update: 首领更替/核心成员变动/宗旨调整时更新\n  - Delete: 组织瓦解/被剿灭/合并时删除\n  (该表为空·请按 Init 策略进行初始化：游戏开始时根据剧本生成主要党派和势力)\n\n[7:重要地点]\n  Columns: [0:地名], [1:所属], [2:类型], [3:战略价值], [4:当前状态], [5:驻守]\n  - Note: 关隘/京畿/边镇/府邸/陵寝等关键地点的当前状态\n  - Insert: 新建/被占领/侨置改隶时插入\n  - Update: 所属变更/驻守换防/战略价值变化时更新\n  - Delete: 失陷不复或并入他省·谨慎删除\n  (该表为空·请按 Init 策略进行初始化：游戏开始时根据剧本生成京畿要地、边关重镇)\n\n[8:大事记摘要]\n  Columns: [0:编码], [1:回合], [2:时间], [3:地点], [4:主体], [5:事件摘要], [6:后果]\n  - Note: 已完成大事的append-only史官档案·与事件历史表通过编码对齐\n  - Insert: 诏令完成/重大改革落地/关键死亡/王朝大事时·与事件历史表同时新增\n  - Update: 禁止更新（append-only）\n  - Delete: 禁止删除（append-only）\n  (该表为空·请按 Init 策略进行初始化：游戏开始时初始为空)\n\n[9:事件历史(加权)]\n  Columns: [0:编码], [1:回合], [2:事件描述], [3:权重], [4:维度标签], [5:关联人物], [6:未来约束]\n  - Note: 本回合事件流·权重由 sc25 10维评分写入(0.0-1.0)·未来约束=true 的事件会进入\"长期约束\"段·AI 必须遵循\n  - Insert: 每回合 sc1 完成后由系统从 evtLog 自动转写·AI 也可显式插入重要事件\n  - Update: 禁止更新（append-only）·权重与\"未来约束\"由后台异步打分覆盖\n  - Delete: 禁止删除（append-only）\n  [0] T4-E1 | 4 | 江南大水·圩田尽没 | 0.5 |  |  | \n\n[10:关系网络]\n  Columns: [0:A方], [1:B方], [2:关系类型], [3:亲疏], [4:近期事件], [5:是否冻结]\n  - Note: 记录重要双向关系·一方死亡则关系冻结而非删除·便于追溯\n  - Insert: 新关系建立时插入·主键为(A,B)规范化字符串\n  - Update: 亲疏变化/类型转变（如盟变敌）时更新·近期事件追加\n  - Delete: 原则上不删除·一方死亡时改是否冻结=是·仅在编辑器调试时硬删\n  (该表为空·请按 Init 策略进行初始化：游戏开始时根据剧本生成核心关系（君臣/师生/政敌/世交）)\n\n[11:皇命专用]\n  Columns: [0:优先级], [1:皇命内容], [2:生效条件], [3:颁布回合], [4:隐藏]\n  - Note: 玩家在编辑器锁定的钉子条目·AI 永读不写·每回合必投到 sc1 prompt 顶部·\"隐藏\"列填 true 的为天机条目仅 sc1 见 sc15/sc2 不见\n  - Insert: 禁止 AI 操作·仅编辑器 UI 添加\n  - Update: 禁止 AI 操作·仅编辑器 UI 修改\n  - Delete: 禁止 AI 操作·仅编辑器 UI 删除\n  (该表为空·请按 Init 策略进行初始化：玩家手动添加·初始为空)\n</dataTable>\n【金样tp】T5·本回合玩家颁诏：减江南赋税一成。行录：巡视太学。\n\n【AI局势分析】\n{\"tensions\":\"北疆虏骑窥边·江南水患未平·国库度支渐紧·清流与勋贵相轧·东宫未定人心浮动\",\"consequences\":\"减赋令下·江南民心可收·然岁入短三十万贯·度支司必有争执\",\"npc_spotlight\":\"张丞相锐意奉行减赋·李将军请增边饷·二人于廷前必起争论\",\"faction_dynamics\":\"北虏秋高马肥·有南下劫掠之势·其酋新立·欲以兵威服众\",\"family_dynamics\":\"后宫安靖·无大变\",\"class_unrest\":\"江南农户闻减赋而喜·市井商贾观望\",\"economic_pressure\":\"岁入将短·边饷又增·度支两难\",\"foreshadow\":\"虏酋新立必犯边·减赋岁入缺口三回合后显·张李之争渐成党争\",\"mood\":\"外弛内张·山雨欲来\",\"memoryQueries\":[]}\n【跨回合因果链】\n{\"causal_chains\":\"江南水患→圩田修缮→今岁减赋·一脉相承·民力渐苏\",\"unresolved\":\"北虏新酋动向未明·减赋后岁入缺口如何弥补尚无着落\",\"patterns\":\"玩家连续两回合施仁政于江南·仁政取向渐显\",\"player_impact\":\"江南民心积累上行·然武备投入偏低·边防隐忧\",\"npc_memories\":\"张丞相记玩家纳其减赋之谏·感遇日深\",\"momentum\":\"若无干预·北虏秋后犯边·江南民心继续回暖\"}\n请基于以上分析推演，确保前回合的悬念得到回应，因果链得到延续。\n\n═══【本回合死亡名单·遵 sysP 硬约束 ②】═══\n已死(禁动)：（无）\n═════════════════════════════════════════════\n\n请仅返回绝JSON，包含:\n{\"turn_summary\":\"一句话概括本回合最重要的结构化变化(30-80字)\",\"shizhengji_basis\":\"供史官成文的事实底稿(80-180字)：只列玩家诏令、奏疏批复、问对朝议、财政军政人事地块势力变化，不写长篇时政记\",\"player_status\":\"政治处境(1句话——朝局格局、权力态势、外部威胁)\",\"player_inner\":\"主角内心独白(1-2句，第一人称，私人情感、矛盾挣扎——此字段仅供NPC记忆，不会直接展示)\",\"personnel_changes\":[{\"name\":\"姓名\",\"former\":\"原职或原身份\",\"change\":\"变动描述\",\"reason\":\"原因(可选)\"}],\"resource_changes\":{\"资源名\":变化量},\"relation_changes\":{\"关系名\":变化量},\"event\":{\"title\":\"...\",\"type\":\"...\"}或null,\"npc_actions\":[{\"name\":\"角色名\",\"action\":\"做了什么(30字)\",\"target\":\"对谁\",\"result\":\"结果\",\"behaviorType\":\"行为类型\",\"publicReason\":\"对外说辞\",\"privateMotiv\":\"真实动机\",\"new_location\":\"因行动转移到何处(可选)\"}],\"affinity_changes\":[{\"a\":\"角色A\",\"b\":\"角色B\",\"delta\":变化量,\"reason\":\"原因\",\"relType\":\"blood/marriage/mentor/sworn/rival/benefactor/enemy(可选，新增或强化关系类型)\"}],\"goal_updates\":[{\"name\":\"角色名\",\"goalId\":\"goal_1\",\"action\":\"update/add/complete/replace\",\"longTerm\":\"长期目标(add/replace时必填)\",\"shortTerm\":\"当前短期目标\",\"progress\":\"0-100\",\"context\":\"当前行动方向(1句)\",\"type\":\"power/wealth/revenge/protect/knowledge/faith(add时必填)\",\"priority\":\"1-10\"}],\"character_deaths\":[{\"name\":\"角色名\",\"reason\":\"死因描述\"}],\"char_updates\":[{\"name\":\"角色名\",\"loyalty_delta\":0,\"ambition_delta\":0,\"stress_delta\":0,\"intelligence_delta\":0,\"valor_delta\":0,\"military_delta\":0,\"administration_delta\":0,\"management_delta\":0,\"charisma_delta\":0,\"diplomacy_delta\":0,\"benevolence_delta\":0,\"legitimacy_delta\":0,\"add_traits\":[\"新获得的特质id\"],\"remove_traits\":[\"失去的特质id\"],\"new_location\":\"新所在地(可选,如被贬/外派/召回)\",\"new_stance\":\"新立场(可选)\",\"new_party\":\"新党派(可选)\",\"action_type\":\"行为类型(punish/reward/betray/mercy/declare_war/reform等)\",\"reason\":\"原因\"}],\"faction_changes\":[{\"name\":\"势力名\",\"strength_delta\":0,\"economy_delta\":0,\"playerRelation_delta\":0,\"reason\":\"原因\"}],\"fortLevel\":0,\"garrison\":0}}],\"faction_relation_changes\":[{\"from\":\"势力A\",\"to\":\"势力B\",\"type\":\"新关系\",\"delta\":变化量,\"reason\":\"原因\"}],\"reason\":\"原因\"}],\"regent_decisions\":[{\"subject\":\"帝位/受摄者\",\"regentName\":\"摄政人选\",\"action\":\"confirm/appoint/defer/revoke/stabilize\",\"hardCeiling\":true,\"reason\":\"幼主或年龄/健康触发摄政\"}],\"reissue_topics\":[{\"topic\":\"留中议题原文\",\"reason\":\"为何形势已变、应起复再议\"}],\"army_changes\":[{\"name\":\"部队名\",\"soldiers_delta\":兵力变化,\"morale_delta\":士气变化,\"training_delta\":训练变化,\"destination\":\"调兵目的地(可选)\",\"reason\":\"原因\"}],\"item_changes\":[{\"name\":\"物品名\",\"acquired\":true,\"owner\":\"新持有者\",\"reason\":\"获得/失去原因\"}],\"era_state_delta\":{\"socialStability_delta\":0,\"economicProsperity_delta\":0,\"centralControl_delta\":0,\"militaryProfessionalism_delta\":0},\"global_state_delta\":{\"taxPressure_delta\":0},\"office_changes\":[{\"dept\":\"部门\",\"position\":\"官职\",\"action\":\"appoint/dismiss/promote/demote/transfer/evaluate/reform\",\"person\":\"人名\",\"reason\":\"原因\",\"newDept\":\"新部门(transfer时)\",\"newPosition\":\"新官职(transfer/promote时)\",\"newRank\":\"新品级(promote/demote时)\",\"evaluator\":\"考评者NPC名(evaluate时必填)\",\"grade\":\"卓越/称职/平庸/失职(evaluate时)\",\"comment\":\"考评评语(evaluate时)\",\"reformDetail\":\"改革内容(reform时：增设/裁撒/合并/改名)\"}],\"office_aggregate\":[{\"dept\":\"部门名\",\"actualCount_delta\":\"实有人数变化(+N递补/-N离职)\",\"evaluation_summary\":{\"excellent\":0,\"good\":0,\"average\":0,\"poor\":0,\"named_excellent\":[\"具象角色\"],\"named_good\":[\"具象角色\"]},\"corruption_found\":0,\"named_corrupt\":[\"具象贪腐者\"],\"narrative\":\"混合叙述——具象角色点名+其余用数字\"}],\"office_spawn\":[{\"dept\":\"部门名(与officeTree中的node.name精确匹配)\",\"position\":\"官职名(与positions[].name精确匹配)\",\"holderName\":\"按本朝代命名习惯起的真实姓名(不得重复现有角色)\",\"age\":35,\"abilities\":{\"intelligence\":60,\"administration\":65,\"military\":40,\"valor\":35,\"charisma\":55,\"diplomacy\":50,\"benevolence\":55},\"personality\":\"性格简述\",\"stance\":\"中立/君党/太子党/外戚党等\",\"loyalty\":55,\"reason\":\"为何在本回合被实体化(如'玩家下诏涉及此官''推演提及此官员')\"}],\"party_agenda_shift\":[{\"party\":\"党派名\",\"newAgenda\":\"新议程\",\"oldAgenda\":\"旧议程\",\"reason\":\"变化原因\",\"influence_delta\":0}],\"party_splinter\":[{\"parent\":\"原党派名\",\"newName\":\"分裂出的新党派名\",\"newLeader\":\"新党派领袖\",\"members\":[\"带走的成员\"],\"ideology\":\"新派立场\",\"reason\":\"分裂原因\"}],\"party_merge\":[{\"absorber\":\"吸收方党派\",\"absorbed\":\"被吸收党派\",\"reason\":\"合流原因\"}],\"faction_succession\":[{\"faction\":\"势力名\",\"oldLeader\":\"旧首脑\",\"newLeader\":\"新首脑\",\"legitimacy\":70,\"stability_delta\":-10,\"disputeType\":\"正常继承/争位/篡位/内战/外戚专政\",\"narrative\":\"继承叙事\"}],\"revolt_precursor\":[{\"class\":\"蓄势阶层\",\"region\":\"发生地\",\"indicator\":\"famine饥荒/landConcentration土地兼并/heavyTax苛税/corvee繁役/officialCorruption吏治腐败/propheticOmen谶纬异象/secretSociety教门密谋\",\"severity\":\"mild/severe/critical\",\"detail\":\"具体表现(如'青州连续三年旱，流民十万涌入徐州')\",\"couldLeadTo\":\"可能导致的起义类型\"}],\"class_revolt\":[{\"revoltId\":\"本次起义的唯一ID(如revolt_huangjin/revolt_1886)\",\"class\":\"起义阶层\",\"region\":\"起义地区(须与行政区划匹配)\",\"leaderName\":\"起义领袖姓名(按朝代命名，如张角、黄巢、李自成风格)\",\"secondaryLeaders\":[\"副将/兄弟/军师\"],\"ideology\":\"religious宗教/dynastic光复/ethnic民族/populist民生/nobleClaim宗室分支/warlord军阀/tributary边疆\",\"organizationType\":\"flowingBandit流寇/baseArea根据地/builtState建制/secretSociety教门/militaryMutiny军变\",\"slogan\":\"口号(如'苍天已死黄天当立'、'均田免粮'、'驱除鞑虏')\",\"religiousSect\":\"宗教派别(ideology=religious时必填，如太平道/白莲教)\",\"historicalArchetype\":\"参考的历史原型(如'黄巾之乱''黄巢之乱''红巾军')\",\"scale\":\"小/中/大/滔天\",\"militaryStrength\":5000,\"composition\":\"兵员组成(如'流民为主、饥卒为辅、少数武装乡民')\",\"supplyStatus\":50,\"phase\":\"brewing酝酿/uprising首义/expansion扩张/stalemate相持/turning转折/decline衰落/establishment建政/ending结局\",\"demands\":[\"起义诉求\"],\"grievances\":[\"积怨(连续三年旱灾/徭役过重/官员贪索/土地兼并)\"],\"spreadPattern\":\"mobile流动作战/baseDefense根据地/urbanSiege攻城/cascade多点齐发\",\"reason\":\"起义导火索\"}],\"revolt_update\":[{\"revoltId\":\"匹配现有 revolt 的 id\",\"newPhase\":\"新阶段(brewing→uprising→expansion→stalemate→turning→decline/establishment→ending)\",\"territoryGained\":[\"本回合占领的城/州\"],\"territoryLost\":[\"本回合失去的\"],\"strength_delta\":1000,\"supplyStatus_delta\":-5,\"absorbedForces\":[\"本回合收编的势力/降将(如'归附了张某三千人'、'收编某都尉降卒')\"],\"externalSupport\":[\"外援(如'受契丹暗中接济粮草')\"],\"defectedOfficials\":[\"归附的朝廷官员(他们会自动转投起义军)\"],\"counterForces\":[\"对抗力量(如'某乡勇首领某某纠集千人抗拒')\"],\"narrative\":\"30-120 字阶段叙事——体现历史真实感\",\"keyEvent\":\"本回合关键事件(如'攻陷长安'、'领袖受伤')\",\"leaderCasualty\":\"领袖伤亡情况(可空；如'领袖中箭负伤'、'副将战死')\"}],\"revolt_suppress\":[{\"revoltId\":\"目标起义\",\"suppressor\":\"镇压主力(官军将领/乡勇首领/异族援军)\",\"suppressorForce\":20000,\"tactic\":\"围剿/坚壁清野/分化瓦解/利诱降服/借异族/迁徙裹挟\",\"outcome\":\"victory彻底剿灭/partial部分镇压/stalemate相持/defeat反被击溃\",\"casualties\":{\"rebel\":5000,\"official\":1500,\"civilian\":3000},\"narrative\":\"战况叙事\"}],\"revolt_amnesty\":[{\"revoltId\":\"目标起义\",\"envoy\":\"招安使节NPC\",\"terms\":\"招安条件(如'封某节度使，残部编入禁军')\",\"outcome\":\"accepted接受/rejected拒绝/split分化(部分接受部分拒绝)\",\"acceptedLeaders\":[\"接受招安的领袖\"],\"rejectedLeaders\":[\"拒绝的顽固派\"],\"fateOfAccepted\":\"归顺后安置(如'宋江等一十八人封武节大夫')\",\"narrative\":\"招安过程\"}],\"commitment_update\":[{\"id\":\"承诺id(匹配GM._npcCommitments)\",\"npcName\":\"承诺者\",\"progress_delta\":10,\"status\":\"executing/completed/failed/delayed\",\"feedback\":\"执行情况叙事(30-80字，具体描述做了什么、遇到什么)\",\"consequenceType\":\"success/partial/obstructed/abandoned\",\"failReason\":\"若status=failed/delayed·为何未成:推诿/无能/被掣肘/阳奉阴违/客观受阻(不填=未知·据承办人忠诚才干心绪判)\"}],\"revolt_transform\":[{\"revoltId\":\"目标起义\",\"transformType\":\"toFaction升级为独立势力/merged融入他派/coopted被招安编入/dissolved自行消散/dynastyReplaced建立新朝(玩家GAMEOVER)\",\"newFactionName\":\"新势力名(toFaction时必填)\",\"mergedInto\":\"被并入的势力名(merged时必填)\",\"finalTerritory\":\"最终控制区(toFaction时)\",\"narrative\":\"转化叙事\"}],\"faction_relation_shift\":[{\"from\":\"势力A\",\"to\":\"势力B\",\"relation_delta\":-10,\"new_type\":\"敌对/联盟/交战/朝贡/通婚\",\"event\":\"变化事件\",\"reason\":\"原因\"}],\"party_create\":[{\"name\":\"新党派名\",\"ideology\":\"立场\",\"leader\":\"党魁(须已存在或同时在char_updates创建)\",\"influence\":20,\"socialBase\":[{\"class\":\"阶层名\",\"affinity\":0.6}],\"currentAgenda\":\"当前议程\",\"status\":\"活跃\",\"memberCount\":15,\"cohesion\":70,\"crossFaction\":false,\"trigger\":\"触发因素(诏令/事件/人物聚集)\",\"reason\":\"崛起原因\"}],\"party_dissolve\":[{\"name\":\"被解散党派名\",\"cause\":\"banned(查禁)/liquidated(肃清)/faded(自然消亡)/leaderKilled(领袖被杀)/absorbed(吞并他党)\",\"perpetrator\":\"主使者(可空)\",\"fatePerMember\":\"流放/下狱/归隐/转投别党\",\"reason\":\"原因\"}],\"faction_create\":[{\"name\":\"新势力名\",\"type\":\"主权国/藩镇/番属/起义军/宗教势力\",\"leader\":\"首脑\",\"territory\":\"控制地区\",\"parentFaction\":\"脱离自的原势力(可空)\",\"strength\":30,\"militaryStrength\":20000,\"economy\":40,\"attitude\":\"敌对\",\"playerRelation\":-30,\"cohesion\":{\"political\":50,\"military\":60,\"economic\":40,\"cultural\":50,\"ethnic\":60,\"loyalty\":50},\"triggerEvent\":\"触发事件(如:安史之乱/黄巾起义/五代更迭)\",\"reason\":\"新建原因\"}],\"faction_dissolve\":[{\"name\":\"被灭势力名\",\"cause\":\"conquered(征服)/absorbed(并入)/collapsed(内部崩解)/seceded_all(分崩离析)/replaced(被取而代之)\",\"conqueror\":\"征服者势力(conquered/absorbed时必填)\",\"territoryFate\":\"territory归属(如:并入某势力/独立成多国/设郡县)\",\"leaderFate\":\"首脑下场(降/死/逃亡)\",\"refugees\":[\"出逃核心人物\"],\"reason\":\"原因\"}],\"class_emerge\":[{\"name\":\"新阶层名\",\"size\":\"约5%\",\"mobility\":\"中\",\"economicRole\":\"商贸/军事/手工/治理\",\"status\":\"良民\",\"privileges\":\"\",\"obligations\":\"\",\"satisfaction\":50,\"influence\":15,\"demands\":\"诉求\",\"origin\":\"从哪演化来(如:军功地主自均田崩坏中兴起/士商自科举资格放开中兴起)\",\"unrestThreshold\":30,\"descriptor\":{\"stratum\":\"上/中/下\",\"fiscalStatus\":\"优免/编户/受饷/法外\",\"unrestArchetype\":\"暴烈/撤离/不合作/哗变\"},\"reason\":\"兴起原因\"}],\"class_dissolve\":[{\"name\":\"消亡阶层名\",\"cause\":\"abolished(法令废除)/assimilated(被吸收)/extincted(衰落消亡)/replaced(被新阶层取代)\",\"successorClass\":\"后继阶层(可空)\",\"membersFate\":\"成员去向(如:编入平民/降为贱籍/融入士绅)\",\"reason\":\"原因\"}],\"vassal_changes\":[{\"action\":\"establish/break/change_tribute\",\"vassal\":\"封臣势力名\",\"liege\":\"宗主势力名\",\"tributeRate\":0.3,\"reason\":\"原因\"}],\"title_changes\":[{\"action\":\"grant/revoke/inherit/promote\",\"character\":\"角色名\",\"titleName\":\"爵位名称\",\"titleLevel\":3,\"hereditary\":true,\"from\":\"继承来源角色(inherit时必填)\",\"reason\":\"原因\"}],\"building_changes\":[{\"action\":\"build/upgrade/destroy/custom_build\",\"territory\":\"行政区划名\",\"type\":\"建筑名称(对应剧本buildingTypes中的name;custom_build时可为自定义名)\",\"isCustom\":false,\"description\":\"自定义建筑时必填——描述作用(AI自判合理性)\",\"level\":1,\"faction\":\"势力名\",\"costActual\":\"实际花费(两)\",\"timeActual\":\"实际工期(回合)\",\"feasibility\":\"合理/勉强/不合理\",\"judgedEffects\":\"AI判定的效果描述——写入推演叙事(如'每月增收银五百两、田亩增一成；建造期民力消耗较大，需徭役若干')\",\"reason\":\"建造原因\"}],\"admin_changes\":[{\"action\":\"appoint_governor/remove_governor/adjust\",\"division\":\"行政区名\",\"person\":\"人名\",\"prosperity_delta\":0,\"population_delta\":0,\"corruption_delta\":0,\"stability_delta\":0,\"unrest_delta\":0,\"reason\":\"地方官治理行为描述\"}],\"autonomy_changes\":[{\"action\":\"enfeoff_prince/enfeoff_duke/enfeoff_tusi/invest_tributary/establish_fanzhen/grace_edict/abolish_fief/tusi_to_liuguan/conquer_as_prefecture\",\"division\":\"行政区划名\",\"holder\":\"持爵者(enfeoff类必填)\",\"titleName\":\"爵名(如亲王/国公/宣慰使)\",\"subtype\":\"real(实封)/nominal(虚封)\",\"loyalty\":60,\"tributeRate\":0.3,\"risk\":\"rebellion/secession/stable\",\"reason\":\"原因——须与中国历史事件命名对应(推恩令/削藩/改土归流/册封/设郡等)\"}],\"admin_division_updates\":[{\"action\":\"add/remove/rename/merge/split/reform/territory_gain/territory_loss\",\"parentDivision\":\"上级行政区名(add时必填)\",\"division\":\"行政区名\",\"newName\":\"新名(rename时)\",\"level\":\"行政层级\",\"population\":0,\"prosperity\":0,\"terrain\":\"\",\"specialResources\":\"\",\"taxLevel\":\"中\",\"officialPosition\":\"主官职位\",\"governor\":\"主官名\",\"description\":\"描述\",\"mergeInto\":\"合并目标(merge时)\",\"splitResult\":[\"拆分后名称列表(split时)\"],\"lostTo\":\"失去给哪个势力(territory_loss时)\",\"gainedFrom\":\"从哪个势力获得(territory_gain时)\",\"reason\":\"原因\"}],\"harem_events\":[{\"type\":\"pregnancy/birth/death/rank_change/favor_change/scandal\",\"character\":\"妃子名\",\"detail\":\"描述\",\"newRank\":\"新位分id(rank_change时)\",\"favor_delta\":\"宠爱变化数值(favor_change时)\"}],\"palace_changes\":[{\"action\":\"build/renovate/assign/ruined/abandon\",\"palace\":\"宫殿名\",\"subHall\":\"殿名(assign时必填)\",\"occupant\":\"居住者(assign时必填)\",\"previousOccupant\":\"原居者(assign/移居时)\",\"newPalace\":\"新宫殿名(build时)\",\"palaceType\":\"main_hall/imperial_residence/consort_residence/dowager/crown_prince/ceremonial/garden/office/offering(build时)\",\"costActual\":\"花费(两)\",\"timeActual\":\"工期(回合)\",\"feasibility\":\"合理/勉强/不合理\",\"judgedEffects\":\"AI判定效果(对威望/国库/民力的影响)\",\"reason\":\"原因\"}],\"description\":\"具体行为描述(20-60字)\",\"publicKnown\":true,\"evidence\":\"书信/当庭/密会/宴饮/私室/朝堂/书院\",\"reason\":\"动机\"}],\"inspiredBy\":\"次韵或酬答的源作id(可空)\",\"commissionedBy\":\"委托人角色名(motivation=ghostwrite/commissioned时必填)\",\"praiseTarget\":\"颂扬对象(若有)\",\"satireTarget\":\"讽刺对象(若有;讽谕政治时务必填)\",\"quality\":\"0-100综合质量(AI据作者智慧学识+心境+主题相性自判)\",\"politicalImplication\":\"政治暗讽/隐含立场描述(可空;讽谏时必填)\",\"politicalRisk\":\"low/medium/high（高者易招诗狱）\",\"narrativeContext\":\"30-80字创作背景叙述——让玩家明白此作因何而作\",\"preservationPotential\":\"low/medium/high(能否传世,视质量/题材/境遇)\"}],\"tech_civic_unlocks\":[{\"name\":\"科技或政策名\",\"type\":\"tech/civic\",\"reason\":\"解锁原因\"}],\"policy_changes\":[{\"action\":\"add/remove\",\"name\":\"国策名\",\"reason\":\"原因\"}],\"scheme_actions\":[{\"schemer\":\"发起者名\",\"action\":\"advance/disrupt/abort/expose\",\"reason\":\"原因\"}],\"timeline_triggers\":[{\"name\":\"时间线事件名\",\"result\":\"实际发生情况\"}],\"edict_feedback\":[{\"content\":\"诏令内容摘要\",\"assignee\":\"负责执行的官员名(必填)\",\"status\":\"executing/completed/obstructed/partial/pending_delivery(信使在途尚未送达)\",\"feedback\":\"执行情况详细描述——谁做了什么、进展如何、遭遇什么阻力、为什么受阻\",\"progressPercent\":50}],\"edict_lifecycle_update\":[{\"edictId\":\"诏令ID——本回合新诏令必须取自上方【本回合诏令】列表中的tracker.id；延续推演的诏令必须用上方【生命周期推演中的诏令】列表中的已有id，不得凭空生成新id\",\"edictType\":\"amnesty大赦/reward封赏/personnel人事/tax_reduction减赋/tax_increase加征/admin_reform行政改革/economic_reform经济改革/military_mobilize军事动员/diplomacy对外/imperial_ritual巡幸祭祀/criminal_justice刑狱/education_culture文教\",\"stage\":\"drafting草拟/review审议/promulgation颁布/transmission传达/interpretation地方解读/execution执行/feedback反馈/adjustment调整/sedimentation沉淀\",\"reformPhase\":\"pilot试点/expand局部推广/national全国推广/backlash反扑/outcome定局(改革类必填)\",\"stageProgress\":0.5,\"executor\":\"督办者角色名\",\"executorEffectiveness\":0.85,\"classesAffected\":{\"士绅\":{\"impact\":-10,\"resistance\":70},\"农民\":{\"impact\":+8,\"resistance\":10}},\"factionsAffected\":{\"契丹\":{\"relation_delta\":-5,\"attitude_shift\":\"hostile\",\"reason\":\"对此诏令的反应\"}},\"partiesAffected\":{\"东林党\":{\"influence_delta\":-8,\"agenda_impact\":\"反对/支持/不关心\",\"reason\":\"态度依据\"}},\"resistanceDescription\":\"阻力来源与形态描述(如'江南士绅联名抗税，地方胥吏怠工截留')\",\"currentEffects\":{\"stateTreasury\":-50000,\"民心_江南\":-5},\"unintendedConsequences\":\"意外后果(如'户部对账发现库银实际仅入库一半，其余被胥吏截留')\",\"pilotRegion\":\"试点地名(改革类必填)\",\"expansionRegions\":[\"已推广地区\"],\"oppositionLeaders\":[\"反对派核心人物\"],\"supporters\":[\"核心支持者\"],\"nextStageETA\":2,\"canPlayerIntervene\":true,\"interventionOptions\":[\"加派干吏督办\",\"暂缓一州\",\"放弃\",\"更严苛执行\"],\"narrativeSnippet\":\"30-80字本阶段叙事——体现程序感和阻力感\"}],\"route_disruptions\":[{\"route\":\"起点-终点\",\"reason\":\"阻断原因(战乱/洪水/叛军占据)\",\"resolved\":false}],\"foreshadowing\":[{\"action\":\"plant/resolve\",\"content\":\"伏笔内容\",\"type\":\"threat/opportunity/mystery/romance\",\"resolveCondition\":\"回收条件(plant时填)\"}],\"current_issues_update\":[{\"action\":\"add/resolve/update\",\"title\":\"时政议题标题(如:河北兵饿拖欠、水利年久失修、某州刺史贪腐被劾)\",\"category\":\"军政/财赋/水利/吉凶/边防/形势/人事/民生\",\"description\":\"半文言200-500字，结合推演实际细化描述具体时政问题的来由、涉及人物、当前态势\",\"id\":\"更新/解决时填已有要务id\"}],\"character_memory_updates\":[{\"actor\":\"NPC name\",\"memory_type\":\"commitment/belief/relationship/preference/grudge/favor/fear/intention/reputation\",\"memory\":\"one concrete actor-scoped memory; no hard_state\",\"private\":false,\"confidence\":0.7,\"source_refs\":[{\"type\":\"jishiRecords/courtRecords/events/edictTracker\",\"id\":\"source id\"}]}],\"map_changes\":{\"ownership_changes\":[],\"development_changes\":[]},\"char_updates\":[{\"name\":\"角色名(必填)\",\"loyalty_delta\":0,\"ambition_delta\":0,\"new_location\":\"简单改位置\",\"updates\":{\"officialTitle\":\"新官职\",\"title\":\"新头衔\",\"age\":45,\"任何字段\":\"任何值\"},\"careerEvent\":{\"title\":\"新职\",\"dept\":\"部门\",\"action\":\"appoint/dismiss/transfer\",\"reason\":\"原因\",\"summary\":\"仕途概要(会附加到 ch.careerHistory)\"},\"travelTo\":{\"toLocation\":\"目的地\",\"estimatedDays\":30,\"reason\":\"赴任/召回/出使\",\"assignPost\":\"到达后就任的官职(可选)\"}}],\"office_assignments\":[{\"name\":\"角色名\",\"post\":\"职位\",\"dept\":\"部门\",\"action\":\"appoint/dismiss/transfer\",\"concurrent\":false,\"fromLocation\":\"原地(可选)\",\"toLocation\":\"任职地(不同于原地则走位)\",\"estimatedDays\":30,\"reason\":\"原因；若为兼职/兼任/加兼须写明并置 concurrent:true\"}],\"fiscal_adjustments\":[{\"action\":\"add/update/stop/remove\",\"target\":\"guoku/neitang/province:某省\",\"kind\":\"income/expense\",\"resource\":\"money/grain/cloth\",\"category\":\"商贸/工程/赈济/军饷/杂税\",\"name\":\"项目名(如:派郑和下西洋商队)\",\"amount\":50000,\"reason\":\"依据/推演得出\",\"recurring\":true,\"stopAfterTurn\":null}],\"currency_adjustments\":[{\"action\":\"ban_private_mint/issue_paper/abolish_paper/debase_coin\",\"paperName\":\"会子/宝钞(可选)\",\"coinType\":\"copper/silver/iron/gold(可选)\",\"amount\":1000000,\"reserveRatio\":0.3,\"reason\":\"依据\"}],\"population_adjustments\":[{\"action\":\"purge_hidden/resettle_refugees/baojia_setup/recount\",\"region\":\"地区(可选)\",\"amount\":0,\"reason\":\"依据\"}],\"central_local_actions\":[{\"action\":\"transfer_to_region/force_levy/dispatch_censor/set_region_allocation\",\"region\":\"地区\",\"amount\":50000,\"qiyunRatio\":0.7,\"cunliuRatio\":0.3,\"purpose\":\"disaster_relief/military_funding/regional_support\",\"reason\":\"依据\"}],\"environment_actions\":[{\"action\":\"ban_logging/dredge/reclaim/fallow/open_waste\",\"region\":\"地区\",\"policyId\":\"可选\",\"reason\":\"依据\"}],\"institution_changes\":[{\"action\":\"create/abolish\",\"name\":\"制度或官司名\",\"rank\":5,\"duties\":\"职责\",\"reason\":\"依据\"}],\"directive_compliance\":[{\"id\":\"dir_xxx\",\"status\":\"followed|partial|ignored\",\"reason\":\"若非 followed 说明原因\",\"evidence\":\"引用 zhengwen/events/npc_actions 中体现遵守的具体片段 30-80 字\"}],\"faction_updates\":[{\"name\":\"势力名\",\"updates\":{\"任何字段\":\"任何值\"}}],\"party_updates\":[{\"name\":\"党派名\",\"updates\":{\"任何字段\":\"任何值\"}}],\"class_updates\":[{\"name\":\"阶层名\",\"updates\":{\"任何字段\":\"任何值\"}}],\"region_updates\":[{\"id或name\":\"行政区划\",\"updates\":{\"任何字段\":\"任何值\"}}],\"project_updates\":[{\"name\":\"工程名\",\"type\":\"工程/商队/学堂/道路/造船\",\"status\":\"planning/active/completed/abandoned\",\"cost\":10000,\"progress\":30,\"leader\":\"负责人\",\"region\":\"地点\",\"description\":\"概述\",\"endTurn\":50}],\"anyPathChanges\":[{\"path\":\"GM.任意嵌套路径\",\"op\":\"set/push/delta/merge/delete\",\"value\":\"值\",\"reason\":\"原因\"}],\"edict_relations\":[{\"from\":\"诏令编码或简称(如 T15-E03 / 盐法)\",\"to\":\"另一诏令编码或简称\",\"type\":\"supersedes/contradicts/continues/elaborates\",\"reason\":\"为何这样关联(40字)\"}]}\n\n——当前观察到的局面（陈述事实，不是任务清单）——\n  · 国库告罄：银 0 万两\n\n——扮演指引——\n你要让每个重要 NPC 根据其人格/派系/恩怨/能力/信息面，自主决定本回合要不要有动作、做什么。\n可能的行为（请按 NPC 个性选择，不要按职位套模板）：\n  · 上奏疏、抗疏、弹劾、举荐、担保、联名陈情\n  · 求见密陈、私访、宴请、诗酒切磋\n  · 鸿雁密信、通报情报、馈赠\n  · 构陷、背叛、告密、结党营私、暗通款曲\n  · 袖手不言、明哲保身、借机牟利\n  · 能力不足把事办砸、信息不全判断失误\n  · 正人被小人构陷、忠良被冷落、奸佞得势\n\n禁忌：\n  × 不要\"御史必谏、将军必请战、清流必劾宦官\"这种工具人模板\n  × 不要所有人对同一件事都响应 —— 多数人观望，少数人介入\n  × 不要只产奏疏 —— 私人活动、党争、旁观都是正当反应\n  × 不要被历史锁死 —— 架空策略只要合理就可产出\n\n——候选 NPC（含人设/派系/权力/关系，供你扮演参考）——\n  · 张丞相 丞相 [朝廷] 忠78·志?·廉?\n  · 李将军 大将军 [朝廷] 忠70·志?·廉?\n\n——产出方式——\n用 p1.npc_interactions[] 数组（已有 schema）：\n  { actor, target, type, description, involvedOthers?, publicKnown? }\ntype 支持：impeach/slander/expose_secret/recommend/guarantee/petition_jointly\n          /private_visit/invite_banquet/duel_poetry/gift_present\n          /correspond_secret/share_intelligence/frame_up/betray 等\n系统自动路由到 奏疏/问对/鸿雁/起居注/风闻。\n\n【七大变量·推演必读（深化数据）】\n  帑廪：钱 0 万两 · 粮 0 万石 · 布 0 万匹 · 月入 0 万\n  内帑：钱 0 万两 · 粮 0 万石 · 布 0 万匹 · 皇庄 0 亩\n\n【推演产出要求】\n推演产生的任何变化请通过以下 JSON 字段输出：\n  · changes: [{path, delta|value, reason}]  （path 支持 by-name：如 \"chars.张三.loyalty\" / \"adminHierarchy.player.divisions.冀州.population.mouths\"）\n  · appointments: [{action:\"appoint|dismiss|transfer\", charName, position, binding}]\n  · institutions: [{action:\"create|abolish\", type, id, name, annualBudget}]\n  · regions: [{action:\"reclassify\", id, newType, reason}]\n  · events: [{category, text, credibility}]\n  · npc_interactions: [{actor, target, type:\"impeach|slander|recommend|frame_up|betray|private_visit|correspond_secret|mediate|expose_secret|duel_poetry|master_disciple|reconcile|guarantee|..\", description, involvedOthers?, publicKnown?}] —— 系统自动路由到 奏疏/问对/鸿雁/起居注/风闻，且按 type 自动涨/跌 actor 的 fame(名望 -100..+100)与 virtueMerit(贤能 累积)——譬如 recommend/mediate 提贤能，frame_up/betray/slander 损名望，expose_secret/impeach 对被揭者 fame 大跌。请按人物性格/立场/与目标关系选择合适的 type，避免机械化\n  · localActions: [{region, type:\"disaster_relief|public_works_water|public_works_road|education|granary_stockpile|military_prep|charity_local|illicit\", amount, reason, proposer}] —— 地方官自主治理（按 region.fiscal 情况决定，amount < 3% 地方留存为常规，10-30% 为应急。illicit 为贪墨挪用，进入主官私产）\n\n【财政与田亩流转·新机制·可用 path】\n  · 各 division.economyBase 字段可读·田赋/盐课/矿/海贸 = farmland × landTaxRate / saltProduction × saltTaxRate / mineralProduction × mineralTaxRate / maritimeTradeVolume × maritimeRate\n  · 兼并自动结算：corruption > 50 时按 (corr-50)/100×4%/年 farmland 流入 landsAnnexed（豪强吞并）\n  · 开垦自动结算：currentLoad < 0.7 时按 (1-load)×1.5%/年 增 farmland，劝农政策×2.5（path: \"policies.encourageFarming\" = true 启动）\n  · 清丈触发：path \"adminHierarchy.{fac}.divisions.{name}._surveyTrigger\" = true 单次触发·下回合按 30-60% 从 landsAnnexed 回 farmland（民心高 → 比例高）\n  · 道路质量 economyBase.roadQuality 影响驿递成本与商旅·可由地方治理「修路」localAction 缓慢提升\n  · 帑廪/内帑 subItems 已展示·推演时引用具体细目（如「田赋·正赋下降 X 万因兼并」）而非空洞「岁入下降」\n\n【重要原则】\n · 必读以上七变量+深化字段，推演要体现数据（而非空洞叙事）\n · 不受历史约束——剧本仅作参考，只要合理即可（架空策略、反史实均允许）\n · NPC 行为不要按职位套模板（御史必谏/将军必请战是工具人思维）\n · 突发事件（灾/疫/异象/权臣/民变）通过 npc_interactions 让大臣/官员上奏或求见告知玩家，不要另起弹窗\n\n【SC1 schema tier=common (Phase 2 A1·按 modelCap)】扩展字段已删·共省 702 字符·请仅返回核心字段。\n\n【SC1 字段边界·重要】本回合 sc1 不输出以下字段·\n  · cultural_works/npc_letters/npc_correspondence/npc_interactions (由 SC1b 专管)\n  · faction_events/faction_ai_outcomes/npc_schemes/hidden_moves/faction_interactions_advanced/fengwen_snippets (由 SC1c 专管)\n即使本 prompt 上方残留提及·sc1 也只返回除上列字段外的其他字段。\n\n【模型能力中等·SC1 schema 中度精简】\n  · 检测到单次输出 ≤ 8K tokens\n  · cultural_works/npc_correspondence/fengwen_snippets 可 []（由 SC1b/SC1c 补充）\n  · 核心字段 turn_summary/shizhengji_basis/edict_feedback/char_updates 必填\n\n\n<dataTable_rule>\n在你的 JSON 回复中必须额外提供 tableEdit 字段·字段值为 <tableEdit>...</tableEdit> 块；若当前模型不受 JSON 格式约束，也可在回复末尾追加该块。\ntableEdit 块内用 HTML 注释包裹三类指令：\n  insertRow(tableIdx, {\"colIdx\":\"value\"})       // 新增一行\n  updateRow(tableIdx, rowIdx, {\"colIdx\":\"value\"}) // 更新指定行的指定列\n  deleteRow(tableIdx, rowIdx)                    // 删除指定行\n\n格式约束：\n  · key 必须用双引号·value 字符串内禁止内嵌双引号（用 / 分隔）\n  · 表索引 [tableIdx] 来自上方 [Idx:Name] 标题·严禁重新编号\n  · 行索引 [rowIdx] 是上方表中显示的行号（带 [n] 前缀的那个）\n  · 编码 T<turn>-<seq> 列由系统补全·你写\"\" 或缺失即可\n  · append-only 表（事件历史/大事记摘要）禁止 update/delete·只允许 insert\n\n冲突解决层级（高优先级覆盖低优先级）：\n  当前局势 > 在朝NPC > 角色档案 > 关系网络 > 事件历史 > 大事记摘要\n\n禁止：\n  · 让已死要员复活（参看 [DeadPin] 块）\n  · 重新虚构编码（系统会强行覆盖）\n  · 修改皇命专用表（只读）\n  · 修改被锁定的单元格（_editorLocks）\n</dataTable_rule>\n\n[Memory output contract]\nOptional field character_memory_updates must be an array. Each item must include actor, memory_type, memory, confidence, source_refs. Use it only for durable actor-scoped memory: commitments, beliefs, grudges, favors, intentions, reputation, relationship changes. Do not write hard_state here; deaths, offices, locations, resources, laws, and facts already owned by engine fields must stay in their proper schema fields. memory_type must be one of commitment/belief/relationship/preference/grudge/favor/fear/intention/reputation; confidence is 0-1; source_refs must point to jishiRecords/courtRecords/events/edictTracker or another concrete source.\n\n\n【新增字段·economic_advice (Phase 3 A10·SC17 已让位)】\n  SC1 输出 JSON 需包含 \"economic_advice\"·string·100-200 字·内容·当前财政完整分析(收入来源/支出压力/盈亏)·通胀压力·下回合资源预测·应该做什么/不应该做什么·\n  无突出经济变化也必须给出·至少给一句\"国库平稳·税入正常\"\n\n\n=== SC1_PRE_CONTEXT·structured memory context ===\n<memory-context-disclaimer>以下 SC1_PRE_CONTEXT 来自结构化记忆档案、编年/时政/人物 rollup 与权威账本投影；用于推演依据，不得覆盖本回合硬状态、死亡、任免、资源与显式诏令。</memory-context-disclaimer>\n<memory-context schema-version=\"memory-context/v0\">\n  <core-facts label=\"core facts\">\n    <memory id=\"hard-char-张丞相\" source=\"hard_state\" turn=\"5\" authority=\"engine_state\" authority-rank=\"100\" lane=\"L1_world_truth\" visibility=\"world_truth\" source-refs=\"char:张丞相\">张丞相 alive 京城 丞相 朝廷</memory>\n    <memory id=\"hard-char-李将军\" source=\"hard_state\" turn=\"5\" authority=\"engine_state\" authority-rank=\"100\" lane=\"L1_world_truth\" visibility=\"world_truth\" source-refs=\"char:李将军\">李将军 alive 京城 大将军 朝廷</memory>\n    <memory id=\"5-张丞相-问对\" source=\"commitment\" turn=\"5\" authority=\"rule_validated\" authority-rank=\"80\" lane=\"L2_active_law_commitment\" visibility=\"world_truth\" source-refs=\"dialogueCommitment:5-张丞相-问对\">张丞相 督办江南减赋一成并核实各州落地 张丞相行文江南各州减赋并回奏 3回合内 问对 明命</memory>\n  </core-facts>\n  <chronology label=\"chronicle and annals\">\n    <memory id=\"shiji-4\" source=\"shiji\" turn=\"4\" authority=\"raw_narrative\" authority-rank=\"50\" lane=\"L6_retrieved_evidence\" visibility=\"public\" source-refs=\"shijiHistory:shiji-4\">四年春·江南水退·修圩田</memory>\n  </chronology>\n  <character-memory label=\"character memories and actor-scoped facts\">\n    <memory id=\"jishi-5-张丞相-0\" source=\"jishi\" turn=\"5\" authority=\"court_report\" authority-rank=\"66\" fact-status=\"reported_dialogue\" lane=\"L4_dialogue_evidence\" visibility=\"public\" source-refs=\"jishiRecords:jishi-5-张丞相-0\">张丞相 问对 朕欲减江南赋税一成·卿以为如何 臣领旨·当即督办江南减赋</memory>\n  </character-memory>\n</memory-context>\n\n\n=== sc1q 硬性要求 (FINAL·不可遗漏) ===\nSC1 必须在 npc_actions / edict_feedback / char_updates / events 等字段中实现以下条目·缺一条都视为推演失败·\n1. 张丞相督办江南减赋并回奏\n\n\n=== 输出格式强约束 (FINAL RULE·不可违反) ===\nYOU MUST RETURN JSON ONLY. 不要包裹 markdown 代码块·不要前言·不要解释·不要附加任何 prose。\n第一个字符必须是 `{`·最后一个字符必须是 `}`。任何非 JSON 字符都会导致整回合推演失败·后续 sc1b/sc1c/sc1d/sc2 等子调用会全部降级。\n若某段叙事字段超出长度·宁可截短不要省略 JSON 结构。",
+   "userLen": 28301,
+   "userSha256": "17c2b7f32bdada020ae5bc7e7e3f07db3638e23b21868bb69ed5f3de7212ba9a"
+  },
+  {
+   "expectedKeys": [
+    "shilu_text",
+    "shizhengji",
+    "szj_title",
+    "szj_summary"
+   ],
+   "id": "sc1d",
+   "label": "实录时政",
+   "max_tokens": 7000,
+   "model": "gpt-4o",
+   "response_format": "json_object",
+   "seq": 5,
+   "system": "【金样sysP】你是天命回合推演引擎·本串为金样网固定系统提示·不代表真实 prompt 面。",
+   "systemLen": 47,
+   "systemSha256": "18430d98b2b67350aa8b7f11c03eec8bd49f49eb4c9ef66e70d79a06413faab9",
+   "temperature": 0.7,
+   "user": "【实录·时政记专项】\n你只负责把 SC1 已判定的结构化账本改写为史官文本，不得新增任何事实、数值、死亡、任免、战事或地块变化。\n本回合：T5 · 公元前356年腊月癸亥日\n玩家诏令/行止原始摘要：{\"edicts\":{\"内政\":\"减江南赋税一成\",\"军务\":\"\"},\"xinglu\":\"巡视太学\"}\nSC1结构化账本：{\"turn_summary\":\"帝纳丞相之谏·诏减江南赋税一成·江南民心稍安·北虏窥边未动\",\"shizhengji_basis\":\"减赋诏下·张丞相领旨督办·行文江南各州·度支司核岁入将短三十万贯·边镇奏虏骑游弋\",\"player_status\":\"忧边事而慰民心\",\"edict_feedback\":[{\"edict\":\"减江南赋税一成\",\"status\":\"executing\",\"feedback\":\"张丞相行文江南各州·首季落地过半\"}],\"events\":[{\"type\":\"政务\",\"title\":\"减赋诏行\",\"text\":\"江南田赋减一成·各州奉行·民心稍安\",\"turn\":5}],\"resource_changes\":{\"国库\":-30},\"fiscal_adjustments\":[],\"currency_adjustments\":[],\"population_adjustments\":[],\"central_local_actions\":[],\"environment_actions\":[],\"institution_changes\":[],\"char_updates\":[{\"name\":\"张丞相\",\"loyalty_delta\":2,\"reason\":\"谏言被纳·奉诏督办\"}],\"personnel_changes\":[],\"office_changes\":[],\"office_assignments\":[],\"faction_events\":[],\"faction_changes\":[],\"army_changes\":[],\"province_changes\":[]}\n\n请返回严格 JSON，只包含以下字段：\n{\"shilu_text\":\"实录0-0字。纯文言史官体，仿《资治通鉴》《明实录》，以月日/是月/上命为句式，只记可验证事实，不评论。\",\"szj_title\":\"时政记副标题，七字对仗两句，用顿号或逗号分隔。\",\"shizhengji\":\"时政记正文0-0字。仿朝政纪要体，分3-5段，逐条复述玩家诏令/奏疏批复/问对朝议，并写执行者、执行过程、阻力、实际效果、遗留隐患。不得编造 SC1 账本没有的变化。\",\"szj_summary\":\"时政记总结一句话，概括局势与隐患。\"}\n可选字段 basis_refs：数组，列出 shilu_text/shizhengji 所依据的 SC1 字段、诏令、问对或奏疏摘要；不得把 basis_refs 当作新增事实。\n可选字段 zhengwen：一段独立的\"史臣曰/朝野时评\"(80-160字·带立场的短评论断·区别于时政记的纪实体·不新增事实)；若无从评则留空。",
+   "userLen": 1292,
+   "userSha256": "7100b0e3d2d0dc887f43f9e704ebe2e7590e13313a2cd193ba3eaf3a6001dcec"
+  },
+  {
+   "expectedKeys": [
+    "cultural_works",
+    "npc_letters",
+    "npc_correspondence",
+    "npc_interactions"
+   ],
+   "id": "sc1b",
+   "label": "文事鸿雁人际",
+   "max_tokens": 8192,
+   "model": "gpt-4o",
+   "response_format": "json_object",
+   "seq": 6,
+   "system": "【金样sysP】你是天命回合推演引擎·本串为金样网固定系统提示·不代表真实 prompt 面。",
+   "systemLen": 47,
+   "systemSha256": "18430d98b2b67350aa8b7f11c03eec8bd49f49eb4c9ef66e70d79a06413faab9",
+   "temperature": 0.85,
+   "user": "【文事·鸿雁·人际互动·专项推演】\n本回合：5 · 公元前356年腊月癸亥日 · 首都：京城\n玩家角色：皇帝（不得作为 npc_interactions.actor，不得 autonomous 作 cultural_works）\n\n【本回合已记时政】\n是岁春·上以江南水患初平·诏减田赋一成·丞相张氏奉诏惟谨·行文各州·吏民相庆·而度支岁入将短·边镇又奏虏骑游弋·廷议渐有增饷之请\n\n【主要人物（含位置/官职/派系/特质）】\n张丞相·丞相@京城[朝廷] 忠78·智82·学85 特{清廉}\n李将军·大将军@京城[朝廷] 忠70·智65·学65 特{骁勇}\n\n【任务】生成以下四类内容，返回严格 JSON（仅包含这四个字段）：\n\n◆ cultural_works（文苑作品·常态 3-6 篇，重大事件时 5-10 篇）——\n  按触发源（A科举宦途/B逆境贬谪/C社交酬酢/D任上施政/E游历山水/F家事私情/G时局天下/H情感心境）选有资格的 NPC 生成其作品。\n  ★ content 必须全文真实生成：绝句 20/律诗 40或56/词按词牌字数/赋 300-800/文 200-600；古文忌现代词汇；格律诗尽力讲平仄对仗。不得写占位符如\"(此处诗)\"。\n  字段：{author, turn:5, date, location, triggerCategory, trigger, motivation, lifeStage, genre, subtype, title, content, mood, theme, elegance, dedicatedTo[], inspiredBy, commissionedBy, praiseTarget, satireTarget, quality, politicalImplication, politicalRisk, narrativeContext, preservationPotential}\n  motivation：spontaneous自发/commissioned受命/flattery干谒/response酬答/mourning哀悼/critique讽谕/celebration颂扬/farewell送别/memorial纪念/ghostwrite代笔/duty应制/self_express自拒\n  genre：shi诗/ci词/fu赋/qu曲/ge歌行/wen散文/apply应用文/ji记叙文/ritual祭文碑铭/paratext序跋\n  politicalRisk：讽谕/critique 类高，平和类低。preservationPotential 质量越高/题材越重越容易传世。\n  触发条件：智力≥70 + scholar/theologian/eccentric/pensive/curious 特质 → 高权重；遇贬/丁忧/致仕/战胜/夺职/乔迁/寿辰 → 强触发；stress>60 借文发泄。lazy/craven 降权。\n\n◆ npc_letters（鸿雁传书·每回合 2-5 封）——\n  不在 京城 的 NPC 遇重大事件主动写信给皇帝。from 必须是不在首都的 NPC。\n  字段：{from, type:\"report奔告/plea求援/warning警报/personal私情/intelligence情报\", urgency:\"normal/urgent/extreme\", content(100-200字古典中文), suggestion(1-2句可省), subjectLine:\"信函题名·5-12字如《辽东告急疏》\", replyExpected:true}\n  参考信件模式：边将告急·地方官请命·流官述情·出使回报·离京旧臣怀想·密探密报。\n\n◆ npc_correspondence（NPC 之间密信·2-5 条）——\n  NPC 间秘密书信/结盟约定/情报交换/密谋。\n  字段：{from, to, content(50-150字), summary(一句话), implication(对局势潜在影响), type:\"secret/alliance/conspiracy/routine\"}\n\n◆ npc_interactions（NPC 互动·5-12 条）——\n  系统自动路由：impeach/slander/expose_secret → 奏疏弹章；recommend/guarantee/petition_jointly → 荐表；\n  private_visit/invite_banquet/duel_poetry → 问对求见；gift_present → 鸿雁附礼；correspond_secret/share_intelligence → 鸿雁密信；\n  frame_up/betray/mediate/reconcile → 风闻；master_disciple → 起居注。\n  字段：{actor, target, type, description(30-60字), involvedOthers?, publicKnown?(true/false)}\n  按人物性格/派系/关系选合适的 type，避免\"御史必谏/将军必请战\"工具人模板。\n  特别注意：包含弹劾/荐举/密寿/辭繁/徒徒传道等古典政治行为，一部分 publicKnown=true 进风闻，一部分 false 私下。\n\n【硬规则】\n  · 只返回上述四个字段的 JSON（无其他字段）\n  · 人名必须是现有角色（已列在上方人物表中）\n  · 内容要丰富、有画面感、不机械化\n  · 玩家 皇帝 不得作 npc_interactions.actor；不得 autonomous 作 cultural_works\n  · 高质量：诗要有境，文要有因，信要有隐，互动要有方\n\n返回格式：\n{\n  \"cultural_works\":[{...}],\n  \"npc_letters\":[{...}],\n  \"npc_correspondence\":[{...}],\n  \"npc_interactions\":[{...}]\n}",
+   "userLen": 2577,
+   "userSha256": "857f4eda388554fffa14d62864cc4970d6e741f1c0e494c932f96c694b4bb178"
+  },
+  {
+   "expectedKeys": [
+    "faction_events",
+    "faction_ai_outcomes",
+    "faction_interactions_advanced",
+    "npc_schemes",
+    "scheme_actions"
+   ],
+   "id": "sc1c",
+   "label": "势力阴谋",
+   "max_tokens": 8192,
+   "model": "gpt-4o",
+   "response_format": "json_object",
+   "seq": 7,
+   "system": "【金样sysP】你是天命回合推演引擎·本串为金样网固定系统提示·不代表真实 prompt 面。",
+   "systemLen": 47,
+   "systemSha256": "18430d98b2b67350aa8b7f11c03eec8bd49f49eb4c9ef66e70d79a06413faab9",
+   "temperature": 0.5499999999999999,
+   "user": "【势力外交·NPC阴谋·专项推演】\n本回合：5 · 公元前356年腊月癸亥日\n\n【本回合时政】\n是岁春·上以江南水患初平·诏减田赋一成·丞相张氏奉诏惟谨·行文各州·吏民相庆·而度支岁入将短·边镇又奏虏骑游弋·廷议渐有增饷之请\n\n【非玩家势力】\n北虏 实62 首:虏酋 态:敌视 目:南下劫掠 [草原]·游牧\n\n【主要 NPC（含官职/派系/忠志廉/特质）】\n张丞相·丞相[朝廷] 忠78·志50·廉50 特{清廉}\n李将军·大将军[朝廷] 忠70·志50·廉50 特{骁勇}\n\n【任务】生成以下九类内容，返回严格 JSON（仅包含这些字段）：\n\n◆ faction_interactions_advanced（势力深度互动·常态 3-6 条，外交活跃期 6-10 条）——\n  23 种 type：\n    战争：declare_war宣战/border_clash边境冲突/sue_for_peace请和/annex_vassal并吞\n    和平：send_envoy遣使/form_confederation结盟/break_confederation毁约/recognize_independence承认独立\n    藩属：demand_tribute索贡/pay_tribute献贡/royal_marriage和亲/send_hostage质子/gift_treasure赠宝\n    经济：open_market互市/trade_embargo贸易禁运/pay_indemnity赔款\n    文化：cultural_exchange文化交流/religious_mission宗教使节\n    军事：military_aid军援/proxy_war代理战争/incite_rebellion煲动叛乱\n    情报：spy_infiltration细作/assassin_dispatch刺客\n  字段：{from, to, type, viaProxy?(proxy_war时), terms, tributeItems?(tribute时), marriageDetails?(marriage时——\"XX公主嫁YY王\"), hostageDetails?(hostage时——\"XX子入质\"), treatyType?(盟好/称臣/停战/互不侵犯), description, durationTurns, reason}\n  历史参考：昭君出塞/文成公主入藏(kinshipTies+/hostility-)；清初质子(trust+)；楚汉用诸侯代理战争(trust-)；寋渊岁币/明册封朝鲜琴琉球；宋辽概场/明蒙马市(economicTies+)\n  一致性式：背盟/毁约/刺杀影响深远不可轻易\"和好\"；和亲/质子要具体人名\n\n◆ faction_events（势力间/内部事件·常态 3-6 条）——\n  字段：{actor, target?(内政事件可省), action(30字), actionType:\"外交/内政/军事/经济\", result(30字), strength_effect:0, geoData?:{routeKm, terrainDifficulty:0.5, hasOfficialRoad, routeDescription(\"经……\"), passesAndBarriers[], fortLevel, garrison}}\n  军事类 geoData 必填，其他类可省\n\n◆ faction_ai_outcomes（势力AI主循环桥账本·2-6 条）——\n  这不是旁路设定：必须把 aiPersonality/aiDecisionWeights/aiConditionalBehaviors 与当前军政财地盘关系联动，并通过 faction_events/faction_interactions_advanced/faction_relation_changes/军政财字段落地。\n  字段：{faction, factionId?, intent, action, target?, motive, result, publicSummary, posterityComment, recordTarget:\"shizhengji|houren|both|none\", structuralLinks:[\"faction_events[0]\"]}\n  publicSummary 供时政记追加，posterityComment 供后人戏说/茶肆/边报/士林议论使用。\n\n◆ faction_relation_changes（势力关系变化·2-5 条）——\n  字段：{from, to, type, delta, reason}\n  关系六维：trust信任/hostility敌意/economicTies经济/culturalAffinity文化/kinshipTies姻亲/territorialDispute领土；按互动导致的维度更新\n\n◆ faction_succession（势力继承·仅当首领死亡/失心/民变时触发）——\n  字段：{faction, oldLeader, newLeader, legitimacy:70, stability_delta:-10, disputeType:\"正常继承/争位/篡位/内战/外戚专政/重臣推载\", narrative(40字)}\n\n◆ npc_schemes（NPC 阴谋·新增阴谋。常态 2-4 条，张力期 4-8 条）——\n  跨回合阴谋——权臣排挤对手、将军暗联外部、收集反对派罪证、款填一贝、交塑后宫、流言造势、后青勾结等长期布局\n  字段：{schemer, target, plan(40字描述), progress:\"酝酿中/即将发动/长期布局\", allies:\"同谋者（人名逗号分隔）\", motive:\"动机·据其所求/恩怨(20字·如「恨李某构陷、欲报此仇」)\", method:\"手段·1词如诬陷/结党/贿赂/构陷/密奏/联姻/散谣\", secrecy:\"隐秘度·极隐/半公开/张扬\", winCondition:\"何为得手·20字\"}\n\n◆ scheme_actions（已有阴谋推进·1-3 条，对应上一回合阴谋）——\n  字段：{schemer, action:\"advance推进/disrupt破坏/abort中止/expose被揭发\", reason(30字)}\n\n◆ hidden_moves（NPC 暗中行动·至少 8 条，字符串数组）——\n  每条格式：\"某角色：因为什么→暗中做了什么→目的是什么\"（30-60字）\n  必包含：≥ 3 条 NPC对NPC暗行；≥ 1 条 势力内部暗流；≥ 1 条 小人物动作（小吏贪墓/商人囤货/探子传信/流民聚集）\n\n◆ fengwen_snippets（风闻录事·常态 12-20 条）——\n  人物和势力的活动风闻——源自坑间耳目、朝堂风诮、往来密函等，通过起居注/耳报/塗报/坊间传闻报入。\n  字段：{type, text(30-60字古典中文风), credibility(0.3-0.95), actors:[\"人名或势力名\"], source:\"坊间/朝堂/耳目/塗报/密札/边关\", mood?:\"忧/喜/怒/恐/亲/仇(传递给 actors 记忆的主导情绪)\"}\n  type 分类：弹劾/荐举/奏议/结党/造谣/私访/宴饮/游宴/诗社/学论/求婚/母祭/丹道/薬释/巡视/巡者/赑捜/司法/核查/捐俸/财行/家事/置产/居着/雅示/密联/战报/边报/和亲/质子/朝贡/互市/盟约/遣使/揭私\n  例：{type:\"诗社\", text:\"西湖三雅集于北山，某甲赋《秋水》，某乙次韵，某丙立划点断句。\", credibility:0.75, actors:[\"某甲\",\"某乙\"], source:\"坊间\", mood:\"喜\"}\n  【硬规则·风闻覆盖要求】\n    · 上述新菜单所有类型主动行为（名望建构/地方治理/中央履职/私产经营/公库担当/政斗博弈/人民互动社交/私人生活）当将生成 1+ 条风闻\n    · 势力的公开互动也会自动进风闻（已系统自动处理，你不需重复）\n    · 断议结果/钥学修鲁等私人行为会在坐间劭绬僣有臀塔丹逸下遮\n    ⚠ 【阴谋 npc_schemes 不得进风闻_snippets！】——阴谋默认隐藏，只有在 scheme_actions.expose 时由系统自动生成「揭私」风闻。\n    · 体现当事人心绪：fengwen 的 mood 字段会传递给 actors 的记忆——弹劾/揭私 → 怒；荐举/達灮 → 喜；上美下需 → 亲；奖式育兩 → 喜；财千造谣 → 仇。\n\n【活动内容方向（AI 推理参考）】\n  无需每种都用，按 NPC/势力性格、当前局势、私心自由选择——该分类仅供扩展思路，避免单调重复。\n\n  【人物·政斗朝堂博弈】\n    · 上疏争辩（为某政策历下反复力争）\n    · 弹劾反弹连环（弹者反被反诘牵连）\n    · 结党·联名奔述（立场相近者共同上表）\n    · 私下游说中立派（宴请·许以好处或威胁）\n    · 借天象/灾异进言（附会阴阳·托言天警）\n    · 让旁人作替身——避直接冲突（借御史台/借诗文影射/借弟子陷阵）\n    · 收集对手把柄/伺机发难（账目·私交·家人过失）\n    · 制造舆论·散布流言（借童谣·谶语·私诩）\n    · 托宦官/外戚/后妃进言（走内线·绕开前朝）\n    · 拒不表态·明哲保身（立场不明·持麻使前）\n    · 离机谋位·上疑工待势（小人之骚扩大/看风使舵）\n\n  【人物·治理公务处置】\n    · 批阅文书/积压案牍（该官类型性显）\n    · 召集僚属议事/堂杂·会公商事\n    · 巡视辖区·巡济亲看（水利/兵防/狱讼/农时）\n    · 微服访民情·百姓殊呼\n    · 整顝风纪·惩贪锁害（查属部·核物券）\n    · 查阅户籍·丈量田亩·治理隐户\n    · 修订地方规章·便宜行事\n    · 荐举部属·考课黜陷（上限单/考详单）\n    · 审理疑难案件·容极冤狱\n    · 抚慰流民/发仓赈济/资遣返乡\n    · 筹措军需/整备防务/增厅少队\n    · 招抚盗贼/议和边民\n    · 筹建工程（桥梁/堤坝/驿道/学宫/禅院）\n    · 处理上级型指令·加盖转发下司\n\n  【人物·彼此互动社交雅事】\n    · 同僚宴饮·诗酒唱和\n    · 学术切磋·论学辩难·讲会\n    · 访友问学·请教前辈·表报师门\n    · 联姻求亲·交换婚诺·合封屔女\n    · 师徒传道·收徒立派·阖宋传经\n    · 私下调停双方纠纷·记恩与恨\n    · 商议共同上疏·联名呈请\n    · 转求同门/同乡援引\n    · 写信慰问病者·吊唐丧者·赓礼爰寗\n    · 同观书画·共赏古玩·欣赏花木\n    · 结社雅集（诗社/文社/义社/云硅会）\n    · 旅行同游·访古寻胜·导游公事\n    · 赠答文字·次韵唯鋳答答\n\n  【人物·主动建构名望贤能行为（心有野望/重视名节的 NPC 应主动为之）】\n    · 救济灾民·施粥抖衣（名望+ 贤能+）\n    · 捐资兴学·建书院·罢学赏事（名望+）\n    · 讲学·立言·著书立学派（文名+）\n    · 奖掎后进·荐拔贤才·提携下士（贤能++）\n    · 修志编史·集贤误特站（文化贡献·名望+）\n    · 兴修水利·建路筑桥·惠民工程（名望+ 贤能+）\n    · 清廉自守·拒贿不拜·各洁身以食（贤能+）\n    · 抚恰孤审·施惠老弱·解困如亲（贤能+）\n    · 平反冤狱·围复名流·正沉受屈（名望++ 贤能+）\n    · 主持乡祭·调停宗族纠纷（地方名望+）\n    · 替人担保·践诺守信·义赈急难（信义+ 贤能+）\n    · 为国献策·犯马直谏·报国屎身（忠名+）\n    · 构籐诗文·题跋名品·需须隶学（文名+）\n    · 置义田义墮·交事寗族人（族望+ 贤能+）\n    ★ 需根据 NPC 性格与野心选择：清流士大夫偏向文化·讲学·置义田，\n      功利型偏向捐资兴教·荐拔·惠民工程，忠自型偏向直谏·峗聴·报国，仁德型偏向平冤·守信·抚恰。\n    ★ 以上行为可通过 npc_interactions 输出（type 可代入 mediate/recommend/guarantee/petition_jointly等），\n      或通过 fengwen_snippets 风闻条到映在玩家相关面板。\n\n  【地方官·辖区治理行为（在地方任职的 NPC 应为本辖之政）】\n    · 勝课农桑·督稻垂溞（春耕秋收时节）\n    · 兴修水利·疑堤疏河·护堡筑陕\n    · 清丈田亩·核骨户口·追追隐户·收招流民\n    · 审理刻狱·媇雷冤狱·避祭欤齐竭\n    · 整顿驿传·巡佐关卡·暂泄盗匪·立窭堂橐\n    · 兴办学宫·选拔贡生·议上乡学·邀权讲学\n    · 备荒仓廪·平籴平籵·赈灾抖惠\n    · 整治胥吏·惩议纹尤·掭除升斗持户\n    · 禁毁淫祠·移风易俗·施者清臕除疰\n    · 竀讧物价·督查市木·抱克挪替·置喽厪宿\n    · 按察武乡·因事请崜民力·寒事厅滪\n    ★ 成代实施可插 localActions (region/type/amount/reason/proposer)，亦可入 fengwen_snippets。\n\n  【中央官员·部制履职·陳替行为（京中任职的 NPC 应为属系之事）】\n    · 批阅积压文书·会审南北震墬·处置偶折归官\n    · 堂司会公·雲使和议·召集连井·会会倾峧表\n    · 主持部务会议·下记部属·考察赎黜陶\n    · 奉旨查核某事·辟魂调阅档案·调寻笥墫厲共\n    · 府后聝下部属·督謼满输奺成部·考城凡所捯\n    · 洝将沗目·使官体笥等透·学能急规\n    · 主持大礼·还颂社稷·召开祭殿·替皇下授评\n    · 接待外使·属国朝贡·会谈外使·记沈外下\n    · 筹划本部改革·议并府局·卑阻出属孝忆請的\n    · 同事会议、联名上禃·会同不同部门府具共令\n    ★ 部内行为可用 npc_interactions (type:mediate/petition_jointly/recommend) 或 fengwen_snippets(type:奏议/奏诮/议示)。\n\n  【人物·私产经营行为（几乎所有 NPC 都会考虑家废）】\n    · 购置田亩·吊置宅院·把声同产·修置庄园\n    · 私下经商·开设典当·放贷取息·投臓禀厅业\n    · 收受礼金·下属孝敬·外塞气吟礼·互移贵重赠了\n    · 将个人财产转移或蘾匿·私下行乐\n    · 套用公嬴·浪费公款·体归數财·谕脆关殿\n    · 融资族产·家孟湏渴·养门客或雇用人\n    · 压京信·资助从篥亲友·完成主男女婚子尀\n    · 贪溚挑招·贷遗私人储金·用于甩队领言技巧等\n    ★ 通过 char_updates.updates.resources.private.money (delta) 体现私产变化；\n      或 fengwen_snippets (type:财行/家事/置产) 风闻传。\n    ⚠ 侵帅类行为 (套用公嬴/受贿) 会使名望缩减；複黑的会被议私下传武\n\n  【人物·公库关切担当行为（仅有能力/志向/五常仁义+ 的 NPC 才会为之）】\n    · 捐俸补公库亏空·跟不受提饮·以私货垫办公事\n    · 击盘保徒·主动核查账目·查揭贪弊·驱逐贪吔\n    · 節流省费·弁废私费·跟格引節公驿演\n    · 上皇请增拨款·秦请毪动公库·请调饱消分弁\n    · 弹劾挪挤公库者·杰索回肆发扣款\n    · 予以任一行为中资质于坑公人任的物价盒循利生会迣之\n    ★ 贤能+廉 ≥ 65 且 他 负责了某公库 → 高概率考虑为之；\n      私心重/廉<40 → 少有关切，一切私为先。\n    ★ 行为批到 npc_interactions (type:expose_secret/impeach/guarantee) 或 char_updates调公库；\n      fengwen_snippets (type:司法/核查/捐俸) 传风闻。\n\n  【人物·私人生活日常】\n    · 家事处理（祭祖/婚娶/丧葬/训子/分家）\n    · 宗教信仰（进庙/礼佛/求道/齋戒/照火疆疫）\n    · 养生保健（服药/静坐/导引/五禽戏）\n    · 文房雅事（收藏金石/题跋丧本/临帖/刻印）\n    · 园林游憩（赏花/听琴/钓鱼/异瑞唯和）\n    · 研究著述（校勘经籍/撰史/注疏/修方志）\n    · 处理疾病·丧服守制\n    · 云游古迹·无无岁月·温车打光\n\n  【势力·内政活动】\n    · 整顿律法·颁布新令\n    · 清查户口·丈量田亩\n    · 改元·更定年号·改制冉官\n    · 宫廷人事整顿·罢革学府/国子监\n    · 罢革宦官·整饰内宫\n\n  【势力·军事活动】\n    · 筹建新军·整编旧部\n    · 修筑城防·增设边塞/堡金\n    · 调动驻军·更换将领\n    · 储备粮草·调运军需\n    · 征募兵源·练兵讲武\n    · 军屯军田改制\n\n  【势力·经济民生活动】\n    · 开市通商·整肃市榈\n    · 召募流民屯垦\n    · 推行平籴/平籵\n    · 改铸钱币·整理盐铁\n    · 兴办矿冶·筹建漕运\n    · 设立仓储·赈灾济民\n\n  【势力·文化宗教外交活动】\n    · 举办科举/祭天/封禅\n    · 兴建寺观·敬事神祈\n    · 整理典籍·编纮国史\n    · 推广本族文化/文字\n    · 抑制异端·禁毁邪说\n    · 派遣使者/接纳流亡\n    · 召集部落大会/诸侯盟会\n\n【硬规则】\n  · 仅返回上述 9 个字段的 JSON，不要任何其他字段\n  · 人名/势力名必须使用上方列出的名称\n  · 防止\"御史必谏·将军必战·清流必劾宦官\"工具人模板——按 NPC 性格/派系/与目标关系/忠志廉选行为\n  · 多数人观望/明哲保身，少数人介入\n  · 玩家 皇帝 不得作任何字段中的 actor/schemer\n  · 历史账本一致性——百年前的令恨/恩惠今仍有余波；不可轻易“和好”之前的屠城/背盟仇敷\n\n返回格式示例：\n{\n  \"faction_interactions_advanced\":[{...}],\n  \"faction_events\":[{...}],\n  \"faction_ai_outcomes\":[{...}],\n  \"faction_relation_changes\":[{...}],\n  \"faction_succession\":[{...}],\n  \"npc_schemes\":[{...}],\n  \"scheme_actions\":[{...}],\n  \"hidden_moves\":[\"...\"],\n  \"fengwen_snippets\":[{...}]\n}",
+   "userLen": 8055,
+   "userSha256": "2434c9b598b754e4176411665d39b4d07a9f8125407157d3a53c03eecb6e45b9"
+  }
+ ],
+ "metaErrors": [],
+ "results": {
+  "p1Summary": "",
+  "sc0": "{\"tensions\":\"北疆虏骑窥边·江南水患未平·国库度支渐紧·清流与勋贵相轧·东宫未定人心浮动\",\"consequences\":\"减赋令下·江南民心可收·然岁入短三十万贯·度支司必有争执\",\"npc_spotlight\":\"张丞相锐意奉行减赋·李将军请增边饷·二人于廷前必起争论\",\"faction_dynamics\":\"北虏秋高马肥·有南下劫掠之势·其酋新立·欲以兵威服众\",\"family_dynamics\":\"后宫安靖·无大变\",\"class_unrest\":\"江南农户闻减赋而喜·市井商贾观望\",\"economic_pressure\":\"岁入将短·边饷又增·度支两难\",\"foreshadow\":\"虏酋新立必犯边·减赋岁入缺口三回合后显·张李之争渐成党争\",\"mood\":\"外弛内张·山雨欲来\",\"memoryQueries\":[]}",
+  "sc05": "{\"causal_chains\":\"江南水患→圩田修缮→今岁减赋·一脉相承·民力渐苏\",\"unresolved\":\"北虏新酋动向未明·减赋后岁入缺口如何弥补尚无着落\",\"patterns\":\"玩家连续两回合施仁政于江南·仁政取向渐显\",\"player_impact\":\"江南民心积累上行·然武备投入偏低·边防隐忧\",\"npc_memories\":\"张丞相记玩家纳其减赋之谏·感遇日深\",\"momentum\":\"若无干预·北虏秋后犯边·江南民心继续回暖\"}",
+  "sc1": {
+   "basis_refs": [],
+   "char_updates": [
+    {
+     "loyalty_delta": 2,
+     "name": "张丞相",
+     "reason": "谏言被纳·奉诏督办"
+    }
+   ],
+   "character_deaths": [],
+   "cultural_works": [],
+   "dialogue_commitment_feedback": [
+    {
+     "npc": "张丞相",
+     "progress": 60,
+     "status": "executing",
+     "task": "督办江南减赋一成并核实各州落地"
+    }
+   ],
+   "edict_feedback": [
+    {
+     "edict": "减江南赋税一成",
+     "feedback": "张丞相行文江南各州·首季落地过半",
+     "status": "executing"
+    }
+   ],
+   "events": [
+    {
+     "text": "江南田赋减一成·各州奉行·民心稍安",
+     "title": "减赋诏行",
+     "turn": 5,
+     "type": "政务"
+    }
+   ],
+   "faction_ai_outcomes": [],
+   "faction_events": [
+    {
+     "action": "游骑沿边墙窥探虚实",
+     "actionType": "军事",
+     "actor": "北虏",
+     "result": "边镇戒严·未接战",
+     "strength_effect": 0,
+     "target": ""
+    }
+   ],
+   "faction_interactions_advanced": [],
+   "faction_relation_changes": [],
+   "faction_succession": [],
+   "fiscal_adjustments": [],
+   "npc_actions": [
+    {
+     "action": "行文江南各州督减赋",
+     "behaviorType": "奉公",
+     "name": "张丞相",
+     "privateMotiv": "以实绩固相位",
+     "publicReason": "奉诏行事",
+     "result": "首季落地过半",
+     "target": "江南各州"
+    }
+   ],
+   "npc_correspondence": [],
+   "npc_interactions": [
+    {
+     "actor": "李将军",
+     "description": "过相府议边备粮饷·不欢而散",
+     "target": "张丞相",
+     "type": "私访"
+    }
+   ],
+   "npc_letters": [],
+   "personnel_changes": [],
+   "player_inner": "减赋易·补缺难·北虏若动·钱粮安出",
+   "player_status": "忧边事而慰民心",
+   "resource_changes": {
+    "国库": -30
+   },
+   "scheme_actions": [],
+   "shilu_text": "五年春正月·诏减江南田赋十之一·丞相张氏督之·虏骑见于边外·诏诸镇严备",
+   "shizhengji": "春·减江南赋诏行·丞相督办·各州奉行过半·边镇奏虏骑游弋·增饷之议起于廷中",
+   "shizhengji_basis": "减赋诏下·张丞相领旨督办·行文江南各州·度支司核岁入将短三十万贯·边镇奏虏骑游弋",
+   "suggestions": [],
+   "szj_summary": "仁政安内·边警未弭",
+   "szj_title": "减赋纪要",
+   "turn_summary": "帝纳丞相之谏·诏减江南赋税一成·江南民心稍安·北虏窥边未动",
+   "zhengwen": "后人论曰·五年之减赋·所以收江南之心也·然虏患方兴而岁入自削·识者忧之"
+  },
+  "sc1b": {
+   "cultural_works": [],
+   "npc_correspondence": [],
+   "npc_interactions": [
+    {
+     "actor": "李将军",
+     "description": "过相府议边备粮饷·不欢而散",
+     "target": "张丞相",
+     "type": "私访"
+    }
+   ],
+   "npc_letters": []
+  },
+  "sc1c": {
+   "faction_ai_outcomes": [],
+   "faction_events": [
+    {
+     "action": "游骑沿边墙窥探虚实",
+     "actionType": "军事",
+     "actor": "北虏",
+     "result": "边镇戒严·未接战",
+     "strength_effect": 0,
+     "target": ""
+    }
+   ],
+   "faction_interactions_advanced": [],
+   "faction_relation_changes": [],
+   "faction_succession": [],
+   "fengwen_snippets": [],
+   "hidden_moves": [],
+   "npc_schemes": [],
+   "scheme_actions": []
+  },
+  "sc1d": {
+   "basis_refs": [],
+   "shilu_text": "五年春正月·诏减江南田赋十之一·丞相张氏督之·虏骑见于边外·诏诸镇严备",
+   "shizhengji": "春·减江南赋诏行·丞相督办·各州奉行过半·边镇奏虏骑游弋·增饷之议起于廷中",
+   "szj_summary": "仁政安内·边警未弭",
+   "szj_title": "减赋纪要",
+   "zhengwen": "后人论曰·五年之减赋·所以收江南之心也·然虏患方兴而岁入自削·识者忧之"
+  },
+  "sc1q": {
+   "collective_resolutions": [],
+   "dialogue_commitments": [
+    {
+     "category": "finance",
+     "deadline": "3回合内",
+     "npc": "张丞相",
+     "player_emphasis": "明命",
+     "required_npc_action": "张丞相行文江南各州减赋并回奏",
+     "source_conv_id": "5-张丞相-问对",
+     "source_type": "问对",
+     "task": "督办江南减赋一成并核实各州落地",
+     "willingness": 0.85
+    }
+   ],
+   "npc_dialogue_intent": [
+    {
+     "mood": "sincere",
+     "next_likely_move": "遣属吏核江南税册",
+     "npc": "张丞相",
+     "subtext": "愿以实绩固相位"
+    }
+   ],
+   "required_sc1_actions": [
+    "张丞相督办江南减赋并回奏"
+   ]
+  }
+ },
+ "turnAiResults": {
+  "memoryReview": "{\"causal_chains\":\"江南水患→圩田修缮→今岁减赋·一脉相承·民力渐苏\",\"unresolved\":\"北虏新酋动向未明·减赋后岁入缺口如何弥补尚无着落\",\"patterns\":\"玩家连续两回合施仁政于江南·仁政取向渐显\",\"player_impact\":\"江南民心积累上行·然武备投入偏低·边防隐忧\",\"npc_memories\":\"张丞相记玩家纳其减赋之谏·感遇日深\",\"momentum\":\"若无干预·北虏秋后犯边·江南民心继续回暖\"}",
+  "memoryTrace": {
+   "compiledContexts": [
+    {
+     "actorScope": "system",
+     "audience": "system",
+     "compileOpts": {
+      "actorScope": "system",
+      "audience": "system",
+      "intent": "turn_inference",
+      "maxTokens": 1800,
+      "turn": 5
+     },
+     "countsByAuthority": {
+      "court_report": 1,
+      "engine_state": 2,
+      "raw_narrative": 1,
+      "rule_validated": 1
+     },
+     "countsByLane": {
+      "L1_world_truth": 2,
+      "L2_active_law_commitment": 1,
+      "L4_dialogue_evidence": 1,
+      "L6_retrieved_evidence": 1
+     },
+     "countsBySource": {
+      "commitment": 1,
+      "hard_state": 2,
+      "jishi": 1,
+      "shiji": 1
+     },
+     "countsByType": {
+      "commitment": 1,
+      "court_dialogue_record": 1,
+      "episodic_event": 1,
+      "hard_state": 2
+     },
+     "id": "SC1_PRE_CONTEXT",
+     "intent": "turn_inference",
+     "items": [
+      {
+       "authority": "engine_state",
+       "authorityRank": 100,
+       "basisRefs": [],
+       "char": "张丞相",
+       "factStatus": "",
+       "id": "hard-char-张丞相",
+       "importance": 10,
+       "lane": "L1_world_truth",
+       "ownerScope": "",
+       "readScope": "",
+       "reason": {
+        "dimension": 1,
+        "importance": 1,
+        "recency": 1,
+        "relevance": 1,
+        "source": 1
+       },
+       "score": 1,
+       "source": "hard_state",
+       "sourceRefs": [
+        {
+         "id": "张丞相",
+         "turn": 5,
+         "type": "char"
+        }
+       ],
+       "status": "alive",
+       "textHash": "h732b57a8-2aceeb6a:len18",
+       "textLength": 18,
+       "textPreview": "张丞相 alive 京城 丞相 朝廷",
+       "turn": 5,
+       "type": "hard_state",
+       "visibility": "world_truth"
+      },
+      {
+       "authority": "engine_state",
+       "authorityRank": 100,
+       "basisRefs": [],
+       "char": "李将军",
+       "factStatus": "",
+       "id": "hard-char-李将军",
+       "importance": 10,
+       "lane": "L1_world_truth",
+       "ownerScope": "",
+       "readScope": "",
+       "reason": {
+        "dimension": 1,
+        "importance": 1,
+        "recency": 1,
+        "relevance": 0.95,
+        "source": 1
+       },
+       "score": 0.9825,
+       "source": "hard_state",
+       "sourceRefs": [
+        {
+         "id": "李将军",
+         "turn": 5,
+         "type": "char"
+        }
+       ],
+       "status": "alive",
+       "textHash": "hc77180df-0e2e5e15:len19",
+       "textLength": 19,
+       "textPreview": "李将军 alive 京城 大将军 ...",
+       "turn": 5,
+       "type": "hard_state",
+       "visibility": "world_truth"
+      },
+      {
+       "authority": "rule_validated",
+       "authorityRank": 80,
+       "basisRefs": [],
+       "char": "张丞相",
+       "factStatus": "",
+       "id": "5-张丞相-问对",
+       "importance": 8,
+       "lane": "L2_active_law_commitment",
+       "ownerScope": "",
+       "readScope": "",
+       "reason": {
+        "dimension": 1,
+        "importance": 0.8,
+        "recency": 1,
+        "relevance": 0.87,
+        "source": 0.72
+       },
+       "score": 0.8585,
+       "source": "commitment",
+       "sourceRefs": [
+        {
+         "id": "5-张丞相-问对",
+         "turn": 5,
+         "type": "dialogueCommitment"
+        }
+       ],
+       "status": "active",
+       "textHash": "h7dbdfcd3-c8d2aa7d:len45",
+       "textLength": 45,
+       "textPreview": "张丞相 督办江南减赋一成并核实各州...",
+       "turn": 5,
+       "type": "commitment",
+       "visibility": "world_truth"
+      },
+      {
+       "authority": "court_report",
+       "authorityRank": 66,
+       "basisRefs": [],
+       "char": "张丞相",
+       "confidence": 0.78,
+       "factStatus": "reported_dialogue",
+       "id": "jishi-5-张丞相-0",
+       "importance": 5,
+       "lane": "L4_dialogue_evidence",
+       "ownerScope": "",
+       "readScope": "",
+       "reason": {
+        "dimension": 0.5,
+        "importance": 0.5,
+        "recency": 1,
+        "relevance": 0.87,
+        "source": 0.74
+       },
+       "score": 0.7525,
+       "source": "jishi",
+       "sourceRefs": [
+        {
+         "id": "jishi-5-张丞相-0",
+         "turn": 5,
+         "type": "jishiRecords"
+        }
+       ],
+       "status": "active",
+       "textHash": "h2bb1da88-f9529006:len35",
+       "textLength": 35,
+       "textPreview": "张丞相 问对 朕欲减江南赋税一成·...",
+       "turn": 5,
+       "type": "court_dialogue_record",
+       "visibility": "public"
+      },
+      {
+       "authority": "raw_narrative",
+       "authorityRank": 50,
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "shiji-4",
+       "importance": 5,
+       "lane": "L6_retrieved_evidence",
+       "ownerScope": "",
+       "readScope": "",
+       "reason": {
+        "dimension": 0.5,
+        "importance": 0.5,
+        "recency": 1,
+        "relevance": 0.75,
+        "source": 0.72
+       },
+       "score": 0.7065,
+       "source": "shiji",
+       "sourceRefs": [
+        {
+         "id": "shiji-4",
+         "turn": 4,
+         "type": "shijiHistory"
+        }
+       ],
+       "status": "active",
+       "textHash": "h551b5d50-8bf8e766:len12",
+       "textLength": 12,
+       "textPreview": "四年春·江南水退·修圩田",
+       "turn": 4,
+       "type": "episodic_event",
+       "visibility": "public"
+      }
+     ],
+     "kept": [
+      {
+       "cost": 263,
+       "groupIndex": 0,
+       "hitIndex": 0,
+       "id": "memory-context-coreFacts",
+       "source": "",
+       "stage": "must_keep"
+      },
+      {
+       "cost": 13,
+       "groupIndex": 0,
+       "hitIndex": 0,
+       "id": "memory-context-header",
+       "source": "",
+       "stage": "must_keep"
+      },
+      {
+       "cost": 5,
+       "groupIndex": 0,
+       "hitIndex": 0,
+       "id": "memory-context-footer",
+       "source": "",
+       "stage": "must_keep"
+      },
+      {
+       "cost": 128,
+       "groupIndex": 0,
+       "hitIndex": 0,
+       "id": "memory-context-characterMemory",
+       "source": "",
+       "stage": "fill"
+      },
+      {
+       "cost": 76,
+       "groupIndex": 0,
+       "hitIndex": 0,
+       "id": "memory-context-chronology",
+       "source": "",
+       "stage": "fill"
+      }
+     ],
+     "lane": "memory_context_compiler",
+     "maxTokens": 1800,
+     "schemaVersion": "memory-context/v0",
+     "sectionCounts": {
+      "characterMemory": 1,
+      "chronology": 1,
+      "coreFacts": 3,
+      "courtRecords": 0,
+      "recentEvents": 0,
+      "relationshipFacts": 0,
+      "stateAffairs": 0,
+      "warnings": 0
+     },
+     "stage": "sc1-pre-inference",
+     "suppressed": [],
+     "textHash": "h8f02ffd9-371a2c73:len1546",
+     "textLength": 1546,
+     "textPreview": "<memory-con...",
+     "textTokensEstimate": 485,
+     "zones": [
+      {
+       "cost": 0,
+       "id": "memory-context-header",
+       "lane": "L6_retrieved_evidence",
+       "order": 0,
+       "reason": "",
+       "score": 0,
+       "source": "MemoryContextCompiler",
+       "textHash": "h54cefb69-8599e53b:len52",
+       "textLength": 52,
+       "textPreview": "<memory-con..."
+      },
+      {
+       "cost": 0,
+       "id": "memory-context-coreFacts",
+       "lane": "L1_world_truth",
+       "order": 10,
+       "reason": "coreFacts",
+       "score": 1.35,
+       "source": "MemoryContextCompiler",
+       "textHash": "h495c4d5b-e7078fe1:len715",
+       "textLength": 715,
+       "textPreview": "<core-facts..."
+      },
+      {
+       "cost": 0,
+       "id": "memory-context-chronology",
+       "lane": "L7_chronicle_context",
+       "order": 11,
+       "reason": "chronology",
+       "score": 0.6672083333333333,
+       "source": "MemoryContextCompiler",
+       "textHash": "h637b9b5c-f27c016a:len261",
+       "textLength": 261,
+       "textPreview": "<chronology..."
+      },
+      {
+       "cost": 0,
+       "id": "memory-context-characterMemory",
+       "lane": "L6_retrieved_evidence",
+       "order": 12,
+       "reason": "characterMemory",
+       "score": 0.9327083333333334,
+       "source": "MemoryContextCompiler",
+       "textHash": "hfa449924-b82b3c5e:len359",
+       "textLength": 359,
+       "textPreview": "<character-..."
+      },
+      {
+       "cost": 0,
+       "id": "memory-context-footer",
+       "lane": "L6_retrieved_evidence",
+       "order": 999999,
+       "reason": "",
+       "score": 0,
+       "source": "MemoryContextCompiler",
+       "textHash": "h57fb2705-c95986a3:len18",
+       "textLength": 18,
+       "textPreview": "</memory-co..."
+      }
+     ]
+    }
+   ],
+   "incidents": [],
+   "injections": [
+    {
+     "items": [
+      {
+       "authority": "engine_state",
+       "authorityRank": 100,
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "hard-char-张丞相",
+       "lane": "L1_world_truth",
+       "reason": "MemoryContextCompiler",
+       "source": "hard_state",
+       "sourceRefs": [
+        {
+         "id": "张丞相",
+         "turn": 5,
+         "type": "char"
+        }
+       ]
+      },
+      {
+       "authority": "rule_validated",
+       "authorityRank": 80,
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "5-张丞相-问对",
+       "lane": "L2_active_law_commitment",
+       "reason": "MemoryContextCompiler",
+       "source": "commitment",
+       "sourceRefs": [
+        {
+         "id": "5-张丞相-问对",
+         "turn": 5,
+         "type": "dialogueCommitment"
+        }
+       ]
+      }
+     ],
+     "lane": "memory_context_compiler",
+     "stage": "sc05-recall-compiler",
+     "suppressed": [],
+     "textHash": "hdd55d0ad-06b74f9f:len684",
+     "textLength": 684,
+     "textPreview": "<recall-dis...",
+     "textTokensEstimate": 213
+    },
+    {
+     "items": [
+      {
+       "authority": "",
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "time_reference",
+       "lane": "L1_world_truth",
+       "reason": "turn chronology",
+       "source": "time_ref",
+       "sourceRefs": [],
+       "visibility": ""
+      },
+      {
+       "authority": "",
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "world_snapshot",
+       "lane": "L1_world_truth",
+       "reason": "current world truth",
+       "source": "world_snapshot",
+       "sourceRefs": [],
+       "visibility": ""
+      },
+      {
+       "authority": "",
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "memory_tables",
+       "lane": "L2_active_law_commitment",
+       "reason": "structured memory tables",
+       "source": "mem_tables",
+       "sourceRefs": [],
+       "visibility": ""
+      }
+     ],
+     "lane": "context_zones",
+     "stage": "sc1-prefix",
+     "suppressed": [],
+     "textHash": "h519b63d4-cccc0e22:len3772",
+     "textLength": 3772,
+     "textPreview": "=== 时间参考（防止...",
+     "textTokensEstimate": 2707
+    },
+    {
+     "items": [
+      {
+       "authority": "engine_state",
+       "authorityRank": 100,
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "hard-char-张丞相",
+       "lane": "L1_world_truth",
+       "reason": "envelope:hard_state",
+       "source": "hard_state",
+       "sourceRefs": [
+        {
+         "id": "张丞相",
+         "turn": 5,
+         "type": "char"
+        }
+       ],
+       "visibility": "world_truth"
+      },
+      {
+       "authority": "engine_state",
+       "authorityRank": 100,
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "hard-char-李将军",
+       "lane": "L1_world_truth",
+       "reason": "envelope:hard_state",
+       "source": "hard_state",
+       "sourceRefs": [
+        {
+         "id": "李将军",
+         "turn": 5,
+         "type": "char"
+        }
+       ],
+       "visibility": "world_truth"
+      },
+      {
+       "authority": "rule_validated",
+       "authorityRank": 80,
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "5-张丞相-问对",
+       "lane": "L2_active_law_commitment",
+       "reason": "envelope:commitment",
+       "source": "commitment",
+       "sourceRefs": [
+        {
+         "id": "5-张丞相-问对",
+         "turn": 5,
+         "type": "dialogueCommitment"
+        }
+       ],
+       "visibility": "world_truth"
+      },
+      {
+       "authority": "court_report",
+       "authorityRank": 66,
+       "basisRefs": [],
+       "confidence": 0.78,
+       "factStatus": "reported_dialogue",
+       "id": "jishi-5-张丞相-0",
+       "lane": "L4_dialogue_evidence",
+       "reason": "envelope:court_dialogue_record",
+       "source": "jishi",
+       "sourceRefs": [
+        {
+         "id": "jishi-5-张丞相-0",
+         "turn": 5,
+         "type": "jishiRecords"
+        }
+       ],
+       "visibility": "public"
+      },
+      {
+       "authority": "raw_narrative",
+       "authorityRank": 50,
+       "basisRefs": [],
+       "factStatus": "",
+       "id": "shiji-4",
+       "lane": "L6_retrieved_evidence",
+       "reason": "envelope:episodic_event",
+       "source": "shiji",
+       "sourceRefs": [
+        {
+         "id": "shiji-4",
+         "turn": 4,
+         "type": "shijiHistory"
+        }
+       ],
+       "visibility": "public"
+      }
+     ],
+     "lane": "memory_context_compiler",
+     "stage": "sc1-pre-inference",
+     "suppressed": [],
+     "textHash": "h8f02ffd9-371a2c73:len1546",
+     "textLength": 1546,
+     "textPreview": "<memory-con...",
+     "textTokensEstimate": 485
+    }
+   ],
+   "prompts": [],
+   "retrievals": [
+    {
+     "budget": {
+      "dropped": 0,
+      "fair": 0,
+      "filled": 0,
+      "guaranteed": 2,
+      "kept": [
+       {
+        "cost": 27,
+        "groupIndex": 0,
+        "hitIndex": 0,
+        "id": "hard-char-张丞相",
+        "source": "hard_state",
+        "stage": "guarantee:hard_state"
+       },
+       {
+        "cost": 49,
+        "groupIndex": 0,
+        "hitIndex": 1,
+        "id": "5-张丞相-问对",
+        "source": "commitment",
+        "stage": "guarantee:commitment"
+       }
+      ],
+      "maxTokens": 1200,
+      "tokenEstimate": 76
+     },
+     "gate": {
+      "reason": "gate 未启用·默认全跑（玩家可设 P.conf.recallGateEnabled=true 启用节流）",
+      "shouldRecall": true
+     },
+     "hits": [
+      {
+       "authority": "engine_state",
+       "authorityRank": 100,
+       "basisRefs": [],
+       "char": "张丞相",
+       "factStatus": "",
+       "id": "hard-char-张丞相",
+       "importance": 10,
+       "lane": "L1_world_truth",
+       "reason": {
+        "dimension": 1,
+        "importance": 1,
+        "recency": 1,
+        "relevance": 0.95,
+        "source": 1
+       },
+       "score": 0.9825,
+       "source": "hard_state",
+       "sourceRefs": [
+        {
+         "id": "张丞相",
+         "turn": 5,
+         "type": "char"
+        }
+       ],
+       "status": "alive",
+       "textHash": "h732b57a8-2aceeb6a:len18",
+       "textLength": 18,
+       "textPreview": "张丞相 alive 京城 丞相 朝廷",
+       "turn": 5,
+       "visibility": "world_truth"
+      },
+      {
+       "authority": "rule_validated",
+       "authorityRank": 80,
+       "basisRefs": [],
+       "char": "张丞相",
+       "factStatus": "",
+       "id": "5-张丞相-问对",
+       "importance": 8,
+       "lane": "L2_active_law_commitment",
+       "reason": {
+        "dimension": 1,
+        "importance": 0.8,
+        "recency": 1,
+        "relevance": 0.75,
+        "source": 0.72
+       },
+       "score": 0.8165,
+       "source": "commitment",
+       "sourceRefs": [
+        {
+         "id": "5-张丞相-问对",
+         "turn": 5,
+         "type": "dialogueCommitment"
+        }
+       ],
+       "status": "active",
+       "textHash": "h7dbdfcd3-c8d2aa7d:len45",
+       "textLength": 45,
+       "textPreview": "张丞相 督办江南减赋一成并核实各州...",
+       "turn": 5,
+       "visibility": "world_truth"
+      }
+     ],
+     "id": "SC_RECALL",
+     "queryHash": "h725a9aea-2676a16c:len194",
+     "queryLength": 194,
+     "queryPreview": "[{\"keywords\":[\"张丞相\",\"督办江南减赋一成并核实各州落地\",\"张丞相行文江南各州减赋并回奏\",\"3回合内\"],\"participant\":\"张丞相\",\"minImportance\":5,\"purpose\":\"auto_priority: dialogue commitment\",\"_auto\":tru...",
+     "sources": {
+      "commitment": 1,
+      "hard_state": 1
+     },
+     "status": "hit",
+     "suppressed": []
+    }
+   ],
+   "schemaVersion": "memorytrace.v0",
+   "source": "endturn.runMain",
+   "subcalls": [],
+   "traceOnly": true,
+   "turnId": 5,
+   "writes": []
+  },
+  "recallResults": [
+   {
+    "_scoring": "5dim-weighted",
+    "hits": [
+     {
+      "_reason": {
+       "dimension": 1,
+       "importance": 1,
+       "recency": 1,
+       "relevance": 0.95,
+       "source": 1
+      },
+      "_score": 0.9825,
+      "affects_future": true,
+      "alive": true,
+      "audience": [],
+      "authority": "engine_state",
+      "authorityRank": 100,
+      "basisRefs": [],
+      "char": "张丞相",
+      "confidence": null,
+      "expiredAtTurn": null,
+      "factStatus": "",
+      "hardStateType": "character",
+      "id": "hard-char-张丞相",
+      "importance": 10,
+      "invalidationReason": "",
+      "invalidationRefs": [],
+      "lane": "L1_world_truth",
+      "learnedAtTurn": null,
+      "ownerId": "",
+      "ownerKind": "",
+      "ownerScope": "",
+      "projectionVersion": 1,
+      "readScope": "",
+      "reason": "envelope:hard_state",
+      "relevance": 0.95,
+      "safeBody": "张丞相 alive 京城 丞相 朝廷",
+      "saveId": "",
+      "schemaVersion": "memory-envelope/v0",
+      "source": "hard_state",
+      "sourceId": "",
+      "sourceRefs": [
+       {
+        "hash": "732b57a8",
+        "id": "张丞相",
+        "turn": 5,
+        "type": "char"
+       }
+      ],
+      "status": "alive",
+      "text": "张丞相 alive 京城 丞相 朝廷",
+      "turn": 5,
+      "type": "hard_state",
+      "validFromTurn": null,
+      "validToTurn": null,
+      "visibility": "world_truth",
+      "worldId": "",
+      "writeScope": ""
+     },
+     {
+      "_reason": {
+       "dimension": 1,
+       "importance": 0.8,
+       "recency": 1,
+       "relevance": 0.75,
+       "source": 0.72
+      },
+      "_score": 0.8165,
+      "affects_future": true,
+      "audience": [],
+      "authority": "rule_validated",
+      "authorityRank": 80,
+      "basisRefs": [],
+      "char": "张丞相",
+      "confidence": null,
+      "expiredAtTurn": null,
+      "factStatus": "",
+      "id": "5-张丞相-问对",
+      "importance": 8,
+      "invalidationReason": "",
+      "invalidationRefs": [],
+      "lane": "L2_active_law_commitment",
+      "learnedAtTurn": null,
+      "ownerId": "",
+      "ownerKind": "",
+      "ownerScope": "",
+      "projectionVersion": 1,
+      "readScope": "",
+      "reason": "envelope:commitment",
+      "relevance": 0.75,
+      "safeBody": "张丞相 督办江南减赋一成并核实各州落地 张丞相行文江南各州减赋并回奏 3回合内 问对 明命",
+      "saveId": "",
+      "schemaVersion": "memory-envelope/v0",
+      "source": "commitment",
+      "sourceRefs": [
+       {
+        "hash": "7dbdfcd3",
+        "id": "5-张丞相-问对",
+        "turn": 5,
+        "type": "dialogueCommitment"
+       }
+      ],
+      "status": "active",
+      "text": "张丞相 督办江南减赋一成并核实各州落地 张丞相行文江南各州减赋并回奏 3回合内 问对 明命",
+      "turn": 5,
+      "type": "commitment",
+      "validFromTurn": null,
+      "validToTurn": null,
+      "visibility": "world_truth",
+      "worldId": "",
+      "writeScope": ""
+     }
+    ],
+    "query": {
+     "_auto": true,
+     "_source": "dialogue_commitment",
+     "keywords": [
+      "张丞相",
+      "督办江南减赋一成并核实各州落地",
+      "张丞相行文江南各州减赋并回奏",
+      "3回合内"
+     ],
+     "minImportance": 5,
+     "participant": "张丞相",
+     "purpose": "auto_priority: dialogue commitment"
+    }
+   }
+  ],
+  "subcall1": {
+   "basis_refs": [],
+   "char_updates": [
+    {
+     "loyalty_delta": 2,
+     "name": "张丞相",
+     "reason": "谏言被纳·奉诏督办"
+    }
+   ],
+   "character_deaths": [],
+   "cultural_works": [],
+   "dialogue_commitment_feedback": [
+    {
+     "npc": "张丞相",
+     "progress": 60,
+     "status": "executing",
+     "task": "督办江南减赋一成并核实各州落地"
+    }
+   ],
+   "edict_feedback": [
+    {
+     "edict": "减江南赋税一成",
+     "feedback": "张丞相行文江南各州·首季落地过半",
+     "status": "executing"
+    }
+   ],
+   "events": [
+    {
+     "text": "江南田赋减一成·各州奉行·民心稍安",
+     "title": "减赋诏行",
+     "turn": 5,
+     "type": "政务"
+    }
+   ],
+   "faction_ai_outcomes": [],
+   "faction_events": [
+    {
+     "action": "游骑沿边墙窥探虚实",
+     "actionType": "军事",
+     "actor": "北虏",
+     "result": "边镇戒严·未接战",
+     "strength_effect": 0,
+     "target": ""
+    }
+   ],
+   "faction_interactions_advanced": [],
+   "faction_relation_changes": [],
+   "faction_succession": [],
+   "fiscal_adjustments": [],
+   "npc_actions": [
+    {
+     "action": "行文江南各州督减赋",
+     "behaviorType": "奉公",
+     "name": "张丞相",
+     "privateMotiv": "以实绩固相位",
+     "publicReason": "奉诏行事",
+     "result": "首季落地过半",
+     "target": "江南各州"
+    }
+   ],
+   "npc_correspondence": [],
+   "npc_interactions": [
+    {
+     "actor": "李将军",
+     "description": "过相府议边备粮饷·不欢而散",
+     "target": "张丞相",
+     "type": "私访"
+    }
+   ],
+   "npc_letters": [],
+   "personnel_changes": [],
+   "player_inner": "减赋易·补缺难·北虏若动·钱粮安出",
+   "player_status": "忧边事而慰民心",
+   "resource_changes": {
+    "国库": -30
+   },
+   "scheme_actions": [],
+   "shilu_text": "五年春正月·诏减江南田赋十之一·丞相张氏督之·虏骑见于边外·诏诸镇严备",
+   "shizhengji": "春·减江南赋诏行·丞相督办·各州奉行过半·边镇奏虏骑游弋·增饷之议起于廷中",
+   "shizhengji_basis": "减赋诏下·张丞相领旨督办·行文江南各州·度支司核岁入将短三十万贯·边镇奏虏骑游弋",
+   "suggestions": [],
+   "szj_summary": "仁政安内·边警未弭",
+   "szj_title": "减赋纪要",
+   "turn_summary": "帝纳丞相之谏·诏减江南赋税一成·江南民心稍安·北虏窥边未动",
+   "zhengwen": "后人论曰·五年之减赋·所以收江南之心也·然虏患方兴而岁入自削·识者忧之"
+  },
+  "subcall1_raw": "{\"turn_summary\":\"帝纳丞相之谏·诏减江南赋税一成·江南民心稍安·北虏窥边未动\",\"shizhengji_basis\":\"减赋诏下·张丞相领旨督办·行文江南各州·度支司核岁入将短三十万贯·边镇奏虏骑游弋\",\"shilu_text\":\"五年春·诏减江南田赋十之一·命丞相张氏督之·北虏游骑见于边墙外·守将严备\",\"szj_title\":\"减赋安民·虏骑窥边\",\"shizhengji\":\"是岁春·上以江南水患初平·诏减田赋一成·丞相张氏奉诏惟谨·行文各州·吏民相庆·而度支岁入将短·边镇又奏虏骑游弋·廷议渐有增饷之请\",\"szj_summary\":\"减赋令行·民心向附·然岁入之缺与边防之费·将为后患\",\"player_status\":\"忧边事而慰民心\",\"player_inner\":\"减赋易·补缺难·北虏若动·钱粮安出\",\"events\":[{\"type\":\"政务\",\"title\":\"减赋诏行\",\"text\":\"江南田赋减一成·各州奉行·民心稍安\",\"turn\":5}],\"resource_changes\":{\"国库\":-30},\"char_updates\":[{\"name\":\"张丞相\",\"loyalty_delta\":2,\"reason\":\"谏言被纳·奉诏督办\"}],\"edict_feedback\":[{\"edict\":\"减江南赋税一成\",\"status\":\"executing\",\"feedback\":\"张丞相行文江南各州·首季落地过半\"}],\"npc_actions\":[{\"name\":\"张丞相\",\"action\":\"行文江南各州督减赋\",\"target\":\"江南各州\",\"result\":\"首季落地过半\",\"behaviorType\":\"奉公\",\"publicReason\":\"奉诏行事\",\"privateMotiv\":\"以实绩固相位\"}],\"dialogue_commitment_feedback\":[{\"npc\":\"张丞相\",\"task\":\"督办江南减赋一成并核实各州落地\",\"progress\":60,\"status\":\"executing\"}],\"character_deaths\":[],\"personnel_changes\":[],\"fiscal_adjustments\":[],\"suggestions\":[]}",
+  "subcall1b": {
+   "cultural_works": [],
+   "npc_correspondence": [],
+   "npc_interactions": [
+    {
+     "actor": "李将军",
+     "description": "过相府议边备粮饷·不欢而散",
+     "target": "张丞相",
+     "type": "私访"
+    }
+   ],
+   "npc_letters": []
+  },
+  "subcall1b_raw": "{\"cultural_works\":[],\"npc_letters\":[],\"npc_correspondence\":[],\"npc_interactions\":[{\"actor\":\"李将军\",\"target\":\"张丞相\",\"description\":\"过相府议边备粮饷·不欢而散\",\"type\":\"私访\"}]}",
+  "subcall1c": {
+   "faction_ai_outcomes": [],
+   "faction_events": [
+    {
+     "action": "游骑沿边墙窥探虚实",
+     "actionType": "军事",
+     "actor": "北虏",
+     "result": "边镇戒严·未接战",
+     "strength_effect": 0,
+     "target": ""
+    }
+   ],
+   "faction_interactions_advanced": [],
+   "faction_relation_changes": [],
+   "faction_succession": [],
+   "fengwen_snippets": [],
+   "hidden_moves": [],
+   "npc_schemes": [],
+   "scheme_actions": []
+  },
+  "subcall1c_raw": "{\"faction_events\":[{\"actor\":\"北虏\",\"target\":\"\",\"action\":\"游骑沿边墙窥探虚实\",\"actionType\":\"军事\",\"result\":\"边镇戒严·未接战\",\"strength_effect\":0}],\"faction_ai_outcomes\":[],\"faction_interactions_advanced\":[],\"faction_relation_changes\":[],\"faction_succession\":[],\"npc_schemes\":[],\"hidden_moves\":[],\"scheme_actions\":[],\"fengwen_snippets\":[]}",
+  "subcall1d": {
+   "basis_refs": [],
+   "shilu_text": "五年春正月·诏减江南田赋十之一·丞相张氏督之·虏骑见于边外·诏诸镇严备",
+   "shizhengji": "春·减江南赋诏行·丞相督办·各州奉行过半·边镇奏虏骑游弋·增饷之议起于廷中",
+   "szj_summary": "仁政安内·边警未弭",
+   "szj_title": "减赋纪要",
+   "zhengwen": "后人论曰·五年之减赋·所以收江南之心也·然虏患方兴而岁入自削·识者忧之"
+  },
+  "subcall1d_raw": "{\"shilu_text\":\"五年春正月·诏减江南田赋十之一·丞相张氏督之·虏骑见于边外·诏诸镇严备\",\"szj_title\":\"减赋纪要\",\"shizhengji\":\"春·减江南赋诏行·丞相督办·各州奉行过半·边镇奏虏骑游弋·增饷之议起于廷中\",\"szj_summary\":\"仁政安内·边警未弭\",\"zhengwen\":\"后人论曰·五年之减赋·所以收江南之心也·然虏患方兴而岁入自削·识者忧之\",\"basis_refs\":[]}",
+  "subcall1q": {
+   "collective_resolutions": [],
+   "dialogue_commitments": [
+    {
+     "category": "finance",
+     "deadline": "3回合内",
+     "npc": "张丞相",
+     "player_emphasis": "明命",
+     "required_npc_action": "张丞相行文江南各州减赋并回奏",
+     "source_conv_id": "5-张丞相-问对",
+     "source_type": "问对",
+     "task": "督办江南减赋一成并核实各州落地",
+     "willingness": 0.85
+    }
+   ],
+   "npc_dialogue_intent": [
+    {
+     "mood": "sincere",
+     "next_likely_move": "遣属吏核江南税册",
+     "npc": "张丞相",
+     "subtext": "愿以实绩固相位"
+    }
+   ],
+   "required_sc1_actions": [
+    "张丞相督办江南减赋并回奏"
+   ]
+  },
+  "thinking": "{\"tensions\":\"北疆虏骑窥边·江南水患未平·国库度支渐紧·清流与勋贵相轧·东宫未定人心浮动\",\"consequences\":\"减赋令下·江南民心可收·然岁入短三十万贯·度支司必有争执\",\"npc_spotlight\":\"张丞相锐意奉行减赋·李将军请增边饷·二人于廷前必起争论\",\"faction_dynamics\":\"北虏秋高马肥·有南下劫掠之势·其酋新立·欲以兵威服众\",\"family_dynamics\":\"后宫安靖·无大变\",\"class_unrest\":\"江南农户闻减赋而喜·市井商贾观望\",\"economic_pressure\":\"岁入将短·边饷又增·度支两难\",\"foreshadow\":\"虏酋新立必犯边·减赋岁入缺口三回合后显·张李之争渐成党争\",\"mood\":\"外弛内张·山雨欲来\",\"memoryQueries\":[]}"
+ },
+ "version": "aiwarm-20260706"
+}

@@ -71,7 +71,9 @@ assert(aiInferLines.length >= 200 && aiInferLines.length <= 400,
   'ai-infer line count (soft anti-balloon ceiling), actual ' + aiInferLines.length);
 assert(aiLines.length >= 2600 && aiLines.length <= 6000,
   'tm-endturn-ai.js line count (soft anti-balloon ceiling), actual ' + aiLines.length);
-assert(applyLines.length >= 4550 && applyLines.length <= 7000,
+// 2026-07-06 apply解构S2：AP-1/AP-6 两端 stage 迁出 tm-endturn-apply-stages.js·origin 6003→5316 行。
+// 下限随拆薄同刀调到实测新值 90%（floor(0.9*5316)=4784·防掏空哨随文件缩小收紧·后续拆再降）。
+assert(applyLines.length >= 4784 && applyLines.length <= 7000,
   'tm-endturn-apply.js line count (soft anti-balloon ceiling), actual ' + applyLines.length);
 assert(followupLines.length >= 2200 && followupLines.length <= 4500,
   'tm-endturn-followup.js line count (soft anti-balloon ceiling), actual ' + followupLines.length);

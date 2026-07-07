@@ -162,7 +162,8 @@ assert(compiled.text.includes('payroll fraud'), 'compiled context includes chara
 [
   'tm-memory-writegate.js',
   'tm-memory-turn-inference.js',
-  'tm-endturn-apply.js'
+  'tm-endturn-apply.js',
+  'tm-endturn-apply-stages.js'
 ].forEach(load);
 
 (async function testEndturnRollupIntegration() {
