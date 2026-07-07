@@ -654,6 +654,45 @@ var MilitarySystems = (function(global) {
     }
   }
 
+  // ─── 鼎革R1b(2026-07-07)·战斗主将命运的玩家岔口 ───
+  // 此前 commanderFate 对玩家角色零特判：御驾亲征战殁只标 alive=false=先帝静默尸政、
+  // 被俘只写 capturedBy 全无后果（勘察D静默杀漏洞①）。owner 铁律：终局=玩家角色被杀·
+  // 有储君继统续玩（走 R1a 裁决器）；被俘=北狩特殊可玩态（不死不继承不终局·owner 裁定分叉①·
+  // 摄政/监国兜政务为后续刀）。通用字段写(alive/capturedBy/军队士气冲击)保持原样·本岔口纯追加。
+  function _routePlayerCommanderFate(ch, outcome, winner, G) {
+    if (!ch || !ch.isPlayer) return false;
+    if (outcome === 'killed' || outcome === 'dead') {
+      ch.dead = true;
+      ch.deathTurn = (G && G.turn) || 0;
+      ch.deathReason = '御驾亲征·崩于军中';
+      if (typeof addEB === 'function') { try { addEB('死亡', ch.name + '崩于军中（御驾亲征战殁）', { credibility: 'high' }); } catch (_e) {} }
+      if (typeof adjudicatePlayerDeath === 'function') {
+        adjudicatePlayerDeath(ch, '御驾亲征，崩于军中', { kind: 'battle' });
+      } else {
+        G._playerDead = true; // arch-ok: 裁决器缺位回落·宁终局勿尸政(R1b)
+        G._playerDeathReason = '御驾亲征，崩于军中'; // arch-ok: 同上
+      }
+      return true;
+    }
+    if (outcome === 'captured') {
+      ch._captured = true;
+      ch._capturedBy = winner || '';
+      ch._capturedTurn = (G && G.turn) || 0;
+      G._playerCaptive = { name: ch.name, by: winner || '', turn: (G && G.turn) || 0 }; // arch-ok: 北狩态全局信号·R1b 新子树(摄政/赎归后续刀读)
+      if (typeof addEB === 'function') { try { addEB('国难', ch.name + '为' + (winner || '敌军') + '所俘·乘舆蒙尘，朝野震动', { credibility: 'high' }); } catch (_e2) {} }
+      if (G && Array.isArray(G.currentIssues)) {
+        G.currentIssues.push({ // arch-ok: 乘舆蒙尘入御案时政·信息条(R1b)
+          id: 'iss_captive_' + ((G && G.turn) || 0),
+          title: '乘舆蒙尘 · 天子蒙难',
+          description: (ch.name || '天子') + '御驾亲征为' + (winner || '敌军') + '所俘。国不可一日无主，朝廷当议监国摄政、遣使赎驾或兴师迎还——天子未崩，社稷犹在。',
+          category: '国难', status: 'pending', raisedTurn: (G && G.turn) || 0, _info: true, _captive: true
+        });
+      }
+      return true;
+    }
+    return false;
+  }
+
   function applyBattleResult(battleResult, root) {
     var G = _root(root);
     var br = battleResult || {};
@@ -894,6 +933,7 @@ var MilitarySystems = (function(global) {
         else if (outcome === 'fled') commander._fledTurn = G.turn || 0;
         else if (outcome === 'surrendered') commander.surrenderedTo = winner;
         else if (outcome === 'injured') commander._battleInjured = true;
+        _routePlayerCommanderFate(commander, outcome, winner, G); // 鼎革R1b·玩家主将命运岔口(战殁→裁决器/被俘→北狩态)
         army.commanderFate = outcome;
         if (outcome === 'killed' || outcome === 'dead' || outcome === 'captured' || outcome === 'surrendered' || outcome === 'fled') {
           army._commanderLost = true;
@@ -999,6 +1039,7 @@ var MilitarySystems = (function(global) {
         else if (outcome === 'captured') ch.capturedBy = winner;
         else if (outcome === 'fled') ch._fledTurn = G.turn || 0;
         else if (outcome === 'surrendered') ch.surrenderedTo = winner;
+        _routePlayerCommanderFate(ch, outcome, winner, G); // 鼎革R1b·玩家主将命运岔口(顶层 commanderFate 路)
         var fateArmy = null;
         if (attackerArmy && String(attackerArmy.commander || '') === fate.name) fateArmy = attackerArmy;
         else if (defenderArmy && String(defenderArmy.commander || '') === fate.name) fateArmy = defenderArmy;
