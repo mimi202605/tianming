@@ -512,8 +512,8 @@ async function _osmConfirm(){
   try{
     showLoading('生成官制',50);
     var prompt='生成'+dynasty+'官制。返回JSON数组，格式：[{"name":"部门","positions":[{"name":"","holder":"","desc":"","rank":""}],"subs":[]}]\n生成5个主要部门。';
-    var c=await callAISmart(prompt,3000,{minLength:200,maxRetries:3,validator:function(content){try{var cleaned=content.replace(/```json|```/g,'').trim();var jm=cleaned.match(/\[[\s\S]*?\](?=\s*$)/);if(!jm){jm=cleaned.match(/\[[\s\S]*\]/);}if(!jm)return false;var arr=JSON.parse(jm[0]);return Array.isArray(arr)&&arr.length>=5;}catch(e){return false;}}});
-    var cleaned=c.replace(/```json|```/g,'').trim();var jm=cleaned.match(/\[[\s\S]*?\](?=\s*$)/);if(!jm){jm=cleaned.match(/\[[\s\S]*\]/);}
+    var c=await callAISmart(prompt,3000,{minLength:200,maxRetries:3,validator:function(content){try{var jm=_osmExtractOfficeArrText(content);if(!jm)return false;var arr=JSON.parse(jm[0]);return Array.isArray(arr)&&arr.length>=5;}catch(e){return false;}}});
+    var jm=_osmExtractOfficeArrText(c);
     if(jm){
       try{
         GM.officeTree=JSON.parse(jm[0]);
@@ -2073,18 +2073,7 @@ function aiGenOfficeEd() {
             appointments.forEach(function(a) {
               if (!a.holder || a.vacant) return;
               // 在officeTree中找到对应职位并填入holder
-              (function _fill(nodes) {
-                nodes.forEach(function(n) {
-                  (n.positions||[]).forEach(function(p) {
-                    if (p.name === a.pos && !p.holder && (n.name === a.dept || !a.dept)) {
-                      p.holder = a.holder;
-                      p.actualCount = Math.max(p.actualCount||0, 1);
-                      _assigned++;
-                    }
-                  });
-                  if (n.subs) _fill(n.subs);
-                });
-              })(P.officeTree);
+              _assigned += _osmFillOfficeHolder(P.officeTree, a);
               // 创建角色（如果不存在）
               if (!P.characters) P.characters = [];
               if (!P.characters.find(function(ch) { return ch.name === a.holder; })) {
@@ -2108,6 +2097,25 @@ function aiGenOfficeEd() {
       } catch(e) { hideLoading(); toast('\u5931\u8D25: ' + (e.message||e)); console.error(e); }
     }
   );
+}
+
+// [N3 nestflat] hoisted from aiGenOfficeEd's inline _fill IIFE (was nesting depth 10).
+// Recursively fills a matching vacant position's holder in the office tree; returns the
+// count of positions filled so the caller can accumulate into _assigned. Byte-equal body;
+// closure vars threaded: `a` in via param, `_assigned` out via return.
+function _osmFillOfficeHolder(nodes, a) {
+  var _assigned = 0;
+  nodes.forEach(function(n) {
+    (n.positions||[]).forEach(function(p) {
+      if (p.name === a.pos && !p.holder && (n.name === a.dept || !a.dept)) {
+        p.holder = a.holder;
+        p.actualCount = Math.max(p.actualCount||0, 1);
+        _assigned++;
+      }
+    });
+    if (n.subs) _assigned += _osmFillOfficeHolder(n.subs, a);
+  });
+  return _assigned;
 }
 
 /** 编辑器：为某部门AI补充生成角色（阶段C） */
@@ -2248,3 +2256,12 @@ if (document.readyState === 'loading') {
  * 初始化科举制度（游戏开始时调用）
  * 由 AI 根据朝代判断是否启用科举
  */
+
+// [N3 nestflat] single-point regex collection for _osmConfirm's office-start AI reply.
+// Strips code fences then extracts the JSON array (tail-anchored match, loose fallback).
+// Byte-equal to the former inline logic; hoisted to file tail so the nesting scanner
+// stops mis-counting the inline fence-regex backticks as a brace-depth phantom.
+function _osmExtractOfficeArrText(content){
+  var cleaned=content.replace(/```json|```/g,'').trim();var jm=cleaned.match(/\[[\s\S]*?\](?=\s*$)/);if(!jm){jm=cleaned.match(/\[[\s\S]*\]/);}
+  return jm;
+}
