@@ -1,7 +1,7 @@
 {
   "appId": "com.tianming.history",
   "appName": "天命",
-  "webDir": "../web",
+  "webDir": "www",
   "server": {
     "androidScheme": "https"
   },

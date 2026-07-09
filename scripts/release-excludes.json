@@ -1,0 +1,7 @@
+{
+  "_readme": "天命发版管线·单一真源排除清单。四条打包管线共用：①热更 web/tools/build-hot-update-package.js ②asar package.json build.files ③Capgo mobile/scripts/build-capgo-bundle.ps1 ④APK staging mobile/scripts/stage-web-for-cap.ps1。改排除规则只改这一处，避免四处手抄漂移。字段：dirs=按目录名排除(任意层级或顶层，视消费端而定)；prefixes=按目录/文件名前缀排除；globs=按路径通配排除；previewMockup=对 preview/ 套 isPreviewMockup 语义(只留 preview/img/ 运行素材，剔设计稿/验证截图/_前缀脚本)。",
+  "dirs": ["_archive", "backups", "_screenshots", "test-results", "_codex_tmp", "dev-tools", "docs", "scripts", "tools", "godot", ".git", "node_modules", ".playwright-cli", ".cache", ".tmp", "tmp", "dist", "build", "release", "coverage", ".hot-update-staging", "_pw-scratch", "generated_images", ".vscode"],
+  "prefixes": [".bak-", "_codex", ".git-defunct-"],
+  "globs": ["**/*.bak*", "**/*.log", "**/*.yml", "**/*.save.json", "web/preview/shots/**", "web/preview/*verify*.png"],
+  "previewMockup": true
+}

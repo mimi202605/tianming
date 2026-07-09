@@ -4,10 +4,10 @@
   "private": true,
   "description": "天命 Android/平板 Capacitor 壳 — webDir 指向 ../web，与桌面端共享同一套前端源（移植宪法①一套代码库）",
   "scripts": {
-    "sync": "cap sync android",
-    "open": "cap open android",
-    "run": "cap run android",
-    "add:android": "cap add android",
+    "sync": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap sync android",
+    "open": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap open android",
+    "run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap run android",
+    "add:android": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap add android",
     "doctor": "cap doctor"
   },
   "dependencies": {

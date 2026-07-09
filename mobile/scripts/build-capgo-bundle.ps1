@@ -32,8 +32,12 @@ $stage = Join-Path $OutDir "_stage-$Version"
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Path $stage -Force | Out-Null
 Write-Host "复制 web → staging（剔垃圾）..." -ForegroundColor Cyan
-$cruft = @('.git','godot','.playwright-cli','_screenshots','docs','backups','test-results','scripts','node_modules','.vscode','.hot-update-staging','dev-tools','_archive')
-robocopy $WebDir $stage /E /NFL /NDL /NJH /NJS /NP /XD ($cruft | ForEach-Object { Join-Path $WebDir $_ }) | Out-Null
+# 排除清单取自单一真源 scripts/release-excludes.json（四条管线共用·改一处全对齐；旧硬编码 $cruft 已并入 JSON·并补齐 _codex_tmp/.cache/tmp/dist 等缺项）
+$exPath = Join-Path $PSScriptRoot '..\..\scripts\release-excludes.json'
+if (-not (Test-Path $exPath)) { throw "排除清单缺失: $exPath" }
+$cruft   = (Get-Content $exPath -Raw | ConvertFrom-Json).dirs
+$cruftXf = @('*.bak*','*.log','*.yml','*.save.json')   # 扩展名过滤·与 JSON globs 对齐·robocopy /XF 就地剔
+robocopy $WebDir $stage /E /NFL /NDL /NJH /NJS /NP /XD ($cruft | ForEach-Object { Join-Path $WebDir $_ }) /XF $cruftXf | Out-Null
 Get-ChildItem $stage -Recurse -File | Where-Object { $_.Name -match '\.bak' } | Remove-Item -Force -ErrorAction SilentlyContinue
 # 剔 preview 子目录的设计稿/验证截图（保留 preview/img、official-scenarios-bundle.js 等运行素材；与 hot 端 isPreviewMockup 对齐，否则 capgo 白夹带 ~157MB 截图）
 $pvShots = Join-Path $stage 'preview\shots'

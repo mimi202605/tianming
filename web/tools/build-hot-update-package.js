@@ -51,22 +51,16 @@ const KNOWN_WEB_TOP_DIRS = [
   'preview'
 ];
 
-const EXCLUDED_DIRS = new Set([
-  '.git', 'node_modules', '.cache', '.tmp', 'tmp', 'dist', 'build', 'release', 'coverage',
-  // 本地开发产物·绝不入热更包
-  '_archive', 'backups', '_screenshots', 'test-results', '_codex_tmp', '.playwright-cli',
-  // 内部文档·开发工具·smoke 测试脚本·运行时不依赖·不入热更包(瘦身~89MB·审计P0-2)
-  'dev-tools', 'docs', 'scripts',
-  // godot 端 WIP 移植·web 运行时不依赖·package.json 也用 !web/godot/**/* 排掉
-  'godot'
-]);
+// 2026-07-09·发版管线加固·排除清单单一真源 scripts/release-excludes.json（四条打包管线共用·改一处全对齐）。
+// 保留原 EXCLUDED_DIRS(Set) / _isExcludedDir(name) 接口·仅把硬编码清单换成 JSON 生成·杜绝四处手抄漂移。
+const RELEASE_EXCLUDES = require('../../scripts/release-excludes.json');
+const EXCLUDED_DIRS = new Set(RELEASE_EXCLUDES.dirs || []);
+// 额外按前缀排除·.bak-rNN 历史快照 / _codex* codex 临时产物 / .git-defunct-* 废弃 git 目录
+const EXCLUDED_DIR_PREFIXES = RELEASE_EXCLUDES.prefixes || [];
 
-// 额外按前缀排除·.bak-rNN 历史快照目录
 function _isExcludedDir(name) {
   if (EXCLUDED_DIRS.has(name)) return true;
-  if (name.startsWith('.bak-')) return true;
-  if (name.startsWith('_codex')) return true; // _codex_tmp / _codex_preview_*.png 等 codex 临时产物·不入热更包
-  return false;
+  return EXCLUDED_DIR_PREFIXES.some(prefix => name.startsWith(prefix));
 }
 
 function arg(name, fallback) {
@@ -251,15 +245,16 @@ function walkAppPreloadImpl() {
 // 让 hot update 也能 ship scenarios 改动·不必等下个 installer
 function walkBundledScenarios() {
   const SCENARIOS_SRC = path.join(APP_ROOT, 'scenarios');
-  // 本地自用/测试剧本不入热更包(防夹带发给玩家)·文件名含这些子串的一律跳过·只 ship 官方剧本
-  const SKIP_SUBSTRINGS = ['111', '自用', '测试', '挽天倾', '崇祯'];
+  // 2026-07-09·正向白名单·只 ship 文件名以「（官方）.json」结尾的官方剧本（与 asar package.json build.files 两行同口径）。
+  // 弃用旧「黑名单子串 SKIP_SUBSTRINGS」：结构上会双向出错——
+  //   ① 未被列入黑名单的自用/草案会被夹带发给玩家（实测 scenarios/绍宋·建炎元年八月_182区草案.json 不含任何黑名单词→旧逻辑照发）；
+  //   ② 名字恰好含黑名单词的官方剧本会被误跳漏发。正向白名单一刀两断。
+  const OFFICIAL_SCENARIO_RE = /（官方）\.json$/;
   const out = [];
   if (!fs.existsSync(SCENARIOS_SRC)) return out;
   fs.readdirSync(SCENARIOS_SRC, { withFileTypes: true }).forEach(entry => {
     if (!entry.isFile()) return;
-    if (SKIP_SUBSTRINGS.some(s => entry.name.includes(s))) return;
-    const ext = path.extname(entry.name).toLowerCase();
-    if (ext !== '.json') return;  // 只 ship 官方 JSON 剧本
+    if (!OFFICIAL_SCENARIO_RE.test(entry.name)) return;  // 只 ship 官方 JSON 剧本（正向白名单）
     out.push({
       abs: path.join(SCENARIOS_SRC, entry.name),
       zipPath: 'bundled-scenarios/' + entry.name
