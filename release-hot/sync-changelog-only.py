@@ -4,15 +4,16 @@
 import os, sys, time, hashlib
 import paramiko
 
-HOST = "64.83.47.115"
-PORT = 2222
-USER = "root"
+HOST = os.environ.get("TIANMING_SSH_HOST")
+PORT = int(os.environ.get("TIANMING_SSH_PORT", "2222"))
+USER = os.environ.get("TIANMING_SSH_USER", "root")
 LOCAL = "C:/Users/37814/Desktop/tianming/web/changelog.json"
-REMOTE = "/opt/1panel/apps/openresty/openresty/www/sites/api.themisfitserspeople.top/index/tianming/changelog.json"
+SERVE = os.environ.get("TIANMING_SERVE_DIR", "/opt/1panel/apps/openresty/openresty/www/sites/api.themisfitserspeople.top/index/tianming")
+REMOTE = SERVE + "/changelog.json"
 
 pw = os.environ.get("TIANMING_SSH_PASS")
-if not pw:
-    print("ERROR: TIANMING_SSH_PASS not set", file=sys.stderr); sys.exit(2)
+if not (HOST and pw):
+    print("ERROR: TIANMING_SSH_HOST / TIANMING_SSH_PASS not set", file=sys.stderr); sys.exit(2)
 
 size = os.path.getsize(LOCAL)
 sha = hashlib.sha256(open(LOCAL, "rb").read()).hexdigest()

@@ -2,12 +2,12 @@
 # 探服务器·为 Capgo 热更部署做准备（只读 + 一个临时 POST 测试文件，用完即删）
 import os, sys, time, paramiko
 
-HOST = "64.83.47.115"; PORT = 2222; USER = "root"
+HOST = os.environ.get("TIANMING_SSH_HOST"); PORT = int(os.environ.get("TIANMING_SSH_PORT", "2222")); USER = os.environ.get("TIANMING_SSH_USER", "root")
 PW = os.environ.get("TIANMING_SSH_PASS")
-if not PW:
-    print("ERROR: TIANMING_SSH_PASS 未设"); sys.exit(1)
+if not (HOST and PW):
+    print("ERROR: TIANMING_SSH_HOST / TIANMING_SSH_PASS 未设"); sys.exit(1)
 
-TM = "/opt/1panel/apps/openresty/openresty/www/sites/api.themisfitserspeople.top/index/tianming"
+TM = os.environ.get("TIANMING_SERVE_DIR", "/opt/1panel/apps/openresty/openresty/www/sites/api.themisfitserspeople.top/index/tianming")
 
 c = paramiko.SSHClient()
 c.set_missing_host_key_policy(paramiko.AutoAddPolicy())

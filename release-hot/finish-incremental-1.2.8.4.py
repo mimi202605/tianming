@@ -5,7 +5,7 @@ import importlib.util, os, sys
 
 SKILL = r"C:\Users\37814\.claude\skills\tianming-hotupdate-push\scripts\upload-hot.py"
 ZIP = r"C:\Users\37814\Desktop\tianming\release-hot\tianming-hot-1.2.8.4.zip"
-HOST, PORT, USER = "64.83.47.115", 2222, "root"
+HOST = os.environ.get("TIANMING_SSH_HOST"); PORT = int(os.environ.get("TIANMING_SSH_PORT", "2222")); USER = os.environ.get("TIANMING_SSH_USER", "root")
 
 spec = importlib.util.spec_from_file_location("upload_hot", SKILL)
 mod = importlib.util.module_from_spec(spec)
@@ -13,8 +13,8 @@ spec.loader.exec_module(mod)
 
 import paramiko
 pw = os.environ.get("TIANMING_SSH_PASS")
-if not pw:
-    print("ERROR: TIANMING_SSH_PASS not set", file=sys.stderr); sys.exit(1)
+if not (HOST and pw):
+    print("ERROR: TIANMING_SSH_HOST / TIANMING_SSH_PASS not set", file=sys.stderr); sys.exit(1)
 
 c = paramiko.SSHClient()
 c.set_missing_host_key_policy(paramiko.AutoAddPolicy())

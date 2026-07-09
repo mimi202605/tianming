@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import os, sys, paramiko
-HOT = "/opt/1panel/apps/openresty/openresty/www/sites/api.themisfitserspeople.top/index/tianming/hot"
+HOST = os.environ.get("TIANMING_SSH_HOST"); PORT = int(os.environ.get("TIANMING_SSH_PORT", "2222")); USER = os.environ.get("TIANMING_SSH_USER", "root")
+HOT = os.environ.get("TIANMING_HOT_DIR", "/opt/1panel/apps/openresty/openresty/www/sites/api.themisfitserspeople.top/index/tianming/hot")
 PW = os.environ.get("TIANMING_SSH_PASS")
-if not PW:
-    sys.exit("ERROR: 环境变量 TIANMING_SSH_PASS 未设（PowerShell: $env:TIANMING_SSH_PASS='...'）")
+if not (HOST and PW):
+    sys.exit("ERROR: 环境变量 TIANMING_SSH_HOST / TIANMING_SSH_PASS 未设（PowerShell: $env:TIANMING_SSH_HOST='...'; $env:TIANMING_SSH_PASS='...'）")
 c = paramiko.SSHClient()
 c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-c.connect("64.83.47.115", port=2222, username="root", password=PW,
+c.connect(HOST, port=PORT, username=USER, password=PW,
           timeout=60, banner_timeout=60, auth_timeout=60, look_for_keys=False, allow_agent=False)
 
 server_script = r'''
