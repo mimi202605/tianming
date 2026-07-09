@@ -50,14 +50,21 @@
       _showOutcomeModal('⏸ 缓议·暂不开科', data, { color: 'var(--txt-d)', icon: '⏸' });
     },
     reform: function(data) {
-      // B3 完后·走 keyi topicType='activation'·此处 stub·直接应用改革后果
-      P.keju.enabled = true;
-      P.keju.reformed = true;
-      P.keju.examIntervalNote = data.intervalNote || '渐进开科';
-      if (data.variableChanges) _applyVariableChanges(data.variableChanges);
-      if (typeof addEB === 'function') addEB('科举·制度', '改·走渐进改革路径');
-      _showOutcomeModal('⚙ 改·走渐进改革', data, { color: 'var(--celadon-400)', icon: '⚙' });
-      // TODO·B3 完后·此处改为 openKeyiSession({ topicType: 'activation', topicData: data })
+      // v7.1·C·reform 不再"直应用"·付议政 (openKeyiSession topicType='activation')·
+      // 表决通过后由 _kjActivationKeyiCallback 落地 (打通计划路径 B/C·
+      // "皇帝是最大扰动源·但须过朝议阻力")·数值不在此落地·只发起议政
+      data = data || {};
+      data.mode = 'reform';   // activation topic 标题据此显示"改革"
+      if (typeof openKeyiSession === 'function') {
+        // 关旧激活面板·避免残留在议政 modal 之下 (对齐其他 outcome 的清场)
+        try { var _panel = document.getElementById('keju-panel-modal'); if (_panel) _panel.remove(); } catch(_){}
+        if (typeof toast === 'function') toast('⚙ 廷臣评议·宜渐进改革·付朝议表决');
+        openKeyiSession({ topicType: 'activation', topicData: data });
+        return;
+      }
+      // fallback·keyi 未加载 (老构建 / 单测环境)·退回直应用·保向后兼容·不 break
+      console.warn('[科举·A1·C] openKeyiSession 未加载·reform 退回直应用 (fallback)');
+      _kjApplyReformOutcome(data, 'fallback');
     },
     reject: function(data) {
       // 不启用·勋戚 satisfaction+5·prestige 概念由 sc1q 系统接管·此处不动 prestige
@@ -68,6 +75,56 @@
       _showOutcomeModal('✗ 拒·时机未至', data, { color: 'var(--vermillion-400)', icon: '✗' });
     }
   };
+
+  /**
+   * v7.1·C·落地"渐进改革"后果·council 零代价·edict/defy 强推有代价
+   * 供 _kjActivationKeyiCallback (议政通过) + reform fallback (keyi 未加载) 共用·DRY
+   * 数值走现有 mutator (_adjustHuangwei / _adjustMinxin)·不发明新代价·跨朝代中立
+   */
+  function _kjApplyReformOutcome(data, method) {
+    data = data || {};
+    if (!(typeof P !== 'undefined' && P && P.keju)) return;
+    P.keju.enabled = true;
+    P.keju.reformed = true;
+    P.keju.examIntervalNote = data.intervalNote || '渐进开科';
+    if (data.variableChanges) _applyVariableChanges(data.variableChanges);
+    // 强推代价·council 零代价·edict 下诏强推·defy 逆众强推
+    if (method === 'edict') {
+      if (typeof _adjustHuangwei === 'function') _adjustHuangwei(-5, '下诏强推科举改革·部分廷臣不悦');
+    } else if (method === 'defy') {
+      if (typeof _adjustHuangwei === 'function') _adjustHuangwei(-10, '逆众强推科举改革·清流抗议');
+      if (typeof _adjustMinxin === 'function') _adjustMinxin(-3, '逆众强推·士林侧目');
+    }
+    var methodTag = (method && method !== 'council' && method !== 'fallback') ? '·' + method : '';
+    if (typeof addEB === 'function') addEB('科举·制度', '改·渐进改革落地' + methodTag);
+    _showOutcomeModal('⚙ 改·渐进改革已定', data, { color: 'var(--celadon-400)', icon: '⚙' });
+  }
+
+  /**
+   * v7.1·C·activation 议题 keyi callback (router·KEYI_TOPIC_TYPES.activation.callback)
+   * 由 _keyiConfirmStart 表决通过后调·签名对齐真实契约·fn(method, opts)·
+   *   method ∈ {council, edict, defy}·opts = { topicType, topicData, passed, support, ... }
+   * council 需 passed·edict/defy 为皇帝强推 (无视 passed)·两者均落地改革后果·
+   * council 且未过 → 缓行不落地 (体现朝议阻力·皇帝须过朝议)
+   */
+  function _kjActivationKeyiCallback(method, opts) {
+    opts = opts || {};
+    var data = opts.topicData || {};
+    if (!(typeof P !== 'undefined' && P && P.keju)) {
+      try { console.warn('[科举·A1·C] activation callback 缺 P.keju·skip'); } catch(_){}
+      return { applied: false, method: method };
+    }
+    var forced = (method === 'edict' || method === 'defy');
+    var councilPassed = (method === 'council' && opts.passed !== false);
+    if (!forced && !councilPassed) {
+      // 朝议未通过·未强推·改革缓行·不落地
+      if (typeof addEB === 'function') addEB('科举·制度', '改·朝议未决·渐进改革暂缓');
+      _showOutcomeModal('⏸ 议未通过·渐进改革暂缓', data, { color: 'var(--txt-d)', icon: '⏸' });
+      return { applied: false, method: method };
+    }
+    _kjApplyReformOutcome(data, method || 'council');
+    return { applied: true, method: method };
+  }
 
   /** 构造 sc0 prompt·5 档评估 */
   function _buildPrompt(mode) {
@@ -215,8 +272,15 @@
   if (typeof window !== 'undefined') {
     window._kjActivateRun = _kjActivateRun;
     window._kjActivateOutcomeHandlers = OUTCOME_HANDLERS;  // 测试用
+    window._kjActivationKeyiCallback = _kjActivationKeyiCallback;  // v7.1·C·router 按名查 window[callback]
+    window._kjApplyReformOutcome = _kjApplyReformOutcome;          // 测试用
   }
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { _kjActivateRun: _kjActivateRun, OUTCOME_HANDLERS: OUTCOME_HANDLERS };
+    module.exports = {
+      _kjActivateRun: _kjActivateRun,
+      OUTCOME_HANDLERS: OUTCOME_HANDLERS,
+      _kjActivationKeyiCallback: _kjActivationKeyiCallback,
+      _kjApplyReformOutcome: _kjApplyReformOutcome
+    };
   }
 })();

@@ -282,6 +282,102 @@
     return { applied: applied, deltas: deltas };
   }
 
+  // ── ④·表长字段压缩消费者（消费 MemTables 的 _compressQueue·补齐"有生产者无消费者"缺口）──
+  // 背景：tm-memory-tables.js insertRow 对超 maxLen 的字段只 push {row,col,len} 进
+  //   GM._memTables[sheet]._meta._compressQueue + 发"待 AI 压缩"提示·全库无消费者读它→长档字段无限膨胀。
+  // 本消费者：确定性·零 LLM·把超长字段结构化截断到限内·全文留 provenance 存证（source-link·可 drill-down
+  //   回原证据·守项目原则"摘要不得替代证据"）·压后清空队列（收敛核心）。LLM 语义摘要为后续增强（见集成清单）。
+  // 跨朝代中立：只用表 key/列名/maxLen（皆剧本 schema 通用词）·零朝代专名。
+  // 写口纪律：经 GM._memTables[key] 取局部引用 sheet 后变异（不新开 GM 子树别名·_memTables 写主仍是
+  //   tm-memory-tables.js）。长期正解=在 MemTables 增 compressCell mutator 走正账·见集成清单。
+  var _META_KEYS = { _sentinelLog: 1, _editorLocks: 1, _pendingDeletes: 1, _toastBudget: 1 };
+
+  // 确定性结构化截断 + source-link 溯源标记。保证返回长度 <= maxLen（预算=maxLen−标记长；极端小 maxLen 兜底硬截）。
+  function _compressFieldValue(original, maxLen, provId) {
+    var s = String(original == null ? '' : original);
+    if (!(maxLen > 0)) return '';
+    var marker = '…〔压缩·溯源#' + provId + '〕';
+    if (marker.length >= maxLen) return ('…#' + provId).slice(0, maxLen); // maxLen 太小·标记放不下→退化最小 id 标记
+    var head = s.slice(0, maxLen - marker.length);
+    var out = head + marker;
+    return (out.length > maxLen) ? out.slice(0, maxLen) : out;
+  }
+
+  // 消费单表队列·返回本表统计（sheet 为 GM._memTables[key] 局部引用·变异不建 GM 子树别名）
+  function _consumeSheetQueue(GM, key, def) {
+    var sheet = GM._memTables[key];
+    if (!sheet || !sheet._meta) return null;
+    var q = sheet._meta._compressQueue;
+    if (!Array.isArray(q) || !q.length) return null;
+    var turn = (GM && GM.turn) || 0;
+    if (!Array.isArray(sheet._meta._compressProvenance)) sheet._meta._compressProvenance = [];
+    var prov = sheet._meta._compressProvenance;
+    var stat = { sheet: key, queued: q.length, compressed: 0, skipped: 0, deltas: [] };
+
+    q.forEach(function (item) {
+      try {
+        if (!item || typeof item.row !== 'number' || typeof item.col !== 'number') { stat.skipped++; return; }
+        var colName = def.columns[item.col];
+        var maxLen = (def.maxLen && colName) ? def.maxLen[colName] : 0;
+        if (!maxLen) { stat.skipped++; return; }                                          // 该列无长度上限·丢弃
+        var row = sheet.rows[item.row];
+        if (!row) { stat.skipped++; return; }                                             // 行已越界/被删·丢弃
+        var val = row[item.col];
+        if (val == null || String(val).length <= maxLen) { stat.skipped++; return; }      // 已在限内(幂等)·丢弃
+        var original = String(val);
+        var provId = key + '#r' + item.row + 'c' + item.col + 't' + turn;
+        var compressed = _compressFieldValue(original, maxLen, provId);
+        // provenance 存证：全文留档·可 drill-down 回原证据（摘要不得替代证据）
+        var rec = {
+          id: provId, sheet: key, row: item.row, col: item.col, column: colName,
+          turn: turn, origLen: original.length, compressedLen: compressed.length,
+          maxLen: maxLen, original: original, method: 'deterministic-truncate',
+          llmSummaryPending: true, ts: _now()
+        };
+        // 有 MemorySourceBound 时挂 source-bound 元数据（与 L2/L3 同源·source-linked）·缺失静默降级
+        var srcMeta = _provenance(GM, 'memTableCompress.' + key, turn, 'T' + turn, compressed,
+          [{ id: provId, turn: turn, content: original }], 8);
+        if (srcMeta && (srcMeta.id || srcMeta.contentHash)) rec.sourceMeta = srcMeta;
+        prov.push(rec);
+        row[item.col] = compressed;                                                       // 经局部引用写回·压到限内
+        stat.compressed++;
+        stat.deltas.push({ col: item.col, column: colName, from: original.length, to: compressed.length });
+      } catch (e) { _dbg('[MemorySteward] compress item fail:', e && e.message); stat.skipped++; }
+    });
+    if (prov.length > 200) sheet._meta._compressProvenance = prov.slice(-200); // 存证 LRU·防其自身膨胀
+    sheet._meta._compressQueue = [];                                          // 清空队列·收敛核心
+    return stat;
+  }
+
+  // 主入口：扫全表·消费各表 _compressQueue。确定性·零 LLM·可独立跑（不需 API key·不调模型）。
+  function consumeCompressQueue(GM, opts) {
+    opts = opts || {};
+    GM = GM || global.GM;
+    if (!GM || !GM._memTables) return { skipped: 'noTables', compressed: 0 };
+    var MT = (global && global.MemTables) || null;
+    if (!MT || !MT.SHEET_BY_KEY) return { skipped: 'noMemTables', compressed: 0 }; // 需 schema 取 maxLen/列名
+    var turn = (GM && GM.turn) || 0;
+    var out = { turn: turn, scannedSheets: 0, compressed: 0, skipped: 0, sheets: [], deltas: [] };
+    Object.keys(GM._memTables).forEach(function (key) {
+      if (_META_KEYS[key]) return;                                   // 跳过 _sentinelLog/_editorLocks 等元键
+      var def = MT.SHEET_BY_KEY[key];
+      if (!def || !def.maxLen) return;                               // 只处理声明了 maxLen 的表
+      var stat = _consumeSheetQueue(GM, key, def);
+      if (!stat) return;
+      out.scannedSheets++;
+      out.compressed += stat.compressed;
+      out.skipped += stat.skipped;
+      out.sheets.push({ sheet: key, queued: stat.queued, compressed: stat.compressed, skipped: stat.skipped });
+      stat.deltas.forEach(function (d) { out.deltas.push({ sheet: key, col: d.col, column: d.column, from: d.from, to: d.to }); });
+    });
+    if (out.compressed) {
+      _logRun(GM, { turn: turn, tableCompress: true, compressed: out.compressed, skipped: out.skipped, sheets: out.sheets, ts: _now() });
+      _dbg('[MemorySteward] tableCompress compressed=' + out.compressed + ' skipped=' + out.skipped +
+           ' sheets=' + out.sheets.map(function (s) { return s.sheet; }).join(','));
+    }
+    return out;
+  }
+
   // ── S4·接管 or 回落 决策：每回合只算一次并缓存·保证 followup(compress×3) 与 post-turn-jobs(L2/L3) 两处读同一答案(否则 steward 中途改 streak 会致两处不一致) ──
   function shouldHandle(GM) {
     GM = GM || global.GM;
@@ -303,10 +399,14 @@
     GM = GM || global.GM;
     if (!GM) return { skipped: 'noGM' };
     var P = global.P || {};
-    if (!P.ai || !P.ai.key) return { skipped: 'noKey' };
+
+    // ④ 表长字段压缩·确定性零 LLM·先跑（不依赖 key/tasks·独立于下方跨层 LLM 固化）。补齐 _compressQueue 消费者缺口。
+    var tableCompress = consumeCompressQueue(GM, opts);
+
+    if (!P.ai || !P.ai.key) return { skipped: 'noKey', tableCompress: tableCompress };
 
     var workList = scan(GM, opts);
-    if (!workList.tasks.length) return { skipped: 'noTasks', turn: workList.turn };
+    if (!workList.tasks.length) return { skipped: 'noTasks', turn: workList.turn, tableCompress: tableCompress };
 
     var req = buildConsolidationRequest(workList, GM);
     _dbg('[MemorySteward] run T' + workList.turn + ' tasks=' + workList.tasks.map(function (t) { return t.layer; }).join(','));
@@ -347,7 +447,7 @@
     _logRun(GM, entry);
     _diag('memory_steward', { status: 'ok', turn: workList.turn, requested: entry.requested, applied: res.applied, deltas: res.deltas, calls: 1, snapshot: _snap(GM) });
     _dbg('[MemorySteward] applied=' + res.applied.join(',') + ' deltas=' + JSON.stringify(res.deltas));
-    return { ok: true, turn: workList.turn, requested: entry.requested, applied: res.applied, deltas: res.deltas };
+    return { ok: true, turn: workList.turn, requested: entry.requested, applied: res.applied, deltas: res.deltas, tableCompress: tableCompress };
   }
 
   function summarize(GM) {
@@ -367,6 +467,7 @@
     run: run,
     shouldHandle: shouldHandle,
     summarize: summarize,
+    consumeCompressQueue: consumeCompressQueue,
     lastRun: lastRun,
     log: log,
     _provenance: _provenance

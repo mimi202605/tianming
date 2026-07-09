@@ -359,6 +359,19 @@
       }
       row[ci] = newVal;
     });
+    // 长字段压缩标记（等异步处理）·与 insertRow 同款入队逻辑
+    //   闭合生产者缺口：此前仅 insertRow 入队·updateRow 致字段变长（如 charProfile.生平要事
+    //   按 updateNode 追加）只被一致性哨兵发「待 AI 压缩」提示·无人消费 → 长档无限膨胀。
+    //   消费者见 tm-memory-steward.js consumeCompressQueue（确定性截断 + provenance 存证·幂等）。
+    if (def.maxLen) {
+      Object.keys(def.maxLen).forEach(function(colName) {
+        var mci = def.columns.indexOf(colName);
+        if (mci >= 0 && row[mci] && row[mci].length > def.maxLen[colName]) {
+          if (!t._meta._compressQueue) t._meta._compressQueue = [];
+          t._meta._compressQueue.push({ row: rowIdx, col: mci, len: row[mci].length });
+        }
+      });
+    }
     // 历史长度上限·LRU 截断（每表 500 条）
     if (t._meta.cellHistory.length > 500) {
       t._meta.cellHistory = t._meta.cellHistory.slice(-400);
