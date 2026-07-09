@@ -736,12 +736,12 @@
         prov.minxinDetails.index = _v;
         prov.minxinDetails.trueIndex = _v;
       });
-    } catch (_uiMxSyncE) {}
+    } catch (_uiMxSyncE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_uiMxSyncE, 'bridge] uiMinxinSync') : console.error('[bridge] uiMinxinSync', _uiMxSyncE); }
 
     // P-DZ·回合末数值定型后，统一把 minxin/huangwei/huangquan 的 phase 段位 + 皇威 tyrant/失威状态
     //   重算对齐当前数值（minxin.trueIndex 此处刚由聚合写定、huangwei.index 由 _tickHuangwei 衰减写定）——
     //   修「数值变了但段位/暴君标记滞留」：面板段位错位 + authority-complete 等按 phase 触发的后果被带偏。
-    try { if (global.AuthorityEngines && typeof global.AuthorityEngines.syncAuthorityPhases === 'function') global.AuthorityEngines.syncAuthorityPhases(); } catch (_syncPhaseE) {}
+    try { if (global.AuthorityEngines && typeof global.AuthorityEngines.syncAuthorityPhases === 'function') global.AuthorityEngines.syncAuthorityPhases(); } catch (_syncPhaseE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_syncPhaseE, 'bridge] syncAuthorityPhases') : console.error('[bridge] syncAuthorityPhases', _syncPhaseE); }
   }
 
   // ═══════════════════════════════════════════════════════════════════

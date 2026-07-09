@@ -262,6 +262,7 @@ function _endTurn_render(shizhengji, zhengwen, playerStatus, playerInner, edicts
     edicts: _thisTurnEdicts,  // 保留玩家诏令全文以便史记回顾+下回合 AI 上下文
     html: _fullHtml
   });
+  if (GM.shijiHistory.length > 200) GM.shijiHistory.splice(0, GM.shijiHistory.length - 200); // arch-ok·史记封顶防长局存档膨胀·生成式 cap（同文件 _factionHistory/_metricHistory）
   // 6.5: 每回合一句话摘要存入年度素材
   if (!GM._yearlyDigest) GM._yearlyDigest = [];
   GM._yearlyDigest.push({turn: GM.turn-1, summary: _summaryText || (shizhengji||'').split(/[\u3002\n]/)[0] || ''});

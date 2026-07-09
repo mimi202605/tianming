@@ -144,7 +144,9 @@ function ensureSaveDir() {
 
 // 文件名清理（防止特殊字符导致问题）
 function sanitize(name) {
-  return String(name).replace(/[<>:"/\\|?*]/g, '_').substring(0, 100);
+  const s = String(name).replace(/[<>:"/\\|?*]/g, '_').substring(0, 100);
+  // 2026-07-09·加固：纯点段（. .. …）会让 path.join(dir, name) 上跳目录·整体替占位
+  return /^\.+$/.test(s) ? '_' : s;
 }
 
 // 回合号段消毒：只允许数字·防 '../' 路径穿越（saveName 已 sanitize·turn 之前漏网，见审核报告 P1）
@@ -2347,8 +2349,19 @@ ipcMain.handle('read-turns-summary', async (event, { saveName, fromTurn, toTurn 
     const saveDir = path.join(TURN_DATA_DIR, sanitize(saveName));
     if (!fs.existsSync(saveDir)) return { success: true, turns: [] };
     const turns = [];
-    for (let t = fromTurn; t <= toTurn; t++) {
-      const contextFile = path.join(saveDir, String(t), 'context.json');
+    let _from = Math.floor(Number(fromTurn)), _to = Math.floor(Number(toTurn));
+    if (!Number.isFinite(_from) || !Number.isFinite(_to)) return { success: true, turns: [] };
+    // 2026-07-09·加固：钳安全整数域 + 回合上限 + 跨度封顶
+    //   防 (a) toTurn≫fromTurn 十亿级循环冻结主进程·(b) ≥2^53 时 t++ 自增停滞死循环·
+    //   (c) 负 fromTurn 经 turnSeg 别名读错回合。上限 1e7 远超任何真实对局。
+    if (!Number.isSafeInteger(_from) || !Number.isSafeInteger(_to)) return { success: true, turns: [] };
+    if (_from < 0) _from = 0;
+    if (_to < _from) return { success: true, turns: [] };
+    _from = Math.min(_from, 10000000);
+    _to   = Math.min(_to, _from + 20000, 10000000);
+    if (_to < _from) return { success: true, turns: [] };
+    for (let t = _from; t <= _to; t++) {
+      const contextFile = path.join(saveDir, turnSeg(t), 'context.json');
       if (fs.existsSync(contextFile)) {
         try {
           const ctx = JSON.parse(fs.readFileSync(contextFile, 'utf-8'));
@@ -2761,7 +2774,8 @@ ipcMain.handle('workshop-install-from-url', async (event, options = {}) => {
     zipPath = path.join(WORKSHOP_DIR, 'downloads', 'tianming-workshop-' + Date.now() + '.tm-pack');
     const fileInfo = await downloadRemoteFile(packageUrl, zipPath, 250 * 1024 * 1024);
     const expectedHash = String(options.sha256 || options.hash || '').toLowerCase();
-    if (expectedHash && expectedHash !== fileInfo.sha256.toLowerCase()) throw new Error('工坊包 sha256 不一致');
+    if (!/^[0-9a-f]{64}$/.test(expectedHash)) throw new Error('工坊包缺少 sha256 校验值，拒绝安装（请更新工坊目录使其携带 hash）。');
+    if (expectedHash !== fileInfo.sha256.toLowerCase()) throw new Error('工坊包 sha256 不一致');
     tempDir = extractZipToTemp(zipPath);
     return installWorkshopPackFromDir(tempDir, { overwrite: !!options.overwrite, source: packageUrl });
   } catch (e) {
