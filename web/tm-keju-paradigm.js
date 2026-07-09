@@ -187,6 +187,8 @@
       _basePresetSnapshot: basePreset ? {
         specialExamCalendar: basePreset.specialExamCalendar,
         schoolNetworkInit: basePreset.schoolNetworkInit,
+        // eunuchInterferenceInit 键全中立·{secretary, agency, partisan}·无朝代专名 (东厂→agency·跨朝代铁律)·
+        // 整对象 snapshot·preset 侧改名自动流经此处·引擎不按专名键消费·Phase I 消费须认中立键
         eunuchInterferenceInit: basePreset.eunuchInterferenceInit,
         discipleGraphSeed: basePreset.discipleGraphSeed
       } : null

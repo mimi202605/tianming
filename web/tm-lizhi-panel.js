@@ -711,13 +711,13 @@ function _lizhi_secretPolice() {
     '<h4 style="color:var(--gold);margin-bottom:0.6rem;">设特务机构</h4>'+
     '<p style="font-size:0.85rem;line-height:1.6;color:var(--txt);margin-bottom:0.8rem;">选择创设机构（每种自带覆盖/独立性/腐败三参数）：</p>'+
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">'+
-      '<button class="vd-action-btn" onclick="_lizhi_doSetupSP(\'yushitai\')">'+
+      '<button class="vd-action-btn" onclick="_lizhi_doSetupSP(\'earlyCensorate\')">'+  /* 引擎键中立·原 yushitai·"御史台" 仅作显示 label (跨朝代铁律·对应 tm-corruption-engine setupSecretPolice) */
         '<div>御史台</div><span class="cost">独立60 · 费 2 万</span></button>'+
-      '<button class="vd-action-btn" onclick="_lizhi_doSetupSP(\'duchayuan\')">'+
+      '<button class="vd-action-btn" onclick="_lizhi_doSetupSP(\'censorate\')">'+  /* 引擎键中立·原 duchayuan·"都察院" 仅作显示 label */
         '<div>都察院</div><span class="cost">独立50 · 费 3.5 万</span></button>'+
-      '<button class="vd-action-btn dangerous" onclick="_lizhi_doSetupSP(\'jinyiwei\')">'+
+      '<button class="vd-action-btn dangerous" onclick="_lizhi_doSetupSP(\'militarySecretPolice\')">'+  /* 引擎键中立·原 jinyiwei·"锦衣卫" 仅作显示 label */
         '<div>锦衣卫</div><span class="cost">独立20 · 费 5 万</span></button>'+
-      '<button class="vd-action-btn dangerous" onclick="_lizhi_doSetupSP(\'dongchang\')">'+
+      '<button class="vd-action-btn dangerous" onclick="_lizhi_doSetupSP(\'innerCourtAgent\')">'+  /* 引擎键中立·原 dongchang·"东厂" 仅作显示 label (跨朝代铁律·对应 tm-corruption-engine setupSecretPolice) */
         '<div>东厂</div><span class="cost">独立5 · 费 6 万</span></button>'+
     '</div></div>';
   if (typeof openGenericModal === 'function') openGenericModal('设特务机构', html, null);

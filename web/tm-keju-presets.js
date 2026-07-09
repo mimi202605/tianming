@@ -29,7 +29,9 @@
  *     features:               1 行特色描述
  *     specialExamCalendar:    D2·特科日历初始值
  *     schoolNetworkInit:      D3·书院网络初始值
- *     eunuchInterferenceInit: D4·宦官干预初始值 (明清专有·其他朝代 0)
+ *     eunuchInterferenceInit: D4·宦官干预初始值 (明清重·其他朝代 0)·键全中立·跨朝代通用·
+ *                             {secretary(批红权·司礼监类), agency(内廷侦缉机构·原 dongchang/东厂), partisan(宦党列表)}·
+ *                             朝代专名 (东厂/司礼监/十常侍) 仅入 historicalNote 注脚·绝不作 schema 键 (跨朝代铁律)
  *     discipleGraphSeed:      D1·历史 mentor-disciple 关系种子
  *   }
  */
@@ -92,7 +94,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,                          // 汉无司礼监
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: true,                     // 东汉十常侍涉察举 (§6.1)
         level: 'political',
@@ -134,7 +136,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: false,
         level: 'none'
@@ -179,7 +181,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: false,
         level: 'none'
@@ -226,7 +228,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: false,                                                    // 唐末高力士涉政但弱涉考 (§6.1)
         level: 'political',
@@ -281,7 +283,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,                                                                  // 北宋宦官地位低 (§6.1)
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: false,
         level: 'low',
@@ -337,7 +339,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: false,
         level: 'low'
@@ -382,7 +384,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,                                                          // 元宦官弱 (§6.1)
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: false,
         level: 'none'
@@ -435,7 +437,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 40,                                                                                                              // 司礼监批红 1420 立 (§6.2)
-        dongchang: 50,                                                                                                              // 东厂 1420 立·明中后期主考被监临
+        agency: 50,                                                                                                                 // 内廷侦缉机构·原东厂 1420 立·明中后期主考被监临 (专名仅注脚)
         partisan: ['阉党'],                                                                                                  // 阉党 (§6.3 魏忠贤朝)
         affectsExam: true,                                                                                                           // 明 D4 重度涉考 (§6.1)
         level: 'severe',
@@ -494,7 +496,7 @@
       },
       eunuchInterferenceInit: {
         secretary: 0,                                                                                                                // 清严禁宦官干政 (§6.1)
-        dongchang: 0,
+        agency: 0,
         partisan: [],
         affectsExam: false,                                                                                                          // 清不涉考
         level: 'political',                                                                                                          // 清末李莲英涉政但不涉考 (§6.5 清 D4 特例)

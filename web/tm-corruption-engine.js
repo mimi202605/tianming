@@ -689,12 +689,16 @@
 
     // 设特务机构
     setupSecretPolice: function(type) {
-      type = type || 'jinyiwei';
+      type = type || 'militarySecretPolice';
       var template = {
-        jinyiwei:  { name:'锦衣卫', coverage:['central','military'],    radius:90, independence:20, corruption:15, cost:50000 },
-        dongchang: { name:'东厂',   coverage:['central','imperial'],    radius:100, independence:5,  corruption:20, cost:60000 },
-        duchayuan: { name:'都察院', coverage:['central','provincial','judicial'], radius:70, independence:50, corruption:10, cost:35000 },
-        yushitai:  { name:'御史台', coverage:['central','judicial'],    radius:60, independence:60, corruption:10, cost:20000 }
+        // militarySecretPolice·军事侦缉机构 (原 jinyiwei/锦衣卫·明)·引擎键中立·"锦衣卫" 仅留作 name label·下游按 .name 匹配 (跨朝代铁律·参 tm-keju-presets 的 agency)
+        militarySecretPolice: { name:'锦衣卫', coverage:['central','military'],    radius:90, independence:20, corruption:15, cost:50000 },
+        // innerCourtAgent·内廷侦缉机构 (原 dongchang/东厂)·引擎键中立·"东厂" 仅留作 name label·下游按 .name 匹配 (跨朝代铁律·参 tm-keju-presets 的 agency)
+        innerCourtAgent: { name:'东厂',   coverage:['central','imperial'],    radius:100, independence:5,  corruption:20, cost:60000 },
+        // censorate·中央监察机构 (原 duchayuan/都察院·明清)·引擎键中立·"都察院" 仅留作 name label·下游按 .name 匹配 (跨朝代铁律)
+        censorate: { name:'都察院', coverage:['central','provincial','judicial'], radius:70, independence:50, corruption:10, cost:35000 },
+        // earlyCensorate·早期监察机构 (原 yushitai/御史台·唐宋)·引擎键中立·"御史台" 仅留作 name label·下游按 .name 匹配 (跨朝代铁律)
+        earlyCensorate:  { name:'御史台', coverage:['central','judicial'],    radius:60, independence:60, corruption:10, cost:20000 }
       }[type] || null;
       if (!template) return { success: false, reason: '未知机构类型' };
       if (GM.guoku && GM.guoku.balance < template.cost) return { success: false, reason: '帑廪不足' };
