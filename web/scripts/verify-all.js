@@ -145,6 +145,10 @@ const checks = [
   { name: 'huji-deep-fields-and-presets', file: 'smoke-huji-deep-fields-and-presets.js', estSec: 1, expectExit: 0 },
   { name: 'memory-read-contract', file: 'smoke-memory-read-contract.js', estSec: 1, expectExit: 0 },
   { name: 'memory-manifest', file: 'smoke-memory-manifest.js', estSec: 1, expectExit: 0 },
+  { name: 'memory-compress-consumer', file: 'smoke-memory-compress-consumer.js', estSec: 1, expectExit: 0 },  // 2026-07-09·记忆 M1 压缩消费者
+  { name: 'keju-indicators', file: 'smoke-keju-indicators.js', estSec: 1, expectExit: 0 },  // 2026-07-09·科举 J1 三指针
+  { name: 'official-bundle-parity', file: 'smoke-official-bundle-parity.js', estSec: 1, expectExit: 0 },  // 2026-07-09·剧本单一真源
+  { name: 'security-ipc-hardening', file: 'smoke-security-ipc-hardening.js', estSec: 1, expectExit: 0 },  // 2026-07-09·安全 IPC 加固
   { name: 'memory-envelope-facade', file: 'smoke-memory-envelope-facade.js', estSec: 1, expectExit: 0 },
   { name: 'memory-envelope-retrieval', file: 'smoke-memory-envelope-retrieval.js', estSec: 1, expectExit: 0 },
   { name: 'memory-envelope-schema-v0', file: 'smoke-memory-envelope-schema-v0.js', estSec: 1, expectExit: 0 },
