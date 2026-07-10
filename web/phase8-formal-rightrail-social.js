@@ -1745,15 +1745,15 @@
     return '<div class="tmrp-chip-list">' + chips + '</div>';
   }
 
-  // 列表态·瘦卡(名+满意/影响+诉求·整卡可点进详情)
+  // 列表态·紧凑行(2026-07-11·玩家反馈行14「没必要滑动·一页显示」)：名+满意/影响数字+一行诉求·
+  // 条形图/立场/盟敌 chips/逐卡提示全撤(详情 flyout 一样不少)·整行可点进详情。
   function rightSocialClassHead(c){
     var sat = rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50);
     var inf = rightSocNum(c, ['influence','power','weight'], 0);
+    var brief = rightSocialBriefText(c.demands || c.currentDemand);
     return '<section class="tmrp-card tmrp-social-head ' + (sat < 45 ? 'hot' : (sat > 62 ? 'ok' : '')) + '" data-right-action="outline-select" data-type="class" data-key="' + attr(rightSocialName(c)) + '">' +
       '<div class="tmrp-card-title"><span>' + esc(c.name || c.label || c.id || '未名阶层') + '</span><small>满意 ' + esc(Math.round(sat)) + rightTrendTag(rightSatTrend(c)) + rightClassPressureTag(c) + rightClassRadicalTag(c) + ' · 影响 ' + esc(Math.round(inf)) + ' ›</small></div>' +
-      rightArmyBar('满意', sat) + rightArmyBar('影响', inf) +
-      rightArmyRows([['诉求', rightSocialBriefText(c.demands || c.currentDemand)]]) +
-      '<div class="tmrp-detail-hint">点击展开议程、近账、民心与行动链</div>' +
+      (brief ? '<div class="tmrp-meta">' + esc(String(brief).slice(0, 44)) + '</div>' : '') +
       '</section>';
   }
 
@@ -1788,18 +1788,24 @@
     var maxInf = rows.reduce(function(m, c){ return Math.max(m, rightSocNum(c, ['influence','power','weight'], 0)); }, 0);
     var summary = '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(rows.length) + '</b><span>阶层</span></div><div class="tmrp-stat"><b>' + esc(avg) + '</b><span>平均满意</span></div><div class="tmrp-stat"><b>' + esc(maxInf) + '</b><span>最高影响</span></div></div>';
     if (!rows.length) return summary + '<section class="tmrp-card empty"><div class="tmrp-empty">暂无阶层数据。</div></section>';
-    return summary + '<div class="tmrp-scroll tall">' + rows.map(rightSocialClassHead).join('') + '</div>';
+    return summary + '<div class="tmrp-meta">点某行·左侧展开议程、近账、民心与行动链</div><div class="tmrp-scroll tall">' + rows.map(rightSocialClassHead).join('') + '</div>';
   }
 
+  // 盟敌一行简计(紧凑行用·全名单在详情 flyout)
+  function rightPartyRelBrief(p){
+    var ps = rightSocGM().partyState && rightSocGM().partyState[p && p.name];
+    var foes = [].concat((ps && ps.conflictWith) || p.enemies || p.rivals || []).filter(Boolean).length;
+    var allies = [].concat((ps && ps.alliedWith) || p.allies || []).filter(Boolean).length;
+    if (!foes && !allies) return '';
+    return ' · ' + (allies ? '盟' + allies : '') + (allies && foes ? '/' : '') + (foes ? '敌' + foes : '');
+  }
   function rightSocialPartyHead(p){
     var inf = rightSocNum(p, ['influence','power','weight'], 0);
     var status = p.status || p.state || '未录';
+    var brief = rightSocialBriefText(p.currentAgenda || p.agenda || p.shortGoal);
     return '<section class="tmrp-card tmrp-social-head ' + (/活跃|active/i.test(String(status)) ? 'hot' : '') + '" data-right-action="outline-select" data-type="party" data-key="' + attr(rightSocialName(p)) + '">' +
-      '<div class="tmrp-card-title"><span>' + esc(p.name || p.label || p.id || '未名党派') + rightPartyStandingTag(p) + '</span><small>' + esc(rightSocialLocalizeText(status)) + ' · 影响 ' + esc(Math.round(inf)) + ' ›</small></div>' +
-      rightArmyBar('影响', inf) +
-      rightArmyRows([['立场', rightSocialLocalizeText(p.ideology || p.stance)], ['当前议程', rightSocialBriefText(p.currentAgenda || p.agenda || p.shortGoal)]]) +
-      rightPartyRelChips(p) +
-      '<div class="tmrp-detail-hint">点击展开近账、生态关系与行动链</div>' +
+      '<div class="tmrp-card-title"><span>' + esc(p.name || p.label || p.id || '未名党派') + rightPartyStandingTag(p) + '</span><small>' + esc(rightSocialLocalizeText(status)) + ' · 影响 ' + esc(Math.round(inf)) + rightPartyRelBrief(p) + ' ›</small></div>' +
+      (brief ? '<div class="tmrp-meta">' + esc(String(brief).slice(0, 44)) + '</div>' : '') +
       '</section>';
   }
 
@@ -1827,7 +1833,7 @@
     var maxInf = rows.reduce(function(m, p){ return Math.max(m, rightSocNum(p, ['influence','power','weight'], 0)); }, 0);
     var summary = '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(rows.length) + '</b><span>党派</span></div><div class="tmrp-stat"><b>' + esc(active) + '</b><span>活跃</span></div><div class="tmrp-stat"><b>' + esc(maxInf) + '</b><span>最高影响</span></div></div>';
     if (!rows.length) return summary + '<section class="tmrp-card empty"><div class="tmrp-empty">暂无党派数据。</div></section>';
-    return summary + '<div class="tmrp-scroll tall">' + rows.map(rightSocialPartyHead).join('') + '</div>';
+    return summary + '<div class="tmrp-meta">点某行·左侧展开近账、生态关系与行动链</div><div class="tmrp-scroll tall">' + rows.map(rightSocialPartyHead).join('') + '</div>';
   }
 
   // 百官空态·幽灵预览：取数名真实臣僚灰显作示例（让玩家看懂钉选后长什么样·非死白）

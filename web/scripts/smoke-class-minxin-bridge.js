@@ -317,6 +317,9 @@ const classHeadMatch = rightRailSource.match(/function rightSocialClassHead[\s\S
 const classDetailMatch = rightRailSource.match(/function rightSocialClassDetail[\s\S]*?function renderRightClassPanel/);
 assert(classDetailMatch && /rightClassMinxinBridgeRows/.test(classDetailMatch[0]) && /minxin\.byClass/.test(rightRailSource), 'right rail class detail should show class-minxin bridge rows');
 assert(classHeadMatch && !/rightClassMinxinBridgeRows/.test(classHeadMatch[0]), 'right rail class cards should keep class-minxin bridge out of the main card');
+// 紧凑行契约(2026-07-11·玩家反馈行14)：列表卡无条形图/逐卡提示·保点行进详情·全档只在 flyout
+assert(classHeadMatch && !/rightArmyBar/.test(classHeadMatch[0]) && !/tmrp-detail-hint/.test(classHeadMatch[0]), 'class list card stays compact (no bars, no per-card hint)');
+assert(classHeadMatch && /outline-select/.test(classHeadMatch[0]), 'compact class card keeps click-to-expand wiring');
 const mapSource = fs.readFileSync(path.join(ROOT, 'phase8-formal-map.js'), 'utf8');
 assert(/data-map-mode="classPressure"/.test(mapSource), 'formal map should expose a class pressure layer button');
 assert(/classPressureForRegion/.test(mapSource) && /ClassMinxinBridge/.test(mapSource), 'formal map should render class-minxin pressure per region');
