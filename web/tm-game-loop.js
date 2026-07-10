@@ -1196,7 +1196,7 @@ function _wtConfirmPending() {
       var aOkN = 0;
       var aDone = _wtHcList.map(function (ahc) {
         var aPath1 = _wtNormalizeHardChangePath(ahc.path);
-        var aok1 = _wtApplyHardChange(ahc.path, ahc.op || 'set', ahc.value);
+        var aok1 = _wtApplyHardChange(ahc.path, ahc.op || 'set', ahc.value, { allowCreate: true });  // 天意档保留造物自由（幽灵键闸只锁 hardChange 档）
         if (aok1) aOkN++;
         return Object.assign({}, ahc, { path: aPath1, _applied: !!aok1 });
       });

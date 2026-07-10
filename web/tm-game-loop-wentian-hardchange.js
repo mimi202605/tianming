@@ -786,7 +786,53 @@ function _wtResolveOfficeHardChange(parts) {
   return { pos: hit.pos };
 }
 
-function _wtApplyHardChange(path, op, value) {
+// ═══ 幽灵键闸 + dry-run 预演（2026-07-10·owner 拍板：hardChange 档拒创建新 GM/P 根·absolute 档 allowCreate 放行）═══
+// 病根：通用导航兜底对任意错路径都「成功」创建新字段——问天直改静默失败的总病根（精力→GM.精力 是最新一例）。
+// 实体前缀正则=七类 resolver + renli 强制前缀的并集（须与各 resolver 的 prefixes 保持镜像·改那边须同步这里）。
+var _WT_ENTITY_PREFIX_RE = /^(chars|characters|character|allCharacters|人物|角色|NPC|npc|armies|army|军|軍|军队|軍隊|部队|部隊|classes|socialClasses|socialClass|class|阶层|階層|阶级|階級|社会阶层|社會階層|facs|faction|factions|fac|势力|勢力|外邦|邦国|邦國|藩镇|藩鎮|parties|party|党派|黨派|党|黨|朋党|朋黨|divisions|division|区划|區劃|州府|府州|府县|府縣|地方|辖区|轄區|office|offices|officeTree|官职|官職|职官|職官|region|地域|丁口|田|田土|役|役政)$/i;
+var _WT_CREATABLE_ROOTS = { _energy: 1, _energyMax: 1 };  // 别名表产物·引擎法定字段·旧档未初始化时允许创建
+
+function _wtGenericNavGate(rootObj, parts) {
+  var rk = String(parts[0] || '');
+  if (_WT_ENTITY_PREFIX_RE.test(rk)) {
+    return { ok: false, reason: '「' + String(parts[1] || rk) + '」不在档（实体名解析失败·请核对真名）' };
+  }
+  if (rootObj && (rk in rootObj)) return { ok: true };
+  if (_WT_CREATABLE_ROOTS[rk]) return { ok: true };
+  return { ok: false, reason: '字段「' + rk + '」不存在（拒创建幽灵键·请用真实字段路径）' };
+}
+
+// dry-run 预演：不写入·判定路径能否落到真实字段（agent submit 校验/确认框预标用）。
+// → { ok, kind:'char|army|class|fac|party|division|office|renli|generic|ghost', normalized, reason? }
+// renli 前缀无只读探针·前缀命中即乐观放行（apply 时 renli 找不到地域仍会落闸拒绝）。
+function _wtDryRunHardChange(path, opts) {
+  var normalizedPath = _wtNormalizeHardChangePath(path);
+  var parts = String(normalizedPath).split('.');
+  var rootObj;
+  if (parts[0] === 'GM' || parts[0] === 'gm') { parts.shift(); rootObj = (typeof GM !== 'undefined') ? GM : null; }
+  else if (parts[0] === 'P' || parts[0] === 'p') { parts.shift(); rootObj = (typeof P !== 'undefined') ? P : null; }
+  else rootObj = (typeof GM !== 'undefined') ? GM : null;
+  if (!parts.length || !parts[0]) return { ok: false, kind: 'ghost', normalized: normalizedPath, reason: '空路径' };
+  if (rootObj && typeof GM !== 'undefined' && rootObj === GM) {
+    try {
+      if (/^(region|地域|丁口|田|田土|役|役政)$/i.test(String(parts[0]))) return { ok: true, kind: 'renli', normalized: normalizedPath };
+      var _dr;
+      if ((_dr = _wtResolveCharacterHardChange(parts)) && _dr.ch) return { ok: true, kind: 'char', normalized: normalizedPath };
+      if ((_dr = _wtResolveArmyHardChange(parts)) && _dr.army) return { ok: true, kind: 'army', normalized: normalizedPath };
+      if ((_dr = _wtResolveClassHardChange(parts)) && _dr.cls) return { ok: true, kind: 'class', normalized: normalizedPath };
+      if ((_dr = _wtResolveFacHardChange(parts)) && _dr.fac) return { ok: true, kind: 'fac', normalized: normalizedPath };
+      if ((_dr = _wtResolvePartyHardChange(parts)) && _dr.party) return { ok: true, kind: 'party', normalized: normalizedPath };
+      if ((_dr = _wtResolveDivisionHardChange(parts)) && _dr.div) return { ok: true, kind: 'division', normalized: normalizedPath };
+      if ((_dr = _wtResolveOfficeHardChange(parts)) && _dr.pos) return { ok: true, kind: 'office', normalized: normalizedPath };
+    } catch (_) {}
+  }
+  if (opts && opts.allowCreate) return { ok: true, kind: 'generic', normalized: normalizedPath };
+  var _gate = _wtGenericNavGate(rootObj, parts);
+  if (_gate.ok) return { ok: true, kind: 'generic', normalized: normalizedPath };
+  return { ok: false, kind: 'ghost', normalized: normalizedPath, reason: _gate.reason };
+}
+
+function _wtApplyHardChange(path, op, value, opts) {
   if (!path) return false;
   // 根据路径前缀决定 root
   var normalizedPath = _wtNormalizeHardChangePath(path);
@@ -928,6 +974,11 @@ function _wtApplyHardChange(path, op, value) {
     }
     // 人力/徭役农政 god-mode（R5·镜像阶层/军队·治"问天改丁/田/役写数组幽灵属性、真账不动"静默失败·逻辑在 tm-renli）
     try { if (typeof TM !== 'undefined' && TM.Renli && typeof TM.Renli.wtHardChange === 'function' && TM.Renli.wtHardChange(GM, (typeof P !== 'undefined' ? P : null), parts, op, value, _wtAfterHardChange)) return true; } catch (_wtRlE) {}
+  }
+  // 幽灵键闸：hardChange 档默认拒创建新根·absolute 档 opts.allowCreate 放行（2026-07-10）
+  if (!(opts && opts.allowCreate)) {
+    var _navGate = _wtGenericNavGate(root, parts);
+    if (!_navGate.ok) return false;
   }
   // 导航到父对象
   var cur = root;
