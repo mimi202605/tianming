@@ -50,6 +50,53 @@
     });
   }
 
+  // ─── T 形接点插入·治「共享边顶点数不匹配」残留(2026-07-11·玩家反馈仍偶出飞地) ──
+  // 焊接治的是"顶点对顶点差几像素"；但 A 在共享边中途有顶点而 B 没有(T 形接点/描点密度不同)时·
+  // A 的两段边与 B 的一整段边永不反向匹配→walk 断→照样落 multi-polygon 出飞地。
+  // 治法：把每个 polygon 的顶点"缝"进其他 polygon 距离 < tol 的边中——按参数位次序插入
+  // 对方顶点本身(非投影点)·保证插入后两侧共享边顶点序列逐点相同→精确反向匹配可成。
+  // 焊接先行已把近邻顶点吸成同点·故此处剩下的都是真边中点；相距远的省 tol 内无贴边顶点不受影响；
+  // 极端误插(远省顶点恰贴边)也只是在边上多一点·拓扑不变·仍按原兜底走。
+  function insertTeeJunctionPoints(polys, tol){
+    var t2 = tol * tol;
+    function ptSegDistSq(v, a, b){
+      var abx = b[0] - a[0], aby = b[1] - a[1];
+      var L2 = abx*abx + aby*aby;
+      if (L2 === 0) return { d2: distSq(v, a), t: 0 };
+      var t = ((v[0] - a[0]) * abx + (v[1] - a[1]) * aby) / L2;
+      if (t < 0) t = 0; else if (t > 1) t = 1;
+      var dx = v[0] - (a[0] + t*abx), dy = v[1] - (a[1] + t*aby);
+      return { d2: dx*dx + dy*dy, t: t };
+    }
+    return polys.map(function(poly, pIdx){
+      var out = [];
+      for (var i = 0; i < poly.length; i++){
+        var a = poly[i], b = poly[(i + 1) % poly.length];
+        out.push([a[0], a[1]]);
+        var inserts = [];
+        for (var q = 0; q < polys.length; q++){
+          if (q === pIdx) continue;
+          var other = polys[q];
+          for (var k = 0; k < other.length; k++){
+            var v = other[k];
+            if (distSq(v, a) <= EPS*EPS || distSq(v, b) <= EPS*EPS) continue; // 端点重合·非 T 点
+            var r = ptSegDistSq(v, a, b);
+            if (r.d2 <= t2 && r.t > 0 && r.t < 1) inserts.push({ t: r.t, v: v });
+          }
+        }
+        if (inserts.length){
+          inserts.sort(function(x, y){ return x.t - y.t; });
+          for (var m = 0; m < inserts.length; m++){
+            var vv = inserts[m].v, last = out[out.length - 1];
+            if (last[0] !== vv[0] || last[1] !== vv[1]) out.push([vv[0], vv[1]]); // 去相邻重复(多省同点)
+          }
+        }
+      }
+      while (out.length > 1 && out[0][0] === out[out.length - 1][0] && out[0][1] === out[out.length - 1][1]) out.pop();
+      return out;
+    });
+  }
+
   // ─── convex hull (Andrew monotone chain) ─────────────────
 
   function convexHull(points){
@@ -188,6 +235,10 @@
     //   相距远的省 tol 内无近邻顶点·不受影响(仍按不相邻兜底)。
     var weldedPolys = weldNearbyVertices(allPolys, MERGE_WELD_EPS).filter(function(p){ return p && p.length >= 3; });
     if (weldedPolys.length >= 2) allPolys = weldedPolys;
+
+    // ★ T 形接点插入·焊接后共享边"一侧有顶点一侧没有"仍匹配不上→互缝对方贴边顶点→匹配可成。
+    var teePolys = insertTeeJunctionPoints(allPolys, MERGE_WELD_EPS).filter(function(p){ return p && p.length >= 3; });
+    if (teePolys.length >= 2) allPolys = teePolys;
 
     // 试 shared-edge walk·合所有 polygons
     var mergedPoly = tryAdjacentMerge(allPolys);
@@ -791,6 +842,7 @@
     convexHull: convexHull,
     tryAdjacentMerge: tryAdjacentMerge,
     weldNearbyVertices: weldNearbyVertices,
+    insertTeeJunctionPoints: insertTeeJunctionPoints,
     segmentIntersect: segmentIntersect
   };
 
