@@ -966,7 +966,7 @@
     var selectedKey = selectedRow ? selectedRow.key : '';
     var groups = rightBuildArmyGroups(rows);
     var listToken = 'army-' + (++_rightArmyRenderSeq);
-    var armyTab = state.rightArmyTab === 'roster' ? 'roster' : 'overview';   // 页签早判·概览页不渲名册也不排水合
+    var armyTab = state.rightArmyTab === 'overview' ? 'overview' : 'roster';   // 页签早判·默认名册(行12=玩家找的就是名册)·概览页不渲名册不排水合
     var deferredList = rows.length > RIGHT_ARMY_INITIAL_ROWS;
     var syncGroups = deferredList ? rightSliceArmyGroups(groups, RIGHT_ARMY_INITIAL_ROWS) : groups;
     if (deferredList && armyTab === 'roster') rightScheduleArmyListHydration(listToken, groups, selectedKey);
@@ -995,8 +995,8 @@
     return '<div class="tmrp-army-shell">' +
       '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(armies.length) + '</b><span>军队</span></div><div class="tmrp-stat"><b>' + esc(rightArmyFmtNum(total)) + '</b><span>总兵力</span></div><div class="tmrp-stat"><b>' + esc(avgMorale + '/' + avgTraining) + '</b><span>士气/训练</span></div></div>' +
       '<div class="tmrp-tabs tmrp-army-tabs">' +
-      '<button type="button" class="' + (armyTab === 'overview' ? 'active' : '') + '" data-right-action="army-tab" data-tab="overview">军情概览' + (armyAlerts.length ? '·警' + armyAlerts.length : '') + '</button>' +
       '<button type="button" class="' + (armyTab === 'roster' ? 'active' : '') + '" data-right-action="army-tab" data-tab="roster">部队名册·' + esc(armies.length) + '</button>' +
+      '<button type="button" class="' + (armyTab === 'overview' ? 'active' : '') + '" data-right-action="army-tab" data-tab="overview">军情概览' + (armyAlerts.length ? '·警' + armyAlerts.length : '') + '</button>' +
       '</div>' +
       (armyTab === 'roster'
         ? rosterCard
@@ -2266,7 +2266,7 @@
       state.rightIssueTab = data.tab || 'wendui';
       openPanel('issue');
     } else if (action === 'army-tab') {
-      state.rightArmyTab = data.tab === 'roster' ? 'roster' : 'overview';
+      state.rightArmyTab = data.tab === 'overview' ? 'overview' : 'roster';   // 默认名册·与 renderArmy 早判镜像
       openPanel('army');
     } else if (action === 'outline-tab') {
       state.rightOutlineTab = data.tab || 'classes';
