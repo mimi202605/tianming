@@ -2051,10 +2051,12 @@ ipcMain.handle('load-auto-save', async () => {
 });
 
 // --- 系统对话框：导出 ---
-ipcMain.handle('dialog-export', async (event, data) => {
+// 2026-07-10 扩第三参 opts { filename, title }（剧本工坊导出用·治「导出无法选文件夹」）·旧两参调用不受影响
+ipcMain.handle('dialog-export', async (event, data, opts) => {
+  const o = opts || {};
   const result = await dialog.showSaveDialog(mainWindow, {
-    title: '导出天命项目',
-    defaultPath: '天命项目.json',
+    title: String(o.title || '导出天命项目'),
+    defaultPath: String(o.filename || '天命项目.json'),
     filters: [
       { name: 'JSON 文件', extensions: ['json'] },
       { name: '所有文件', extensions: ['*'] }

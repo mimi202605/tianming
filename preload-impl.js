@@ -38,8 +38,8 @@ contextBridge.exposeInMainWorld('tianming', {
     ipcRenderer.invoke('load-auto-save'),
 
   // === 系统对话框 ===
-  dialogExport: (data) =>
-    ipcRenderer.invoke('dialog-export', data),
+  dialogExport: (data, opts) =>
+    ipcRenderer.invoke('dialog-export', data, opts),
 
   dialogImport: () =>
     ipcRenderer.invoke('dialog-import'),

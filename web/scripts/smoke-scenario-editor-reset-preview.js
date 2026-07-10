@@ -3091,4 +3091,24 @@ assert(railBlock && /max-height:\s*calc\(100vh/.test(railBlock[0]),
 assert(railBlock && /overflow-y:\s*auto/.test(railBlock[0]),
   '.module-rail base rule should set overflow-y:auto');
 
+// ── 保存/导出加固（2026-07-10 玩家反馈「无法保存」「导出无法选文件夹」）──
+// 案卷索引 localStorage 配额加固：此前裸 setItem 一炸即断 saveProjectSnapshot·索引丢失成孤儿案卷。
+assert(appJs.includes("LIBRARY_DB_ID = '__projectLibraryMeta__'"), 'library meta should have a reserved IndexedDB backup key');
+assert(/function writeProjectLibrary\(\)\s*\{[\s\S]{0,900}?try\s*\{[\s\S]{0,300}?localStorage\.setItem\(PROJECT_LIBRARY_KEY/.test(appJs),
+  'writeProjectLibrary should wrap localStorage.setItem in try/catch (quota-proof)');
+assert(appJs.includes('putLibraryMetaBody(metas)'), 'writeProjectLibrary quota failure should fall back to IndexedDB meta backup');
+assert(appJs.includes('function reconcileLibraryFromIdb'), 'reconcileLibraryFromIdb self-heal should exist');
+assert(/finishInit\(\)\s*\{[\s\S]{0,300}?reconcileLibraryFromIdb\(\)/.test(appJs), 'finishInit should run library reconcile self-heal');
+// 导出走桌面原生另存为对话框（可选目录）·无 IPC 回退浏览器下载。
+assert(/function performExportDownload[\s\S]{0,600}?dialogExport\(scenario,\s*\{\s*filename:\s*name\s*\}\)/.test(appJs),
+  'performExportDownload should prefer native dialogExport with filename');
+assert(/function performExportDownload[\s\S]{0,1600}?a\.download = name/.test(appJs),
+  'performExportDownload should keep browser anchor download fallback');
+assert(/await performExportDownload\(pack,/.test(appJs), 'exportProjectSnapshot should route through the unified export helper');
+const mainImplJs = fs.readFileSync(path.join(ROOT, '..', 'main-impl.js'), 'utf8');
+const preloadImplJs = fs.readFileSync(path.join(ROOT, '..', 'preload-impl.js'), 'utf8');
+assert(/ipcMain\.handle\('dialog-export', async \(event, data, opts\)/.test(mainImplJs), 'dialog-export handler should accept opts (filename/title)');
+assert(mainImplJs.indexOf("o.filename || '天命项目.json'") >= 0, 'dialog-export should use opts.filename as defaultPath with legacy fallback');
+assert(/dialogExport: \(data, opts\)/.test(preloadImplJs), 'preload dialogExport should pass opts through');
+
 console.log('smoke-scenario-editor-reset-preview OK: ' + passed + ' assertions');

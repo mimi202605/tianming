@@ -61,6 +61,7 @@
   var EXPORT_NAME = 'tianming-scenario-editor-reset-export.json';
   var projectMemoryBodies = {};
   var DRAFT_DB_ID = '__autosaveDraft__';  // 治 quota：超大剧本草稿落 IndexedDB 的保留 key
+  var LIBRARY_DB_ID = '__projectLibraryMeta__';  // 治「无法保存」：案卷索引 localStorage 配额炸时的 IndexedDB 备份 key
   var idbDraftCache = null;               // 启动时异步捞到的 IndexedDB 草稿（localStorage 装不下时的后备）
   var idbDraftActive = false;             // 当前草稿是否存在 IndexedDB（避免每次小存都去开 DB 删）
 
@@ -1333,7 +1334,76 @@
   }
 
   function writeProjectLibrary() {
-    localStorage.setItem(PROJECT_LIBRARY_KEY, JSON.stringify(state.projectLibrary.slice(0, 24).map(compactProjectMeta)));
+    var metas = state.projectLibrary.slice(0, 24).map(compactProjectMeta);
+    // 治「无法保存」（2026-07-10 玩家群反馈）：桌面 file:// 下编辑器与游戏本体共享同一 localStorage 配额
+    // （tm_P 等即可占满）——此处此前裸写 setItem·一炸就把 saveProjectSnapshot 断在报状态之前·且索引丢失
+    // （案卷本体在 IndexedDB 里成孤儿）。失败落 IndexedDB 备份·启动时 reconcileLibraryFromIdb 找回。
+    try {
+      localStorage.setItem(PROJECT_LIBRARY_KEY, JSON.stringify(metas));
+    } catch (err) {
+      try { localStorage.removeItem(PROJECT_LIBRARY_KEY); } catch (_) {}
+      putLibraryMetaBody(metas);
+      pushStatusLog('案卷索引已落本地库备份（localStorage 配额满：' + ((err && err.message) || err) + '）', 'warn');
+    }
+  }
+
+  // 案卷索引的 IndexedDB 备份读写（复用项目库 DB/store·保留 key __projectLibraryMeta__）
+  function putLibraryMetaBody(metas) {
+    return openProjectDb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        try {
+          var tx = db.transaction(PROJECT_DB_STORE, 'readwrite');
+          tx.objectStore(PROJECT_DB_STORE).put({ id: LIBRARY_DB_ID, metas: metas });
+          tx.oncomplete = function () { db.close(); resolve(true); };
+          tx.onerror = function () { db.close(); resolve(false); };
+        } catch (_) { resolve(false); }
+      });
+    }).catch(function () { return false; });
+  }
+
+  // 治「无法保存」后遗症自愈：此前索引写 localStorage 炸丢·但案卷本体仍在 IndexedDB——启动后扫库重建索引，
+  // 玩家「消失」的已存案卷全部找回（索引备份优先·再按本体兜底重建）。
+  function reconcileLibraryFromIdb() {
+    if (!global.indexedDB) return;
+    openProjectDb().then(function (db) {
+      if (!db) return;
+      try {
+        var tx = db.transaction(PROJECT_DB_STORE, 'readonly');
+        var req = tx.objectStore(PROJECT_DB_STORE).getAll();
+        req.onsuccess = function () {
+          db.close();
+          var rows = req.result || [];
+          var known = {};
+          state.projectLibrary.forEach(function (m) { if (m && m.id) known[m.id] = 1; });
+          var restored = 0;
+          rows.forEach(function (row) {
+            if (row && row.id === LIBRARY_DB_ID && Array.isArray(row.metas)) {
+              row.metas.forEach(function (m) {
+                if (m && m.id && !known[m.id]) { known[m.id] = 1; state.projectLibrary.push(compactProjectMeta(m)); restored++; }
+              });
+            }
+          });
+          rows.forEach(function (row) {
+            if (!row || !row.id || known[row.id]) return;
+            if (row.id === DRAFT_DB_ID || row.id === LIBRARY_DB_ID) return;
+            if (String(row.id).indexOf(RUNTIME_RETURN_DB_PREFIX) === 0) return;
+            if (!row.scenario) return;
+            known[row.id] = 1;
+            state.projectLibrary.push(compactProjectMeta(row));
+            restored++;
+          });
+          if (restored > 0) {
+            state.projectLibrary.sort(function (a, b) { return String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')); });
+            state.projectLibrary = state.projectLibrary.slice(0, 24);
+            renderProjectLibrary();
+            pushStatusLog('已从本地库找回 ' + restored + ' 份案卷（此前索引因存储配额丢失）', 'warn');
+            renderStatusLog();
+          }
+        };
+        req.onerror = function () { db.close(); };
+      } catch (_) { try { db.close(); } catch (_) {} }
+    }).catch(function () {});
   }
 
   function readJsonStorage(key) {
@@ -20484,18 +20554,30 @@
     return scenario;
   }
 
+  // 导出统一口（2026-07-10 玩家反馈「导出无法选文件夹」）：桌面 Electron 走原生「另存为」对话框
+  // （可自选目录；file:// 页的 blob 锚点下载在部分环境静默失败）；无 IPC（web/安卓）回退浏览器下载。
+  // → Promise<{mode:'native'|'download'|'canceled', path?}>
   function performExportDownload(scenario, filename) {
     var name = filename || EXPORT_NAME;
-    var data = JSON.stringify(scenario, null, 2);
-    var blob = new Blob([data], { type: 'application/json;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    var wt = (typeof window !== 'undefined') ? window.tianming : null;
+    var native = (wt && typeof wt.dialogExport === 'function')
+      ? Promise.resolve().then(function () { return wt.dialogExport(scenario, { filename: name }); }).catch(function () { return null; })
+      : Promise.resolve(null);
+    return native.then(function (res) {
+      if (res && res.success) return { mode: 'native', path: res.path || '' };
+      if (res && res.canceled) return { mode: 'canceled' };
+      var data = JSON.stringify(scenario, null, 2);
+      var blob = new Blob([data], { type: 'application/json;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+      return { mode: 'download' };
+    });
   }
 
   function exportScenario(options) {
@@ -20510,9 +20592,12 @@
       return null;
     }
     report.warnings.forEach(function(msg) { pushStatusLog('导出警告：' + msg, 'warn'); });
-    performExportDownload(state.scenario, EXPORT_NAME);
     state.pendingExport = null;
-    setStatus('已导出 JSON：' + EXPORT_NAME + (report.warnings.length ? '（' + report.warnings.length + ' 项警告）' : ''), report.warnings.length ? 'warn' : 'good');
+    var warnSuffix = report.warnings.length ? '（' + report.warnings.length + ' 项警告）' : '';
+    performExportDownload(state.scenario, EXPORT_NAME).then(function(r) {
+      if (r.mode === 'canceled') { setStatus('导出已取消', 'warn'); return; }
+      setStatus(r.mode === 'native' ? ('已导出到：' + r.path + warnSuffix) : ('已导出 JSON：' + EXPORT_NAME + warnSuffix), report.warnings.length ? 'warn' : 'good');
+    });
     return clone(state.scenario);
   }
 
@@ -20521,10 +20606,14 @@
       setStatus('没有待强制导出的剧本。先调用 exportScenario() 触发校验。', 'warn');
       return null;
     }
-    performExportDownload(state.pendingExport.scenario, state.pendingExport.filename || EXPORT_NAME);
     var report = state.pendingExport.report;
+    var pendingScenario = state.pendingExport.scenario;
+    var pendingName = state.pendingExport.filename || EXPORT_NAME;
     state.pendingExport = null;
-    setStatus('已强制导出（跳过 ' + report.errors.length + ' 项校验错误）。', 'warn');
+    performExportDownload(pendingScenario, pendingName).then(function(r) {
+      if (r.mode === 'canceled') { setStatus('强制导出已取消', 'warn'); return; }
+      setStatus('已强制导出' + (r.mode === 'native' ? '到：' + r.path : '') + '（跳过 ' + report.errors.length + ' 项校验错误）。', 'warn');
+    });
     return null;
   }
 
@@ -20615,16 +20704,9 @@
       return null;
     }
     var pack = { format: 'tianming-scenario-editor-reset-package', version: 1, exportedAt: new Date().toISOString(), meta: { id: snapshot.id, name: snapshot.name, scenarioName: snapshot.scenarioName, source: snapshot.source, stats: snapshot.stats }, releaseNotes: buildReleaseNotes(), fieldNotes: clone(snapshot.fieldNotes || state.fieldNotes || {}), scenario: clone(snapshot.scenario) };
-    var blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'tianming-scenario-package-' + snapshot.id + '.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
-    setStatus('已导出案卷包：' + snapshot.name, 'good');
+    var r = await performExportDownload(pack, 'tianming-scenario-package-' + snapshot.id + '.json');
+    if (r.mode === 'canceled') { setStatus('案卷包导出已取消', 'warn'); return null; }
+    setStatus(r.mode === 'native' ? ('已导出案卷包到：' + r.path) : ('已导出案卷包：' + snapshot.name), 'good');
     return pack;
   }
 
@@ -22134,6 +22216,7 @@
   }
   function finishInit() {
     loadScenario();
+    reconcileLibraryFromIdb();   // 治「无法保存」后遗症：找回索引丢失的已存案卷（异步·UI 就绪后自动补渲染）
     setRailCollapsed(isRailCollapsed());
     setInspectorCollapsed(isInspectorCollapsed());
     applyModuleOrder();
