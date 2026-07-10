@@ -576,12 +576,40 @@
     return { ok: v.length === 0, violations: v, details: { histNoWuchang: histNoWC.length, abilityOob: oob, factionMismatch: mismatch } };
   }
 
+  // 刀①(2026-07-10 智能升级B)：关系网一致性——顶层 relations 边表引用完整/无自环/无全重。
+  // 治「改名/删人后关系悬空静默带病导出」（agent 动人物最常见的连带伤·此前只有技能里的口头要求无可执行校验）。
+  function vRelationConsistency(draft) {
+    var v = [];
+    var rels = (draft && draft.relations) || [];
+    if (!Array.isArray(rels) || !rels.length) return { ok: true, violations: [] };
+    var names = {};
+    ((draft && (draft.characters || draft.chars)) || []).forEach(function (c) { if (c && c.name) names[c.name] = 1; });
+    var danglingMap = {}, danglingEdges = 0, selfLoop = 0, dupes = 0, seen = {};
+    rels.forEach(function (r) {
+      if (!r) return;
+      var f = r.from, t = r.to, bad = false;
+      if (f && !names[f]) { danglingMap[f] = 1; bad = true; }
+      if (t && !names[t]) { danglingMap[t] = 1; bad = true; }
+      if (bad) danglingEdges++;
+      if (f && f === t) selfLoop++;
+      var k = String(f) + '→' + String(t) + '·' + String(r.type || '');
+      if (seen[k]) dupes++; else seen[k] = 1;
+    });
+    var danglingNames = Object.keys(danglingMap);
+    if (danglingNames.length) v.push('关系边悬空引用 ' + danglingEdges + ' 条（from/to 不在人物名册）：' + danglingNames.slice(0, 6).join('、') + (danglingNames.length > 6 ? ' 等' : '') + '——人物改名用 renameEntity 联动·删人前 findReferences 清关系');
+    if (selfLoop) v.push('关系自环(from=to) ' + selfLoop + ' 条');
+    if (dupes) v.push('完全重复关系边(from+to+type 同) ' + dupes + ' 条');
+    // gateScore=边级计数（违规消息按类聚合·消息数对「多了一条悬空」不敏感·质量闸按此比对基线）
+    return { ok: v.length === 0, violations: v, gateScore: danglingEdges + selfLoop + dupes, details: { danglingEdges: danglingEdges, danglingNames: danglingNames.length, selfLoop: selfLoop, dupes: dupes } };
+  }
+
   var _checks = {
     'admin-population': vAdminPopulation,
     'faction-refs': vFactionRefs,
     'region-coverage': vRegionCoverage,
     'timeline-compliance': vTimelineCompliance,
     'char-completeness': vCharCompleteness,
+    'relation-consistency': vRelationConsistency,
     'runtime-chars': vRuntimeChars,
     'runtime-office': vRuntimeOffice,
     'runtime-boot': vRuntimeBoot
@@ -1092,7 +1120,7 @@
       name: 'validateDraft',
       description: '校验当前草稿（人口/势力引用/区划覆盖/角色/官制/启动必备），返回违规列表。每改完一批应调用以自查。',
       parameters: { type: 'object', properties: {
-        group: { type: 'string', description: '可选：只跑某组 admin-population/faction-refs/region-coverage/runtime-chars/runtime-office/runtime-boot' }
+        group: { type: 'string', description: '可选：只跑某组 admin-population/faction-refs/region-coverage/timeline-compliance/char-completeness/relation-consistency(关系边悬空/自环/重复)/runtime-chars/runtime-office/runtime-boot' }
       } }
     },
     {
@@ -1869,7 +1897,7 @@
   /** tool_result 内容文本（喂回模型）。带违规时明列，让 agent 知道修什么。 */
   function _resultToText(result) {
     if (!result) return '';
-    if (result.violations && result.violations.length) return 'ok:false 违规: ' + result.violations.slice(0, 8).join('; ');
+    if (result.violations && result.violations.length) return 'ok:false ' + (result.errorCode ? '[' + result.errorCode + '] ' : '') + (result.reason ? result.reason + ' · ' : '') + '违规: ' + result.violations.slice(0, 8).join('; ');   // 刀①·errorCode/reason 不再被违规清单挤掉(质量闸的「基线→现值」教学语要让模型看见)
     if (result.ok === false) return 'ok:false ' + (result.errorCode ? '[' + result.errorCode + '] ' : '') + (result.reason || '');   // 刀G9 · errorCode 让模型可见(错误分类可模式化自纠)
     return JSON.stringify(result).slice(0, 1200);
   }
@@ -2110,7 +2138,7 @@
       '规则：① 只用工具修改/查询，不要直接输出 JSON 剧本正文。② 中文显示名（人物/势力/地名）保持中文，禁止英译。',
       '③【勘察】先查后改：getField（单路径）/getFields（批量·一次读多个路径省往返，需同时核对多处时优先用它）/listCollection/describeSchema 看清现状与字段；searchEntities/listGaps 查实体与规格缺口；不确定东西在哪个集合时用 globalSearch 全局检索定位。想确认正式游戏怎么读某字段、读不读它，用 fieldContract 查契约（按需查，别凭印象）；想看游戏 UI/逻辑的源码实现，用 listSource 找文件、readSource 读、grepSource 全局搜——可直接读整个代码库。生成或大改某部分(人物/势力/经济/官制/封臣…)前，先 genReference 看老编辑器对该部分的生成范式(设定深度/字段形状/朝代逻辑/参数区间)，借鉴后再动手。',
       '④【落改】bulkAdd/multiEdit 一次多改提效。改名优先 renameEntity（联动所有引用、不留死链）；地图地块/省名改名用 renameRegion（同步 map/mapData 双镜像·如需联动其他引用再补 renameEntity）；删除实体前先 findReferences 查谁引用了它，再 removeEntity。改地图归属（把某地块划给某势力、调整疆域）先 mapOverview 看清地块/归属/势力，再 mapAssignOwner 按地块名+势力名改（自动上色、同步双镜像）。玩家配了生图 API 时，可用 generateImage 给人物立绘(characters.N.portrait)/势力旗徽生成图像（未配置会明确报错，届时用文字描述代替，不要反复重试）；生成的图要复用/挪到别的字段用 copyField(from,to) 直拷——图片值极大，绝不要 getField 读出来再 applyEdit 写回。与用户需求相关的必需缺口顺手补齐，让剧本完整可玩。',
-      '⑤【自查与收尾】每改完一批用 validateDraft 自查，有违规继续修（写类工具的返回已回挂变更后的当前值 nowValue/nowValues/collectionLength，据此确认改动已落地，无需再 getField 重读确认）。改好后用 preflight 跑运行时体检（确保游戏能正常加载），有 blockers 继续修到 bootable，再调用 finish——summary 要向玩家说清「改了什么、为什么这么改」（具体到关键实体/字段，2-4 句中文），不要只写"完成"。',
+      '⑤【自查与收尾】每改完一批用 validateDraft 自查，有违规继续修（写类工具的返回已回挂变更后的当前值 nowValue/nowValues/collectionLength，据此确认改动已落地，无需再 getField 重读确认）。改好后用 preflight 跑运行时体检（确保游戏能正常加载），有 blockers 继续修到 bootable，再调用 finish——summary 要向玩家说清「改了什么、为什么这么改」（具体到关键实体/字段，2-4 句中文），不要只写"完成"。finish 有质量闸：运行时必崩项与关系一致性不得比开工时更糟（quality-gate-worse 被顶回=你本次改动引入了新问题·按提示修掉再收尾）。动过人物名/删过人后务必跑 validateDraft {group:"relation-consistency"} 清悬空关系。',
       '⑥ 若发现该玩家/剧本有值得长期沿用的约定（命名规律、文风、设定惯例），可调 recordConvention 记一条（仅在确有发现时，别凑数）；从对话中了解到**推导不出来的背景**（玩家是谁与偏好/玩家给的做法反馈/创作长线目标/外部资料指引），用 saveMemory 存对应类型的记忆供下次共事召回——剧本里本就有的数据与本次改动明细不要存。⑦ 用户消息可能附图（编辑器截图/史料素材/手绘草图）——图即需求的一部分，按图中信息办。⑧ 对没把握的改动（史实存疑、靠推测填充）调 flagUncertain 标一下路径，提醒玩家重点复核（只标真没把握的）；运行中若在工具结果里收到「（插话）」注入，那是玩家的实时补充指令——完成当前一步后必须优先处理它，勿忽略。',
       '⑨【填实·禁空内容·铁律】新增或改写实体必须填到可直接用的质量，绝不留空：先用 listCollection / searchEntities 看一两个剧本里已有的同类实体（或 genReference 看生成范式），照着它们的字段集与丰满度，把新实体的所有相关字段都填上有意义的中文内容——身份/官衔/数值(能力/人口/兵力等)/背景小传/性格/目标/关系/履历等该有的都要有，数值要符合设定区间、彼此自洽。禁止留空字符串、0 占位（除非数值确为 0）、"待补/TODO/未知/暂无"之类占位词，也禁止只填 name 就交差。createEntity 模板只是最小骨架，拿到后必须逐字段补全。宁可少加一个实体，也要把加的每个都填实、达到与官方实体同等的完整度。',
       '⑩【高权限·可写任意字段】你对剧本草稿有完全的写入权限：applyEdit/applyPush 可以创建任意新字段、新嵌套结构，包括剧本编辑器当前没有专门面板/不在结构速查/fieldContract 查不到的"非标准/自定义"字段——编辑器会自动吸收并展示这些字段，不会丢。fieldContract 返回"不在游戏字段契约中"只表示它是扩展/自定义字段（正式游戏不直接读），并不代表禁止写；只要对实现用户需求有用就大胆写。唯一不可改的是：剧本唯一 id、下划线开头的内部字段、ai/conf/meta 等配置（改这些会损坏剧本）。其余一切随需求自由创建与修改。',
@@ -2236,6 +2264,21 @@
     };
   }
 
+  // 刀①(2026-07-10 智能升级B)：finish 质量闸·增量基线——run 起点各「运行时必崩组+关系一致性」的违规数快照。
+  // 闸语义=「不得比开工时更糟」：存量坏账不逼 agent 顺手修完（否则小任务也被整局旧病闸死）·但绝不许带新病收尾。
+  var _GATE_GROUPS = ['runtime-boot', 'faction-refs', 'runtime-office', 'runtime-chars', 'relation-consistency'];
+  function _gateCounts(draft) {
+    var counts = {};
+    _GATE_GROUPS.forEach(function (g) {
+      try {
+        var r = _checks[g] ? (_checks[g](draft) || { violations: [] }) : { violations: [] };
+        // 优先 gateScore（细粒度·如关系检查按边计数——违规消息按类聚合·对「多了一条悬空」不敏感）
+        counts[g] = (typeof r.gateScore === 'number' && isFinite(r.gateScore)) ? r.gateScore : (r.violations || []).length;
+      } catch (_) { counts[g] = 0; }
+    });
+    return counts;
+  }
+
   // 取指定 group 的违规（finish 门控只拦 agent 能改的硬不变量·见 blockingChecks 默认值）
   function _blockingViolations(report, blockingChecks) {
     var v = [];
@@ -2307,6 +2350,8 @@
     var maxTokens = opts.maxTokens || 260000;         // 刀D · 自主度：token 预算放宽·覆盖长任务一次跑完
     var maxFinishAttempts = opts.maxFinishAttempts || 3;
     var blockingChecks = opts.blockingChecks || ['admin-population', 'faction-refs'];
+    var _gateBaseline = _gateCounts(draft);   // 刀①·finish 质量闸基线（增量语义·opts.qualityGate===false 可关）
+    var qualityGateOn = opts.qualityGate !== false;
     var perms = { allowedCollections: opts.allowedCollections || null, allowDestructive: opts.allowDestructive !== false };   // 方向F · 权限（默认无限制·全放行）
     var planOnly = !!opts.planOnly;   // 计划模式：只读 + proposePlan，不动手
     var reviewOnly = !!opts.reviewOnly;   // 方向D · 审阅模式：只读 + submitReview，不动剧本
@@ -2505,8 +2550,24 @@
                   return { ok: false, finish: false, errorCode: 'todos-pending', reason: '任务表尚有 ' + _pTd.length + ' 项未完成：' + _pTd.slice(0, 3).map(function (t) { return '「' + t.content + '」'; }).join('、') + (_pTd.length > 3 ? ' 等' : '') + '。请逐项完成并用 todoWrite 标 completed 后再 finish；若某项经查确实不需要做，先用 todoWrite 更新任务表（移除或改写该项）再 finish。' };
                 }
                 var blocking = _blockingViolations(validateDraft(draft), blockingChecks);
-                if (!blocking.length) { _finishSummary = (c.input && c.input.summary) || ''; finishAccepted = true; return { ok: true, finish: true, summary: _finishSummary }; }
-                finishAttempts++; return { ok: false, finish: false, reason: '\u8349\u7a3f\u4ecd\u6709 ' + blocking.length + ' \u9879\u5fc5\u4fee\u8fdd\u89c4\uff0c\u7981\u6b62\u7ed3\u675f\uff0c\u8bf7\u5148\u4fee\u590d', violations: blocking };
+                if (blocking.length) { finishAttempts++; return { ok: false, finish: false, reason: '\u8349\u7a3f\u4ecd\u6709 ' + blocking.length + ' \u9879\u5fc5\u4fee\u8fdd\u89c4\uff0c\u7981\u6b62\u7ed3\u675f\uff0c\u8bf7\u5148\u4fee\u590d', violations: blocking }; }
+                // \u5200\u2460(2026-07-10 \u667a\u80fd\u5347\u7ea7B)\uff1a\u8d28\u91cf\u95f8\u2014\u2014\u8fd0\u884c\u65f6\u5fc5\u5d29\u7ec4+\u5173\u7cfb\u4e00\u81f4\u6027\u4e0d\u5f97\u6bd4\u5f00\u5de5\u65f6\u66f4\u7cdf\uff08\u5b58\u91cf\u4e0d\u8ffd\u8d23\u00b7\u65b0\u75c5\u4e0d\u653e\u884c\u00b7\u6cbb\u5e26\u75c5\u6536\u5c3e\uff09
+                if (qualityGateOn) {
+                  var _gNow = _gateCounts(draft);
+                  var _gWorse = _GATE_GROUPS.filter(function (g) { return (_gNow[g] || 0) > (_gateBaseline[g] || 0); });
+                  if (_gWorse.length) {
+                    finishAttempts++;
+                    var _gDetail = [];
+                    _gWorse.forEach(function (g) {
+                      try { ((_checks[g](draft) || {}).violations || []).slice(0, 2).forEach(function (m) { _gDetail.push('[' + g + '] ' + m); }); } catch (_) {}
+                    });
+                    return { ok: false, finish: false, errorCode: 'quality-gate-worse',
+                      reason: '\u8d28\u91cf\u95f8\uff1a\u4ee5\u4e0b\u68c0\u67e5\u6bd4\u5f00\u5de5\u65f6\u66f4\u7cdf\u00b7\u7981\u6b62\u6536\u5c3e\uff08\u628a\u672c\u6b21\u6539\u52a8\u5f15\u5165\u7684\u65b0\u95ee\u9898\u4fee\u6389\u518d finish\u00b7\u7528 validateDraft(group)/preflight \u5b9a\u4f4d\uff09\uff1a'
+                        + _gWorse.map(function (g) { return g + '(' + (_gateBaseline[g] || 0) + '\u2192' + (_gNow[g] || 0) + ')'; }).join('\u3001'),
+                      violations: _gDetail.slice(0, 8) };
+                  }
+                }
+                _finishSummary = (c.input && c.input.summary) || ''; finishAccepted = true; return { ok: true, finish: true, summary: _finishSummary };
               }
               var deny = _permCheck(c.name, c.input, perms);
               if (deny) return { ok: false, reason: deny };

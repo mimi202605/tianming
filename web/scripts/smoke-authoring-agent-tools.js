@@ -502,6 +502,35 @@ function ok(cond, msg) {
     ok(AA.dispatchTool(draftCF, 'copyField', { from: 'characters.张.portrait' }).ok === false, 'copyField 缺 to → 拒绝');
     ok(AA.AGENT_TOOLS.some(t => t.name === 'copyField'), 'copyField 已注册进 AGENT_TOOLS');
 
+    console.log('— C3: relation-consistency + finish 质量闸（刀①2026-07-10 智能升级B）—');
+    const dRel = AA.makeDraft({ characters: [{ name: '甲' }, { name: '乙' }], relations: [
+      { from: '甲', to: '乙', type: '好友' },
+      { from: '甲', to: '不存在的人', type: '仇' },
+      { from: '乙', to: '乙', type: '自恋' },
+      { from: '甲', to: '乙', type: '好友' }
+    ] });
+    const vr = AA.validateDraft(dRel, 'relation-consistency');
+    ok(vr.ok === false && vr.violations.length === 3, 'relation-consistency 悬空/自环/重复三类全报');
+    ok(/不存在的人/.test(vr.violations.join('')), '悬空引用点名');
+    ok(AA.validateDraft(AA.makeDraft({ characters: [{ name: '甲' }, { name: '乙' }], relations: [{ from: '甲', to: '乙', type: '好友' }] }), 'relation-consistency').ok === true, '干净关系网通过');
+
+    // finish 质量闸：增量语义——存量坏账不追责·引入新病顶回·修掉放行
+    const dGate = AA.makeDraft({ characters: [{ name: '甲' }], relations: [{ from: '甲', to: '旧悬空', type: '旧账' }] });
+    let gRound = 0;
+    const gateCaller = function () {
+      gRound++;
+      if (gRound === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'g1', name: 'applyPush', input: { path: 'relations', value: { from: '甲', to: '新悬空', type: '新病' } } }] });
+      if (gRound === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'g2', name: 'finish', input: { summary: '带病收尾试探' } }] });
+      if (gRound === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'g3', name: 'applyEdit', input: { path: 'relations', value: [{ from: '甲', to: '旧悬空', type: '旧账' }] } }] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'g4', name: 'finish', input: { summary: '修好了' } }] });
+    };
+    const gRes = await AA.runAuthoringLoop(dGate, '加一条关系', { caller: gateCaller, conventions: '', blockingChecks: [], maxTokens: 1000000 });
+    ok(gRes.finished && gRes.stopReason === 'finish', '质量闸：修掉新病后放行 finish（存量旧悬空不追责）');
+    const gTR = gRes.conversation.filter(m => m.role === 'tool').reduce((a, m) => a.concat(m.toolResults || []), []);
+    const gRefused = gTR.filter(tr => tr.name === 'finish' && String(tr.content).indexOf('quality-gate-worse') >= 0);
+    ok(gRefused.length === 1, '质量闸：引入新悬空关系的 finish 被顶回(quality-gate-worse)');
+    ok(gTR.some(tr => tr.name === 'finish' && String(tr.content).indexOf('relation-consistency') >= 0 && String(tr.content).indexOf('1→2') >= 0), '顶回信息带组名与基线→现值');
+
     console.log('— UI·X applySelectedDiffs 逐条接受/拒绝 —');
     const xCur = { name: '原名', factions: [{ name: '甲', power: 5 }, { name: '乙', power: 3 }], time: { year: 1627 } };
     const xDraft = { name: '新名', factions: [{ name: '甲改', power: 5 }, { name: '乙', power: 3 }, { name: '丙', power: 1 }], time: { year: 1628 } };
