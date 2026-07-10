@@ -1224,14 +1224,23 @@ function _sShowCtxInfo() {
   html += ' · 模型: ' + model;
   html += ' · 来源: ' + (manual ? '手动设置' : layer);
   if (wl > 0 && !manual) html += ' · 白名单参考: ' + wl + 'K';
-  // 最近探测日志
+  // 最近探测日志（2026-07-10 改显示进服务窗：此前 <details> 在本行=模型信息栏内联展开·日志把模型那栏顶掉——改点击后渲染进 s-status 服务窗·再点收起）
   if (typeof _ctxDetectLog !== 'undefined' && _ctxDetectLog.length > 0) {
-    html += '<details style="margin-top:4px;"><summary style="cursor:pointer;color:var(--txt-d);">探测日志 (' + _ctxDetectLog.length + '条)</summary>';
-    html += '<div style="max-height:120px;overflow-y:auto;font-size:0.71rem;padding:4px;background:var(--bg-3);border-radius:4px;margin-top:2px;">';
-    _ctxDetectLog.forEach(function(e) { html += '<div>' + e.time + ' ' + e.msg + '</div>'; });
-    html += '</div></details>';
+    html += ' · <a href="javascript:void(0)" onclick="_sShowDetectLog()" style="color:var(--gold);cursor:pointer;">探测日志(' + _ctxDetectLog.length + '条)</a>';
   }
   el.innerHTML = html;
+}
+
+/** 探测日志渲染进服务窗（s-status）·再点收起（2026-07-10） */
+function _sShowDetectLog() {
+  var st = _$('s-status'); if (!st) return;
+  if (st.querySelector('#s-detect-log')) { st.innerHTML = ''; return; }
+  if (typeof _ctxDetectLog === 'undefined' || !_ctxDetectLog.length) { st.innerHTML = '<span style="color:var(--txt-d);">（暂无探测日志）</span>'; return; }
+  var h = '<div id="s-detect-log"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--gold);">探测日志 (' + _ctxDetectLog.length + '条)</span><a href="javascript:void(0)" onclick="_sShowDetectLog()" style="color:var(--txt-d);font-size:0.7rem;cursor:pointer;">收起 ✕</a></div>';
+  h += '<div style="max-height:120px;overflow-y:auto;font-size:0.71rem;padding:4px;background:var(--bg-3);border-radius:4px;margin-top:2px;">';
+  _ctxDetectLog.forEach(function(e) { h += '<div>' + e.time + ' ' + (typeof escHtml === 'function' ? escHtml(e.msg) : e.msg) + '</div>'; });
+  h += '</div></div>';
+  st.innerHTML = h;
 }
 
 /** 重新探测上下文窗口 */
