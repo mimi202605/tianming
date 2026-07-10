@@ -919,7 +919,8 @@
           '3. 一律追加禁则：无文字/无水印/无现代物/无奇幻元素。',
           '4. 北族(女真/契丹/党项/草原)人物追加：避免清代辫发剃额、避免无据的蒙元装束、避免角盔与奇幻甲。',
           '5. 女性/未成年/俘虏等人物追加：庄重肖像、不性化、不羞辱、不血腥。',
-          '6. 剧本已有有效立绘的绝不覆盖（除非玩家点名要换）；玩家未配生图 API 时报错即停，改为把 appearance 文字描述写丰满。'
+          '6. 剧本已有有效立绘的绝不覆盖（除非玩家点名要换）；玩家未配生图 API 时报错即停，改为把 appearance 文字描述写丰满。',
+          '7. 生成后按需复用：同一图要用到别处（势力 leaderPortrait、事件配图等）用 copyField(from,to) 直拷——图不过上下文、不重新生成、不重复扣费。'
         ].join('\n')
       }]
     },
@@ -1158,6 +1159,15 @@
         prompt: { type: 'string', description: '画面描述（中文可·写清人物气质/服制/构图）' },
         size: { type: 'string', description: '尺寸·默认 1024x1024' }
       }, required: ['path', 'prompt'] }
+    },
+    {
+      name: 'copyField',
+      description: '把一个字段的值原样复制到另一个字段（值不经过你的上下文·专治立绘/旗徽等大图 data URL 的复用挪移——generateImage 生成一次·copyField 多处复用零成本零重生）。享 applyEdit 同套权限/落账/回读。',
+      parameters: { type: 'object', properties: {
+        from: { type: 'string', description: '源字段路径·如 characters.3.portrait' },
+        to: { type: 'string', description: '目标字段路径·如 factions.2.leaderPortrait' },
+        reason: { type: 'string', description: '为何复制(短句·落历史)' }
+      }, required: ['from', 'to'] }
     },
     {
       name: 'multiEdit',
@@ -1537,11 +1547,11 @@
   }
 
   // 工具B · 写后回读：写类工具结果回挂"变更后当前值"·agent 不必再 getField 确认·减重复读
-  var _WRITE_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, generateImage: 1 };
+  var _WRITE_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, generateImage: 1, copyField: 1 };
   // 刀G3(2026-07-02·CC 对照) · 只读/致变工具表：重复读去重与"纯勘察打转"检测共用。
   //   validateDraft/preflight 亦只读——结果随草稿变·但去重有"期间零写入"守卫·天然安全。
   var _READ_TOOLS = { getField: 1, getFields: 1, searchEntities: 1, globalSearch: 1, findReferences: 1, listCollection: 1, describeSchema: 1, listGaps: 1, fieldContract: 1, genReference: 1, readSource: 1, listSource: 1, grepSource: 1, mapOverview: 1, checkHistory: 1, validateDraft: 1, preflight: 1 };
-  var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1, generateImage: 1 };
+  var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1, generateImage: 1, copyField: 1 };
   // 刀G4(2026-07-02·CC read-before-edit 新鲜度对照) · 外部修改防护:agent 运行期间用户可能在编辑器里
   //   手改草稿——按顶层区段留指纹·写前对照·外部改过则拒写要求重读(agent 自己的读/写都会刷新指纹)。
   //   注:CC 的"先读后写"门有意不搬——国师初始消息自带草稿摘要+写后有 nowValue 回读·硬加会拦正常流程。
@@ -1560,6 +1570,7 @@
     var roots;
     switch (name) {
       case 'applyEdit': case 'applyPush': case 'removeEntity': case 'generateImage': roots = [_pathRoot(input.path)]; break;
+      case 'copyField': roots = [_pathRoot(input.to)]; break;
       case 'multiEdit': roots = (Array.isArray(input.edits) ? input.edits : []).map(function (e) { return _pathRoot(e && e.path); }); break;
       case 'bulkAdd': roots = [_pathRoot(input.collection)]; break;
       case 'mapAssignOwner': case 'renameRegion': roots = ['map', 'mapData']; break;
@@ -1591,6 +1602,9 @@
       } else if (name === 'bulkAdd') {
         var rrc = _resolvePath(draft, input.collection);
         if (rrc && Array.isArray(rrc.value)) result.collectionLength = rrc.value.length;
+      } else if (name === 'copyField') {
+        var rcp = _resolvePath(draft, input.to);
+        result.nowValue = _truncForLLM(rcp && rcp.value, 120);
       }
     } catch (e) {}
     return result;
@@ -1624,6 +1638,16 @@
           if (_w && _w.ok === false) return _w;
           return { ok: true, path: input.path, image: (_it && _it.b64_json) ? ('base64·约' + Math.round(_it.b64_json.length * 3 / 4 / 1024) + 'KB') : ('url·' + String(_it.url).slice(0, 60)), model: _icfg.model || 'dall-e-3' };
         }).catch(function (eG) { return { ok: false, reason: '生图失败：' + ((eG && eG.message) || eG) + '（可稍后重试或改用文字描述）' }; });
+      }
+      case 'copyField': {   // 生图复用（2026-07-10）：大值(立绘 data URL)经路径直拷·不过 LLM 上下文·复用 applyEdit 享权限/指纹/落账
+        if (!input.from || !input.to) return { ok: false, reason: '需要 from（源字段路径）与 to（目标字段路径）' };
+        var _cfr = _resolvePath(draft, input.from);
+        if (!_cfr.parent || _cfr.value === undefined) return { ok: false, reason: 'from 字段不存在或为空: ' + input.from };
+        var _cfw = applyEdit(draft, input.to, _cfr.value, { reason: input.reason || ('复制自 ' + input.from) });
+        if (_cfw && _cfw.ok === false) return _cfw;
+        var _cfsz = (typeof _cfr.value === 'string') ? _cfr.value.length : JSON.stringify(_cfr.value || '').length;
+        var _cfimg = (typeof _cfr.value === 'string' && _cfr.value.indexOf('data:image') === 0);
+        return { ok: true, from: input.from, to: input.to, copied: _cfimg ? ('图像·约' + Math.round(_cfsz * 3 / 4 / 1024) + 'KB') : ('值·' + _cfsz + '字符') };
       }
       case 'getField': {
         var rr = _resolvePath(draft, input.path);
@@ -2085,7 +2109,7 @@
       '⓪ ≥3 步的任务先用 todoWrite 列任务表再动手（每完成一步立即标 completed·恰保持一项 in_progress·计划变了重写整表）；finish 前任务表要么全部完成、要么如实更新掉确不需要的项（带着未完项收尾会被顶回）。单条杂感用 note。若需求含糊到无法动手（缺关键信息），先用 askClarification 问 1-3 个具体问题再继续；需求清楚就直接做。',
       '规则：① 只用工具修改/查询，不要直接输出 JSON 剧本正文。② 中文显示名（人物/势力/地名）保持中文，禁止英译。',
       '③【勘察】先查后改：getField（单路径）/getFields（批量·一次读多个路径省往返，需同时核对多处时优先用它）/listCollection/describeSchema 看清现状与字段；searchEntities/listGaps 查实体与规格缺口；不确定东西在哪个集合时用 globalSearch 全局检索定位。想确认正式游戏怎么读某字段、读不读它，用 fieldContract 查契约（按需查，别凭印象）；想看游戏 UI/逻辑的源码实现，用 listSource 找文件、readSource 读、grepSource 全局搜——可直接读整个代码库。生成或大改某部分(人物/势力/经济/官制/封臣…)前，先 genReference 看老编辑器对该部分的生成范式(设定深度/字段形状/朝代逻辑/参数区间)，借鉴后再动手。',
-      '④【落改】bulkAdd/multiEdit 一次多改提效。改名优先 renameEntity（联动所有引用、不留死链）；地图地块/省名改名用 renameRegion（同步 map/mapData 双镜像·如需联动其他引用再补 renameEntity）；删除实体前先 findReferences 查谁引用了它，再 removeEntity。改地图归属（把某地块划给某势力、调整疆域）先 mapOverview 看清地块/归属/势力，再 mapAssignOwner 按地块名+势力名改（自动上色、同步双镜像）。玩家配了生图 API 时，可用 generateImage 给人物立绘(characters.N.portrait)/势力旗徽生成图像（未配置会明确报错，届时用文字描述代替，不要反复重试）。与用户需求相关的必需缺口顺手补齐，让剧本完整可玩。',
+      '④【落改】bulkAdd/multiEdit 一次多改提效。改名优先 renameEntity（联动所有引用、不留死链）；地图地块/省名改名用 renameRegion（同步 map/mapData 双镜像·如需联动其他引用再补 renameEntity）；删除实体前先 findReferences 查谁引用了它，再 removeEntity。改地图归属（把某地块划给某势力、调整疆域）先 mapOverview 看清地块/归属/势力，再 mapAssignOwner 按地块名+势力名改（自动上色、同步双镜像）。玩家配了生图 API 时，可用 generateImage 给人物立绘(characters.N.portrait)/势力旗徽生成图像（未配置会明确报错，届时用文字描述代替，不要反复重试）；生成的图要复用/挪到别的字段用 copyField(from,to) 直拷——图片值极大，绝不要 getField 读出来再 applyEdit 写回。与用户需求相关的必需缺口顺手补齐，让剧本完整可玩。',
       '⑤【自查与收尾】每改完一批用 validateDraft 自查，有违规继续修（写类工具的返回已回挂变更后的当前值 nowValue/nowValues/collectionLength，据此确认改动已落地，无需再 getField 重读确认）。改好后用 preflight 跑运行时体检（确保游戏能正常加载），有 blockers 继续修到 bootable，再调用 finish——summary 要向玩家说清「改了什么、为什么这么改」（具体到关键实体/字段，2-4 句中文），不要只写"完成"。',
       '⑥ 若发现该玩家/剧本有值得长期沿用的约定（命名规律、文风、设定惯例），可调 recordConvention 记一条（仅在确有发现时，别凑数）；从对话中了解到**推导不出来的背景**（玩家是谁与偏好/玩家给的做法反馈/创作长线目标/外部资料指引），用 saveMemory 存对应类型的记忆供下次共事召回——剧本里本就有的数据与本次改动明细不要存。⑦ 用户消息可能附图（编辑器截图/史料素材/手绘草图）——图即需求的一部分，按图中信息办。⑧ 对没把握的改动（史实存疑、靠推测填充）调 flagUncertain 标一下路径，提醒玩家重点复核（只标真没把握的）；运行中若在工具结果里收到「（插话）」注入，那是玩家的实时补充指令——完成当前一步后必须优先处理它，勿忽略。',
       '⑨【填实·禁空内容·铁律】新增或改写实体必须填到可直接用的质量，绝不留空：先用 listCollection / searchEntities 看一两个剧本里已有的同类实体（或 genReference 看生成范式），照着它们的字段集与丰满度，把新实体的所有相关字段都填上有意义的中文内容——身份/官衔/数值(能力/人口/兵力等)/背景小传/性格/目标/关系/履历等该有的都要有，数值要符合设定区间、彼此自洽。禁止留空字符串、0 占位（除非数值确为 0）、"待补/TODO/未知/暂无"之类占位词，也禁止只填 name 就交差。createEntity 模板只是最小骨架，拿到后必须逐字段补全。宁可少加一个实体，也要把加的每个都填实、达到与官方实体同等的完整度。',
@@ -2240,6 +2264,7 @@
     input = input || {};
     switch (name) {
       case 'applyEdit': case 'applyPush': case 'removeEntity': case 'generateImage': return [_topOf(input.path)];
+      case 'copyField': return [_topOf(input.to)];
       case 'bulkAdd': return [_topOf(input.collection)];
       case 'multiEdit': return (Array.isArray(input.edits) ? input.edits : []).map(function(e) { return _topOf(e && e.path); });
       case 'renameEntity': return null;

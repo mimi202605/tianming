@@ -460,7 +460,8 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(rG1.ok === true && /images\/generations$/.test(_imgReq.url) && _imgReq.body.model === 'flux-1' && _imgReq.body.response_format === 'b64_json', 'H7 真调生图端点(模型/回参形制对)');
   ok(dG.characters[0].portrait === 'data:image/png;base64,aGVsbG8=', 'H7 图片以 data URL 写入指定字段(经 applyEdit 管线)');
   var agSrc7 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent.js'), 'utf8');
-  ok(/renameRegion: 1, generateImage: 1 \}/.test(agSrc7) && /case 'generateImage': return \[_topOf\(input\.path\)\]/.test(agSrc7), 'H7 注册进写工具/权限沙箱/指纹管线(范围与危险闸同管)');
+  ok(/renameRegion: 1, generateImage: 1, copyField: 1 \}/.test(agSrc7) && /case 'generateImage': return \[_topOf\(input\.path\)\]/.test(agSrc7), 'H7 注册进写工具/权限沙箱/指纹管线(范围与危险闸同管·copyField 同帐 2026-07-10)');
+  ok(/case 'copyField': return \[_topOf\(input\.to\)\]/.test(agSrc7), 'H7b copyField 危险闸按目标路径记账');
   delete global.fetch;
 
   // ───────── H8 · 附件与视觉(拖拽/粘贴截图/文件导入·Claude 桌面端对照) ─────────

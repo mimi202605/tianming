@@ -490,6 +490,18 @@ function ok(cond, msg) {
     ok(!AA.applyRemove({}, 'ai.key').ok, 'applyRemove 拒绝 blocked path');
     ok(AA.dispatchTool(draftC, 'removeEntity', { path: 'factions.清' }).ok && draftC.factions.length === 1, 'removeEntity 走 dispatch 删势力');
 
+    console.log('— C2: copyField 生图复用直拷（2026-07-10）—');
+    const bigImg = 'data:image/png;base64,' + 'A'.repeat(40000);
+    const draftCF = AA.makeDraft({ characters: [{ name: '张', portrait: bigImg }, { name: '李' }], factions: [{ name: '明' }] });
+    const cf1 = AA.dispatchTool(draftCF, 'copyField', { from: 'characters.张.portrait', to: 'factions.明.leaderPortrait' });
+    ok(cf1.ok === true && draftCF.factions[0].leaderPortrait === bigImg, 'copyField 大图 data URL 经路径直拷落目标字段');
+    ok(/图像·约\d+KB/.test(cf1.copied), 'copyField 返回图像体量摘要(不把大值送回上下文)');
+    const cf2 = AA.dispatchTool(draftCF, 'copyField', { from: 'characters.王.portrait', to: 'characters.李.portrait' });
+    ok(cf2.ok === false && /from/.test(cf2.reason), 'copyField 源字段不存在 → 明确报错');
+    ok(AA.dispatchTool(draftCF, 'copyField', { from: 'characters.张.portrait', to: 'ai.key' }).ok === false, 'copyField 写入享 applyEdit 同套拦截(blocklist)');
+    ok(AA.dispatchTool(draftCF, 'copyField', { from: 'characters.张.portrait' }).ok === false, 'copyField 缺 to → 拒绝');
+    ok(AA.AGENT_TOOLS.some(t => t.name === 'copyField'), 'copyField 已注册进 AGENT_TOOLS');
+
     console.log('— UI·X applySelectedDiffs 逐条接受/拒绝 —');
     const xCur = { name: '原名', factions: [{ name: '甲', power: 5 }, { name: '乙', power: 3 }], time: { year: 1627 } };
     const xDraft = { name: '新名', factions: [{ name: '甲改', power: 5 }, { name: '乙', power: 3 }, { name: '丙', power: 1 }], time: { year: 1628 } };
