@@ -1284,7 +1284,7 @@ function _wtConfirmPending() {
   }
   // 查证轨迹入持久档（2026-07-10 刀③·此前只在确认框一闪而过——翻问天历史可回看 AI 凭什么裁定）
   if (p._agentTrace && p._agentTrace.length) {
-    GM._wentianHistory.push({ role: 'system', content: '⌕ 查证轨迹：' + p._agentTrace.join(' → ') });
+    GM._wentianHistory.push({ role: 'system', content: '⌕ 查证轨迹：' + p._agentTrace.join(' → ') }); // arch-ok 问天历史行·与本函数既有 _wentianHistory push 同容器同性质(刀③查证轨迹)
   }
   _wtPending = null;
   var cb = _$('wt-confirm-box'); if (cb) cb.remove();
