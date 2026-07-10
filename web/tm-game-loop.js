@@ -1282,6 +1282,10 @@ function _wtConfirmPending() {
     GM._wentianHistory.push({ role: 'system', content: sysMsg });
     toast('\u6307\u4EE4\u5DF2\u5165\u5E93');
   }
+  // 查证轨迹入持久档（2026-07-10 刀③·此前只在确认框一闪而过——翻问天历史可回看 AI 凭什么裁定）
+  if (p._agentTrace && p._agentTrace.length) {
+    GM._wentianHistory.push({ role: 'system', content: '⌕ 查证轨迹：' + p._agentTrace.join(' → ') });
+  }
   _wtPending = null;
   var cb = _$('wt-confirm-box'); if (cb) cb.remove();
   _wtRenderHistory();
