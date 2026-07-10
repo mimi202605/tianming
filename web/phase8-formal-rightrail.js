@@ -966,9 +966,10 @@
     var selectedKey = selectedRow ? selectedRow.key : '';
     var groups = rightBuildArmyGroups(rows);
     var listToken = 'army-' + (++_rightArmyRenderSeq);
+    var armyTab = state.rightArmyTab === 'roster' ? 'roster' : 'overview';   // 页签早判·概览页不渲名册也不排水合
     var deferredList = rows.length > RIGHT_ARMY_INITIAL_ROWS;
     var syncGroups = deferredList ? rightSliceArmyGroups(groups, RIGHT_ARMY_INITIAL_ROWS) : groups;
-    if (deferredList) rightScheduleArmyListHydration(listToken, groups, selectedKey);
+    if (deferredList && armyTab === 'roster') rightScheduleArmyListHydration(listToken, groups, selectedKey);
     var armyAlerts = rows.map(function(row){
       var a = row.army;
       var morale = rightArmyPercent(a, ['morale','moraleValue'], 50);
@@ -987,15 +988,19 @@
         armyAlerts.slice(0, 5).map(function(al){ return '<div class="tmrp-step"><b>' + esc(al.name) + '</b>' + esc(al.reasons.join(' · ')) + '</div>'; }).join('') +
         (armyAlerts.length > 5 ? '<div class="tmrp-meta">另有 ' + esc(armyAlerts.length - 5) + ' 部待察。</div>' : '') + '</section>'
       : '<section class="tmrp-card"><div class="tmrp-card-title"><span>军情概览</span><small>诸军态势</small></div><div class="tmrp-meta">诸军暂无士气、粮饷或兵变之虞，边防大体安稳。点名册中部队，可于左侧展开军情明细。</div></section>';
+    // 页签分栏(2026-07-11·玩家反馈行12——名册压在概览下方要滑动·不够明显)：概览/部队名册两页·镜像 issue-tab 惯例
+    var rosterCard = '<section class="tmrp-card"><div class="tmrp-card-title"><span>部队名册</span><small>点部队·左侧展开军情</small></div>' +
+      (rows.length ? '<div class="tmrp-scroll compact tmrp-army-list" data-army-list-token="' + attr(listToken) + '">' + rightArmyGroupsHtml(syncGroups, selectedKey) + (deferredList ? '<div class="tmrp-meta">余下部队正在载入...</div>' : '') + '</div>' : '<div class="tmrp-empty">麾下暂无军队。</div>') +
+      '</section>';
     return '<div class="tmrp-army-shell">' +
       '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(armies.length) + '</b><span>军队</span></div><div class="tmrp-stat"><b>' + esc(rightArmyFmtNum(total)) + '</b><span>总兵力</span></div><div class="tmrp-stat"><b>' + esc(avgMorale + '/' + avgTraining) + '</b><span>士气/训练</span></div></div>' +
-      rightGuozuoCard() +
-      armyOverviewCard +
-      rightArmoryCard() +
-      rightRovingCard() +
-      '<section class="tmrp-card"><div class="tmrp-card-title"><span>部队名册</span><small>点部队·左侧展开军情</small></div>' +
-      (rows.length ? '<div class="tmrp-scroll compact tmrp-army-list" data-army-list-token="' + attr(listToken) + '">' + rightArmyGroupsHtml(syncGroups, selectedKey) + (deferredList ? '<div class="tmrp-meta">余下部队正在载入...</div>' : '') + '</div>' : '<div class="tmrp-empty">麾下暂无军队。</div>') +
-      '</section>' +
+      '<div class="tmrp-tabs tmrp-army-tabs">' +
+      '<button type="button" class="' + (armyTab === 'overview' ? 'active' : '') + '" data-right-action="army-tab" data-tab="overview">军情概览' + (armyAlerts.length ? '·警' + armyAlerts.length : '') + '</button>' +
+      '<button type="button" class="' + (armyTab === 'roster' ? 'active' : '') + '" data-right-action="army-tab" data-tab="roster">部队名册·' + esc(armies.length) + '</button>' +
+      '</div>' +
+      (armyTab === 'roster'
+        ? rosterCard
+        : rightGuozuoCard() + armyOverviewCard + rightArmoryCard() + rightRovingCard()) +
       '</div>';
   }
 
@@ -2260,6 +2265,9 @@
     } else if (action === 'issue-tab') {
       state.rightIssueTab = data.tab || 'wendui';
       openPanel('issue');
+    } else if (action === 'army-tab') {
+      state.rightArmyTab = data.tab === 'roster' ? 'roster' : 'overview';
+      openPanel('army');
     } else if (action === 'outline-tab') {
       state.rightOutlineTab = data.tab || 'classes';
       rightCloseSocialFlyout();

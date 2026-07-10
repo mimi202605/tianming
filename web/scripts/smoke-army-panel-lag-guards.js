@@ -32,4 +32,9 @@ assert(!belongs.includes('rightKnownFactionNames();'), 'army ownership check mus
 assert(!/armies\.filter\s*\(\s*function\s*\(\s*a\s*\)\s*\{\s*return\s+rightArmyType\s*\(\s*a\s*\)\s*===\s*g/.test(renderArmy), 'renderArmy must not filter the full army list once per group');
 assert(!renderArmy.includes('armies.indexOf(a)'), 'renderArmy must not call indexOf for every army row');
 
+// 军务页签化契约(2026-07-11·玩家反馈行12：名册压在下方要滑动)
+assert(renderArmy.includes('tmrp-army-tabs') && renderArmy.includes('data-right-action="army-tab"'), 'renderArmy must render 概览/名册 tab bar');
+assert(/deferredList && armyTab === 'roster'/.test(renderArmy), 'roster hydration must only be scheduled when roster tab is shown');
+assert(/action === 'army-tab'/.test(source) && /state\.rightArmyTab = data\.tab === 'roster' \? 'roster' : 'overview'/.test(source), 'army-tab action must switch state.rightArmyTab and rerender');
+
 console.log('smoke-army-panel-lag-guards OK');
