@@ -1023,6 +1023,7 @@ async function _wtSend() {
           edictChannel: _r.edictChannel || '',
           interpretation: _r.interpretation || '',
           ambiguity: Array.isArray(_r.ambiguity) ? _r.ambiguity : [],
+          clarify: (_r.clarify && _r.clarify.question && Array.isArray(_r.clarify.options) && _r.clarify.options.length) ? _r.clarify : null,  // 歧义追问（刀⑤·agent 独有）
           plan: _r.plan || '',
           turn: GM.turn,
           _agentTrace: Array.isArray(_agRes.trace) ? _agRes.trace : []
@@ -1161,6 +1162,15 @@ function _wtShowPendingConfirmation() {
     p.ambiguity.forEach(function(q){ h += '<div>\u00B7 ' + escHtml(q) + '</div>'; });
     h += '</div>';
   }
+  // \u6B67\u4E49\u8FFD\u95EE\uFF082026-07-10 \u5200\u2464\u00B7agent \u72EC\u6709\uFF09\uFF1AAI \u62FF\u4E0D\u51C6\u2192\u7ED9\u53EF\u70B9\u9009\u9879\u00B7\u4E00\u70B9\u5373\u5E26\u6F84\u6E05\u91CD\u65B0\u8D70\u4E00\u904D\u95EE\u5929\uFF08\u91CD\u65B0\u67E5\u8BC1\u518D\u88C1\uFF09
+  if (p.clarify && p.clarify.question && Array.isArray(p.clarify.options) && p.clarify.options.length) {
+    h += '<div style="margin:6px 0 4px;padding:4px 6px;background:rgba(184,154,83,0.08);border-left:2px solid var(--gold-400);border-radius:2px;">'
+      + '<div style="font-size:0.66rem;color:var(--gold-300);margin-bottom:4px;">\uFF1F' + escHtml(String(p.clarify.question)) + '</div>'
+      + p.clarify.options.slice(0, 4).map(function (o, i) {
+          return '<button class="bt bsm" onclick="_wtClarifyPending(' + i + ')" style="font-size:0.66rem;margin:0 4px 4px 0;">' + escHtml(String(o)) + '</button>';
+        }).join('')
+      + '</div>';
+  }
   if (p.plan) h += '<div style="font-size:0.68rem;color:var(--celadon-400);margin-bottom:6px;font-style:italic;">\u2192 ' + escHtml(p.plan) + '</div>';
   // 按钮
   h += '<div style="display:flex;gap:6px;">';
@@ -1289,6 +1299,17 @@ function _wtConfirmPending() {
   _wtPending = null;
   var cb = _$('wt-confirm-box'); if (cb) cb.remove();
   _wtRenderHistory();
+}
+
+/** 歧义追问点选（2026-07-10 刀⑤）：把澄清拼回原指令·复用 _wtSend 整条管线重裁（agent 带着澄清重新查证） */
+function _wtClarifyPending(optIdx) {
+  var p = _wtPending; if (!p || !p.clarify || !Array.isArray(p.clarify.options)) return;
+  var opt = p.clarify.options[optIdx]; if (opt == null) return;
+  var content = String(p.raw || '').trim() + '（澄清：' + String(p.clarify.question || '').trim() + '→' + String(opt).trim() + '）';
+  _wtPending = null;
+  var cb = _$('wt-confirm-box'); if (cb) cb.remove();
+  var inp = _$('wt-input');
+  if (inp) { inp.value = content; _wtSend(); }
 }
 
   // ═══ 巨石拆分(20260706)：§5b 问天直改引擎(_wt* 硬改)已迁出 tm-game-loop-wentian-hardchange.js(紧接本文件之后装载) ═══

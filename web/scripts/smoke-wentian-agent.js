@@ -142,13 +142,14 @@ console.log('— §B · agent 循环(行为) —');
     };
     g3.callAIWithTools = function () {
       g3calls++;
-      return Promise.resolve({ toolCalls: [{ name: 'submit_wentian', input: { category: 'absolute', interpretation: 'y', hardChanges: [{ path: '仙术', op: 'set', value: 1 }] } }] });
+      return Promise.resolve({ toolCalls: [{ name: 'submit_wentian', input: { category: 'absolute', interpretation: 'y', hardChanges: [{ path: '仙术', op: 'set', value: 1 }], clarify: { question: '哪位王承恩？', options: ['司礼监太监', '蓟州总兵'] } } }] });
     };
     g3.window = g3; g3.global = g3; g3.globalThis = g3;
     vm.runInContext(read('tm-wentian-agent.js'), vm.createContext(g3), { filename: 'tm-wentian-agent.js' });
     var res3 = await g3.TM.WentianAgent.run('天意降下仙术', { teaching: 'T' });
     ok(res3 && res3.ok === true && g3calls === 1, 'absolute 天意档坏笔不退回(造物自由·首轮即提)');
     ok(res3.result.hardChanges[0]._dryRun && res3.result.hardChanges[0]._dryRun.ok === false, 'absolute 坏笔仍带标注(确认框黄标用)');
+    ok(res3.result.clarify && res3.result.clarify.question === '哪位王承恩？' && res3.result.clarify.options.length === 2, 'clarify 歧义追问透传(刀⑤)');
   })();
 })().then(function () {
   /* ── §C 接线契约 ──────────────────────────────────────────── */
@@ -163,6 +164,8 @@ console.log('— §B · agent 循环(行为) —');
   var wa = read('tm-wentian-agent.js');
   ok(/_wtDryRunHardChange/.test(wa) && /_validateSubmit/.test(wa), 'agent 接 submit 校验回路(dry-run 探针)');
   ok(/hc\._dryRun/.test(gl) && /_wtDryRunHardChange\(hc\.path\)/.test(gl), '确认框红绿预标接线(agent 标注复用·单发现场预演)');
+  ok(/clarify:/.test(wa), 'SUBMIT_TOOL 有 clarify 歧义追问字段(刀⑤)');
+  ok(/\nfunction _wtClarifyPending\(/.test(gl) && /onclick="_wtClarifyPending\(/.test(gl) && gl.indexOf('function _wtClarifyPending') > gl.indexOf('function _wtConfirmPending'), '歧义追问按钮接线(顶层函数·点选带澄清重裁)');
   ok(/wentianAgentMode/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))) && /问天·先查证后裁定/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))), '设置面板开关(默认启用可关)');
   ok(/tm-wentian-agent\.js/.test(read('index.html')), 'index.html 挂载(在只读工具之后)');
   console.log('\nsmoke-wentian-agent ' + (F0 === 0 ? 'PASS' : 'FAIL') + ' ' + P0 + '/' + (P0 + F0));

@@ -43,7 +43,8 @@
         edictText: { type: 'string', description: 'category=edictSubstitute 时必填·诏令正式措辞30-80字' },
         edictChannel: { type: 'string', enum: ['pol', 'mil', 'dip', 'eco', 'oth'] },
         structured: { type: 'object', description: '{target,action,scope,forbidden,measurable,condition}' },
-        ambiguity: { type: 'array', items: { type: 'string' } }
+        ambiguity: { type: 'array', items: { type: 'string' } },
+        clarify: { type: 'object', description: '仅当对象指代/意图拿不准且影响裁定时才填：向玩家提一个澄清问题·确认框会给可点选项·玩家一点即带澄清重裁。拿得准就不要填。', properties: { question: { type: 'string', description: '一句话问题' }, options: { type: 'array', items: { type: 'string' }, description: '2-4个候选短语(如两个同名人的身份区分)' } } }
       },
       required: ['category', 'interpretation']
     }
