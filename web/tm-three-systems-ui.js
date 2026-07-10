@@ -354,7 +354,9 @@
     });
     return out;
   }
-  function _tsAppointGeneral(aname) {
+  var _tsAppointRet = null;   // 易将来源标记(rightrail=右栏部队详情)·确认后据此定回跳·每次打开重置
+  function _tsAppointGeneral(aname, opts) {
+    _tsAppointRet = (opts && opts.ret) || null;
     var a = (global.GM && GM.armies || []).find(function(x){return x.name === aname;});
     if (!a) { _toast('未找到部队·' + aname); return; }
     var curName = a.commander || '';
@@ -407,7 +409,16 @@
     _pushEdict('谕：擢 ' + name + ' 为 ' + aname + ' 新统帅·原统帅另有任用。', '易将');
     try { if (typeof closeGenericModal === 'function') closeGenericModal(); } catch (e) {}
     _toast('已拜 ' + name + ' 为 ' + aname + ' 主帅');
-    try { if (typeof openMilitaryDetailPanel === 'function') openMilitaryDetailPanel(); } catch (e) {}
+    // 回跳按来源：右栏部队详情来的回刷飞出层·否则维持旧军务面板行为
+    if (_tsAppointRet === 'rightrail') {
+      _tsAppointRet = null;
+      try {
+        var _rr = global.TMPhase8FormalBridge && global.TMPhase8FormalBridge.rightrail;
+        if (_rr && typeof _rr.refreshArmyFlyout === 'function') _rr.refreshArmyFlyout();
+      } catch (e) {}
+    } else {
+      try { if (typeof openMilitaryDetailPanel === 'function') openMilitaryDetailPanel(); } catch (e) {}
+    }
   }
 
   // ─── 暴露 ───

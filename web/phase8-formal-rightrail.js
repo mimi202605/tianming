@@ -861,6 +861,7 @@
       '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="train" data-id="' + attr(armyKey) + '">整训</button>' +
       '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="redeploy" data-id="' + attr(armyKey) + '">调防</button>' +
       '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="chaoyi" data-id="' + attr(armyKey) + '">入朝议</button>' +
+      (rightArmyBelongsToPlayer(a) ? '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="appoint" data-id="' + attr(armyKey) + '" title="拜将易帅·仅在世将才可受命">易将</button>' : '') +
       (rightArmyBelongsToPlayer(a) ? '<button type="button" class="tmrp-btn" data-right-action="army-command" data-command="stance" data-id="' + attr(armyKey) + '" title="御驾亲征·出兵预勾(O11):此军接敌时 问我=会战阶段临场请旨 / 必亲征=免弹窗径入战术 / 必委之=径庙算">' + esc(rightArmyStanceLabel(a)) + '</button>' : '') +
       '</div>' +
       '</section>';
@@ -2087,6 +2088,10 @@
       state.rightChaoyiMode = 'tinyi';
       state.rightChaoyiTopic = name + ' 军务处置';
       openPanel('issue');
+    } else if (cmd === 'appoint') {
+      // 易将走既有拜帅弹窗(tm-three-systems-ui·活人候选/防死人守卫)·ret 标记令确认后回刷本飞出层而非旧军务面板
+      if (typeof window._tsAppointGeneral === 'function') window._tsAppointGeneral(army.name || name, { ret: 'rightrail' });
+      else toast('易将组件未加载');
     } else if (cmd === 'stance') {
       var cur = army._battleStance;   // O11 预勾三态轮换:问我→必亲征→必委之→问我(存 live GM.armies·随档)
       army._battleStance = cur === 'always' ? 'delegate' : cur === 'delegate' ? undefined : 'always';
