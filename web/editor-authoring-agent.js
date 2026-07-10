@@ -721,10 +721,13 @@
     };
   }
   // 生图 API 配置(全游戏共用 tm_api_image·与工坊生图面板同源)——agent 的 generateImage 工具用
+  // Key 留空复用主 API 的 Key（与游戏侧 ImageAPI.getConfig 同约·2026-07-10）
   function _loadImageApiConfig() {
     try {
       var t = JSON.parse((global.localStorage && global.localStorage.getItem('tm_api_image')) || '{}') || {};
-      return { key: t.key || '', url: (t.url || '').replace(/\/+$/, ''), model: t.model || 'dall-e-3' };
+      var k = t.key || '';
+      if (!k && t.url) { try { k = loadEditorApiConfig().key || ''; } catch (e2) {} }
+      return { key: k, url: (t.url || '').replace(/\/+$/, ''), model: t.model || 'dall-e-3' };
     } catch (e) { return { key: '', url: '', model: 'dall-e-3' }; }
   }
   // 次要模型配置：同 API 换便宜模型干杂活(三堂会审的史官/谏官·宏压缩摘要)——未配则返回 null(用主模型)
@@ -1603,8 +1606,13 @@
         var _icfg = _loadImageApiConfig();
         if (!_icfg.key || !_icfg.url) return { ok: false, errorCode: 'image-api-missing', reason: '生图 API 未配置：请玩家在「API 设置 → 生图」里填好（存 tm_api_image）后再试；当前请改用文字描述该形象并写入相邻描述字段。' };
         if (!input.path || !input.prompt) return { ok: false, reason: '需要 path（写入字段·如 characters.3.portrait）与 prompt（画面描述）' };
-        var _ibase = String(_icfg.url).replace(/\/+$/, ''); if (!/\/v\d+(beta)?$/i.test(_ibase)) _ibase += '/v1';
-        return _fetchJSON(_ibase + '/images/generations', {
+        // 端点归一化：基址补 /v1/images/generations·完整端点原样用（与 tm-ai-infra ImageAPI.normalizeUrl 同规·勿漂移·治「填完整端点→双拼 /v1 → 404」）
+        var _ibase = String(_icfg.url).replace(/\/+$/, '');
+        if (!/\/images\/(generations|edits|variations)$/i.test(_ibase)) {
+          if (!/\/v\d+(beta)?$/i.test(_ibase)) _ibase += '/v1';
+          _ibase += '/images/generations';
+        }
+        return _fetchJSON(_ibase, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _icfg.key },
           body: JSON.stringify({ model: _icfg.model || 'dall-e-3', prompt: String(input.prompt).slice(0, 1800), n: 1, size: input.size || '1024x1024', response_format: 'b64_json' })

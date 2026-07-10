@@ -2319,15 +2319,29 @@ function loadT(){var t=P.time;var map={"t-year":t.year,"t-prefix":t.prefix||"","
 //  全局图片生成API（独立于主文本API，编辑器和游戏通用）
 // ============================================================
 var ImageAPI = {
+  /** 生图端点归一化（2026-07-10 治「填基址→POST 到基址→404」）：
+      既收基址(https://api.x.com 或 …/v1 → 自动补 /v1/images/generations)·也收完整端点(…/images/generations 原样用)。
+      ★editor-authoring-agent.js generateImage 有同规镜像·改此处须同步。 */
+  normalizeUrl: function(u) {
+    u = String(u || '').trim().replace(/\/+$/, '');
+    if (!u) return u;
+    if (/\/images\/(generations|edits|variations)$/i.test(u)) return u;
+    if (!/\/v\d+(beta)?$/i.test(u)) u += '/v1';
+    return u + '/images/generations';
+  },
   /** 获取生图API配置 */
   getConfig: function() {
     var imgCfg = {};
     try { imgCfg = JSON.parse(localStorage.getItem('tm_api_image') || '{}'); } catch(e) {}
-    if (imgCfg.key && imgCfg.url) return {supported: true, key: imgCfg.key, url: imgCfg.url, model: imgCfg.model || 'dall-e-3'};
-    // 回退到主API
     var mainCfg = {};
     try { mainCfg = JSON.parse(localStorage.getItem('tm_api') || '{}'); } catch(e) {}
     if (typeof P !== 'undefined' && P.ai) mainCfg = P.ai;
+    // 填了生图 URL 就以它为准；Key 留空复用主 API 的 Key（设置页 2026-07-10 指引承诺·此前 Key 留空时 URL 被整个无视→落主API推断→404）
+    if (imgCfg.url) {
+      var _ik = imgCfg.key || mainCfg.key || '';
+      if (_ik) return {supported: true, key: _ik, url: this.normalizeUrl(imgCfg.url), model: imgCfg.model || 'dall-e-3', keyInherited: !imgCfg.key};
+    }
+    // 回退到主API
     var mainUrl = (mainCfg.url || '').toLowerCase();
     if (mainUrl.indexOf('openai.com') >= 0 && mainCfg.key) {
       return {supported: true, key: mainCfg.key, url: 'https://api.openai.com/v1/images/generations', model: 'dall-e-3', inferred: true};
