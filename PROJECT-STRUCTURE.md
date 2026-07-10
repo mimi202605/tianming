@@ -35,7 +35,7 @@ tianming/
 |---|---|---|
 | `deprecated/` | 旧·已废弃 | `release/`（1.1.x 安装包）、`release-hot-packages/`（18 个旧热更包 ≈7.6G）、`output/`（playwright 产物）、`__pycache__/`、2 个空目录、`.tmp-doc-recovery/` |
 | `reference/` | 旧·可参考 | `map-pipeline/`（17 个建图脚本 + `history map/`）、`backups/`、`_bak/`、`_codex_tmp/`、`codex-claudecode-dialogue/`、`phase8-moodboards/`、`saves/`、`turn-data/`、`old-plans/`（5 旧计划）、`docs/`（6 旧计划）、`restore-tinyi-manual.js` |
-| `current/` | 现在·在用 | `findings.md` / `progress.md` / `task_plan.md`、`docs/`（audit-report + design/）｜⚠️ 见疑难点⑤ |
+| `current/` | 现在·在用 | `findings.md` / `progress.md` / `task_plan.md`（根目录副本已于 2026-07-10 清理下架·历史在 git）、`docs/`（audit-report + design/）｜⚠️ 见疑难点⑤ |
 | `future/` | 未来·后续开发 | `godot/`（Godot 迁移工程）、`tools/`（godot-mcp + monitor）、`scripts/`（42 smoke 测试） |
 
 > 校验：关键运行文件 12/12 在位 · 四入口语法校验 PASS · 删除数 0。
@@ -55,7 +55,7 @@ tianming/
 
 按优先级：
 
-1. **[高·已立计划] `web/` 命名 + 结构**：412 个 js 平铺 + 310 顺序脚本 + 全局 `window.*` 串联。绝大多数已合规，真正违例仍是那一小撮（`phase8-formal-*`、`tm-tinyi-v3` 等，**尚未改名**）。统一命名规范 + 切割式重命名计划见 **`NAMING-PLAN.md`**；协作 agent 改动守则见 **`DEV-GUIDE.md`**。深度重构（去冗余 `tm-` / 进子目录，200+ 文件）列为可选后续。
+1. **[高·已立计划] `web/` 命名 + 结构**：412 个 js 平铺 + 310 顺序脚本 + 全局 `window.*` 串联。绝大多数已合规，真正违例仍是那一小撮（`phase8-formal-*`、`tm-tinyi-v3` 等，**尚未改名**）。统一命名规范 + 切割式重命名计划见 **`docs/NAMING-PLAN.md`**；协作 agent 改动守则见 **`DEV-GUIDE.md`**。深度重构（去冗余 `tm-` / 进子目录，200+ 文件）列为可选后续。
 2. **[已定] godot-mcp 先禁用**：`tools/` 移入 `future/` 后该 MCP 程序已不在原路径、连不上。决策——**先禁用**（开关在游戏项目之外的 Claude 用户级配置，需本人操作）；后续要用 Godot 集成时，再把路径指向 `_archive/future/tools/godot-mcp/` 或还原后启用。
 3. **[中] GUI 实跑验证**：已做语法 + 结构校验，但 Electron GUI 未实测。双击 `启动天命.bat`，确认进主菜单 / 读官方剧本 / 存读档正常。
 4. **[低] scenarios dev/发布分离**：7 个剧本 json（约 10MB）中只 2 个官方随包，其余 5 个为本地 dev 剧本，可单独归置（注：`scenarios/` 总 116MB 主要是素材，非 json）。

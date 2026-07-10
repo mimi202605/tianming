@@ -318,7 +318,7 @@ tm-var-drawers / -ext / -final · 变量抽屉的 3 代版本
 2. **巨石文件**：平铺层 `tm-tinyi-v3.js`(6938)/`tm-endturn-apply.js`(5378)/`tm-chaoyi-changchao.js`(5100) 仍是单 IIFE，且有 ~3200 行单函数。按 DEV-GUIDE 小步切，保持 `window.*` 挂载名不变。
 3. **回退项**：`localStorage` 未 try 从 0 涨回 33；空 catch 159。lint 工具已能逐个定位。
 4. **持续**：每新增 AI 字段必经 `TM_AI_SCHEMA`，每新增数据字段优先经 `DA.*`（别再加裸 `GM.` 访问扩大 #1 的债）。
-5. **文件名规范化**：`tm-tinyi-v3.js`/`phase8-formal-*` 等违例改名见 `NAMING-PLAN.md`（搭车整包热更发，别单发）。
+5. **文件名规范化**：`tm-tinyi-v3.js`/`phase8-formal-*` 等违例改名见 `docs/NAMING-PLAN.md`（搭车整包热更发，别单发）。
 
 ---
 
