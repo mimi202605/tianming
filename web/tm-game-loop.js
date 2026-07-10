@@ -1131,7 +1131,20 @@ function _wtShowPendingConfirmation() {
     var _hcList = (p.hardChanges && p.hardChanges.length) ? p.hardChanges : (p.hardChange && p.hardChange.path ? [p.hardChange] : []);
     _hcList.forEach(function (hc) {
       if (!hc || !hc.path) return;
-      h += '<div style="font-size:0.68rem;color:var(--vermillion-300);padding:4px 6px;background:rgba(192,64,48,0.1);border:1px solid rgba(192,64,48,0.3);border-radius:3px;margin-bottom:4px;font-family:monospace;">\u2696\ufe0e <b>' + escHtml(hc.path) + '</b> <span style="color:var(--ink-200);">' + escHtml(hc.op||'set') + '</span> <b>' + escHtml(String(hc.value)) + '</b>' + (hc.note ? ' <span style="color:var(--ink-300);font-family:inherit;">\u00b7' + escHtml(String(hc.note).slice(0, 30)) + '</span>' : '') + '</div>';
+      // dry-run \u7ea2\u7eff\u9884\u6807\uff082026-07-10 \u5200\u2461\uff09\uff1aagent \u5df2\u6807(_dryRun)\u7528\u73b0\u6210\u00b7\u5355\u53d1\u6a21\u5f0f\u73b0\u573a\u9884\u6f14\u2014\u2014\u73a9\u5bb6\u70b9\u786e\u8ba4\u524d\u5c31\u77e5\u9053\u54ea\u7b14\u4f1a\u843d\u7a7a
+      var _dr = hc._dryRun;
+      if (!_dr && typeof _wtDryRunHardChange === 'function') {
+        try { var _d0 = _wtDryRunHardChange(hc.path); _dr = _d0 ? { ok: !!_d0.ok, reason: _d0.reason || '' } : null; } catch (_) { _dr = null; }
+      }
+      var _mark = '', _bd = 'rgba(192,64,48,0.3)';
+      if (_dr && _dr.ok) _mark = '<span style="color:var(--celadon-400);">\u2713</span> ';
+      else if (_dr && !_dr.ok) {
+        if (p.category === 'absolute') _mark = '<span style="color:var(--amber-400);">\u26a0</span> ';
+        else { _mark = '<span style="color:var(--vermillion-400);font-weight:700;">\u2717</span> '; _bd = 'rgba(192,64,48,0.7)'; }
+      }
+      h += '<div style="font-size:0.68rem;color:var(--vermillion-300);padding:4px 6px;background:rgba(192,64,48,0.1);border:1px solid ' + _bd + ';border-radius:3px;margin-bottom:4px;font-family:monospace;">' + _mark + '\u2696\ufe0e <b>' + escHtml(hc.path) + '</b> <span style="color:var(--ink-200);">' + escHtml(hc.op||'set') + '</span> <b>' + escHtml(String(hc.value)) + '</b>' + (hc.note ? ' <span style="color:var(--ink-300);font-family:inherit;">\u00b7' + escHtml(String(hc.note).slice(0, 30)) + '</span>' : '')
+        + ((_dr && !_dr.ok) ? '<div style="font-size:0.6rem;font-family:inherit;color:' + (p.category === 'absolute' ? 'var(--amber-400)' : 'var(--vermillion-400)') + ';margin-top:2px;">' + escHtml(p.category === 'absolute' ? ('\u5929\u610f\u9020\u7269\uff1a' + (_dr.reason || '\u5c06\u521b\u5efa\u65b0\u5b57\u6bb5')) : ('\u786e\u8ba4\u540e\u5c06\u88ab\u62d2\uff1a' + (_dr.reason || '\u89e3\u6790\u4e0d\u5230\u771f\u5b9e\u5b57\u6bb5'))) + '</div>' : '')
+        + '</div>';
     });
     if (p._agentTrace && p._agentTrace.length) {
       h += '<div style="font-size:0.62rem;color:var(--celadon-400);margin-bottom:4px;">\u2634 \u5df2\u67e5\u8bc1\uff1a' + escHtml(p._agentTrace.join(' \u2192 ')) + '</div>';
@@ -1198,7 +1211,9 @@ function _wtConfirmPending() {
         var aPath1 = _wtNormalizeHardChangePath(ahc.path);
         var aok1 = _wtApplyHardChange(ahc.path, ahc.op || 'set', ahc.value, { allowCreate: true });  // 天意档保留造物自由（幽灵键闸只锁 hardChange 档）
         if (aok1) aOkN++;
-        return Object.assign({}, ahc, { path: aPath1, _applied: !!aok1 });
+        var aRec = Object.assign({}, ahc, { path: aPath1, _applied: !!aok1 });
+        delete aRec._dryRun;  // 预标只服务确认框·不入存档
+        return aRec;
       });
       dir.hardChange = aDone[0] || null;
       if (aDone.length > 1) dir.hardChanges = aDone;
@@ -1221,7 +1236,9 @@ function _wtConfirmPending() {
     var hDone = _wtHcList.map(function (hc1) {
       var ok1 = _wtApplyHardChange(hc1.path, hc1.op || 'set', hc1.value);
       if (ok1) hOkN++;
-      return Object.assign({}, hc1, { _applied: !!ok1 });
+      var hRec = Object.assign({}, hc1, { _applied: !!ok1 });
+      delete hRec._dryRun;  // 预标只服务确认框·不入存档
+      return hRec;
     });
     var hc = hDone[0] || {};
     var ok = !!(hDone[0] && hDone[0]._applied);

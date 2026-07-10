@@ -52,6 +52,30 @@
     try { return (root.TM && TM.Endturn && TM.Endturn.AgentReadTools) || null; } catch (_) { return null; }
   }
 
+  // dry-run 探针（2026-07-10 刀②·引擎导出 _wtDryRunHardChange·缺位[node裸跑/装载序异常]→null=跳过校验保旧行为）
+  function _dryRun(path) {
+    try {
+      if (typeof root._wtDryRunHardChange === 'function') return root._wtDryRunHardChange(path);
+    } catch (_) {}
+    return null;
+  }
+
+  // submit 校验：hardChanges 逐笔 dry-run 预演(不写入)·就地标注 hc._dryRun 供确认框红绿预标。
+  // 返回坏笔清单（仅 category=hardChange 计坏·absolute 天意档不拒只标注——造物自由是其语义）。
+  function _validateSubmit(result) {
+    var bad = [];
+    var hcs = (result && Array.isArray(result.hardChanges)) ? result.hardChanges : [];
+    for (var i = 0; i < hcs.length; i++) {
+      var hc = hcs[i];
+      if (!hc || !hc.path) continue;
+      var dr = _dryRun(hc.path);
+      if (!dr) continue;
+      hc._dryRun = { ok: !!dr.ok, kind: dr.kind || '', reason: dr.reason || '' };
+      if (!dr.ok && result.category !== 'absolute') bad.push({ i: i, path: hc.path, reason: dr.reason || '解析不到真实字段' });
+    }
+    return bad;
+  }
+
   function enabled() {
     try {
       if (root.P && P.conf && P.conf.wentianAgentMode === false) return false;
@@ -103,10 +127,23 @@
         return { ok: false, error: (eCall && eCall.message) || String(eCall) };
       }
       var calls = (resp && resp.toolCalls) || [];
+      var submitted = null;
       for (var s = 0; s < calls.length; s++) {
-        if (calls[s] && calls[s].name === 'submit_wentian' && calls[s].input) {
-          return { ok: true, result: calls[s].input, trace: trace };
+        if (calls[s] && calls[s].name === 'submit_wentian' && calls[s].input) { submitted = calls[s].input; break; }
+      }
+      if (submitted) {
+        // submit 校验回路（2026-07-10 刀②）：hardChange 档解析不到真实字段的笔=确认后必落幽灵键闸被拒——
+        // 还有轮次就把校验报告喂回·逼 AI 用工具核实真名后重提；轮尽仍坏→照常返回(确认框红标兜底·玩家裁决)。
+        var bad = _validateSubmit(submitted);
+        if (bad.length && round < maxR) {
+          transcript += '\n【submit 校验·未通过】你提交的 hardChanges 有 ' + bad.length + ' 笔解析不到真实字段（确认后会被引擎拒绝）：\n'
+            + bad.map(function (x) { return '- 第' + (x.i + 1) + '笔 path「' + x.path + '」：' + x.reason; }).join('\n')
+            + '\n请用只读工具核实对象在档真名与真实字段路径·然后重新调用 submit_wentian（无问题的笔保持原样一并重提）。\n';
+          trace.push('校验退回×' + bad.length);
+          if (typeof opts.onProgress === 'function') { try { opts.onProgress('校验退回', round); } catch (_) {} }
+          continue;
         }
+        return { ok: true, result: submitted, trace: trace };
       }
       // 执行只读工具（≤4/轮）·结果滚入 transcript 续轮
       var used = 0;

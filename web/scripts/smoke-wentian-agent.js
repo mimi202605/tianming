@@ -108,6 +108,45 @@ console.log('— §B · agent 循环(行为) —');
     g.P.conf.wentianAgentMode = undefined;
     delete g.callAIWithTools;
     ok(WA.enabled() === false, '无 callAIWithTools 基建→enabled false(永不断问天)');
+
+    /* §B2 submit 校验回路（刀②2026-07-10）：坏笔→校验退回→重提；absolute 不拒只标注 */
+    function mkTools() { return { Endturn: { AgentReadTools: {
+      defs: function () { return [{ name: 'get_field', description: 'g', parameters: { type: 'object', properties: {}, required: [] } }]; },
+      handle: function (name) { return Promise.resolve({ ok: true, name: name, text: '在档字段:_energy=85' }); }
+    } } }; }
+    var g2calls = [];
+    var g2 = { TM: mkTools(), P: { conf: {} }, GM: {},
+      _wtDryRunHardChange: function (p) {
+        return (p === '_energy' || p === 'huangwei.index')
+          ? { ok: true, kind: 'generic', normalized: p }
+          : { ok: false, kind: 'ghost', normalized: p, reason: '字段「' + p + '」不存在（拒创建幽灵键）' };
+      }
+    };
+    g2.callAIWithTools = function (transcript) {
+      var n = g2calls.push({ sawReject: transcript.indexOf('submit 校验·未通过') >= 0 });
+      if (n === 1) return Promise.resolve({ toolCalls: [{ name: 'submit_wentian', input: { category: 'hardChange', interpretation: 'x', hardChanges: [{ path: '精气神', op: 'set', value: 100 }, { path: 'huangwei.index', op: 'add', value: 5 }] } }] });
+      return Promise.resolve({ toolCalls: [{ name: 'submit_wentian', input: { category: 'hardChange', interpretation: 'x2', hardChanges: [{ path: '_energy', op: 'set', value: 100 }, { path: 'huangwei.index', op: 'add', value: 5 }] } }] });
+    };
+    g2.window = g2; g2.global = g2; g2.globalThis = g2;
+    vm.runInContext(read('tm-wentian-agent.js'), vm.createContext(g2), { filename: 'tm-wentian-agent.js' });
+    var res2 = await g2.TM.WentianAgent.run('精力拉满·皇威+5', { teaching: 'T' });
+    ok(res2 && res2.ok === true && g2calls.length === 2, '坏笔第一轮校验退回·第二轮重提成功');
+    ok(g2calls[1].sawReject === true, '校验报告滚入 transcript(第二轮可见)');
+    ok(res2.trace.indexOf('校验退回×1') >= 0, 'trace 记校验退回');
+    ok(res2.result.hardChanges[0]._dryRun && res2.result.hardChanges[0]._dryRun.ok === true, '通过笔带 _dryRun 标注(确认框绿标用)');
+    var g3calls = 0;
+    var g3 = { TM: mkTools(), P: { conf: {} }, GM: {},
+      _wtDryRunHardChange: function (p) { return { ok: false, kind: 'ghost', normalized: p, reason: '不存在' }; }
+    };
+    g3.callAIWithTools = function () {
+      g3calls++;
+      return Promise.resolve({ toolCalls: [{ name: 'submit_wentian', input: { category: 'absolute', interpretation: 'y', hardChanges: [{ path: '仙术', op: 'set', value: 1 }] } }] });
+    };
+    g3.window = g3; g3.global = g3; g3.globalThis = g3;
+    vm.runInContext(read('tm-wentian-agent.js'), vm.createContext(g3), { filename: 'tm-wentian-agent.js' });
+    var res3 = await g3.TM.WentianAgent.run('天意降下仙术', { teaching: 'T' });
+    ok(res3 && res3.ok === true && g3calls === 1, 'absolute 天意档坏笔不退回(造物自由·首轮即提)');
+    ok(res3.result.hardChanges[0]._dryRun && res3.result.hardChanges[0]._dryRun.ok === false, 'absolute 坏笔仍带标注(确认框黄标用)');
   })();
 })().then(function () {
   /* ── §C 接线契约 ──────────────────────────────────────────── */
@@ -118,6 +157,9 @@ console.log('— §B · agent 循环(行为) —');
   ok(/divisions\[府州名\]\.economyBase\.farmland/.test(gl) && /office\[官职名\]\.publicTreasury/.test(gl), '教学补区划/官职常见路径');
   ok(/_wtHcList/.test(gl) && /dir\.hardChanges = hDone/.test(gl), '确认流支持多笔 hardChanges');
   ok(/_agentTrace/.test(gl), '确认框展示查证轨迹');
+  var wa = read('tm-wentian-agent.js');
+  ok(/_wtDryRunHardChange/.test(wa) && /_validateSubmit/.test(wa), 'agent 接 submit 校验回路(dry-run 探针)');
+  ok(/hc\._dryRun/.test(gl) && /_wtDryRunHardChange\(hc\.path\)/.test(gl), '确认框红绿预标接线(agent 标注复用·单发现场预演)');
   ok(/wentianAgentMode/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))) && /问天·先查证后裁定/.test((read('tm-patches.js') + '\n' + read('tm-patches-start.js'))), '设置面板开关(默认启用可关)');
   ok(/tm-wentian-agent\.js/.test(read('index.html')), 'index.html 挂载(在只读工具之后)');
   console.log('\nsmoke-wentian-agent ' + (F0 === 0 ? 'PASS' : 'FAIL') + ' ' + P0 + '/' + (P0 + F0));
