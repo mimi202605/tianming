@@ -318,6 +318,79 @@
     }, 60000);
   }
 
+  // ── 刀④乙(2026-07-10 国师智能升级A·owner 拍板)：快测·首回合真跑 ─────────────
+  //   带 key 启动沙盒 → 等 boot 安定 → _endTurnInternal 真跑一回合(真 AI 推演·烧玩家 key·故只由玩家显式按钮触发) →
+  //   报告(boot/回合统计+错误清单)写回编辑器同一 IndexedDB·国师 readQuickTestReport 工具读取。
+  var QUICKTEST_DB_ID = 'quickTestReport:latest';
+  function writeQuickTestReport(report) {
+    return openReturnDb().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        try {
+          var tx = db.transaction(RETURN_DB_STORE, 'readwrite');
+          tx.objectStore(RETURN_DB_STORE).put({ id: QUICKTEST_DB_ID, quickTest: report });
+          tx.oncomplete = function () { db.close(); resolve(true); };
+          tx.onerror = function () { db.close(); resolve(false); };
+        } catch (_) { resolve(false); }
+      });
+    }).catch(function () { return false; });
+  }
+
+  function runQuickTestFirstTurn(sc) {
+    var report = {
+      id: 'quicktest-' + Date.now().toString(36),
+      createdAt: new Date().toISOString(),
+      scenarioId: sc.id, scenarioName: sc.name || '',
+      phase: 'boot', bootOk: false, turnRan: false, turnOk: false,
+      errors: [], boot: null, turn: null, note: ''
+    };
+    function errCap(msg) { if (report.errors.length < 20) report.errors.push(String(msg == null ? '?' : msg).slice(0, 300)); }
+    function onWinErr(ev) { errCap((ev && (ev.message || (ev.reason && (ev.reason.message || ev.reason)))) || ev); }
+    if (global.addEventListener) { global.addEventListener('error', onWinErr); global.addEventListener('unhandledrejection', onWinErr); }
+    function gmStats() {
+      var GM = global.GM || {};
+      return {
+        turn: GM.turn || 0,
+        chars: (GM.chars || []).length,
+        facs: (GM.facs || []).length,
+        guoku: GM.guoku ? GM.guoku.money : null,
+        minxin: (GM.minxin && GM.minxin.trueIndex != null) ? Math.round(GM.minxin.trueIndex) : null,
+        huangwei: GM.huangwei ? GM.huangwei.index : null,
+        huangquan: GM.huangquan ? GM.huangquan.index : null
+      };
+    }
+    function finish(phaseNote) {
+      if (phaseNote) report.note = report.note ? (report.note + '；' + phaseNote) : phaseNote;
+      if (global.removeEventListener) { global.removeEventListener('error', onWinErr); global.removeEventListener('unhandledrejection', onWinErr); }
+      return writeQuickTestReport(report).then(function (ok) {
+        try { if (typeof global.toast === 'function') global.toast(ok ? ('快测报告已写回工坊：' + (report.turnOk ? '首回合跑通' : (report.bootOk ? '启动成功·回合未跑通' : '启动异常')) + (report.errors.length ? '·' + report.errors.length + ' 条错误' : '')) : '快测报告写回失败(IndexedDB 不可用)'); } catch (_) {}
+      });
+    }
+    var t0 = Date.now();
+    return Promise.resolve()
+      .then(function () { return global.startGame(sc.id); })
+      .then(function () { return new Promise(function (r) { setTimeout(r, 2000); }); })   // 等 boot 渲染/异步装载安定
+      .then(function () {
+        report.bootOk = !!(global.GM && Array.isArray(global.GM.chars));
+        report.boot = { ms: Date.now() - t0, stats: gmStats() };
+        report.phase = 'turn';
+        if (!(global.P && global.P.ai && global.P.ai.key && String(global.P.ai.key).trim())) return finish('未配 API 密钥·只验启动·回合推演未跑');
+        if (typeof global._endTurnInternal !== 'function') return finish('运行时无 _endTurnInternal·回合未跑');
+        if (global.GM && global.GM.busy) return finish('GM.busy·回合未跑');
+        report.turnRan = true;
+        var t1 = Date.now();
+        return Promise.resolve(global._endTurnInternal())
+          .then(function () {
+            report.turn = { ms: Date.now() - t1, stats: gmStats() };
+            report.turnOk = !!(report.turn.stats.turn > report.boot.stats.turn);
+            report.phase = 'done';
+            return finish(report.turnOk ? '' : '回合数未推进·疑中途失败');
+          })
+          .catch(function (eT) { errCap('回合异常: ' + ((eT && eT.message) || eT)); report.turn = { ms: Date.now() - t1, stats: gmStats() }; return finish('回合抛错'); });
+      })
+      .catch(function (eB) { errCap('启动异常: ' + ((eB && eB.message) || eB)); return finish('startGame 抛错'); });
+  }
+
   function startWithPausedAi(sc) {
     if (!sc || typeof global.startGame !== 'function') return false;
     var originalKey = global.P && global.P.ai ? global.P.ai.key : '';
@@ -363,7 +436,10 @@
       }
       var sc = installSandboxScenario(payload);
       var params = query();
-      if (params.get('tmScenarioAutoStart') === '1') {
+      if (params.get('tmScenarioQuickTest') === '1') {
+        // 刀④乙：快测·首回合真跑（带 key·玩家显式触发·报告写回工坊）
+        setTimeout(function() { runQuickTestFirstTurn(sc); }, 0);
+      } else if (params.get('tmScenarioAutoStart') === '1') {
         setTimeout(function() { startWithPausedAi(sc); }, 0);
       } else if (typeof global.showScnSelect === 'function') {
         setTimeout(function() { global.showScnSelect(); }, 0);
