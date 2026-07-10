@@ -55,6 +55,17 @@ function _wtNormalizeHardChangePath(path) {
     'neicang.money': 'neitang.money',
     'neicang.balance': 'neitang.money',
     'neitang.balance': 'neitang.money',
+    '精力': '_energy',
+    '精力.value': '_energy',
+    '主角精力': '_energy',
+    '玩家精力': '_energy',
+    '君主精力': '_energy',
+    'energy': '_energy',
+    'player.energy': '_energy',
+    'player.精力': '_energy',
+    '精力上限': '_energyMax',
+    '精力.max': '_energyMax',
+    'energyMax': '_energyMax',
     '皇权': 'huangquan.index',
     '皇权.value': 'huangquan.index',
     '皇权.index': 'huangquan.index',
@@ -264,6 +275,7 @@ function _wtHardChangeImpact(path) {
   else if (/^(chars|allCharacters)\./.test(p)) { d.renwu = true; d.wendui = true; }
   else if (/^armies\./.test(p)) d.shizheng = true;
   else if (/^(huangquan|huangwei|minxin|corruption)\./.test(p)) d.shizheng = true;
+  else if (/^_energy(Max)?$/.test(p)) { /* 主角精力·左栏能量条即够 */ }
   else d.full = true;
   return d;
 }
@@ -442,6 +454,14 @@ function _wtSyncHardChangeSideEffects(parts, newVal) {
         }
       });
     }
+  }
+  if (key === '_energy' && hasNumber) {
+    var _enMax = (typeof GM._energyMax === 'number' && GM._energyMax > 0) ? GM._energyMax : 100;
+    GM._energy = Math.max(0, Math.min(_enMax, Math.round(numeric))); // arch-ok 问天god-mode直改主角精力·夹取0..上限(2026-07-10 治「改精力落GM.精力幽灵键」)
+  }
+  if (key === '_energyMax' && hasNumber) {
+    GM._energyMax = Math.max(1, Math.round(numeric)); // arch-ok 问天god-mode直改精力上限
+    if (typeof GM._energy === 'number' && GM._energy > GM._energyMax) GM._energy = GM._energyMax; // arch-ok 上限收窄时同步夹现值
   }
   var subDeptMatch = key.match(/^corruption\.subDepts\.([^.]+)\.true$/);
   if (subDeptMatch && GM.corruption && typeof GM.corruption === 'object' && hasNumber) {

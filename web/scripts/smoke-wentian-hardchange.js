@@ -123,6 +123,21 @@ assert(!Object.prototype.hasOwnProperty.call(context.GM.chars, '袁崇焕'), 'na
 assert(context._wtApplyHardChange('chars.袁崇焕.location', 'set', '顺天府') === true, 'character location by chars.name path should apply');
 assert(context.GM.chars[1].location === '顺天府', 'chars.name.location should write real character');
 
+// 主角精力（2026-07-10 治「问天改精力落 GM.精力 幽灵键·真值 GM._energy 不动」）
+assert(context._wtNormalizeHardChangePath('精力') === '_energy', '精力 alias should target GM._energy');
+assert(context._wtNormalizeHardChangePath('vars.精力') === '_energy', 'vars 前缀精力 alias should strip and target _energy');
+assert(context._wtNormalizeHardChangePath('精力上限') === '_energyMax', '精力上限 alias should target GM._energyMax');
+assert(context._wtApplyHardChange('精力', 'set', '70') === true, '精力 hard change should apply');
+assert(context.GM._energy === 70, '精力 set should write GM._energy');
+assert(!Object.prototype.hasOwnProperty.call(context.GM, '精力'), 'Wentian should not create ghost GM.精力');
+assert(context._wtApplyHardChange('精力', 'add', -100) === true, '精力 add negative should apply');
+assert(context.GM._energy === 0, '精力 should clamp at 0');
+assert(context._wtApplyHardChange('精力', 'set', 250) === true, '精力 overmax set should apply');
+assert(context.GM._energy === 100, '精力 should clamp at default max 100');
+assert(context._wtApplyHardChange('精力上限', 'set', 60) === true, '精力上限 hard change should apply');
+assert(context.GM._energyMax === 60, '精力上限 should write GM._energyMax');
+assert(context.GM._energy === 60, '精力上限收窄应同步夹现值');
+
 const inferred = context._wtAugmentParsedHardChange('天意让袁崇焕所在地改为京师', { category: 'absolute', structured: {} }, 'absolute');
 assert(inferred.hardChange && inferred.hardChange.path === 'chars.袁崇焕.location' && inferred.hardChange.value === '京师', 'Tianyi location text should infer hardChange payload');
 
