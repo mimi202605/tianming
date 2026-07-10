@@ -502,6 +502,29 @@ function ok(cond, msg) {
     ok(AA.dispatchTool(draftCF, 'copyField', { from: 'characters.张.portrait' }).ok === false, 'copyField 缺 to → 拒绝');
     ok(AA.AGENT_TOOLS.some(t => t.name === 'copyField'), 'copyField 已注册进 AGENT_TOOLS');
 
+    console.log('— C4: bulkUpdate 条件批改 + statsAggregate 聚合（刀②2026-07-10 智能升级C）—');
+    const dBu = AA.makeDraft({ characters: [
+      { name: '祖大寿', faction: '明', region: '辽东', military: 80, loyalty: 60 },
+      { name: '满桂', faction: '明', region: '辽东', military: 78, loyalty: 70 },
+      { name: '钱谦益', faction: '明', region: '江南', military: 20, loyalty: 50 },
+      { name: '皇太极', faction: '后金', region: '辽东', military: 92, loyalty: 100 }
+    ] });
+    const bu1 = AA.dispatchTool(dBu, 'bulkUpdate', { collection: 'characters', where: { faction: '明', region: '辽东' }, field: 'military', op: 'add', value: 5 });
+    ok(bu1.ok === true && bu1.matched === 2 && bu1.changed === 2, 'bulkUpdate 多键 AND 条件命中批改');
+    ok(dBu.characters[0].military === 85 && dBu.characters[1].military === 83 && dBu.characters[2].military === 20 && dBu.characters[3].military === 92, 'bulkUpdate 只改命中项·数值正确');
+    const bu2 = AA.dispatchTool(dBu, 'bulkUpdate', { collection: 'characters', where: { loyalty: { op: '<', value: 61 } }, field: 'loyalty', op: 'add', value: 10 });
+    ok(bu2.ok === true && bu2.changed === 2 && dBu.characters[0].loyalty === 70 && dBu.characters[2].loyalty === 60, 'bulkUpdate 比较条件({op:"<"})生效');
+    const bu3 = AA.dispatchTool(dBu, 'bulkUpdate', { collection: 'characters', where: { faction: '明' }, field: 'military', op: 'add', value: 1, limit: 1 });
+    ok(bu3.ok === true && bu3.matched === 3 && bu3.changed === 1 && bu3.cappedByLimit === 2, 'bulkUpdate limit 试跑封顶·matched 如实报');
+    ok(AA.dispatchTool(dBu, 'bulkUpdate', { collection: 'characters', where: { faction: '明' }, field: 'title', op: 'add', value: 5 }).skippedNonNumeric === 3, 'bulkUpdate 非数值字段 add 跳过并计数');
+    ok(AA.dispatchTool(dBu, 'bulkUpdate', { collection: 'characters', field: 'military', op: 'add', value: 5 }).ok === false, 'bulkUpdate 缺 where 拒绝');
+    const sa1 = AA.dispatchTool(dBu, 'statsAggregate', { collection: 'characters', groupBy: 'faction', metrics: ['military'] });
+    ok(sa1.ok === true && sa1.groups === 2 && sa1.stats['后金'].metrics.military.avg === 92, 'statsAggregate 分组聚合·均值正确');
+    ok(sa1.stats['明'].count === 3 && sa1.stats['明'].metrics.military.max >= 85, 'statsAggregate 组内 count/max');
+    const sa2 = AA.dispatchTool(dBu, 'statsAggregate', { collection: 'characters', metrics: ['loyalty'], where: { region: '辽东' } });
+    ok(sa2.ok === true && sa2.stats['(全部)'].count === 3, 'statsAggregate where 过滤+不分组');
+    ok(AA.AGENT_TOOLS.some(t => t.name === 'bulkUpdate') && AA.AGENT_TOOLS.some(t => t.name === 'statsAggregate'), '两工具已注册进 AGENT_TOOLS');
+
     console.log('— C3: relation-consistency + finish 质量闸（刀①2026-07-10 智能升级B）—');
     const dRel = AA.makeDraft({ characters: [{ name: '甲' }, { name: '乙' }], relations: [
       { from: '甲', to: '乙', type: '好友' },
