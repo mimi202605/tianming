@@ -810,7 +810,9 @@ function adjustFontSize(delta) {
   }
 
   root.style.fontSize = newSize + 'px';
-  try { localStorage.setItem('tianming_font_size', newSize); } catch(_){}
+  // 2026-07-10 字号双轨合一：统一写 tm.uiFontScale（设置面板·index.html 早期应用同款键）·
+  // 并删旧键 tianming_font_size——旧键会在 startGame:after 回滚根字号，致「设置里调字号无用」
+  try { localStorage.setItem('tm.uiFontScale', String(newSize / 16)); localStorage.removeItem('tianming_font_size'); } catch(_){}
   AudioSystem.playSfx('click');
 }
 
@@ -828,12 +830,18 @@ function toggleAnimation() {
 GameHooks.on('startGame:after', function() {
   ThemeSystem.init();
 
-  // 恢复字体大小 (R153 包 try)
-  var savedFontSize = null;
-  try { savedFontSize = localStorage.getItem('tianming_font_size'); } catch(_){}
-  if (savedFontSize) {
-    document.documentElement.style.fontSize = savedFontSize + 'px';
-  }
+  // 恢复字体大小：旧键 tianming_font_size 一次性迁移到 tm.uiFontScale 后废弃（2026-07-10）。
+  // 旧逻辑无条件按旧键重设根字号，会把设置面板「界面字号」刚设的档位在开局时回滚——即「全局字号调节无用」bug。
+  try {
+    var legacyFs = parseFloat(localStorage.getItem('tianming_font_size'));
+    if (legacyFs) {
+      if (!localStorage.getItem('tm.uiFontScale')) {
+        localStorage.setItem('tm.uiFontScale', String(legacyFs / 16));
+        document.documentElement.style.fontSize = legacyFs + 'px';
+      }
+      localStorage.removeItem('tianming_font_size');
+    }
+  } catch(_){}
 
   // 恢复动画设置 (R153 包 try)
   var savedAnimation = null;
