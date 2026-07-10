@@ -2228,7 +2228,7 @@
       });
   }
 
-  function _buildSystemPrompt(conventions, worldKind) {
+  function _buildSystemPrompt(conventions, worldKind, microPlanOn) {
     var fiction = worldKind === 'fictional';
     // 世界类型分支：虚构世界观（奇幻/武侠/未来/异世界/架空历史等原创设定）下，去掉「违背史实即硬伤」的史实锚定，
     // 改以「世界观自洽性」为判据；史实世界保持原有考据铁律不变。
@@ -2243,7 +2243,8 @@
       : '⑫【先核后写·自查证】新增/改写涉及具体史实的内容（年号纪年、人物生卒与年龄、职官名称品级、重大事件时间地点）前，先用 checkHistory 把你将依据的关键史实逐条列出并自评把握：把握高的照写；把握低/拿不准的，落字用保守措辞（约/相传/据载）并对该路径 flagUncertain，绝不把存疑当确定口吻硬写。这是「国师」对硬核可信的本分。注意：无外部资料时这是自我审视，治"自信地编"，但变不出你本就不知道的事——真拿不准就老实标出来交玩家定夺。';
     return [
       head,
-      '⓪ ≥3 步的任务先用 todoWrite 列任务表再动手（每完成一步立即标 completed·恰保持一项 in_progress·计划变了重写整表）；finish 前任务表要么全部完成、要么如实更新掉确不需要的项（带着未完项收尾会被顶回）。单条杂感用 note。若需求含糊到无法动手（缺关键信息），先用 askClarification 问 1-3 个具体问题再继续；需求清楚就直接做。',
+      '⓪ ≥3 步的任务先用 todoWrite 列任务表再动手（每完成一步立即标 completed·恰保持一项 in_progress·计划变了重写整表）；finish 前任务表要么全部完成、要么如实更新掉确不需要的项（带着未完项收尾会被顶回）。单条杂感用 note。若需求含糊到无法动手（缺关键信息），先用 askClarification 问 1-3 个具体问题再继续；需求清楚就直接做。'
+        + (microPlanOn ? '\n⓪½【歧义先对齐·微计划】需求有多解、或影响面大（批量改/删除/结构性重构）而你对玩家真意把握不足时——别硬猜：第一轮就用 askClarification·questions 只放一条「我准备这么做：〈2-3 句具体到实体/字段的做法〉。回复"继续"即照此执行·或直接说你要的改法」。仅限新需求的第一轮；对话延续、玩家已确认过方向、或需求明确的单点小改一律不问直接做——此机制治的是"猜错方向白干一场"，不是让你事事请示。' : ''),
       '规则：① 只用工具修改/查询，不要直接输出 JSON 剧本正文。② 中文显示名（人物/势力/地名）保持中文，禁止英译。',
       '③【勘察】先查后改：getField（单路径）/getFields（批量·一次读多个路径省往返，需同时核对多处时优先用它）/listCollection/describeSchema 看清现状与字段；searchEntities/listGaps 查实体与规格缺口；不确定东西在哪个集合时用 globalSearch 全局检索定位。想确认正式游戏怎么读某字段、读不读它，用 fieldContract 查契约（按需查，别凭印象）；想看游戏 UI/逻辑的源码实现，用 listSource 找文件、readSource 读、grepSource 全局搜——可直接读整个代码库。生成或大改某部分(人物/势力/经济/官制/封臣…)前，先 genReference 看老编辑器对该部分的生成范式(设定深度/字段形状/朝代逻辑/参数区间)，借鉴后再动手。',
       '④【落改】bulkAdd/multiEdit 一次多改提效；同一字段按条件成批调（「辽东诸将武力+5」类）用 bulkUpdate 一步到位（先 limit:3 试跑核对再放开）；配平数值前先 statsAggregate 读真账。改名优先 renameEntity（联动所有引用、不留死链）；地图地块/省名改名用 renameRegion（同步 map/mapData 双镜像·如需联动其他引用再补 renameEntity）；删除实体前先 findReferences 查谁引用了它，再 removeEntity。改地图归属（把某地块划给某势力、调整疆域）先 mapOverview 看清地块/归属/势力，再 mapAssignOwner 按地块名+势力名改（自动上色、同步双镜像）。玩家配了生图 API 时，可用 generateImage 给人物立绘(characters.N.portrait)/势力旗徽生成图像（未配置会明确报错，届时用文字描述代替，不要反复重试）；生成的图要复用/挪到别的字段用 copyField(from,to) 直拷——图片值极大，绝不要 getField 读出来再 applyEdit 写回。与用户需求相关的必需缺口顺手补齐，让剧本完整可玩。',
@@ -2260,12 +2261,15 @@
     ].join('\n');
   }
 
-  function _buildInitialUser(draft, userRequest, surfaces, editorContext, exemplars, memory) {
+  function _buildInitialUser(draft, userRequest, surfaces, editorContext, exemplars, memory, runHistory) {
     var lines = [
       '【用户需求】\n' + (userRequest || '')
     ];
     if (memory) {   // 跨会话记忆：你在与该玩家之前的对话里做过什么（延续上下文·避免重复/冲突）
       lines.push('\n【跨会话记忆·你在之前的对话里对本剧本做过这些】（供延续，不要重复已做的，注意与之前改动保持一致；这是历史记录非当前需求）\n' + String(memory).slice(0, 2200));
+    }
+    if (runHistory) {   // 刀③(2026-07-10 智能升级D2)：运行教训回喂——此前审计日志与上下文完全割裂·每次从零
+      lines.push('\n【前情·最近几次协作的结局】（未完成/被顶回的注意原因·若与本次相关吸取教训别重蹈；已应用的勿重复做）\n' + String(runHistory).slice(0, 1200));
     }
     if (exemplars) {   // 方向J · few-shot 范例：参考其笔法与字段丰满度（编辑官方剧本时即官方范例）
       lines.push('\n【参考范例·新增/改写内容请贴近这些范例的笔法、字段完整度与设定风格】\n' + String(exemplars).slice(0, 6000));
@@ -2471,7 +2475,7 @@
     // 世界类型：史实(默认) / 虚构(架空·奇幻·武侠·未来·异世界等)。优先 opts.worldKind(UI 显式声明)，否则读剧本持久字段 draft.worldKind；
     // 虚构档去史实锚定、点出 world/worldSettings 容器、校验豁免「五常」。非 'fictional' 一律归史实。
     var worldKind = (opts.worldKind || (draft && draft.worldKind) || 'historical') === 'fictional' ? 'fictional' : 'historical';
-    var system = explainOnly ? _buildExplainSystemPrompt(conventions) : (qaOnly ? _buildQaSystemPrompt(conventions) : (reviewOnly ? _buildReviewSystemPrompt(conventions, opts.reviewFocus, worldKind) : (planOnly ? _buildPlanSystemPrompt(conventions) : _buildSystemPrompt(conventions, worldKind))));
+    var system = explainOnly ? _buildExplainSystemPrompt(conventions) : (qaOnly ? _buildQaSystemPrompt(conventions) : (reviewOnly ? _buildReviewSystemPrompt(conventions, opts.reviewFocus, worldKind) : (planOnly ? _buildPlanSystemPrompt(conventions) : _buildSystemPrompt(conventions, worldKind, opts.microPlanConfirm !== false))));   // 刀③D1·微计划规则默认注入(opts.microPlanConfirm=false 关)
     var surfaces = _getFieldSurfaces(opts);   // 刀A · 规格（游戏运行时要什么）
     var editorContext = opts.editorContext || '';   // 上下文感知：编辑器当前焦点（模块/集合/选中实体）
     var exemplars = opts.exemplars || '';   // 方向J · few-shot 范例（开关式·编辑官方剧本时即官方范例）
@@ -2484,7 +2488,7 @@
       conversation.push(_fu);
       try { _priorTokens = _estimateTokens(JSON.stringify(opts.priorConversation)); } catch (e) {}
     } else {
-      var _iu = { role: 'user', text: explainOnly ? _buildExplainUser(draft, userRequest, surfaces, editorContext) : (qaOnly ? _buildQaUser(draft, userRequest, surfaces, editorContext) : (reviewOnly ? _buildReviewUser(draft, userRequest, surfaces, editorContext) : _buildInitialUser(draft, userRequest, surfaces, editorContext, exemplars, opts.memory || ''))) };
+      var _iu = { role: 'user', text: explainOnly ? _buildExplainUser(draft, userRequest, surfaces, editorContext) : (qaOnly ? _buildQaUser(draft, userRequest, surfaces, editorContext) : (reviewOnly ? _buildReviewUser(draft, userRequest, surfaces, editorContext) : _buildInitialUser(draft, userRequest, surfaces, editorContext, exemplars, opts.memory || '', opts.runHistory || ''))) };
       if (_turnImages) _iu.images = _turnImages;
       conversation = [_iu];
     }

@@ -687,6 +687,7 @@
       { k: 'initconv', t: '初始化约定', d: '通读剧本·总结值得沿用的创作约定（可逐条记住）', run: function () { ui.els.req.value = '【梳理创作约定】通读剧本，总结 5-10 条值得长期沿用的创作约定（命名规律、文风与称谓、数值区间、结构惯例、世界观基调）。每确认一条就调用 recordConvention 记录一条；报告 findings 也逐条列出这些约定及其依据。不评质量问题，只提炼惯例。'; runReview(); } },
       { k: 'compact', t: '压缩前情', d: '把长对话压成前情摘要（省上下文·续接不断）', run: function () { runCompactUI(); } },
       { k: 'notify', t: '完成通知', d: '页面切后台时跑完弹系统通知（开/关）', run: function () { _toggleNotify(); } },
+      { k: 'microplan', t: '歧义先对齐', d: '需求多解时国师先给微计划确认再动手（开/关·默认开）', run: function () { _toggleMicroPlan(); } },
       { k: 'checkpoint', t: '存检查点', d: '当前剧本存为可回退存档点', run: function () { _plusAct('checkpoint'); } },
       { k: 'undo', t: '撤销上次应用', d: '回到上次应用前快照', run: function () { _plusAct('undo'); } },
       { k: 'perm-plan', t: '权限·问策', d: '只读出计划·绝不动剧本', run: function () { var p = _loadPerm(); p.mode = 'plan'; _applyPerm(p); setStatus('权限已切到「问策」· 只读出计划'); } },
@@ -1650,6 +1651,27 @@
     if (res.answer) return '回答：' + String(res.answer.answer || '').slice(0, 100);
     return res.summary || '（无说明）';
   }
+  // 刀③(2026-07-10 智能升级D1)：微计划开关（默认开·localStorage 持久·家规=新行为必配开关）
+  function _microPlanOn() { try { return localStorage.getItem('tm_aa_microplan') !== '0'; } catch (e) { return true; } }
+  function _toggleMicroPlan() {
+    try {
+      if (_microPlanOn()) { localStorage.setItem('tm_aa_microplan', '0'); setStatus('「歧义先对齐」已关 · 国师将直接按理解动手'); }
+      else { localStorage.setItem('tm_aa_microplan', '1'); setStatus('「歧义先对齐」已开 · 需求多解时国师先给微计划确认'); }
+    } catch (e) {}
+  }
+
+  // 刀③(2026-07-10 智能升级D2)：运行教训回喂——最近数次运行结局一行一条·新对话首轮注入（此前审计日志与上下文割裂·每次从零）
+  function _runHistoryBrief() {
+    try {
+      var h = _loadHistory();
+      if (!h || !h.length) return '';
+      return h.slice(-5).map(function (r) {
+        var outcome = (r.stopReason === 'finish' || r.stopReason === 'imported') ? ('完成' + (r.applied ? '·玩家已应用' : '')) : ('未完成:' + (r.stopReason || '?'));
+        return '· [' + (r.kind || '?') + '] ' + String(r.request || '').slice(0, 40) + ' → ' + outcome + (r.summary ? '（' + String(r.summary).slice(0, 60) + '）' : '');
+      }).join('\n');
+    } catch (e) { return ''; }
+  }
+
   function _logRun(kind, request, res) {
     ui._histSeq = (ui._histSeq || 0) + 1;
     var rec = {
@@ -2525,6 +2547,8 @@
       initialTodos: _rtd,
       priorConversation: continuing ? ui.conversation : null,
       memory: continuing ? '' : _buildMemory(),             // 跨会话记忆：新对话才注入历史；续接已在线程里
+      runHistory: continuing ? '' : _runHistoryBrief(),     // 刀③D2 · 运行教训回喂（新对话首轮）
+      microPlanConfirm: _microPlanOn(),                     // 刀③D1 · 歧义先对齐微计划（默认开·＋菜单可关）
       editorContext: _editorContext(),
       allowedCollections: ui.allowedCollections || null,   // 方向F · 范围沙箱
       allowDestructive: ui.allowDestructive !== false,      // 方向F · 危险操作开关

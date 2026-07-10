@@ -502,6 +502,20 @@ function ok(cond, msg) {
     ok(AA.dispatchTool(draftCF, 'copyField', { from: 'characters.张.portrait' }).ok === false, 'copyField 缺 to → 拒绝');
     ok(AA.AGENT_TOOLS.some(t => t.name === 'copyField'), 'copyField 已注册进 AGENT_TOOLS');
 
+    console.log('— C5: 微计划规则注入 + 运行教训回喂（刀③2026-07-10 智能升级D）—');
+    let mpSys = '', mpUser = '';
+    const mpCaller = function (conversation, tools, o) {
+      mpSys = (o && o.system) || '';
+      mpUser = (conversation && conversation[0] && conversation[0].text) || '';
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'm1', name: 'finish', input: { summary: 'x' } }] });
+    };
+    await AA.runAuthoringLoop(AA.makeDraft({ factions: [] }), '大改经济', { caller: mpCaller, conventions: '', blockingChecks: [], maxTokens: 1000000, runHistory: '· [国师] 重做官职 → 未完成:tokenBudget（半途而废）' });
+    ok(mpSys.indexOf('歧义先对齐') >= 0 && mpSys.indexOf('微计划') >= 0, '微计划规则默认注入系统提示(⓪½)');
+    ok(mpUser.indexOf('前情·最近几次协作的结局') >= 0 && mpUser.indexOf('tokenBudget') >= 0, '运行教训回喂进首轮上下文');
+    let mpSys2 = '';
+    await AA.runAuthoringLoop(AA.makeDraft({ factions: [] }), 'x', { caller: function (c, t, o) { mpSys2 = (o && o.system) || ''; return Promise.resolve({ text: '', toolCalls: [{ id: 'm2', name: 'finish', input: { summary: 'x' } }] }); }, conventions: '', blockingChecks: [], maxTokens: 1000000, microPlanConfirm: false });
+    ok(mpSys2.indexOf('歧义先对齐') < 0, 'microPlanConfirm=false 时规则不注入(开关可关)');
+
     console.log('— C4: bulkUpdate 条件批改 + statsAggregate 聚合（刀②2026-07-10 智能升级C）—');
     const dBu = AA.makeDraft({ characters: [
       { name: '祖大寿', faction: '明', region: '辽东', military: 80, loyalty: 60 },
