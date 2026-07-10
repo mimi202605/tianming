@@ -78,6 +78,7 @@ console.log('— §B · agent 循环(行为) —');
         return [
           { name: 'search_save', description: 's', parameters: { type: 'object', properties: {}, required: [] } },
           { name: 'get_field', description: 'g', parameters: { type: 'object', properties: {}, required: [] } },
+          { name: 'get_dossier', description: '聚合工具·刀④起问天带', parameters: { type: 'object', properties: {}, required: [] } },
           { name: 'read_records', description: '重工具·问天不该带', parameters: { type: 'object', properties: {}, required: [] } }
         ];
       },
@@ -100,7 +101,8 @@ console.log('— §B · agent 循环(行为) —');
     var res = await WA.run('让袁崇焕忠诚拉满·皇威+5', { teaching: 'T', ctx: 'C' });
     ok(res && res.ok === true && res.result && res.result.hardChanges.length === 2, '两轮查证→提交·多笔 hardChanges 透传');
     ok(res.trace.length === 1 && res.trace[0] === 'search_save', 'trace 记查证轨迹');
-    ok(calls[0].toolNames.indexOf('read_records') < 0 && calls[0].toolNames.indexOf('submit_wentian') >= 0, '问天只带轻量只读工具+终结工具(重工具不带)');
+    ok(calls[0].toolNames.indexOf('read_records') < 0 && calls[0].toolNames.indexOf('submit_wentian') >= 0, '问天只带白名单只读工具+终结工具(records 重工具不带)');
+    ok(calls[0].toolNames.indexOf('get_dossier') >= 0, 'get_dossier 聚合工具在列(刀④·涉面广指令一调抓全)');
     ok(calls[1].hasEvidence === true, '工具结果滚入 transcript 续轮(第二轮见查证证据)');
     ok(!calls[0].force && !calls[1].force, '未到末轮不强制终结');
     g.P.conf.wentianAgentMode = false;

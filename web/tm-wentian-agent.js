@@ -12,8 +12,9 @@
 (function (root) {
   root.TM = root.TM || {};
 
-  // 问天只用轻量只读工具（dossier/records 等重工具留给回合 agent·问天要快）
-  var READ_TOOL_NAMES = ['get_overview', 'get_field', 'list_entities', 'inspect_entity', 'search_save', 'get_relations'];
+  // 问天带轻量只读工具 + get_dossier（2026-07-10 刀④·一调抓全维度·「整顿辽东军务」类涉面广的指令不必 get_field 一手手摸）
+  // records 等重工具仍留给回合 agent（问天要快）。
+  var READ_TOOL_NAMES = ['get_overview', 'get_field', 'list_entities', 'inspect_entity', 'search_save', 'get_relations', 'get_dossier'];
 
   var SUBMIT_TOOL = {
     name: 'submit_wentian',
@@ -154,8 +155,9 @@
         try { out = await rt.handle(c.name, c.input || {}, { GM: root.GM, P: root.P }); }
         catch (eTool) { out = { ok: false, text: '(工具异常:' + ((eTool && eTool.message) || eTool) + ')' }; }
         var outText = (out && typeof out === 'object') ? String(out.text || '') : String(out || '');
+        var _cap = (c.name === 'get_dossier') ? 3600 : 1600;  // dossier 是聚合工具·1600 会砍掉维度汇总的价值
         transcript += '\n【工具·' + c.name + '】入参 ' + JSON.stringify(c.input || {}).slice(0, 240)
-          + '\n结果：' + outText.slice(0, 1600) + '\n';
+          + '\n结果：' + outText.slice(0, _cap) + '\n';
         trace.push(c.name);
         used++;
         if (typeof opts.onProgress === 'function') { try { opts.onProgress(c.name, round); } catch (_) {} }
