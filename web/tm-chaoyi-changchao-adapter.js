@@ -370,6 +370,20 @@ async function _cc3_buildAgendaFromGM() {
     console.log('[cc3·agenda] extractJSON 解析结果·type=' + (Array.isArray(parsed) ? 'array(' + parsed.length + ')' : typeof parsed), parsed);
     let items = Array.isArray(parsed) ? parsed : (parsed && typeof parsed === "object" ? [parsed] : []);
     items = items.filter(it => it && typeof it === "object" && (it.title || it.content || it.announceLine));
+    // 首次常朝降低上限 + AI 输出去重（同一主题 AI 可能生成多条相似议题）
+    var _isFirstCourt = !Array.isArray(GM._courtRecords) || GM._courtRecords.length === 0;
+    var _aiMax = _isFirstCourt ? 6 : 9;
+    var _aiSeen = {}, _aiSeenTopics = {};
+    items = items.filter(function(it) {
+      var key = _cc2_cleanAgendaText((it.title || '') + '|' + (it.content || it.detail || ''), 80).replace(/\s+/g, '');
+      if (key && _aiSeen[key]) return false;
+      var tk = _cc2_agendaTopicKey({ title: it.title || '', detail: it.content || it.detail || '' });
+      if (tk && _aiSeenTopics['topic:' + tk]) return false;
+      if (key) _aiSeen[key] = 1;
+      if (tk) _aiSeenTopics['topic:' + tk] = 1;
+      return true;
+    });
+    if (items.length > _aiMax) items = items.slice(0, _aiMax);
     if (items.length === 0) {
       console.warn('[cc3·agenda] AI 返回不可用·走 fallback');
       return _cc3_fallbackAgenda();
@@ -550,12 +564,15 @@ function _cc3_fallbackAgenda() {
   }
 
   // 去重：排除已分配给廷议的 issue·廷议会单独处理这些
+  // 首次常朝降低数量——开局数据量大·避免首次议事过多
+  var _isFirstCourt = !Array.isArray(GM._courtRecords) || GM._courtRecords.length === 0;
+  var _fbMax = _isFirstCourt ? 4 : 5;
   const sourcePool = (typeof _cc2_collectAgendaSources === 'function')
     ? _cc2_collectAgendaSources({ max: 12, includeHeld: true })
     : [];
   const pickedSources = sourcePool.length && typeof _cc2_pickAgendaSourcesForCourt === 'function'
-    ? _cc2_pickAgendaSourcesForCourt(sourcePool, 5)
-    : sourcePool.slice(0, 5);
+    ? _cc2_pickAgendaSourcesForCourt(sourcePool, _fbMax)
+    : sourcePool.slice(0, _fbMax);
   pickedSources.forEach(function(src, idx) {
     if (typeof _cc2_agendaSourceToItem !== 'function') return;
     const base = _cc2_agendaSourceToItem(src, idx);

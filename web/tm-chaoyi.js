@@ -480,6 +480,27 @@ function _cc2_agendaDedupKey(row) {
   return _cc2_cleanAgendaText((row.title || '') + '|' + (row.detail || row.content || ''), 80).replace(/\s+/g, '');
 }
 
+// ─── 主题指纹去重──同一事件从不同来源（如 activeWars 既进"军务战事"又进"外部势力军政"）
+//     描述措辞不同·精确 dedup key 失效·用主题核心词做更宽松的跨来源去重 ───
+var _CC2_TOPIC_STOPWORDS = /^(动向|军情|民情|态势|奏疏|来书|朝议|军政|外交|内政|人事|财赋|党争|时政|事务|议题|请旨|预警|紧急|日常|联名|弹劾|奏报|官员|部议|任务|变动|指数|近事|起居|事件|战事|地方|官制|官守|留中|续议|朱批|诏令|行止|主角|陛下|百官|外部势力|核心|政争|议程|动向|请旨|有司|核奏|朝政|未名|廷议|待议|未决|本回合|行止)$/;
+function _cc2_agendaTopicKey(row) {
+  var title = String(row && row.title || '');
+  var detail = String(row && (row.detail || row.content || '') || '');
+  var text = title + ' ' + detail;
+  // 提取连续中文词组（2-6 字）
+  var tokens = [];
+  var re = /[\u4e00-\u9fa5]{2,6}/g;
+  var m;
+  while ((m = re.exec(text)) && tokens.length < 6) {
+    var w = m[0];
+    if (!_CC2_TOPIC_STOPWORDS.test(w)) tokens.push(w);
+  }
+  if (!tokens.length) return '';
+  // 取最长的 2 个 token 作为主题指纹
+  tokens.sort(function(a, b) { return b.length - a.length; });
+  return tokens.slice(0, 2).sort().join('|');
+}
+
 function _cc2_pushAgendaSource(out, seen, row) {
   if (!row) return;
   var title = _cc2_cleanAgendaText(row.title || row.topic || row.subject || row.name || '', 24);
@@ -489,7 +510,11 @@ function _cc2_pushAgendaSource(out, seen, row) {
   var source = _cc2_cleanAgendaText(row.source || '朝政', 12) || '朝政';
   var key = _cc2_agendaDedupKey({ title: title, detail: detail || source });
   if (key && seen[key]) return;
+  // 主题指纹去重：同一事件从不同来源描述措辞不同·用核心词做跨来源去重
+  var topicKey = _cc2_agendaTopicKey({ title: title, detail: detail || source });
+  if (topicKey && seen['topic:' + topicKey]) return;
   if (key) seen[key] = 1;
+  if (topicKey) seen['topic:' + topicKey] = 1;
   out.push({
     source: source,
     title: title || '未名事务',
@@ -1070,21 +1095,31 @@ function _cc2_formatAgendaSourcesForPrompt(list, max) {
 function _cc2_pickAgendaSourcesForCourt(pool, max) {
   pool = pool || [];
   max = max || 6;
-  var picked = [], used = {};
+  var picked = [], used = {}, usedTopics = {};
   var order = ['留中续议', '陛下诏令', '朱批奏疏', '主角行止', '百官奏疏', '政斗弹劾', '外部势力军政', '外部势力外交', '外部势力内政', '外部势力朝议', '外部势力态势', '鸿雁来书', '近事起居', '事件栏', '军务战事', '地方民情', '内政事务', '官制人事', '民情财赋', '官守党争', '廷议待议', '御案时政'];
+  function _topicTaken(row) {
+    var tk = _cc2_agendaTopicKey(row);
+    return tk && usedTopics[tk];
+  }
+  function _markTopic(row) {
+    var tk = _cc2_agendaTopicKey(row);
+    if (tk) usedTopics[tk] = 1;
+  }
   order.forEach(function(src) {
     if (picked.length >= max) return;
-    var row = pool.find(function(x) { return x && x.source === src && !used[_cc2_agendaDedupKey(x)]; });
+    var row = pool.find(function(x) { return x && x.source === src && !used[_cc2_agendaDedupKey(x)] && !_topicTaken(x); });
     if (row) {
       used[_cc2_agendaDedupKey(row)] = 1;
+      _markTopic(row);
       picked.push(row);
     }
   });
   pool.forEach(function(row) {
     if (picked.length >= max || !row) return;
     var key = _cc2_agendaDedupKey(row);
-    if (used[key]) return;
+    if (used[key] || _topicTaken(row)) return;
     used[key] = 1;
+    _markTopic(row);
     picked.push(row);
   });
   return picked;
@@ -1118,11 +1153,16 @@ function _cc2_agendaSourceToItem(src, idx) {
 }
 
 function _cc2_buildAgendaPrompt() {
-  var p = '你是常朝议程编撰官。请为今日常朝后台生成 5-9 条奏报事务（玩家暂不可见，将按顺序一条一条登场）。\n';
+  // 首次常朝（无朝议记录）降低议事数量——开局数据量大·避免首次议事过多
+  var _isFirstCourt = !Array.isArray(GM._courtRecords) || GM._courtRecords.length === 0;
+  var _agendaMin = _isFirstCourt ? 4 : 5;
+  var _agendaMax = _isFirstCourt ? 6 : 9;
+  var _poolMax = _isFirstCourt ? 12 : 18;
+  var p = '你是常朝议程编撰官。请为今日常朝后台生成 ' + _agendaMin + '-' + _agendaMax + ' 条奏报事务（玩家暂不可见，将按顺序一条一条登场）。\n';
   p += '当前：' + (typeof getTSText==='function'?getTSText(GM.turn):'T'+GM.turn) + '\n';
-  var _agendaSources = (typeof _cc2_collectAgendaSources === 'function') ? _cc2_collectAgendaSources({ max: 18, includeHeld: false }) : [];
+  var _agendaSources = (typeof _cc2_collectAgendaSources === 'function') ? _cc2_collectAgendaSources({ max: _poolMax, includeHeld: false }) : [];
   if (_agendaSources.length) {
-    p += '【常朝候选来源池——只作议题线索，禁止原文照搬为奏报正文】\n' + _cc2_formatAgendaSourcesForPrompt(_agendaSources, 18) + '\n';
+    p += '【常朝候选来源池——只作议题线索，禁止原文照搬为奏报正文】\n' + _cc2_formatAgendaSourcesForPrompt(_agendaSources, _poolMax) + '\n';
   } else if (GM.currentIssues) {
     var _pi = GM.currentIssues.filter(function(i){return i.status==='pending';}).slice(0,5);
     if (_pi.length) p += '【待处理时政——只作议题线索，禁止原文照搬为奏报正文】\n' + _pi.map(function(i){return '  '+i.title+'：要点 '+(i.description||i.summary||i.brief||'').slice(0,42)+'；须改写为有司奏称';}).join('\n') + '\n';
@@ -1180,8 +1220,10 @@ function _cc2_buildAgendaPrompt() {
 // ─── 议程兜底·AI 调用失败/返回空时·从时政要务派生最小议程·让朝会能跑完 ───
 function _cc2_fallbackAgenda() {
   var items = [];
+  var _isFirstCourt = !Array.isArray(GM._courtRecords) || GM._courtRecords.length === 0;
+  var _fbMax = _isFirstCourt ? 4 : 5;
   var pool = (typeof _cc2_collectAgendaSources === 'function') ? _cc2_collectAgendaSources({ max: 12, includeHeld: true }) : [];
-  var picked = (typeof _cc2_pickAgendaSourcesForCourt === 'function') ? _cc2_pickAgendaSourcesForCourt(pool, 5) : pool.slice(0, 5);
+  var picked = (typeof _cc2_pickAgendaSourcesForCourt === 'function') ? _cc2_pickAgendaSourcesForCourt(pool, _fbMax) : pool.slice(0, _fbMax);
   picked.forEach(function(src, idx) { items.push(_cc2_agendaSourceToItem(src, idx)); });
   if (items.length === 0) {
     items.push({
