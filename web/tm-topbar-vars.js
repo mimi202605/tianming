@@ -105,12 +105,24 @@ function _barAccountDelta(account, prevAccount, resource, fallback) {
 // 各变量的渲染逻辑
 // ─────────────────────────────────────────────
 
+// 失真层S2·据奏取值(严格史实+开关才失真·键名与右rail财计/帑廪panel三面同一·docs/design-reported-view-2026-07.md)
+function _barReported(key, val, dir) {
+  var RV = (typeof TM !== 'undefined' && TM && TM.ReportedView) ? TM.ReportedView : null;
+  if (!RV || !RV.active(typeof P !== 'undefined' ? P : null)) return { shown: val, distorted: false };
+  return RV.value('fiscal', key, val, { direction: dir, dept: 'fiscal' });
+}
+
 function _renderGuoku() {
   var g = GM.guoku || {};
   var prevG = GM._prevGuoku || null;
-  var money = _barAccountStock(g, 'money');
-  var grain = _barAccountStock(g, 'grain');
-  var cloth = _barAccountStock(g, 'cloth');
+  // 据奏口径(拍板①一律据奏当默认·库藏/岁入报多=账面好看·岁支报少=显节用)·未开失真层=原真值直通
+  var _rvM = _barReported('guoku.money', _barAccountStock(g, 'money'), 'good');
+  var _rvG = _barReported('guoku.grain', _barAccountStock(g, 'grain'), 'good');
+  var _rvC = _barReported('guoku.cloth', _barAccountStock(g, 'cloth'), 'good');
+  var money = _rvM.shown;
+  var grain = _rvG.shown;
+  var cloth = _rvC.shown;
+  var _rvAny = _rvM.distorted || _rvG.distorted || _rvC.distorted;
   var phase = money < -(g.annualIncome || 1) * 0.5 ? 'bankrupt' : '';
   var U = (typeof CurrencyUnit !== 'undefined') ? CurrencyUnit.getUnit() : { money:'两', grain:'石', cloth:'匹' };
   var turnDays = g.turnDays || 30;
@@ -149,7 +161,7 @@ function _renderGuoku() {
     ],
     tip: {
       title: '帑廪',
-      subtitle: '国库 · 三账',
+      subtitle: '国库 · 三账' + (_rvAny ? ' · 据奏(有司上报口径·实情须核)' : ''),
       glyph: '帑',
       themeMode: 'public',
       state: stateGk,
@@ -159,9 +171,9 @@ function _renderGuoku() {
         { name:'布', val:_barFmtNum(cloth), unit:U.cloth, color:'amber' }
       ],
       flows: [
-        { label:incomeLabel, val:_barFmtNum(g.turnIncome || g.monthlyIncome || 0), unit:U.money, trend:moneyTrend },
-        { label:expenseLabel, val:_barFmtNum(g.turnExpense || g.monthlyExpense || 0), unit:U.money, neg:true },
-        { label:'年入',     val:_barFmtNum(g.annualIncome || 0), unit:U.money }
+        { label:incomeLabel, val:_barFmtNum(_barReported('fiscal.turnIncome', g.turnIncome || g.monthlyIncome || 0, 'good').shown), unit:U.money, trend:moneyTrend },
+        { label:expenseLabel, val:_barFmtNum(_barReported('fiscal.turnExpense', g.turnExpense || g.monthlyExpense || 0, 'bad').shown), unit:U.money, neg:true },
+        { label:'年入',     val:_barFmtNum(_barReported('fiscal.annualIncome', g.annualIncome || 0, 'good').shown), unit:U.money }
       ],
       alerts: alertHints,
       note: '点击查看帑廪详情 →'

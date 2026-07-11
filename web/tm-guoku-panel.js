@@ -85,9 +85,16 @@ function renderGuokuPanel() {
   var clothLed = ledgers.cloth || { stock:0 };
 
   // ─── Hero · 国库纪要 ───
-  var stockMoney = (moneyLed.stock != null ? moneyLed.stock : (g.balance || 0));
-  var stockGrain = grainLed.stock || 0;
-  var stockCloth = clothLed.stock || 0;
+  // 失真层S2·据奏取值(键名与顶栏/右rail财计三面同一·未开失真层=真值直通)
+  function _gkReported(key, val, dir) {
+    var RV = (typeof TM !== 'undefined' && TM && TM.ReportedView) ? TM.ReportedView : null;
+    if (!RV || !RV.active(typeof P !== 'undefined' ? P : null)) return { shown: val, distorted: false };
+    return RV.value('fiscal', key, val, { direction: dir, dept: 'fiscal' });
+  }
+  var _rvM = _gkReported('guoku.money', (moneyLed.stock != null ? moneyLed.stock : (g.balance || 0)), 'good');
+  var stockMoney = _rvM.shown;
+  var stockGrain = _gkReported('guoku.grain', grainLed.stock || 0, 'good').shown;
+  var stockCloth = _gkReported('guoku.cloth', clothLed.stock || 0, 'good').shown;
   var balanceClass = stockMoney < 0 ? 'bad' :
                      stockMoney < (g.annualIncome || 1) * 0.2 ? 'warn' : '';
   // 状态标签
@@ -143,7 +150,8 @@ function renderGuokuPanel() {
   html +=         '<span><b>粮</b>' + _guokuFmt(stockGrain) + '<span class="mu">' + U.grain + '</span></span>';
   html +=         '<span><b>布</b>' + _guokuFmt(stockCloth) + '<span class="mu">' + U.cloth + '</span></span>';
   html +=         '<span><b>本回合</b>' + (deltaVal >= 0 ? '+' : '') + _guokuFmt(deltaVal) + '</span>';
-  html +=         '<span title="仅中央上解部分（不含地方留存）·下方三数中的『官府实收』=中央+地方留存"><b>中央年入</b>' + _guokuFmt(g.annualIncome || 0) + '</span>';
+  html +=         '<span title="仅中央上解部分（不含地方留存）·下方三数中的『官府实收』=中央+地方留存"><b>中央年入</b>' + _guokuFmt(_gkReported('fiscal.annualIncome', g.annualIncome || 0, 'good').shown) + '</span>';
+  if (_rvM.distorted && typeof TM !== 'undefined' && TM.ReportedView) html += TM.ReportedView.badge(_rvM);
   if (_govActualAnnual > 0) {
     html +=       '<span title="官府实收年化·中央上解 + 地方留存·与下方三数面板的『官府实收』同源"><b>全国官收(年)</b>' + _guokuFmt(_govActualAnnual) + '</span>';
   }
@@ -158,14 +166,14 @@ function renderGuokuPanel() {
   html +=   '<div class="tr-section-head"><span class="tr-section-name">回合速察</span><span class="tr-section-badge">钱·中央实入·下方三数为全国口径</span></div>';
   html +=   '<div class="tr-quickstats">';
   // 回合入(中央)·与下方三数『官府实收』有别·此处只算上解中央部分
-  var turnIn = g.turnIncome || g.monthlyIncome || 0;
+  var turnIn = _gkReported('fiscal.turnIncome', g.turnIncome || g.monthlyIncome || 0, 'good').shown;
   var _localRetainTurn = (_cas && _cas.localRetain) ? Math.round(_cas.localRetain.money || 0) : 0;
   var _qsInSub = _localRetainTurn > 0
     ? (U.money + ' · 地留 ' + _guokuFmt(_localRetainTurn))
     : U.money;
   html +=     '<div class="tr-qs" title="仅中央上解·若需全国官收看下方三数面板"><div class="tr-qs-label">中央' + periodLbl + '入</div><div class="tr-qs-val up">' + _guokuFmt(turnIn) + '</div><div class="tr-qs-sub">' + _qsInSub + '</div></div>';
   // 回合支
-  var turnOut = g.turnExpense || g.monthlyExpense || 0;
+  var turnOut = _gkReported('fiscal.turnExpense', g.turnExpense || g.monthlyExpense || 0, 'bad').shown;
   html +=     '<div class="tr-qs"><div class="tr-qs-label">' + periodLbl + '支</div><div class="tr-qs-val down">' + _guokuFmt(turnOut) + '</div><div class="tr-qs-sub">' + U.money + '</div></div>';
   // 增减
   var deltaCls = deltaVal >= 0 ? 'up' : 'down';

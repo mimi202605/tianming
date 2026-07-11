@@ -1213,23 +1213,31 @@
     }).join('') + (items.length > 8 ? '<div class="tmrp-meta">余 ' + esc(items.length - 8) + ' 项未列。</div>' : '');
   }
 
+  // 失真层S2·据奏取值(键名与顶栏/帑廪panel三面同一·内帑永真值不套·docs/design-reported-view-2026-07.md)
+  function rightFiscalReported(key, val, dir){
+    var RV = window.TM && TM.ReportedView;
+    if (!RV || !RV.active(window.P || null)) return { shown: val, distorted: false };
+    return RV.value('fiscal', key, val, { direction: dir, dept: 'fiscal' });
+  }
   function renderFinanceRich(){
     var root = rightFinanceRoot();
     var g = root.guoku || {};
     var n = root.neitang || {};
     var f = root.fiscal || {};
-    var money = rightFinanceFirst(g, ['stockMoney','money','balance','silver','taicangMoney'], 0);
-    var grain = rightFinanceFirst(g, ['stockGrain','grain','grainStock','food'], 0);
-    var cloth = rightFinanceFirst(g, ['stockCloth','cloth','clothStock'], '');
+    var _rvM = rightFiscalReported('guoku.money', rightFinanceFirst(g, ['stockMoney','money','balance','silver','taicangMoney'], 0), 'good');
+    var money = _rvM.shown;
+    var grain = rightFiscalReported('guoku.grain', rightFinanceFirst(g, ['stockGrain','grain','grainStock','food'], 0), 'good').shown;
+    var cloth = rightFiscalReported('guoku.cloth', rightFinanceFirst(g, ['stockCloth','cloth','clothStock'], ''), 'good').shown;
     var neitang = rightFinanceFirst(n, ['money','balance','silver'], '');
-    var income = rightFinanceFirst(g, ['turnIncome','monthlyIncome','income','lastIncome'], rightFinanceFirst(f, ['turnIncome','monthlyIncome','income'], 0));
-    var expense = rightFinanceFirst(g, ['turnExpense','monthlyExpense','expense','lastExpense'], rightFinanceFirst(f, ['turnExpense','monthlyExpense','expense'], 0));
+    var income = rightFiscalReported('fiscal.turnIncome', rightFinanceFirst(g, ['turnIncome','monthlyIncome','income','lastIncome'], rightFinanceFirst(f, ['turnIncome','monthlyIncome','income'], 0)), 'good').shown;
+    var expense = rightFiscalReported('fiscal.turnExpense', rightFinanceFirst(g, ['turnExpense','monthlyExpense','expense','lastExpense'], rightFinanceFirst(f, ['turnExpense','monthlyExpense','expense'], 0)), 'bad').shown;
     var net = rightAdminNum(income, 0) - rightAdminNum(expense, 0);
     var incomeItems = rightFinanceCollect(['incomeItems','incomes','longTermIncome','recurringIncome','customTaxes','taxes']);
     var expenseItems = rightFinanceCollect(['expenseItems','expenses','longTermExpense','recurringExpense','fixedExpenses','spendingItems']);
+    var _rvBadge = (_rvM.distorted && window.TM && TM.ReportedView) ? TM.ReportedView.badge(_rvM) : '';
     return '<div class="tmrp-finance-shell">' +
       '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(rightFinanceMoney(money)) + '</b><span>太仓银</span></div><div class="tmrp-stat"><b>' + esc(rightFinanceMoney(grain)) + '</b><span>太仓粮</span></div><div class="tmrp-stat"><b>' + esc(rightFinanceMoney(net)) + '</b><span>本期结余</span></div></div>' +
-      '<section class="tmrp-card"><div class="tmrp-card-title"><span>库藏</span><small>国库 / 内帑 / 本回合</small></div>' +
+      '<section class="tmrp-card"><div class="tmrp-card-title"><span>库藏' + _rvBadge + '</span><small>国库 / 内帑 / 本回合</small></div>' +
       '<div class="tmrp-mini-grid"><div><span>太仓银</span><b>' + esc(rightFinanceMoney(money)) + '</b></div><div><span>太仓粮</span><b>' + esc(rightFinanceMoney(grain)) + '</b></div><div><span>库存布</span><b>' + esc(rightFinanceMoney(cloth)) + '</b></div><div><span>内帑银</span><b>' + esc(rightFinanceMoney(neitang)) + '</b></div></div></section>' +
       '<section class="tmrp-card ' + (net < 0 ? 'hot' : '') + '"><div class="tmrp-card-title"><span>本期收支</span><small>' + esc(getTurnText(window.GM && GM.turn)) + '</small></div>' +
       rightArmyRows([['本期收入', rightFinanceMoney(income)], ['本期支出', rightFinanceMoney(expense)], ['军饷', rightFinanceMoney(rightFinanceFirst(g, ['armyExpense','militaryExpense'], '待核'))], ['宗禄', rightFinanceMoney(rightFinanceFirst(g, ['royalExpense','clanExpense'], '待核'))]]) +
