@@ -1633,25 +1633,34 @@ function _sSaveImgAPI() {
 async function _sTestImgConn() {
   var st = _$('s-img-status');
   if (st) st.innerHTML = '<span style="color:var(--gold);">\u6D4B\u8BD5\u4E2D\u2026</span>';
+  // 2026-07-11 \u4FEE\u300C\u586B\u4E86\u6CA1\u4FDD\u5B58\u5C31\u6D4B\u2192\u6D4B\u5230\u65E7\u914D\u7F6E\u300D\uFF1A\u5148\u628A\u680F\u4F4D\u843D\u76D8\u00B7\u6D4B\u7684\u5C31\u662F\u773C\u524D\u586B\u7684
+  try { _sSaveImgAPI(); } catch(_){}
   var cfg = typeof ImageAPI !== 'undefined' ? ImageAPI.getConfig() : null;
   if (!cfg || !cfg.supported) {
     if (st) st.innerHTML = '<span style="color:var(--red);">\u274C \u672A\u914D\u7F6E\u751F\u56FEAPI\uFF08Key\u6216URL\u4E3A\u7A7A\uFF09</span>';
     return;
   }
   try {
-    // 用一个极简prompt测试连接（不实际生成图片，只验证认证）
+    // 故意用超小尺寸探测：多数服务商会拒 size（方舟 seedream 最小 92 万像素·dall-e-3 下限 1024²·2026-07-11 实测）——
+    // 收到「尺寸类 400」即证明网络/Key/端点/模型路由全通且不出图不计费；401/403/404 才是真配置问题
     var resp = await fetch(cfg.url, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},
       body: JSON.stringify({model:cfg.model||'dall-e-3',prompt:'test',n:1,size:'256x256',response_format:'url'})
     });
+    var errMsg = '';
+    if (!resp.ok) {
+      try { var ej = await resp.json(); errMsg = (ej.error && ej.error.message) || ''; } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-patches');}catch(_){}}
+    }
     if (resp.ok) {
       if (st) st.innerHTML = '<span style="color:var(--green);">\u2705 \u8FDE\u63A5\u6210\u529F\uFF0C\u751F\u56FEAPI\u53EF\u7528</span>';
+    } else if ((resp.status === 400 || resp.status === 422) && /size|pixel|resolution|width|height|\u5C3A\u5BF8|\u5206\u8FA8\u7387/i.test(errMsg)) {
+      // \u5C3A\u5BF8\u88AB\u670D\u52A1\u5546\u6821\u9A8C\u62D2\u7EDD = \u5DF2\u901A\u8FC7\u8BA4\u8BC1\u5E76\u8DEF\u7531\u5230\u6A21\u578B\u00B7\u8FDE\u63A5\u53EF\u7528\uFF08\u63A2\u6D4B\u4E0D\u51FA\u56FE\u00B7\u4E0D\u8BA1\u8D39\uFF09
+      if (st) st.innerHTML = '<span style="color:var(--green);">\u2705 \u8FDE\u63A5\u6B63\u5E38\uFF1AKey\u3001\u5730\u5740\u4E0E Model_ID \u5747\u53EF\u8FBE\uFF08\u670D\u52A1\u5546\u6821\u9A8C\u5230\u5C3A\u5BF8\u53C2\u6570\u5373\u8BC1\u660E\u8BA4\u8BC1\u4E0E\u7AEF\u70B9\u7686\u901A\u00B7\u672C\u63A2\u6D4B\u4E0D\u51FA\u56FE\u4E0D\u8BA1\u8D39\uFF09\u3002\u8981\u5B9E\u9645\u51FA\u56FE\u9A8C\u8BC1\uFF0C\u70B9\u300C\u68C0\u6D4B\u751F\u56FE\u529F\u80FD\u300D\u3002</span>';
     } else {
-      var errMsg = '';
-      try { var ej = await resp.json(); errMsg = (ej.error && ej.error.message) || ''; } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-patches');}catch(_){}}
       if (st) st.innerHTML = '<span style="color:var(--red);">\u274C HTTP ' + resp.status + (errMsg ? ': ' + errMsg.slice(0,60) : '')
-        + (resp.status === 404 ? '\u00B7\u63A5\u53E3\u8DEF\u5F84\u4E0D\u5BF9\uFF1FURL \u586B\u670D\u52A1\u5546\u57FA\u5740(\u81EA\u52A8\u8865\u5168 /v1/images/generations)\u6216\u5B8C\u6574\u751F\u56FE\u7AEF\u70B9\u7686\u53EF' : '') + '</span>'
+        + (resp.status === 404 ? '\u00B7\u63A5\u53E3\u8DEF\u5F84\u4E0D\u5BF9\uFF1FURL \u586B\u670D\u52A1\u5546\u57FA\u5740(\u81EA\u52A8\u8865\u5168 /v1/images/generations)\u6216\u5B8C\u6574\u751F\u56FE\u7AEF\u70B9\u7686\u53EF' : '')
+        + (resp.status === 401 || resp.status === 403 ? '\u00B7Key \u65E0\u6548\u6216\u65E0\u6743\u9650\uFF1F' : '') + '</span>'
         + '<div style="color:var(--txt-d);font-size:0.68rem;margin-top:2px;">\u5B9E\u9645\u8BF7\u6C42\u7AEF\u70B9: ' + (typeof escHtml==='function'?escHtml(cfg.url):cfg.url) + '</div>';
     }
   } catch(e) {
@@ -1663,9 +1672,11 @@ async function _sTestImgConn() {
 async function _sDetectImgCap() {
   var st = _$('s-img-status');
   if (st) st.innerHTML = '<span style="color:var(--gold);">\u68C0\u6D4B\u4E2D\u2026\u6B63\u5728\u5C1D\u8BD5\u751F\u6210\u6D4B\u8BD5\u56FE\u7247</span>';
+  try { _sSaveImgAPI(); } catch(_){} // 同测试连接：先把栏位落盘再测
   try {
-    // 实际生成一张极小的测试图来验证生图能力
-    var testUrl = await ImageAPI.generate('A simple red circle on white background, minimal, test image', {size:'256x256', quality:'standard'});
+    // 实际生成一张测试图验证生图能力。尺寸必须 1024x1024：
+    // 256x256 低于方舟 seedream 最小面积（92 万像素）也低于 dall-e-3 下限（1024²）·2026-07-11 实测定罪
+    var testUrl = await ImageAPI.generate('A simple red circle on white background, minimal, test image', {size:'1024x1024', quality:'standard'});
     if (testUrl) {
       if (st) st.innerHTML = '<span style="color:var(--green);">\u2705 \u751F\u56FE\u529F\u80FD\u6B63\u5E38\uFF01\u5DF2\u6210\u529F\u751F\u6210\u6D4B\u8BD5\u56FE\u7247\u3002</span>' +
         '<br><img src="' + (typeof escHtml==='function'?escHtml(testUrl):testUrl) + '" style="width:64px;height:64px;border-radius:4px;margin-top:4px;border:1px solid var(--bdr);">';
