@@ -1761,9 +1761,28 @@ function _tmIsIncompleteOfficialProject(project) {
     _tmCountSidRowsInProject(project, 'variables', sid) < 10;
 }
 
+// 设备级 API 配置回灌：saveP 各持久化端(IDB/tm_P/tm_P_lite/桌面autoSave)一律剥 key 落盘（安全·不进可分享数据），
+// 故恢复层整体覆盖 P.ai 后必须从设备真源 localStorage.tm_api 把非空字段合回——否则启动时补回的 key 会被
+// 异步晚到的恢复层(尤其 IndexedDB 层·07-04 修活后)冲掉，症状=每次进游戏都要重填 key(2026-07-11)。
+// 合并口径与 fullLoadGame._preservedAi 一致：tm_api 的非空字段覆盖，用户最近保存的配置永远生效。
+function _tmRehydrateAiFromDevice() {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    var raw = localStorage.getItem('tm_api');
+    if (!raw) return;
+    var dev = JSON.parse(raw);
+    if (!dev || typeof dev !== 'object') return;
+    if (!P.ai) P.ai = {};
+    for (var k in dev) {
+      if (Object.prototype.hasOwnProperty.call(dev, k) && dev[k] != null && dev[k] !== '') P.ai[k] = dev[k];
+    }
+  } catch (_) {}
+}
+if (typeof window !== 'undefined') { window._tmRehydrateAiFromDevice = _tmRehydrateAiFromDevice; }
+
 function _tmApplyMachinePrefsFromProject(project) {
   if (!project) return;
-  if (project.ai) P.ai = project.ai;
+  if (project.ai) { P.ai = project.ai; _tmRehydrateAiFromDevice(); }
   if (project.conf) {
     if (!P.conf) P.conf = {};
     for (var k in project.conf) {
@@ -1855,6 +1874,7 @@ function _tmEmitPRestored(source) {
         for (var key in saved) {
           if (saved.hasOwnProperty(key)) P[key] = saved[key];
         }
+        _tmRehydrateAiFromDevice(); // tm_P 系剥 key 落盘·整树覆盖后从 tm_api 回灌
         console.log('[restoreP] 从localStorage(tm_P)恢复, scenarios:', P.scenarios.length);
         // 迁移：旧格式存在则写入IndexedDB并清理（tm-storage 后载·短轮询等就位·原 typeof 一次性检查恒 false=迁移死代码）
         (function _tmMigrateTmPWhenReady(tries) {
@@ -1871,7 +1891,7 @@ function _tmEmitPRestored(source) {
       try { lite = localStorage.getItem('tm_P_lite'); } catch(_){}
       if (lite) {
         var liteData = JSON.parse(lite);
-        if (liteData.ai) P.ai = liteData.ai;
+        if (liteData.ai) { P.ai = liteData.ai; _tmRehydrateAiFromDevice(); } // lite.ai 无 key·覆盖后回灌
         // 同步恢复用户设置(conf)——必须早于剧本 register() 的 saveP·否则被默认 conf 覆盖(见 saveP 处注释)
         if (liteData.conf && typeof liteData.conf === 'object') {
           if (!P.conf) P.conf = {};
@@ -1910,6 +1930,7 @@ function _tmEmitPRestored(source) {
         for (var key in fullP) {
           if (fullP.hasOwnProperty(key) && key !== 'gameState' && key !== '_saveMeta') P[key] = fullP[key]; // 跳僵尸键·与层3同口径
         }
+        _tmRehydrateAiFromDevice(); // IDB project 系剥 key 落盘·此层异步晚到曾冲掉启动时补回的 key(进游戏必重填·2026-07-11)
         console.log('[restoreP] 从IndexedDB恢复完整P, scenarios:', P.scenarios.length);
         // 如果已在剧本管理页，刷新显示
         if (typeof showScnManage === 'function' && document.querySelector('.scn-page.show')) {
@@ -1929,6 +1950,7 @@ function _tmEmitPRestored(source) {
             P[key] = r.data[key];
           }
         }
+        _tmRehydrateAiFromDevice(); // 桌面 autoSave 亦剥 key·覆盖后回灌
         console.log('[restoreP] 从desktop autoSave补充恢复');
         _tmEmitPRestored('desktop-autosave');
       }
