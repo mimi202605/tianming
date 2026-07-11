@@ -277,31 +277,40 @@ function _renderHukou() {
   };
 }
 
+// 失真层S3a·顶栏掉头判定(拍板②标题直接换据奏)：严格史实+开关下·且该键未被揭真→标题用朝廷视野(perceivedIndex)·真值从顶栏消失
+function _barFlipToPerceived(domain, key) {
+  var RV = (typeof TM !== 'undefined' && TM && TM.ReportedView) ? TM.ReportedView : null;
+  if (!RV || !RV.active(typeof P !== 'undefined' ? P : null)) return false;
+  return !RV.revealed(domain, key);
+}
+
 function _renderLizhi() {
   var c = GM.corruption || {};
   var trueIdx = typeof c.trueIndex === 'number' ? c.trueIndex : (typeof c.overall === 'number' ? c.overall : 0);
   var perc = c.perceivedIndex !== undefined ? c.perceivedIndex : trueIdx;
+  // 掉头：失真层开且未揭 → 墨点/段名/明细全按朝廷视野·真浊度与分部门真账从顶栏消失(须厂卫/推问/查案掀)
+  var _flip = _barFlipToPerceived('corruption', 'index');
+  var shownIdx = _flip ? perc : trueIdx;
   // 吏治段位（腐败高=吏治差）
   var phase = '';
-  if (trueIdx > 70) phase = 'corrupt-high';
+  if (shownIdx > 70) phase = 'corrupt-high';
   // 墨点指示（与 腐败系统 §5.2 一致）
-  var dots = trueIdx < 25 ? '○○○○' :
-             trueIdx < 50 ? '○○○●' :
-             trueIdx < 70 ? '○○●●' :
-             trueIdx < 85 ? '○●●●' : '●●●●';
-  var phaseName = trueIdx < 25 ? '清明' :
-                  trueIdx < 50 ? '尚可' :
-                  trueIdx < 70 ? '渐弊' :
-                  trueIdx < 85 ? '颓靡' : '积重';
+  var dots = shownIdx < 25 ? '○○○○' :
+             shownIdx < 50 ? '○○○●' :
+             shownIdx < 70 ? '○○●●' :
+             shownIdx < 85 ? '○●●●' : '●●●●';
+  var phaseName = shownIdx < 25 ? '清明' :
+                  shownIdx < 50 ? '尚可' :
+                  shownIdx < 70 ? '渐弊' :
+                  shownIdx < 85 ? '颓靡' : '积重';
   var sd = c.subDepts || {};
-  return {
-    value: dots,
-    trend: 'stable',
-    phase: phase,
-    tip: {
-      title: '吏治',
-      phase: phaseName + '（朝廷视野：' + Math.round(perc) + '）',
-      rows: [
+  var rows = _flip
+    ? [
+        ['据奏浊度', Math.round(perc) + ' / 100（有司上报口径）'],
+        ['各部门虚实', '须遣厂卫、推问或派员核查方知'],
+        ['监察力度', ((c.supervision||{}).level || 0) + ' / 100']
+      ]
+    : [
         ['真实浊度', Math.round(trueIdx) + ' / 100'],
         ['朝廷视野', Math.round(perc) + '（地方可能粉饰）'],
         ['中央部门', Math.round((sd.central||{}).true || 0)],
@@ -309,8 +318,18 @@ function _renderLizhi() {
         ['军队部门', Math.round((sd.military||{}).true || 0)],
         ['税司',    Math.round((sd.fiscal||{}).true || 0)],
         ['监察力度', ((c.supervision||{}).level || 0) + ' / 100']
-      ],
-      note: '真实浊度与朝廷视野的落差决定了"你以为的吏治"与"实际的吏治"。点击查看详情'
+      ];
+  return {
+    value: dots,
+    trend: 'stable',
+    phase: phase,
+    tip: {
+      title: '吏治',
+      phase: phaseName + (_flip ? '（据奏）' : '（朝廷视野：' + Math.round(perc) + '）'),
+      rows: rows,
+      note: _flip
+        ? '此为有司上报口径——吏治真貌须经厂卫密奏、诏狱推问或派员核查方得掀见。点击查看详情'
+        : '真实浊度与朝廷视野的落差决定了"你以为的吏治"与"实际的吏治"。点击查看详情'
     }
   };
 }
@@ -319,26 +338,37 @@ function _renderMinxin() {
   var m = GM.minxin || {};
   var trueIdx = typeof m.trueIndex === 'number' ? m.trueIndex : (typeof m.index === 'number' ? m.index : (typeof m.value === 'number' ? m.value : 0));
   var perc = m.perceivedIndex !== undefined ? m.perceivedIndex : trueIdx;
-  var phase = trueIdx < 20 ? 'revolt' :
-              trueIdx < 40 ? 'thievery' :
-              trueIdx < 60 ? 'endurance' :
-              trueIdx < 80 ? 'peace' : 'acclaim';
+  // 掉头(拍板②)：失真层开且未揭 → 标题/段位按朝廷视野·真实民心从顶栏消失(揭竿在即而奏报颂圣=玩法本体)
+  var _flip = _barFlipToPerceived('minxin', 'index');
+  var shownIdx = _flip ? perc : trueIdx;
+  var phase = shownIdx < 20 ? 'revolt' :
+              shownIdx < 40 ? 'thievery' :
+              shownIdx < 60 ? 'endurance' :
+              shownIdx < 80 ? 'peace' : 'acclaim';
   var phaseNames = {
     revolt:'揭竿',thievery:'窃盗',endurance:'忍耐',peace:'安居',acclaim:'颂圣'
   };
   return {
-    value: Math.round(trueIdx),
+    value: Math.round(shownIdx),
     trend: m.trend || 'stable',
     phase: phase,
     tip: {
       title: '民心',
-      phase: phaseNames[phase] + '段（朝廷视野：' + Math.round(perc) + '）',
-      rows: [
-        ['真实民心', Math.round(trueIdx) + ' / 100'],
-        ['朝廷视野', Math.round(perc) + '（地方上报）'],
-        ['段位',     phaseNames[phase]]
-      ],
-      note: '"天视自我民视"——但朝廷看到的民心未必真实。点击查看分区/分阶层详情'
+      phase: phaseNames[phase] + (_flip ? '段（据奏）' : '段（朝廷视野：' + Math.round(perc) + '）'),
+      rows: _flip
+        ? [
+            ['据奏民心', Math.round(perc) + ' / 100（地方上报口径）'],
+            ['段位(据奏)', phaseNames[phase]],
+            ['民间真貌', '须密报、微服或派员查访方知']
+          ]
+        : [
+            ['真实民心', Math.round(trueIdx) + ' / 100'],
+            ['朝廷视野', Math.round(perc) + '（地方上报）'],
+            ['段位',     phaseNames[phase]]
+          ],
+      note: _flip
+        ? '"天视自我民视"——而今所见皆有司之奏。实情须经门生密报、厂卫查访方得掀见。点击查看分区/分阶层详情'
+        : '"天视自我民视"——但朝廷看到的民心未必真实。点击查看分区/分阶层详情'
     }
   };
 }
