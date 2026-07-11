@@ -738,7 +738,18 @@ function findScenarioById(id) {
     console.warn('[findScenarioById] scenarioById 不是 Map，重建索引');
     buildIndices();
   }
-  return P._indices.scenarioById.get(id);
+  // 自愈（2026-07-11 治「新建空卷→立刻打开→找不到剧本」）：P.scenarios 有十余处直接 push/splice
+  // （confirmNewScn/桌面导入/工坊发布…），数组动了索引不知道。命中先验真（防 splice 删除后的
+  // 幽灵条目），未命中兜底扫数组并回填索引；剧本数量级小（个位~几十），线性扫无感。
+  var map = P._indices.scenarioById;
+  var list = Array.isArray(P.scenarios) ? P.scenarios : [];
+  var hit = map.get(id);
+  if (hit && list.indexOf(hit) >= 0) return hit;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && list[i].id === id) { map.set(id, list[i]); return list[i]; }
+  }
+  if (hit) map.delete(id);
+  return undefined;
 }
 
 // ============================================================

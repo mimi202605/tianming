@@ -492,6 +492,7 @@ function showScnManage(){
     "<div id=\"ai-full-gen-panel\" style=\"display:none;max-width:600px;width:100%;margin-top:1rem;\"></div>"+
     "<div class=\"scn-grid edit-grid-purple\">"+
     "<div class=\"scn-card scn-card-new\" onclick=\"createNewScn()\">\uFF0B \u65B0 \u5EFA \u7A7A \u5377</div>"+
+    "<div class=\"scn-card scn-card-new\" onclick=\"importScnFromFile()\">\u21EA \u5BFC \u5165 \u5267 \u672C</div>"+
     P.scenarios.map(function(s,i){
       return "<div class=\"scn-card\" onclick=\"(window.openScenarioResetEditor||openEditorHtml)('"+s.id+"')\">"+
         "<div class=\"scn-era\">"+s.era+"</div>"+
@@ -516,6 +517,37 @@ function createNewScn(){
   document.body.appendChild(modal);
   setTimeout(function(){var inp=_$("new-scn-name");if(inp)inp.focus();},100);
 }
+// 导入剧本 JSON（2026-07-11 玩家反馈：著卷列表页此前没有直接导入口——桌面端要靠把文件丢进
+// scenarios 目录、新工坊的导入藏在编辑器工具栏「入」钮。此处补正门：选 .json → 入库 → 留在列表页）
+function importScnFromFile(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.style.display='none';
+  inp.onchange=function(){
+    var f=inp.files&&inp.files[0];if(!f)return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        var scn=JSON.parse(String(rd.result||''));
+        if(!scn||typeof scn!=='object'||Array.isArray(scn)){toast('不是有效的剧本 JSON');return;}
+        if(!scn.name){toast('剧本缺少 name 字段');return;}
+        if(!scn.id) scn.id=uid();
+        var existing=P.scenarios.findIndex(function(s){return s&&s.id===scn.id;});
+        if(existing>=0){
+          if(!confirm('已存在同 id 剧本《'+(P.scenarios[existing].name||scn.id)+'》，覆盖？'))return;
+          P.scenarios.splice(existing,1,scn); // arch-ok 导入覆盖同 id·与 confirmNewScn 同类剧本库写口
+        }else{
+          P.scenarios.push(scn); // arch-ok 导入入库·索引由 findScenarioById 查询侧自愈·不手写 p:_indices
+        }
+        saveP();
+        toast('剧本《'+scn.name+'》已导入');
+        showScnManage();
+      }catch(e){toast('导入失败：'+(e&&e.message||e));}
+    };
+    rd.readAsText(f,'utf-8');
+  };
+  document.body.appendChild(inp);inp.click();
+  setTimeout(function(){try{inp.remove();}catch(_){}},60000);
+}
+
 function confirmNewScn(){
   var name=_$("new-scn-name")?_$("new-scn-name").value.trim():"";
   if(!name){toast("\u8F93\u5165\u540D\u79F0");return;}
