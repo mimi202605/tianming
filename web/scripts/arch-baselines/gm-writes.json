@@ -9,10 +9,10 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-07T05:05:41.507Z",
+  "updatedAt": "2026-07-11T09:27:28.737Z",
   "totals": {
-    "gm": 4510,
-    "p": 739
+    "gm": 4496,
+    "p": 733
   },
   "files": {
     "map-converter.js": {
@@ -24,7 +24,7 @@
     },
     "tm-utils.js": {
       "gm": 16,
-      "p": 13,
+      "p": 15,
       "roots": {
         "gm:_errorLog": 2,
         "gm:_rngCheckpoints": 3,
@@ -33,7 +33,7 @@
         "gm:_loyaltyLog": 3,
         "gm:_loyaltyBlocked": 3,
         "gm:_trCurrentIdx": 1,
-        "p:ai": 2,
+        "p:ai": 4,
         "p:conf": 4,
         "p:scenarios": 2,
         "p:<dynamic>": 5
@@ -58,9 +58,9 @@
     },
     "tm-ai-infra-model-detect.js": {
       "gm": 0,
-      "p": 17,
+      "p": 13,
       "roots": {
-        "p:conf": 17
+        "p:conf": 13
       }
     },
     "tm-memory-trace.js": {
@@ -212,11 +212,11 @@
       }
     },
     "tm-mechanics-world.js": {
-      "gm": 43,
+      "gm": 41,
       "p": 0,
       "roots": {
         "gm:_gossipQueue": 4,
-        "gm:families": 5,
+        "gm:families": 3,
         "gm:harem": 9,
         "gm:_varMapping": 5,
         "gm:_tyrantDecadence": 3,
@@ -417,8 +417,8 @@
       }
     },
     "tm-office-panel.js": {
-      "gm": 33,
-      "p": 1,
+      "gm": 30,
+      "p": 0,
       "roots": {
         "gm:_edictSuggestions": 13,
         "gm:qijuHistory": 1,
@@ -426,9 +426,6 @@
         "gm:chars": 4,
         "gm:minxin": 1,
         "gm:_chronicle": 5,
-        "gm:officeChanges": 2,
-        "gm:officeTree": 1,
-        "p:officeTree": 1,
         "gm:biannianItems": 1
       }
     },
@@ -499,10 +496,10 @@
     },
     "tm-player-settings.js": {
       "gm": 0,
-      "p": 28,
+      "p": 26,
       "roots": {
-        "p:ai": 4,
-        "p:conf": 24
+        "p:ai": 3,
+        "p:conf": 23
       }
     },
     "tm-player-core.js": {
@@ -615,11 +612,9 @@
       }
     },
     "tm-dynamic-systems.js": {
-      "gm": 32,
+      "gm": 28,
       "p": 0,
       "roots": {
-        "gm:postSystem": 2,
-        "gm:_indices": 2,
         "gm:turnChanges": 3,
         "gm:vars[<dynamic>]": 3,
         "gm:eraState": 18,
@@ -776,14 +771,12 @@
       }
     },
     "tm-ai-apply-deaths.js": {
-      "gm": 8,
-      "p": 1,
+      "gm": 7,
+      "p": 0,
       "roots": {
         "gm:currentIssues": 1,
         "gm:provinceStats": 2,
         "gm:harem": 2,
-        "p:playerInfo": 1,
-        "gm:_successionEvent": 1,
         "gm:_playerDead": 1,
         "gm:_playerDeathReason": 1
       }
@@ -827,6 +820,13 @@
       "p": 0,
       "roots": {
         "gm:_dianzhang": 1
+      }
+    },
+    "tm-benji.js": {
+      "gm": 2,
+      "p": 0,
+      "roots": {
+        "gm:_benji": 2
       }
     },
     "tm-endturn-systems.js": {
@@ -920,13 +920,6 @@
       "roots": {
         "gm:memoryAnchors": 5,
         "gm:memoryArchive": 2
-      }
-    },
-    "tm-benji.js": {
-      "gm": 2,
-      "p": 0,
-      "roots": {
-        "gm:_benji": 2
       }
     },
     "tm-endturn-edict.js": {
@@ -2304,15 +2297,14 @@
       }
     },
     "tm-guoku-engine.js": {
-      "gm": 217,
+      "gm": 212,
       "p": 0,
       "roots": {
-        "gm:guoku": 149,
+        "gm:guoku": 148,
         "gm:<dynamic>": 3,
-        "gm:corruption": 6,
+        "gm:corruption": 5,
         "gm:military": 1,
-        "gm:huangwei": 12,
-        "gm:huangquan": 3,
+        "gm:huangwei": 10,
         "gm:activeDisasters": 3,
         "gm:_lastSimDisasterTurn": 1,
         "gm:vars": 5,
@@ -2320,6 +2312,7 @@
         "gm:_grainReleaseTurn": 1,
         "gm:population": 2,
         "gm:totalOfficials": 2,
+        "gm:huangquan": 2,
         "gm:hukou": 5,
         "gm:currency": 8,
         "gm:fiscal": 3,
@@ -2577,7 +2570,7 @@
       }
     },
     "tm-authority-complete.js": {
-      "gm": 73,
+      "gm": 72,
       "p": 0,
       "roots": {
         "gm:corruption": 3,
@@ -2589,7 +2582,6 @@
         "gm:_pendingMemorials": 2,
         "gm:huangwei": 11,
         "gm:minxin": 3,
-        "gm:_gameOver": 1,
         "gm:revolts": 1,
         "gm:_crisisPlayerActions": 1,
         "gm:_turnReport": 1,
