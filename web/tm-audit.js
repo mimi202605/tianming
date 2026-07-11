@@ -108,6 +108,19 @@
       G.corruption.trueIndex = Math.max(0, (typeof G.corruption.trueIndex === 'number' ? G.corruption.trueIndex : (typeof G.corruption.overall === 'number' ? G.corruption.overall : 30)) - 2);
       G.corruption.overall = G.corruption.trueIndex;
     }
+    // 失真层S6·查案成功=御史回报实情：掀吏治/民情全局与当地据奏许可(失真层开时顶栏/方志/舆图显实情·ttl后重蒙尘)
+    try {
+      var RVa = (typeof TM !== 'undefined' && TM && TM.ReportedView) || (typeof window !== 'undefined' && window.TM && window.TM.ReportedView);
+      if (RVa && typeof RVa.reveal === 'function') {
+        RVa.reveal('corruption', 'index', 'audit');
+        RVa.reveal('minxin', 'index', 'audit');
+        if (audit.region) {
+          RVa.reveal('renli', 'region.' + audit.region, 'audit');
+          RVa.reveal('minxin', 'region.' + audit.region, 'audit');
+          RVa.reveal('corruption', 'region.' + audit.region, 'audit');
+        }
+      }
+    } catch (e) {}
     // 若该 region 的地方官存在 → 可能下狱
     var localGov = (G.chars || []).find(function(c){return c.alive !== false && c.region === audit.region && (c.officialTitle||'').match(/知|总督|巡抚|刺史/);});
     if (localGov && Math.random() < 0.5) {

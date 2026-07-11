@@ -159,7 +159,12 @@ async function genMemorialsAI(count){
     if (GM.eraState) {
       prompt += '局势：' + (GM.eraState.dynastyPhase || '') + '，统一' + Math.round((GM.eraState.politicalUnity||0.5)*100) + '% 集权' + Math.round((GM.eraState.centralControl||0.5)*100) + '% 稳定' + Math.round((GM.eraState.socialStability || 0.5) * 100) + '% 经济' + Math.round((GM.eraState.economicProsperity || 0.5) * 100) + '% 文化' + Math.round((GM.eraState.culturalVibrancy||0.5)*100) + '%\n';
     }
-    if (GM.taxPressure !== undefined) prompt += '税压' + Math.round(GM.taxPressure||0) + '\n';
+    // 失真层S7·奏疏口径：官员知道的是官账(据奏)——严格史实+开关下·喂AI的数字改据奏口径·
+    // 粉饰后危机省可落阈值之下=「该奏不奏」的壅蔽涌现·解药=查案/密报揭真(docs/design-reported-view-2026-07.md)
+    var _rvS7 = (typeof TM !== 'undefined' && TM && TM.ReportedView) ? TM.ReportedView : null;
+    var _s7on = !!(_rvS7 && _rvS7.active(P));
+    function _s7(k, v, dir) { return _s7on ? _rvS7.value('provinceStats', k, Number(v) || 0, { direction: dir }).shown : v; }
+    if (GM.taxPressure !== undefined) prompt += '税压' + Math.round(_s7on ? _rvS7.value('fiscal', 'taxPressure', GM.taxPressure || 0, { direction: 'bad' }).shown : (GM.taxPressure || 0)) + '\n';
 
     // 全部变量
     var topVars = [];
@@ -172,9 +177,11 @@ async function genMemorialsAI(count){
       P.playerInfo.coreContradictions.forEach(function(c) { prompt += '  [' + c.dimension + '] ' + c.title + (c.parties?'('+c.parties+')':'') + '\n'; });
     }
 
-    // 危机省份（让地方官上疏）
+    // 危机省份（让地方官上疏）·失真层下按据奏值过滤——粉饰后落阈值下的省不入奏(壅蔽本体·揭真可破)
     if (GM.provinceStats) {
-      var _critProv2 = Object.entries(GM.provinceStats).filter(function(e){return e[1].unrest>40||e[1].corruption>50;});
+      var _critProv2 = Object.entries(GM.provinceStats).map(function(e){
+        return [e[0], { unrest: _s7(e[0] + '.unrest', e[1].unrest, 'bad'), corruption: _s7(e[0] + '.corruption', e[1].corruption, 'bad') }];
+      }).filter(function(e){return e[1].unrest>40||e[1].corruption>50;});
       if (_critProv2.length > 0) {
         prompt += '危机省份：' + _critProv2.map(function(e){return e[0]+'(民变'+Math.round(e[1].unrest)+' 腐'+Math.round(e[1].corruption)+')';}).join('、') + '\n';
       }
@@ -202,6 +209,7 @@ async function genMemorialsAI(count){
 
     // 游戏模式感知——影响奏疏风格
     var _gMode = (P.conf && P.conf.gameMode) || 'yanyi';
+    if (_s7on) prompt += '【奏报口径】上列数字皆有司层层上报之官账（或有粉饰）。奏疏引用数字须与官账口径一致；除密奏、密报渠道外，臣工不得道出官账之外的实情。\n';
     if (_gMode === 'strict_hist') prompt += '【模式：严格史实】奏疏应严谨考据，引用真实典故，格式严格仿古\n';
     else if (_gMode === 'light_hist') prompt += '【模式：轻度史实】奏疏基于史实但可适度发挥\n';
     else prompt += '【模式：演义】奏疏可富于文学性和戏剧性\n';

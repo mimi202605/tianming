@@ -590,7 +590,17 @@
   }
 
   function rightArmySoldiers(a){
-    return Math.max(0, Math.round(rightArmyNumRaw(a, ['soldiers','size','strength','troops','initialTroops'], 0)));
+    var t = Math.max(0, Math.round(rightArmyNumRaw(a, ['soldiers','size','strength','troops','initialTroops'], 0)));
+    // 失真层S5(拍板③)：名册/详情/总兵力显据奏名员=实额虚增(吃空饷·军队分部门吏治面×统帅忠诚点·
+    // 直臣治军虚额少)·核饷点验揭实额·战斗引擎读GM真值零影响。
+    var RV = window.TM && TM.ReportedView;
+    if (!RV || !RV.active(window.P || null)) return t;
+    var handler = null;
+    try {
+      var cn = a && (a.commander || a.commanderName || a.general);
+      if (cn && typeof findCharByName === 'function') handler = findCharByName(cn);
+    } catch (e) {}
+    return RV.value('army', 'soldiers.' + String((a && (a.name || a.id)) || ''), t, { direction: 'good', dept: 'military', handler: handler }).shown;
   }
 
   function rightArmyFmtNum(n){
@@ -2087,6 +2097,15 @@
       rightOpenArmyFlyout(row.key);
       toast('已展开 ' + name + ' 军令详情');
     } else if (cmd === 'pay') {
+      // 失真层S6·核饷=点验名册：揭该军实额(ttl 回合后重蒙尘)·失真层未开则纯面板跳转如旧
+      try {
+        var RVp = window.TM && TM.ReportedView;
+        if (RVp && RVp.active(window.P || null)) {
+          RVp.reveal('army', 'soldiers.' + String((army && (army.name || army.id)) || name), 'hexiang');
+          toast('核饷点验：' + name + ' 实额已掀见');
+          refreshArmyFlyout();
+        }
+      } catch (e) {}
       state.selectedArmy = row.key;
       openPanel('finance');
       toast('已转入户部财计，可核查 ' + name + ' 岁饷');

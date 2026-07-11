@@ -1745,10 +1745,17 @@
     return '<div class="tmrp-chip-list">' + chips + '</div>';
   }
 
+  // 失真层S3b·阶层满意度据奏(键='class.'+阶层名·head/detail/均值三处同键·上报偏高=有司报民感圣恩)
+  function rightSocSatReported(c, sat){
+    var RV = window.TM && TM.ReportedView;
+    if (!RV || !RV.active(window.P || null)) return sat;
+    return RV.value('minxin', 'class.' + rightSocialName(c), sat, { direction: 'good' }).shown;
+  }
+
   // 列表态·紧凑行(2026-07-11·玩家反馈行14「没必要滑动·一页显示」)：名+满意/影响数字+一行诉求·
   // 条形图/立场/盟敌 chips/逐卡提示全撤(详情 flyout 一样不少)·整行可点进详情。
   function rightSocialClassHead(c){
-    var sat = rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50);
+    var sat = rightSocSatReported(c, rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50));
     var inf = rightSocNum(c, ['influence','power','weight'], 0);
     var brief = rightSocialBriefText(c.demands || c.currentDemand);
     return '<section class="tmrp-card tmrp-social-head ' + (sat < 45 ? 'hot' : (sat > 62 ? 'ok' : '')) + '" data-right-action="outline-select" data-type="class" data-key="' + attr(rightSocialName(c)) + '">' +
@@ -1759,7 +1766,7 @@
 
   // 详情态·全 11 层深析(置入左展 flyout·壳自带头部×与滚动)
   function rightSocialClassDetail(c){
-    var sat = rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50);
+    var sat = rightSocSatReported(c, rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50));
     var inf = rightSocNum(c, ['influence','power','weight'], 0);
     var baseRow = isFinite(Number(c._structBaseline)) ? [['势位(应然)', String(Math.round(c._structBaseline)) + (Array.isArray(c._structParts) && c._structParts.length ? ' · ' + c._structParts.slice(0, 2).join(' · ') : '')]] : [];
     var leg = rightSocGM()._legitimacy;
@@ -1784,7 +1791,7 @@
 
   function renderRightClassPanel(){
     var rows = getClasses();
-    var avg = rows.length ? Math.round(rows.reduce(function(s, c){ return s + rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50); }, 0) / rows.length) : 0;
+    var avg = rows.length ? Math.round(rows.reduce(function(s, c){ return s + rightSocSatReported(c, rightSocNum(c, ['satisfaction','support','mood','loyalty'], 50)); }, 0) / rows.length) : 0;
     var maxInf = rows.reduce(function(m, c){ return Math.max(m, rightSocNum(c, ['influence','power','weight'], 0)); }, 0);
     var summary = '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(rows.length) + '</b><span>阶层</span></div><div class="tmrp-stat"><b>' + esc(avg) + '</b><span>平均满意</span></div><div class="tmrp-stat"><b>' + esc(maxInf) + '</b><span>最高影响</span></div></div>';
     if (!rows.length) return summary + '<section class="tmrp-card empty"><div class="tmrp-empty">暂无阶层数据。</div></section>';

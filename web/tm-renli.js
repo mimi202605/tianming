@@ -1030,6 +1030,11 @@
         letters.unshift({ id: lid, from: '门生·' + c.name, title: c.name + '·密启', content: lbody,
           turn: num(GM.turn, 0), playerRead: false, sourceSystem: 'renli', sourceType: 'renli_truth', cipher: 'secret' });
       }
+      // 失真层S6·门生密报=读真值通道：掀该地役政/民情据奏许可(失真层开时方志/舆图该地显实情·ttl后重蒙尘)
+      try {
+        var RVr = (typeof TM !== 'undefined' && TM && TM.ReportedView) || (typeof window !== 'undefined' && window.TM && window.TM.ReportedView);
+        if (RVr && typeof RVr.reveal === 'function') { RVr.reveal('renli', 'region.' + c.rid, 'mishu'); RVr.reveal('minxin', 'region.' + c.rid, 'mishu'); }
+      } catch (e) {}
     });
     if (letters.length > 200) GM.letters = letters.slice(0, 200);
   }

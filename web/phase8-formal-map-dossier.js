@@ -931,8 +931,14 @@
         var rp = _reportedPop(r);
         if (rp && rp.ding != null && Number(rp.conceal) > 0 && hasDisplayValue(b.pop.ding)) {
           // 默认只看上报值（督抚据报·瞒报税基/隐户）·真丁口藏于聚光（hover 核验）——薛定谔奏报范式 pilot
+          // 失真层S4收严(拍板①真值须揭)：失真层开且该地未揭真→hover 不再泄真丁口与瞒报%·只提示核查之途
           var cP = Math.round(Number(rp.conceal) * 100);
-          return '<div class="bk-lr" data-bk-cause="ding" title="督抚奏报口径 · 真丁口 ' + attr(ppValue(b.pop.ding)) + '（约瞒报 ' + cP + '%·聚光核验）"><span class="bk-k">丁口 <small style="opacity:.65">据报</small></span><span class="bk-v">' + esc(ppValue(rp.ding)) + '</span></div>';
+          var RVd = window.TM && TM.ReportedView;
+          var _veiled = RVd && RVd.active(window.P || null) && !RVd.revealed('renli', 'region.' + String((r && (r.id || r.name)) || ''));
+          var tt = _veiled
+            ? '督抚奏报口径 · 真丁口须遣员核查、门生密报方得掀见'
+            : '督抚奏报口径 · 真丁口 ' + ppValue(b.pop.ding) + '（约瞒报 ' + cP + '%·聚光核验）';
+          return '<div class="bk-lr" data-bk-cause="ding" title="' + attr(tt) + '"><span class="bk-k">丁口 <small style="opacity:.65">据报</small></span><span class="bk-v">' + esc(ppValue(rp.ding)) + '</span></div>';
         }
         return bkRow('丁口', b.pop.ding, null, 'ding');
       })(),
@@ -1074,10 +1080,16 @@
         bkRow('本回合粮产', rg ? rg.grainOutput : '', 'jin'),
         bkRow('缺粮', rg ? rg.foodDeficit : '', 'zhu'),
         // 刀C·官报对照：督抚奏报口径（reported·可粉饰）vs 上列真值——瞒报显著则标红示警
+        // 失真层S4翻转(拍板①)：失真层开且该地未揭→对照行升为主口径·不泄瞒报%与「实情见上」·揭后照旧对照
         (function(){
           var rep = (window.GM && GM.renli && GM.renli.reported) ? (GM.renli.reported[rid] || (r.name ? GM.renli.reported[r.name] : null)) : null;
           if (!rep) return '';
           var cz = Number(rep.conceal) || 0;
+          var RVy = window.TM && TM.ReportedView;
+          var _veiledY = RVy && RVy.active(window.P || null) && !RVy.revealed('renli', 'region.' + String(rid || (r && r.name) || ''));
+          if (_veiledY) {
+            return bkRow('督抚奏报', '役负' + Math.round((Number(rep.corveeRate)||0)*100) + '% · 抛荒' + Math.round((Number(rep.fallowShare)||0)*100) + '%　〔诸数皆有司口径·实情须遣员核查〕', '');
+          }
           return bkRow('督抚奏报', '役负' + Math.round((Number(rep.corveeRate)||0)*100) + '% · 抛荒' + Math.round((Number(rep.fallowShare)||0)*100) + '%' + (cz > 0.12 ? ('　〔瞒报~' + Math.round(cz*100) + '%·实情见上〕') : '　〔与实情相符〕'), cz > 0.12 ? 'zhu' : '');
         })(),
         alloc ? bkRow('丁分配', '务农 ' + ppValue(alloc.farm) + ' · 应役 ' + ppValue(alloc.corvee) + ' · 应征 ' + ppValue(alloc.draft) + ' · 优免 ' + ppValue(alloc.exempt)) : '',

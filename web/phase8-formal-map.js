@@ -1636,7 +1636,7 @@
         _tipRow('主官', firstValue(data.governor, data.official)) +
         _tipRow('驻军', firstValue(data.garrison, b.army.troops, r && r.troops)) +
         _mobileForceRow(r, b) +
-        _tipRow('民心', firstValue(data.minxinLocal, r && r.mood));
+        _tipRow('民心', mapReported('minxin', r, firstValue(data.minxinLocal, r && r.mood), 'good'));
       return '<b>' + esc(regionTitle(r)) + '</b><span class="tip-owner">' + esc(ownerName(r) || '') + '</span>' +
         '<div class="tip-body">' + rows + '</div>' +
         '<div class="tip-foot"><em>左键 翻方志</em><em>右键 展势力</em></div>';
@@ -2249,6 +2249,14 @@
   // ── 四视图计分（2026-06-11 重构）──────────────────────────────────
   // 从 regionBundle 运行时字段动态结算·替代旧粗算（旧版军务直接拿驻军数当 0-100 分用、
   // 官守是 100-corruption 但 riskClass 不反转致清廉显红）。每项可缺省、文本档位词可解析。
+  // 失真层S3b·区域据奏取值(键='region.'+地块id·与tooltip同键防穿帮·公开事件如民变/战区扣分不失真·
+  //   tax层=名义vs实征真账不套·docs/design-reported-view-2026-07.md)
+  function mapReported(domain, r, val, dir){
+    var RV = window.TM && TM.ReportedView;
+    if (!RV || !RV.active(window.P || null) || !isFinite(Number(val))) return val;
+    return RV.value(domain, 'region.' + String((r && (r.id || r.name)) || ''), Number(val), { direction: dir }).shown;
+  }
+
   // 语义：mood=民心好坏(高=好) army=军务压力(高=险) office=吏治浊度(高=浊) tax=实征足额率(高=足·null=免科)
   function parseLevelWord(v, fallback){
     if (v === undefined || v === null || v === '') return fallback;
@@ -2274,6 +2282,7 @@
     var data = b.data || {};
     var base = Number(firstValue(data.minxinLocal, r && r.mood, data.prosperity, 55));
     if (!isFinite(base)) base = 55;
+    base = mapReported('minxin', r, base, 'good');   // 据奏：地方上报的民心偏乐观·民变/战区扣分在下(公开事件不失真)
     var mouths = Number(firstValue(b.pop.mouths, data.population, 0)) || 0;
     var fug = Number(b.pop.fugitives) || 0;
     var hid = Number(b.pop.hiddenCount) || 0;
@@ -2326,6 +2335,7 @@
     b = b || regionBundle(r);
     var data = b.data || {};
     var corr = Number(firstValue(data.corruptionLocal, data.corruption));
+    if (isFinite(corr)) corr = mapReported('corruption', r, corr, 'bad');   // 据奏：地方浊度瞒减显清明·缺员/怠政是可见事实不失真
     var score = isFinite(corr) ? corr : 50;
     var vac = Number(firstValue(data.officeVacancy, data.vacancy));
     if (isFinite(vac) && vac > 0) score += Math.min(12, vac * 4);

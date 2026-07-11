@@ -105,11 +105,13 @@ function _barAccountDelta(account, prevAccount, resource, fallback) {
 // 各变量的渲染逻辑
 // ─────────────────────────────────────────────
 
-// 失真层S2·据奏取值(严格史实+开关才失真·键名与右rail财计/帑廪panel三面同一·docs/design-reported-view-2026-07.md)
-function _barReported(key, val, dir) {
+// 失真层S2/S4·据奏取值(严格史实+开关才失真·键名与右rail财计/帑廪panel三面同一·docs/design-reported-view-2026-07.md)
+// S4 泛化：domain 可选(缺省 fiscal·户口线传 'renli')·fiscal 域吃税司分部门吏治
+function _barReported(key, val, dir, domain) {
   var RV = (typeof TM !== 'undefined' && TM && TM.ReportedView) ? TM.ReportedView : null;
   if (!RV || !RV.active(typeof P !== 'undefined' ? P : null)) return { shown: val, distorted: false };
-  return RV.value('fiscal', key, val, { direction: dir, dept: 'fiscal' });
+  var dom = domain || 'fiscal';
+  return RV.value(dom, key, val, { direction: dir, dept: dom === 'fiscal' ? 'fiscal' : undefined });
 }
 
 function _renderGuoku() {
@@ -250,11 +252,13 @@ function _renderHukou() {
   // 优先读新聚合（IntegrationBridge 写入 GM.population.national），fallback 老 hukou
   var pop = (GM.population && GM.population.national) || {};
   var legacy = GM.hukou || {};
-  var total = pop.mouths || legacy.registeredTotal || 0;
-  var households = pop.households || 0;
-  var ding = pop.ding || 0;
-  var fugitives = (GM.population && GM.population.fugitives) || 0;
-  var hidden = (GM.population && GM.population.hiddenCount) || legacy.estimatedHidden || 0;
+  // 失真层S4·据奏(拍板①)：黄册口算历来少报——丁口户数瞒减避税役·逃户隐户更报少遮失政·全键 bad 方向
+  var _hvM = _barReported('national.mouths', pop.mouths || legacy.registeredTotal || 0, 'bad', 'renli');
+  var total = _hvM.shown;
+  var households = _barReported('national.households', pop.households || 0, 'bad', 'renli').shown;
+  var ding = _barReported('national.ding', pop.ding || 0, 'bad', 'renli').shown;
+  var fugitives = _barReported('national.fugitives', (GM.population && GM.population.fugitives) || 0, 'bad', 'renli').shown;
+  var hidden = _barReported('national.hidden', (GM.population && GM.population.hiddenCount) || legacy.estimatedHidden || 0, 'bad', 'renli').shown;
   var initial = (GM.scenarioMetadata && GM.scenarioMetadata.initialPopulation) || total;
   var phase = total < initial * 0.5 ? 'depopulation' : '';
   return {
@@ -263,6 +267,7 @@ function _renderHukou() {
     phase: phase,
     tip: {
       title: '在籍户口',
+      subtitle: _hvM.distorted ? '据奏(有司上报口径·实情须核)' : undefined,
       phase: phase === 'depopulation' ? '⚠ 人口锐减' : '常态',
       rows: [
         ['口',     _barFmtNum(total)],
@@ -272,7 +277,7 @@ function _renderHukou() {
         ['隐户',   _barFmtNum(hidden)],
         ['隐户率', total > 0 ? ((hidden / (total + hidden)) * 100).toFixed(1) + '%' : '—']
       ],
-      note: '点击查看户口详情'
+      note: _hvM.distorted ? '黄册所载皆有司之奏——实情须密报、查案方得掀见。点击查看户口详情' : '点击查看户口详情'
     }
   };
 }
