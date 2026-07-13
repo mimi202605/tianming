@@ -75,7 +75,7 @@ function checkHistoryEvents() {
       //   ③写好的 trigger 从不生效：字符串 trigger 被当注记→改用通用结构化条件(triggerCondAll/requiresDead)求值。
       // (0) 注定之死已由玩家以别法了结(如提前处决)→记为已了结·不重复弹/不重复级联
       if (event.deathTarget && _rigidDeathTargetAlreadyDead(event.deathTarget)) {
-        GM.triggeredHistoryEvents[event.id] = { turn: GM.turn, resolved: 'already-dead' };
+        GM.triggeredHistoryEvents[event.id] = { turn: GM.turn, resolved: 'already-dead' }; // arch-ok 本文件自有触发记录表·同 line 85 既有写口
         return;
       }
       // (1) 触发门：演义按条件/可全关；轻度·严格史实照旧到点即弹(时间门上方已把关)
