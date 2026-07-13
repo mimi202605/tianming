@@ -94,7 +94,7 @@
     var G = global.GM;
     if (!G.huangquan) return;
     // cabinetization：制度化（内阁/军机处等）
-    if (!G._cabinetInstitutionEverFired && G.dynamicInstitutions) {
+    if (!G._cabinetInstitutionEverFired && Array.isArray(G.dynamicInstitutions)) {
       var cabinetish = G.dynamicInstitutions.some(function(inst) {
         return /内阁|军机|议政/.test(inst.name || '');
       });

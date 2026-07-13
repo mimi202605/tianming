@@ -69,12 +69,27 @@ function checkHistoryEvents() {
     if (!hasGate) return;
 
     if (yearMatch && monthMatch && customMatch) {
+      // ★ 刚性史实事件·触发门 + 结构化死亡（2026-07-08）治三症：
+      //   ①晚一回合/永不死：死亡原靠下游叙事词库扫描兜底(漏"杖毙"等即永不死)→带 deathTarget 者触发时当场结构化置死。
+      //   ②演义也照旧硬弹：与"由玩家改写历史"调性冲突→演义按结构化条件触发·可全关；轻度/严格史实维持现状。
+      //   ③写好的 trigger 从不生效：字符串 trigger 被当注记→改用通用结构化条件(triggerCondAll/requiresDead)求值。
+      // (0) 注定之死已由玩家以别法了结(如提前处决)→记为已了结·不重复弹/不重复级联
+      if (event.deathTarget && _rigidDeathTargetAlreadyDead(event.deathTarget)) {
+        GM.triggeredHistoryEvents[event.id] = { turn: GM.turn, resolved: 'already-dead' };
+        return;
+      }
+      // (1) 触发门：演义按条件/可全关；轻度·严格史实照旧到点即弹(时间门上方已把关)
+      if (!_rigidHistoryEventShouldFire(event)) return; // 条件不成立/被玩家关闭·本回合不弹(不标记·局势后续变了可再判)
+
       // 标记为已触发
       GM.triggeredHistoryEvents[event.id] = {
         turn: GM.turn,
         year: currentYear,
         month: currentMonth
       };
+
+      // (2) 结构化"史实注定死亡"：当场置死 + 全级联(复用 applyOneDeath)·不再等下游叙事扫描兜底
+      _applyRigidHistoryDeath(event);
 
       // 显示事件选择界面（v0.2·事件并入御案时政:开关开 → 收编进 currentIssues·关 → 原独立事件框·零回归）
       if (typeof _eventAdjudicationOn === 'function' && _eventAdjudicationOn() && typeof _pushHistoryEventToIssues === 'function') {
@@ -84,6 +99,119 @@ function checkHistoryEvents() {
       }
     }
   });
+}
+
+// ============================================================
+//  刚性史实事件·触发门 + 结构化死亡（2026-07-08）
+//  跨朝代通用：引擎只认通用字段(deathTarget/deathReason/requiresDead/requiresAlive/triggerCondAll/路径)·
+//    朝代专名(魏忠贤/客氏/皇威 等)全落在剧本数据·引擎不预设任何单朝特例。
+// ============================================================
+
+/** 该注定死者是否已死（玩家可能已用别法了结·避免重复弹与重复死亡级联） */
+function _rigidDeathTargetAlreadyDead(name) {
+  if (!name) return false;
+  var c = _rigidFindChar(name);
+  return !!(c && c.alive === false);
+}
+
+/** 触发门：本回合该刚性事件是否应当触发 */
+function _rigidHistoryEventShouldFire(event) {
+  var mode = (typeof P !== 'undefined' && P.conf && P.conf.gameMode) || 'yanyi';
+  // 轻度/严格史实：维持现状——时间门过了就弹(不加条件门·历史照旧推进)
+  if (mode === 'light_hist' || mode === 'strict_hist') return true;
+  // 演义：玩家可一键全关这类"注定事件"(由我改写历史)
+  if (typeof P !== 'undefined' && P.conf && P.conf.rigidHistEventsOff) return false;
+  // 演义：按结构化条件触发(局势已被玩家改写、条件不再成立则不弹)
+  return _rigidHistoryConditionHolds(event);
+}
+
+/** 结构化条件求值(通用)：requiresDead / requiresAlive / triggerCondAll[{path,op,val}] 全满足才 true；无条件→true */
+function _rigidHistoryConditionHolds(event) {
+  if (!event) return true;
+  // 依赖：指定角色须已死(如"客氏杖毙"须"魏忠贤已死")
+  if (Array.isArray(event.requiresDead)) {
+    for (var i = 0; i < event.requiresDead.length; i++) {
+      var cd = _rigidFindChar(event.requiresDead[i]);
+      if (!(cd && cd.alive === false)) return false; // 目标不存在或仍在世 → 条件不成立
+    }
+  }
+  // 依赖：指定角色须在世
+  if (Array.isArray(event.requiresAlive)) {
+    for (var j = 0; j < event.requiresAlive.length; j++) {
+      var ca = _rigidFindChar(event.requiresAlive[j]);
+      if (!ca || ca.alive === false) return false;
+    }
+  }
+  // 数值门：全部子句成立(路径解析不到数值→该子句判不成立·保守·演义倾向"不硬弹")
+  if (Array.isArray(event.triggerCondAll)) {
+    for (var k = 0; k < event.triggerCondAll.length; k++) {
+      var cl = event.triggerCondAll[k];
+      if (!cl || !cl.path) continue;
+      var v = _rigidResolvePath(cl.path);
+      if (typeof v !== 'number' || !_rigidCmp(v, cl.op, cl.val)) return false;
+    }
+  }
+  return true;
+}
+
+/** 通用比较器 */
+function _rigidCmp(v, op, val) {
+  switch (op) {
+    case '<': return v < val;
+    case '<=': return v <= val;
+    case '>': return v > val;
+    case '>=': return v >= val;
+    case '==': case '===': return v === val;
+    case '!=': case '!==': return v !== val;
+    default: return false;
+  }
+}
+
+/** 通用路径解析：'fac:名.字段' 走 GM.facs 按名查势力字段；其余复用 getValueByPath(GM.x.y / vars.x / 对象.value|.index) */
+function _rigidResolvePath(path) {
+  if (!path) return undefined;
+  if (path.indexOf('fac:') === 0) {
+    var rest = path.slice(4);
+    var dot = rest.indexOf('.');
+    var fname = dot >= 0 ? rest.slice(0, dot) : rest;
+    var field = dot >= 0 ? rest.slice(dot + 1) : 'power';
+    var facs = (typeof GM !== 'undefined' && Array.isArray(GM.facs)) ? GM.facs : [];
+    var f = facs.find(function (x) { return x && x.name === fname; });
+    return f ? f[field] : undefined;
+  }
+  if (typeof getValueByPath === 'function') return getValueByPath(path);
+  return undefined;
+}
+
+/** 按名找角色(复用运行时全局·模糊+精确·测试环境缺省时回落 GM.chars 线性查) */
+function _rigidFindChar(name) {
+  if (!name) return null;
+  if (typeof _fuzzyFindChar === 'function') { var c = _fuzzyFindChar(name); if (c) return c; }
+  if (typeof findCharByName === 'function') { var c2 = findCharByName(name); if (c2) return c2; }
+  var arr = (typeof GM !== 'undefined' && Array.isArray(GM.chars)) ? GM.chars : [];
+  return arr.find(function (x) { return x && x.name === name; }) || null;
+}
+
+/** 结构化史实死亡：deathTarget 当场置死 + 全级联(复用 applyOneDeath)·治"死亡靠下游叙事扫描·晚一回合/漏词永不死" */
+function _applyRigidHistoryDeath(event) {
+  if (!event || !event.deathTarget) return;
+  var reason = event.deathReason || event.name || '史实注定'; // 史实注定
+  try {
+    if (typeof applyOneDeath === 'function') {
+      applyOneDeath({ name: event.deathTarget, reason: reason });
+    } else {
+      // 极端回落(applyOneDeath 缺位)：至少置死·免"注定死者仍活蹦乱跳"的尸政
+      var c = _rigidFindChar(event.deathTarget);
+      if (c && c.alive !== false) { c.alive = false; c.dead = true; c.deathReason = reason; c.deathTurn = (typeof GM !== 'undefined' && GM.turn) || 0; }
+    }
+  } catch (e) {
+    try { console.warn('[刚性史实死亡] 应用失败:', (e && e.message) || e); } catch (_) {}
+  }
+}
+if (typeof window !== 'undefined') {
+  window._rigidHistoryEventShouldFire = _rigidHistoryEventShouldFire;
+  window._rigidHistoryConditionHolds = _rigidHistoryConditionHolds;
+  window._applyRigidHistoryDeath = _applyRigidHistoryDeath;
 }
 
 /**
