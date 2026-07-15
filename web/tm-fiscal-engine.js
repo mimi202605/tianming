@@ -890,44 +890,42 @@
     // P1-B1·商贸随人口/繁荣浮动(物产卷·拆自然基础+建筑加成·增量捕获不改 building-works)·去 _ensureEconomyBase:824 懒初始化冻结。
     //   建筑加成 = 现 commerceVolume - 上回合自然基础(building-works/AI 写入的增量·持久保留)。
     //   灾异折损在 computeTaxAmount:1028 算税时乘 disasterPenalty·不改存储·与此重算正交。
-    //   开关 productionFloatEnabled 默认开(owner 拍板·物产活化直接生效·显式 false 才冻结)·物产卷 B1-B4 共用。
-    if (!(global.P && global.P.conf && global.P.conf.productionFloatEnabled === false)) {   // 默认开·显式 false 才关(owner 拍板·物产活化直接生效)
-      var _coefB1 = Math.max(0.4, safeNumber(div.prosperity, 50) / 50);
-      var _mouthsB1 = safeNumber(div.populationDetail && div.populationDetail.mouths, safeNumber(eb.mouths, 0));
-      var _commNatural = Math.round(_mouthsB1 * 0.05 * _coefB1);
-      var _commBuilt = (typeof eb._commerceNaturalLast === 'number')
-        ? Math.max(0, safeNumber(eb.commerceVolume, 0) - eb._commerceNaturalLast)
-        // 首回合(无 _commerceNaturalLast)：剧本 authored commerceVolume 超出自然基础的部分 = 初始建筑/authored 商业加成·须保留·
-        // 否则首回合把 authored 值(如绍宋雅州 664万)整个丢弃·只剩自然基础(mouths×0.05×coef=4.78万)→ 商税骤减 139 倍 → 开局收入畸低(绍宋七万)。跨剧本根治。
-        : Math.max(0, safeNumber(eb.commerceVolume, 0) - _commNatural);
-      eb.commerceVolume = _commNatural + _commBuilt;
-      eb._commerceNaturalLast = _commNatural;
-      eb.commerceCoefficient = _coefB1;
-      div._thisTurnCommerce = { natural: _commNatural, built: _commBuilt, total: eb.commerceVolume };
+    //   物产活化恒开(owner 拍板·物产活化直接生效·2026-07 斩旗转正删 productionFloatEnabled flag)·物产卷 B1-B4 共用。
+    var _coefB1 = Math.max(0.4, safeNumber(div.prosperity, 50) / 50);
+    var _mouthsB1 = safeNumber(div.populationDetail && div.populationDetail.mouths, safeNumber(eb.mouths, 0));
+    var _commNatural = Math.round(_mouthsB1 * 0.05 * _coefB1);
+    var _commBuilt = (typeof eb._commerceNaturalLast === 'number')
+      ? Math.max(0, safeNumber(eb.commerceVolume, 0) - eb._commerceNaturalLast)
+      // 首回合(无 _commerceNaturalLast)：剧本 authored commerceVolume 超出自然基础的部分 = 初始建筑/authored 商业加成·须保留·
+      // 否则首回合把 authored 值(如绍宋雅州 664万)整个丢弃·只剩自然基础(mouths×0.05×coef=4.78万)→ 商税骤减 139 倍 → 开局收入畸低(绍宋七万)。跨剧本根治。
+      : Math.max(0, safeNumber(eb.commerceVolume, 0) - _commNatural);
+    eb.commerceVolume = _commNatural + _commBuilt;
+    eb._commerceNaturalLast = _commNatural;
+    eb.commerceCoefficient = _coefB1;
+    div._thisTurnCommerce = { natural: _commNatural, built: _commBuilt, total: eb.commerceVolume };
 
-      // P1-B2·盐矿马渔/海贸随人口浮动+建筑加成(同 B1 拆基础/加成模型·增量捕获不改 building-works)·仅产区(tag)浮动。
-      //   建矿场(building-works +mineralProduction)→增量捕获保留→矿课升(税基 fiscal:1024)。灾异减产走 computeTaxAmount disasterPenalty。
-      //   开采枯竭(矿/盐有限衰减)需储量状态·留 B2 后续。
-      var _prodFields = [
-        ['saltProduction', div.tags.saltRegion ? 0.5 : 0],
-        ['mineralProduction', div.tags.mineralRegion ? 0.1 : 0],
-        ['horseProduction', div.tags.horseRegion ? 0.001 : 0],
-        ['fishingProduction', div.tags.fishingRegion ? 0.05 : 0],
-        ['maritimeTradeVolume', div.tags.hasPort ? 0.02 : 0]
-      ];
-      for (var _pi = 0; _pi < _prodFields.length; _pi++) {
-        var _pk = _prodFields[_pi][0], _prate = _prodFields[_pi][1];
-        if (_prate <= 0) continue;                                   // 非产区·不浮动(保持 0/剧本值)
-        var _pNatural = Math.round(_mouthsB1 * _prate);
-        var _pLastKey = '_' + _pk + 'NaturalLast';
-        var _pBuilt = (typeof eb[_pLastKey] === 'number') ? Math.max(0, safeNumber(eb[_pk], 0) - eb[_pLastKey]) : 0;
-        eb[_pk] = _pNatural + _pBuilt;
-        eb[_pLastKey] = _pNatural;
-      }
-
-      // P1-B3a·皇庄田 imperialFarmland 随 farmland 同步(farmland 已活·皇庄田跟着浮动·imperialDomain 才有)
-      if (div.tags.imperialDomain) eb.imperialFarmland = Math.round(eb.farmland * 0.05);
+    // P1-B2·盐矿马渔/海贸随人口浮动+建筑加成(同 B1 拆基础/加成模型·增量捕获不改 building-works)·仅产区(tag)浮动。
+    //   建矿场(building-works +mineralProduction)→增量捕获保留→矿课升(税基 fiscal:1024)。灾异减产走 computeTaxAmount disasterPenalty。
+    //   开采枯竭(矿/盐有限衰减)需储量状态·留 B2 后续。
+    var _prodFields = [
+      ['saltProduction', div.tags.saltRegion ? 0.5 : 0],
+      ['mineralProduction', div.tags.mineralRegion ? 0.1 : 0],
+      ['horseProduction', div.tags.horseRegion ? 0.001 : 0],
+      ['fishingProduction', div.tags.fishingRegion ? 0.05 : 0],
+      ['maritimeTradeVolume', div.tags.hasPort ? 0.02 : 0]
+    ];
+    for (var _pi = 0; _pi < _prodFields.length; _pi++) {
+      var _pk = _prodFields[_pi][0], _prate = _prodFields[_pi][1];
+      if (_prate <= 0) continue;                                   // 非产区·不浮动(保持 0/剧本值)
+      var _pNatural = Math.round(_mouthsB1 * _prate);
+      var _pLastKey = '_' + _pk + 'NaturalLast';
+      var _pBuilt = (typeof eb[_pLastKey] === 'number') ? Math.max(0, safeNumber(eb[_pk], 0) - eb[_pLastKey]) : 0;
+      eb[_pk] = _pNatural + _pBuilt;
+      eb[_pLastKey] = _pNatural;
     }
+
+    // P1-B3a·皇庄田 imperialFarmland 随 farmland 同步(farmland 已活·皇庄田跟着浮动·imperialDomain 才有)
+    if (div.tags.imperialDomain) eb.imperialFarmland = Math.round(eb.farmland * 0.05);
 
     div._thisTurnLandFlow = {
       annexed: annexLoss,

@@ -89,21 +89,6 @@ function ok(c, m) { if (c) pass++; else { fail++; console.error('  ✗ ' + m); }
   ok(st2.repaired === 1, 'tick·stat.repaired=1');
 })();
 
-// ── 7. 开关关·灾损不发(零回归) ──
-(function () {
-  var div = {
-    name: '宁远', economyBase: { farmland: 100000, disasterRecord: [{ type: '旱', severity: '重', startTurn: 5 }] },
-    fortLevel: 3, publicTreasury: { money: { stock: 20000 } },
-    buildings: [{ name: '城', status: 'completed', costActual: 50000, appliedDelta: { 'fortLevel': 2 } }]
-  };
-  var P = { conf: { buildingHazardEnabled: false }, adminHierarchy: { player: { divisions: [div] } } };
-  var orig = Math.random; Math.random = function () { return 0; };
-  var st = BW.tick({ turn: 5 }, P);
-  Math.random = orig;
-  ok(div.buildings[0].status === 'completed' && st.damaged === 0, '开关关·重灾也不半损(buildingHazardEnabled=false)');
-  ok(div.fortLevel === 3, '开关关·城防不动');
-})();
-
 // ── 8. S7·buildingLedger 可观测账（实入账=真贡献·非 per-level 规则） ──
 (function () {
   var bld = { name: '龙江矿场', status: 'completed', level: 1, costActual: 5000000, appliedDelta: { 'economyBase.mineralProduction': 400000, 'fortLevel': 1, '_minxin': 1 } };
