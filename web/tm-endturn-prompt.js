@@ -505,25 +505,23 @@
         }
       });
       if (_passLines.length > 0) _mechResults.push('【关隘要塞】\n' + _passLines.join('\n'));
-      // P1-P2-1·地方氛围感知串(软喂 AI 叙事色彩·零数值改动·让 AI 在叙事/任命/民变情节调用)·开关 regionFlavorEnabled 默认开(owner 拍板·显式 false 可关)
-      if (!(P.conf && P.conf.regionFlavorEnabled === false)) {   // 默认开·显式 false 才关(owner 拍板)
-        var _flavorLines = [];
-        P.map.regions.forEach(function(r) {
-          var d = (r && r.data) || r || {};
-          var bits = [];
-          if (d.specialCulture) bits.push('风俗:' + String(d.specialCulture).slice(0, 30));
-          if (d.leadingGentry) bits.push('士绅:' + String(d.leadingGentry).slice(0, 30));
-          if (d.localFaction) bits.push('党派:' + String(d.localFaction).slice(0, 24));
-          if (d.religiousSites) bits.push('信仰:' + String(d.religiousSites).slice(0, 24));
-          if (Array.isArray(d.tradeRoutes) && d.tradeRoutes.length) bits.push('商路:' + d.tradeRoutes.slice(0, 2).map(function(x){ return String(x).slice(0, 16); }).join('/'));
-          if (d.dejureOwner) bits.push('法理属:' + String(d.dejureOwner).slice(0, 16));
-          if (d.coreStatus || d.borderStatus) bits.push(String(d.coreStatus || d.borderStatus).slice(0, 12));
-          if (Array.isArray(d.ownerHistory) && d.ownerHistory.length) bits.push('易主:' + String(d.ownerHistory[d.ownerHistory.length - 1]).slice(0, 20));
-          if (d.note) bits.push('志:' + String(d.note).slice(0, 40));   // P2-2·note 拼进感知串
-          if (bits.length) _flavorLines.push('  ' + (r.name || r.id) + ': ' + bits.join(' · '));
-        });
-        if (_flavorLines.length > 0) _mechResults.push('【地方风物·叙事可调用】\n' + _flavorLines.slice(0, 12).join('\n'));
-      }
+      // P1-P2-1·地方氛围感知串(软喂 AI 叙事色彩·零数值改动·让 AI 在叙事/任命/民变情节调用)·恒开(owner 拍板·2026-07 斩旗转正删 regionFlavorEnabled flag)
+      var _flavorLines = [];
+      P.map.regions.forEach(function(r) {
+        var d = (r && r.data) || r || {};
+        var bits = [];
+        if (d.specialCulture) bits.push('风俗:' + String(d.specialCulture).slice(0, 30));
+        if (d.leadingGentry) bits.push('士绅:' + String(d.leadingGentry).slice(0, 30));
+        if (d.localFaction) bits.push('党派:' + String(d.localFaction).slice(0, 24));
+        if (d.religiousSites) bits.push('信仰:' + String(d.religiousSites).slice(0, 24));
+        if (Array.isArray(d.tradeRoutes) && d.tradeRoutes.length) bits.push('商路:' + d.tradeRoutes.slice(0, 2).map(function(x){ return String(x).slice(0, 16); }).join('/'));
+        if (d.dejureOwner) bits.push('法理属:' + String(d.dejureOwner).slice(0, 16));
+        if (d.coreStatus || d.borderStatus) bits.push(String(d.coreStatus || d.borderStatus).slice(0, 12));
+        if (Array.isArray(d.ownerHistory) && d.ownerHistory.length) bits.push('易主:' + String(d.ownerHistory[d.ownerHistory.length - 1]).slice(0, 20));
+        if (d.note) bits.push('志:' + String(d.note).slice(0, 40));   // P2-2·note 拼进感知串
+        if (bits.length) _flavorLines.push('  ' + (r.name || r.id) + ': ' + bits.join(' · '));
+      });
+      if (_flavorLines.length > 0) _mechResults.push('【地方风物·叙事可调用】\n' + _flavorLines.slice(0, 12).join('\n'));
     }
     // 法理冲突
     if (typeof hasDejureClaim === 'function' && P.adminHierarchy) {
