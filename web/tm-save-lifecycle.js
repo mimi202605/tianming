@@ -1265,10 +1265,27 @@ function _autoSaveSnapshotGM(){
   //   _facIndex·派生反向索引·序列化后是与 chars 脱钩的死拷贝·读档即 rebuild(fullLoadGame)+每回合 render-finalize 重建
   //   _savedMapData / _savedAdminHierarchy·_prepareGMForSave 每次从工作数据克隆的备份·
   //     与文件里 gameState.mapData / P.adminHierarchy 逐字节相同·_restoreSavedFields 是条件式恢复·缺席时工作数据原样生效
+  // 2026-07-16·案二·_saved* 镜像去重(承上两键的同款判断·真档 T54 实测再省 ~4.8MB):
+  //   下列 _saved* 均是 _prepareGMForSave 以 _safeClone(GM.<活字段>) 克隆的镜像·与文件里的活字段(gameState.GM.<活字段>)
+  //   逐字节全同(measure 实证 IDENTICAL)·_restoreSavedFields 的恢复是条件式 `if(GM._savedX){GM.x=GM._savedX;...}`·
+  //   缺席时活字段(fullLoadGame:822/828 直接从档载入·恢复前不被重置)原样生效·故只落活字段一份即可。
+  //   ★安全边界(白名单法·多列一个只是多存·漏列一个不丢数据)：只纳入「活字段=GM.x·恢复写回 GM.x·非切片」者。
+  //   刻意排除：子系统序列化态(_savedEventOpinions/_savedEventBus·经 OpinionSystem/StoryEventBus 反序列化·无活字段孪生)、
+  //   DOM 草稿(_savedEdictDrafts)、逐角色聚合(_savedCharMemExt/_savedCharOfficeFields)、
+  //   P 层孪生(_savedVassalSystem/_savedTitleSystem/_savedBuildingSystem/_savedKeju/_savedOfficialVassalMapping/_savedGovernment/_savedOfficeConfig·跨 GM/P)、
+  //   截断切片(_savedNpcDecisionDiagnostics=slice(-120)·镜像≠活字段)、_savedRenli(并行线在飞·避让)。
   var SKIP = {
     _aiTelemetry:1, _debugSnapshots:1, _aiBranchDiag:1, _aiDiag:1,
     _sysCacheMode:1, _sysCacheLen:1, _saveMeta:1,
-    _facIndex:1, _savedMapData:1, _savedAdminHierarchy:1
+    _facIndex:1, _savedMapData:1, _savedAdminHierarchy:1,
+    // ── 案二·GM 活字段的冗余 _saved* 镜像(按 T54 体积降序·活字段孪生已入档) ──
+    _savedConvArchive:1, _savedMemoryArchiveFull:1, _savedLetters:1,
+    _savedEdictTracker:1, _savedEdictSuggestions:1, _savedNpcActionLedger:1,
+    _savedChronicle:1, _savedCulturalWorks:1, _savedProvinceStats:1,
+    _savedHistoryIndex:1, _savedFactionRelationsMap:1, _savedNpcCommitments:1,
+    _savedCharacterArcs:1, _savedEdictLifecycle:1, _savedCourtRecords:1,
+    _savedNpcFactionAiTurnLedger:1, _savedFamilies:1, _savedCausalGraph:1,
+    _savedMemoryLayers:1, _savedBattleHistory:1, _savedFactionArcs:1
   };
   var out = {};
   for (var k in GM) {
