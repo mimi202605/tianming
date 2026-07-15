@@ -197,7 +197,7 @@ var SaveManager = {
         if (record.gameState && record.gameState.P && typeof record.gameState.P === 'object') _tmStripAiKeyInPlace(record.gameState.P);
         else _tmStripAiKeyInPlace(record.gameState);
       } catch(_){}
-      // 统一用未压缩·可人读的 JSON 导出
+      // 统一用未压缩(非 gzip·可移植) JSON 导出·紧凑写盘(存档非配置文件·再导入走 JSON.parse 双向兼容·缩进空白约占存档体积一半)
       var exportRec = {
         id: record.id,
         name: record.name,
@@ -212,7 +212,7 @@ var SaveManager = {
         _format: 'tianming-save-v1'
       };
       var json;
-      try { json = JSON.stringify(exportRec, null, 2); }
+      try { json = JSON.stringify(exportRec); }
       catch(_e) { console.error('[exportSave] JSON.stringify failed:', _e); toast('❌ 序列化失败'); return; }
       if (!json || json.length < 100) {
         toast('❌ 导出内容异常·请重试');

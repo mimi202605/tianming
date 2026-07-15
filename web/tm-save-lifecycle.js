@@ -560,7 +560,7 @@ doSaveGame=async function(){
     _tmStripAiKeyInPlace(saveData2);
     saveData2.gameState=deepClone(GM);
     saveData2._saveMeta={name:name,turn:GM.turn,time:getTSText(GM.turn),scenario:sc2?sc2.name:"",date:new Date().toISOString(),version:P.meta.v};
-    var blob=new Blob([JSON.stringify(saveData2,null,2)],{type:"application/json"});
+    var blob=new Blob([JSON.stringify(saveData2)],{type:"application/json"});// 紧凑写(存档非配置·再导入走 JSON.parse·缩进约占体积一半)
     var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name+".json";a.click();
     toast("\u2705 \u5DF2\u5BFC\u51FA: "+name+".json");
   }
