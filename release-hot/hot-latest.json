@@ -1,14 +1,14 @@
 {
   "type": "tianming-hot-update-feed",
-  "version": "1.3.4.7",
-  "packageUrl": "tianming-hot-1.3.4.7.zip",
-  "manifestUrl": "manifests/1.3.4.7.json",
+  "version": "1.3.4.8",
+  "packageUrl": "tianming-hot-1.3.4.8.zip",
+  "manifestUrl": "manifests/1.3.4.8.json",
   "filesBaseUrl": "files/",
-  "sha256": "0c98acce1c5cc87ad368b887d62d6aaa9d6a2a5b84f087b02919a25fcf71553f",
-  "size": 828177909,
-  "notes": "失真层「据奏与实情」：国库/民心/吏治/户口/军额/舆图等改为有司据奏口径、须查案揭真（设置内默认关）；刚性史实事件·结构化死亡（注定之死不再漏判、演义可改写或一键关）；修「进游戏须重填 AI 接口密钥」。",
-  "generatedAt": "2026-07-11T09:15:57.088Z",
+  "sha256": "832204246e75629c9e3db3ae1ad61daf28c8c492631359fc3043158dad83ab9d",
+  "size": 828188201,
+  "notes": "正式发布「终局与继承」「失真层·据奏与实情」「刚性史实事件」等一批大更新（详见邸报）；天启/绍宋官方剧本随包完整，全新安装即可开局；一组构建与稳定性修复。",
+  "generatedAt": "2026-07-15T03:53:33.655Z",
   "packageUrlMirrors": [
-    "https://github.com/misfit-user/tianming/releases/download/ship-1.3.4.7/tianming-hot-1.3.4.7.zip"
+    "https://github.com/misfit-user/tianming/releases/download/ship-1.3.4.8/tianming-hot-1.3.4.8.zip"
   ]
 }
