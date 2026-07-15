@@ -774,9 +774,7 @@
 
   // A1b·边境军情：让 LLM 出征/防守决策看见 borderRisk(A1a 叶级算)·补「AI 开战对地块边境盲视」。
   //   我方叶 borderRisk 高=本地驻军空虚易被攻(宜守)·敌对 faction 叶 borderRisk 高=其空虚(可攻软肋)。
-  //   开关 borderRiskEnabled 守卫(A1a 没开则无活值·返空·_pushSection 不注入=零回归)。
   function _formatBorderIntel(fac) {
-    if (global.P && global.P.conf && global.P.conf.borderRiskEnabled === false) return [];   // 默认开·显式 false 才关(owner 拍板)
     if (!fac || !fac.name) return [];
     var lines = [];
     function riskyLeaves(tree, limit) {
