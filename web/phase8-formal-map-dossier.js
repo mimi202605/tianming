@@ -989,7 +989,7 @@
       liveArmyHtml ? bkRow('在驻之师', b.army.liveArmyCount + ' 支（驻军数即其合计）') : '',
       bkRow('可募兵源', firstValue(data.militaryRecruits, b.army.recruits), null, 'recruits'),
       bkRow('军压', firstValue(data.armyPressure, r && r.armyPressure), 'zhu'),
-      bkRow('月军费', data.localMilitaryCost, null, 'army'),                                       // P1-A2b·本地养兵月耗(armyPressureEnabled 关→叶无值·自动不渲染)
+      bkRow('月军费', data.localMilitaryCost, null, 'army'),                                       // P1-A2b·本地养兵月耗(恒开·无值叶自动不渲染)
       bkRow('净留用', data.retainedNet, (Number(data.retainedNet) < 0 ? 'zhu' : null), 'army'),    // P1-A2b·养兵后净留用·赤字(军费吃穿地方留用)标红
       fortRow ? bkRow('城防', [(b.liveDivision && Number(b.liveDivision.fortLevel) > 0) ? b.liveDivision.fortLevel + ' 档' : '', b.army.fortification].filter(hasDisplayValue).map(ppValue).join(' · '), 'jin', 'fort') : '',  // P0-5: fortLevel 活档优先·删 data.fortification 死重复
       bkRow('主将', firstValue(b.army.liveArmies && b.army.liveArmies[0] && b.army.liveArmies[0].commander, data.commander, b.army.commander)),

@@ -1382,7 +1382,6 @@
     G = getGame(G);
     if (!G || !G.adminHierarchy) return 0;
     var disasters = Array.isArray(G.activeDisasters) ? G.activeDisasters : [];
-    var _b4on = !(global.P && global.P.conf && global.P.conf.productionFloatEnabled === false);  // P1-B4·默认开·显式 false 才关(owner 拍板)
     var dlist = [];
     for (var k = 0; k < disasters.length; k++) {
       var d = disasters[k]; if (!d) continue;
@@ -1400,7 +1399,7 @@
         div._disasterEconomyReduce = { farmland: Math.min(0.6, farm), commerceVolume: Math.min(0.6, comm) };
         affected++;
         // P1-B4·天灾 push disasterRecord(让面板「在灾实录」显近期灾异·同回合同类去重·限近 8 条)
-        if (_b4on && matched) {
+        if (matched) {
           if (!div.economyBase) div.economyBase = {};
           if (!Array.isArray(div.economyBase.disasterRecord)) div.economyBase.disasterRecord = [];
           var _drec = div.economyBase.disasterRecord, _exists = false;
