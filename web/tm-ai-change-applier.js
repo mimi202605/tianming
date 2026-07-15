@@ -1668,6 +1668,77 @@
     // ── 10. fiscal_adjustments：岁入岁出动态增删 + **立即作用于余额** ──
     // schema: [{ target:'guoku|neitang|province:X', kind:'income|expense', resource?:'money|grain|cloth', category, name, amount, reason, recurring:bool, stopAfterTurn }]
     var fiscalCount = 0;
+    var _transferPairSeen = {};
+    // ★ 转账对语义闸(2026-07-16·落库契约硬化刀②·居平内帑案的另一形态)：
+    //   居平案原形=同批次「A库 expense + B库 income、金额相等、事由同源」一对——把单边节流/增支旨意
+    //   错记成两库转账·凭空多出一侧假账(内帑掏空 + 国库虚增)。既有「裁减语义守卫」(下方 1696)只拦
+    //   含"裁减/节省…用度"关键字的单条·既有「金额相称闸」(下方 1769)只拦单条超量·两者都漏这种
+    //   "两条各自结构合法、成对才露馅"的转账对形态。此闸纯确定性配对(不掷骰不调 AI)·四条件全中才算：
+    //   ①一 income 一 expense ②跨两个库(guoku/neitang/province) ③金额近等(≤1%) ④事由文本同源。
+    //   处置=保守留痕：fiscal schema 无原生 transfer 语义(只 income/expense)·不折算·两笔照落但打
+    //   嫌疑标记(entry._transferPairSuspect)+ turnReport 携标 + 事件簿⚠·让 playtest 看得见·不静默
+    //   吞账(真转账不误杀)也不误伤(两笔无关同额收支·事由不同源→不判)。
+    (function _flagFiscalTransferPairs(){
+      var list = aiOutput.fiscal_adjustments;
+      if (!Array.isArray(list) || list.length < 2) return;
+      function _normTarget(t){
+        var s = String(t == null ? '' : t).trim();
+        if (/^(太仓|太仓库|国库|户部库|外库|公帑|公库|guoku|taicang|taicangku)$/i.test(s)) return 'guoku';
+        if (/^(内帑|内库|内承运库|私帑|帝室库|御库|neitang|neicang)$/i.test(s)) return 'neitang';
+        if (/^(province|省|布政使司)\s*[:：]/i.test(s)) return 'province:' + s.replace(/^(province|省|布政使司)\s*[:：]\s*/i, '');
+        if (s === 'guoku' || s === 'neitang' || /^province:/.test(s)) return s;
+        return '';
+      }
+      function _normKind(k){
+        var s = String(k == null ? '' : k).trim();
+        if (/^(income|收入|进项|增收|入项)$/i.test(s)) return 'income';
+        if (/^(expense|expenditure|支出|开支|耗费|拨支|出项)$/i.test(s)) return 'expense';
+        return (s === 'income' || s === 'expense') ? s : '';
+      }
+      function _norm(fa){
+        if (!fa) return null;
+        var act = String(fa.action || fa.op || 'add').toLowerCase();
+        if (act === 'modify' || act === 'set') act = 'update';
+        if (act === 'delete' || act === 'disable' || act === 'cancel') act = 'stop';
+        if (act !== 'add' && act !== 'update' && act !== 'stop' && act !== 'remove') act = 'add';
+        if (act !== 'add') return null;                                   // 只在新增(add)之间配对
+        var res = (fa.resource === 'grain' || fa.resource === 'cloth') ? fa.resource : 'money';
+        if (res !== 'money') return null;                                 // 仅银两转账对(粮布不判·宁漏勿误)
+        var tgt = _normTarget(fa.target); if (!tgt) return null;
+        var kind = _normKind(fa.kind); if (!kind) return null;
+        var amt = Math.abs(parseFloat(fa.amount) || 0); if (!(amt > 0)) return null;
+        return { fa: fa, target: tgt, kind: kind, amount: amt, label: String((fa.name||'') + ' ' + (fa.category||'') + ' ' + (fa.reason||'')) };
+      }
+      function _clean(s){ return String(s || '').replace(/[\s　]+/g, '').replace(/[，。、；：·「」『』()（）\-—_./]/g, ''); }
+      function _sameSource(a, b){   // 确定性同源：短串被长串包含(≥2字) 或 字符二元组 Jaccard ≥ 0.5
+        var x = _clean(a), y = _clean(b);
+        if (x.length < 2 || y.length < 2) return false;
+        if (x.indexOf(y) >= 0 || y.indexOf(x) >= 0) return true;
+        function _bg(s){ var m = {}; for (var i = 0; i < s.length - 1; i++) m[s.substr(i, 2)] = 1; return m; }
+        var bx = _bg(x), by = _bg(y), inter = 0, uni = {};
+        Object.keys(bx).forEach(function(k){ uni[k] = 1; if (by[k]) inter++; });
+        Object.keys(by).forEach(function(k){ uni[k] = 1; });
+        var u = Object.keys(uni).length;
+        return u > 0 && (inter / u) >= 0.5;
+      }
+      var norms = list.map(_norm), paired = {};
+      for (var i = 0; i < norms.length; i++) {
+        var A = norms[i]; if (!A || paired[i]) continue;
+        for (var j = i + 1; j < norms.length; j++) {
+          var B = norms[j]; if (!B || paired[j]) continue;
+          if (A.kind === B.kind) continue;                               // ①须一进一出
+          if (A.target === B.target) continue;                           // ②须跨两库
+          var hi = Math.max(A.amount, B.amount), lo = Math.min(A.amount, B.amount);
+          if ((hi - lo) > Math.max(1, lo * 0.01)) continue;              // ③金额近等(≤1%)
+          if (!_sameSource(A.label, B.label)) continue;                  // ④事由同源
+          var pid = 'tpair_' + (G.turn || 0) + '_' + i + '_' + j;
+          A.fa._transferPairSuspect = true; A.fa._transferPairId = pid; A.fa._transferPairWith = B.target + '/' + B.kind;
+          B.fa._transferPairSuspect = true; B.fa._transferPairId = pid; B.fa._transferPairWith = A.target + '/' + A.kind;
+          paired[i] = true; paired[j] = true;
+          break;
+        }
+      }
+    })();
     (aiOutput.fiscal_adjustments || []).forEach(function(fa) {
       if (!fa) return;
       // ★ fiscal 容差归一(2026-06-02·bug A)：AI 常用中文/自然名指账户与收支·若不归一则 target 解析为 null·
@@ -1730,6 +1801,7 @@
         reason: fa.reason || '',
         recurring: !!fa.recurring,
         _coercedOneTime: !!fa._coercedOneTime,
+        _transferPairSuspect: !!fa._transferPairSuspect,   // 刀②·两库转账对嫌疑标记(随条目持久化·可见于存档/奏报)
         addedTurn: G.turn || 0,
         stopAfterTurn: fa.stopAfterTurn || null,
         action: action
@@ -1826,6 +1898,12 @@
       if (target && containerKey) {
         target[containerKey].push(entry);
         fiscalCount++;
+        // ★ 刀②·转账对嫌疑留痕：两笔照落·不动银·仅按对告警一次(供 playtest 核是否单边节流/增支误记成两库搬家)
+        if (fa._transferPairSuspect && !_transferPairSeen[fa._transferPairId]) {
+          _transferPairSeen[fa._transferPairId] = true;
+          if (applied && applied.semantic) applied.semantic.fiscal_transfer_pair_suspects = (applied.semantic.fiscal_transfer_pair_suspects || 0) + 1;
+          if (typeof global.addEB === 'function') global.addEB('财政❗', '疑似两库转账对·' + (fa.target==='guoku'?'帑廪':fa.target==='neitang'?'内帑':fa.target) + (fa.kind==='income'?'入':'出') + amount + '两「' + (entry.name||'') + '」与 ' + (fa._transferPairWith||'') + ' 同额·事由同源·两笔照落待核(防单边节流/增支误记成两库搬家)');
+        }
         // ★ 立即作用于余额：支出不得突破 0（主动行为最多拨完库存）
         //   被动结算（CascadeTax/FixedExpense）已在 fiscal_adjustments 之前运行
         //   · 若此时 cur <= 0（被动结算后已赤字）→ 主动支出完全失败，amount=0/shortfall=requested
@@ -1873,7 +1951,7 @@
         entry.shortfall = shortfall;
         entry.executionStatus = executionStatus;
         // turnReport：记 actual + shortfall + status（渲染器区别对待）
-        G._turnReport.push({ type:'fiscal_adj', action: action, target: fa.target, kind: fa.kind, resource: resource, name: entry.name, amount: actualApplied, requested: amount, annualAmount: entry.recurring ? amount : 0, recurring: !!entry.recurring, coercedOneTime: !!entry._coercedOneTime, shortfall: shortfall, executionStatus: executionStatus, reason: entry.reason, turn: G.turn||0 });
+        G._turnReport.push({ type:'fiscal_adj', action: action, target: fa.target, kind: fa.kind, resource: resource, name: entry.name, amount: actualApplied, requested: amount, annualAmount: entry.recurring ? amount : 0, recurring: !!entry.recurring, coercedOneTime: !!entry._coercedOneTime, transferPairSuspect: !!fa._transferPairSuspect, shortfall: shortfall, executionStatus: executionStatus, reason: entry.reason, turn: G.turn||0 });
         // 亏欠单独登记——供下回合 AI 推演、史记、风闻录事参考
         if (shortfall > 0) {
           if (!G._fiscalShortfalls) G._fiscalShortfalls = [];
