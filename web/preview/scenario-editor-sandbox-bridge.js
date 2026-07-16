@@ -321,6 +321,11 @@
   // ── 刀④乙(2026-07-10 国师智能升级A·owner 拍板)：快测·首回合真跑 ─────────────
   //   带 key 启动沙盒 → 等 boot 安定 → _endTurnInternal 真跑一回合(真 AI 推演·烧玩家 key·故只由玩家显式按钮触发) →
   //   报告(boot/回合统计+错误清单)写回编辑器同一 IndexedDB·国师 readQuickTestReport 工具读取。
+  // ── 扩建(2026-07-16 刀A/B·playtest 前一键体检)：默认连跑 3 回合(同一局·世界连续·非三局各跑一回合)·
+  //   每回合结束跑四类确定性体检(死人任职/幽灵键/账面守恒/叙事错名·全部「调既有校验器取结果」不新造检测)·
+  //   逐回合累积进报告·末尾给总判(绿/黄/红 + 异常清单带回合号与原句/原账摘录)·
+  //   单回合抛错记录后继续跑后续·超时则安全中止后续(防 _endTurnInternal 异步与下一回合争抢)·
+  //   格式向后兼容(schema:2·仍保留旧 turn/turnOk/turnRan 字段·新增字段不删旧字段)。
   var QUICKTEST_DB_ID = 'quickTestReport:latest';
   function writeQuickTestReport(report) {
     return openReturnDb().then(function (db) {
@@ -336,13 +341,100 @@
     }).catch(function () { return false; });
   }
 
-  function runQuickTestFirstTurn(sc) {
+  // 四类确定性体检·全部「调既有校验器取结果」·不新造检测逻辑：
+  //   死人任职 + 幽灵键 ← TM.invariants.check()（tm-invariants.js·GM 结构快照·随叫随跑）
+  //   账面守恒        ← GM._fiscalValidatorLog（tm-ai-change-applier-validators.js:_validateFiscalConsistency 回合内产出）
+  //   叙事错名        ← GM._personnelValidatorLog（同上:_validatePersonnelConsistency 回合内产出）
+  //   logBaseline={fiscal,narrative}=本回合开跑前各 log 长度·slice(baseline)=只归本回合新增·确定性归因。
+  function quickTestHealthChecks(logBaseline) {
+    var GM = global.GM || {};
+    var out = { deadOffice: null, ghostKey: null, fiscal: null, narrative: null };
+    // ① 死人任职 + ② 幽灵键：一次 TM.invariants.check() 取两面
+    try {
+      if (global.TM && global.TM.invariants && typeof global.TM.invariants.check === 'function') {
+        var inv = global.TM.invariants.check();
+        var res = inv.results || {};
+        var chd = (res.chars && res.chars.details) || {};
+        var otd = (res.officeTree && res.officeTree.details) || {};
+        var fcd = (res.factions && res.factions.details) || {};
+        var deadViol = [];
+        ((res.chars && res.chars.violations) || []).forEach(function (v) { if (/占职/.test(v)) deadViol.push(v); });
+        ((res.officeTree && res.officeTree.violations) || []).forEach(function (v) { if (/死亡/.test(v)) deadViol.push(v); });
+        out.deadOffice = { count: (chd.deadButBusy || 0) + (otd.deadHolders || 0), charsDeadButBusy: chd.deadButBusy || 0, officeDeadHolders: otd.deadHolders || 0, violations: deadViol };
+        var ghostViol = [];
+        ((res.officeTree && res.officeTree.violations) || []).forEach(function (v) { if (/不存在/.test(v)) ghostViol.push(v); });
+        ((res.factions && res.factions.violations) || []).forEach(function (v) { ghostViol.push(v); });
+        out.ghostKey = { count: (otd.phantomHolders || 0) + (fcd.orphanFacRefs || 0), phantomHolders: otd.phantomHolders || 0, orphanFacRefs: fcd.orphanFacRefs || 0, violations: ghostViol };
+      } else {
+        out.deadOffice = { count: 0, unavailable: 'TM.invariants 未加载' };
+        out.ghostKey = { count: 0, unavailable: 'TM.invariants 未加载' };
+      }
+    } catch (e) {
+      var em = String((e && e.message) || e);
+      out.deadOffice = { count: 0, error: em }; out.ghostKey = { count: 0, error: em };
+    }
+    // ③ 账面守恒：本回合新增的 _fiscalValidatorLog（叙事金额↔fiscal_adjustments 脱节告警）
+    try {
+      var fNew = (GM._fiscalValidatorLog || []).slice((logBaseline && logBaseline.fiscal) || 0);
+      var fWarns = [], fSamples = [];
+      fNew.forEach(function (entry) {
+        (entry.warnings || []).forEach(function (w) { fWarns.push(w); });
+        (entry.samples || []).forEach(function (s) { if (fSamples.length < 5 && s && s.raw) fSamples.push(s.raw); });
+      });
+      out.fiscal = { count: fWarns.length, warnings: fWarns.slice(0, 8), samples: fSamples };
+    } catch (e2) { out.fiscal = { count: 0, error: String((e2 && e2.message) || e2) }; }
+    // ④ 叙事错名：本回合新增的 _personnelValidatorLog.missing（叙事提及死亡/去职但 AI 未结构化上报）
+    try {
+      var pNew = (GM._personnelValidatorLog || []).slice((logBaseline && logBaseline.narrative) || 0);
+      var miss = [], patched = 0, skipped = 0;
+      pNew.forEach(function (entry) {
+        (entry.missing || []).forEach(function (m) { miss.push({ name: m.name, verb: m.verb || m.action || '', raw: String(m.raw || '').slice(0, 120) }); });
+        patched += (entry.patched || 0);
+        skipped += (entry.skipped || []).length;
+      });
+      out.narrative = { count: miss.length, missing: miss.slice(0, 8), patched: patched, skipped: skipped };
+    } catch (e3) { out.narrative = { count: 0, error: String((e3 && e3.message) || e3) }; }
+    return out;
+  }
+
+  // 总判：结构性损坏(死人任职/幽灵键/回合抛错/未推进/启动失败)=红；
+  //       内容脱节(账面守恒/叙事错名·校验器已自动补录·属内容质量告警)或运行时错误=黄；全清=绿。
+  function quickTestVerdict(report) {
+    var anomalies = [], red = false, yellow = false;
+    if (!report.bootOk) { red = true; anomalies.push({ category: 'boot', turn: 0, detail: '启动失败·GM 未就绪' }); }
+    (report.turns || []).forEach(function (t) {
+      if (t.skipped) { yellow = true; anomalies.push({ category: 'turn-skipped', turn: t.n, detail: t.reason || '回合被跳过' }); return; }
+      if (t.threw) { red = true; anomalies.push({ category: 'turn-error', turn: t.n, detail: t.error || '回合抛错' }); }
+      else if (!t.ok) { red = true; anomalies.push({ category: 'turn-stall', turn: t.n, detail: '回合数未推进·疑中途失败' }); }
+      var h = t.health || {};
+      if (h.deadOffice && h.deadOffice.count > 0) { red = true; anomalies.push({ category: 'dead-office', turn: t.n, detail: h.deadOffice.count + ' 例死人占职', excerpt: (h.deadOffice.violations || []).join('；') }); }
+      if (h.ghostKey && h.ghostKey.count > 0) { red = true; anomalies.push({ category: 'ghost-key', turn: t.n, detail: h.ghostKey.count + ' 例幽灵引用', excerpt: (h.ghostKey.violations || []).join('；') }); }
+      if (h.fiscal && h.fiscal.count > 0) { yellow = true; anomalies.push({ category: 'fiscal-drift', turn: t.n, detail: h.fiscal.count + ' 项账面脱节(叙事金额↔fiscal_adjustments)', excerpt: (h.fiscal.samples || []).join(' / ') }); }
+      if (h.narrative && h.narrative.count > 0) { yellow = true; anomalies.push({ category: 'narrative-name', turn: t.n, detail: h.narrative.count + ' 例叙事错名(提及死亡/去职未结构化)', excerpt: (h.narrative.missing || []).map(function (m) { return m.name + '·' + m.raw; }).join(' / ') }); }
+    });
+    if (report.errors && report.errors.length) { if (!red) yellow = true; anomalies.push({ category: 'runtime-error', turn: null, detail: report.errors.length + ' 条运行时错误', excerpt: report.errors.slice(0, 3).join(' / ') }); }
+    var level = red ? 'red' : (yellow ? 'yellow' : 'green');
+    var summary;
+    if (!report.bootOk) summary = '启动未通过·无法体检';
+    else if (report.turnsRan === 0) summary = '仅验启动(回合未跑' + (report.note ? '·' + report.note : '') + ')';
+    else summary = report.turnsRan + '/' + report.turnsRequested + ' 回合跑通·' + (level === 'green' ? '四类体检全清' : (level === 'red' ? ('发现结构性异常 ' + anomalies.filter(function (a) { return ['dead-office', 'ghost-key', 'turn-error', 'turn-stall', 'boot'].indexOf(a.category) >= 0; }).length + ' 项') : ('内容告警 ' + anomalies.length + ' 项(校验器已自动补录)')));
+    return { level: level, summary: summary, anomalies: anomalies };
+  }
+
+  function runQuickTestFirstTurn(sc, opts) {
+    opts = opts || {};
+    var turnsWanted = Math.max(1, Math.min(10, parseInt(opts.turns, 10) || 3));
+    var perTurnTimeoutMs = opts.perTurnTimeoutMs != null ? opts.perTurnTimeoutMs : 90000;
+    var bootWaitMs = opts.bootWaitMs != null ? opts.bootWaitMs : 2000;
     var report = {
       id: 'quicktest-' + Date.now().toString(36),
       createdAt: new Date().toISOString(),
       scenarioId: sc.id, scenarioName: sc.name || '',
       phase: 'boot', bootOk: false, turnRan: false, turnOk: false,
-      errors: [], boot: null, turn: null, note: ''
+      errors: [], boot: null, turn: null, note: '',
+      // ── 多回合体检扩展(2026-07-16·向后兼容) ──
+      schema: 2, turnsRequested: turnsWanted, turnsRan: 0, aiTier: 'primary',
+      turns: [], verdict: null
     };
     function errCap(msg) { if (report.errors.length < 20) report.errors.push(String(msg == null ? '?' : msg).slice(0, 300)); }
     function onWinErr(ev) { errCap((ev && (ev.message || (ev.reason && (ev.reason.message || ev.reason)))) || ev); }
@@ -362,34 +454,79 @@
     function finish(phaseNote) {
       if (phaseNote) report.note = report.note ? (report.note + '；' + phaseNote) : phaseNote;
       if (global.removeEventListener) { global.removeEventListener('error', onWinErr); global.removeEventListener('unhandledrejection', onWinErr); }
+      report.verdict = quickTestVerdict(report);
       return writeQuickTestReport(report).then(function (ok) {
-        try { if (typeof global.toast === 'function') global.toast(ok ? ('快测报告已写回工坊：' + (report.turnOk ? '首回合跑通' : (report.bootOk ? '启动成功·回合未跑通' : '启动异常')) + (report.errors.length ? '·' + report.errors.length + ' 条错误' : '')) : '快测报告写回失败(IndexedDB 不可用)'); } catch (_) {}
+        try {
+          if (typeof global.toast === 'function') {
+            var v = report.verdict || {};
+            var badge = v.level === 'green' ? '绿·健康' : (v.level === 'yellow' ? '黄·内容告警' : '红·须修');
+            global.toast(ok ? ('快测报告已写回工坊[' + badge + ']：' + (v.summary || '')) : '快测报告写回失败(IndexedDB 不可用)');
+          }
+        } catch (_) {}
+      });
+    }
+    // 单回合真跑：捕获同步/异步抛错(记录后不中断后续)·超时中止后续(防异步争抢)·跑完做四类体检。
+    function runOneTurn(n) {
+      if (report._aborted) { report.turns.push({ n: n, ok: false, skipped: true, reason: report._abortReason || '前序中断' }); return Promise.resolve(); }
+      var t1 = Date.now();
+      var GM = global.GM || {};
+      var fBase = (GM._fiscalValidatorLog || []).length;
+      var pBase = (GM._personnelValidatorLog || []).length;
+      var prevTurn = GM.turn || 0;
+      var rec = { n: n, ok: false, threw: false, ms: 0, error: '', turnBefore: prevTurn, stats: null, health: null };
+      if (GM.busy) { rec.threw = true; rec.error = 'GM.busy·回合未跑'; errCap('回合 ' + n + ' 未跑: GM.busy'); rec.ms = 0; rec.stats = gmStats(); report.turns.push(rec); return Promise.resolve(); }
+      var turnP;
+      try { turnP = Promise.resolve(global._endTurnInternal()); }
+      catch (eSync) {
+        rec.threw = true; rec.error = '同步抛错: ' + ((eSync && eSync.message) || eSync); errCap('回合 ' + n + ' ' + rec.error);
+        rec.ms = Date.now() - t1; rec.stats = gmStats(); rec.health = quickTestHealthChecks({ fiscal: fBase, narrative: pBase });
+        report.turnsRan++; report.turnRan = true; report.turn = { ms: rec.ms, stats: rec.stats }; if (n === 1) report.turnOk = false;
+        report.turns.push(rec); return Promise.resolve();
+      }
+      var timeoutP = new Promise(function (res) { setTimeout(function () { res('__timeout__'); }, perTurnTimeoutMs); });
+      var racedP = turnP.then(function () { return '__ok__'; }).catch(function (eT) { rec.threw = true; rec.error = '回合异常: ' + ((eT && eT.message) || eT); errCap('回合 ' + n + ' ' + rec.error); return '__err__'; });
+      return Promise.race([racedP, timeoutP]).then(function (outcome) {
+        rec.ms = Date.now() - t1;
+        if (outcome === '__timeout__') { rec.threw = true; rec.error = '回合超时(' + perTurnTimeoutMs + 'ms)'; errCap('回合 ' + n + ' 超时'); report._aborted = true; report._abortReason = '回合 ' + n + ' 超时·中止后续'; }
+        rec.stats = gmStats();
+        rec.ok = !rec.threw && (rec.stats.turn > prevTurn);
+        rec.health = quickTestHealthChecks({ fiscal: fBase, narrative: pBase });
+        report.turnsRan++;
+        report.turnRan = true;
+        report.turn = { ms: rec.ms, stats: rec.stats };   // 旧字段：turn=最后一回合(向后兼容)
+        if (n === 1) report.turnOk = rec.ok;               // 旧语义 turnOk=首回合是否跑通
+        report.turns.push(rec);
       });
     }
     var t0 = Date.now();
     return Promise.resolve()
       .then(function () { return global.startGame(sc.id); })
-      .then(function () { return new Promise(function (r) { setTimeout(r, 2000); }); })   // 等 boot 渲染/异步装载安定
+      .then(function () { return new Promise(function (r) { setTimeout(r, bootWaitMs); }); })   // 等 boot 渲染/异步装载安定
       .then(function () {
         report.bootOk = !!(global.GM && Array.isArray(global.GM.chars));
         report.boot = { ms: Date.now() - t0, stats: gmStats() };
         report.phase = 'turn';
         if (!(global.P && global.P.ai && global.P.ai.key && String(global.P.ai.key).trim())) return finish('未配 API 密钥·只验启动·回合推演未跑');
         if (typeof global._endTurnInternal !== 'function') return finish('运行时无 _endTurnInternal·回合未跑');
-        if (global.GM && global.GM.busy) return finish('GM.busy·回合未跑');
-        report.turnRan = true;
-        var t1 = Date.now();
-        return Promise.resolve(global._endTurnInternal())
-          .then(function () {
-            report.turn = { ms: Date.now() - t1, stats: gmStats() };
-            report.turnOk = !!(report.turn.stats.turn > report.boot.stats.turn);
-            report.phase = 'done';
-            return finish(report.turnOk ? '' : '回合数未推进·疑中途失败');
-          })
-          .catch(function (eT) { errCap('回合异常: ' + ((eT && eT.message) || eT)); report.turn = { ms: Date.now() - t1, stats: gmStats() }; return finish('回合抛错'); });
+        // 顺序连跑 N 回合(同一局·世界连续)
+        var chain = Promise.resolve();
+        for (var i = 1; i <= turnsWanted; i++) { (function (n) { chain = chain.then(function () { return runOneTurn(n); }); })(i); }
+        return chain.then(function () {
+          report.phase = 'done';
+          var advanced = report.turns.filter(function (t) { return t.ok; }).length;
+          return finish(advanced === turnsWanted ? '' : (advanced + '/' + turnsWanted + ' 回合推进·余者失败或中止'));
+        });
       })
       .catch(function (eB) { errCap('启动异常: ' + ((eB && eB.message) || eB)); return finish('startGame 抛错'); });
   }
+
+  // 快测能力对外句柄(程序化触发 + smoke 可测·运行器/校验器包装器本在闭包内不可达)。
+  global.TM_SCENARIO_QUICKTEST = {
+    run: runQuickTestFirstTurn,
+    healthChecks: quickTestHealthChecks,
+    verdict: quickTestVerdict,
+    DB_ID: QUICKTEST_DB_ID
+  };
 
   function startWithPausedAi(sc) {
     if (!sc || typeof global.startGame !== 'function') return false;
