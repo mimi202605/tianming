@@ -1705,6 +1705,8 @@
     (function _flagFiscalTransferPairs(){
       var list = aiOutput.fiscal_adjustments;
       if (!Array.isArray(list) || list.length < 2) return;
+      // ★别名表镜像·改须与 tm-ai-change-applier-reconcile.js:_faNormTargetForGate/_faNormKindForGate 及下方
+      //   fiscal_adjustments 容差归一段同步(三处逐字一致)。
       function _normTarget(t){
         var s = String(t == null ? '' : t).trim();
         if (/^(太仓|太仓库|国库|户部库|外库|公帑|公库|guoku|taicang|taicangku)$/i.test(s)) return 'guoku';
@@ -1767,6 +1769,8 @@
       if (!fa) return;
       // ★ fiscal 容差归一(2026-06-02·bug A)：AI 常用中文/自然名指账户与收支·若不归一则 target 解析为 null·
       //   此条 fiscal 静默漏账(财政死账真凶之一)。映射常见别名到 guoku/neitang/province: 与 income/expense。
+      //   ★别名表镜像·改须与 _normTarget(上方 _flagFiscalTransferPairs 内)及 tm-ai-change-applier-reconcile.js:
+      //   _faNormTargetForGate/_faNormKindForGate(preflight 白名单)同步(三处逐字一致)。
       if (fa.target != null) {
         var _ft = String(fa.target).trim();
         if (/^(太仓|太仓库|国库|户部库|外库|公帑|公库|guoku|taicang|taicangku)$/i.test(_ft)) fa.target = 'guoku';
