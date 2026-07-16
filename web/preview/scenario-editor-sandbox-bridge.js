@@ -451,7 +451,37 @@
         huangquan: GM.huangquan ? GM.huangquan.index : null
       };
     }
+    // 刀C·快档路由：次要 API(快模型)配置完整且启用时·快测全程临时把 P.ai 指向 secondary——
+    //   整条回合推演链(主推演+全部子调用·无论内部 tier 传参)统一走快档·省玩家主 quota。
+    //   手法沿用本文件 startWithPausedAi 先例(临时改 P.ai·跑完必还原)·不碰 endturn 引擎本体。
+    //   key 真源在 localStorage('tm_api')·此处只动内存态·还原后不 saveP(避免快档配置被持久化)。
+    var _origAi = null;
+    function engageFastTier() {
+      try {
+        if (typeof global._useSecondaryTier !== 'function' || !global._useSecondaryTier()) return false;
+        var sec = global.P && global.P.ai && global.P.ai.secondary;
+        if (!sec || !sec.key || !sec.url) return false;
+        _origAi = { key: global.P.ai.key, url: global.P.ai.url, model: global.P.ai.model };
+        global.P.ai.key = sec.key;
+        global.P.ai.url = sec.url;
+        if (sec.model) global.P.ai.model = sec.model;
+        report.aiTier = 'secondary';
+        return true;
+      } catch (_) { return false; }
+    }
+    function restoreAiTier() {
+      if (!_origAi) return;
+      try {
+        if (global.P && global.P.ai) {
+          global.P.ai.key = _origAi.key;
+          global.P.ai.url = _origAi.url;
+          global.P.ai.model = _origAi.model;
+        }
+      } catch (_) {}
+      _origAi = null;
+    }
     function finish(phaseNote) {
+      restoreAiTier();
       if (phaseNote) report.note = report.note ? (report.note + '；' + phaseNote) : phaseNote;
       if (global.removeEventListener) { global.removeEventListener('error', onWinErr); global.removeEventListener('unhandledrejection', onWinErr); }
       report.verdict = quickTestVerdict(report);
@@ -500,7 +530,7 @@
     }
     var t0 = Date.now();
     return Promise.resolve()
-      .then(function () { return global.startGame(sc.id); })
+      .then(function () { engageFastTier(); return global.startGame(sc.id); })   // 快档在 startGame 前接管·boot 期 AI 调用亦走快档
       .then(function () { return new Promise(function (r) { setTimeout(r, bootWaitMs); }); })   // 等 boot 渲染/异步装载安定
       .then(function () {
         report.bootOk = !!(global.GM && Array.isArray(global.GM.chars));
@@ -521,8 +551,17 @@
   }
 
   // 快测能力对外句柄(程序化触发 + smoke 可测·运行器/校验器包装器本在闭包内不可达)。
+  //   console 一键入口(刀C)：TM_SCENARIO_QUICKTEST.runById('剧本id', { turns: 3 })——
+  //   对 P.scenarios 里任一已装剧本跑体检·与编辑器工作台按钮同一运行器·报告同写 quickTestReport:latest。
+  function runQuickTestById(id, opts) {
+    var sc = (global.P && Array.isArray(global.P.scenarios)) ? global.P.scenarios.find(function (s) { return s && s.id === id; }) : null;
+    if (!sc) { console.warn('[快测] 剧本不存在: ' + id + '（P.scenarios 未找到）'); return Promise.resolve(null); }
+    console.log('[快测] 开始一键体检: ' + (sc.name || sc.id) + '·' + ((opts && opts.turns) || 3) + ' 回合·报告写 IndexedDB quickTestReport:latest');
+    return runQuickTestFirstTurn(sc, opts);
+  }
   global.TM_SCENARIO_QUICKTEST = {
     run: runQuickTestFirstTurn,
+    runById: runQuickTestById,
     healthChecks: quickTestHealthChecks,
     verdict: quickTestVerdict,
     DB_ID: QUICKTEST_DB_ID
@@ -574,8 +613,9 @@
       var sc = installSandboxScenario(payload);
       var params = query();
       if (params.get('tmScenarioQuickTest') === '1') {
-        // 刀④乙：快测·首回合真跑（带 key·玩家显式触发·报告写回工坊）
-        setTimeout(function() { runQuickTestFirstTurn(sc); }, 0);
+        // 刀④乙：快测·一键体检（带 key·玩家显式触发·报告写回工坊）·turns 可经 URL 调(默认 3)
+        var qtTurns = parseInt(params.get('tmScenarioQuickTestTurns'), 10);
+        setTimeout(function() { runQuickTestFirstTurn(sc, qtTurns > 0 ? { turns: qtTurns } : undefined); }, 0);
       } else if (params.get('tmScenarioAutoStart') === '1') {
         setTimeout(function() { startWithPausedAi(sc); }, 0);
       } else if (typeof global.showScnSelect === 'function') {
