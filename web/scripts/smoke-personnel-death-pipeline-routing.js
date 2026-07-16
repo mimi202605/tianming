@@ -159,6 +159,102 @@ console.log('===== G·非致死类直写 + 留痕通道 =====');
   assert(tr.length > 0 && Array.isArray(tr[tr.length - 1].skipped), 'G5 _turnReport.personnel_validation 亦携 skipped 留痕字段');
 })();
 
+// ═══════════════════════════════════════════════════════════════════════
+//  刀①·批二(2026-07-16)：onDismissal 死亡分支并轨死亡管线
+//    上方 A-G 验校验器(叙事→_validatePersonnelConsistency)路径；下方 H-M 验 onDismissal 自身
+//    死亡分支——结构化 personnel_changes(change='赐死'·经 applier 1601 行 reason='execute')/appointments/
+//    office_assignments 的死因 reason 都经 onDismissal·此前死亡分支裸写 ch.alive=false 绕过裁决器+级联。
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── H·结构化 personnel_changes(change='赐死')·非玩家 → onDismissal 死亡分支经死亡管线 + 级联(刀①核心) ──
+console.log('===== H·结构化赐死(personnel_changes)经 onDismissal→死亡管线 =====');
+(function () {
+  const ctx = makeCtx();
+  ctx.GM = baseGM(
+    [{ name: '孙传庭', isPlayer: true, alive: true, faction: '明朝廷', resources: {} },
+     { name: '胡廷晏', officialTitle: '巡抚', position: '巡抚', alive: true, faction: '明朝廷', resources: {} }],
+    { armies: [{ name: '秦军', commander: '胡廷晏', morale: 80 }] });
+  ctx.P = { playerInfo: { characterName: '孙传庭' }, adminHierarchy: {} };
+  const res = ctx.applyAITurnChanges({ personnel_changes: [{ name: '胡廷晏', change: '赐死', reason: '通敌' }] });
+  const hu = ctx.GM.chars.find(c => c.name === '胡廷晏');
+  assert(hu.alive === false, 'H1 结构化赐死·受刑者 alive=false');
+  assert(ctx._deathCalls.indexOf('胡廷晏') >= 0, 'H2 ★onDismissal 死亡分支经 applyOneDeath 死亡管线(非旧裸写)');
+  assert(ctx.GM.armies[0].commander === '', 'H3 死亡级联生效·军队摘帅(旧直写分支不会做此级联)');
+  assert(ctx._pdCalls.length === 0, 'H4 非玩家不触发玩家之死裁决器');
+  assert(res.applied && res.applied.semantic && res.applied.semantic.personnel_changes_fallback >= 1,
+    'H5 ★返回契约不变·onDismissal 返 {ok:true}·personnel 兜底计数照常(调用方无感)');
+})();
+
+// ── I·结构化 personnel_changes(change='赐死')·玩家角色 → 玩家之死裁决器(刀①核心补漏) ──
+console.log('===== I·结构化赐死玩家角色→裁决器(★旧路径静默置死不裁决) =====');
+(function () {
+  const ctx = makeCtx();
+  ctx.GM = baseGM([{ name: '崇祯', isPlayer: true, officialTitle: '皇帝', alive: true, faction: '明朝廷', resources: {} }]);
+  ctx.P = { playerInfo: { characterName: '崇祯' }, adminHierarchy: {} };
+  ctx.applyAITurnChanges({ personnel_changes: [{ name: '崇祯', change: '赐死', reason: '权臣逼宫' }] });
+  assert(ctx._deathCalls.indexOf('崇祯') >= 0, 'I1 玩家角色结构化赐死走死亡管线');
+  assert(ctx._pdCalls.length === 1 && ctx._pdCalls[0].name === '崇祯',
+    'I2 ★经玩家之死裁决器(旧 onDismissal 直写路径绝不触发)');
+  assert(ctx.GM._playerDead === true, 'I3 ★无嗣→终局信号 _playerDead(旧路径静默置死·不终局也不继统)');
+})();
+
+// ── J·已死者 onDismissal 死因·前置已死闸不重投管线(applyOneDeath 无已死早退·防级联双落账) ──
+console.log('===== J·已死者不重投死亡管线(防双落账) =====');
+(function () {
+  const ctx = makeCtx();
+  ctx.GM = baseGM([{ name: '胡廷晏', alive: false, dead: true, faction: '明朝廷', resources: {} }]);
+  ctx.P = { playerInfo: {}, adminHierarchy: {} };
+  const r = ctx.onDismissal('胡廷晏', '赐死');
+  assert(ctx._deathCalls.length === 0, 'J1 ★已死者不再投喂 applyOneDeath(onDismissal 前置已死闸·防级联双落账)');
+  assert(r && r.ok === true, 'J2 返回契约不变({ok:true})');
+})();
+
+// ── K·极端沙箱(死亡管线缺位)·onDismissal 死亡分支回落原直写·不丢「死者必落库」 ──
+console.log('===== K·沙箱回落直写(管线缺位) =====');
+(function () {
+  const ctx = makeCtx();
+  ctx.GM = baseGM([{ name: '胡廷晏', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }]);
+  ctx.P = { playerInfo: {}, adminHierarchy: {} };
+  // 模拟极端沙箱·死亡管线双缺(置 undefined 而非 delete：delete 只除全局属性·applyCharacterDeaths 内的
+  //   bare applyOneDeath 词法绑定仍存活会绕过沙箱·置 undefined 令 onDismissal 的 typeof 闸真正落空)
+  ctx.applyOneDeath = undefined; ctx.applyCharacterDeaths = undefined;
+  const r = ctx.onDismissal('胡廷晏', '处决');
+  const hu = ctx.GM.chars.find(c => c.name === '胡廷晏');
+  assert(hu.alive === false, 'K1 管线缺位→回落原直写·死者仍落库(alive=false)');
+  assert(hu._deathCause === '处决', 'K2 回落直写保 _deathCause');
+  assert(r && r.ok === true, 'K3 返回契约不变({ok:true})');
+})();
+
+// ── L·validator 沙箱回落调 onDismissal·无递归/无双落账(applyOneDeath+applyCharacterDeaths 双缺→直写兜底) ──
+console.log('===== L·validator 沙箱回落 onDismissal·无递归无双落账 =====');
+(function () {
+  const ctx = makeCtx();
+  ctx.GM = baseGM([{ name: '胡廷晏', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }]);
+  ctx.P = { playerInfo: {}, adminHierarchy: {} };
+  // 双缺→validator 的 _routeDeathToPipeline 落空→回落 onDismissal(line 216)→onDismissal 死亡分支亦双缺→直写
+  //   (置 undefined 而非 delete·理由同 K：确保 typeof 闸真正落空·逼出 onDismissal 沙箱回落这条被测路径)
+  ctx.applyOneDeath = undefined; ctx.applyCharacterDeaths = undefined;
+  ctx.applyAITurnChanges({ shizhengji: '帝震怒，赐死胡廷晏。' });   // 能返回=不死循环(无递归)
+  const hu = ctx.GM.chars.find(c => c.name === '胡廷晏');
+  assert(hu.alive === false, 'L1 沙箱下 validator→onDismissal 回落·死者仍落库(能返回即证无递归死循环)');
+  assert(ctx._deathCalls.length === 0, 'L2 沙箱下无 applyOneDeath 调用(双缺·全走直写)');
+  const log = ctx.GM._personnelValidatorLog || [];
+  const last = log[log.length - 1] || {};
+  assert(last.patched === 1, 'L3 ★补录恰一次(无双落账·validator 经 onDismissal 回落 patched=1)');
+})();
+
+// ── M·结构化赐死 + 叙事复述同一人·死亡管线只跑一次(validator handled 拦截·无双落账) ──
+console.log('===== M·结构化+叙事双提同一死者·管线只跑一次 =====');
+(function () {
+  const ctx = makeCtx();
+  ctx.GM = baseGM([{ name: '孙传庭', isPlayer: true, alive: true, faction: '明朝廷', resources: {} },
+                   { name: '胡廷晏', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }]);
+  ctx.P = { playerInfo: { characterName: '孙传庭' }, adminHierarchy: {} };
+  ctx.applyAITurnChanges({ personnel_changes: [{ name: '胡廷晏', change: '赐死', reason: '通敌' }], shizhengji: '帝赐死胡廷晏。' });
+  const calls = ctx._deathCalls.filter(n => n === '胡廷晏');
+  assert(calls.length === 1, 'M1 ★同一死者结构化+叙事双提·applyOneDeath 只跑一次(validator handled 拦截·无双落账)');
+})();
+
 console.log('');
 console.log('[smoke-personnel-death-pipeline-routing] ' + passed + ' passed / ' + failed + ' failed');
 if (failed > 0) process.exit(1);

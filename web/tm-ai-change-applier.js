@@ -545,11 +545,35 @@
     //   误判·押解/押粮/押司/签押/押韵/拘谨/拘泥/拘束/逃避/隐遁/匿名 等 → false positive
     //   改用必须的入狱/流放/逃亡 compound·并加 release/起复路径清 _imprisoned/_exiled/_fled
     if (/处决|处斩|处死|斩首|斩决|斩杀|戮杀|正法|明正典刑|诛杀|诛戮|诛九族|凌迟|腰斩|弃市|枭首|枭示|问斩|赐死|赐自尽|绞刑|绞死|伏诛|伏法|就戮|授首|自尽|自缢|自刎|自裁|自杀|服毒自尽|畏罪自尽|磔|execute|死刑|身故|病故|病逝|病殁|病卒|病亡|亡故|暴毙|暴卒|暴亡|猝死|物故|殒命|毙命|殉国|殉难|殉城|殉职|罹难|遇害|遇难|遭难|薨逝|溘逝|寿终|城破身死/.test(_reasonStr)) {
-      ch.alive = false;
-      ch._deathCause = _reasonStr;
-      ch._deathTurn = G.turn || 0;
-      // 预存殁前官衔(供墓志铭 positionAtDeath / 图志「原任X」)·随后 646 行统一清 officialTitle
-      if (ch.officialTitle && !ch.positionAtDeath) ch.positionAtDeath = ch.officialTitle;
+      // ★ 落库契约硬化刀①(2026-07-16)：死亡分支不再裸写 ch.alive=false。
+      //   旧直写绕过「玩家之死裁决器」adjudicatePlayerDeath(合法继统门·鼎革 R1a)与死亡级联
+      //   (军队摘帅/丁忧/势力首领继承/头衔/governor/后宫)——结构化 personnel_changes(change='赐死'类·
+      //   经本文件 1601 行映射 reason='execute')及 appointments/office_assignments 的死因 reason 都经此·
+      //   会静默置死玩家角色而既不路由继统、也不触终局(尸政/无嗣不终局)。改为合成 character_deaths 同构条目
+      //   投喂既有死亡管线 applyOneDeath(缺位回落 applyCharacterDeaths·两者都缺才保留原直写·极端沙箱兜底
+      //   不丢「死者必落库」)——与批一刀①校验器(validators.js:_routeDeathToPipeline)同款优先级、同一 sink。
+      //   幂等：applyOneDeath 无「已死早退」·对已死者重投会重跑全级联(重复 addEB/家族声望-2/摘帅-15)造双落账·
+      //   故此处前置已死闸(alive===false 即不重投)。本分支后续(抄家/officeTree 清理/addEB)属非死亡通用段·零改动。
+      var _routedDeath = false;
+      if (ch.alive === false) {
+        _routedDeath = true;  // 已死·死亡管线此前已跑·不重投(防双落账)
+      } else {
+        var _deathCd = { name: ch.name, reason: _reasonStr };
+        try {
+          if (typeof global.applyOneDeath === 'function') { global.applyOneDeath(_deathCd); _routedDeath = true; }
+          else if (typeof global.applyCharacterDeaths === 'function') { global.applyCharacterDeaths({ character_deaths: [_deathCd] }); _routedDeath = true; }
+        } catch (_odDeathE) {
+          try { window.TM && TM.errors && TM.errors.captureSilent && TM.errors.captureSilent(_odDeathE, 'onDismissal-death-route'); } catch (__) {}
+        }
+      }
+      if (!_routedDeath) {
+        // 极端沙箱(死亡管线缺位)·保留原直写·不丢「死者必落库」兜底
+        ch.alive = false;
+        ch._deathCause = _reasonStr;
+        ch._deathTurn = G.turn || 0;
+        // 预存殁前官衔(供墓志铭 positionAtDeath / 图志「原任X」)·随后统一清 officialTitle
+        if (ch.officialTitle && !ch.positionAtDeath) ch.positionAtDeath = ch.officialTitle;
+      }
     } else if (/释放|开释|赦免|大赦|无罪|平反|昭雪|宽释|保释|出狱|赦出/.test(_reasonStr)) {
       // ★ 释放 / 赦免·清入狱状态
       ch._imprisoned = false;
