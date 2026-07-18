@@ -324,7 +324,8 @@ function _togglePConf(confKey, on) {
     worldReactorBattleEnabled: { on: '已启用兵败牵动天下·战败方确定性折损实力', off: '已关闭·战败只走 AI 裁量·不自动折损实力' },
     populationBottomUpEnabled: { on: '已启用人口自下而上·按叶级政区分别核算', off: '已关闭·走全局粗粒度人口增长' },
     cognitionFeedbackEnabled: { on: '已启用认知反馈·知遇/贬谪落到忠诚数值', off: '已关闭·忠诚不因升降迁谪自动漂移' },
-    useNewKejuScandal: { on: '已启用科场弊案·科举可能爆舞弊/科场案', off: '已关闭科场弊案链' }
+    useNewKejuScandal: { on: '已启用科场弊案·科举可能爆舞弊/科场案', off: '已关闭科场弊案链' },
+    rigidHistEventsOff: { on: '已关闭注定史实事件·演义模式下史实人物的注定命运（如史实死亡）不再自动触发', off: '已恢复注定史实事件·演义模式下史实注定命运照常触发（轻度/严格史实模式一向照旧）' }
   };
   var l = labels[confKey] || { on: '已启用 ' + confKey, off: '已关闭 ' + confKey };
   if (typeof toast === 'function') toast('✅ ' + (on ? l.on : l.off));

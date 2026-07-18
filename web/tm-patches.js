@@ -112,7 +112,8 @@ if (typeof _togglePConf === 'undefined') {
       semanticRecallAutoload: { on: '已启用语义检索自动加载', off: '已关闭语义检索自动加载·SC_RECALL 第 5 源失效' },
       npcAiPrecision: { on: '已启用 NPC 势力真决策·会真实改动数据并写入账本', off: '已关闭 NPC 势力真决策·走本地模板 + 人格 hints' },
       npcAiCosmeticEnrich: { on: '已启用 NPC 文字润色·仅改显示文辞', off: '已关闭 NPC 文字润色·不影响真决策' },
-      useTinyiV3: { on: '已启用廷议 v3 (默认·8 阶段·新框架)', off: '已关闭 v3·退回 v2 廷议 (简陋·5 阶段·已加 ChronicleTracker/ClassEngine 集成 fallback)' }
+      useTinyiV3: { on: '已启用廷议 v3 (默认·8 阶段·新框架)', off: '已关闭 v3·退回 v2 廷议 (简陋·5 阶段·已加 ChronicleTracker/ClassEngine 集成 fallback)' },
+      rigidHistEventsOff: { on: '已关闭注定史实事件·演义模式下史实人物的注定命运（如史实死亡）不再自动触发', off: '已恢复注定史实事件·演义模式下史实注定命运照常触发（轻度/严格史实模式一向照旧）' }
     };
     var l = labels[confKey] || { on: '已启用 ' + confKey, off: '已关闭 ' + confKey };
     if (typeof toast === 'function') toast('✅ ' + (on ? l.on : l.off));
@@ -1205,7 +1206,16 @@ openSettings=function(){
     "<label><input type=\"checkbox\" "+(P.ai && P.ai.sc28Enabled===true?'checked':'')+" onchange=\"if(!P.ai)P.ai={};P.ai.sc28Enabled=this.checked;saveP();\"> sc28 世界快照</label>"+
     "</div>"+
     "<span style=\"font-size:0.7rem;color:var(--ink-300,#888);\">\u6CE8\uFF1A\u6539\u52A8\u540E\u9996\u56DE\u5408\u4F1A\u91CD\u5EFA\u63D0\u793A\u7F13\u5B58\uFF0C\u7565\u589E\u4E00\u6B21\u5C0F\u989D\u5F00\u9500\u3002</span>"+
-    "</details></div></div>"+
+    "</details></div>"+
+    // ★还账(设flag必配设置开关)：rigidHistEventsOff 有读端(tm-history-events.js _rigidHistoryEventShouldFire)却无任何写端·changelog 曾承诺「可在设置里一键关闭」但玩家点不到。此处补开关·落「游戏模式」段(rw 行后·section 内)·走 _togglePConf→saveP 现有 conf 持久化管线(不自创路径)。默认未写=undefined=注定事件照常触发(保持现状)。
+    '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.5rem 0 0.2rem;margin-top:0.3rem;border-top:1px dotted var(--bdr);cursor:pointer;">' +
+      '<input type="checkbox" id="s-rigid-hist-off" ' + (P.conf && P.conf.rigidHistEventsOff===true ? 'checked ' : '') + 'onchange="_togglePConf(\'rigidHistEventsOff\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">演义模式·关闭注定史实事件</div>' +
+        '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后，演义模式下史实人物的注定命运事件（如史实死亡）不再自动触发，交由你改写历史。轻度 / 严格史实模式不受影响。</div>' +
+      '</div>' +
+    '</label>' +
+    "</div>"+
 
     // ⚠️ P.conf.showRelation 当前是僵尸字段——UI 写但无消费者读·将来或补 renderCharProfile 端读取或删此 UI
     // 人物志
