@@ -1085,7 +1085,8 @@ function _wtParseTeachingText() {
     + '       ★【常见路径】白银=guoku.money·粮=guoku.grain·布=guoku.cloth·军备库甲胄=guoku.armory.甲胄.stock(兵刃/弓弩/火器/战马同式)·原料库铁=guoku.materials.铁.stock(硝石/皮革/木同式)·内帑银=neitang.money·皇威=huangwei.index·皇权=huangquan.index·腐败/吏治=corruption.trueIndex·民心=minxin.trueIndex·人物忠诚=chars[人物名].loyalty·人物所在地=chars[人物名].location·军队兵力=armies[军名].soldiers·军队主帅=armies[军名].commander·军队士气=armies[军名].morale·军队忠诚=armies[军名].loyalty·军队欠饷月数=armies[军名].payArrearsMonths·阶层满意度=classes[阶层名].satisfaction·阶层影响力=classes[阶层名].influence·阶层人口=classes[阶层名].population·势力实力=facs[势力名].strength·势力经济=facs[势力名].economy·势力对玩家关系=facs[势力名].playerRelation·党派影响力=parties[党派名].influence·党派凝聚力=parties[党派名].cohesion·区划民心=divisions[府州名].minxin·区划吏治=divisions[府州名].corruption·区划田亩=divisions[府州名].economyBase.farmland(商业额commerceVolume/盐产saltProduction/矿产mineralProduction/渔获fishingProduction/马政horseProduction/解额kejuQuota同式)·官职公库=office[官职名].publicTreasury·主角精力=_energy(君主自身·0-100·玩家写"精力"亦可)·精力上限=_energyMax\n'
     + '       ★【操作符】"加/增/+"→op:add · "减/扣/-"→op:add(负数) · "设为/改为/="→op:set · "翻倍/x2"→op:mul\n'
     + '       ★【单位换算】1 万两=10000·50 万两=500000·100 万石=1000000·玩家说"100 万"一律写成 1000000 数字不要保留"万"字\n'
-    + '   · edictSubstitute — 等同诏令：玩家实际想下诏令的事（例："拨银赈灾"、"罢某某官"、"遣使某国"——这些本该走诏令而非问天）\n'
+    + '   · edictSubstitute — 等同诏令：玩家实际想下诏令的事（例："拨银赈灾"、"罢某某官"、"遣使某国"——这些本该走诏令而非问天）。\n'
+    + '       ★【问天不造新实体】问天七类直改只能改在档实体（人物/军队/阶层/党派/势力/区划/官职）的现有字段，不能凭空创建任何新实体。玩家要求"生成/引入新人物"（下回合出个新谋士、征召某历史人物等）时→归入 edictSubstitute·把 edictText 写成征召句式（如"征召<姓名>入朝"、"诏<姓名>为<官职>"、"起复<姓名>"），玩家下诏后引擎的诏令征召管线才会真正造出此人。禁止口头答应"下回合生成新人物"而无诏令落实——须如实说明新人物只能经【诏令征召】引入。\n'
     + '   · absolute — 天意/至高意志：玩家明确以"天意"、"绝对"、"必须"、"神谕"、"不论如何"、"强制"等词修饰·或语气极强要求无条件落实（例："天意让北虏此回合覆灭"、"必须让此人变心"）——此类由世界法则直接生效·AI 无推辞空间·须在叙事中让其字面发生\n'
     + '3. 解析为结构化约束 structured:{target, action, scope, forbidden, measurable, condition}\n'
     + '4. 若 category=hardChange，或 category=absolute 且玩家要求直改字段/数值 → 必填 hardChange:{path:"GM/P 字段路径(如 guoku.money)", op:"set|add|mul", value:数字或要写入的内容}\n'
@@ -1145,6 +1146,8 @@ function _wtShowPendingConfirmation() {
       }
       h += '<div style="font-size:0.68rem;color:var(--vermillion-300);padding:4px 6px;background:rgba(192,64,48,0.1);border:1px solid ' + _bd + ';border-radius:3px;margin-bottom:4px;font-family:monospace;">' + _mark + '\u2696\ufe0e <b>' + escHtml(hc.path) + '</b> <span style="color:var(--ink-200);">' + escHtml(hc.op||'set') + '</span> <b>' + escHtml(String(hc.value)) + '</b>' + (hc.note ? ' <span style="color:var(--ink-300);font-family:inherit;">\u00b7' + escHtml(String(hc.note).slice(0, 30)) + '</span>' : '')
         + ((_dr && !_dr.ok) ? '<div style="font-size:0.6rem;font-family:inherit;color:' + (p.category === 'absolute' ? 'var(--amber-400)' : 'var(--vermillion-400)') + ';margin-top:2px;">' + escHtml(p.category === 'absolute' ? ('\u5929\u610f\u9020\u7269\uff1a' + (_dr.reason || '\u5c06\u521b\u5efa\u65b0\u5b57\u6bb5')) : ('\u786e\u8ba4\u540e\u5c06\u88ab\u62d2\uff1a' + (_dr.reason || '\u89e3\u6790\u4e0d\u5230\u771f\u5b9e\u5b57\u6bb5'))) + '</div>' : '')
+        // \u5b9e\u4f53\u524d\u7f00+\u4e0d\u5728\u6863\u540d\u5b57\uff08\u5e7d\u7075\u952e\u95f8\u62e6\u4e0b\uff09\u2192\u8865\u4e00\u53e5\u4eba\u8bdd\uff1a\u95ee\u5929\u4e0d\u9020\u65b0\u5b9e\u4f53\u00b7\u65b0\u4eba\u7269\u8d70\u8bcf\u4ee4\u5f81\u53ec
+        + ((_dr && !_dr.ok && p.category !== 'absolute' && /\u5b9e\u4f53\u540d\u89e3\u6790\u5931\u8d25/.test(String(_dr.reason || ''))) ? '<div style="font-size:0.6rem;font-family:inherit;color:var(--amber-400);margin-top:2px;">\u95ee\u5929\u4e0d\u9020\u65b0\u5b9e\u4f53\u00b7\u65b0\u4eba\u7269\u8bf7\u8d70\u3010\u8bcf\u4ee4\u5f81\u53ec\u3011\u5f15\u5165</div>' : '')
         + '</div>';
     });
     if (p._agentTrace && p._agentTrace.length) {
