@@ -131,6 +131,24 @@
     }) || null;
   }
 
+  // ★2026-07-16 落库契约硬化刀④·叙事补录人名严格解析:主官/势力首领须精确命中 GM.chars 且在世·返真 char 或 null。
+  //   _resolveNarrativeCommanderName(army.js:573) 末尾 fallback(:584-585·查无 char 时返 text.match/slice 的幻影名)会把
+  //   不存在/已死者裸写进 div.governor / fac.leader 镜像(census §K K5 病灶)。此处二次严校·把幻影/死者挡在落账之外。
+  //   触发面(正则)不动——只在解析后、落账前加闸;命中真活人的原有落账路径全不变(exact/contained 匹配返的正是 GM.chars 名)。
+  function _narrativeResolveAliveChar(G, name) {
+    if (!G || !Array.isArray(G.chars) || name == null) return null;
+    var nm = String(name).trim();
+    if (!nm) return null;
+    var ch = G.chars.find(function(c) { return c && c.name && String(c.name).trim() === nm; });
+    if (!ch || ch.alive === false || ch.dead) return null;
+    return ch;
+  }
+
+  // 不落账候选留痕·既有 console.warn 通道(不造 UI·不新增 GM 写点)·带原句摘录供 playtest 排查
+  function _narrativeSkipTrace(where, subject, raw) {
+    try { console.warn('[ai-change-narrative] 幻影/死者实体·叙事补录未落账(已留痕)·' + where + '：' + subject + '·据「' + String(raw || '').slice(0, 40) + '」'); } catch(_) {}
+  }
+
   function _resolveNarrativePlaceName(G, raw) {
     var text = _cleanNarrativeToken(raw);
     if (!text) return '';
@@ -563,8 +581,12 @@
           var person = _resolveNarrativeCommanderName(G, gm[ruleObj.person]);
           var office = ruleObj.role ? _cleanRegionOfficeTitle(gm[ruleObj.role]) : '';
           var gkey = (rec.id || rec.name) + '|governor|' + person;
-          if (!person || seen[gkey]) continue;
+          if (!person || seen[gkey]) continue;   // seen 幂等·同回合同一地块同一主官不双落账
           seen[gkey] = true;
+          // ★2026-07-16 刀④·实体+死人闸:主官须精确命中 GM.chars 且在世·幻影/死者不落账+留痕。
+          //   保留直写(onAppointment 官制树落账与 apply 主流程强耦合·不便单独调用)·但 _setRegionGovernorMirrors
+          //   已把 mapRegion/mapRegion.data/div/provinceStats 各 governor 别名键 + char officialTitle/position 一并同步(镜像两侧一致)。
+          if (!_narrativeResolveAliveChar(G, person)) { _narrativeSkipTrace('region.governor', (rec.name || rec.id) + '←' + person, gm[0]); continue; }
           if (_setRegionGovernorMirrors(G, rec, person, '叙事主官补录', office)) count++;
         }
       });
@@ -679,8 +701,11 @@
         while ((m = pat.exec(narrative)) !== null) {
           var leader = _resolveNarrativeCommanderName(G, m[1]);
           var key = (fac.id || fac.name) + '|leader|' + leader;
-          if (!leader || seen[key]) continue;
+          if (!leader || seen[key]) continue;   // seen 幂等·同回合同一势力同一首领不双落账
           seen[key] = true;
+          // ★2026-07-16 刀④·实体+死人闸:势力首领须精确命中 GM.chars 且在世·幻影/死者不落账+留痕。
+          //   保留直写(势力继统 sink 耦合 apply 主流程/死亡级联)·_setFactionLeader 已把 fac.leader/ruler/leadership.ruler 三镜像键一并同步。
+          if (!_narrativeResolveAliveChar(G, leader)) { _narrativeSkipTrace('faction.leader', (fac.name || fac.id) + '←' + leader, m[0]); continue; }
           if (_setFactionLeader(fac, leader, G, '叙事首领补录')) count++;
         }
       });
