@@ -124,8 +124,9 @@ function extractEdictActions(edictText) {
     ? ('(?:' + _imprisonRe.source + ')|(?:' + _removeOfficeVerbs + ')')
     : ('(?:' + _removeOfficeVerbs + ')');
   var _crimeVerbRx = new RegExp(_crimeVerbSrc, 'g');
-  // 规则①·极性标记(扫描取最靠近动词者)·改/改为/改判 正极性且触发"承接"(改判为治罪·宾语承接前文名)
-  var _POS_MARKERS = ['仍须','仍应','仍要','仍需','务必','须即','应即','著即','着即','即行','改判','改为','改'];
+  // 规则①·极性标记(扫描取最靠近动词者)·改为/改判 正极性且触发"承接"(改判为治罪·宾语承接前文名)
+  //   Codex三审①:单字"改"不入通用正标记(lastIndexOf 无词界·"改任/改元"会误翻正)·改由"紧邻动词"判承接
+  var _POS_MARKERS = ['仍须','仍应','仍要','仍需','务必','须即','应即','著即','着即','即行','改判','改为'];
   var _NEG_MARKERS = ['切勿','不得','不可','不必','不要','避免','以免','暂缓','姑免','宽宥','赦免','释放','开释','勿','毋'];
   // 规则③·边界集合:空白 + ASCII/中文句读 + ——/…/（）/()/斜杠/【】/《》 → 硬边界(锚定窗口永不跨越);顿号"、"作枚举连接符保留
   var _BND = '\n';
@@ -188,18 +189,20 @@ function extractEdictActions(edictText) {
       if (_at >= 0 && (_at + knownChars[_pi].length) > _scopeStart) _scopeStart = _at + knownChars[_pi].length;
     }
     var _scope = _pre.slice(_scopeStart);
-    if (/不得不|不可不/.test(_scope)) return { positive: true, change: false };            // 双重否定→正(先于一切)
-    if (/非[一-龥]{0,8}$/.test(_scope) && /^[一-龥、及与并暨]{0,10}不可/.test(seg.slice(vEnd))) return { positive: true, change: false };   // 非…不可→正
+    // Codex三审①·单字"改"仅在紧邻动词(改+动词零距或隔≤1字·如"改革职/改查办")时触发承接·避免"改任/改元"翻正误摘
+    var _chgAdj = /改/.test(seg.slice(Math.max(0, vStart - 2), vStart));
+    if (/不得不|不可不/.test(_scope)) return { positive: true, change: _chgAdj };            // 双重否定→正(先于一切)
+    if (/非[一-龥]{0,8}$/.test(_scope) && /^[一-龥、及与并暨]{0,10}不可/.test(seg.slice(vEnd))) return { positive: true, change: _chgAdj };   // 非…不可→正
     var _bi = -1, _bp = true, _bc = false;
     function _mscan(mks, positive) {
       for (var _mk = 0; _mk < mks.length; _mk++) {
         var _ix = _scope.lastIndexOf(mks[_mk]);
-        if (_ix > _bi) { _bi = _ix; _bp = positive; _bc = positive && mks[_mk].charAt(0) === '改'; }
+        if (_ix > _bi) { _bi = _ix; _bp = positive; _bc = positive && mks[_mk].charAt(0) === '改'; }   // 仅"改为/改判"双字标记
       }
     }
     _mscan(_NEG_MARKERS, false); _mscan(_POS_MARKERS, true);
-    if (_bi < 0) return { positive: true, change: false };                                  // 无标记→照摘
-    return { positive: _bp, change: _bc };
+    if (_bi < 0) return { positive: true, change: _chgAdj };                                 // 无标记→照摘(承接看紧邻"改")
+    return { positive: _bp, change: _bc || _chgAdj };
   }
   // 逐片段处置(片段内极性+锚定) + 受控相邻缝合(规则②)
   var _segInfos = _segs.map(function(seg){ return { seg: seg, lists: _scanEnumLists(seg), verbs: _findVerbs(seg) }; });
@@ -217,11 +220,13 @@ function extractEdictActions(edictText) {
       var _boundB = false;
       lists.forEach(function(L) { if (L.end <= v.start && _PASSB_FILLER.test(seg.slice(L.end, v.start))) { L.members.forEach(_pushDismissal); _boundB = true; } });
       if (_boundB) return;
-      // 承接(改判为治罪·片段内变体:赦免X死罪改革职留用)·宾语承接动词前最靠右名单
+      // 承接(改判为治罪·片段内变体:赦免X死罪改革职留用)·仅当动词前去重后 canonical 名严格==1 才承接
+      //   (多人列举"赦免X、Y死罪改革职留用"歧义·一概不承接·Codex三审③)
       if (_pol.change) {
-        var _carry = null;
-        lists.forEach(function(L) { if (L.end <= v.start && (!_carry || L.end > _carry.end)) _carry = L; });
-        if (_carry) _carry.members.forEach(_pushDismissal);
+        var _cu = {};
+        lists.forEach(function(L) { if (L.end <= v.start) L.members.forEach(function(m){ _cu[m] = true; }); });
+        var _cuK = Object.keys(_cu);
+        if (_cuK.length === 1) _pushDismissal(_cuK[0]);
       }
     });
   });
@@ -230,13 +235,22 @@ function extractEdictActions(edictText) {
     var seg = info.seg, lists = info.lists, verbs = info.verbs;
     var prev = _segInfos[i - 1], next = _segInfos[i + 1];
     if (!verbs.length || lists.length) return;   // 缝合只对"有治罪动词但无本地名"的片段发生
-    // (a) 片段以 改/改为/改判 开头·含治罪动词·无名 → 承接前段唯一名(跨段变体:赦免X死罪，改革职留用)
-    if (prev && _CHANGE_HEAD.test(seg) && prev.lists.length === 1) prev.lists[0].members.forEach(_pushDismissal);
+    // (a) 片段以 改/改为/改判 开头·含治罪动词·无名 → 承接前段名(跨段变体:赦免X死罪，改革职留用)
+    //   Codex三审②:承接前先对缝合段治罪动词跑同套极性(负极性如"改为不要/暂缓革职留用"则不承接·与无标点单片段同语义一致)
+    //   Codex三审③:"唯一名"= prev 去重后 canonical character 严格==1 才缝(名单含多人一概不缝)·非仅 lists.length==1
+    if (prev && _CHANGE_HEAD.test(seg) && verbs.some(function(v){ return _polarityOf(seg, v.start, v.end).positive; })) {
+      var _pn = {};
+      prev.lists.forEach(function(L){ L.members.forEach(function(m){ _pn[m] = true; }); });
+      var _pnK = Object.keys(_pn);
+      if (_pnK.length === 1) _pushDismissal(_pnK[0]);
+    }
     // (b) 片段是裸治罪动词结尾 → 缝下段开头名单(缝合动词正极性·名后无自带谓词·防"革职|孙传庭奏捷"误缝)
     if (next && next.lists.length && next.lists[0].start === 0) {
       var _tail = verbs[verbs.length - 1];
       if (_tail.end === seg.length && _polarityOf(seg, _tail.start, _tail.end).positive) {
         var _afterName = next.seg.slice(next.lists[0].end).replace(/^(?:、|及|与|并|暨)+/, '');
+        // Codex三审④·刻意保守契约(宁不缝勿误缝):名后≥2字非连接内容即不缝·副作用是"革职 陈奇瑜等人/一并"的
+        //   "等人/一并"也被当自带谓词挡住(不经缝合)·该片段无动词故不摘·退回纯枚举扫描路径·已在 smoke 固化现状。
         if (!/[一-龥]{2,}/.test(_afterName)) next.lists[0].members.forEach(_pushDismissal);
       }
     }
