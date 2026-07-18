@@ -103,28 +103,67 @@ function extractEdictActions(edictText) {
     }
   });
 
-  // ═══ 免职模式 ═══
-  var dismissVerbs = '(?:免去|罢免|革去|撤去|免职|撤职|革职|削职|黜|罢|削|贬|黜陟|谪|戍|贬谪|着革|着免)';
-  var dismissPatterns = [
-    new RegExp(dismissVerbs + '([\\u4e00-\\u9fa5]{2,6}?)(?:的|之)?([\\u4e00-\\u9fa5]{0,14})', 'g'),
-    new RegExp('([\\u4e00-\\u9fa5]{2,6}?)(?:免职|去职|撤职|革职|削职|下狱)', 'g')
-  ];
+  // ═══ 免职/治罪 模式（扩词表·单一真源·已知名锚定·双向 salvage）═══
+  //   病根(2026-07-19 侦探实测钉死)：① 动词表缺 查办/圈禁/拿问/削籍/下诏狱/褫职 等→「查办陈奇瑜」解析=[]；
+  //     ② 动词在前语序缺陷:非贪婪 {2,6}? 把处置中介词当人名或截短真名(「革职拿问陈奇瑜」→拿问·「革职陈奇瑜」→陈奇)；
+  //     ③ salvage 单向:只救 raw⊇真名·救不了 raw⊂真名(截断)。
+  //   修：治罪动词分两组——(a) 入狱类【复用 tm-ai-change-applier 的 _TM_IMPRISON_RE 单一真源·不另立第三处正则】；
+  //       (b) 明确去官动词(革职/削籍/褫职/罢黜/查办/圈禁…)。命中动词后不硬靠非贪婪截取·而在本句局部窗口内
+  //       用已知名录(knownChars/knownMap·派生自 GM.chars·等价 findCharByName 命中)锚定最靠前的真名·双向覆盖。
+  var _removeOfficeVerbs = '免去|免官|免职|罢免|革去|革职|革任|撤去|撤职|去职|停职|削职|削籍|夺职|夺官|开缺|勒令致仕|勒致仕|褫职|褫夺|罢黜|黜落|罢官|贬黜|贬谪|谪戍|着革|着免|查办|议处|勘问|圈禁|黜|谪';
+  var _imprisonRe = (typeof _TM_IMPRISON_RE !== 'undefined' && _TM_IMPRISON_RE) ||
+    (typeof window !== 'undefined' && window && window._TM_IMPRISON_RE) ||
+    (typeof global !== 'undefined' && global && global._TM_IMPRISON_RE) || null;
+  var _crimeVerbSrc = _imprisonRe
+    ? ('(?:' + _imprisonRe.source + ')|(?:' + _removeOfficeVerbs + ')')
+    : ('(?:' + _removeOfficeVerbs + ')');
+  var _crimeVerbRx = new RegExp(_crimeVerbSrc, 'g');
   var _dismissSet = {};
-  dismissPatterns.forEach(function(pat) {
-    var m;
-    while ((m = pat.exec(text)) !== null) {
-      var rawName = m[1].replace(/[，。、的之]/g, '');
-      var char = rawName;
-      if (knownChars.length) {
-        for (var i=0; i<knownChars.length; i++) {
-          if (rawName.indexOf(knownChars[i]) >= 0) { char = knownMap[knownChars[i]]; break; }
-        }
+  var _DISMISS_GAP = 10;   // 动词末→人名首的最大字距(容"着锦衣卫拿问"等处置中介·同句内)
+  function _pushDismissal(charMain) {
+    if (!charMain || charMain.length < 2 || _dismissSet[charMain]) return;
+    // 必须经已知名录解析出主名才算数(防"拿问/籍下"等垃圾串)——knownMap 派生自 GM.chars·等价 findCharByName 命中
+    if (typeof findCharByName === 'function' && !findCharByName(charMain)) return;
+    _dismissSet[charMain] = true;
+    actions.dismissals.push({ character: charMain, position: '' });
+  }
+  // 局部窗口内锚定已知名:扫最靠前命中(同位取更长名·knownChars 已按长度降序)→返回主名。
+  //   双向 salvage 天然覆盖:raw⊇真名 与 raw⊂真名(截断)都归结为"在窗口串里 indexOf 已知名"·无方向偏见。
+  function _anchorKnownName(win) {
+    if (!win || !knownChars.length) return null;
+    var bestName = null, bestIdx = Infinity, bestLen = 0;
+    for (var i = 0; i < knownChars.length; i++) {
+      var idx = win.indexOf(knownChars[i]);
+      if (idx < 0) continue;
+      if (idx < bestIdx || (idx === bestIdx && knownChars[i].length > bestLen)) {
+        bestIdx = idx; bestName = knownChars[i]; bestLen = knownChars[i].length;
       }
-      if (char.length < 2 || _dismissSet[char]) continue;
-      _dismissSet[char] = true;
-      actions.dismissals.push({ character: char, position: m[2] ? m[2].replace(/[，。、]/g, '') : '' });
     }
-  });
+    return bestName ? { main: knownMap[bestName], idx: bestIdx } : null;
+  }
+  // Pass A·动词在前:命中治罪/去官动词→其后【同句片段】窗口内锚定已知名(跳过处置中介词/介词·不跨标点)
+  var _cm;
+  _crimeVerbRx.lastIndex = 0;
+  while ((_cm = _crimeVerbRx.exec(text)) !== null) {
+    if (_cm.index === _crimeVerbRx.lastIndex) _crimeVerbRx.lastIndex++;   // 零宽保护
+    var _vEnd = _cm.index + _cm[0].length;
+    // 只在本句片段(至下一标点)里找名·免跨子句错抓("缉拿归案，某人奏报"不误判)
+    var _seg = text.slice(_vEnd, _vEnd + _DISMISS_GAP + 6).split(/[，。、；！？：]/)[0];
+    var _hitA = _anchorKnownName(_seg);
+    if (_hitA && _hitA.idx <= _DISMISS_GAP) _pushDismissal(_hitA.main);
+  }
+  // Pass B·人名在前:已知名后紧跟(容少量虚词)治罪/去官动词("陈奇瑜革职"/"陈奇瑜下诏狱")
+  if (knownRx) {
+    // 虚词/处置前缀:含 下|入|系|收 令"某人下诏狱"(下+诏狱)成立·但仅当其后紧跟真治罪关键词才匹配·无假阳性
+    var _tailRx = new RegExp('^(?:[的之，、]|奉旨|奉诏|着即|着|即|旋|遂|竟|终|下|入|系|收){0,3}(?:' + _crimeVerbSrc + ')');
+    var _nm;
+    knownRx.lastIndex = 0;
+    while ((_nm = knownRx.exec(text)) !== null) {
+      if (_nm.index === knownRx.lastIndex) knownRx.lastIndex++;
+      var _afterB = text.slice(_nm.index + _nm[0].length, _nm.index + _nm[0].length + 10);
+      if (_tailRx.test(_afterB)) _pushDismissal(knownMap[_nm[0]] || _nm[0]);
+    }
+  }
   if (actions.appointments.length && actions.dismissals.length) {
     var _appointedNames = {};
     actions.appointments.forEach(function(a){ if (a && a.character) _appointedNames[a.character] = true; });
