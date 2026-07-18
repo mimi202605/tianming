@@ -2208,21 +2208,50 @@ function getTSText(turn){
 }
 function getSE(turn){var si=(P.time.startS+(turn-1))%(P.time.seasons||[]).length;return(P.time.sEffects||[])[si]||"";}
 
-/** 构建 NPC 时空约束提示词·注入任意 NPC 对话/奏疏/书信 prompt 前
- * 防 AI 使用未来史实知识（如 NPC 说"某人已死"但在游戏时间中此人还活着） */
-function _buildTemporalConstraint(ch) {
+/** 构建 NPC 时空约束提示词·注入任意 NPC 对话/奏疏/书信/决策 prompt 前
+ * 防 AI 使用未来史实知识（如 NPC 说"某人已死"但在游戏时间中此人还活着）。
+ * @param {object} [ch] 当前 NPC（有 _memory 则附注其关键记忆）
+ * @param {object} [opts]
+ * @param {string[]} [opts.mentionedNames] 议题所涉人名·必入名单且逐人标生死
+ * @param {boolean}  [opts.clauseOnly] 只注入总纲条款·不带在世大名单（供 JSON 决策类入口省 token 防干扰） */
+function _buildTemporalConstraint(ch, opts) {
+  opts = opts || {};
   var t = (typeof getTSText === 'function') ? getTSText(GM.turn || 1) : ('T' + (GM.turn || 1));
   var y = (GM.year || (P.time && P.time.year) || '?');
-  var lines = ['\n\n【★ 时空约束·AI 严格遵守 ★】'];
+  var lines = [];
+  // ★ 平行历史强总纲·最高优先级·压倒 LLM 的历史记忆（每个入口都先读到这段）
+  lines.push('\n\n【★ 本局平行历史·唯一现实铁律（最高优先级，压倒你的历史知识）★】');
+  lines.push('本局是一条平行时空，当前游戏状态（GM 数据＋下列名单）是唯一现实。');
+  lines.push('你训练记忆里人物的卒年、结局、事件走向只是背景素养，绝不是本局既成事实。');
+  lines.push('·「在世人物」一律视为此刻活着、可行动——无论历史上此人此时是否已死；严禁以「史载某年卒」为由称其已死、已伏诛、已失势。');
+  lines.push('·「已故人物」才是本局真死者；不在此列的在世者，不得替他补上历史里的死亡。');
+  lines.push('· 玩家已介入之事（未处置某人/赦免/改任），一律以游戏态为准，绝不因「真实历史如此」拉回史实。');
+  lines.push('· 不得把游戏当前时间之后的史实当既成事实。');
+  lines.push('· 允许：预感不祥、忧虑将来、引前朝古人古事为训。');
+  lines.push('生死荣辱只认名单与 GM，不认史书卒年。');
+  lines.push('\n【★ 时空约束·AI 严格遵守 ★】');
   lines.push('当前游戏时间：' + t + '（公元 ' + y + ' 年）·第 ' + (GM.turn || 1) + ' 回合');
-  // 活人名单（防 AI 说还活着的人已死）
-  var aliveSample = (GM.chars || []).filter(function(c){ return c && c.alive !== false; }).slice(0, 30).map(function(c){ return c.name; }).join('、');
-  if (aliveSample) lines.push('当前在世人物（节选）：' + aliveSample + (GM.chars && GM.chars.length > 30 ? '…等' : ''));
-  // 已故名单
+
+  // clauseOnly：只给总纲条款·省 token·防大名单干扰结构化 JSON 输出
+  if (opts.clauseOnly) {
+    _tcAppendMentioned(lines, opts.mentionedNames);   // 即便省名单·议题所涉人仍逐人标生死（少量·不干扰）
+    lines.push('★ 绝对禁止：说在世人物已死·或说已故人物仍活·生死以 GM 数据为准·非历史上的卒年。');
+    lines.push('★ 允许：隐约预感/占卜不祥/担忧未来/引前朝/古事为训。');
+    return lines.join('\n');
+  }
+
+  // 在世名单·按重要度排序后取前 30（有官职/高品级/重要度高/历史名臣/忠野极端者优先·而非数组序·防要人被采样漏掉被 AI 当死）
+  var allAlive = (GM.chars || []).filter(function(c){ return c && c.alive !== false && !c.dead; });
+  var ranked = allAlive.slice().sort(function(a, b){ return _tcImportanceScore(b) - _tcImportanceScore(a); });
+  var aliveSample = ranked.slice(0, 30).map(function(c){ return c.name; }).join('、');
+  if (aliveSample) lines.push('当前在世人物（按要位择要·节选）：' + aliveSample + (allAlive.length > 30 ? '…等' : ''));
+  // 已故名单·带卒于回合
   var deadList = (GM.chars || []).filter(function(c){ return c && (c.alive === false || c.dead); }).slice(0, 12).map(function(c){
-    return c.name + (c.deathTurn ? '(T' + c.deathTurn + ')' : '');
+    return c.name + (c.deathTurn ? '（卒于第' + c.deathTurn + '回合）' : '');
   }).join('、');
-  if (deadList) lines.push('已故人物：' + deadList);
+  if (deadList) lines.push('已故人物（本局真死者·仅此列已死）：' + deadList);
+  // 议题所涉人名·必入名单且逐人标生死（凌驾史书卒年）
+  _tcAppendMentioned(lines, opts.mentionedNames);
   lines.push('★ 绝对禁止：');
   lines.push('  · 讨论游戏当前时间之后才发生的史实事件（如游戏在天启七年·不得提及崇祯朝将发生之事为既成事实）');
   lines.push('  · 说在世人物已死·或说已故人物仍活·生死以上述名单+GM 数据为准·非历史上的卒年');
@@ -2236,6 +2265,43 @@ function _buildTemporalConstraint(ch) {
     lines.push('本 NPC 关键记忆（时序）：\n' + memLines);
   }
   return lines.join('\n');
+}
+
+/** 时空约束·在世名单重要度打分（数字越大越靠前·让身居要职/关键人物优先入名单·而非数组序） */
+function _tcImportanceScore(c) {
+  if (!c) return -1;
+  var s = 0;
+  if (c.isPlayer) s += 500;                                              // 玩家角色必在
+  if (c.officialTitle) s += 120;                                         // 身居实职
+  if (typeof c.rank === 'number') s += Math.max(0, 10 - c.rank) * 10;    // 品级越高（数越小）越靠前
+  var imp = c.importance;
+  if (imp === '关键') s += 80;
+  else if (imp === '重要') s += 45;
+  else if (typeof imp === 'number') s += Math.min(Math.max(imp, 0), 100) * 0.8;
+  if (c.isHistorical) s += 30;                                           // 历史名臣
+  try { if (c.faction && typeof P !== 'undefined' && P.playerInfo && c.faction === P.playerInfo.factionName) s += 10; } catch (_) {}
+  if (typeof c.loyalty === 'number' && (c.loyalty < 25 || c.loyalty > 88)) s += 12;  // 忠诚极端·戏份重
+  if (typeof c.ambition === 'number' && c.ambition > 78) s += 12;                     // 野心极端
+  return s;
+}
+
+/** 时空约束·把议题所涉人名逐人纳入并标生死（凌驾史书卒年·防 AI 把在世涉议人说死） */
+function _tcAppendMentioned(lines, mentionedNames) {
+  if (!Array.isArray(mentionedNames) || mentionedNames.length === 0) return;
+  var seen = {}, out = [];
+  mentionedNames.forEach(function(nm) {
+    if (!nm || typeof nm !== 'string') return;
+    nm = nm.trim();
+    if (!nm || seen[nm]) return;
+    seen[nm] = 1;
+    var c = null;
+    if (typeof findCharByName === 'function') { try { c = findCharByName(nm); } catch (_) {} }
+    if (!c) c = (GM.chars || []).filter(function(x){ return x && x.name === nm; })[0] || null;
+    if (!c) { out.push(nm + '（不在人物册·如系历史人物·其生死仍以本局 GM 为准·勿据史书断其存殁）'); return; }
+    if (c.alive === false || c.dead) out.push(c.name + '（已故·卒于第' + (c.deathTurn || '?') + '回合）');
+    else out.push(c.name + '（在世·此刻活着可行动）');
+  });
+  if (out.length) lines.push('★ 本议题所涉人物·生死以此为准（凌驾史书卒年）：' + out.join('；'));
 }
 
 /** 构建长期行动/长期诏书/长期政策摘要·注入推演 sysP
