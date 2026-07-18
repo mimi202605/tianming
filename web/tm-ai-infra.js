@@ -2219,42 +2219,34 @@ function _buildTemporalConstraint(ch, opts) {
   var t = (typeof getTSText === 'function') ? getTSText(GM.turn || 1) : ('T' + (GM.turn || 1));
   var y = (GM.year || (P.time && P.time.year) || '?');
   var lines = [];
-  // ★ 平行历史强总纲·最高优先级·压倒 LLM 的历史记忆（每个入口都先读到这段）
-  lines.push('\n\n【★ 本局平行历史·唯一现实铁律（最高优先级，压倒你的历史知识）★】');
-  lines.push('本局是一条平行时空，当前游戏状态（GM 数据＋下列名单）是唯一现实。');
-  lines.push('你训练记忆里人物的卒年、结局、事件走向只是背景素养，绝不是本局既成事实。');
-  lines.push('·「在世人物」一律视为此刻活着、可行动——无论历史上此人此时是否已死；严禁以「史载某年卒」为由称其已死、已伏诛、已失势。');
-  lines.push('·「已故人物」才是本局真死者；不在此列的在世者，不得替他补上历史里的死亡。');
-  lines.push('· 玩家已介入之事（未处置某人/赦免/改任），一律以游戏态为准，绝不因「真实历史如此」拉回史实。');
-  lines.push('· 不得把游戏当前时间之后的史实当既成事实。');
-  lines.push('· 允许：预感不祥、忧虑将来、引前朝古人古事为训。');
-  lines.push('生死荣辱只认名单与 GM，不认史书卒年。');
+  _tcPreamble(lines, opts.clauseOnly ? 'clause' : 'full');
   lines.push('\n【★ 时空约束·AI 严格遵守 ★】');
   lines.push('当前游戏时间：' + t + '（公元 ' + y + ' 年）·第 ' + (GM.turn || 1) + ' 回合');
 
-  // clauseOnly：只给总纲条款·省 token·防大名单干扰结构化 JSON 输出
+  // clauseOnly：只给总纲条款·省 token·防大名单干扰结构化 JSON 输出（文案自洽·不引用「下列名单」）
   if (opts.clauseOnly) {
-    _tcAppendMentioned(lines, opts.mentionedNames);   // 即便省名单·议题所涉人仍逐人标生死（少量·不干扰）
-    lines.push('★ 绝对禁止：说在世人物已死·或说已故人物仍活·生死以 GM 数据为准·非历史上的卒年。');
+    _tcAppendMentioned(lines, opts.mentionedNames);   // 议题所涉人仍逐人标生死（少量·不干扰）
+    lines.push('★ 绝对禁止：说在世人物已死·或说已故人物仍活·生死一律以本 prompt 游戏态与 GM 数据为准·非历史上的卒年。');
     lines.push('★ 允许：隐约预感/占卜不祥/担忧未来/引前朝/古事为训。');
     return lines.join('\n');
   }
 
-  // 在世名单·按重要度排序后取前 30（有官职/高品级/重要度高/历史名臣/忠野极端者优先·而非数组序·防要人被采样漏掉被 AI 当死）
+  // 在世名单·按重要度排序后取前 30（真实字段打分：官职关键词分层＋本朝在职＋rankLevel 兜底·而非数组序·防要人被采样漏掉被 AI 当死）
   var allAlive = (GM.chars || []).filter(function(c){ return c && c.alive !== false && !c.dead; });
   var ranked = allAlive.slice().sort(function(a, b){ return _tcImportanceScore(b) - _tcImportanceScore(a); });
   var aliveSample = ranked.slice(0, 30).map(function(c){ return c.name; }).join('、');
-  if (aliveSample) lines.push('当前在世人物（按要位择要·节选）：' + aliveSample + (allAlive.length > 30 ? '…等' : ''));
-  // 已故名单·带卒于回合
+  if (aliveSample) lines.push('当前在世人物（按要位择要·节选，非全名单）：' + aliveSample + (allAlive.length > 30 ? '…等' : ''));
+  // 已故名单·带卒于回合（截取部分·全部生死以 GM 为准）
   var deadList = (GM.chars || []).filter(function(c){ return c && (c.alive === false || c.dead); }).slice(0, 12).map(function(c){
-    return c.name + (c.deathTurn ? '（卒于第' + c.deathTurn + '回合）' : '');
+    var dt = (c.deathTurn != null) ? c.deathTurn : c._deathTurn;
+    return c.name + (dt != null ? '（卒于第' + dt + '回合）' : '');
   }).join('、');
-  if (deadList) lines.push('已故人物（本局真死者·仅此列已死）：' + deadList);
+  if (deadList) lines.push('以下为部分已故人物（本局全部生死以 GM 为准）：' + deadList);
   // 议题所涉人名·必入名单且逐人标生死（凌驾史书卒年）
   _tcAppendMentioned(lines, opts.mentionedNames);
   lines.push('★ 绝对禁止：');
   lines.push('  · 讨论游戏当前时间之后才发生的史实事件（如游戏在天启七年·不得提及崇祯朝将发生之事为既成事实）');
-  lines.push('  · 说在世人物已死·或说已故人物仍活·生死以上述名单+GM 数据为准·非历史上的卒年');
+  lines.push('  · 说在世人物已死·或说已故人物仍活；不在在世名单者，生死以 GM 数据为准·不得凭史实臆断');
   lines.push('  · 以"历史上某年某人做了 X"作为此时此事的既成根据');
   lines.push('★ 允许：隐约预感/占卜不祥/担忧未来/引前朝/古事为训');
   // 若 ch 有 _memory·注入关键记忆
@@ -2267,21 +2259,72 @@ function _buildTemporalConstraint(ch, opts) {
   return lines.join('\n');
 }
 
-/** 时空约束·在世名单重要度打分（数字越大越靠前·让身居要职/关键人物优先入名单·而非数组序） */
+/** 时空约束·平行历史强总纲（mode='full' 带名单指涉；'clause' 无名单·文案自洽只认 GM 游戏态） */
+function _tcPreamble(lines, mode) {
+  var clause = (mode === 'clause');
+  lines.push('\n\n【★ 本局平行历史·唯一现实铁律（最高优先级，压倒你的历史知识）★】');
+  lines.push('本局是一条平行时空，当前游戏状态（' + (clause ? '本 prompt 提供的游戏态与 GM 数据' : 'GM 数据＋下列名单') + '）是唯一现实。');
+  lines.push('你训练记忆里人物的卒年、结局、事件走向只是背景素养，绝不是本局既成事实。');
+  lines.push('·「在世人物」一律视为此刻活着、可行动——无论历史上此人此时是否已死；严禁以「史载某年卒」为由称其已死、已伏诛、已失势。');
+  lines.push('· 不在' + (clause ? '本 prompt' : '在世名单') + '者，生死一律以 GM 游戏态为准，不得凭史实臆断某人已死。');
+  lines.push('·「已故人物」名单为本局已确认的死者（可能只列一部分）；未列入者，不得替他补上历史里的死亡。');
+  lines.push('· 玩家已介入之事（未处置某人/赦免/改任），一律以游戏态为准，绝不因「真实历史如此」拉回史实。');
+  lines.push('· 不得把游戏当前时间之后的史实当既成事实。');
+  lines.push('· 允许：预感不祥、忧虑将来、引前朝古人古事为训。');
+  lines.push('生死荣辱' + (clause ? '只认 GM 游戏态' : '只认名单与 GM') + '，不认史书卒年。');
+}
+
+/** 时空约束·官职关键词分层（跨朝代通用官职通用词·扩自引擎 _cyFallbackRankByTitle·数字越大越显要） */
+var _TC_OFFICE_TIERS = [
+  { w: 300, re: /(首辅|次辅|辅臣|大学士|内阁|宰相|丞相|相国|中书令|尚书令|仆射|平章|参知政事|枢密|太师|太傅|太保|太尉|司徒|司空)/ },
+  { w: 250, re: /(尚书|侍郎|都御史|御史大夫|总督|督师|经略|巡抚|布政使|九卿|太常|太仆|光禄|鸿胪|大理寺|宗正|詹事|祭酒|总兵|都督|都指挥|节度使|观察使|安抚使|经略使)/ },
+  { w: 250, re: /(司礼|秉笔|掌印|东厂|西厂|内厂|镇守太监|提督.*太监|内相)/ },
+  { w: 200, re: /(皇帝|天子|太子|亲王|郡王|世子|可汗|大汗|单于|国公|郡公|驸马)/ },
+  { w: 130, re: /(参将|副将|游击|知府|同知|按察使|通判|佥事|都司|卫指挥|转运使|刺史|太守)/ },
+  { w: 90,  re: /(御史|给事中|郎中|员外|主事|翰林|侍读|侍讲|编修|检讨|中书|舍人|博士|监生)/ },
+  { w: 45,  re: /(知州|知县|县令|县丞|主簿|典史|教谕|训导|巡检)/ }
+];
+/** 官职文本·归一空/无（officialTitle 与 title 合并·'无/白身/未仕/布衣/平民' 视为无官） */
+function _tcTitleText(c) {
+  var raw = ((c && c.officialTitle != null) ? String(c.officialTitle) : '') + ' ' + ((c && c.title != null) ? String(c.title) : '');
+  raw = raw.trim();
+  if (raw === '无' || raw === '白身' || raw === '未仕' || raw === '布衣' || raw === '平民') return '';
+  return raw;
+}
+function _tcOfficeTier(title) {
+  if (!title) return 0;
+  for (var i = 0; i < _TC_OFFICE_TIERS.length; i++) { if (_TC_OFFICE_TIERS[i].re.test(title)) return _TC_OFFICE_TIERS[i].w; }
+  return 0;
+}
+/** 是否本朝（faction === 玩家 faction） */
+function _tcIsOwnCourt(c) {
+  try {
+    var pf = (typeof P !== 'undefined' && P.playerInfo && P.playerInfo.factionName) || '';
+    return !!(pf && c && c.faction && c.faction === pf);
+  } catch (_) { return false; }
+}
+/** 时空约束·在世名单重要度打分（真实字段：官职关键词分层为主·本朝在职大幅优先·外邦君主降权不挤本朝·rankLevel 仅兜底 keyword-less 者·而非虚构 rank 字段） */
 function _tcImportanceScore(c) {
   if (!c) return -1;
+  if (c.isPlayer) return 100000;                    // 玩家角色必首
   var s = 0;
-  if (c.isPlayer) s += 500;                                              // 玩家角色必在
-  if (c.officialTitle) s += 120;                                         // 身居实职
-  if (typeof c.rank === 'number') s += Math.max(0, 10 - c.rank) * 10;    // 品级越高（数越小）越靠前
+  var title = _tcTitleText(c);
+  var tier = _tcOfficeTier(title);
+  var hasOffice = tier > 0 || (title && title.length > 0);
+  var own = _tcIsOwnCourt(c);
+  s += tier;
+  if (tier === 0) {                                 // 无可识别官职关键词→退用真实 rankLevel 兜底（品越高越靠前·脏 18/缺省=0·仅救 keyword-less 的清品级者·不动已分层者）
+    var rl = (typeof c.rankLevel === 'number' && c.rankLevel >= 1 && c.rankLevel <= 18) ? c.rankLevel : 18;
+    s += (18 - rl) * 6;
+  }
+  if (own) { s += 220; if (hasOffice) s += 80; }    // 本朝显著优先·在职再加（本朝在职权重远高于 isHistorical）
+  else { s -= 260; }                                // 外邦大幅降权·不得挤掉本朝重臣
+  if (c.isHistorical) s += own ? 20 : 5;
   var imp = c.importance;
-  if (imp === '关键') s += 80;
-  else if (imp === '重要') s += 45;
-  else if (typeof imp === 'number') s += Math.min(Math.max(imp, 0), 100) * 0.8;
-  if (c.isHistorical) s += 30;                                           // 历史名臣
-  try { if (c.faction && typeof P !== 'undefined' && P.playerInfo && c.faction === P.playerInfo.factionName) s += 10; } catch (_) {}
-  if (typeof c.loyalty === 'number' && (c.loyalty < 25 || c.loyalty > 88)) s += 12;  // 忠诚极端·戏份重
-  if (typeof c.ambition === 'number' && c.ambition > 78) s += 12;                     // 野心极端
+  if (imp === '关键') s += 30; else if (imp === '重要') s += 15;
+  else if (typeof imp === 'number') s += Math.min(Math.max(imp, 0), 100) * 0.3;   // 'regional' 等异构值不计
+  if (typeof c.loyalty === 'number' && (c.loyalty < 20 || c.loyalty > 90)) s += 10;
+  if (typeof c.ambition === 'number' && c.ambition > 80) s += 8;
   return s;
 }
 
@@ -2298,10 +2341,31 @@ function _tcAppendMentioned(lines, mentionedNames) {
     if (typeof findCharByName === 'function') { try { c = findCharByName(nm); } catch (_) {} }
     if (!c) c = (GM.chars || []).filter(function(x){ return x && x.name === nm; })[0] || null;
     if (!c) { out.push(nm + '（不在人物册·如系历史人物·其生死仍以本局 GM 为准·勿据史书断其存殁）'); return; }
-    if (c.alive === false || c.dead) out.push(c.name + '（已故·卒于第' + (c.deathTurn || '?') + '回合）');
+    var dt = (c.deathTurn != null) ? c.deathTurn : c._deathTurn;
+    if (c.alive === false || c.dead) out.push(c.name + '（已故·卒于第' + (dt != null ? dt : '?') + '回合）');
     else out.push(c.name + '（在世·此刻活着可行动）');
   });
   if (out.length) lines.push('★ 本议题所涉人物·生死以此为准（凌驾史书卒年）：' + out.join('；'));
+}
+
+/** 时空约束·从议题/上下文文本里有界扫描 GM.chars 已知人名（indexOf 命中·去重·hit 上限 cap≈10），种子名（如发言人）恒保留·供四入口作 mentionedNames */
+function _tcScanMentionedNames(text, seedNames, cap) {
+  cap = (typeof cap === 'number' && cap > 0) ? cap : 10;
+  var out = [], seen = {};
+  function add(nm) { if (!nm || typeof nm !== 'string') return; nm = nm.trim(); if (!nm || seen[nm]) return; seen[nm] = 1; out.push(nm); }
+  (seedNames || []).forEach(add);                    // 发言人等种子先入·恒保留
+  var t = (text == null) ? '' : String(text);
+  if (t) {
+    var chars = (typeof GM !== 'undefined' && GM.chars) || [];
+    var hits = 0;
+    for (var i = 0; i < chars.length; i++) {
+      if (hits >= cap) break;
+      var c = chars[i];
+      if (!c || !c.name || c.name.length < 2 || seen[c.name]) continue;
+      if (t.indexOf(c.name) >= 0) { add(c.name); hits++; }   // 至少 2 字·防单字误命中
+    }
+  }
+  return out;
 }
 
 /** 构建长期行动/长期诏书/长期政策摘要·注入推演 sysP
