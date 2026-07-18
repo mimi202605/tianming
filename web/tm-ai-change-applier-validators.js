@@ -22,9 +22,77 @@
   //  解决: AI narrative 提『某某下狱/赐死/抄家/流放』但不写 personnel_changes·数据不变
   //  做法: 扫所有 narrative 字段·用动词关键字 + 人名 regex 抓·与结构化数据对比·直接补调 onDismissal
   // ═══════════════════════════════════════════════════════════════════
+
+  // ── 刀9·无源史实幻觉死亡反向闸·源头判据(2026-07-19) ───────────────────────────
+  //  背景(owner 亲报平行历史存档污染)：裸自戕/裸伏诛/纯自然死是 AI「按真实历史幻觉」的高发形态——
+  //  本局玩家没杀魏忠贤·AI 却按史实在自由叙事写「魏忠贤伏诛/薨逝」·旧兜底把幻觉当真落库成永久死亡。
+  //  判据：narrative 死亡是否有「本回合可追溯的源头」。★宽判(宁可判据宽少拦·别把合法处决拦了)：任一信号即有源。
+  //    有源 → 照旧补录(现行为零变化)；无任何源头 → 疑幻觉·不落库·转弱自查纸条留痕。
+  //  仅对 deathKind==='bare'(裸自戕 reI / 纯自然死 reN-plain)生效；主动致死/暴力殉难(deathKind==='active')不经此判据。
+  // 最长实体匹配：text 是否「真提及」nm——先按在册全名长度降序占位消解·nm 命中区间若被更长在册名覆盖则不算·
+  //   防人名裸子串误命中(如玩家诏令「起复王安石」不该算作对「王安」的处决意图)。
+  function _textMentionsName(text, nm, allNames) {
+    if (!nm) return false;
+    var s = String(text == null ? '' : text);
+    if (s.indexOf(nm) < 0) return false;
+    // 只需消解「比 nm 更长且含 nm 为子串」的在册名(其余名不影响判定)·长者优先
+    var longer = (allNames || []).filter(function(n){ return n && n.length > nm.length && n.indexOf(nm) >= 0; })
+                                 .sort(function(a, b){ return b.length - a.length; });
+    for (var i = 0; i < longer.length; i++) {
+      var L = longer[i], idx;
+      while ((idx = s.indexOf(L)) >= 0) { s = s.slice(0, idx) + ' '.repeat(L.length) + s.slice(idx + L.length); }
+    }
+    return s.indexOf(nm) >= 0;
+  }
+
+  function _narrativeDeathSourced(G, aiOutput, ch) {
+    if (!ch || !ch.name) return true;   // 无实体信息·不拦(实体存在性另由下游闸把)
+    var nm = ch.name;
+    // ① 玩家角色：死亡恒经玩家之死裁决器(合法继统/终局门自处理)·绝不拦(如城破崇祯自缢)
+    if (ch.isPlayer === true) return true;
+    // ② 已在司法/危难态(下狱/流放/在逃/抄家)：死亡有明确前置·有源
+    if (ch._imprisoned || ch._exiled || ch._fled || ch._confiscated) return true;
+    if (!aiOutput) aiOutput = {};
+    // ③ AI 本回合在任一结构化字段点名操纵该人(死亡意图/人事/任免/NPC 行动)：非凭空叙事·有源。
+    //    character_deaths：主链 SC1 stage 现已随主叙事同传标准键(见 tm-endturn-apply-stages)·主链结构化死者进 handled/识源正常。
+    function _named(arr, keys) {
+      if (!Array.isArray(arr)) return false;
+      for (var i = 0; i < arr.length; i++) {
+        var x = arr[i]; if (!x) continue;
+        for (var k = 0; k < keys.length; k++) { if (x[keys[k]] === nm) return true; }
+      }
+      return false;
+    }
+    if (_named(aiOutput.character_deaths, ['name'])) return true;
+    if (_named(aiOutput.personnel_changes, ['name'])) return true;
+    if (_named(aiOutput.char_updates, ['name'])) return true;
+    if (_named(aiOutput.office_assignments, ['name'])) return true;
+    if (_named(aiOutput.npc_actions, ['name', 'actor', 'target'])) return true;
+    // ④ 玩家诏令/裁决提及该人：玩家意志有源(最长实体匹配·防「起复王安石」误命中「王安」)
+    var allNames = (G && Array.isArray(G.chars)) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
+    function _dirHit(text) { return _textMentionsName(text, nm, allNames); }
+    // 问天持久规则库(rule/correction·content)
+    var dirs = (G && Array.isArray(G._playerDirectives)) ? G._playerDirectives : [];
+    for (var d = 0; d < dirs.length; d++) { if (dirs[d] && _dirHit(dirs[d].content)) return true; }
+    // 本回合已执行并移除的一次性纠正指令：闸前被 _applyDirectiveCompliance 删除·其文本快照存于此暂存(见 reconcile 侧)
+    var appliedDirs = (G && Array.isArray(G._directivesAppliedThisTurn)) ? G._directivesAppliedThisTurn : [];
+    for (var a = 0; a < appliedDirs.length; a++) { if (appliedDirs[a] && _dirHit(appliedDirs[a].content)) return true; }
+    // 近回合诏书/行止(agent 模式·真实 schema={turn,edicts:[字符串..],xinglu}·兼容 content/text/note)
+    var recent = (G && Array.isArray(G._agentRecentDirectives)) ? G._agentRecentDirectives : [];
+    for (var r = 0; r < recent.length; r++) {
+      var rd = recent[r]; if (!rd) continue;
+      if (Array.isArray(rd.edicts)) { for (var e = 0; e < rd.edicts.length; e++) { if (_dirHit(rd.edicts[e])) return true; } }
+      if (_dirHit(rd.xinglu) || _dirHit(rd.content) || _dirHit(rd.text) || _dirHit(rd.note)) return true;
+    }
+    return false;
+  }
+
   function _validatePersonnelConsistency(G, aiOutput, applied) {
     if (!G || !aiOutput) return;
     var narrativeText = '';
+    // ★主叙事字段：SC1 主链 stage 把主时政叙事传在 narrative 键(见 tm-endturn-apply-stages:84)·与其他 validator 用的
+    //   _getNarrativeText 对齐(它已扫 narrative)·此前人事 validator 漏扫 narrative→主链裸死亡扫不到(Codex探针:narrative键→0/0)。
+    if (aiOutput.narrative) narrativeText += String(aiOutput.narrative) + '\n';
     if (aiOutput.shilu_text) narrativeText += String(aiOutput.shilu_text) + '\n';
     if (aiOutput.shizhengji) narrativeText += String(aiOutput.shizhengji) + '\n';
     // zhengwen(邸报/政闻)也是真实 AI 叙事输出字段·此前漏扫→AI 只在 zhengwen 里写"某巡抚被杀"
@@ -103,12 +171,14 @@
                           '就戮','授首','自尽','自缢','自刎','自裁','自杀','磔'];
       // 自然/含糊死亡词·名前即受事(非处决非自戕)·治巡抚死于民变常被叙作"遇害/病故/城破身死"
       //   而非处决词→旧扫描器全漏(玩家报"死人下月还在任")。只收多字不歧义词·避开单字 卒/死/薨/殁。
-      var KILL_NATURAL = ['溘然长逝','城破身死','城陷而死','以身殉国','为国捐躯',
-                          '病故','病逝','病殁','病卒','病亡','亡故','暴毙','暴卒','暴亡','猝死','物故','身故',
-                          '殒命','毙命','殉国','殉难','殉城','殉职','罹难','遇害','遇难','遭难',
-                          '薨逝','溘逝','寿终','谢世','辞世','弃世','长逝'];
+      // ★刀9(2026-07-19)按「是否隐含本回合致死事件」二分(并集=原表·零漏词)：
+      //   VIOLENT=暴力/殉难/城破——文义自带本回合外部致死事件(战乱/民变/城陷)·视为有源·照旧补录；
+      //   PLAIN=纯病老/暴卒/薨逝——无本回合致因·是 AI「按真实历史幻觉」的高发形态(如「魏忠贤薨逝」)·须外部源头才落库。
+      var KILL_NATURAL_VIOLENT = ['城破身死','城陷而死','以身殉国','为国捐躯','殉国','殉难','殉城','殉职','罹难','遇害','遇难','遭难','殒命','毙命'];
+      var KILL_NATURAL_PLAIN  = ['溘然长逝','病故','病逝','病殁','病卒','病亡','亡故','暴毙','暴卒','暴亡','猝死','物故','身故','薨逝','溘逝','寿终','谢世','辞世','弃世','长逝'];
+      var KILL_NATURAL = KILL_NATURAL_VIOLENT.concat(KILL_NATURAL_PLAIN);   // 并集=原自然死表(供他处沿用·此处不再整体用)
       function alt(list){ return list.slice().sort(function(a,b){return b.length-a.length;}).join('|'); }
-      var transAlt = alt(KILL_TRANS), intransAlt = alt(KILL_INTRANS), natAlt = alt(KILL_NATURAL);
+      var transAlt = alt(KILL_TRANS), intransAlt = alt(KILL_INTRANS), natViolentAlt = alt(KILL_NATURAL_VIOLENT), natPlainAlt = alt(KILL_NATURAL_PLAIN);
       // 名与死亡词之间夹关系词→死的是亲属非本人(如"胡廷晏之子病故")·跳过防误杀
       var _relRe = /之|其|亲|眷|属|族|子|女|父|母|妻|夫|弟|兄|孙|侄|甥|婿|妾|嗣|叔|伯|舅|姑|姊|妹/;
       var NP = '[^。！？；;.!?，,、\\n]{0,6}';  // 同句内窗口·不跨标点
@@ -131,20 +201,23 @@
         var reV = new RegExp('(?:' + transAlt + ')(?:了|之|讫|于[^。！？；，、\\n]{0,4})?' + _victimRole + '\\s*' + e);
         // 自戕/受事名前: X自尽 / X伏诛
         var reI = new RegExp(e + '[^。！？；;，,、\\n]{0,4}(?:' + intransAlt + ')');
-        // 自然/含糊死亡·名前即受事(病故/薨逝/遇害/城破身死…)·捕窗口·夹关系词则跳过
-        var reN = new RegExp(e + '([^。！？；;，,、\\n]{0,4})(?:' + natAlt + ')');
-        var _vpref = '处决';
+        // 自然/含糊死亡·名前即受事(病故/薨逝/遇害/城破身死…)·捕窗口·夹关系词则跳过·拆暴力/纯自然两条
+        var reNv = new RegExp(e + '([^。！？；;，,、\\n]{0,4})(?:' + natViolentAlt + ')');
+        var reNp = new RegExp(e + '([^。！？；;，,、\\n]{0,4})(?:' + natPlainAlt + ')');
+        // deathKind: 'active'=主动致死/暴力殉难(隐含本回合致死事件·有源·照旧补录) · 'bare'=裸自戕/裸伏诛/纯自然死(疑史实幻觉·须刀9源头判据)
+        var _vpref = '处决', _deathKind = 'active';
         if ((m = reP.exec(narrativeText))) hit = m[0];
         else if ((m = reW.exec(narrativeText))) hit = m[0];
         else if ((m = reB.exec(narrativeText))) hit = m[0];
         else if ((m = reV.exec(narrativeText))) hit = m[0];
-        else if ((m = reI.exec(narrativeText))) hit = m[0];
-        else if ((m = reN.exec(narrativeText)) && !_relRe.test(m[1] || '')) { hit = m[0]; _vpref = '身故'; }
+        else if ((m = reI.exec(narrativeText))) { hit = m[0]; _deathKind = 'bare'; }   // 裸自戕/裸伏诛(伏诛/弃市/自缢/自尽)·历史命运回忆高发·刀9 须外部源
+        else if ((m = reNv.exec(narrativeText)) && !_relRe.test(m[1] || '')) { hit = m[0]; _vpref = '身故'; }   // 暴力殉难(遇害/殉城/城破身死)·隐含本回合致死事件·视为有源
+        else if ((m = reNp.exec(narrativeText)) && !_relRe.test(m[1] || '')) { hit = m[0]; _vpref = '身故'; _deathKind = 'bare'; }   // 纯自然死(病故/薨逝/寿终)·无本回合致因·刀9 须外部源
         if (!hit) return;
         var key = nm + '_execute';
         if (mentioned.find(function(x){return x.key===key;})) return;
-        // reason 带『处决』(处决/自戕)或『身故』(自然死)令 onDismissal 置 alive=false·原文附死因便追溯
-        mentioned.push({ key: key, name: nm, action: 'execute', verb: _vpref + '·据叙事「' + hit + '」', raw: hit });
+        // reason 带『处决』(处决/自戕)或『身故』(自然死)令 onDismissal 置 alive=false·原文附死因便追溯·deathKind 供刀9 源头判据
+        mentioned.push({ key: key, name: nm, action: 'execute', verb: _vpref + '·据叙事「' + hit + '」', raw: hit, deathKind: _deathKind });
       });
     })();
 
@@ -166,7 +239,8 @@
             u._retired !== undefined || u._fled !== undefined || u._confiscated !== undefined) handled[cu.name] = true;
       }
     });
-    // AI 已正经填结构化死亡的·由 applyCharacterDeaths 落地·此处不再从叙事重复补录
+    // AI 已正经填结构化死亡的·由 applyCharacterDeaths 落地·此处不再从叙事重复补录。
+    //   主链 SC1 stage 现已随主叙事同传标准 character_deaths 键·主链结构化死者进 handled 直接跳过·免错记无源+吐垃圾弱提示。
     (aiOutput.character_deaths || []).forEach(function(cd) {
       if (cd && cd.name) handled[cd.name] = true;
     });
@@ -208,6 +282,20 @@
       if (m.action !== 'execute' && ch.alive === false) { skipped.push({ name: ch.name, action: m.action, reason: 'already-dead', raw: m.raw }); return; }
       try {
         if (m.action === 'execute') {
+          // ── 刀9·无源史实幻觉死亡反向闸(2026-07-19) ─────────────────────────────
+          //  裸自戕/裸伏诛(reI)与纯自然死(reN-plain·病故/薨逝/寿终)是 AI「按真实历史幻觉」的高发形态。
+          //  若本回合无任何源头(玩家角色/司法态/结构化死亡意图/玩家诏令) → 判为孤立叙事幻觉·★不落库★·
+          //  改投既有弱自查纸条 GM._aiWeakWriteHints(下回合轻喂 AI·可忽略)+console 留痕·避免污染存档。
+          //  主动致死(被斩/把X砍/斩X/赐死X)与暴力殉难(遇害/殉城/城破身死)属 deathKind==='active'·不入本闸·零改动。
+          if (m.deathKind === 'bare' && !_narrativeDeathSourced(G, aiOutput, ch)) {
+            if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok·弱自查纸条 sink·与 reconcile 侧 _tmPushAIWeakHint 同构
+            G._aiWeakWriteHints.push({ label: '无源叙事死亡', reason: '孤立叙事死亡·本回合无死亡意图/玩家诏令/司法前置·疑 AI 史实幻觉', itemName: ch.name, source: 'personnel-validator-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+            if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+            try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源叙事死亡', itemName: ch.name, raw: m.raw }); } catch(_rhE) {}
+            skipped.push({ name: ch.name, action: m.action, reason: 'no-source-isolated-death', raw: m.raw });
+            console.warn('[PersonnelValidator] 无源孤立叙事死亡·不落库(转弱自查纸条留痕): ' + ch.name + ' ← 「' + m.raw + '」');
+            return;
+          }
           if (_routeDeathToPipeline(ch, m.verb)) {
             patched++;
             if (global.addEB) global.addEB('校验补录', '人事校验器·' + ch.name + '『' + m.verb + '』经死亡管线补录入库(原文: ' + m.raw + ')');

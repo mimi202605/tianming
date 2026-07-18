@@ -403,7 +403,16 @@
   global._applyTaxAuthorityGate = _applyTaxAuthorityGate;
 
   function _applyDirectiveCompliance(G, aiOutput) {
-    if (!G || !Array.isArray(G._playerDirectives) || G._playerDirectives.length === 0) return;
+    if (!G) return;
+    // 刀9·本回合已执行一次性纠正指令暂存：下方 filter 删除 _pendingRemovalAfterApply 指令·validator 本 pass 稍后读其文本判源。
+    //   ★turn 级重置(非每 pass 清)：同回合多 pass(sc1/问天/奏疏各调一次 applier)时·后续 pass 不得清掉先前 pass 快照·
+    //   否则「王安病故」在后续 pass 被误判无源。按 GM.turn 换回合才清·同 turn 保留并去重 append·重入结算安全。
+    var _curTurn = G.turn || 0;
+    if (!Array.isArray(G._directivesAppliedThisTurn) || G._directivesAppliedTurn !== _curTurn) {
+      G._directivesAppliedThisTurn = [];   // arch-ok
+      G._directivesAppliedTurn = _curTurn;   // arch-ok
+    }
+    if (!Array.isArray(G._playerDirectives) || G._playerDirectives.length === 0) return;
     var reports = aiOutput && Array.isArray(aiOutput.directive_compliance) ? aiOutput.directive_compliance : [];
     // 按 id 索引指令
     var idMap = {};
@@ -434,9 +443,18 @@
         d._lastCheckTurn = G.turn || 0;
       }
     });
-    // 合规处理完·清理本回合标记的一次性 directive（纠正类执行后移除）
+    // 合规处理完·清理本回合标记的一次性 directive（纠正类执行后移除）·删前把文本快照到本回合暂存(供刀9 源头判据·去重防重入双记)
     G._playerDirectives = G._playerDirectives.filter(function(d){
-      return !(d && d._pendingRemovalAfterApply);
+      if (d && d._pendingRemovalAfterApply) {
+        try {
+          var _dc = (d.content != null ? String(d.content) : '');
+          if (!G._directivesAppliedThisTurn.some(function(x){ return x && x.content === _dc; })) {
+            G._directivesAppliedThisTurn.push({ turn: _curTurn, content: _dc });   // arch-ok
+          }
+        } catch(_) {}
+        return false;
+      }
+      return true;
     });
   }
   global._applyDirectiveCompliance = _applyDirectiveCompliance;

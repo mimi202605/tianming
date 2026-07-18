@@ -28,3 +28,8 @@
 
 # 本文件历史契约为 CRLF；仍检查真正的行尾空格，但不把 CR 本身误报为 trailing whitespace。
 web/tm-endturn-prompt.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+
+# 刀9(2026-07-19)触及的历史 CRLF 文件：同 tm-endturn-prompt.js 契约·检查真行尾空格但不把 CR 误报为 trailing whitespace。
+web/tm-ai-change-applier-validators.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+web/tm-ai-change-applier-reconcile.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+web/tm-endturn-apply-stages.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
