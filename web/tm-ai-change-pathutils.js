@@ -4,7 +4,7 @@
  * tm-ai-change-pathutils.js — AI 推演变化·路径工具 + 编辑保护白名单 (拆自 tm-ai-change-applier.js·2026-05-21·Slice 1)
  *
  * 暴露·TM.AIChange.PathUtils·12 函数·
- *   resolvePath / applyPathSet / applyPathDelta / applyPathPush
+ *   resolvePath / applyPathSet / applyPathDelta / applyPathPush / applyPathMerge
  *   normalizeCoreVarPath / syncCoreVarSideEffects / deriveLabel
  *   findDivisionByNameOrId / findInTreeDeep
  *   recordCharChange / recordToTurnChanges
@@ -411,6 +411,12 @@
 
   function _applyPathDelta(obj, path, delta, reason) {
     path = _normalizeCoreVarPath(path);
+    if (_isPathBlocked(path)) return { ok: false, path: path, reason: 'blocked' };
+    // AI JSON 必须给真 number。旧逻辑把非数字目标当 0，并直接做 old + delta；
+    // delta="5" 时会把 40 写成字符串 "405"，且对文本字段也会凭空造数值。
+    if (typeof delta !== 'number' || !isFinite(delta)) {
+      return { ok: false, path: path, reason: 'delta must be a finite number' };
+    }
     var r = _resolvePath(obj, path);
     if (!r.parent) {
       console.warn('[ai-applier] path not found:', path);
@@ -426,7 +432,10 @@
       if (!loyDelta || !loyDelta.ok || loyDelta.blocked) return { ok: false, reason: loyDelta && loyDelta.reason || 'loyalty rejected' };
       return { ok: true, old: loyDelta.oldValue, new: loyDelta.newValue, delta: loyDelta.delta, reason: reason };
     }
-    var old = typeof r.value === 'number' ? r.value : 0;
+    if (typeof r.value !== 'number' || !isFinite(r.value)) {
+      return { ok: false, path: path, reason: 'delta target must be a finite number' };
+    }
+    var old = r.value;
     r.parent[r.key] = old + delta;
     _syncCoreVarSideEffects(path, r.parent[r.key], { op: 'delta', delta: delta, reason: reason });
     _recordToTurnChanges(path, old, r.parent[r.key], reason);
@@ -435,6 +444,9 @@
 
   function _applyPathSet(obj, path, value, reason) {
     path = _normalizeCoreVarPath(path);
+    if (_isPathBlocked(path)) return { ok: false, path: path, reason: 'blocked' };
+    var valueGate = _validateNestedJsonValue(path, value, 0);
+    if (!valueGate.ok) return { ok: false, path: path, reason: valueGate.reason };
     var pathKey = String(path || '').replace(/^GM\./, '');
     var r = _resolvePath(obj, path);
     if (!r.parent) {
@@ -473,6 +485,12 @@
 
   function _applyPathPush(obj, path, value) {
     var pathKey = String(path || '').replace(/^GM\./, '');
+    if (_isPathBlocked(path)) return { ok: false, path: path, reason: 'blocked' };
+    // collection push 的 payload 视作一个元素做敏感路径校验；armies 是例外，它会立即路由
+    // applyAIArmyChange 语义 sink（其中 commander 有严格活人校验），故保留 collection 根。
+    var valueBase = _normalizeCoreVarPath(path) + (pathKey === 'armies' ? '' : '.0');
+    var valueGate = _validateNestedJsonValue(valueBase, value, 0);
+    if (!valueGate.ok) return { ok: false, path: path, reason: valueGate.reason };
     if (pathKey === 'armies' && value && typeof value === 'object' && !Array.isArray(value)) {
       var change = Object.assign({}, value);
       if (!change.armyName && change.name) change.armyName = change.name;
@@ -500,6 +518,123 @@
     return { ok: true };
   }
 
+  function _isPlainObject(value) {
+    if (!value || Object.prototype.toString.call(value) !== '[object Object]') return false;
+    var proto = Object.getPrototypeOf(value);
+    // vm/iframe 跨 realm 的 Object.prototype 引用不同；仍只接受构造器名为 Object 的普通 JSON 对象。
+    return proto === null || !!(proto && Object.prototype.hasOwnProperty.call(proto, 'constructor') &&
+      typeof proto.constructor === 'function' && proto.constructor.name === 'Object');
+  }
+
+  function _validateMergePatch(basePath, patch, depth) {
+    if (!_isPlainObject(patch)) return { ok: false, reason: 'merge value must be a plain object' };
+    return _validateNestedJsonValue(basePath, patch, depth);
+  }
+
+  function _validateNestedJsonValue(basePath, value, depth) {
+    if (depth > 16) return { ok: false, reason: 'value too deep' };
+    if (value === null || typeof value === 'string' || typeof value === 'boolean') return { ok: true };
+    if (typeof value === 'number') return isFinite(value) ? { ok: true } : { ok: false, reason: 'non-finite number at ' + basePath };
+    if (Array.isArray(value)) {
+      for (var ai = 0; ai < value.length; ai++) {
+        var arrayGate = _validateNestedJsonValue(basePath + '.' + ai, value[ai], depth + 1);
+        if (!arrayGate.ok) return arrayGate;
+      }
+      return { ok: true };
+    }
+    if (!_isPlainObject(value)) return { ok: false, reason: 'non-JSON value at ' + basePath };
+    var keys = Object.keys(value);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      var childPath = basePath ? (basePath + '.' + key) : key;
+      if (_isPathBlocked(childPath)) return { ok: false, reason: 'value contains blocked path: ' + childPath };
+      var nested = _validateNestedJsonValue(childPath, value[key], depth + 1);
+      if (!nested.ok) return nested;
+    }
+    return { ok: true };
+  }
+
+  function _mergePlainObject(target, patch) {
+    Object.keys(patch).forEach(function(key) {
+      var value = patch[key];
+      if (_isPlainObject(value)) {
+        if (!_isPlainObject(target[key])) target[key] = {};
+        _mergePlainObject(target[key], value);
+      } else {
+        target[key] = value;
+      }
+    });
+    return target;
+  }
+
+  /**
+   * anyPathChanges.op="merge" 的明确语义：仅对普通对象做深 merge；数组/标量叶子替换，
+   * 目标不存在时创建普通对象。先完整校验 payload，再一次性落账，避免半写入与原型污染。
+   */
+  function _applyPathMerge(obj, path, patch, reason) {
+    path = _normalizeCoreVarPath(path);
+    if (_isPathBlocked(path)) return { ok: false, path: path, reason: 'blocked' };
+    var gate = _validateMergePatch(path, patch, 0);
+    if (!gate.ok) return { ok: false, path: path, reason: gate.reason };
+    var r = _resolvePath(obj, path);
+    if (!r.parent) {
+      var created = {};
+      _mergePlainObject(created, patch);
+      return _applyPathSet(obj, path, created, reason);
+    }
+    if (!_isPlainObject(r.value)) return { ok: false, path: path, reason: 'merge target must be a plain object' };
+    var old = {};
+    _mergePlainObject(old, r.value);
+    _mergePlainObject(r.value, patch);
+    _recordToTurnChanges(path, old, r.value, reason);
+    return { ok: true, path: path, old: old, new: r.value, reason: reason };
+  }
+
+  /**
+   * changes[] 的统一强类型 dispatcher。返回实际落地数，失败逐项写入 failed；
+   * applier 主文件仅负责聚合计数，避免再次膨胀为路径语义巨石。
+   */
+  function _applyDeclaredPathChanges(obj, changes, report, failed) {
+    var count = 0;
+    (Array.isArray(changes) ? changes : []).forEach(function(ch) {
+      if (!ch || typeof ch !== 'object' || typeof ch.path !== 'string' || !ch.path.trim()) {
+        failed.push({ change: ch, reason: 'invalid change/path' });
+        return;
+      }
+      if (_isPathBlocked(ch.path)) { failed.push({ path: ch.path, reason: 'blocked' }); return; }
+      var result;
+      var hasValue = Object.prototype.hasOwnProperty.call(ch, 'value');
+      var hasDelta = Object.prototype.hasOwnProperty.call(ch, 'delta');
+      var op = ch.op == null || ch.op === '' ? (hasValue ? 'set' : (hasDelta ? 'delta' : '')) : String(ch.op).toLowerCase();
+      if (op === 'push') {
+        if (!hasValue) { failed.push({ path: ch.path, reason: 'push requires value' }); return; }
+        result = _applyPathPush(obj, ch.path, ch.value);
+      } else if (op === 'set') {
+        if (!hasValue) { failed.push({ path: ch.path, reason: 'set requires value' }); return; }
+        result = _applyPathSet(obj, ch.path, ch.value, ch.reason);
+      } else if (op === 'delta') {
+        if (typeof ch.delta !== 'number' || !isFinite(ch.delta)) { failed.push({ path: ch.path, reason: 'delta must be a finite number' }); return; }
+        result = _applyPathDelta(obj, ch.path, ch.delta, ch.reason);
+      } else if (op === 'merge') {
+        if (!hasValue) { failed.push({ path: ch.path, reason: 'merge requires object value' }); return; }
+        result = _applyPathMerge(obj, ch.path, ch.value, ch.reason);
+      } else {
+        failed.push({ path: ch.path, reason: 'unsupported op: ' + (op || '(missing)') });
+        return;
+      }
+      if (result && result.ok) {
+        count++;
+        if (Array.isArray(report)) report.push({
+          type: 'change', path: result.path || ch.path, old: result.old, new: result.new,
+          delta: ch.delta, reason: ch.reason, turn: obj.turn || 0
+        });
+      } else {
+        failed.push({ path: ch.path, reason: result && result.reason || 'path apply failed' });
+      }
+    });
+    return count;
+  }
+
   // ═══════════════════════════════════════════════════════════════════
   //  白名单：AI 不能改的 path
   // ═══════════════════════════════════════════════════════════════════
@@ -508,7 +643,7 @@
   //  AI 编辑路径保护（v2·最小禁区·其余全开放）
   // ═══════════════════════════════════════════════════════════════════
   // 策略：AI 至高权力·能改一切游戏内容·但有几类硬禁区：
-  //   1. P.ai.*          ——玩家 API 配置·绝不允许
+  //   1. P.*             ——P 是剧本模板/玩家配置，不是本回合运行态；绝不从 AI 任意路径写
   //   2. GM.saveName     ——存档名·防 AI 污染
   //   3. 时序关键字段    ——turn/year/month/day/sid·防 AI 错乱时间线
   //   4. P.conf.*        ——游戏模式等通用配置·防 AI 偷改
@@ -517,8 +652,7 @@
     /^turn$/, /^year$/, /^month$/, /^day$/, /^sid$/,
     /^saveName$/i,
     /^_[a-zA-Z]/,           // 下划线开头的内部字段
-    /^P\.ai(\.|$)/i,         // P.ai.*
-    /^P\.conf(\.|$)/i,       // P.conf.*
+    /^P(\.|$)/i,             // P.*（运行态真源应写 GM.*）
     /^GM\.saveName$/i,
     /^ai\.(key|url|model|temp|prompt|rules)/i,
     /_savedKeju|_savedCourtRecords|_savedWentianHistory/i
@@ -532,7 +666,26 @@
       var _norm = _normalizeCoreVarPath(String(path));
       if (_norm && probes.indexOf(_norm) < 0) probes.push(_norm);
     } catch (_e) { return true; }
-    return BLOCKED_PATHS.some(function(re) { return probes.some(function(p) { return re.test(p); }); });
+    if (BLOCKED_PATHS.some(function(re) { return probes.some(function(p) { return re.test(p); }); })) return true;
+
+    return probes.some(function(raw) {
+      var p = String(raw || '').replace(/\[(\d+)\]/g, '.$1').replace(/^GM\./i, '');
+      var segs = p.split('.').filter(Boolean);
+      // 任意层级内部字段与 JS 原型链键一律不可达。
+      if (segs.some(function(seg) { return /^_/.test(seg) || /^(?:__proto__|prototype|constructor)$/i.test(seg); })) return true;
+
+      // 死亡必须走 character_deaths/applyOneDeath；任职、首领、统帅必须走各自语义 sink。
+      if (segs.some(function(seg) { return /^(?:alive|dead|isDead|deceased|positionAtDeath|diedAt|death[a-zA-Z0-9_]*|_death[a-zA-Z0-9_]*)$/i.test(seg); })) return true;
+      if (/^chars\.[^.]+\.(?:officialTitle|officialTitles|concurrentTitle|concurrentTitles|position|post|office)(?:\.|$)/i.test(p)) return true;
+      if (/^(?:facs|factions)\.[^.]+\.(?:leader|leaderName|leader_name|ruler|newLeader)(?:\.|$)/i.test(p)) return true;
+      if (/^(?:facs|factions)\.[^.]+\.leadership\.(?:ruler|leader|newLeader)(?:\.|$)/i.test(p)) return true;
+      if (/^(?:facs|factions)\.[^.]+\.leaderInfo\.(?:name|leader|ruler)(?:\.|$)/i.test(p)) return true;
+      if (/^(?:parties|partyState)\.[^.]+\.(?:leader|head|leaderName|leader_name|ruler|newLeader|new_leader)(?:\.|$)/i.test(p)) return true;
+      if (/^armies\.[^.]+\.(?:commander|commanderName|commanderDisplayName|commander_name|general|generalName|leader|leaderName|commandingOfficer|chiefCommander|chiefGeneral|mainGeneral|newCommander|newGeneral)(?:\.|$)/i.test(p)) return true;
+      if (/^officeTree(?:\.|$).*\.(?:holder|actualHolders)(?:\.|$)/i.test(p)) return true;
+      if (/^(?:adminHierarchy|regionMap|provinceStats)(?:\.|$).*\.(?:governor|governorName|officialPosition)(?:\.|$)/i.test(p)) return true;
+      return false;
+    });
   }
 
   // ── Export ──
@@ -551,6 +704,10 @@
     applyPathDelta: _applyPathDelta,
     applyPathSet: _applyPathSet,
     applyPathPush: _applyPathPush,
+    applyPathMerge: _applyPathMerge,
+    applyDeclaredPathChanges: _applyDeclaredPathChanges,
+    isPlainObject: _isPlainObject,
+    validateNestedJsonValue: _validateNestedJsonValue,
     isPathBlocked: _isPathBlocked
   };
 

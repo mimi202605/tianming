@@ -33,6 +33,19 @@ function makeCtx() {
   ctx.GameEventBus = { emit(){}, on(){} };
   ctx.addEB = () => {};
   ctx.getTSText = () => '';
+  // 本 smoke 聚焦叙事受事识别，不复制死亡实现；提供最小语义 sink，锁定所有死亡均经
+  // applyOneDeath 路由（完整级联/玩家裁决由死亡管线专项 smoke 覆盖）。
+  ctx._deathSinkCalls = [];
+  ctx.applyOneDeath = (death) => {
+    const name = death && death.name;
+    ctx._deathSinkCalls.push(name);
+    const target = ((ctx.GM && ctx.GM.chars) || []).find(c => c && c.name === name);
+    if (!target || target.alive === false || target.dead === true) return { ok: false, reason: 'missing-or-dead' };
+    target.alive = false;
+    target.dead = true;
+    target.deathReason = String((death && (death.reason || death.cause)) || '');
+    return { ok: true };
+  };
   vm.createContext(ctx);
   ['tm-ai-change-pathutils.js', 'tm-ai-change-army.js', 'tm-ai-change-narrative.js', 'tm-ai-change-applier.js', 'tm-ai-change-applier-validators.js', 'tm-ai-change-applier-reconcile.js']
     .forEach(f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }));
@@ -51,15 +64,15 @@ function runCase(names, aiOutput) {
   try { ctx.AIChangeApplier.applyAITurnChanges(aiOutput || {}); }
   catch (e) { console.error('  ! applyAITurnChanges threw: ' + (e && e.message)); }
   const dead = ctx.GM.chars.filter(c => c.alive === false).map(c => c.name).sort();
-  return dead;
+  return { dead, routed: ctx._deathSinkCalls.slice().sort() };
 }
 function eq(a, b){ return JSON.stringify(a.slice().sort()) === JSON.stringify(b.slice().sort()); }
 function check(desc, names, narrative, expectDead, field) {
   const out = {}; out[field || 'shizhengji'] = narrative;
-  const dead = runCase(names, out);
-  const ok = eq(dead, expectDead);
-  if (ok) { passed++; console.log('  ✓ ' + desc + '  → 死[' + dead.join('、') + ']'); }
-  else { failed++; console.error('  ✗ ' + desc + '\n      期望死[' + expectDead.join('、') + '] 实际死[' + dead.join('、') + ']'); }
+  const result = runCase(names, out);
+  const ok = eq(result.dead, expectDead) && eq(result.routed, expectDead);
+  if (ok) { passed++; console.log('  ✓ ' + desc + '  → 死亡sink[' + result.dead.join('、') + ']'); }
+  else { failed++; console.error('  ✗ ' + desc + '\n      期望sink/死亡[' + expectDead.join('、') + '] 实际sink[' + result.routed.join('、') + '] 死亡[' + result.dead.join('、') + ']'); }
 }
 
 const CAST = ['孙传庭', '胡廷晏', '黄得功', '曹变蛟', '方正化', '魏忠贤'];
@@ -91,8 +104,7 @@ check('受命施事者: X被遣讨贼', CAST, '孙传庭被遣斩贼于潼关。
 console.log('===== 结构化死亡不重复补录 =====');
 (function(){
   // AI 已填 character_deaths·叙事又提及·验证 validator 不重复补调(handled 生效)
-  // 本 vm 未加载 apply-deaths 模块·故 alive 不会被 death-applier 置 false·
-  // 若 validator 仍误补录→胡廷晏会 alive=false·期望 handled 拦下→仍 true
+  // character_deaths 由外层 end-turn dispatcher 统一交给死亡管线；此处只锁 validator 不重复补录。
   const ctx = makeCtx();
   ctx.GM = { turn: 5, facs: [{ name: '明朝廷' }], officeTree: [], _turnReport: [], publicTreasury: {},
     guoku: { money: 100000 }, neitang: { money: 50000 },

@@ -178,13 +178,18 @@ function main() {
 
   // [C] pure-helper smoke (path utils + entity lookup directly via globals)
   // applyPathSet / applyPathDelta — write into GM
-  // 避开 _normalizeCoreVarPath 改写的 vars.*·用自定义 path
+  // 下划线开头是运行时内部字段，强写回契约必须拒绝；普通自定义数值 path 仍可写。
   ctx.GM._smokeTestNum = 100;
-  ctx.AIChangeApplier.applyPathSet(ctx.GM, '_smokeTestNum', 80, 'smoke-test');
-  assert(ctx.GM._smokeTestNum === 80, `applyPathSet should write 80·got ${ctx.GM._smokeTestNum}`);
+  const blockedInternal = ctx.AIChangeApplier.applyPathSet(ctx.GM, '_smokeTestNum', 80, 'smoke-test');
+  assert(blockedInternal && blockedInternal.ok === false && ctx.GM._smokeTestNum === 100,
+    'applyPathSet should reject an underscore-prefixed internal path');
 
-  ctx.AIChangeApplier.applyPathDelta(ctx.GM, '_smokeTestNum', -10, 'smoke-test');
-  assert(ctx.GM._smokeTestNum === 70, `applyPathDelta -10 should result in 70·got ${ctx.GM._smokeTestNum}`);
+  ctx.GM.smokeTestNum = 100;
+  ctx.AIChangeApplier.applyPathSet(ctx.GM, 'smokeTestNum', 80, 'smoke-test');
+  assert(ctx.GM.smokeTestNum === 80, `applyPathSet should write 80·got ${ctx.GM.smokeTestNum}`);
+
+  ctx.AIChangeApplier.applyPathDelta(ctx.GM, 'smokeTestNum', -10, 'smoke-test');
+  assert(ctx.GM.smokeTestNum === 70, `applyPathDelta -10 should result in 70·got ${ctx.GM.smokeTestNum}`);
 
   // 用 core var path·测 normalize 路径
   ctx.GM.huangquan = { index: 70 };
@@ -218,7 +223,7 @@ function main() {
   console.log('  exports: ' + PUBLIC_FUNCS.length + ' funcs locked');
   console.log('  globals: ' + GLOBAL_SHORTCUTS.length + ' shortcuts locked');
   console.log('  arities: ' + Object.keys(FUNC_ARITIES).length + ' functions arity locked');
-  console.log('  behavior: applyPathSet/Delta (custom + core var path) + resolveBinding + ensurePublicTreasury');
+  console.log('  behavior: blocked internal path + applyPathSet/Delta (custom + core var path) + resolveBinding + ensurePublicTreasury');
 }
 
 try { main(); } catch (e) {

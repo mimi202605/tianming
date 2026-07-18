@@ -19,15 +19,24 @@
 - 遇 GBK→UTF-8 乱码：**禁 ASCII-safe 替换**，从 1.1.6 备份做参考还原。
 - 对齐 schema 以**运行时渲染器**（`_peRender*` / `_render*Panel`）为权威，preview-*.html 只是 mockup。
 
-## 协作·推送（2026-07-07 起 · 双人 trunk-based · 详见 CONTRIBUTING.md）
-- 主干 = `main`，**远端为唯一真相源**。每把刀开工前必 `git pull --rebase`。
-- **刀成即推**：一把刀验证全绿（`lint-arch-all` 8/8 + 定向 smoke）并 commit 后随手 push——不憋、不攒、不等指令。push 被拒（对方先推了）→ `pull --rebase` → 重跑 lint → 再推。
-- 禁：force-push（分支保护也拦）；守卫红着推；半成品占坑式提交；`--no-verify` 绕 hook（仅急救，事后必补账）。
-- PR 只走两类：大范式重构、跨对方领地的改动。其余直推 main。
+## 协作·推送（双人短命分支 + PR · 详见 CONTRIBUTING.md）
+- 主干 = 受保护的 `main`，**远端为唯一真相源**。开工先更新 main，再建一事一分支。
+- 一把刀验证全绿（`lint-arch-all` 8/8 + 定向 smoke）后推分支、开 PR；等 `guards` + `mobile-release-contracts` 全绿和对方 1 次 approval 后合并。
+- 禁：直接推 main、force-push、守卫红着合、半成品占坑式提交、`--no-verify` 绕 hook。
+- 新协作者只使用自己的 GitHub 账号和 `Write` 权限；禁止共享仓主 PAT/SSH/API key，生产发布凭据仍由仓主持有。
+- 磁铁文件/跨领地改动先认领；PR 合并后删短命分支。
 - 磁铁文件（`arch-baselines/*.json`）rebase 冲突时**不手合**，取一侧后重跑对应 lint `--update` 重生成。
+
+## 官方剧本真源
+- 唯一数据真源是仓根 `scenarios/*（官方）.json`；`web/scenarios/*.js`、seeder/preview bundle、`web/bundled-scenarios/` 都是派生物。
+- 改官方 JSON 后运行 `npm run sync:official-scenarios`，再跑 `npm run verify:official-scenarios`；禁止从内置 JS/bundle 反向导出覆盖 JSON。
 
 ## 发版（ship / 热更）
 - **ship / 热更 / 发版仍只由仓主显式触发**，合进 main ≠ 发版；进行中的大功能（如科举大改）整套完工前不 ship。
+- 发版必须分两阶段：短命分支运行 `scripts/release.js --prepare`，把版本盖戳与 `web/.hot-update-manifest.json` 经 PR 合入；随后只在 clean 且 `HEAD === origin/main` 的 `main` 运行 `--publish`。publish 禁止再改 tracked 版本/基线，上传前会复验 HEAD 与 release tag 指向。
+- Android 版本真源是 tracked `mobile/release-version.json`；`mobile/android/app/build.gradle` 属 ignored Capacitor 派生物，publish 只在本机从 canonical 同步它，禁止把它当 PR 盖戳文件。
+- production 外写只认仓库 owner：`release.js` 上传前验证当前 `gh` 账号；`pages-production` 同时限制 manual actor 与 Release author。direct Write 协作者只能开发/PR，不能触发正式 Pages 或 ship 外写。
+- `--publish --no-upload` 仅供本地制品验证，允许非 main/dirty，但必须硬跳过 GitHub Release 与 autodeploy 外写；`--offline` 不得用于正式 publish。
 - 发热更走 **server-side SSH `python3` 解 zip**，不走 SFTP per-file。
 - `changelog.json` 要 `/tianming` 与 `/hot` 两处同步（skill `upload-hot.py` 已自动同步）。
 - 发增量包前确认基线对齐，避免「版本号跳最新但 UI 退版」的假更新。

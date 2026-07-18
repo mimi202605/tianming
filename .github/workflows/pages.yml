@@ -1,0 +1,87 @@
+name: pages-production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Exact tag, branch, or commit to publish
+        required: true
+        default: main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'ship-') && github.event.release.author.login == github.repository_owner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install release-gate dependencies
+        run: npm ci --ignore-scripts
+      - name: Prove release tag commit came from origin/main
+        if: github.event_name == 'release'
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor HEAD origin/main || {
+            echo "release tag ${GITHUB_REF_NAME} is not on origin/main" >&2
+            exit 1
+          }
+      - name: Regenerate official scenario products
+        run: node web/scripts/sync-official-scenarios.js
+      - name: Reject stale generated products
+        run: git diff --exit-code
+      - name: Official scenario parity
+        run: node web/scripts/verify-official-scenario-parity.js
+      - name: Cross-release contract
+        run: node scripts/verify-release-contract.js
+      - name: Hot-update builder fixture
+        run: node web/scripts/verify-hot-builder-gates.js
+      - name: Architecture guards (8/8)
+        working-directory: web
+        run: node scripts/lint-arch-all.js
+      - name: Full smoke suite
+        working-directory: web
+        run: node scripts/ci-smokes.js
+      - uses: actions/configure-pages@v5
+      - name: Stage Pages runtime tree
+        run: node scripts/stage-web-release.js --target "${{ runner.temp }}/tianming-pages" --label pages-production
+      - name: Verify Pages artifact
+        run: node scripts/verify-pages-artifact.js --target "${{ runner.temp }}/tianming-pages"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/tianming-pages
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify deployed game shell
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          base="${PAGE_URL%/}/"
+          curl --fail --location --retry 6 --retry-delay 5 "${base}index.html" --output /tmp/tianming-index.html
+          grep -q 'meta name="tm-version"' /tmp/tianming-index.html
+          grep -q 'tm-official-scenario-loader.js' /tmp/tianming-index.html
+          curl --fail --location --retry 6 --retry-delay 5 "${base}bundled-scenarios/manifest.json" --output /tmp/tianming-official.json
+          node -e "const m=require('/tmp/tianming-official.json'); if(!Array.isArray(m.entries)||m.entries.length<2) process.exit(1)"

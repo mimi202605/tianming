@@ -9,6 +9,37 @@
  */
 
 const { contextBridge, ipcRenderer } = require('electron');
+const { randomUUID } = require('crypto');
+
+let _autoSaveSessionToken = '';
+try {
+  const current = ipcRenderer.sendSync('auto-save-session-current');
+  if (current && current.success && current.token) _autoSaveSessionToken = String(current.token);
+} catch (_) {}
+// sidecar 尚不存在时先在 preload 固定一个非空 token（暂不持久化）；这样首个写请求即使排队期间
+// 遇到读档/新局 rotate，也携带旧 token 而不会被主进程误收编进新 session。
+if (!_autoSaveSessionToken) _autoSaveSessionToken = randomUUID();
+
+function _invokeAutoSave(data) {
+  return ipcRenderer.invoke('auto-save', {
+    __tmAutoSaveEnvelope: 1,
+    sessionToken: _autoSaveSessionToken,
+    data: data
+  }).then(function(result) {
+    if (result && result.sessionToken) _autoSaveSessionToken = String(result.sessionToken);
+    return result;
+  });
+}
+
+function _rotateAutoSaveSession(token) {
+  try {
+    const result = ipcRenderer.sendSync('auto-save-session-rotate', String(token || ''));
+    if (result && result.success && result.token) _autoSaveSessionToken = String(result.token);
+    return result || { success: false, error: '主进程未返回 session 结果' };
+  } catch (e) {
+    return { success: false, error: e && e.message || String(e) };
+  }
+}
 
 // 把这些功能暴露给网页中的 JavaScript
 contextBridge.exposeInMainWorld('tianming', {
@@ -32,7 +63,13 @@ contextBridge.exposeInMainWorld('tianming', {
 
   // === 自动存档 ===
   autoSave: (data) =>
-    ipcRenderer.invoke('auto-save', data),
+    _invokeAutoSave(data),
+
+  rotateAutoSaveSession: (token) =>
+    _rotateAutoSaveSession(token),
+
+  getAutoSaveSessionToken: () =>
+    _autoSaveSessionToken,
 
   loadAutoSave: () =>
     ipcRenderer.invoke('load-auto-save'),

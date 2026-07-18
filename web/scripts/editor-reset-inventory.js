@@ -27,6 +27,9 @@ const TOP_LEVEL_COVERAGE = {
   startYear: 'scriptInfo',
   startMonth: 'scriptInfo',
   startLocation: 'scriptInfo',
+  historicalFallYear: 'scriptInfo',
+  historicalFallMonth: 'scriptInfo',
+  historicalFallNote: 'scriptInfo',
   tags: 'scriptInfo',
   scnStyle: 'scriptInfo',
   scnStyleRule: 'scriptInfo',
@@ -62,6 +65,7 @@ const TOP_LEVEL_COVERAGE = {
   eraState: 'eraState',
   economyConfig: 'economy',
   populationConfig: 'eraState',
+  renliPilot: 'economy',
   fiscalConfig: 'economy',
   guoku: 'economy',
   guoku_advanced: 'economy',
@@ -125,6 +129,7 @@ const RESET_BLUEPRINT_MODULES = [
       'emperor', 'role', 'background', 'overview', 'openingText', 'opening',
       'openingLetters', 'playerInfo', 'gameSettings', 'startYear', 'active',
       'startMonth', 'startLocation', 'openingHook', 'tags', 'scnStyle',
+      'historicalFallYear', 'historicalFallMonth', 'historicalFallNote',
       'scnStyleRule', 'refFiles', 'refFilesContent', 'refText',
       'masterScript', 'isFullyDetailed', '_adaptation', '_buildStatus'
     ]
@@ -178,7 +183,7 @@ const RESET_BLUEPRINT_MODULES = [
     currentPanels: ['economy', 'eraState', 'worldSettings'],
     topLevelKeys: [
       'economyConfig', 'populationConfig', 'fiscalConfig', 'guoku',
-      'guoku_advanced', 'environmentConfig', 'culturalConfig', 'culturalWorks',
+      'guoku_advanced', 'environmentConfig', 'culturalConfig', 'culturalWorks', 'renliPilot',
       'worldSettings', 'worldview', 'eraState'
     ]
   },
@@ -401,6 +406,15 @@ function loadBuiltinScenario(root) {
 
 function loadOfficialScenario(root) {
   const desktopDir = path.resolve(root, '..', 'scenarios');
+  // The repository also contains personal/draft scenarios that deliberately
+  // reuse the Tianqi id. Never let directory ordering select one as the reset
+  // baseline: the exact official filename is the truth source.
+  const official = path.join(desktopDir, '天启七年·九月（官方）.json');
+  if (fs.existsSync(official)) {
+    const data = JSON.parse(readText(official));
+    if (!data || data.id !== SID) throw new Error('official Tianqi id mismatch: ' + official);
+    return { scenario: data, source: official };
+  }
   const candidates = listJsonScenarioFiles(desktopDir);
   for (const file of candidates) {
     try {

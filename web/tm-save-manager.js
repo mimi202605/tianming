@@ -28,6 +28,26 @@ function _getSaveIndex() {
   try { return JSON.parse(localStorage.getItem('tm_save_index') || '{}'); } catch(e) { return {}; }
 }
 
+// pre_endturn 恢复契约：IDB record、内嵌快照信封与（崩溃自动恢复时）localStorage marker
+// 必须在 snapshotId / turn / committed 三项上完全一致。旧的无信封快照不冒充新回合，安全回退 autosave。
+function _validatePreEndturnSnapshot(record, marker, requireMarker) {
+  if (!record || !record.gameState) return { ok: false, reason: 'missing-record' };
+  var envelope = record.gameState && record.gameState._preEndturn;
+  if (!envelope || !envelope.snapshotId || !envelope.turn) return { ok: false, reason: 'missing-envelope' };
+  if (record.commitState !== 'committed' || envelope.commitState !== 'committed') return { ok: false, reason: 'not-committed' };
+  if (!record.snapshotId || record.snapshotId !== envelope.snapshotId) return { ok: false, reason: 'record-snapshot-mismatch' };
+  if (Number(record.turn) !== Number(envelope.turn)) return { ok: false, reason: 'record-turn-mismatch' };
+  var savedGM = record.gameState.GM || record.gameState;
+  if (!savedGM || Number(savedGM.turn) !== Number(envelope.turn)) return { ok: false, reason: 'state-turn-mismatch' };
+  if (requireMarker) {
+    if (!marker || marker.commitState !== 'committed' || !marker.snapshotId) return { ok: false, reason: 'marker-not-committed' };
+    if (marker.snapshotId !== envelope.snapshotId) return { ok: false, reason: 'marker-snapshot-mismatch' };
+    if (Number(marker.turn) !== Number(envelope.turn)) return { ok: false, reason: 'marker-turn-mismatch' };
+  }
+  return { ok: true, snapshotId: envelope.snapshotId, turn: Number(envelope.turn) };
+}
+if (typeof window !== 'undefined') window._validatePreEndturnSnapshot = _validatePreEndturnSnapshot;
+
 // 存档管理器
 var SaveManager = {
   maxSlots: 10,
@@ -65,7 +85,8 @@ var SaveManager = {
     if (typeof _prepareGMForSave === 'function') _prepareGMForSave();
 
     var _sc = typeof findScenarioById === 'function' ? findScenarioById(GM.sid) : null;
-    var gameState = { GM: deepClone(GM), P: _tmStripAiKeyInPlace(deepClone(P)) };
+    if (typeof _buildSaveState !== 'function') throw new Error('存档快照构造器未就绪');
+    var gameState = _buildSaveState({ format: 'idb', prepare: false });
     // 打上存档版本号，避免旧存档被误判为 v1 触发全链迁移
     if (typeof SaveMigrations !== 'undefined' && typeof SaveMigrations.stamp === 'function') {
       SaveMigrations.stamp(gameState);
@@ -145,12 +166,12 @@ var SaveManager = {
     return true;
   },
 
-  // 自动存档（每回合调用）
+  // 兼容入口：核心端回合不再调用它（由 tm-endturn-render 统一写 autosave + slot_0）；
+  // 旧扩展若显式调用仍保留原语义，并复用 saveToSlot 的统一 snapshot builder。
   autoSave: function() {
     if (!GM.running) return;
-    // 每N回合自动存到slot_0
     if (GM.turn % this.autoSaveInterval === 0) {
-      this.saveToSlot(0, '自动封存 · 第' + GM.turn + '回合');
+      return this.saveToSlot(0, '自动封存 · 第' + GM.turn + '回合');
     }
   },
 
@@ -401,7 +422,9 @@ function openSaveManager() {
         var idx = parseInt(s.id.replace('slot_', ''));
         if (!isNaN(idx)) savesBySlot[idx] = { slotId: idx, name: s.name, turn: s.turn, timestamp: s.timestamp, scenarioName: s.scenarioName, eraName: s.eraName, date: s.date || '', dynastyPhase: s.dynastyPhase || '' };
       } else if (s.id === 'pre_endturn') {
-        preEndturnRec = { name: s.name, turn: s.turn, timestamp: s.timestamp, scenarioName: s.scenarioName, eraName: s.eraName };
+        if (s.commitState === 'committed' && s.snapshotId && s.turn) {
+          preEndturnRec = { name: s.name, turn: s.turn, timestamp: s.timestamp, scenarioName: s.scenarioName, eraName: s.eraName, snapshotId: s.snapshotId };
+        }
       }
     });
     // 同时补充 localStorage 索引中的记录（兼容）
@@ -722,18 +745,21 @@ function loadPreEndturnSnapshot() {
         return;
       }
       TM_SaveDB.load('pre_endturn').then(function(record) {
-        if (record && record.gameState) {
+        var _preCheck = (typeof _validatePreEndturnSnapshot === 'function')
+          ? _validatePreEndturnSnapshot(record, null, false)
+          : { ok: false, reason: 'validator-missing' };
+        if (_preCheck.ok) {
           try {
             fullLoadGame({ gameState: record.gameState });
             try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_){}
-            toast('已恢复至过回合前·第' + (record.turn || GM.turn) + '回合');
+            toast('已恢复至过回合前·第' + _preCheck.turn + '回合');
             closeSaveManager();
           } catch (_e) {
             (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_e, 'loadPreEndturnSnapshot') : console.error('[loadPreEndturnSnapshot]', _e);
             toast('恢复失败：' + (_e.message || _e));
           }
         } else {
-          toast('过回合前快照已损坏');
+          toast('过回合前快照校验失败（' + _preCheck.reason + '）·未恢复');
         }
       }).catch(function(e) { toast('恢复失败：' + (e && e.message || e)); });
     }

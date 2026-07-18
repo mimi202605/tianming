@@ -25,3 +25,6 @@
 *.dll binary
 *.pdf binary
 *.save.json binary
+
+# 本文件历史契约为 CRLF；仍检查真正的行尾空格，但不把 CR 本身误报为 trailing whitespace。
+web/tm-endturn-prompt.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

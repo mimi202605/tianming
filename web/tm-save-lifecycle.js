@@ -556,9 +556,7 @@ doSaveGame=async function(){
     // 浏览器端：直接导出
     var sc2=findScenarioById(GM.sid);
     var name="T"+GM.turn+"_"+(sc2?sc2.name:"save")+"_"+new Date().toISOString().slice(0,10);
-    var saveData2=deepClone(P);
-    _tmStripAiKeyInPlace(saveData2);
-    saveData2.gameState=deepClone(GM);
+    var saveData2=_buildSaveState({format:'project',prepare:false});
     saveData2._saveMeta={name:name,turn:GM.turn,time:getTSText(GM.turn),scenario:sc2?sc2.name:"",date:new Date().toISOString(),version:P.meta.v};
     var blob=new Blob([JSON.stringify(saveData2)],{type:"application/json"});// 紧凑写(存档非配置·再导入走 JSON.parse·缩进约占体积一半)
     var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name+".json";a.click();
@@ -572,9 +570,7 @@ window.desktopDoSave=async function(){
   var sc=findScenarioById(GM.sid);
   if (typeof _awaitPostTurnJobsForSave === 'function') await _awaitPostTurnJobsForSave();
   _prepareGMForSave(); // 序列化所有系统数据+确保GM/P字段默认值
-  var saveData=deepClone(P);
-  _tmStripAiKeyInPlace(saveData);
-  saveData.gameState=_autoSaveSnapshotGM(); // 复用自动存档快照·与 autosave 同口径(SKIP debug/派生大块 + _saved* 引用)·避免裸 deepClone(GM) 把 5.5MB 派生冗余塞进手动档
+  var saveData=_buildSaveState({format:'project',prepare:false}); // 与 autosave / 导出 / pre_endturn 同一构造口·保持 P+gameState 旧格式
   saveData._saveMeta={name:name,turn:GM.turn,time:getTSText(GM.turn),scenario:sc?sc.name:"",date:new Date().toISOString(),version:P.meta.v};
   try{
     var r=await window.tianming.saveProject(name,saveData);
@@ -799,7 +795,8 @@ var PREF_CONF_KEYS = [
   'insecureTlsRelay'
 ];
 
-function fullLoadGame(data){
+function fullLoadGame(data, loadOptions){
+  loadOptions = loadOptions || {};
   // 跨档保留 API 设置：localStorage 的 tm_api 是用户的"机器"配置·不应被存档覆盖
   var _preservedAi = null;
   try {
@@ -833,6 +830,13 @@ function fullLoadGame(data){
   }
   if (typeof _tmInstallScenarioGetter === 'function') _tmInstallScenarioGetter(); // P 整体重赋值后重装 P.scenario 派生 getter
   try { if (typeof window !== 'undefined') window._tmLoadGen = (window._tmLoadGen || 0) + 1; } catch (_lg) {} // 读档代际++·按GM.turn失效的模块级缓存(officeIndex/memCache)读同turn档曾泄漏旧局数据(2026-07-04 审查定罪)
+  // 同步通知主进程切换 canonical auto-save session。旧 IPC 即使正在 writeFile，rename 前也会因 token 失效被拒；
+  // 从 canonical 自动档恢复时沿用其 token，普通案卷/残局读档则创建新 token。
+  try {
+    if (typeof _tmRotateDesktopAutoSaveSession === 'function') {
+      _tmRotateDesktopAutoSaveSession('full-load', loadOptions.autoSaveSessionToken || '');
+    }
+  } catch (_asRotateE) { try { console.warn('[autoSave] 读档 session 切换失败:', _asRotateE); } catch (_) {} }
   // 恢复被存档冲掉的 API 配置（key/url/model 等都从 localStorage 拉回）
   if (_preservedAi && typeof _preservedAi === 'object' && (_preservedAi.key || _preservedAi.url)) {
     if (!P.ai) P.ai = {};
@@ -1237,6 +1241,46 @@ var _autoSaveDeferStreak=0;    // C·连续 defer 次数·用于日志
 var _autoSaveLastSavedTurn=-1; // D·上次成功存档时的 GM.turn
 var _autoSaveIdleSkipStreak=0; // D·连续闲置跳过次数·用于日志
 
+function _tmDesktopAutoSaveResultOk(result){
+  return result === true || !!(result && result.success === true);
+}
+function _tmDesktopAutoSaveFailure(result){
+  return new Error('桌面自动存档未落盘' + (result && result.error ? '：' + result.error : ''));
+}
+
+function _tmNewDesktopAutoSaveSessionToken(){
+  try {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  } catch (_) {}
+  return 'tm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 14) + '_' + Math.random().toString(36).slice(2, 10);
+}
+
+function _tmGetDesktopAutoSaveSessionToken(){
+  try {
+    if (typeof window !== 'undefined' && window.tianming && typeof window.tianming.getAutoSaveSessionToken === 'function') {
+      var bridgeToken = String(window.tianming.getAutoSaveSessionToken() || '');
+      if (bridgeToken) window._tmAutoSaveSessionToken = bridgeToken;
+    }
+  } catch (_) {}
+  return (typeof window !== 'undefined' && window._tmAutoSaveSessionToken) ? String(window._tmAutoSaveSessionToken) : '';
+}
+
+function _tmRotateDesktopAutoSaveSession(reason, preferredToken){
+  if (!_tmHasNativeFs()) return '';
+  var token = String(preferredToken || '') || _tmNewDesktopAutoSaveSessionToken();
+  if (!(window.tianming && typeof window.tianming.rotateAutoSaveSession === 'function')) return _tmGetDesktopAutoSaveSessionToken();
+  var result = window.tianming.rotateAutoSaveSession(token);
+  if (!(result && result.success === true && result.token)) {
+    throw new Error('auto-save session rotate failed' + (result && result.error ? '：' + result.error : '') + (reason ? ' [' + reason + ']' : ''));
+  }
+  window._tmAutoSaveSessionToken = String(result.token);
+  return window._tmAutoSaveSessionToken;
+}
+if (typeof window !== 'undefined') {
+  window._tmGetDesktopAutoSaveSessionToken = _tmGetDesktopAutoSaveSessionToken;
+  window._tmRotateDesktopAutoSaveSession = _tmRotateDesktopAutoSaveSession;
+}
+
 // C·document 级监听·任何键盘/指点/IME composition 都算 active input·5s 内 autoSave 跳过
 if (typeof document !== 'undefined'){
   var _aSBumpInput=function(){ _autoSaveLastInputMs=Date.now(); };
@@ -1247,8 +1291,9 @@ if (typeof document !== 'undefined'){
 
 // A-1·snapshot helper·浅拷顶 + 选择性深拷·明示 mutable / appendOnly / skip
 // 注·top-level function decl 通过 hoisting 自动 attach 到 window (sloppy mode)·无需占位
-function _autoSaveSnapshotGM(){
-  if (typeof GM === 'undefined' || !GM) return null;
+function _autoSaveSnapshotGM(sourceGM){
+  var _snapshotGM = sourceGM || (typeof GM !== 'undefined' ? GM : null);
+  if (!_snapshotGM) return null;
   // append-only 字段·上层只 push·不改老元素·直接引用 (无 deepClone 成本)
   var APPEND_ONLY = {
     qijuHistory:1, jishiRecords:1, shijiHistory:1, evtLog:1, biannianItems:1,
@@ -1288,17 +1333,17 @@ function _autoSaveSnapshotGM(){
     _savedMemoryLayers:1, _savedBattleHistory:1, _savedFactionArcs:1
   };
   var out = {};
-  for (var k in GM) {
-    if (!GM.hasOwnProperty(k)) continue;
+  for (var k in _snapshotGM) {
+    if (!_snapshotGM.hasOwnProperty(k)) continue;
     if (SKIP[k]) continue;
     // _prepareGMForSave 刚以 _safeClone 建的 _saved* 镜像·写后只读不再变动·此处引用即可
     // (原落入下方 deepClone 分支被二次深拷·每60s 自动存档对~130 个大块多拷一遍·此优化砍掉冗余那遍·序列化输出逐字节不变)
-    if (k.slice(0, 6) === '_saved') { out[k] = GM[k]; continue; }
+    if (k.slice(0, 6) === '_saved') { out[k] = _snapshotGM[k]; continue; }
     if (APPEND_ONLY[k]) {
-      out[k] = GM[k];  // 引用·不拷
+      out[k] = _snapshotGM[k];  // 引用·不拷
       continue;
     }
-    var v = GM[k];
+    var v = _snapshotGM[k];
     // 函数·跳·先于 primitive 检查 (typeof function 不是 'object'·会误入 primitive 分支)
     if (typeof v === 'function') continue;
     // 原始 / null·直接赋
@@ -1310,9 +1355,36 @@ function _autoSaveSnapshotGM(){
   return out;
 }
 if (typeof window !== 'undefined') window._autoSaveSnapshotGM = _autoSaveSnapshotGM;
+
+// 存档快照唯一构造口：所有可持久化写口都复用同一份 selective GM snapshot，
+// 并保持两种既有外壳格式不变：
+//   idb     -> { GM, P }（TM_SaveDB / slot / pre_endturn）
+//   project -> P 克隆本体 + gameState（桌面存档 / 浏览器导出 / Electron autosave）
+// 调用方须在需要时先 await 后台任务；prepare 默认开启，传 prepare:false 可避免同一写口重复序列化。
+function _buildSaveState(options){
+  options = options || {};
+  var liveGM = (typeof GM !== 'undefined' ? GM : null);
+  var sourceGM = options.gm || liveGM;
+  var sourceP = options.p || (typeof P !== 'undefined' ? P : {});
+  if (!sourceGM) return null;
+  if (options.prepare !== false && sourceGM === liveGM && typeof _prepareGMForSave === 'function') _prepareGMForSave();
+
+  var gmSnapshot = _autoSaveSnapshotGM(sourceGM);
+  if (options.detach) gmSnapshot = deepClone(gmSnapshot);
+  var pSnapshot = _tmStripAiKeyInPlace(deepClone(sourceP || {}));
+  // P.gameState 只允许出现在 project 外壳的最外层；清掉旧读档遗留的嵌套僵尸再装当前快照。
+  try { if (pSnapshot && pSnapshot.gameState) delete pSnapshot.gameState; } catch (_) {}
+  if (options.format === 'project') {
+    pSnapshot.gameState = gmSnapshot;
+    return pSnapshot;
+  }
+  return { GM: gmSnapshot, P: pSnapshot };
+}
+if (typeof window !== 'undefined') window._buildSaveState = _buildSaveState;
 if(_tmHasNativeFs()){
-  // 每60秒自动存档（始终保存P，游戏运行时附带GM） (timer-leak-ok·文件顶层一次性·桌面端生命周期)
+  // 每60秒自动存档（仅完整运行局；纯 P 由 project IDB + lite 保存） (timer-leak-ok·文件顶层一次性·桌面端生命周期)
   setInterval(async function(){
+    if(!GM || !GM.running) return;
     if(_autoSaveInFlight){
       _autoSaveSkipCount++;
       if(_autoSaveSkipCount===5)console.warn("[autoSave] 连续 5 次被跳·上一次未完成·deepClone/IPC 可能卡住");
@@ -1352,22 +1424,33 @@ if(_tmHasNativeFs()){
     try{
       _autoSaveSkipCount=0;
       if(GM.running && typeof _awaitPostTurnJobsForSave === 'function') await _awaitPostTurnJobsForSave();
-      if(GM.running && typeof _prepareGMForSave === 'function') _prepareGMForSave();
-      var saveData=deepClone(P);
-      _tmStripAiKeyInPlace(saveData);
-      if(GM.running){
-        var _t0=Date.now();
-        saveData.gameState=_autoSaveSnapshotGM();
+      // await 后才绑定本次实际快照；IPC 回包若跨了读档代际，不得推进“盘上最新”基线。
+      var _autoSaveSourceGM=GM;
+      var _autoSaveSourceP=P;
+      var _autoSaveSourceLoadGen=(typeof window!=='undefined'&&window._tmLoadGen)||0;
+      var _autoSaveSourceSession=_tmGetDesktopAutoSaveSessionToken();
+      var _autoSaveSourceRunning=!!(_autoSaveSourceGM&&_autoSaveSourceGM.running);
+      if(_autoSaveSourceRunning && typeof _prepareGMForSave === 'function') _prepareGMForSave();
+      if(GM!==_autoSaveSourceGM || P!==_autoSaveSourceP || (((typeof window!=='undefined'&&window._tmLoadGen)||0)!==_autoSaveSourceLoadGen)) return;
+      var _t0=Date.now();
+      var saveData=_buildSaveState({format:'project',prepare:false,gm:_autoSaveSourceGM,p:_autoSaveSourceP});
+      if(_autoSaveSourceRunning){
         var _gmMs=Date.now()-_t0;
         if(_gmMs>800)console.warn('[autoSave] GM snapshot slow:'+_gmMs+'ms');
         // 2026-06-10·性能:scenario 只存名字串(原 findScenarioById 整对象=把 5.3MB 剧本含内嵌地图又塞进存档一份)·
         // 与手动存档(:557/:572 sc.name)口径一致·读档方只用 turn/字符串显示·无人读 scenario 对象字段
-        var _asScen=findScenarioById(GM.sid);
-        saveData._saveMeta={turn:GM.turn,scenario:(_asScen&&_asScen.name)||'',saveName:GM.saveName,date:new Date().toISOString()};
+        var _asScen=findScenarioById(_autoSaveSourceGM.sid);
+        saveData._saveMeta={turn:_autoSaveSourceGM.turn,scenario:(_asScen&&_asScen.name)||'',saveName:_autoSaveSourceGM.saveName,date:new Date().toISOString()};
       }
-      await window.tianming.autoSave(saveData);
+      if(_autoSaveSourceSession!==_tmGetDesktopAutoSaveSessionToken()) return;
+      var _autoSaveResult=await window.tianming.autoSave(saveData);
+      if(!_tmDesktopAutoSaveResultOk(_autoSaveResult)) throw _tmDesktopAutoSaveFailure(_autoSaveResult);
+      if(GM!==_autoSaveSourceGM || P!==_autoSaveSourceP || (((typeof window!=='undefined'&&window._tmLoadGen)||0)!==_autoSaveSourceLoadGen)) {
+        console.warn('[autoSave] 写盘完成时已跨档·不推进闲置跳存基线·下个 tick 将重存当前局');
+        return;
+      }
       _autoSaveLastDoneMs=Date.now();
-      _autoSaveLastSavedTurn=(typeof GM!=='undefined'&&GM)?GM.turn:_autoSaveLastSavedTurn; // D·记录存档时 turn·闲置跳存基线
+      _autoSaveLastSavedTurn=(saveData._saveMeta&&Number.isFinite(Number(saveData._saveMeta.turn)))?Number(saveData._saveMeta.turn):_autoSaveLastSavedTurn; // D·锚定实际写入快照的 turn，不读 await 后 live GM
       // C3·tm_P_lite 5 分钟刷一次·完整 P 已在 autoSave 里·lite 只是 boot 快速恢复用
       _autoSaveLiteTick++;
       if(_autoSaveLiteTick>=5){
@@ -1387,7 +1470,7 @@ if(_tmHasNativeFs()){
           // 有运行中的游戏——提示恢复
           if(confirm("\u68C0\u6D4B\u5230\u81EA\u52A8\u5B58\u6863 (T"+(r.data.gameState.turn||1)+")\uFF0C\u662F\u5426\u6062\u590D\uFF1F")){
             showLoading("\u6062\u590D...",50);
-            try { fullLoadGame(r.data); }
+            try { fullLoadGame(r.data, { autoSaveSessionToken: r.sessionToken || '' }); }
             catch (_restE) { console.error('[autoRestore] 恢复失败', _restE); toast('恢复失败: ' + (_restE.message||_restE)); }
             finally { hideLoading(); }
           }

@@ -6,18 +6,74 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: guards-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   guards:
+    name: guards
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: 架构守卫 8 项（棘轮）
+          cache: npm
+      - name: Install release-gate dependencies
+        run: npm ci --ignore-scripts
+      - name: Regenerate official scenario products
+        run: node web/scripts/sync-official-scenarios.js
+      - name: Reject stale generated products
+        run: git diff --exit-code
+      - name: Official scenario parity
+        run: node web/scripts/verify-official-scenario-parity.js
+      - name: Cross-release contract
+        run: node scripts/verify-release-contract.js
+      - name: Hot-update builder fixture
+        run: node web/scripts/verify-hot-builder-gates.js
+      - name: Architecture guards (8/8)
         working-directory: web
         run: node scripts/lint-arch-all.js
-      - name: 全量 smoke（--no-retry 严格模式·缺资产白名单豁免）
+      - name: Full smoke suite
         working-directory: web
         run: node scripts/ci-smokes.js
+      - name: Stage main preview artifact
+        if: github.event_name == 'push'
+        run: node scripts/stage-web-release.js --target "${{ runner.temp }}/tianming-main-preview" --label main-preview
+      - name: Verify main preview artifact
+        if: github.event_name == 'push'
+        run: node scripts/stage-web-release.js --target "${{ runner.temp }}/tianming-main-preview" --verify --label main-preview
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        with:
+          name: tianming-main-preview-${{ github.sha }}
+          path: ${{ runner.temp }}/tianming-main-preview
+          include-hidden-files: true
+          retention-days: 7
+
+  mobile-release-contracts:
+    name: mobile-release-contracts
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate official scenario products
+        shell: powershell
+        run: node web/scripts/sync-official-scenarios.js
+      - name: Windows PowerShell 5.1 dry run
+        shell: powershell
+        run: .\mobile\scripts\verify-staging-dryrun.ps1
+      - name: Stage and hash-verify mobile www
+        shell: powershell
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'tianming-mobile-www'
+          .\mobile\scripts\stage-web-for-cap.ps1 -WwwDir $target
+          .\mobile\scripts\verify-staged-web.ps1 -TargetDir $target

@@ -46,10 +46,16 @@ release-hot/files/
 release-hot/manifests/
 mobile/capgo-dist/
 mobile/capgo/
+mobile/www/
+mobile/_deploy/
+_pages/
 *.apk
 *.aab
-.hot-update-manifest.json
-web/.hot-update-manifest.json
+/.hot-update-manifest.json
+
+# 官方剧本派生副本：根 scenarios/*（官方）.json 才是真源；metadata 小文件入库。
+web/bundled-scenarios/*.json
+!web/bundled-scenarios/manifest.json
 
 # ── 大媒体 / 生成资源 / 独立工程（基线聚焦代码·媒体与 godot 另管）──
 宣传片/

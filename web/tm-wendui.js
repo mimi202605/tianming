@@ -17,6 +17,9 @@
 // ============================================================
 var _wenduiMode = 'formal';
 var _wenduiSending = false;
+// 异步问对写回代际：每次真正打开目标时递增；承诺抽取 await 后必须仍属于同一局/回合/会话/目标。
+var _wdSessionEpoch = 0;
+var _wdTargetEpoch = 0;
 
 function _wdFactionValues(src) {
   var out = [];
@@ -395,6 +398,8 @@ function openWenduiModal(name, mode, prefillMsg) {
   }
   // N4: 问对消耗精力
   if (typeof _spendEnergy === 'function' && !_spendEnergy(5, '问对·' + name)) return;
+  _wdSessionEpoch++;
+  _wdTargetEpoch++;
   _wenduiMode = mode || 'formal';
   try { _wdSessionShichenBase = Math.floor(Math.random() * 9); } catch(_) { _wdSessionShichenBase = 0; }
   GM.wenduiTarget = name;
@@ -1697,6 +1702,15 @@ function _wdUpdateEmotionBar(name) {
 function closeWenduiModal() {
   var _targetName = GM.wenduiTarget;
   var _closingMode = _wenduiMode;   // L4·b2·snapshot 关前 mode
+  var _closingCommitGuard = {
+    gm: GM,
+    sid: GM.sid,
+    turn: GM.turn,
+    loadGen: (typeof window !== 'undefined' && window._tmLoadGen) || 0,
+    sessionEpoch: _wdSessionEpoch,
+    targetEpoch: _wdTargetEpoch,
+    targetName: _targetName
+  };
   // L4·f1·对质后果——御前对质给在场者之间记 confront 关系账（行为有代价：affinity−10/积怨+1）
   if (Array.isArray(_wdConfronters) && _wdConfronters.length && _targetName && typeof applyNpcInteraction === 'function') {
     _wdConfronters.forEach(function(_cfName) {
@@ -1770,7 +1784,7 @@ function closeWenduiModal() {
     }
   }
   // ★ 异步提取本次问对中的承诺（玩家指令→NPC应答），供推演使用
-  if (_targetName) _wd_extractCommitments(_targetName);
+  if (_targetName) _wd_extractCommitments(_targetName, _closingCommitGuard);
   // 性能·2026-06-10·名册/左栏刷新推迟一帧:先让弹窗移除这帧立即上屏(点关闭手感即时)·
   // 重建工作下一帧再做(renderWenduiChars 自带 gt-wendui 隐藏跳过 guard)
   var _wdAfterCloseRefresh = function(){
@@ -1782,8 +1796,17 @@ function closeWenduiModal() {
 }
 
 /** 问对结束后抽取承诺：AI 读本次对话，产出 NPC 承诺清单 */
-async function _wd_extractCommitments(targetName) {
+async function _wd_extractCommitments(targetName, guardCtx) {
   if (!P.ai || !P.ai.key || !targetName) return;
+  var _wdGuard = guardCtx || {
+    gm: GM,
+    sid: GM.sid,
+    turn: GM.turn,
+    loadGen: (typeof window !== 'undefined' && window._tmLoadGen) || 0,
+    sessionEpoch: _wdSessionEpoch,
+    targetEpoch: _wdTargetEpoch,
+    targetName: targetName
+  };
   // 仅取本次问对的对话片段——从 jishiRecords 取最新几条 target=此人
   // 仅取本次问对的对话——按 mode 过滤，避免把朝议发言误作问对承诺
   var records = (GM.jishiRecords||[]).filter(function(r){
@@ -1820,6 +1843,21 @@ async function _wd_extractCommitments(targetName) {
 
   try {
     var raw = await callAI(prompt, 500);
+    var _liveLoadGen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
+    var _liveCh = (typeof findCharByName === 'function') ? findCharByName(targetName) : null;
+    var _guardOk = GM === _wdGuard.gm
+      && GM.sid === _wdGuard.sid
+      && GM.turn === _wdGuard.turn
+      && _liveLoadGen === _wdGuard.loadGen
+      && _wdSessionEpoch === _wdGuard.sessionEpoch
+      && _wdTargetEpoch === _wdGuard.targetEpoch
+      && _wdGuard.targetName === targetName
+      && _liveCh === ch
+      && _liveCh && _liveCh.alive !== false && !_liveCh.dead && !_liveCh._fakeDeath;
+    if (!_guardOk) {
+      try { console.warn('[_wd_extractCommitments] 晚到结果已拒绝·局/回合/会话/目标已变化:', targetName); } catch(_wdLateE) {}
+      return;
+    }
     var obj = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!obj) return;
     // ★2026-07-01 codex-fix S4:纯传话场景 AI 返回 {commitments:[], relays:[...]}·绝不能因 commitments 空就早退·

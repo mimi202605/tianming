@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const AdmZip = require('adm-zip');
+const RELEASE_TREE = require('../../scripts/lib/release-tree.js');
 
 // 2026-06-11·S7 测试缝·--web-root/--app-root 可注入合成树（验证脚本用）·默认不变
 const WEB_ROOT = (function () {
@@ -177,6 +178,8 @@ function walk(dir, out) {
       return;
     }
     if (!entry.isFile()) return;
+    const releaseRel = normalizeRel(abs);
+    if (RELEASE_TREE.excludedReason(releaseRel, RELEASE_EXCLUDES)) return;
     // 安装包专用的「首装增量基线」清单·不入热更包(apply 时 finalize 会写当版真 manifest)·避免自引用/陈旧
     if (entry.name === '.hot-update-manifest.json') return;
     const ext = path.extname(entry.name).toLowerCase();
@@ -275,6 +278,7 @@ function main() {
   const packageName = arg('package-name', 'tianming-hot-' + version + '.zip');
   const packageUrl = arg('package-url', packageName);
   const includePreview = flag('include-preview');
+  const manifestOnly = flag('manifest-only');
   const explicitFiles = listArg('files');
   const indexRefs = collectIndexReferencedLocalFiles();
 
@@ -354,18 +358,18 @@ function main() {
 
   fs.mkdirSync(outDir, { recursive: true });
   const zipPath = path.join(outDir, packageName);
-  const zip = new AdmZip();
+  const zip = manifestOnly ? null : new AdmZip();
   filtered
     .sort((a, b) => a.path.localeCompare(b.path))
     .forEach(entry => {
-      zip.addLocalFile(entry.absPath, path.dirname(entry.path) === '.' ? '' : path.dirname(entry.path));
+      if (zip) zip.addLocalFile(entry.absPath, path.dirname(entry.path) === '.' ? '' : path.dirname(entry.path));
     });
 
   // 2026-05-22·bundled scenarios·热更也能 ship 官方剧本 JSON 改动
   const bundledScenarios = walkBundledScenarios();
   bundledScenarios.forEach(entry => {
     const stat = fs.statSync(entry.abs);
-    zip.addLocalFile(entry.abs, 'bundled-scenarios');
+    if (zip) zip.addLocalFile(entry.abs, 'bundled-scenarios');
     addManifestEntry(manifestEntries, entry.abs, stat.size, sha256File(entry.abs), entry.zipPath);
   });
   if (bundledScenarios.length) {
@@ -376,7 +380,7 @@ function main() {
   const appMains = walkAppMainImpl();
   appMains.forEach(entry => {
     const stat = fs.statSync(entry.abs);
-    zip.addLocalFile(entry.abs, '', '_app_main.js');
+    if (zip) zip.addLocalFile(entry.abs, '', '_app_main.js');
     addManifestEntry(manifestEntries, entry.abs, stat.size, sha256File(entry.abs), '_app_main.js');
   });
   if (appMains.length) {
@@ -389,7 +393,7 @@ function main() {
   const appPreloads = walkAppPreloadImpl();
   appPreloads.forEach(entry => {
     const stat = fs.statSync(entry.abs);
-    zip.addLocalFile(entry.abs, '', '_app_preload.js');
+    if (zip) zip.addLocalFile(entry.abs, '', '_app_preload.js');
     addManifestEntry(manifestEntries, entry.abs, stat.size, sha256File(entry.abs), '_app_preload.js');
   });
   if (appPreloads.length) {
@@ -435,6 +439,14 @@ function main() {
     remove: []
   };
   if (minAppVersion) manifest.minAppVersion = minAppVersion;
+  if (manifestOnly) {
+    const manifestOut = path.resolve(arg('manifest-out', path.join(outDir, version + '.manifest-only.json')));
+    fs.mkdirSync(path.dirname(manifestOut), { recursive: true });
+    fs.writeFileSync(manifestOut, JSON.stringify(manifest, null, 2), 'utf-8');
+    console.log('[hot-update] manifest-only:', manifestOut);
+    console.log('[hot-update] files:', finalManifestFiles.length);
+    return;
+  }
   zip.addFile('manifest.json', Buffer.from(JSON.stringify(manifest, null, 2), 'utf-8'));
   zip.writeZip(zipPath);
 

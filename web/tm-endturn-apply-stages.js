@@ -48,9 +48,35 @@
     } catch (e) { try { console.warn('[落地核对] surface failed', e); } catch (_) {} }
   }
 
+  // _unappliedChanges 的单一写主；其他模块运行时动态调用本入口，避免各自闯入内部子树。
+  ns.recordUnappliedChange = function(entry, source) {
+    _surfaceUnappliedChanges({ applied:{ failed:[entry || { reason:'unknown writeback failure' }] } }, source || 'endturn-writeback');
+  };
+
+  function _stageSemanticFailure(kind, ref, reason) {
+    ns.recordUnappliedChange({ kind:kind, ref:ref, reason:reason }, 'endturn-reconcile');
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_gate', { label:kind, ref:ref, reason:reason }); } catch (_) {}
+    return false;
+  }
+  function _stageSetPartyLeader(party, ref, reason) {
+    var raw = String(ref == null ? '' : ref).trim();
+    var ch = (typeof GM !== 'undefined' && GM && Array.isArray(GM.chars)) ? GM.chars.find(function(c) {
+      return c && ((c.name != null && String(c.name).trim() === raw) || (c.id != null && String(c.id).trim() === raw));
+    }) : null;
+    if (!ch || ch.alive === false || ch.dead === true) return _stageSemanticFailure('party_events.leader', ref, 'leader must be an existing living character');
+    var sink = global.TM && global.TM.AIChange && global.TM.AIChange.Narrative && global.TM.AIChange.Narrative.setPartyLeader;
+    if (typeof sink !== 'function') return _stageSemanticFailure('party_events.leader', ref, 'party leader sink unavailable');
+    sink(party, ch.name, GM, reason || '一致性补录立党');
+    return party.leader === ch.name && party.head === ch.name ? true : _stageSemanticFailure('party_events.leader', ref, 'party leader sink rejected write');
+  }
+
   // ── AP-1（自 origin writeBack sc1 写回主体逐字节迁出·if(p1) 由 dispatcher 保留·此处 recompute p1）──
   ns.stages._applyCore_reconcile = async function(ctx) {
     var p1 = ctx.results.sc1 || null;
+        // char_updates 的 alive/dead 先在原始 p1 上规范化：后续既有 applyCharacterDeaths(p1)
+        // 负责唯一死亡 sink；同时把敏感键从共享 char_update 对象移除，防通用 merge 裸写。
+        var _deathNorm1 = { added: [], failed: [], normalized: 0 };
+        try { if (p1 && typeof global.normalizeAIWriteBackDeaths === 'function') _deathNorm1 = global.normalizeAIWriteBackDeaths(p1, { source: 'endturn-full-p1', deferDeaths: true }) || _deathNorm1; } catch(_dnE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_dnE, 'endturn] normalizeAIWriteBackDeaths') : console.warn('[endturn] normalizeAIWriteBackDeaths:', _dnE); }
         try { if (typeof preflightAIWriteBack === 'function') preflightAIWriteBack(p1, { source: 'endturn-full-p1' }); } catch(_pfE) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_pfE, 'endturn] preflightAIWriteBack') : console.warn('[endturn] preflightAIWriteBack:', _pfE); }
         // 方案融入：AI 产出的通用变化/任免/机构/区划/事件/NPC行动/关系 → 统一应用
         try {
@@ -75,12 +101,23 @@
               office_assignments: Array.isArray(p1.office_assignments) ? p1.office_assignments : [],
               faction_updates: Array.isArray(p1.faction_updates) ? p1.faction_updates : [],
               party_updates: Array.isArray(p1.party_updates) ? p1.party_updates : [],
+              // v2 结构化扩展字段必须跟主 p1 同回合抵达 applier；此前 prompt 宣告但 dispatcher 遗漏，形成静默黑洞。
+              tax_reforms: Array.isArray(p1.tax_reforms) ? p1.tax_reforms : (Array.isArray(p1.taxReforms) ? p1.taxReforms : []),
+              class_updates: Array.isArray(p1.class_updates) ? p1.class_updates : [],
+              region_updates: Array.isArray(p1.region_updates) ? p1.region_updates : [],
+              project_updates: Array.isArray(p1.project_updates) ? p1.project_updates : [],
+              anyPathChanges: Array.isArray(p1.anyPathChanges) ? p1.anyPathChanges : [],
               // 兜底：AI 常只写 personnel_changes (展示用) 而不写 office_assignments — applier 里做备胎消费
               personnel_changes: Array.isArray(p1.personnel_changes) ? p1.personnel_changes : [],
               // 问天 directive 合规回报
               directive_compliance: Array.isArray(p1.directive_compliance) ? p1.directive_compliance : [],
               regent_decisions: Array.isArray(p1.regent_decisions) ? p1.regent_decisions : []
             });
+            if (_deathNorm1.failed && _deathNorm1.failed.length) {
+              _applyRes1.applied = _applyRes1.applied || {};
+              _applyRes1.applied.failed = Array.isArray(_applyRes1.applied.failed) ? _applyRes1.applied.failed : [];
+              Array.prototype.push.apply(_applyRes1.applied.failed, _deathNorm1.failed);
+            }
             _surfaceUnappliedChanges(_applyRes1, 'sc1主应用');  // 【落地核对】接住失败清单·让静默 #1 可见
           }
         } catch(_applyErr) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_applyErr, 'endturn] applyAITurnChanges:') : console.warn('[endturn] applyAITurnChanges:', _applyErr); }
@@ -451,7 +488,10 @@
               _patch.party_events.forEach(function(e) {
                 if (!Array.isArray(GM.parties)) GM.parties = [];
                 if (e.action === 'form') {
-                  GM.parties.push({ name: e.partyName, leader: e.leader||'', members: e.leader?[e.leader]:[], formedTurn: GM.turn||0, status: 'active', reason: e.reason||'', _autoFromReconcile: true });
+                  var _formedParty = { name: e.partyName, leader:'', head:'', members:[], formedTurn: GM.turn||0, status: 'active', reason: e.reason||'', _autoFromReconcile: true };
+                  if (e.leader && !_stageSetPartyLeader(_formedParty, e.leader, e.reason || '一致性补录立党')) return;
+                  if (_formedParty.leader) _formedParty.members = [_formedParty.leader];
+                  GM.parties.push(_formedParty);
                 } else if (e.action === 'dissolve') {
                   var p = GM.parties.find(function(x){return x && x.name === e.partyName && x.status === 'active';});
                   if (p) { p.status = 'dissolved'; p.dissolvedTurn = GM.turn||0; }
@@ -579,18 +619,21 @@ inst._imprisonedTurn = GM.turn||0;
                 if (!_qamGated && _action === 'regicide' && _outcome === 'succeeded') {
                   var _pcName = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.characterName) || '';
                   var _sov = (GM.chars || []).find(function (c) { return c && (c.isPlayer || (_pcName && c.name === _pcName)); });
-                  if (_sov && _sov.alive !== false && !_sov.dead) {
-                    _sov.alive = false;
-                    _sov.dead = true;
-                    _sov.deathTurn = GM.turn || 0;
-                    _sov.deathReason = '为' + (e.instigator || '逆党') + '所弑';
-                    if (typeof addEB === 'function') addEB('国变', (_sov.name || '天子') + '为' + (e.instigator || '逆党') + '所弑·大行崩逝，天下震动', { credibility: 'high' });
-                    if (typeof adjudicatePlayerDeath === 'function') {
-                      adjudicatePlayerDeath(_sov, '为' + (e.instigator || '逆党') + '所弑', { kind: 'regicide' });
-                    } else {
-                      GM._playerDead = true; // arch-ok: 裁决器缺位回落·宁终局勿尸政(R1c)
-                      GM._playerDeathReason = _sov.deathReason; // arch-ok: 同上
+                  if (!_sov) {
+                    _stageSemanticFailure('conspiracy_events.regicide', _pcName || '(player)', 'player character not found');
+                  } else if (_sov.alive !== false && !_sov.dead) {
+                    var _regicideReason = '为' + (e.instigator || '逆党') + '所弑';
+                    var _regicideRouteFailed = false;
+                    try {
+                      if (typeof global.applyOneDeath === 'function') global.applyOneDeath({ name:_sov.name, reason:_regicideReason });
+                      else if (typeof global.applyCharacterDeaths === 'function') global.applyCharacterDeaths({ character_deaths:[{ name:_sov.name, reason:_regicideReason }] });
+                      else { _regicideRouteFailed = true; _stageSemanticFailure('conspiracy_events.regicide', _sov.name, 'death pipeline unavailable'); }
+                    } catch (_regicideE) {
+                      _regicideRouteFailed = true;
+                      _stageSemanticFailure('conspiracy_events.regicide', _sov.name, 'death pipeline exception: ' + ((_regicideE && _regicideE.message) || _regicideE));
                     }
+                    if (!_regicideRouteFailed && _sov.alive !== false && !_sov.dead) _stageSemanticFailure('conspiracy_events.regicide', _sov.name, 'death pipeline did not apply');
+                    if ((_sov.alive === false || _sov.dead) && typeof addEB === 'function') addEB('国变', (_sov.name || '天子') + '为' + (e.instigator || '逆党') + '所弑·大行崩逝，天下震动', { credibility: 'high' });
                   }
                 }
                 if (!GM.turnChanges) GM.turnChanges = {};
@@ -669,6 +712,16 @@ inst._imprisonedTurn = GM.turn||0;
     var shizhengji = _st.shizhengji, zhengwen = _st.zhengwen, playerStatus = _st.playerStatus, playerInner = _st.playerInner, turnSummary = _st.turnSummary, shiluText = _st.shiluText, szjTitle = _st.szjTitle, szjSummary = _st.szjSummary, personnelChanges = _st.personnelChanges, hourenXishuo = _st.hourenXishuo;
     var _applied = _st._applied;
     var _applyStart = _st._applyStart;
+      // 主链的 faction_succession consumer 还承担稳定度/史事副作用；在其执行后统一经
+      // Narrative 语义 sink 补齐 leader/leaderName/ruler/leadership.ruler/leaderInfo.name 镜像。
+      // 前置 preflight 已将 faction/newLeader 收紧为当前活跃势力与存活人物的精确对象。
+      if (p1 && Array.isArray(p1.faction_succession) && global.TM && global.TM.AIChange && global.TM.AIChange.Narrative && typeof global.TM.AIChange.Narrative.setFactionLeader === 'function') {
+        p1.faction_succession.forEach(function(sc) {
+          if (!sc || !sc.faction || !sc.newLeader) return;
+          var fac = (GM.facs || []).find(function(f) { return f && f.name === sc.faction; });
+          if (fac) global.TM.AIChange.Narrative.setFactionLeader(fac, sc.newLeader, GM, '势力继统');
+        });
+      }
       // 1.4: 幻觉防火墙——后验校验（检查AI返回的人名/地名是否在白名单内）
       if (p1 && p1.npc_actions) {
         var _aliveSet = {};

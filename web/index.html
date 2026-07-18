@@ -894,58 +894,11 @@ console.log('天命游戏脚本开始加载...');
 <script src="editor-division-deep.js?v=2026050301" defer></script>
 <script src="editor-office-deep.js?v=2026050301" defer></script>
 <script src="editor-presets.js?v=2026050301" defer></script>
-<!-- 官方剧本 -->
-<script src="scenarios/tianqi7-1627.js?v=2026062502"></script>
-<script src="scenarios/shaosong-jianyan-1127.js?v=2026062501"></script>
-<!-- 性能·7MB 官方运行时快照延迟到首屏后空闲注入（原为同步解析·占首屏 JS 约 32%）。
-     快照 IIFE 加载即自应用·自带 setTimeout 重试 + tm:p-restored 自愈·幂等去重·
-     远早于玩家在启动页点选剧本（需数秒）；启动路径 _tmStartApplyOfficialSnapshot 再幂等兜底。 -->
-<script>
-(function(){
-  // 2026-06-06 在线版地图修复：天启 7MB 运行时快照（内含 43 地块的整份地图）原本只从相对路径
-  // （github.io）拉取。国内访问 github.io 时这个大文件常超时/拉不下来，导致 getMapData() 取空、
-  // 玩家看到「剧本没有配备地图」。这里仿照本文件顶部 styles.css 的 data-css-fallback 范式，
-  // 给快照加 CDN 兜底：相对路径失败（onerror）或迟迟未应用（超时）时改从 jsDelivr 镜像拉。
-  // 桌面端读本地文件仍走相对路径首选，不受影响。
-  var SNAP_QS = '?v=20260616-renli-shaanxi-pilot';
-  var SNAP_REL = 'data/scenario-supplements/tianqi7-official-runtime-snapshot.js' + SNAP_QS;
-  var SNAP_CDN = 'https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/web/data/scenario-supplements/tianqi7-official-runtime-snapshot.js' + SNAP_QS;
-  var _snapFallbackUsed = false;
-  function _applied(){ return !!window.TM_TIANQI_OFFICIAL_RUNTIME_SNAPSHOT; }
-  function _injectSnap(src, isFallback){
-    var s = document.createElement('script');
-    s.src = src;
-    s.async = true;
-    s.onerror = function(){
-      if (!isFallback && !_snapFallbackUsed && !_applied()) {
-        _snapFallbackUsed = true;
-        console.warn('[tianqi-snap] 相对路径加载失败，改用 CDN 兜底：' + SNAP_CDN);
-        _injectSnap(SNAP_CDN, true);
-      }
-    };
-    (document.head || document.documentElement).appendChild(s);
-  }
-  function _loadTianqiSnapshot(){
-    if (window.__tmTianqiSnapLoaded) return;
-    window.__tmTianqiSnapLoaded = true;
-    _injectSnap(SNAP_REL, false);
-    // 超时兜底：onerror 不会在「连上但下载卡住」时触发，故再加一道计时器——
-    // 12s 内快照仍未应用，则直接从 CDN 拉一份（幂等去重由快照 IIFE 自身保证）。
-    setTimeout(function(){
-      if (!_applied() && !_snapFallbackUsed) {
-        _snapFallbackUsed = true;
-        console.warn('[tianqi-snap] 相对路径 12s 内未应用，改用 CDN 兜底：' + SNAP_CDN);
-        _injectSnap(SNAP_CDN, true);
-      }
-    }, 12000);
-  }
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(_loadTianqiSnapshot, { timeout: 3000 });
-  } else {
-    window.addEventListener('load', function(){ setTimeout(_loadTianqiSnapshot, 600); });
-  }
-})();
-</script>
+<!-- 官方剧本：首屏只载生成的轻量 manifest；完整 24.4MiB 数据在玩家选定剧本后按需注入。 -->
+<script src="bundled-scenarios/manifest.js?v=20260718-lazy-official"></script>
+<script src="tm-official-scenario-loader.js?v=20260718-lazy-official"></script>
+<!-- 旧 Tianqi runtime snapshot 仍可作为兼容产物生成，但在线入口不再空闲时无条件下载。
+     完整官方脚本已包含同源地图与运行时数组，由 TMOfficialScenarioLoader 在选中剧本时一次性加载。 -->
 
 <!-- 测试框架（?test=1 自动运行） -->
 <script src="tm-test-harness.js?v=2026042714" defer></script>

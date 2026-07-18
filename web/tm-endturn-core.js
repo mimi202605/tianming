@@ -306,28 +306,65 @@ async function _endTurnCore(){
   // 异步·失败静默·不阻塞推演
   try {
     if (typeof TM_SaveDB !== 'undefined' && typeof _prepareGMForSave === 'function') {
+      var _preSaveGM = GM;
+      var _preSaveP = P;
+      var _preSaveLoadGen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
       _prepareGMForSave();
-      var _preState = { GM: deepClone(GM), P: _tmStripAiKeyInPlace(deepClone(P)) };
+      var _preSnapshotId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : ('pre_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10));
+      var _preTurn = GM.turn;
+      var _preSid = GM.sid;
+      var _preWriteStillCurrent = function() {
+        var _liveLoadGen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
+        var _liveSnapshotId = (typeof window !== 'undefined' && window._tmActivePreEndturnSnapshotId) || '';
+        return GM === _preSaveGM && P === _preSaveP
+          && _liveLoadGen === _preSaveLoadGen
+          && GM.turn === _preTurn && GM.sid === _preSid
+          && _liveSnapshotId === _preSnapshotId;
+      };
+      var _preState = _buildSaveState({ format: 'idb', prepare: false });
+      _preState._preEndturn = { snapshotId: _preSnapshotId, turn: _preTurn, commitState: 'committed' };
       var _scPre = (typeof findScenarioById === 'function' && GM.sid) ? findScenarioById(GM.sid) : null;
       var _preMeta = {
         name: '过回合前·' + (typeof getTSText === 'function' ? getTSText(GM.turn) : 'T' + GM.turn),
         type: 'pre_endturn',
-        turn: GM.turn,
+        turn: _preTurn,
         scenarioName: _scPre ? _scPre.name : '',
         eraName: GM.eraName || '',
-        savedAt: Date.now()
+        savedAt: Date.now(),
+        snapshotId: _preSnapshotId,
+        commitState: 'committed'
       };
-      // 先同步写 localStorage mark·再异步写 IDB·防止 IDB 在途崩溃丢失恢复信号
-      // mark 存在但 IDB 缺失 → 恢复弹窗已有 fallback("过回合前快照已损坏·尝试加载常规自动存档")
+      // 两阶段提交：先写 pending marker，再写带同一 snapshotId 的 IDB record；
+      // 仅事务确认成功后把 marker 提升为 committed。任何中途崩溃都只会安全回退 autosave。
       try {
         localStorage.setItem('tm_pre_endturn_mark', JSON.stringify({
-          turn: GM.turn, timestamp: Date.now(),
+          turn: _preTurn, timestamp: Date.now(),
           scenarioName: _preMeta.scenarioName,
           eraName: _preMeta.eraName,
-          saveName: GM.saveName || ''
+          saveName: GM.saveName || '',
+          snapshotId: _preSnapshotId,
+          commitState: 'pending'
         }));
       } catch(_lsE){try{window.TM&&TM.errors&&TM.errors.captureSilent(_lsE,'pre_endturn ls mark');}catch(_){}}
-      TM_SaveDB.save('pre_endturn', _preState, _preMeta).catch(function(e){
+      try { window._tmActivePreEndturnSnapshotId = _preSnapshotId; } catch(_preIdE) {}
+      TM_SaveDB.save('pre_endturn', _preState, _preMeta, { writeGuard: _preWriteStillCurrent }).then(function(ok){
+        if (!ok) throw new Error('pre_endturn IndexedDB commit failed');
+        if (!_preWriteStillCurrent()) return;
+        try {
+          var _rawPreMark = localStorage.getItem('tm_pre_endturn_mark');
+          var _livePreMark = _rawPreMark ? JSON.parse(_rawPreMark) : null;
+          // 旧异步完成不得覆盖后起回合的新 marker。
+          if (!_livePreMark || _livePreMark.snapshotId !== _preSnapshotId || _livePreMark.turn !== _preTurn) return;
+          _livePreMark.commitState = 'committed';
+          _livePreMark.committedAt = Date.now();
+          localStorage.setItem('tm_pre_endturn_mark', JSON.stringify(_livePreMark));
+        } catch(_markCommitE) {
+          // marker 未能提交时不可信；启动恢复会按 pending/缺字段安全回退 autosave。
+          try { window.TM&&TM.errors&&TM.errors.captureSilent(_markCommitE,'pre_endturn mark commit'); } catch(_) {}
+        }
+      }).catch(function(e){
         (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'PreEndTurnSave]') : console.warn('[PreEndTurnSave]', e);
       });
     }

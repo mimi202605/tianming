@@ -1364,18 +1364,24 @@ function _sUpdateMaxoutInfo() {
 var DEFAULT_PROMPT="\u4F60\u662F\u5386\u53F2\u6A21\u62DF\u63A8\u6F14AI\u3002\u5267\u672C:{scenario_name} \u65F6\u4EE3:{era} \u89D2\u8272:{role}\n\u65F6\u95F4:{time_display} \u7B2C{turn}\u56DE\u5408\n\u96BE\u5EA6:{difficulty} \u6587\u98CE:{narrative_style}\n\u8D44\u6E90:{resources_json}\n\u5173\u7CFB:{relations_json}\n\u4EBA\u7269:{characters_json}\n\u89C4\u5219:{custom_rules}";
 var DEFAULT_RULES="1.\u6570\u503C\u5408\u7406 2.\u89D2\u8272\u72EC\u7ACB 3.\u6218\u4E89\u6D88\u8017 4.\u5B63\u8282\u5F71\u54CD 5.\u5386\u53F2\u540D\u81E3\u7B26\u5408\u53F2\u5B9E";
 
-function sSaveAPI(){
+function _sApplyPrimaryApiFields(){
   P.ai.key=_$("s-key")?_$("s-key").value:"";P.ai.url=_$("s-url")?_$("s-url").value:"";P.ai.model=_$("s-model")?_$("s-model").value:"";var _tv=parseFloat(_$("s-temp")?_$("s-temp").value:"");P.ai.temp=isNaN(_tv)?0.8:_tv;var _mv=parseInt(_$("s-mem")?_$("s-mem").value:"");P.ai.mem=isNaN(_mv)?20:_mv;P.ai.provider=_$("s-prov")?_$("s-prov").value:"openai";
+}
+function sSaveAPI(){
+  _sApplyPrimaryApiFields();
   try{ if(typeof tmApplyInsecureTlsConfig==='function') tmApplyInsecureTlsConfig(); }catch(_){}
   // ★2026-07-01·修「桌面端保存主 API key·关游戏再进就丢」:key 真源在 localStorage.tm_api(启动时 tm-player-core.js:257
   //   从此水合 P.ai)·桌面 autoSave 走 _tmStripAiKeyView 故意剥掉 key(不进可分享存档·安全)。原实现桌面分支只 autoSave、
   //   漏写 localStorage.tm_api → 主 key 只活内存·重启即失。改为两端都写 localStorage.tm_api(与 sSaveSecondaryAPI 同范式)·桌面再 autoSave。
   try{localStorage.setItem("tm_api",JSON.stringify(P.ai));}catch(e){ console.warn("[catch] 静默异常:", e.message || e); }
-  if(window.tianming&&window.tianming.isDesktop){window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(e){ (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'catch] async:') : console.warn('[catch] async:', e); });}
+  // 统一交给 saveP：对局中只写 IDB/lite，绝不以纯 P 覆盖桌面崩溃恢复档；非对局再由 saveP 写 Electron。
+  if(typeof saveP==='function') saveP();
   toast("\u2705 API\u5DF2\u4FDD\u5B58");
 }
 function sSaveAll(){
-  sSaveAPI();
+  // 先把主/次 API 面板全部合入内存，最后一次性写 tm_api；旧实现先持久化旧 secondary，
+  // 随后只改内存，导致重启恢复旧次 key。
+  _sApplyPrimaryApiFields();
   // M3·次 API 字段同步保存（若面板上有填）
   if(_$("s-sec-key")||_$("s-sec-url")||_$("s-sec-model")){
     var _sk=_$("s-sec-key")?_$("s-sec-key").value.trim():"";
@@ -1432,6 +1438,8 @@ function sSaveAll(){
   P.conf.style=_$("s-style")?_$("s-style").value:"";P.conf.difficulty=_$("s-diff")?_$("s-diff").value:"";
   P.conf.customStyle=_$("s-cstyle")?_$("s-cstyle").value:"";P.conf.gameMode=_$("s-mode")?_$("s-mode").value:"yanyi";P.conf.aiCallDepth=_$("s-aidepth")?_$("s-aidepth").value:"full";
   P.ai.prompt=_$("s-prompt")?_$("s-prompt").value:"";P.ai.rules=_$("s-rules")?_$("s-rules").value:"";
+  try{ if(typeof tmApplyInsecureTlsConfig==='function') tmApplyInsecureTlsConfig(); }catch(_){}
+  try{localStorage.setItem("tm_api",JSON.stringify(P.ai));}catch(e){ console.warn("[catch] 静默异常:", e.message || e); }
   saveP(); // 持久化所有设置（含记忆容量配置）
   toast("\u2705 \u5168\u90E8\u5DF2\u4FDD\u5B58");
 }
@@ -1468,7 +1476,6 @@ function sSaveSecondaryAPI(){
     toast("\u2705 \u5DF2\u6E05\u7A7A\u6B21 API\u00B7\u56DE\u9000\u4E3B API");
   }
   try{localStorage.setItem("tm_api",JSON.stringify(P.ai));}catch(e){}
-  if(window.tianming&&window.tianming.isDesktop){try{window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(){});}catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-patches');}catch(_){}}}
   try{ if(typeof tmApplyInsecureTlsConfig==='function') tmApplyInsecureTlsConfig(); }catch(_){}  // 次 API 地址变了·刷新放行白名单
   saveP();
   // 刷新面板以更新徽标和清除按钮可见性
@@ -1726,7 +1733,12 @@ function renderScnTab(em,sc){
 // ============================================================
 //  开局逻辑审查：AI生成缺失所在地 + 检查剧本数据矛盾
 // ============================================================
-async function _logicAuditOnStart(sc) {
+async function _logicAuditOnStart(sc, options) {
+  options = options || {};
+  var _background = options.background === true;
+  var _session = (typeof _tmPlanningCaptureSession === 'function')
+    ? _tmPlanningCaptureSession(options.session)
+    : (options.session || { gmRef: GM, sid: GM && GM.sid, turn: GM && GM.turn });
   if (!P.ai.key || !GM.chars || GM.chars.length === 0) return;
   // 剧本已人工深化·跳过 AI 逻辑审查（角色 location/矛盾已手工填妥）
   if (sc && (sc.aiAutoEnrich === false || sc.isFullyDetailed === true)) {
@@ -1852,6 +1864,10 @@ async function _logicAuditOnStart(sc) {
 
   try {
     var result = await callAISmart(prompt, 6000, { maxRetries: 2 });
+    if (typeof _tmPlanningSessionCurrent === 'function' && !_tmPlanningSessionCurrent(_session)) {
+      console.warn('[LogicAudit] 丢弃过期的开局审查结果');
+      return;
+    }
     var data = (typeof extractJSON === 'function') ? extractJSON(result) : null;
     if (!data) return;
 
@@ -1895,7 +1911,7 @@ async function _logicAuditOnStart(sc) {
     // ── 汇总 ──
     var totalChanges = genCount + fixCount;
     if (totalChanges > 0) {
-      showLoading('\u903B\u8F91\u5BA1\u67E5: \u751F\u6210' + genCount + '\u5904\u6240\u5728\u5730\uFF0C\u4FEE\u6B63' + fixCount + '\u5904\u77DB\u76FE', 92);
+      if (!_background && typeof showLoading === 'function') showLoading('\u903B\u8F91\u5BA1\u67E5: \u751F\u6210' + genCount + '\u5904\u6240\u5728\u5730\uFF0C\u4FEE\u6B63' + fixCount + '\u5904\u77DB\u76FE', 92);
       console.log('[LogicAudit] 生成所在地 ' + genCount + ' 处，修正矛盾 ' + fixCount + ' 处');
       if (GM.qijuHistory) {
         var logParts = [];
@@ -1907,7 +1923,7 @@ async function _logicAuditOnStart(sc) {
         });
       }
     } else {
-      showLoading('\u903B\u8F91\u5BA1\u67E5: \u6570\u636E\u65E0\u77DB\u76FE', 92);
+      if (!_background && typeof showLoading === 'function') showLoading('\u903B\u8F91\u5BA1\u67E5: \u6570\u636E\u65E0\u77DB\u76FE', 92);
     }
   } catch(e) {
     console.warn('[LogicAudit] 审查失败:', e.message || e);

@@ -27,22 +27,16 @@ function Write-JsonNoBom([string]$Path, $Obj) {
   [System.IO.File]::WriteAllText($Path, $json, (New-Object System.Text.UTF8Encoding($false)))
 }
 
-# 1) web → staging·剔除垃圾（与 APK 打包一致：.git/godot/playwright 缓存/测试产物/文档/备份）
+# 1) web → staging·统一排除、forbidden path、体积与 SHA256 manifest 闸
 $stage = Join-Path $OutDir "_stage-$Version"
-if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
-New-Item -ItemType Directory -Path $stage -Force | Out-Null
-Write-Host "复制 web → staging（剔垃圾）..." -ForegroundColor Cyan
-# 排除清单取自单一真源 scripts/release-excludes.json（四条管线共用·改一处全对齐；旧硬编码 $cruft 已并入 JSON·并补齐 _codex_tmp/.cache/tmp/dist 等缺项）
-$exPath = Join-Path $PSScriptRoot '..\..\scripts\release-excludes.json'
-if (-not (Test-Path $exPath)) { throw "排除清单缺失: $exPath" }
-$cruft   = (Get-Content $exPath -Raw -Encoding UTF8 | ConvertFrom-Json).dirs  # PS5.1 默认 GBK 读 UTF-8 JSON→中文乱码呛死 ConvertFrom-Json·必须显式 UTF8
-$cruftXf = @('*.bak*','*.log','*.yml','*.save.json')   # 扩展名过滤·与 JSON globs 对齐·robocopy /XF 就地剔
-robocopy $WebDir $stage /E /NFL /NDL /NJH /NJS /NP /XD ($cruft | ForEach-Object { Join-Path $WebDir $_ }) /XF $cruftXf | Out-Null
-Get-ChildItem $stage -Recurse -File | Where-Object { $_.Name -match '\.bak' } | Remove-Item -Force -ErrorAction SilentlyContinue
-# 剔 preview 子目录的设计稿/验证截图（保留 preview/img、official-scenarios-bundle.js 等运行素材；与 hot 端 isPreviewMockup 对齐，否则 capgo 白夹带 ~157MB 截图）
-$pvShots = Join-Path $stage 'preview\shots'
-if (Test-Path $pvShots) { Remove-Item $pvShots -Recurse -Force -ErrorAction SilentlyContinue }
-Get-ChildItem (Join-Path $stage 'preview') -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'verify.*\.png$' } | Remove-Item -Force -ErrorAction SilentlyContinue
+$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
+$stageScript = Join-Path $repoRoot 'scripts\stage-web-release.js'
+$officialSync = Join-Path $repoRoot 'web\scripts\sync-official-scenarios.js'
+Write-Host "复制 web → staging（统一 release-tree）..." -ForegroundColor Cyan
+& node $officialSync
+if ($LASTEXITCODE -ne 0) { throw "官方剧本生成失败·exit=$LASTEXITCODE" }
+& node $stageScript --repo-root $repoRoot --source $WebDir --target $stage --label capgo
+if ($LASTEXITCODE -ne 0) { throw "Capgo staging 闸失败·exit=$LASTEXITCODE" }
 $sz = [math]::Round((Get-ChildItem $stage -Recurse -File | Measure-Object Length -Sum).Sum/1MB,1)
 Write-Host "  staging = $sz MB" -ForegroundColor Gray
 

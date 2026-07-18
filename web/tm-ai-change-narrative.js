@@ -23,6 +23,16 @@
   var _findDivisionByNameOrId = _PathUtils && _PathUtils.findDivisionByNameOrId;
   var _findDivisionByNameFuzzy = (_PathUtils && _PathUtils.findDivisionByNameFuzzy) || _findDivisionByNameOrId;
   var _recordCharChange       = _PathUtils && _PathUtils.recordCharChange;
+  var _isPlainObject          = _PathUtils && _PathUtils.isPlainObject;
+  var _isPathBlocked          = _PathUtils && _PathUtils.isPathBlocked;
+  var _validateNestedJsonValue= _PathUtils && _PathUtils.validateNestedJsonValue;
+
+  function _safeOwnCopy(obj) {
+    var out = Object.create(null);
+    if (!obj || typeof obj !== 'object') return out;
+    Object.keys(obj).forEach(function(key) { out[key] = obj[key]; });
+    return out;
+  }
 
   // ── 从 Army 拿到的 helper ──
   var _Army = (global.TM && global.TM.AIChange && global.TM.AIChange.Army) || null;
@@ -139,7 +149,9 @@
     if (!G || !Array.isArray(G.chars) || name == null) return null;
     var nm = String(name).trim();
     if (!nm) return null;
-    var ch = G.chars.find(function(c) { return c && c.name && String(c.name).trim() === nm; });
+    var ch = G.chars.find(function(c) {
+      return c && ((c.name != null && String(c.name).trim() === nm) || (c.id != null && String(c.id).trim() === nm));
+    });
     if (!ch || ch.alive === false || ch.dead) return null;
     return ch;
   }
@@ -617,14 +629,50 @@
   }
 
   function _setFactionLeader(fac, leader, G, reason) {
-    if (!fac || !leader) return false;
+    if (!fac || leader == null) return false;
+    leader = String(leader).trim();
+    // 非空首领必须精确解析到当前在册活人；这里是所有 faction leader 写入的最终 sink。
+    // 空字符串用于明确出缺，允许同步清空所有镜像。
+    if (leader) {
+      var living = _narrativeResolveAliveChar(G, leader);
+      if (!living) {
+        _narrativeSkipTrace('faction.leader', (fac.name || fac.id) + '←' + leader, reason || 'structured faction update');
+        return false;
+      }
+      leader = living.name;
+    }
     var old = fac.leader || fac.ruler || (fac.leadership && fac.leadership.ruler) || '';
-    if (old === leader && fac.leader === leader && fac.ruler === leader) return false;
+    var mirrorsAlreadySynced = old === leader && fac.leader === leader && fac.leaderName === leader && fac.ruler === leader &&
+      fac.leadership && fac.leadership.ruler === leader && fac.leaderInfo && fac.leaderInfo.name === leader;
+    if (mirrorsAlreadySynced) return false;
     fac.leader = leader;
+    fac.leaderName = leader;
     fac.ruler = leader;
     if (!fac.leadership || typeof fac.leadership !== 'object') fac.leadership = {};
     fac.leadership.ruler = leader;
+    if (!fac.leaderInfo || typeof fac.leaderInfo !== 'object' || Array.isArray(fac.leaderInfo)) fac.leaderInfo = {};
+    fac.leaderInfo.name = leader;
     if (G && G._turnReport) G._turnReport.push({ type:'faction_update', entity:fac.name || fac.id, field:'leader', old:old, new:leader, reason:reason || '叙事首领补录', turn:G.turn||0 });
+    return true;
+  }
+
+  function _setPartyLeader(party, leader, G, reason) {
+    if (!party || leader == null) return false;
+    leader = String(leader).trim();
+    // party.leader / party.head 是同一语义的历史镜像，统一只接受当前在册活人。
+    // 空字符串仍表示明确出缺，并同步清空两侧。
+    if (leader) {
+      var living = _narrativeResolveAliveChar(G, leader);
+      if (!living) {
+        _narrativeSkipTrace('party.leader', (party.name || party.id) + '←' + leader, reason || 'structured party update');
+        return false;
+      }
+      leader = living.name;
+    }
+    var old = party.leader || party.head || '';
+    if (party.leader === leader && party.head === leader) return false;
+    party.leader = leader;
+    party.head = leader;
     return true;
   }
 
@@ -786,10 +834,21 @@
   }
 
   /** 深度 merge updates 到 entity·每个字段变化记入 _turnReport */
-  function _mergeUpdatesToEntity(entity, updates, reportType, entityName, reason) {
+  function _mergeUpdatesToEntity(entity, updates, reportType, entityName, reason, failed) {
     if (!entity || !updates) return 0;
     var G = global.GM;
     var count = 0;
+    if (typeof _isPlainObject !== 'function' || !_isPlainObject(updates)) {
+      if (Array.isArray(failed)) failed.push({ field:reportType || 'entity_update', entity:entityName || entity.name || entity.id, reason:'updates must be a plain JSON object' });
+      return 0;
+    }
+    var _mergeBasePath = ({
+      char_update: 'chars.0',
+      faction_update: 'facs.0',
+      party_update: 'parties.0',
+      class_update: 'classes.0',
+      region_update: 'adminHierarchy.0'
+    })[reportType] || 'entityUpdates.0';
     // ★ 落地守卫(2026-06-02)·弱模型脏输出探测：剔除 U+FFFD 替换字符·防乱码静默写库
     function _sanitizeAiStr(raw, ctxKey){
       if (typeof raw !== 'string' || raw.indexOf('�') < 0) return raw;
@@ -800,27 +859,65 @@
       } catch(_){}
       return cleaned;
     }
+    function _blockedMergeKey(key, isChar) {
+      if (/^_/.test(key) || /^(?:__proto__|prototype|constructor)$/i.test(key)) return true;
+      // 人物存亡与死亡元数据只能由 character_deaths → applyOneDeath 写入。
+      return !!(isChar && /^(?:alive|dead|isDead|deceased|positionAtDeath|diedAt|death[a-zA-Z0-9_]*|_death[a-zA-Z0-9_]*)$/i.test(key));
+    }
+    // "+field" 是旧数组追加语法；只保留代码与提示明确承诺的仕途履历字段。
+    // 先剥 "+" 再走同一安全检查，防 +alive / +_deathCause / +__proto__ 绕过。
+    var _APPENDABLE_UPDATE_ARRAY_FIELDS = { careerHistory: true };
+    function _rejectMergeKey(key, why) {
+      if (Array.isArray(failed)) failed.push({
+        field: reportType || 'entity_update', entity: entityName || entity.name || entity.id,
+        updateKey: key, reason: why || 'blocked update field'
+      });
+    }
     Object.keys(updates).forEach(function(key){
-      // 跳过禁区字段（以 _ 开头）
-      if (/^_/.test(key)) return;
+      var isAppend = /^\+/.test(key);
+      var realKey = isAppend ? key.slice(1).trim() : key;
+      if (!realKey || _blockedMergeKey(realKey, reportType === 'char_update')) {
+        _rejectMergeKey(key, 'blocked update field: ' + realKey);
+        return;
+      }
+      if (isAppend && !_APPENDABLE_UPDATE_ARRAY_FIELDS[realKey]) {
+        _rejectMergeKey(key, 'array append not allowed: ' + realKey);
+        return;
+      }
       var newVal = _sanitizeAiStr(updates[key], key);
-      var oldVal = entity[key];
+      var valuePath = _mergeBasePath + '.' + realKey;
+      if (typeof _isPathBlocked !== 'function' || _isPathBlocked(valuePath)) {
+        _rejectMergeKey(key, 'blocked update path: ' + valuePath);
+        return;
+      }
+      if (typeof _validateNestedJsonValue !== 'function') {
+        _rejectMergeKey(key, 'nested JSON validator unavailable');
+        return;
+      }
+      var valueGate = _validateNestedJsonValue(valuePath, newVal, 0);
+      if (!valueGate || !valueGate.ok) {
+        _rejectMergeKey(key, (valueGate && valueGate.reason) || 'invalid nested JSON value');
+        return;
+      }
+      var oldVal = entity[realKey];
       // 数组追加（key 以 + 开头·如 "+careerHistory"）
-      if (/^\+/.test(key)) {
-        var realKey = key.slice(1);
+      if (isAppend) {
         if (!Array.isArray(entity[realKey])) entity[realKey] = [];
         if (Array.isArray(newVal)) entity[realKey] = entity[realKey].concat(newVal);
         else entity[realKey].push(newVal);
         count++;
       } else if (typeof newVal === 'object' && newVal !== null && !Array.isArray(newVal) &&
-                 typeof entity[key] === 'object' && entity[key] !== null && !Array.isArray(entity[key])) {
+                 typeof entity[realKey] === 'object' && entity[realKey] !== null && !Array.isArray(entity[realKey])) {
         // 对象深 merge
         Object.keys(newVal).forEach(function(subK){
-          if (/^_/.test(subK)) return;
-          entity[key][subK] = _sanitizeAiStr(newVal[subK], key + '.' + subK);
+          if (_blockedMergeKey(subK, reportType === 'char_update')) {
+            _rejectMergeKey(realKey + '.' + subK, 'blocked nested update field: ' + subK);
+            return;
+          }
+          entity[realKey][subK] = _sanitizeAiStr(newVal[subK], realKey + '.' + subK);
         });
         count++;
-      } else if (reportType === 'char_update' && key === 'loyalty' && typeof global.setCharacterLoyalty === 'function') {
+      } else if (reportType === 'char_update' && realKey === 'loyalty' && typeof global.setCharacterLoyalty === 'function') {
         var _loySet = global.setCharacterLoyalty(entity, newVal, reason, {
           source: 'ai-char-update-loyalty',
           ai: true,
@@ -830,27 +927,56 @@
         if (!_loySet || !_loySet.ok || _loySet.blocked) return;
         count++;
       } else {
-        entity[key] = newVal;
+        entity[realKey] = newVal;
         count++;
       }
       if (G && G._turnReport) {
         G._turnReport.push({
           type: reportType || 'entity_update',
           entity: entityName || entity.name || entity.id,
-          field: key,
+          field: realKey,
           old: oldVal,
-          new: entity[key],
+          new: entity[realKey],
           turn: G.turn||0
         });
       }
       // 若是人物更新·同步登记到 turnChanges.characters（供史记数值变化说明显示）
-      if (reportType === 'char_update' && entityName && !/^\+/.test(key)) {
+      if (reportType === 'char_update' && entityName && !isAppend) {
         try {
-          if (key !== 'loyalty') _recordCharChange('chars.' + entityName + '.' + key, oldVal, entity[key], reason || '');
+          if (realKey !== 'loyalty') _recordCharChange('chars.' + entityName + '.' + realKey, oldVal, entity[realKey], reason || '');
         } catch(_rcE){ if(window.TM&&TM.errors) TM.errors.capture(_rcE,'applier.recordCharChange'); }
       }
     });
     return count;
+  }
+
+  function _applyStructuredPartyUpdate(G, party, pu, failed) {
+    if (!party || !pu || pu.updates == null) return 0;
+    if (typeof _isPlainObject !== 'function' || !_isPlainObject(pu.updates)) {
+      if (Array.isArray(failed)) failed.push({ party_update:pu.name, reason:'updates must be a plain JSON object' });
+      return 0;
+    }
+    var updates = _safeOwnCopy(pu.updates);
+    var candidates = [];
+    ['leader','head','newLeader','new_leader','leaderName','leader_name','ruler'].forEach(function(key) {
+      if (!Object.prototype.hasOwnProperty.call(updates, key)) return;
+      candidates.push(String(updates[key] == null ? '' : updates[key]).trim());
+      delete updates[key];
+    });
+    var count = 0;
+    if (candidates.length) {
+      var unique = candidates.filter(function(v, i, arr) { return arr.indexOf(v) === i; });
+      if (unique.length > 1) {
+        if (Array.isArray(failed)) failed.push({ party_update:pu.name, reason:'conflicting party leader mirrors' });
+      } else {
+        var ref = unique[0];
+        var living = ref ? _narrativeResolveAliveChar(G, ref) : null;
+        if (ref && !living) {
+          if (Array.isArray(failed)) failed.push({ party_update:pu.name, reason:'party leader must be an existing living character: ' + ref });
+        } else if (_setPartyLeader(party, living ? living.name : '', G, pu.reason || 'AI党派首领变更')) count++;
+      }
+    }
+    return count + _mergeUpdatesToEntity(party, updates, 'party_update', party.name, pu.reason || '', failed);
   }
 
   // ── Export ──
@@ -860,6 +986,7 @@
     applyNarrativeArmyFieldFallback: _applyNarrativeArmyFieldFallback,
     applyNarrativeFactionFieldFallback: _applyNarrativeFactionFieldFallback,
     applyNarrativeRegionFieldFallback: _applyNarrativeRegionFieldFallback,
+    applyStructuredPartyUpdate: _applyStructuredPartyUpdate,
     cleanNarrativeFieldValue: _cleanNarrativeFieldValue,
     cleanNarrativeToken: _cleanNarrativeToken,
     cleanRegionOfficeTitle: _cleanRegionOfficeTitle,
@@ -877,6 +1004,9 @@
     setFactionCapital: _setFactionCapital,
     setFactionFields: _setFactionFields,
     setFactionLeader: _setFactionLeader,
+    setPartyLeader: _setPartyLeader,
+    safeOwnCopy: _safeOwnCopy,
+    resolveAliveChar: _narrativeResolveAliveChar,
     setFactionRelationPair: _setFactionRelationPair,
     setRegionGovernorMirrors: _setRegionGovernorMirrors,
     setRegionOwnerMirrors: _setRegionOwnerMirrors,

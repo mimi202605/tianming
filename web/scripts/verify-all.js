@@ -114,6 +114,7 @@ const checks = [
   { name: 'char-autogen-containers', file: 'smoke-char-autogen-containers.js', estSec: 1, expectExit: 0 },
   { name: 'wentian-hardchange', file: 'smoke-wentian-hardchange.js', estSec: 1, expectExit: 0 },
   { name: 'ai-core-path-aliases', file: 'smoke-ai-core-path-aliases.js', estSec: 1, expectExit: 0 },
+  { name: 'ai-writeback-integrity', file: 'smoke-ai-writeback-integrity.js', estSec: 1, expectExit: 0 },
   { name: 'model-probe-evidence', file: 'smoke-model-probe-evidence.js', estSec: 1, expectExit: 0 },
   { name: 'conn-quickcheck', file: 'smoke-conn-quickcheck.js', estSec: 1, expectExit: 0 },
   { name: 'core-ui-field-reads', file: 'smoke-core-ui-field-reads.js', estSec: 1, expectExit: 0 },

@@ -76,9 +76,10 @@ assert(html.includes('203') && html.includes('22') && html.includes('83'),
 /* 2026-07-03 玄墨案头重做：照片纹理(img/ancient-tabletop-board.png)按设计退役，
    背景改程序化墨底+微噪点；「使用天命自有视觉资产」的守卫改钉随游戏分发的自带字体。 */
 assert(html.includes('../assets/fonts/ZCOOLXiaoWei-Regular.ttf'),
-  'preview should use an existing Tianming visual asset (bundled fonts)');
-assert(fs.existsSync(path.join(ROOT, 'assets', 'fonts', 'ZCOOLXiaoWei-Regular.ttf')),
-  'preview font asset should exist');
+  'preview should reference the Tianming release font when assets are present');
+assert(html.includes('font-display: swap') &&
+  /--je-font-display:[^;]*var\(--je-font-kai\)/.test(html),
+  'preview should remain usable through its tracked fallback stack when large release fonts are absent in CI');
 assert(html.includes('scenario-editor-reset-data.js'), 'preview should load generated official scenario data');
 assert(html.includes('scenario-editor-reset-app.js'), 'preview should load standalone functional app script');
 assert(html.includes('id="scenario-editor-reset-static-prototype"'), 'preview should keep the old static prototype inert');
@@ -1707,14 +1708,15 @@ const combo = path.join(ROOT, 'scripts', 'build-scenario-editor-reset-all.js');
 assert(fs.existsSync(combo),
   'combo build runner should exist');
 const comboSrc = fs.readFileSync(combo, 'utf8');
-assert(comboSrc.includes("require('./build-scenario-editor-reset-data.js')"),
-  'combo runner should depend on the baked data builder');
-assert(comboSrc.includes("require('./build-official-scenarios-bundle.js')"),
-  'combo runner should depend on the bundle builder');
-assert(comboSrc.includes('buildBundle.build()'),
-  'combo runner should invoke the bundle build');
-assert(comboSrc.includes('module.exports = { main, rewriteData }'),
-  'combo runner should expose its main + rewriteData entry points');
+assert(comboSrc.includes("require('./sync-official-scenarios.js')"),
+  'combo runner should delegate to the unified official-scenario synchronizer');
+assert(comboSrc.includes('syncer.sync({ check: false })'),
+  'combo runner should refresh every derived official artifact atomically');
+assert(!comboSrc.includes("require('./build-scenario-editor-reset-data.js')") &&
+  !comboSrc.includes("require('./build-official-scenarios-bundle.js')"),
+  'combo runner should not rebuild editor artifacts through partial legacy paths');
+assert(comboSrc.includes('module.exports = { main }'),
+  'combo runner should expose only its unified main entry point');
 
 // Slice 20: batch 采纳 buttons in the comparison panel. The single-row
 // buttons from Slice 16 don't scale when migrating tens of fields between

@@ -28,7 +28,7 @@
   var LRU_MAX = 30;
 
   // RAA·D1·真 per-session·module-local closure cache·**非 GM 字段** (GM 被 deepClone 入 save)
-  // saveToSlot 调 deepClone(GM)·任何 GM._kjp* 都持久化·跟 doc Q1 矛盾·改 module 内
+  // saveToSlot 统一快照仍会持久化未列入 SKIP 的 GM._kjp*·跟 doc Q1 矛盾·改 module 内
   var _BIO_CACHE = {};        // { name: { text, faction, birthYear, deathYear, generatedAt, generatedYear } }
   var _BIO_INFLIGHT = {};     // RAA·B6·name → promise (dedup 并发 call)
 

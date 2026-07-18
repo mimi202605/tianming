@@ -39,8 +39,12 @@
     opts = opts || {};
     GM = GM || global.GM; P = (P !== undefined ? P : global.P);
     if (!GM) return null;
+    // 正式运行时复用统一存档 builder；独立模块 smoke / 旧嵌入页未加载 lifecycle 时保留兼容降级。
+    var resumeState = (typeof global._buildSaveState === 'function')
+      ? global._buildSaveState({ format: 'idb', prepare: false, detach: true, gm: GM, p: P || {} })
+      : { GM: _deepClone(GM), P: _stripKey(_deepClone(P || {})) };
     var save = {
-      gameState: { GM: _deepClone(GM), P: _stripKey(_deepClone(P || {})) },
+      gameState: resumeState,
       _format: 'tianming-save-v1',
       _resume: true
     };

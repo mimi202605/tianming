@@ -137,6 +137,16 @@ function generateMemorials(){
 }
 
 async function genMemorialsAI(count){
+  var _memSession = {
+    gmRef: GM,
+    sid: GM && GM.sid,
+    turn: GM && GM.turn,
+    startEpoch: (typeof window !== 'undefined') ? window._tmStartPrewarmEpoch : undefined
+  };
+  function _memSessionCurrent(){
+    return typeof GM !== 'undefined' && GM === _memSession.gmRef && GM.sid === _memSession.sid && GM.turn === _memSession.turn
+      && (_memSession.startEpoch == null || typeof window === 'undefined' || window._tmStartPrewarmEpoch === _memSession.startEpoch);
+  }
   try{
     // 构建极丰富上下文prompt
     var prompt = getTSText(GM.turn) + '第' + GM.turn + '回合。\n';
@@ -577,6 +587,7 @@ async function genMemorialsAI(count){
         return true;  // 字数偏短不在此整批废·留给「部分接受」逐篇筛+补缺
       }
     });
+    if (!_memSessionCurrent()) { console.warn('[genMemorialsAI] 丢弃过期结果'); return; }
     var _memRaw = extractJSON(c) || [];
     var _good = [], _shortN = 0;
     _memRaw.forEach(function(m) { if (m && !_memIsIllegalPresenterName(m.from)) { if (_memPassesLength(m)) _good.push(m); else _shortN++; } });
@@ -589,6 +600,7 @@ async function genMemorialsAI(count){
           maxRetries: 1,
           validator: function(content) { var p = extractJSON(content); return Array.isArray(p) && p.length >= 1; }
         });
+        if (!_memSessionCurrent()) { console.warn('[genMemorialsAI] 丢弃过期补写结果'); return; }
         (extractJSON(_c2) || []).forEach(function(m) { if (_good.length < count && m && !_memIsIllegalPresenterName(m.from) && _memPassesLength(m)) _good.push(m); });
       } catch (_topupE) { try { console.warn('[memorials·部分接受·补写失败]', _topupE); } catch (_) {} }
     }
@@ -675,8 +687,8 @@ async function genMemorialsAI(count){
         }
       } catch(_l5PostE) { try { console.warn('[memorials·L5 post-spawn]', _l5PostE); } catch(_){} }
     }
-  } catch(e) { console.warn('[genMemorialsAI]', e.message || e); }
-  renderMemorials();
+  } catch(e) { if (_memSessionCurrent()) console.warn('[genMemorialsAI]', e.message || e); }
+  if (_memSessionCurrent()) renderMemorials();
 }
 function renderMemorials(force){
   var el=_$("zouyi-list");if(!el)return;
