@@ -103,46 +103,48 @@ function extractEdictActions(edictText) {
     }
   });
 
-  // ═══ 免职/治罪 模式（扩词表·单一真源·已知名锚定·否定门·多人列举·标点边界硬化）═══
-  //   病根(2026-07-19 侦探实测钉死)：① 动词表缺 查办/圈禁/拿问/削籍/下诏狱/褫职→「查办陈奇瑜」解析=[]；
-  //     ② 动词在前非贪婪 {2,6}? 把处置中介当人名/截短真名；③ salvage 单向。
-  //   Codex 复审再逮四洞：④ 否定/赦免语境(避免拘押/不要查办)误摘职；⑤ Pass B 跨标点吞前缀(释放X，革职Y→两摘)；
-  //     ⑥ 切句只认中文标点·漏 ASCII/空白(全局 text 已删空白·"缉拿归案 孙传庭"粘连→误摘)；⑦ 多人列举漏抓(革职X、Y 只得 X)。
-  //   修：入狱动词【复用 tm-ai-change-applier 的 _TM_IMPRISON_RE 单一真源·不另立第三处正则】+ 去官动词组；
-  //     从原文重建保留分隔的 _dtext(空白/ASCII/中文句读→硬边界·顿号"、"及及/与/并/暨作枚举连接符保留)·
-  //     按硬边界切句片段(锚定窗口永不跨越)·动词前回看否定门·片段内已知名前缀锚定 + 枚举链扩展(全员入账)。
+  // ═══ 免职/治罪 模式（动作-目标级极性判定 + 受控相邻缝合 · Codex 二审重构）═══
+  //   演进:侦探三病(动词表缺口/非贪婪截名/salvage 单向)→一审四洞(否定误摘/Pass B 吞标点/漏 ASCII空白/漏多人列举)
+  //   →二审三洞:补丁式否定窗判不了「不得不革职X(双否→正)」「不得宽宥仍须查办X(近标记=仍须→正)」「切勿…轻率查办X(近标记=切勿→负·距离无上限)」;
+  //     Pass B 救不了「革职␣陈奇瑜/查办\n陈奇瑜(空白/换行隔断动宾)」;边界漏 ——/（）/斜杠。
+  //   统一规则:①【动作-目标级极性】每个治罪动词·在本片段内从动词向前扫·遇第一个极性标记定极性(正=照摘/负=作罢/无=照摘)·
+  //     遇已知人名即停(名是前一动作宾语·隔断作用域);双重否定习语(不得不/不可不/非…不可)先于一切判正。
+  //   ②【受控相邻缝合·只跨一个边界·仅两态】(a)片段以"改/改为/改判"开头含治罪动词但无名→承接前段唯一名(赦免X死罪|改革职留用);
+  //     (b)片段是裸治罪动词结尾无名·下段以名开头且名后无自带谓词→缝合(革职|陈奇瑜)。③边界补 ——/…/（）/()/斜杠/【】/《》。
+  //   入狱动词仍【复用 _TM_IMPRISON_RE 单一真源·未动本体】+去官动词组;顿号"、"及及/与/并/暨作枚举连接符(一诏摘多人)。
   var _removeOfficeVerbs = '免去|免官|免职|罢免|革去|革职|革任|撤去|撤职|去职|停职|削职|削籍|夺职|夺官|开缺|勒令致仕|勒致仕|褫职|褫夺|罢黜|黜落|罢官|贬黜|贬谪|谪戍|着革|着免|查办|议处|勘问|圈禁|黜|谪';
   var _imprisonRe = (typeof _TM_IMPRISON_RE !== 'undefined' && _TM_IMPRISON_RE) ||
     (typeof window !== 'undefined' && window && window._TM_IMPRISON_RE) ||
     (typeof global !== 'undefined' && global && global._TM_IMPRISON_RE) || null;
   if (!_imprisonRe && !extractEdictActions._warnedNoImprisonRe) {
-    extractEdictActions._warnedNoImprisonRe = true;   // Codex洞⑤b:一次性留痕·防线上 applier 未加载时入狱识别静默降级无人知
+    extractEdictActions._warnedNoImprisonRe = true;   // 一次性留痕·防线上 applier 未加载时入狱识别静默降级无人知
     try { console.warn('[Edict] _TM_IMPRISON_RE 缺失(tm-ai-change-applier 未加载)·治罪诏令入狱动词识别降级为仅去官动词表'); } catch (_wIE) {}
   }
   var _crimeVerbSrc = _imprisonRe
     ? ('(?:' + _imprisonRe.source + ')|(?:' + _removeOfficeVerbs + ')')
     : ('(?:' + _removeOfficeVerbs + ')');
   var _crimeVerbRx = new RegExp(_crimeVerbSrc, 'g');
-  // Codex洞④·否定/宽宥门:动词前紧邻窗口命中→该次治罪作罢·不摘职(免其*仅取宽宥义·不误伤"免其官职"去官义)
-  var _NEG_RE = /避免|以免|免于|免遭|免予|免被|幸免|得免|未予|不予|勿|切勿|毋|毋庸|无须|毋须|不须|不要|不得|不可|不必|不宜|岂可|岂能|暂缓|从宽|从轻|从轻发落|姑免|姑息|宽宥|宽贷|宽恕|宽免|赦免|赦宥|释放|开释|昭雪|平反|免其罪|免其死|免其责|免其咎|免其罚|免其议|免其究|恕其|贷其|免死|免罪/;
-  var _NEG_LOOKBACK = 12;
-  // Codex洞⑥·治罪解析专用文本:全局 text(:20)已删空白会把"缉拿归案 孙传庭"粘连→从原文重建·
-  //   空白串 + ASCII/中文句读标点 → 统一硬边界(锚定窗口永不跨越)；顿号"、"作枚举连接符保留(洞⑦多人列举)。
+  // 规则①·极性标记(扫描取最靠近动词者)·改/改为/改判 正极性且触发"承接"(改判为治罪·宾语承接前文名)
+  var _POS_MARKERS = ['仍须','仍应','仍要','仍需','务必','须即','应即','著即','着即','即行','改判','改为','改'];
+  var _NEG_MARKERS = ['切勿','不得','不可','不必','不要','避免','以免','暂缓','姑免','宽宥','赦免','释放','开释','勿','毋'];
+  // 规则③·边界集合:空白 + ASCII/中文句读 + ——/…/（）/()/斜杠/【】/《》 → 硬边界(锚定窗口永不跨越);顿号"、"作枚举连接符保留
   var _BND = '\n';
   var _dtext = String(edictText || '')
     .replace(/\s+/g, _BND)
-    .replace(/[,.;:!?，。；：！？·…]/g, _BND);
+    .replace(/[,.;:!?，。；：！？·…—－()（）【】《》〈〉「」『』〔〕|\/\\-]+/g, _BND);
+  var _segs = _dtext.split(_BND).filter(function(s){ return s && s.length; });
   var _dismissSet = {};
-  var _DISMISS_GAP = 10;                       // 动词末→首名首的最大字距(容"着锦衣卫拿问"等处置中介)·列举后续成员不计距(洞⑦)
+  var _DISMISS_GAP = 10;                       // 动词末→首名首的最大字距(容处置中介)·列举后续成员不计距
   var _ENUM_CONN = /^(?:、|及|与|并|暨)/;       // 枚举连接符(仅这几个·不含"和/同/等"防误连)
+  var _PASSB_FILLER = /^(?:[的之下入系收着即旋遂竟终]|奉旨|奉诏){0,4}$/;   // 名→动词间可容的处置前缀(片段内·不跨标点)
+  var _CHANGE_HEAD = /^(?:改判|改为|改)/;
   function _pushDismissal(charMain) {
     if (!charMain || charMain.length < 2 || _dismissSet[charMain]) return;
-    // 须经已知名录解析出在册主名才算数(防"拿问/籍下"等垃圾串)——knownMap 派生自 GM.chars·等价 findCharByName 命中
-    if (typeof findCharByName === 'function' && !findCharByName(charMain)) return;
+    if (typeof findCharByName === 'function' && !findCharByName(charMain)) return;   // 须在册·防垃圾串
     _dismissSet[charMain] = true;
     actions.dismissals.push({ character: charMain, position: '' });
   }
-  // 某位置起是否正好是已知名前缀(最长优先·knownChars 已长度降序)→返回主名与长度·双向 salvage 内蕴于前缀匹配
+  // 某位置起是否正好是已知名前缀(最长优先·knownChars 已长度降序)→返回主名与长度
   function _prefixKnownName(str, pos) {
     for (var _pk = 0; _pk < knownChars.length; _pk++) {
       var _nmK = knownChars[_pk];
@@ -150,7 +152,7 @@ function extractEdictActions(edictText) {
     }
     return null;
   }
-  // 片段内扫枚举名单:name(、/及/与/并/暨 name)* → [{start,end,members[]}](洞⑦一诏摘多人)
+  // 片段内扫枚举名单:name(、/及/与/并/暨 name)* → [{start,end,members[]}]
   function _scanEnumLists(seg) {
     var _ls = [], _i = 0, _g1 = 0;
     while (_i < seg.length && _g1++ < 2000) {
@@ -169,34 +171,75 @@ function extractEdictActions(edictText) {
     }
     return _ls;
   }
-  // 逐句片段处置(硬边界内·锚定窗口不跨越任何原文分隔)
-  _dtext.split(_BND).forEach(function(seg) {
-    if (!seg || seg.length < 3 || !knownChars.length) return;
-    var _lists = _scanEnumLists(seg);
-    if (!_lists.length) return;
-    var _verbs = [], _vm2;
-    _crimeVerbRx.lastIndex = 0;
-    while ((_vm2 = _crimeVerbRx.exec(seg)) !== null) {
-      if (_vm2.index === _crimeVerbRx.lastIndex) _crimeVerbRx.lastIndex++;   // 零宽保护
-      _verbs.push({ start: _vm2.index, end: _vm2.index + _vm2[0].length });
+  function _findVerbs(seg) {
+    var _vs = [], _m; _crimeVerbRx.lastIndex = 0;
+    while ((_m = _crimeVerbRx.exec(seg)) !== null) {
+      if (_m.index === _crimeVerbRx.lastIndex) _crimeVerbRx.lastIndex++;   // 零宽保护
+      _vs.push({ start: _m.index, end: _m.index + _m[0].length });
     }
-    if (!_verbs.length) return;
-    _verbs.forEach(function(v) {
-      // Codex洞④·否定门:动词前紧邻窗口(片段内)命中否定/宽宥词→该次作罢
-      if (_NEG_RE.test(seg.slice(Math.max(0, v.start - _NEG_LOOKBACK), v.start))) return;
-      // Pass A·动词在前:其后 GAP 内起头的最近枚举名单·全员入账(首名计距·列举成员不计距·洞⑦)
+    return _vs;
+  }
+  // 规则①·动作-目标级极性:{positive, change}·从动词向前扫·遇已知人名即停·双重否定习语先判正
+  function _polarityOf(seg, vStart, vEnd) {
+    var _pre = seg.slice(0, vStart);
+    var _scopeStart = 0;                         // 遇已知人名即停:作用域起于最靠右人名之后(名是前一动作宾语·隔断)
+    for (var _pi = 0; _pi < knownChars.length; _pi++) {
+      var _at = _pre.lastIndexOf(knownChars[_pi]);
+      if (_at >= 0 && (_at + knownChars[_pi].length) > _scopeStart) _scopeStart = _at + knownChars[_pi].length;
+    }
+    var _scope = _pre.slice(_scopeStart);
+    if (/不得不|不可不/.test(_scope)) return { positive: true, change: false };            // 双重否定→正(先于一切)
+    if (/非[一-龥]{0,8}$/.test(_scope) && /^[一-龥、及与并暨]{0,10}不可/.test(seg.slice(vEnd))) return { positive: true, change: false };   // 非…不可→正
+    var _bi = -1, _bp = true, _bc = false;
+    function _mscan(mks, positive) {
+      for (var _mk = 0; _mk < mks.length; _mk++) {
+        var _ix = _scope.lastIndexOf(mks[_mk]);
+        if (_ix > _bi) { _bi = _ix; _bp = positive; _bc = positive && mks[_mk].charAt(0) === '改'; }
+      }
+    }
+    _mscan(_NEG_MARKERS, false); _mscan(_POS_MARKERS, true);
+    if (_bi < 0) return { positive: true, change: false };                                  // 无标记→照摘
+    return { positive: _bp, change: _bc };
+  }
+  // 逐片段处置(片段内极性+锚定) + 受控相邻缝合(规则②)
+  var _segInfos = _segs.map(function(seg){ return { seg: seg, lists: _scanEnumLists(seg), verbs: _findVerbs(seg) }; });
+  _segInfos.forEach(function(info) {
+    var seg = info.seg, lists = info.lists, verbs = info.verbs;
+    if (!verbs.length || !knownChars.length) return;
+    verbs.forEach(function(v) {
+      var _pol = _polarityOf(seg, v.start, v.end);
+      if (!_pol.positive) return;                // 规则①·负极性·作罢
+      // Pass A·动词在前:GAP 内起头的最近枚举名单·全员入账
       var _bestA = null;
-      _lists.forEach(function(L) {
-        if (L.start >= v.end && (L.start - v.end) <= _DISMISS_GAP && (!_bestA || L.start < _bestA.start)) _bestA = L;
-      });
+      lists.forEach(function(L) { if (L.start >= v.end && (L.start - v.end) <= _DISMISS_GAP && (!_bestA || L.start < _bestA.start)) _bestA = L; });
       if (_bestA) { _bestA.members.forEach(_pushDismissal); return; }
-      // Pass B·人名在前:紧邻动词前结束的枚举名单·中间只容处置前缀(下/入/系/收/着…)·绝不跨标点(∵已按硬边界切片·洞⑤)·全员入账
-      _lists.forEach(function(L) {
-        if (L.end <= v.start && /^(?:[的之下入系收着即旋遂竟终]|奉旨|奉诏){0,4}$/.test(seg.slice(L.end, v.start))) {
-          L.members.forEach(_pushDismissal);
-        }
-      });
+      // Pass B·人名在前:紧邻动词前结束的枚举名单·中间只容处置前缀(片段内·不跨标点)
+      var _boundB = false;
+      lists.forEach(function(L) { if (L.end <= v.start && _PASSB_FILLER.test(seg.slice(L.end, v.start))) { L.members.forEach(_pushDismissal); _boundB = true; } });
+      if (_boundB) return;
+      // 承接(改判为治罪·片段内变体:赦免X死罪改革职留用)·宾语承接动词前最靠右名单
+      if (_pol.change) {
+        var _carry = null;
+        lists.forEach(function(L) { if (L.end <= v.start && (!_carry || L.end > _carry.end)) _carry = L; });
+        if (_carry) _carry.members.forEach(_pushDismissal);
+      }
     });
+  });
+  // 规则②·受控相邻缝合·只跨一个边界·仅两种受控形态
+  _segInfos.forEach(function(info, i) {
+    var seg = info.seg, lists = info.lists, verbs = info.verbs;
+    var prev = _segInfos[i - 1], next = _segInfos[i + 1];
+    if (!verbs.length || lists.length) return;   // 缝合只对"有治罪动词但无本地名"的片段发生
+    // (a) 片段以 改/改为/改判 开头·含治罪动词·无名 → 承接前段唯一名(跨段变体:赦免X死罪，改革职留用)
+    if (prev && _CHANGE_HEAD.test(seg) && prev.lists.length === 1) prev.lists[0].members.forEach(_pushDismissal);
+    // (b) 片段是裸治罪动词结尾 → 缝下段开头名单(缝合动词正极性·名后无自带谓词·防"革职|孙传庭奏捷"误缝)
+    if (next && next.lists.length && next.lists[0].start === 0) {
+      var _tail = verbs[verbs.length - 1];
+      if (_tail.end === seg.length && _polarityOf(seg, _tail.start, _tail.end).positive) {
+        var _afterName = next.seg.slice(next.lists[0].end).replace(/^(?:、|及|与|并|暨)+/, '');
+        if (!/[一-龥]{2,}/.test(_afterName)) next.lists[0].members.forEach(_pushDismissal);
+      }
+    }
   });
   if (actions.appointments.length && actions.dismissals.length) {
     var _appointedNames = {};
