@@ -40,7 +40,7 @@
             required: ['path', 'op']
           }
         },
-        edictText: { type: 'string', description: 'category=edictSubstitute 时必填·诏令正式措辞30-80字。★问天不能凭空造新人物/军队/势力等实体（七类直改只改在档实体现有字段）；玩家要"生成/引入新人物"时归本类·把 edictText 写成征召句式（"征召<姓名>入朝"/"诏<姓名>为<官职>"/"起复<姓名>"），玩家下诏后诏令征召管线才会真造人。禁止在 interpretation 里口头答应生成新实体而无诏令落实。' },
+        edictText: { type: 'string', description: 'category=edictSubstitute 时必填·诏令正式措辞30-80字。★问天不能凭空造新人物/军队/势力等实体（七类直改只改在档实体现有字段；天意 absolute 类目除外，天意档依既有语义直接造物不受此限）；玩家（未以天意措辞）要"生成/引入新人物"时归本类·把 edictText 写成征召句式（"征召<姓名>入朝"/"诏<姓名>为<官职>"/"起复<姓名>"），玩家下诏后诏令征召管线才会真造人。禁止在 interpretation 里口头答应生成新实体而无诏令落实。' },
         edictChannel: { type: 'string', enum: ['pol', 'mil', 'dip', 'eco', 'oth'] },
         structured: { type: 'object', description: '{target,action,scope,forbidden,measurable,condition}' },
         ambiguity: { type: 'array', items: { type: 'string' } },
