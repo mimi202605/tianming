@@ -575,6 +575,13 @@ async function genMemorialsAI(count){
       var minReq = (subt === '密折' || subt === '密揭' || subt === '密报' || subt === '表' || subt === '笺') ? Math.round(_secretRange[0] * 0.85) : Math.round(_normalRange[0] * 0.85);
       return m.content.length >= minReq;
     }
+    // ★ 平行历史时空约束·防 AI 按史实把在世 NPC 说死（本局未处置者一律在世）·上奏角色逐人标生死
+    if (typeof _buildTemporalConstraint === 'function') {
+      try {
+        var _memMentioned = (candidates || []).slice(0, 12).map(function(cc){ return cc && cc.name; }).filter(Boolean);
+        prompt += _buildTemporalConstraint(null, { mentionedNames: _memMentioned });
+      } catch (_tcMemE) {}
+    }
     var c = await callAISmart(prompt, _dynamicMaxTok, {
       minLength: count * _strictMin,
       maxRetries: 2,

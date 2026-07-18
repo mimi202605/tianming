@@ -1544,6 +1544,11 @@
       user += '\nGOALS: 见 ACTIVE_GOALS 段·连贯推进既有目标(每回合通常 advance 一步)·达成则 resolve·世界剧变才 newGoals(≤1/回合)·goalUpdates.id 必须用 ACTIVE_GOALS 中真实 id·与 actions/rationale 保持一致。';
     }
 
+    // ★ 平行历史时空约束·clauseOnly 版（只注入总纲条款·不带大名单·防大列表干扰结构化 JSON 决策输出）
+    if (typeof global._buildTemporalConstraint === 'function') {
+      try { sys += global._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcFacE) {}
+    }
+
     return { system: sys, user: user };
   }
 

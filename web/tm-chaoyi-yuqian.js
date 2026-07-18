@@ -284,6 +284,10 @@ async function _yq2_oneAdvisorSpeak(name, roundNum) {
   prompt += '返回 JSON：{"line":"...","stance":"支持/反对/保留/另提/推诿","inwardThought":"真实内心(10-30字)"}';
 
   // A2: 流式化——建占位气泡·onChunk 渐进显示 "line" 字段
+  // ★ 平行历史时空约束·防 AI 按史实把在世人物说死（本局未处置者一律在世）
+  if (typeof _buildTemporalConstraint === 'function') {
+    try { prompt += _buildTemporalConstraint(ch, { mentionedNames: [name] }); } catch (_tcYqE) {}
+  }
   var _yqDiv = addCYBubble(name, '\u2026', false);
   try { _yq2_setSpeaker(name); if (_yqDiv && CY._yq2 && CY._yq2.candorMap && CY._yq2.candorMap[name] && CY._yq2.candorMap[name].candor <= 50) _yqDiv.classList.add('yq-guard'); } catch(_yqSpErr) {}   // \u8c01\u6df1\u8a00\u5219\u8c01\u7acb\u7ed8 + \u5766\u767d\u5ea6\u6761
   try { _yq2_tagBubbleCandor(_yqDiv, candorLevel); } catch(_yqCdErr) {}   // name 行坦白度标签（对齐预览 .cand）

@@ -111,5 +111,26 @@ function sliceA() {
   console.log('  [sliceA] ' + PASS + ' 断言通过');
 }
 
+// ── Slice B：四个零防线 LLM 入口源码 grep（防退化）──
+function sliceB() {
+  const startPass = PASS;
+  const files = [
+    { f: 'tm-memorials.js',                 note: '百官奏疏 genMemorialsAI' },
+    { f: 'tm-chaoyi-tinyi.js',              note: '廷议 v2/v3 共用 _ty2_genOneSpeech' },
+    { f: 'tm-chaoyi-yuqian.js',             note: '御前会议 _yq2_oneAdvisorSpeak' },
+    { f: 'tm-faction-npc-llm-decision.js',  note: '势力 NPC LLM 决策 _buildPrompt（clauseOnly）' }
+  ];
+  files.forEach(function(it) {
+    const src = fs.readFileSync(path.join(ROOT, it.f), 'utf8');
+    assert(/(?:global\.)?_buildTemporalConstraint\s*\(/.test(src), it.f + ' 缺 _buildTemporalConstraint 调用（' + it.note + '）');
+    assert(src.indexOf("typeof") >= 0 && /typeof\s+(?:global\.)?_buildTemporalConstraint\s*===\s*'function'/.test(src), it.f + ' 须以 typeof 守卫注入 _buildTemporalConstraint');
+  });
+  // faction 决策走 clauseOnly（防大名单干扰 JSON 结构化输出）
+  const facSrc = fs.readFileSync(path.join(ROOT, 'tm-faction-npc-llm-decision.js'), 'utf8');
+  assert(/_buildTemporalConstraint\s*\([^)]*clauseOnly/.test(facSrc.replace(/\s+/g, ' ')), 'faction 决策应用 clauseOnly 版');
+  console.log('  [sliceB] ' + (PASS - startPass) + ' 断言通过（四入口 grep）');
+}
+
 sliceA();
+sliceB();
 console.log('PASS smoke-temporal-constraint · 共 ' + PASS + ' 断言');

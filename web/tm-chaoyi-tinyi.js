@@ -719,6 +719,10 @@ async function _ty2_genOneSpeech(name, roundNum, prevSpeeches) {
   prompt += '返回 JSON：{"stance":"极力支持/支持/倾向支持/中立/倾向反对/反对/极力反对/折中/另提议","confidence":0-100,"line":"发言内容","reason":"内在动机"' + (_debateOn ? ',"respondTo":"你主要回应或反驳的同僚名(无则空字符串)","stanceShiftReason":"若因他人论点改立场·写明被谁何语打动(无则空)"' : '') + '}';
 
   // A1: 流式化——先建占位气泡·onChunk 用 regex 渐进显示 "line" 字段
+  // ★ 平行历史时空约束·防 AI 按史实把在世同僚/涉议人物说死（本局未处置者一律在世）
+  if (typeof _buildTemporalConstraint === 'function') {
+    try { prompt += _buildTemporalConstraint(ch, { mentionedNames: [name] }); } catch (_tcTyE) {}
+  }
   var _tyDiv = addCYBubble(name, '\u2026', false);
   try { _ty2_setSpeaker(name); } catch(_tySpErr) {}   // \u8c01\u9648\u8bcd\u5219\u8c01\u7acb\u7ed8
   var _tyBubble = _tyDiv && _tyDiv.querySelector ? _tyDiv.querySelector('.cy-bubble') : null;
