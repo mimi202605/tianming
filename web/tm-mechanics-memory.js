@@ -35,6 +35,124 @@ function _tmMemoryFindChar(name) {
   return (GM.chars || []).find(function(c) { return c && c.name === name; }) || null;
 }
 
+// <<<刀B-DETECTOR-START>>> 生死矛盾检测器（NPC 记忆污染消毒·V1 只治生死类矛盾）
+// ═══════════════════════════════════════════════════════════════════════════
+// 背景（侦察确诊的污染环）：问对等场景 AI 一句史实幻觉（如「魏忠贤已伏诛」而本局魏在世）被
+//   remember 无校验持久化进 ch._memory + GM._memoryArchiveFull，下回合又被 _buildTemporalConstraint
+//   当「本 NPC 关键记忆」喂回 prompt，自证自强化。此确定性检测器在落库前扫事件文本，逮住与
+//   GM 生死态直接冲突的宣称。取向 = 宁误放勿误杀：拿不准的边界一律放行，绝不静默丢正常记忆。
+//
+// 最长实体消歧（本地版·镜像另一分支「刀9」的 _textMentionsName——那个函数不在本 lineage，故
+//   本文件自实现本地版）：候选名按长度降序匹配·长名命中即消费其字符跨度·所含短名不再另计
+//   （防「王安石」误配「王安」）。另设「名—死讯词之间只容连接/标点」的紧邻判定，兼治只有短名
+//   「王安」在册而文本写「王安石已死」时不误配（"石"非连接词→判为更长 token 的一部分→放行）。
+//
+// ── 竞态注记（remember 调用点 vs 死亡落库先后序·已 trace）───────────────────────────────
+//   唯一死亡 sink = applyOneDeath(tm-ai-apply-deaths.js)：先置 ch.alive=false + ch.dead=true +
+//   ch.deathTurn=GM.turn（L46-48），之后才 remember(…「X离世」)（L82/97/126）。故死讯记忆落库时
+//   当事人 X 已 alive===false → 命中「宣称与 GM 一致」边界②放行，不误杀正常死讯。
+//   character_memory_updates（AI 自撰记忆）走记忆管家候选池 GM._aiMemory·不经 remember·不触本闸。
+//   端内仍设 deathTurn===GM.turn 边界③为防御带：万一某路径在 X.alive 尚未翻转前写「X已死」而 X
+//   确于本回合被判死，以 deathTurn 命中放行（宁误放）。
+// ═══════════════════════════════════════════════════════════════════════════
+var _TM_VITAL_SCAN_CAP = 400;   // 只扫事件文本前 400 字·防长文本性能
+var _TM_VITAL_WINDOW = 16;      // 名后 16 字窗口内的生死词才可能指向此人
+// 死亡宣称词（指向某人已死·取形式化古语·避开易撞的口语「死了/死心」等）
+var _TM_DEATH_CLAIM_RE = /已死|已卒|已故|已亡|已殁|身殁|身亡|身故|亡故|殒命|丧命|毙命|暴毙|暴亡|驾崩|已伏诛|伏诛|正法|问斩|已处决|自缢身[死亡]|自尽身[死亡]|被诛|诛杀|伏法|遇害|殉国|殉难|已逝|薨逝|薨/;
+// 存活宣称词（指向某人仍在世/复起）
+var _TM_ALIVE_CLAIM_RE = /仍在世|尚在世|仍然在世|仍健在|尚健在|健在|仍在位|尚在位|依旧在位|官复原职|复起用|复起|复出|东山再起|仍活着|尚活着|还活着|尚在人世|仍在人世|安然无恙/;
+// 任一生死词的存在性快测（绝大多数记忆无此词→O(1) 直接放行·免全表扫描）
+var _TM_VITAL_ANY_RE = /[死卒故亡殁殒毙诛斩缢崩薨逝]|正法|问斩|处决|伏法|遇害|殉|健在|在世|在位|在人世|官复|复起|复出|东山再起|活着|无恙/;
+// 名与死/活宣称词之间「紧邻」允许的过门字（连接词/标点/数字/空白）；出现此集之外的汉字→判为
+//   非指本人（如「之父」「之子」或更长 token 的续字「石」）→放行（宁误放）。
+var _TM_VITAL_TIGHT_RE = /^[\s0-9已现今如将方才刚亦也竟遂终则或乃是然实果真早经晚看闻听说道传、，。；：·…（）()\[\]【】「」《》\u201c\u201d\u2018\u2019—-]*$/;
+
+/** 事件文本里按最长实体消歧扫出被点名的 GM 人物及其位置（长名消费字符跨度·所含短名不再另计） */
+function _tmVitalScanMentions(text) {
+  var out = [];
+  if (typeof GM === "undefined" || !GM || !Array.isArray(GM.chars)) return out;
+  var names = [];
+  for (var i = 0; i < GM.chars.length; i++) {
+    var c = GM.chars[i];
+    if (c && typeof c.name === "string" && c.name.length >= 2) names.push(c.name);
+  }
+  names.sort(function (a, b) { return b.length - a.length; });   // 长名优先
+  var consumed = new Array(text.length);   // 已被更长名消费的字符位
+  for (var n = 0; n < names.length; n++) {
+    var nm = names[n], from = 0, pos;
+    while ((pos = text.indexOf(nm, from)) >= 0) {
+      var end = pos + nm.length, clash = false;
+      for (var k = pos; k < end; k++) { if (consumed[k]) { clash = true; break; } }
+      if (!clash) { for (var k2 = pos; k2 < end; k2++) consumed[k2] = 1; out.push({ name: nm, pos: pos, end: end }); }
+      from = pos + nm.length;
+    }
+  }
+  out.sort(function (a, b) { return a.pos - b.pos; });
+  return out;
+}
+
+/** 确定性生死矛盾检测·返回首个冲突 {claimTarget, claimType} 或 null（无冲突/放行）
+ *  claimType: 'death_of_living'（称在世者已死） | 'alive_of_dead'（称已故者仍在）。
+ *  边界：①在册查无此人（虚构/泛称）→放行 ②宣称与 GM 一致→放行 ③本回合刚判死(竞态)→放行。 */
+function _tmDetectVitalConflict(text) {
+  try {
+    if (!text || typeof text !== "string") return null;
+    var s = text.length > _TM_VITAL_SCAN_CAP ? text.slice(0, _TM_VITAL_SCAN_CAP) : text;
+    if (!_TM_VITAL_ANY_RE.test(s)) return null;          // 无任何生死词→放行（绝大多数记忆走这条）
+    if (typeof GM === "undefined" || !GM) return null;    // 无 GM→永不崩·放行
+    var mentions = _tmVitalScanMentions(s);
+    if (!mentions.length) return null;                    // 只有泛称/虚构人·无在册点名→放行（边界①）
+    var curTurn = GM.turn;
+    for (var i = 0; i < mentions.length; i++) {
+      var m = mentions[i];
+      var winEnd = m.end + _TM_VITAL_WINDOW;
+      if (i + 1 < mentions.length && mentions[i + 1].pos < winEnd) winEnd = mentions[i + 1].pos;   // 窗口截到下一个被点名者前
+      var claim = s.slice(m.end, winEnd);
+      if (!claim) continue;
+      var c = _tmMemoryFindChar(m.name);
+      if (!c) continue;                                   // 查无此人→放行（边界①）
+      var isDead = (c.alive === false || c.dead === true);
+      var diedThisTurn = (curTurn != null && c.deathTurn === curTurn);   // 边界③·本回合刚判死
+      var md = _TM_DEATH_CLAIM_RE.exec(claim);
+      if (md) {
+        // 名与死讯词须紧邻（其间只容过门字）·否则非指本人（治「王安石已死」误配王安、「之父已故」等）
+        if (_TM_VITAL_TIGHT_RE.test(claim.slice(0, md.index)) && !isDead && !diedThisTurn) {
+          return { claimTarget: m.name, claimType: "death_of_living" };   // 称在世者已死→冲突
+        }
+        continue;   // isDead / diedThisTurn / 非紧邻 → 放行（边界②③）
+      }
+      var ma = _TM_ALIVE_CLAIM_RE.exec(claim);
+      if (ma && _TM_VITAL_TIGHT_RE.test(claim.slice(0, ma.index)) && isDead && !diedThisTurn) {
+        return { claimTarget: m.name, claimType: "alive_of_dead" };       // 称已故者仍在→冲突
+      }
+    }
+    return null;
+  } catch (_) { return null; }   // 任何异常→放行·永不崩
+}
+
+/** 写闸拒写留痕：落弱提示账 GM._aiWeakWriteHints + console.warn（弱纸条·AI 可忽略·非硬规则） */
+function _tmRecordVitalConflictHint(npc, conflict, event) {
+  try {
+    if (typeof GM === "undefined" || !GM) return;
+    var claimTarget = (conflict && conflict.claimTarget) || "";
+    var hint = {
+      kind: "memory_hist_conflict",
+      npc: npc || "",
+      claimTarget: claimTarget,
+      textSlice: String(event || "").slice(0, 60),
+      turn: GM.turn || 0,
+      label: "memory_hist_conflict",   // 供 tm-endturn-prompt 弱纸条消费者渲染
+      itemName: claimTarget
+    };
+    if (!GM._aiWeakWriteHints) GM._aiWeakWriteHints = [];
+    GM._aiWeakWriteHints.push(hint);
+    if (GM._aiWeakWriteHints.length > 20) GM._aiWeakWriteHints = GM._aiWeakWriteHints.slice(-20);
+    try { console.warn("[记忆消毒·刀B] 拒写生死矛盾记忆·NPC=" + hint.npc + "·" + (conflict && conflict.claimType) + "「" + claimTarget + "」·以本局 GM 为准 · " + hint.textSlice); } catch (_) {}
+  } catch (_) {}
+}
+if (typeof window !== "undefined") { window._tmDetectVitalConflict = _tmDetectVitalConflict; window._tmVitalScanMentions = _tmVitalScanMentions; }
+// <<<刀B-DETECTOR-END>>>
+
 var NpcMemorySystem = {
   /**
    * 获取角色的动态记忆容量（根据品位/身份/互动量分级）
@@ -144,6 +262,10 @@ var NpcMemorySystem = {
     }
     var ch = _tmMemoryFindChar(charName);
     if (!ch || ch.alive === false) return;
+    // 刀B·写闸：生死矛盾检测——AI 幻觉「X已伏诛」而本局 X 在世等，拒写（不落 _memory / _memoryArchiveFull /
+    //   _impressions / _relationHistory / 不镜像），只落弱提示账 + console.warn 留痕。宁误放勿误杀。
+    var _vitalConflict = (typeof _tmDetectVitalConflict === "function") ? _tmDetectVitalConflict(event) : null;
+    if (_vitalConflict) { _tmRecordVitalConflictHint(charName, _vitalConflict, event); return; }
     if (!ch._memory) ch._memory = [];
     if (!ch._memArchive) ch._memArchive = [];
 

@@ -203,12 +203,13 @@
       }
     },
     "tm-mechanics-memory.js": {
-      "gm": 7,
+      "gm": 10,
       "p": 0,
       "roots": {
         "gm:_charInteractionCount": 4,
         "gm:_charInteractionCountTurn": 1,
-        "gm:_memoryArchiveFull": 2
+        "gm:_memoryArchiveFull": 2,
+        "gm:_aiWeakWriteHints": 3
       }
     },
     "tm-mechanics-world.js": {
