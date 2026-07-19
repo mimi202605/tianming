@@ -1331,7 +1331,10 @@ function _autoSaveSnapshotGM(sourceGM){
     _savedHistoryIndex:1, _savedFactionRelationsMap:1, _savedNpcCommitments:1,
     _savedCharacterArcs:1, _savedEdictLifecycle:1, _savedCourtRecords:1,
     _savedNpcFactionAiTurnLedger:1, _savedFamilies:1, _savedCausalGraph:1,
-    _savedMemoryLayers:1, _savedBattleHistory:1, _savedFactionArcs:1
+    _savedMemoryLayers:1, _savedBattleHistory:1, _savedFactionArcs:1,
+    // 刀C返工三轮(2026-07-19)·写端来源判据的派生记忆化缓存(allNames/朝议拼接文本+其签名)·非游戏态·不入档
+    //   (随通用快照持久化会致读档命中旧局缓存·已并 loadGen 入键作二保险)。
+    _wgAllNamesCache:1, _wgAllNamesSigVal:1, _wgCourtTextCache:1, _wgCourtTextSigVal:1
   };
   var out = {};
   for (var k in _snapshotGM) {

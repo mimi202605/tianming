@@ -834,7 +834,7 @@
   }
 
   /** 深度 merge updates 到 entity·每个字段变化记入 _turnReport */
-  function _mergeUpdatesToEntity(entity, updates, reportType, entityName, reason, failed) {
+  function _mergeUpdatesToEntity(entity, updates, reportType, entityName, reason, failed, aiOutput) {
     if (!entity || !updates) return 0;
     var G = global.GM;
     var count = 0;
@@ -880,13 +880,24 @@
         _rejectMergeKey(key, 'blocked update field: ' + realKey);
         return;
       }
+      // ── 刀C·C3(2026-07-19)·char_update 敏感字段(失势向量)来源判据 ──
+      //   stance/grade(清誉)/reputation/fame/faction 是 AI「按真实历史幻觉」最爱的失势向量·此前任写。过字段级同款来源判据
+      //   (validators._sensitiveCharFieldSourced 复用 _writeActionSourced：玩家诏令/司法态/结构化互证[排 char_updates 自证]/本回合弹劾朝议输入)：
+      //   无源→跳过该字段(其余字段照常 merge)·validators 侧留痕弱自查纸条；有源→_c3approved 豁免下方 _isPathBlocked 禁区·经既有 generic
+      //   路径正常落(这些字段已入禁区堵万能键 anyPathChanges/changes·但 char_updates 经本闸判源后放行)。loyalty 另有 canonical 闸·不在此列。★宁漏勿误杀。
+      var _c3approved = false;
+      if (reportType === 'char_update' && !isAppend && /^(?:stance|grade|reputation|fame|faction)$/.test(realKey)) {
+        var _c3g = global.TM && global.TM.__acaParts && global.TM.__acaParts._sensitiveCharFieldSourced;
+        if (_c3g && !_c3g(G, (aiOutput || null), entity, realKey, entityName)) return;   // 无源·validators 已留痕·跳过该敏感字段
+        _c3approved = true;   // 有源·放行·豁免下方 _isPathBlocked(该字段已入禁区仅为堵万能键·char_updates 经本闸放行)
+      }
       if (isAppend && !_APPENDABLE_UPDATE_ARRAY_FIELDS[realKey]) {
         _rejectMergeKey(key, 'array append not allowed: ' + realKey);
         return;
       }
       var newVal = _sanitizeAiStr(updates[key], key);
       var valuePath = _mergeBasePath + '.' + realKey;
-      if (typeof _isPathBlocked !== 'function' || _isPathBlocked(valuePath)) {
+      if (!_c3approved && (typeof _isPathBlocked !== 'function' || _isPathBlocked(valuePath))) {
         _rejectMergeKey(key, 'blocked update path: ' + valuePath);
         return;
       }

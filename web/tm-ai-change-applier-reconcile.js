@@ -403,7 +403,16 @@
   global._applyTaxAuthorityGate = _applyTaxAuthorityGate;
 
   function _applyDirectiveCompliance(G, aiOutput) {
-    if (!G || !Array.isArray(G._playerDirectives) || G._playerDirectives.length === 0) return;
+    if (!G) return;
+    // 刀9·本回合已执行一次性纠正指令暂存：下方 filter 删除 _pendingRemovalAfterApply 指令·validator 本 pass 稍后读其文本判源。
+    //   ★turn 级重置(非每 pass 清)：同回合多 pass(sc1/问天/奏疏各调一次 applier)时·后续 pass 不得清掉先前 pass 快照·
+    //   否则「王安病故」在后续 pass 被误判无源。按 GM.turn 换回合才清·同 turn 保留并去重 append·重入结算安全。
+    var _curTurn = G.turn || 0;
+    if (!Array.isArray(G._directivesAppliedThisTurn) || G._directivesAppliedTurn !== _curTurn) {
+      G._directivesAppliedThisTurn = [];   // arch-ok
+      G._directivesAppliedTurn = _curTurn;   // arch-ok
+    }
+    if (!Array.isArray(G._playerDirectives) || G._playerDirectives.length === 0) return;
     var reports = aiOutput && Array.isArray(aiOutput.directive_compliance) ? aiOutput.directive_compliance : [];
     // 按 id 索引指令
     var idMap = {};
@@ -434,9 +443,18 @@
         d._lastCheckTurn = G.turn || 0;
       }
     });
-    // 合规处理完·清理本回合标记的一次性 directive（纠正类执行后移除）
+    // 合规处理完·清理本回合标记的一次性 directive（纠正类执行后移除）·删前把文本快照到本回合暂存(供刀9 源头判据·去重防重入双记)
     G._playerDirectives = G._playerDirectives.filter(function(d){
-      return !(d && d._pendingRemovalAfterApply);
+      if (d && d._pendingRemovalAfterApply) {
+        try {
+          var _dc = (d.content != null ? String(d.content) : '');
+          if (!G._directivesAppliedThisTurn.some(function(x){ return x && x.content === _dc; })) {
+            G._directivesAppliedThisTurn.push({ turn: _curTurn, content: _dc });   // arch-ok
+          }
+        } catch(_) {}
+        return false;
+      }
+      return true;
     });
   }
   global._applyDirectiveCompliance = _applyDirectiveCompliance;
@@ -708,6 +726,20 @@
       if (!deathReason) return _tmGateReason('character_deaths', 'missing cause/reason: ' + d.name, d);
       d.name = ch.name || rawDeathName;
       if (!d.reason) d.reason = String(deathReason);
+      // ── 刀C·C1(2026-07-19)·结构化死亡来源判据(裸伏诛/自缢/纯病故=bare·无源→疑史实幻觉·不落库) ──
+      //   复用刀9：_classifyStructuredDeathKind 分类 bare/active·仅 gate bare 且本回合无任何源头(玩家诏令三源/司法危难态/
+      //   其他结构化键互证[排 character_deaths 自证]/npc_actions 涉及·_narrativeDeathSourced)。主动致死/暴力殉难/含本局
+      //   具体事由(战殁/奉旨赐死/被斩)=active·照常落。★宁漏勿误杀：非 bare 或有任一源即放行。拒写降级=转弱自查纸条+console 留痕·不静默丢弃。
+      try {
+        var _c1bkt = global.TM && global.TM.__acaParts;
+        var _c1classify = _c1bkt && _c1bkt._classifyStructuredDeathKind;
+        var _c1sourced = _c1bkt && _c1bkt._narrativeDeathSourced;
+        if (_c1classify && _c1sourced && _c1classify(d.reason) === 'bare' &&
+            !_c1sourced(G, aiOutput, ch, { excludeStructuredKey: 'character_deaths' })) {
+          console.warn('[preflight/character_deaths] 无源孤立结构化死亡·不落库(疑 AI 史实幻觉·转弱自查纸条留痕): ' + d.name + ' ← 「' + String(d.reason).slice(0, 40) + '」');
+          return _tmGateReason('character_deaths', '无源孤立结构化死亡(疑史实幻觉·bare 死因无任何源头): ' + d.name + '·死因「' + String(d.reason).slice(0, 30) + '」', d);
+        }
+      } catch (_c1e) {}
       return true;
     });
 

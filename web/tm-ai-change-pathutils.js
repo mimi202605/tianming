@@ -684,6 +684,8 @@
       if (/^armies\.[^.]+\.(?:commander|commanderName|commanderDisplayName|commander_name|general|generalName|leader|leaderName|commandingOfficer|chiefCommander|chiefGeneral|mainGeneral|newCommander|newGeneral)(?:\.|$)/i.test(p)) return true;
       if (/^officeTree(?:\.|$).*\.(?:holder|actualHolders)(?:\.|$)/i.test(p)) return true;
       if (/^(?:adminHierarchy|regionMap|provinceStats)(?:\.|$).*\.(?:governor|governorName|officialPosition)(?:\.|$)/i.test(p)) return true;
+      // 刀C·C3(2026-07-19)·敏感人物字段(失势向量)不得借万能键(anyPathChanges/changes)绕过 char_update 来源判据·须走 char_updates(经 _mergeUpdatesToEntity C3 闸)。
+      if (/^chars\.[^.]+\.(?:stance|grade|reputation|fame|faction)(?:\.|$)/i.test(p)) return true;
       return false;
     });
   }

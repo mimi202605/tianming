@@ -153,7 +153,10 @@
     var fn = root.onDismissal;
     if (typeof fn !== 'function') { _recordFail(gm, 'dismiss', input && input.name, 'onDismissal 未加载'); return { ok: false, reason: 'onDismissal 未加载' }; }
     if (!input || !input.name) return { ok: false, reason: '缺 name' };
-    var res; try { res = fn(input.name, input.reason || ''); } catch (e) { _recordFail(gm, 'dismiss', input.name, 'engine 异常:' + (e && e.message)); return { ok: false, reason: 'engine 异常:' + (e && e.message) }; }
+    // 刀C·返工二轮issue1(2026-07-19)：agent 语义写走 AI-apply 通道·须给 onDismissal 传第3参 aiOutput·否则死亡收口闸
+    //   (_gateDeathRoutingSource 遇 !aiOutput 直接放行=裸病故旁路)。agent 单工具调用无 p1 结构化输出·传显式标记对象·
+    //   令判源经玩家诏令/司法态/朝议(读 GM)两路而非 fail-open；非死因 reason(致仕/罢官)本就不入死亡闸·无影响。
+    var res; try { res = fn(input.name, input.reason || '', { _agentWrite: true, _op: 'dismiss' }); } catch (e) { _recordFail(gm, 'dismiss', input.name, 'engine 异常:' + (e && e.message)); return { ok: false, reason: 'engine 异常:' + (e && e.message) }; }
     if (res && res.ok === false) { _recordFail(gm, 'dismiss', input.name, res.reason || '去职失败'); return { ok: false, reason: res.reason || '去职失败' }; }
     _report(gm, { type: 'change', path: 'chars/' + input.name, reason: (input.reason || '') + '·去职', turn: gm.turn || 0, _agent: true, _op: 'dismiss' });
     return { ok: true, path: 'chars/' + input.name };

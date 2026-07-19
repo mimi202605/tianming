@@ -99,6 +99,11 @@
               institution_changes: Array.isArray(p1.institution_changes) ? p1.institution_changes : [],
               char_updates: Array.isArray(p1.char_updates) ? p1.char_updates : [],
               office_assignments: Array.isArray(p1.office_assignments) ? p1.office_assignments : [],
+              // 刀9·随主叙事同传结构化死亡名单给校验器(令结构化死者进 handled·免主链把正经死亡错记无源+吐垃圾弱提示)。
+              //   Codex 二审对照实测确认走标准键安全：normalizeAIWriteBackDeaths 只路由 char_updates 合成死亡·不 apply 显式 character_deaths→
+              //   本 applyAITurnChanges 死亡 sink=0(不落库)·仅 _processDeathEpitaphs 消费一次生成墓志铭(墓志铭=1)·避免 advisory 影子键漏掉墓志铭消费者；
+              //   真死亡仍唯一由稍后 tm-endturn-apply.js:997 的 applyCharacterDeaths(p1) 落库(sink=1·已死幂等闸防双墓志铭)。
+              character_deaths: Array.isArray(p1.character_deaths) ? p1.character_deaths : [],
               faction_updates: Array.isArray(p1.faction_updates) ? p1.faction_updates : [],
               party_updates: Array.isArray(p1.party_updates) ? p1.party_updates : [],
               // v2 结构化扩展字段必须跟主 p1 同回合抵达 applier；此前 prompt 宣告但 dispatcher 遗漏，形成静默黑洞。

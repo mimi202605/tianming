@@ -1090,12 +1090,14 @@
                 if (typeof addEB === 'function') addEB('人事', cu.name + '从' + _oldLoc + '赴' + cu.new_location);
               }
             }
-            // 立场变化
-            if (cu.new_stance && typeof cu.new_stance === 'string') {
+            // 立场变化 ── 刀C·返工issue1(2026-07-19)·扁平 new_stance/new_party 是真实 SC1 消费点(此前 C3 只识别嵌套 updates.{}·扁平绕过)。
+            //   过 C3 同款字段级来源判据 _sensitiveCharFieldSourced(无源→跳过该字段+留痕·有源→照落)。玩家目标字段已在上方 1027 行删除·此处只作非玩家。
+            var _wgFlat = global.TM && global.TM.__acaParts;
+            if (cu.new_stance && typeof cu.new_stance === 'string' && (!(_wgFlat && _wgFlat._sensitiveCharFieldSourced) || _wgFlat._sensitiveCharFieldSourced(GM, p1, ch, 'stance', ch.name))) {
               ch.stance = cu.new_stance;
             }
             // 党派变化
-            if (cu.new_party !== undefined) {
+            if (cu.new_party !== undefined && (!(_wgFlat && _wgFlat._sensitiveCharFieldSourced) || _wgFlat._sensitiveCharFieldSourced(GM, p1, ch, 'party', ch.name))) {
               ch.party = cu.new_party || '';
             }
             // 压力-特质挂钩
