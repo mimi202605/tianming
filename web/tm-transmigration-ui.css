@@ -1,0 +1,279 @@
+/* ============================================================
+ * tm-transmigration-ui.css — 穿越模式 Phase A · Task A6 专属 CSS
+ * ------------------------------------------------------------
+ * 所有规则包在 body.transmigration-mode 下·皇帝模式零视觉回归
+ * 5 套身份主题色：civil(青) / royal(紫) / merchant(金) / martial(黑) / monastic(白)
+ * ============================================================ */
+
+/* ── §6.2 5 套身份主题色变量 ──────────────────────────────── */
+body.player-role-minister,
+body.player-role-regent,
+body.player-role-retired_official {
+  --player-accent: #4a90e2;
+  --player-accent-light: #7fb3d5;
+  --player-bg: #f4f8fb;
+  --player-text-strong: #1a5490;
+}
+
+body.player-role-prince,
+body.player-role-custom,
+body.player-role-eunuch,
+body.player-role-maid {
+  --player-accent: #9b59b6;
+  --player-accent-light: #bb8fce;
+  --player-bg: #faf4fb;
+  --player-text-strong: #6c3483;
+}
+
+body.player-role-merchant,
+body.player-role-artisan {
+  --player-accent: #d4a017;
+  --player-accent-light: #f1c40f;
+  --player-bg: #fdf8ed;
+  --player-text-strong: #9a7d0a;
+}
+
+body.player-role-general,
+body.player-role-bandit {
+  --player-accent: #2c3e50;
+  --player-accent-light: #e74c3c;
+  --player-bg: #f0f0f0;
+  --player-text-strong: #1c2833;
+}
+
+body.player-role-monk,
+body.player-role-infant,
+body.player-role-commoner,
+body.player-role-actor {
+  --player-accent: #7f8c8d;
+  --player-accent-light: #bdc3c7;
+  --player-bg: #ffffff;
+  --player-text-strong: #566573;
+}
+
+/* ── §1.5 / §6.5 皇帝模式隔离 ────────────────────────────── */
+.hidden-emperor { display: none !important; }
+
+/* ── §2.1 顶栏玩家身份条 ─────────────────────────────────── */
+body.transmigration-mode .bar-player-identity {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--player-bg, #f4f8fb);
+  border-bottom: 2px solid var(--player-accent, #4a90e2);
+  font-size: 13px;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .bar-player-identity .player-portrait {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--player-accent, #4a90e2);
+  color: #fff; border-radius: 4px;
+}
+body.transmigration-mode .bar-player-identity .player-name {
+  font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .bar-player-identity .player-role-chip {
+  padding: 1px 8px; border-radius: 4px;
+  background: var(--player-accent, #4a90e2); color: #fff;
+  font-size: 12px;
+}
+body.transmigration-mode .bar-player-identity .player-divider { color: #aaa; }
+body.transmigration-mode .bar-player-identity .player-location,
+body.transmigration-mode .bar-player-identity .player-clan,
+body.transmigration-mode .bar-player-identity .player-age,
+body.transmigration-mode .bar-player-identity .player-sovereign {
+  color: #555;
+}
+
+/* 顶栏变量 */
+body.transmigration-mode .bar-var-item {
+  display: inline-flex; gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--player-accent-light, #7fb3d5);
+  border-radius: 4px;
+  margin-right: 4px;
+  font-size: 12px;
+}
+body.transmigration-mode .bar-var-label { color: #888; }
+body.transmigration-mode .bar-var-value { color: var(--player-text-strong, #1a5490); font-weight: 600; }
+
+/* ── §3 左栏 7 场景 tab ───────────────────────────────────── */
+body.transmigration-mode .player-left-tabs {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px;
+}
+body.transmigration-mode .player-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #444;
+  transition: background 150ms ease;
+}
+body.transmigration-mode .player-tab:hover {
+  background: var(--player-bg, #f4f8fb);
+}
+body.transmigration-mode .player-tab.active {
+  background: var(--player-accent, #4a90e2);
+  color: #fff;
+}
+body.transmigration-mode .player-tab-icon { font-size: 14px; }
+body.transmigration-mode .player-tab-label { font-size: 13px; }
+body.transmigration-mode .player-tab-redot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #e74c3c;
+  margin-left: auto;
+  animation: player-tab-pulse 1s infinite alternate;
+}
+@keyframes player-tab-pulse {
+  from { opacity: 0.5; } to { opacity: 1; }
+}
+
+/* ── §4 主面板区块 ───────────────────────────────────────── */
+body.transmigration-mode .player-scene {
+  padding: 12px 16px;
+  animation: player-scene-fadein 150ms ease;
+}
+@keyframes player-scene-fadein {
+  from { opacity: 0; } to { opacity: 1; }
+}
+body.transmigration-mode .player-block {
+  margin-bottom: 16px;
+  border-left: 3px solid var(--player-accent, #4a90e2);
+  padding-left: 10px;
+}
+body.transmigration-mode .player-block-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+  margin-bottom: 6px;
+}
+body.transmigration-mode .player-block-empty,
+body.transmigration-mode .player-block-error {
+  font-size: 12px; color: #999; font-style: italic;
+}
+
+/* ── §5 奉旨卡片浮层 ─────────────────────────────────────── */
+body .edict-card-host {
+  position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none;
+}
+body .edict-card-toast {
+  pointer-events: auto;
+  min-width: 360px; max-width: 480px;
+  background: #fffdf5;
+  border: 2px solid var(--player-accent, #9b59b6);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 8px 12px;
+  animation: edict-toast-slide 200ms ease-out;
+}
+@keyframes edict-toast-slide {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+body .edict-card-toast-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4px;
+}
+body .edict-card-toast-title {
+  font-weight: 600; color: var(--player-royal, #9b59b6);
+}
+body .edict-card-toast-actions button {
+  background: none; border: none; cursor: pointer;
+  color: #888; padding: 0 4px; font-size: 12px;
+}
+body .edict-card-toast-body {
+  font-size: 13px; color: #333;
+}
+body .edict-card-toast-comment,
+body .edict-card-toast-grade {
+  font-size: 12px; color: #666; margin-top: 2px;
+}
+
+body .edict-card-modal {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+}
+body .edict-card-modal-inner {
+  background: #fff;
+  border-radius: 6px;
+  max-width: 640px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+}
+body .edict-card-modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600; color: var(--player-royal, #9b59b6);
+}
+body .edict-card-modal-head button {
+  background: none; border: none; cursor: pointer; font-size: 18px; color: #888;
+}
+body .edict-card-modal-body { padding: 12px 16px; }
+body .edict-card-modal-row {
+  margin-bottom: 12px;
+}
+body .edict-card-modal-row label {
+  display: block; font-size: 12px; color: #888; margin-bottom: 4px;
+}
+body .edict-card-modal-row > div {
+  font-size: 13px; color: #333;
+}
+body .edict-card-modal-foot {
+  padding: 12px 16px; text-align: right;
+  border-top: 1px solid #eee;
+}
+body .edict-card-modal-ok {
+  background: var(--player-royal, #9b59b6); color: #fff;
+  border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer;
+}
+
+/* ── §5.5 src-* chip 样式 ────────────────────────────────── */
+.qiju-src-chip {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-size: 11px; margin-right: 6px;
+}
+.qiju-src-chip.src-player    { background: var(--player-civil, #4a90e2); color: #fff; }
+.qiju-src-chip.src-sovereign { background: var(--player-royal, #9b59b6); color: #fff; }
+.qiju-src-chip.src-npc       { background: #888; color: #fff; }
+
+/* ── §5.1 右栏玩家身份卡 ─────────────────────────────────── */
+body.transmigration-mode .player-right-panel {
+  padding: 8px;
+}
+body.transmigration-mode .player-id-card {
+  display: flex; gap: 10px;
+  padding: 10px;
+  background: var(--player-bg, #f4f8fb);
+  border: 1px solid var(--player-accent-light, #7fb3d5);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+body.transmigration-mode .player-id-portrait {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--player-accent, #4a90e2);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+body.transmigration-mode .player-id-info { flex: 1; }
+body.transmigration-mode .player-id-name {
+  font-size: 16px; font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .player-id-title {
+  font-size: 13px; color: #666; margin-top: 2px;
+}
+body.transmigration-mode .player-id-meta,
+body.transmigration-mode .player-id-loc,
+body.transmigration-mode .player-id-sov {
+  font-size: 12px; color: #888; margin-top: 2px;
+}
