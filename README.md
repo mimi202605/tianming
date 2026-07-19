@@ -8,8 +8,8 @@
 
 | | |
 |---|---|
-| **在线游玩** | <https://misfit-user.github.io/tianming/> |
-| **当前内容版本** | 1.3.4.6（2026-07-04） |
+| **在线游玩** | <https://mimi202605.github.io/tianming/> |
+| **当前内容版本** | 1.3.4.8（2026-07-19） |
 | **技术栈** | Electron + 原生 JS，零编译；AI 自带 API key |
 | **协议** | MIT |
 
