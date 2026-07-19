@@ -86,6 +86,8 @@
       + '\n\n请生成一份极高密度的世界状态快照·供下回合 AI 作记忆起点。只返回 JSON:\n'
       + '{"world_snapshot":"当前世界完整状态压缩——含所有关键变化、人物状态、势力格局、经济军事、社会矛盾(≤400字)","next_turn_seeds":"下回合应发展的种子——哪些事正在酝酿、哪些人即将行动(≤200字)","tension_level":"当前紧张度(1-10)及原因(≤50字)"}';
     var sys = '你是天命的世界态势史官。基于本回合实际发生的变化·凝练一份客观、信息密集的世界快照与下回合伏笔种子。只返回 JSON·不要解释。';
+    // 时空约束·世界态势快照深析(快照述人物状态/势力格局→下回合记忆锚·防写入史实结局污染续演)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw;
     try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1600, null, 'secondary'); }
     catch (e) { return { ok: false, text: '(世界快照调用失败:' + (e && e.message) + ')' }; }
@@ -122,6 +124,8 @@
       + '\n只返回 JSON:\n'
       + '{"npcs":[{"name":"","mood":"一词情绪(如 忧惧/愤懑/窃喜/隐忍)","stress_delta":-20到20整数,"inner":"一句内心独白(≤40字)","hidden_intent":"暗中打算·无则空(≤30字)"}]}';
     var sys = '你是天命的人物内心史官。基于本回合实际发生的事(含玩家与各人的问对/朝议/书信)·推演重点人物的真实内心与暗筹·须贴合各自忠诚/野心/性格/处境·**且与其本回合已有言行一致(勿人格分裂)**·不要套话。只返回 JSON·不要解释。';
+    // 时空约束·人物内心深析(内心/暗筹·防NPC据史实预知己身结局或误认在世者已死)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw;
     try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1800, null, 'secondary'); }
     catch (e) { return { ok: false, text: '(NPC深化调用失败:' + (e && e.message) + ')' }; }
@@ -178,6 +182,8 @@
       + '\n可用关系类型(请用括号前的英文 type):' + typeGuide
       + '\n只返回 JSON:\n{"relations":[{"actor":"发起者姓名","target":"对象姓名","type":"英文type","reason":"因本回合何事(≤25字)"}]}';
     var sys = '你是天命的人物关系史官。据本回合实际发生·推演重点人物之间的关系变化·须有真实因果(本回合确有其事)·勿捏造。只返回 JSON·不要解释。';
+    // 时空约束·人物关系深析(reason为自由文本·防「因某人史实伏诛」类越今引后事)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw;
     try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1400, null, 'secondary'); }
     catch (e) { return { ok: false, text: '(关系深化调用失败:' + (e && e.message) + ')' }; }
@@ -234,6 +240,8 @@
       + '"foreshadow":["伏笔1——40字·何人何事何时引爆","伏笔2","伏笔3"],'
       + '"causal_edges":[{"from":"起因(事件/决策/人物·≤20字)","to":"结果(≤20字)","type":"triggered/enabled/blocked/escalated","strength":0.6,"explanation":"因果说明(≤40字)"}]}';
     var sys = '你是天命的记忆与情节史官。把本回合固化为高密度记忆、状态盘、情节线索与因果链连续性·供下回合推演续接。只返回 JSON·不要解释。';
+    // 时空约束·记忆/脉络固化(saga跨回合记忆骨干·杠杆最高·防把史实结局固化进memory污染全程)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw;
     try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 2000, null, 'secondary'); }
     catch (e) { return { ok: false, text: '(整合调用失败:' + (e && e.message) + ')' }; }
@@ -311,6 +319,8 @@
       + '\n本回合若无自然通信由头·返回空数组(0 封·勿强凑)；有则 1-3 封·写信人收信人贴合各自处境与关系。只返回 JSON:\n'
       + '{"letters":[{"from":"写信人姓名","to":"收信人姓名(优先另一 NPC·非玩家)","letterType":"intelligence/private/gift/plea/accusation","urgency":"normal/urgent","content":"信文(≤200字·有实质内容·非套话)"}]}';
     var sys = '你是天命的人际文书史官。据本回合实际发生·推演人物之间此刻该有的书信往来(人物活动的一种)·贴合各人处境与关系·有实质内容。无由头则空。只返回 JSON·不要解释。';
+    // 时空约束·人物书信深析(信文散叙·防书信引「闻某公已伏诛」类史实为既成)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw;
     try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1800, null, 'secondary'); }
     catch (e) { return { ok: false, text: '(书信调用失败:' + (e && e.message) + ')' }; }
@@ -352,6 +362,8 @@
       + '\n② 群臣求见(audiences):本回合有谁因何事想**入对面君**(口奏求见·非书面奏疏)·须本回合确有缘由·写真实在场人物。无则空数组。'
       + '\n只返回 JSON:\n{"issue_updates":[{"action":"add|update|resolve","id":"(update/resolve 必填·现有 id)","title":"(add/update 用)","category":"军务/财政/民生/吏治/边防/宫廷等","description":"≤50字","reason":"因本回合何事(≤25字)"}],"audiences":[{"name":"求见者姓名","reason":"求见缘由(≤30字)"}]}';
     var sys = '你是天命的朝务编修。据本回合实际发生·推演该浮上君上案头的待决事务:御案时政要务的新增/推进/了结、群臣的求见入对。须扣本回合真有其事·勿凭空捏造。只返回 JSON·不要解释。';
+    // 时空约束·御案朝务深析(时政议题/求见上御案·防据史实新增本局未发之案)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw;
     try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1600, null, 'secondary'); }
     catch (e) { return { ok: false, text: '(朝务调用失败:' + (e && e.message) + ')' }; }
@@ -408,6 +420,8 @@
       + '\n\n为每人给出:① 当下对局面与君上的真实看法 ② 对本回合某事的认知(是否看穿/误判/起疑)。只返回 JSON:\n'
       + '{"npcs":[{"name":"","currentView":"对局面/君上的真实看法(≤80字)","recognition":"对某事的认知或起疑(≤60字)"}]}';
     var sys = '你是天命的人物认知史官。据本回合实际发生·推演重点人物当下的认知(怎么看、信什么、是否看穿)·贴合其立场处境。只返回 JSON·不要解释。';
+    // 时空约束·人物认知深析(看法/信念·防以史实卒年臆断他人存殁)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw;
     try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1600, null, 'secondary'); }
     catch (e) { return { ok: false, text: '(认知深化调用失败:' + (e && e.message) + ')' }; }
@@ -447,6 +461,8 @@
       + '\n\n为每方给出:据本回合实际·该势力此刻真实意图/动向/对君上(玩家)态度变化(贴合其实力处境宿怨·勿套话)·并指出本回合浮现的势力暗流与暗中图谋。只返回 JSON:\n'
       + '{"factions":[{"name":"","intent":"当前核心意图(≤30字)","move":"下一步动向(≤30字)","toward_player":"对君上态度:亲附/观望/离心/敌对·及因","stance_delta":-20到20整数}],"undercurrents":[{"faction":"","type":"暗流(结党/离心/观望/异动)","description":"≤40字","impact":"对局势影响≤30字"}],"schemes":[{"schemer":"主谋(人或势力)","target":"目标","plan":"图谋≤40字","progress":"萌芽/酝酿/进行"}]}';
     var sys = '你是天命的地缘势力史官。基于本回合实际·推演各方势力真实意图与动向、浮现的暗流与暗中图谋·须贴合各自实力/处境/历史宿怨·不要套话。只返回 JSON。';
+    // 时空约束·势力/外交深析(意图/暗流/阴谋·尤防把后世外族战事当既成)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw; try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 2200, null, 'secondary'); } catch (e) { return { ok: false, text: '(势力深析调用失败:' + (e && e.message) + ')' }; }
     var text = (typeof raw === 'string') ? raw : ((raw && (raw.content || raw.text)) || '');
     var p = _parse(text); var list = (p && Array.isArray(p.factions)) ? p.factions : null;
@@ -478,6 +494,8 @@
     var tp = '本回合发生:\n' + _turnDigest(gm) + '\n\n请据本回合之事·深析天下财政经济态势。只返回 JSON:\n'
       + '{"assessment":"财政经济总评——国库/赋税/民生经济真实状况与本回合变化(≤200字)","risks":["隐患1","隐患2"],"trends":["趋势1","趋势2"],"fiscal_pressure":"财政压力(1-10)及因(≤40字)"}';
     var sys = '你是天命的经济财政史官。基于本回合实际·客观深析财政经济态势、隐患、趋势。只返回 JSON。';
+    // 时空约束·财政经济深析(隐患/趋势·防引后世灾荒/财崩为既定事实)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw; try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1400, null, 'secondary'); } catch (e) { return { ok: false, text: '(经济深析失败:' + (e && e.message) + ')' }; }
     var text = (typeof raw === 'string') ? raw : ((raw && (raw.content || raw.text)) || ''); var p = _parse(text);
     if (!p || !p.assessment) return { ok: false, text: '(经济深析解析失败/空)' };
@@ -497,6 +515,8 @@
       + '\n\n请据本回合之事·深析军事态势(战力/边防/威胁/战和)。只返回 JSON:\n'
       + '{"assessment":"军事态势总评——边防/战力/威胁真实状况与本回合变化(≤200字)","threats":["威胁1","威胁2"],"recommendations":["建议1","建议2"],"war_risk":"战事风险(1-10)及因(≤40字)"}';
     var sys = '你是天命的军事边防史官。基于本回合实际·客观深析军事态势、威胁、战和建议。只返回 JSON。';
+    // 时空约束·军事边防深析(威胁·尤防把后世战事结局当既成事实)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var raw; try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: tp }], 1400, null, 'secondary'); } catch (e) { return { ok: false, text: '(军事深析失败:' + (e && e.message) + ')' }; }
     var text = (typeof raw === 'string') ? raw : ((raw && (raw.content || raw.text)) || ''); var p = _parse(text);
     if (!p || !p.assessment) return { ok: false, text: '(军事深析解析失败/空)' };
@@ -517,7 +537,10 @@
     if (typeof root.callAIMessages !== 'function') return { ok: false, text: '(callAIMessages 未加载)' };
     var turn = gm.turn || 0; var digest = _turnDigest(gm); var memCtx = _memoryContext(gm);   // memCtx:跨回合记忆·史记须接前文
     // 第1遍·纲要
-    var raw1; try { raw1 = await root.callAIMessages([{ role: 'system', content: '你是天命史官。先列本回合史记的关键脉络(不写正文)。只返回 JSON:{"beats":["要点1","要点2"],"tone":"基调"}' }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n列出本回合史记应涵盖的关键脉络(3-6 点·须呼应跨回合记忆中的情节线与伏笔)。' }], 900, null, _narrTier()); } catch (e) { return { ok: false, text: '(叙事纲要失败:' + (e && e.message) + ')' }; }
+    // 时空约束·史记纲要脉络·clauseOnly(纲要虽内部脚手架·仍防把史实结局写进beats污染下游正文)（typeof守卫防加载序）
+    var _tcBeats = '';
+    if (typeof root._buildTemporalConstraint === 'function') { try { _tcBeats = '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
+    var raw1; try { raw1 = await root.callAIMessages([{ role: 'system', content: '你是天命史官。先列本回合史记的关键脉络(不写正文)。只返回 JSON:{"beats":["要点1","要点2"],"tone":"基调"}' }, { role: 'user', content: '本回合发生:\n' + digest + memCtx + '\n\n列出本回合史记应涵盖的关键脉络(3-6 点·须呼应跨回合记忆中的情节线与伏笔)。' + _tcBeats }], 900, null, _narrTier()); } catch (e) { return { ok: false, text: '(叙事纲要失败:' + (e && e.message) + ')' }; }
     var t1 = (typeof raw1 === 'string') ? raw1 : ((raw1 && (raw1.content || raw1.text)) || ''); var o = _parse(t1);
     var beats = (o && Array.isArray(o.beats)) ? o.beats.join('；') : '';
     // 第2遍·据纲要成正文
@@ -549,6 +572,8 @@
     var _aliveNames = (gm.chars || []).filter(function (c) { return c && c.alive !== false && c.name; }).map(function (c) { return c.name; }).slice(0, 40);
     var _periodVocab = (gm._aiScenarioDigest && gm._aiScenarioDigest.periodVocabulary) ? String(gm._aiScenarioDigest.periodVocabulary).slice(0, 200) : '';
     var _xinshi = '\n\n【信史校准·守硬核可信】① 人名只用真实在世人物' + (_aliveNames.length ? ('(' + _aliveNames.join('、') + ')') : '(见上文出场者)') + '·勿杜撰查无此人;② 禁时代错乱:勿用现代词汇/制度/物事、勿掺他朝专名' + (_periodVocab ? ('·宜用本时代用语(' + _periodVocab + ')') : '·称谓名物须合本朝代') + '。';
+    // 时空约束·史记四体(时政记/实录/政文/后人戏说)修史·clauseOnly补铁律(上方信史校准已列在世名单·此加卒年铁律/不越今引后事/本局以GM为准)·经_xinshi同注入下方record与后人戏说两口不重复（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { _xinshi += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     // ★工具调用优化(2026-06):后人戏说(raw3·_tokHouren≤24k)与史记主体(raw2·_tokRecord≤16k)均只依赖 raw1 纲要 beats、彼此独立·又是系统最大两次调用→**并行**(先 kick off raw3·再 await raw2·省 1 次最大调用墙钟·AI 队列自限真并发)。raw3 .catch 返 null·不阻断史记主体。
     var _hsFn = (root.TM && root.TM.Endturn && root.TM.Endturn.AI && root.TM.Endturn.AI.prompt && root.TM.Endturn.AI.prompt.hourenSpec);
     var _raw3P = _hsFn
