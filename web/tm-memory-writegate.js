@@ -147,7 +147,7 @@
     //   隔离(quarantined·不自动接受)+落弱提示账·防污染经 GM._memoryAccepted 被 envelope 再投影自强化。
     //   检测器/记账安家 tm-mechanics-memory.js·此处 typeof 守卫（运行时用全局 GM 对账·非唯一 sink 详见其头注）。
     if (typeof _tmDetectVitalConflict === 'function') {
-      var _vc = _tmDetectVitalConflict(body);
+      var _vc = _tmDetectVitalConflict(body) || _tmDetectVitalConflict(clean(env.safeBody));   // 双字段分别检测：下游 compiler 注入 safeBody||body 权威相反·任一冲突即隔离
       if (_vc) {
         reasons.push(reason('memory_hist_conflict', 'claim conflicts with GM life/death state: ' + (_vc.claimTarget || '')));
         if (typeof _tmRecordVitalConflictHint === 'function') { try { _tmRecordVitalConflictHint(clean(candidate.actor || candidate.ownerScope || env.ownerScope || ''), _vc, body); } catch (_vh) {} }
@@ -610,7 +610,7 @@
     // P1·写闸旁路封堵（Codex 二轮）：带 type+status+body 的候选直走 enrichMemoryItem 跳过 evaluateCandidate·
     //   公开 API enqueue 能带 accepted 状态绕生死对账；此处对最终 item 再对账·两路径都过·不可绕。
     if (typeof _tmDetectVitalConflict === 'function' && item && item.status !== 'quarantined') {
-      var _evc = _tmDetectVitalConflict(clean(item.body || item.safeBody || ''));
+      var _evc = _tmDetectVitalConflict(clean(item.body)) || _tmDetectVitalConflict(clean(item.safeBody));   // 双字段分别检测（干净 body + 毒 safeBody 亦拦）
       if (_evc) {
         item.status = 'quarantined'; item.reviewStatus = 'quarantined';
         item.reasons = (Array.isArray(item.reasons) ? item.reasons : []).concat([reason('memory_hist_conflict', 'claim conflicts with GM life/death state: ' + (_evc.claimTarget || ''))]);
