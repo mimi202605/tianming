@@ -1003,16 +1003,20 @@ async function pickHistoricalCandidates(exam) {
   });
   var existingOfficials = Object.keys(existingOfficialsSet);
   // \u67611\u00B7\u672C\u5C40\u5DF2\u6545\u8005\u540D\u5355\uFF08\u4E0D\u53D7\u5B98\u804C/\u5728\u4E16 gate\u00B7\u4EFB\u4F55\u672C\u5C40\u6B7B\u8005\u4E25\u7981\u4F5C\u4E3A\u8003\u751F\u590D\u6D3B\uFF09\u00B7\u5E76\u5165 prompt \u4E25\u7981\u8FD4\u56DE\u540D\u5355
-  // 条1·本局已故者多字段异名键集(name/displayName/字zi/号hao/alias/aliases/courtesyName)·两侧空白归一(剔全部内部空白)·防 displayName 与内插空格穿透后置闸
+  // 条1/条2·本局已故者异名键集·真实 schema 字段(name/displayName/字zi/号haoName/alias/aliases数组/曾用名formerNames数组·hao/courtesyName 系猜测死代码已剔·经 scenarios JSON grep 核实)·两侧空白归一(剔全部内部空白)防 displayName/内插空格穿透
+  // 条2·别名(displayName/字/号/曾用名)撞在世者身份则不入键集·让位在世者(明确可应考)·残余仅"死者本名恰撞在世者本名"极低概率(假设本名全局唯一)
   function _kjNormNameKey(s){ return String(s == null ? '' : s).replace(/\s+/g, ''); }
+  var _kjAliveKeys = {};   // 在世者 name/displayName 归一键·防死者别名撞在世者误杀
+  (GM.chars || []).forEach(function(c){ if (c && !(c.alive === false || c.dead)) { [c.name, c.displayName].forEach(function(v){ var k = _kjNormNameKey(v); if (k) _kjAliveKeys[k] = true; }); } });
   var _deadKeys = {};   // 归一异名 → true·后置硬闸比对
   var deadNames = [];   // 可读死者名·条2·独立进 prompt 排除段(不与官员名单抢 slice 额度)
   (GM.chars || []).forEach(function(c){
     if (!c || !(c.alive === false || c.dead)) return;
     var _readable = c.displayName || c.name;
     if (_readable && deadNames.indexOf(_readable) < 0) deadNames.push(_readable);
-    [c.name, c.displayName, c.zi, c.hao, c.alias, c.courtesyName].forEach(function(v){ var k = _kjNormNameKey(v); if (k) _deadKeys[k] = true; });
-    if (Array.isArray(c.aliases)) c.aliases.forEach(function(v){ var k = _kjNormNameKey(v); if (k) _deadKeys[k] = true; });
+    var _primaryKey = _kjNormNameKey(c.name);
+    if (_primaryKey) _deadKeys[_primaryKey] = true;   // 本名恒入(即便撞在世者·本名假设全局唯一)
+    [c.displayName, c.zi, c.haoName, c.alias].concat(Array.isArray(c.aliases) ? c.aliases : []).concat(Array.isArray(c.formerNames) ? c.formerNames : []).forEach(function(v){ var k = _kjNormNameKey(v); if (k && !_kjAliveKeys[k]) _deadKeys[k] = true; });   // 条2·别名撞在世者则跳过
   });
   var usedNames = P.keju._historicalFiguresUsed.concat(
     (GM.chars || []).filter(function(c){ return c && c.isHistorical && c.source === '\u79D1\u4E3E'; }).map(function(c){ return c.name; }),
@@ -1059,7 +1063,11 @@ async function pickHistoricalCandidates(exam) {
       if (_existCh && (_existCh.alive === false || _existCh.dead)) { try { console.warn('[科举·滤] 丢弃本局已故候选(GM在册已死):', c.name); } catch(_){} return false; }
       // 条4·off-GM 史实候选后置校验时代窗(strict/light 模式)·防 AI 塞窗外年份/跨朝代人物(era-gate 不只写在提示词)
       if (!_existCh && window != null) {
-        if (typeof c.historicalYearMet === 'number' && (c.historicalYearMet < year - window || c.historicalYearMet > year + window)) {
+        // 条3·era-gate fail-closed·coerce 数字字符串·缺失/null/非有限值一律拒收(不 fail-open)
+        var _hym = c.historicalYearMet;
+        if (typeof _hym === 'string' && _hym.trim() !== '') _hym = Number(_hym);
+        if (typeof _hym !== 'number' || !isFinite(_hym)) { try { console.warn('[科举·滤] 丢弃缺/非法 historicalYearMet 的史实候选(严谨模式):', c.name, c.historicalYearMet); } catch(_){} return false; }
+        if (_hym < year - window || _hym > year + window) {
           try { console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u7A97\u5916\u53F2\u5B9E\u5019\u9009:', c.name, c.historicalYearMet, '[' + (year - window) + ',' + (year + window) + ']'); } catch(_){} return false;
         }
         if (c.nativeEra && (P.dynasty || '') && (P.dynasty || '').indexOf(c.nativeEra) < 0) {

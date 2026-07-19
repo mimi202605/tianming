@@ -25,7 +25,7 @@ function extractTopFn(src, sig) {
 }
 function baseCtx() {
   return { console: { log(){}, warn(){}, error(){} }, Math, JSON, Object, Array, RegExp,
-           Number, String, Boolean, Promise, setTimeout, Date };
+           Number, String, Boolean, Promise, setTimeout, Date, isFinite, parseInt, parseFloat };
 }
 
 // ── Slice A：机制自检 ──
@@ -220,7 +220,31 @@ async function sliceD() {
   r = await runPick({ mode: 'yanyi', year: 1620, dynasty: '明', chars: [], returns: [
     { name: '演义跨代', age: 30, class: '寒门', historicalYearMet: 1140, nativeEra: '宋', probability: 1 } ] });
   assert(r.names.indexOf('演义跨代') >= 0, '条4·演义模式(window=null)不做时代硬剔·跨代人物保留');
-  console.log('  [sliceD] ' + (PASS - start) + ' 断言通过（条1异名穿透+条2死者段+条4 era-gate）');
+  // 场景7·条2·真实 schema 异名穿透（haoName 号名 / formerNames 曾用名·hao/courtesyName 死代码已剔）
+  r = await runPick({ chars: [{ name: '王安石', haoName: '半山（号）', alive: false, dead: true }], returns: [
+    { name: '半山（号）', age: 30, class: '寒门', probability: 1 }, { name: '活士', age: 28, class: '寒门', probability: 1 } ] });
+  assert(r.names.indexOf('半山（号）') < 0 && r.names.indexOf('活士') >= 0, '条2·死者 haoName 号名变体须被剔除（真 schema 字段）');
+  r = await runPick({ chars: [{ name: '李贽', formerNames: ['林载贽'], alive: false, dead: true }], returns: [
+    { name: '林载贽', age: 40, class: '寒门', probability: 1 }, { name: '活士', age: 28, class: '寒门', probability: 1 } ] });
+  assert(r.names.indexOf('林载贽') < 0 && r.names.indexOf('活士') >= 0, '条2·死者 formerNames 曾用名变体须被剔除（真 schema 字段）');
+  // 场景8·条2·displayName 撞在世者 name·归属让位·在世者不被误杀
+  r = await runPick({ chars: [{ name: '张三', displayName: '李贽', alive: false, dead: true }, { name: '李贽', alive: true }], returns: [
+    { name: '李贽', age: 35, class: '寒门', probability: 1 } ] });
+  assert(r.names.indexOf('李贽') >= 0, '条2·死者别名(displayName)撞在世者 name 时·在世者不被误杀（归属让位在世者）');
+  // 场景9·条3·era 闸 fail-closed·数字字符串"1140"(窗外)转数后剔·"1600"(窗内)留
+  r = await runPick({ mode: 'strict_hist', window: 100, year: 1620, dynasty: '明', returns: [
+    { name: '串窗外', age: 30, class: '寒门', historicalYearMet: '1140', nativeEra: '明', probability: 1 },
+    { name: '串窗内', age: 30, class: '寒门', historicalYearMet: '1600', nativeEra: '明', probability: 1 } ] });
+  assert(r.names.indexOf('串窗外') < 0, '条3·数字字符串"1140"须 Number() 转换后按窗剔除（非 fail-open 绕过）');
+  assert(r.names.indexOf('串窗内') >= 0, '条3·数字字符串"1600"窗内应留');
+  // 场景10·条3·strict 下缺字段 / null → fail-closed 拒收；演义(window=null)不 gate
+  r = await runPick({ mode: 'strict_hist', window: 100, year: 1620, dynasty: '明', returns: [
+    { name: '缺年份', age: 30, class: '寒门', nativeEra: '明', probability: 1 },
+    { name: 'null年份', age: 30, class: '寒门', historicalYearMet: null, nativeEra: '明', probability: 1 } ] });
+  assert(r.names.indexOf('缺年份') < 0 && r.names.indexOf('null年份') < 0, '条3·strict 下缺失/null historicalYearMet 一律拒收（fail-closed）');
+  r = await runPick({ mode: 'yanyi', year: 1620, dynasty: '明', returns: [{ name: '演义缺年', age: 30, class: '寒门', probability: 1 }] });
+  assert(r.names.indexOf('演义缺年') >= 0, '条3·演义模式(window=null)不做 era 硬剔·缺年份候选保留');
+  console.log('  [sliceD] ' + (PASS - start) + ' 断言通过（条1异名穿透+条2真schema/归属+条4 era-gate fail-closed）');
 }
 
 // ── Slice E：条2 行为锁·VM 实调 _kjpL12LlmReformerBio ──
@@ -258,13 +282,25 @@ async function sliceE() {
   // 直测句剔除器
   const scrub = alive.ctx.window._kjpL12ScrubDeathClaims('甲事。卒于1086年。乙事。', '某');
   assert(scrub.indexOf('卒于1086年') < 0 && scrub.indexOf('甲事') >= 0 && scrub.indexOf('乙事') >= 0, '条2·_kjpL12ScrubDeathClaims 应只剔书卒句、留其余');
-  // 条3·句级主语判定（不误删他人卒句）
+  // 条3·Codex 六行矩阵（子句级主语判定·不误删他人卒句）
   const scrub3 = alive.ctx.window._kjpL12ScrubDeathClaims;
-  const kinSample = '改革者少孤。先父卒于万历年间，家贫力学。后行新法。';
-  assert(scrub3(kinSample, '改革者') === kinSample, '条3·「先父卒于…」家世句须完整保留（Codex 样例·不误删他人卒句）');
-  assert(scrub3('王介甫行新法。卒于元祐元年·葬钟山。后世论其功过。', '王安石').indexOf('卒于元祐元年') < 0, '条3·传主自身书卒句(无主语默认传主)须删');
-  assert(scrub3('其法仿商鞅。张居正卒于万历十年。安石行之。', '王安石').indexOf('张居正卒于万历十年') >= 0, '条3·他人名(张居正)紧邻死亡词·先例句须保留');
-  console.log('  [sliceE] ' + (PASS - start) + ' 断言通过（条2·deathYear闸+书卒剔除+sentinel真达 / 条3·句级主语判定）');
+  let mx = scrub3('改革者之父先卒，后改革者亦卒于任上', '改革者');
+  assert(mx.indexOf('改革者之父先卒') >= 0 && mx.indexOf('亦卒于任上') < 0, '条3矩阵①·「改革者之父先卒」留 + 传主卒子句删（合法父卒不丢失）');
+  mx = scrub3('其父先卒，后改革者亦卒于任上', '改革者');
+  assert(mx.indexOf('其父先卒') >= 0 && mx.indexOf('亦卒于任上') < 0, '条3矩阵②·「其父先卒」留 + 传主卒子句删（传主书卒不泄漏）');
+  mx = scrub3('改革者卒后，门人继其志', '改革者');
+  assert(mx.indexOf('门人继其志') >= 0 && mx.indexOf('卒后') < 0, '条3矩阵③·传主「卒后」子句删 + 「门人继其志」留（卒后已入死亡正则）');
+  assert(scrub3('先考卒于家', '改革者') === '先考卒于家', '条3矩阵④·「先考卒于家」亲属词救·整句保留');
+  assert(scrub3('改革者行新法。改革者卒于元祐元年。后世论其功过。', '改革者').indexOf('卒于元祐元年') < 0, '条3矩阵⑤·传主自身书卒句须删');
+  assert(scrub3('其法仿商鞅。张居正卒于万历十年，考成法行。安石继之。', '王安石').indexOf('张居正卒于万历十年') >= 0, '条3矩阵⑥·他人名(张居正)紧邻死亡词·先例句保留');
+  const neg = scrub3('传言其已卒，实则健在。后复起用。', '王安石');
+  assert(neg.indexOf('实则健在') >= 0 && neg.indexOf('已卒') >= 0, '条1③·否定/转折(传言…实则健在)·死亡宣称存疑须整句保留');
+  // 条4·变异红绿：删 clause 级 KIN 分支 → 「先考卒于家」失救被删（证亲属分支载重·非被通用人名正则兜住）
+  const mutSrc = bioSrc.replace('_KJP_L12_KIN_RE.test(clause) ||', 'false ||');
+  assert(mutSrc !== bioSrc, '条4·变异锚点存在（_kjpL12ClauseNotSubjectDeath 的 clause 级 KIN 分支）');
+  function scrubFrom(srcText) { const c = baseCtx(); c.window = {}; c.P = { ai: {} }; c.GM = { chars: [] }; c.findCharByName = () => null; vm.createContext(c); vm.runInContext(srcText, c); return c.window._kjpL12ScrubDeathClaims; }
+  assert(scrubFrom(mutSrc)('先考卒于家', '改革者').indexOf('先考卒于家') < 0, '条4·删 KIN 分支后「先考卒于家」必被删（变异转红·证 KIN 分支不可缺·未被通用人名正则兜住）');
+  console.log('  [sliceE] ' + (PASS - start) + ' 断言通过（条2·deathYear闸+子句剔除+sentinel / 条3·六行矩阵+否定 / 条4·KIN 变异红绿）');
 }
 
 (async function main() {
