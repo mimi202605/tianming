@@ -248,6 +248,72 @@
     return { field: field, reserve: reserve };
   }
 
+  /* ── 省实况元数据(梯队三E:打到哪省像哪省)。读 GM.mapData.regions/oceans(回退 P.map/P.mapData)·全部确定性派生·拿不到就省略不造 ── */
+  function _mapDataOf(GMref) {
+    var g = GMref || (typeof window !== 'undefined' && window.GM) || (typeof GM !== 'undefined' ? GM : null);
+    if (g && g.mapData && Array.isArray(g.mapData.regions) && g.mapData.regions.length) return g.mapData;
+    var p = (typeof window !== 'undefined' && window.P) || (typeof P !== 'undefined' ? P : null);
+    if (p) { if (p.mapData && Array.isArray(p.mapData.regions) && p.mapData.regions.length) return p.mapData; if (p.map && Array.isArray(p.map.regions) && p.map.regions.length) return p.map; }
+    return null;
+  }
+  function _rCenter(r) { if (!r) return null; if (Array.isArray(r.center) && r.center.length >= 2) return { x: +r.center[0] || 0, y: +r.center[1] || 0 }; if (r.centroid && typeof r.centroid === 'object') return { x: +r.centroid.x || 0, y: +r.centroid.y || 0 }; return null; }
+  /* 位置文本/hint → 匹配 region(id/mapRegionId/sourceId 直配 → name 全等 → 双向包含)。永不崩 */
+  function _findRegion(md, army, hintName) {
+    if (!md || !Array.isArray(md.regions)) return null; var regs = md.regions;
+    var rid = army && (army.regionId || army.mapRegionId || army.regionHintId);
+    if (rid) { for (var i = 0; i < regs.length; i++) { var r = regs[i]; if (r.id === rid || r.mapRegionId === rid || r.sourceId === rid) return r; } }
+    var toks = [];
+    [hintName, army && army.location, army && army.garrison, army && army.regionHint].forEach(function (s) { if (s) String(s).split(/[\/、,，\-－—~～·・‧至\s]+/).forEach(function (t) { t = (t || '').trim(); if (t) toks.push(t); }); });
+    for (var a = 0; a < toks.length; a++) { for (var j = 0; j < regs.length; j++) { if (regs[j].name === toks[a] || regs[j].id === toks[a]) return regs[j]; } }
+    for (var b = 0; b < toks.length; b++) { for (var k = 0; k < regs.length; k++) { var nm = regs[k].name; if (nm && (nm.indexOf(toks[b]) >= 0 || toks[b].indexOf(nm) >= 0)) return regs[k]; } }
+    return null;
+  }
+  /* region → 省会/府名:data.children[capitalChildId] → 含'府'子节点 → officialPosition府名(前缀≠省名·如 顺天巡抚→顺天府) → region.name(兜底) */
+  function _capitalOf(r) {
+    if (!r) return ''; var d = r.data || {}, ch = d.children;
+    if (Array.isArray(ch) && ch.length) {
+      if (d.capitalChildId) { for (var i = 0; i < ch.length; i++) { if (ch[i] && (ch[i].id === d.capitalChildId || ch[i].childId === d.capitalChildId)) return ch[i].name || ''; } }
+      for (var j = 0; j < ch.length; j++) { if (ch[j] && ch[j].name && ch[j].name.indexOf('府') >= 0) return ch[j].name; }
+    }
+    var op = d.officialPosition || r.officialPosition || '';
+    var m = String(op).match(/^(.{2,4}?)(巡抚|总督|巡按|府尹|留守|镇守)/);
+    if (m && m[1] && m[1] !== r.name) return m[1] + '府';
+    return r.name || '';
+  }
+  /* region.resources → 军政风物类·截前2(盐/铁/漕/矿/煤/马/港/贸/船/茶/丝/瓷 优先) */
+  function _salientResources(r) {
+    var rs = (r && Array.isArray(r.resources)) ? r.resources : []; if (!rs.length) return null;
+    var sal = rs.filter(function (x) { return /盐|铁|漕|矿|煤|马|港|贸|船|茶|丝|瓷/.test(String(x)); });
+    var pick = (sal.length ? sal : rs).slice(0, 2);
+    return pick.length ? pick : null;
+  }
+  /* 海岸方位:该省最近 ocean 相对省 center 的东/西 → 战场 right/left。判不出→null */
+  function _oceanSide(md, r) {
+    var rc = _rCenter(r); if (!rc || !md || !Array.isArray(md.oceans) || !md.oceans.length) return null;
+    var best = null, bd = Infinity;
+    for (var i = 0; i < md.oceans.length; i++) { var oc = _rCenter(md.oceans[i]); if (!oc) continue; var dd = (oc.x - rc.x) * (oc.x - rc.x) + (oc.y - rc.y) * (oc.y - rc.y); if (dd < bd) { bd = dd; best = oc; } }
+    return best ? (best.x >= rc.x ? 'right' : 'left') : null;
+  }
+  /* 敌军来向:敌省 center 相对本省 center 方位 → N/S/E/W(y 小为北·主轴取绝对值大者)。判不出→null */
+  function _neighborDir(ownC, foeC) {
+    if (!ownC || !foeC) return null; var dx = foeC.x - ownC.x, dy = foeC.y - ownC.y;
+    if (dx === 0 && dy === 0) return null;
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'E' : 'W';
+    return dy >= 0 ? 'S' : 'N';
+  }
+  /* 省实况元数据(挂 terrainProfile.provinceMeta·透传原型)。字段独立·拿不到即省略;整体拿不到→null */
+  function provinceMeta(GMref, playerArmy, enemyArmy, provinceName, terrainTag) {
+    try {
+      var md = _mapDataOf(GMref); var r = _findRegion(md, playerArmy, provinceName); if (!r) return null;
+      var meta = {};
+      var cap = _capitalOf(r); if (cap) meta.capitalName = cap;
+      var res = _salientResources(r); if (res) meta.resources = res;
+      var prof = terrainProfile(terrainTag); if (prof && (prof.coast || prof.island)) { var os = _oceanSide(md, r); if (os) meta.oceanSide = os; }   // 海岸方位仅对沿海省有意义
+      var foeR = _findRegion(md, enemyArmy, null); var nd = _neighborDir(_rCenter(r), _rCenter(foeR)); if (nd) meta.neighborDir = nd;
+      return Object.keys(meta).length ? meta : null;
+    } catch (e) { return null; }
+  }
+
   /* 主入口:交战双方 army 群 → startBattle(config)。
    * playerArmies/enemyArmies = 该接触节点上 同/敌 faction 在场全部军(联军合流)。
    * opts:{ provinceName, terrainTag, weather, playerFactionName, enemyFactionName, emperorArmyId, GM } */
@@ -262,9 +328,12 @@
     var jin = sideTokens(enemyArmies, G, null);
     var enemyLead = (enemyArmies && enemyArmies[0] && enemyArmies[0].commander) || '敌帅';
     var mSel = selectOnField(ming, ONFIELD_CAP), jSel = selectOnField(jin, ONFIELD_CAP);   // 兵种分层取样(非按队序截断)
+    var tp = terrainProfile(terrainTag);                                                    // {dens,biome,语义位} 或 null
+    var pMeta = provinceMeta(G, p0, (enemyArmies && enemyArmies[0]) || null, provinceName, terrainTag);   // 省实况(省会/资源/海岸方位/敌军来向)
+    if (pMeta) { tp = tp || {}; tp.provinceMeta = pMeta; }                                   // 挂 terrainProfile 透传原型(即便地形未知也带 meta·原型 dens/biome 缺则默认)
     return {
       mapSeed: provinceSeed(provinceName),
-      terrainProfile: terrainProfile(terrainTag),
+      terrainProfile: tp,
       weather: weather,
       sideName: { ming: opts.playerFactionName || '我军', jin: opts.enemyFactionName || '敌军' },
       lead: enemyLead,
@@ -279,6 +348,7 @@
     buildBattleConfig: buildBattleConfig, sideTokens: sideTokens, unitToToken: unitToToken, selectOnField: selectOnField, degradeQualityByEquip: degradeQualityByEquip,
     genFor: genFor, qualityFromVet: qualityFromVet, provinceSeed: provinceSeed, terrainProfile: terrainProfile,
     resolveTerrainTag: resolveTerrainTag, deriveWeather: deriveWeather, seasonOf: seasonOf,
+    provinceMeta: provinceMeta,
     ONFIELD_CAP: ONFIELD_CAP
   };
   if (typeof window !== 'undefined') window.TMBattleAdapter = API;

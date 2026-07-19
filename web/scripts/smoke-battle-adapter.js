@@ -173,5 +173,38 @@ const seaArmy = [{ id: 'sea', name: '水师', faction: '明', commander: '某', 
 const seaCfg = ADP.buildBattleConfig(seaArmy, enemy, { GM: GM, terrainTag: '沿海/群岛' });
 ok(seaCfg.terrainProfile.coast === true && seaCfg.terrainProfile.island === true, '⑲ buildBattleConfig 透传语义位(沿海/群岛→coast+island 入 config.terrainProfile)');
 
+/* ⑳ provinceMeta 省实况桥(梯队三E:读 GM.mapData.regions/oceans → capitalName/resources/oceanSide/neighborDir·确定性·拿不到省略) */
+const MDGM = { chars: GM.chars, mapData: {
+  oceans: [{ name: '渤海', center: [781, 314.6] }, { name: '黄海', center: [792.5, 341.9] }, { name: '东海', center: [814.6, 425.4] }, { name: '台湾海峡', center: [757.3, 488.6] }, { name: '南海', center: [697.3, 552] }],   // 真实洋中心(福建最近=台湾海峡·在东)
+  regions: [
+    { id: 'ming-01', name: '北直隶', center: [721.1, 321.5], terrain: '平原', resources: ['漕运', '煤', '铁', '海盐(长芦)'], data: { officialPosition: '顺天巡抚' } },   // 内陆·官职派生 顺天府
+    { id: 'ming-fj', name: '福建', center: [751.8, 470], terrain: '沿海', resources: ['海贸', '茶', '海船'], data: { officialPosition: '福建巡抚' } },               // 沿海·东临黄海
+    { id: 'ming-sd', name: '山东', center: [760, 330], terrain: '平原', resources: ['盐', '麦'], data: { officialPosition: '山东巡抚', capitalChildId: 'c1', children: [{ id: 'c1', name: '济南府' }, { id: 'c2', name: '兖州府' }] } },   // children+capitalChildId
+    { id: 'ming-gd', name: '广东', center: [682.4, 500], terrain: '沿海', resources: ['海贸', '盐', '铁'], data: { officialPosition: '广东巡抚' } }
+  ]
+} };
+const pmA = [{ id: 'pmA', name: '京营', faction: '明', commander: '岳飞', location: '北直隶', composition: [{ type: '长枪兵', count: 3000 }] }];
+const pmE = [{ id: 'pmE', name: '敌军', faction: '金', commander: '完颜宗弼', location: '山东', composition: [{ type: '骑兵', count: 2000 }] }];   // 山东在北直隶之东
+const pm1 = ADP.buildBattleConfig(pmA, pmE, { GM: MDGM });
+ok(pm1.terrainProfile && pm1.terrainProfile.provinceMeta, '⑳ terrainProfile 挂 provinceMeta');
+ok(pm1.terrainProfile.provinceMeta.capitalName === '顺天府', '⑳ 北直隶→省会顺天府(officialPosition 顺天巡抚派生·前缀≠省名)·实=' + pm1.terrainProfile.provinceMeta.capitalName);
+ok(JSON.stringify(pm1.terrainProfile.provinceMeta.resources) === '["漕运","煤"]', '⑳ 资源截前2军政风物·实=' + JSON.stringify(pm1.terrainProfile.provinceMeta.resources));
+ok(pm1.terrainProfile.provinceMeta.neighborDir === 'E', '⑳ 敌驻山东(东)→neighborDir=E·实=' + pm1.terrainProfile.provinceMeta.neighborDir);
+ok(!pm1.terrainProfile.provinceMeta.oceanSide, '⑳ 北直隶非沿海→无 oceanSide(仅沿海省有)');
+/* 沿海省:oceanSide + 敌自北 */
+const fjA = [{ id: 'fjA', name: '闽军', faction: '明', commander: '某', location: '福建', composition: [{ type: '水兵', count: 2000 }] }];
+const fjE = [{ id: 'fjE', name: '敌', faction: '金', commander: '某', location: '北直隶', composition: [{ type: '步兵', count: 1500 }] }];   // 北直隶在福建之北
+const pm2 = ADP.buildBattleConfig(fjA, fjE, { GM: MDGM, terrainTag: '沿海' });
+ok(pm2.terrainProfile.provinceMeta.oceanSide === 'right', '⑳ 福建沿海·最近洋在东→oceanSide=right·实=' + pm2.terrainProfile.provinceMeta.oceanSide);
+ok(pm2.terrainProfile.provinceMeta.neighborDir === 'N', '⑳ 敌自北直隶(北)→neighborDir=N·实=' + pm2.terrainProfile.provinceMeta.neighborDir);
+/* children+capitalChildId 主路径 */
+const sdA = [{ id: 'sdA', name: '鲁军', faction: '明', commander: '某', location: '山东', composition: [{ type: '步兵', count: 2000 }] }];
+const pm3 = ADP.buildBattleConfig(sdA, pmE, { GM: MDGM });
+ok(pm3.terrainProfile.provinceMeta.capitalName === '济南府', '⑳ 山东→省会济南府(children+capitalChildId 主路径)·实=' + pm3.terrainProfile.provinceMeta.capitalName);
+/* 无 mapData → provinceMeta 省略(不崩·terrainProfile 不含 meta) */
+const pm4 = ADP.buildBattleConfig(pmA, pmE, { GM: { chars: GM.chars } });
+ok(!pm4.terrainProfile || !pm4.terrainProfile.provinceMeta, '⑳ 无 mapData→无 provinceMeta(优雅省略)');
+ok(ADP.provinceMeta({}, pmA[0], pmE[0], '北直隶', '平原') === null, '⑳ provinceMeta 直调无 mapData→null');
+
 console.log('\n结果: ' + A + ' 通过 / ' + F + ' 失败');
 process.exit(F ? 1 : 0);
