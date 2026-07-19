@@ -271,7 +271,59 @@
     ROLE_SCENES: ROLE_SCENES
   };
 
+  // ── PlayerCourtDebate 系统 stub（B5） ──────────────────────────
+  // 朝议活跃状态用 CY.open 判断（非 GM.courtDebate·后者不存在）
+  // 君主 AI 准否反馈链路推迟到 Phase C·此处只写 CY._pendingCourtierSpeech 队列留接口
+  var PlayerCourtDebate = {
+    state: function () {
+      try {
+        if (typeof CY === 'undefined' || !CY || !CY.open) return { active: false };
+        // topic 兜底链：v3 优先（_ty3）→ v2（_ty2）→ 御前（_yq2）→ 顶层（CY.topic）
+        // 注：v3 重构后 _ty3 是优先字段·仅查 _ty2 在 v3 模式下会读到空字符串
+        var topic = '';
+        if (CY._ty3 && CY._ty3.topic) topic = CY._ty3.topic;
+        else if (CY._ty2 && CY._ty2.topic) topic = CY._ty2.topic;
+        else if (CY._yq2 && CY._yq2.topic) topic = CY._yq2.topic;
+        else if (CY.topic) topic = CY.topic;
+        return { active: true, topic: topic, phase: CY.phase || '' };
+      } catch (_) { return { active: false }; }
+    },
+    petitionToSpeak: function () {
+      try {
+        if (typeof CY === 'undefined' || !CY || !CY.open) {
+          if (typeof toast === 'function') toast('朝议未开·无法请旨');
+          return { ok: false, reason: 'not_active' };
+        }
+        // 写入待审队列·供君主 AI 准否（Phase C 接 SovereignAI.runTurn）
+        // 含 topic 字段·避免 Phase C 异步窗口切议题后无法回溯
+        if (!CY._pendingCourtierSpeech) CY._pendingCourtierSpeech = [];
+        var ch = _resolvePlayerChar();
+        var name = (ch && ch.name) || '玩家';
+        var st = this.state();
+        CY._pendingCourtierSpeech.push({ name: name, line: '臣请旨发言', topic: st.topic || '', ts: Date.now() });
+        if (typeof toast === 'function') toast('已请旨发言·待君主裁决');
+        return { ok: true };
+      } catch (e) {
+        if (typeof toast === 'function') toast('请旨异常：' + e);
+        return { ok: false, reason: String(e) };
+      }
+    },
+    renderBlockHTML: function (role) {
+      var st = this.state();
+      if (!st.active) {
+        return '<div class="player-block-empty">（君主未开朝议）</div>';
+      }
+      var html = '<div class="player-court-debate-active">';
+      if (st.topic) html += '<div class="player-court-debate-topic">当前议题：' + _esc(st.topic) + '</div>';
+      else html += '<div class="player-court-debate-topic">（议题未明）</div>';
+      html += '<button type="button" class="bt bp" data-system="PlayerCourtDebate" data-action="petitionToSpeak">请旨发言</button>';
+      html += '</div>';
+      return html;
+    }
+  };
+
   global.TM.PlayerSystemsUI = PlayerSystemsUI;
+  global.TM.PlayerCourtDebate = PlayerCourtDebate;
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = PlayerSystemsUI;
