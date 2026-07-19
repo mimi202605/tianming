@@ -78,6 +78,7 @@ function _ensureGMDefaults() {
   if (!GM._factionHistory) GM._factionHistory = [];
   if (!GM._factionUndercurrents) GM._factionUndercurrents = [];
   if (!GM._factionUndercurrentsHistory) GM._factionUndercurrentsHistory = [];
+  if (typeof GM._factionLivingWorld !== 'boolean') GM._factionLivingWorld = false;   // F2 势力活世界总闸·默认 OFF·随存档(whole-GM 自动序列化·此处仅补默认防旧档 undefined)
   if (!GM._courtRecords) GM._courtRecords = [];
   // Phase 4 基建·sc28 world_snapshot 跨回合 mirror·sc1 prep 注入需要
   if (!GM._lastSc28Snapshot) GM._lastSc28Snapshot = null;

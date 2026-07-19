@@ -40,6 +40,8 @@
       if (agentModeOn()) return false;
       // 总闸（任一命名空间设了都认）
       if (ai.agentUpgradesEnabled || conf.agentUpgradesEnabled) return true;
+      // 【势力活世界·F2】GM._factionLivingWorld(本局存档·御驾亲征式总闸) 连带启用势力社会子系统(双向外交/激活策略)
+      if (name === 'factionAgentEnabled' && global.GM && global.GM._factionLivingWorld === true) return true;
       // 否则各自独立开关（同时认两个命名空间·解决历史不一致）
       return !!(ai[name] || conf[name]);
     } catch (e) { return false; }

@@ -44,6 +44,9 @@
   var VALID_CHAOYI_TYPES = ['cooperate','attack','compromise','infight'];
   var VALID_OFFICE_KINDS = ['promote','demote','appoint','dismiss','transfer'];
   var TYPES = ['memorial','edict','court_alignment','office_change','fiscal_policy','military_order','diplomacy','province_policy','rebellion_policy','spy_or_intrigue'];
+  // 【F2·势力活世界】总闸 GM._factionLivingWorld(默认OFF·本局存档·御驾亲征式)门控的额外动作类型·OFF 时 validateDecision 不收=零回归
+  var LIVING_WORLD_TYPES = ['declare_war', 'join_war'];
+  var VALID_CASUS_BELLI = ['rebellion', 'border', 'claim', 'holy', 'subjugation', 'none'];
   var ACTION_CONTRACT = {
     memorial: {
       required: ['from','type','content','rulerDecision'],
@@ -104,6 +107,18 @@
       optional: ['target','relationDelta','pressure','reason'],
       mutates: ['targetFac._intriguePressure','GM.factionRelations','fac.npcIntrigueActions'],
       visible: ['faction AI ledger','qijuHistory']
+    },
+    declare_war: {
+      required: ['targetFaction'],
+      optional: ['casusBelli','reason'],
+      mutates: ['GM.activeWars (via CasusBelliSystem.declareWar·真开战·停战/重复/盟友连坐一并结算)'],
+      visible: ['war UI','faction relation UI','qijuHistory','御案时政']
+    },
+    join_war: {
+      required: ['targetFaction'],
+      optional: ['casusBelli','reason'],
+      mutates: ['GM.activeWars (加入已有战争·对 targetFaction 宣战·走 CasusBelliSystem)'],
+      visible: ['war UI','faction relation UI','qijuHistory','御案时政']
     }
   };
 
@@ -115,7 +130,9 @@
     opts = opts || {};
     var maxChars = _safeNum(opts.maxChars) || 1800;
     var lines = ['Use actions[] only with these canonical action types. Required fields must use visible candidate names.'];
-    TYPES.forEach(function(type) {
+    var _types = TYPES.slice();
+    if (_livingWorldOn()) { _types = _types.concat(LIVING_WORLD_TYPES); lines.push('LIVING WORLD ENABLED: declare_war / join_war route through the real war system (casus belli required·停战/重复自动结算); use them for genuine strategic war, not idle threats.'); }
+    _types.forEach(function(type) {
       var c = ACTION_CONTRACT[type] || {};
       lines.push('- ' + type + ': required=' + _arr(c.required).join(',')
         + '; optional=' + _arr(c.optional).join(',')
@@ -189,7 +206,9 @@
     }).slice(0, 2);
     if (!Array.isArray(d.actions)) d.actions = [];
     d.actions = d.actions.filter(function(a) {
-      return a && typeof a === 'object' && TYPES.indexOf(a.type || a.actionType) >= 0;
+      if (!a || typeof a !== 'object') return false;
+      var _at = a.type || a.actionType;
+      return TYPES.indexOf(_at) >= 0 || (_livingWorldOn() && LIVING_WORLD_TYPES.indexOf(_at) >= 0);
     }).slice(0, 8);
     return d;
   }
@@ -308,7 +327,7 @@
 
   function validateActionTarget(fac, action, ctx) {
     ctx = ctx || {};
-    if (!fac || !action || TYPES.indexOf(action.type) < 0) return { ok:false, reason:'invalid action' };
+    if (!fac || !action || (TYPES.indexOf(action.type) < 0 && LIVING_WORLD_TYPES.indexOf(action.type) < 0)) return { ok:false, reason:'invalid action' };
     var p = action.payload || {};
     var alive = ctx.alive || _aliveFor(fac);
     if (action.type === 'memorial') {
@@ -351,6 +370,12 @@
       var wantsOwnerChange = owner || String(p.policy || '').indexOf('transfer') >= 0 || String(p.policy || '').indexOf('owner') >= 0;
       if (wantsOwnerChange && !_findFac(owner)) return { ok:false, reason:'owner faction not found', ownerFaction:owner };
       return { ok:true };
+    }
+    if (action.type === 'declare_war' || action.type === 'join_war') {
+      var _wt = p.targetFaction || p.target || p.toFaction || p.defender || p.against || p.enemy || p.to || '';
+      _wt = String((_wt && (_wt.name || _wt)) || '').trim();
+      if (!_wt || _wt === (fac && fac.name)) return { ok:false, reason:'missing faction target', targetFaction:_wt };
+      return _findFac(_wt) ? { ok:true } : { ok:false, reason:'target faction not found', targetFaction:_wt };
     }
     if (action.type === 'spy_or_intrigue' || action.type === 'rebellion_policy') {
       var targetFac = _payloadTargetFor(action);
@@ -775,6 +800,97 @@
     return { ok:true, summaryKey:'rebellionPolicy', detail:{ targetFaction:targetFacName, support:support } };
   }
 
+  // ── 【F2·势力活世界】总闸读口 + 真战争接线(declare_war/join_war 走 CasusBelliSystem·绝不自写 activeWars) ──
+  function _livingWorldOn() { return !!(global.GM && global.GM._factionLivingWorld === true); }
+  var _LW_PLAYER_WAR_REL_THRESHOLD = -40;   // 对玩家宣战/参战门槛：关系值须 <= 此值 且 有正当 casus belli·防开局乱咬
+  function _lwPlayerFacNames() {
+    var G = global.GM || {}, P0 = global.P || {}, out = [];
+    function push(v){ v = String(v == null ? '' : v).trim(); if (v && out.indexOf(v) < 0) out.push(v); }
+    push(P0.playerInfo && P0.playerInfo.factionName); push(P0.playerFactionName); push(P0.playerFaction);
+    push(G.playerFactionName); push(G.playerFaction); if (G.playerInfo) push(G.playerInfo.factionName);
+    _arr(G.facs).forEach(function(f){ if (f && (f.isPlayer || f.playerControlled || f.controlledBy === 'player' || f.controller === 'player')) push(f.name); });
+    return out;
+  }
+  function _lwResolveFacName(v) {
+    var name = String((v && (v.name || v.factionName)) || v || '').trim();
+    if (!name) return '';
+    var f = _findFac(name);
+    return f ? f.name : name;
+  }
+  function _lwNormalizeCasusBelli(v) {
+    var s0 = String(v == null ? '' : v).trim().toLowerCase();
+    if (VALID_CASUS_BELLI.indexOf(s0) >= 0) return s0;
+    var z = String(v == null ? '' : v);
+    if (/rebel|叛|逆|平叛/i.test(z)) return 'rebellion';
+    if (/border|边|疆/i.test(z)) return 'border';
+    if (/claim|宣称|领土|故土/i.test(z)) return 'claim';
+    if (/holy|讨不臣|天子|勤王/i.test(z)) return 'holy';
+    if (/subjug|征服|吞并/i.test(z)) return 'subjugation';
+    return 'border';   // 默认给正当 CB(非 none)·避免无端开衅的最高代价
+  }
+  function _lwPlayerWarBlocked(attacker, target, cbId) {
+    if (_lwPlayerFacNames().indexOf(target) < 0) return null;   // 非玩家势力·无额外门槛
+    var rel = _findRelationRecord(attacker, target) || _findRelationRecord(target, attacker);
+    var relVal = rel && rel.value != null ? _safeNum(rel.value) : 0;
+    if (relVal > _LW_PLAYER_WAR_REL_THRESHOLD) return { reason: 'player-war blocked: relation ' + relVal + ' > ' + _LW_PLAYER_WAR_REL_THRESHOLD, relValue: relVal };
+    if (!cbId || cbId === 'none') return { reason: 'player-war blocked: needs a legitimate casus belli (not none)' };
+    return null;
+  }
+  function _lwAlreadyAtWar(a, b) {
+    return _arr((global.GM || {}).activeWars).some(function(w){ return w && ((w.attacker === a && w.defender === b) || (w.attacker === b && w.defender === a)); });
+  }
+  function _lwDeclareViaCasusBelli(attacker, target, cbId) {
+    var CB = global.CasusBelliSystem;
+    if (!CB || typeof CB.declareWar !== 'function') return { ok: false, reason: 'CasusBelliSystem unavailable' };
+    var res;
+    try { res = CB.declareWar(attacker, target, cbId); } catch (e) { return { ok: false, reason: 'declareWar threw: ' + ((e && e.message) || e) }; }
+    if (!res || res.success !== true) return { ok: false, reason: (res && res.message) || 'declareWar failed' };
+    return { ok: true, war: res.war || null };
+  }
+  function _applyDeclareWar(fac, action) {
+    if (!_livingWorldOn()) return { ok: false, reason: 'living world off' };
+    var p = action.payload || {};
+    var attacker = fac && fac.name;
+    var target = _lwResolveFacName(p.targetFaction || p.target || p.toFaction || p.defender || p.to);
+    if (!attacker || !target || attacker === target) return { ok: false, reason: 'missing/invalid war target', targetFaction: target };
+    if (!_findFac(target)) return { ok: false, reason: 'target faction not found', targetFaction: target };
+    if (_lwAlreadyAtWar(attacker, target)) return { ok: false, reason: 'already at war', targetFaction: target };
+    var cbId = _lwNormalizeCasusBelli(p.casusBelli || p.cb || p.reason);
+    var blocked = _lwPlayerWarBlocked(attacker, target, cbId);
+    if (blocked) return { ok: false, reason: blocked.reason, targetFaction: target };
+    var dr = _lwDeclareViaCasusBelli(attacker, target, cbId);
+    if (!dr.ok) return { ok: false, reason: dr.reason, targetFaction: target };
+    var rec = { id: action.actionId, turn: action.turn || _turn(), targetFaction: target, casusBelli: (dr.war && dr.war.casusBelli) || cbId, warId: (dr.war && dr.war.id) || '', reason: p.reason || '', _generatedByLlm: action.source !== 'local', _decisionId: action.decisionId, _actionId: action.actionId, _actionType: action.type };
+    _pushFacTrajectory(fac, 'npcWarActions', rec);
+    return { ok: true, summaryKey: 'wars', detail: { targetFaction: target, warId: rec.warId, casusBelli: rec.casusBelli }, worldEvent: { kind: 'declare_war', actor: attacker, target: target, cb: rec.casusBelli } };
+  }
+  function _applyJoinWar(fac, action) {
+    if (!_livingWorldOn()) return { ok: false, reason: 'living world off' };
+    var p = action.payload || {};
+    var joiner = fac && fac.name;
+    var enemy = _lwResolveFacName(p.targetFaction || p.against || p.enemy || p.target || p.to);
+    if (!joiner || !enemy || joiner === enemy) return { ok: false, reason: 'missing/invalid war target', targetFaction: enemy };
+    if (!_findFac(enemy)) return { ok: false, reason: 'target faction not found', targetFaction: enemy };
+    var enemyAtWar = _arr((global.GM || {}).activeWars).some(function(w){ return w && (w.attacker === enemy || w.defender === enemy); });
+    if (!enemyAtWar) return { ok: false, reason: 'no ongoing war involving target (join needs an existing war)', targetFaction: enemy };
+    if (_lwAlreadyAtWar(joiner, enemy)) return { ok: false, reason: 'already at war', targetFaction: enemy };
+    var cbId = _lwNormalizeCasusBelli(p.casusBelli || p.cb || 'holy');
+    var blocked = _lwPlayerWarBlocked(joiner, enemy, cbId);
+    if (blocked) return { ok: false, reason: blocked.reason, targetFaction: enemy };
+    var dr = _lwDeclareViaCasusBelli(joiner, enemy, cbId);
+    if (!dr.ok) return { ok: false, reason: dr.reason, targetFaction: enemy };
+    var rec = { id: action.actionId, turn: action.turn || _turn(), targetFaction: enemy, casusBelli: (dr.war && dr.war.casusBelli) || cbId, warId: (dr.war && dr.war.id) || '', joinedWar: true, reason: p.reason || '', _generatedByLlm: action.source !== 'local', _decisionId: action.decisionId, _actionId: action.actionId, _actionType: action.type };
+    _pushFacTrajectory(fac, 'npcWarActions', rec);
+    return { ok: true, summaryKey: 'wars', detail: { targetFaction: enemy, warId: rec.warId, joinedWar: true }, worldEvent: { kind: 'join_war', actor: joiner, target: enemy, cb: rec.casusBelli } };
+  }
+  // 设置面板「势力活世界·实验」开关处理器(tm-patches.js 设置渲染调·切 GM._factionLivingWorld·本局存档生效·御驾亲征式 pill 类切换)
+  function setFactionLivingWorld(on, btn) {
+    on = !!on;
+    try { if (global.GM) global.GM._factionLivingWorld = on; } catch (e) {}   // arch-ok: F2 势力活世界总闸·本局存档·御驾亲征式设置开关(唯一写口)
+    try { if (btn && btn.parentNode) { var bs = btn.parentNode.querySelectorAll('button[data-slhs]'); for (var i = 0; i < bs.length; i++) { var want = bs[i].getAttribute('data-slhs') === '1'; bs[i].className = 'bt ' + (want === on ? 'bp' : 'bs') + ' bsm'; } } } catch (e) {}
+    try { if (typeof global.toast === 'function') global.toast(on ? '势力活世界已开启 · 列国将真宣战/结盟/立志/兴事(本局存档生效)' : '势力活世界已关闭 · 列国维持现状'); } catch (e) {}
+  }
+
   var APPLIERS = {
     memorial: _applyMemorial,
     edict: _applyEdict,
@@ -785,7 +901,9 @@
     diplomacy: _applyDiplomacy,
     province_policy: _applyProvince,
     spy_or_intrigue: _applyIntrigue,
-    rebellion_policy: _applyRebellion
+    rebellion_policy: _applyRebellion,
+    declare_war: _applyDeclareWar,
+    join_war: _applyJoinWar
   };
 
   function ensureStrategy(fac, decision, actions) {
@@ -1329,8 +1447,13 @@
     ensureStrategy: ensureStrategyV2,
     scoreFactionCandidate: scoreFactionCandidate,
     rankFactionCandidates: rankFactionCandidates,
-    getSc16Compliance: getSc16Compliance
+    getSc16Compliance: getSc16Compliance,
+    livingWorldOn: _livingWorldOn,
+    setFactionLivingWorld: setFactionLivingWorld,
+    _applyDeclareWar: _applyDeclareWar,
+    _applyJoinWar: _applyJoinWar
   };
+  if (typeof global !== 'undefined') { try { global._tmSetFactionLivingWorld = setFactionLivingWorld; } catch (e) {} }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = global.TM.FactionActionEngine;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : globalThis));
