@@ -488,11 +488,11 @@
     }
     var face = person ? rightIssuePortrait(person) : '<span class="tmrp-avatar">' + esc(initial) + '</span>';
     return '<article class="tmrp-wd-request envoy">' +
-      '<button type="button" class="tmrp-wd-request-main" data-right-action="wendui-queue" data-index="' + attr(idx) + '">' +
+      '<button type="button" class="tmrp-wd-request-main" data-right-action="wendui-queue" data-qid="' + attr(q._qid || '') + '">' +
       face +
       '<span><b>' + esc(name) + (q.isEnvoy ? '<i>使节</i>' : '') + '</b><small>' + esc(compactText(q.reason || q.fromFaction || '等待陛下决断', 72)) + '</small></span>' +
       '</button>' +
-      '<button type="button" class="tmrp-wd-mini" data-right-action="wendui-dismiss" data-index="' + attr(idx) + '">暂却</button>' +
+      '<button type="button" class="tmrp-wd-mini" data-right-action="wendui-dismiss" data-qid="' + attr(q._qid || '') + '">暂却</button>' +
       '</article>';
   }
 
@@ -557,6 +557,7 @@
     } else {
       pendingAudiences = rawPendingAudiences.filter(_wdKeep);   // 兜底：mutator 未载入时不写回·仅供本次渲染
     }
+    if (typeof window._wdEnsurePendingQids === 'function') window._wdEnsurePendingQids();   // 渲染前补 _qid(队列按钮按 _qid 定位·非 index)
     var atCourt = people.filter(rightIssueAtCourt);
     var seekers = atCourt.filter(rightWenduiIsSeeker);
     var waiting = atCourt.filter(function(p){ return seekers.indexOf(p) < 0; });
@@ -1310,9 +1311,9 @@
   }
 
   // 岁入/岁出分项走 cascade 结算真源(2026-07-19)：读 GM.guoku.ledgers.{money,grain,cloth}.{sources,sinks}
-  //   (本回合按税种/支类结算·与帑廪 panel 岁入岁出分项同源) + income 侧并入 g._customTaxStats。原 rightFinanceCollect
-  //   读的是 incomeItems/taxes 静态配置数组，与真源结算对不上；cascade 无数据时上层回落静态数组并标「(概算)」。
-  //   税种/支类中文名镜像 tm-guoku-panel 的 _tagNameMap/_expLabels(跨朝代通用财政科目·未知 tag 保留原值)。
+  //   (本回合按税种/支类结算·与帑廪 panel 岁入岁出分项同源)。原 rightFinanceCollect 读 incomeItems/taxes 静态配置
+  //   数组，与真源结算对不上；cascade 无数据时上层回落静态数组并标「(概算)」。
+  //   税种/支类中文名镜像 tm-guoku-panel 的 _tagNameMap/_expLabels(跨朝代通用财政科目)。
   function rightFinanceTagNames(){
     return {
       tianfu:'田赋', tianfu_silver:'田赋折银', dingshui:'丁税', yongBu:'庸役折布', shangShui:'商税',
@@ -1323,26 +1324,47 @@
       shangci:'赏赐', neiting:'内廷转运'
     };
   }
+  // tag→中文：静态科目表优先 → 自定义税 stats.name → 剧本 fiscalConfig.customTaxes 名(镜像 tm-guoku-panel.js
+  // _resolveTagName 的剧本回落·★同步义务：panel 那段改了这里也要跟着改) → 原始 tag。
+  function rightFinanceResolveTagName(tag, customStats){
+    var names = rightFinanceTagNames();
+    if (names[tag]) return names[tag];
+    if (customStats && customStats[tag] && customStats[tag].name) return customStats[tag].name;
+    try {
+      var sc = (typeof findScenarioById === 'function' && window.GM && GM.sid) ? findScenarioById(GM.sid) : null;
+      var cts = (sc && sc.fiscalConfig && sc.fiscalConfig.customTaxes) || [];
+      for (var i = 0; i < cts.length; i++) { if (cts[i] && (cts[i].id === tag || cts[i].sourceTag === tag)) return cts[i].name || tag; }
+    } catch (_) {}
+    return tag;
+  }
   function rightFinanceCascadeItems(kind){
     var gm = window.GM || {};
     var g = gm.guoku || (window.P && P.guoku) || {};
     var ledgers = g.ledgers || {};
-    var names = rightFinanceTagNames();
+    var customStats = g._customTaxStats || {};
     var mapKey = kind === 'expense' ? 'sinks' : 'sources';
     var units = [['money','钱'], ['grain','粮'], ['cloth','布']];
     var out = [];
+    var seen = {};   // 已从 ledger 枚举出的 tag(去重·防自定义税重复列)
     units.forEach(function(u){
       var led = ledgers[u[0]]; if (!led) return;
       var m = led[mapKey] || {};
       Object.keys(m).forEach(function(tag){
         var v = m[tag]; if (!v) return;
-        out.push({ name: (names[tag] || tag) + '·' + u[1], amount: v, note: '本回合结算' });
+        seen[tag] = true;
+        out.push({ name: rightFinanceResolveTagName(tag, customStats) + '·' + u[1], amount: v, note: '本回合结算' });
       });
     });
+    // 自定义税：仅补 ledger 未枚举到的(去重)·且统一本回合口径(turnAmount·非年化 amount)——
+    //   producer 已把自定义税本回合值写进 ledger.sources[sourceTag]，若无条件追加 _customTaxStats.amount 会
+    //   同一税列两行且口径混用(本回合 vs 年化)。realized 税已在 seen 里跳过；未 realized 者 turnAmount=0 略过。
     if (kind !== 'expense') {
-      var ct = g._customTaxStats || {};
-      Object.keys(ct).forEach(function(k){
-        var c = ct[k]; if (c && c.amount) out.push({ name: (c.name || k) + '·钱', amount: c.amount, note: '自定义税种' });
+      Object.keys(customStats).forEach(function(k){
+        if (seen[k]) return;
+        var c = customStats[k]; if (!c) return;
+        var tv = (c.turnAmount != null) ? c.turnAmount : 0;
+        if (!tv) return;
+        out.push({ name: (c.name || k) + '·钱', amount: tv, note: '自定义税种' });
       });
     }
     return out;
@@ -1582,7 +1604,7 @@
         var loyClass = loy < 45 ? 'lo' : (loy >= 75 ? 'hi' : 'mid');
         var loyTag = loy < 45 ? '险' : (loy >= 75 ? '忠' : '稳');
         return '<section class="tmrp-card tmrp-minister-card' + (loy < 45 ? ' hot' : '') + '"><div class="tmrp-minister-face">' + rightIssuePortrait(p) + '</div><div class="tmrp-minister-main">' +
-          '<div class="tmrp-card-title"><span>' + esc(p.name || key) + '</span><small><i class="tmrp-loy-tag ' + loyClass + '">' + loyTag + '</i> · ' + esc(rightIssuePersonTitle(p)) + '</small></div>' +
+          '<div class="tmrp-card-title"><span>' + esc(p.name || key) + '</span><small><i class="tmrp-loy-tag ' + loyClass + '">' + loyTag + '</i> · ' + esc(rightIssuePersonTitle(p)) + (rightFactionDisplay(p.faction) ? ' · ' + esc(rightFactionDisplay(p.faction)) : '') + '</small></div>' +
           '<div class="tmrp-mini-grid"><div><span>忠</span><b>' + esc(p.loyalty || p.loyal || '未录') + '</b></div><div><span>智</span><b>' + esc(p.intelligence || p.wisdom || '未录') + '</b></div><div><span>政</span><b>' + esc(p.administration || p.politics || '未录') + '</b></div><div><span>军</span><b>' + esc(p.military || '未录') + '</b></div></div>' +
           '<div class="tmrp-action-row"><button type="button" class="tmrp-btn primary" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'detail\')">详阅</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'wendui\')">问对</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'letter\')">传书</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'office\')">官制</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.unpin(\'' + attr(key) + '\')">移除</button></div>' +
           '</div></section>';
@@ -1985,15 +2007,15 @@
   }
 
   function rightOpenWenduiQueue(data){
-    var idx = Number(data && data.index);
-    if (!Number.isFinite(idx)) return;
+    var qid = (data && data.qid) || '';   // 稳定 _qid(非 render-time index)
+    if (!qid) return;
     closeDeskOverlay();
     closeModule();
     closeRightDrawer();
     if (typeof window._wdOpenAudienceQueue === 'function') {
-      window._wdOpenAudienceQueue(idx);
+      window._wdOpenAudienceQueue(qid);
     } else if (typeof _wdOpenAudienceQueue === 'function') {
-      _wdOpenAudienceQueue(idx);
+      _wdOpenAudienceQueue(qid);
     } else {
       toast('待见流程未加载');
     }
@@ -2001,14 +2023,14 @@
   }
 
   function rightDismissWenduiQueue(data){
-    var idx = Number(data && data.index);
-    if (!Number.isFinite(idx) || !window.GM) return;
+    var qid = (data && data.qid) || '';   // 稳定 _qid(非 render-time index)
+    if (!qid || !window.GM) return;
     if (typeof window._wdDismissPending === 'function') {
-      window._wdDismissPending(idx);
+      window._wdDismissPending(qid);
     } else if (typeof _wdDismissPending === 'function') {
-      _wdDismissPending(idx);
-    } else if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences[idx] && typeof window._wdRemovePendingAudience === 'function') {
-      window._wdRemovePendingAudience(GM._pendingAudiences[idx]);   // 即时把 idx 解析成 q 引用后按稳定标识删·非裸 splice
+      _wdDismissPending(qid);
+    } else if (typeof window._wdRemovePendingAudience === 'function') {
+      window._wdRemovePendingAudience(qid);   // 按 _qid 主键删·非 idx splice
       toast('已暂却待见');
     }
     openPanel('issue');

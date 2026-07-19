@@ -390,7 +390,8 @@
       gm._pendingAudiences.push({ name: a.name, reason: String(a.reason || '求见').slice(0, 60), turn: turn, _agent: true });
       audN++;
     });
-    if (gm._pendingAudiences.length > 20) gm._pendingAudiences = gm._pendingAudiences.slice(-20);  // cap(同 faction-diplomacy)
+    if (typeof _wdCapPendingAudiences === 'function' && typeof GM !== 'undefined' && gm === GM) _wdCapPendingAudiences(20);   // 唯一去顶写口
+    else if (gm._pendingAudiences.length > 20) gm._pendingAudiences = gm._pendingAudiences.slice(-20);  // cap(同 faction-diplomacy)
     var total = addN + updN + resN + audN;
     if (total && Array.isArray(gm._turnReport)) gm._turnReport.push({ type: 'change', path: '御案·朝务', reason: '时政 新' + addN + '/进' + updN + '/结' + resN + ' · 求见' + audN, turn: turn, _agent: true, _op: 'deepen_court' });
     return { ok: total > 0, text: total > 0 ? ('御案时政 新增' + addN + '/更新' + updN + '/解决' + resN + ' · 求见 ' + audN + ' 人(入问对待见)') : '(本回合无新待决事务)' };
