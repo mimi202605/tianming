@@ -562,6 +562,15 @@
       }
     }
 
+    // 时空约束·full 带在世/已故名单(ch=null·生成对象本人尚未入 GM·不作种子免「不在人物册」噪声)·扫描源=触发生成的上下文 opts.sourceContext + reason·令普通同代人物 bio 不按史书叙他人生死(typeof 守卫防加载序)
+    if (typeof _buildTemporalConstraint === 'function') {
+      try {
+        var _cgScan = String(sourceContext || '') + ' ' + String(reason || '');
+        var _cgMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_cgScan, [], 10) : [];
+        prompt += _buildTemporalConstraint(null, { mentionedNames: _cgMentioned });
+      } catch (_cgTcE) {}
+    }
+
     var attempt = 0;
     var lastErr = null;
     while (attempt < 3) {
