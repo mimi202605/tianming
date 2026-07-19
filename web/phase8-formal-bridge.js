@@ -2410,10 +2410,9 @@
     }
   }
 
-  window.openZhao = openZhaoPreviewPanel;
-  window.openYueZou = openYueZouPreviewPanel;
-  window.openHongyan = openHongyanPreviewPanel;
-  window.openShilu = openShiluPreviewPanel;
+  // 单点导出收口·window.openZhao/openYueZou/openHongyan/openShilu 的【唯一 owner】= phase8-formal-drafts.js
+  //   (drafts 装载于本文件之后·真源实现在彼处)·此处不再重复 window.* 赋值(旧双设=drafts 夺舍 bridge·徒增竞态)
+  //   bridge 内部仍经 bridge.openZhao/openYueZou/... 命名空间导出(见下方对象字面量)
   window.openShizheng = openShizhengLegacyFlow;
   window.syncPhase8FormalEdictDrafts = syncFormalEdictDraftsToLegacyInputs;
   window.getPhase8FormalEdictDraftSnapshot = getFormalEdictDraftSnapshot;
