@@ -146,80 +146,80 @@
   - [x] SubTask 16.10: 御案新增"私产"面板
   - 验证：跑 `node web/scripts/smoke-player-economy.js`（新增 smoke）
 
-- [ ] Task 17: 玩家跑商系统 `web/tm-player-trade.js`
-  - [ ] SubTask 17.1: 定义 `TM.PlayerTrade` 命名空间
-  - [ ] SubTask 17.2: 商队数据结构：id, owner, route{from,to}, goods[], guards, carts, permit, status
-  - [ ] SubTask 17.3: 实现"组建商队"：消耗银钱 + 配置护卫/车马/通关文牒（许可难度关联官场关系）
-  - [ ] SubTask 17.4: 实现"派遣贸易"：根据 `tm-economy-engine.js` 区域价格矩阵计算预期利润
-  - [ ] SubTask 17.5: 路线风险事件：山贼劫掠（沿用 `tm-coastal-raid.js` 模式）、官府盘剥、气候灾害、地方势力索要过路费
-  - [ ] SubTask 17.6: 商队到达后结算实际盈亏，写入玩家银钱账本
-  - [ ] SubTask 17.7: 大宗贸易（超阈值）调用 `tm-region-magnate.js` 影响区域经济
-  - [ ] SubTask 17.8: 跨朝代通用：剧本数据 hook 路线（丝路/茶马/漕运/海贸），引擎只提供"商队+路线+风险+利润"通用框架
-  - [ ] SubTask 17.9: 跑商积累商誉，开启新商业网络与 NPC 关系
-  - [ ] SubTask 17.10: 御案新增"商队"面板
+- [x] Task 17: 玩家跑商系统 `web/tm-player-trade.js`
+  - [x] SubTask 17.1: 定义 `TM.PlayerTrade` 命名空间
+  - [x] SubTask 17.2: 商队数据结构：id, owner, route{from,to}, goods[], guards, carts, permit, status
+  - [x] SubTask 17.3: 实现"组建商队"：消耗银钱 + 配置护卫/车马/通关文牒（许可难度关联官场关系）
+  - [x] SubTask 17.4: 实现"派遣贸易"：根据 `tm-economy-engine.js` 区域价格矩阵计算预期利润
+  - [x] SubTask 17.5: 路线风险事件：山贼劫掠（沿用 `tm-coastal-raid.js` 模式）、官府盘剥、气候灾害、地方势力索要过路费
+  - [x] SubTask 17.6: 商队到达后结算实际盈亏，写入玩家银钱账本
+  - [x] SubTask 17.7: 大宗贸易（超阈值）调用 `tm-region-magnate.js` 影响区域经济
+  - [x] SubTask 17.8: 跨朝代通用：剧本数据 hook 路线（丝路/茶马/漕运/海贸），引擎只提供"商队+路线+风险+利润"通用框架
+  - [x] SubTask 17.9: 跑商积累商誉，开启新商业网络与 NPC 关系
+  - [x] SubTask 17.10: 御案新增"商队"面板
   - 验证：跑 `node web/scripts/smoke-player-trade.js`（新增 smoke）
 
-- [ ] Task 18: 玩家科技研发系统 `web/tm-player-tech.js`（含固定科技路线）
-  - [ ] SubTask 18.1: 定义 `TM.PlayerTech` 命名空间
-  - [ ] SubTask 18.2: 玩家科技账本：currentResearch{field, level, progress, invested}, completed[], discoveries[]
-  - [ ] SubTask 18.3: **预设固定科技路线数据**：内置默认路线（农业/军事/工艺/医药/水利/天文/算学/文学等线，每线 5 级），写入 `tm-engine-constants.js` 或新 `tm-tech-routes-data.js`
+- [x] Task 18: 玩家科技研发系统 `web/tm-player-tech.js`（含固定科技路线）
+  - [x] SubTask 18.1: 定义 `TM.PlayerTech` 命名空间
+  - [x] SubTask 18.2: 玩家科技账本：currentResearch{field, level, progress, invested}, completed[], discoveries[]
+  - [x] SubTask 18.3: **预设固定科技路线数据**：内置默认路线（农业/军事/工艺/医药/水利/天文/算学/文学等线，每线 5 级），写入 `tm-engine-constants.js` 或新 `tm-tech-routes-data.js`
     - 农业线：`农具改良 → 良种选育 → 水利灌溉 → 耕作制度 → 多熟种植`
     - 军事线：`冶铁锻造 → 弩机改良 → 甲胄升级 → 攻城器械 → 火药初探`
     - 工艺线：`纺织改进 → 陶瓷烧制 → 造纸印刷 → 冶铸高炉 → 雕版活字`
     - 医药线：`本草整理 → 方剂编纂 → 针灸推拿 → 疫病防治 → 法医检验`
     - 水利线：`沟渠疏浚 → 陂塘修筑 → 堰坝工程 → 运河开凿 → 海塘修筑`
-  - [ ] SubTask 18.4: 实现"启动研发"：选定领域，扣银钱，按 `学识 + 投入 + 基础 + 时代限制` 计算进度
-  - [ ] SubTask 18.5: 实现"前置科技解锁"：完成 N 级才能研发 N+1 级，未完成时禁用按钮并提示
-  - [ ] SubTask 18.6: 剧本数据可覆盖/扩展路线（merge 默认 + 剧本）
-  - [ ] SubTask 18.7: 实现"招揽匠人加速"：关联人物互动，进度加成
-  - [ ] SubTask 18.8: 实现"研发完成"：解锁对应增益
-  - [ ] SubTask 18.9: 实现"上奏推广"与"私藏自用"两条路径
-  - [ ] SubTask 18.10: 御案新增"科技"面板，可视化科技树（已解锁/进行中/锁定）
+  - [x] SubTask 18.4: 实现"启动研发"：选定领域，扣银钱，按 `学识 + 投入 + 基础 + 时代限制` 计算进度
+  - [x] SubTask 18.5: 实现"前置科技解锁"：完成 N 级才能研发 N+1 级，未完成时禁用按钮并提示
+  - [x] SubTask 18.6: 剧本数据可覆盖/扩展路线（merge 默认 + 剧本）
+  - [x] SubTask 18.7: 实现"招揽匠人加速"：关联人物互动，进度加成
+  - [x] SubTask 18.8: 实现"研发完成"：解锁对应增益
+  - [x] SubTask 18.9: 实现"上奏推广"与"私藏自用"两条路径
+  - [x] SubTask 18.10: 御案新增"科技"面板，可视化科技树（已解锁/进行中/锁定）
   - 验证：跑 `node web/scripts/smoke-player-tech.js`（新增 smoke），断言前置科技锁正确
 
-- [ ] Task 19: 玩家家族与子女系统 `web/tm-player-family.js`
-  - [ ] SubTask 19.1: 定义 `TM.PlayerFamily` 命名空间
-  - [ ] SubTask 19.2: 玩家家族结构（复用 `tm-char-full-schema.js` 的 `family` / `familyMembers` 字段）：父母/兄弟/姐妹/配偶/子女/宗族
-  - [ ] SubTask 19.3: 实现"结婚"（常规娶妻/嫁女）：通过人物互动系统联姻，配偶带入嫁妆/陪嫁/家族关系，走"纳采/问名/纳吉/纳征/请期/亲迎"六礼流程
-  - [ ] SubTask 19.4: 实现"生育子女"：时间推进到生育周期生成子女角色（写入 `family.children`）
-  - [ ] SubTask 19.5: 实现"子女成长"：婴幼儿→少年→成年，每阶段触发事件（满月/启蒙/冠礼/及笄）
-  - [ ] SubTask 19.6: 实现"子女教育"：延师/亲自教导/送书院，更新子女 `learning/intelligence/benevolence` 字段
-  - [ ] SubTask 19.7: 实现"子女联姻"：成年子女与 NPC 家族联姻
-  - [ ] SubTask 19.8: 实现"子女出仕"：科举/荫袭/征辟三条路径
-  - [ ] SubTask 19.9: 实现"子女继承"：玩家死亡/罢黜时子女继承家产/官职/名望，可选切换至子女继续游戏
-  - [ ] SubTask 19.10: 实现"子嗣危机"：无子触发"绝嗣"危机；子嗣过多触发"夺嫡"内斗
-  - [ ] SubTask 19.11: 实现"子女叛逃"：关系恶化到"仇敌"级时子女可能叛逃
-  - [ ] SubTask 19.12: 御案新增"家族"面板，展示家族树与子女状态
+- [x] Task 19: 玩家家族与子女系统 `web/tm-player-family.js`
+  - [x] SubTask 19.1: 定义 `TM.PlayerFamily` 命名空间
+  - [x] SubTask 19.2: 玩家家族结构（复用 `tm-char-full-schema.js` 的 `family` / `familyMembers` 字段）：父母/兄弟/姐妹/配偶/子女/宗族
+  - [x] SubTask 19.3: 实现"结婚"（常规娶妻/嫁女）：通过人物互动系统联姻，配偶带入嫁妆/陪嫁/家族关系，走"纳采/问名/纳吉/纳征/请期/亲迎"六礼流程
+  - [x] SubTask 19.4: 实现"生育子女"：时间推进到生育周期生成子女角色（写入 `family.children`）
+  - [x] SubTask 19.5: 实现"子女成长"：婴幼儿→少年→成年，每阶段触发事件（满月/启蒙/冠礼/及笄）
+  - [x] SubTask 19.6: 实现"子女教育"：延师/亲自教导/送书院，更新子女 `learning/intelligence/benevolence` 字段
+  - [x] SubTask 19.7: 实现"子女联姻"：成年子女与 NPC 家族联姻
+  - [x] SubTask 19.8: 实现"子女出仕"：科举/荫袭/征辟三条路径
+  - [x] SubTask 19.9: 实现"子女继承"：玩家死亡/罢黜时子女继承家产/官职/名望，可选切换至子女继续游戏
+  - [x] SubTask 19.10: 实现"子嗣危机"：无子触发"绝嗣"危机；子嗣过多触发"夺嫡"内斗
+  - [x] SubTask 19.11: 实现"子女叛逃"：关系恶化到"仇敌"级时子女可能叛逃
+  - [x] SubTask 19.12: 御案新增"家族"面板，展示家族树与子女状态
 
-- [ ] Task 19B: 玩家婚姻礼制系统（婚嫁/赘婿/招赘/再婚/和离）`web/tm-player-marriage.js`
-  - [ ] SubTask 19B.1: 定义 `TM.PlayerMarriage` 命名空间
-  - [ ] SubTask 19B.2: 婚姻状态机：未婚/已娶/赘婿/招赘/和离/丧偶/再婚（继室/平妻）
-  - [ ] SubTask 19B.3: 实现"六礼流程"：纳采/问名/纳吉/纳征/请期/亲迎，每步消耗时间/银钱，可被 NPC 拒婚
-  - [ ] SubTask 19B.4: 实现"入赘为赘婿"路径：玩家男性 + 选择入赘，改入女方家族，地位较低，触发"赘婿逆袭"或"被妻家欺压"戏剧线
-  - [ ] SubTask 19B.5: 实现"招赘"路径：玩家女性/女家主，赘婿入门加入玩家家族，子女归玩家家族
-  - [ ] SubTask 19B.6: 实现"再婚"：丧偶/和离后度过守制期可再婚，新配偶标记继室/平妻
-  - [ ] SubTask 19B.7: 实现"守制期校验"：父母丧/夫丧/妻丧期间禁婚，违规触发礼法风险（言官弹劾/名声下降/官员被罢）
-  - [ ] SubTask 19B.8: 实现"再婚带子女"：鳏夫/寡妇带子女再婚，子女与新配偶关系动态生成（慈/严/慈爱/虐待/敌对）
-  - [ ] SubTask 19B.9: 实现"和离/休妻/休夫"：玩家主动和离（协议）、休妻（男方需符合七出）、休夫（罕见需妻家强势），子女归属按礼法判定
-  - [ ] SubTask 19B.10: 实现"平妻/嫡庶之争"：特殊情况下平妻触发嫡庶之争风险，子嗣继承顺序争议
-  - [ ] SubTask 19B.11: 婚姻事件写入玩家记忆与编年史（结婚/赘婿/再婚/和离/休妻等关键节点）
-  - [ ] SubTask 19B.12: 御案"家族"面板新增"婚姻"子面板，展示当前婚姻状态、配偶档案、可选婚姻动作
+- [x] Task 19B: 玩家婚姻礼制系统（婚嫁/赘婿/招赘/再婚/和离）`web/tm-player-marriage.js`
+  - [x] SubTask 19B.1: 定义 `TM.PlayerMarriage` 命名空间
+  - [x] SubTask 19B.2: 婚姻状态机：未婚/已娶/赘婿/招赘/和离/丧偶/再婚（继室/平妻）
+  - [x] SubTask 19B.3: 实现"六礼流程"：纳采/问名/纳吉/纳征/请期/亲迎，每步消耗时间/银钱，可被 NPC 拒婚
+  - [x] SubTask 19B.4: 实现"入赘为赘婿"路径：玩家男性 + 选择入赘，改入女方家族，地位较低，触发"赘婿逆袭"或"被妻家欺压"戏剧线
+  - [x] SubTask 19B.5: 实现"招赘"路径：玩家女性/女家主，赘婿入门加入玩家家族，子女归玩家家族
+  - [x] SubTask 19B.6: 实现"再婚"：丧偶/和离后度过守制期可再婚，新配偶标记继室/平妻
+  - [x] SubTask 19B.7: 实现"守制期校验"：父母丧/夫丧/妻丧期间禁婚，违规触发礼法风险（言官弹劾/名声下降/官员被罢）
+  - [x] SubTask 19B.8: 实现"再婚带子女"：鳏夫/寡妇带子女再婚，子女与新配偶关系动态生成（慈/严/慈爱/虐待/敌对）
+  - [x] SubTask 19B.9: 实现"和离/休妻/休夫"：玩家主动和离（协议）、休妻（男方需符合七出）、休夫（罕见需妻家强势），子女归属按礼法判定
+  - [x] SubTask 19B.10: 实现"平妻/嫡庶之争"：特殊情况下平妻触发嫡庶之争风险，子嗣继承顺序争议
+  - [x] SubTask 19B.11: 婚姻事件写入玩家记忆与编年史（结婚/赘婿/再婚/和离/休妻等关键节点）
+  - [x] SubTask 19B.12: 御案"家族"面板新增"婚姻"子面板，展示当前婚姻状态、配偶档案、可选婚姻动作
   - 验证：跑 `node web/scripts/smoke-player-family.js`（新增 smoke）
 
-- [ ] Task 20: 玩家私军系统 `web/tm-player-private-army.js`
-  - [ ] SubTask 20.1: 定义 `TM.PlayerPrivateArmy` 命名空间
-  - [ ] SubTask 20.2: 私军数据结构：units[{id, type, count, training, equipment, morale}], type ∈ {家丁/门客剑士/部曲/死士}
-  - [ ] SubTask 20.3: 实现"招募私军"：从流民/镖师/江湖人/退役军士中招募，关联人物互动可招揽名将
-  - [ ] SubTask 20.4: 实现"私军维护"：每月消耗银钱/粮草，规模超限触发财政压力
-  - [ ] SubTask 20.5: 实现"训练私军"：消耗时间/银钱，训练度提升（沿用 `tm-army-units.js` 模型）
-  - [ ] SubTask 20.6: 实现"装备私军"：购置兵器/甲胄/战马（关联私产系统）
-  - [ ] SubTask 20.7: 实现"护卫商队"使用场景：派遣护卫降低山贼劫掠风险
-  - [ ] SubTask 20.8: 实现"自卫"使用场景：反叛筹备期抵御围剿
-  - [ ] SubTask 20.9: 实现"政变"使用场景：反叛时私军作为主力参战（沿用 `tm-battle-*.js`）
-  - [ ] SubTask 20.10: 实现"私斗"使用场景：与 NPC 家族械斗
-  - [ ] SubTask 20.11: 实现"僭越风险"：规模超阈值触发朝廷调查/言官弹劾/问罪
-  - [ ] SubTask 20.12: 沿用 `tm-military.js` / `tm-army-units.js` 战斗单位模型，标记 `kind:'private'` 独立账本
-  - [ ] SubTask 20.13: 御案新增"私军"面板
+- [x] Task 20: 玩家私军系统 `web/tm-player-private-army.js`
+  - [x] SubTask 20.1: 定义 `TM.PlayerPrivateArmy` 命名空间
+  - [x] SubTask 20.2: 私军数据结构：units[{id, type, count, training, equipment, morale}], type ∈ {家丁/门客剑士/部曲/死士}
+  - [x] SubTask 20.3: 实现"招募私军"：从流民/镖师/江湖人/退役军士中招募，关联人物互动可招揽名将
+  - [x] SubTask 20.4: 实现"私军维护"：每月消耗银钱/粮草，规模超限触发财政压力
+  - [x] SubTask 20.5: 实现"训练私军"：消耗时间/银钱，训练度提升（沿用 `tm-army-units.js` 模型）
+  - [x] SubTask 20.6: 实现"装备私军"：购置兵器/甲胄/战马（关联私产系统）
+  - [x] SubTask 20.7: 实现"护卫商队"使用场景：派遣护卫降低山贼劫掠风险
+  - [x] SubTask 20.8: 实现"自卫"使用场景：反叛筹备期抵御围剿
+  - [x] SubTask 20.9: 实现"政变"使用场景：反叛时私军作为主力参战（沿用 `tm-battle-*.js`）
+  - [x] SubTask 20.10: 实现"私斗"使用场景：与 NPC 家族械斗
+  - [x] SubTask 20.11: 实现"僭越风险"：规模超阈值触发朝廷调查/言官弹劾/问罪
+  - [x] SubTask 20.12: 沿用 `tm-military.js` / `tm-army-units.js` 战斗单位模型，标记 `kind:'private'` 独立账本
+  - [x] SubTask 20.13: 御案新增"私军"面板
   - 验证：跑 `node web/scripts/smoke-player-private-army.js`（新增 smoke）
 
 - [x] Task 21: 玩家自由移动系统 `web/tm-player-movement.js`

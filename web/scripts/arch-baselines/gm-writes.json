@@ -9,10 +9,10 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-11T09:27:28.737Z",
+  "updatedAt": "2026-07-19T08:27:11.816Z",
   "totals": {
-    "gm": 4496,
-    "p": 733
+    "gm": 4497,
+    "p": 738
   },
   "files": {
     "map-converter.js": {
@@ -1387,6 +1387,13 @@
         "gm:provinceStats": 3
       }
     },
+    "tm-player-tech.js": {
+      "gm": 1,
+      "p": 0,
+      "roots": {
+        "gm:_playerTech": 1
+      }
+    },
     "tm-faction-diplomacy.js": {
       "gm": 8,
       "p": 0,
@@ -1877,7 +1884,7 @@
     },
     "tm-save-lifecycle.js": {
       "gm": 382,
-      "p": 77,
+      "p": 82,
       "roots": {
         "gm:shijiHistory": 1,
         "gm:allCharacters": 1,
@@ -1976,6 +1983,7 @@
         "p:_varFormulas": 2,
         "p:mechanicsConfig": 17,
         "p:militaryConfig": 4,
+        "p:playerInfo": 5,
         "gm:_chronicleSysState": 2,
         "gm:_warTruces": 1,
         "gm:_rngState": 1,
