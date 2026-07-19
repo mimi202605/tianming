@@ -1236,7 +1236,7 @@
 
   // 将加载的数据合并到scriptData并刷新UI
   function _mergeAndRenderScriptData(d) {
-    if (typeof SchemaAdapter !== 'undefined' && d && (Array.isArray(d.events) || Array.isArray(d.relations) || Array.isArray(d.factionRelations) || Array.isArray(d.variables))) {
+    if (typeof SchemaAdapter !== 'undefined' && d && (Array.isArray(d.events) || Array.isArray(d.relations) || Array.isArray(d.factionRelations) || Array.isArray(d.variables) || (SchemaAdapter.needsMilitaryMigration && SchemaAdapter.needsMilitaryMigration(d)))) {
       try {
         var _ad = SchemaAdapter.importScenario(d);
         d = _ad.scriptData;
