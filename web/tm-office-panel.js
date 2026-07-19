@@ -228,6 +228,16 @@ function _offPickerConfirmPre(charName, deptName, posName, oldHolder) {
 function _offPickerConfirm(charName, deptName, posName, oldHolder, mode) {
   // mode: 'resign'(默认·辞旧就新) | 'concurrent'(兼任)
   mode = mode || 'resign';
+  // 穿越模式：玩家非君主 → 按 playerRole 判定任免权限（SubTask 13.3）
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  if (_isTrans && typeof canPerformAction === 'function') {
+    var _perm = canPerformAction(charName, 'appointment', _pi.playerRole);
+    if (!_perm || !_perm.can) {
+      try { if (typeof toast === 'function') toast(_perm && _perm.reason ? _perm.reason : '无任免之权'); } catch(_) {}
+      return;
+    }
+  }
   // ═══ 三位一体·即时生效·回合内可撤销 ═══
   // 1. 直接改 officeTree holder（UI 立即刷新）
   // 2. 同步更新 char.officialTitle + careerHistory + 官职公库 currentHead

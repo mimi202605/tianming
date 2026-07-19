@@ -86,35 +86,35 @@
 
 ## Phase 4 · 玩家角色动作集（按 playerRole 分支）
 
-- [ ] Task 11: 诏令面板按 playerRole 分支渲染
-  - [ ] SubTask 11.1: 在 `tm-game-ui-shell.js:139` 把 `var _edictRole='天子';` 改为读 `P.playerInfo.playerRole` 分支
-  - [ ] SubTask 11.2: 皇帝模式：保留"天子御笔 · 奉天承运皇帝诏曰" + 5 类诏书 textarea
-  - [ ] SubTask 11.3: 穿越模式：替换为"上奏 · 臣{characterName}谨奏" + 1-3 篇奏疏 textarea
-  - [ ] SubTask 11.4: 按角色定位增减动作按钮：minister→廷推/荐举，general→请旨出征，prince→朝贡/上表，regent→代诏，后宫→枕边风
-  - [ ] SubTask 11.5: `_endTurn_collectInput`（tm-endturn-prep.js:341）按 playerRole 分支收集玩家上奏 vs 诏令
+- [x] Task 11: 诏令面板按 playerRole 分支渲染
+  - [x] SubTask 11.1: 在 `tm-game-ui-shell.js:139` 把 `var _edictRole='天子';` 改为读 `P.playerInfo.playerRole` 分支
+  - [x] SubTask 11.2: 皇帝模式：保留"天子御笔 · 奉天承运皇帝诏曰" + 5 类诏书 textarea
+  - [x] SubTask 11.3: 穿越模式：替换为"上奏 · 臣{characterName}谨奏" + 1-3 篇奏疏 textarea
+  - [x] SubTask 11.4: 按角色定位增减动作按钮：minister→廷推/荐举，general→请旨出征，prince→朝贡/上表，regent→代诏，后宫→枕边风
+  - [x] SubTask 11.5: `_endTurn_collectInput`（tm-endturn-prep.js:341）按 playerRole 分支收集玩家上奏 vs 诏令
   - 验证：跑 `node web/scripts/smoke-transmigration-edict-panel.js`（新增 smoke）
 
-- [ ] Task 12: 朝议面板按 playerRole 分支
-  - [ ] SubTask 12.1: 在 `tm-chaoyi.js:20 openChaoyi` 入口判定 playerRole
-  - [ ] SubTask 12.2: 皇帝模式：保留现有"插言"路径（line 35 的 placeholder 文案保留）
-  - [ ] SubTask 12.3: 穿越模式：玩家不能主动开朝议（按钮禁用并提示"朝议由君主发起"）
-  - [ ] SubTask 12.4: 穿越模式下玩家在朝议中"请旨发言"——按钮申请，皇帝 AI 决定准否
-  - [ ] SubTask 12.5: 朝议气泡中所有 `'皇帝'` 字面量替换为 `P.playerInfo.sovereignName || '皇帝'`
+- [x] Task 12: 朝议面板按 playerRole 分支
+  - [x] SubTask 12.1: 在 `tm-chaoyi.js:20 openChaoyi` 入口判定 playerRole
+  - [x] SubTask 12.2: 皇帝模式：保留现有"插言"路径（line 35 的 placeholder 文案保留）
+  - [x] SubTask 12.3: 穿越模式：玩家不能主动开朝议（按钮禁用并提示"朝议由君主发起"）
+  - [x] SubTask 12.4: 穿越模式下玩家在朝议中"请旨发言"——按钮申请，皇帝 AI 决定准否
+  - [x] SubTask 12.5: 朝议气泡中所有 `'皇帝'` 字面量替换为 `P.playerInfo.sovereignName || '皇帝'`
   - 验证：跑 `node web/scripts/smoke-transmigration-chaoyi.js`（新增 smoke），断言皇帝名字动态化
 
-- [ ] Task 13: 官制权限按 playerRole 分支
-  - [ ] SubTask 13.1: 在 `tm-office-system.js:930-963 canPerformAction` 增加 `playerRole` 参数
-  - [ ] SubTask 13.2: 按 spec「官制权限判定」分支：emperor 全权，regent 三品以下+代诏，minister 本职下属+廷推，general 本部军官，prince 封国官属，其他无任免权
-  - [ ] SubTask 13.3: 调用方（`tm-office-panel.js` 等）传入 `P.playerInfo.playerRole`，UI 按权限显隐按钮
-  - [ ] SubTask 13.4: 不删除现有 `_offIsSovereign` 中的剧本特定正则（向后兼容）
+- [x] Task 13: 官制权限按 playerRole 分支
+  - [x] SubTask 13.1: 在 `tm-office-system.js:930-963 canPerformAction` 增加 `playerRole` 参数
+  - [x] SubTask 13.2: 按 spec「官制权限判定」分支：emperor 全权，regent 三品以下+代诏，minister 本职下属+廷推，general 本部军官，prince 封国官属，其他无任免权
+  - [x] SubTask 13.3: 调用方（`tm-office-panel.js` 等）传入 `P.playerInfo.playerRole`，UI 按权限显隐按钮
+  - [x] SubTask 13.4: 不删除现有 `_offIsSovereign` 中的剧本特定正则（向后兼容）
   - 验证：跑 `node web/scripts/smoke-transmigration-office-permission.js`（新增 smoke）
 
-- [ ] Task 14: 摄政权臣特殊路径
-  - [ ] SubTask 14.1: 在 `tm-transmigration.js` 实现 `TM.Transmigration.runRegentAction(action, payload)` —— 玩家代行皇权入口
-  - [ ] SubTask 14.2: 代诏诏令标记 `source:'regent-proxy'`，落账到 `_edictTracker`
-  - [ ] SubTask 14.3: 代诏合法性损耗：影响 `皇威` 或派生合法性指标（沿用 `tm-authority-deep.js`）
-  - [ ] SubTask 14.4: 复用 `TM.InfluenceGroups.buildRegentSignal`（tm-influence-groups.js:228）触发还政/拒还事件
-  - [ ] SubTask 14.5: 拒还触发"权臣架空"危机（沿用 `tm-influence-groups.js` 危机管线）
+- [x] Task 14: 摄政权臣特殊路径
+  - [x] SubTask 14.1: 在 `tm-transmigration.js` 实现 `TM.Transmigration.runRegentAction(action, payload)` —— 玩家代行皇权入口
+  - [x] SubTask 14.2: 代诏诏令标记 `source:'regent-proxy'`，落账到 `_edictTracker`
+  - [x] SubTask 14.3: 代诏合法性损耗：影响 `皇威` 或派生合法性指标（沿用 `tm-authority-deep.js`）
+  - [x] SubTask 14.4: 复用 `TM.InfluenceGroups.buildRegentSignal`（tm-influence-groups.js:228）触发还政/拒还事件
+  - [x] SubTask 14.5: 拒还触发"权臣架空"危机（沿用 `tm-influence-groups.js` 危机管线）
   - 验证：跑 `node web/scripts/smoke-transmigration-regent.js`（新增 smoke）
 
 ## Phase 4.5 · 玩家专属系统（穿越模式核心爽点）

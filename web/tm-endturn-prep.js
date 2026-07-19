@@ -344,6 +344,10 @@ function _endTurn_collectInput() {
     else if (typeof window.syncPhase8FormalEdictDrafts === 'function') window.syncPhase8FormalEdictDrafts();
   } catch(_) {}
   var edicts={political:(_$("edict-pol")?_$("edict-pol").value:"").trim(),military:(_$("edict-mil")?_$("edict-mil").value:"").trim(),diplomatic:(_$("edict-dip")?_$("edict-dip").value:"").trim(),economic:(_$("edict-eco")?_$("edict-eco").value:"").trim(),other:(_$("edict-oth")?_$("edict-oth").value:"").trim()};
+  // 穿越模式：玩家非君主 → 收集"上奏"而非"诏令"·source 标记为 player-memorial
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  var _src = _isTrans ? 'player-memorial' : 'sovereign-player';
   // 记录玩家决策
   if (edicts.political) recordPlayerDecision('edict', '政令:' + edicts.political.substring(0, 80));
   if (edicts.military) recordPlayerDecision('edict', '军令:' + edicts.military.substring(0, 80));
@@ -351,7 +355,9 @@ function _endTurn_collectInput() {
   if (edicts.economic) recordPlayerDecision('edict', '经济:' + edicts.economic.substring(0, 80));
   // 1.1: 诏令执行追踪——记录本回合所有诏令·同 content 未完成诏令去重
   if (!GM._edictTracker) GM._edictTracker = [];
-  var _edictCats = [{key:'political',label:'政令'},{key:'military',label:'军令'},{key:'diplomatic',label:'外交'},{key:'economic',label:'经济'},{key:'other',label:'其他'}];
+  var _edictCats = _isTrans
+    ? [{key:'political',label:'奏疏'},{key:'military',label:'建议'},{key:'other',label:'其他'}]
+    : [{key:'political',label:'政令'},{key:'military',label:'军令'},{key:'diplomatic',label:'外交'},{key:'economic',label:'经济'},{key:'other',label:'其他'}];
   _edictCats.forEach(function(cat) {
     if (!edicts[cat.key]) return;
     var _content = edicts[cat.key];
@@ -360,7 +366,7 @@ function _endTurn_collectInput() {
       return t.status === 'pending' || t.status === 'executing' || t.status === 'partial' || t.status === 'obstructed' || t.status === 'pending_delivery';
     });
     if (!_dup) {
-      GM._edictTracker.push({ id: uid(), content: _content, category: cat.label, turn: GM.turn, status: 'pending', assignee: '', feedback: '', progressPercent: 0 });
+      GM._edictTracker.push({ id: uid(), content: _content, category: cat.label, turn: GM.turn, status: 'pending', assignee: '', feedback: '', progressPercent: 0, source: _src });
     }
   });
   // ★ 候选事件池消费(2026-06-02·bug C)：玩家本回合诏令已处理的候选事件标 _fired·

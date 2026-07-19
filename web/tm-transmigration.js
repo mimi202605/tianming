@@ -537,6 +537,109 @@
     }
   }
 
+  // ── 玩家角色动作执行器（minister/general/prince/custom 等非摄政角色的统一入口）──
+  // action: 'tingtui'|'recommend'|'requestExpedition'|'tribute'|'submitMemorial'|'pillowTalk'
+  function roleAction(action, payload) {
+    payload = payload || {};
+    if (!isTransmigrationMode()) return { ok: false, reason: '非穿越模式' };
+    var pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+    if (!pi || !pi.playerRole || pi.playerRole === 'emperor') return { ok: false, reason: '非穿越角色' };
+    var G = (typeof GM !== 'undefined') ? GM : null;
+    if (!G) return { ok: false, reason: 'GM 未就绪' };
+    // 权限判定（复用 canPerformAction·若可用）
+    if (typeof canPerformAction === 'function') {
+      var perm = canPerformAction(pi.characterName || '', action, pi.playerRole);
+      if (!perm || !perm.can) return { ok: false, reason: (perm && perm.reason) || '无此权' };
+    }
+    if (!Array.isArray(G._edictTracker)) G._edictTracker = []; // arch-ok
+    G._edictTracker.push({ // arch-ok
+      id: (typeof uid === 'function') ? uid() : ('role_' + Date.now()),
+      content: payload.content || ((pi.characterName || '臣') + '·' + action),
+      category: payload.category || ('玩家动作·' + action),
+      turn: G.turn || 0,
+      status: 'pending',
+      assignee: '',
+      feedback: '',
+      progressPercent: 0,
+      source: 'player-action',
+      playerRole: pi.playerRole,
+      playerAction: action
+    });
+    return { ok: true, action: action };
+  }
+
+  // ── 摄政权臣特殊路径 ──
+  // action: 'proxyEdict'(代诏) | 'returnPower'(还政) | 'holdPower'(拒还)
+  // payload: { content?, category? } for proxyEdict
+  function runRegentAction(action, payload) {
+    payload = payload || {};
+    if (!isTransmigrationMode()) return { ok: false, reason: '非穿越模式' };
+    var pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+    if (!pi || pi.playerRole !== 'regent') return { ok: false, reason: '非摄政角色' };
+    var G = (typeof GM !== 'undefined') ? GM : null;
+    if (!G) return { ok: false, reason: 'GM 未就绪' };
+
+    if (action === 'proxyEdict') {
+      var content = String(payload.content || '').trim();
+      if (!content) return { ok: false, reason: '代诏内容为空' };
+      var category = payload.category || '代诏';
+      if (!Array.isArray(G._edictTracker)) G._edictTracker = []; // arch-ok
+      G._edictTracker.push({ // arch-ok
+        id: (typeof uid === 'function') ? uid() : ('regent_' + Date.now()),
+        content: content,
+        category: category,
+        turn: G.turn || 0,
+        status: 'pending',
+        assignee: '',
+        feedback: '',
+        progressPercent: 0,
+        source: 'regent-proxy',
+        proxyRegent: pi.characterName || ''
+      });
+      // 代诏损耗皇威（沿用 AuthorityComplete.triggerHuangweiEvent）
+      var hwResult = null;
+      try {
+        if (typeof AuthorityComplete !== 'undefined' && typeof AuthorityComplete.triggerHuangweiEvent === 'function') {
+          hwResult = AuthorityComplete.triggerHuangweiEvent('brokenPromise', { reason: '摄政代诏·皇权旁落' });
+        }
+      } catch (_) {}
+      // 复用 buildRegentSignal 触发还政/拒还信号
+      var signal = null;
+      try {
+        if (typeof TM !== 'undefined' && TM.InfluenceGroups && typeof TM.InfluenceGroups.buildRegentSignal === 'function') {
+          signal = TM.InfluenceGroups.buildRegentSignal(G);
+        }
+      } catch (_) {}
+      return { ok: true, action: 'proxyEdict', source: 'regent-proxy', huangwei: hwResult, signal: signal };
+    }
+
+    if (action === 'returnPower') {
+      // 还政于君：关闭穿越模式·玩家回归皇帝模式
+      pi.transmigrationMode = false; // arch-ok
+      pi.playerRole = 'emperor'; // arch-ok
+      return { ok: true, action: 'returnPower' };
+    }
+
+    if (action === 'holdPower') {
+      // 拒还：触发"权臣架空"危机（沿用 handleCrisisAction type='power_minister'）
+      var crisisReq = {
+        type: 'power_minister',
+        action: 'purge',
+        target: pi.characterName || '',
+        reason: '权臣拒还·架空君主'
+      };
+      var crisisResult = null;
+      try {
+        if (typeof AuthorityComplete !== 'undefined' && typeof AuthorityComplete.handleCrisisAction === 'function') {
+          crisisResult = AuthorityComplete.handleCrisisAction(crisisReq, { turn: G.turn || 0, source: 'regent-hold' });
+        }
+      } catch (_) {}
+      return { ok: true, action: 'holdPower', crisis: crisisResult };
+    }
+
+    return { ok: false, reason: '未知 action: ' + action };
+  }
+
   window.doTransmigration = function () {
     if (window.TM && TM.Transmigration && typeof TM.Transmigration.startFlow === 'function') {
       TM.Transmigration.startFlow();
@@ -554,6 +657,8 @@
     getSovereignTitle: getSovereignTitle,
     startFlow: startFlow,
     showCharacterSelect: showCharacterSelect,
-    confirmCharacter: confirmCharacter
+    confirmCharacter: confirmCharacter,
+    roleAction: roleAction,
+    runRegentAction: runRegentAction
   };
 })();
