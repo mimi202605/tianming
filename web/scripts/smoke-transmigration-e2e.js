@@ -694,8 +694,12 @@ function playerReclaimTest() {
   var PR = ctx.TM.PlayerReclaim;
   var r1 = PR.surveyWasteland('杭州', 'medium', { policy: 'tunTian' });
   assert(r1.ok === true, 'reclaim: surveyWasteland ok');
-  assert(r1.project && r1.project.region === '杭州', 'reclaim: project.region=杭州');
-  var r2 = PR.requestPermission(r1.project.id);
+  // surveyWasteland 返回 projectId/region（非 project 对象）
+  assert(r1.projectId, 'reclaim: projectId 字段存在');
+  assert(r1.region === '杭州', 'reclaim: region=杭州');
+  var proj = PR.getProjectById(r1.projectId);
+  assert(proj && proj.region === '杭州', 'reclaim: getProjectById.region=杭州');
+  var r2 = PR.requestPermission(r1.projectId);
   assert(r2.ok === true, 'reclaim: requestPermission ok');
 }
 
