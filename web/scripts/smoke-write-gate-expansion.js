@@ -35,6 +35,8 @@ function makeCtx() {
    'tm-ai-change-applier.js', 'tm-ai-change-applier-validators.js', 'tm-ai-change-applier-reconcile.js',
    'tm-ai-apply-deaths.js', 'tm-endturn-apply-stages.js']
     .forEach(f => { try { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }); } catch (_) {} });
+  // C4·当前游戏年由 TimeUtils.turnToDate 权威给出(真机=turn+剧本 startYear 算)·此处 stub 为 GM.year·令时点闸可控确定。
+  ctx.TimeUtils = { turnToDate: function () { return { year: Number(ctx.GM && ctx.GM.year) || 0 }; } };
   return ctx;
 }
 
@@ -170,6 +172,44 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
     ctx.GM = baseGM([{ name: '魏忠贤', alive: true, faction: '明朝廷', stance: '忠', resources: {} }]);
     ctx.applyAITurnChanges({ anyPathChanges: [{ path: 'chars.魏忠贤.stance', op: 'set', value: '奸佞' }] });
     ok(findCh(ctx.GM, '魏忠贤').stance === '忠', 'C3-backdoor anyPathChanges 改敏感字段→_isPathBlocked 禁区拦(不落库·不绕闸)');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  C4·events 键时点闸(applyAITurnChanges 事件段)
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== C4·events 时点闸 =====');
+  function eventReportCount(GM) { return (GM._turnReport || []).filter(e => e && e.type === 'event').length; }
+  // C4-neg·带未来年份的事件→硬拒(不播报)+弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([], { year: 1626 });
+    ctx.applyAITurnChanges({ events: [{ title: '己巳之变', year: 1700, text: '后金破关而入，京师戒严。' }] });
+    ok(eventReportCount(ctx.GM) === 0, 'C4-neg 未来年份(1700>1626)事件→硬拒(不落 turnReport 播报)');
+    ok((ctx.GM._aiWeakWriteHints || []).some(h => h && h.label === '未来时点事件'), 'C4-neg 拒写降级→弱自查纸条留痕');
+  }
+  // C4-pos·当年/过去年份事件→照常播报·无弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([], { year: 1626 });
+    ctx.applyAITurnChanges({ events: [{ title: '本年时政', year: 1626, text: '整饬边备。' }] });
+    ok(eventReportCount(ctx.GM) === 1, 'C4-pos(当年) 当前年份事件→照常播报(不误拦)');
+    ok(hintCount(ctx.GM) === 0, 'C4-pos(当年) 放行→零弱提示');
+  }
+  // C4-pos·无年份字段事件→照常播报(宁漏勿误杀·无从判时点不拦)
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([], { year: 1626 });
+    ctx.applyAITurnChanges({ events: [{ title: '寻常朝报', text: '雨顺风调，四境安堵。' }] });
+    ok(eventReportCount(ctx.GM) === 1, 'C4-pos(无年份) 无时点标注→照常播报(保守不拦)');
+    ok(hintCount(ctx.GM) === 0, 'C4-pos(无年份) 放行→零弱提示');
+  }
+  // C4-soft·未到 triggerTurn 的既定史实名现于事件文本→软提示(不硬拒·仍播报)
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([], { year: 1626, rigidHistoryEvents: [{ name: '甲申国难', triggerTurn: 99 }] });
+    ctx.applyAITurnChanges({ events: [{ title: '坊间流言', text: '市井传言，恐有甲申国难之厄。' }] });
+    ok(eventReportCount(ctx.GM) === 1, 'C4-soft 未到期史实名现于文本→软闸不硬拒(仍播报·防同名议论误杀)');
+    ok((ctx.GM._aiWeakWriteHints || []).some(h => h && h.label === '未到期史实事件'), 'C4-soft 软提示留痕(供自查·不阻断)');
   }
 
   console.log('');

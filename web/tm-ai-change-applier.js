@@ -1333,6 +1333,7 @@
 
     // 5. 事件（风闻）
     (aiOutput.events || []).forEach(function(e) {
+      var _c4b = global.TM && global.TM.__acaParts; if (_c4b && _c4b._gateEventTimepoint && _c4b._gateEventTimepoint(G, e, applied)) return;   // 刀C·C4·events 时点闸(逻辑在 validators·未来年份硬拒/未到期史实软提示)
       // v0.2·来源涌现：AI 标记 critical 的决策型事件(带 choices)+ 开关开 → 收编进御案时政 currentIssues
       //   (玩家在御案时政「陛下决断」·_chooseIssueOption 开关开走 AI 据局面裁后果)。寻常事件保持播报/走 playerChoices 软 surface(寄生为主·抉择 C)。
       if (e && e.critical && Array.isArray(e.choices) && e.choices.length

@@ -166,6 +166,59 @@
     return false;
   }
 
+  // ── 刀C·C4(2026-07-19)·events 键时点闸(applier events 段调用) ──
+  //   AI 可把「己巳之变/甲申国难」等未来史实当既成事件播报污染。确定性时点闸(保守·宁漏勿误杀)：
+  //   ① 硬闸·event 带明确年份/日期字段且晚于当前游戏年→拒(未来事件当既发)+弱提示；
+  //   ② 软闸·GM.rigidHistoryEvents 里未到 triggerTurn 的既定史实名在 event 文本出现→只弱提示不硬拒(防同名议论误杀)。
+  //   返 true=硬拦(调用方 return 跳过)·false=放行(软提示已就地留痕)。
+  function _extractEventYear(e) {
+    var cands = [e.year, e.eventYear, e.triggerYear, e.happenedYear, e.gYear, e.date, e.time];
+    for (var i = 0; i < cands.length; i++) {
+      var v = cands[i]; if (v == null) continue;
+      if (typeof v === 'number' && isFinite(v) && v > 0) return Math.floor(v);
+      var m = String(v).match(/(?:^|[^0-9])((?:1[0-9]|20)[0-9]{2})(?:\s*年|[^0-9]|$)/);   // 仅认公元四位年(1000-2099)·避免误解干支/年号/斩获数字
+      if (m) return parseInt(m[1], 10);
+    }
+    return 0;
+  }
+  function _gateEventTimepoint(G, e, applied) {
+    if (!G || !e || typeof e !== 'object') return false;
+    function _pushHint(label, reason) {
+      if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+      G._aiWeakWriteHints.push({ label: label, reason: reason, itemName: e.title || e.name || e.category || '', source: 'events-c4-timepoint', active: null, turn: G.turn || 0 });   // arch-ok
+      if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+      try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: label, itemName: e.title || e.name || '' }); } catch(_ge){}
+    }
+    // 当前游戏年：TimeUtils.turnToDate(权威·由 turn+剧本 startYear 算) 优先·回落 G.year/currentYear。无从确定→不硬拦(保守)。
+    var curYear = 0;
+    try { var _td = global.TimeUtils && global.TimeUtils.turnToDate; if (_td && G.turn != null) curYear = Number(_td(G.turn).year) || 0; } catch(_te){}
+    if (!curYear) curYear = Number(G.year) || Number(G.currentYear) || 0;
+    // ① 硬闸：明确未来年份
+    var evYear = _extractEventYear(e);
+    if (curYear && evYear && evYear > curYear) {
+      try { console.warn('[events/C4] 未来时点事件·拒(当既成播报未来史实): 「' + String(e.title || e.text || e.name || '').slice(0, 30) + '」·事件年 ' + evYear + ' > 当前 ' + curYear); } catch(_cw){}
+      _pushHint('未来时点事件', '事件标注年份 ' + evYear + ' 晚于当前游戏年 ' + curYear + '·疑把未来史实当既成事件播报·拒落库');
+      if (applied && Array.isArray(applied.failed)) applied.failed.push({ event: e.title || e.name || '', reason: 'future-timepoint: ' + evYear + ' > ' + curYear });
+      return true;
+    }
+    // ② 软闸：未到 triggerTurn 的既定史实名出现在 event 文本→弱提示(不硬拒·防同名议论误杀)
+    var rig = (Array.isArray(G.rigidHistoryEvents) && G.rigidHistoryEvents) ||
+              (global.P && Array.isArray(global.P.rigidHistoryEvents) && global.P.rigidHistoryEvents) || null;
+    if (rig && rig.length) {
+      var txt = String((e.text || '') + ' ' + (e.title || '') + ' ' + (e.desc || '') + ' ' + (e.name || '') + ' ' + (e.category || ''));
+      for (var r = 0; r < rig.length; r++) {
+        var rev = rig[r]; if (!rev || !rev.name) continue;
+        var tt = Number(rev.triggerTurn);
+        if (isFinite(tt) && tt > (G.turn || 0) && String(rev.name).length >= 2 && txt.indexOf(String(rev.name)) >= 0) {
+          try { console.warn('[events/C4] 未到期既定史实名现于事件文本·软提示(不拒): 「' + rev.name + '」 triggerTurn=' + tt + ' > 当前回合 ' + (G.turn || 0)); } catch(_cw2){}
+          _pushHint('未到期史实事件', '事件文本提及未到 triggerTurn(' + tt + ') 的既定史实「' + rev.name + '」·疑既成播报未来·软提示(不硬拒)');
+          break;
+        }
+      }
+    }
+    return false;
+  }
+
   function _validatePersonnelConsistency(G, aiOutput, applied) {
     if (!G || !aiOutput) return;
     var narrativeText = '';
@@ -1384,5 +1437,5 @@
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
   // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
-  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced;
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
