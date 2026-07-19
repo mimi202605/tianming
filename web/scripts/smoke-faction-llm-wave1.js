@@ -124,11 +124,75 @@ function coldStartMindModelTest() {
   assert(combined.indexOf('posture≈戒备') >= 0 || combined.indexOf('posture≈敌对') >= 0, 'hostile relation should infer 戒备/敌对 posture');
 }
 
+// ── 返工 S2·跨回合护栏：连续两回合解析失败，第二回合不落重复动作 + 兜底零副作用 ──
+async function fallbackCooldownTest() {
+  const ctx = buildContext();
+  ctx.P = { playerInfo: { factionName: '玩家朝廷' }, ai: { key: 'fake' },
+    conf: { npcAiPrecision: true, npcAiPrecisionRetryAttempts: 1, npcAiPrecisionMaxTokens: 2000 } };
+  const npc = { name: '连败势力', treasury: { money: 5000 }, derivedStrength: { value: 20 }, derivedEconomy: { fiscalStress: 75, netFlow: -800 } };
+  ctx.GM = { turn: 1, facs: [npc, { name: '玩家朝廷', isPlayer: true }], chars: [], qijuHistory: [],
+    _facIndex: { '连败势力': { chars: [], parties: {}, metrics: {} } } };
+  ctx.callAI = function() { return Promise.resolve('废话·非 JSON'); };
+
+  const t1 = await ctx.TM.FactionNpcLlmDecision.decideFor('连败势力', { source: 'manual', turn: 1, maxAttempts: 1 });
+  assert(t1 && t1.applied && t1.templateFallback === true, 'T1 parse failure should be rescued by fallback');
+  assert(Array.isArray(npc.npcEdicts) && npc.npcEdicts.length === 1, 'T1 fallback should record exactly one edict');
+  const eff = npc.npcEdicts[0].effects.loyaltyDeltas || {};
+  assert(!eff.court && !eff.general && !eff.clan, 'fallback edict must carry zero loyalty deltas (no 薅忠诚)');
+
+  ctx.GM.turn = 2;
+  const t2 = await ctx.TM.FactionNpcLlmDecision.decideFor('连败势力', { source: 'manual', turn: 2, maxAttempts: 1 });
+  assert(t2 && t2.skipped && !t2.applied, 'T2 identical fallback should be cooled down (silent, not re-applied)');
+  assert(npc.npcEdicts.length === 1, 'T2 must NOT append a duplicate fallback edict (no per-turn 刷公告)');
+}
+
+// ── 返工 S1·短名 substring 假情报：fac.name='明' 不得被「黎明」命中，仅「明军」类组合命中 ──
+function shortNameGuardTest() {
+  const ctx = buildContext();
+  ctx.P = { playerInfo: { factionName: '玩家朝廷' }, conf: { npcAiPrecision: true }, ai: { key: 'fake' } };
+  const npc = { name: '明', treasury: { money: 100000 } };
+  const base = function(dirs) { return { turn: 5, facs: [npc, { name: '玩家朝廷', isPlayer: true }], chars: [],
+    _facIndex: { '明': { chars: [], parties: {}, metrics: {} } }, activeWars: [], battleHistory: [], _playerDirectives: dirs, playerDecisions: [] }; };
+
+  ctx.GM = base([{ id: 'd1', content: '黎明时整饬京营，操练士卒', type: 'setting', turn: 5 }]);
+  let combined = ((p) => p.system + '\n' + p.user)(ctx.TM.FactionNpcLlmDecision._buildPrompt(npc));
+  assert(combined.indexOf('君上近令涉本势力') < 0, '「黎明」must NOT falsely match single-char faction 「明」(substring 假情报)');
+
+  ctx.GM = base([{ id: 'd2', content: '着诸镇备边御明军来犯', type: 'setting', turn: 5 }]);
+  combined = ((p) => p.system + '\n' + p.user)(ctx.TM.FactionNpcLlmDecision._buildPrompt(npc));
+  assert(combined.indexOf('君上近令涉本势力') >= 0 && combined.indexOf('明军') >= 0, '「明军」(名+限定字) should legitimately match single-char faction 「明」');
+}
+
+// ── 返工 S1·battleHistory shape：结构化 battleResult 只写 winner/loser，须以 winner/loser 产行、不伪造攻守 ──
+function battleShapeTest() {
+  const ctx = buildContext();
+  ctx.P = { playerInfo: { factionName: '玩家朝廷' }, conf: { npcAiPrecision: true }, ai: { key: 'fake' } };
+  const npc = { name: '结构势力', treasury: { money: 100000 } };
+  ctx.GM = { turn: 6, facs: [npc, { name: '玩家朝廷', isPlayer: true }], chars: [],
+    _facIndex: { '结构势力': { chars: [], parties: {}, metrics: {} } }, activeWars: [],
+    // Shape A（tm-military.js:978 真实生产者形态）：只有 winner/loser，无 attacker*/defender*
+    battleHistory: [{ battleId: 'b1', turn: 5, structured: true, verdict: 'structured', winner: '玩家朝廷', loser: '结构势力', attackerLoss: 0, defenderLoss: 0 }] };
+  let combined = ((p) => p.system + '\n' + p.user)(ctx.TM.FactionNpcLlmDecision._buildPrompt(npc));
+  const lineA = combined.split('\n').find(function(l){ return l.indexOf('近战') >= 0; });
+  assert(lineA && lineA.indexOf('胜玩家朝廷') >= 0, 'shape-A battle should produce a line judged by winner/loser');
+  assert(lineA.indexOf('攻') < 0 && lineA.indexOf('我损') < 0, 'shape-A (no attacker/defender) must NOT fabricate attack direction or unmappable losses');
+
+  // Shape B（tm-military.js:1297 引擎战形态）：有 attackerFaction/defenderFaction → 补方向与可归属损失
+  ctx.GM.battleHistory = [{ turn: 5, attackerFaction: '玩家朝廷', defenderFaction: '结构势力', winner: '玩家朝廷', loser: '结构势力', attackerLoss: 80, defenderLoss: 400 }];
+  combined = ((p) => p.system + '\n' + p.user)(ctx.TM.FactionNpcLlmDecision._buildPrompt(npc));
+  const lineB = combined.split('\n').find(function(l){ return l.indexOf('近战') >= 0; });
+  assert(lineB && lineB.indexOf('玩家朝廷攻结构势力') >= 0, 'shape-B should show attack direction from attacker/defender factions');
+  assert(lineB.indexOf('我损400/敌损80') >= 0, 'shape-B should map losses to this faction correctly (defender=self → 我损=defenderLoss)');
+}
+
 async function main() {
   playerIntelPresentTest();
   playerIntelOmittedTest();
   await templateFallbackTest();
   coldStartMindModelTest();
+  await fallbackCooldownTest();
+  shortNameGuardTest();
+  battleShapeTest();
   console.log('[smoke-faction-llm-wave1] all pass · ' + PASS + ' assertions');
 }
 
