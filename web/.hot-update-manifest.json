@@ -2,7 +2,7 @@
   "type": "tianming-hot-update",
   "version": "1.3.4.9",
   "entry": "index.html",
-  "generatedAt": "2026-07-19T16:16:19.570Z",
+  "generatedAt": "2026-07-19T16:54:57.292Z",
   "files": [
     {
       "path": "_app_main.js",
@@ -3291,8 +3291,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-data.js",
-      "sha256": "57c45807d2f6afbe9e161471e5bb998be01cf1740a28425d186252db1ea8e6fd",
-      "size": 7240684
+      "sha256": "0f9728b3d1aa82b6bd3bba470f1719a5b319f07e558c5449a74437800c9cdd0e",
+      "size": 7240646
     },
     {
       "path": "preview/scenario-editor-reset-preview.html",
