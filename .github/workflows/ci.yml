@@ -6,6 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+# 同时声明 workflow 级权限：deploy-pages 需 pages:write + id-token:write
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一 main 上的并发部署只保留最新一次·旧 run 自动取消
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   guards:
     runs-on: ubuntu-latest
@@ -21,3 +32,25 @@ jobs:
       - name: 全量 smoke（--no-retry 严格模式·缺资产白名单豁免）
         working-directory: web
         run: node scripts/ci-smokes.js
+
+  # GitHub Pages 自动部署：push 到 main 且 guards 通过后·把 web/ 发布到 Pages
+  # 仓主需在 Settings → Pages → Source 选 "GitHub Actions"（仅一次）
+  deploy-pages:
+    needs: guards
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 配置 Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: 上传 web/ 为 Pages 制品
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
