@@ -38,6 +38,9 @@ const benji = R('tm-benji.js');
 const depth = R('tm-endturn-agent-depth-tools.js');
 const agent = R('tm-endturn-agent-mode.js');
 const aira = R('tm-ai-infra.js');
+// B5 真跑 run() 需新 run() 契约的硬前置依赖(kernel 预算/唯一提交器)·真加载入沙箱·否则 run() 于 :874 早退到不了 cawt
+const agentKernel = R('tm-agent-kernel.js');
+const agentIntentPlan = R('tm-endturn-agent-intent-plan.js');
 
 // ══════════════════════════════════════════════════════════════
 // 真实 _buildTemporalConstraint 抽取（含全部 _tc* 助手）
@@ -210,12 +213,18 @@ behaviorPromises.push((function () {
 
 // B5 agent 主 transcript(总口) → 真跑 run()·stub callAIWithTools 捕获真实 transcript
 //   锁的是「_buildSystemPrompt() 的产出真流进了发给 LLM 的 transcript」这条线——
-//   把 :806 的 sys:_buildSystemPrompt() 改成 sys:'' 后·捕获的 transcript 无 sentinel → 变红。
+//   run() 内 :957 `_bParts.sys = _buildSystemPrompt()` → _assembleBase() → baseTranscript → :1030 cawt;
+//   而 clauseOnly 约束由 _buildSystemPrompt() 内 :419-420 注入。把 :419-420 注入删掉(或 :957 sys 改 '')
+//   后·捕获的 transcript 无 sentinel → 变红。
+//   ⚠ 新 run() 契约(国师 Agent 升级)硬前置:TM.AgentKernel(预算)+ TM.Endturn.AgentIntentPlan(唯一提交器)·
+//     缺则 run() 于 :874 早退到不了 cawt——故真加载这两个模块入同沙箱(非 stub·与 smoke-agent-mode-governance 同范式)。
 behaviorPromises.push((function () {
   const captured = [];
   const sb = baseSandbox({ showLoading: () => {} });
   sb.callAIWithTools = function (transcript) { captured.push(String(transcript || '')); return Promise.resolve({ text: '', toolCalls: [] }); };
   sb.callAIMessages = function () { return Promise.resolve('{"actions":[]}'); };   // 循环后脚手架/深化兜底(不影响本断言)
+  vm.runInContext(agentKernel, sb, { filename: 'agent-kernel' });         // TM.AgentKernel(预算/回执底座)真加载
+  vm.runInContext(agentIntentPlan, sb, { filename: 'agent-intent-plan' }); // TM.Endturn.AgentIntentPlan(唯一提交器)真加载
   vm.runInContext(agent, sb, { filename: 'agent-mode' });
   sb.TM.Endturn.AgentReadTools = { defs: () => [] };
   sb.TM.Endturn.AgentWriteTools = { defs: () => [{ name: 'set_field' }] };
