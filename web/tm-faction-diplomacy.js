@@ -45,13 +45,16 @@
     var G = global.GM; if (!G) return;
     if (!Array.isArray(G._pendingAudiences)) G._pendingAudiences = [];
     // 防刷屏：同派同 type 未决的使节求见只留最新一条(仅去重本通道·_factionProposalId 标记)
-    G._pendingAudiences = G._pendingAudiences.filter(function (a) { return !(a && a._factionProposalId && a._diplomacyType === item.type && _norm(a.fromFaction) === _norm(fromName)); });
+    var _dedup = function (a) { return !(a && a._factionProposalId && a._diplomacyType === item.type && _norm(a.fromFaction) === _norm(fromName)); };
+    if (typeof _wdCleansePendingAudiences === 'function' && typeof GM !== 'undefined' && G === GM) _wdCleansePendingAudiences(_dedup);   // 唯一清洗写口(按谓词)
+    else G._pendingAudiences = G._pendingAudiences.filter(_dedup);
     G._pendingAudiences.push({
       name: fromName + '使节', reason: '【' + (TYPE_CN[item.type] || item.type) + '】' + (item.terms || '') + (item.rationale ? '（' + item.rationale + '）' : ''),
       turn: item.turn, isEnvoy: true, fromFaction: fromName, interactionType: (_DIP2ENVOY[item.type] || 'faction_proposal'),
       _factionProposalId: item.id, _diplomacyType: item.type
     });
-    if (G._pendingAudiences.length > 20) G._pendingAudiences = G._pendingAudiences.slice(-20);
+    if (typeof _wdCapPendingAudiences === 'function' && typeof GM !== 'undefined' && G === GM) _wdCapPendingAudiences(20);   // 唯一去顶写口
+    else if (G._pendingAudiences.length > 20) G._pendingAudiences = G._pendingAudiences.slice(-20);
     _log({ turn: item.turn, kind: 'propose_player', from: fromName, to: 'player', type: item.type, terms: item.terms });
   }
 

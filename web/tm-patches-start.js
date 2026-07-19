@@ -1230,7 +1230,8 @@ function doActualStart(sid, requestToken){
     }
     if(Array.isArray(sc.openingAudiences)){
       // 问对「阶下待见」运行时读 GM._pendingAudiences；开局远来求见(使节·告急·特请·非在京者动态浮现不了)由 openingAudiences 预置·打 sid·幂等。
-      GM._pendingAudiences = (GM._pendingAudiences||[]).filter(function(x){return x && x._sid!==sid;});
+      if (typeof _wdCleansePendingAudiences === 'function' && Array.isArray(GM._pendingAudiences)) _wdCleansePendingAudiences(function(x){return x && x._sid!==sid;});   // 唯一清洗写口(剔本 sid 旧预置)
+      else GM._pendingAudiences = (GM._pendingAudiences||[]).filter(function(x){return x && x._sid!==sid;});   // 兜底兼作数组 ensure
       sc.openingAudiences.forEach(function(x){var c=deepClone(x); c._sid=sid; if(c._opening==null)c._opening=true; GM._pendingAudiences.push(c);});
     }
   }
