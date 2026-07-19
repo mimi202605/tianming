@@ -479,6 +479,8 @@ async function _endTurnCore(){
       + '请根据以下本月事件，撰写' + _wordLimit + '字以内的月度纪事。\n\n'
       + '【本月事件】\n' + _monthSummary + '\n';
     if (_prevMonthly) _mPrompt += '\n【上月纪事末尾】' + _prevMonthly + '\n';
+    // 时空约束·月度纪事修史·full(独立callAIMessages不继承主sysP·防越今引后事/给在世者书卒)（typeof守卫防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { _mPrompt += '\n' + _buildTemporalConstraint(null, {}); } catch (_) {} }
     _mPrompt += '\n请直接输出纪事正文（不要JSON包裹）：';
 
     // 异步调用，不await——不阻塞后续逻辑；必须走共享 AI 队列，避免绕过并发控制。

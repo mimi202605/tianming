@@ -61,6 +61,8 @@
     var mat = seg.material || [];
     if (mat.length) s += '【史料】\n' + mat.join('\n') + '\n';
     else s += '【史料】此段史料散佚无存——如实短卷：仅按范围纪年，书「史阙有间」之意，勿虚构。\n';
+    // 时空约束·本纪终局修史·clauseOnly裁剪版(本纪已「人名只用史料中出现者」强局部锚·full大名单反诱其引入册外人;此处补卒年铁律/不越终局引后事/本局以GM为准)（typeof守卫防加载序）
+    if (typeof global._buildTemporalConstraint === 'function') { try { s += '\n' + global._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     return s;
   }
 
