@@ -1,4 +1,4 @@
-# Verify that a staged www/native public tree exactly matches current web/ and
+﻿# Verify that a staged www/native public tree exactly matches current web/ and
 # its .tm-release-manifest.json. Read-only; suitable before Android Studio builds.
 param(
   [string]$WebDir = "$PSScriptRoot\..\..\web",

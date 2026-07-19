@@ -1,4 +1,4 @@
-# verify-staging-dryrun.ps1 — PS5.1-safe, read-only release-tree audit.
+﻿# verify-staging-dryrun.ps1 — PS5.1-safe, read-only release-tree audit.
 param(
   [string]$WebDir = "$PSScriptRoot\..\..\web"
 )

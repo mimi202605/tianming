@@ -1,4 +1,4 @@
-# stage-web-for-cap.ps1 — PS5.1-safe wrapper around the shared Node release-tree stage.
+﻿# stage-web-for-cap.ps1 — PS5.1-safe wrapper around the shared Node release-tree stage.
 # All Unicode JSON parsing, exclusion matching, SHA256 and manifest writing happen
 # in Node, avoiding Windows PowerShell 5.1's locale/BOM traps.
 param(
