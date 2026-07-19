@@ -237,8 +237,37 @@
     if (pi.location) html += '<div class="player-id-loc">现居：' + _esc(pi.location) + '</div>';
     if (pi.sovereignName) html += '<div class="player-id-sov">君主：' + _esc(pi.sovereignName) + '</div>';
     html += '</div></div>';
-    html += '<div class="player-id-recent" id="player-id-recent"></div>';
-    html += '<div class="player-id-relations" id="player-id-relations"></div>';
+
+    // 近况·从 GM.qijuHistory 按 source=player/sovereign-ai 过滤·取最近 5 条
+    var recent = [];
+    try {
+      if (typeof GM !== 'undefined' && GM && Array.isArray(GM.qijuHistory)) {
+        recent = GM.qijuHistory.filter(function (e) { return e && (e.source === 'player' || e.source === 'sovereign-ai'); }).slice(-5).reverse();
+      }
+    } catch (_) {}
+    var recentHtml = recent.length ? recent.map(function (e) {
+      return '<div class="player-recent-item">' + _esc((e.ts > 0 ? new Date(e.ts).toLocaleDateString() + '·' : '') + (e.title || e.text || '')) + '</div>';
+    }).join('') : '<div class="player-recent-empty">暂无近况</div>';
+    html += '<div class="player-id-recent"><div class="player-id-section-title">近况</div>' + recentHtml + '</div>';
+
+    // 关系 TOP 5·从 GM._playerInteraction.relations 取
+    var relations = [];
+    try {
+      if (typeof GM !== 'undefined' && GM && GM._playerInteraction && Array.isArray(GM._playerInteraction.relations)) {
+        relations = GM._playerInteraction.relations.slice().sort(function (a, b) {
+          return (b.score || 0) - (a.score || 0);
+        }).slice(0, 5);
+      }
+    } catch (_) {}
+    var relHtml = relations.length ? relations.map(function (r) {
+      return '<div class="player-rel-item">' +
+             '<span class="player-rel-name">' + _esc(r.name || '') + '</span>' +
+             '<span class="player-rel-kind">' + _esc(r.kind || '') + '</span>' +
+             '<span class="player-rel-score">' + _esc(String(r.score != null ? r.score : '')) + '</span>' +
+             '</div>';
+    }).join('') : '<div class="player-rel-empty">暂无关系</div>';
+    html += '<div class="player-id-relations"><div class="player-id-section-title">人际关系 TOP 5</div>' + relHtml + '</div>';
+
     panel.innerHTML = html;
   }
 
