@@ -262,6 +262,68 @@
 - [ ] 沿用 `tm-feudal.js` 篡位 + `tm-class-radical-revolt.js` 农民起义机制
 - [ ] 跑 `smoke-player-rebellion.js` 全过
 
+## 玩家婚姻礼制系统
+
+- [ ] 新增 `web/tm-player-marriage.js`
+- [ ] 婚姻状态机：未婚/已娶/赘婿/招赘/和离/丧偶/再婚（继室/平妻）
+- [ ] 六礼流程：纳采/问名/纳吉/纳征/请期/亲迎，每步消耗时间/银钱，可被 NPC 拒婚
+- [ ] "入赘为赘婿"路径：男性 + 选择入赘，改入女方家族，地位较低
+- [ ] "招赘"路径：女性/女家主，赘婿入门加入玩家家族，子女归玩家家族
+- [ ] "再婚"路径：丧偶/和离后度过守制期可再婚，新配偶标记继室/平妻
+- [ ] 守制期校验：父母丧/夫丧/妻丧期间禁婚，违规触发礼法风险
+- [ ] 再婚带子女：鳏夫/寡妇带子女再婚，子女与新配偶关系动态生成
+- [ ] "和离/休妻/休夫"路径：协议和离/男方休妻（七出）/罕见休夫，子女归属按礼法判定
+- [ ] 平妻/嫡庶之争：特殊情况下平妻触发嫡庶之争风险
+- [ ] 婚姻事件写入玩家记忆与编年史
+- [ ] 御案"家族"面板新增"婚姻"子面板
+- [ ] 跑 `smoke-player-family.js`（含婚姻分支）全过
+
+## 玩家自我技能提升系统
+
+- [ ] 新增 `web/tm-player-self-improvement.js`
+- [ ] 属性字段：`learning` / `intelligence` / `valor` / `military` / `administration` / `management` / `charisma` / `diplomacy` / `benevolence` / `diction` + `learning` 子项
+- [ ] "入读学塾/书院"：报名入学，按期学习提升 `learning` 与子项，复用 `tm-keju-school-network.js`
+- [ ] "拜名师"：通过人物互动拜 NPC 名师，按师父专长定向加成，可传授独门技艺
+- [ ] "自学苦读"：消耗时间+银钱自学，效率低于书院/拜师但灵活
+- [ ] "游学"：通过自由移动到达名胜/古战场/名郡触发游学事件（LLM 生成见闻）
+- [ ] "历练"：完成实际政务/军事/外交任务自动积累经验提升对应技能
+- [ ] "江湖习武"：商贾/隐逸/江湖人入武馆/镖局/门派习武
+- [ ] "修道/礼佛"：提升 `benevolence`/`intelligence`，副作用为远离世俗，深度触发"出家"危机
+- [ ] 属性上限 100，提升效率随年龄变化（少年学习快、老年学习慢）
+- [ ] 提升概率按 `当前属性 + 师资 + 投入 + 资质` 计算
+- [ ] 关键突破事件：属性达里程碑或完成成就触发 LLM 叙事，写入记忆与编年史，解锁特殊称号
+- [ ] 御案新增"修习"面板，展示当前属性、可学场所、师徒关系、近期突破
+- [ ] 跑 `smoke-player-self-improvement.js` 全过
+
+## 特殊身份玩家路线
+
+- [ ] 新增 `web/tm-player-special-roles.js`
+- [ ] `P.playerInfo.playerRole` 扩展：eunuch / maid / commoner / bandit / infant / retired_official / monk / artisan / actor
+- [ ] 太监路线：禁婚娶生育 + 养子义子路径 + 专有动作（讨好皇帝/把持内廷/勾结外臣/阉党揽权）+ 专有风险
+- [ ] 太监具体职务（司礼监/秉笔/掌印等）由剧本 hook，引擎零明清专名
+- [ ] 宫女路线：伺候主位 + 传递消息 + 被宠幸晋升妃嫔（playerRole 转后宫）+ 出宫
+- [ ] 宫女专有风险：宫廷斗争/与外臣私通死罪
+- [ ] 布衣路线：耕读/经商/游学/应募当兵/科举入仕/上书言事（需转呈）
+- [ ] 布衣多条出路可切换 playerRole（科举→minister、经商→merchant、从军→general、落草→bandit、皈依→monk）
+- [ ] 盗贼路线：劫掠商队/招揽喽啰（标记 `kind:'bandit'`）/结盟/打官府/收保护费
+- [ ] 盗贼转线：被招安→general、自立为王→prince（关联反叛）、被剿灭→游戏结束
+- [ ] 婴儿路线：监护人代为决策，玩家只能"观察+选择反应"
+- [ ] 婴儿成长阶段推进，玩家随年龄增长逐步获得行动权
+- [ ] 婴儿成年后 playerRole 按家族出身转为对应身份
+- [ ] 退休官员路线：乡居教学/干预地方政务/撰写回忆录/被起复
+- [ ] 退休官员"余威犹存"机制（旧部门生故吏可调度）
+- [ ] 退休官员被起复后 playerRole 转 minister/general
+- [ ] 僧道路线（可选）：修行/收徒/影响信众/参与政变，专有风险（妖言惑众/灭佛毁道）
+- [ ] 匠人路线（可选）：精进技艺（关联科技研发）/收徒/为朝廷服役/自办作坊（关联产业建设）
+- [ ] 匠人晋升路径：匠户→匠师→工部匠官（playerRole 转 minister）
+- [ ] 伶人路线（可选）：献艺/收徒/结交权贵，专有风险（倡优误国/被强夺）
+- [ ] 伶人晋升路径：被宠幸后 playerRole 转后宫/宠臣
+- [ ] 特殊身份转线机制：触发条件后 playerRole 转换，事件写入记忆与编年史
+- [ ] 御案"身份"面板新增"特殊身份玩法"子面板，按 playerRole 展示专有动作集
+- [ ] 跨朝代铁律审计：所有专有职务/机构名目由剧本 hook，引擎只提供通用框架
+- [ ] grep 验证引擎层零明清专名
+- [ ] 跑 `smoke-player-special-roles.js` 全过，7 类特殊身份至少各跑通 1 个专有动作
+
 ## 回合流程编排
 
 - [ ] `tm-endturn-pipeline-steps.js` 新增 `_endturnStep_sovereignAI(root, ctx)` 步骤
@@ -275,22 +337,30 @@
 
 ## 集成与回归
 
-- [ ] 跑 `smoke-transmigration-e2e.js` 全过（端到端穿越模式，含 7 大玩家系统核心动作）
+- [ ] 跑 `smoke-transmigration-e2e.js` 全过（端到端穿越模式，含 15 大玩家系统核心动作：人物互动/赚钱/跑商/科技/家族/婚姻/私军/移动/产业/开垦/科举/考核/反叛/自我提升/特殊身份）
 - [ ] 跑 `verify-all.js` 全套绿（皇帝模式无回归）
 - [ ] 跑 `lint-arch-all.js` 8/8 绿
 - [ ] 新增 GM/P 直写已登记 owners 或走 mutator/ledger
-- [ ] 9 个新文件加入 `arch-baselines/*.json`：
+- [ ] 17 个新文件加入 `arch-baselines/*.json`：
   - [ ] `tm-transmigration.js`
   - [ ] `tm-sovereign-ai.js`
   - [ ] `tm-player-interaction.js`
   - [ ] `tm-player-economy.js`
   - [ ] `tm-player-trade.js`
-  - [ ] `tm-player-tech.js`
+  - [ ] `tm-player-tech.js`（含 `tm-tech-routes-data.js`）
+  - [ ] `tm-player-family.js`
+  - [ ] `tm-player-marriage.js`
+  - [ ] `tm-player-private-army.js`
+  - [ ] `tm-player-movement.js`
+  - [ ] `tm-player-industry.js`
+  - [ ] `tm-player-reclaim.js`
   - [ ] `tm-player-keju.js`
   - [ ] `tm-player-annual-review.js`
   - [ ] `tm-player-rebellion.js`
-- [ ] `web/INDEX.md` 注册 9 个新文件
-- [ ] `web/ARCHITECTURE.md` 增补「穿越模式架构」一节，含 7 大玩家系统数据流图
+  - [ ] `tm-player-self-improvement.js`
+  - [ ] `tm-player-special-roles.js`
+- [ ] `web/INDEX.md` 注册 17 个新文件
+- [ ] `web/ARCHITECTURE.md` 增补「穿越模式架构」一节，含 15 大玩家系统数据流图
 
 ## 跨朝代铁律审计
 
@@ -298,7 +368,10 @@
 - [ ] 角色官衔属剧本数据，可保留专名
 - [ ] UI 固定文案朝代中立
 - [ ] 跑商路线 hook 归剧本数据，引擎不预置朝代特定路线
-- [ ] 科技列表归剧本数据，引擎不预置朝代特定科技
+- [ ] 科技列表归剧本数据，引擎不预置朝代特定科技（但默认 5 级固定科技路线取中国古代通用脉络）
+- [ ] 太监具体职务（司礼监/秉笔/掌印等）由剧本 hook
+- [ ] 灭佛/毁道等宗教事件由剧本 hook
+- [ ] 工部/匠官等机构名目由剧本 hook
 
 ## 命门护栏
 

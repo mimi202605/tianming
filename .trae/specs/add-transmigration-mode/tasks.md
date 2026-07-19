@@ -302,6 +302,71 @@
   - [ ] SubTask 26.11: 沿用 `tm-feudal.js` 篡位机制 + `tm-class-radical-revolt.js` 农民起义机制
   - 验证：跑 `node web/scripts/smoke-player-rebellion.js`（新增 smoke）
 
+- [ ] Task 26B: 玩家自我技能提升系统 `web/tm-player-self-improvement.js`
+  - [ ] SubTask 26B.1: 定义 `TM.PlayerSelfImprovement` 命名空间
+  - [ ] SubTask 26B.2: 属性字段定义：`learning` / `intelligence` / `valor` / `military` / `administration` / `management` / `charisma` / `diplomacy` / `benevolence` / `diction` + `learning` 子项（经史/诗赋/算学/律法/医术/兵法/天文/地理/音律/书法等）
+  - [ ] SubTask 26B.3: 实现"入读学塾/书院"：报名入学（学费/考核），按期学习提升 `learning` 与子项，不同书院侧重不同（经史/武/医/律书院等），复用 `tm-keju-school-network.js`
+  - [ ] SubTask 26B.4: 实现"拜名师"：通过人物互动拜 NPC 名师，建立师徒关系，按师父专长定向加成（拜名将学兵法、拜名医学医术、拜大儒学经史），可传授独门技艺
+  - [ ] SubTask 26B.5: 实现"自学苦读"：消耗时间 + 银钱（购书/置办文具）自学，效率低于书院/拜师但灵活，受 `intelligence` / 现有 `learning` 影响
+  - [ ] SubTask 26B.6: 实现"游学"：通过自由移动到达名胜/古战场/名郡触发游学事件（LLM 生成见闻/感悟），按地点加成对应属性（如游赤壁加 `military`/`learning`），见闻写入玩家记忆
+  - [ ] SubTask 26B.7: 实现"历练"：完成实际政务/军事/外交任务自动积累经验，按任务类型提升对应技能（政务→`administration`/`management`，军事→`military`/`valor`，外交→`diplomacy`/`charisma`），关键突破触发额外加成
+  - [ ] SubTask 26B.8: 实现"江湖习武"：playerRole 为商贾/隐逸/江湖人，入武馆/镖局/门派习武，提升 `valor` / `military`，与江湖人物建立关系
+  - [ ] SubTask 26B.9: 实现"修道/礼佛"：提升 `benevolence` / `intelligence`，副作用为远离世俗、官场关系疏远、可能被指"不思进取"，深度修道触发"出家"危机选项
+  - [ ] SubTask 26B.10: 实现"属性上限与年龄影响"：每属性上限 100，提升效率随年龄变化（少年学习快但属性低，老年属性稳定但学习慢），概率按 `当前属性 + 师资 + 投入 + 资质` 计算
+  - [ ] SubTask 26B.11: 实现"关键突破事件"：属性达里程碑（50/80/100）或完成成就（著作/拜名师/悟理）触发 LLM 叙事，写入记忆与编年史，解锁特殊能力/称号（如"经学大家"/"兵法宗师"/"医术圣手"）
+  - [ ] SubTask 26B.12: 御案新增"修习"面板，展示当前属性、可学场所、师徒关系、近期突破
+  - 验证：跑 `node web/scripts/smoke-player-self-improvement.js`（新增 smoke）
+
+- [ ] Task 26C: 特殊身份玩家路线（太监/宫女/布衣/盗贼/婴儿/退休官员等）`web/tm-player-special-roles.js`
+  - [ ] SubTask 26C.1: 定义 `TM.PlayerSpecialRoles` 命名空间，作为特殊身份玩法的统一调度入口
+  - [ ] SubTask 26C.2: 扩展 `P.playerInfo.playerRole` 枚举值：新增 `eunuch`（太监）/ `maid`（宫女）/ `commoner`（布衣）/ `bandit`（盗贼）/ `infant`（婴儿）/ `retired_official`（退休官员）/ `monk`（僧道）/ `artisan`（匠人）/ `actor`（伶人）等
+  - [ ] SubTask 26C.3: 实现"太监路线"（`eunuch`）：
+    - 不能结婚/生育（无家族延续），但有"养子/义子"路径（收养 NPC 为义子延续势力）
+    - 专有动作：讨好皇帝（影响皇帝 AI 决策权重）、把持司礼监/内书堂、与外臣勾结（关联派系）、掌印/秉笔（如剧本允许）、阉党揽权（触发东林式反弹）
+    - 专有风险：清流弹劾、皇帝猜忌、被诛（宦官专权必遭反噬）
+    - 跨朝代铁律：太监具体职务（司礼监/秉笔/掌印等）由剧本 hook，引擎只提供"内廷宦官"通用框架
+  - [ ] SubTask 26C.4: 实现"宫女路线"（`maid`）：
+    - 专有动作：伺候后宫主位（关系网）、传递消息（影响前朝）、被宠幸（晋升妃嫔，playerRole 转为后宫）、出宫（年龄到限/被放出）
+    - 专有风险：宫廷斗争（被诬陷/被毒杀/被罚）、与外臣私通（死罪）
+    - 可晋升路径：宫女→女官→妃嫔（被宠幸后）→太后（罕见）
+  - [ ] SubTask 26C.5: 实现"布衣路线"（`commoner`）：
+    - 平民百姓起点，无官职无势力
+    - 专有动作：耕读（关联自我技能提升）、经商（关联赚钱/跑商）、游学（关联自由移动）、应募当兵（转为军汉）、科举入仕（关联科举系统）、上书言事（需通过臣子转呈）
+    - 专有风险：被豪强欺压、被征徭役、遇灾荒逃荒
+    - 多条出路：科举出仕/经商致富/从军立功/落草为盗/皈依宗教
+  - [ ] SubTask 26C.6: 实现"盗贼路线"（`bandit`）：
+    - 落草为寇起点，占据山头/水寨
+    - 专有动作：劫掠商队（关联跑商风险反面）、招揽喽啰（类似私军但身份非法）、与江湖势力结盟、打官府（小型战斗）、收保护费
+    - 专有路径：被招安（转为正规军将领）、自立为王（建立割据政权，关联反叛系统）、被剿灭（游戏结束）
+    - 专有风险：官兵围剿、黑吃黑、被仇家寻仇
+  - [ ] SubTask 26C.7: 实现"婴儿路线"（`infant`）：
+    - 玩家以婴幼儿身份开局（如皇子/宗室子/名门子），无法主动行动
+    - 专有机制：由监护人（父母/乳母/太傅）代为决策，玩家只能"观察 + 选择反应"（如哭闹/乖巧/早慧）
+    - 成长阶段：婴幼儿→少年→成年，每阶段有成长事件，玩家随年龄增长逐步获得行动权
+    - 专有戏剧线：夺嫡之争（若为皇子）、家产之争（若为名门子）、早慧传闻（影响 NPC 期待）
+    - 成年后 playerRole 按家族出身转为对应身份（皇子→宗室，名门子→minister/commoner 等）
+  - [ ] SubTask 26C.8: 实现"退休官员路线"（`retired_official`）：
+    - 致仕/罢黜/告老后的官员身份
+    - 专有动作：乡居教学（开馆授徒，关联自我技能提升）、干预地方政务（幕后操纵）、撰写回忆录/史书（提升 `learning`，写入编年史）、被起复（朝廷重新征召）
+    - 专有影响：余威犹存（旧部/门生故吏遍布朝野，可调度资源）、被清算（政敌上门报复）
+    - 可被朝廷起复：起复后 playerRole 转为 minister/general
+  - [ ] SubTask 26C.9: 实现"僧道路线"（`monk`，可选）：
+    - 出家身份，远离世俗但有专属影响路径
+    - 专有动作：修行（提升 `benevolence`/`intelligence`）、收徒（建立宗教势力）、影响信众（包括皇帝）、参与政变（以宗教名义）
+    - 专有风险：被指妖言惑众、被朝廷清算（灭佛/毁道历史事件）
+  - [ ] SubTask 26C.10: 实现"匠人路线"（`artisan`，可选）：
+    - 手工业者身份，专精某项工艺（陶瓷/纺织/冶铸/造纸等）
+    - 专有动作：精进技艺（关联科技研发）、收徒传艺、为朝廷服役（被征辟为官营作坊匠人）、自办作坊（关联产业建设）
+    - 可晋升路径：匠户→匠师→工部匠官（playerRole 转为 minister）
+  - [ ] SubTask 26C.11: 实现"伶人路线"（`actor`，可选）：
+    - 戏曲/音乐/歌舞艺人身份
+    - 专有动作：献艺（影响皇帝/重臣）、收徒传艺、结交权贵
+    - 专有风险：被指"倡优误国"、被权贵强夺、身份低微受歧视
+    - 可晋升路径：被宠幸后 playerRole 转为后宫/宠臣
+  - [ ] SubTask 26C.12: 御案"身份"面板新增"特殊身份玩法"子面板，按当前 playerRole 展示对应专有动作集
+  - [ ] SubTask 26C.13: 跨朝代铁律审计：所有特殊身份的专有职务/机构名目由剧本 hook，引擎只提供"特殊身份 + 通用动作框架"
+  - 验证：跑 `node web/scripts/smoke-player-special-roles.js`（新增 smoke），断言 7 类特殊身份至少各跑通 1 个专有动作
+
 ## Phase 5 · UI 文案与身份展示动态化
 
 - [ ] Task 27: 顶栏身份展示按 playerRole 分支
@@ -343,8 +408,8 @@
 ## Phase 7 · 集成与回归
 
 - [ ] Task 32: 端到端穿越模式 smoke
-  - [ ] SubTask 32.1: 新增 `web/scripts/smoke-transmigration-e2e.js`：从主界面点穿越→选剧本→选角色→进入游戏→结束回合→皇帝 AI 决策→玩家上奏批答→起居注回看→人物互动→跑商→科技研发（固定路线解锁）→家族子女→私军招募→移动→产业建设→开垦荒地→科举→年终考核→反叛筹备
-  - [ ] SubTask 32.2: 断言：`P.playerInfo.transmigrationMode === true`，皇帝 AI 至少生成 1 个决策，玩家上奏得到批答，12 大玩家系统至少各跑通 1 个核心动作
+  - [ ] SubTask 32.1: 新增 `web/scripts/smoke-transmigration-e2e.js`：从主界面点穿越→选剧本→选角色→进入游戏→结束回合→皇帝 AI 决策→玩家上奏批答→起居注回看→人物互动→跑商→科技研发（固定路线解锁）→家族子女→婚嫁/再婚→私军招募→移动→产业建设→开垦荒地→科举→年终考核→自我技能提升（学塾/拜师）→特殊身份专有动作（至少 1 类）→反叛筹备
+  - [ ] SubTask 32.2: 断言：`P.playerInfo.transmigrationMode === true`，皇帝 AI 至少生成 1 个决策，玩家上奏得到批答，14+ 大玩家系统至少各跑通 1 个核心动作
   - 验证：`node web/scripts/smoke-transmigration-e2e.js` 全过
 
 - [ ] Task 33: 皇帝模式回归
@@ -356,17 +421,18 @@
 - [ ] Task 34: 架构守卫
   - [ ] SubTask 34.1: 跑 `node scripts/lint-arch-all.js`，须 8/8 绿
   - [ ] SubTask 34.2: 新增 GM/P 直写需登记 owners 或走 mutator/ledger
-  - [ ] SubTask 34.3: 新增 14 个文件加入 `arch-baselines/*.json`：
+  - [ ] SubTask 34.3: 新增 17 个文件加入 `arch-baselines/*.json`：
     - `tm-transmigration.js` / `tm-sovereign-ai.js`
     - `tm-player-interaction.js` / `tm-player-economy.js` / `tm-player-trade.js`
-    - `tm-player-tech.js`（含 `tm-tech-routes-data.js`）/ `tm-player-family.js` / `tm-player-private-army.js`
+    - `tm-player-tech.js`（含 `tm-tech-routes-data.js`）/ `tm-player-family.js` / `tm-player-marriage.js` / `tm-player-private-army.js`
     - `tm-player-movement.js` / `tm-player-industry.js` / `tm-player-reclaim.js`
     - `tm-player-keju.js` / `tm-player-annual-review.js` / `tm-player-rebellion.js`
+    - `tm-player-self-improvement.js` / `tm-player-special-roles.js`
   - 验证：lint 全绿
 
 - [ ] Task 35: 文档与命名
-  - [ ] SubTask 35.1: 在 `web/INDEX.md` 注册 14 个新文件
-  - [ ] SubTask 35.2: 在 `web/ARCHITECTURE.md` 增补「穿越模式架构」一节，含 12 大玩家系统数据流图
+  - [ ] SubTask 35.1: 在 `web/INDEX.md` 注册 17 个新文件
+  - [ ] SubTask 35.2: 在 `web/ARCHITECTURE.md` 增补「穿越模式架构」一节，含 14+ 大玩家系统数据流图
   - [ ] SubTask 35.3: 跨朝代铁律审计：grep 明清专名（内阁/票拟/司礼监/东厂/八股等），确认未硬编入引擎层
   - [ ] SubTask 35.4: 科技路线默认数据跨朝代审计：默认 5 级科技链取中国古代通用脉络
   - 验证：grep 检查 + 文档完整性
@@ -391,6 +457,9 @@
 - Task 24（玩家科举）依赖 Task 5
 - Task 25（年终考核）依赖 Task 5
 - Task 26（反叛）依赖 Task 15（笼络军权）+ Task 16（积累粮草）+ Task 20（私军主力）+ Task 6（皇帝 AI 平叛）
+- Task 19B（婚姻礼制）依赖 Task 19（家族基础）+ Task 15（联姻人物互动）
+- Task 26B（自我技能提升）依赖 Task 21（游学需自由移动）+ Task 15（拜师人物互动）
+- Task 26C（特殊身份路线）依赖 Task 5（基础身份框架）+ Task 6（太监/宫女影响皇帝 AI）+ Task 19B（宫女晋升妃嫔）+ Task 26B（婴儿/布衣后续成长）+ Task 18（匠人关联科技）+ Task 22（匠人自办作坊）+ Task 26（盗贼自立为王关联反叛）
 - Task 27 / Task 28 / Task 29 依赖 Task 5（并行）
 - Task 30 依赖 Task 6 + Task 11
 - Task 31 依赖 Task 30
