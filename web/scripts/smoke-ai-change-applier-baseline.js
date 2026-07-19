@@ -64,7 +64,7 @@ const FUNC_ARITIES = {
   applyAITurnChanges: 1,
   applyAIArmyChange: 2,
   onAppointment: 3,
-  onDismissal: 2,
+  onDismissal: 3,   // 刀C·返工issue4(2026-07-19)·新增第3形参 aiOutput(死亡管线收口来源判据·仅 AI-apply 通道传入·既有二参调用向后兼容 undefined)
   onTransfer: 4,
   registerInstitution: 1,
   abolishInstitution: 2,
