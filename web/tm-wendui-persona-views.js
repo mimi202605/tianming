@@ -156,7 +156,7 @@ function _wdConsortContext(ch) {
         _spouseCtx += '  在 JSON 中加字段 {"requestOvernight":true} 表达此请求·reply 文本内也要含相关话语\n';
       }
       // 注入最近问对记录（自有记忆里）
-      var _recentHist = (GM.wenduiHistory && GM.wenduiHistory[ch.name]) || [];
+      var _recentHist = (typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries((GM.wenduiHistory && GM.wenduiHistory[ch.name]) || [], GM) : ((GM.wenduiHistory && GM.wenduiHistory[ch.name]) || []);   /* 刀B·生死矛盾问对条不注入后妃承续上下文 */
       if (_recentHist.length > 0) {
         var _lastFew = _recentHist.slice(-4);
         _spouseCtx += '\n  【最近问对记录·请自然承续】';

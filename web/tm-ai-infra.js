@@ -2254,10 +2254,12 @@ function _buildTemporalConstraint(ch, opts) {
   lines.push('★ 允许：隐约预感/占卜不祥/担忧未来/引前朝/古事为训');
   // 若 ch 有 _memory·注入关键记忆
   if (ch && Array.isArray(ch._memory) && ch._memory.length > 0) {
-    var memLines = ch._memory.slice(-5).map(function(m) {
+    // 读侧兜底（刀B·治老玩家已污染存档）：与本局 GM 生死态冲突的记忆条目不注入（检测器/过滤器安家 tm-mechanics-memory.js·typeof 守卫）
+    var _memSrc = (typeof _tmFilterMemories === 'function') ? _tmFilterMemories(ch._memory, GM) : ch._memory;
+    var memLines = _memSrc.slice(-5).map(function(m) {
       return '  · T' + (m.turn || 0) + '·' + (m.event || '') + (m.emotion ? '(' + m.emotion + ')' : '');
     }).join('\n');
-    lines.push('本 NPC 关键记忆（时序）：\n' + memLines);
+    if (memLines) lines.push('本 NPC 关键记忆（时序）：\n' + memLines);
   }
   return lines.join('\n');
 }

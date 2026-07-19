@@ -425,7 +425,7 @@
       var wh = gm && gm.wenduiHistory;
       if (wh && typeof wh === 'object') {
         var dlg = [];
-        Object.keys(wh).forEach(function (nm) { var arr = wh[nm]; if (Array.isArray(arr)) arr.filter(function (e) { return e && _isThisTurn(e.turn); }).slice(-4).forEach(function (e) { dlg.push('   · 与' + nm + ':' + (e.role === 'player' || e.role === 'user' ? '君曰「' : (nm + '曰「')) + _brief(e.content || e.text || '', 70) + '」'); }); });
+        Object.keys(wh).forEach(function (nm) { var arr = wh[nm]; if (Array.isArray(arr)) (typeof _tmFilterWenduiEntries === 'function' ? _tmFilterWenduiEntries(arr, gm) : arr).filter(function (e) { return e && _isThisTurn(e.turn); }).slice(-4).forEach(function (e) { dlg.push('   · 与' + nm + ':' + (e.role === 'player' || e.role === 'user' ? '君曰「' : (nm + '曰「')) + _brief(e.content || e.text || '', 70) + '」'); }); });
         if (dlg.length) { L.push('▸ 人物问对(君上召对):'); dlg.slice(0, 10).forEach(function (d) { L.push(d); }); }
       }
     } catch (e) {}
