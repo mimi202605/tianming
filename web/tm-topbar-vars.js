@@ -455,6 +455,17 @@ var _VAR_RENDERERS = {
 // ─────────────────────────────────────────────
 
 function renderTopBarVars() {
+  // 穿越模式 Phase A · Task A7：顶栏变量渲染由 TM.PlayerUI.renderTopBar() 接管
+  try {
+    var _pi_topbar = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+    var _isTrans_topbar = _pi_topbar && _pi_topbar.transmigrationMode === true &&
+                         _pi_topbar.playerRole && _pi_topbar.playerRole !== 'emperor';
+    if (_isTrans_topbar && typeof window !== 'undefined' && window.TM && TM.PlayerUI &&
+        typeof TM.PlayerUI.renderTopBar === 'function') {
+      TM.PlayerUI.renderTopBar();
+      return;  // 早返回·不让皇帝模式变量挂载
+    }
+  } catch (_) {}
   var host = document.getElementById('bar-vars');
   if (!host) return;
   if (typeof GM === 'undefined' || !GM.running) { host.innerHTML = ''; host._lastBarVarsHtml = ''; return; }
