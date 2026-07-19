@@ -47,41 +47,41 @@
 
 ## Phase 3 · 皇帝 AI 自动决策引擎
 
-- [ ] Task 6: 新增皇帝 AI 决策模块 `web/tm-sovereign-ai.js`
-  - [ ] SubTask 6.1: 定义 `TM.SovereignAI` 命名空间，挂载到 `window.TM`
-  - [ ] SubTask 6.2: 实现 `TM.SovereignAI.runTurn(root, turnCtx)` —— 主入口，编排下旨/朝议/批奏/任免四个子动作
-  - [ ] SubTask 6.3: 复用 `tm-faction-npc-llm-decision.js` 的 LLM 调用基建（多 provider / token 预算 / 重试 / schema 验证）
-  - [ ] SubTask 6.4: 编写皇帝 AI 专属 prompt 模板（高于派系 NPC，包含完整国库/民心/边警/吏治/派系矩阵 + 玩家上奏）
-  - [ ] SubTask 6.5: 定义皇帝 AI 输出 schema：`{ rationale, edicts[], chaoyiSpeeches[], memorialDecisions[], officeActions[] }`
-  - [ ] SubTask 6.6: 注册到 `index.html` `<script>` 顺序链
+- [x] Task 6: 新增皇帝 AI 决策模块 `web/tm-sovereign-ai.js`
+  - [x] SubTask 6.1: 定义 `TM.SovereignAI` 命名空间，挂载到 `window.TM`
+  - [x] SubTask 6.2: 实现 `TM.SovereignAI.runTurn(root, turnCtx)` —— 主入口，编排下旨/朝议/批奏/任免四个子动作
+  - [x] SubTask 6.3: 复用 `tm-faction-npc-llm-decision.js` 的 LLM 调用基建（多 provider / token 预算 / 重试 / schema 验证）
+  - [x] SubTask 6.4: 编写皇帝 AI 专属 prompt 模板（高于派系 NPC，包含完整国库/民心/边警/吏治/派系矩阵 + 玩家上奏）
+  - [x] SubTask 6.5: 定义皇帝 AI 输出 schema：`{ rationale, edicts[], chaoyiSpeeches[], memorialDecisions[], officeActions[] }`
+  - [x] SubTask 6.6: 注册到 `index.html` `<script>` 顺序链
   - 验证：浏览器控制台 `TM.SovereignAI.runTurn` 可调用，且空状态返回合理空对象
 
-- [ ] Task 7: 皇帝 AI 下旨路径
-  - [ ] SubTask 7.1: 在 `TM.SovereignAI.runTurn` 中根据世界状态生成 0-3 道诏令文本
-  - [ ] SubTask 7.2: 诏令文本经 `classifyEdict` 分类，落账到 `GM._edictTracker`，标记 `source:'sovereign-ai'`
-  - [ ] SubTask 7.3: 经 `estimateResistance` + `applyEdictTypedIncidence` 走完整阻力与执行流程
-  - [ ] SubTask 7.4: 诏令渲染到御案（带"AI 颁旨"标识，区别于玩家下旨）
+- [x] Task 7: 皇帝 AI 下旨路径
+  - [x] SubTask 7.1: 在 `TM.SovereignAI.runTurn` 中根据世界状态生成 0-3 道诏令文本
+  - [x] SubTask 7.2: 诏令文本经 `classifyEdict` 分类，落账到 `GM._edictTracker`，标记 `source:'sovereign-ai'`
+  - [x] SubTask 7.3: 经 `estimateResistance` + `applyEdictTypedIncidence` 走完整阻力与执行流程
+  - [x] SubTask 7.4: 诏令渲染到御案（带"AI 颁旨"标识，区别于玩家下旨）
   - 验证：跑 `node web/scripts/smoke-sovereign-ai-edict.js`（新增 smoke），断言诏令落账与阻力计算
 
-- [ ] Task 8: 皇帝 AI 朝议发言
-  - [ ] SubTask 8.1: 在 `tm-chaoyi.js` 抽出 `addCYBubble(speaker, text, opts)` 函数（如已存在则复用）
-  - [ ] SubTask 8.2: 在 `TM.SovereignAI.runTurn` 中根据需要触发朝议议题
-  - [ ] SubTask 8.3: 皇帝发言经 LLM 生成，符合其性格 + 时代质感（沿用 `tm-wendui-persona-views.js` persona）
-  - [ ] SubTask 8.4: 朝议气泡中的"皇帝"字面量替换为 `P.playerInfo.sovereignName`
+- [x] Task 8: 皇帝 AI 朝议发言
+  - [x] SubTask 8.1: 在 `tm-chaoyi.js` 抽出 `addCYBubble(speaker, text, opts)` 函数（如已存在则复用）
+  - [x] SubTask 8.2: 在 `TM.SovereignAI.runTurn` 中根据需要触发朝议议题
+  - [x] SubTask 8.3: 皇帝发言经 LLM 生成，符合其性格 + 时代质感（沿用 `tm-wendui-persona-views.js` persona）
+  - [x] SubTask 8.4: 朝议气泡中的"皇帝"字面量替换为 `P.playerInfo.sovereignName`
   - 验证：跑 `node web/scripts/smoke-sovereign-ai-chaoyi.js`（新增 smoke）
 
-- [ ] Task 9: 皇帝 AI 批奏
-  - [ ] SubTask 9.1: 在 `tm-memorials.js` 新增 `_sovereignAIReplyMemorial(memorial)` 函数
-  - [ ] SubTask 9.2: 调用 LLM 生成批答（准/驳/留中/下议/交部 五选一 + 批语）
-  - [ ] SubTask 9.3: 批答影响 NPC 忠诚度（取自 `tm-relations.js` 的 loyaltyDelta）
-  - [ ] SubTask 9.4: 玩家上奏的批答以"奉旨"卡片形式反馈到玩家御案
+- [x] Task 9: 皇帝 AI 批奏
+  - [x] SubTask 9.1: 在 `tm-memorials.js` 新增 `_sovereignAIReplyMemorial(memorial)` 函数
+  - [x] SubTask 9.2: 调用 LLM 生成批答（准/驳/留中/下议/交部 五选一 + 批语）
+  - [x] SubTask 9.3: 批答影响 NPC 忠诚度（取自 `tm-relations.js` 的 loyaltyDelta）
+  - [x] SubTask 9.4: 玩家上奏的批答以"奉旨"卡片形式反馈到玩家御案
   - 验证：跑 `node web/scripts/smoke-sovereign-ai-memorial.js`（新增 smoke）
 
-- [ ] Task 10: 皇帝 AI 任免
-  - [ ] SubTask 10.1: 在 `TM.SovereignAI.runTurn` 中根据廷推/罪臣/功臣判断任免需求
-  - [ ] SubTask 10.2: 经 `_offAppointPerson` / `_offDismissPerson` 走标准任职树变更
-  - [ ] SubTask 10.3: 经 `tm-ai-change-applier.js` 路径白名单校验
-  - [ ] SubTask 10.4: 玩家本人可能被任免（升迁/贬谪/罢黜），向玩家推送通知
+- [x] Task 10: 皇帝 AI 任免
+  - [x] SubTask 10.1: 在 `TM.SovereignAI.runTurn` 中根据廷推/罪臣/功臣判断任免需求
+  - [x] SubTask 10.2: 经 `_offAppointPerson` / `_offDismissPerson` 走标准任职树变更
+  - [x] SubTask 10.3: 经 `tm-ai-change-applier.js` 路径白名单校验
+  - [x] SubTask 10.4: 玩家本人可能被任免（升迁/贬谪/罢黜），向玩家推送通知
   - 验证：跑 `node web/scripts/smoke-sovereign-ai-office.js`（新增 smoke）
 
 ## Phase 4 · 玩家角色动作集（按 playerRole 分支）
