@@ -236,6 +236,63 @@ function goalLifecycleOnTest() {
   assert((p.system + p.user).indexOf('goalUpdates') >= 0, 'ON: goal-stack schema (goalUpdates) injected into decision prompt');
 }
 
+// ─────────────── Slice 3·后果事件化 ───────────────
+function eventOffTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx);   // OFF
+  const eng = ctx.TM.FactionActionEngine;
+  const facA = ctx.GM.facs[0];
+  ctx.GM.currentIssues = [];
+  eng.applyDecision(facA, mkDecision([{ type: 'diplomacy', targetFaction: '乙势力', relationDelta: 60, treaty: '盟约' }]), { turn: 5 });
+  assert(ctx.GM.currentIssues.filter(function(x){ return x && x._flw; }).length === 0, 'OFF: major decision does NOT emit any world event to currentIssues');
+}
+
+function eventOnDeclareWarTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  const facA = ctx.GM.facs[0];
+  ctx.GM.currentIssues = [];
+  eng.applyDecision(facA, mkDecision([{ type: 'declare_war', targetFaction: '乙势力', casusBelli: 'border' }]), { turn: 5 });
+  const iss = ctx.GM.currentIssues.filter(function(x){ return x && x._flw; });
+  assert(iss.length === 1, 'ON: declare_war emits exactly one world-event issue');
+  assert(iss[0].status === 'pending' && iss[0].title.indexOf('宣战') >= 0 && Number(iss[0].raisedTurn) === 5, 'ON: issue has canonical shape (pending/title/turn) for 御案时政 render');
+  assert(iss[0].linkedFactions.indexOf('甲势力') >= 0 && iss[0].linkedFactions.indexOf('乙势力') >= 0, 'ON: issue linkedFactions carry actor + target');
+  assert(iss[0]._flwActor === '甲势力', 'ON: issue tagged with acting faction');
+}
+
+function eventCapDedupTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  const facA = ctx.GM.facs[0];
+  ctx.GM.currentIssues = [];
+  // 每势力 cap 1/回合：同一势力本回合多项重大决策 → 只发最重一条
+  eng.applyDecision(facA, mkDecision([
+    { type: 'declare_war', targetFaction: '乙势力', casusBelli: 'border' },
+    { type: 'diplomacy', targetFaction: '玩家朝廷', relationDelta: 60, treaty: '盟约' }
+  ]), { turn: 5 });
+  assert(ctx.GM.currentIssues.filter(function(x){ return x && x._flwActor === '甲势力' && Number(x.raisedTurn) === 5; }).length === 1, 'ON: per-faction cap 1/turn (multiple majors collapse to one issue)');
+  // 同 id 去重：重发同事件不重复
+  eng._emitWorldEvents(facA, [{ kind: 'declare_war', actor: '甲势力', target: '乙势力', cb: 'border' }], 5);
+  assert(ctx.GM.currentIssues.filter(function(x){ return x && x._flwActor === '甲势力' && Number(x.raisedTurn) === 5; }).length === 1, 'ON: same-turn re-emit does not duplicate');
+  // 全局 cap 3/回合
+  ctx.GM.currentIssues = [];
+  ['f1', 'f2', 'f3', 'f4'].forEach(function(n){ ctx.GM.facs.push({ name: n }); eng._emitWorldEvents({ name: n }, [{ kind: 'alliance', actor: n, target: '乙势力' }], 5); });
+  assert(ctx.GM.currentIssues.filter(function(x){ return x && x._flw && Number(x.raisedTurn) === 5; }).length === 3, 'ON: global cap 3/turn caps the flood');
+}
+
+function eventDiplomacyKindTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  const facA = ctx.GM.facs[0];
+  ctx.GM.currentIssues = [];
+  eng.applyDecision(facA, mkDecision([{ type: 'diplomacy', targetFaction: '乙势力', relationDelta: -70 }]), { turn: 7 });
+  const iss = ctx.GM.currentIssues.filter(function(x){ return x && x._flw && Number(x.raisedTurn) === 7; });
+  assert(iss.length === 1 && iss[0]._flwKind === 'betrayal' && iss[0].title.indexOf('交恶') >= 0, 'ON: big negative diplomacy emits a 背刺/交恶 world event');
+}
+
 function main() {
   offZeroChangeTest();
   offOnDiffTest();
@@ -244,6 +301,10 @@ function main() {
   onJoinWarTest();
   goalLifecycleOffTest();
   goalLifecycleOnTest();
+  eventOffTest();
+  eventOnDeclareWarTest();
+  eventCapDedupTest();
+  eventDiplomacyKindTest();
   console.log('[smoke-faction-living-world] all pass · ' + PASS + ' assertions');
 }
 

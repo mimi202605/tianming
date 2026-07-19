@@ -630,7 +630,10 @@
     var rec = { id:action.actionId, turn:action.turn || _turn(), action:p.order || p.kind || 'military_order', army:army.name || armyName, commanderFrom:oldCommander, commanderTo:commander || _armyCommander(army), soldiersDelta:soldiersDelta, moraleDelta:moraleDelta, trainingDelta:trainingDelta, reason:p.reason || p.rationale || '', _generatedByLlm:action.source !== 'local', _decisionId:action.decisionId, _actionId:action.actionId, _actionType:action.type };
     _pushFacTrajectory(fac, 'npcMilitaryActions', rec);
     if (global.TM && global.TM.FactionNpcNewsBridge && typeof global.TM.FactionNpcNewsBridge.pushMilitaryAction === 'function') try { global.TM.FactionNpcNewsBridge.pushMilitaryAction(fac, rec); } catch(_){}
-    return { ok:true, summaryKey:'military', detail:{ army:rec.army, commanderFrom:oldCommander, commanderTo:rec.commanderTo, soldiersDelta:soldiersDelta, moraleDelta:moraleDelta, trainingDelta:trainingDelta } };
+    var _milEvent = null;
+    var _ord = String(p.order || p.kind || '');
+    if (/move|reinforce|移防|调动|增兵|开拔|进兵|移屯/i.test(_ord) || Math.abs(_safeNum(soldiersDelta)) >= 5000) _milEvent = { kind:'troop_move', actor:(fac && fac.name), target:(p.destination || p.location || p.garrison || '') };
+    return { ok:true, summaryKey:'military', detail:{ army:rec.army, commanderFrom:oldCommander, commanderTo:rec.commanderTo, soldiersDelta:soldiersDelta, moraleDelta:moraleDelta, trainingDelta:trainingDelta }, worldEvent:_milEvent };
   }
 
   function _findRelationRecord(from, to) {
@@ -690,7 +693,11 @@
     var rec = { id:action.actionId, turn:action.turn || _turn(), from:from, to:to, relationFrom:oldValue, relationTo:nextValue, relationType:relType, treaty:treatyTitle || '', reason:desc, _generatedByLlm:action.source !== 'local', _decisionId:action.decisionId, _actionId:action.actionId, _actionType:action.type };
     _pushFacTrajectory(fac, 'npcDiplomacyActions', rec);
     if (global.TM && global.TM.FactionNpcNewsBridge && typeof global.TM.FactionNpcNewsBridge.pushDiplomacyAction === 'function') try { global.TM.FactionNpcNewsBridge.pushDiplomacyAction(fac, rec); } catch(_){}
-    return { ok:true, summaryKey:'diplomacy', detail:{ from:from, to:to, relationFrom:oldValue, relationTo:nextValue, treaty:treatyTitle || '', treatyRecord:!!treatyRec } };
+    var _dipEvent = null;
+    var _relDelta = _safeNum(nextValue) - _safeNum(oldValue);
+    if (treatyTitle || /盟|结盟|alliance|同盟/i.test(String(relType)) || _relDelta >= 40) _dipEvent = { kind:'alliance', actor:from, target:to };
+    else if (_relDelta <= -40 || /敌|绝交|背盟|反目|betray|hostile/i.test(String(relType))) _dipEvent = { kind:'betrayal', actor:from, target:to };
+    return { ok:true, summaryKey:'diplomacy', detail:{ from:from, to:to, relationFrom:oldValue, relationTo:nextValue, treaty:treatyTitle || '', treatyRecord:!!treatyRec }, worldEvent:_dipEvent };
   }
 
   function _adjustProvinceField(st, keys, delta, lo, hi) {
@@ -1243,6 +1250,38 @@
     });
   }
 
+  // 【F2·Slice3】重大势力决策(宣战/参战/背刺/结盟/大军调动)→ 世界事件入御案时政(玩家下回合可见须应对)。
+  //   防洪：全局 cap 3/回合·每势力 cap 1/回合·同 id 去重·只发本势力最重的一条。走 currentIssues 既有 shape(phase8-formal-bridge 读)。
+  var _FLW_EVENT_RANK = { declare_war: 5, join_war: 4, betrayal: 3, alliance: 2, troop_move: 1 };
+  function _emitWorldEvents(fac, events, turn) {
+    events = _arr(events); if (!events.length || !fac || !fac.name) return 0;
+    var G = global.GM || {};
+    if (!Array.isArray(G.currentIssues)) G.currentIssues = [];   // arch-ok: F2 世界事件入御案时政(currentIssues 既有子树)
+    var mineTurn = G.currentIssues.filter(function(x){ return x && x._flw && _safeNum(x.raisedTurn) === turn; });
+    if (mineTurn.length >= 3) return 0;
+    if (mineTurn.some(function(x){ return x._flwActor === fac.name; })) return 0;
+    var ev = events.slice().sort(function(a, b){ return (_FLW_EVENT_RANK[b && b.kind] || 0) - (_FLW_EVENT_RANK[a && a.kind] || 0); })[0];
+    if (!ev || !ev.kind) return 0;
+    var actor = fac.name, target = String(ev.target || '');
+    var id = 'iss_flw_' + turn + '_' + _slugId(ev.kind) + '_' + _slugId(actor) + '_' + _slugId(target);
+    if (G.currentIssues.some(function(x){ return x && x.id === id; })) return 0;
+    var CN = {
+      declare_war: { t: actor + ' 向 ' + target + ' 宣战', d: actor + '以「' + (ev.cb || '边衅') + '」为名对 ' + target + ' 兴兵。列国相攻·牵动天下·陛下当早为之备。', sev: '紧要' },
+      join_war:    { t: actor + ' 参战攻 ' + target, d: actor + ' 加入对 ' + target + ' 之战事·战端愈广。', sev: '紧要' },
+      betrayal:    { t: actor + ' 与 ' + target + ' 交恶', d: actor + ' 与 ' + target + ' 邦交骤裂·恐启衅端。', sev: '要事' },
+      alliance:    { t: actor + ' 与 ' + target + ' 结盟', d: actor + ' 与 ' + target + ' 缔盟联和·势成掎角。', sev: '要事' },
+      troop_move:  { t: actor + ' 大军调动', d: actor + ' 大举调兵' + (target ? '·指向 ' + target : '') + '·边情叵测。', sev: '要事' }
+    }[ev.kind] || { t: actor + ' 有重大动向', d: actor + ' 近有异动。', sev: '要事' };
+    var issue = {
+      id: id, title: CN.t, description: CN.d, category: '外交军务', severity: CN.sev,
+      status: 'pending', raisedTurn: turn,
+      raisedDate: (typeof global.getTSText === 'function' ? global.getTSText(turn) : (G._gameDate || '')),
+      linkedFactions: [actor, target].filter(Boolean), proposer: '边报', dept: '兵部',
+      _info: true, _flw: true, _flwActor: actor, _flwKind: ev.kind
+    };
+    G.currentIssues.push(issue);   // arch-ok: F2 势力活世界·重大势力决策入御案时政(currentIssues 既有子树·经裁定·非写主入口)
+    return 1;
+  }
   function applyDecision(fac, decision, opts) {
     opts = opts || {};
     var d = validateDecision(decision);
@@ -1254,6 +1293,7 @@
     var summary = { memorials:0, edicts:0, chaoyi:0, office:0, actions:0, attemptedActions: actions.length, skippedActions:0, mergedActions:0, skippedDetails:[], mergedDetails:[] };
     // F1·2026-05-22·in-batch 去重·防 LLM 同一 decision 重复 emit (legacy+native 双填或纯 native 双填)
     var seenBatchKeys = {};
+    var _worldEvents = [];   // F2·Slice3·收集重大决策世界事件(仅总闸 ON 时消费)
     actions.forEach(function(action) {
       var preflight = validateActionTarget(fac, action, ctx);
       if (!preflight || !preflight.ok) {
@@ -1284,6 +1324,7 @@
         var key = res.summaryKey || action.type;
         summary[key] = (summary[key] || 0) + 1;
         summary.actions++;
+        if (_livingWorldOn() && res && res.worldEvent) _worldEvents.push(res.worldEvent);
         if (batchKey) seenBatchKeys[batchKey] = { source: action.source, actionId: action.actionId };
         _recordAction(fac, action, 'applied', res.detail || null);
       } else {
@@ -1293,6 +1334,7 @@
         _recordAction(fac, action, 'skipped', { reason:failReason });
       }
     });
+    if (_livingWorldOn() && _worldEvents.length) { try { _emitWorldEvents(fac, _worldEvents, turn); } catch (_) {} }   // F2·Slice3·后果事件化
     if (d && d.rationale) fac._lastLlmRationale = { turn:turn, text:d.rationale };
     ensureStrategyV2(fac, d, actions);
     // G3-C·2026-05-22·决策风格 rolling memory·写在 strategy 后·只算 applied actions·skipped 不入
@@ -1477,7 +1519,8 @@
     setFactionLivingWorld: setFactionLivingWorld,
     _applyDeclareWar: _applyDeclareWar,
     _applyJoinWar: _applyJoinWar,
-    _pruneStrategyLifecycle: _pruneStrategyLifecycle
+    _pruneStrategyLifecycle: _pruneStrategyLifecycle,
+    _emitWorldEvents: _emitWorldEvents
   };
   if (typeof global !== 'undefined') { try { global._tmSetFactionLivingWorld = setFactionLivingWorld; } catch (e) {} }
 
