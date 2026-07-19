@@ -35,7 +35,12 @@ var scriptData = {
       characterBio:'', characterDesc:'',
       characterAppearance:'', characterCharisma:'',
       // 显著矛盾（黑格尔式：矛盾是推动事物发展的源泉）
-      coreContradictions: []  // [{title:'矛盾标题',dimension:'political/economic/military/social',description:'详细描述',parties:'冲突双方',severity:'critical/major/minor'}]
+      coreContradictions: [],  // [{title:'矛盾标题',dimension:'political/economic/military/social',description:'详细描述',parties:'冲突双方',severity:'critical/major/minor'}]
+      // 穿越模式（Phase 1 · Task 2）—— 玩家可扮演除君主以外的任何人物
+      transmigrationMode: false,  // 是否为穿越模式存档
+      sovereignName: '',          // 当前君主名（穿越模式下与 characterName 解耦）
+      sovereignTitle: '',         // 当前君主尊号（朝代中立·剧本可覆盖）
+      selectedCharId: ''          // 穿越模式选定的玩家化身角色 id
     },
     gameSettings:{
       enabledSystems:{ items:true, military:true, techTree:true, civicTree:true, events:true, map:true, characters:true, factions:true, classes:true, rules:true, officeTree:true },
