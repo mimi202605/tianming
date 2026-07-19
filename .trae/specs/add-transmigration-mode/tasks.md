@@ -121,29 +121,29 @@
 
 > 这 7 个系统是穿越模式相比皇帝模式的差异化玩法，让玩家在自己职位上"有事可做、有成长感、有戏剧性"。系统间存在关联（如人物互动→反叛筹备→交战），按依赖顺序实现。
 
-- [ ] Task 15: 玩家人物互动系统 `web/tm-player-interaction.js`
-  - [ ] SubTask 15.1: 定义 `TM.PlayerInteraction` 命名空间
-  - [ ] SubTask 15.2: 实现 `interact(npcName, kind, payload)` —— kind ∈ {visit, secretTalk, entrust, befriend, gift, marry, antagonize, frame, recruit, disciple}
-  - [ ] SubTask 15.3: 每次互动消耗精力（复用 `_spendEnergy`）+ 推进时间
-  - [ ] SubTask 15.4: 调用 LLM 生成互动场景描述（基于双方性格 + 关系 + 当前局势）
-  - [ ] SubTask 15.5: 更新 NPC 对玩家的 5 维关系值（师徒/亲友/政敌/同僚/仇敌，沿用 `tm-relations.js`）
-  - [ ] SubTask 15.6: 关键互动写入玩家记忆系统（沿用 `tm-memory-*.js`）
-  - [ ] SubTask 15.7: 实现"联姻"——双方 `family` 字段建立姻亲关系
-  - [ ] SubTask 15.8: 事件钩子：与禁军将领关系达"死党"+ 选择"密谋" → 提示可发动政变
-  - [ ] SubTask 15.9: 御案新增"人物互动"面板，列出可互动 NPC 与动作菜单
+- [x] Task 15: 玩家人物互动系统 `web/tm-player-interaction.js`
+  - [x] SubTask 15.1: 定义 `TM.PlayerInteraction` 命名空间
+  - [x] SubTask 15.2: 实现 `interact(npcName, kind, payload)` —— kind ∈ {visit, secretTalk, entrust, befriend, gift, marry, antagonize, frame, recruit, disciple}
+  - [x] SubTask 15.3: 每次互动消耗精力（复用 `_spendEnergy`）+ 推进时间
+  - [x] SubTask 15.4: 调用 LLM 生成互动场景描述（基于双方性格 + 关系 + 当前局势）
+  - [x] SubTask 15.5: 更新 NPC 对玩家的 5 维关系值（师徒/亲友/政敌/同僚/仇敌，沿用 `tm-relations.js`）
+  - [x] SubTask 15.6: 关键互动写入玩家记忆系统（沿用 `tm-memory-*.js`）
+  - [x] SubTask 15.7: 实现"联姻"——双方 `family` 字段建立姻亲关系
+  - [x] SubTask 15.8: 事件钩子：与禁军将领关系达"死党"+ 选择"密谋" → 提示可发动政变
+  - [x] SubTask 15.9: 御案新增"人物互动"面板，列出可互动 NPC 与动作菜单
   - 验证：跑 `node web/scripts/smoke-player-interaction.js`（新增 smoke）
 
-- [ ] Task 16: 玩家赚钱与私产系统 `web/tm-player-economy.js`
-  - [ ] SubTask 16.1: 定义 `TM.PlayerEconomy` 命名空间
-  - [ ] SubTask 16.2: 玩家个人银钱账本（独立于国库），字段：cash, properties[], investments[], grayIncome[]
-  - [ ] SubTask 16.3: 每月初自动领取官俸（复用 `tm-char-economy-engine.js` 的 14 类角色俸禄）
-  - [ ] SubTask 16.4: 实现"贪墨/受贿"动作：玩家银钱+，corruption 字段累计，触发吏治腐败引擎风险
-  - [ ] SubTask 16.5: 实现"购置产业"：酒楼/当铺/作坊三类，每月产生经营性收入
-  - [ ] SubTask 16.6: 实现"放贷收息"：超出阈值触发民怨
-  - [ ] SubTask 16.7: 实现"囤货居奇"：触发市舶司调查风险
-  - [ ] SubTask 16.8: 实现"被抄家"路径（沿用 `tm-char-economy-ui.js`）：罢黜/反叛失败/贪腐被查 → 私产充公
-  - [ ] SubTask 16.9: 实现"派系勒索"：派系向玩家索要保护费，拒绝则关系恶化
-  - [ ] SubTask 16.10: 御案新增"私产"面板
+- [x] Task 16: 玩家赚钱与私产系统 `web/tm-player-economy.js`
+  - [x] SubTask 16.1: 定义 `TM.PlayerEconomy` 命名空间
+  - [x] SubTask 16.2: 玩家个人银钱账本（独立于国库），字段：cash, properties[], investments[], grayIncome[]
+  - [x] SubTask 16.3: 每月初自动领取官俸（复用 `tm-char-economy-engine.js` 的 14 类角色俸禄）
+  - [x] SubTask 16.4: 实现"贪墨/受贿"动作：玩家银钱+，corruption 字段累计，触发吏治腐败引擎风险
+  - [x] SubTask 16.5: 实现"购置产业"：酒楼/当铺/作坊三类，每月产生经营性收入
+  - [x] SubTask 16.6: 实现"放贷收息"：超出阈值触发民怨
+  - [x] SubTask 16.7: 实现"囤货居奇"：触发市舶司调查风险
+  - [x] SubTask 16.8: 实现"被抄家"路径（沿用 `tm-char-economy-ui.js`）：罢黜/反叛失败/贪腐被查 → 私产充公
+  - [x] SubTask 16.9: 实现"派系勒索"：派系向玩家索要保护费，拒绝则关系恶化
+  - [x] SubTask 16.10: 御案新增"私产"面板
   - 验证：跑 `node web/scripts/smoke-player-economy.js`（新增 smoke）
 
 - [ ] Task 17: 玩家跑商系统 `web/tm-player-trade.js`
@@ -222,17 +222,17 @@
   - [ ] SubTask 20.13: 御案新增"私军"面板
   - 验证：跑 `node web/scripts/smoke-player-private-army.js`（新增 smoke）
 
-- [ ] Task 21: 玩家自由移动系统 `web/tm-player-movement.js`
-  - [ ] SubTask 21.1: 定义 `TM.PlayerMovement` 命名空间
-  - [ ] SubTask 21.2: 玩家移动状态：currentLocation, travelStatus{moving, from, to, mode, eta}, discoveredLocations[]
-  - [ ] SubTask 21.3: 实现"发起移动"：选定目的地，复用 `tm-military.js` 行军路径算法计算距离/耗时
-  - [ ] SubTask 21.4: 实现移动方式选择：步行/骑马/车驾/舟船/驿站（不同速度/成本）
-  - [ ] SubTask 21.5: 驿站方式需官场关系（关联人物互动）
-  - [ ] SubTask 21.6: 实现"移动事件"：路上随机触发盗匪/天气/偶遇 NPC/发现古迹（LLM 生成）
-  - [ ] SubTask 21.7: 实现"地点决定动作集"：京城/地方/封国/边疆/名胜/敌国化外 等地点分支
-  - [ ] SubTask 21.8: 实现"携带随从"：家属/私军/商队一起移动，成本按规模加成
-  - [ ] SubTask 21.9: 玩家 `location` 字段更新（沿用 `tm-char-full-schema.js`）
-  - [ ] SubTask 21.10: 御案新增"移动"面板，显示地图与可去地点
+- [x] Task 21: 玩家自由移动系统 `web/tm-player-movement.js`
+  - [x] SubTask 21.1: 定义 `TM.PlayerMovement` 命名空间
+  - [x] SubTask 21.2: 玩家移动状态：currentLocation, travelStatus{moving, from, to, mode, eta}, discoveredLocations[]
+  - [x] SubTask 21.3: 实现"发起移动"：选定目的地，复用 `tm-military.js` 行军路径算法计算距离/耗时
+  - [x] SubTask 21.4: 实现移动方式选择：步行/骑马/车驾/舟船/驿站（不同速度/成本）
+  - [x] SubTask 21.5: 驿站方式需官场关系（关联人物互动）
+  - [x] SubTask 21.6: 实现"移动事件"：路上随机触发盗匪/天气/偶遇 NPC/发现古迹（LLM 生成）
+  - [x] SubTask 21.7: 实现"地点决定动作集"：京城/地方/封国/边疆/名胜/敌国化外 等地点分支
+  - [x] SubTask 21.8: 实现"携带随从"：家属/私军/商队一起移动，成本按规模加成
+  - [x] SubTask 21.9: 玩家 `location` 字段更新（沿用 `tm-char-full-schema.js`）
+  - [x] SubTask 21.10: 御案新增"移动"面板，显示地图与可去地点
   - 验证：跑 `node web/scripts/smoke-player-movement.js`（新增 smoke）
 
 - [ ] Task 22: 玩家产业建设系统 `web/tm-player-industry.js`
