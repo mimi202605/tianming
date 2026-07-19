@@ -640,6 +640,116 @@
     return { ok: false, reason: '未知 action: ' + action };
   }
 
+  // ── 角色变更路径表（朝代中立·不写死某朝官制） ──
+  // key = current role, value = { kind: { label, newRole, msg } }
+  // 跨朝代铁律：仅用通称（官/臣/军/宗/爵等），禁明清专名
+  var _ROLE_CHANGE_PATHS = {
+    minister: {
+      resign: { label: '辞官归田', newRole: ROLE.COMMONER, msg: '辞官归田，从此布衣之身' },
+      retire:  { label: '告老致仕', newRole: ROLE.RETIRED_OFFICIAL, msg: '告老致仕，荣归故里' }
+    },
+    general: {
+      demobilize: { label: '解甲归田', newRole: ROLE.RETIRED_OFFICIAL, msg: '解甲归田，卸下戎装' },
+      reinstate:  { label: '起复视事', newRole: ROLE.MINISTER, msg: '起复视事，改授文衔' }
+    },
+    prince: {
+      inherit: { label: '袭爵承嗣', newRole: ROLE.PRINCE, msg: '袭爵承嗣，宗祧有继' },
+      contend: { label: '争嫡夺储', newRole: ROLE.PRINCE, msg: '争嫡夺储，挑战储位' }
+    },
+    merchant: {
+      donate:      { label: '献财入仕', newRole: ROLE.MINISTER, msg: '献财输饷，赐官身出仕' },
+      monopolize: { label: '独占商路', newRole: ROLE.MERCHANT, msg: '独占商路，财势益盛' }
+    },
+    eunuch: {
+      leavePalace: { label: '乞骸出宫', newRole: ROLE.COMMONER, msg: '乞骸出宫，归老田园' }
+    },
+    maid: {
+      leavePalace: { label: '放出宫闱', newRole: ROLE.COMMONER, msg: '放出宫闱，归家择配' },
+      conferred:   { label: '蒙恩册封', newRole: ROLE.CUSTOM, msg: '蒙恩册封，入侍君侧' }
+    },
+    commoner: {
+      takeExam: { label: '应试科场', newRole: ROLE.COMMONER, msg: '应试科场，静待金榜' },
+      enlist:   { label: '投军效力', newRole: ROLE.GENERAL, msg: '投军效力，从戎报国' }
+    },
+    bandit: {
+      amnesty: { label: '受招安', newRole: ROLE.GENERAL, msg: '受招安，从军效用' }
+    },
+    retired_official: {
+      reinstate: { label: '起复视事', newRole: ROLE.MINISTER, msg: '起复视事，再膺重任' }
+    },
+    monk: {
+      secularize: { label: '还俗入世', newRole: ROLE.COMMONER, msg: '还俗入世，重归红尘' }
+    },
+    artisan: {
+      donate:      { label: '献艺入仕', newRole: ROLE.MINISTER, msg: '献艺入仕，供奉内廷' },
+      independent: { label: '自立门派', newRole: ROLE.ARTISAN, msg: '自立门派，名扬四海' }
+    },
+    actor: {
+      free:    { label: '赎身脱籍', newRole: ROLE.COMMONER, msg: '赎身脱籍，从良入世' },
+      perform: { label: '入宫供奉', newRole: ROLE.ACTOR, msg: '入宫供奉，名动京华' }
+    },
+    infant: {
+      growUp: { label: '长大成人', newRole: ROLE.PRINCE, msg: '长大成人，依宗亲例授爵' }
+    },
+    custom: {
+      conferred: { label: '进位尊崇', newRole: ROLE.CUSTOM, msg: '进位尊崇，恩宠益隆' }
+    }
+  };
+
+  function getRoleChangePaths(playerRole) {
+    if (!playerRole) return null;
+    return _ROLE_CHANGE_PATHS[playerRole] || null;
+  }
+
+  // ── 角色变更执行器 ──
+  // kind: 见 _ROLE_CHANGE_PATHS
+  // payload: { newTitle? } 可选·用于同步 underlying character 的 officialTitle
+  function triggerRoleChange(kind, payload) {
+    payload = payload || {};
+    if (!isTransmigrationMode()) return { ok: false, reason: '非穿越模式' };
+    var pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+    if (!pi || !pi.playerRole || pi.playerRole === 'emperor') return { ok: false, reason: '非穿越角色' };
+    var currentRole = pi.playerRole;
+    var paths = _ROLE_CHANGE_PATHS[currentRole];
+    if (!paths) return { ok: false, reason: '当前角色无变更路径：' + currentRole };
+    var path = paths[kind];
+    if (!path) return { ok: false, reason: '未知变更类型：' + kind };
+
+    var G = (typeof GM !== 'undefined') ? GM : null;
+    var pc = null;
+    if (G && Array.isArray(G.chars)) {
+      for (var i = 0; i < G.chars.length; i++) {
+        if (G.chars[i] && G.chars[i].isPlayer === true) { pc = G.chars[i]; break; }
+      }
+    }
+    // 应用 playerRole 变更（P.playerInfo 是唯一真相源）
+    pi.playerRole = path.newRole; // arch-ok
+    // 同步底层角色（若找到）+ 可选 newTitle
+    if (pc) {
+      try { pc.playerRole = path.newRole; } catch (_) {}
+      if (payload.newTitle && typeof payload.newTitle === 'string') {
+        try { pc.officialTitle = payload.newTitle; pi.characterTitle = payload.newTitle; } catch (_) {}
+      }
+    }
+    // 记入编年/起居注
+    try {
+      if (typeof addEB === 'function') addEB('身份变更', (pi.characterName || '玩家') + '·' + path.msg);
+    } catch (_) {}
+    try {
+      if (typeof NpcMemorySystem !== 'undefined' && NpcMemorySystem.addMemory && pi.characterName) {
+        NpcMemorySystem.addMemory(pi.characterName, path.msg, 9, 'career');
+      }
+    } catch (_) {}
+    return {
+      ok: true,
+      kind: kind,
+      fromRole: currentRole,
+      newRole: path.newRole,
+      msg: path.msg,
+      label: path.label
+    };
+  }
+
   window.doTransmigration = function () {
     if (window.TM && TM.Transmigration && typeof TM.Transmigration.startFlow === 'function') {
       TM.Transmigration.startFlow();
@@ -659,6 +769,8 @@
     showCharacterSelect: showCharacterSelect,
     confirmCharacter: confirmCharacter,
     roleAction: roleAction,
-    runRegentAction: runRegentAction
+    runRegentAction: runRegentAction,
+    getRoleChangePaths: getRoleChangePaths,
+    triggerRoleChange: triggerRoleChange
   };
 })();

@@ -322,6 +322,258 @@ tm-var-drawers / -ext / -final · 变量抽屉的 3 代版本
 
 ---
 
+## 11. 穿越模式架构（Phase 1-7 · 2026-07 新增）
+
+> 穿越模式打破 §1「玩家=皇帝」北极星第 4 条，允许玩家扮演除皇帝外的任意角色。本节是穿越模式的「实然」架构地图——理想参见 spec `add-transmigration-mode/spec.md`。
+> 文件清单与职责速查见 [INDEX.md](INDEX.md) §「🎭 穿越模式文件注册」。
+
+### 11.1 单一真相源：`P.playerInfo`
+
+```
+P.playerInfo = {
+  transmigrationMode:  boolean   // true = 穿越模式 / false = 皇帝模式（默认）
+  playerRole:          string    // 16 种角色：emperor / regent / minister / general /
+                                 //             prince / consort / merchant / student /
+                                 //             eunuch / maid / commoner / bandit /
+                                 //             infant / retired_official / monk / artisan
+  sovereignName:       string    // 当前君主姓名（穿越模式由 GM.chars 中 _offIsSovereign 反推）
+  sovereignTitle:      string    // 君主尊号（朝代中立·剧本 hook）
+  selectedCharId:      string    // 玩家所选角色 ID
+  characterTitle:      string    // 玩家角色职衔
+  characterName:       string    // 玩家角色姓名
+}
+```
+
+**玩家身份唯一标识**：`c.isPlayer`（`GM.chars` 中有且仅有一个角色 `isPlayer=true`）。`P.playerInfo.playerRole` 是其派生缓存，由 `TM.Transmigration.derivePlayerRole(c)` 在 `confirmCharacter` 时写入。
+
+### 11.2 14 大玩家系统数据流图
+
+```
+                       ┌─────────────────────────────────────┐
+                       │   TM.Transmigration (Phase 1 入口)    │
+                       │   startFlow → showCharacterSelect     │
+                       │   → confirmCharacter → enterGame      │
+                       └───────────────┬─────────────────────┘
+                                       │ 写入 P.playerInfo
+                                       ▼
+        ┌──────────────────────────────────────────────────────────┐
+        │                  玩家角色（c.isPlayer=true）                │
+        └──────────────────────────────────────────────────────────┘
+                                       │
+        ┌──────────────┬──────────────┼──────────────┬──────────────┐
+        ▼              ▼              ▼              ▼              ▼
+  ┌──────────┐  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
+  │Interaction│  │ Economy  │   │  Trade   │   │   Tech   │   │ Movement │
+  │ interact  │  │ cash/    │   │ caravan  │   │ research │   │ travelTo │
+  │ marry/    │  │ gray/    │   │ route/   │   │ unlock/  │   │ arrive/  │
+  │ recruit   │  │ confiscate│   │ risk/    │   │ discover │   │ encounter│
+  └─────┬────┘  └────┬─────┘   └────┬─────┘   └────┬────┘   └────┬────┘
+        │            │              │              │             │
+        │     ┌──────┴──────┐       │       ┌──────┴──────┐      │
+        │     ▼             ▼       │       ▼             ▼      │
+        │  ┌──────┐   ┌─────────┐   │   ┌────────┐   ┌────────┐  │
+        │  │Family│   │Industry │   │   │Reclaim │   │ Private│  │
+        │  │marry/│   │ build/  │   │   │survey/ │   │  Army  │  │
+        │  │heir/ │   │ operate │   │   │permit/ │   │recruit/│  │
+        │  │rebel │   │ upgrade │   │   │harvest │   │deploy  │  │
+        │  └──┬───┘   └─────────┘   │   └────────┘   └───┬────┘  │
+        │     │                     │                   │       │
+        │     ▼                     │                   │       ▼
+        │  ┌─────────┐              │                   │  ┌─────────┐
+        │  │Marriage │              │                   │  │ Rebel   │
+        │  │ 六礼/   │              │                   │  │ prep/   │
+        │  │ 赘婿/   │              │                   │  │ launch/ │
+        │  │ 和离    │              │                   │  │ resolve │
+        │  └─────────┘              │                   │  └─────────┘
+        │                           │
+        ▼                           ▼
+  ┌──────────┐                ┌──────────┐
+  │ Keju     │                │Skill     │
+  │ exam/    │                │ 学塾/    │
+  │ pass/    │                │ 拜师/    │
+  │ scandal  │                │ 游学/    │
+  └──────────┘                │ 历练     │
+                              └──────────┘
+        ┌──────────────┐
+        │Annual Review │
+        │ 9-grade /    │
+        │ promote /    │
+        │ demote       │
+        └──────────────┘
+        ┌──────────────┐
+        │SpecialIdentity│
+        │ eunuch/maid/ │
+        │ bandit/      │
+        │ infant/...   │
+        └──────────────┘
+
+  ↑                              ↑
+  │                              │
+  └── TM.PlayerActionSignals ────┘
+      （Phase 5 · 动作信号聚合·统一打标 source 字段）
+                                      │
+                                      ▼
+                          ┌────────────────────────┐
+                          │ TM.Qiju.record(        │ ←─── 起居注单一写口
+                          │   content, {source})   │      CAP=240
+                          └────────────┬───────────┘
+                                       │
+                                       ▼
+                          ┌────────────────────────┐
+                          │ TM.Chronicle.record(   │ ←─── 编年史单一写口
+                          │   entry)               │      月稿两段制
+                          └────────────────────────┘
+                              sovereignDecisions[]
+                              playerActions[]
+```
+
+**依赖关系**（spec Task Dependencies 摘录）：
+- `PlayerTrade` ← `PlayerEconomy`（商队需银钱账本）
+- `PlayerTech` ← `PlayerInteraction` + `PlayerEconomy`（招匠人 + 研发投入）
+- `PlayerFamily` ← `PlayerInteraction` + `PlayerKeju`（联姻 + 子女出仕）
+- `PlayerPrivateArmy` ← `PlayerEconomy`（装备投入）
+- `PlayerIndustry` / `PlayerReclaim` ← `PlayerEconomy` + `PlayerMovement`（购地 + 选址）
+- `PlayerRebel` ← `PlayerInteraction` + `PlayerEconomy` + `PlayerPrivateArmy` + `TM.SovereignAI`
+- `PlayerMarriage` ← `PlayerFamily` + `PlayerInteraction`
+- `PlayerSkill` ← `PlayerMovement` + `PlayerInteraction`（游学 + 拜师）
+- `PlayerSpecialIdentity` ← `TM.Transmigration` + `TM.SovereignAI` + 多个玩家系统（特殊身份的复合路径）
+
+### 11.3 玩家身份与决策来源标识
+
+```
+玩家动作产生                  写口                     起居注渲染
+─────────────────────────────────────────────────────────────────
+玩家上奏（奏疏）          source='player-memorial'     src-player · 「玩家·上奏」
+玩家其他动作              source='player'              src-player · 「玩家」
+玩家皇帝模式（旧）        source='sovereign-player'    src-sovereign · 「玩家·君主」
+皇帝 AI 自动决策          source='sovereign-ai'        src-sovereign · 「君主AI」
+LLM 失败·规则兜底         source='fallback'            src-sovereign · 「君主AI·兜底」
+派系 NPC 决策             source='npc'                 src-npc · 「NPC」
+```
+
+老存档兜底：`_qijuNormalize` 从「【君主 AI」前缀反推 `source='sovereign-ai'`（向后兼容）。
+
+### 11.4 Endturn Pipeline 穿越模式分支
+
+```
+endTurn() @ tm-endturn-core.js
+  │
+  └─ TM.Endturn.Pipeline.run(ctx) @ tm-endturn-pipeline-executor.js
+     │
+     ├─ step 'prep'                 ← tm-endturn-prep.js
+     │     _endTurn_collectInput 按 P.playerInfo.playerRole 分支：
+     │       皇帝模式 → 收集诏令 + 朝议 + 奏疏批注
+     │       穿越模式 → 收集玩家上奏（奏疏 textarea × 1-3 篇）
+     │
+     ├─ step 'sovereign-ai'         ← tm-endturn-pipeline-steps.js（新增·穿越模式专用）
+     │     穿越模式：调 TM.SovereignAI.runTurn(root, ctx) → 下旨/朝议/批奏/任免
+     │     皇帝模式：跳过（玩家即皇帝，无 AI 代行）
+     │     LLM 降级：callAI → callLLM → 规则引擎兜底（source='fallback'）
+     │
+     ├─ step 'plan-prefetch'        ← tm-endturn-ai.js
+     ├─ step 'ai'                   ← tm-endturn-prompt.js + tm-endturn-ai.js
+     │     prompt 注入区分两段：
+     │       sovereignDecisions[]（君主 AI 自动决策·穿越模式）
+     │       playerActions[]（玩家上奏与动作·两模式通用）
+     │
+     ├─ step 'post-ai-edict'        ← tm-endturn-edict.js + tm-ai-change-applier.js
+     ├─ step 'systems'              ← tm-endturn-systems.js
+     └─ step 'render-and-finalize'  ← tm-endturn-render.js
+           confirmEndTurn 文案（tm-office-panel.js）按 playerRole 切换：
+             皇帝模式：「诏令颁行」
+             穿越模式：「上奏呈递」
+```
+
+### 11.5 皇帝 AI 双入口设计
+
+```
+TM.SovereignAI.runTurn(root, ctx)        异步·LLM 路径
+  ├─ 构建 prompt：国库/民心/边警/吏治/派系矩阵 + 玩家上奏
+  ├─ 调 callAI / callLLM → extractJSON → 校验 schema
+  ├─ 写 TM.Qiju.record(content, {source:'sovereign-ai'})
+  └─ 失败降级 → runTurnSync(presetOutput)
+
+TM.SovereignAI.runTurnSync(root, opts)   同步·presetOutput·供 smoke
+  ├─ 用 opts.presetOutput 或规则引擎生成
+  ├─ 写 TM.Qiju.record(content, {source:'fallback'})
+  └─ smoke 用此入口断言「至少生成 1 个决策」
+```
+
+### 11.6 跨朝代铁律（spec 强约束）
+
+引擎层（`tm-transmigration.js` / `tm-sovereign-ai.js` / `tm-player-*.js` / `tm-tech-routes-data.js`）**绝不硬编**以下明清专名：
+
+| 类别 | 禁词清单 |
+|------|---------|
+| 内廷秘书 | 内阁 / 票拟 / 批红 / 票拟批红 / 司礼监 / 内书堂 |
+| 特务缉捕 | 东厂 / 西厂 / 锦衣卫 / 内行厂 / 提刑按察 |
+| 科举文体 | 八股 / 制义 / 四书文 / 小题文 / 大题文 |
+| 奏报文书 | 奏折 / 题本 / 奏本 / 揭帖 / 题奏 |
+| 地方督抚 | 总督 / 巡抚 / 提督 / 总兵 / 巡按 |
+| 宗藩封爵 | 亲王 / 郡王 / 镇国将军 / 奉国将军 |
+
+**通用术语允许**（不属于禁词）：皇帝 / 君主 / 朝廷 / 命官 / 臣子 / 妃嫔 / 内廷 / 外朝 / 诏令 / 奏疏 / 上奏 / 朝议 / 廷推 / 科举 / 县试 / 乡试 / 会试 / 殿试。
+
+剧本层（`scenarios/*.json` 与 `P.customTechRoutes` 等）可任意 hook 朝代专属机构/职务/科场文体——引擎只提供通用框架。
+
+### 11.7 玩家角色枚举（16 种）
+
+| playerRole | 中文 | 触发场景 |
+|-----------|------|---------|
+| `emperor` | 皇帝 | 皇帝模式（默认） |
+| `regent` | 摄政权臣 | 玩家选摄政角色 / 幼主在位 |
+| `minister` | 朝臣 | 玩家选文官角色 |
+| `general` | 武将 | 玩家选武官角色 |
+| `prince` | 宗室 | 玩家选宗室角色 |
+| `consort` | 后宫 | 玩家选妃嫔角色 |
+| `merchant` | 商贾 | 玩家选商人角色 |
+| `student` | 士子 | 玩家选学子角色 |
+| `eunuch` | 太监 | 玩家选宦官角色 |
+| `maid` | 宫女 | 玩家选宫女角色 |
+| `commoner` | 布衣 | 玩家选平民角色 |
+| `bandit` | 盗贼 | 玩家选草寇角色 |
+| `infant` | 婴幼儿 | 玩家选幼童角色 |
+| `retired_official` | 退休官员 | 玩家选致仕角色 |
+| `monk` | 僧道 | 玩家选出家人角色 |
+| `artisan` | 匠人 | 玩家选手工艺人角色 |
+
+### 11.8 穿越模式回归验证
+
+| smoke 文件 | 验证范围 |
+|----------|---------|
+| `scripts/smoke-transmigration-e2e.js` | 端到端 21 sub-tests：选角色→进入→回合→14 系统各 1 动作 |
+| `scripts/smoke-transmigration-endturn.js` | pipeline sovereign-ai step + 两段制月稿 |
+| `scripts/smoke-transmigration-chronicle.js` | 起居注 source 标识 + chip 渲染 + 老存档兜底 |
+| `scripts/smoke-transmigration-edict-panel.js` | 诏令面板按 playerRole 分支渲染 |
+| `scripts/smoke-transmigration-chaoyi.js` | 朝议面板「皇帝」字面量动态化 |
+| `scripts/smoke-transmigration-office-permission.js` | 官制权限按 playerRole 分支 |
+| `scripts/smoke-transmigration-regent.js` | 摄政权臣代诏 + 还政危机 |
+| `scripts/smoke-transmigration-role-change.js` | triggerRoleChange 角色切换 |
+| `scripts/smoke-sovereign-ai-edict.js` | 皇帝 AI 下旨 + 阻力计算 |
+| `scripts/smoke-sovereign-ai-chaoyi.js` | 皇帝 AI 朝议发言 |
+| `scripts/smoke-sovereign-ai-memorial.js` | 皇帝 AI 批奏 |
+| `scripts/smoke-sovereign-ai-office.js` | 皇帝 AI 任免 |
+| `scripts/smoke-player-interaction.js` | 玩家互动 10 动作 |
+| `scripts/smoke-player-economy.js` | 玩家银钱账本 |
+| `scripts/smoke-player-trade.js` | 玩家跑商 |
+| `scripts/smoke-player-tech.js` | 玩家科技 + 前置解锁 |
+| `scripts/smoke-player-family.js` | 玩家家族 + 婚姻 |
+| `scripts/smoke-player-private-army.js` | 玩家私军 |
+| `scripts/smoke-player-movement.js` | 玩家移动 |
+| `scripts/smoke-player-industry.js` | 玩家产业 |
+| `scripts/smoke-player-reclaim.js` | 玩家开垦 |
+| `scripts/smoke-player-keju.js` | 玩家科举 |
+| `scripts/smoke-player-annual-review.js` | 玩家年终考核 |
+| `scripts/smoke-player-rebel.js` | 玩家反叛 |
+| `scripts/smoke-player-skill.js` | 玩家自我技能提升 |
+| `scripts/smoke-player-special-identity.js` | 特殊身份路线 |
+
+皇帝模式回归（Task 33）：`smoke-chaoyi-v3.js` / `smoke-edict-typed-incidence.js` / `smoke-office-dup-seat-heal.js` 等已有 smoke 全绿，`verify-all` 仅 `tm-keju-indicators.js` 历史孤岛（Phase J1 遗留·与本特性无关）。
+
+架构守卫（Task 34）：`lint-arch-all` 8/8 绿；新穿越模式文件 GM/P 写操作均加 `// arch-ok` 行内豁免（玩家专属账本·不进 gm-writes baseline）。
+
+---
+
 ## 附录 A · 常用调试控制台片段
 
 ```javascript

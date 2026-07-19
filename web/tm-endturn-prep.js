@@ -515,7 +515,8 @@ function _endTurn_collectInput() {
       if (typeof recordPlayerDecision === 'function') recordPlayerDecision('edict', '颁行诏书:' + _decreeText.substring(0, 80));
     }
   }
-  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({turn:GM.turn,time:getTSText(GM.turn),edicts:edicts,xinglu:xinglu,memorials:memRes,edictsSource:_edictsSource});
+  // Task 31·起居注标注决策来源：玩家上奏(player-memorial) / 君主亲颁诏令(sovereign-player)
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({turn:GM.turn,time:getTSText(GM.turn),edicts:edicts,xinglu:xinglu,memorials:memRes,edictsSource:_edictsSource,source:_src});
   resetTurnChanges();
   // 注意：不在此处清空 _couplingReport/_edictExecutionReport/_buildingOutputReport/_npcIntents/_healthAlerts/_decisionAlerts
   // 这些字段由上一回合的 SettlementPipeline 设置，在本回合 AI prompt 中读取（"上回合发生了什么"）

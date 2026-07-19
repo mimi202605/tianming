@@ -212,8 +212,9 @@ async function _yq2_startRoundQuery() {
       if (CY._pendingPlayerLine) {
         var _pl = CY._pendingPlayerLine; CY._pendingPlayerLine = null;
         _yq2_emp(_pl);
-        if (CY._yq2.record !== 'secret') _cy_jishiAdd('yuqian', CY._yq2.topic, '皇帝', _pl, { playerInterject: true, round: _rd });
-        CY._yq2._transcript += '\n皇帝：' + _pl;
+        var _yqSovNm = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝';
+        if (CY._yq2.record !== 'secret') _cy_jishiAdd('yuqian', CY._yq2.topic, _yqSovNm, _pl, { playerInterject: true, round: _rd });
+        CY._yq2._transcript += '\n' + _yqSovNm + '：' + _pl;
         // 令心腹应答皇帝插言(治御前只塞 transcript 无人回应)·智能选人·秘议不入纪事
         try { await _cyInterjectRespond(_pl, { kind: 'yuqian', topic: CY._yq2.topic, attendees: CY._yq2.advisors, lastSpeaker: CY._yq2._lastSpeaker, round: _rd, noJishi: CY._yq2.record === 'secret' }); } catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-chaoyi-keju');}catch(_){}}
       }
@@ -490,7 +491,7 @@ function _yq2_decide(mode) {
       : (mode === 'reject') ? '御前·驳否'
       : (mode === 'defer') ? '御前·留待再议'
       : ('御前·圣裁：' + String(customText || line).slice(0, 40));
-    _cy_jishiAdd('yuqian', CY._yq2.topic, '皇帝', '决：' + line, { final: true, secret: false, outcome: _yqOutcome });
+    _cy_jishiAdd('yuqian', CY._yq2.topic, ((typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝'), '决：' + line, { final: true, secret: false, outcome: _yqOutcome });
   } else {
     // 不录：单独存 GM._secretMeetings
     if (!GM._secretMeetings) GM._secretMeetings = [];
@@ -509,7 +510,7 @@ function _yq2_decide(mode) {
     if (_isSecretAction) {
       if (!GM.activeSchemes) GM.activeSchemes = [];
       GM.activeSchemes.push({
-        schemer: (P.playerInfo && P.playerInfo.characterName) || '皇帝',
+        schemer: (P.playerInfo && P.playerInfo.characterName) || '君上',
         target: '',
         plan: '【御前密议决】' + CY._yq2.topic + '——' + decisionLine,
         progress: '酝酿中',
@@ -653,9 +654,10 @@ function _yq2_globalFooter() {
 // 渲染后 DOM 重排（保留全部 id/handler）+ scoped CSS（styles.css #chaoyi-modal.cy-mode-yuqian）
 function _yq2_makeDiv(html) { var d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild || d; }
 
-// 皇帝气泡（右对齐·朱金·朕印·对齐预览 msg.emp）
+// 君主气泡（右对齐·朱金·朕印·对齐预览 msg.emp）
 function _yq2_emp(text) {
-  var d = addCYBubble('皇帝', text, false);
+  var _empName = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝';
+  var d = addCYBubble(_empName, text, false);
   if (d) {
     d.classList.add('yq-emp');
     var av = d.firstElementChild;

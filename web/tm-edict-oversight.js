@@ -86,7 +86,8 @@
     if (Array.isArray(p1.personnel_changes || p1.personnelChanges)) { var pc = p1.personnel_changes || p1.personnelChanges; if (pc.length) ev += '人事：' + pc.slice(0, 10).map(function (p) { return (p.name || p.char || '?') + (p.action || p.change || ''); }).join('；') + '\n'; }
     if (!ev && opts && opts.evidence) ev = String(opts.evidence).slice(0, 1200);  // agent 模式无 subcall1·用本回合推演实绩(史记/守护写流水)作执行证据(LLM 模式有 p1·此回落不触发·零影响)
 
-    var sys = '你是御前督查·代陛下核查诏令的**跨回合执行**。不只看本回合新诏·更要盯**往回合下达、仍在执行中的旧诏**是否在推进、还是被悄悄架空/拖延。'
+    var _ovSov = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '陛下';
+    var sys = '你是御前督查·代' + _ovSov + '核查诏令的**跨回合执行**。不只看本回合新诏·更要盯**往回合下达、仍在执行中的旧诏**是否在推进、还是被悄悄架空/拖延。'
       + '据「结构化势力态」(势力强度/对君关系/贪腐)判断真实摩擦·而非只凭叙事。诚实·政令本就有阻力·"颁布≠见效"。仅返回 JSON。';
     var u = '【回合】T' + turn + '\n\n【在办诏令(含旧诏·按 oid 列)】\n';
     active.forEach(function (a) {

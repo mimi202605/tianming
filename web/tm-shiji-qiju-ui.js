@@ -288,6 +288,7 @@ var _qijuPage=0,_qijuKw='',_qijuCat='all',_qijuPageSize=15,_qijuAnnotOnly=false,
 /** 统一获取起居注条目的显示文本和类别 */
 function _qijuNormalize(r) {
   var text = '', cat = r.category || '';
+  var src = r.source || '';
   // schema1: 回合结算 {edicts, xinglu, memorials, edictsSource?}
   if (r.edicts) {
     var parts = [];
@@ -319,8 +320,29 @@ function _qijuNormalize(r) {
       else if (text.indexOf('\u3010\u5165\u4EAC') >= 0 || text.indexOf('\u4EFB\u547D') >= 0 || text.indexOf('\u7F62\u514D') >= 0) cat = '\u4EBA\u4E8B';
       else cat = '\u5176\u4ED6';
     }
+    // 君主 AI 颁旨类条目：从内容前缀反推 source（兜底，老存档无 source 字段时）
+    if (!src && text.indexOf('\u3010\u541B\u4E3B AI') >= 0) src = 'sovereign-ai';
   }
-  return { text: text || '(无内容)', cat: cat || '\u5176\u4ED6' };
+  return { text: text || '(\u65E0\u5185\u5BB9)', cat: cat || '\u5176\u4ED6', source: src };
+}
+
+/** Task 31·来源→CSS 类（穿越模式下标识决策主体） */
+function _qijuSourceClass(src) {
+  if (!src) return '';
+  if (src === 'player-memorial' || src === 'sovereign-player' || src === 'player') return 'src-player';
+  if (src === 'sovereign-ai' || src === 'fallback') return 'src-sovereign';
+  if (src === 'npc') return 'src-npc';
+  return '';
+}
+/** Task 31·来源→显示标签 */
+function _qijuSourceLabel(src) {
+  if (src === 'player-memorial') return '\u73A9\u5BB6\u00B7\u4E0A\u594F';
+  if (src === 'sovereign-player') return '\u73A9\u5BB6\u00B7\u541B\u4E3B';
+  if (src === 'player') return '\u73A9\u5BB6';
+  if (src === 'sovereign-ai') return '\u541B\u4E3BAI';
+  if (src === 'fallback') return '\u541B\u4E3BAI\u00B7\u515C\u5E95';
+  if (src === 'npc') return 'NPC';
+  return '';
 }
 
 /** 类别→CSS 类 */
@@ -377,7 +399,7 @@ function renderQiju(){
   // 统一化
   var normalized = all.map(function(r) {
     var n = _qijuNormalize(r);
-    return { raw: r, text: n.text, cat: n.cat, turn: r.turn||0, date: r.time || r.date || (typeof getTSText==='function'?getTSText(r.turn):'T'+(r.turn||'?')), annotation: r._annotation || '' };
+    return { raw: r, text: n.text, cat: n.cat, source: n.source, turn: r.turn||0, date: r.time || r.date || (typeof getTSText==='function'?getTSText(r.turn):'T'+(r.turn||'?')), annotation: r._annotation || '' };
   });
 
   // 全量统计
@@ -476,6 +498,10 @@ function renderQiju(){
         h += '<div class="qj-rec ' + _cls + '">';
         h += '<div class="qj-rec-hdr">';
         h += '<span class="qj-cat-chip">' + escHtml(n.cat) + '</span>';
+        // Task 31·决策来源 chip（穿越模式下标识玩家/君主AI/NPC）
+        var _srcCls = _qijuSourceClass(n.source);
+        var _srcLbl = _qijuSourceLabel(n.source);
+        if (_srcCls && _srcLbl) h += '<span class="qj-src-chip ' + _srcCls + '">' + escHtml(_srcLbl) + '</span>';
         if (n.date) h += '<span class="qj-rec-time">' + escHtml(n.date) + '</span>';
         h += '<div class="qj-rec-actions">';
         h += '<button class="qj-rec-btn annot" onclick="_qijuAnnotate(' + _ridx + ')">\u5FA1 \u6279</button>';
@@ -559,9 +585,13 @@ function _qijuZoom(idx) {
   var n = _qijuNormalize(r);
   var dt = r.time || r.date || (typeof getTSText==='function'?getTSText(r.turn):'T'+(r.turn||'?'));
   var _cls = _qijuCatClass(n.cat);
+  // Task 31·展阅弹窗显示决策来源
+  var _srcCls = _qijuSourceClass(n.source);
+  var _srcLbl = _qijuSourceLabel(n.source);
+  var _srcChipHtml = (_srcCls && _srcLbl) ? '<span class="qj-src-chip ' + _srcCls + '" style="margin-left:0.6rem;">' + escHtml(_srcLbl) + '</span>' : '';
   var html = '<div class="modal-bg show" id="_qijuZoomModal" onclick="if(event.target===this)this.remove()">';
   html += '<div class="modal-box" style="max-width:640px;">';
-  html += '<h3 style="color:var(--gold-300);margin:0 0 0.4rem;letter-spacing:0.12em;">\u3010' + escHtml(n.cat) + '\u3011\u7B2C' + (r.turn||'?') + '\u56DE\u5408</h3>';
+  html += '<h3 style="color:var(--gold-300);margin:0 0 0.4rem;letter-spacing:0.12em;">\u3010' + escHtml(n.cat) + '\u3011\u7B2C' + (r.turn||'?') + '\u56DE\u5408' + _srcChipHtml + '</h3>';
   html += '<div style="font-size:0.82rem;color:#d4c9b0;font-style:italic;letter-spacing:0.08em;margin-bottom:0.8rem;">' + escHtml(dt) + '</div>';
   html += '<div class="qj-rec ' + _cls + '" style="padding:10px 14px;">';
   html += '<div class="qj-rec-text" style="font-size:14.5px;line-height:2;">' + _qijuHighlight(n.text) + '</div>';
