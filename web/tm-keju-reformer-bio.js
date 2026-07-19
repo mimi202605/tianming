@@ -151,17 +151,39 @@
     return !!(c && c.alive !== false && !c.dead);
   }
 
-  // 条2·剔除正文中对传主的明显书卒宣称句（按中文句读切分·命中书卒标记的整句剔除+console 留痕）
+  // 条2/条3·剔除正文中"对传主"的书卒宣称句·句级主语判定(不误删他人卒句·如「先父卒于万历年间」合法家世叙述须保留)
   var _KJP_L12_DEATH_RE = /(卒于|卒年|病逝|病故|薨于|薨逝|殁于|殁年|死于|逝世|去世|身故|身死|溘逝|寿终|享年|殉难|遇害)/;
+  // 条3·亲属/师承称谓·命中则该句死亡主语非传主·整句保留
+  var _KJP_L12_KIN_RE = /(先父|先母|先考|先妣|亡父|亡母|亡兄|亡弟|亡妻|亡子|先兄|先祖|先师|恩师|其父|其母|其兄|其师|祖父|祖母|外祖|父卒|母卒|尊翁|太夫人)/;
+  // 条3·死亡词前紧邻 2-4 汉字的人名候选(不含享年·其常无名紧邻)
+  var _KJP_L12_NAME_BEFORE_RE = /([一-龥]{2,4})(?:卒于|卒年|病逝|病故|薨于|薨逝|殁于|殁年|死于|逝世|去世|身故|身死|溘逝|寿终|殉难|遇害)/g;
+  // 条3·死亡词前的虚词/时间词·非人名主语
+  var _KJP_L12_STOP_RE = /(后|又|遂|乃|亦|竟|终|以|而|其|故|因|时|旋|寻|未|已|将|复|遽|甫|即|随|皆|俱|并|岁|年间|之后|不幸|晚年|暮年|次年|翌年)/;
+  function _kjpL12OtherNameBeforeDeath(sentence, name) {
+    var re = new RegExp(_KJP_L12_NAME_BEFORE_RE.source, 'g'), m;
+    while ((m = re.exec(sentence)) !== null) {
+      var pre = m[1];
+      if (_KJP_L12_STOP_RE.test(pre)) continue;                                    // 前接虚词·非人名主语
+      if (name && (pre.indexOf(name) >= 0 || name.indexOf(pre) >= 0)) continue;    // 是传主名·非他人
+      return true;                                                                 // 他人名紧邻死亡词→他人之死·保留
+    }
+    return false;
+  }
   function _kjpL12ScrubDeathClaims(text, name) {
     var t = String(text == null ? '' : text);
     if (!_KJP_L12_DEATH_RE.test(t)) return t;
     var parts = t.split('。'), kept = [], removed = 0;
     for (var i = 0; i < parts.length; i++) {
-      if (parts[i] && _KJP_L12_DEATH_RE.test(parts[i])) { removed++; continue; }
-      kept.push(parts[i]);
+      var seg = parts[i];
+      if (seg && _KJP_L12_DEATH_RE.test(seg)) {
+        // 保留：亲属/师承称谓·或他人名紧邻死亡词(主语非传主)
+        if (_KJP_L12_KIN_RE.test(seg) || _kjpL12OtherNameBeforeDeath(seg, name)) { kept.push(seg); continue; }
+        // 删除：主语是传主(句含传主名·或无其他主语默认传主叙述)
+        removed++; continue;
+      }
+      kept.push(seg);
     }
-    if (removed > 0) { try { console.warn('[L12·bio·闸] 传主本局在世·剔除书卒句 ' + removed + ' 处·' + name); } catch (_) {} }
+    if (removed > 0) { try { console.warn('[L12·bio·闸] 传主本局在世·剔除传主书卒句 ' + removed + ' 处·' + name); } catch (_) {} }
     var out = kept.join('。').trim();
     return out || ('（' + String(name || '') + '·本局在世·后世评未定）');
   }

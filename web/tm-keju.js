@@ -1003,13 +1003,20 @@ async function pickHistoricalCandidates(exam) {
   });
   var existingOfficials = Object.keys(existingOfficialsSet);
   // \u67611\u00B7\u672C\u5C40\u5DF2\u6545\u8005\u540D\u5355\uFF08\u4E0D\u53D7\u5B98\u804C/\u5728\u4E16 gate\u00B7\u4EFB\u4F55\u672C\u5C40\u6B7B\u8005\u4E25\u7981\u4F5C\u4E3A\u8003\u751F\u590D\u6D3B\uFF09\u00B7\u5E76\u5165 prompt \u4E25\u7981\u8FD4\u56DE\u540D\u5355
-  var _deadSet = {};
-  (GM.chars || []).forEach(function(c){ if (c && c.name && (c.alive === false || c.dead)) _deadSet[c.name] = true; });
-  var deadNames = Object.keys(_deadSet);
+  // 条1·本局已故者多字段异名键集(name/displayName/字zi/号hao/alias/aliases/courtesyName)·两侧空白归一(剔全部内部空白)·防 displayName 与内插空格穿透后置闸
+  function _kjNormNameKey(s){ return String(s == null ? '' : s).replace(/\s+/g, ''); }
+  var _deadKeys = {};   // 归一异名 → true·后置硬闸比对
+  var deadNames = [];   // 可读死者名·条2·独立进 prompt 排除段(不与官员名单抢 slice 额度)
+  (GM.chars || []).forEach(function(c){
+    if (!c || !(c.alive === false || c.dead)) return;
+    var _readable = c.displayName || c.name;
+    if (_readable && deadNames.indexOf(_readable) < 0) deadNames.push(_readable);
+    [c.name, c.displayName, c.zi, c.hao, c.alias, c.courtesyName].forEach(function(v){ var k = _kjNormNameKey(v); if (k) _deadKeys[k] = true; });
+    if (Array.isArray(c.aliases)) c.aliases.forEach(function(v){ var k = _kjNormNameKey(v); if (k) _deadKeys[k] = true; });
+  });
   var usedNames = P.keju._historicalFiguresUsed.concat(
     (GM.chars || []).filter(function(c){ return c && c.isHistorical && c.source === '\u79D1\u4E3E'; }).map(function(c){ return c.name; }),
-    existingOfficials,
-    deadNames
+    existingOfficials
   );
 
   var prompt = '\u4F60\u662F\u5386\u53F2\u8003\u636E AI\u3002\u4E3A' + (P.dynasty || P.era || '') + '\u671D ' + year +
@@ -1028,6 +1035,8 @@ async function pickHistoricalCandidates(exam) {
     '}]\n\n\u53EA\u8F93\u51FA JSON\u3002';
 
   try {
+    // 条2·本局死者独立成段并入 prompt 排除(不与官员名单抢 slice 额度·保证死者恒在排除段)
+    if (deadNames.length) prompt += '\n\u3010\u786C\u89C4\u5219\u00B7\u52FF\u590D\u6D3B\u3011\u672C\u5C40\u5DF2\u6545\u8005\u4E25\u7981\u4F5C\u4E3A\u8003\u751F\uFF08\u4E0B\u5217\u672C\u5C40\u5DF2\u6B7B\uFF09\uFF1A' + deadNames.slice(0, 30).join('\u3001') + (deadNames.length > 30 ? '\u7B49' : '');
     var _tokBudget = (P.conf && P.conf.maxOutputTokens) || (P.conf && P.conf._detectedMaxOutput) || 4000;
     // 时空约束·不适用：此口为史实检索器·契约要求返回真实名臣+史料原文摘引且只取应考(在世)候选·注入平行时空约束(别信史实记忆)会与其契约直接冲突并诱发虚构·targeted书卒/时间线既成之害在此口不成立·故不注入
     var raw = await callAISmart(prompt, _tokBudget, { maxRetries: 2 });
@@ -1043,11 +1052,20 @@ async function pickHistoricalCandidates(exam) {
       if (!c || !c.name) return false;
       if (usedNames.indexOf(c.name) >= 0) return false;
       // 条1·硬闸·本局已故者名单命中一律剔除（不查官职·直查生死·防 AI 复活本局死者）
-      if (_deadSet[c.name]) { try { console.warn('[科举·滤] 丢弃本局已故候选(名单命中):', c.name); } catch(_){} return false; }
+      if (_deadKeys[_kjNormNameKey(c.name)]) { try { console.warn('[科举·滤] 丢弃本局已故候选(名单命中):', c.name); } catch(_){} return false; }
       // 再次过滤：若此名已在 GM.chars 且有官职·强制剔除（AI 硬性违规）
       var _existCh = (typeof findCharByName === 'function') ? findCharByName(c.name) : null;
       // 条1·硬闸·GM 在册且已死者(alive===false||dead)一律剔除（防名单未命中的别名/异写死者复活）
       if (_existCh && (_existCh.alive === false || _existCh.dead)) { try { console.warn('[科举·滤] 丢弃本局已故候选(GM在册已死):', c.name); } catch(_){} return false; }
+      // 条4·off-GM 史实候选后置校验时代窗(strict/light 模式)·防 AI 塞窗外年份/跨朝代人物(era-gate 不只写在提示词)
+      if (!_existCh && window != null) {
+        if (typeof c.historicalYearMet === 'number' && (c.historicalYearMet < year - window || c.historicalYearMet > year + window)) {
+          try { console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u7A97\u5916\u53F2\u5B9E\u5019\u9009:', c.name, c.historicalYearMet, '[' + (year - window) + ',' + (year + window) + ']'); } catch(_){} return false;
+        }
+        if (c.nativeEra && (P.dynasty || '') && (P.dynasty || '').indexOf(c.nativeEra) < 0) {
+          try { console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u8DE8\u671D\u4EE3\u53F2\u5B9E\u5019\u9009:', c.name, c.nativeEra); } catch(_){} return false;
+        }
+      }
       if (_existCh && (_existCh.officialTitle || _existCh.title || _existCh.spouse || _existCh.isPlayer)) {
         console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u5DF2\u4EFB\u5B98\u5019\u9009:', c.name, _existCh.officialTitle||_existCh.title);
         return false;

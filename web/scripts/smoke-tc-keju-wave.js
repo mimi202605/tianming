@@ -160,32 +160,67 @@ function sliceC() {
   console.log('  [sliceC] ' + (PASS - start) + ' 断言通过（32 口计数对账）');
 }
 
-// ── Slice D：条1 行为锁·VM 实调 pickHistoricalCandidates ──
+// ── Slice D：条1(异名穿透)+条2(死者段独立)+条4(era-gate 后置) 行为锁·VM 实调 pickHistoricalCandidates ──
 async function sliceD() {
   const start = PASS;
   const src = readSrc('tm-keju.js');
   const fnSrc = extractTopFn(src, 'async function pickHistoricalCandidates(exam) {');
-  const ctx = baseCtx();
-  let capturedPrompt = '';
-  ctx.P = { keju: { historicalFigurePolicy: { enableHistorical: true }, _historicalFiguresUsed: [] }, ai: { key: 'k' }, conf: { gameMode: 'yanyi' }, dynasty: '明', era: '明' };
-  ctx.GM = { year: 1620, chars: [ { name: '死学者', alive: false, dead: true }, { name: '亡臣', alive: false } ] };
-  ctx._kejuHistoricalWindow = () => 50;
-  ctx.findCharByName = (n) => ctx.GM.chars.filter(c => c && c.name === n)[0] || null;
-  ctx.extractJSON = (r) => { try { return JSON.parse(r); } catch (_) { return null; } };
-  ctx.callAISmart = async (p) => { capturedPrompt = p; return JSON.stringify([
-    { name: '死学者', age: 30, class: '寒门', probability: 1 },   // 本局已死(dead)·必剔
-    { name: '亡臣',   age: 32, class: '士族', probability: 1 },   // 本局已死(alive:false)·必剔
-    { name: '活名士', age: 28, class: '寒门', probability: 1 }    // 不在 GM 册·应留
-  ]); };
-  vm.createContext(ctx);
-  vm.runInContext(fnSrc + '\nthis.__pick = pickHistoricalCandidates;', ctx, { filename: 'extracted-pick.js' });
-  const res = await ctx.__pick({});
-  const names = (res || []).map(c => c.name);
-  assert(names.indexOf('死学者') < 0, '条1·本局死者(dead)绝不出现在候选（实=' + names.join('、') + '）');
-  assert(names.indexOf('亡臣') < 0, '条1·本局死者(alive:false)绝不出现在候选（实=' + names.join('、') + '）');
-  assert(names.indexOf('活名士') >= 0, '条1·不在册的应考名士应保留（实=' + names.join('、') + '）');
-  assert(capturedPrompt.indexOf('死学者') >= 0 && capturedPrompt.indexOf('亡臣') >= 0, '条1·本局死者名单须并入 prompt 严禁返回名单');
-  console.log('  [sliceD] ' + (PASS - start) + ' 断言通过（条1·死者绝不复活+prompt排除）');
+  function runPick(cfg) {
+    const ctx = baseCtx();
+    let cap = '';
+    ctx.P = { keju: { historicalFigurePolicy: { enableHistorical: true }, _historicalFiguresUsed: [] }, ai: { key: 'k' }, conf: { gameMode: cfg.mode || 'yanyi' }, dynasty: cfg.dynasty || '明', era: cfg.dynasty || '明' };
+    ctx.GM = { year: cfg.year || 1620, chars: cfg.chars || [] };
+    ctx._kejuHistoricalWindow = () => (cfg.window === undefined ? null : cfg.window);
+    ctx.findCharByName = (n) => ctx.GM.chars.filter(c => c && c.name === n)[0] || null;   // 精确名·模拟 displayName/内插空格不被 findCharByName 解析
+    ctx.extractJSON = (r) => { try { return JSON.parse(r); } catch (_) { return null; } };
+    ctx.callAISmart = async (p) => { cap = p; return JSON.stringify(cfg.returns); };
+    vm.createContext(ctx);
+    vm.runInContext(fnSrc + '\nthis.__pick = pickHistoricalCandidates;', ctx, { filename: 'extracted-pick.js' });
+    return ctx.__pick({}).then(r => ({ names: (r || []).map(c => c.name), prompt: cap }));
+  }
+  // 基线：GM 明确死者(dead / alive:false)绝不入选·非死者留
+  let r = await runPick({ chars: [{ name: '死学者', alive: false, dead: true }, { name: '亡臣', alive: false }], returns: [
+    { name: '死学者', age: 30, class: '寒门', probability: 1 },
+    { name: '亡臣', age: 32, class: '士族', probability: 1 },
+    { name: '活名士', age: 28, class: '寒门', probability: 1 } ] });
+  assert(r.names.indexOf('死学者') < 0 && r.names.indexOf('亡臣') < 0, '条1·GM 明确死者绝不入选（实=' + r.names.join('、') + '）');
+  assert(r.names.indexOf('活名士') >= 0, '条1·不在册应考名士应留');
+  // 场景1·displayName 变体穿透（findCharByName 按 name 不解析 displayName·靠归一异名键集拦）
+  r = await runPick({ chars: [{ name: '王安石', displayName: '王介甫（显示名）', alive: false, dead: true }], returns: [
+    { name: '王介甫（显示名）', age: 30, class: '寒门', probability: 1 },
+    { name: '活名士', age: 28, class: '寒门', probability: 1 } ] });
+  assert(r.names.indexOf('王介甫（显示名）') < 0, '条1·死者 displayName 变体须被后置闸剔除（实=' + r.names.join('、') + '）');
+  assert(r.names.indexOf('活名士') >= 0, '条1·displayName 场景非死者应留');
+  // 场景2·内插空格（GM 侧脏空格「李 贽」·候选侧有/无空格两变体·两侧归一后皆命中）
+  r = await runPick({ chars: [{ name: '李 贽', alive: false, dead: true }], returns: [
+    { name: '李贽', age: 40, class: '寒门', probability: 1 },
+    { name: '李 贽', age: 40, class: '寒门', probability: 1 },
+    { name: '活名士', age: 28, class: '寒门', probability: 1 } ] });
+  assert(r.names.indexOf('李贽') < 0 && r.names.indexOf('李 贽') < 0, '条1·死者名内插空格·两侧归一后有/无空格变体皆剔（实=' + r.names.join('、') + '）');
+  assert(r.names.indexOf('活名士') >= 0, '条1·空格场景非死者应留');
+  // 场景3·80 在世官员 + 1 死者·死者恒在 prompt 排除段（不被官员名单 slice(0,80) 挤出）
+  const many = [];
+  for (let i = 0; i < 80; i++) many.push({ name: '官员' + i, alive: true, officialTitle: '尚书' });
+  many.push({ name: '亡卿', alive: false, dead: true });
+  r = await runPick({ chars: many, returns: [{ name: '活名士', age: 28, class: '寒门', probability: 1 }] });
+  assert(r.prompt.indexOf('亡卿') >= 0, '条2·80 官员+1 死者时·死者恒在 prompt 排除段（不被官员名单挤出）');
+  // 场景4·条4·窗外年份剔除（strict·year1620·window100·[1520,1720]）
+  r = await runPick({ mode: 'strict_hist', window: 100, year: 1620, dynasty: '明', chars: [], returns: [
+    { name: '窗外人', age: 30, class: '寒门', historicalYearMet: 1140, nativeEra: '宋', probability: 1 },
+    { name: '窗内人', age: 30, class: '寒门', historicalYearMet: 1600, nativeEra: '明', probability: 1 } ] });
+  assert(r.names.indexOf('窗外人') < 0, '条4·窗外年份(1140∉[1520,1720])史实候选须剔除（实=' + r.names.join('、') + '）');
+  assert(r.names.indexOf('窗内人') >= 0, '条4·窗内年份史实候选应留');
+  // 场景5·条4·跨朝代剔除（strict·明·nativeEra宋）
+  r = await runPick({ mode: 'strict_hist', window: 100, year: 1620, dynasty: '明', chars: [], returns: [
+    { name: '跨代人', age: 30, class: '寒门', historicalYearMet: 1600, nativeEra: '宋', probability: 1 },
+    { name: '本代人', age: 30, class: '寒门', historicalYearMet: 1600, nativeEra: '明', probability: 1 } ] });
+  assert(r.names.indexOf('跨代人') < 0, '条4·strict 模式跨朝代(nativeEra宋≠明)史实候选须剔除（实=' + r.names.join('、') + '）');
+  assert(r.names.indexOf('本代人') >= 0, '条4·本朝候选应留');
+  // 场景6·演义模式(window=null)·不做时代硬剔（跨代人物保留·仅标 anomaly）
+  r = await runPick({ mode: 'yanyi', year: 1620, dynasty: '明', chars: [], returns: [
+    { name: '演义跨代', age: 30, class: '寒门', historicalYearMet: 1140, nativeEra: '宋', probability: 1 } ] });
+  assert(r.names.indexOf('演义跨代') >= 0, '条4·演义模式(window=null)不做时代硬剔·跨代人物保留');
+  console.log('  [sliceD] ' + (PASS - start) + ' 断言通过（条1异名穿透+条2死者段+条4 era-gate）');
 }
 
 // ── Slice E：条2 行为锁·VM 实调 _kjpL12LlmReformerBio ──
@@ -223,7 +258,13 @@ async function sliceE() {
   // 直测句剔除器
   const scrub = alive.ctx.window._kjpL12ScrubDeathClaims('甲事。卒于1086年。乙事。', '某');
   assert(scrub.indexOf('卒于1086年') < 0 && scrub.indexOf('甲事') >= 0 && scrub.indexOf('乙事') >= 0, '条2·_kjpL12ScrubDeathClaims 应只剔书卒句、留其余');
-  console.log('  [sliceE] ' + (PASS - start) + ' 断言通过（条2·deathYear闸+书卒剔除+sentinel真达）');
+  // 条3·句级主语判定（不误删他人卒句）
+  const scrub3 = alive.ctx.window._kjpL12ScrubDeathClaims;
+  const kinSample = '改革者少孤。先父卒于万历年间，家贫力学。后行新法。';
+  assert(scrub3(kinSample, '改革者') === kinSample, '条3·「先父卒于…」家世句须完整保留（Codex 样例·不误删他人卒句）');
+  assert(scrub3('王介甫行新法。卒于元祐元年·葬钟山。后世论其功过。', '王安石').indexOf('卒于元祐元年') < 0, '条3·传主自身书卒句(无主语默认传主)须删');
+  assert(scrub3('其法仿商鞅。张居正卒于万历十年。安石行之。', '王安石').indexOf('张居正卒于万历十年') >= 0, '条3·他人名(张居正)紧邻死亡词·先例句须保留');
+  console.log('  [sliceE] ' + (PASS - start) + ' 断言通过（条2·deathYear闸+书卒剔除+sentinel真达 / 条3·句级主语判定）');
 }
 
 (async function main() {
