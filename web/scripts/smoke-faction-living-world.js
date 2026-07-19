@@ -186,12 +186,64 @@ function onJoinWarTest() {
   assert(ctx.CasusBelliSystem._calls.some(function(c){ return c.attacker === '甲势力' && c.defender === '乙势力'; }), 'join_war routes through CasusBelliSystem too');
 }
 
+// ─────────────── Slice 2·目标生命周期 ───────────────
+function goalStrat(fac) {
+  return { name: fac, aiStrategy: { claims: ['已占省', '未占省'], threats: ['亡势力', '活势力'], alliances: [], objectives: [], cooldowns: {} } };
+}
+function goalGM(ctx, facObj, opts) {
+  opts = opts || {};
+  ctx.P = { playerInfo: { factionName: '玩家朝廷' }, conf: { npcAiPrecision: true }, ai: { key: 'fake' } };
+  ctx.GM = {
+    turn: 9, facs: [facObj, { name: '活势力' }, { name: '玩家朝廷', isPlayer: true }],
+    _facIndex: { '甲势力': { chars: [], parties: {}, metrics: {} } },
+    _provinceToFaction: { '已占省': '甲势力' }, activeWars: []
+  };
+  if (opts.livingWorld) ctx.GM._factionLivingWorld = true;
+}
+
+function goalLifecycleOffTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  const fac = goalStrat('甲势力');
+  goalGM(ctx, fac);   // OFF
+  assert(ctx.agentFlagOn('factionGoalStackEnabled') === false, 'OFF: factionGoalStackEnabled not brought on');
+  ctx.TM.FactionActionEngine.ensureStrategy(fac, { rationale: 'x' }, []);
+  assert(fac.aiStrategy.claims.length === 2 && fac.aiStrategy.threats.length === 2, 'OFF: strategy arrays are NOT pruned (zero behavior change)');
+}
+
+function goalLifecycleOnTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  const fac = goalStrat('甲势力');
+  goalGM(ctx, fac, { livingWorld: true });   // ON
+  assert(ctx.agentFlagOn('factionGoalStackEnabled') === true, 'ON: master brings on factionGoalStackEnabled');
+  ctx.TM.FactionActionEngine.ensureStrategy(fac, { rationale: 'x' }, []);
+  assert(fac.aiStrategy.claims.indexOf('已占省') < 0, 'ON: fulfilled claim (province now owned by self) is pruned');
+  assert(fac.aiStrategy.claims.indexOf('未占省') >= 0, 'ON: still-open claim retained');
+  assert(fac.aiStrategy.threats.indexOf('亡势力') < 0, 'ON: dead threat (not in GM.facs) is pruned');
+  assert(fac.aiStrategy.threats.indexOf('活势力') >= 0, 'ON: live threat retained');
+
+  // 目标栈超期未推进 → abandoned(降权)·经 pruneGoals
+  const gs = ctx.TM.FactionGoalStack;
+  gs.addGoal(fac, { desc: '陈旧目标', horizon: 'short' }, 1);   // createdTurn 1·lastProgressTurn 1
+  ctx.GM.turn = 20;   // >12 回合无进展
+  ctx.TM.FactionActionEngine.ensureStrategy(fac, { rationale: 'y' }, []);   // 触发 pruneGoals
+  const stale = (fac.aiStrategy.goals || []).find(function(g){ return g.desc === '陈旧目标'; });
+  assert(stale && stale.status === 'abandoned', 'ON: stale goal (>12 turns no progress) is deprioritized to abandoned');
+
+  // 目标栈路径入 prompt（goalUpdates schema 出现）
+  const fld = ctx.TM.FactionNpcLlmDecision;
+  ctx.GM._facIndex['甲势力'] = { chars: [], parties: {}, metrics: {} };
+  const p = fld._buildPrompt(fac);
+  assert((p.system + p.user).indexOf('goalUpdates') >= 0, 'ON: goal-stack schema (goalUpdates) injected into decision prompt');
+}
+
 function main() {
   offZeroChangeTest();
   offOnDiffTest();
   onDeclareWarTest();
   onPlayerWarThresholdTest();
   onJoinWarTest();
+  goalLifecycleOffTest();
+  goalLifecycleOnTest();
   console.log('[smoke-faction-living-world] all pass · ' + PASS + ' assertions');
 }
 

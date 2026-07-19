@@ -941,6 +941,30 @@
     return s;
   }
 
+  // 【F2·Slice2】目标生命周期修剪·仅总闸 ON 时跑(OFF 时 ensureStrategyV2 行为不变=零回归)：
+  //   claims 已占(本势力现掌该地)→达成移除·threats 已亡(不在现存势力)/已结盟→失效移除·alliances 已亡→移除·
+  //   结构化目标栈 FactionGoalStack.pruneGoals(超期未推进→abandoned·降权)。
+  function _pruneStrategyLifecycle(fac, s, turn) {
+    var G = global.GM || {};
+    var facNames = {};
+    _arr(G.facs).forEach(function(f){ if (f && f.name) facNames[f.name] = true; });
+    var p2f = (G._provinceToFaction && typeof G._provinceToFaction === 'object') ? G._provinceToFaction : null;
+    var myName = fac && fac.name;
+    var pruned = { claims: 0, threats: 0, alliances: 0 };
+    if (Array.isArray(s.claims) && p2f && myName) {
+      s.claims = s.claims.filter(function(c){ var n = String(c || '').trim(); if (n && p2f[n] === myName) { pruned.claims++; return false; } return true; });
+    }
+    var allySet = {};
+    _arr(s.alliances).forEach(function(a){ allySet[String(a)] = true; });
+    if (Array.isArray(s.threats)) {
+      s.threats = s.threats.filter(function(t){ var n = String(t || '').trim(); if (n && (!facNames[n] || allySet[n])) { pruned.threats++; return false; } return true; });
+    }
+    if (Array.isArray(s.alliances)) {
+      s.alliances = s.alliances.filter(function(a){ var n = String(a || '').trim(); if (n && !facNames[n]) { pruned.alliances++; return false; } return true; });
+    }
+    try { if (global.TM && global.TM.FactionGoalStack && typeof global.TM.FactionGoalStack.pruneGoals === 'function') global.TM.FactionGoalStack.pruneGoals(fac, turn); } catch (_) {}
+    return pruned;
+  }
   function ensureStrategyV2(fac, decision, actions) {
     var s = ensureStrategy(fac, decision, actions);
     if (!s) return s;
@@ -1006,6 +1030,7 @@
       actionTypes: _arr(actions).map(function(a){ return a.type; }).slice(0, 12)
     };
     s.lastUpdatedTurn = turn;
+    if (_livingWorldOn()) { try { _pruneStrategyLifecycle(fac, s, turn); } catch (_) {} }   // F2·Slice2·目标生命周期修剪(仅总闸 ON)
     return s;
   }
 
@@ -1451,7 +1476,8 @@
     livingWorldOn: _livingWorldOn,
     setFactionLivingWorld: setFactionLivingWorld,
     _applyDeclareWar: _applyDeclareWar,
-    _applyJoinWar: _applyJoinWar
+    _applyJoinWar: _applyJoinWar,
+    _pruneStrategyLifecycle: _pruneStrategyLifecycle
   };
   if (typeof global !== 'undefined') { try { global._tmSetFactionLivingWorld = setFactionLivingWorld; } catch (e) {} }
 
