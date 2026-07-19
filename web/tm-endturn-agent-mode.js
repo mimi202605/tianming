@@ -119,6 +119,8 @@
     } catch (_fe) {}
     var changes = (Array.isArray(gm._turnReport) ? gm._turnReport : []).filter(function (e) { return e && e.type === 'change'; }).slice(0, 16).map(function (e) { return (e.path || '') + (e.reason ? '(' + _brief(e.reason, 24) + ')' : ''); });
     var sys = '你是史官兼审读官·审查本回合推演成文的质量。三审:① 因果合理(后果是否从玩家举措+局势自然推出·有无无源突变) ② 信史(有无时代错乱/杜撰人名/反历史常识) ③ 既定事实一致(有无让已故者行动、无视已发生之事)。严格但不吹毛求疵·仅返回 JSON。';
+    // 时空约束·史记质量审读·clauseOnly(防审读官据真实史实误判本局在世者为「反历史」而触发错误修订)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var u = '【本回合史记·时政记】\n' + String(szj).slice(0, 1400) + '\n'
       + (ch.shilu ? ('【实录】\n' + String(ch.shilu).slice(0, 600) + '\n') : '')
       + '\n【本回合关键改动】' + (changes.join('；') || '(无)') + '\n'
@@ -133,6 +135,8 @@
     if (!issues.length) return { narrative: narrative, pass: true };
     // 一轮定向修补:据 issues 重写史记(只改成文·不动状态/数值)
     var fixSys = '你是史官。据审读意见修订本回合史记·只修正被指出的问题(因果/信史/一致)·保持原有信息与文风·勿大改、勿新增杜撰。仅返回 JSON。';
+    // 时空约束·据审读修订史记正文·clauseOnly(改写玩家可见史记·防「修订」把本局在世者拉回史实卒/引后事)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { fixSys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var fixU = '【原时政记】\n' + String(szj).slice(0, 1600) + '\n\n【审读意见(逐条修正)】\n' + issues.slice(0, 6).map(function (i) { return '· [' + (i.dim || '') + '] ' + i.problem + ' → ' + (i.fix || '修正'); }).join('\n') + '\n\n返回 JSON:{"shizhengji":"修订后时政记","shilu":"修订后实录(无改动则照原)","zhengwen":"修订后政文(无改动则照原)"}';
     var fixRaw;
     try { _show('⟨执政⟩据审读修订史记…', 88); fixRaw = await root.callAIMessages([{ role: 'system', content: fixSys }, { role: 'user', content: fixU }], 2000, null, 'primary', { priority: 'background', timeoutMs: 45000, maxRetries: 1, id: 'agent_quality_fix' }); }
