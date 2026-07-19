@@ -33,7 +33,7 @@ function makeCtx() {
   vm.createContext(ctx);
   ['tm-time-utils.js', 'tm-ai-change-pathutils.js', 'tm-ai-change-army.js', 'tm-ai-change-narrative.js',
    'tm-ai-change-applier.js', 'tm-ai-change-applier-validators.js', 'tm-ai-change-applier-reconcile.js',
-   'tm-ai-apply-deaths.js', 'tm-endturn-apply-stages.js']
+   'tm-ai-apply-deaths.js', 'tm-endturn-apply-stages.js', 'tm-endturn-agent-write-tools.js']
     .forEach(f => { try { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }); } catch (_) {} });
   // C4·当前游戏年权威=calcDateFromTurn(真机读 P.time.year 真开局年+按 turn 推进)。此 stub 同款语义：有 P.time.year 则据其推进·否则 adYear=0(回落 GM.year)。
   ctx.calcDateFromTurn = function (t) {
@@ -256,9 +256,9 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
   {
     const ctx = makeCtx();
     ctx.GM = baseGM([{ name: '杨涟', position: '都御史', officialTitle: '都御史', alive: true, faction: '明朝廷', resources: {} }],
-      { _lastChangchaoDecisions: [{ action: 'adopt', title: '论杨涟结党植私之罪', dept: '都察院', extra: '着锦衣卫拿杨涟下诏狱' }] });
+      { _lastChangchaoDecisions: [{ action: 'adopt', title: '论杨涟结党植私之罪', dept: '都察院', extra: '着锦衣卫拿杨涟下诏狱' }], _lastChangchaoDecisionsTargetTurn: 5 });
     ctx.applyAITurnChanges({ personnel_changes: [{ name: '杨涟', change: '下狱究问' }] });
-    ok(!!findCh(ctx.GM, '杨涟')._imprisoned && hintCount(ctx.GM) === 0, 'issue3-pos 常朝裁决(_lastChangchaoDecisions)点名=有源→放行');
+    ok(!!findCh(ctx.GM, '杨涟')._imprisoned && hintCount(ctx.GM) === 0, 'issue3-pos 常朝裁决(_lastChangchaoDecisions·targetTurn===当前)点名=有源→放行');
   }
   // issue3-pos·_courtRecords(常朝/廷议统一快照)决议/转录点名→有源放行(char_updates 敏感字段)
   {
@@ -377,6 +377,64 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
     ctx.P = { playerInfo: { characterName: '孙传庭' }, adminHierarchy: {} };
     ctx.applyAITurnChanges({ appointments: [{ charName: '逆首某', action: 'dismiss', reason: '奉旨明正典刑' }] });
     ok(aliveOf(ctx.GM, '逆首某') === false, 'issue4-pos-B appointments『奉旨明正典刑』=active→照常落死(active 不入 bare 闸)');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  返工二轮(Codex复审)·四反例：agent裸病故被拦 / 旧裁决过期不自证 / 未来targetTurn不提前放行 / 廷议单数形状放行
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== 返工二轮·四反例 =====');
+  // 反例1·agent 语义写 dismiss_official 裸病故·无源→死亡收口闸拦(标记非 fail-open)+弱提示（真 AgentWriteTools 链）
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', officialTitle: '都御史', alive: true, faction: '明朝廷', resources: {} }]);
+    ctx.P = { playerInfo: {}, adminHierarchy: {} };
+    const WT = ctx.TM.Endturn && ctx.TM.Endturn.AgentWriteTools;
+    WT.handle('dismiss_official', { name: '杨涟', reason: '病故' }, { GM: ctx.GM });
+    ok(aliveOf(ctx.GM, '杨涟') === true, '反例1 agent dismiss_official 裸病故无源→死亡收口闸拦(第3参标记非 fail-open)');
+    ok(hintNames(ctx.GM).indexOf('杨涟') >= 0, '反例1 拒写降级→弱自查纸条留痕');
+  }
+  // 反例1-pos·agent dismiss 病故+玩家诏令点名→照常落死(不误拦)
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', officialTitle: '都御史', alive: true, faction: '明朝廷', resources: {} }],
+      { _playerDirectives: [{ id: 'd1', content: '究治杨涟诸罪，勿使漏网' }] });
+    ctx.P = { playerInfo: {}, adminHierarchy: {} };
+    ctx.TM.Endturn.AgentWriteTools.handle('dismiss_official', { name: '杨涟', reason: '病故' }, { GM: ctx.GM });
+    ok(aliveOf(ctx.GM, '杨涟') === false, '反例1-pos agent dismiss 病故+玩家诏令=有源→照常落死(不误拦)');
+  }
+  // 反例2·旧裁决(targetTurn 过期)不自证：GM.turn=6·_lastChangchaoDecisions 目标回合=5→不算本回合来源→无源被拦
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', stance: '清流', resources: {} }],
+      { turn: 6, _lastChangchaoDecisions: [{ title: '论杨涟罪', extra: '着夺杨涟清望' }], _lastChangchaoDecisionsTargetTurn: 5 });
+    ctx.applyAITurnChanges({ char_updates: [{ name: '杨涟', updates: { stance: '获罪' } }] });
+    ok(findCh(ctx.GM, '杨涟').stance === '清流', '反例2 旧裁决(targetTurn=5·当前=6 过期)不自证→无源敏感字段被拦(原值不变)');
+    ok(hintNames(ctx.GM).indexOf('杨涟') >= 0, '反例2 拒写降级→弱自查纸条留痕');
+  }
+  // 反例3·未来 targetTurn 不提前放行：GM.turn=5·post-turn court record turn=5/targetTurn=6→不算第5回合来源→无源被拦
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', stance: '清流', resources: {} }],
+      { turn: 5, _courtRecords: [{ turn: 5, targetTurn: 6, phase: 'post-turn', decisions: [{ title: '杨涟一案', detail: '拟罢黜杨涟' }] }] });
+    ctx.applyAITurnChanges({ char_updates: [{ name: '杨涟', updates: { stance: '获罪' } }] });
+    ok(findCh(ctx.GM, '杨涟').stance === '清流', '反例3 post-turn 裁决(turn=5/targetTurn=6)在第5回合不提前放行→无源被拦');
+    ok(hintNames(ctx.GM).indexOf('杨涟') >= 0, '反例3 拒写降级→弱自查纸条留痕');
+  }
+  // 反例3-pos·同 court record 到第6回合(targetTurn===当前)→放行
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', stance: '清流', resources: {} }],
+      { turn: 6, _courtRecords: [{ turn: 5, targetTurn: 6, phase: 'post-turn', decisions: [{ title: '杨涟一案', detail: '拟罢黜杨涟' }] }] });
+    ctx.applyAITurnChanges({ char_updates: [{ name: '杨涟', updates: { stance: '获罪' } }] });
+    ok(findCh(ctx.GM, '杨涟').stance === '获罪' && hintCount(ctx.GM) === 0, '反例3-pos post-turn 裁决到目标回合(=6)→有源放行');
+  }
+  // 反例4·真实廷议单数形状(topic+decision·非 decisions[])放行：tm-chaoyi-tinyi/yuqian 落点
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', fame: 80, resources: {} }],
+      { turn: 5, _courtRecords: [{ turn: 5, targetTurn: 5, phase: 'in-turn', mode: 'tinyi', topic: '杨涟结党案', decision: { mode: 'adopt', direction: '罢黜杨涟以肃朝纲', custom: '' } }] });
+    ctx.applyAITurnChanges({ char_updates: [{ name: '杨涟', updates: { fame: 10 } }] });
+    ok(findCh(ctx.GM, '杨涟').fame === 10 && hintCount(ctx.GM) === 0, '反例4 真实廷议单数 topic+decision 点名=有源→敏感字段放行(此前只读 decisions[] 误拦)');
   }
 
   console.log('');

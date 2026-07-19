@@ -115,12 +115,63 @@
   //   复用刀9四路(isPlayer/司法危难态/结构化互证[opts.excludeStructuredKey 排自证键]/玩家诏令三源)·
   //   再扩「本回合游戏态输入面」(opts.scanInputs=true)：弹劾奏疏(GM.memorials)/朝议要务(GM.currentIssues)点名此人→有源。
   //   ★宁漏勿误杀：任一路命中即放行·输入面扫描只加源不减源。
+  // ── 刀C·返工二轮(2026-07-19·Codex复审)·来源扫描面按回合记忆化(perf)+朝议裁决回合边界(镜像 tm-endturn-prompt._getCurrentChangchaoDecisions) ──
+  //   allNames(花名册)与朝议拼接文本每回合只重建一次(turn 变 / court 记录数变才失效)·避免每动作重构在真实剧本(数百角色+长转录)下拖垮 endturn。
+  function _wgCachedAllNames(G) {
+    if (!G) return [];
+    var t = G.turn || 0;
+    if (G._wgAllNamesCache && G._wgAllNamesCacheTurn === t) return G._wgAllNamesCache;
+    var names = Array.isArray(G.chars) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
+    G._wgAllNamesCache = names; G._wgAllNamesCacheTurn = t;   // arch-ok(内部记忆化缓存·非游戏态)
+    return names;
+  }
+  // 常朝『上回合圣意』的目标回合(镜像 prompt:44·Meta.targetTurn 优先·_lastChangchaoDecisionsTargetTurn 兜底)
+  function _wgLccTargetTurn(G) {
+    var meta = G && G._lastChangchaoDecisionMeta;
+    if (meta && meta.targetTurn != null && meta.targetTurn !== '') return Number(meta.targetTurn);
+    if (G && G._lastChangchaoDecisionsTargetTurn != null && G._lastChangchaoDecisionsTargetTurn !== '') return Number(G._lastChangchaoDecisionsTargetTurn);
+    return null;
+  }
+  function _wgStringifyDecision(d) {
+    if (d == null) return '';
+    if (typeof d !== 'object') return ' ' + String(d);
+    var s = '';
+    ['direction', 'custom', 'text', 'line', 'mode', 'action', 'title', 'detail', 'content'].forEach(function(k){ if (d[k] != null && typeof d[k] !== 'object') s += ' ' + d[k]; });
+    return s;
+  }
+  // 本回合朝议裁决拼接文本(记忆化·turn+记录数为键)：★回合边界(issue2·镜像 prompt:38)=targetTurn 为准·turn 仅无 targetTurn 时兜底·
+  //   两者不做 OR(避 targetTurn 过期旧裁决永久自证 / post-turn 裁决提前放行)。★形状(issue3)=覆盖常朝 decisions[]/transcript[]
+  //   与廷议/御前单数 topic+decision(tm-chaoyi-tinyi:1155 / yuqian:461)两种真实落点。
+  function _wgCachedCourtText(G) {
+    if (!G) return '';
+    var t = G.turn || 0;
+    var crs = Array.isArray(G._courtRecords) ? G._courtRecords : [];
+    var lccLen = Array.isArray(G._lastChangchaoDecisions) ? G._lastChangchaoDecisions.length : 0;
+    if (G._wgCourtTextCache != null && G._wgCourtTextCacheTurn === t && G._wgCourtTextCacheKey === (crs.length + '/' + lccLen)) return G._wgCourtTextCache;
+    var txt = '';
+    if (_wgLccTargetTurn(G) === t && Array.isArray(G._lastChangchaoDecisions)) {
+      G._lastChangchaoDecisions.forEach(function(dd){ if (dd) txt += ' ' + (dd.title || '') + ' ' + (dd.extra || '') + ' ' + (dd.dept || ''); });
+    }
+    for (var c = 0; c < crs.length; c++) {
+      var rec = crs[c]; if (!rec) continue;
+      var rt = Number((rec.targetTurn != null && rec.targetTurn !== '') ? rec.targetTurn : rec.turn);
+      if (!isFinite(rt) || rt !== t) continue;
+      txt += ' ' + (rec.topic || '') + _wgStringifyDecision(rec.decision);
+      var decs = Array.isArray(rec.decisions) ? rec.decisions : [];
+      for (var di = 0; di < decs.length; di++) { var de = decs[di]; if (de) txt += ' ' + (de.title || '') + ' ' + (de.detail || '') + ' ' + (de.content || '') + ' ' + (de.presenter || '') + ' ' + (de.dept || ''); }
+      var tr = Array.isArray(rec.transcript) ? rec.transcript : [];
+      for (var ti = 0; ti < tr.length; ti++) { var te = tr[ti]; if (te) txt += ' ' + (te.text || '') + ' ' + (te.speaker || ''); }
+    }
+    G._wgCourtTextCache = txt; G._wgCourtTextCacheTurn = t; G._wgCourtTextCacheKey = (crs.length + '/' + lccLen);   // arch-ok(内部记忆化缓存)
+    return txt;
+  }
+
   function _writeActionSourced(G, aiOutput, ch, opts) {
     opts = opts || {};
     if (_narrativeDeathSourced(G, aiOutput, ch, opts)) return true;
     if (opts.scanInputs && ch && ch.name) {
       var nm = ch.name;
-      var allNames = (G && Array.isArray(G.chars)) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
+      var allNames = _wgCachedAllNames(G);   // 记忆化·按回合(issue5)
       var _hit = function(t) { return _textMentionsName(t, nm, allNames); };
       var mems = (G && Array.isArray(G.memorials)) ? G.memorials : [];
       for (var i = 0; i < mems.length; i++) {
@@ -132,27 +183,9 @@
         var q = iss[j]; if (!q) continue;
         if (_hit(q.title) || _hit(q.description) || _hit(q.desc)) return true;
       }
-      // 刀C·返工(2026-07-19·含 perf 修)·朝议/常朝/廷议裁决面(玩家批红/口诏落点·喂 AI 的『上回合圣意』)：GM._lastChangchaoDecisions
-      //   + GM._courtRecords 点名此人→合法裁决有源。治『合法罢黜/失势裁决后写 stance/faction 被误拦』。
-      //   ★perf：只查本回合条目(turn/targetTurn===当前回合·历史快照不重扫)·且每条记录拼一次文本作单次匹配——避免
-      //   records×decisions×transcript×字段×花名册 在真实剧本(数百角色+长转录)下 O(n^k) 爆炸拖垮 endturn(full-turn-flow 实测)。
-      var _curT = G.turn || 0;
-      var lcc = (G && Array.isArray(G._lastChangchaoDecisions)) ? G._lastChangchaoDecisions : [];
-      for (var k = 0; k < lcc.length; k++) {
-        var dd = lcc[k]; if (!dd) continue;
-        if (_hit(dd.title) || _hit(dd.extra) || _hit(dd.dept)) return true;
-      }
-      var crs = (G && Array.isArray(G._courtRecords)) ? G._courtRecords : [];
-      for (var c = 0; c < crs.length; c++) {
-        var rec = crs[c]; if (!rec) continue;
-        if (Number(rec.turn) !== _curT && Number(rec.targetTurn) !== _curT) continue;   // 只本回合裁决
-        var _rtxt = '';
-        var decs = Array.isArray(rec.decisions) ? rec.decisions : [];
-        for (var di = 0; di < decs.length; di++) { var de = decs[di]; if (de) _rtxt += ' ' + (de.title || '') + ' ' + (de.detail || '') + ' ' + (de.content || '') + ' ' + (de.presenter || '') + ' ' + (de.dept || ''); }
-        var tr = Array.isArray(rec.transcript) ? rec.transcript : [];
-        for (var ti = 0; ti < tr.length; ti++) { var te = tr[ti]; if (te) _rtxt += ' ' + (te.text || '') + ' ' + (te.speaker || ''); }
-        if (_rtxt && _hit(_rtxt)) return true;   // 单条记录一次匹配(_textMentionsName 内先 indexOf 廉价短路)
-      }
+      // 朝议/常朝/廷议/御前裁决面(记忆化拼接文本·回合边界 issue2 + 两种真实形状 issue3·详见 _wgCachedCourtText)：本回合裁决点名此人→有源。
+      var _courtTxt = _wgCachedCourtText(G);
+      if (_courtTxt && _hit(_courtTxt)) return true;
     }
     return false;
   }
