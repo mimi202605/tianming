@@ -551,6 +551,10 @@ async function _offMaterialize(deptName, posName) {
       + '优先用真实历史人物，找不到则虚构。\n'
       + '已有角色：' + _existNames.slice(0,15).join('、') + '\n'
       + '返回JSON：{"name":"人名","personality":"性格","intelligence":60,"administration":60,"military":40,"loyalty":60,"ambition":50}';
+    // 时空约束·clauseOnly(短 JSON 具象化口·防大名单干扰结构)·新任职者尚未入 GM·无涉议名单只挂总纲铁律·防按史书卒年拒生/据史定身份(typeof 守卫防加载序)
+    if (typeof _buildTemporalConstraint === 'function') {
+      try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_offTcE) {}
+    }
     var c = await callAI(prompt, 500, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);  // 【降本2026-06-19】角色具象化(机械生成)走次 API
     var parsed = extractJSON(c);
     if (parsed && parsed.name) {

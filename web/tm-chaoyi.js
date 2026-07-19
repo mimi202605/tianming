@@ -145,6 +145,14 @@ async function _cyInterjectRespond(playerText, opts){
     if(mentioned.indexOf(nm) >= 0) p += '（陛下点名问你，须正面回应，勿顾左右。）\n';
     p += '请以臣子口吻简短回应陛下此言：可顺旨/进谏/剖白/转圜/重申立场，须切合你的性格' + (stance ? '与立场' : '') + (typeof _aiDialogueWordHint === 'function' ? _aiDialogueWordHint() : '') + '\n';
     p += '返回 JSON：{"newStance":"…(如因此改变立场则填，否则留空)","line":"…"}';
+    // 时空约束·扫描源=玩家插话 txt + 议题 opts.topic·响应者 nm 作种子恒入(逐人循环各自 findCharByName(nm) 组 prompt)·防 AI 按史书卒年答「某某已伏诛」(typeof 守卫防加载序)
+    if (typeof _buildTemporalConstraint === 'function') {
+      try {
+        var _ciTopic = String(txt || '') + ' ' + String(opts.topic || '');
+        var _ciMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_ciTopic, [nm], 10) : [nm];
+        p += _buildTemporalConstraint(ch, { mentionedNames: _ciMentioned });
+      } catch (_ciTcE) {}
+    }
     try {
       var raw = await callAI(p, (typeof _aiDialogueTok === 'function' ? _aiDialogueTok('cy', 1) : 400), null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);
       if(!CY || !CY.open || CY._abortChaoyi) return;  // await 期间玩家退朝/打断→勿写已销毁 DOM、勿再续
