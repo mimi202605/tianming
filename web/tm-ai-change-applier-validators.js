@@ -45,7 +45,7 @@
     return s.indexOf(nm) >= 0;
   }
 
-  function _narrativeDeathSourced(G, aiOutput, ch) {
+  function _narrativeDeathSourced(G, aiOutput, ch, opts) {
     if (!ch || !ch.name) return true;   // 无实体信息·不拦(实体存在性另由下游闸把)
     var nm = ch.name;
     // ① 玩家角色：死亡恒经玩家之死裁决器(合法继统/终局门自处理)·绝不拦(如城破崇祯自缢)
@@ -63,9 +63,12 @@
       }
       return false;
     }
-    if (_named(aiOutput.character_deaths, ['name'])) return true;
-    if (_named(aiOutput.personnel_changes, ['name'])) return true;
-    if (_named(aiOutput.char_updates, ['name'])) return true;
+    // 刀C·扩面复用(2026-07-19)：opts.excludeStructuredKey 排除「本键自证」——校验某结构化键自身合法性时不得拿该键自证
+    //   (C1 死条查 character_deaths 不算自身自证 / C2 司法查 personnel_changes 不算自身自证)。未传则全键计入(刀9 原行为·零变)。
+    var _selfKey = opts && opts.excludeStructuredKey;
+    if (_selfKey !== 'character_deaths' && _named(aiOutput.character_deaths, ['name'])) return true;
+    if (_selfKey !== 'personnel_changes' && _named(aiOutput.personnel_changes, ['name'])) return true;
+    if (_selfKey !== 'char_updates' && _named(aiOutput.char_updates, ['name'])) return true;
     if (_named(aiOutput.office_assignments, ['name'])) return true;
     if (_named(aiOutput.npc_actions, ['name', 'actor', 'target'])) return true;
     // ④ 玩家诏令/裁决提及该人：玩家意志有源(最长实体匹配·防「起复王安石」误命中「王安」)
@@ -85,6 +88,23 @@
       if (_dirHit(rd.xinglu) || _dirHit(rd.content) || _dirHit(rd.text) || _dirHit(rd.note)) return true;
     }
     return false;
+  }
+
+  // ── 刀C·C1(2026-07-19)·结构化 character_deaths 死因语义分类(bare/active)·镜像刀9 _scanExecutions 词表语义 ──
+  //   active=主动致死/暴力殉难/含本局具体事由(被斩/赐死/处决/战殁/阵亡/殉国/遇害/城破/奉旨/明正典刑…)——有本回合致因·照常落库；
+  //   bare=裸自戕/裸伏诛/纯自然死(伏诛/弃市/自尽/自缢/病故/薨逝/寿终/暴卒/无疾而终…)——无本回合致因·AI 史实幻觉高发·须外部源头。
+  //   ★宁漏勿误杀：先判强 active(本回合外部事件/玩家意志) → 再判 bare(裸词) → 再判处决动词 active → 无法归类一律 active(放行)。
+  //   顺序要害：强 active/bare 先于「斩/诛」处决动词·免「伏诛」被裸「诛」误升 active 漏杀了本该 gate 的裸伏诛(owner 亲报病灶)。
+  function _classifyStructuredDeathKind(reason) {
+    var s = String(reason == null ? '' : reason);
+    if (!s) return 'active';   // 无死因·不判幻觉·放行
+    // ① 强 active：本回合外部致死事件 / 玩家意志明标(战殁/殉难/城破/遇害/兵败/民变/奉旨/明正典刑/被斩…)·优先
+    if (/战殁|战死|阵亡|阵殁|阵前|殉国|殉难|殉城|殉职|捐躯|城破|城陷|遇害|遇难|遭难|罹难|殒命|毙命|兵败|兵变|民变|乱兵|流寇|奉旨|奉诏|明正典刑|就地正法|被斩|被诛|被杀|被害|被处死/.test(s)) return 'active';
+    // ② bare：裸伏诛/裸自戕/纯自然死(无本回合致因·AI 史实幻觉高发)·镜像刀9 KILL_INTRANS + KILL_NATURAL_PLAIN
+    if (/伏诛|伏法|弃市|就戮|授首|自尽|自缢|自刎|自裁|自杀|溘然长逝|病故|病逝|病殁|病卒|病亡|病笃|寝疾|亡故|暴毙|暴卒|暴亡|猝死|物故|身故|薨逝|薨|溘逝|寿终|谢世|辞世|弃世|长逝|无疾而终/.test(s)) return 'bare';
+    // ③ 主动处决动词(斩/诛/赐死/处决/凌迟…·有施死主体)·active
+    if (/斩|诛|赐死|赐自尽|处决|处斩|处死|正法|凌迟|腰斩|枭首|枭示|问斩|绞|戮|磔/.test(s)) return 'active';
+    return 'active';   // 无法归类·宁漏勿误杀·放行
   }
 
   function _validatePersonnelConsistency(G, aiOutput, applied) {
@@ -1304,4 +1324,6 @@
   __acaP._validateRevoltConsistency = _validateRevoltConsistency; __acaP._validateDisasterConsistency = _validateDisasterConsistency; __acaP._validateDiplomacyConsistency = _validateDiplomacyConsistency; __acaP._validateKejuConsistency = _validateKejuConsistency; __acaP._validatePartyConsistency = _validatePartyConsistency; __acaP._validateEdictEffectConsistency = _validateEdictEffectConsistency;
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
+  // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));

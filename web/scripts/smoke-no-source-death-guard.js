@@ -79,9 +79,12 @@ const stage = (ctx) => ctx.TM.Endturn.AI.apply.stages._applyCore_reconcile;
   console.log('===== T2·标准键对照(applier:墓志铭1/sink0 → 真管线:sink1/墓志铭仍1) =====');
   {
     const ctx = makeCtx();
-    ctx.GM = baseGM([{ name: '魏忠贤', position: '司礼', officialTitle: '司礼', alive: true, faction: '明朝廷', resources: {} }]);
+    // 刀C·C1(2026-07-19)后：结构化 character_deaths 的裸死因(病笃/薨逝=bare)若本回合无任何源头·preflight 会判史实幻觉不落库。
+    //   本例意在校验「墓志铭/死亡 sink 对照机制」(与 sourcing 正交)·故给 魏忠贤 一个司法前置态(_imprisoned·有源)→C1 放行·机制照测。
+    //   无源被拦的反面用例在 smoke-write-gate-expansion.js 覆盖。
+    ctx.GM = baseGM([{ name: '魏忠贤', position: '司礼', officialTitle: '司礼', alive: true, faction: '明朝廷', _imprisoned: true, resources: {} }]);
     ctx.P = { playerInfo: {}, adminHierarchy: {} };
-    const p1 = { shizhengji: '魏忠贤薨逝于府第。', character_deaths: [{ name: '魏忠贤', reason: '病笃' }] };
+    const p1 = { shizhengji: '魏忠贤下诏狱究问，旋病笃薨逝于狱。', character_deaths: [{ name: '魏忠贤', reason: '狱中病笃' }] };
     await stage(ctx)({ results: { sc1: p1 } });
     ok(epitaphCount(ctx.GM, '魏忠贤') === 1, 'T2a applier后·_processDeathEpitaphs 生成墓志铭=1(advisory影子键会漏为0)');
     ok(ctx._deathCalls.indexOf('魏忠贤') < 0 && ctx.GM.chars.find(c => c.name === '魏忠贤').alive === true, 'T2b applier后·死亡 sink=0(不双落库·真死亡另由真管线)');

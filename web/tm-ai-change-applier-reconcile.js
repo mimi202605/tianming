@@ -726,6 +726,20 @@
       if (!deathReason) return _tmGateReason('character_deaths', 'missing cause/reason: ' + d.name, d);
       d.name = ch.name || rawDeathName;
       if (!d.reason) d.reason = String(deathReason);
+      // ── 刀C·C1(2026-07-19)·结构化死亡来源判据(裸伏诛/自缢/纯病故=bare·无源→疑史实幻觉·不落库) ──
+      //   复用刀9：_classifyStructuredDeathKind 分类 bare/active·仅 gate bare 且本回合无任何源头(玩家诏令三源/司法危难态/
+      //   其他结构化键互证[排 character_deaths 自证]/npc_actions 涉及·_narrativeDeathSourced)。主动致死/暴力殉难/含本局
+      //   具体事由(战殁/奉旨赐死/被斩)=active·照常落。★宁漏勿误杀：非 bare 或有任一源即放行。拒写降级=转弱自查纸条+console 留痕·不静默丢弃。
+      try {
+        var _c1bkt = global.TM && global.TM.__acaParts;
+        var _c1classify = _c1bkt && _c1bkt._classifyStructuredDeathKind;
+        var _c1sourced = _c1bkt && _c1bkt._narrativeDeathSourced;
+        if (_c1classify && _c1sourced && _c1classify(d.reason) === 'bare' &&
+            !_c1sourced(G, aiOutput, ch, { excludeStructuredKey: 'character_deaths' })) {
+          console.warn('[preflight/character_deaths] 无源孤立结构化死亡·不落库(疑 AI 史实幻觉·转弱自查纸条留痕): ' + d.name + ' ← 「' + String(d.reason).slice(0, 40) + '」');
+          return _tmGateReason('character_deaths', '无源孤立结构化死亡(疑史实幻觉·bare 死因无任何源头): ' + d.name + '·死因「' + String(d.reason).slice(0, 30) + '」', d);
+        }
+      } catch (_c1e) {}
       return true;
     });
 
