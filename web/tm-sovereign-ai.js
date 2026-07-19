@@ -677,41 +677,55 @@
   // 主入口：编排下旨/朝议/批奏/任免四个子动作
   // ────────────────────────────────────────────────────────────
   async function runTurn(root, turnCtx) {
+    // B6: 进入君主圣裁阶段·切 bar-ai-live 状态
+    try { if (global.TM && global.TM.PlayerUI && typeof global.TM.PlayerUI.setAiLiveStatus === 'function') global.TM.PlayerUI.setAiLiveStatus('sovereign'); } catch (_) {}
+
     if (!_isEnabled()) {
+      // B6: 早返回也需复位·避免 UI 卡在"君主圣裁中"
+      try { if (global.TM && global.TM.PlayerUI && typeof global.TM.PlayerUI.setAiLiveStatus === 'function') global.TM.PlayerUI.setAiLiveStatus('npc'); } catch (_) {}
       return { ok: false, reason: 'sovereign-ai disabled (not transmigration mode or player is emperor)', applied: null };
     }
     var G = root || (typeof GM !== 'undefined' ? GM : null);
-    if (!G) return { ok: false, reason: 'no GM root', applied: null };
-
-    turnCtx = turnCtx || {};
-    var prompts = _buildPrompt(G, turnCtx);
-    var aiOutput = null;
-    if (prompts) {
-      try {
-        var raw = await _callLLM(prompts.system + '\n\n' + prompts.user, {
-          maxTokens: turnCtx.maxTokens || 4000,
-          timeoutMs: turnCtx.timeoutMs || 0,
-          maxAttempts: turnCtx.maxAttempts || 2
-        });
-        if (raw) aiOutput = _validateOutput(raw);
-      } catch (_) { aiOutput = null; }
+    if (!G) {
+      // B6: 早返回也需复位
+      try { if (global.TM && global.TM.PlayerUI && typeof global.TM.PlayerUI.setAiLiveStatus === 'function') global.TM.PlayerUI.setAiLiveStatus('npc'); } catch (_) {}
+      return { ok: false, reason: 'no GM root', applied: null };
     }
-    if (!aiOutput) aiOutput = _fallbackOutput(G, turnCtx);
 
-    var edictResult = _generateEdicts(G, aiOutput);
-    var chaoyiResult = _triggerChaoyi(G, aiOutput.chaoyiSpeeches);
-    var memorialResult = _applyMemorialDecisions(G, aiOutput.memorialDecisions);
-    var officeResult = _processOfficeActions(G, aiOutput.officeActions);
+    try {
+      turnCtx = turnCtx || {};
+      var prompts = _buildPrompt(G, turnCtx);
+      var aiOutput = null;
+      if (prompts) {
+        try {
+          var raw = await _callLLM(prompts.system + '\n\n' + prompts.user, {
+            maxTokens: turnCtx.maxTokens || 4000,
+            timeoutMs: turnCtx.timeoutMs || 0,
+            maxAttempts: turnCtx.maxAttempts || 2
+          });
+          if (raw) aiOutput = _validateOutput(raw);
+        } catch (_) { aiOutput = null; }
+      }
+      if (!aiOutput) aiOutput = _fallbackOutput(G, turnCtx);
 
-    return {
-      ok: true,
-      source: aiOutput._source || 'fallback',
-      rationale: aiOutput.rationale || '',
-      edicts: edictResult,
-      chaoyi: chaoyiResult,
-      memorials: memorialResult,
-      office: officeResult
-    };
+      var edictResult = _generateEdicts(G, aiOutput);
+      var chaoyiResult = _triggerChaoyi(G, aiOutput.chaoyiSpeeches);
+      var memorialResult = _applyMemorialDecisions(G, aiOutput.memorialDecisions);
+      var officeResult = _processOfficeActions(G, aiOutput.officeActions);
+
+      return {
+        ok: true,
+        source: aiOutput._source || 'fallback',
+        rationale: aiOutput.rationale || '',
+        edicts: edictResult,
+        chaoyi: chaoyiResult,
+        memorials: memorialResult,
+        office: officeResult
+      };
+    } finally {
+      // B6: 无论成功失败·退出君主圣裁阶段·切回市井演化
+      try { if (global.TM && global.TM.PlayerUI && typeof global.TM.PlayerUI.setAiLiveStatus === 'function') global.TM.PlayerUI.setAiLiveStatus('npc'); } catch (_) {}
+    }
   }
 
   // 同步版（无 LLM·仅供 smoke 测试与确定性场景调用）
