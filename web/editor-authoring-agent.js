@@ -41,41 +41,64 @@
   __aaP.loadEditorApiConfig = loadEditorApiConfig; // 反向发布(函数声明已提升)
 
   // 内联的纯路径解析器（复制自 tm-ai-change-pathutils.js 的 _resolvePath·纯函数·无副作用）
-  // 支持 a.b、a[0]、以及在数组上按 name/id 取元素（如 chars.张三.loyalty）
+  // 支持 a.b、a[0]、以及在数组上按 name/id 取元素（如 chars.张三.loyalty）。
+  // 安全边界：模型提供的路径永远不得穿过原型链；constructor/prototype/__proto__ 即使 force 也拒绝。
+  var _UNSAFE_PATH_SEGMENTS = { '__proto__': 1, 'prototype': 1, 'constructor': 1 };
+  function _hasOwn(obj, key) { return obj != null && Object.prototype.hasOwnProperty.call(obj, key); }
+  function _hasUnsafePathSegment(path) {
+    return String(path == null ? '' : path).split('.').some(function(raw) {
+      var seg = String(raw).replace(/\[\d+\]$/, '').toLowerCase();
+      return !!_UNSAFE_PATH_SEGMENTS[seg];
+    });
+  }
   function _resolvePath(obj, path) {
-    if (!obj || !path) return { parent: null, key: null, exists: false, value: undefined };
+    if (!obj || !path || _hasUnsafePathSegment(path)) return { parent: null, key: null, exists: false, value: undefined };
     var keys = String(path).split('.');
     var parent = obj;
     for (var i = 0; i < keys.length - 1; i++) {
       var k = keys[i];
       var m = k.match(/^(\w+)\[(\d+)\]$/);
       if (m) {
-        if (!parent[m[1]]) return { parent: null, key: null, exists: false, value: undefined };
+        if (!_hasOwn(parent, m[1]) || !parent[m[1]]) return { parent: null, key: null, exists: false, value: undefined };
         parent = parent[m[1]][Number(m[2])];
       } else if (Array.isArray(parent) && isNaN(Number(k))) {
-        var nextParent = parent.find(function(it) { return it && (it.name === k || it.id === k); });
+        var nextParent = parent.find(function(it) { return it && ((_hasOwn(it, 'name') && it.name === k) || (_hasOwn(it, 'id') && it.id === k)); });
         if (!nextParent) return { parent: null, key: null, exists: false, value: undefined };
         parent = nextParent;
       } else if (Array.isArray(parent) && !isNaN(Number(k))) {
+        if (!_hasOwn(parent, Number(k))) return { parent: null, key: null, exists: false, value: undefined };
         parent = parent[Number(k)];
       } else {
-        if (parent[k] === undefined || parent[k] === null) return { parent: null, key: null, exists: false, value: undefined };
+        if (!_hasOwn(parent, k) || parent[k] === undefined || parent[k] === null) return { parent: null, key: null, exists: false, value: undefined };
         parent = parent[k];
       }
       if (parent === undefined || parent === null) return { parent: null, key: null, exists: false, value: undefined };
     }
     var lastKey = keys[keys.length - 1];
+    var lastIndexed = lastKey.match(/^(\w+)\[(\d+)\]$/);
+    if (lastIndexed) {
+      if (!_hasOwn(parent, lastIndexed[1]) || !Array.isArray(parent[lastIndexed[1]])) return { parent: null, key: null, exists: false, value: undefined };
+      var lastArray = parent[lastIndexed[1]], lastIndex = Number(lastIndexed[2]);
+      return { parent: lastArray, key: lastIndex, exists: _hasOwn(lastArray, lastIndex), value: lastArray[lastIndex] };
+    }
     if (Array.isArray(parent) && isNaN(Number(lastKey))) {
-      var target = parent.find(function(it) { return it && (it.name === lastKey || it.id === lastKey); });
+      var target = parent.find(function(it) { return it && ((_hasOwn(it, 'name') && it.name === lastKey) || (_hasOwn(it, 'id') && it.id === lastKey)); });
       if (target !== undefined) {
         return { parent: parent, key: parent.indexOf(target), exists: true, value: target };
       }
     }
-    return { parent: parent, key: lastKey, exists: parent[lastKey] !== undefined, value: parent[lastKey] };
+    var resolvedKey = (Array.isArray(parent) && !isNaN(Number(lastKey))) ? Number(lastKey) : lastKey;
+    return { parent: parent, key: resolvedKey, exists: _hasOwn(parent, resolvedKey), value: _hasOwn(parent, resolvedKey) ? parent[resolvedKey] : undefined };
   }
 
   function _agentClone(x) {
     try { return JSON.parse(JSON.stringify(x)); } catch (e) { return x; }
+  }
+  function _replaceObjectContents(target, source) {
+    if (!target || !source || typeof target !== 'object' || typeof source !== 'object') return false;
+    Object.keys(target).forEach(function(k) { delete target[k]; });
+    Object.keys(source).forEach(function(k) { target[k] = source[k]; });
+    return true;
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -103,7 +126,7 @@
   function isBlocked(path) {
     if (!path) return true;
     var p = String(path);
-    return BLOCKED.some(function(re) { return re.test(p); });
+    return _hasUnsafePathSegment(p) || BLOCKED.some(function(re) { return re.test(p); });
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -119,6 +142,7 @@
     opts = opts || {};
     if (!draft || typeof draft !== 'object') return { ok: false, reason: 'no draft' };
     if (!path) return { ok: false, reason: 'empty path' };
+    if (_hasUnsafePathSegment(path)) return { ok: false, reason: 'unsafe path: ' + path };
     if (!opts.force && isBlocked(path)) return { ok: false, reason: 'blocked path: ' + path };
 
     // 顶层数组集合被整个设成非数组（agent 偶把 relations/events 这类整集合设成对象/单条）→ 转数组，
@@ -140,7 +164,8 @@
       for (var i = 0; i < keys.length - 1; i++) {
         var k = keys[i];
         if (/[\[\]]/.test(k)) return { ok: false, reason: '无法创建数组索引路径: ' + path };
-        if (cur[k] === undefined || cur[k] === null) cur[k] = {};
+        if (!_hasOwn(cur, k) || cur[k] === undefined || cur[k] === null) cur[k] = {};
+        if (!cur[k] || typeof cur[k] !== 'object') return { ok: false, reason: '路径中间段不是对象: ' + k };
         cur = cur[k];
       }
       var last = keys[keys.length - 1];
@@ -158,6 +183,7 @@
     opts = opts || {};
     if (!draft || typeof draft !== 'object') return { ok: false, reason: 'no draft' };
     if (!path) return { ok: false, reason: 'empty path' };
+    if (_hasUnsafePathSegment(path)) return { ok: false, reason: 'unsafe path: ' + path };
     if (!opts.force && isBlocked(path)) return { ok: false, reason: 'blocked path: ' + path };
 
     var r = _resolvePath(draft, path);
@@ -165,7 +191,8 @@
       var keys = String(path).split('.');
       var cur = draft;
       for (var i = 0; i < keys.length - 1; i++) {
-        if (cur[keys[i]] === undefined || cur[keys[i]] === null) cur[keys[i]] = {};
+        if (!_hasOwn(cur, keys[i]) || cur[keys[i]] === undefined || cur[keys[i]] === null) cur[keys[i]] = {};
+        if (!cur[keys[i]] || typeof cur[keys[i]] !== 'object') return { ok: false, reason: '路径中间段不是对象: ' + keys[i] };
         cur = cur[keys[i]];
       }
       cur[keys[keys.length - 1]] = [value];
@@ -181,6 +208,7 @@
     opts = opts || {};
     if (!draft || typeof draft !== 'object') return { ok: false, reason: 'no draft' };
     if (!path) return { ok: false, reason: 'empty path' };
+    if (_hasUnsafePathSegment(path)) return { ok: false, reason: 'unsafe path: ' + path };
     if (!opts.force && isBlocked(path)) return { ok: false, reason: 'blocked path: ' + path };
     var r = _resolvePath(draft, path);
     if (!r.parent) return { ok: false, reason: 'path not found: ' + path };
@@ -576,8 +604,8 @@
     return { ok: v.length === 0, violations: v, details: { histNoWuchang: histNoWC.length, abilityOob: oob, factionMismatch: mismatch } };
   }
 
-  // 刀①(2026-07-10 智能升级B)：关系网一致性——顶层 relations 边表引用完整/无自环/无全重。
-  // 治「改名/删人后关系悬空静默带病导出」（agent 动人物最常见的连带伤·此前只有技能里的口头要求无可执行校验）。
+  // 刀①(2026-07-10 智能升级B)：关系网一致性——无自环/无全重；显式 strictRefs 的人物边才检查名册引用。
+  // 顶层 relations 在官方剧本中也是开放图（党派/阶层/已故或未出场人物均可作节点），不能把所有未知端点都当坏外键。
   function vRelationConsistency(draft) {
     var v = [];
     var rels = (draft && draft.relations) || [];
@@ -588,15 +616,16 @@
     rels.forEach(function (r) {
       if (!r) return;
       var f = r.from, t = r.to, bad = false;
-      if (f && !names[f]) { danglingMap[f] = 1; bad = true; }
-      if (t && !names[t]) { danglingMap[t] = 1; bad = true; }
+      var strictRefs = r.strictRefs === true;
+      if (strictRefs && f && !names[f]) { danglingMap[f] = 1; bad = true; }
+      if (strictRefs && t && !names[t]) { danglingMap[t] = 1; bad = true; }
       if (bad) danglingEdges++;
       if (f && f === t) selfLoop++;
       var k = String(f) + '→' + String(t) + '·' + String(r.type || '');
       if (seen[k]) dupes++; else seen[k] = 1;
     });
     var danglingNames = Object.keys(danglingMap);
-    if (danglingNames.length) v.push('关系边悬空引用 ' + danglingEdges + ' 条（from/to 不在人物名册）：' + danglingNames.slice(0, 6).join('、') + (danglingNames.length > 6 ? ' 等' : '') + '——人物改名用 renameEntity 联动·删人前 findReferences 清关系');
+    if (danglingNames.length) v.push('严格人物关系边悬空引用 ' + danglingEdges + ' 条（strictRefs=true 且 from/to 不在人物名册）：' + danglingNames.slice(0, 6).join('、') + (danglingNames.length > 6 ? ' 等' : '') + '——人物改名用 renameEntity 联动·删人前 findReferences 清关系');
     if (selfLoop) v.push('关系自环(from=to) ' + selfLoop + ' 条');
     if (dupes) v.push('完全重复关系边(from+to+type 同) ' + dupes + ' 条');
     // gateScore=边级计数（违规消息按类聚合·消息数对「多了一条悬空」不敏感·质量闸按此比对基线）
@@ -688,9 +717,38 @@
     if (draft.era != null && draft.era !== '' && (gs.era == null || gs.era === '')) gs.era = draft.era;  // 年号顶层 → gameSettings
   }
 
+  // 体检必须是纯读：列出原先会被 ensure* 静默补齐的运行时契约，让玩家/国师显式修复。
+  function _canonicalFieldFindings(draft) {
+    var blockers = [], warnings = [];
+    if (!draft || typeof draft !== 'object') return { blockers: ['[canonical-fields] 剧本为空'], warnings: [] };
+    var gs = draft.gameSettings;
+    var topYear = draft.startYear, runtimeYear = gs && gs.startYear;
+    if (!gs || typeof gs !== 'object') {
+      blockers.push('[canonical-fields] 缺 gameSettings（运行时读取开局时间的权威容器）');
+    } else if (runtimeYear == null || runtimeYear === '') {
+      blockers.push('[canonical-fields] 缺 gameSettings.startYear（只写顶层 startYear 会让运行时纪年失真）');
+    }
+    if ((topYear == null || topYear === '') && (runtimeYear == null || runtimeYear === '')) {
+      blockers.push('[canonical-fields] 顶层 startYear 与 gameSettings.startYear 均缺失');
+    } else if (topYear != null && topYear !== '' && runtimeYear != null && runtimeYear !== '' && Number(topYear) !== Number(runtimeYear)) {
+      blockers.push('[canonical-fields] 顶层 startYear 与 gameSettings.startYear 不一致（' + topYear + ' / ' + runtimeYear + '）');
+    } else if ((topYear == null || topYear === '') && runtimeYear != null && runtimeYear !== '') {
+      warnings.push('[canonical-fields] 顶层 startYear 缺失；运行时可启动，但时点校验与编辑器摘要会跳过');
+    }
+    if (gs && typeof gs === 'object' && (gs.startMonth == null || gs.startMonth === '') && draft.startMonth != null && draft.startMonth !== '') {
+      warnings.push('[canonical-fields] 顶层 startMonth 尚未同步到 gameSettings.startMonth');
+    }
+    var facByName = {};
+    (Array.isArray(draft.factions) ? draft.factions : []).forEach(function(f) { if (f && f.name && f.id) facByName[f.name] = f.id; });
+    var missingFactionIds = 0;
+    (Array.isArray(draft.characters) ? draft.characters : []).forEach(function(c) {
+      if (c && c.faction && facByName[c.faction] && (c.factionId == null || c.factionId === '')) missingFactionIds++;
+    });
+    if (missingFactionIds) warnings.push('[canonical-fields] ' + missingFactionIds + ' 个人物可由 faction 名回填 factionId；体检未自动改动原剧本');
+    return { blockers: blockers, warnings: warnings };
+  }
+
   function preflight(draft) {
-    ensureCharFactionId(draft);   // 体检前先同步人物 factionId ↔ 名串（避免势力改名后误报"引用不存在势力"）
-    ensureTimeFields(draft);      // 体检前同步剧本时间 startYear/startMonth/era → gameSettings（引擎权威·修"进游戏显示公元前"死字段）
     var groups = Object.keys(_checks);   // 体检跑全部检查（结构 + 运行时）
     var results = {}, blockers = [], warnings = [];
     groups.forEach(function(g) {
@@ -703,12 +761,15 @@
         r.violations.forEach(function(m) { bucket.push('[' + g + '] ' + m); });
       }
     });
+    var canonical = _canonicalFieldFindings(draft);
+    blockers = blockers.concat(canonical.blockers);
+    warnings = warnings.concat(canonical.warnings);
     var rep = { results: results, ok: blockers.length === 0 && warnings.length === 0 };
     var bootable = blockers.length === 0;
     var summary = bootable
       ? (warnings.length ? '可运行，但有 ' + warnings.length + ' 处建议改进' : '✓ 运行时体检通过，可正常加载')
       : '✗ 有 ' + blockers.length + ' 处会影响运行的问题，建议先修';
-    return { ok: rep.ok, bootable: bootable, blockers: blockers, warnings: warnings, summary: summary, results: rep.results };
+    return { ok: rep.ok, bootable: bootable, blockers: blockers, warnings: warnings, normalizations: canonical, summary: summary, results: rep.results };
   }
 
   /** 注册自定义校验（供后续 slice 扩展） */
@@ -798,19 +859,25 @@
     try { global.localStorage && global.localStorage.setItem(MEMDIR_KEY, JSON.stringify(arr.slice(0, 60))); return true; }
     catch (e) { return false; }
   }
-  function saveMemoryEntry(m) {
+  function _prepareMemoryEntry(m) {
     m = m || {};
     var name = String(m.name || '').trim().slice(0, 60);
     var type = MEMORY_TYPES.indexOf(m.type) >= 0 ? m.type : 'project';
     var description = String(m.description || '').trim().slice(0, 160);
     var body = String(m.body || '').trim().slice(0, 1500);
     if (!name || !description || !body) return { ok: false, error: 'name/description/body 均必填' };
+    return { ok: true, value: { name: name, type: type, description: description, body: body } };
+  }
+  function saveMemoryEntry(m) {
+    var prepared = _prepareMemoryEntry(m);
+    if (!prepared.ok) return prepared;
+    var v = prepared.value;
     var arr = _loadMemories();
-    var i = arr.findIndex(function (x) { return x && x.name === name; });
-    var entry = { id: i >= 0 ? arr[i].id : ('mem_' + Date.now().toString(36)), name: name, type: type, description: description, body: body, ts: Date.now() };
+    var i = arr.findIndex(function (x) { return x && x.name === v.name; });
+    var entry = { id: i >= 0 ? arr[i].id : ('mem_' + Date.now().toString(36)), name: v.name, type: v.type, description: v.description, body: v.body, ts: Date.now() };
     if (i >= 0) arr[i] = entry; else arr.unshift(entry);
-    _saveMemoriesArr(arr);
-    return { ok: true, saved: name, type: type, total: Math.min(arr.length, 60), updated: i >= 0 };
+    if (!_saveMemoriesArr(arr)) return { ok: false, error: '记忆存储失败' };
+    return { ok: true, saved: v.name, type: v.type, total: Math.min(arr.length, 60), updated: i >= 0 };
   }
   function deleteMemory(idOrName) {
     var arr = _loadMemories(), n = arr.length;
@@ -847,14 +914,14 @@
   }
   /* 召回：≤3 条全注入免调用；>3 条用次要模型(未配则主模型)选≤5；调用失败回退关键词。
      callerFn 可注入(mock 测试·与 runAuthoringLoop 的 opts.caller 同型)。 */
-  function _recallMemories(query, cfgMain, callerFn) {
+  function _recallMemories(query, cfgMain, callerFn, signal) {
     var mems = _loadMemories();
     if (!mems.length) return Promise.resolve('');
     if (mems.length <= 3) return Promise.resolve(_memBlock(mems));
     var manifest = mems.map(function (m) { return '- ' + m.name + ' [' + m.type + '] ' + m.description; }).join('\n');
     var sys = '你在为一个剧本编辑 agent 挑选背景记忆。根据用户需求，从清单中选出明确有用的记忆名（≤5 个）。拿不准的不选；没有就空数组。只调用 selectMemories 工具。';
     var ask = '【用户需求】\n' + String(query || '').slice(0, 600) + '\n\n【记忆清单】\n' + manifest;
-    return Promise.resolve((callerFn || callWithTools)([{ role: 'user', text: ask }], _RECALL_TOOL, { maxTok: 300, maxRetries: 1, cfg: _secondaryCfg() || cfgMain, system: sys }))
+    return Promise.resolve((callerFn || callWithTools)([{ role: 'user', text: ask }], _RECALL_TOOL, { maxTok: 300, maxRetries: 1, cfg: _secondaryCfg() || cfgMain, system: sys, signal: signal }))
       .then(function (r) {
         var call = r && r.toolCalls && r.toolCalls[0];
         var names = (call && call.input && Array.isArray(call.input.names)) ? call.input.names : null;
@@ -891,7 +958,7 @@
     try { global.localStorage && global.localStorage.setItem(SKILLS_KEY, JSON.stringify(arr.slice(0, 40))); return true; }
     catch (e) { return false; }
   }
-  function saveSkillEntry(s) {
+  function _prepareSkillEntry(s) {
     s = s || {};
     var name = String(s.name || '').trim().slice(0, 60);
     var description = String(s.description || '').trim().slice(0, 160);
@@ -899,12 +966,50 @@
     var body = String(s.body || '').trim().slice(0, 4000);
     if (!name || !body) return { ok: false, error: 'name/body 必填' };
     if (BUILTIN_SKILLS.some(function (b) { return b.name === name; })) return { ok: false, error: '「' + name + '」是内置技能，换个名字' };
+    return { ok: true, value: { name: name, description: description, whenToUse: whenToUse, body: body } };
+  }
+  function saveSkillEntry(s) {
+    var prepared = _prepareSkillEntry(s);
+    if (!prepared.ok) return prepared;
+    var v = prepared.value;
     var arr = _loadUserSkills();
-    var i = arr.findIndex(function (x) { return x && x.name === name; });
-    var entry = { name: name, description: description, whenToUse: whenToUse, body: body, ts: Date.now() };
+    var i = arr.findIndex(function (x) { return x && x.name === v.name; });
+    var entry = { name: v.name, description: v.description, whenToUse: v.whenToUse, body: v.body, ts: Date.now() };
     if (i >= 0) arr[i] = entry; else arr.unshift(entry);
-    _saveUserSkills(arr);
-    return { ok: true, saved: name, updated: i >= 0 };
+    if (!_saveUserSkills(arr)) return { ok: false, error: '技能存储失败' };
+    return { ok: true, saved: v.name, updated: i >= 0 };
+  }
+
+  // 工具在运行期只暂存外部副作用；玩家真正“应用到剧本”后才原子提交。
+  // 任一条失败会把两份 localStorage 恢复到提交前，避免草稿被放弃却留下记忆/技能。
+  function commitSideEffects(effects) {
+    effects = Array.isArray(effects) ? effects : [];
+    if (!effects.length) return { ok: true, committed: 0 };
+    for (var vi = 0; vi < effects.length; vi++) {
+      var fx = effects[vi] || {};
+      var check = fx.type === 'memory' ? _prepareMemoryEntry(fx.input) : (fx.type === 'skill' ? _prepareSkillEntry(fx.input) : { ok: false, error: '未知副作用类型:' + fx.type });
+      if (!check.ok) return { ok: false, committed: 0, error: check.error };
+    }
+    var beforeMem = null, beforeSkill = null;
+    try {
+      beforeMem = global.localStorage && global.localStorage.getItem(MEMDIR_KEY);
+      beforeSkill = global.localStorage && global.localStorage.getItem(SKILLS_KEY);
+      var results = [];
+      effects.forEach(function (fx) {
+        var r = fx.type === 'memory' ? saveMemoryEntry(fx.input) : saveSkillEntry(fx.input);
+        if (!r || r.ok === false) throw new Error((r && r.error) || '副作用提交失败');
+        results.push(r);
+      });
+      return { ok: true, committed: results.length, results: results };
+    } catch (e) {
+      try {
+        if (global.localStorage) {
+          if (beforeMem == null) global.localStorage.removeItem(MEMDIR_KEY); else global.localStorage.setItem(MEMDIR_KEY, beforeMem);
+          if (beforeSkill == null) global.localStorage.removeItem(SKILLS_KEY); else global.localStorage.setItem(SKILLS_KEY, beforeSkill);
+        }
+      } catch (_) {}
+      return { ok: false, committed: 0, error: (e && e.message) || String(e) };
+    }
   }
   function deleteSkill(name) {
     var arr = _loadUserSkills(), n = arr.length;
@@ -1120,7 +1225,7 @@
       name: 'validateDraft',
       description: '校验当前草稿（人口/势力引用/区划覆盖/角色/官制/启动必备），返回违规列表。每改完一批应调用以自查。',
       parameters: { type: 'object', properties: {
-        group: { type: 'string', description: '可选：只跑某组 admin-population/faction-refs/region-coverage/timeline-compliance/char-completeness/relation-consistency(关系边悬空/自环/重复)/runtime-chars/runtime-office/runtime-boot' }
+        group: { type: 'string', description: '可选：只跑某组 admin-population/faction-refs/region-coverage/timeline-compliance/char-completeness/relation-consistency(严格人物边悬空/自环/重复)/runtime-chars/runtime-office/runtime-boot' }
       } }
     },
     {
@@ -1602,12 +1707,50 @@
     return s;
   }
 
-  // 工具B · 写后回读：写类工具结果回挂"变更后当前值"·agent 不必再 getField 确认·减重复读
-  var _WRITE_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, bulkUpdate: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, generateImage: 1, copyField: 1 };
+  // 工具B · 所有致变工具的唯一注册表。权限、指纹、写后回读共用，新增工具不会再漏过范围沙箱。
+  var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, bulkUpdate: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1, generateImage: 1, copyField: 1 };
+  var _WRITE_TOOLS = _MUT_TOOLS;   // 兼容旧内部命名；不得另建第二份名单
   // 刀G3(2026-07-02·CC 对照) · 只读/致变工具表：重复读去重与"纯勘察打转"检测共用。
   //   validateDraft/preflight 亦只读——结果随草稿变·但去重有"期间零写入"守卫·天然安全。
   var _READ_TOOLS = { getField: 1, getFields: 1, searchEntities: 1, globalSearch: 1, findReferences: 1, listCollection: 1, describeSchema: 1, listGaps: 1, fieldContract: 1, genReference: 1, readSource: 1, listSource: 1, grepSource: 1, mapOverview: 1, checkHistory: 1, validateDraft: 1, preflight: 1, statsAggregate: 1, readQuickTestReport: 1 };
-  var _MUT_TOOLS = { applyEdit: 1, applyPush: 1, multiEdit: 1, bulkAdd: 1, bulkUpdate: 1, removeEntity: 1, mapAssignOwner: 1, renameRegion: 1, renameEntity: 1, generateImage: 1, copyField: 1 };
+  var _TOOL_PACK_BY_NAME = {
+    mapOverview: 'map', mapAssignOwner: 'map', renameRegion: 'map',
+    genReference: 'history', readSource: 'history', listSource: 'history', grepSource: 'history', checkHistory: 'history',
+    generateImage: 'media', copyField: 'media',
+    bulkAdd: 'bulk', bulkUpdate: 'bulk', multiEdit: 'bulk', statsAggregate: 'bulk',
+    readQuickTestReport: 'sandbox',
+    saveMemory: 'knowledge', saveSkill: 'knowledge'
+  };
+  function _toolPack(name) { return _TOOL_PACK_BY_NAME[name] || 'core'; }
+  function selectToolPacks(request, opts) {
+    opts = opts || {};
+    if (Array.isArray(opts.toolPacks)) return ['core'].concat(opts.toolPacks).filter(function(v, i, a) { return a.indexOf(v) === i; });
+    var q = String(request || '').toLowerCase(), packs = ['core'];
+    function add(p) { if (packs.indexOf(p) < 0) packs.push(p); }
+    if ((opts.worldKind || '') === 'historical' || /史实|史料|考据|年代|年号|生卒|官职|历史|正史/.test(q)) add('history');
+    if (/地图|地块|疆域|归属|版图|行政绑定|省份|州县/.test(q)) add('map');
+    if (/图片|图像|立绘|头像|肖像|生图|插画|portrait/.test(q)) add('media');
+    if (/批量|全部|统一|聚合|平均|统计|平衡数值|成批/.test(q)) add('bulk');
+    if (/快测|沙盒|实跑|运行报告|回合测试/.test(q)) add('sandbox');
+    if (/记住|记忆|沉淀|技能|以后都|下次/.test(q)) add('knowledge');
+    return packs;
+  }
+  function _filterToolsByPacks(tools, request, opts) {
+    if (opts && opts.toolPacks === false) return tools.slice();
+    var packs = selectToolPacks(request, opts), allowed = {};
+    packs.forEach(function(p) { allowed[p] = 1; });
+    return tools.filter(function(t) { return !t || !t.name || !AGENT_TOOLS.some(function(a) { return a.name === t.name; }) || !!allowed[_toolPack(t.name)]; });
+  }
+  var AUTHORING_TOOL_SPECS = AGENT_TOOLS.map(function(t) {
+    var effect = t.name === 'generateImage' ? 'external' : (_MUT_TOOLS[t.name] ? 'draft-write' : ((t.name === 'saveMemory' || t.name === 'saveSkill') ? 'memory-write' : (_READ_TOOLS[t.name] ? 'read' : 'control')));
+    return Object.assign({}, t, {
+      effect: effect, domain: _toolPack(t.name), pack: _toolPack(t.name),
+      risk: /removeEntity|renameEntity|renameRegion/.test(t.name) ? 'high' : (effect === 'read' || effect === 'control' ? 'low' : 'medium'),
+      idempotent: effect === 'read', rollback: effect === 'draft-write' ? 'draft-snapshot' : (effect === 'memory-write' ? 'staged-commit' : 'none')
+    });
+  });
+  var AUTHORING_TOOL_REGISTRY = (global.TM && global.TM.AgentKernel && global.TM.AgentKernel.createRegistry)
+    ? global.TM.AgentKernel.createRegistry(AUTHORING_TOOL_SPECS) : null;
   // 刀G4(2026-07-02·CC read-before-edit 新鲜度对照) · 外部修改防护:agent 运行期间用户可能在编辑器里
   //   手改草稿——按顶层区段留指纹·写前对照·外部改过则拒写要求重读(agent 自己的读/写都会刷新指纹)。
   //   注:CC 的"先读后写"门有意不搬——国师初始消息自带草稿摘要+写后有 nowValue 回读·硬加会拦正常流程。
@@ -1635,6 +1778,14 @@
     // map↔mapData 同步镜像:写一个连带另一个(_mapSyncMirror)·指纹须成双·否则自家写误报外部修改
     if (roots.indexOf('map') >= 0 || roots.indexOf('mapData') >= 0) { if (roots.indexOf('map') < 0) roots.push('map'); if (roots.indexOf('mapData') < 0) roots.push('mapData'); }
     return roots;
+  }
+  function _toolStateHash(draft, name, input) {
+    if (!_MUT_TOOLS[name]) return null;
+    var roots = _mutRoots(name, input);
+    if (!roots) return _fpOf(draft);   // renameEntity 等跨区段工具用全草稿指纹
+    var seen = {}, state = {};
+    roots.forEach(function(r) { if (r && !seen[r]) { seen[r] = 1; state[r] = draft && draft[r]; } });
+    return _fpOf(state);
   }
   function _readRootsOf(name, input) {
     input = input || {};
@@ -1670,6 +1821,7 @@
   function _bulkWhereMatch(item, where) {
     if (!item || !where || typeof where !== 'object') return false;
     return Object.keys(where).every(function (k) {
+      if (_hasUnsafePathSegment(k)) return false;
       var cond = where[k];
       var val = _dottedValue(item, k);
       if (cond && typeof cond === 'object' && cond.op) {
@@ -1688,13 +1840,14 @@
     });
   }
   function _dottedValue(obj, path) {
+    if (_hasUnsafePathSegment(path)) return undefined;
     var parts = String(path || '').split('.');
     var cur = obj;
-    for (var i = 0; i < parts.length; i++) { if (cur == null) return undefined; cur = cur[parts[i]]; }
+    for (var i = 0; i < parts.length; i++) { if (cur == null || !_hasOwn(cur, parts[i])) return undefined; cur = cur[parts[i]]; }
     return cur;
   }
 
-  function dispatchTool(draft, name, input, surfaces) {
+  function dispatchTool(draft, name, input, surfaces, runCtx) {
     input = input || {};
     switch (name) {
       case 'applyEdit': return applyEdit(draft, input.path, input.value, { reason: input.reason });
@@ -1714,7 +1867,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _icfg.key },
           body: JSON.stringify({ model: _icfg.model || 'dall-e-3', prompt: String(input.prompt).slice(0, 1800), n: 1, size: input.size || '1024x1024', response_format: 'b64_json' })
-        }, { maxRetries: 1, timeoutMs: 150000 }).then(function (d) {
+        }, { maxRetries: 1, timeoutMs: 150000, signal: runCtx && runCtx.signal }).then(function (d) {
           var _it = d && d.data && d.data[0];
           var _val = (_it && _it.b64_json) ? ('data:image/png;base64,' + _it.b64_json) : (_it && _it.url);
           if (!_val) return { ok: false, reason: '生图 API 未返回图片（b64_json/url 皆空）' };
@@ -1734,10 +1887,11 @@
         return { ok: true, from: input.from, to: input.to, copied: _cfimg ? ('图像·约' + Math.round(_cfsz * 3 / 4 / 1024) + 'KB') : ('值·' + _cfsz + '字符') };
       }
       case 'bulkUpdate': {   // 刀②(2026-07-10 智能升级C)：按条件批量改·逐条复用 applyEdit 享权限/指纹/落账
-        var _buArr = draft ? draft[input.collection] : null;
+        var _buDraft = _agentClone(draft);
+        var _buArr = _buDraft ? _buDraft[input.collection] : null;
         if (!Array.isArray(_buArr)) return { ok: false, reason: '集合不存在或非数组: ' + input.collection };
         if (!input.where || typeof input.where !== 'object') return { ok: false, reason: '需要 where 筛选条件(全集也须显式给空对象·防误伤)' };
-        if (!input.field || !input.op) return { ok: false, reason: '需要 field 与 op(set/add/mul)' };
+        if (!input.field || ['set', 'add', 'mul'].indexOf(input.op) < 0) return { ok: false, reason: '需要 field 与合法 op(set/add/mul)' };
         var _buLimit = (typeof input.limit === 'number' && input.limit > 0) ? input.limit : 500;
         var _buWhereAll = Object.keys(input.where).length === 0;
         var _buChanged = [], _buSkipped = 0, _buMatched = 0, _buBlocked = null;
@@ -1755,13 +1909,14 @@
             if (!isFinite(_bBase) || !isFinite(_bDelta)) { _buSkipped++; continue; }
             _bNew = (input.op === 'add') ? (_bBase + _bDelta) : (_bBase * _bDelta);
           }
-          var _bw = applyEdit(draft, input.collection + '.' + _bi + '.' + input.field, _bNew, { reason: input.reason || ('批改 ' + input.field) });
+          var _bw = applyEdit(_buDraft, input.collection + '.' + _bi + '.' + input.field, _bNew, { reason: input.reason || ('批改 ' + input.field) });
           if (_bw && _bw.ok === false) { _buBlocked = _bw.reason || 'blocked'; break; }
           _buChanged.push({ name: (_bit.name || _bit.id || ('#' + _bi)), old: _bOld, next: _bNew });
         }
-        if (_buBlocked) return { ok: false, reason: '批改中止(写入被拦): ' + _buBlocked + '·中止前已改 ' + _buChanged.length + ' 条', changedBeforeAbort: _buChanged.slice(0, 6) };
+        if (_buBlocked) return { ok: false, atomic: true, reason: '批改中止(写入被拦): ' + _buBlocked + '·整批未落地', attemptedBeforeAbort: _buChanged.length };
+        _replaceObjectContents(draft, _buDraft);
         var _buCapped = _buMatched - _buChanged.length - _buSkipped;
-        return { ok: true, matched: _buMatched, changed: _buChanged.length, skippedNonNumeric: _buSkipped, cappedByLimit: _buCapped > 0 ? _buCapped : 0, sample: _buChanged.slice(0, 8) };
+        return { ok: true, atomic: true, matched: _buMatched, changed: _buChanged.length, skippedNonNumeric: _buSkipped, cappedByLimit: _buCapped > 0 ? _buCapped : 0, sample: _buChanged.slice(0, 8) };
       }
       case 'readQuickTestReport': {   // 刀④乙(2026-07-10 智能升级A·2026-07-16 扩多回合体检)：读沙盒快测报告(★DB名/store/id='quickTestReport:latest' 与 scenario-editor-sandbox-bridge.js 镜像·改须同步·报告 schema:2 整体透传·加字段天然向后兼容)
         if (typeof global.indexedDB === 'undefined' || !global.indexedDB) return { ok: false, reason: '当前环境无 IndexedDB(需在编辑器页运行)·无法读快测报告' };
@@ -1936,27 +2091,49 @@
       case 'bulkAdd': {
         var items = Array.isArray(input.items) ? input.items : [];
         if (!input.collection || !items.length) return { ok: false, reason: '需要 collection 和非空 items[]' };
+        var _baDraft = _agentClone(draft);
         var added = 0, addErrs = [];
         items.forEach(function(it, i) {
-          var r = applyPush(draft, input.collection, it);
+          var r = applyPush(_baDraft, input.collection, it);
           if (r && r.ok !== false) added++; else addErrs.push('#' + i + ': ' + ((r && r.reason) || 'fail'));
         });
-        return { ok: addErrs.length === 0, collection: input.collection, added: added, errors: addErrs.slice(0, 5) };
+        if (addErrs.length) return { ok: false, atomic: true, collection: input.collection, added: 0, attempted: added, errors: addErrs.slice(0, 5) };
+        _replaceObjectContents(draft, _baDraft);
+        return { ok: true, atomic: true, collection: input.collection, added: added, errors: [] };
       }
       case 'multiEdit': {
         var edits = Array.isArray(input.edits) ? input.edits : [];
         if (!edits.length) return { ok: false, reason: '需要非空 edits[]（每项 {path,value}）' };
+        var _meDraft = _agentClone(draft);
         var done = 0, fails = [];
         edits.forEach(function(e, i) {
           if (!e || !e.path) { fails.push('#' + i + ': 缺 path'); return; }
-          var r = applyEdit(draft, e.path, e.value, { reason: e.reason });
+          var r = applyEdit(_meDraft, e.path, e.value, { reason: e.reason });
           if (r && r.ok !== false) done++; else fails.push('#' + i + '(' + e.path + '): ' + ((r && r.reason) || 'fail'));
         });
-        return { ok: fails.length === 0, applied: done, failures: fails.slice(0, 5) };
+        if (fails.length) return { ok: false, atomic: true, applied: 0, attempted: done, failures: fails.slice(0, 5) };
+        _replaceObjectContents(draft, _meDraft);
+        return { ok: true, atomic: true, applied: done, failures: [] };
       }
       case 'note': return { ok: true, note: String(input.text || '').slice(0, 500) };
-      case 'saveMemory': return saveMemoryEntry(input);
-      case 'saveSkill': return saveSkillEntry(input);
+      case 'saveMemory': {
+        var _pm = _prepareMemoryEntry(input);
+        if (!_pm.ok) return _pm;
+        if (runCtx && Array.isArray(runCtx.sideEffects)) {
+          runCtx.sideEffects.push({ type: 'memory', input: _agentClone(input) });
+          return { ok: true, staged: true, saved: _pm.value.name, note: '将在玩家应用草稿时提交' };
+        }
+        return saveMemoryEntry(input);
+      }
+      case 'saveSkill': {
+        var _ps = _prepareSkillEntry(input);
+        if (!_ps.ok) return _ps;
+        if (runCtx && Array.isArray(runCtx.sideEffects)) {
+          runCtx.sideEffects.push({ type: 'skill', input: _agentClone(input) });
+          return { ok: true, staged: true, saved: _ps.value.name, note: '将在玩家应用草稿时提交' };
+        }
+        return saveSkillEntry(input);
+      }
       case 'useSkill': {
         var _sk = listAllSkills().find(function (s) { return s.name === String(input.name || '').trim(); });
         if (!_sk) return { ok: false, error: '无此技能', available: listAllSkills().map(function (s) { return s.name; }) };
@@ -2277,7 +2454,7 @@
       '规则：① 只用工具修改/查询，不要直接输出 JSON 剧本正文。② 中文显示名（人物/势力/地名）保持中文，禁止英译。',
       '③【勘察】先查后改：getField（单路径）/getFields（批量·一次读多个路径省往返，需同时核对多处时优先用它）/listCollection/describeSchema 看清现状与字段；searchEntities/listGaps 查实体与规格缺口；不确定东西在哪个集合时用 globalSearch 全局检索定位。想确认正式游戏怎么读某字段、读不读它，用 fieldContract 查契约（按需查，别凭印象）；想看游戏 UI/逻辑的源码实现，用 listSource 找文件、readSource 读、grepSource 全局搜——可直接读整个代码库。生成或大改某部分(人物/势力/经济/官制/封臣…)前，先 genReference 看老编辑器对该部分的生成范式(设定深度/字段形状/朝代逻辑/参数区间)，借鉴后再动手。',
       '④【落改】bulkAdd/multiEdit 一次多改提效；同一字段按条件成批调（「辽东诸将武力+5」类）用 bulkUpdate 一步到位（先 limit:3 试跑核对再放开）；配平数值前先 statsAggregate 读真账。改名优先 renameEntity（联动所有引用、不留死链）；地图地块/省名改名用 renameRegion（同步 map/mapData 双镜像·如需联动其他引用再补 renameEntity）；删除实体前先 findReferences 查谁引用了它，再 removeEntity。改地图归属（把某地块划给某势力、调整疆域）先 mapOverview 看清地块/归属/势力，再 mapAssignOwner 按地块名+势力名改（自动上色、同步双镜像）。玩家配了生图 API 时，可用 generateImage 给人物立绘(characters.N.portrait)/势力旗徽生成图像（未配置会明确报错，届时用文字描述代替，不要反复重试）；生成的图要复用/挪到别的字段用 copyField(from,to) 直拷——图片值极大，绝不要 getField 读出来再 applyEdit 写回。与用户需求相关的必需缺口顺手补齐，让剧本完整可玩。',
-      '⑤【自查与收尾】每改完一批用 validateDraft 自查，有违规继续修（写类工具的返回已回挂变更后的当前值 nowValue/nowValues/collectionLength，据此确认改动已落地，无需再 getField 重读确认）。改好后用 preflight 跑运行时体检（确保游戏能正常加载），有 blockers 继续修到 bootable，再调用 finish——summary 要向玩家说清「改了什么、为什么这么改」（具体到关键实体/字段，2-4 句中文），不要只写"完成"。finish 有质量闸：运行时必崩项与关系一致性不得比开工时更糟（quality-gate-worse 被顶回=你本次改动引入了新问题·按提示修掉再收尾）。动过人物名/删过人后务必跑 validateDraft {group:"relation-consistency"} 清悬空关系。大改（结构性重构/批量数值/新系统）收尾时在 summary 里建议玩家点「快测·首回合真跑」；下次协作先 readQuickTestReport 看有无报告——报告里的错误/异常是运行时真后果·优先修它。',
+      '⑤【自查与收尾】每改完一批用 validateDraft 自查，有违规继续修（写类工具的返回已回挂变更后的当前值 nowValue/nowValues/collectionLength，据此确认改动已落地，无需再 getField 重读确认）。改好后用 preflight 跑运行时体检（确保游戏能正常加载），有 blockers 继续修到 bootable，再调用 finish——summary 要向玩家说清「改了什么、为什么这么改」（具体到关键实体/字段，2-4 句中文），不要只写"完成"。finish 有质量闸：运行时必崩项与关系一致性不得比开工时更糟（quality-gate-worse 被顶回=你本次改动引入了新问题·按提示修掉再收尾）。relations 是开放关系图（党派/阶层/未出场人物可作节点）；只有确需绑定 characters 名册的边才设 strictRefs:true。动过人物名/删过人后仍须 findReferences 并跑 validateDraft {group:"relation-consistency"}。大改（结构性重构/批量数值/新系统）收尾时在 summary 里建议玩家点「快测·首回合真跑」；下次协作先 readQuickTestReport 看有无报告——报告里的错误/异常是运行时真后果·优先修它。',
       '⑥ 若发现该玩家/剧本有值得长期沿用的约定（命名规律、文风、设定惯例），可调 recordConvention 记一条（仅在确有发现时，别凑数）；从对话中了解到**推导不出来的背景**（玩家是谁与偏好/玩家给的做法反馈/创作长线目标/外部资料指引），用 saveMemory 存对应类型的记忆供下次共事召回——剧本里本就有的数据与本次改动明细不要存。⑦ 用户消息可能附图（编辑器截图/史料素材/手绘草图）——图即需求的一部分，按图中信息办。⑧ 对没把握的改动（史实存疑、靠推测填充）调 flagUncertain 标一下路径，提醒玩家重点复核（只标真没把握的）；运行中若在工具结果里收到「（插话）」注入，那是玩家的实时补充指令——完成当前一步后必须优先处理它，勿忽略。',
       '⑨【填实·禁空内容·铁律】新增或改写实体必须填到可直接用的质量，绝不留空：先用 listCollection / searchEntities 看一两个剧本里已有的同类实体（或 genReference 看生成范式），照着它们的字段集与丰满度，把新实体的所有相关字段都填上有意义的中文内容——身份/官衔/数值(能力/人口/兵力等)/背景小传/性格/目标/关系/履历等该有的都要有，数值要符合设定区间、彼此自洽。禁止留空字符串、0 占位（除非数值确为 0）、"待补/TODO/未知/暂无"之类占位词，也禁止只填 name 就交差。createEntity 模板只是最小骨架，拿到后必须逐字段补全。宁可少加一个实体，也要把加的每个都填实、达到与官方实体同等的完整度。',
       '⑩【高权限·可写任意字段】你对剧本草稿有完全的写入权限：applyEdit/applyPush 可以创建任意新字段、新嵌套结构，包括剧本编辑器当前没有专门面板/不在结构速查/fieldContract 查不到的"非标准/自定义"字段——编辑器会自动吸收并展示这些字段，不会丢。fieldContract 返回"不在游戏字段契约中"只表示它是扩展/自定义字段（正式游戏不直接读），并不代表禁止写；只要对实现用户需求有用就大胆写。唯一不可改的是：剧本唯一 id、下划线开头的内部字段、ai/conf/meta 等配置（改这些会损坏剧本）。其余一切随需求自由创建与修改。',
@@ -2382,6 +2559,7 @@
     var tools = planOnly ? _planTools() : (opts.tools || AGENT_TOOLS);
     var conventions = (opts.conventions != null ? opts.conventions : loadConventions()) || '';   // 方向B · 剧本约定
     var system = planOnly ? _buildPlanSystemPrompt(conventions) : _buildSystemPrompt(conventions);
+    tools = _filterToolsByPacks(tools, userRequest, { worldKind: (draft && draft.worldKind) === 'fictional' ? 'fictional' : 'historical', toolPacks: opts.toolPacks });
     var surfaces = _getFieldSurfaces(opts);
     var continuing = !!(Array.isArray(opts.priorConversation) && opts.priorConversation.length);
     var editorContext = opts.editorContext || '';
@@ -2441,9 +2619,8 @@
    *   caller(conversation, tools, {maxTok,cfg,system}) → Promise<{text,toolCalls:[{id,name,input}]}>；默认 callWithTools，测试可注入。
    * @returns {Promise<{draft, transcript, conversation, iterations, finished, finalValidation, stopReason, tokensUsed, finishAttempts}>}
    */
-  // 方向F · 权限闸：write 工具受 allowedCollections(范围沙箱) + allowDestructive(危险操作开关) 约束，拦在 dispatch 边界（结构性强制）。
-  var _WRITE_TOOLS = { applyEdit: 1, applyPush: 1, removeEntity: 1, multiEdit: 1, bulkAdd: 1, renameEntity: 1 };
-  var _DESTRUCTIVE_TOOLS = { removeEntity: 1, renameEntity: 1 };
+  // 方向F · 权限闸：所有 _MUT_TOOLS 都受 allowedCollections(范围沙箱) + allowDestructive(危险操作开关) 约束。
+  var _DESTRUCTIVE_TOOLS = { removeEntity: 1, renameEntity: 1, renameRegion: 1 };
   function _topOf(path) { return String(path == null ? '' : path).split(/[.\[]/)[0]; }
   function _toolCollections(name, input) {   // 该工具会改的顶层集合；null=全局(无法限定·如 renameEntity 跨集合联动)
     input = input || {};
@@ -2452,12 +2629,13 @@
       case 'copyField': return [_topOf(input.to)];
       case 'bulkAdd': case 'bulkUpdate': return [_topOf(input.collection)];
       case 'multiEdit': return (Array.isArray(input.edits) ? input.edits : []).map(function(e) { return _topOf(e && e.path); });
+      case 'mapAssignOwner': case 'renameRegion': return ['map', 'mapData'];
       case 'renameEntity': return null;
       default: return [];
     }
   }
   function _permCheck(name, input, perms) {   // 返回拦截原因(字符串)或 null(放行)
-    if (!perms || !_WRITE_TOOLS[name]) return null;
+    if (!perms || !_MUT_TOOLS[name]) return null;
     if (_DESTRUCTIVE_TOOLS[name] && perms.allowDestructive === false) {
       return '危险操作保护已开启：删除/改名（' + name + '）被禁用。如确需请玩家在权限里允许危险操作。';
     }
@@ -2471,9 +2649,25 @@
     return null;
   }
 
-  // 刀E · 可中断：模块级当前运行句柄 + abort()。Claude code 式"随时停"（轮间中断，干净收尾）。
-  var _activeRun = null;
-  function abort() { if (_activeRun) _activeRun.aborted = true; return !!_activeRun; }
+  // 刀E · 可中断：允许会审并行注册多个运行句柄；停止必须覆盖全部在途评审，不能只停最后一个。
+  var _activeRun = null, _activeRuns = [];
+  function _registerRun(control) {
+    _activeRuns.push(control);
+    _activeRun = control;
+  }
+  function _releaseRun(control) {
+    var i = _activeRuns.indexOf(control);
+    if (i >= 0) _activeRuns.splice(i, 1);
+    if (_activeRun === control) _activeRun = _activeRuns.length ? _activeRuns[_activeRuns.length - 1] : null;
+  }
+  function abort() {
+    var runs = _activeRuns.slice();
+    runs.forEach(function(control) {
+      if (control && typeof control.abort === 'function') control.abort('player-stop');
+      else if (control) control.aborted = true;
+    });
+    return runs.length > 0;
+  }
   // 刀G9(CC message queue 对照) · 运行中插话：agent 跑着时用户可继续发话——排队·本轮工具结果落定后
   //   作为 user 消息注入(下一轮模型即见)·不打断当前轮(CC "先干完手头这步·必须处理·勿忽略"语义)。
   function steer(text) {
@@ -2504,6 +2698,7 @@
     // 世界类型：史实(默认) / 虚构(架空·奇幻·武侠·未来·异世界等)。优先 opts.worldKind(UI 显式声明)，否则读剧本持久字段 draft.worldKind；
     // 虚构档去史实锚定、点出 world/worldSettings 容器、校验豁免「五常」。非 'fictional' 一律归史实。
     var worldKind = (opts.worldKind || (draft && draft.worldKind) || 'historical') === 'fictional' ? 'fictional' : 'historical';
+    tools = _filterToolsByPacks(tools, userRequest, { worldKind: worldKind, toolPacks: opts.toolPacks });
     var system = explainOnly ? _buildExplainSystemPrompt(conventions) : (qaOnly ? _buildQaSystemPrompt(conventions) : (reviewOnly ? _buildReviewSystemPrompt(conventions, opts.reviewFocus, worldKind) : (planOnly ? _buildPlanSystemPrompt(conventions) : _buildSystemPrompt(conventions, worldKind, opts.microPlanConfirm !== false))));   // 刀③D1·微计划规则默认注入(opts.microPlanConfirm=false 关)
     var surfaces = _getFieldSurfaces(opts);   // 刀A · 规格（游戏运行时要什么）
     var editorContext = opts.editorContext || '';   // 上下文感知：编辑器当前焦点（模块/集合/选中实体）
@@ -2541,8 +2736,21 @@
     var _clarifyResult = null;   // 方向K · 交互式澄清产出（askClarification 的问题）
     var _remonstrateResult = null;   // 刀1 · 国师进谏产出（remonstrate 的异议+替代方案）
     var _finishSummary = '';   // 改动说明：finish 时 agent 给的"做了什么+为什么"
-    var control = { aborted: false, steers: [] };   // 刀E · 本次运行的中断句柄；刀G9 · 运行中插话队列
-    _activeRun = control;
+    var _kernelRun = (global.TM && global.TM.AgentKernel && typeof global.TM.AgentKernel.createRun === 'function')
+      ? global.TM.AgentKernel.createRun({ meta: { surface: 'authoring', mode: planOnly ? 'plan' : (reviewOnly ? 'review' : (qaOnly ? 'qa' : (explainOnly ? 'explain' : 'edit'))) }, budget: { maxCalls: maxIterations + 4, maxTokens: maxTokens, reserveCalls: 1 } })
+      : null;
+    var _localCtrl = !_kernelRun && typeof global.AbortController === 'function' ? new global.AbortController() : null;
+    var control = {
+      aborted: false, steers: [], sideEffects: [], toolReceipts: [],
+      signal: _kernelRun ? _kernelRun.signal : (_localCtrl ? _localCtrl.signal : null),
+      abort: function(reason) {
+        if (control.aborted) return;
+        control.aborted = true;
+        if (_kernelRun) _kernelRun.abort(reason || 'aborted');
+        else if (_localCtrl && !_localCtrl.signal.aborted) _localCtrl.abort(reason || 'aborted');
+      }
+    };   // 刀E · 真 AbortSignal 中断在途 fetch；外部副作用只暂存到 sideEffects
+    _registerRun(control);
     // 刀G9 · 排空插话队列 → 包装成一条 user 消息注入(CC wrapCommandText 语义:必须处理·勿忽略)
     var _steeredCount = 0;
     function _drainSteers() {
@@ -2600,7 +2808,7 @@
       _macroTries++;
       var flat = _flattenForSummary(conversation, _macroTries === 1 ? 0.45 : 0.2);   // 二次尝试再砍半(摘要请求自身超限的退路)
       if (typeof opts.onText === 'function') { try { opts.onText('（上下文过长，正在压缩前情摘要…）', iterations); } catch (eOt) {} }
-      return Promise.resolve(caller([{ role: 'user', text: _macroSummaryAsk(flat) }], _MACRO_SUM_TOOLS, { maxTok: Math.max(4000, opts.maxTok || 0), maxRetries: 1, cfg: opts.cfg2 || _secondaryCfg() || opts.cfg, system: _MACRO_SUM_SYS }))   // 刀H1 · 后台请求不放大重试(CC 对照)·S3 · 摘要=杂活走次要模型
+      return Promise.resolve(caller([{ role: 'user', text: _macroSummaryAsk(flat) }], _MACRO_SUM_TOOLS, { maxTok: Math.max(4000, opts.maxTok || 0), maxRetries: 1, cfg: opts.cfg2 || _secondaryCfg() || opts.cfg, system: _MACRO_SUM_SYS, signal: control.signal }))   // 刀H1 · 后台请求不放大重试(CC 对照)·S3 · 摘要=杂活走次要模型
         .then(function (r) {
           var s = _macroPickSummary(r);
           if (s.length < 200) return false;   // 摘要太薄不可信·按失败处理(不替换对话)
@@ -2639,7 +2847,7 @@
       }
       if (tokensUsed >= maxTokens) { stopReason = 'tokenBudget'; return Promise.resolve(); }   // 刀G8 · 硬停挪到压缩之后(先自救再认命)
       iterations++;
-      return Promise.resolve(caller(conversation, tools, { maxTok: _curMaxTok || opts.maxTok, cfg: opts.cfg, system: system }))
+      return Promise.resolve(caller(conversation, tools, { maxTok: _curMaxTok || opts.maxTok, cfg: opts.cfg, system: system, signal: control.signal }))
         .then(function(resp) {
           stepRetries = 0;   // 成功一轮即重置：每个停顿点各容忍 maxStepRetries 次抖动
           var text = (resp && resp.text) || '';
@@ -2680,6 +2888,7 @@
             if (_ci >= calls.length || finishAccepted) return Promise.resolve();
             var c = calls[_ci++];
             return Promise.resolve().then(function () {
+              c._stateBefore = _toolStateHash(draft, c.name, c.input);
               if (c.name === 'finish') {
                 // 刀G9 · 有未处理的用户插话 → 不许收尾(新指示可能改变需求·队列随轮末注入·处理完自然放行)
                 if (control.steers.length) {
@@ -2734,12 +2943,31 @@
                   }
                 }
               }
-              return Promise.resolve().then(function () { return dispatchTool(draft, c.name, c.input, surfaces); }).catch(function (te) { return { ok: false, reason: '\u5de5\u5177\u6267\u884c\u51fa\u9519\uff1a' + ((te && te.message) || te) + '\uff08\u8bf7\u68c0\u67e5\u53c2\u6570\u540e\u91cd\u8bd5\uff0c\u6216\u6362\u4e2a\u5de5\u5177/\u65b9\u5f0f\uff09' }; });
+              return Promise.resolve().then(function () { return dispatchTool(draft, c.name, c.input, surfaces, control); }).catch(function (te) {
+                if (control.aborted || (te && te.aborted)) return { ok: false, aborted: true, reason: '玩家已停止' };
+                return { ok: false, reason: '\u5de5\u5177\u6267\u884c\u51fa\u9519\uff1a' + ((te && te.message) || te) + '\uff08\u8bf7\u68c0\u67e5\u53c2\u6570\u540e\u91cd\u8bd5\uff0c\u6216\u6362\u4e2a\u5de5\u5177/\u65b9\u5f0f\uff09' };
+              });
             }).then(function (result) {
+              result = result || { ok: false, reason: '工具未返回结果' };
+              result = _attachWriteVerify(draft, c.name, c.input, result);   // 工具B · 写后回读：回挂变更后当前值
+              var _stateAfter = _toolStateHash(draft, c.name, c.input);
+              var _ok = result.ok !== false;
+              var _spec = AUTHORING_TOOL_REGISTRY && AUTHORING_TOOL_REGISTRY.get ? AUTHORING_TOOL_REGISTRY.get(c.name) : null;
+              if (!_spec) _spec = { name: c.name, effect: _MUT_TOOLS[c.name] ? 'draft-write' : (_READ_TOOLS[c.name] ? 'read' : 'control'), risk: 'low', version: '1' };
+              var _changed = _MUT_TOOLS[c.name] ? (_ok && c._stateBefore !== _stateAfter) : (_ok && result.staged === true);
+              var _verified = _ok && (_spec.effect === 'read' || _spec.effect === 'control' || _spec.effect === 'memory-write' || !_MUT_TOOLS[c.name] || c._stateBefore === _stateAfter || _changed);
+              if (_MUT_TOOLS[c.name] && result.changed == null) result.changed = _changed;
+              var _receipt = global.TM && global.TM.AgentKernel && typeof global.TM.AgentKernel.makeReceipt === 'function'
+                ? global.TM.AgentKernel.makeReceipt(_spec, Object.assign({}, result, { ok: _ok }), { changed: _changed, verified: _verified, beforeHash: c._stateBefore, afterHash: _stateAfter, paths: _mutRoots(c.name, c.input) || [], provenance: 'authoring-draft' })
+                : { tool: c.name, attempted: true, ok: _ok, changed: _changed, verified: _verified, beforeHash: c._stateBefore, afterHash: _stateAfter };
+              control.toolReceipts.push(_receipt);
+              if (_kernelRun && _kernelRun.trace && typeof _kernelRun.trace.add === 'function') _kernelRun.trace.add('tool_receipt', _receipt);
+              // 模型只需紧凑回执；完整 ToolReceipt 留在本轮结果/trace，避免每轮上下文膨胀。
+              result.receipt = { id: _receipt.id || '', tool: _receipt.tool, ok: _receipt.ok, changed: _receipt.changed, verified: _receipt.verified };
               // \u5200G3 \u00b7 \u8bfb/\u5199\u8bb0\u8d26:\u6210\u529f\u8bfb\u8bb0\u5165 _seenReads(\u5e26\u5f53\u524d\u5199\u4e16\u4ee3)\u00b7\u6210\u529f\u5199\u63a8\u8fdb\u4e16\u4ee3\u53f7(\u5176\u540e\u540c\u53c2\u8bfb\u653e\u884c)
               if (result && result.ok !== false) {
                 if (c._readKey && !result.unchanged) _seenReads[c._readKey] = { iter: iterations, writes: _writeCount };
-                if (_MUT_TOOLS[c.name]) _writeCount++;
+                if (_MUT_TOOLS[c.name] && _receipt.changed) _writeCount++;
                 // \u5200G4 \u00b7 \u6307\u7eb9\u5237\u65b0:\u8bfb\u5230\u4ec0\u4e48/\u5199\u6210\u4ec0\u4e48\u90fd\u7b97"\u6700\u65b0\u6240\u89c1"(renameEntity \u8de8\u533a\u6bb5\u2192\u5168\u91cf\u5237\u65b0)
                 if (_MUT_TOOLS[c.name]) _refreshSnap(c.name === 'renameEntity' ? null : _mutRoots(c.name, c.input));
                 else if (_READ_TOOLS[c.name] && !result.unchanged) { var _rr0 = _readRootsOf(c.name, c.input); if (_rr0.length) _refreshSnap(_rr0); }
@@ -2750,7 +2978,6 @@
               if (c.name === 'submitExplanation' && result && result.explained) { _explainResult = { summary: result.summary, points: result.points }; finishAccepted = true; }
               if (c.name === 'askClarification' && result && result.clarify) { _clarifyResult = { questions: result.questions }; finishAccepted = true; }
               if (c.name === 'remonstrate' && result && result.remonstrate) { _remonstrateResult = { concern: result.concern, severity: result.severity, suggestion: result.suggestion }; finishAccepted = true; }
-              result = _attachWriteVerify(draft, c.name, c.input, result);   // 工具B · 写后回读：回挂变更后当前值·省 agent 重读确认
               record(c.name, c.input, result);
               toolResults.push({ id: c.id, name: c.name, content: _resultToText(result) });
               return _procCall();
@@ -2812,7 +3039,10 @@
             stepRetries++;
             if (typeof opts.onText === 'function') { try { opts.onText('（网络/服务抖动，正在重试 ' + stepRetries + '/' + maxStepRetries + '…）', iterations); } catch (er) {} }
             iterations--;   // 重试不计入迭代预算
-            return _delay(retryBaseMs * Math.pow(2, stepRetries - 1)).then(step);
+            return _delay(retryBaseMs * Math.pow(2, stepRetries - 1), control.signal).then(step).catch(function(delayErr) {
+              if (control.aborted || (delayErr && delayErr.aborted)) { stopReason = 'aborted'; return; }
+              throw delayErr;
+            });
           }
           return _fail(e);   // 非瞬态 / 重试耗尽 → 维持 reject 语义(UI 显示失败)·刀G8:partial 挂已完成工作供调用方续
         });
@@ -2822,14 +3052,27 @@
       /* M刀(CC memdir 对照) · 记忆召回：仅新会话首轮·6s 超时·失败静默跳过不阻塞主流程 */
       if (Array.isArray(opts.priorConversation) && opts.priorConversation.length) return '';
       if (opts.noMemoryRecall) return '';
-      return Promise.race([_recallMemories(userRequest, opts.cfg, opts.caller), _delay(6000)]).catch(function () { return ''; });
+      var _recallCtrl = typeof global.AbortController === 'function' ? new global.AbortController() : null;
+      var _recallSignal = _recallCtrl ? _recallCtrl.signal : control.signal;
+      var _parentAbort = null;
+      if (_recallCtrl && control.signal && control.signal.addEventListener) {
+        _parentAbort = function() { try { _recallCtrl.abort(control.signal.reason || 'aborted'); } catch (_) {} };
+        control.signal.addEventListener('abort', _parentAbort, { once: true });
+      }
+      var _recallTimeout = _delay(6000, control.signal).then(function() { if (_recallCtrl) _recallCtrl.abort('memory-recall-timeout'); return ''; });
+      return Promise.race([_recallMemories(userRequest, opts.cfg, opts.caller, _recallSignal), _recallTimeout])
+        .catch(function () { return ''; })
+        .then(function(v) {
+          if (_parentAbort && control.signal && control.signal.removeEventListener) control.signal.removeEventListener('abort', _parentAbort);
+          return v;
+        });
     }).then(function (memBlk) {
       if (memBlk && conversation.length && conversation[0] && conversation[0].role === 'user') {
         conversation[0].text += '\n\n' + memBlk;
         _convRecount(); tokensUsed = _reqTokens();
       }
     }).then(step).then(function() {
-      if (_activeRun === control) _activeRun = null;   // 刀E · 收尾清句柄
+      _releaseRun(control);   // 刀E · 成功/正常中止均注销本运行，不影响并行会审的其他句柄
       return {
         draft: draft, transcript: transcript, conversation: conversation,
         iterations: iterations, finished: finished, plan: _planResult, review: _reviewResult, answer: _qaResult, explanation: _explainResult, clarification: _clarifyResult, remonstrance: _remonstrateResult,
@@ -2838,6 +3081,9 @@
         tokensBreakdown: { system: _sysTok, tools: _toolsTok, conversation: _convTok },   // 刀G1 · 真口径构成(UI/诊断用)
         macroCompactions: _macroDone,   // 刀G8 · 本次运行发生的宏压缩次数(诊断/UI 可提示"前情已压缩")
         steered: _steeredCount,   // 刀G9 · 本次运行注入的用户插话条数
+        sideEffects: control.sideEffects.slice(),   // 记忆/技能等待玩家应用草稿后再提交
+        toolReceipts: control.toolReceipts.slice(),   // attempted/ok/changed/verified 标准回执
+        runTrace: _kernelRun ? _kernelRun.snapshot() : null,
         todos: _todoState.list.slice(),   // 刀G5 · 收尾时的任务表(全完成则已自动清空·UI 可渲染)
         summary: _finishSummary,   // 改动说明：做了什么+为什么
         notes: transcript.filter(function(t) { return t.name === 'note'; }).map(function(t) { return (t.input && t.input.text) || ''; }).filter(Boolean),
@@ -2848,6 +3094,9 @@
         // 刀2 · 自查证轨迹：国师写入前自核的史实声明（供玩家审 + 后续史官重点复核低把握项）
         historyChecks: transcript.filter(function(t) { return t.name === 'checkHistory'; }).reduce(function(acc, t) { return acc.concat((t.input && t.input.facts) || []); }, [])
       };
+    }, function(err) {
+      _releaseRun(control);
+      throw err;
     });
   }
 
@@ -2875,7 +3124,7 @@
         notify({ phase: 'single' });
         var oneOpts = Object.assign({}, opts, { planOnly: false, reviewOnly: false, onSubtask: undefined });
         return runAuthoringLoop(draft, userRequest, oneOpts).then(function(r) {
-          return { orchestrated: false, steps: steps, subResults: [r], draft: draft, finalValidation: r.finalValidation, summary: r.summary, stopReason: r.stopReason };
+          return { orchestrated: false, steps: steps, subResults: [r], draft: draft, finalValidation: r.finalValidation, summary: r.summary, stopReason: r.stopReason, sideEffects: (r.sideEffects || []).slice() };
         });
       }
       notify({ phase: 'plan', steps: steps });
@@ -2905,7 +3154,8 @@
         return {
           orchestrated: true, steps: steps, subResults: subResults, draft: draft,
           finalValidation: validateDraft(draft), summary: summary,
-          stopReason: aborted ? 'aborted' : 'finish'
+          stopReason: aborted ? 'aborted' : 'finish',
+          sideEffects: subResults.reduce(function(all, s) { return all.concat((s.result && s.result.sideEffects) || []); }, [])
         };
       });
     });
@@ -2945,7 +3195,8 @@
       if (authorRes.stopReason === 'needsConfirmation' || authorRes.stopReason === 'needsClarification') {
         return { draft: draft, critiqued: false, revised: false, steps: steps, findings: [],
           summary: '拟稿阶段国师有异议/待澄清，先交玩家定夺再会审', stopReason: authorRes.stopReason,
-          remonstrance: authorRes.remonstrance, clarification: authorRes.clarification, authorConversation: authorRes.conversation };
+          remonstrance: authorRes.remonstrance, clarification: authorRes.clarification, authorConversation: authorRes.conversation,
+          sideEffects: (authorRes.sideEffects || []).slice() };
       }
       // 2+3 · 史官 + 谏官 并行审（对已改 draft 只读，互不影响）
       notify({ phase: 'review' });
@@ -2968,7 +3219,8 @@
         if (!findings.length) {
           return { draft: draft, critiqued: true, revised: false, steps: steps, findings: findings,
             critiques: { history: histR.review, balance: balR.review },
-            summary: '三堂会审：史官/谏官均未发现需修订的问题，拟稿即终稿', stopReason: 'finish' };
+            summary: '三堂会审：史官/谏官均未发现需修订的问题，拟稿即终稿', stopReason: 'finish',
+            sideEffects: (authorRes.sideEffects || []).slice() };
         }
         // 4 · 国师据谏修订（审阅意见回灌进需求，作者模式）
         notify({ phase: 'revise', findings: findings });
@@ -2980,9 +3232,57 @@
           return { draft: draft, critiqued: true, revised: true, steps: steps, findings: findings,
             critiques: { history: histR.review, balance: balR.review },
             summary: '三堂会审：拟稿 → 史官查史(' + hf.length + '条)+谏官批平衡(' + bf.length + '条) → 国师据谏修订',
-            stopReason: revRes.stopReason };
+            stopReason: revRes.stopReason,
+            sideEffects: (authorRes.sideEffects || []).concat(revRes.sideEffects || []) };
         });
       });
+    });
+  }
+
+  // 玩家手动选择的「自动选择工作模式」：只负责在本次请求里挑一条既有执行路线，
+  // 绝不与权限模式混同，也不会成为默认后台行为。
+  function selectWorkMode(userRequest, draft, opts) {
+    opts = opts || {};
+    var q = String(userRequest || '').trim();
+    var perm = opts.permissionMode || 'review';
+    var result = { mode: 'direct', label: '直接执行', risk: 'low', reason: '范围清楚，可由单一作者流程完成' };
+    if (perm === 'plan') return { mode: 'plan', label: '先出计划', risk: 'low', reason: '玩家当前权限模式为「问策」' };
+
+    var historicalRisk = /史实|考据|正史|年号|生卒|官制|历史人物/.test(q);
+    var balanceRisk = /平衡|数值体系|经济系统|战斗系统|财政|人口模型|全局规则/.test(q);
+    var destructiveRisk = /删除|清空|重置|重做|改名联动|迁移|合并势力|拆除/.test(q);
+    var criticIntent = /三堂会审|会审|史官|谏官|严格复核|对抗审/.test(q);
+    if (criticIntent || ((historicalRisk || balanceRisk) && destructiveRisk)) {
+      return { mode: 'critics', label: '三堂会审', risk: 'high', reason: criticIntent ? '请求明确要求多角色复核' : '高影响改动同时涉及史实或平衡，先拟稿再双重审查' };
+    }
+
+    var stepSignals = (q.match(/并且|同时|以及|然后|再把|分别|逐个|全部|全面|一并|从头|重构|系统性/g) || []).length;
+    var scopeSignals = (q.match(/人物|势力|地图|区划|关系|事件|时间线|官制|经济|军事|剧本/g) || []).length;
+    if (/分解|编排|分步骤|多阶段/.test(q) || stepSignals >= 2 || (q.length >= 100 && scopeSignals >= 2)) {
+      return { mode: 'orchestrate', label: '分解编排', risk: destructiveRisk ? 'high' : 'medium', reason: '需求跨多个步骤或剧本领域，拆成有序子任务更稳' };
+    }
+
+    var vague = q.length < 16 && /优化|完善|调整|改一下|处理一下|看看|继续/.test(q);
+    if (!q || vague) return { mode: 'plan', label: '先出计划', risk: 'medium', reason: '目标较含混，先只读勘察并让玩家确认边界' };
+    if ((historicalRisk && balanceRisk) || /高风险|不能出错|正式发布/.test(q)) {
+      result = { mode: 'critics', label: '三堂会审', risk: 'high', reason: '史实与平衡同时受影响，需要独立复核' };
+    }
+    return result;
+  }
+
+  function runAutoSelected(draft, userRequest, opts) {
+    opts = opts || {};
+    var selection = selectWorkMode(userRequest, draft, opts);
+    var runOpts = Object.assign({}, opts); delete runOpts.permissionMode;
+    var p;
+    if (selection.mode === 'plan') p = runAuthoringLoop(draft, userRequest, Object.assign(runOpts, { planOnly: true }));
+    else if (selection.mode === 'orchestrate') p = runOrchestrated(draft, userRequest, runOpts);
+    else if (selection.mode === 'critics') p = runWithCritics(draft, userRequest, runOpts);
+    else p = runAuthoringLoop(draft, userRequest, runOpts);
+    return Promise.resolve(p).then(function(res) {
+      res = res || {};
+      res.autoSelected = true; res.selectedMode = selection.mode; res.selection = selection;
+      return res;
     });
   }
 
@@ -2996,16 +3296,18 @@
    */
   function computeDiff(before, after, opts) {
     opts = opts || {};
-    var maxEntries = opts.maxEntries || 300;
+    // 默认必须返回完整改动集；只有调用方显式给上限时才截断，并把 truncated 标志带回，提交端据此 fail closed。
+    var maxEntries = opts.maxEntries == null ? Infinity : Math.max(0, Number(opts.maxEntries) || 0);
     var out = [];
+    var truncated = false;
     function isObj(x) { return x && typeof x === 'object'; }
     function walk(a, b, path) {
-      if (out.length >= maxEntries) return;
       if (a === b) return;
+      if (out.length >= maxEntries) { truncated = true; return; }
       if (a === undefined) { out.push({ path: path, type: 'added', after: b }); return; }
       if (b === undefined) { out.push({ path: path, type: 'removed', before: a }); return; }
       if (isObj(a) && isObj(b)) {
-        var keys = {};
+        var keys = Object.create(null);
         Object.keys(a).forEach(function(k) { keys[k] = 1; });
         Object.keys(b).forEach(function(k) { keys[k] = 1; });
         Object.keys(keys).forEach(function(k) {
@@ -3016,34 +3318,38 @@
       if (JSON.stringify(a) !== JSON.stringify(b)) out.push({ path: path, type: 'changed', before: a, after: b });
     }
     walk(before, after, '');
+    try { Object.defineProperty(out, 'truncated', { value: truncated, enumerable: false, configurable: true }); }
+    catch (_) { out.truncated = truncated; }
     return out;
   }
 
-  // UI·X · 逐条接受/拒绝改动（Cursor/Claude Code edit-review 范式）：从 current 出发，只应用【接受】的 hunk。
-  // 模型：clone(draft)（draft 已含全部改动·内部一致无索引漂移）起手，把【拒绝】的 hunk 逐个 revert 回原状；
-  // 受影响的数组最后 compact 去 undefined 洞。比"按顶层字段整块替换"细一档，且对独立标量编辑完全安全。
-  // isAccepted(d) 默认接受（拒绝是 opt-out）。current=当前剧本·draft=agent 改完的草稿·diffs=computeDiff(current,draft)。
-  function applySelectedDiffs(current, draft, diffs, isAccepted) {
+  // UI·X · 从【实时 current】起只落接受的 hunk；拒绝项与国师运行期间的用户改动原样保留。
+  // 若 current 在同一路径已偏离 diff.before，则判为并行冲突并拒绝整次应用，禁止旧草稿静默覆盖。
+  function applySelectedDiffs(current, draft, diffs, isAccepted, opts) {
+    opts = opts || {};
     function segs(path) { return String(path || '').split('.').filter(function(s) { return s !== ''; }); }
     function getAt(root, path) {
+      if (_hasUnsafePathSegment(path)) return undefined;
       var ss = segs(path), o = root;
-      for (var i = 0; i < ss.length; i++) { if (o == null) return undefined; o = o[ss[i]]; }
+      for (var i = 0; i < ss.length; i++) { if (o == null || !_hasOwn(o, ss[i])) return undefined; o = o[ss[i]]; }
       return o;
     }
     function setAt(root, path, val) {
+      if (_hasUnsafePathSegment(path)) throw new Error('unsafe diff path: ' + path);
       var ss = segs(path); if (!ss.length) return;
       var o = root;
       for (var i = 0; i < ss.length - 1; i++) {
         var k = ss[i];
-        if (o[k] == null || typeof o[k] !== 'object') { o[k] = /^\d+$/.test(ss[i + 1]) ? [] : {}; }
+        if (!_hasOwn(o, k) || o[k] == null || typeof o[k] !== 'object') { o[k] = /^\d+$/.test(ss[i + 1]) ? [] : {}; }
         o = o[k];
       }
       o[ss[ss.length - 1]] = val;
     }
     function delAt(root, path) {
+      if (_hasUnsafePathSegment(path)) throw new Error('unsafe diff path: ' + path);
       var ss = segs(path); if (!ss.length) return;
       var o = root;
-      for (var i = 0; i < ss.length - 1; i++) { if (o == null) return; o = o[ss[i]]; }
+      for (var i = 0; i < ss.length - 1; i++) { if (o == null || !_hasOwn(o, ss[i])) return; o = o[ss[i]]; }
       if (o == null) return;
       var last = ss[ss.length - 1];
       if (Array.isArray(o) && /^\d+$/.test(last)) { o[+last] = undefined; }   // 留洞·稍后 compact
@@ -3054,16 +3360,39 @@
       var last = ss[ss.length - 1]; if (!/^\d+$/.test(last)) return '';
       return ss.slice(0, ss.length - 1).join('.');
     }
+    function sameValue(a, b) {
+      if (a === b) return true;
+      try { return JSON.stringify(a) === JSON.stringify(b); } catch (_) { return false; }
+    }
     var accept = (typeof isAccepted === 'function') ? isAccepted : function() { return true; };
-    var result = _agentClone(draft);
+    if (diffs && diffs.truncated) {
+      var truncErr = new Error('改动预览不完整，已拒绝应用；请重新生成完整 diff');
+      truncErr.code = 'diff-truncated';
+      throw truncErr;
+    }
+    var accepted = (diffs || []).filter(function(d) { return accept(d); });
+    var conflicts = [];
+    accepted.forEach(function(d) {
+      var path = String(d.path || '');
+      if (_hasUnsafePathSegment(path)) { conflicts.push({ path: path, reason: 'unsafe-path' }); return; }
+      var live = getAt(current, path);
+      var expected = d.type === 'added' ? undefined : d.before;
+      // 用户已手工改成与国师相同结果，视为幂等，不报冲突。
+      if (!sameValue(live, expected) && !sameValue(live, d.after)) conflicts.push({ path: path, before: expected, current: live, after: d.after });
+    });
+    if (conflicts.length && !opts.allowConflicts) {
+      var conflictErr = new Error('当前剧本有 ' + conflicts.length + ' 处与国师草稿并行冲突，未应用任何改动');
+      conflictErr.code = 'edit-conflict';
+      conflictErr.conflicts = conflicts;
+      throw conflictErr;
+    }
+    var result = _agentClone(current);
     var touched = {};
-    (diffs || []).forEach(function(d) {
-      if (accept(d)) return;   // 接受 → 保留 draft 的值，不动
+    accepted.forEach(function(d) {
       var path = String(d.path || ''), pa = parentArrayPath(path);
       if (pa) touched[pa] = 1;
-      if (d.type === 'changed') setAt(result, path, _agentClone(d.before));
-      else if (d.type === 'added') delAt(result, path);                 // 拒绝新增 → 删
-      else if (d.type === 'removed') setAt(result, path, _agentClone(d.before));   // 拒绝删除 → 放回
+      if (d.type === 'removed') delAt(result, path);
+      else setAt(result, path, _agentClone(d.after));
     });
     Object.keys(touched).forEach(function(pp) {
       var arr = getAt(result, pp);
@@ -3141,6 +3470,10 @@
             if (mod && (mod.title || mod.name)) parts.push('当前模块：' + (mod.title || mod.name));
           }
           var field = st.selectedField;
+          if (field && isBlocked(field)) {
+            var candidates = (mod && Array.isArray(mod.topLevelKeys) ? mod.topLevelKeys : Object.keys(sc)).filter(function(k) { return !isBlocked(k); });
+            field = candidates[0] || '';
+          }
           if (field) {
             parts.push('当前集合/字段：' + field);
             var coll = sc[field], idx = st.selectedEntityIndex;
@@ -3190,11 +3523,15 @@
     memories: { list: _loadMemories, save: saveMemoryEntry, remove: deleteMemory, recall: _recallMemories },
     skills: { list: listAllSkills, save: saveSkillEntry, remove: deleteSkill, builtin: BUILTIN_SKILLS },
     packs: { list: listPacks, setEnabled: setPackEnabled, importJSON: importPackJSON, exportJSON: exportPackJSON, remove: removePack },
+    commitSideEffects: commitSideEffects,
     testConnection: testConnection,
     abort: abort,
     steer: steer,   // 刀G9 · 运行中插话(排队·下一轮注入·无活跃运行返回 false)
     estimateRun: estimateRun,
     AGENT_TOOLS: AGENT_TOOLS,
+    TOOL_SPECS: AUTHORING_TOOL_SPECS,
+    toolRegistry: AUTHORING_TOOL_REGISTRY,
+    selectToolPacks: selectToolPacks,
     dispatchTool: dispatchTool,
     _compactOldToolResults: _compactOldToolResults,
     _compactTailSlice: _compactTailSlice,   // 刀G8 · 宏压缩尾部切片(smoke)
@@ -3214,6 +3551,8 @@
     runAuthoringLoop: runAuthoringLoop,
     runOrchestrated: runOrchestrated,
     runWithCritics: runWithCritics,   // 刀3 · 对抗式三角色：拟稿→史官+谏官→修订
+    selectWorkMode: selectWorkMode,
+    runAutoSelected: runAutoSelected,
     // S5
     ENTITY_TEMPLATES: ENTITY_TEMPLATES,
     buildSchemaGuide: buildSchemaGuide,
@@ -3228,4 +3567,3 @@
     module.exports = TM.AuthoringAgent;
   }
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
-

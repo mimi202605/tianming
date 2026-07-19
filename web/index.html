@@ -536,6 +536,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-mechanics-memory.js?v=20260706-splitsync"></script>
 <script src="tm-mechanics-world.js?v=20260621-renownfix"></script>
 <!-- S2 (2026-06-18) 按需取数 agent 工具层：包现有检索 API 为 LLM 可调用工具·供 SC_RECALL agent 分支（开关 P.conf.agentRecallEnabled 默认关） -->
+<script src="tm-agent-kernel.js?v=20260719-kernel1"></script>
 <script src="tm-agent-flags.js?v=20260623-liveworld"></script>
 <script src="tm-memory-agent-tools.js?v=20260618-s2"></script>
 <script src="tm-memory-steward.js?v=20260619-steward-s5"></script>
@@ -664,16 +665,18 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-endturn-core.js?v=20260531-party-class-llm"></script>
 <!-- slice 1·2026-05-07·endTurn 管道执行器骨架·feature flag P.flags.useNewPipeline 触发·见 web/docs/endturn-data-flow.md -->
 <script src="tm-endturn-pipeline-types.js?v=2026050701"></script>
+<script src="tm-endturn-mode-contract.js?v=20260719-parallel1"></script>
 <script src="tm-endturn-timing-ledger.js?v=2026051801"></script>
 <script src="tm-endturn-pipeline-executor.js?v=2026050701"></script>
 <script src="tm-endturn-validity.js?v=2026051701"></script>
-<script src="tm-endturn-pipeline-steps.js?v=20260523-1251"></script>
+<script src="tm-endturn-pipeline-steps.js?v=20260719-agentparallel1"></script>
 <!-- 回合推演「模式 b · agent 模式」平行引擎(开关 agentModeEnabled 默认关)·详设 docs/agent-mode-design.md -->
-<script src="tm-endturn-agent-mode.js?v=20260623-liveworld"></script>
-<script src="tm-endturn-agent-read-tools.js?v=20260621-toolcall"></script>
+<script src="tm-endturn-agent-mode.js?v=20260719-agentparallel1"></script>
+<script src="tm-endturn-agent-read-tools.js?v=20260719-agentparallel1"></script>
 <script src="tm-wentian-agent.js?v=20260703-wtagent"></script><!-- 问天 agent 模式·先查证后裁定(复用只读工具+callAIWithTools)·默认开可关 -->
-<script src="tm-endturn-agent-write-tools.js?v=20260622-geo2"></script>
-<script src="tm-endturn-agent-depth-tools.js?v=20260623-narrparallel"></script>
+<script src="tm-endturn-agent-write-tools.js?v=20260719-agentparallel1"></script>
+<script src="tm-endturn-agent-depth-tools.js?v=20260719-agentparallel1"></script>
+<script src="tm-endturn-agent-intent-plan.js?v=20260719-single-committer1"></script>
 <script src="tm-endturn-shiji-compose.js?v=20260706-shijivolumes"></script><!-- 史记弹窗·御览分卷组装·须先于 render 加载（render 调 _composeShijiHtml·alias _renderUnifiedChanges 在此） -->
 <script src="tm-endturn-render.js?v=20260706-shijivolumes"></script>
 <!-- 过回合进度拍表引擎 + 电影化加载层·2026-06-10·见 web/docs/endturn-progress-precision-backlog.md·agent 拍表 2026-06-20 -->

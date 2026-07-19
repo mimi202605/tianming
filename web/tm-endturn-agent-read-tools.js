@@ -19,6 +19,7 @@
   TM.Endturn = TM.Endturn || {};
 
   function _GM(ctx) { return (ctx && ctx.GM) || root.GM || null; }
+  function _unsafeSegment(s) { return s === '__proto__' || s === 'prototype' || s === 'constructor'; }
 
   // kind → 候选 GM 键(取第一个是数组/对象的)·容忍剧本/版本差异
   var KIND_KEYS = {
@@ -52,9 +53,11 @@
     if (!gm || path == null) return { ok: false };
     var p = String(path).replace(/^GM\./, '').replace(/^\$\.?/, '');
     var parts = p.split('.').filter(function (s) { return s !== ''; });
+    if (parts.some(_unsafeSegment)) return { ok: false };
     var cur = gm;
     for (var i = 0; i < parts.length; i++) {
       if (cur == null || typeof cur !== 'object') return { ok: false };
+      if (!Object.prototype.hasOwnProperty.call(cur, parts[i])) return { ok: false };
       cur = cur[parts[i]];
     }
     if (cur === undefined) return { ok: false };
@@ -321,8 +324,10 @@
     { name: 'get_relations', description: '【关系网】查某人/某势力的关系网(人际关系 + 势力邦交)·一把抓其盟友/敌对/恩怨。推演社会/朋党/邦交动态、谁会帮谁、谁会反谁时调。', parameters: { type: 'object', properties: { name: { type: 'string', description: '人物名或势力名' } }, required: ['name'] } }
   ];
 
+  var SPECS = DEFS.map(function (d) { return Object.assign({}, d, { effect: 'read', domain: 'runtime-observe', pack: 'runtime-read', risk: 'low', idempotent: true }); });
+  var REGISTRY = (TM.AgentKernel && TM.AgentKernel.createRegistry) ? TM.AgentKernel.createRegistry(SPECS) : null;
   var TOOL_SET = {};
-  DEFS.forEach(function (d) { TOOL_SET[d.name] = true; });
+  SPECS.forEach(function (d) { TOOL_SET[d.name] = true; });
 
   // handle(name, input, ctx) → {ok, name, text}·async(recall 复用②是异步)
   async function handle(name, input, ctx) {
@@ -347,12 +352,16 @@
     }
   }
 
-  function defs() { return DEFS.slice(); }
+  function defs() { return REGISTRY ? REGISTRY.defs() : DEFS.slice(); }
+  function specs() { return REGISTRY ? REGISTRY.list() : SPECS.slice(); }
   function isToolName(name) { return Object.prototype.hasOwnProperty.call(TOOL_SET, name); }
 
   TM.Endturn.AgentReadTools = {
     defs: defs,
     DEFS: DEFS,
+    SPECS: SPECS,
+    specs: specs,
+    registry: REGISTRY,
     handle: handle,
     isToolName: isToolName,
     KIND_KEYS: KIND_KEYS

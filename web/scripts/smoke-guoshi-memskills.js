@@ -4,7 +4,7 @@
  * M 记忆(≈CC memdir)：四型条目·同名更新·≤3条免调用直注入·>3条副模型选择召回·失败回退关键词。
  * S 技能(≈CC SkillTool)：内置+用户+能力包合并清单·useSkill 展开·内置同名拒存。
  * P 能力包(≈CC plugin)：默认启用·停用即技能退场·JSON 导出导入(跨玩家分发)。
- * E2E：mock caller 全链——system 带技能清单/召回注入首 user/useSkill 展开回对话/agent saveMemory 落库。 */
+ * E2E：mock caller 全链——system 带技能清单/召回注入首 user/useSkill 展开回对话/agent saveMemory 暂存并在批准边界落库。 */
 global.localStorage = (function () { var s = {}; return { getItem: function (k) { return Object.prototype.hasOwnProperty.call(s, k) ? s[k] : null; }, setItem: function (k, v) { s[k] = String(v); }, removeItem: function (k) { delete s[k]; } }; })();
 global.window = global;
 require('../editor-authoring-agent.js');
@@ -66,7 +66,9 @@ AA.memories.recall('需求', null, mockSel).then(function (blk) {
   return AA.runAuthoringLoop(draft, '把张三丰满一下', { caller: mockCaller, cfg: {}, maxIterations: 6 }).then(function (r) {
     ok(/可用技能/.test(sawSystem) && /人物塑造章法/.test(sawSystem) && /疆域与地图调整法/.test(sawSystem), 'system 含技能清单(内置+能力包)');
     ok(/相关记忆/.test(sawFirstUser) && /bg-0/.test(sawFirstUser) && !/bg-1/.test(sawFirstUser), '召回选择性注入首条 user');
-    ok(AA.memories.list().some(function (m) { return m.name === 'owner-pref'; }), 'agent saveMemory 落库');
+    ok(!AA.memories.list().some(function (m) { return m.name === 'owner-pref'; }) && r.sideEffects.length === 1, 'agent saveMemory 先暂存·运行期不越过玩家批准');
+    var fxCommit = AA.commitSideEffects(r.sideEffects);
+    ok(fxCommit.ok && AA.memories.list().some(function (m) { return m.name === 'owner-pref'; }), '玩家批准边界后 saveMemory 落库');
     ok(r.finished, 'run 正常收尾');
   });
 }).then(function () {

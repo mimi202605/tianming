@@ -62,6 +62,30 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
   function _clone(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return o; } }   // 维度3 · 撤销快照
+  function _startDraft(source) {
+    var live = source || (ui.adapter && ui.adapter.getScenario ? ui.adapter.getScenario() : {});
+    ui.baseScenario = AA.makeDraft(live);
+    ui.draft = AA.makeDraft(live);
+    ui._pendingSideEffects = [];
+    return ui.draft;
+  }
+  function _setDraftFromBase(base, draft) {
+    ui.baseScenario = AA.makeDraft(base || {});
+    ui.draft = draft;
+    ui._pendingSideEffects = [];
+    return ui.draft;
+  }
+  function _draftDiff() {
+    return AA.computeDiff(ui.baseScenario || (ui.adapter && ui.adapter.getScenario ? ui.adapter.getScenario() : {}), ui.draft || {});
+  }
+  function _clearDraft() { ui.draft = null; ui.baseScenario = null; ui._pendingSideEffects = []; }
+  function _captureSideEffects(res, append) {
+    var fx = (res && Array.isArray(res.sideEffects)) ? res.sideEffects : [];
+    if (!append) ui._pendingSideEffects = [];
+    if (!Array.isArray(ui._pendingSideEffects)) ui._pendingSideEffects = [];
+    if (fx.length) ui._pendingSideEffects = ui._pendingSideEffects.concat(_clone(fx));
+    return ui._pendingSideEffects.length;
+  }
 
   // UI 借鉴 Claude Code/Codex · 轻量安全 markdown 渲染（先转义、再套 md；支持代码块/行内码/标题/有序无序列表/加粗/斜体）
   function _mdInline(s) {
@@ -553,7 +577,12 @@
       raillist: panel.querySelector('#tm-aa-raillist'),
       railTg: panel.querySelector('#tm-aa-rail-tg')
     };
-    panel.querySelector('#tm-aa-x').addEventListener('click', function() { if (panel._fs) _toggleFullscreen(); panel.classList.remove('open'); });
+    panel.querySelector('#tm-aa-x').addEventListener('click', function() {
+      if (panel._fs) _toggleFullscreen();
+      panel.classList.remove('open');
+      // 剧本工坊停靠态也必须真正关闭并归还正文宽度；此前 CSS 强制 display:flex 导致 × 形同虚设。
+      try { document.body.classList.remove('je-guoshi-docked', 'je-guoshi-settings-open'); } catch (e) {}
+    });
     var _nc = panel.querySelector('#tm-aa-newchat'); if (_nc) _nc.addEventListener('click', newConversation);   // 真·连续会话：另起新对话
     var _pf = panel.querySelector('#tm-aa-preflight'); if (_pf) _pf.addEventListener('click', function () { runPreflightUI(); });   // 常驻·运行时体检(确定性免API·随时重跑·不止空状态)
     if (ui.els.fs) ui.els.fs.addEventListener('click', function () { _toggleFullscreen('user'); });   // UI·AI · 全屏切换
@@ -608,6 +637,8 @@
       if (sc) {
         sc.worldKind = v;                 // 写进活剧本对象：makeDraft 每次克隆活对象 → draft.worldKind 带过去
         if (ui.draft) ui.draft.worldKind = v;   // 续接会话中已建 draft → 同步本轮
+        var app = global.TM_SCENARIO_EDITOR_RESET_APP;
+        if (app && typeof app.recordExternalEdit === 'function') app.recordExternalEdit('设置世界类型', 'worldKind=' + v);
       }
     } catch (e) {}
     _reflectWorldKind();
@@ -642,6 +673,7 @@
   // ── Claude 桌面端式 · ＋能力菜单：把散落的高级能力收进输入卡左下角（全部走既有运行器·零新行为） ──
   var _PLUS_ITEMS = [
     { act: 'preflight', ic: 'pulse', t: '运行时体检', d: '确定性检查·免 API·查会影响加载的阻塞' },
+    { act: 'auto-select', ic: 'route', t: '自动选择工作模式', d: '手动武装下一次请求·由国师在直接/计划/编排/会审中择一' },
     { act: 'review', ic: 'search', t: '审阅出报告', d: '全面体检剧本（输入框可写审阅重点）' },
     { act: 'qa', ic: 'chat', t: '剧本问答', d: '就剧本提问（先在输入框写问题）' },
     { act: 'explain', ic: 'book', t: '讲解剧本', d: '给接手的人做 onboarding 式讲解' },
@@ -655,6 +687,7 @@
   // ＋菜单与 / 命令面板共用的能力派发（S6·CC slash commands 对照）
   function _plusAct(act) {
     if (act === 'preflight') runPreflightUI();
+    else if (act === 'auto-select') _armAutoMode();
     else if (act === 'review') runReview();
     else if (act === 'qa') runQaUI();
     else if (act === 'explain') runExplainUI();
@@ -672,6 +705,7 @@
       { k: 'new', t: '新对话', d: '另起新会话（旧会话留侧栏可切回）', run: function () { newConversation(); } },
       { k: 'sessions', t: '会话侧栏', d: '打开/收起会话历史（全屏侧栏）', run: function () { if (ui.els.railTg) ui.els.railTg.click(); } },
       { k: 'review', t: '审阅出报告', d: '全面体检·可带重点：/审阅 平衡性', run: function () { _plusAct('review'); } },
+      { k: 'auto', t: '自动选择工作模式', d: '手动武装下一次请求·自动选直接/计划/编排/会审', run: function () { _plusAct('auto-select'); } },
       { k: 'qa', t: '剧本问答', d: '就剧本提问：/剧本问答 谁掌兵权', run: function () { _plusAct('qa'); } },
       { k: 'explain', t: '讲解剧本', d: '给接手的人做 onboarding 式讲解', run: function () { _plusAct('explain'); } },
       { k: 'orchestrate', t: '分解编排', d: '大需求拆子任务：/分解编排 重做经济', run: function () { _plusAct('orchestrate'); } },
@@ -1324,7 +1358,7 @@
     if (!meta) { setStatus('该会话已不存在'); return; }
     var body = _sessBody(id), fk = _fileKey();
     function bind(viewOnly) {
-      ui._pendingPlan = false; ui._pendingClarify = false; ui.draft = null; ui._autoCont = 0;
+      ui._pendingPlan = false; ui._pendingClarify = false; _clearDraft(); ui._autoCont = 0;
       if (ui._criticsArmed) _disarmCriticsVisual();
       if (body && !viewOnly) {
         ui.conversation = body.conversation;
@@ -2089,10 +2123,11 @@
     }).then(function(res) {
       setRunning(false);
       ui.conversation = res.conversation;
+      _captureSideEffects(res, true);
       _logRun('计划执行', '(按计划执行)', res);   // 方向M
       _beginReplyCard();
       renderSummary(res.summary, res.notes, res.suggestedConventions, true);   // UI·P · 流式
-      renderDiff(AA.computeDiff(ui.adapter.getScenario(), ui.draft), res.uncertainties);   // 置信度标注
+      renderDiff(_draftDiff(), res.uncertainties);   // 以开工基线审阅，实时剧本留到应用时做冲突合并
       renderValidation(res.finalValidation);
       ui.els.actions.style.display = '';
       ui.els.apply.className = res.finalValidation.ok ? '' : 'warn';
@@ -2109,7 +2144,7 @@
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     var focus = (ui.els.req.value || '').trim();
     _appendUserMsg(focus || '审阅整个剧本', { kind: 'review', input: focus });   // UI·B 会话流 + UI·Y 重试派发
-    ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照（审阅不改它）
+    _startDraft();   // 只读快照（审阅不改它）
     ui.conversation = null; ui._pendingPlan = false;
     setRunning(true);
     setStatus('正在审阅剧本…（agent 只读巡查，出体检报告，可能需要数十秒）');
@@ -2121,9 +2156,10 @@
       onText: function(text, iter) { appendText(text, iter); }
     }).then(function(res) {
       setRunning(false);
+      _captureSideEffects(res, false);
       _logRun('审阅', focus || '(全面体检)', res);   // 方向M
       ui.els.req.value = ''; _autoGrowReq();
-      ui.draft = null;   // 审阅不产生可应用改动
+      _clearDraft();   // 审阅不产生可应用改动
       if (res.review) {
         _beginReplyCard();
         renderReview(res.review, true);   // UI·P · 流式
@@ -2166,13 +2202,13 @@
     var res = AA.mergeEntityBundle(cur, bundle);
     if (res.error) { setStatus('导入失败：' + res.error); return false; }
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
-    ui.draft = res.scenario; ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
+    _setDraftFromBase(cur, res.scenario); ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
     var renamedN = res.renamed ? Object.keys(res.renamed).length : 0;
     var sm = '已合并捆绑包：势力 +' + res.added.factions + ' · 人物 +' + res.added.characters + ' · 关系 +' + res.added.relations + (renamedN ? ' · 重名已改 ' + renamedN + ' 个' : '');
     _logRun('导入捆绑', '捆绑包导入', { summary: sm, tokensUsed: 0, iterations: 0, stopReason: 'imported' });   // 方向M · 记历史 + 让 markLastApplied 生效
     _beginReplyCard();
     renderSummary(sm, null, null);
-    renderDiff(AA.computeDiff(cur, ui.draft));
+    renderDiff(_draftDiff());
     renderValidation(AA.validateDraft(ui.draft));
     ui.els.actions.style.display = '';
     ui.els.apply.className = ''; ui.els.apply.textContent = '应用到剧本'; ui.els.discard.textContent = '放弃';
@@ -2207,7 +2243,7 @@
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     _appendUserMsg(question, { kind: 'qa', input: question });   // UI·B 会话流 + UI·Y 重试派发
-    ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照
+    _startDraft();   // 只读快照
     ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
     setRunning(true);
     setStatus('正在查证并回答…（只读，不改剧本）');
@@ -2220,7 +2256,7 @@
     }).then(function(res) {
       setRunning(false);
       _logRun('问答', question, res);   // 方向M
-      ui.draft = null; ui.els.req.value = ''; _autoGrowReq();
+      _clearDraft(); ui.els.req.value = ''; _autoGrowReq();
       if (res.answer) {
         _beginReplyCard();
         renderAnswer(question, res.answer.answer, true);   // UI·P · 流式
@@ -2244,7 +2280,7 @@
     var focus = (ui.els.req.value || '').trim();
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     _appendUserMsg(focus || '讲解剧本', { kind: 'explain', input: focus });   // UI·B 会话流 + UI·Y 重试派发
-    ui.draft = AA.makeDraft(ui.adapter.getScenario());   // 只读快照
+    _startDraft();   // 只读快照
     ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
     setRunning(true);
     setStatus('正在通读剧本并讲解…（只读，不改剧本）');
@@ -2257,7 +2293,7 @@
     }).then(function(res) {
       setRunning(false);
       _logRun('讲解', focus || '(全面 onboarding)', res);
-      ui.draft = null; ui.els.req.value = ''; _autoGrowReq();
+      _clearDraft(); ui.els.req.value = ''; _autoGrowReq();
       if (res.explanation) {
         _beginReplyCard();
         renderExplanation(res.explanation, true);   // UI·P · 流式
@@ -2330,7 +2366,7 @@
     if (!AA || typeof AA.runOrchestrated !== 'function') { setStatus('agent 核心未加载'); return; }
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     _appendUserMsg(request, { kind: 'orchestrate', input: request });   // UI·B 会话流 + UI·Y 重试派发
-    ui.draft = AA.makeDraft(ui.adapter.getScenario());
+    _startDraft();
     ui.conversation = null; ui._pendingPlan = false;
     setRunning(true);
     setStatus('正在分解任务…（先拆子任务，再逐步执行）');
@@ -2366,12 +2402,13 @@
       }
     }).then(function(res) {
       setRunning(false);
+      _captureSideEffects(res, false);
       if (_clSteps.length) _renderChecklist(_clSteps.length, true);   // 全部 ✓
       _logRun('分解执行', request, res);   // 方向M
       ui.els.req.value = ''; _autoGrowReq();
       _beginReplyCard();
       renderSummary(res.summary, null, null, true);   // UI·P · 流式
-      var diffs = AA.computeDiff(ui.adapter.getScenario(), ui.draft);
+      var diffs = _draftDiff();
       renderDiff(diffs);
       renderValidation(res.finalValidation);
       ui.els.actions.style.display = '';
@@ -2388,7 +2425,20 @@
   //  入口走「武装」式：点 🏛️ chip 武装，玩家写需求后点发送即走会审（区别于普通生成）。引擎在 AA.runWithCritics。
   // ───────────────────────────────────────────────
   var _REQ_PLACEHOLDER = '描述你想要的修改，例如：把主角势力改名为「西凉军」并补两个文官';
+  function _armAutoMode() {
+    if (ui._criticsArmed) _disarmCriticsVisual();
+    ui._autoModeArmed = true;
+    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '智'; ui.els.go.style.fontSize = '13px'; ui.els.go.title = '自动选择工作模式：直接执行 / 先出计划 / 分解编排 / 三堂会审'; }
+    if (ui.els && ui.els.req) { ui.els.req.placeholder = '【自动选择模式】写下需求——国师只为这次请求选择最合适的工作模式'; ui.els.req.focus(); }
+    setStatus('已手动选择「自动选择工作模式」· 下一次发送时择一执行；它不是默认行为，也不改变问策/共审/放行权限');
+  }
+  function _disarmAutoVisual() {
+    ui._autoModeArmed = false;
+    if (ui.els && ui.els.go && !ui.running && !ui._criticsArmed) { ui.els.go.textContent = '↑'; ui.els.go.style.fontSize = ''; ui.els.go.title = 'Enter 发送 · Shift+Enter 换行'; }
+    if (ui.els && ui.els.req && !ui._criticsArmed) ui.els.req.placeholder = _REQ_PLACEHOLDER;
+  }
   function _armCritics() {
+    if (ui._autoModeArmed) _disarmAutoVisual();
     ui._criticsArmed = true;
     if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '审'; ui.els.go.style.fontSize = '13px'; ui.els.go.title = '三堂会审：拟稿→史官查史+谏官批平衡→据谏修订'; }
     if (ui.els && ui.els.req) { ui.els.req.placeholder = '【三堂会审】写下要新增/修改什么——国师拟稿，再由史官查史实、谏官批平衡，据谏修订后交你审'; ui.els.req.focus(); }
@@ -2396,8 +2446,8 @@
   }
   function _disarmCriticsVisual() {
     ui._criticsArmed = false;
-    if (ui.els && ui.els.go && !ui.running) { ui.els.go.textContent = '↑'; ui.els.go.style.fontSize = ''; ui.els.go.title = 'Enter 发送 · Shift+Enter 换行'; }
-    if (ui.els && ui.els.req) ui.els.req.placeholder = _REQ_PLACEHOLDER;
+    if (ui.els && ui.els.go && !ui.running && !ui._autoModeArmed) { ui.els.go.textContent = '↑'; ui.els.go.style.fontSize = ''; ui.els.go.title = 'Enter 发送 · Shift+Enter 换行'; }
+    if (ui.els && ui.els.req && !ui._autoModeArmed) ui.els.req.placeholder = _REQ_PLACEHOLDER;
   }
   function runWithCriticsUI() {
     if (ui.running) return;
@@ -2406,7 +2456,7 @@
     if (!AA || typeof AA.runWithCritics !== 'function') { setStatus('agent 核心未加载'); return; }
     resetResults(true);   // 聊天化：保留对话流（结果作为新卡 append，不清历史）
     _appendUserMsg(request, { kind: 'critics', input: request });
-    ui.draft = AA.makeDraft(ui.adapter.getScenario());
+    _startDraft();
     ui.conversation = null; ui._pendingPlan = false;
     setRunning(true);
     setStatus('三堂会审 · 国师拟稿中…');
@@ -2442,13 +2492,14 @@
       // 拟稿阶段被国师进谏/澄清打断 → 渲染对应卡片，提示玩家调整需求后重新发起（会审不做续接，避免与主流程纠缠）
       if (res.stopReason === 'needsConfirmation' && res.remonstrance) { _logRun('三堂会审', request, res); renderRemonstrance(res.remonstrance); setStatus('国师对此需求有异议（见上）· 调整需求后可重新发起三堂会审'); return; }
       if (res.stopReason === 'needsClarification' && res.clarification) { _logRun('三堂会审', request, res); renderClarify(res.clarification.questions); setStatus('国师拟稿前需澄清（见上）· 补充需求后可重新发起三堂会审'); return; }
+      _captureSideEffects(res, false);
       _info.hist = ((res.critiques && res.critiques.history && res.critiques.history.findings) || []).length;
       _info.bal = ((res.critiques && res.critiques.balance && res.critiques.balance.findings) || []).length;
       _phase.draft = 'done'; _phase.review = 'done'; _phase.revise = 'done'; _render(true);
       _logRun('三堂会审', request, res);
       ui.els.req.value = ''; _autoGrowReq();
       renderCriticsReport(res);
-      var diffs = AA.computeDiff(ui.adapter.getScenario(), ui.draft);
+      var diffs = _draftDiff();
       renderDiff(diffs);
       var val = res.finalValidation || AA.validateDraft(ui.draft);
       renderValidation(val);
@@ -2488,7 +2539,7 @@
     ui.els.summary.style.display = '';
   }
 
-  // UI·Q · 停止/中断生成：调 agent core 的 abort()（轮间干净收尾·不施未完成的改动）。
+  // UI·Q · 停止/中断生成：调 agent core 的 abort()（立即取消在途请求·不施未完成的改动）。
   // 适用于所有运行类型(普通编辑/计划执行/审阅/问答/讲解/分解执行)——abort() 终止当前 _activeRun。
   function onStop() {
     if (!ui.running || ui._stopping) return;
@@ -2497,7 +2548,7 @@
     try { stopped = !!(AA && AA.abort && AA.abort()); } catch (e) {}
     if (ui.els && ui.els.go) { ui.els.go.textContent = '…'; ui.els.go.disabled = true; }
     _cancelTypewriter();   // 打字机若在途也立即落定
-    setStatus(stopped ? '正在停止…（本轮 API 返回后干净收尾，不施未完成的改动）' : '当前没有正在进行的运行');
+    setStatus(stopped ? '正在停止…（已取消在途请求，不施未完成的改动）' : '当前没有正在进行的运行');
   }
   // 「生成」键的统一入口：运行中→停止，空闲→生成
   function onGoClick() { if (ui.running) onStop(); else onGenerate(); }
@@ -2522,8 +2573,15 @@
     var request = (ui.els.req.value || '').trim();
     if (!request) { setStatus('请先输入需求'); return; }
     if (!AA || typeof AA.runAuthoringLoop !== 'function') { setStatus('agent 核心未加载'); return; }
+    var _autoSelection = null;
+    if (ui._autoModeArmed && typeof AA.selectWorkMode === 'function') {
+      _autoSelection = AA.selectWorkMode(request, ui.adapter && ui.adapter.getScenario ? ui.adapter.getScenario() : null, { permissionMode: _loadPerm().mode });
+      _disarmAutoVisual();
+      if (_autoSelection.mode === 'orchestrate') { setStatus('自动选择 → 分解编排：' + _autoSelection.reason); runOrchestratedUI(); return; }
+      if (_autoSelection.mode === 'critics') { setStatus('自动选择 → 三堂会审：' + _autoSelection.reason); runWithCriticsUI(); return; }
+    }
     if (ui._pendingClarify) ui._pendingClarify = false;   // 聊天化：玩家发送即视为对上轮进谏/澄清的回应，走续接（无独立按钮）
-    var planOnly = !!ui.planMode;   // 计划模式：先出计划，批准再执行
+    var planOnly = !!ui.planMode || !!(_autoSelection && _autoSelection.mode === 'plan');   // 权限问策或手动自动选模判为计划
     // 真·连续会话：只要对话线程还在就续接（哪怕上一轮已应用·draft 已清）。计划模式总从当前剧本起新计划。
     //   ——治「每发一条指令都是新对话」：之前续接还要求 ui.draft，应用后 draft 没了就被迫重置；现在线程贯穿整个会话。
     var continuing = !planOnly && !!(ui.conversation && ui.conversation.length && !ui._pendingPlan);
@@ -2533,9 +2591,10 @@
     resetResults(continuing);   // UI·B · 会话流：续接保留线程+消息流、新对话清空
     _appendUserMsg(request + (_attN ? '（附 ' + _attN + ' 件）' : ''), { input: request });    // 回显用户消息气泡
     setRunning(true);
-    setStatus(planOnly ? '正在规划…（agent 先只读、出计划）' : '正在生成…（agent 多轮编辑+自校验，可能需要数十秒）');
-    if (!continuing) { ui.draft = AA.makeDraft(ui.adapter.getScenario()); if (!planOnly) ui.conversation = null; }
-    else if (!ui.draft) { ui.draft = AA.makeDraft(ui.adapter.getScenario()); }   // 续接但上轮已应用 → 从当前(已更新)剧本新建 draft，对话线程保留
+    var _autoPrefix = _autoSelection ? ('自动选择 → ' + _autoSelection.label + '（' + _autoSelection.reason + '）· ') : '';
+    setStatus(_autoPrefix + (planOnly ? '正在规划…（agent 先只读、出计划）' : '正在生成…（agent 多轮编辑+自校验，可能需要数十秒）'));
+    if (!continuing) { _startDraft(); if (!planOnly) ui.conversation = null; }
+    else if (!ui.draft) { _startDraft(); }   // 续接但上轮已应用 → 从当前(已更新)剧本新建 draft，对话线程保留
 
     var _rtd = (continuing && ui._restoredTodos && ui._restoredTodos.length) ? ui._restoredTodos : null;   // 刀H3 · 恢复的任务表一次性回灌
     ui._restoredTodos = null;
@@ -2559,6 +2618,7 @@
       setRunning(false);
       ui.conversation = res.conversation;   // 维度1 · 存住线程
       _saveSession(res, request, res.remonstrance ? '进谏' : (res.clarification ? '澄清' : (res.plan ? '计划' : '编辑')));   // S5 · 落盘到当前会话(跨刷新/跨剧本可切回)
+      _captureSideEffects(res, continuing);   // saveMemory/saveSkill 先暂存，随草稿一起批准/放弃
       // 自动续接：未完成且因轮次/token 上限停 → 自动发「继续」续接（复用连续会话线程·持续调用直到完整·安全上限 3 次）。
       if (!planOnly && !res.finished && (res.stopReason === 'maxIterations' || res.stopReason === 'tokenBudget') && (ui._autoCont || 0) < 3) {
         ui._autoCont = (ui._autoCont || 0) + 1;
@@ -2594,7 +2654,7 @@
         ui.els.discard.textContent = '放弃';
         setStatus('结束（' + (stopMap[res.stopReason] || res.stopReason) + '·' + res.iterations + ' 轮·约 ' + res.tokensUsed + ' tokens）· 可继续追加需求，或应用/放弃');
         renderSummary(res.summary, res.notes, res.suggestedConventions, true);   // UI·P · 流式
-        var diffs = AA.computeDiff(ui.adapter.getScenario(), ui.draft);
+        var diffs = _draftDiff();
         renderDiff(diffs, res.uncertainties);   // 置信度标注：高亮没把握的改动
         renderValidation(res.finalValidation);
         ui.els.actions.style.display = '';
@@ -2606,15 +2666,31 @@
     }).catch(function(err) { renderError('generate', request, err); });   // UI·AC · 错误卡+重试（重试走 onGenerate·仍按当前 planMode）
   }
 
-  // UI·X · 逐条接受/拒绝 · 应用：只落【接受】的 hunk（拒绝集外的）。核心纯函数 applySelectedDiffs 负责
-  //   从当前剧本起、把拒绝的 hunk revert 回原状（数组 compact 无洞）。无拒绝 → 整份草稿。
+  // UI·X · 逐条接受/拒绝：永远从实时剧本起只落接受 hunk；全接受也不能整份旧草稿覆盖用户并行编辑。
   function _applyScenario() {
     var diffs = ui._lastDiffs || [], rej = ui._diffRejected || new Set();
-    if (!diffs.length || !rej.size) return ui.draft;   // 全接受 → 整份草稿
     if (AA && typeof AA.applySelectedDiffs === 'function') {
       return AA.applySelectedDiffs(ui.adapter.getScenario(), ui.draft, diffs, function(d) { return !rej.has(d.__idx); });
     }
-    return ui.draft;
+    throw new Error('缺少安全的逐项应用器，已拒绝覆盖当前剧本');
+  }
+
+  // 选择性应用会破坏原草稿内部一致性，因此按“相对实时剧本新增的问题”重新跑结构+运行时契约。
+  function _validateSelectedScenario(live, candidate) {
+    var groups = ['admin-population', 'faction-refs', 'region-coverage', 'timeline-compliance', 'char-completeness', 'relation-consistency', 'runtime-chars', 'runtime-office', 'runtime-boot'];
+    var added = [];
+    groups.forEach(function(group) {
+      var before = AA.validateDraft(live, group), after = AA.validateDraft(candidate, group);
+      var known = {};
+      (before.violations || []).forEach(function(v) { known[v] = 1; });
+      (after.violations || []).forEach(function(v) { if (!known[v]) added.push(v); });
+    });
+    if (AA.preflight) {
+      var beforePf = AA.preflight(live), afterPf = AA.preflight(candidate), knownBlockers = {};
+      (beforePf.blockers || []).forEach(function(v) { knownBlockers[v] = 1; });
+      (afterPf.blockers || []).forEach(function(v) { if (!knownBlockers[v]) added.push(v); });
+    }
+    return { ok: added.length === 0, violations: added, results: {}, stats: { checked: groups.length, failed: added.length ? 1 : 0 } };
   }
 
   function onApply() {
@@ -2632,8 +2708,9 @@
     }
     try {
       var diffs = ui._lastDiffs || [], rej = ui._diffRejected || new Set();
+      if (!diffs.length) { setStatus('本轮没有可应用的改动'); return; }
       if (diffs.length && rej.size >= diffs.length) { setStatus('已拒绝全部改动，未应用'); return; }
-      _pushCheckpoint('应用前 ' + _ckptTime());   // 方向G · 应用前自动存检查点（可多级回溯）
+      var _liveBefore = ui.adapter.getScenario();
       var _finalSc = _applyScenario();
       ['characters', 'factions', 'parties', 'classes', 'items', 'events', 'families', 'relations', 'factionRelations', 'rigidHistoryEvents', 'timeline', 'openingLetters', 'goals'].forEach(function (f) {
         if (!_finalSc || _finalSc[f] == null || Array.isArray(_finalSc[f])) return;
@@ -2644,7 +2721,24 @@
           _finalSc[f] = (_ks.length && _ks.every(function (k) { return /^\d+$/.test(k); })) ? _ks.map(function (k) { return _v[k]; }) : [_v];
         } else { _finalSc[f] = [_v]; }
       });
+      var _selectedValidation = _validateSelectedScenario(_liveBefore, _finalSc);
+      if (!_selectedValidation.ok) {
+        renderValidation(_selectedValidation);
+        ui.els.apply.className = 'warn';
+        setStatus('选择后的剧本新增 ' + _selectedValidation.violations.length + ' 项一致性问题，已拒绝应用；请调整接受项');
+        return;
+      }
+      _pushCheckpoint('应用前 ' + _ckptTime());   // 通过冲突与选择后校验后才建检查点
       ui.adapter.commit(_finalSc);   // 应用前规范化：集合字段非数组→数组（修已生成草稿里 agent 误设成对象的集合，防下游遍历崩）
+      var _fxN = (ui._pendingSideEffects || []).length;
+      if (_fxN && AA && typeof AA.commitSideEffects === 'function') {
+        var _fxCommit = AA.commitSideEffects(ui._pendingSideEffects);
+        if (!_fxCommit || _fxCommit.ok === false) {
+          try { ui.adapter.commit(_liveBefore); } catch (_) {}
+          throw new Error('剧本附带的记忆/技能提交失败，已回滚剧本：' + ((_fxCommit && _fxCommit.error) || '未知错误'));
+        }
+      }
+      ui._pendingSideEffects = [];
       var partial = rej.size > 0;
       markLastApplied();   // 方向M · 把最近一条历史标记为已应用
       try {   // N4 · 通知编辑器：在折子里高亮国师刚改的字段 + 精确跳到首处改动
@@ -2654,19 +2748,22 @@
         if (_app && typeof _app.markAgentTouched === 'function') _app.markAgentTouched(Object.keys(_touched));
         if (_firstPath && _app && typeof _app.revealPath === 'function') _app.revealPath(_firstPath);
       } catch (e) {}
-      setStatus('已应用到剧本 ✓' + (partial ? '（仅接受的改动·拒绝了 ' + rej.size + ' 处）' : '') + '（可继续追问·同一会话）');
+      setStatus('已应用到剧本 ✓' + (partial ? '（仅接受的改动·拒绝了 ' + rej.size + ' 处）' : '') + (_fxN ? '（并提交 ' + _fxN + ' 条记忆/技能）' : '') + '（可继续追问·同一会话）');
       if (ui._reply) { ui._reply.classList.add('applied'); var _atag = ui._reply.querySelector('.reply-tag'); if (_atag) _atag.textContent = '✓ 已应用到剧本' + (partial ? '（拒绝 ' + rej.size + ' 处）' : ''); }
       _freezeLastReply();   // 聊天化：应用后冻结当前卡（按钮隐藏·成历史只读）
-      ui.draft = null;
+      _clearDraft();
       // 真·连续会话：应用后【保留】对话线程，下条指令在同一会话里续接（draft 已清·续接时从当前剧本新建）。
       //   想另起新对话用「＋ 新对话」或「放弃」。线程上限交 runAuthoringLoop 的 token 预算自然收口。
     } catch (e) {
-      setStatus('应用失败：' + (e && e.message || e));
+      if (e && e.code === 'edit-conflict') {
+        var paths = (e.conflicts || []).slice(0, 3).map(function(c) { return c.path; }).join('、');
+        setStatus('检测到并行编辑冲突，未应用任何改动' + (paths ? '：' + paths : '') + '；请重新生成或先处理冲突');
+      } else setStatus('应用失败：' + (e && e.message || e));
     }
   }
 
   function onDiscard() {
-    ui.draft = null;
+    _clearDraft();
     ui.conversation = null;   // 维度1 · 放弃后结束会话
     ui._pendingPlan = false;
     ui._pendingClarify = false;
@@ -2678,9 +2775,10 @@
   // 真·连续会话：另起新对话（清空当前线程+消息流；上一会话已存入历史·下次新对话会注入记忆延续）。
   function newConversation() {
     if (ui.running) { setStatus('运行中，请先停止再新开对话'); return; }
-    ui.draft = null; ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
+    _clearDraft(); ui.conversation = null; ui._pendingPlan = false; ui._pendingClarify = false;
     ui._restoredTodos = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 新对话=新会话·旧会话留侧栏可切回·指针置空(开面板不再拉回)
     if (ui._criticsArmed) _disarmCriticsVisual();   // 刀3 · 新对话清掉未用的会审武装
+    if (ui._autoModeArmed) _disarmAutoVisual();
     resetResults(false);
     _syncEmpty();
     setStatus('已开始新对话（上一会话已入历史/记忆，可被延续）');
@@ -2702,7 +2800,7 @@
     try {
       var cp = ui._checkpoints.pop();
       ui.adapter.commit(cp.snapshot);
-      ui.draft = null; ui.conversation = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 剧本已回退·脱离当前会话(旧会话留档不删)
+      _clearDraft(); ui.conversation = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 剧本已回退·脱离当前会话(旧会话留档不删)
       if (typeof ui._onCheckpointsChange === 'function') { try { ui._onCheckpointsChange(); } catch (e) {} }
       setStatus('已撤销，回到「' + cp.label + '」(' + cp.when + ') ↩');
       return true;
@@ -2722,7 +2820,7 @@
     try {
       _pushCheckpoint('回退前 ' + _ckptTime());
       ui.adapter.commit(_clone(cp.snapshot));
-      ui.draft = null; ui.conversation = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 同上·回退后脱离会话(留档)
+      _clearDraft(); ui.conversation = null; ui._sessId = null; _sessPtrSet(_fileKey(), null);   // S5 · 同上·回退后脱离会话(留档)
       setStatus('已回到检查点「' + cp.label + '」(' + cp.when + ')');
       return true;
     } catch (e) { setStatus('回退失败：' + (e && e.message || e)); return false; }
@@ -2763,6 +2861,6 @@
   else init();
 
   // 暴露给测试/调试
-  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles, showMemories: showMemoriesUI, showSkills: showSkillsUI, showPacks: showPacksUI, showUsage: showUsageUI,
+  global.TM_AuthoringAgentUI = { init: init, _ui: ui, undo: undoLastApply, stop: onStop, review: runReview, orchestrate: runOrchestratedUI, preflight: runPreflightUI, qa: runQaUI, explain: runExplainUI, autoMode: _armAutoMode, checkpoint: manualCheckpoint, checkpoints: listCheckpoints, restore: restoreCheckpoint, history: listHistory, clearHistory: clearHistory, changelog: buildChangelog, runChangelog: runChangelogUI, macros: listMacros, saveMacro: saveMacro, deleteMacro: deleteMacro, applyMacro: applyMacro, exportBundle: exportBundle, importBundle: importBundle, detectModels: _detectModels, saveApiCfg: _saveApiCfg, permMode: function (m) { if (m && _PM_LABEL[m]) { var p = _loadPerm(); p.mode = m; _applyPerm(p); } return _loadPerm().mode; }, attachIngest: _ingestFiles, showMemories: showMemoriesUI, showSkills: showSkillsUI, showPacks: showPacksUI, showUsage: showUsageUI,
     listSessions: listSessions, switchSession: switchSession, deleteSession: deleteSession, renameSession: renameSession, forkSession: forkSession, rememberConvention: rememberConvention };
 })(typeof window !== 'undefined' ? window : this);
