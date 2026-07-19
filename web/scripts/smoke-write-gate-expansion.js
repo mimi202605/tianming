@@ -94,6 +94,44 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
     ok(hintCount(ctx.GM) === 0, 'C1-pos(诏令) 放行→零弱提示');
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  C2·personnel_changes 司法类动词补来源判据(applyAITurnChanges 兜底段)
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== C2·personnel_changes 司法类动作来源判据 =====');
+  // C2-neg·下诏狱·无任何源头 → 不执行(未下狱)+弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', position: '司礼', officialTitle: '司礼', alive: true, faction: '明朝廷', resources: {} }]);
+    ctx.applyAITurnChanges({ personnel_changes: [{ name: '魏忠贤', change: '下狱究问' }] });
+    ok(!findCh(ctx.GM, '魏忠贤')._imprisoned, 'C2-neg 下诏狱无源→不执行(魏忠贤未下狱)');
+    ok(hintNames(ctx.GM).indexOf('魏忠贤') >= 0, 'C2-neg 拒写降级→弱自查纸条留痕');
+  }
+  // C2-pos·玩家诏令点名(有源) → 照常执行(已下狱)·无 C2 弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', position: '司礼', officialTitle: '司礼', alive: true, faction: '明朝廷', resources: {} }],
+      { _playerDirectives: [{ id: 'd1', content: '着锦衣卫拿魏忠贤下诏狱究问' }] });
+    ctx.applyAITurnChanges({ personnel_changes: [{ name: '魏忠贤', change: '下狱究问' }] });
+    ok(!!findCh(ctx.GM, '魏忠贤')._imprisoned, 'C2-pos(诏令) 玩家诏令点名=有源→司法动作照常落(已下狱)');
+    ok(hintCount(ctx.GM) === 0, 'C2-pos(诏令) 放行→零弱提示(不误杀)');
+  }
+  // C2-pos·本回合弹劾奏疏点名(输入面扫描·有源) → 照常执行
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', position: '司礼', officialTitle: '司礼', alive: true, faction: '明朝廷', resources: {} }],
+      { memorials: [{ from: '御史', text: '臣劾魏忠贤十大罪，乞下诏狱明正典刑' }] });
+    ctx.applyAITurnChanges({ personnel_changes: [{ name: '魏忠贤', change: '下狱' }] });
+    ok(!!findCh(ctx.GM, '魏忠贤')._imprisoned, 'C2-pos(弹劾) 本回合弹劾奏疏点名=有源→司法动作照常落');
+    ok(hintCount(ctx.GM) === 0, 'C2-pos(弹劾) 放行→零弱提示');
+  }
+  // C2-pos·普通任免(致仕·非司法)无源也不入闸
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '孙承宗', position: '督师', officialTitle: '督师', alive: true, faction: '明朝廷', resources: {} }]);
+    ctx.applyAITurnChanges({ personnel_changes: [{ name: '孙承宗', change: '乞骸骨致仕' }] });
+    ok(hintCount(ctx.GM) === 0, 'C2-pos(致仕) 普通任免不入司法闸→零弱提示(宁漏勿误杀)');
+  }
+
   console.log('');
   console.log('[smoke-write-gate-expansion] ' + passed + ' passed / ' + failed + ' failed');
   if (failed > 0) process.exit(1);

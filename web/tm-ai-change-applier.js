@@ -1627,6 +1627,7 @@
         if (post) action = 'appoint';
       }
       if (!action) return;
+      if (action === 'dismiss') { var _c2b = global.TM && global.TM.__acaParts; if (_c2b && _c2b._gateJudicialPersonnelChange && _c2b._gateJudicialPersonnelChange(G, aiOutput, pc, changeText, applied)) return; }   // 刀C·C2·司法类人事无源判据(逻辑在 validators·alias 内联·免堆巨石)
       var r = null;
       if (action === 'appoint' && post) r = onAppointment(pc.name, post, { concurrent: isConcurrentPersonnel, reason: reason });
       else if (action === 'dismiss') r = onDismissal(pc.name, reason);

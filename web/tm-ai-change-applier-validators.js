@@ -107,6 +107,51 @@
     return 'active';   // 无法归类·宁漏勿误杀·放行
   }
 
+  // ── 刀C·C2/C3(2026-07-19)·写端动作来源判据(结构化人事/敏感字段共用) ──
+  //   复用刀9四路(isPlayer/司法危难态/结构化互证[opts.excludeStructuredKey 排自证键]/玩家诏令三源)·
+  //   再扩「本回合游戏态输入面」(opts.scanInputs=true)：弹劾奏疏(GM.memorials)/朝议要务(GM.currentIssues)点名此人→有源。
+  //   ★宁漏勿误杀：任一路命中即放行·输入面扫描只加源不减源。
+  function _writeActionSourced(G, aiOutput, ch, opts) {
+    opts = opts || {};
+    if (_narrativeDeathSourced(G, aiOutput, ch, opts)) return true;
+    if (opts.scanInputs && ch && ch.name) {
+      var nm = ch.name;
+      var allNames = (G && Array.isArray(G.chars)) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
+      var _hit = function(t) { return _textMentionsName(t, nm, allNames); };
+      var mems = (G && Array.isArray(G.memorials)) ? G.memorials : [];
+      for (var i = 0; i < mems.length; i++) {
+        var m = mems[i]; if (!m) continue;
+        if (_hit(m.title) || _hit(m.text) || _hit(m.content) || _hit(m.from) || _hit(m.target) || _hit(m.subject) || _hit(m.about)) return true;
+      }
+      var iss = (G && Array.isArray(G.currentIssues)) ? G.currentIssues : [];
+      for (var j = 0; j < iss.length; j++) {
+        var q = iss[j]; if (!q) continue;
+        if (_hit(q.title) || _hit(q.description) || _hit(q.desc)) return true;
+      }
+    }
+    return false;
+  }
+
+  // ── 刀C·C2(2026-07-19)·司法类人事动作来源判据(applier.personnel_changes 兜底段调用) ──
+  //   司法类(下狱/抄家/流放/斩/杖/拿问/夺职拿问)落库前过同款判据(_writeActionSourced：玩家诏令/司法态/结构化互证[排 personnel_changes
+  //   自证]/本回合弹劾朝议输入)。无源→不执行·拒写降级=弱自查纸条+console 留痕+入 failed 可见。普通任免(升/调/致仕/罢黜)不入闸。
+  //   返回 true=已拦(调用方应 return 跳过该条)·false=有源或非司法·照常落。★宁漏勿误杀。
+  function _gateJudicialPersonnelChange(G, aiOutput, pc, changeText, applied) {
+    if (!G || !pc || !pc.name) return false;
+    var judicial = /下狱|入狱|系狱|收押|收监|关押|囚禁|捉拿|逮捕|抓捕|缉拿|锁拿|拿问|逮治|械系|下诏狱|抄家|抄没|籍没|查抄|没官|流放|发配|戍边|充军|斩|诛|处决|处斩|处死|正法|凌迟|枭首|问斩|赐死|杖毙|廷杖|杖责|夺职拿问/.test(String(changeText || ''));
+    if (!judicial) return false;
+    var ch = (typeof _findEntity === 'function') ? _findEntity(G, 'char', pc.name) : (Array.isArray(G.chars) ? G.chars.filter(function(c){ return c && c.name === pc.name; })[0] : null);
+    if (!ch) return false;   // 查无此人·实体存在性另由既有 onDismissal 兜底·此闸只管来源
+    if (_writeActionSourced(G, aiOutput, ch, { excludeStructuredKey: 'personnel_changes', scanInputs: true })) return false;
+    console.warn('[personnel/C2] 无源司法类人事动作·不执行(疑 AI 史实幻觉·转弱自查纸条留痕): ' + pc.name + ' ← 「' + String(changeText || '') + '」');
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源司法人事', reason: '司法类人事动作本回合无任一源头(玩家诏令/司法态/结构化互证/弹劾朝议输入)·疑史实幻觉·摘要「' + String(changeText || '').slice(0, 20) + '」', itemName: pc.name, source: 'personnel-c2-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源司法人事', itemName: pc.name, raw: String(changeText || '') }); } catch(_c2e) {}
+    if (applied && Array.isArray(applied.failed)) applied.failed.push({ personnel_change: { name: pc.name, change: pc.change }, reason: '无源司法类人事动作·未落库(疑史实幻觉·转弱自查纸条)' });
+    return true;
+  }
+
   function _validatePersonnelConsistency(G, aiOutput, applied) {
     if (!G || !aiOutput) return;
     var narrativeText = '';
@@ -1325,5 +1370,5 @@
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
   // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
-  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind;
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
