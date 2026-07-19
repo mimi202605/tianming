@@ -183,6 +183,13 @@ function battleShapeTest() {
   const lineB = combined.split('\n').find(function(l){ return l.indexOf('近战') >= 0; });
   assert(lineB && lineB.indexOf('玩家朝廷攻结构势力') >= 0, 'shape-B should show attack direction from attacker/defender factions');
   assert(lineB.indexOf('我损400/敌损80') >= 0, 'shape-B should map losses to this faction correctly (defender=self → 我损=defenderLoss)');
+
+  // Shape C·canonical 僵持（tm-military.js:1283 真实生产者：winner===loser==='僵持' + verdict='僵持'）·不得伪报「胜僵持」
+  ctx.GM.battleHistory = [{ turn: 5, attackerFaction: '玩家朝廷', defenderFaction: '结构势力', winner: '僵持', loser: '僵持', verdict: '僵持', attackerLoss: 200, defenderLoss: 220 }];
+  combined = ((p) => p.system + '\n' + p.user)(ctx.TM.FactionNpcLlmDecision._buildPrompt(npc));
+  const lineC = combined.split('\n').find(function(l){ return l.indexOf('近战') >= 0; });
+  assert(lineC && lineC.indexOf('僵持') >= 0 && lineC.indexOf('胜') < 0, 'canonical stalemate must render ·僵持, never fabricate 胜僵持/胜果');
+  assert(lineC.indexOf('我损220/敌损200') >= 0, 'stalemate should still show mapped losses (defender=self → 我损=defenderLoss)');
 }
 
 async function main() {

@@ -378,7 +378,8 @@
       var line = '  近战 ' + _fmtTurn(b);
       if (atkF && defF) line += ' ' + _txt(atkF, 20) + '攻' + _txt(defF, 20);
       else if (b.attacker && b.defender) line += ' ' + _txt(b.attacker, 20) + '·' + _txt(b.defender, 20);
-      if (win) line += '·胜' + win; else if (los) line += '·负' + los;
+      var stale = b.verdict === '僵持' || b.verdict === '胶着' || (win && los && win === los) || win === '僵持' || win === '胶着';   // 真实生产者(tm-military.js:1283)僵持时 winner===loser==='僵持'+verdict='僵持'·须分流勿伪报「胜僵持」
+      if (stale) line += '·僵持'; else if (win) line += '·胜' + win; else if (los) line += '·负' + los;
       if ((b.attackerLoss != null || b.defenderLoss != null) && (atkF === myName || defF === myName)) line += '·我损' + _safeNum(atkF === myName ? b.attackerLoss : b.defenderLoss) + '/敌损' + _safeNum(atkF === myName ? b.defenderLoss : b.attackerLoss);
       body.push(line);
     });
