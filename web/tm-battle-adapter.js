@@ -95,26 +95,47 @@
     return (h >>> 0) || 1;
   }
 
-  /* 省地形标签 → genMap 地形档(§8 适配器·dens/biome)。标签缺省→默认随机感(dens 0.3) */
+  /* 省地形标签 → genMap 地形档(§8 适配器·dens/biome/语义位)。标签缺省→默认随机感(dens 0.3)
+   * 词素(morpheme)表:各原子地貌 {dens:林障密度, biome:PROC_BIOMES主题键, 语义位?}。
+   * 语义位:coast(沿海)/island(群岛)/desert(荒漠·绿洲)/wetland(河套·水乡)/fort(边塞·边堡)——透传原型据以生军事地貌/新主题。
+   * 无分隔复合词(如"山地海岸"/"寒地岛屿林海")由 _matchMorphemes 长词优先扫子串拆解·全部观测词皆命中(不再落默认 dens0.3)。 */
   var TERRAIN_PROFILE = {
-    '平原': { dens: 0.18, biome: 'plain' }, '草原': { dens: 0.10, biome: 'plain' },
-    '丘陵': { dens: 0.34, biome: 'verdant' }, '山地': { dens: 0.52, biome: 'verdant' },
-    '高原': { dens: 0.26, biome: 'plain' }, '沿海': { dens: 0.22, biome: 'verdant' },
-    '边塞': { dens: 0.30, biome: 'snow' }, '林地': { dens: 0.40, biome: 'verdant' },
-    '漠南草原': { dens: 0.10, biome: 'plain' }, '盆地': { dens: 0.24, biome: 'verdant' }, '河谷': { dens: 0.28, biome: 'verdant' }
+    '平原': { dens: 0.18, biome: 'plain' }, '草原': { dens: 0.10, biome: 'plain' }, '高原': { dens: 0.26, biome: 'plain' },
+    '丘陵': { dens: 0.34, biome: 'verdant' }, '山地': { dens: 0.52, biome: 'verdant' }, '山林': { dens: 0.46, biome: 'verdant' },
+    '林地': { dens: 0.40, biome: 'verdant' }, '林海': { dens: 0.50, biome: 'verdant' }, '盆地': { dens: 0.24, biome: 'verdant' }, '河谷': { dens: 0.28, biome: 'verdant' },
+    '沿海': { dens: 0.22, biome: 'verdant', coast: true }, '海岸': { dens: 0.24, biome: 'verdant', coast: true },
+    '群岛': { dens: 0.18, biome: 'verdant', coast: true, island: true }, '岛屿': { dens: 0.20, biome: 'verdant', coast: true, island: true }, '半岛': { dens: 0.22, biome: 'verdant', coast: true },
+    '边塞': { dens: 0.30, biome: 'snow', fort: true }, '边堡': { dens: 0.30, biome: 'snow', fort: true }, '寒地': { dens: 0.22, biome: 'snow' },
+    '河套': { dens: 0.16, biome: 'plain', wetland: true }, '水乡': { dens: 0.30, biome: 'wetland', wetland: true },
+    '绿洲': { dens: 0.20, biome: 'desert', desert: true }, '荒漠': { dens: 0.08, biome: 'desert', desert: true },
+    '漠南草原': { dens: 0.10, biome: 'plain' }
   };
-  /* 复合地形标签拆分:"平原/山地"、"沿海/海域" → ['平原','山地']('海域'等未知子标签自然被忽略) */
+  var _SEM_BITS = ['coast', 'island', 'desert', 'wetland', 'fort'];
+  /* 复合地形标签拆分:"平原/山地"、"沿海/海域" → ['平原','山地'](分隔号切) */
   function _splitTags(tag) {
     return String(tag || '').split(/[\/、,，;；\s]+/).map(function (s) { return s.trim(); }).filter(Boolean);
   }
-  /* 单标签直取·复合标签取已知子标签的 dens 均值(biome 取首个已知=通常写在前的主地貌)。缺省/全未知→null(原型用默认随机感 dens0.3) */
+  var _MORPHEMES = null;   // 词素表·长词优先(漠南草原 先于 草原·山地海岸 先取 山地/海岸)
+  function _morphemes() { if (!_MORPHEMES) _MORPHEMES = Object.keys(TERRAIN_PROFILE).sort(function (a, b) { return b.length - a.length; }); return _MORPHEMES; }
+  /* 单个子标签 → 命中 profile 列表(按出现位置排序·主地貌在前)。直配优先;否则长词优先贪心扫子串(occupancy 位标记防重叠) */
+  function _matchMorphemes(token) {
+    token = String(token || '').trim(); if (!token) return [];
+    if (TERRAIN_PROFILE[token]) return [TERRAIN_PROFILE[token]];
+    var ms = _morphemes(), used = [], hits = [];
+    for (var i = 0; i < ms.length; i++) { var mo = ms[i], from = 0, idx; while ((idx = token.indexOf(mo, from)) >= 0) { var free = true; for (var u = 0; u < mo.length; u++) { if (used[idx + u]) { free = false; break; } } if (free) { for (var u2 = 0; u2 < mo.length; u2++) used[idx + u2] = true; hits.push({ at: idx, p: TERRAIN_PROFILE[mo] }); break; } from = idx + 1; } }
+    hits.sort(function (a, b) { return a.at - b.at; });
+    return hits.map(function (h) { return h.p; });
+  }
+  /* 单标签直取·复合标签取已知子地貌的 dens 均值(biome 取首个已知=通常写在前的主地貌)·语义位按各子地貌并取。缺省/全未知→null(原型用默认随机感 dens0.3) */
   function terrainProfile(tag) {
-    var parts = _splitTags(tag), hits = [];
-    for (var i = 0; i < parts.length; i++) { var p = TERRAIN_PROFILE[parts[i]]; if (p) hits.push(p); }
-    if (!hits.length) return null;
-    if (hits.length === 1) return { dens: hits[0].dens, biome: hits[0].biome };
-    var dens = 0; for (var j = 0; j < hits.length; j++) dens += hits[j].dens;
-    return { dens: Math.round(dens / hits.length * 100) / 100, biome: hits[0].biome };
+    var parts = _splitTags(tag), all = [];
+    for (var i = 0; i < parts.length; i++) { var ms = _matchMorphemes(parts[i]); for (var k = 0; k < ms.length; k++) all.push(ms[k]); }
+    if (!all.length) return null;
+    var dens = 0; for (var j = 0; j < all.length; j++) dens += all[j].dens;
+    dens = all.length === 1 ? all[0].dens : Math.round(dens / all.length * 100) / 100;
+    var out = { dens: dens, biome: all[0].biome };
+    for (var b = 0; b < _SEM_BITS.length; b++) { for (var n = 0; n < all.length; n++) { if (all[n][_SEM_BITS[b]]) { out[_SEM_BITS[b]] = true; break; } } }
+    return out;
   }
 
   /* ── 战场环境解析(Phase4 收尾:军队所在省 → 地形标签 / 全局回合 → 天候·喂 buildBattleConfig)── */
@@ -180,9 +201,27 @@
     var turn = Number(g && g.turn) || 1;
     return ['春', '夏', '秋', '冬'][(((turn - 1) % 4) + 4) % 4] || '春';
   }
-  /* 季节 → 战场天候(冬→雪·余→晴·确定性·雾留待未来)。喂 startBattle(config).weather */
-  function deriveWeather(GMref) {
-    try { return seasonOf(GMref) === '冬' ? 'snow' : 'clear'; } catch (e) { return 'clear'; }
+  /* 确定性单步 roll(mulberry32 一步·→[0,1))·喂 fog 概率·非 Math.random */
+  function _detRoll(seed) {
+    var a = (seed >>> 0) || 1; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+  /* 季节 → 战场天候(冬→雪·春秋小概率雾·余→晴)。雾由 provinceSeed^turn 确定性派生(非随机·同址同回合恒一致)·原型 sim 认雾-38%射程。
+   * 空省名(裸调 deriveWeather(GM))不起雾→需真实战场省份上下文·喂 startBattle(config).weather */
+  function deriveWeather(GMref, provinceName) {
+    try {
+      var s = seasonOf(GMref);
+      if (s === '冬') return 'snow';
+      var pn = (provinceName == null ? '' : String(provinceName)).trim();   // 标准化:纯空白/首尾空格→归一(空白省名不起雾·需真实战场上下文)
+      if ((s === '春' || s === '秋') && pn) {
+        var g = GMref || (typeof window !== 'undefined' && window.GM) || (typeof GM !== 'undefined' ? GM : null);
+        var turn = Number(g && g.turn) || 1;
+        var seed = (provinceSeed(pn) ^ Math.imul(turn, 0x9e3779b9)) >>> 0;
+        if (_detRoll(seed) < 0.16) return 'fog';
+      }
+      return 'clear';
+    } catch (e) { return 'clear'; }
   }
 
   var ONFIELD_CAP = 35;   // 场上≤35队/方(全场≤70·§4/§12.1)·超出入波次 reserves
@@ -209,6 +248,72 @@
     return { field: field, reserve: reserve };
   }
 
+  /* ── 省实况元数据(梯队三E:打到哪省像哪省)。读 GM.mapData.regions/oceans(回退 P.map/P.mapData)·全部确定性派生·拿不到就省略不造 ── */
+  function _mapDataOf(GMref) {
+    var g = GMref || (typeof window !== 'undefined' && window.GM) || (typeof GM !== 'undefined' ? GM : null);
+    if (g && g.mapData && Array.isArray(g.mapData.regions) && g.mapData.regions.length) return g.mapData;
+    var p = (typeof window !== 'undefined' && window.P) || (typeof P !== 'undefined' ? P : null);
+    if (p) { if (p.mapData && Array.isArray(p.mapData.regions) && p.mapData.regions.length) return p.mapData; if (p.map && Array.isArray(p.map.regions) && p.map.regions.length) return p.map; }
+    return null;
+  }
+  function _rCenter(r) { if (!r) return null; if (Array.isArray(r.center) && r.center.length >= 2) return { x: +r.center[0] || 0, y: +r.center[1] || 0 }; if (r.centroid && typeof r.centroid === 'object') return { x: +r.centroid.x || 0, y: +r.centroid.y || 0 }; return null; }
+  /* 位置文本/hint → 匹配 region(id/mapRegionId/sourceId 直配 → name 全等 → 双向包含)。永不崩 */
+  function _findRegion(md, army, hintName) {
+    if (!md || !Array.isArray(md.regions)) return null; var regs = md.regions;
+    var rid = army && (army.regionId || army.mapRegionId || army.regionHintId);
+    if (rid) { for (var i = 0; i < regs.length; i++) { var r = regs[i]; if (r.id === rid || r.mapRegionId === rid || r.sourceId === rid) return r; } }
+    var toks = [];
+    [hintName, army && army.location, army && army.garrison, army && army.regionHint].forEach(function (s) { if (s) String(s).split(/[\/、,，\-－—~～·・‧至\s]+/).forEach(function (t) { t = (t || '').trim(); if (t) toks.push(t); }); });
+    for (var a = 0; a < toks.length; a++) { for (var j = 0; j < regs.length; j++) { if (regs[j].name === toks[a] || regs[j].id === toks[a]) return regs[j]; } }
+    for (var b = 0; b < toks.length; b++) { for (var k = 0; k < regs.length; k++) { var nm = regs[k].name; if (nm && (nm.indexOf(toks[b]) >= 0 || toks[b].indexOf(nm) >= 0)) return regs[k]; } }
+    return null;
+  }
+  /* region → 省会/府名:data.children[capitalChildId] → 含'府'子节点 → officialPosition府名(前缀≠省名·如 顺天巡抚→顺天府) → region.name(兜底) */
+  function _capitalOf(r) {
+    if (!r) return ''; var d = r.data || {}, ch = d.children;
+    if (Array.isArray(ch) && ch.length) {
+      if (d.capitalChildId) { for (var i = 0; i < ch.length; i++) { if (ch[i] && (ch[i].id === d.capitalChildId || ch[i].childId === d.capitalChildId)) return ch[i].name || ''; } }
+      for (var j = 0; j < ch.length; j++) { if (ch[j] && ch[j].name && ch[j].name.indexOf('府') >= 0) return ch[j].name; }
+    }
+    var op = d.officialPosition || r.officialPosition || '';
+    var m = String(op).match(/^(.{2,4}?)(巡抚|总督|巡按|府尹|留守|镇守)/);
+    if (m && m[1] && m[1] !== r.name) return m[1] + '府';
+    return r.name || '';
+  }
+  /* region.resources → 军政风物类·截前2(盐/铁/漕/矿/煤/马/港/贸/船/茶/丝/瓷 优先) */
+  function _salientResources(r) {
+    var rs = (r && Array.isArray(r.resources)) ? r.resources : []; if (!rs.length) return null;
+    var sal = rs.filter(function (x) { return /盐|铁|漕|矿|煤|马|港|贸|船|茶|丝|瓷/.test(String(x)); });
+    var pick = (sal.length ? sal : rs).slice(0, 2);
+    return pick.length ? pick : null;
+  }
+  /* 海岸方位:该省最近 ocean 相对省 center 的东/西 → 战场 right/left。判不出→null */
+  function _oceanSide(md, r) {
+    var rc = _rCenter(r); if (!rc || !md || !Array.isArray(md.oceans) || !md.oceans.length) return null;
+    var best = null, bd = Infinity;
+    for (var i = 0; i < md.oceans.length; i++) { var oc = _rCenter(md.oceans[i]); if (!oc) continue; var dd = (oc.x - rc.x) * (oc.x - rc.x) + (oc.y - rc.y) * (oc.y - rc.y); if (dd < bd) { bd = dd; best = oc; } }
+    return best ? (best.x >= rc.x ? 'right' : 'left') : null;
+  }
+  /* 敌军来向:敌省 center 相对本省 center 方位 → N/S/E/W(y 小为北·主轴取绝对值大者)。判不出→null */
+  function _neighborDir(ownC, foeC) {
+    if (!ownC || !foeC) return null; var dx = foeC.x - ownC.x, dy = foeC.y - ownC.y;
+    if (dx === 0 && dy === 0) return null;
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'E' : 'W';
+    return dy >= 0 ? 'S' : 'N';
+  }
+  /* 省实况元数据(挂 terrainProfile.provinceMeta·透传原型)。字段独立·拿不到即省略;整体拿不到→null */
+  function provinceMeta(GMref, playerArmy, enemyArmy, provinceName, terrainTag) {
+    try {
+      var md = _mapDataOf(GMref); var r = _findRegion(md, playerArmy, provinceName); if (!r) return null;
+      var meta = {};
+      var cap = _capitalOf(r); if (cap) meta.capitalName = cap;
+      var res = _salientResources(r); if (res) meta.resources = res;
+      var prof = terrainProfile(terrainTag); if (prof && (prof.coast || prof.island)) { var os = _oceanSide(md, r); if (os) meta.oceanSide = os; }   // 海岸方位仅对沿海省有意义
+      var foeR = _findRegion(md, enemyArmy, null); var nd = _neighborDir(_rCenter(r), _rCenter(foeR)); if (nd) meta.neighborDir = nd;
+      return Object.keys(meta).length ? meta : null;
+    } catch (e) { return null; }
+  }
+
   /* 主入口:交战双方 army 群 → startBattle(config)。
    * playerArmies/enemyArmies = 该接触节点上 同/敌 faction 在场全部军(联军合流)。
    * opts:{ provinceName, terrainTag, weather, playerFactionName, enemyFactionName, emperorArmyId, GM } */
@@ -218,14 +323,17 @@
     var p0 = (playerArmies && playerArmies[0]) || null;
     var provinceName = opts.provinceName != null ? opts.provinceName : ((p0 && (p0.location || p0.garrison)) || '');
     var terrainTag = opts.terrainTag != null ? opts.terrainTag : resolveTerrainTag(G, p0);   // 未显式给→由玩家主军所在省解析(§8)
-    var weather = opts.weather || deriveWeather(G);                                          // 未显式给→由季节推导(冬→雪)
+    var weather = opts.weather || deriveWeather(G, provinceName);                            // 未显式给→由季节推导(冬→雪·春秋按省址+回合确定性小概率雾)
     var ming = sideTokens(playerArmies, G, opts.emperorArmyId);
     var jin = sideTokens(enemyArmies, G, null);
     var enemyLead = (enemyArmies && enemyArmies[0] && enemyArmies[0].commander) || '敌帅';
     var mSel = selectOnField(ming, ONFIELD_CAP), jSel = selectOnField(jin, ONFIELD_CAP);   // 兵种分层取样(非按队序截断)
+    var tp = terrainProfile(terrainTag);                                                    // {dens,biome,语义位} 或 null
+    var pMeta = provinceMeta(G, p0, (enemyArmies && enemyArmies[0]) || null, provinceName, terrainTag);   // 省实况(省会/资源/海岸方位/敌军来向)
+    if (pMeta) { tp = tp || {}; tp.provinceMeta = pMeta; }                                   // 挂 terrainProfile 透传原型(即便地形未知也带 meta·原型 dens/biome 缺则默认)
     return {
       mapSeed: provinceSeed(provinceName),
-      terrainProfile: terrainProfile(terrainTag),
+      terrainProfile: tp,
       weather: weather,
       sideName: { ming: opts.playerFactionName || '我军', jin: opts.enemyFactionName || '敌军' },
       lead: enemyLead,
@@ -240,6 +348,7 @@
     buildBattleConfig: buildBattleConfig, sideTokens: sideTokens, unitToToken: unitToToken, selectOnField: selectOnField, degradeQualityByEquip: degradeQualityByEquip,
     genFor: genFor, qualityFromVet: qualityFromVet, provinceSeed: provinceSeed, terrainProfile: terrainProfile,
     resolveTerrainTag: resolveTerrainTag, deriveWeather: deriveWeather, seasonOf: seasonOf,
+    provinceMeta: provinceMeta,
     ONFIELD_CAP: ONFIELD_CAP
   };
   if (typeof window !== 'undefined') window.TMBattleAdapter = API;
