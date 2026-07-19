@@ -391,6 +391,10 @@ function _qijuHighlight(text) {
 
 function renderQiju(){
   var el=_$("qiju-history");if(!el)return;
+  // 穿越模式判定（B3 玩家视角文案 + A8 推送共用）
+  var _pi_qj = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans_qj = _pi_qj && _pi_qj.transmigrationMode === true &&
+                    _pi_qj.playerRole && _pi_qj.playerRole !== 'emperor';
   var sbar=_$("qj-statbar"), leg=_$("qj-legend");
   var all=(GM.qijuHistory||[]).slice();
   var kw=(_qijuKw||'').trim().toLowerCase();
@@ -517,6 +521,15 @@ function renderQiju(){
           h += '<div class="qj-rec-text wd-selectable">' + _qijuHighlight(n.text) + '</div>';
         }
         if (n.annotation) h += '<div class="qj-annot">' + escHtml(n.annotation) + '</div>';
+        // 穿越模式 Phase B · Task B3：玩家视角文案（奏疏原题/批答/批语/品语）
+        if (_isTrans_qj && n.raw) {
+          var _pv = '';
+          if (n.raw.title) _pv += '<div class="qj-rec-player-title">奏疏原题：' + escHtml(n.raw.title) + '</div>';
+          if (n.raw.verdict) _pv += '<div class="qj-rec-player-verdict">批答：' + escHtml(n.raw.verdict) + '</div>';
+          if (n.raw.comment) _pv += '<div class="qj-rec-player-comment">批语：' + escHtml(n.raw.comment) + '</div>';
+          if (n.raw.grade) _pv += '<div class="qj-rec-player-grade">品语：' + escHtml(n.raw.grade) + '</div>';
+          if (_pv) h += '<div class="qj-rec-player-view">' + _pv + '</div>';
+        }
         // 诏令类·附加后续连锁效应（从 _edictTracker 取 _chainEffects）
         if (n.cat === '\u8BCF\u4EE4' && GM._edictTracker && GM._edictTracker.length) {
           var _matchedTrackers = [];
@@ -568,9 +581,6 @@ function renderQiju(){
   try { if (typeof decoratePendingInDom === 'function') decoratePendingInDom(el); } catch(_){}
 // 穿越模式 Phase A · Task A8：玩家上奏批答推送奉旨卡片
 try {
-  var _pi_qj = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
-  var _isTrans_qj = _pi_qj && _pi_qj.transmigrationMode === true &&
-                    _pi_qj.playerRole && _pi_qj.playerRole !== 'emperor';
   if (_isTrans_qj && typeof window !== 'undefined' && window.TM && TM.PlayerEdictCard &&
       typeof TM.PlayerEdictCard.show === 'function') {
     // 仅处理最近一条 source=sovereign-ai/fallback 的条目
