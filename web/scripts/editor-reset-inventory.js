@@ -199,7 +199,7 @@ const RESET_BLUEPRINT_MODULES = [
     currentPanels: ['events', 'timeline', 'goals'],
     topLevelKeys: [
       'events', 'rigidHistoryEvents', 'rigidTriggers', 'timeline', 'goals',
-      'winCond', 'loseCond', 'chronicleConfig', 'eventConstraints'
+      'winCond', 'loseCond', 'chronicleConfig', 'eventConstraints', 'histAnchors'
     ]
   },
   {
