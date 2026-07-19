@@ -11,7 +11,7 @@
  *   read-tool / 单轮 agent 范式复用 tm-endturn-agent-read-tools.js / tm-office-recall-agent.js。
  *   A2 接硬门 + 核议帖卡片 UI；A3 接准奏开工 + 注入推演；A4 活字段 write 词汇表；A5 多步 + 对抗审。
  *
- * 开关 P.conf.customBuildAgentEnabled 默认开（玩家主动点按钮才调·无 API/关闭→回落原建议库路径·零额外成本）。
+ * 自拟营建恒开（玩家主动点按钮才调·无 API key 则回落原建议库路径·零额外成本·2026-07 斩旗转正删 customBuildAgentEnabled flag）。
  * 跨朝代：巡检司/义仓/书院皆通用古制·引擎不认朝代专名（专名归剧本）。
  * 详设 web/docs/building-custom-construction-upgrade-2026-06.md §三/§四。
  */
@@ -22,8 +22,8 @@
   function _num(v, d) { var n = Number(v); return isFinite(n) ? n : (d || 0); }
   function _conf() { return (root.P && root.P.conf) || {}; }
 
-  // 开关：默认开·显式 false 才关（玩家点按钮才触发·成本可控）
-  function enabled() { return _conf().customBuildAgentEnabled !== false; }
+  // 恒开（玩家点按钮才触发·成本可控·2026-07 斩旗转正删 customBuildAgentEnabled flag·仍导出供 UI 判显）
+  function enabled() { return true; }
 
   // adminHierarchy 双源：代码库两套约定并存——建筑系统读 P.adminHierarchy（tm-building-works/tm-endturn-apply）、
   //   边警/官缺读 GM.adminHierarchy（tm-border-risk/tm-office-vacancy）。某些 save/剧本下二者不同步（真机逮到：
@@ -271,7 +271,6 @@
 
   // ── A5 配置（owner 拍板：默认走次要 API 优先）──
   function _TIER() { return _conf().customBuildAgentTier || 'secondary'; }        // 次要 API 优先·可配
-  function _criticOn() { return _conf().customBuildCriticEnabled !== false; }     // 谏官对抗审·默认开
   function _maxRounds() { var r = _num(_conf().customBuildAgentRounds); return (r >= 1 && r <= 5) ? r : 3; }  // 多步轮数·默认 3·设 1 即单发
 
   // A5 多步工具：勘地(可比照他地) + 查史例(找依据)
@@ -440,7 +439,6 @@
     ctx = ctx || {};
     req = req || {};
     var out = { ok: false, fallback: false, appraisal: null, inspection: null };
-    if (!enabled()) { out.reason = 'disabled'; return out; }
     var cawt = root.callAIWithTools;
     if (typeof cawt !== 'function') { out.reason = 'no-cawt'; return out; }
     var hasKey = !!(root.P && root.P.ai && root.P.ai.key);
@@ -457,13 +455,11 @@
     var ap = decided.appraisal;
     if (!ap) { out.reason = 'no-appraisal'; return out; }
 
-    // A5 谏官对抗审：审过誉/工期虚短·据评回调效果与工期（默认开·tier:secondary·失败不动·宁严勿宽）
-    if (_criticOn()) {
-      try {
-        var cri = await _critiqueAppraisal(req, ap, inspection, ctx);
-        if (cri) { out.critique = cri.verdict; if (cri.applied) ap = cri.adjusted; }
-      } catch (eC) {}
-    }
+    // A5 谏官对抗审：审过誉/工期虚短·据评回调效果与工期（恒开·tier:secondary·失败不动·宁严勿宽·2026-07 斩旗转正删 customBuildCriticEnabled flag）
+    try {
+      var cri = await _critiqueAppraisal(req, ap, inspection, ctx);
+      if (cri) { out.critique = cri.verdict; if (cri.applied) ap = cri.adjusted; }
+    } catch (eC) {}
 
     // A2 落账硬门：判断当场自由，落账走硬门——AI 拟的 effectsStructured 必过 sanitizeStructuredFx
     //   （白名单 + 费效封顶）削正后才认；人话徽签走 fxLabels（与真实建筑同一路径·保「所见即所得」）。

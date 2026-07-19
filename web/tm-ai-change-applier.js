@@ -111,7 +111,8 @@
     switch (type) {
       case 'region':
         if (G.regionMap && G.regionMap[id]) return G.regionMap[id];
-        if (G.dynamicInstitutions && G.dynamicInstitutions.regions && G.dynamicInstitutions.regions[id]) return G.dynamicInstitutions.regions[id];
+        var _diR = _normalizeDynamicInstitutions(G).find(function (x) { return x && x.id === id && x.type === 'region'; });
+        if (_diR) return _diR;
         // 尝试 adminHierarchy 查找
         if (G.adminHierarchy) {
           for (var facId in G.adminHierarchy) {
@@ -123,11 +124,13 @@
         return null;
       case 'ministry':
         if (G.fiscal && G.fiscal.guoku && G.fiscal.guoku.subBudgets && G.fiscal.guoku.subBudgets[id]) return G.fiscal.guoku.subBudgets[id];
-        if (G.dynamicInstitutions && G.dynamicInstitutions.ministries && G.dynamicInstitutions.ministries[id]) return G.dynamicInstitutions.ministries[id];
+        var _diM = _normalizeDynamicInstitutions(G).find(function (x) { return x && x.id === id && (x.type === 'ministry' || x.type == null); });
+        if (_diM) return _diM;
         return null;
       case 'military':
         if (G.fiscal && G.fiscal.guoku && G.fiscal.guoku.subBudgets && G.fiscal.guoku.subBudgets.military && G.fiscal.guoku.subBudgets.military[id]) return G.fiscal.guoku.subBudgets.military[id];
-        if (G.dynamicInstitutions && G.dynamicInstitutions.militaryUnits && G.dynamicInstitutions.militaryUnits[id]) return G.dynamicInstitutions.militaryUnits[id];
+        var _diU = _normalizeDynamicInstitutions(G).find(function (x) { return x && x.id === id && x.type === 'military'; });
+        if (_diU) return _diU;
         return null;
       case 'imperial':
         if (G.fiscal && G.fiscal.neicang && G.fiscal.neicang.subBudgets && G.fiscal.neicang.subBudgets[id]) return G.fiscal.neicang.subBudgets[id];
@@ -542,11 +545,35 @@
     //   误判·押解/押粮/押司/签押/押韵/拘谨/拘泥/拘束/逃避/隐遁/匿名 等 → false positive
     //   改用必须的入狱/流放/逃亡 compound·并加 release/起复路径清 _imprisoned/_exiled/_fled
     if (/处决|处斩|处死|斩首|斩决|斩杀|戮杀|正法|明正典刑|诛杀|诛戮|诛九族|凌迟|腰斩|弃市|枭首|枭示|问斩|赐死|赐自尽|绞刑|绞死|伏诛|伏法|就戮|授首|自尽|自缢|自刎|自裁|自杀|服毒自尽|畏罪自尽|磔|execute|死刑|身故|病故|病逝|病殁|病卒|病亡|亡故|暴毙|暴卒|暴亡|猝死|物故|殒命|毙命|殉国|殉难|殉城|殉职|罹难|遇害|遇难|遭难|薨逝|溘逝|寿终|城破身死/.test(_reasonStr)) {
-      ch.alive = false;
-      ch._deathCause = _reasonStr;
-      ch._deathTurn = G.turn || 0;
-      // 预存殁前官衔(供墓志铭 positionAtDeath / 图志「原任X」)·随后 646 行统一清 officialTitle
-      if (ch.officialTitle && !ch.positionAtDeath) ch.positionAtDeath = ch.officialTitle;
+      // ★ 落库契约硬化刀①(2026-07-16)：死亡分支不再裸写 ch.alive=false。
+      //   旧直写绕过「玩家之死裁决器」adjudicatePlayerDeath(合法继统门·鼎革 R1a)与死亡级联
+      //   (军队摘帅/丁忧/势力首领继承/头衔/governor/后宫)——结构化 personnel_changes(change='赐死'类·
+      //   经本文件 1601 行映射 reason='execute')及 appointments/office_assignments 的死因 reason 都经此·
+      //   会静默置死玩家角色而既不路由继统、也不触终局(尸政/无嗣不终局)。改为合成 character_deaths 同构条目
+      //   投喂既有死亡管线 applyOneDeath(缺位回落 applyCharacterDeaths·两者都缺才保留原直写·极端沙箱兜底
+      //   不丢「死者必落库」)——与批一刀①校验器(validators.js:_routeDeathToPipeline)同款优先级、同一 sink。
+      //   幂等：applyOneDeath 无「已死早退」·对已死者重投会重跑全级联(重复 addEB/家族声望-2/摘帅-15)造双落账·
+      //   故此处前置已死闸(alive===false 即不重投)。本分支后续(抄家/officeTree 清理/addEB)属非死亡通用段·零改动。
+      var _routedDeath = false;
+      if (ch.alive === false) {
+        _routedDeath = true;  // 已死·死亡管线此前已跑·不重投(防双落账)
+      } else {
+        var _deathCd = { name: ch.name, reason: _reasonStr };
+        try {
+          if (typeof global.applyOneDeath === 'function') { global.applyOneDeath(_deathCd); _routedDeath = true; }
+          else if (typeof global.applyCharacterDeaths === 'function') { global.applyCharacterDeaths({ character_deaths: [_deathCd] }); _routedDeath = true; }
+        } catch (_odDeathE) {
+          try { window.TM && TM.errors && TM.errors.captureSilent && TM.errors.captureSilent(_odDeathE, 'onDismissal-death-route'); } catch (__) {}
+        }
+      }
+      if (!_routedDeath) {
+        // 极端沙箱(死亡管线缺位)·保留原直写·不丢「死者必落库」兜底
+        ch.alive = false;
+        ch._deathCause = _reasonStr;
+        ch._deathTurn = G.turn || 0;
+        // 预存殁前官衔(供墓志铭 positionAtDeath / 图志「原任X」)·随后统一清 officialTitle
+        if (ch.officialTitle && !ch.positionAtDeath) ch.positionAtDeath = ch.officialTitle;
+      }
     } else if (/释放|开释|赦免|大赦|无罪|平反|昭雪|宽释|保释|出狱|赦出/.test(_reasonStr)) {
       // ★ 释放 / 赦免·清入狱状态
       ch._imprisoned = false;
@@ -689,30 +716,47 @@
   //  动态机构 / 区划 注册
   // ═══════════════════════════════════════════════════════════════════
 
+  // 动态机构统一为数组表示（type 字段分 region/military/ministry·不分池）·与圣旨路径(edict-parser)一致。
+  // 老档/旧版本可能存成对象池 {ministries,regions,militaryUnits}·此处一次性合并成数组·下游全部按数组读·幂等。
+  function _normalizeDynamicInstitutions(G) {
+    if (!G) return [];
+    var di = G.dynamicInstitutions;
+    if (Array.isArray(di)) return di;
+    var out = [];
+    if (di && typeof di === 'object') {
+      [['ministries', 'ministry'], ['regions', 'region'], ['militaryUnits', 'military']].forEach(function (pair) {
+        var pool = di[pair[0]];
+        if (pool && typeof pool === 'object') Object.keys(pool).forEach(function (k) {
+          var inst = pool[k];
+          if (inst && typeof inst === 'object') { if (inst.type == null) inst.type = pair[1]; out.push(inst); }
+        });
+      });
+    }
+    G.dynamicInstitutions = out;
+    return out;
+  }
+
   function registerInstitution(spec) {
     var G = global.GM;
-    if (!G.dynamicInstitutions) G.dynamicInstitutions = { ministries:{}, regions:{}, militaryUnits:{} };
+    var _di = _normalizeDynamicInstitutions(G);
+    var _t = spec.type === 'region' ? 'region' : spec.type === 'military' ? 'military' : 'ministry';
     var inst = Object.assign({
       id: spec.id || 'inst_' + (G.turn||0) + '_' + Math.floor(Math.random()*10000),
       name: spec.name || '新设机构',
       createdTurn: G.turn || 0,
       stage: 'running'
-    }, spec);
+    }, spec, { type: _t });
     _ensurePublicTreasury(inst);
-    if (spec.type === 'region') G.dynamicInstitutions.regions[inst.id] = inst;
-    else if (spec.type === 'military') G.dynamicInstitutions.militaryUnits[inst.id] = inst;
-    else G.dynamicInstitutions.ministries[inst.id] = inst;
+    _di.push(inst);
     if (global.addEB) global.addEB('新制', '设 ' + inst.name);
     return inst;
   }
 
   function abolishInstitution(id, reason) {
     var G = global.GM;
-    if (!G.dynamicInstitutions) return { ok:false };
-    var inst = null;
-    ['ministries','regions','militaryUnits'].forEach(function(pool) {
-      if (G.dynamicInstitutions[pool] && G.dynamicInstitutions[pool][id]) inst = G.dynamicInstitutions[pool][id];
-    });
+    var _di = _normalizeDynamicInstitutions(G);
+    if (!_di.length) return { ok:false };
+    var inst = _di.find(function (x) { return x && x.id === id; });
     if (!inst) return { ok:false };
     inst.stage = 'abolished';
     inst.abolishedTurn = G.turn || 0;
@@ -725,7 +769,7 @@
     var G = global.GM;
     var r = null;
     if (G.regionMap && G.regionMap[regionId]) r = G.regionMap[regionId];
-    if (!r && G.dynamicInstitutions && G.dynamicInstitutions.regions) r = G.dynamicInstitutions.regions[regionId];
+    if (!r) r = _normalizeDynamicInstitutions(G).find(function (x) { return x && x.id === regionId && x.type === 'region'; }) || null;
     if (!r) return { ok: false };
     r.regionType = newType;
     if (global.addEB) global.addEB('区划', regionId + ' 改为 ' + newType + '（' + (reason||'') + '）');
@@ -880,7 +924,7 @@
 
   function _findAIInstitutionLifecycleTarget(item) {
     var G = global.GM || {};
-    var list = Array.isArray(G.dynamicInstitutions) ? G.dynamicInstitutions : [];
+    var list = _normalizeDynamicInstitutions(G);
     var id = _aiPolicyText(item && (item.id || item.instId || item.institutionId || item.officeId || ''));
     var name = _aiPolicyText(item && (item.officeName || item.name || item.institutionName || ''));
     if (id) {
@@ -901,10 +945,7 @@
     if (!G || !parser) return null;
     var action = _aiInstitutionLifecycleAction(item);
     if (!action) return null;
-    if (!G.dynamicInstitutions) G.dynamicInstitutions = [];
-    if (!Array.isArray(G.dynamicInstitutions)) {
-      return { ok: false, action: action, reason: 'dynamicInstitutions is not array' };
-    }
+    _normalizeDynamicInstitutions(G);
     if (action === 'create') {
       if (typeof parser.registerDynamicInstitution !== 'function') return null;
       var spec = {
@@ -1651,10 +1692,85 @@
     // ── 10. fiscal_adjustments：岁入岁出动态增删 + **立即作用于余额** ──
     // schema: [{ target:'guoku|neitang|province:X', kind:'income|expense', resource?:'money|grain|cloth', category, name, amount, reason, recurring:bool, stopAfterTurn }]
     var fiscalCount = 0;
+    var _transferPairSeen = {};
+    // ★ 转账对语义闸(2026-07-16·落库契约硬化刀②·居平内帑案的另一形态)：
+    //   居平案原形=同批次「A库 expense + B库 income、金额相等、事由同源」一对——把单边节流/增支旨意
+    //   错记成两库转账·凭空多出一侧假账(内帑掏空 + 国库虚增)。既有「裁减语义守卫」(下方 1696)只拦
+    //   含"裁减/节省…用度"关键字的单条·既有「金额相称闸」(下方 1769)只拦单条超量·两者都漏这种
+    //   "两条各自结构合法、成对才露馅"的转账对形态。此闸纯确定性配对(不掷骰不调 AI)·四条件全中才算：
+    //   ①一 income 一 expense ②跨两个库(guoku/neitang/province) ③金额近等(≤1%) ④事由文本同源。
+    //   处置=保守留痕：fiscal schema 无原生 transfer 语义(只 income/expense)·不折算·两笔照落但打
+    //   嫌疑标记(entry._transferPairSuspect)+ turnReport 携标 + 事件簿⚠·让 playtest 看得见·不静默
+    //   吞账(真转账不误杀)也不误伤(两笔无关同额收支·事由不同源→不判)。
+    (function _flagFiscalTransferPairs(){
+      var list = aiOutput.fiscal_adjustments;
+      if (!Array.isArray(list) || list.length < 2) return;
+      // ★别名表镜像·改须与 tm-ai-change-applier-reconcile.js:_faNormTargetForGate/_faNormKindForGate 及下方
+      //   fiscal_adjustments 容差归一段同步(三处逐字一致)。
+      function _normTarget(t){
+        var s = String(t == null ? '' : t).trim();
+        if (/^(太仓|太仓库|国库|户部库|外库|公帑|公库|guoku|taicang|taicangku)$/i.test(s)) return 'guoku';
+        if (/^(内帑|内库|内承运库|私帑|帝室库|御库|neitang|neicang)$/i.test(s)) return 'neitang';
+        if (/^(province|省|布政使司)\s*[:：]/i.test(s)) return 'province:' + s.replace(/^(province|省|布政使司)\s*[:：]\s*/i, '');
+        if (s === 'guoku' || s === 'neitang' || /^province:/.test(s)) return s;
+        return '';
+      }
+      function _normKind(k){
+        var s = String(k == null ? '' : k).trim();
+        if (/^(income|收入|进项|增收|入项)$/i.test(s)) return 'income';
+        if (/^(expense|expenditure|支出|开支|耗费|拨支|出项)$/i.test(s)) return 'expense';
+        return (s === 'income' || s === 'expense') ? s : '';
+      }
+      function _norm(fa){
+        if (!fa) return null;
+        var act = String(fa.action || fa.op || 'add').toLowerCase();
+        if (act === 'modify' || act === 'set') act = 'update';
+        if (act === 'delete' || act === 'disable' || act === 'cancel') act = 'stop';
+        if (act !== 'add' && act !== 'update' && act !== 'stop' && act !== 'remove') act = 'add';
+        if (act !== 'add') return null;                                   // 只在新增(add)之间配对
+        var res = (fa.resource === 'grain' || fa.resource === 'cloth') ? fa.resource : 'money';
+        if (res !== 'money') return null;                                 // 仅银两转账对(粮布不判·宁漏勿误)
+        var tgt = _normTarget(fa.target); if (!tgt) return null;
+        var kind = _normKind(fa.kind); if (!kind) return null;
+        var amt = Math.abs(parseFloat(fa.amount) || 0); if (!(amt > 0)) return null;
+        return { fa: fa, target: tgt, kind: kind, amount: amt, label: String((fa.name||'') + ' ' + (fa.category||'') + ' ' + (fa.reason||'')) };
+      }
+      function _clean(s){ return String(s || '').replace(/[\s　]+/g, '').replace(/[，。、；：·「」『』()（）\-—_./]/g, ''); }
+      function _sameSource(a, b){   // 确定性同源：短串被长串包含(≥2字) 或 字符二元组 Jaccard ≥ 0.5
+        var x = _clean(a), y = _clean(b);
+        if (x.length < 2 || y.length < 2) return false;
+        if (x.indexOf(y) >= 0 || y.indexOf(x) >= 0) return true;
+        function _bg(s){ var m = {}; for (var i = 0; i < s.length - 1; i++) m[s.substr(i, 2)] = 1; return m; }
+        var bx = _bg(x), by = _bg(y), inter = 0, uni = {};
+        Object.keys(bx).forEach(function(k){ uni[k] = 1; if (by[k]) inter++; });
+        Object.keys(by).forEach(function(k){ uni[k] = 1; });
+        var u = Object.keys(uni).length;
+        return u > 0 && (inter / u) >= 0.5;
+      }
+      var norms = list.map(_norm), paired = {};
+      for (var i = 0; i < norms.length; i++) {
+        var A = norms[i]; if (!A || paired[i]) continue;
+        for (var j = i + 1; j < norms.length; j++) {
+          var B = norms[j]; if (!B || paired[j]) continue;
+          if (A.kind === B.kind) continue;                               // ①须一进一出
+          if (A.target === B.target) continue;                           // ②须跨两库
+          var hi = Math.max(A.amount, B.amount), lo = Math.min(A.amount, B.amount);
+          if ((hi - lo) > Math.max(1, lo * 0.01)) continue;              // ③金额近等(≤1%)
+          if (!_sameSource(A.label, B.label)) continue;                  // ④事由同源
+          var pid = 'tpair_' + (G.turn || 0) + '_' + i + '_' + j;
+          A.fa._transferPairSuspect = true; A.fa._transferPairId = pid; A.fa._transferPairWith = B.target + '/' + B.kind;
+          B.fa._transferPairSuspect = true; B.fa._transferPairId = pid; B.fa._transferPairWith = A.target + '/' + A.kind;
+          paired[i] = true; paired[j] = true;
+          break;
+        }
+      }
+    })();
     (aiOutput.fiscal_adjustments || []).forEach(function(fa) {
       if (!fa) return;
       // ★ fiscal 容差归一(2026-06-02·bug A)：AI 常用中文/自然名指账户与收支·若不归一则 target 解析为 null·
       //   此条 fiscal 静默漏账(财政死账真凶之一)。映射常见别名到 guoku/neitang/province: 与 income/expense。
+      //   ★别名表镜像·改须与 _normTarget(上方 _flagFiscalTransferPairs 内)及 tm-ai-change-applier-reconcile.js:
+      //   _faNormTargetForGate/_faNormKindForGate(preflight 白名单)同步(三处逐字一致)。
       if (fa.target != null) {
         var _ft = String(fa.target).trim();
         if (/^(太仓|太仓库|国库|户部库|外库|公帑|公库|guoku|taicang|taicangku)$/i.test(_ft)) fa.target = 'guoku';
@@ -1676,6 +1792,21 @@
       if (action === 'add' && amount <= 0) return;
       amount = _applyTaxAuthorityGate(G, fa, amount);   // 官制活化 Slice③ 权限门：税类 income 按掌征税权者执行力打折
       var resource = (fa.resource === 'grain' || fa.resource === 'cloth') ? fa.resource : 'money';
+      // ★ 裁减语义守卫(2026-07-12·居平内帑案)：「裁减/节省用度」类旨意是降常例支出率的节流令·不是帑银调拨——
+      //   本 schema 只有 income/expense 两个库存动词·LLM 只能错映射成「支出 N 两」(内帑侧被真扣)或
+      //   「节省 N 两入库」(国库侧凭空进账)·一对条目=巨款凭空搬家(实证:后宫裁减用度 1300 万·内帑掏空+国库虚增)。
+      //   动词+宾语双匹配才拦(裁汰冗兵遣散费=真支出·不误伤)·仅拦 add(stop/update 既有条目照旧)·
+      //   不动库存·记 fiscal_adj_rejected 独立 type(agent 写工具按无 fiscal_adj 正确得 ok:false)·事件簿可见。
+      if (action === 'add') {
+        var _cutLabel = String((fa.name || '') + ' ' + (fa.category || '') + ' ' + (fa.reason || ''));
+        if (/(裁减|裁革|削减|核减|减省|节省|省减|俭省|裁汰|缩减|撙节)/.test(_cutLabel) &&
+            /(用度|开支|支出|费用|经费|浮费|冗费|宫费|糜费|靡费)/.test(_cutLabel)) {
+          if (applied && Array.isArray(applied.failed)) applied.failed.push({ fiscal_adjustment: { target: fa.target, kind: fa.kind, name: fa.name || fa.category, amount: amount }, reason: '裁减用度类旨意不产生银两调拨·语义守卫拦截(应降常例支出)' });
+          G._turnReport.push({ type: 'fiscal_adj_rejected', action: action, target: fa.target, kind: fa.kind, resource: resource, name: fa.name || fa.category || '', amount: 0, requested: amount, recurring: !!fa.recurring, executionStatus: 'rejected_semantic', reason: '裁减/节省用度为节流令·不动帑银·未入账', turn: G.turn || 0 });
+          if (typeof global.addEB === 'function') global.addEB('财政', (fa.target === 'guoku' ? '帑廪' : fa.target === 'neitang' ? '内帑' : fa.target) + '「' + (fa.name || '裁减用度') + '」系节流之令·不动帑银·未按 ' + amount + ' 计调拨');
+          return;
+        }
+      }
       // ★ 一次性误判护栏(2026-06-21)：LLM 偶把突发赏赐/赈济/抄没/缴获等「一次性」收支误标 recurring:true·
       //   被当长期年例逐回合重复结算(虚增岁入岁出·且因 scheduled 分支当回合反而不入账)。
       //   据名目/缘由关键字保守纠偏：含明确一次性词且无长期年例词 → 强制 recurring:false。
@@ -1698,6 +1829,7 @@
         reason: fa.reason || '',
         recurring: !!fa.recurring,
         _coercedOneTime: !!fa._coercedOneTime,
+        _transferPairSuspect: !!fa._transferPairSuspect,   // 刀②·两库转账对嫌疑标记(随条目持久化·可见于存档/奏报)
         addedTurn: G.turn || 0,
         stopAfterTurn: fa.stopAfterTurn || null,
         action: action
@@ -1732,6 +1864,22 @@
         } else {
           // 【落地核对·Slice4·2026-06】province 解析不到→原本 target 留 null→后续 if(target&&containerKey) 静默跳过=财政死账真凶。记 failed 可见(Slice1 surface)·不改控制流(仍照旧落空)
           if (applied && Array.isArray(applied.failed)) applied.failed.push({ fiscal_adjustment: { target: fa.target, kind: fa.kind, name: fa.name || fa.category }, reason: 'province 未找到·财政未落地: ' + provName });
+        }
+      }
+      // ★ 金额相称闸(2026-07-12·同刀)：单条银两金额超过 max(账户年流水×3, 100 万) = 幻觉量级——
+      //   压至该上限并留痕(entry._clampedFrom·reason 追注·事件簿⚠)·勿静默。年流水取 monthlyIncome/
+      //   monthlyExpense 较大者×12(guoku/neitang 引擎均维护该字段)·无流水数据或粮布资源不压(宁漏勿误杀)。
+      //   100 万地板保正常大额(犒军/岁币/报效)零打扰·年流水×3 随经济规模自适应(加派类真年例放行)。
+      if (amount > 0 && target && resource === 'money' && (fa.target === 'guoku' || fa.target === 'neitang')) {
+        var _mFlow = Math.max(Number(target.monthlyIncome) || 0, Number(target.monthlyExpense) || 0) * 12;
+        var _amtCap = Math.max(_mFlow * 3, 1000000);
+        if (_mFlow > 0 && amount > _amtCap) {
+          var _rawAmt = amount;
+          amount = Math.round(_amtCap);
+          entry.amount = amount;
+          entry._clampedFrom = _rawAmt;
+          entry.reason = (entry.reason ? entry.reason + '·' : '') + '原报 ' + _rawAmt + ' 超账户年流水三倍·压至 ' + amount;
+          if (typeof global.addEB === 'function') global.addEB('财政⚠', (fa.target === 'guoku' ? '帑廪' : '内帑') + '「' + (entry.name || '') + '」报额 ' + _rawAmt + ' 显异常·压至 ' + amount);
         }
       }
       if (target && containerKey && action !== 'add') {
@@ -1778,6 +1926,12 @@
       if (target && containerKey) {
         target[containerKey].push(entry);
         fiscalCount++;
+        // ★ 刀②·转账对嫌疑留痕：两笔照落·不动银·仅按对告警一次(供 playtest 核是否单边节流/增支误记成两库搬家)
+        if (fa._transferPairSuspect && !_transferPairSeen[fa._transferPairId]) {
+          _transferPairSeen[fa._transferPairId] = true;
+          if (applied && applied.semantic) applied.semantic.fiscal_transfer_pair_suspects = (applied.semantic.fiscal_transfer_pair_suspects || 0) + 1;
+          if (typeof global.addEB === 'function') global.addEB('财政❗', '疑似两库转账对·' + (fa.target==='guoku'?'帑廪':fa.target==='neitang'?'内帑':fa.target) + (fa.kind==='income'?'入':'出') + amount + '两「' + (entry.name||'') + '」与 ' + (fa._transferPairWith||'') + ' 同额·事由同源·两笔照落待核(防单边节流/增支误记成两库搬家)');
+        }
         // ★ 立即作用于余额：支出不得突破 0（主动行为最多拨完库存）
         //   被动结算（CascadeTax/FixedExpense）已在 fiscal_adjustments 之前运行
         //   · 若此时 cur <= 0（被动结算后已赤字）→ 主动支出完全失败，amount=0/shortfall=requested
@@ -1825,7 +1979,7 @@
         entry.shortfall = shortfall;
         entry.executionStatus = executionStatus;
         // turnReport：记 actual + shortfall + status（渲染器区别对待）
-        G._turnReport.push({ type:'fiscal_adj', action: action, target: fa.target, kind: fa.kind, resource: resource, name: entry.name, amount: actualApplied, requested: amount, annualAmount: entry.recurring ? amount : 0, recurring: !!entry.recurring, coercedOneTime: !!entry._coercedOneTime, shortfall: shortfall, executionStatus: executionStatus, reason: entry.reason, turn: G.turn||0 });
+        G._turnReport.push({ type:'fiscal_adj', action: action, target: fa.target, kind: fa.kind, resource: resource, name: entry.name, amount: actualApplied, requested: amount, annualAmount: entry.recurring ? amount : 0, recurring: !!entry.recurring, coercedOneTime: !!entry._coercedOneTime, transferPairSuspect: !!fa._transferPairSuspect, shortfall: shortfall, executionStatus: executionStatus, reason: entry.reason, turn: G.turn||0 });
         // 亏欠单独登记——供下回合 AI 推演、史记、风闻录事参考
         if (shortfall > 0) {
           if (!G._fiscalShortfalls) G._fiscalShortfalls = [];

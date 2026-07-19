@@ -1010,6 +1010,19 @@ openSettings=function(){
       '</label></div>';
     })()+
 
+    // ── 党争/阶层·LLM 校准 (默认开·2026-07 补设置开关·此前仅 console·耗 API) ──
+    (function(){
+      var _on = !(P.conf && P.conf.partyClassLlmEnabled === false);
+      return '<div class="settings-section"><h4>AI 校准</h4>' +
+        '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;cursor:pointer;">' +
+        '<input type="checkbox" id="s-party-class-llm" ' + (_on?'checked ':'') + 'onchange="_togglePConf(\'partyClassLlmEnabled\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+        '<div style="flex:1;">' +
+          '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">🎭 党争/阶层·LLM 校准（默认开）</div>' +
+          '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后（默认），游戏按剧本设定的党派/阶层，在每回合推演及你临朝理事时用 AI 精细校准各党派、各阶层对时局的态度与倾向（耗 API）；关闭则省这部分 AI 调用，党派/阶层动态退回内置机械信号规则（仍照常演化，只是不再逐回合 AI 精修）。</div>' +
+        '</div>' +
+      '</label></div>';
+    })()+
+
     // ── 玩法机制·深化 (opt-in·默认关·2026-07-01·补设置开关·此前仅 console 可开·确定性玩法非 AI) ──
     (function(){
       var _mechs = [

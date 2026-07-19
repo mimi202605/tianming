@@ -35,7 +35,7 @@ Write-Host "复制 web → staging（剔垃圾）..." -ForegroundColor Cyan
 # 排除清单取自单一真源 scripts/release-excludes.json（四条管线共用·改一处全对齐；旧硬编码 $cruft 已并入 JSON·并补齐 _codex_tmp/.cache/tmp/dist 等缺项）
 $exPath = Join-Path $PSScriptRoot '..\..\scripts\release-excludes.json'
 if (-not (Test-Path $exPath)) { throw "排除清单缺失: $exPath" }
-$cruft   = (Get-Content $exPath -Raw | ConvertFrom-Json).dirs
+$cruft   = (Get-Content $exPath -Raw -Encoding UTF8 | ConvertFrom-Json).dirs  # PS5.1 默认 GBK 读 UTF-8 JSON→中文乱码呛死 ConvertFrom-Json·必须显式 UTF8
 $cruftXf = @('*.bak*','*.log','*.yml','*.save.json')   # 扩展名过滤·与 JSON globs 对齐·robocopy /XF 就地剔
 robocopy $WebDir $stage /E /NFL /NDL /NJH /NJS /NP /XD ($cruft | ForEach-Object { Join-Path $WebDir $_ }) /XF $cruftXf | Out-Null
 Get-ChildItem $stage -Recurse -File | Where-Object { $_.Name -match '\.bak' } | Remove-Item -Force -ErrorAction SilentlyContinue
@@ -67,7 +67,7 @@ if (-not $Manifest) {
   $baseline = @{}
   if ($BaselineManifest) {
     if (-not (Test-Path $BaselineManifest)) { throw "BaselineManifest 不存在: $BaselineManifest" }
-    $bmRaw = Get-Content $BaselineManifest -Raw
+    $bmRaw = Get-Content $BaselineManifest -Raw -Encoding UTF8  # 同上·manifest path 含中文剧本名·PS5.1 GBK 读会乱码
     $bm = $bmRaw | ConvertFrom-Json
     $bArr = @()
     if ($bm.PSObject.Properties['manifest']) { $bArr = $bm.manifest }
@@ -128,4 +128,5 @@ if (-not $Manifest) {
   Write-Host "   上传 capgo-files-$Version.zip + $Version.zip + latest.json（release.js 合成）→ gh release" -ForegroundColor Yellow
   Write-Host "   assets 不变的文件 sha 与上版相同 → Capgo 自动跳过 → 只下改动的几 MB" -ForegroundColor Yellow
 }
-Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+try { Remove-Item $stage -Recurse -Force -ErrorAction Stop } catch { Write-Host "  (staging 清理有残留·不影响已生成产物: $($_.Exception.Message))" -ForegroundColor Gray }
+exit 0  # 产物在 build.json 已落盘·别让末尾 staging 清理的文件锁非致命错误把退出码染成 1（release.js 用 status 判 capgo 成败会误 die）

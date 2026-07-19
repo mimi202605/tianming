@@ -791,19 +791,42 @@
     }
 
     // § 动态机构·制度志
-    if (G.dynamicInstitutions && G.dynamicInstitutions.length > 0) {
+    // 形状归一：AI 变更路径(registerInstitution)可能把 dynamicInstitutions 存成对象池 {ministries,regions,militaryUnits}·
+    // 与圣旨路径的数组表示冲突·此处合并成数组再画·防 .length===undefined 整段静默消失(老档/异形亦兜)
+    var _diList = (function(di){
+      if (Array.isArray(di)) return di;
+      if (di && typeof di === 'object') {
+        var out = [];
+        ['ministries','regions','militaryUnits'].forEach(function(pool){
+          var p = di[pool];
+          if (p && typeof p === 'object') Object.keys(p).forEach(function(k){ if (p[k]) out.push(p[k]); });
+        });
+        return out;
+      }
+      return [];
+    })(G.dynamicInstitutions);
+    // 拟制态占位：officeReformAdjudicationEnabled 开时·设衙门之议入 _pendingReforms 待廷议裁定·尚未落 dynamicInstitutions·
+    // 制度志亦须露出(否则玩家下诏设衙门后此处查无·代入感重伤)
+    var _pendInst = (G._pendingReforms || []).filter(function(it){ return it && it.status === '拟制中'; });
+    if (_diList.length > 0 || _pendInst.length > 0) {
       var dh = '';
-      G.dynamicInstitutions.forEach(function(inst) {
+      _diList.forEach(function(inst) {
         var stCol = inst.stage === 'abolished' ? 'var(--vermillion-400)' : inst.stage === 'running' ? '#6aa88a' : 'var(--gold)';
         dh += '<div style="padding:5px 8px;background:var(--bg-2);border-left:3px solid ' + stCol + ';margin-bottom:3px;font-size:0.74rem;">';
-        dh += '<b style="color:' + stCol + ';">' + _esc(inst.name) + '</b> · 品 ' + inst.rank + ' · ' + _esc(inst.stage) + ' · 员额 ' + (inst.staffSize||0) + ' · 岁支 ' + _fmt(inst.annualBudget||0);
+        dh += '<b style="color:' + stCol + ';">' + _esc(inst.name) + '</b> · 品 ' + (inst.rank!=null?inst.rank:'—') + ' · ' + _esc(inst.stage) + ' · 员额 ' + (inst.staffSize||0) + ' · 岁支 ' + _fmt(inst.annualBudget||0);
         if (inst.effectiveness !== undefined) dh += '<br><span style="font-size:0.7rem;color:var(--txt-d);">效率 ' + ((inst.effectiveness||0)*100).toFixed(0) + '% · 腐败 ' + Math.round(inst.corruption||0) + '</span>';
         if (inst.stage !== 'abolished') {
           // 废除走诏令
         }
         dh += '</div>';
       });
-      html += _sec('动态机构 · 制度志', G.dynamicInstitutions.length + '', dh);
+      _pendInst.forEach(function(it) {
+        dh += '<div style="padding:5px 8px;background:var(--bg-2);border-left:3px dashed var(--gold);margin-bottom:3px;font-size:0.74rem;">';
+        dh += '<b style="color:var(--gold);">' + _esc((it.reformDetail || '改制') + ' ' + (it.dept || '')) + '</b> · <span style="color:var(--txt-d);">待廷议裁定</span>';
+        if (it.reason) dh += '<br><span style="font-size:0.7rem;color:var(--txt-d);">' + _esc(String(it.reason).slice(0,40)) + '</span>';
+        dh += '</div>';
+      });
+      html += _sec('动态机构 · 制度志', (_diList.length + _pendInst.length) + '', dh);
     }
 
     // § 永制

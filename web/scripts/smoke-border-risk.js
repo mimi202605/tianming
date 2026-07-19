@@ -28,7 +28,7 @@ global.GM = {
     盟友: { divisions: [AllyLeaf] }                          // NPC·与大明友好
   }
 };
-global.P = { conf: { borderRiskEnabled: false }, playerInfo: { factionName: '大明' } };
+global.P = { conf: {}, playerInfo: { factionName: '大明' } };
 // 真实 getLeafDivisions 行为(ah[facId].divisions 的叶·非 mock 返回全部)
 global.IntegrationBridge = {
   getLeafDivisions: function (ah, facId) {
@@ -40,12 +40,7 @@ global.IntegrationBridge = {
   }
 };
 
-// ── T1：开关关·不算(死值不被动) ──
-BorderRisk.tick();
-var T1 = (Border.borderRisk === '剧本死值40' && Inland.borderRisk === '剧本死值40');
-
-// ── 开关开·结算 ──
-global.P.conf.borderRiskEnabled = true;
+// ── 结算(恒开) ──
 BorderRisk.tick();
 console.log('[A1a] 边镇(空虚)=' + Border.borderRisk + ' · 腹地(充足)=' + Inland.borderRisk +
   ' · 建州(NPC后金叶)=' + JinLeaf.borderRisk + ' · 友邦(NPC友好叶)=' + AllyLeaf.borderRisk);
@@ -58,13 +53,12 @@ var T6 = (AllyLeaf.borderRisk === 0);                                           
 var T7 = (typeof Fortified.borderRisk === 'number' && Fortified.borderRisk < Border.borderRisk);  // A4·同空虚·边防工事 defenseBonus 降边警
 
 console.log('  [A4] 雄关(空虚+边防工事5档)=' + Fortified.borderRisk + ' vs 边镇(空虚无工事)=' + Border.borderRisk);
-console.log('  [T1] 开关关不算(死值不被动)：' + (T1 ? 'OK' : 'FAIL'));
 console.log('  [T2] 边镇空虚高危(≥60)：' + (T2 ? 'OK' : 'FAIL'));
 console.log('  [T3] 腹地充足低危(<40)：' + (T3 ? 'OK' : 'FAIL'));
 console.log('  [T4] 同敌强·空虚>充足：' + (T4 ? 'OK' : 'FAIL'));
 console.log('  [T5] NPC faction 叶也被算(取叶覆盖所有 faction)：' + (T5 ? 'OK' : 'FAIL'));
 console.log('  [T6] 友好邻无敌对归 0：' + (T6 ? 'OK' : 'FAIL'));
 console.log('  [T7] A4·边防工事 defenseBonus 降边警(雄关<边镇)：' + (T7 ? 'OK' : 'FAIL'));
-var all = T1 && T2 && T3 && T4 && T5 && T6 && T7;
+var all = T2 && T3 && T4 && T5 && T6 && T7;
 console.log('\n=== ' + (all ? 'ALL PASS' : 'FAIL') + ' ===');
 process.exit(all ? 0 : 1);

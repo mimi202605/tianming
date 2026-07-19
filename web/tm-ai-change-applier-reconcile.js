@@ -540,6 +540,25 @@
     return true;
   }
 
+  // ── fiscal 别名归一(preflight 白名单判定用·落库契约硬化刀②·2026-07-16·居平内帑案悬案) ──
+  //   ★别名表镜像·改须与 tm-ai-change-applier.js 的 _normTarget/_normKind(_flagFiscalTransferPairs 内)
+  //     与 fiscal_adjustments 容差归一段(fa.target/fa.kind 中文别名映射)同步·三处逐字一致(反之亦然)。
+  //   仅供 preflight 白名单判定·不 mutate 条目(下游 applier 会对留存条目再归一·防重复变换)。
+  function _faNormTargetForGate(t) {
+    var s = String(t == null ? '' : t).trim();
+    if (/^(太仓|太仓库|国库|户部库|外库|公帑|公库|guoku|taicang|taicangku)$/i.test(s)) return 'guoku';
+    if (/^(内帑|内库|内承运库|私帑|帝室库|御库|neitang|neicang)$/i.test(s)) return 'neitang';
+    if (/^(province|省|布政使司)\s*[:：]/i.test(s)) return 'province:' + s.replace(/^(province|省|布政使司)\s*[:：]\s*/i, '');
+    if (s === 'guoku' || s === 'neitang' || /^province:/.test(s)) return s;
+    return '';
+  }
+  function _faNormKindForGate(k) {
+    var s = String(k == null ? '' : k).trim();
+    if (/^(income|收入|进项|增收|入项)$/i.test(s)) return 'income';
+    if (/^(expense|expenditure|支出|开支|耗费|拨支|出项)$/i.test(s)) return 'expense';
+    return (s === 'income' || s === 'expense') ? s : '';
+  }
+
   function preflightAIWriteBack(aiOutput, opts) {
     var G = global.GM;
     if (!G || !aiOutput || typeof aiOutput !== 'object') return aiOutput;
@@ -616,12 +635,18 @@
 
     keepArray('fiscal_adjustments', 'fiscal_adjustments', function(fa) {
       if (!fa || !fa.target || !fa.kind) return _tmGateReason('fiscal_adjustments', 'missing target/kind', fa);
-      if (fa.kind !== 'income' && fa.kind !== 'expense') return _tmGateReason('fiscal_adjustments', 'invalid kind: ' + fa.kind, fa);
+      // ★ 落库契约硬化刀②(2026-07-16·居平内帑案悬案)：闸前先做中文→canonical 归一·归一后再过白名单。
+      //   此前白名单只认英文 guoku/neitang/province:/income/expense·AI 写中文别名(内帑/国库/太仓/收入/支出…)
+      //   的 fiscal 条目在 preflight 即被剔·而下游 applier(fiscal_adjustments 容差归一段)本能吃这些别名
+      //   (2026-06-02 bug A 修)——preflight 比消费端更严=好账被冤杀。此处归一「仅供闸判定」·不 mutate fa
+      //   (留存条目由 applier 再归一)。真垃圾 target/kind 归一落空照剔。别名表镜像见上方 _faNormTargetForGate 注释。
+      var _gateKind = _faNormKindForGate(fa.kind);
+      if (_gateKind !== 'income' && _gateKind !== 'expense') return _tmGateReason('fiscal_adjustments', 'invalid kind: ' + fa.kind, fa);
       var fiscalAction = String(fa.action || fa.op || 'add').toLowerCase();
       if (fiscalAction === 'modify' || fiscalAction === 'set') fiscalAction = 'update';
       if (fiscalAction === 'delete' || fiscalAction === 'disable' || fiscalAction === 'cancel') fiscalAction = 'stop';
       if (fiscalAction !== 'stop' && fiscalAction !== 'remove' && !(parseFloat(fa.amount) > 0)) return _tmGateReason('fiscal_adjustments', 'invalid amount', fa);
-      if (fa.target !== 'guoku' && fa.target !== 'neitang' && !/^province:/.test(String(fa.target))) {
+      if (!_faNormTargetForGate(fa.target)) {
         return _tmGateReason('fiscal_adjustments', 'invalid target: ' + fa.target, fa);
       }
       return true;

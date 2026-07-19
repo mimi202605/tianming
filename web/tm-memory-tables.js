@@ -840,9 +840,10 @@
       if (!Array.isArray(GM._edictTracker)) return;
       var seenCodes = {};
       t.rows.forEach(function(r) { if (r[0]) seenCodes[r[0]] = 1; });
-      GM._edictTracker.forEach(function(e) {
+      GM._edictTracker.forEach(function(e, _ei) {
         if (!e || e.status === 'completed' || e.status === 'aborted') return;
-        var code = 'T' + (e.startTurn || 1) + '-E' + ((e.id || '').slice(-3) || '?');
+        // 无 id 诏令给唯一后缀(#入行序号)·防两道无 id 诏令都塌成同一 'T?-E?' 撞码触发一致性哨兵误报(rows 0,1)
+        var code = 'T' + (e.startTurn || 1) + '-E' + (e.id ? String(e.id).slice(-3) : ('#' + _ei));
         if (seenCodes[code]) return;
         t.rows.push([
           code,
@@ -854,6 +855,7 @@
           (e.keyPersons || []).join('、'),
           e.eta || ''
         ]);
+        seenCodes[code] = 1; // 回填·防同趟 forEach 内两条同码诏令双双过 guard 入行(此前只在 829 用既有行预置·push 后不回填)
         stats.rows++;
       });
       stats.tables++;
