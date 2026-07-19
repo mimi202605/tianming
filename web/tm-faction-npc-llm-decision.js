@@ -330,6 +330,80 @@
     return lines;
   }
 
+  // Slice 1·PLAYER_INTEL·结构化玩家对本势力动态(确定性派生·有界·每条一行·cap 6)
+  //   病：_formatPlayerRecent 只喂玩家诏令文本、玩家又被排除出 OPPONENT_MIND_MODEL——势力对「玩家对本势力做了什么」无结构化感知。
+  //   本段从战争态/近战/省份(claims 对照 _provinceToFaction)/点名诏令派生·无内容整段省略·拿不到的省略勿造。
+  function _formatPlayerIntel(fac) {
+    if (!fac || !fac.name) return [];
+    var G = global.GM || {};
+    var myName = fac.name;
+    var playerNames = _resolvePlayerFactionNames();
+    if (!_arr(playerNames).length) return [];
+    var CAP = 6;
+    var body = [];
+    function involvesBoth(text, sides) {
+      var t = String(text || '');
+      var arr = _arr(sides);
+      var hasMe = t.indexOf(myName) >= 0 || arr.indexOf(myName) >= 0;
+      var hasPlayer = playerNames.some(function(pn){ return pn && (t.indexOf(pn) >= 0 || arr.indexOf(pn) >= 0); });
+      return hasMe && hasPlayer;
+    }
+    // 1) 与玩家的战争态(GM.activeWars·双方均在)
+    _arr(G.activeWars).forEach(function(w) {
+      if (body.length >= CAP || !w) return;
+      var sides = _arr(w.sides).concat([w.attacker, w.defender, w.enemy, w.opponent].filter(Boolean));
+      if (!involvesBoth(_txt(w, 300), sides)) return;
+      body.push('  ⚔ 与君上(玩家)交兵：' + _txt(w.name || w.title || '未名战事', 40)
+        + ((w.status || w.phase) ? '·' + _txt(w.status || w.phase, 30) : '')
+        + (w.frontline ? '·前线' + _txt(w.frontline, 24) : ''));
+    });
+    // 2) 近期与玩家的战斗(GM.battleHistory·涉双方)
+    _arr(G.battleHistory).slice(-8).forEach(function(b) {
+      if (body.length >= CAP || !b) return;
+      var sides = [b.attackerFaction, b.defenderFaction, b.attacker, b.defender, b.winner, b.loser].filter(Boolean);
+      if (!involvesBoth(_txt(b, 220), sides)) return;
+      var atk = _txt(b.attackerFaction || b.attacker, 24);
+      var def = _txt(b.defenderFaction || b.defender, 24);
+      var win = _txt(b.winner || b.winnerFactionId, 24);
+      body.push('  近战 ' + _fmtTurn(b) + ' ' + atk + '攻' + def + (win ? '·胜' + win : '')
+        + ((b.attackerLoss != null || b.defenderLoss != null) ? '·损' + _safeNum(b.attackerLoss) + '/' + _safeNum(b.defenderLoss) : ''));
+    });
+    // 3) 省份易手(本势力所图之地今为玩家所据·claims 对照 _provinceToFaction·拿不到则省略)
+    var p2f = G._provinceToFaction;
+    if (p2f && typeof p2f === 'object') {
+      var claims = [];
+      if (fac.aiStrategy && Array.isArray(fac.aiStrategy.claims)) claims = claims.concat(fac.aiStrategy.claims);
+      if (Array.isArray(fac.claims)) claims = claims.concat(fac.claims);
+      var seenCl = {};
+      claims.forEach(function(cl) {
+        if (body.length >= CAP) return;
+        var pname = String(cl == null ? '' : (cl.name || cl.province || cl)).trim();
+        if (!pname || seenCl[pname]) return;
+        seenCl[pname] = true;
+        var owner = p2f[pname];
+        if (owner && _isPlayerFactionName(owner, playerNames)) {
+          body.push('  失地·所图「' + _txt(pname, 30) + '」今为君上(' + _txt(owner, 20) + ')所据');
+        }
+      });
+    }
+    // 4) 玩家近期诏令/决策点名本势力(GM._playerDirectives / GM.playerDecisions 文本 match 势力名)
+    var named = [];
+    _arr(G._playerDirectives).slice(-10).forEach(function(d) {
+      if (!d) return;
+      var txt = _txt(d.content || d.raw || d.interpretation || d, 200);
+      if (txt && txt.indexOf(myName) >= 0) named.push('  君上近令涉本势力：' + txt.slice(0, 90));
+    });
+    _arr(G.playerDecisions).slice(-12).forEach(function(d) {
+      if (!d) return;
+      var txt = _txt((d.desc || '') + (d.consequences ? '·' + d.consequences : ''), 200);
+      if (txt && txt.indexOf(myName) >= 0) named.push('  君上决策涉本势力[' + _txt(d.category, 12) + ']：' + txt.slice(0, 90));
+    });
+    named.slice(0, 3).forEach(function(x){ if (body.length < CAP) body.push(x); });
+    if (!body.length) return [];
+    var lines = ['  Player (君上/朝廷) actions directed at THIS faction — first-hand intel on how the player treats you; weigh into diplomacy/defense/posture.'];
+    return lines.concat(body.slice(0, CAP));
+  }
+
   function _formatFactionTrajectory(fac) {
     var lines = [];
     _tail(fac.npcMemorials, 4).forEach(function(m){
@@ -1477,6 +1551,7 @@
     _pushSection(extra, 'FISCAL_CONTEXT', _formatFiscalContext(fac));
     _pushSection(extra, 'RECENT_WORLD', _formatRecentWorld(fac.name));
     _pushSection(extra, 'PLAYER_RECENT', _formatPlayerRecent());
+    _pushSection(extra, 'PLAYER_INTEL', _formatPlayerIntel(fac));   // Slice 1·结构化玩家对本势力动态(战争/近战/失地/点名诏令)
     _pushSection(extra, 'SCENARIO_FACTION_PROFILE', _formatFactionProfile(fac));
     _pushSection(extra, 'OWN_ADMIN_HIERARCHY', _formatOwnAdminHierarchy(fac));
     _pushSection(extra, 'SC16_WORLD_DIRECTIVE', _formatSc16DirectiveForFac(fac));
