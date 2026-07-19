@@ -422,6 +422,102 @@ function b7EventBoundAndTitleTest() {
   assert(iss && iss.title.indexOf('议互不侵犯') >= 0 && iss.title.indexOf('结盟') < 0, 'B7: alliance-family event title splits by relationType (互不侵犯→议互不侵犯, not 结盟)');
 }
 
+// ═══════════ Codex 二轮·五阻断红绿 ═══════════
+// B2①·去重键加 terms：同 from+type 但不同条款两提案都保留(旧=去重丢第一条)
+function b2aDedupTermsTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const dip = ctx.TM.FactionDiplomacy, B = ctx.GM.facs[1];
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'deal', terms: '互市粮秣' }], 5);
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'deal', terms: '互市茶马' }], 5);
+  const deals = (B._incomingProposals || []).filter(function(x){ return x.type === 'deal' && x.status === 'pending'; });
+  assert(deals.length === 2, 'B2①: two same from+type but DIFFERENT-terms proposals are both kept (not deduped to one)');
+}
+// B2②·全局递增序号：同回合两次 recordProposals 的 id 不碰撞(旧=n 重置 → dp-5-a-0 撞)
+function b2bSeqNoCollisionTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const dip = ctx.TM.FactionDiplomacy, B = ctx.GM.facs[1];
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'alliance', terms: 'a' }], 5);
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'nonaggression', terms: 'b' }], 5);
+  const ids = (B._incomingProposals || []).map(function(x){ return x.id; });
+  assert(ids.length === 2 && ids[0] !== ids[1], 'B2②: two same-turn recordProposals calls yield DISTINCT ids (global seq)');
+}
+// B2③·匹配 fail-closed：带 id 未命中→保持未决；无 id 歧义→保持未决；无 id 唯一→结算
+function b2cMatchFailClosedTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const dip = ctx.TM.FactionDiplomacy, B = ctx.GM.facs[1];
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'alliance', terms: 't' }], 5);
+  dip.applyResponses(B, [{ proposalId: 'no-such-id', decision: 'accept' }], 5);
+  assert((B._incomingProposals || []).every(function(p){ return p.status === 'pending'; }), 'B2③: response with unknown id is fail-closed (stays pending, not mis-settled to another proposal)');
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'deal', terms: 'x' }], 5);
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'deal', terms: 'y' }], 5);
+  dip.applyResponses(B, [{ from: '甲势力', type: 'deal', decision: 'accept' }], 5);
+  const deals = (B._incomingProposals || []).filter(function(p){ return p.type === 'deal'; });
+  assert(deals.length === 2 && deals.every(function(p){ return p.status === 'pending'; }), 'B2③: ambiguous no-id response (2 candidates) keeps BOTH pending');
+  dip.applyResponses(B, [{ from: '甲势力', type: 'alliance', decision: 'accept' }], 5);
+  const alli = (B._incomingProposals || []).filter(function(p){ return p.type === 'alliance'; })[0];
+  assert(alli && alli.status === 'accepted', 'B2③: unique no-id response IS settled');
+}
+// B4·混合数组一次性迁移：OFF 跑出字符串 goals → 开闸 → 纯结构对象
+function b4MigrationTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  const fac = { name: '甲势力', treasury: { money: 100000 } };
+  ctx.P = { playerInfo: { factionName: '玩家朝廷' }, conf: { npcAiPrecision: true }, ai: { key: 'fake' } };
+  ctx.GM = { turn: 5, facs: [fac, { name: '乙势力' }, { name: '玩家朝廷', isPlayer: true }], _facIndex: { '甲势力': { chars: [], parties: {}, metrics: {} } }, activeWars: [], factionRelations: [] };
+  const eng = ctx.TM.FactionActionEngine;
+  eng.ensureStrategy(fac, { rationale: 'x' }, [{ type: 'diplomacy', payload: { targetFaction: '乙势力', relationDelta: -10 } }]);   // OFF
+  assert(fac.aiStrategy.goals.some(function(g){ return typeof g === 'string'; }), 'B4 setup: OFF produced legacy string goals');
+  ctx.GM._factionLivingWorld = true;
+  ctx.TM.FactionGoalStack.addGoal(fac, { desc: '真目标', horizon: 'short' }, 5);   // 此刻 goals 混合(字符串+对象)
+  eng.ensureStrategy(fac, { rationale: 'y' }, []);   // 触发一次性迁移
+  assert(fac.aiStrategy.goals.length >= 1 && fac.aiStrategy.goals.every(function(g){ return g && typeof g === 'object'; }), 'B4: flag-on migrates the mixed array → goals pure structured objects');
+  assert(fac.aiStrategy.recentActionLabels.some(function(l){ return typeof l === 'string'; }), 'B4: migrated string labels moved to recentActionLabels');
+}
+// B5·join_war honor 指定 warId(非数组首/非最新)
+function b5WarIdHonorTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  ctx.GM.facs.push({ name: '丙' });
+  ctx.GM.activeWars.push({ id: 'w-first', attacker: '玩家朝廷', defender: '乙势力', startTurn: 5 });   // 数组首·最新
+  ctx.GM.activeWars.push({ id: 'w-old', attacker: '丙', defender: '乙势力', startTurn: 3 });            // 较老
+  eng.applyDecision(ctx.GM.facs[0], mkDecision([{ type: 'join_war', targetFaction: '乙势力', casusBelli: 'holy', warId: 'w-old' }]), { turn: 6 });
+  const joined = ctx.GM.activeWars.find(function(w){ return w.attacker === '甲势力' && w.defender === '乙势力'; });
+  assert(joined && joined.parentWarId === 'w-old', 'B5: join_war honors specified warId=w-old (not array-first w-first / not latest)');
+}
+// B7·过期是每回合必经：无新事件也过期(旧=清理挂在非空事件检查之后)
+function b7UnconditionalExpireTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  const facA = ctx.GM.facs[0], facB = ctx.GM.facs[1];
+  ctx.GM.currentIssues = [];
+  eng.applyDecision(facA, mkDecision([{ type: 'declare_war', targetFaction: '乙势力', casusBelli: 'border' }]), { turn: 1 });
+  assert(ctx.GM.currentIssues.filter(function(x){ return x && x._flw && x.status === 'pending'; }).length === 1, 'B7 setup: T1 event pending');
+  // T2..T4：乙只做无世界事件的决策(fiscal)——过期须在此必经路径跑
+  eng.applyDecision(facB, mkDecision([{ type: 'fiscal_policy', resource: 'money', treasuryDelta: 100, reason: 'x' }]), { turn: 2 });
+  eng.applyDecision(facB, mkDecision([{ type: 'fiscal_policy', resource: 'money', treasuryDelta: 100, reason: 'x' }]), { turn: 3 });
+  eng.applyDecision(facB, mkDecision([{ type: 'fiscal_policy', resource: 'money', treasuryDelta: 100, reason: 'x' }]), { turn: 4 });
+  assert(!ctx.GM.currentIssues.some(function(x){ return x && x._flw && x.status === 'pending' && Number(x.raisedTurn) === 1; }), 'B7: T1 event expired by T4 even with NO new events (unconditional cleanup, not gated on emit)');
+}
+// B8·agent-mode + 总闸组合：功能不可达 + prompt 不注入新段(一致语义·消除半开)
+function b8AgentModeInertTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  ctx.P.conf.agentModeEnabled = true;   // 进入 agent 模式(mode-b)
+  const eng = ctx.TM.FactionActionEngine, fld = ctx.TM.FactionNpcLlmDecision;
+  assert(ctx.agentModeOn() === true, 'B8 setup: agent-mode on');
+  assert(eng.livingWorldOn() === false, 'B8: _livingWorldOn is false in agent-mode even with master ON (功能不可达)');
+  assert(ctx.agentFlagOn('factionAgentEnabled') === false && ctx.agentFlagOn('factionGoalStackEnabled') === false, 'B8: master does NOT light sub-flags in agent-mode (no half-open)');
+  assert(eng.formatActionContractForPrompt({ maxChars: 4000 }).indexOf('declare_war') < 0, 'B8: agent-mode+master → contract has no living-world types');
+  const p = fld._buildPrompt(ctx.GM.facs[0]);
+  assert((p.system + p.user).indexOf('declare_war') < 0 && p.user.indexOf('proposalResponses') < 0, 'B8: agent-mode+master → prompt injects no new sections/schema (no goalUpdates/proposalResponses without a consumer)');
+  const sum = eng.applyDecision(ctx.GM.facs[0], mkDecision([{ type: 'declare_war', targetFaction: '乙势力', casusBelli: 'border' }]), { turn: 5 });
+  assert(!sum.wars && ctx.CasusBelliSystem._calls.length === 0, 'B8: agent-mode+master → declare_war applier is a no-op (war unreachable)');
+}
+
 function main() {
   offZeroChangeTest();
   offOnDiffTest();
@@ -442,6 +538,14 @@ function main() {
   b5JoinWarParentTest();
   b6PlayerCbFailClosedTest();
   b7EventBoundAndTitleTest();
+  // Codex 二轮
+  b2aDedupTermsTest();
+  b2bSeqNoCollisionTest();
+  b2cMatchFailClosedTest();
+  b4MigrationTest();
+  b5WarIdHonorTest();
+  b7UnconditionalExpireTest();
+  b8AgentModeInertTest();
   console.log('[smoke-faction-living-world] all pass · ' + PASS + ' assertions');
 }
 

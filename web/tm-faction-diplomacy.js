@@ -56,13 +56,15 @@
   }
 
   // ── ① 存提议：A 的 proposals → 目标派 _incomingProposals(玩家目标入 player 队·留 S2) ──
+  // B2②·全局递增序号(GM 级)·防同回合多次 recordProposals 的本地 n 重置 → id 碰撞(dp-5-a-0 撞 dp-5-a-0)
+  function _dipSeq() { var G = global.GM; if (!G) return Date.now(); var v = Number(G._factionDiplomacySeq); G._factionDiplomacySeq = (isFinite(v) ? v : 0) + 1; return G._factionDiplomacySeq; }   // arch-ok: F2 外交提案全局递增序号(GM 级·防 id 碰撞)
   function recordProposals(fromName, proposals, turn) {
     if (!Array.isArray(proposals) || !proposals.length) return { recorded: 0, toPlayer: 0 };
-    var recorded = 0, toPlayer = 0, n = 0;
+    var recorded = 0, toPlayer = 0;
     proposals.slice(0, 4).forEach(function (p) {
       if (!p || !p.toFaction || !p.type || !TYPES[p.type]) return;
       if (_norm(p.toFaction) === _norm(fromName)) return; // 不向自己提
-      var item = { id: 'dp-' + turn + '-' + _norm(fromName).slice(0, 6) + '-' + (n++), from: String(fromName).slice(0, 30), type: p.type, terms: String(p.terms || '').slice(0, 60), rationale: String(p.rationale || '').slice(0, 50), turn: turn, status: 'pending' };
+      var item = { id: 'dp-' + turn + '-' + _norm(fromName).slice(0, 6) + '-' + _dipSeq(), from: String(fromName).slice(0, 30), type: p.type, terms: String(p.terms || '').slice(0, 60), rationale: String(p.rationale || '').slice(0, 50), turn: turn, status: 'pending' };
       if (_isPlayerName(p.toFaction)) {
         // 目标=玩家：①入队(供观测/反馈) ②【S2】路由成「势力使节」求见(复用现有 envoy audience·surface 到问对)
         var G = global.GM; if (!G) return;
@@ -76,8 +78,8 @@
       var target = _facByName(p.toFaction);
       if (!target) return; // 目标势力不存在
       if (!Array.isArray(target._incomingProposals)) target._incomingProposals = [];
-      // 去重：同 from+type 未决的只留一条(更新条款)
-      target._incomingProposals = target._incomingProposals.filter(function (x) { return !(x.status === 'pending' && _norm(x.from) === _norm(item.from) && x.type === item.type); });
+      // B2①·去重键加 terms 摘要：仅【同 from+type+条款】的重复才合并·真正不同条款的两提案都保留(不再丢第一条)
+      target._incomingProposals = target._incomingProposals.filter(function (x) { return !(x.status === 'pending' && _norm(x.from) === _norm(item.from) && x.type === item.type && _norm(x.terms) === _norm(item.terms)); });
       target._incomingProposals.push(item);
       if (target._incomingProposals.length > MAX_PENDING) target._incomingProposals = target._incomingProposals.slice(-MAX_PENDING);
       _log({ turn: turn, kind: 'propose', from: item.from, to: p.toFaction, type: p.type, terms: item.terms });
@@ -107,16 +109,19 @@
       if (!r || !r.decision) return;
       var pendAll = (fac._incomingProposals || []).filter(function (p) { return p.status === 'pending'; });
       if (!pendAll.length) return;
-      // 张冠李戴防护：① 稳定 id 精确匹配 → ② type+from 精确匹配 → ③ 末路仅 from 取最近一条(旧行为)
+      // B2③·张冠李戴防护(fail-closed)：带 id → 命中即结算·未命中则保持未决(不降级猜)；无 id → 仅候选唯一才结算·歧义(0 或 >1)保持未决
       var prop = null;
       var pid = r.proposalId != null ? r.proposalId : r.id;
-      if (pid != null && String(pid)) { prop = pendAll.filter(function (p) { return String(p.id) === String(pid); })[0] || null; }
-      if (!prop && r.from && r.type) {
-        var rt = _norm(r.type);
-        prop = pendAll.filter(function (p) { return _norm(p.from) === _norm(r.from) && (_norm(p.type) === rt || _norm(TYPE_CN[p.type]) === rt); })[0] || null;
+      if (pid != null && String(pid)) {
+        prop = pendAll.filter(function (p) { return String(p.id) === String(pid); })[0] || null;
+        if (!prop) return;   // 带 id 未命中 → fail-closed·保持未决
+      } else {
+        var cand = pendAll;
+        if (r.from) cand = cand.filter(function (p) { return _norm(p.from) === _norm(r.from); });
+        if (r.type) { var rt = _norm(r.type); cand = cand.filter(function (p) { return _norm(p.type) === rt || _norm(TYPE_CN[p.type]) === rt; }); }
+        if (cand.length !== 1) return;   // 无候选/歧义 → 保持未决(不错配)
+        prop = cand[0];
       }
-      if (!prop && r.from) { var byFrom = pendAll.filter(function (p) { return _norm(p.from) === _norm(r.from); }); prop = byFrom[byFrom.length - 1] || null; }
-      if (!prop) return;
       var proposer = _facByName(prop.from);
       var dec = _norm(r.decision);
       if (dec === 'accept') {

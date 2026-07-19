@@ -116,8 +116,8 @@
     },
     join_war: {
       required: ['targetFaction'],
-      optional: ['casusBelli','reason'],
-      mutates: ['GM.activeWars (加入已有战争·对 targetFaction 宣战·走 CasusBelliSystem)'],
+      optional: ['casusBelli','reason','warId'],
+      mutates: ['GM.activeWars (加入已有战争·可选 warId 指定加入哪一场·缺失取涉目标最新一场·对 targetFaction 宣战·走 CasusBelliSystem·新战 parentWarId 关联原战)'],
       visible: ['war UI','faction relation UI','qijuHistory','御案时政']
     }
   };
@@ -810,7 +810,11 @@
   }
 
   // ── 【F2·势力活世界】总闸读口 + 真战争接线(declare_war/join_war 走 CasusBelliSystem·绝不自写 activeWars) ──
-  function _livingWorldOn() { return !!(global.GM && global.GM._factionLivingWorld === true); }
+  function _livingWorldOn() {
+    if (!global.GM || global.GM._factionLivingWorld !== true) return false;
+    if (typeof global.agentModeOn === 'function' && global.agentModeOn()) return false;   // B8·agent 模式(mode-b·平行回合引擎)下总闸不生效·功能不可达·与 agent-flags「子 flag 不点亮」同一语义
+    return true;
+  }
   var _LW_PLAYER_WAR_REL_THRESHOLD = -40;   // 对玩家宣战/参战门槛：关系值须 <= 此值 且 有正当 casus belli·防开局乱咬
   function _lwPlayerFacNames() {
     var G = global.GM || {}, P0 = global.P || {}, out = [];
@@ -882,9 +886,12 @@
     var enemy = _lwResolveFacName(p.targetFaction || p.against || p.enemy || p.target || p.to);
     if (!joiner || !enemy || joiner === enemy) return { ok: false, reason: 'missing/invalid war target', targetFaction: enemy };
     if (!_findFac(enemy)) return { ok: false, reason: 'target faction not found', targetFaction: enemy };
-    // 必须已有涉 enemy 的进行中战争(=加入非另起)·记原战对象以 parentWarId 关联
-    var origWar = _arr((global.GM || {}).activeWars).filter(function(w){ return w && (w.attacker === enemy || w.defender === enemy); })[0];
-    if (!origWar) return { ok: false, reason: 'no ongoing war involving target (join needs an existing war)', targetFaction: enemy };
+    // 必须已有涉 enemy 的进行中战争(=加入非另起)。优先 honor LLM 指定的合法 warId·缺失/非法→确定性规则=取涉目标最新一场(startTurn 最大·并列取数组末位)
+    var _joinWars = _arr((global.GM || {}).activeWars).filter(function(w){ return w && (w.attacker === enemy || w.defender === enemy); });
+    if (!_joinWars.length) return { ok: false, reason: 'no ongoing war involving target (join needs an existing war)', targetFaction: enemy };
+    var _wantWarId = p.warId || p.warID || p.war || '';
+    var origWar = _wantWarId ? (_joinWars.filter(function(w){ return String(w.id) === String(_wantWarId); })[0] || null) : null;
+    if (!origWar) origWar = _joinWars.reduce(function(best, w){ return (!best || _safeNum(w.startTurn) >= _safeNum(best.startTurn)) ? w : best; }, null);
     if (_lwAlreadyAtWar(joiner, enemy)) return { ok: false, reason: 'already at war', targetFaction: enemy };
     var cbMatched = _lwResolveCasusBelli(p.casusBelli || p.cb);
     var blocked = _lwPlayerWarBlocked(joiner, enemy, cbMatched);
@@ -931,7 +938,13 @@
     if (!Array.isArray(s.warAims)) s.warAims = [];
     // B4·目标栈激活(总闸带动/独立开)时 s.goals 归 FactionGoalStack 结构化对象所有·字符串行为标签改落 s.recentActionLabels(objectives 亦已收同标签)·防混合数组撞契约
     var _gsOn = (typeof agentFlagOn === 'function') ? !!agentFlagOn('factionGoalStackEnabled') : !!(global.P && global.P.conf && global.P.conf.factionGoalStackEnabled);
-    if (_gsOn && !Array.isArray(s.recentActionLabels)) s.recentActionLabels = [];
+    if (_gsOn) {
+      if (!Array.isArray(s.recentActionLabels)) s.recentActionLabels = [];
+      if (s.goals.some(function(g){ return typeof g === 'string'; })) {   // B4·一次性迁移·幂等(迁完再跑无字符串项)
+        s.goals.forEach(function(g){ if (typeof g === 'string' && s.recentActionLabels.indexOf(g) < 0) s.recentActionLabels.push(g); });
+        s.goals = s.goals.filter(function(g){ return g && typeof g === 'object'; });
+      }
+    }
     // 【势力 agent·posture 自著·2026-06-19】开关开 + LLM 给了 posture → 用势力自己宣告的战略姿态(替冻结的启发式默认·随局势演进)·否则保留现有或启发式种子(零回归)
     if (decision && decision.posture && (typeof agentFlagOn === 'function' ? agentFlagOn('factionAgentEnabled') : (global.P && global.P.conf && global.P.conf.factionAgentEnabled))) {
       s.posture = String(decision.posture).slice(0, 16);
@@ -1272,19 +1285,23 @@
     if (/媾和|议和|peace|和约/i.test(z)) return '媾和';
     return '结盟';
   }
+  // B7·过期清理(每回合必经·无新事件也跑)·直接删(与 phase8 消费面对齐·不留半死条)·只碰本系统 _flw
+  function _expireWorldEvents(G, turn) {
+    if (!G || !Array.isArray(G.currentIssues)) return;
+    G.currentIssues = G.currentIssues.filter(function(x){ return !(x && x._flw && x.status === 'pending' && (turn - _safeNum(x.raisedTurn) > 2)); });   // arch-ok: F2 世界事件跨回合过期(只剔本系统 _flw)
+    var _activeFlw = G.currentIssues.filter(function(x){ return x && x._flw && x.status === 'pending'; });
+    if (_activeFlw.length > 5) {   // 全局活跃上限 5·超则删最老
+      _activeFlw.sort(function(a, b){ return _safeNum(a.raisedTurn) - _safeNum(b.raisedTurn); });
+      var _drop = {};
+      _activeFlw.slice(0, _activeFlw.length - 5).forEach(function(x){ _drop[x.id] = true; });
+      G.currentIssues = G.currentIssues.filter(function(x){ return !(x && _drop[x.id]); });   // arch-ok: F2 世界事件全局活跃上限(只剔本系统 _flw)
+    }
+  }
   function _emitWorldEvents(fac, events, turn) {
     events = _arr(events); if (!events.length || !fac || !fac.name) return 0;
     var G = global.GM || {};
     if (!Array.isArray(G.currentIssues)) G.currentIssues = [];   // arch-ok: F2 世界事件入御案时政(currentIssues 既有子树)
-    // 跨回合防积压：本系统旧回合仍 pending 的信息事件·超 2 回合未决即失时效剔除(只剔本系统 _flw·不碰他系统条目)
-    G.currentIssues = G.currentIssues.filter(function(x){ return !(x && x._flw && x.status === 'pending' && (turn - _safeNum(x.raisedTurn) > 2)); });   // arch-ok: F2 世界事件跨回合过期(只剔本系统 _flw·currentIssues 既有子树)
-    var _activeFlw = G.currentIssues.filter(function(x){ return x && x._flw && x.status === 'pending'; });
-    if (_activeFlw.length >= 5) {   // 全局活跃上限 5·超则先剔最老的·留位给本回合新事件
-      _activeFlw.sort(function(a, b){ return _safeNum(a.raisedTurn) - _safeNum(b.raisedTurn); });
-      var _drop = {};
-      _activeFlw.slice(0, _activeFlw.length - 4).forEach(function(x){ _drop[x.id] = true; });
-      G.currentIssues = G.currentIssues.filter(function(x){ return !(x && _drop[x.id]); });   // arch-ok: F2 世界事件全局活跃上限(只剔本系统 _flw)
-    }
+    _expireWorldEvents(G, turn);
     var mineTurn = G.currentIssues.filter(function(x){ return x && x._flw && _safeNum(x.raisedTurn) === turn; });
     if (mineTurn.length >= 3) return 0;
     if (mineTurn.some(function(x){ return x._flwActor === fac.name; })) return 0;
@@ -1362,7 +1379,7 @@
         _recordAction(fac, action, 'skipped', { reason:failReason });
       }
     });
-    if (_livingWorldOn() && _worldEvents.length) { try { _emitWorldEvents(fac, _worldEvents, turn); } catch (_) {} }   // F2·Slice3·后果事件化
+    if (_livingWorldOn()) { try { _expireWorldEvents(global.GM || {}, turn); if (_worldEvents.length) _emitWorldEvents(fac, _worldEvents, turn); } catch (_) {} }   // F2·Slice3·后果事件化(过期清理每回合必经·再判新事件)
     if (d && d.rationale) fac._lastLlmRationale = { turn:turn, text:d.rationale };
     ensureStrategyV2(fac, d, actions);
     // G3-C·2026-05-22·决策风格 rolling memory·写在 strategy 后·只算 applied actions·skipped 不入
@@ -1548,7 +1565,8 @@
     _applyDeclareWar: _applyDeclareWar,
     _applyJoinWar: _applyJoinWar,
     _pruneStrategyLifecycle: _pruneStrategyLifecycle,
-    _emitWorldEvents: _emitWorldEvents
+    _emitWorldEvents: _emitWorldEvents,
+    _expireWorldEvents: _expireWorldEvents
   };
   if (typeof global !== 'undefined') { try { global._tmSetFactionLivingWorld = setFactionLivingWorld; } catch (e) {} }
 

@@ -37,14 +37,13 @@
       // 【活世界例外】唯独势力 agent③(factionAgentEnabled)可经 agent 模式专属开关 agentLiveWorldEnabled 单独放行——
       //   填"agent 模式下势力不决策(死世界)"黑洞·让激活策略(top3 最强优先)+ decideFor prompt 增强(边境军情/双向外交)满血;其余 LLM 升级仍互斥关。
       if (agentModeOn() && name === 'factionAgentEnabled' && agentLiveWorldOn()) return true;
-      // 【势力活世界·F2】GM._factionLivingWorld(本局存档·御驾亲征式总闸) 连带启用势力社会(双向外交)+前瞻式目标栈两子系统。
-      //   置于 agent-mode 互斥闸【之前】——因活世界的战争 applier(declare_war/join_war·经 applyDecision)直读 GM 总闸、
-      //   在任何模式都可能落地；若此处放在互斥闸后，mode-b 下会出现「战争接线活但目标栈/双向外交带不动」的半激活不一致。
-      //   故总闸开则两子系统在 mode-b 亦一并放行，与战争 applier 同进退(避免半激活)；总闸关(默认)则此行 no-op·mode-b 行为零变更。
-      if ((name === 'factionAgentEnabled' || name === 'factionGoalStackEnabled') && global.GM && global.GM._factionLivingWorld === true) return true;
       if (agentModeOn()) return false;
       // 总闸（任一命名空间设了都认）
       if (ai.agentUpgradesEnabled || conf.agentUpgradesEnabled) return true;
+      // 【势力活世界·F2】GM._factionLivingWorld(本局存档·御驾亲征式总闸) 连带启用势力社会(双向外交)+前瞻式目标栈两子系统。
+      //   B8·置于 agent-mode 互斥闸【之后】——总闸只在【非】agent 模式生效(与引擎 _livingWorldOn 同步:mode-b 下战争/事件亦被 _livingWorldOn 挡下)·
+      //   避免 mode-b 下「prompt 注入 goalUpdates/proposalResponses 却无决策循环消费」的半开状态。mode-b 的势力社会仍走 agentLiveWorld 专闸(上面独立放行)。
+      if ((name === 'factionAgentEnabled' || name === 'factionGoalStackEnabled') && global.GM && global.GM._factionLivingWorld === true) return true;
       // 否则各自独立开关（同时认两个命名空间·解决历史不一致）
       return !!(ai[name] || conf[name]);
     } catch (e) { return false; }
