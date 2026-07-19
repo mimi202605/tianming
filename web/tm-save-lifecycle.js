@@ -290,6 +290,14 @@ function _ensurePDefaults() {
   if (!mc.characterRules.legitimacyRules) mc.characterRules.legitimacyRules = [];
   // 4.6 重大决策——编辑器配置决策类型和条件
   if (!mc.decisions) mc.decisions = [];
+
+  // Phase 1 · Task 2.3 — 穿越模式字段向后兼容：老存档/旧剧本缺字段时补默认
+  // 默认值与 editor-core.js 的 P.playerInfo 初值对齐
+  if (!P.playerInfo) P.playerInfo = {};
+  if (typeof P.playerInfo.transmigrationMode !== 'boolean') P.playerInfo.transmigrationMode = false;
+  if (typeof P.playerInfo.sovereignName !== 'string') P.playerInfo.sovereignName = '';
+  if (typeof P.playerInfo.sovereignTitle !== 'string') P.playerInfo.sovereignTitle = '';
+  if (typeof P.playerInfo.selectedCharId !== 'string') P.playerInfo.selectedCharId = '';
 }
 
 // 统一的存档前准备函数——所有存档路径都必须调用此函数

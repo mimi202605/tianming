@@ -5,18 +5,18 @@
 
 ## Phase 1 · 基础设施与开局流程（前置必做）
 
-- [ ] Task 1: 新增穿越模式核心模块 `web/tm-transmigration.js`
-  - [ ] SubTask 1.1: 定义 `TM.Transmigration` 命名空间，挂载到 `window.TM`
-  - [ ] SubTask 1.2: 实现 `TM.Transmigration.isTransmigrationMode()` —— 读取 `P.playerInfo.transmigrationMode`
-  - [ ] SubTask 1.3: 实现 `TM.Transmigration.derivePlayerRole(ch)` —— 根据角色 `role`/`officialTitle`/`royalRelation`/`familyTier` 推导 `playerRole`
-  - [ ] SubTask 1.4: 实现 `TM.Transmigration.getSovereignName(root)` —— 在 `GM.chars` 中找出 `_offIsSovereign` 角色并返回姓名
-  - [ ] SubTask 1.5: 注册到 `index.html` 的 `<script>` 顺序链（在 `tm-launch.js` 之前）
+- [x] Task 1: 新增穿越模式核心模块 `web/tm-transmigration.js`
+  - [x] SubTask 1.1: 定义 `TM.Transmigration` 命名空间，挂载到 `window.TM`
+  - [x] SubTask 1.2: 实现 `TM.Transmigration.isTransmigrationMode()` —— 读取 `P.playerInfo.transmigrationMode`
+  - [x] SubTask 1.3: 实现 `TM.Transmigration.derivePlayerRole(ch)` —— 根据角色 `role`/`officialTitle`/`royalRelation`/`familyTier` 推导 `playerRole`
+  - [x] SubTask 1.4: 实现 `TM.Transmigration.getSovereignName(root)` —— 在 `GM.chars` 中找出 `_offIsSovereign` 角色并返回姓名
+  - [x] SubTask 1.5: 注册到 `index.html` 的 `<script>` 顺序链（在 `tm-launch.js` 之前）
   - 验证：浏览器控制台 `TM.Transmigration.isTransmigrationMode()` 可调用
 
-- [ ] Task 2: 扩展 `P.playerInfo` 数据结构
-  - [ ] SubTask 2.1: 在 `editor-core.js:26-39` 给 `P.playerInfo` 增加字段：`transmigrationMode`(boolean) / `sovereignName`(string) / `sovereignTitle`(string) / `selectedCharId`(string)
-  - [ ] SubTask 2.2: 默认值：`transmigrationMode:false` / `sovereignName:''` / 其他空字符串
-  - [ ] SubTask 2.3: 在 `tm-save-lifecycle.js` 的存档 schema 增加这四个字段（向后兼容，缺失补默认）
+- [x] Task 2: 扩展 `P.playerInfo` 数据结构
+  - [x] SubTask 2.1: 在 `editor-core.js:26-39` 给 `P.playerInfo` 增加字段：`transmigrationMode`(boolean) / `sovereignName`(string) / `sovereignTitle`(string) / `selectedCharId`(string)
+  - [x] SubTask 2.2: 默认值：`transmigrationMode:false` / `sovereignName:''` / 其他空字符串
+  - [x] SubTask 2.3: 在 `tm-save-lifecycle.js` 的存档 schema 增加这四个字段（向后兼容，缺失补默认）
   - 验证：跑 `node web/scripts/smoke-scenario-editor-reset-roundtrip.js` 确保存档读档不丢字段
 
 ## Phase 2 · 主界面入口与角色选择
