@@ -117,12 +117,22 @@
   //   ★宁漏勿误杀：任一路命中即放行·输入面扫描只加源不减源。
   // ── 刀C·返工二轮(2026-07-19·Codex复审)·来源扫描面按回合记忆化(perf)+朝议裁决回合边界(镜像 tm-endturn-prompt._getCurrentChangchaoDecisions) ──
   //   allNames(花名册)与朝议拼接文本每回合只重建一次(turn 变 / court 记录数变才失效)·避免每动作重构在真实剧本(数百角色+长转录)下拖垮 endturn。
+  // 读档代际(镜像 npc-decision:483/mechanics-memory:466)·并入缓存键→读同 turn 旧档不串用(全 _wg*Cache 亦入存档 SKIP·派生不落档)。
+  function _wgLoadGen(G) { return (typeof global !== 'undefined' && global._tmLoadGen) || (G && G._tmLoadGen) || 0; }
+  function _wgFp(x, n) { return String(x == null ? '' : x).slice(0, n || 10); }
+  // ★返工三轮issue1(2026-07-19)·allNames 缓存签名=turn|loadGen|len|首名|末名——同回合 addChar(push·len 变·tm-indices:1197)/
+  //   整组替换(首末名变)/首末改名均自然失效·治『王安建缓存后加王安石·最长实体消歧失效致对王安无源写误放』。
+  function _wgAllNamesSig(G) {
+    var chars = (G && Array.isArray(G.chars)) ? G.chars : [];
+    var n = chars.length;
+    return ((G && G.turn) || 0) + '|' + _wgLoadGen(G) + '|' + n + '|' + _wgFp(n ? (chars[0] && chars[0].name) : '', 12) + '|' + _wgFp(n ? (chars[n - 1] && chars[n - 1].name) : '', 12);
+  }
   function _wgCachedAllNames(G) {
     if (!G) return [];
-    var t = G.turn || 0;
-    if (G._wgAllNamesCache && G._wgAllNamesCacheTurn === t) return G._wgAllNamesCache;
+    var sig = _wgAllNamesSig(G);
+    if (G._wgAllNamesCache && G._wgAllNamesSigVal === sig) return G._wgAllNamesCache;
     var names = Array.isArray(G.chars) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
-    G._wgAllNamesCache = names; G._wgAllNamesCacheTurn = t;   // arch-ok(内部记忆化缓存·非游戏态)
+    G._wgAllNamesCache = names; G._wgAllNamesSigVal = sig;   // arch-ok(派生记忆化缓存·入档 SKIP·非游戏态)
     return names;
   }
   // 常朝『上回合圣意』的目标回合(镜像 prompt:44·Meta.targetTurn 优先·_lastChangchaoDecisionsTargetTurn 兜底)
@@ -142,12 +152,25 @@
   // 本回合朝议裁决拼接文本(记忆化·turn+记录数为键)：★回合边界(issue2·镜像 prompt:38)=targetTurn 为准·turn 仅无 targetTurn 时兜底·
   //   两者不做 OR(避 targetTurn 过期旧裁决永久自证 / post-turn 裁决提前放行)。★形状(issue3)=覆盖常朝 decisions[]/transcript[]
   //   与廷议/御前单数 topic+decision(tm-chaoyi-tinyi:1155 / yuqian:461)两种真实落点。
+  // ★返工三轮issue2(2026-07-19)·court 缓存签名=turn|loadGen + 记录/裁决数组的(len+首末条廉价指纹)——真实生产者封顶8条 push+shift
+  //   (changchao-flows:273/tinyi:1155/yuqian:461)净 len 恒8·整组替换 _lastChangchaoDecisions 可能 len 不变·旧 len-only 键刷不进新裁决→误拦。
+  //   指纹让『push+shift 末条变 / 整组替换首末变 / 增长 len 变』三真实路径全失效。
+  function _wgRecFp(rec) { return rec ? ((rec.turn == null ? '' : rec.turn) + '_' + (rec.targetTurn == null ? '' : rec.targetTurn) + '_' + _wgFp(rec.topic || (rec.decision && rec.decision.direction) || (Array.isArray(rec.decisions) && rec.decisions[0] && rec.decisions[0].title) || '', 10)) : ''; }
+  function _wgDecFp(dd) { return dd ? _wgFp((dd.title || '') + '/' + (dd.extra || ''), 14) : ''; }
+  function _wgCourtTextSig(G) {
+    var crs = (G && Array.isArray(G._courtRecords)) ? G._courtRecords : [];
+    var lcc = (G && Array.isArray(G._lastChangchaoDecisions)) ? G._lastChangchaoDecisions : [];
+    var cn = crs.length, ln = lcc.length;
+    return ((G && G.turn) || 0) + '|' + _wgLoadGen(G) + '|c' + cn + ':' + _wgRecFp(cn ? crs[0] : null) + ':' + _wgRecFp(cn ? crs[cn - 1] : null) +
+           '|l' + ln + ':' + _wgDecFp(ln ? lcc[0] : null) + ':' + _wgDecFp(ln ? lcc[ln - 1] : null) +
+           '|lt:' + ((G && G._lastChangchaoDecisionsTargetTurn) == null ? '' : G._lastChangchaoDecisionsTargetTurn) + ':' + ((G && G._lastChangchaoDecisionMeta && G._lastChangchaoDecisionMeta.targetTurn) == null ? '' : G._lastChangchaoDecisionMeta.targetTurn);
+  }
   function _wgCachedCourtText(G) {
     if (!G) return '';
     var t = G.turn || 0;
     var crs = Array.isArray(G._courtRecords) ? G._courtRecords : [];
-    var lccLen = Array.isArray(G._lastChangchaoDecisions) ? G._lastChangchaoDecisions.length : 0;
-    if (G._wgCourtTextCache != null && G._wgCourtTextCacheTurn === t && G._wgCourtTextCacheKey === (crs.length + '/' + lccLen)) return G._wgCourtTextCache;
+    var sig = _wgCourtTextSig(G);
+    if (G._wgCourtTextCache != null && G._wgCourtTextSigVal === sig) return G._wgCourtTextCache;
     var txt = '';
     if (_wgLccTargetTurn(G) === t && Array.isArray(G._lastChangchaoDecisions)) {
       G._lastChangchaoDecisions.forEach(function(dd){ if (dd) txt += ' ' + (dd.title || '') + ' ' + (dd.extra || '') + ' ' + (dd.dept || ''); });
@@ -162,7 +185,7 @@
       var tr = Array.isArray(rec.transcript) ? rec.transcript : [];
       for (var ti = 0; ti < tr.length; ti++) { var te = tr[ti]; if (te) txt += ' ' + (te.text || '') + ' ' + (te.speaker || ''); }
     }
-    G._wgCourtTextCache = txt; G._wgCourtTextCacheTurn = t; G._wgCourtTextCacheKey = (crs.length + '/' + lccLen);   // arch-ok(内部记忆化缓存)
+    G._wgCourtTextCache = txt; G._wgCourtTextSigVal = sig;   // arch-ok(派生记忆化缓存·入档 SKIP)
     return txt;
   }
 
@@ -1537,5 +1560,5 @@
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
   // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
-  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint; __acaP._gateAllegianceSource = _gateAllegianceSource; __acaP._gateDeathRoutingSource = _gateDeathRoutingSource;
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint; __acaP._gateAllegianceSource = _gateAllegianceSource; __acaP._gateDeathRoutingSource = _gateDeathRoutingSource; __acaP._wgCachedAllNames = _wgCachedAllNames; __acaP._wgCachedCourtText = _wgCachedCourtText;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));

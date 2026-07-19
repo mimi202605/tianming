@@ -437,6 +437,74 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
     ok(findCh(ctx.GM, '杨涟').fame === 10 && hintCount(ctx.GM) === 0, '反例4 真实廷议单数 topic+decision 点名=有源→敏感字段放行(此前只读 decisions[] 误拦)');
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  返工三轮(Codex复审)·缓存失效四例：同回合新增长人名 / 封顶push+shift新裁决 / 整组替换 / 存读档loadGen不串用
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== 返工三轮·缓存失效四例 =====');
+  const fs2 = fs; const path2 = path;
+  // 三轮1·同回合 addChar 长人名后 allNames 缓存失效(issue1)：王安建缓存后加王安石·消歧须纳入王安石
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '王安', alive: true, faction: '明朝廷', resources: {} }]);
+    const bkt = ctx.TM.__acaParts;
+    bkt._wgCachedAllNames(ctx.GM);   // 建缓存(仅王安)
+    ctx.GM.chars.push({ name: '王安石', alive: true, faction: '明朝廷', resources: {} });   // 同回合 push(tm-indices addChar 同款)
+    const names = bkt._wgCachedAllNames(ctx.GM);
+    ok(names.indexOf('王安石') >= 0, '三轮1 同回合新增长人名后 allNames 缓存按 len 失效→纳入王安石(消歧不再漏)');
+    // 判源正确性：仅提王安石的奏疏不得给王安当源(最长实体消歧)
+    const ctx2 = makeCtx();
+    ctx2.GM = baseGM([{ name: '王安', alive: true, faction: '明朝廷', resources: {} }], { memorials: [{ from: '御史', text: '论王安石变法之弊' }] });
+    const bkt2 = ctx2.TM.__acaParts;
+    bkt2._wgCachedAllNames(ctx2.GM);
+    ctx2.GM.chars.push({ name: '王安石', alive: true, faction: '明朝廷', resources: {} });
+    ok(bkt2._writeActionSourced(ctx2.GM, {}, findCh(ctx2.GM, '王安'), { scanInputs: true }) === false, '三轮1 仅提王安石的奏疏·缓存失效后对王安判源正确=无源(不误放)');
+  }
+  // 三轮2·封顶8条 push+shift 后新裁决生效(issue2)：净 len 恒8·靠首末条指纹失效
+  {
+    const ctx = makeCtx();
+    const crs = [];
+    for (let i = 0; i < 8; i++) crs.push({ turn: 5, targetTurn: 5, decisions: [{ title: '寻常议题' + i }] });
+    ctx.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', stance: '清流', resources: {} }], { turn: 5, _courtRecords: crs });
+    const bkt = ctx.TM.__acaParts;
+    const t0 = bkt._wgCachedCourtText(ctx.GM);   // 建缓存(无杨涟)
+    ok(t0.indexOf('杨涟') < 0, '三轮2 前置·封顶8条裁决无杨涟');
+    ctx.GM._courtRecords.push({ turn: 5, targetTurn: 5, decisions: [{ title: '杨涟结党案', detail: '罢黜杨涟' }] });
+    ctx.GM._courtRecords.shift();   // 封顶 push+shift·净 len 仍 8
+    const t1 = bkt._wgCachedCourtText(ctx.GM);
+    ok(t1.indexOf('杨涟') >= 0, '三轮2 封顶 push+shift(len 仍8)·末条指纹变→缓存失效→新杨涟裁决刷进(此前 len-only 键漏)');
+  }
+  // 三轮3·整组替换 _lastChangchaoDecisions 后生效(issue2)：len 可不变·靠首末指纹失效
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', stance: '清流', resources: {} }],
+      { turn: 5, _lastChangchaoDecisions: [{ title: '论他人事', extra: '与杨涟无涉' }], _lastChangchaoDecisionsTargetTurn: 5 });
+    const bkt = ctx.TM.__acaParts;
+    ok(bkt._wgCachedCourtText(ctx.GM).indexOf('杨涟结党') < 0, '三轮3 前置·旧裁决组无杨涟结党');
+    ctx.GM._lastChangchaoDecisions = [{ title: '杨涟结党案', extra: '着夺杨涟清望' }];   // 整组替换·len 仍 1
+    const t1 = bkt._wgCachedCourtText(ctx.GM);
+    ok(t1.indexOf('杨涟结党') >= 0, '三轮3 整组替换(len 仍1)·首末指纹变→缓存失效→新裁决刷进(此前 len-only 键漏)');
+  }
+  // 三轮4·存读档 loadGen 不串用(issue3)：同 turn 同签名旧局缓存被污染·bump _tmLoadGen 后不得命中
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '张三', alive: true, faction: '明朝廷', resources: {} },
+                     { name: '王安石', alive: true, faction: '明朝廷', resources: {} },
+                     { name: '李四', alive: true, faction: '明朝廷', resources: {} }], { turn: 5 });
+    ctx._tmLoadGen = 0;
+    const bkt = ctx.TM.__acaParts;
+    bkt._wgCachedAllNames(ctx.GM);   // 建缓存(正确)
+    ctx.GM._wgAllNamesCache = ['张三', '王安', '李四'];   // 污染:模拟读档载入的旧局陈旧缓存(首末名/len 全同·仅中间不同)
+    ctx._tmLoadGen = 1;   // 读档代际++
+    const names = bkt._wgCachedAllNames(ctx.GM);
+    ok(names.indexOf('王安石') >= 0 && names.indexOf('王安') < 0, '三轮4 读档 loadGen++ 后·陈旧缓存(同 turn 同首末签名)不命中→按真 chars 重建(不串旧局)');
+    const valSrc = fs2.readFileSync(path2.join(ROOT, 'tm-ai-change-applier-validators.js'), 'utf8');
+    ok(/function _wgLoadGen\([^)]*\)\s*\{[^}]*_tmLoadGen/.test(valSrc) && /function _wgAllNamesSig[\s\S]{0,400}_wgLoadGen\(/.test(valSrc) && /function _wgCourtTextSig[\s\S]{0,600}_wgLoadGen\(/.test(valSrc), '三轮4 契约·allNames/court 缓存签名经 _wgLoadGen 并入 _tmLoadGen(读档代际)');
+    // SKIP 契约：五缓存键入存档黑名单·派生不落档
+    const lifeSrc = fs2.readFileSync(path2.join(ROOT, 'tm-save-lifecycle' + '.js'), 'utf8');
+    const skipSeg = lifeSrc.slice(lifeSrc.indexOf('var SKIP = {'), lifeSrc.indexOf('var SKIP = {') + 1600);
+    ok(/_wgAllNamesCache:1/.test(skipSeg) && /_wgAllNamesSigVal:1/.test(skipSeg) && /_wgCourtTextCache:1/.test(skipSeg) && /_wgCourtTextSigVal:1/.test(skipSeg), '三轮4 契约·_wg*Cache 四键入 _autoSaveSnapshotGM SKIP(派生缓存不入档)');
+  }
+
   console.log('');
   console.log('[smoke-write-gate-expansion] ' + passed + ' passed / ' + failed + ' failed');
   if (failed > 0) process.exit(1);
