@@ -60,8 +60,8 @@ function _tmMemoryFindChar(name) {
 //   applyOneDeath / triggerCharacterDeath / 赐死 / 狱中卒 / 御驾亲征战殁 五处先置 alive=false 再
 //   deathTurn=GM.turn（不互相 funnel·各自直写）。本检测器「与 GM 一致」以 alive===false||dead===true
 //   为准→死者死讯记忆一律放行。deathTurn 仅供**死亡宣称**同回合竞态豁免；★存活宣称永不享此豁免。
-//   getMemoryContext 同回合缓存据「本回合已判死人数」签名失效（读 deathTurn===turn·覆盖全 sink·
-//   见 getMemoryContext 缓存注）。
+//   getMemoryContext 同回合缓存据「本回合已判死人数」签名失效（计 deathTurn===turn·覆盖全五 sink 的判死方向；
+//   ★签名只覆盖判死方向·复活翻转不失效·当前无复活写口故不可达·若未来加复活须同步失效·见缓存注）。
 // ═══════════════════════════════════════════════════════════════════════════
 var _TM_VITAL_SCAN_CAP = 400;   // 只扫文本前 400 字·防长文本性能
 var _TM_VITAL_WINDOW = 20;      // 名后 20 字窗口内的生死词才可能指向此人
@@ -134,9 +134,16 @@ function _tmVitalRelationAfter(claim, endIdx) {
   var seg = String(claim || "").slice(endIdx).split(/[，,。、；;：！？!?\s（）()]/)[0].slice(0, 3);
   return !!seg && _TM_RELATION_RE.test(seg);
 }
-// 死讯词后「后置否定尾」：死词后 14 字内出现 妄言/谣传/不实… → 该死亡宣称被否定→true（整句放行）
+// 后置否定尾：死词后 14 字内出现 妄言/谣传/不实… → 该死亡宣称被否定→整句放行。★双重否定（非/并非/
+//   绝非/岂是/不是 + 妄言/谣传/不实）=对否定的否定=确认死讯·不放行（治「已伏诛，此非妄言」误放）。
+function _tmVitalHasNegationTail(text) {
+  var t = String(text || ""), m = _TM_NEGATION_TAIL_RE.exec(t);
+  if (!m) return false;
+  if (/(非|并非|绝非|岂[是非]|不是|无非|未尝不|何尝不)$/.test(t.slice(Math.max(0, m.index - 3), m.index))) return false;   // 双重否定=确认死讯·非真否定
+  return true;
+}
 function _tmVitalNegatedAfter(sent, deathEndAbs) {
-  return _TM_NEGATION_TAIL_RE.test(String(sent || "").slice(deathEndAbs, deathEndAbs + 14));
+  return _tmVitalHasNegationTail(String(sent || "").slice(deathEndAbs, deathEndAbs + 14));
 }
 
 /** 确定性生死矛盾检测·返回首个冲突 {claimTarget, claimType} 或 null（无冲突/放行）
@@ -168,7 +175,7 @@ function _tmDetectVitalConflict(text, gm) {
         }
         if (gj > gi) {
           var _le = mentions[gj].end, _cc = sent.slice(_le, _le + _TM_VITAL_WINDOW);
-          if (_TM_COLLECTIVE_RE.test(_cc.slice(0, 5)) && !_TM_NEGATION_TAIL_RE.test(_cc)) {
+          if (_TM_COLLECTIVE_RE.test(_cc.slice(0, 5)) && !_tmVitalHasNegationTail(_cc)) {
             var _cAlive = _TM_ALIVE_CLAIM_RE.exec(_cc), _cDeath = _TM_DEATH_CLAIM_RE.exec(_cc);
             for (var gk = gi; gk <= gj; gk++) {
               var _gc = mentions[gk].char;
@@ -710,7 +717,9 @@ var NpcMemorySystem = {
     // 6.2: 每回合缓存——同一回合内同一角色只构建一次（读档代际参与失效·读同turn档曾把旧局记忆注入新局prompt·2026-07-04 审查定罪）
     var _mcGen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
     // 刀B·同回合生死翻转→缓存失效：本回合内某人物改判死/生后，含其生死态的旧 context 须重算(否则 turn+1 才消失)。
-    // 生死签名=本回合已判死人数(五个死亡 sink 均置 deathTurn=GM.turn·直读 alive/dead 翻转·免在各 sink ++·覆盖全 sink)。
+    // 生死签名=本回合已判死人数(五个死亡 sink 均置 deathTurn=GM.turn·计此签名免在各 sink ++·覆盖全 sink 的判死方向)。
+    // ★边界：签名只覆盖「判死」方向；死→活的复活翻转(若保留 deathTurn)不使缓存失效。Codex 核实当前游戏无复活写口
+    //   (策名亦先返回同名死者)故不可达；若未来新增复活写口，须在该处同步 bust 本缓存。
     var _vitalSig = 0, _vgChars = GM.chars || [];
     for (var _vi = 0; _vi < _vgChars.length; _vi++) { var _vgc = _vgChars[_vi]; if (_vgc && (_vgc.deathTurn === GM.turn || _vgc._deathTurn === GM.turn)) _vitalSig++; }
     if (this._memCacheTurn !== GM.turn || this._memCacheGen !== _mcGen || this._memCacheVital !== _vitalSig) { this._memCache = {}; this._memCacheTurn = GM.turn; this._memCacheGen = _mcGen; this._memCacheVital = _vitalSig; }
