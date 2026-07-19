@@ -417,6 +417,17 @@
   function rightWenduiIsSeeker(p){
     if (!p || !rightIssueAtCourt(p)) return false;
     if (p._mourning || p._lastMetTurn === ((window.GM && GM.turn) || 1)) return false;
+    // 单一真源：走 tm-wendui 的 _wdDeriveAudienceAgenda(与旧 UI【有臣求见】筛选、与本文件 rightWenduiSeekReason 同源)。
+    // agenda 依赖 _npcCommitments/_wdRewardPunish/loyalty/stress 等真实处境，只挂在真身上→照 :409 取真身。
+    var realCh = (typeof findCharByName === 'function' && findCharByName(p.name)) || p;
+    if (typeof window !== 'undefined' && typeof window._wdDeriveAudienceAgenda === 'function') {
+      var agenda = null;
+      try { agenda = window._wdDeriveAudienceAgenda(realCh); } catch (_) {}
+      // agenda 已内置防洪(routine/未逾期/浅离心 seek=false)，不再叠加过滤把集合改窄；未回信亲至是 agenda 之外的独立 or 条件(与旧 UI :192-194 一致)。
+      return !!(agenda && agenda.seek)
+        || rightWenduiHasUnansweredLetter(p.name || personKey(p));
+    }
+    // 回退：真源缺席(加载序未就绪/单元环境)时用旧启发式，防渲染崩。
     var stress = rightIssueNum(p, ['stress','pressure'], 0);
     var loyalty = rightIssueNum(p, ['loyalty','loyal'], 50);
     var ambition = rightIssueNum(p, ['ambition'], 50);
@@ -525,7 +536,7 @@
       return rightWenduiPersonCard(p, 'wendui-letter', compactText(loc + travel, 12));
     }).join('') + '</div>' : '';
     var queueBody = pendingAudiences.length ? '<div class="tmrp-wd-list">' + pendingAudiences.map(rightWenduiQueueItem).join('') + '</div>' : '';
-    var seekerBody = seekers.length ? '<div class="tmrp-wd-list">' + seekers.slice(0, 12).map(rightWenduiRequestItem).join('') + '</div>' : '';
+    var seekerBody = seekers.length ? '<div class="tmrp-wd-list">' + seekers.map(rightWenduiRequestItem).join('') + '</div>' : '';
     return '<div class="tmrp-issue-shell tmrp-wendui">' +
       '<div class="tmrp-summary cols4">' +
         '<div class="tmrp-stat"><b>' + esc(pendingAudiences.length) + '</b><span>候见</span></div>' +

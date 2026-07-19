@@ -128,4 +128,14 @@ assert(k.tag === 'routine' && k.seek === false, '常态不应主动求见(避免
 // 筛选器源头一致性:render 路径必须读 _sa.seek(而非旧硬编码 str>60 子集)
 assert(/_wdDeriveAudienceAgenda\(c\)[\s\S]{0,80}_sa\.seek/.test(src), '【有臣求见】筛选器须接 agenda.seek');
 
+// 两套 UI 同源钉:新 UI(phase8 右侧栏)的求见判定必须走同一真源 _wdDeriveAudienceAgenda(.seek)，
+// 不得回退到硬编码阈值子集(旧病根:漏逾期复命/谢恩/谢罪/低忠离心/危兆进谏五类)。
+const rightrailSrc = fs.readFileSync(path.join(ROOT, 'phase8-formal-rightrail.js'), 'utf8');
+const _seekerStart = rightrailSrc.indexOf('function rightWenduiIsSeeker');
+const _seekerEnd = rightrailSrc.indexOf('function rightWenduiFactionTag');
+assert(_seekerStart >= 0 && _seekerEnd > _seekerStart, 'phase8 rightWenduiIsSeeker 应存在');
+const seekerBlock = rightrailSrc.slice(_seekerStart, _seekerEnd);
+assert(/_wdDeriveAudienceAgenda/.test(seekerBlock), '新 UI 求见判定须引用 _wdDeriveAudienceAgenda(与旧 UI 同源)');
+assert(/agenda\s*&&\s*agenda\.seek/.test(seekerBlock), '新 UI 求见判定须读 agenda.seek');
+
 console.log(`[verify-audience-seek] PASS ${passed} assertions`);
