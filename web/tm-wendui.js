@@ -2241,12 +2241,14 @@ async function sendWendui(){
       var history=GM.wenduiHistory[name].slice(-10);
       var messages=[{role:'system',content:sysP}];
       history.forEach(function(h){
-        if (h && (h._histConflict || (h.role === "npc" && typeof _tmDetectVitalConflict === "function" && _tmDetectVitalConflict(h.content)))) return;   // 刀B·生死矛盾条目不回放喂 AI（标记优先·运行时侦测兜底老存档）
+        if (!h) return;
         // system(面谕/赏罚)=帝侧动作·曾被映成 assistant 令 AI 把御赐当自己说过的话(2026-07-04 审查定罪)。
         // 映 user+纪事前缀·相邻 user 合并(防严格交替 API 400)。
         var _isSys = h.role === 'system';
         var _r = (h.role === 'player' || _isSys) ? 'user' : 'assistant';
-        var _c = _isSys ? ('【朝廷纪事·非对话】' + h.content) : h.content;
+        // 刀B·生死矛盾条目(标记 或 运行时侦测)不原样回放：assistant 位置以占位替换(保 Q-A 配对/上下文深度·避免删条致相邻 user 合并)
+        var _vitalBad = (_r === 'assistant') && (h._histConflict || (typeof _tmWenduiEntryConflict === 'function' && _tmWenduiEntryConflict(h, GM)));
+        var _c = _isSys ? ('【朝廷纪事·非对话】' + h.content) : (_vitalBad ? '（前次答复所述人物存殁与本局不符·已作废）' : h.content);
         var _last = messages[messages.length - 1];
         if (_last && _last.role === 'user' && _r === 'user') _last.content += '\n' + _c;
         else messages.push({ role: _r, content: _c });
