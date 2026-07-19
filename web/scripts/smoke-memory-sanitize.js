@@ -65,6 +65,27 @@ const gmWeiAlive = { turn: 5, chars: [{ name: WEI, alive: true }] };
   ['魏忠贤如今已死', '如今(剥时间连接词)']
 ].forEach(function (row) { ok(detect(gmWeiAlive, row[0]) != null, '真阳性仍拦：' + row[1] + ' 「' + row[0] + '」'); });
 
+// ═══ P0-2 二轮·判序重构（三序坑 + 三漏网·变异锁：判序回退须红）═══
+console.log('\n[P0-2·二轮] 判序重构');
+const gmWeiDead = { turn: 9, chars: [{ name: WEI, alive: false, dead: true, deathTurn: 5 }] };
+// ① 单字「闻」传闻标记 → 误杀放行
+ok(detect(gmWeiAlive, '闻魏忠贤已伏诛，臣不敢信') == null, '①单字闻·hearsay→放行');
+// ② 亲属闸锚定死词后首段·遇标点即止（其子/子民 在逗号后异子句·不误放真死讯）
+ok(detect(gmWeiAlive, '魏忠贤已伏诛，其子亦下狱') != null, '②「其子」不误放·真死讯仍拦');
+ok(detect(gmWeiAlive, '魏忠贤已伏诛，子民称快') != null, '②「子民」不误放·真死讯仍拦');
+ok(detect(gmWeiAlive, '魏忠贤，已故家父曾与之同朝') == null, '②「已故家父」仍放行（亲属紧贴死词）');
+// ③ 存活/否定长模式先跑（治「并未身亡」被死RE先中身亡后跳存活的序坑）
+ok(detect(gmWeiDead, '魏忠贤并未身亡') != null && detect(gmWeiDead, '魏忠贤并未身亡').claimType === 'alive_of_dead', '③「并未身亡」(魏死)→alive_of_dead');
+ok(detect(gmWeiDead, '魏忠贤未死') != null, '③「未死」(魏死)→拦');
+ok(detect(gmWeiAlive, '魏忠贤并未身亡') == null, '③「并未身亡」(魏活)→一致放行');
+ok(detect(gmWeiAlive, '魏忠贤未曾亡故') == null, '③「未曾亡故」(魏活)→放行');
+// ⑤ 倒装判断句「死词+者，名+也」（古文高频）
+ok(detect(gmWeiAlive, '已伏诛者，魏忠贤也') != null, '⑤倒装「已伏诛者，魏忠贤也」→拦');
+ok(detect(gmWeiDead, '已伏诛者，魏忠贤也') == null, '⑤倒装(魏死)→一致放行');
+// ④ 子句级指代「亦然」
+ok(detect({ turn: 9, chars: [{ name: WEI, alive: false, dead: true, deathTurn: 5 }, { name: '客氏', alive: true }] }, '魏忠贤已伏诛；客氏亦然') != null, '④「亦然」：魏死客活→客氏拦');
+ok(detect({ turn: 9, chars: [{ name: WEI, alive: false, dead: true, deathTurn: 5 }, { name: '客氏', alive: false, dead: true, deathTurn: 5 }] }, '魏忠贤已伏诛；客氏亦然') == null, '④「亦然」：二者皆死→放行');
+
 // ═══ P1-5·竞态豁免方向 ═══
 console.log('\n[P1-5] 竞态豁免方向');
 const weiRaceDeath = { turn: 7, chars: [{ name: WEI, alive: true, deathTurn: 7 }] };   // alive 未翻转·死亡宣称竞态
@@ -112,6 +133,15 @@ console.log('\n[①] remember 写闸');
   ok(memOf(gm, ZHANG).some(m => m.event === POISON), '③ 魏真死后同文本→放行写入');
 })();
 
+// ═══ ④ getMemoryContext 总入口单点收口（真跑·变异锁：内部过滤删掉须红）═══
+console.log('\n[P0·总入口] getMemoryContext 单点收口');
+(function () {
+  setGM({ turn: 5, chars: [{ name: WEI, alive: true }, { name: ZHANG, alive: true, _memory: [{ event: POISON, importance: 9, turn: 5 }, { event: '商讨盐政', importance: 8, turn: 5 }] }] });
+  const out = NMS.getMemoryContext(ZHANG) || '';
+  ok(out.indexOf('已伏诛') < 0, '④ getMemoryContext 铭记段无污染条「已伏诛」（问对/奏疏/朝议/廷议/御前/鸿雁/时政/势力/编制 全经此·间接消费者受益）');
+  ok(out.indexOf('商讨盐政') >= 0, '④ getMemoryContext 保留正常记忆');
+})();
+
 // ═══ ③(P0-3) 记忆管家写闸生死对账（真跑 MemoryWriteGate）═══
 console.log('\n[P0-3] MemoryWriteGate 生死对账');
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-memory-writegate.js'), 'utf8'), sandbox, { filename: 'tm-memory-writegate.js' });
@@ -128,6 +158,12 @@ const WG = sandbox.TM.MemoryWriteGate;
   sandbox.GM._memoryWriteQueue = []; sandbox.GM._memoryDraftInbox = []; sandbox.GM._memoryQuarantine = []; sandbox.GM._memoryAccepted = []; sandbox.GM._memoryAuditEvents = [];
   const it = WG.enqueue(sandbox.GM, poison, { forceDraft: true });
   ok(it.status === 'quarantined' && !sandbox.GM._memoryDraftInbox.some(x => x.id === it.id), 'P0-3 enqueue：污染进 quarantine 不进 draftInbox（autoAccept 够不着）');
+  // ★变异锁·写闸旁路复现（Codex 二轮）：带 type+status+body 的候选直走 enrichMemoryItem 跳过
+  //   evaluateCandidate·公开 API enqueue 能带 active/accepted 状态绕闸——须仍被拦为 quarantined。
+  sandbox.GM._memoryWriteQueue = []; sandbox.GM._memoryDraftInbox = []; sandbox.GM._memoryQuarantine = []; sandbox.GM._memoryAccepted = []; sandbox.GM._memoryAuditEvents = [];
+  const bypass = { type: 'character_memory', status: 'active', body: '张三深信魏忠贤已伏诛', source: 'engine_state', actor: ZHANG, sourceRefs: [{ type: 'events', id: 'eb', turn: 5 }] };
+  const itB = WG.enqueue(sandbox.GM, bypass, {});
+  ok(itB.status === 'quarantined' && !sandbox.GM._memoryAccepted.some(x => x.id === itB.id), 'P0-3 旁路封堵：带 status 的绕闸候选仍被隔离·不落 _memoryAccepted');
 })();
 
 // ═══ ⑤ 读侧 _buildTemporalConstraint 记忆块（真跑抽取块）═══
@@ -207,7 +243,14 @@ const prompt = fs.readFileSync(path.join(ROOT, 'tm-endturn-prompt.js'), 'utf8');
 
 // ═══ ⑧ 各 sink 源码接线结构断言（persona-views / agent-mode）═══
 console.log('\n[P0-1] sink 接线结构');
-ok(fs.readFileSync(path.join(ROOT, 'tm-wendui-persona-views.js'), 'utf8').indexOf('_tmFilterWenduiEntries((GM.wenduiHistory && GM.wenduiHistory[ch.name])') >= 0, '⑧ persona-views 承续上下文已接过滤器');
-ok(fs.readFileSync(path.join(ROOT, 'tm-endturn-agent-mode.js'), 'utf8').indexOf('_tmFilterWenduiEntries(arr, gm)') >= 0, '⑧ agent-mode 问对注入已接过滤器');
+const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+ok(rd('tm-wendui-persona-views.js').indexOf('_tmFilterWenduiEntries((GM.wenduiHistory && GM.wenduiHistory[ch.name])') >= 0, '⑧ persona-views 承续上下文已接过滤器');
+ok(rd('tm-endturn-agent-mode.js').indexOf('_tmFilterWenduiEntries(arr, gm)') >= 0, '⑧ agent-mode 问对注入已接过滤器');
+// 二轮·四个直读点各接过滤器（变异锁：删调用即红）
+ok(rd('tm-mechanics-memory.js').indexOf('var _gmcMem = (typeof _tmFilterMemories') >= 0, '⑧ getMemoryContext 内部单点收口已接 _tmFilterMemories');
+ok(rd('tm-memorials.js').indexOf('_tmFilterMemories(ch._memory, GM) : ch._memory).slice(-3)') >= 0, '⑧ memorials:349 直读 slice(-3) 已接过滤器');
+ok(rd('tm-endturn-prompt.js').indexOf('_tmFilterMemories(c2._memory, GM) : c2._memory).slice()') >= 0, '⑧ endturn-prompt:1184 最高重要度记忆已接过滤器');
+ok(rd('tm-faction-npc-llm-decision.js').indexOf('_tmFilterMemories(c._memory,') >= 0, '⑧ faction:1012 直读 slice(-2) 已接过滤器（仅加过滤调用）');
+ok(rd('tm-keju-reform-llm.js').indexOf('_tmFilterWenduiEntries(GM.wenduiHistory[ch.name], GM)') >= 0 && rd('tm-keju-reform-llm.js').split('_tmFilterWenduiEntries((GM_.wenduiHistory').length === 3, '⑧ keju-reform 两处 wenduiHistory 直读已接过滤器');
 
 console.log('\n结果: ' + A + ' 通过 / 0 失败');
