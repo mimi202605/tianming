@@ -928,7 +928,7 @@
         Object.keys(GM.wenduiHistory).forEach(function(name) {
           if (!onStageNames[name]) return;
           var msgs = GM.wenduiHistory[name] || [];
-          var recent = msgs.filter(function(m){ return (curTurn - (m.turn || curTurn)) <= recentTurns; }).slice(-4);
+          var recent = (typeof _tmFilterWenduiEntries === 'function' ? _tmFilterWenduiEntries(msgs, GM) : msgs).filter(function(m){ return (curTurn - (m.turn || curTurn)) <= recentTurns; }).slice(-4);
           if (recent.length > 0) {
             var innerXml = recent.map(function(m){
               var who = (m.role === 'player' || m.role === 'user') ? '帝' : '臣';
@@ -1068,7 +1068,9 @@
           }
           return s;
         };
-        var sorted = c._memory.slice().sort(function(a,b){ return _memScore(b) - _memScore(a); });
+        // 刀B·过滤与本局 GM 生死态冲突的记忆条目（治老玩家已污染 ch._memory·npc-hearts 不喂污染条）
+        var _cleanMem = (typeof _tmFilterMemories === 'function') ? _tmFilterMemories(c._memory, GM) : (c._memory || []);
+        var sorted = _cleanMem.slice().sort(function(a,b){ return _memScore(b) - _memScore(a); });
         // ★2026-07-01 codex-fix S1:hearts 门槛 impMin 随模型上下文动态(3~9·见 tm-ai-infra heartsImportanceMin)·中/小上下文可到 7~8·
         //   会把 imp6 的正式问对记忆挡在推演外。额外放行「近2回合内 importance>=6」的记忆(典型=刚发生的问对/奏疏交谈)·
         //   令新近君臣交谈无论动态门槛多高都能进推演·不改其 importance(避伤疤膨胀)。先过滤后截断·以保其入选。
@@ -1081,8 +1083,8 @@
         //   取最近回合中(turn 最新、同 turn 取 importance 最高)一条·若未入选则占最后 1 槽(perChar<=1 时独占·定义性伤疤已在 <self>)。
         var _lastTurnGate = (GM.turn || 0) - 1;
         var _freshest = null;
-        for (var _fi = 0; _fi < c._memory.length; _fi++) {
-          var _fm = c._memory[_fi];
+        for (var _fi = 0; _fi < _cleanMem.length; _fi++) {
+          var _fm = _cleanMem[_fi];
           if (!_fm || (_fm.turn||0) < _lastTurnGate) continue;
           if (!_freshest || (_fm.turn||0) > (_freshest.turn||0) || ((_fm.turn||0) === (_freshest.turn||0) && (_fm.importance||0) > (_freshest.importance||0))) _freshest = _fm;
         }
@@ -1138,7 +1140,7 @@
         //   已入上方 <memory> 的不重挂)显式挂 <with>·令两人同场时 AI 见得到"他们之间发生过什么"·对手戏不靠猜。
         try {
           var _gBest = {};
-          (c._memory || []).forEach(function(m) {
+          _cleanMem.forEach(function(m) {
             var w = m && m.who;
             if (!w || w === c.name || !_present[w] || (m.importance || 0) < 5) return;
             if (top.indexOf(m) >= 0) return;  // 已作 <memory> 注入·不重挂
@@ -1179,7 +1181,7 @@
               var _sc = c2._scars[c2._scars.length - 1];
               if (_sc) _defMem = String(_sc.event || '').slice(0, 26) + (_sc.emotion ? '[' + _sc.emotion + ']' : '');
             } else if (Array.isArray(c2._memory) && c2._memory.length) {
-              var _mm = c2._memory.slice().sort(function(a, b){ return (b.importance || 0) - (a.importance || 0); })[0];
+              var _mm = ((typeof _tmFilterMemories === 'function') ? _tmFilterMemories(c2._memory, GM) : c2._memory).slice().sort(function(a, b){ return (b.importance || 0) - (a.importance || 0); })[0];
               if (_mm && _mm.event) _defMem = String(_mm.event).slice(0, 26);
             }
           } catch (_dmE) {}

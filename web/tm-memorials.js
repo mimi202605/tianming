@@ -346,7 +346,7 @@ async function genMemorialsAI(count){
       // 完善·近期记忆(直接列 3 条·补 NpcMemorySystem 心绪)
       var _memList = '';
       if (Array.isArray(ch._memory) && ch._memory.length > 0) {
-        var _ms = ch._memory.slice(-3).map(function(m){
+        var _ms = ((typeof _tmFilterMemories === 'function') ? _tmFilterMemories(ch._memory, GM) : ch._memory).slice(-3).map(function(m){
           return (m.event || m.text || '').slice(0, 24);
         }).filter(Boolean);
         if (_ms.length > 0) _memList = ' 忆:[' + _ms.join('；') + ']';

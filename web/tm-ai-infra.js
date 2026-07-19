@@ -2226,6 +2226,7 @@ function _buildTemporalConstraint(ch, opts) {
   // clauseOnly：只给总纲条款·省 token·防大名单干扰结构化 JSON 输出（文案自洽·不引用「下列名单」）
   if (opts.clauseOnly) {
     _tcAppendMentioned(lines, opts.mentionedNames);   // 议题所涉人仍逐人标生死（少量·不干扰）
+    if (typeof _tcAppendDivergence === 'function') _tcAppendDivergence(lines, true); // 分歧账·clause 模式压成一句总纲(不列名单·省 token)
     lines.push('★ 绝对禁止：说在世人物已死·或说已故人物仍活·生死一律以本 prompt 游戏态与 GM 数据为准·非历史上的卒年。');
     lines.push('★ 允许：隐约预感/占卜不祥/担忧未来/引前朝/古事为训。');
     return lines.join('\n');
@@ -2244,6 +2245,8 @@ function _buildTemporalConstraint(ch, opts) {
   if (deadList) lines.push('以下为部分已故人物（本局全部生死以 GM 为准）：' + deadList);
   // 议题所涉人名·必入名单且逐人标生死（凌驾史书卒年）
   _tcAppendMentioned(lines, opts.mentionedNames);
+  // 本局与史实的已知分歧账(V1)·读 GM.histAnchors·史载已故者本局仍在世→逐条「以本局为准」(cap 8·文案中立)
+  if (typeof _tcAppendDivergence === 'function') _tcAppendDivergence(lines, false);
   lines.push('★ 绝对禁止：');
   lines.push('  · 讨论游戏当前时间之后才发生的史实事件（如游戏在天启七年·不得提及崇祯朝将发生之事为既成事实）');
   lines.push('  · 说在世人物已死·或说已故人物仍活；不在在世名单者，生死以 GM 数据为准·不得凭史实臆断');
@@ -2251,10 +2254,12 @@ function _buildTemporalConstraint(ch, opts) {
   lines.push('★ 允许：隐约预感/占卜不祥/担忧未来/引前朝/古事为训');
   // 若 ch 有 _memory·注入关键记忆
   if (ch && Array.isArray(ch._memory) && ch._memory.length > 0) {
-    var memLines = ch._memory.slice(-5).map(function(m) {
+    // 读侧兜底（刀B·治老玩家已污染存档）：与本局 GM 生死态冲突的记忆条目不注入（检测器/过滤器安家 tm-mechanics-memory.js·typeof 守卫）
+    var _memSrc = (typeof _tmFilterMemories === 'function') ? _tmFilterMemories(ch._memory, GM) : ch._memory;
+    var memLines = _memSrc.slice(-5).map(function(m) {
       return '  · T' + (m.turn || 0) + '·' + (m.event || '') + (m.emotion ? '(' + m.emotion + ')' : '');
     }).join('\n');
-    lines.push('本 NPC 关键记忆（时序）：\n' + memLines);
+    if (memLines) lines.push('本 NPC 关键记忆（时序）：\n' + memLines);
   }
   return lines.join('\n');
 }
@@ -2347,6 +2352,7 @@ function _tcAppendMentioned(lines, mentionedNames) {
   });
   if (out.length) lines.push('★ 本议题所涉人物·生死以此为准（凌驾史书卒年）：' + out.join('；'));
 }
+// 分歧账(V1)·_tcAppendDivergence 的本体移出至 tm-history-events.js(史实域·避免本巨石破 3000 行阈)·此处运行时按 window 全局调用。
 
 /** 时空约束·从议题/上下文文本里有界扫描 GM.chars 已知人名（indexOf 命中·去重·hit 上限 cap≈10），种子名（如发言人）恒保留·供四入口作 mentionedNames */
 function _tcScanMentionedNames(text, seedNames, cap) {

@@ -168,6 +168,7 @@ const checks = [
   { name: 'memory-capacity', file: 'smoke-memory-capacity.js', estSec: 1, expectExit: 0 },
   { name: 'memory-era-rollup', file: 'smoke-memory-era-rollup.js', estSec: 1, expectExit: 0 },
   { name: 'memory-recency-decay', file: 'smoke-memory-recency-decay.js', estSec: 1, expectExit: 0 },
+  { name: 'memory-sanitize', file: 'smoke-memory-sanitize.js', estSec: 1, expectExit: 0 },
   { name: 'memory-failed-edict-lesson', file: 'smoke-memory-failed-edict-lesson.js', estSec: 1, expectExit: 0 },
   { name: 'memory-turn-writeback', file: 'smoke-memory-turn-writeback.js', estSec: 1, expectExit: 0 },
   { name: 'memory-turn-archive', file: 'smoke-memory-turn-archive.js', estSec: 1, expectExit: 0 },

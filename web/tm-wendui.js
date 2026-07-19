@@ -1013,13 +1013,21 @@ function _wdResolveAudienceReplyText(name, ch, parsed, rawReply) {
   return _wdSanitizeDialogueReplyText(name, ch, parsed, rawReply);
 }
 
+// 刀B·给带生死矛盾（如「魏忠贤已伏诛」而本局魏在世）的问对历史条目打 _histConflict 标；回放侧据标跳过。
+// 回复原文已展示给玩家不能拒收，故只打标不拒写；检测器安家 tm-mechanics-memory.js·此处 typeof 守卫调用。
+function _wdFlagVitalConflict(entry) {
+  try {
+    if (entry && typeof entry.content === "string" && typeof _tmDetectVitalConflict === "function" && _tmDetectVitalConflict(entry.content)) entry._histConflict = true;
+  } catch (_) {}
+  return entry;
+}
 function _wdCommitAudienceOpening(name, ch, replyText) {
   var safeText = String(replyText == null ? '' : replyText).trim() || _wdAudienceOpeningFallback(name, ch);
   var bubble = _$('wd-init-bubble');
   if (bubble) { bubble.textContent = safeText; bubble.removeAttribute('id'); }
   if (!GM.wenduiHistory) GM.wenduiHistory = {};
   if (!GM.wenduiHistory[name]) GM.wenduiHistory[name] = [];
-  GM.wenduiHistory[name].push({ role: 'npc', content: safeText, turn: GM.turn });
+  GM.wenduiHistory[name].push(_wdFlagVitalConflict({ role: 'npc', content: safeText, turn: GM.turn }));
   if (!GM.jishiRecords) GM.jishiRecords = [];
   GM.jishiRecords.push({ turn: GM.turn, char: name, playerSaid: '（NPC主动求见）', npcSaid: safeText, mode: 'formal' });
   return bubble;
@@ -2299,11 +2307,14 @@ async function sendWendui(){
       var history=GM.wenduiHistory[name].slice(-10);
       var messages=[{role:'system',content:sysP}];
       history.forEach(function(h){
+        if (!h) return;
         // system(面谕/赏罚)=帝侧动作·曾被映成 assistant 令 AI 把御赐当自己说过的话(2026-07-04 审查定罪)。
         // 映 user+纪事前缀·相邻 user 合并(防严格交替 API 400)。
         var _isSys = h.role === 'system';
         var _r = (h.role === 'player' || _isSys) ? 'user' : 'assistant';
-        var _c = _isSys ? ('【朝廷纪事·非对话】' + h.content) : h.content;
+        // 刀B·生死矛盾条目(标记 或 运行时侦测)不原样回放：assistant 位置以占位替换(保 Q-A 配对/上下文深度·避免删条致相邻 user 合并)
+        var _vitalBad = (_r === 'assistant') && (h._histConflict || (typeof _tmWenduiEntryConflict === 'function' && _tmWenduiEntryConflict(h, GM)));
+        var _c = _isSys ? ('【朝廷纪事·非对话】' + h.content) : (_vitalBad ? '（前次答复所述人物存殁与本局不符·已作废）' : h.content);
         var _last = messages[messages.length - 1];
         if (_last && _last.role === 'user' && _r === 'user') _last.content += '\n' + _c;
         else messages.push({ role: _r, content: _c });
@@ -2449,7 +2460,7 @@ async function sendWendui(){
         if (_wenduiMode === 'cedui' && typeof window !== 'undefined' && window._kjpCurrentCeduiDigest) {
           _wdEntry.ceduiParadigmDigest = window._kjpCurrentCeduiDigest;
         }
-        GM.wenduiHistory[name].push(_wdEntry);
+        GM.wenduiHistory[name].push(_wdFlagVitalConflict(_wdEntry));
         // 性能·2026-06-10·写入端封顶:单人 400 条(AI 上下文只用 slice(-10)·UI 只渲最近 60·起居注/纪事另有完整留痕)·防长局单人史无界膨胀存档
         if (GM.wenduiHistory[name].length > 400) GM.wenduiHistory[name] = GM.wenduiHistory[name].slice(-400);
         // #4·君臣私交长弧：每次问对累积亲信度（私下更快·负面交流不涨·封顶100）
@@ -2522,7 +2533,7 @@ async function sendWendui(){
               + '<div class="wendui-npc-bubble wd-selectable">' + escHtml(_crText) + '</div></div>';
             chat.appendChild(_crDiv);
             if (!GM.wenduiHistory[cr.name]) GM.wenduiHistory[cr.name] = [];
-            GM.wenduiHistory[cr.name].push({ role:'npc', content:_crText, turn:GM.turn, mode:_wenduiMode, _confrontWith:name });
+            GM.wenduiHistory[cr.name].push(_wdFlagVitalConflict({ role:'npc', content:_crText, turn:GM.turn, mode:_wenduiMode, _confrontWith:name }));
             if (Array.isArray(GM.jishiRecords)) GM.jishiRecords.push({ turn:GM.turn, char:cr.name, playerSaid:'〔' + name + '对质·在场〕' + msg, npcSaid:_crText, loyaltyDelta:0, mode:_wenduiMode });
           });
           chat.scrollTop = chat.scrollHeight;
@@ -2647,7 +2658,7 @@ async function sendWendui(){
     if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '奉旨'; }
   }else{
     var fb=ch&&ch.dialogues&&ch.dialogues[0]?ch.dialogues[0]:'臣谨遵。';
-    GM.wenduiHistory[name].push({role:'npc',content:fb});
+    GM.wenduiHistory[name].push(_wdFlagVitalConflict({role:'npc',content:fb}));
     _wdAppendNpcBubble(chat, name, ch, fb);
     chat.scrollTop=chat.scrollHeight;
   }
