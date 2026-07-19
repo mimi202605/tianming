@@ -1841,6 +1841,14 @@ async function _wd_extractCommitments(targetName, guardCtx) {
   prompt += '· relays：若皇帝提到要「通知/转告/让某第三方(记其姓名B)知道或去办」某事·填 relays（to=B的姓名·content=B应知或应办之事·via=经谁转告，如让此人转告B则填此人姓名、皇帝只是当面议及B则留空）；对话未涉及第三方则空数组\n';
   prompt += '返回 JSON：{"commitments":[{"task":"具体任务(30字内)","category":"query查办/write撰写/dispatch调遣/intel侦查/diplomacy外使/finance财赋/other","deadline":"回合数(1-10，默认3)","willingness":0-1,"npcPromise":"他答应的话(原句摘要)","conditions":"附加条件(若有)"}],"relays":[{"to":"第三方姓名","content":"要其知晓或去办之事(30字内)","via":"经谁转告(空=皇帝当面议及)"}]}';
 
+  // 时空约束·clauseOnly(JSON 抽取口·防大名单干扰 commitments/relays 结构)·扫描源=本次问对对话片段 dialog·对象 targetName 作种子恒入·防 relays 第三方按史书卒年被判死而漏抽(typeof 守卫防加载序)
+  if (typeof _buildTemporalConstraint === 'function') {
+    try {
+      var _wcMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(String(dialog || ''), [targetName], 10) : [targetName];
+      prompt += _buildTemporalConstraint(ch, { clauseOnly: true, mentionedNames: _wcMentioned });
+    } catch (_wcTcE) {}
+  }
+
   try {
     var raw = await callAI(prompt, 500);
     var _liveLoadGen = (typeof window !== 'undefined' && window._tmLoadGen) || 0;
