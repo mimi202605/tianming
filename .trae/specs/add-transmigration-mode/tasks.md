@@ -117,67 +117,159 @@
   - [ ] SubTask 14.5: 拒还触发"权臣架空"危机（沿用 `tm-influence-groups.js` 危机管线）
   - 验证：跑 `node web/scripts/smoke-transmigration-regent.js`（新增 smoke）
 
+## Phase 4.5 · 玩家专属系统（穿越模式核心爽点）
+
+> 这 7 个系统是穿越模式相比皇帝模式的差异化玩法，让玩家在自己职位上"有事可做、有成长感、有戏剧性"。系统间存在关联（如人物互动→反叛筹备→交战），按依赖顺序实现。
+
+- [ ] Task 15: 玩家人物互动系统 `web/tm-player-interaction.js`
+  - [ ] SubTask 15.1: 定义 `TM.PlayerInteraction` 命名空间
+  - [ ] SubTask 15.2: 实现 `interact(npcName, kind, payload)` —— kind ∈ {visit, secretTalk, entrust, befriend, gift, marry, antagonize, frame, recruit, disciple}
+  - [ ] SubTask 15.3: 每次互动消耗精力（复用 `_spendEnergy`）+ 推进时间
+  - [ ] SubTask 15.4: 调用 LLM 生成互动场景描述（基于双方性格 + 关系 + 当前局势）
+  - [ ] SubTask 15.5: 更新 NPC 对玩家的 5 维关系值（师徒/亲友/政敌/同僚/仇敌，沿用 `tm-relations.js`）
+  - [ ] SubTask 15.6: 关键互动写入玩家记忆系统（沿用 `tm-memory-*.js`）
+  - [ ] SubTask 15.7: 实现"联姻"——双方 `family` 字段建立姻亲关系
+  - [ ] SubTask 15.8: 事件钩子：与禁军将领关系达"死党"+ 选择"密谋" → 提示可发动政变
+  - [ ] SubTask 15.9: 御案新增"人物互动"面板，列出可互动 NPC 与动作菜单
+  - 验证：跑 `node web/scripts/smoke-player-interaction.js`（新增 smoke）
+
+- [ ] Task 16: 玩家赚钱与私产系统 `web/tm-player-economy.js`
+  - [ ] SubTask 16.1: 定义 `TM.PlayerEconomy` 命名空间
+  - [ ] SubTask 16.2: 玩家个人银钱账本（独立于国库），字段：cash, properties[], investments[], grayIncome[]
+  - [ ] SubTask 16.3: 每月初自动领取官俸（复用 `tm-char-economy-engine.js` 的 14 类角色俸禄）
+  - [ ] SubTask 16.4: 实现"贪墨/受贿"动作：玩家银钱+，corruption 字段累计，触发吏治腐败引擎风险
+  - [ ] SubTask 16.5: 实现"购置产业"：酒楼/当铺/作坊三类，每月产生经营性收入
+  - [ ] SubTask 16.6: 实现"放贷收息"：超出阈值触发民怨
+  - [ ] SubTask 16.7: 实现"囤货居奇"：触发市舶司调查风险
+  - [ ] SubTask 16.8: 实现"被抄家"路径（沿用 `tm-char-economy-ui.js`）：罢黜/反叛失败/贪腐被查 → 私产充公
+  - [ ] SubTask 16.9: 实现"派系勒索"：派系向玩家索要保护费，拒绝则关系恶化
+  - [ ] SubTask 16.10: 御案新增"私产"面板
+  - 验证：跑 `node web/scripts/smoke-player-economy.js`（新增 smoke）
+
+- [ ] Task 17: 玩家跑商系统 `web/tm-player-trade.js`
+  - [ ] SubTask 17.1: 定义 `TM.PlayerTrade` 命名空间
+  - [ ] SubTask 17.2: 商队数据结构：id, owner, route{from,to}, goods[], guards, carts, permit, status
+  - [ ] SubTask 17.3: 实现"组建商队"：消耗银钱 + 配置护卫/车马/通关文牒（许可难度关联官场关系）
+  - [ ] SubTask 17.4: 实现"派遣贸易"：根据 `tm-economy-engine.js` 区域价格矩阵计算预期利润
+  - [ ] SubTask 17.5: 路线风险事件：山贼劫掠（沿用 `tm-coastal-raid.js` 模式）、官府盘剥、气候灾害、地方势力索要过路费
+  - [ ] SubTask 17.6: 商队到达后结算实际盈亏，写入玩家银钱账本
+  - [ ] SubTask 17.7: 大宗贸易（超阈值）调用 `tm-region-magnate.js` 影响区域经济
+  - [ ] SubTask 17.8: 跨朝代通用：剧本数据 hook 路线（丝路/茶马/漕运/海贸），引擎只提供"商队+路线+风险+利润"通用框架
+  - [ ] SubTask 17.9: 跑商积累商誉，开启新商业网络与 NPC 关系
+  - [ ] SubTask 17.10: 御案新增"商队"面板
+  - 验证：跑 `node web/scripts/smoke-player-trade.js`（新增 smoke）
+
+- [ ] Task 18: 玩家科技研发系统 `web/tm-player-tech.js`
+  - [ ] SubTask 18.1: 定义 `TM.PlayerTech` 命名空间
+  - [ ] SubTask 18.2: 玩家科技账本：currentResearch{field, progress, invested}, completed[], discoveries[]
+  - [ ] SubTask 18.3: 实现"启动研发"：选定领域（农业/水利/军事/工艺/医药/天文/算学/文学等），扣银钱，按 `玩家学识 + 投入资源 + 现有科技基础 + 时代限制` 计算进度
+  - [ ] SubTask 18.4: 实现"招揽匠人加速"：关联人物互动，匠人加入门客清单，进度加成
+  - [ ] SubTask 18.5: 实现"研发完成"：解锁对应增益（农业增产/军事强军/工艺增收/医药减疫）
+  - [ ] SubTask 18.6: 实现"上奏推广"：上奏到皇帝 AI，采纳后全国获得增益
+  - [ ] SubTask 18.7: 实现"私藏自用"：增益仅作用于玩家本人/封国
+  - [ ] SubTask 18.8: 跨朝代铁律：引擎只提供"研发投入→进度→解锁增益"通用管线，科技列表归剧本数据
+  - [ ] SubTask 18.9: 御案新增"科技"面板，显示当前研发进度与已解锁增益
+  - 验证：跑 `node web/scripts/smoke-player-tech.js`（新增 smoke）
+
+- [ ] Task 19: 玩家参加科举考试 `web/tm-player-keju.js`
+  - [ ] SubTask 19.1: 定义 `TM.PlayerKeju` 命名空间
+  - [ ] SubTask 19.2: 玩家考生状态：role='student', currentLevel{县试/府试/院试/乡试/会试/殿试}, examHistory[]
+  - [ ] SubTask 19.3: 实现"报名应试"：playerRole 为商贾/隐逸/宗室旁支/低级官吏子弟可走科举路径
+  - [ ] SubTask 19.4: 接入 `tm-keju-runtime.js` 全流程，玩家以考生身份参与
+  - [ ] SubTask 19.5: 实现"作答考题"：通过 `tm-keju-question-ui.js` 作答，LLM 评卷生成成绩
+  - [ ] SubTask 19.6: 实现"拜师求学"：关联人物互动 + `tm-keju-school-network.js`
+  - [ ] SubTask 19.7: 实现"考中进士"：身份变更 + `playerRole` 升级为 minister + 自动授予官职（沿用 `tm-keju-allocation.js`）
+  - [ ] SubTask 19.8: 实现"卷入科场弊案"：玩家可选"行贿考官/请托关节/枪替冒名"，沿用 `tm-keju-scandal.js`，风险与收益并存
+  - [ ] SubTask 19.9: 御案新增"科举"面板（穿越模式下与皇帝模式科举面板区分）
+  - 验证：跑 `node web/scripts/smoke-player-keju.js`（新增 smoke）
+
+- [ ] Task 20: 玩家官员年终考核 `web/tm-player-annual-review.js`
+  - [ ] SubTask 20.1: 定义 `TM.PlayerAnnualReview` 命名空间
+  - [ ] SubTask 20.2: 考核指标：履职情况、政务成绩、廉洁度、人际关系、上级评价、民众口碑
+  - [ ] SubTask 20.3: 实现"年末触发考核"：每年末综合玩家 1 年行为生成指标
+  - [ ] SubTask 20.4: LLM 生成考核评语
+  - [ ] SubTask 20.5: 结果分九等（上上/上中/上下/中上/中中/中下/下上/下中/下下）
+  - [ ] SubTask 20.6: 按等级触发后果：升迁/贬谪/加俸/罚俸/赐物/记过/罢黜
+  - [ ] SubTask 20.7: 实现"主动运作考核"：贿赂考官/托人情（关联人物互动），指标向上偏移但有被发现风险
+  - [ ] SubTask 20.8: 考核结果与评语写入编年史（沿用 `tm-chronicle-system.js`）
+  - [ ] SubTask 20.9: 玩家御案显示考核通知
+  - 验证：跑 `node web/scripts/smoke-player-annual-review.js`（新增 smoke）
+
+- [ ] Task 21: 玩家反叛系统 `web/tm-player-rebellion.js`
+  - [ ] SubTask 21.1: 定义 `TM.PlayerRebellion` 命名空间
+  - [ ] SubTask 21.2: 反叛筹备状态：prepProgress{军权, 粮草, 势力联络, 舆论}, threshold
+  - [ ] SubTask 21.3: 实现"密谋反叛"入口：playerRole ∈ {prince, regent, general, minister, merchant（农民起义条件）}
+  - [ ] SubTask 21.4: 筹备动作：笼络军权（关联人物互动）、积累粮草（关联私产）、联络势力、制造舆论（童谣/谶纬）
+  - [ ] SubTask 21.5: 筹备进度可视化（御案显示筹备度）
+  - [ ] SubTask 21.6: 实现"举事"：筹备度达阈值，按 playerRole 分支反叛类型（宗室夺嫡/藩王起兵/权臣篡位/边将叛乱/农民起义）
+  - [ ] SubTask 21.7: 触发交战（沿用 `tm-battle-turn.js` / `tm-battle-adapter.js` / `tm-battle-resolve.js`）
+  - [ ] SubTask 21.8: 皇帝 AI 发动平叛（关联 `TM.SovereignAI`）
+  - [ ] SubTask 21.9: 反叛失败：玩家被诛（游戏结束）或逃亡（角色变成通缉犯），家属流放，私产抄没，编年史写入永久污点
+  - [ ] SubTask 21.10: 反叛成功：`playerRole` 转为 emperor，`transmigrationMode` 转为 false，模式切回皇帝模式，编年史写入"新朝建立"
+  - [ ] SubTask 21.11: 沿用 `tm-feudal.js` 篡位机制 + `tm-class-radical-revolt.js` 农民起义机制
+  - 验证：跑 `node web/scripts/smoke-player-rebellion.js`（新增 smoke）
+
 ## Phase 5 · UI 文案与身份展示动态化
 
-- [ ] Task 15: 顶栏身份展示按 playerRole 分支
-  - [ ] SubTask 15.1: 在 `tm-game-ui-shell.js` 顶栏渲染处读 `P.playerInfo.playerRole`
-  - [ ] SubTask 15.2: 皇帝模式：显示"年号 · 尊号"（如"崇祯十五年 · 明思宗"）
-  - [ ] SubTask 15.3: 穿越模式：显示"玩家官职 · 当前皇帝年号"（如"兵部尚书 · 崇祯十五年"）
+- [ ] Task 22: 顶栏身份展示按 playerRole 分支
+  - [ ] SubTask 22.1: 在 `tm-game-ui-shell.js` 顶栏渲染处读 `P.playerInfo.playerRole`
+  - [ ] SubTask 22.2: 皇帝模式：显示"年号 · 尊号"（如"崇祯十五年 · 明思宗"）
+  - [ ] SubTask 22.3: 穿越模式：显示"玩家官职 · 当前皇帝年号"（如"兵部尚书 · 崇祯十五年"）
   - 验证：浏览器实查两种模式渲染
 
-- [ ] Task 16: 字面量 `'皇帝'` 全面动态化
-  - [ ] SubTask 16.1: 在 `tm-chaoyi.js` line 35/141/186/189 替换为读 `P.playerInfo.sovereignName || '皇帝'`
-  - [ ] SubTask 16.2: 在 `tm-chaoyi-yuqian.js` line 215/493/658 同样替换
-  - [ ] SubTask 16.3: 在 `tm-tinyi-v3.js` line 219/2629 与 `tm-tinyi-v3-edict-personnel.js` line 152/449 同样替换
-  - [ ] SubTask 16.4: 在 `tm-endturn-prompt.js` line 568 `'本回合皇帝亲颁诏令原文'` 改为读 `P.playerInfo` 动态拼接
-  - [ ] SubTask 16.5: 在 `tm-edict-oversight.js` line 89 `'代陛下核查诏令'` 同样动态化
+- [ ] Task 23: 字面量 `'皇帝'` 全面动态化
+  - [ ] SubTask 23.1: 在 `tm-chaoyi.js` line 35/141/186/189 替换为读 `P.playerInfo.sovereignName || '皇帝'`
+  - [ ] SubTask 23.2: 在 `tm-chaoyi-yuqian.js` line 215/493/658 同样替换
+  - [ ] SubTask 23.3: 在 `tm-tinyi-v3.js` line 219/2629 与 `tm-tinyi-v3-edict-personnel.js` line 152/449 同样替换
+  - [ ] SubTask 23.4: 在 `tm-endturn-prompt.js` line 568 `'本回合皇帝亲颁诏令原文'` 改为读 `P.playerInfo` 动态拼接
+  - [ ] SubTask 23.5: 在 `tm-edict-oversight.js` line 89 `'代陛下核查诏令'` 同样动态化
   - 验证：grep `'皇帝'` 字面量，确认穿越模式下所有用户可见处已动态化（保留 schema 数据中的 `'皇帝'` 不动）
 
-- [ ] Task 17: 退位/禅让系统穿越模式禁用
-  - [ ] SubTask 17.1: 在 `tm-player-core.js:68 openAbdication` 入口判定 `transmigrationMode`，true 时隐藏入口并提示"穿越模式下不可禅让"
-  - [ ] SubTask 17.2: 改为角色定位匹配的身份变更路径：minister→"辞职/告老"，prince→"袭爵/夺嫡"，general→"卸甲/起复"等
-  - [ ] SubTask 17.3: 调用 `TM.Transmigration.triggerRoleChange(kind, payload)` 触发身份变更
+- [ ] Task 24: 退位/禅让系统穿越模式禁用
+  - [ ] SubTask 24.1: 在 `tm-player-core.js:68 openAbdication` 入口判定 `transmigrationMode`，true 时隐藏入口并提示"穿越模式下不可禅让"
+  - [ ] SubTask 24.2: 改为角色定位匹配的身份变更路径：minister→"辞职/告老"，prince→"袭爵/夺嫡"，general→"卸甲/起复"等
+  - [ ] SubTask 24.3: 调用 `TM.Transmigration.triggerRoleChange(kind, payload)` 触发身份变更
   - 验证：跑 `node web/scripts/smoke-transmigration-role-change.js`（新增 smoke）
 
 ## Phase 6 · 回合流程编排
 
-- [ ] Task 18: 穿越模式回合流程接入
-  - [ ] SubTask 18.1: 在 `tm-endturn-pipeline-steps.js` 新增 `_endturnStep_sovereignAI(root, ctx)` 步骤
-  - [ ] SubTask 18.2: 步骤位置：玩家上奏收集之后、派系 NPC 决策之前
-  - [ ] SubTask 18.3: 调用 `TM.SovereignAI.runTurn(root, ctx)`，将其输出转化为回合变更
-  - [ ] SubTask 18.4: 在 `tm-endturn-prep.js:341 _endTurn_collectInput` 按 playerRole 分支收集（诏令 vs 上奏）
-  - [ ] SubTask 18.5: `confirmEndTurn`（tm-office-panel.js:1600）按 playerRole 切换文案：皇帝模式"诏令颁行"，穿越模式"上奏呈递"
+- [ ] Task 25: 穿越模式回合流程接入
+  - [ ] SubTask 25.1: 在 `tm-endturn-pipeline-steps.js` 新增 `_endturnStep_sovereignAI(root, ctx)` 步骤
+  - [ ] SubTask 25.2: 步骤位置：玩家上奏收集之后、派系 NPC 决策之前
+  - [ ] SubTask 25.3: 调用 `TM.SovereignAI.runTurn(root, ctx)`，将其输出转化为回合变更
+  - [ ] SubTask 25.4: 在 `tm-endturn-prep.js:341 _endTurn_collectInput` 按 playerRole 分支收集（诏令 vs 上奏）
+  - [ ] SubTask 25.5: `confirmEndTurn`（tm-office-panel.js:1600）按 playerRole 切换文案：皇帝模式"诏令颁行"，穿越模式"上奏呈递"
   - 验证：跑 `node web/scripts/smoke-transmigration-endturn.js`（新增 smoke）
 
-- [ ] Task 19: 起居注/编年标注决策来源
-  - [ ] SubTask 19.1: 在 `tm-shiji-qiju-ui.js` 渲染条目时读 `entry.source` 字段（'player' / 'sovereign-ai' / 'npc'）
-  - [ ] SubTask 19.2: 不同来源用不同图标/颜色标识，便于玩家回看
-  - [ ] SubTask 19.3: 编年史（`tm-chronicle-system.js`）月稿自动区分"君主自动决策"与"玩家行动"两段
+- [ ] Task 26: 起居注/编年标注决策来源
+  - [ ] SubTask 26.1: 在 `tm-shiji-qiju-ui.js` 渲染条目时读 `entry.source` 字段（'player' / 'sovereign-ai' / 'npc'）
+  - [ ] SubTask 26.2: 不同来源用不同图标/颜色标识，便于玩家回看
+  - [ ] SubTask 26.3: 编年史（`tm-chronicle-system.js`）月稿自动区分"君主自动决策"与"玩家行动"两段
   - 验证：跑 `node web/scripts/smoke-transmigration-chronicle.js`（新增 smoke）
 
 ## Phase 7 · 集成与回归
 
-- [ ] Task 20: 端到端穿越模式 smoke
-  - [ ] SubTask 20.1: 新增 `web/scripts/smoke-transmigration-e2e.js`：从主界面点穿越→选剧本→选角色→进入游戏→结束回合→皇帝 AI 决策→玩家上奏批答→起居注回看
-  - [ ] SubTask 20.2: 断言：`P.playerInfo.transmigrationMode === true`，皇帝 AI 至少生成 1 个决策，玩家上奏得到批答
+- [ ] Task 27: 端到端穿越模式 smoke
+  - [ ] SubTask 27.1: 新增 `web/scripts/smoke-transmigration-e2e.js`：从主界面点穿越→选剧本→选角色→进入游戏→结束回合→皇帝 AI 决策→玩家上奏批答→起居注回看→人物互动→跑商→科技研发→科举→年终考核→反叛筹备
+  - [ ] SubTask 27.2: 断言：`P.playerInfo.transmigrationMode === true`，皇帝 AI 至少生成 1 个决策，玩家上奏得到批答，7 大玩家系统至少各跑通 1 个核心动作
   - 验证：`node web/scripts/smoke-transmigration-e2e.js` 全过
 
-- [ ] Task 21: 皇帝模式回归
-  - [ ] SubTask 21.1: 跑 `node web/scripts/smoke-chaoyi-v3.js` / `smoke-edict-typed-incidence.js` / `smoke-office-dup-seat-heal.js` 等已有 smoke
-  - [ ] SubTask 21.2: 跑 `node web/scripts/verify-all.js` 全套
-  - [ ] SubTask 21.3: 修复任何因字面量动态化引入的回归
+- [ ] Task 28: 皇帝模式回归
+  - [ ] SubTask 28.1: 跑 `node web/scripts/smoke-chaoyi-v3.js` / `smoke-edict-typed-incidence.js` / `smoke-office-dup-seat-heal.js` 等已有 smoke
+  - [ ] SubTask 28.2: 跑 `node web/scripts/verify-all.js` 全套
+  - [ ] SubTask 28.3: 修复任何因字面量动态化引入的回归
   - 验证：`verify-all` 全绿
 
-- [ ] Task 22: 架构守卫
-  - [ ] SubTask 22.1: 跑 `node scripts/lint-arch-all.js`，须 8/8 绿
-  - [ ] SubTask 22.2: 新增 GM/P 直写需登记 owners 或走 mutator/ledger
-  - [ ] SubTask 22.3: `tm-transmigration.js` / `tm-sovereign-ai.js` 加入 `arch-baselines/*.json`
+- [ ] Task 29: 架构守卫
+  - [ ] SubTask 29.1: 跑 `node scripts/lint-arch-all.js`，须 8/8 绿
+  - [ ] SubTask 29.2: 新增 GM/P 直写需登记 owners 或走 mutator/ledger
+  - [ ] SubTask 29.3: 新增 9 个文件（tm-transmigration / tm-sovereign-ai / tm-player-interaction / tm-player-economy / tm-player-trade / tm-player-tech / tm-player-keju / tm-player-annual-review / tm-player-rebellion）加入 `arch-baselines/*.json`
   - 验证：lint 全绿
 
-- [ ] Task 23: 文档与命名
-  - [ ] SubTask 23.1: 在 `web/INDEX.md` 注册 `tm-transmigration.js` / `tm-sovereign-ai.js`
-  - [ ] SubTask 23.2: 在 `web/ARCHITECTURE.md` 增补「穿越模式架构」一节
-  - [ ] SubTask 23.3: 跨朝代铁律审计：grep 明清专名，确认未硬编入引擎层
+- [ ] Task 30: 文档与命名
+  - [ ] SubTask 30.1: 在 `web/INDEX.md` 注册 9 个新文件
+  - [ ] SubTask 30.2: 在 `web/ARCHITECTURE.md` 增补「穿越模式架构」一节，含 7 大玩家系统数据流图
+  - [ ] SubTask 30.3: 跨朝代铁律审计：grep 明清专名（内阁/票拟/司礼监/东厂/八股等），确认未硬编入引擎层
   - 验证：grep 检查 + 文档完整性
 
 # Task Dependencies
@@ -188,15 +280,24 @@
 - Task 6 独立（皇帝 AI 引擎）
 - Task 7 / Task 8 / Task 9 / Task 10 依赖 Task 6（并行）
 - Task 11 / Task 12 / Task 13 / Task 14 依赖 Task 5（并行）
-- Task 15 / Task 16 / Task 17 依赖 Task 5（并行）
-- Task 18 依赖 Task 6 + Task 11
-- Task 19 依赖 Task 18
-- Task 20 依赖 Task 18 + Task 19
-- Task 21 / Task 22 / Task 23 依赖 Task 20（并行）
+- Task 15（人物互动）依赖 Task 5 —— 后续多个系统依赖此系统
+- Task 16（赚钱/私产）依赖 Task 5
+- Task 17（跑商）依赖 Task 16（商队需银钱账本）
+- Task 18（科技）依赖 Task 15（招揽匠人）+ Task 16（研发投入）
+- Task 19（玩家科举）依赖 Task 5
+- Task 20（年终考核）依赖 Task 5
+- Task 21（反叛）依赖 Task 15（笼络军权）+ Task 16（积累粮草）+ Task 6（皇帝 AI 平叛）
+- Task 22 / Task 23 / Task 24 依赖 Task 5（并行）
+- Task 25 依赖 Task 6 + Task 11
+- Task 26 依赖 Task 25
+- Task 27 依赖 Task 25 + Task 26 + Phase 4.5 全部（Task 15-21）
+- Task 28 / Task 29 / Task 30 依赖 Task 27（并行）
 
 # 并行机会
 
 - Phase 3 内部：Task 7/8/9/10 可并行（皇帝 AI 四个动作面）
 - Phase 4 内部：Task 11/12/13/14 可并行（按 playerRole 分支的面板）
-- Phase 5 内部：Task 15/16/17 可并行
-- Phase 7 内部：Task 21/22/23 可并行
+- Phase 4.5 内部：Task 15/16/19/20 可并行（人物互动/赚钱/科举/考核，无强依赖）
+- Phase 4.5 串行链：Task 15→17（跑商依赖私产）→18（科技依赖互动+私产）→21（反叛依赖互动+私产+AI）
+- Phase 5 内部：Task 22/23/24 可并行
+- Phase 7 内部：Task 28/29/30 可并行

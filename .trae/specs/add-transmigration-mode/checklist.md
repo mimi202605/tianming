@@ -86,6 +86,98 @@
 - [ ] 角色定位匹配的身份变更路径：minister→辞职/告老，prince→袭爵/夺嫡，general→卸甲/起复等
 - [ ] 跑 `smoke-transmigration-role-change.js` 全过
 
+## 玩家人物互动系统
+
+- [ ] 新增 `web/tm-player-interaction.js`，`TM.PlayerInteraction.interact(npcName, kind, payload)` 可调用
+- [ ] 互动消耗精力（`_spendEnergy`）+ 推进时间
+- [ ] LLM 生成互动场景描述（基于双方性格 + 关系 + 当前局势）
+- [ ] NPC 对玩家的 5 维关系值更新（师徒/亲友/政敌/同僚/仇敌）
+- [ ] 关键互动写入玩家记忆系统
+- [ ] 联姻动作：双方 `family` 字段建立姻亲关系
+- [ ] 事件钩子：与禁军将领关系达"死党"+ 选择"密谋" → 提示可发动政变
+- [ ] 御案新增"人物互动"面板
+- [ ] 跑 `smoke-player-interaction.js` 全过
+
+## 玩家赚钱与私产系统
+
+- [ ] 新增 `web/tm-player-economy.js`，玩家个人银钱账本（cash/properties/investments/grayIncome）
+- [ ] 每月初自动领取官俸（复用 `tm-char-economy-engine.js`）
+- [ ] "贪墨/受贿"动作：银钱+，corruption 累计，触发吏治腐败风险
+- [ ] "购置产业"：酒楼/当铺/作坊三类，月经营性收入
+- [ ] "放贷收息"超阈值触发民怨
+- [ ] "囤货居奇"触发市舶司调查风险
+- [ ] "被抄家"路径：罢黜/反叛失败/贪腐被查 → 私产充公
+- [ ] "派系勒索"：派系索要保护费
+- [ ] 御案新增"私产"面板
+- [ ] 跑 `smoke-player-economy.js` 全过
+
+## 玩家跑商系统
+
+- [ ] 新增 `web/tm-player-trade.js`，商队数据结构完整（route/goods/guards/carts/permit/status）
+- [ ] "组建商队"消耗银钱 + 配置护卫/车马/通关文牒
+- [ ] 通关文牒许可难度关联官场关系
+- [ ] "派遣贸易"根据 `tm-economy-engine.js` 区域价格矩阵计算预期利润
+- [ ] 路线风险事件：山贼劫掠/官府盘剥/气候灾害/势力索要过路费
+- [ ] 商队到达后结算实际盈亏，写入玩家银钱账本
+- [ ] 大宗贸易（超阈值）调用 `tm-region-magnate.js` 影响区域经济
+- [ ] 跨朝代通用：剧本数据 hook 路线，引擎不预置朝代特定路线
+- [ ] 跑商积累商誉，开启新商业网络与 NPC 关系
+- [ ] 御案新增"商队"面板
+- [ ] 跑 `smoke-player-trade.js` 全过
+
+## 玩家科技研发系统
+
+- [ ] 新增 `web/tm-player-tech.js`，玩家科技账本（currentResearch/completed/discoveries）
+- [ ] "启动研发"扣银钱，按 `学识 + 投入 + 基础 + 时代限制` 计算进度
+- [ ] "招揽匠人加速"关联人物互动，进度加成
+- [ ] "研发完成"解锁对应增益（农业增产/军事强军/工艺增收/医药减疫）
+- [ ] "上奏推广"上奏到皇帝 AI，采纳后全国获得增益
+- [ ] "私藏自用"增益仅作用于玩家本人/封国
+- [ ] 跨朝代铁律：引擎只提供"研发投入→进度→解锁增益"通用管线，科技列表归剧本数据
+- [ ] 御案新增"科技"面板
+- [ ] 跑 `smoke-player-tech.js` 全过
+
+## 玩家参加科举考试
+
+- [ ] 新增 `web/tm-player-keju.js`，玩家考生状态完整
+- [ ] "报名应试"对商贾/隐逸/宗室旁支/低级官吏子弟开放
+- [ ] 接入 `tm-keju-runtime.js` 全流程
+- [ ] "作答考题"通过 `tm-keju-question-ui.js`，LLM 评卷
+- [ ] "拜师求学"关联人物互动 + `tm-keju-school-network.js`
+- [ ] "考中进士"身份变更 + playerRole 升级为 minister + 自动授予官职
+- [ ] "卷入科场弊案"沿用 `tm-keju-scandal.js`，风险与收益并存
+- [ ] 御案新增"科举"面板（穿越模式与皇帝模式区分）
+- [ ] 跑 `smoke-player-keju.js` 全过
+
+## 玩家官员年终考核
+
+- [ ] 新增 `web/tm-player-annual-review.js`
+- [ ] 考核指标完整：履职/政务/廉洁/人际/上级评价/民众口碑
+- [ ] 年末触发考核，综合玩家 1 年行为生成指标
+- [ ] LLM 生成考核评语
+- [ ] 结果分九等（上上至下下）
+- [ ] 按等级触发后果：升迁/贬谪/加俸/罚俸/赐物/记过/罢黜
+- [ ] "主动运作考核"：贿赂考官/托人情（关联人物互动），有被发现风险
+- [ ] 考核结果写入编年史
+- [ ] 玩家御案显示考核通知
+- [ ] 跑 `smoke-player-annual-review.js` 全过
+
+## 玩家反叛系统
+
+- [ ] 新增 `web/tm-player-rebellion.js`
+- [ ] 反叛筹备状态完整（军权/粮草/势力联络/舆论）
+- [ ] "密谋反叛"对 prince/regent/general/minister/merchant 开放
+- [ ] 筹备动作：笼络军权（关联人物互动）/积累粮草（关联私产）/联络势力/制造舆论
+- [ ] 筹备进度可视化
+- [ ] "举事"按 playerRole 分支反叛类型（宗室夺嫡/藩王起兵/权臣篡位/边将叛乱/农民起义）
+- [ ] 触发交战（沿用 `tm-battle-*.js`）
+- [ ] 皇帝 AI 发动平叛
+- [ ] 反叛失败：被诛/逃亡/家属流放/私产抄没/编年史污点
+- [ ] 反叛成功：playerRole 转 emperor，transmigrationMode 转 false，模式切回皇帝模式
+- [ ] 编年史写入"新朝建立"事件
+- [ ] 沿用 `tm-feudal.js` 篡位 + `tm-class-radical-revolt.js` 农民起义机制
+- [ ] 跑 `smoke-player-rebellion.js` 全过
+
 ## 回合流程编排
 
 - [ ] `tm-endturn-pipeline-steps.js` 新增 `_endturnStep_sovereignAI(root, ctx)` 步骤
@@ -99,22 +191,35 @@
 
 ## 集成与回归
 
-- [ ] 跑 `smoke-transmigration-e2e.js` 全过（端到端穿越模式）
+- [ ] 跑 `smoke-transmigration-e2e.js` 全过（端到端穿越模式，含 7 大玩家系统核心动作）
 - [ ] 跑 `verify-all.js` 全套绿（皇帝模式无回归）
 - [ ] 跑 `lint-arch-all.js` 8/8 绿
 - [ ] 新增 GM/P 直写已登记 owners 或走 mutator/ledger
-- [ ] `tm-transmigration.js` / `tm-sovereign-ai.js` 加入 `arch-baselines/*.json`
-- [ ] `web/INDEX.md` 注册新文件
-- [ ] `web/ARCHITECTURE.md` 增补「穿越模式架构」一节
+- [ ] 9 个新文件加入 `arch-baselines/*.json`：
+  - [ ] `tm-transmigration.js`
+  - [ ] `tm-sovereign-ai.js`
+  - [ ] `tm-player-interaction.js`
+  - [ ] `tm-player-economy.js`
+  - [ ] `tm-player-trade.js`
+  - [ ] `tm-player-tech.js`
+  - [ ] `tm-player-keju.js`
+  - [ ] `tm-player-annual-review.js`
+  - [ ] `tm-player-rebellion.js`
+- [ ] `web/INDEX.md` 注册 9 个新文件
+- [ ] `web/ARCHITECTURE.md` 增补「穿越模式架构」一节，含 7 大玩家系统数据流图
 
 ## 跨朝代铁律审计
 
 - [ ] grep 引擎层（`tm-*.js`）无新增明清专名（内阁/票拟/司礼监/东厂/八股等）
 - [ ] 角色官衔属剧本数据，可保留专名
 - [ ] UI 固定文案朝代中立
+- [ ] 跑商路线 hook 归剧本数据，引擎不预置朝代特定路线
+- [ ] 科技列表归剧本数据，引擎不预置朝代特定科技
 
 ## 命门护栏
 
 - [ ] 皇帝 AI 行为硬核自洽，复用 LLM 决策管线护栏（schema 验证 / 变更白名单 / 阻力模型）
 - [ ] 玩家角色行为产生与皇帝模式同等强度的 AI 回应（NPC 反应 / 势力变化 / 编年史）
 - [ ] 不出现"AI 敷衍 / 前后矛盾 / 穿越出戏"的塌方表现
+- [ ] 7 大玩家系统彼此关联顺畅（人物互动→反叛筹备、私产→跑商→科技研发投入、科举→年终考核等）
+- [ ] 反叛成功转皇帝模式后，原皇帝模式所有功能（诏令/朝议/官制等）正常运作
