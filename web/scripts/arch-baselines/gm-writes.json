@@ -1198,7 +1198,7 @@
       }
     },
     "tm-patches-start.js": {
-      "gm": 93,
+      "gm": 94,
       "p": 93,
       "roots": {
         "p:<dynamic>": 4,
@@ -1290,6 +1290,7 @@
         "gm:civicTree": 1,
         "gm:events": 1,
         "gm:rigidHistoryEvents": 1,
+        "gm:histAnchors": 1,
         "gm:_tianjiEnabled": 1,
         "gm:_junqingBriefEnabled": 1,
         "gm:_xinjunObserveEnabled": 1,

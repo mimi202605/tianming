@@ -1392,6 +1392,10 @@ function doActualStart(sid, requestToken){
   // GM 没有对应数组→处理器/AI 被迫读 P 库→玩绍宋时会看到/触发天启的「魏忠贤自缢」等剧本事件。此处给当前局
   // 建一份只含本剧本的干净副本·让 gameplay 只读 GM(单剧本世界)·不再伸手进多剧本的 P 库。
   GM.rigidHistoryEvents=(P.rigidHistoryEvents||[]).filter(function(e){return e&&e.sid===sid;}).map(function(e){return deepClone(e);});
+  // 史实锚点(认知背景·非强制剧情)：本剧本关键人物的史实原线结局(sc.histAnchors)装入 GM.histAnchors 单剧本干净副本·
+  // 只作 AI 分歧账(_buildTemporalConstraint)的背景素养——读锚点·不杀人。与刚性史事(强制剧情死·已从官方剧本删)分家：
+  // 平行历史下「强制剧情死·认知背景活」。工坊老剧本/无此键的剧本→空数组·全程无害。
+  GM.histAnchors=(sc && Array.isArray(sc.histAnchors)) ? sc.histAnchors.map(function(a){return deepClone(a);}) : [];
   // 天机·改命(穿越/上帝视角剧本)：开局建天机录(预知未来刚性史事)+注入御案时政。gated sc.tianjiEnabled(默认关·绍宋赵玖穿越开)·跨朝代。
   GM._tianjiEnabled = !!(sc && sc.tianjiEnabled);
   if (GM._tianjiEnabled && typeof TMTianji !== 'undefined') { try { TMTianji.build(GM); } catch(_tjE){} }
