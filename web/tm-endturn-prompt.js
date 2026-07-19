@@ -1181,7 +1181,7 @@
               var _sc = c2._scars[c2._scars.length - 1];
               if (_sc) _defMem = String(_sc.event || '').slice(0, 26) + (_sc.emotion ? '[' + _sc.emotion + ']' : '');
             } else if (Array.isArray(c2._memory) && c2._memory.length) {
-              var _mm = c2._memory.slice().sort(function(a, b){ return (b.importance || 0) - (a.importance || 0); })[0];
+              var _mm = ((typeof _tmFilterMemories === 'function') ? _tmFilterMemories(c2._memory, GM) : c2._memory).slice().sort(function(a, b){ return (b.importance || 0) - (a.importance || 0); })[0];
               if (_mm && _mm.event) _defMem = String(_mm.event).slice(0, 26);
             }
           } catch (_dmE) {}

@@ -494,7 +494,7 @@
                         ? _kjpSummarizeDiff(topicData.paradigmDiff)
                         : '');
     if (!topicDigest) return promptBuf;
-    var history = GM.wenduiHistory[ch.name];
+    var history = (typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries(GM.wenduiHistory[ch.name], GM) : GM.wenduiHistory[ch.name];
     var curTurn = (typeof GM !== 'undefined' && GM.turn) || 0;
     var matches = [];
     for (var i = history.length - 1; i >= 0; i--) {
@@ -760,8 +760,8 @@
   // 读两 advisor 的 cedui 最新 entry·LLM 抽 consensus + disagreements + advisorRelations
   async function _kjpLlmMergeAdvisorViews(advisorAName, advisorBName, paradigmDigest) {
     var GM_ = (typeof GM !== 'undefined') ? GM : (typeof window !== 'undefined' ? (window.GM || {}) : {});
-    var histA = ((GM_.wenduiHistory && GM_.wenduiHistory[advisorAName]) || []).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
-    var histB = ((GM_.wenduiHistory && GM_.wenduiHistory[advisorBName]) || []).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
+    var histA = ((typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries((GM_.wenduiHistory && GM_.wenduiHistory[advisorAName]) || [], GM_) : ((GM_.wenduiHistory && GM_.wenduiHistory[advisorAName]) || [])).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
+    var histB = ((typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries((GM_.wenduiHistory && GM_.wenduiHistory[advisorBName]) || [], GM_) : ((GM_.wenduiHistory && GM_.wenduiHistory[advisorBName]) || [])).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
     if (!histA.length || !histB.length) return _kjpMergeViewsFallback(advisorAName, advisorBName, paradigmDigest);
 
     var npcA = (typeof findCharByName === 'function') ? findCharByName(advisorAName) : null;

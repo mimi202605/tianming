@@ -1009,7 +1009,7 @@
     alive.slice(0, 12).forEach(function(c){
       var parts = [];
       if (Array.isArray(c._memory) && c._memory.length) {
-        parts.push('记:' + c._memory.slice(-2).map(function(m){ return _txt(m.event || m, 70); }).join('；'));
+        parts.push('记:' + ((typeof _tmFilterMemories === 'function') ? _tmFilterMemories(c._memory, (typeof global!=='undefined'&&global.GM)||null) : c._memory).slice(-2).map(function(m){ return _txt(m.event || m, 70); }).join('；'));
       }
       if (Array.isArray(c._scars) && c._scars.length) {
         parts.push('伤:' + c._scars.slice(-1).map(function(s){ return _txt(s.event || s, 70); }).join('；'));
