@@ -245,7 +245,8 @@ function _tcAppendDivergence(lines, clauseOnly) {
   }
   if (!rows.length) return;
   if (clauseOnly) {
-    lines.push('★ 本局已偏离史实原线：多名史载此前已故之人本局仍在世；人物存殁一律以本局 GM 游戏态为准，不得据史书卒年补其死亡。');
+    // 计数中立(不列名单·省 token·防干扰结构化 JSON)·「N 名…」对单/复数皆自洽·避免「多名」在单条时失真。
+    lines.push('★ 本局已偏离史实原线：有 ' + rows.length + ' 名史载此前已故之人于本局仍在世；人物存殁一律以本局 GM 游戏态为准，不得据史书卒年补其死亡。');
     return;
   }
   lines.push('【本局与史实的已知分歧（史实锚点·仅背景素养，一切以本局为准）】');
