@@ -18,6 +18,13 @@
 // ============================================================
 
 function openChaoyi(){
+  // 穿越模式：玩家非君主 → 不能主动开朝议（朝议由君主发起）
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  if (_isTrans) {
+    try { if (typeof toast === 'function') toast('朝议由君主发起·臣子不得擅开'); } catch(_) {}
+    return;
+  }
   // 频率计数初始化；具体限制在 _cy_pickMode 按模式判断，御前会议不限。
   if (!GM._chaoyiCount) GM._chaoyiCount = {};
   if (!GM._chaoyiCount[GM.turn]) GM._chaoyiCount[GM.turn] = 0;
@@ -133,12 +140,13 @@ async function _cyInterjectRespond(playerText, opts){
     responders = _shuf(attendees.slice()).slice(0, Math.min(2, attendees.length));
   }
   var yuqian = (opts.kind === 'yuqian');
+  var _sovereignName = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝';
   for(var i = 0; i < responders.length; i++){
     if(!CY.open || CY._abortChaoyi) break;
     var nm = responders[i];
     var ch = (typeof findCharByName === 'function') ? findCharByName(nm) : null;
     var stance = (opts.stances && opts.stances[nm] && opts.stances[nm].current) || '';
-    var p = '皇帝在' + (yuqian ? '御前密议' : '廷议') + '中发话：「' + txt + '」\n';
+    var p = _sovereignName + '在' + (yuqian ? '御前密议' : '廷议') + '中发话：「' + txt + '」\n';
     p += '议题：' + (opts.topic || '') + '\n';
     p += '你扮演' + nm + '（' + ((ch && (ch.officialTitle || ch.title)) || '') + '）' + (stance ? ('，当前立场：' + stance) : '') + '\n';
     p += '性格：' + ((ch && ch.personality) || '') + '，忠诚' + ((ch && ch.loyalty) || 50) + (ch && ch.party ? ('，党：' + ch.party) : '') + '\n';
@@ -183,10 +191,11 @@ function _cy_jishiAdd(kind, topic, speaker, line, meta) {
     var lineStr = String(line == null ? '' : line);
 
     if (!Array.isArray(GM.jishiRecords)) GM.jishiRecords = [];
-    var isEmperor = speaker === '皇帝';
+    var _sovereignName = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝';
+    var isEmperor = speaker === '皇帝' || speaker === _sovereignName;
     GM.jishiRecords.push({
       turn: turn,
-      char: isEmperor ? '皇帝' : (speaker || ''),
+      char: isEmperor ? _sovereignName : (speaker || ''),
       playerSaid: isEmperor ? lineStr : ('【' + modeLbl + '】' + topicStr),
       npcSaid: isEmperor ? '' : lineStr,
       mode: kind || '',
