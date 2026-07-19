@@ -55,9 +55,11 @@
   var RIGHT_ARMY_INITIAL_ROWS = 36;
   var RIGHT_ADMIN_INITIAL_ROWS = 24;
   var RIGHT_OFFICE_INITIAL_NODES = 8;
+  var RIGHT_WENDUI_INITIAL_ROWS = 24;
   var _rightArmyRenderSeq = 0;
   var _rightAdminRenderSeq = 0;
   var _rightOfficeRenderSeq = 0;
+  var _rightWenduiRenderSeq = 0;
 
   // ── late-bound wrappers for orchestration calls (bridge.X / window.X) ─
   function openPanel(slot){ return bridge.openPanel(slot); }
@@ -500,6 +502,30 @@
       '</section>';
   }
 
+  // 问对名单渐进水合(2026-07-19·求见刀复审返工·防洪)：高压局求见/在京/远方名单可达数百人，
+  //   一次性全渲则 DOM 线性膨胀致卡顿(极端局千人≈8000+元素)。与军队/政区名册同范式——先渲一批
+  //   (RIGHT_WENDUI_INITIAL_ROWS)，余量经 setTimeout 水合补全；完整人数由分组标题 count + 「余 N 人」
+  //   提示保留，绝不静默截断(区别于旧 slice(0,N) 丢人)。求见/在京/远方卡片均以稳定 data-id(personKey)标识，
+  //   不涉 index，故水合安全。
+  function rightScheduleWenduiHydration(token, fullHtml){
+    setTimeout(function(){
+      var mount = document.querySelector('[data-wd-list-token="' + token + '"]');
+      if (!mount || String(mount.getAttribute('data-wd-list-token') || '') !== String(token)) return;
+      mount.innerHTML = fullHtml;
+    }, 0);
+  }
+  function rightWenduiHydratedList(cls, items, renderItem){
+    var arr = Array.isArray(items) ? items : [];
+    var token = 'wd-' + (++_rightWenduiRenderSeq);
+    var deferred = arr.length > RIGHT_WENDUI_INITIAL_ROWS;
+    var syncArr = deferred ? arr.slice(0, RIGHT_WENDUI_INITIAL_ROWS) : arr;
+    if (deferred) rightScheduleWenduiHydration(token, arr.map(renderItem).join(''));
+    return '<div class="' + cls + '" data-wd-list-token="' + attr(token) + '">' +
+      syncArr.map(renderItem).join('') +
+      (deferred ? '<div class="tmrp-meta">余 ' + (arr.length - RIGHT_WENDUI_INITIAL_ROWS) + ' 人载入中...</div>' : '') +
+      '</div>';
+  }
+
   function renderRightWenduiPanel(){
     var people = rightIssuePeople();
     var gm = window.GM || {};
@@ -536,7 +562,7 @@
       return rightWenduiPersonCard(p, 'wendui-letter', compactText(loc + travel, 12));
     }).join('') + '</div>' : '';
     var queueBody = pendingAudiences.length ? '<div class="tmrp-wd-list">' + pendingAudiences.map(rightWenduiQueueItem).join('') + '</div>' : '';
-    var seekerBody = seekers.length ? '<div class="tmrp-wd-list">' + seekers.map(rightWenduiRequestItem).join('') + '</div>' : '';
+    var seekerBody = seekers.length ? rightWenduiHydratedList('tmrp-wd-list', seekers, rightWenduiRequestItem) : '';
     return '<div class="tmrp-issue-shell tmrp-wendui">' +
       '<div class="tmrp-summary cols4">' +
         '<div class="tmrp-stat"><b>' + esc(pendingAudiences.length) + '</b><span>候见</span></div>' +
