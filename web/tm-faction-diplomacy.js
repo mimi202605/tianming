@@ -94,7 +94,7 @@
     if (!pend.length) return [];
     var lines = ['  其他势力本回合/近回合向你提出的外交动议·你须在 proposalResponses 中逐条回应(accept/reject/counter·按你自己的目标/宿怨/姿态权衡·非必接受)：'];
     pend.slice(0, MAX_PENDING).forEach(function (p) {
-      lines.push('  · 来自「' + p.from + '」·' + (TYPE_CN[p.type] || p.type) + (p.terms ? '·条款：' + p.terms : '') + (p.rationale ? '·其由：' + p.rationale : '') + '(T' + p.turn + ')');
+      lines.push('  · [id:' + p.id + '] 来自「' + p.from + '」·' + (TYPE_CN[p.type] || p.type) + (p.terms ? '·条款：' + p.terms : '') + (p.rationale ? '·其由：' + p.rationale : '') + '(T' + p.turn + ')·回应时于 proposalResponses 填此 id');
     });
     return lines;
   }
@@ -104,10 +104,19 @@
     if (!fac || !Array.isArray(responses) || !responses.length) return { resolved: 0 };
     var resolved = 0;
     responses.slice(0, MAX_PENDING).forEach(function (r) {
-      if (!r || !r.from || !r.decision) return;
-      var pend = (fac._incomingProposals || []).filter(function (p) { return p.status === 'pending' && _norm(p.from) === _norm(r.from); });
-      if (!pend.length) return;
-      var prop = pend[pend.length - 1]; // 最近一条
+      if (!r || !r.decision) return;
+      var pendAll = (fac._incomingProposals || []).filter(function (p) { return p.status === 'pending'; });
+      if (!pendAll.length) return;
+      // 张冠李戴防护：① 稳定 id 精确匹配 → ② type+from 精确匹配 → ③ 末路仅 from 取最近一条(旧行为)
+      var prop = null;
+      var pid = r.proposalId != null ? r.proposalId : r.id;
+      if (pid != null && String(pid)) { prop = pendAll.filter(function (p) { return String(p.id) === String(pid); })[0] || null; }
+      if (!prop && r.from && r.type) {
+        var rt = _norm(r.type);
+        prop = pendAll.filter(function (p) { return _norm(p.from) === _norm(r.from) && (_norm(p.type) === rt || _norm(TYPE_CN[p.type]) === rt); })[0] || null;
+      }
+      if (!prop && r.from) { var byFrom = pendAll.filter(function (p) { return _norm(p.from) === _norm(r.from); }); prop = byFrom[byFrom.length - 1] || null; }
+      if (!prop) return;
       var proposer = _facByName(prop.from);
       var dec = _norm(r.decision);
       if (dec === 'accept') {
@@ -136,6 +145,25 @@
     return { resolved: resolved };
   }
 
+  // 结盟/互不侵犯/联手落 GM.treaties——与 tm-feudal-warfare._ty_callAlliesToWar 消费面对齐字段(parties/type/mutual_defense/active)·
+  //   此前只写 aiStrategy.alliances(软标签)·战争盟友参战只读真实 treaties → 结盟「无牙」。alliance 置 mutual_defense 使盟友应约参战。
+  function _lodgeTreaty(a, b, type, turn) {
+    try {
+      var G = global.GM; if (!G) return;
+      if (!Array.isArray(G.treaties)) G.treaties = [];   // arch-ok: F2 势力社会结盟落账(GM.treaties 既有子树·战争引擎消费面)
+      var mutual = (type === 'alliance');
+      var typeName = ({ alliance: '同盟', nonaggression: '互不侵犯', joint_action: '共同行动' })[type] || type;
+      var dup = G.treaties.some(function (t) {
+        if (!t || t.active === false || t.type !== type) return false;
+        var parties = Array.isArray(t.parties) ? t.parties.map(function (p) { return (p && p.name) || p; }) : [];
+        return parties.indexOf(a) >= 0 && parties.indexOf(b) >= 0;
+      });
+      if (dup) return;
+      G.treaties.push({ id: 'ftr-' + (turn || _turn()) + '-' + _norm(a).slice(0, 6) + '-' + _norm(b).slice(0, 6), type: type, typeName: typeName, mutual_defense: mutual, parties: [{ name: a }, { name: b }], startTurn: (turn || _turn()), active: true, _source: 'faction-diplomacy' });   // arch-ok: F2 结盟落 GM.treaties(战争引擎盟友参战消费面)
+      if (G.treaties.length > 80) G.treaties = G.treaties.slice(-80);   // arch-ok: F2 结盟落账截断(GM.treaties 既有子树·战争引擎消费面)
+    } catch (e) {}
+  }
+
   function _resolveAccept(proposer, target, prop) {
     if (!proposer || !target) return;
     var ps = _strat(proposer), ts = _strat(target);
@@ -144,6 +172,7 @@
       // 结盟→消解彼此宿怨
       ps.grudges = ps.grudges.filter(function (g) { return _norm(g) !== _norm(target.name); });
       ts.grudges = ts.grudges.filter(function (g) { return _norm(g) !== _norm(proposer.name); });
+      _lodgeTreaty(proposer.name, target.name, prop.type, prop.turn);   // B3·落 GM.treaties·让战争盟友参战真读到
     } else if (prop.type === 'peace') {
       // 媾和：消解宿怨(不必结盟)
       ps.grudges = ps.grudges.filter(function (g) { return _norm(g) !== _norm(target.name); });

@@ -1640,12 +1640,12 @@
     if (global.P && (typeof agentFlagOn==='function' ? agentFlagOn('factionAgentEnabled') : (P.conf && P.conf.factionAgentEnabled))) {
       user += ',\n  "posture": "本势力当前战略姿态(2-6字·如 扩张/守成/隐忍/结盟/孤立/复仇/观望/决战/称霸)·应随局势演进·若较上回合转变须在 rationale 说明因由"';
       user += ',\n  "proposals": [ {"toFaction":"<目标势力名·可含玩家方>","type":"alliance|nonaggression|deal|joint_action|ultimatum|peace","terms":"<条款·40字>","rationale":"<为何向其提此议·30字>"} ]·0-3 条·仅当确有外交意图主动向他派(或玩家)提议·不必每回合都提';
-      user += ',\n  "proposalResponses": [ {"from":"<INCOMING_PROPOSALS 中提议来源势力名>","decision":"accept|reject|counter","reason":"<按你自己目标/宿怨/姿态权衡·30字>","counterTerms":"<若 counter 才填·还价条款·40字>"} ]·逐条回应 INCOMING_PROPOSALS 段中收到的提议·无收到则空数组';
+      user += ',\n  "proposalResponses": [ {"proposalId":"<INCOMING_PROPOSALS 段中该提议的 id·精确回应防同回合多提议错配>","from":"<提议来源势力名>","type":"<提议类型>","decision":"accept|reject|counter","reason":"<按你自己目标/宿怨/姿态权衡·30字>","counterTerms":"<若 counter 才填·还价条款·40字>"} ]·逐条回应 INCOMING_PROPOSALS 段中收到的提议(务必填其 id)·无收到则空数组';
       user += ',\n  "builds": [ {"territory":"<本派地块名·须 BUILD_OPPORTUNITIES 或 OWN_ADMIN_HIERARCHY 中真实地块>","name":"<工役名·如 镇边堡/府学/屯田所>","category":"military|economic|cultural|administrative","feasibility":"合理|勉强","costActual":<两>,"timeActual":<回合>,"effectsStructured":{"abs":{"defenseBonus":1}},"judgedEffects":"<效用>","reason":"<为何此地建此>"} ]·0-2 条·仅当本派某地确有营建之需(BUILD_OPPORTUNITIES 所列·边警高筑防/官缺重兴学/田邑垦田)·效果只许白名单字段(defenseBonus/officialSupply/economyBase.*/fortLevel 等)·勿每回合都建';   // S5·NPC 自主营建
     }
     user += '\n}\n';
-    user += '\n动作字段速查 (10 种 type·完整 required/optional 见 ACTION_CONTRACT 段):';
-    user += '\n  type ∈ {memorial|edict|court_alignment|office_change|fiscal_policy|military_order|diplomacy|province_policy|spy_or_intrigue|rebellion_policy}';
+    user += '\n动作字段速查 (' + ((global.GM && global.GM._factionLivingWorld === true) ? '基础 type·完整 required/optional 及总闸开启时可用的 declare_war/join_war 见 ACTION_CONTRACT 段' : '10 种 type·完整 required/optional 见 ACTION_CONTRACT 段') + '):';
+    user += '\n  type ∈ {memorial|edict|court_alignment|office_change|fiscal_policy|military_order|diplomacy|province_policy|spy_or_intrigue|rebellion_policy' + ((global.GM && global.GM._factionLivingWorld === true) ? '|declare_war|join_war' : '') + '}';
     user += '\n  memorial         {from, type:"军务|政务|民生|经济|人事|密奏", content(60-120 字古文), rulerDecision:"approved|rejected|annotated|referred", ruling(10-30 字), loyaltyDelta:-5至5}';
     user += '\n  edict            {type:"催征|减俸|补饷|整军|安抚|罢党争|怀柔|赏赐|巡抚|经略", content(60-120 字古文), trigger, treasuryDelta:-500000至500000, loyaltyDeltas:{court,general,clan}:-15至15}';
     user += '\n  court_alignment  {type:"cooperate|attack|compromise|infight", summary(20-50 字), partyImbalanceDelta:-0.2至0.2, loyaltyDeltaByParty:{partyName:-5至5}}';

@@ -293,6 +293,135 @@ function eventDiplomacyKindTest() {
   assert(iss.length === 1 && iss[0]._flwKind === 'betrayal' && iss[0].title.indexOf('交恶') >= 0, 'ON: big negative diplomacy emits a 背刺/交恶 world event');
 }
 
+// ═══════════ Codex 返工·八阻断红绿 ═══════════
+// B1·契约不截断：ON 时 maxChars=1800 仍完整含 declare_war/join_war 的字段行(旧=尾部被截) + enum 12 类
+function b1ContractNotTruncatedTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine, fld = ctx.TM.FactionNpcLlmDecision;
+  const c = eng.formatActionContractForPrompt({ maxChars: 1800 });
+  assert(c.indexOf('declare_war') >= 0 && c.indexOf('join_war') >= 0, 'B1: contract at maxChars=1800 still lists BOTH new types (not truncated off the tail)');
+  assert(c.indexOf('CasusBelliSystem') >= 0, 'B1: the declare_war full field line (mutates=CasusBelliSystem) survives, not just a mention');
+  const p = fld._buildPrompt(ctx.GM.facs[0]);
+  assert(p.user.indexOf('|declare_war|join_war') >= 0, 'B1: static enum becomes 12-class when living world is ON');
+  assert(p.user.indexOf('10 种 type') < 0, 'B1: the false "10 种" claim is gone when ON');
+}
+
+// B8·OFF 契约绝对过滤：getActionContract() 公开 API 在 OFF 不列两新类型；OFF enum 无 declare_war
+function b8OffContractFilterTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx);   // OFF
+  const eng = ctx.TM.FactionActionEngine, fld = ctx.TM.FactionNpcLlmDecision;
+  const c = eng.getActionContract();
+  assert(!c.declare_war && !c.join_war, 'B8: getActionContract() must NOT expose living-world types when OFF');
+  const p = fld._buildPrompt(ctx.GM.facs[0]);
+  assert(p.user.indexOf('declare_war') < 0 && p.user.indexOf('10 种 type') >= 0, 'B8: OFF static schema stays 10-class F1 text, no declare_war leak');
+  ctx.GM._factionLivingWorld = true;
+  assert(!!eng.getActionContract().declare_war, 'B8: ON getActionContract() DOES expose declare_war (control)');
+}
+
+// B2·响应按 id 精确匹配：同回合 A 发 alliance+joint_action，B 接受 alliance/拒绝 joint_action 不错配
+function b2ResponseIdMatchTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const dip = ctx.TM.FactionDiplomacy;
+  const B = ctx.GM.facs[1];   // 乙势力
+  dip.recordProposals('甲势力', [
+    { toFaction: '乙势力', type: 'alliance', terms: '共御外敌' },
+    { toFaction: '乙势力', type: 'joint_action', terms: '联攻丙' }
+  ], 5);
+  const inc = B._incomingProposals;
+  assert(inc && inc.length === 2, 'B2 setup: two proposals from 甲 recorded on 乙');
+  const idAlliance = inc.find(function(x){ return x.type === 'alliance'; }).id;
+  const idJoint = inc.find(function(x){ return x.type === 'joint_action'; }).id;
+  dip.applyResponses(B, [
+    { proposalId: idAlliance, decision: 'accept' },
+    { proposalId: idJoint, decision: 'reject' }
+  ], 5);
+  const allianceProp = (B._incomingProposals || []).find(function(x){ return x.id === idAlliance; });
+  const jointProp = (B._incomingProposals || []).find(function(x){ return x.id === idJoint; });
+  assert(allianceProp && allianceProp.status === 'accepted', 'B2: alliance accepted by id (not swapped)');
+  assert(jointProp && jointProp.status === 'rejected', 'B2: joint_action rejected by id (not swapped)');
+}
+
+// B3·结盟落 GM.treaties(有牙)：accept alliance → treaty(mutual_defense,parties) 落账·战争引擎可读
+function b3AllianceTreatyTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const dip = ctx.TM.FactionDiplomacy;
+  const B = ctx.GM.facs[1];
+  dip.recordProposals('甲势力', [{ toFaction: '乙势力', type: 'alliance', terms: '同盟' }], 5);
+  const id = B._incomingProposals[0].id;
+  dip.applyResponses(B, [{ proposalId: id, decision: 'accept' }], 5);
+  const tr = (ctx.GM.treaties || []).find(function(t){
+    var parties = Array.isArray(t.parties) ? t.parties.map(function(p){ return (p && p.name) || p; }) : [];
+    return t.type === 'alliance' && parties.indexOf('甲势力') >= 0 && parties.indexOf('乙势力') >= 0;
+  });
+  assert(tr, 'B3: accepted alliance lodges a real GM.treaties entry (not just aiStrategy.alliances)');
+  assert(tr.mutual_defense === true && tr.active === true, 'B3: alliance treaty carries mutual_defense + active (feudal-warfare _ty_callAlliesToWar consumes these)');
+}
+
+// B4·目标契约不撞车：goal-stack 激活时 s.goals 纯结构对象·字符串标签落 recentActionLabels
+function b4GoalStructureTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine, gs = ctx.TM.FactionGoalStack;
+  const facA = ctx.GM.facs[0];
+  gs.addGoal(facA, { desc: '结构化目标', horizon: 'short' }, 5);
+  eng.applyDecision(facA, mkDecision([{ type: 'diplomacy', targetFaction: '乙势力', relationDelta: -20, reason: '边衅' }]), { turn: 5 });
+  const goals = facA.aiStrategy.goals || [];
+  assert(goals.length >= 1 && goals.every(function(g){ return g && typeof g === 'object'; }), 'B4: aiStrategy.goals holds ONLY structured objects (no string labels mixed in)');
+  assert(Array.isArray(facA.aiStrategy.recentActionLabels) && facA.aiStrategy.recentActionLabels.some(function(l){ return typeof l === 'string' && l.indexOf('diplomacy') >= 0; }), 'B4: action string labels are redirected to recentActionLabels');
+}
+
+// B5·join_war 语义：新战标 parentWarId 关联原战对象(双边模型取舍)
+function b5JoinWarParentTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  ctx.GM.activeWars.push({ id: 'origW', attacker: '玩家朝廷', defender: '乙势力', casusBelli: 'border', startTurn: 4 });
+  eng.applyDecision(ctx.GM.facs[0], mkDecision([{ type: 'join_war', targetFaction: '乙势力', casusBelli: 'holy' }]), { turn: 6 });
+  const joined = ctx.GM.activeWars.find(function(w){ return w.attacker === '甲势力' && w.defender === '乙势力'; });
+  assert(joined && joined.parentWarId === 'origW' && joined._joinedWar === true, 'B5: join_war stamps parentWarId of the original war (join semantics, not orphan war)');
+}
+
+// B6·对玩家 casus belli fail-closed：缺失/非法 → 拒(即便关系够恶)·正当 CB → 放行
+function b6PlayerCbFailClosedTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  const facA = ctx.GM.facs[0];
+  ctx.GM.factionRelations = [{ from: '甲势力', to: '玩家朝廷', value: -70 }];   // 关系够恶
+  let sum = eng.applyDecision(facA, mkDecision([{ type: 'declare_war', targetFaction: '玩家朝廷', casusBelli: '莫须有' }]), { turn: 5 });
+  assert(!sum.wars, 'B6: garbage casus belli against player is rejected (fail-closed·not auto-normalized to border)');
+  sum = eng.applyDecision(facA, mkDecision([{ type: 'declare_war', targetFaction: '玩家朝廷' }]), { turn: 6 });
+  assert(!sum.wars, 'B6: MISSING casus belli against player is rejected (fail-closed)');
+  sum = eng.applyDecision(facA, mkDecision([{ type: 'declare_war', targetFaction: '玩家朝廷', casusBelli: 'claim' }]), { turn: 7 });
+  assert(sum.wars === 1, 'B6: explicit legitimate casus belli against player IS allowed');
+  // NPC-vs-NPC 保留宽松：非法 CB 归一 border 仍可开战
+  const ctx2 = buildContext(); installCasusBelli(ctx2); baseGM(ctx2, { livingWorld: true });
+  const s2 = ctx2.TM.FactionActionEngine.applyDecision(ctx2.GM.facs[0], mkDecision([{ type: 'declare_war', targetFaction: '乙势力', casusBelli: '莫须有' }]), { turn: 5 });
+  assert(s2.wars === 1, 'B6: NPC-vs-NPC keeps lenient normalization (garbage → border, still wars)');
+}
+
+// B7·事件跨回合防积压(过期>2回合 + 全局上限) + 结盟标题按 relationType 分词
+function b7EventBoundAndTitleTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  ctx.GM.currentIssues = [];
+  // 跨 6 回合不同势力各发事件 → 总 pending 有界 + 老事件(>2回合)过期
+  for (var t = 20; t <= 25; t++) { ctx.GM.facs.push({ name: 'fac' + t }); eng._emitWorldEvents({ name: 'fac' + t }, [{ kind: 'declare_war', actor: 'fac' + t, target: '乙势力', cb: 'border' }], t); }
+  const pend = ctx.GM.currentIssues.filter(function(x){ return x && x._flw && x.status === 'pending'; });
+  assert(pend.length <= 5, 'B7: cross-turn pending living-world events are globally bounded (<=5), not unbounded');
+  assert(!ctx.GM.currentIssues.some(function(x){ return x && x._flw && x.status === 'pending' && (25 - Number(x.raisedTurn) > 2); }), 'B7: events older than 2 turns are expired (no stale backlog)');
+  // 结盟标题分词：互不侵犯 relationType → 「议互不侵犯」不是「结盟」
+  ctx.GM.currentIssues = [];
+  eng.applyDecision(ctx.GM.facs[0], mkDecision([{ type: 'diplomacy', targetFaction: '乙势力', relationDelta: 55, relationType: '互不侵犯' }]), { turn: 5 });
+  const iss = ctx.GM.currentIssues.filter(function(x){ return x && x._flw && Number(x.raisedTurn) === 5; })[0];
+  assert(iss && iss.title.indexOf('议互不侵犯') >= 0 && iss.title.indexOf('结盟') < 0, 'B7: alliance-family event title splits by relationType (互不侵犯→议互不侵犯, not 结盟)');
+}
+
 function main() {
   offZeroChangeTest();
   offOnDiffTest();
@@ -305,6 +434,14 @@ function main() {
   eventOnDeclareWarTest();
   eventCapDedupTest();
   eventDiplomacyKindTest();
+  b1ContractNotTruncatedTest();
+  b8OffContractFilterTest();
+  b2ResponseIdMatchTest();
+  b3AllianceTreatyTest();
+  b4GoalStructureTest();
+  b5JoinWarParentTest();
+  b6PlayerCbFailClosedTest();
+  b7EventBoundAndTitleTest();
   console.log('[smoke-faction-living-world] all pass · ' + PASS + ' assertions');
 }
 
