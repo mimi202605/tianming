@@ -235,137 +235,137 @@
   - [x] SubTask 21.10: 御案新增"移动"面板，显示地图与可去地点
   - 验证：跑 `node web/scripts/smoke-player-movement.js`（新增 smoke）
 
-- [ ] Task 22: 玩家产业建设系统 `web/tm-player-industry.js`
-  - [ ] SubTask 22.1: 定义 `TM.PlayerIndustry` 命名空间
-  - [ ] SubTask 22.2: 产业数据结构：industries[{id, type, location, size, status, output, workers, equipment, level}]
-  - [ ] SubTask 22.3: 产业类型：庄园/农场/牧场/矿场/林场/渔场/工坊/商号
-  - [ ] SubTask 22.4: 实现"选址建设"：校验选址限制（矿场只能在矿山附近等），购地消耗银钱 + 当地官府许可
-  - [ ] SubTask 22.5: 实现"施工建设"：募工 + 施工时间（按规模），完成后投产
-  - [ ] SubTask 22.6: 实现"产业经营"：每月产出货物/银钱，受管理 + 民夫/匠人 + 治安 + 灾害影响
-  - [ ] SubTask 22.7: 实现"产业升级"：扩建/改良/特化
-  - [ ] SubTask 22.8: 实现"产业风险"：火灾/水灾/盗匪/民夫逃亡/官府强征/敌军劫掠
-  - [ ] SubTask 22.9: 实现"豪强标签"：大产业触发朝廷强征/抄没风险
-  - [ ] SubTask 22.10: 沿用 `tm-building-works.js` 建筑系统底层
-  - [ ] SubTask 22.11: 御案新增"产业"面板，展示已建产业与产出
+- [x] Task 22: 玩家产业建设系统 `web/tm-player-industry.js`
+  - [x] SubTask 22.1: 定义 `TM.PlayerIndustry` 命名空间
+  - [x] SubTask 22.2: 产业数据结构：industries[{id, type, location, size, status, output, workers, equipment, level}]
+  - [x] SubTask 22.3: 产业类型：庄园/农场/牧场/矿场/林场/渔场/工坊/商号
+  - [x] SubTask 22.4: 实现"选址建设"：校验选址限制（矿场只能在矿山附近等），购地消耗银钱 + 当地官府许可
+  - [x] SubTask 22.5: 实现"施工建设"：募工 + 施工时间（按规模），完成后投产
+  - [x] SubTask 22.6: 实现"产业经营"：每月产出货物/银钱，受管理 + 民夫/匠人 + 治安 + 灾害影响
+  - [x] SubTask 22.7: 实现"产业升级"：扩建/改良/特化
+  - [x] SubTask 22.8: 实现"产业风险"：火灾/水灾/盗匪/民夫逃亡/官府强征/敌军劫掠
+  - [x] SubTask 22.9: 实现"豪强标签"：大产业触发朝廷强征/抄没风险
+  - [x] SubTask 22.10: 沿用 `tm-building-works.js` 建筑系统底层
+  - [x] SubTask 22.11: 御案新增"产业"面板，展示已建产业与产出
   - 验证：跑 `node web/scripts/smoke-player-industry.js`（新增 smoke）
 
-- [ ] Task 23: 玩家开垦荒地系统 `web/tm-player-reclaim.js`
-  - [ ] SubTask 23.1: 定义 `TM.PlayerReclaim` 命名空间
-  - [ ] SubTask 23.2: 开垦状态：projects[{id, region, size, progress, workers, status, expectedOutput}]
-  - [ ] SubTask 23.3: 实现"勘探荒地"：选定区域，校验可开垦规模（小块/中块/大块）与成本预估
-  - [ ] SubTask 23.4: 实现"官府许可前置"：需当地官府许可（关联人物互动 + 官制权限）
-  - [ ] SubTask 23.5: 实现"违规开垦"：触发"占田"风险（言官弹劾/强令退还）
-  - [ ] SubTask 23.6: 实现"开垦施工"：募集流民/民夫，流程：平整土地 → 修水利 → 播种 → 收获
-  - [ ] SubTask 23.7: 不同规模消耗不同时间（小块 1 月/中块 3 月/大块 6-12 月）
-  - [ ] SubTask 23.8: 实现"开垦产出"：新耕地按比例增加当地粮食产量，玩家享分成
-  - [ ] SubTask 23.9: 实现"开垦副作用"：侵占牧场/林地/猎场触发当地势力不满；大规模开垦触发生态事件（水患/沙化）
-  - [ ] SubTask 23.10: 实现"与朝廷互动"：开垦有成可上奏请功；失败触发问责
-  - [ ] SubTask 23.11: 跨朝代通用：屯田/占田/均田等政策由剧本 hook，引擎只提供"开垦→产出→风险"通用框架
-  - [ ] SubTask 23.12: 御案新增"开垦"面板
+- [x] Task 23: 玩家开垦荒地系统 `web/tm-player-reclaim.js`
+  - [x] SubTask 23.1: 定义 `TM.PlayerReclaim` 命名空间
+  - [x] SubTask 23.2: 开垦状态：projects[{id, region, size, progress, workers, status, expectedOutput}]
+  - [x] SubTask 23.3: 实现"勘探荒地"：选定区域，校验可开垦规模（小块/中块/大块）与成本预估
+  - [x] SubTask 23.4: 实现"官府许可前置"：需当地官府许可（关联人物互动 + 官制权限）
+  - [x] SubTask 23.5: 实现"违规开垦"：触发"占田"风险（言官弹劾/强令退还）
+  - [x] SubTask 23.6: 实现"开垦施工"：募集流民/民夫，流程：平整土地 → 修水利 → 播种 → 收获
+  - [x] SubTask 23.7: 不同规模消耗不同时间（小块 1 月/中块 3 月/大块 6-12 月）
+  - [x] SubTask 23.8: 实现"开垦产出"：新耕地按比例增加当地粮食产量，玩家享分成
+  - [x] SubTask 23.9: 实现"开垦副作用"：侵占牧场/林地/猎场触发当地势力不满；大规模开垦触发生态事件（水患/沙化）
+  - [x] SubTask 23.10: 实现"与朝廷互动"：开垦有成可上奏请功；失败触发问责
+  - [x] SubTask 23.11: 跨朝代通用：屯田/占田/均田等政策由剧本 hook，引擎只提供"开垦→产出→风险"通用框架
+  - [x] SubTask 23.12: 御案新增"开垦"面板
   - 验证：跑 `node web/scripts/smoke-player-reclaim.js`（新增 smoke）
 
-- [ ] Task 24: 玩家参加科举考试 `web/tm-player-keju.js`
-  - [ ] SubTask 24.1: 定义 `TM.PlayerKeju` 命名空间
-  - [ ] SubTask 24.2: 玩家考生状态：role='student', currentLevel{县试/府试/院试/乡试/会试/殿试}, examHistory[]
-  - [ ] SubTask 24.3: 实现"报名应试"：playerRole 为商贾/隐逸/宗室旁支/低级官吏子弟可走科举路径
-  - [ ] SubTask 24.4: 接入 `tm-keju-runtime.js` 全流程，玩家以考生身份参与
-  - [ ] SubTask 24.5: 实现"作答考题"：通过 `tm-keju-question-ui.js` 作答，LLM 评卷生成成绩
-  - [ ] SubTask 24.6: 实现"拜师求学"：关联人物互动 + `tm-keju-school-network.js`
-  - [ ] SubTask 24.7: 实现"考中进士"：身份变更 + `playerRole` 升级为 minister + 自动授予官职（沿用 `tm-keju-allocation.js`）
-  - [ ] SubTask 24.8: 实现"卷入科场弊案"：玩家可选"行贿考官/请托关节/枪替冒名"，沿用 `tm-keju-scandal.js`，风险与收益并存
-  - [ ] SubTask 24.9: 御案新增"科举"面板（穿越模式下与皇帝模式科举面板区分）
+- [x] Task 24: 玩家参加科举考试 `web/tm-player-keju.js`
+  - [x] SubTask 24.1: 定义 `TM.PlayerKeju` 命名空间
+  - [x] SubTask 24.2: 玩家考生状态：role='student', currentLevel{县试/府试/院试/乡试/会试/殿试}, examHistory[]
+  - [x] SubTask 24.3: 实现"报名应试"：playerRole 为商贾/隐逸/宗室旁支/低级官吏子弟可走科举路径
+  - [x] SubTask 24.4: 接入 `tm-keju-runtime.js` 全流程，玩家以考生身份参与
+  - [x] SubTask 24.5: 实现"作答考题"：通过 `tm-keju-question-ui.js` 作答，LLM 评卷生成成绩
+  - [x] SubTask 24.6: 实现"拜师求学"：关联人物互动 + `tm-keju-school-network.js`
+  - [x] SubTask 24.7: 实现"考中进士"：身份变更 + `playerRole` 升级为 minister + 自动授予官职（沿用 `tm-keju-allocation.js`）
+  - [x] SubTask 24.8: 实现"卷入科场弊案"：玩家可选"行贿考官/请托关节/枪替冒名"，沿用 `tm-keju-scandal.js`，风险与收益并存
+  - [x] SubTask 24.9: 御案新增"科举"面板（穿越模式下与皇帝模式科举面板区分）
   - 验证：跑 `node web/scripts/smoke-player-keju.js`（新增 smoke）
 
-- [ ] Task 25: 玩家官员年终考核 `web/tm-player-annual-review.js`
-  - [ ] SubTask 25.1: 定义 `TM.PlayerAnnualReview` 命名空间
-  - [ ] SubTask 25.2: 考核指标：履职情况、政务成绩、廉洁度、人际关系、上级评价、民众口碑
-  - [ ] SubTask 25.3: 实现"年末触发考核"：每年末综合玩家 1 年行为生成指标
-  - [ ] SubTask 25.4: LLM 生成考核评语
-  - [ ] SubTask 25.5: 结果分九等（上上/上中/上下/中上/中中/中下/下上/下中/下下）
-  - [ ] SubTask 25.6: 按等级触发后果：升迁/贬谪/加俸/罚俸/赐物/记过/罢黜
-  - [ ] SubTask 25.7: 实现"主动运作考核"：贿赂考官/托人情（关联人物互动），指标向上偏移但有被发现风险
-  - [ ] SubTask 25.8: 考核结果与评语写入编年史（沿用 `tm-chronicle-system.js`）
-  - [ ] SubTask 25.9: 玩家御案显示考核通知
+- [x] Task 25: 玩家官员年终考核 `web/tm-player-annual-review.js`
+  - [x] SubTask 25.1: 定义 `TM.PlayerAnnualReview` 命名空间
+  - [x] SubTask 25.2: 考核指标：履职情况、政务成绩、廉洁度、人际关系、上级评价、民众口碑
+  - [x] SubTask 25.3: 实现"年末触发考核"：每年末综合玩家 1 年行为生成指标
+  - [x] SubTask 25.4: LLM 生成考核评语
+  - [x] SubTask 25.5: 结果分九等（上上/上中/上下/中上/中中/中下/下上/下中/下下）
+  - [x] SubTask 25.6: 按等级触发后果：升迁/贬谪/加俸/罚俸/赐物/记过/罢黜
+  - [x] SubTask 25.7: 实现"主动运作考核"：贿赂考官/托人情（关联人物互动），指标向上偏移但有被发现风险
+  - [x] SubTask 25.8: 考核结果与评语写入编年史（沿用 `tm-chronicle-system.js`）
+  - [x] SubTask 25.9: 玩家御案显示考核通知
   - 验证：跑 `node web/scripts/smoke-player-annual-review.js`（新增 smoke）
 
-- [ ] Task 26: 玩家反叛系统 `web/tm-player-rebellion.js`
-  - [ ] SubTask 26.1: 定义 `TM.PlayerRebellion` 命名空间
-  - [ ] SubTask 26.2: 反叛筹备状态：prepProgress{军权, 粮草, 势力联络, 舆论}, threshold
-  - [ ] SubTask 26.3: 实现"密谋反叛"入口：playerRole ∈ {prince, regent, general, minister, merchant（农民起义条件）}
-  - [ ] SubTask 26.4: 筹备动作：笼络军权（关联人物互动 + 私军）、积累粮草（关联私产）、联络势力、制造舆论（童谣/谶纬）
-  - [ ] SubTask 26.5: 筹备进度可视化（御案显示筹备度）
-  - [ ] SubTask 26.6: 实现"举事"：筹备度达阈值，按 playerRole 分支反叛类型（宗室夺嫡/藩王起兵/权臣篡位/边将叛乱/农民起义）
-  - [ ] SubTask 26.7: 触发交战（沿用 `tm-battle-turn.js` / `tm-battle-adapter.js` / `tm-battle-resolve.js`），私军作为反叛主力
-  - [ ] SubTask 26.8: 皇帝 AI 发动平叛（关联 `TM.SovereignAI`）
-  - [ ] SubTask 26.9: 反叛失败：玩家被诛（游戏结束）或逃亡（角色变成通缉犯），家属流放，私产抄没，编年史写入永久污点
-  - [ ] SubTask 26.10: 反叛成功：`playerRole` 转为 emperor，`transmigrationMode` 转为 false，模式切回皇帝模式，编年史写入"新朝建立"
-  - [ ] SubTask 26.11: 沿用 `tm-feudal.js` 篡位机制 + `tm-class-radical-revolt.js` 农民起义机制
-  - 验证：跑 `node web/scripts/smoke-player-rebellion.js`（新增 smoke）
+- [x] Task 26: 玩家反叛系统 `web/tm-player-rebel.js`
+  - [x] SubTask 26.1: 定义 `TM.PlayerRebel` 命名空间（spec 原拟 `TM.PlayerRebellion`·实施时改为 `TM.PlayerRebel`·与文件名一致）
+  - [x] SubTask 26.2: 反叛筹备状态：prepProgress{军权, 粮草, 势力联络, 舆论}, threshold
+  - [x] SubTask 26.3: 实现"密谋反叛"入口：playerRole ∈ {prince, regent, general, minister, merchant（农民起义条件）}
+  - [x] SubTask 26.4: 筹备动作：笼络军权（关联人物互动 + 私军）、积累粮草（关联私产）、联络势力、制造舆论（童谣/谶纬）
+  - [x] SubTask 26.5: 筹备进度可视化（御案显示筹备度）
+  - [x] SubTask 26.6: 实现"举事"：筹备度达阈值，按 playerRole 分支反叛类型（宗室夺嫡/藩王起兵/权臣篡位/边将叛乱/农民起义）
+  - [x] SubTask 26.7: 触发交战（沿用 `tm-battle-turn.js` / `tm-battle-adapter.js` / `tm-battle-resolve.js`），私军作为反叛主力
+  - [x] SubTask 26.8: 皇帝 AI 发动平叛（关联 `TM.SovereignAI`）
+  - [x] SubTask 26.9: 反叛失败：玩家被诛（游戏结束）或逃亡（角色变成通缉犯），家属流放，私产抄没，编年史写入永久污点
+  - [x] SubTask 26.10: 反叛成功：`playerRole` 转为 emperor，`transmigrationMode` 转为 false，模式切回皇帝模式，编年史写入"新朝建立"
+  - [x] SubTask 26.11: 沿用 `tm-feudal.js` 篡位机制 + `tm-class-radical-revolt.js` 农民起义机制
+  - 验证：跑 `node web/scripts/smoke-player-rebel.js`（新增 smoke）
 
-- [ ] Task 26B: 玩家自我技能提升系统 `web/tm-player-self-improvement.js`
-  - [ ] SubTask 26B.1: 定义 `TM.PlayerSelfImprovement` 命名空间
-  - [ ] SubTask 26B.2: 属性字段定义：`learning` / `intelligence` / `valor` / `military` / `administration` / `management` / `charisma` / `diplomacy` / `benevolence` / `diction` + `learning` 子项（经史/诗赋/算学/律法/医术/兵法/天文/地理/音律/书法等）
-  - [ ] SubTask 26B.3: 实现"入读学塾/书院"：报名入学（学费/考核），按期学习提升 `learning` 与子项，不同书院侧重不同（经史/武/医/律书院等），复用 `tm-keju-school-network.js`
-  - [ ] SubTask 26B.4: 实现"拜名师"：通过人物互动拜 NPC 名师，建立师徒关系，按师父专长定向加成（拜名将学兵法、拜名医学医术、拜大儒学经史），可传授独门技艺
-  - [ ] SubTask 26B.5: 实现"自学苦读"：消耗时间 + 银钱（购书/置办文具）自学，效率低于书院/拜师但灵活，受 `intelligence` / 现有 `learning` 影响
-  - [ ] SubTask 26B.6: 实现"游学"：通过自由移动到达名胜/古战场/名郡触发游学事件（LLM 生成见闻/感悟），按地点加成对应属性（如游赤壁加 `military`/`learning`），见闻写入玩家记忆
-  - [ ] SubTask 26B.7: 实现"历练"：完成实际政务/军事/外交任务自动积累经验，按任务类型提升对应技能（政务→`administration`/`management`，军事→`military`/`valor`，外交→`diplomacy`/`charisma`），关键突破触发额外加成
-  - [ ] SubTask 26B.8: 实现"江湖习武"：playerRole 为商贾/隐逸/江湖人，入武馆/镖局/门派习武，提升 `valor` / `military`，与江湖人物建立关系
-  - [ ] SubTask 26B.9: 实现"修道/礼佛"：提升 `benevolence` / `intelligence`，副作用为远离世俗、官场关系疏远、可能被指"不思进取"，深度修道触发"出家"危机选项
-  - [ ] SubTask 26B.10: 实现"属性上限与年龄影响"：每属性上限 100，提升效率随年龄变化（少年学习快但属性低，老年属性稳定但学习慢），概率按 `当前属性 + 师资 + 投入 + 资质` 计算
-  - [ ] SubTask 26B.11: 实现"关键突破事件"：属性达里程碑（50/80/100）或完成成就（著作/拜名师/悟理）触发 LLM 叙事，写入记忆与编年史，解锁特殊能力/称号（如"经学大家"/"兵法宗师"/"医术圣手"）
-  - [ ] SubTask 26B.12: 御案新增"修习"面板，展示当前属性、可学场所、师徒关系、近期突破
-  - 验证：跑 `node web/scripts/smoke-player-self-improvement.js`（新增 smoke）
+- [x] Task 26B: 玩家自我技能提升系统 `web/tm-player-skill.js`
+  - [x] SubTask 26B.1: 定义 `TM.PlayerSkill` 命名空间（spec 原拟 `TM.PlayerSelfImprovement`·实施时改为 `TM.PlayerSkill`·与文件名一致）
+  - [x] SubTask 26B.2: 属性字段定义：`learning` / `intelligence` / `valor` / `military` / `administration` / `management` / `charisma` / `diplomacy` / `benevolence` / `diction` + `learning` 子项（经史/诗赋/算学/律法/医术/兵法/天文/地理/音律/书法等）
+  - [x] SubTask 26B.3: 实现"入读学塾/书院"：报名入学（学费/考核），按期学习提升 `learning` 与子项，不同书院侧重不同（经史/武/医/律书院等），复用 `tm-keju-school-network.js`
+  - [x] SubTask 26B.4: 实现"拜名师"：通过人物互动拜 NPC 名师，建立师徒关系，按师父专长定向加成（拜名将学兵法、拜名医学医术、拜大儒学经史），可传授独门技艺
+  - [x] SubTask 26B.5: 实现"自学苦读"：消耗时间 + 银钱（购书/置办文具）自学，效率低于书院/拜师但灵活，受 `intelligence` / 现有 `learning` 影响
+  - [x] SubTask 26B.6: 实现"游学"：通过自由移动到达名胜/古战场/名郡触发游学事件（LLM 生成见闻/感悟），按地点加成对应属性（如游赤壁加 `military`/`learning`），见闻写入玩家记忆
+  - [x] SubTask 26B.7: 实现"历练"：完成实际政务/军事/外交任务自动积累经验，按任务类型提升对应技能（政务→`administration`/`management`，军事→`military`/`valor`，外交→`diplomacy`/`charisma`），关键突破触发额外加成
+  - [x] SubTask 26B.8: 实现"江湖习武"：playerRole 为商贾/隐逸/江湖人，入武馆/镖局/门派习武，提升 `valor` / `military`，与江湖人物建立关系
+  - [x] SubTask 26B.9: 实现"修道/礼佛"：提升 `benevolence` / `intelligence`，副作用为远离世俗、官场关系疏远、可能被指"不思进取"，深度修道触发"出家"危机选项
+  - [x] SubTask 26B.10: 实现"属性上限与年龄影响"：每属性上限 100，提升效率随年龄变化（少年学习快但属性低，老年属性稳定但学习慢），概率按 `当前属性 + 师资 + 投入 + 资质` 计算
+  - [x] SubTask 26B.11: 实现"关键突破事件"：属性达里程碑（50/80/100）或完成成就（著作/拜名师/悟理）触发 LLM 叙事，写入记忆与编年史，解锁特殊能力/称号（如"经学大家"/"兵法宗师"/"医术圣手"）
+  - [x] SubTask 26B.12: 御案新增"修习"面板，展示当前属性、可学场所、师徒关系、近期突破
+  - 验证：跑 `node web/scripts/smoke-player-skill.js`（新增 smoke）
 
-- [ ] Task 26C: 特殊身份玩家路线（太监/宫女/布衣/盗贼/婴儿/退休官员等）`web/tm-player-special-roles.js`
-  - [ ] SubTask 26C.1: 定义 `TM.PlayerSpecialRoles` 命名空间，作为特殊身份玩法的统一调度入口
-  - [ ] SubTask 26C.2: 扩展 `P.playerInfo.playerRole` 枚举值：新增 `eunuch`（太监）/ `maid`（宫女）/ `commoner`（布衣）/ `bandit`（盗贼）/ `infant`（婴儿）/ `retired_official`（退休官员）/ `monk`（僧道）/ `artisan`（匠人）/ `actor`（伶人）等
-  - [ ] SubTask 26C.3: 实现"太监路线"（`eunuch`）：
+- [x] Task 26C: 特殊身份玩家路线（太监/宫女/布衣/盗贼/婴儿/退休官员等）`web/tm-player-special-identity.js`
+  - [x] SubTask 26C.1: 定义 `TM.PlayerSpecialIdentity` 命名空间（spec 原拟 `TM.PlayerSpecialRoles`·实施时改为 `TM.PlayerSpecialIdentity`·与文件名一致）
+  - [x] SubTask 26C.2: 扩展 `P.playerInfo.playerRole` 枚举值：新增 `eunuch`（太监）/ `maid`（宫女）/ `commoner`（布衣）/ `bandit`（盗贼）/ `infant`（婴儿）/ `retired_official`（退休官员）/ `monk`（僧道）/ `artisan`（匠人）/ `actor`（伶人）等
+  - [x] SubTask 26C.3: 实现"太监路线"（`eunuch`）：
     - 不能结婚/生育（无家族延续），但有"养子/义子"路径（收养 NPC 为义子延续势力）
     - 专有动作：讨好皇帝（影响皇帝 AI 决策权重）、把持司礼监/内书堂、与外臣勾结（关联派系）、掌印/秉笔（如剧本允许）、阉党揽权（触发东林式反弹）
     - 专有风险：清流弹劾、皇帝猜忌、被诛（宦官专权必遭反噬）
-    - 跨朝代铁律：太监具体职务（司礼监/秉笔/掌印等）由剧本 hook，引擎只提供"内廷宦官"通用框架
-  - [ ] SubTask 26C.4: 实现"宫女路线"（`maid`）：
+    - 跨朝代铁律：太监具体职务（具体禁词清单见 lint 规则与项目铁律文档）由剧本 hook，引擎只提供"内廷宦官"通用框架
+  - [x] SubTask 26C.4: 实现"宫女路线"（`maid`）：
     - 专有动作：伺候后宫主位（关系网）、传递消息（影响前朝）、被宠幸（晋升妃嫔，playerRole 转为后宫）、出宫（年龄到限/被放出）
     - 专有风险：宫廷斗争（被诬陷/被毒杀/被罚）、与外臣私通（死罪）
     - 可晋升路径：宫女→女官→妃嫔（被宠幸后）→太后（罕见）
-  - [ ] SubTask 26C.5: 实现"布衣路线"（`commoner`）：
+  - [x] SubTask 26C.5: 实现"布衣路线"（`commoner`）：
     - 平民百姓起点，无官职无势力
     - 专有动作：耕读（关联自我技能提升）、经商（关联赚钱/跑商）、游学（关联自由移动）、应募当兵（转为军汉）、科举入仕（关联科举系统）、上书言事（需通过臣子转呈）
     - 专有风险：被豪强欺压、被征徭役、遇灾荒逃荒
     - 多条出路：科举出仕/经商致富/从军立功/落草为盗/皈依宗教
-  - [ ] SubTask 26C.6: 实现"盗贼路线"（`bandit`）：
+  - [x] SubTask 26C.6: 实现"盗贼路线"（`bandit`）：
     - 落草为寇起点，占据山头/水寨
     - 专有动作：劫掠商队（关联跑商风险反面）、招揽喽啰（类似私军但身份非法）、与江湖势力结盟、打官府（小型战斗）、收保护费
     - 专有路径：被招安（转为正规军将领）、自立为王（建立割据政权，关联反叛系统）、被剿灭（游戏结束）
     - 专有风险：官兵围剿、黑吃黑、被仇家寻仇
-  - [ ] SubTask 26C.7: 实现"婴儿路线"（`infant`）：
+  - [x] SubTask 26C.7: 实现"婴儿路线"（`infant`）：
     - 玩家以婴幼儿身份开局（如皇子/宗室子/名门子），无法主动行动
     - 专有机制：由监护人（父母/乳母/太傅）代为决策，玩家只能"观察 + 选择反应"（如哭闹/乖巧/早慧）
     - 成长阶段：婴幼儿→少年→成年，每阶段有成长事件，玩家随年龄增长逐步获得行动权
     - 专有戏剧线：夺嫡之争（若为皇子）、家产之争（若为名门子）、早慧传闻（影响 NPC 期待）
     - 成年后 playerRole 按家族出身转为对应身份（皇子→宗室，名门子→minister/commoner 等）
-  - [ ] SubTask 26C.8: 实现"退休官员路线"（`retired_official`）：
+  - [x] SubTask 26C.8: 实现"退休官员路线"（`retired_official`）：
     - 致仕/罢黜/告老后的官员身份
     - 专有动作：乡居教学（开馆授徒，关联自我技能提升）、干预地方政务（幕后操纵）、撰写回忆录/史书（提升 `learning`，写入编年史）、被起复（朝廷重新征召）
     - 专有影响：余威犹存（旧部/门生故吏遍布朝野，可调度资源）、被清算（政敌上门报复）
     - 可被朝廷起复：起复后 playerRole 转为 minister/general
-  - [ ] SubTask 26C.9: 实现"僧道路线"（`monk`，可选）：
+  - [x] SubTask 26C.9: 实现"僧道路线"（`monk`，可选）：
     - 出家身份，远离世俗但有专属影响路径
     - 专有动作：修行（提升 `benevolence`/`intelligence`）、收徒（建立宗教势力）、影响信众（包括皇帝）、参与政变（以宗教名义）
     - 专有风险：被指妖言惑众、被朝廷清算（灭佛/毁道历史事件）
-  - [ ] SubTask 26C.10: 实现"匠人路线"（`artisan`，可选）：
+  - [x] SubTask 26C.10: 实现"匠人路线"（`artisan`，可选）：
     - 手工业者身份，专精某项工艺（陶瓷/纺织/冶铸/造纸等）
     - 专有动作：精进技艺（关联科技研发）、收徒传艺、为朝廷服役（被征辟为官营作坊匠人）、自办作坊（关联产业建设）
     - 可晋升路径：匠户→匠师→工部匠官（playerRole 转为 minister）
-  - [ ] SubTask 26C.11: 实现"伶人路线"（`actor`，可选）：
+  - [x] SubTask 26C.11: 实现"伶人路线"（`actor`，可选）：
     - 戏曲/音乐/歌舞艺人身份
     - 专有动作：献艺（影响皇帝/重臣）、收徒传艺、结交权贵
     - 专有风险：被指"倡优误国"、被权贵强夺、身份低微受歧视
     - 可晋升路径：被宠幸后 playerRole 转为后宫/宠臣
-  - [ ] SubTask 26C.12: 御案"身份"面板新增"特殊身份玩法"子面板，按当前 playerRole 展示对应专有动作集
-  - [ ] SubTask 26C.13: 跨朝代铁律审计：所有特殊身份的专有职务/机构名目由剧本 hook，引擎只提供"特殊身份 + 通用动作框架"
-  - 验证：跑 `node web/scripts/smoke-player-special-roles.js`（新增 smoke），断言 7 类特殊身份至少各跑通 1 个专有动作
+  - [x] SubTask 26C.12: 御案"身份"面板新增"特殊身份玩法"子面板，按当前 playerRole 展示对应专有动作集
+  - [x] SubTask 26C.13: 跨朝代铁律审计：所有特殊身份的专有职务/机构名目由剧本 hook，引擎只提供"特殊身份 + 通用动作框架"
+  - 验证：跑 `node web/scripts/smoke-player-special-identity.js`（新增 smoke），断言 7 类特殊身份至少各跑通 1 个专有动作
 
 ## Phase 5 · UI 文案与身份展示动态化
 
