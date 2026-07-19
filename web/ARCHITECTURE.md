@@ -333,7 +333,7 @@ tm-var-drawers / -ext / -final · 变量抽屉的 3 代版本
 P.playerInfo = {
   transmigrationMode:  boolean   // true = 穿越模式 / false = 皇帝模式（默认）
   playerRole:          string    // 16 种角色：emperor / regent / minister / general /
-                                 //             prince / consort / merchant / student /
+                                 //             prince / custom / merchant / actor /
                                  //             eunuch / maid / commoner / bandit /
                                  //             infant / retired_official / monk / artisan
   sovereignName:       string    // 当前君主姓名（穿越模式由 GM.chars 中 _offIsSovereign 反推）
@@ -525,9 +525,9 @@ TM.SovereignAI.runTurnSync(root, opts)   同步·presetOutput·供 smoke
 | `minister` | 朝臣 | 玩家选文官角色 |
 | `general` | 武将 | 玩家选武官角色 |
 | `prince` | 宗室 | 玩家选宗室角色 |
-| `consort` | 后宫 | 玩家选妃嫔角色 |
+| `custom` | 后宫内命 | 玩家选妃嫔/自定义内命角色 |
 | `merchant` | 商贾 | 玩家选商人角色 |
-| `student` | 士子 | 玩家选学子角色 |
+| `actor` | 伶人乐师 | 玩家选伶人角色 |
 | `eunuch` | 太监 | 玩家选宦官角色 |
 | `maid` | 宫女 | 玩家选宫女角色 |
 | `commoner` | 布衣 | 玩家选平民角色 |
