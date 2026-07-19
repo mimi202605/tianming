@@ -566,6 +566,42 @@ function renderQiju(){
   h += '</div>';
   el.innerHTML = h;
   try { if (typeof decoratePendingInDom === 'function') decoratePendingInDom(el); } catch(_){}
+// 穿越模式 Phase A · Task A8：玩家上奏批答推送奉旨卡片
+try {
+  var _pi_qj = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans_qj = _pi_qj && _pi_qj.transmigrationMode === true &&
+                    _pi_qj.playerRole && _pi_qj.playerRole !== 'emperor';
+  if (_isTrans_qj && typeof window !== 'undefined' && window.TM && TM.PlayerEdictCard &&
+      typeof TM.PlayerEdictCard.show === 'function') {
+    // 仅处理最近一条 source=sovereign-ai/fallback 的条目
+    var _recent = (typeof GM !== 'undefined' && GM && Array.isArray(GM.qijuHistory))
+      ? GM.qijuHistory.slice(-1)[0] : null;
+    if (_recent && (_recent.source === 'sovereign-ai' || _recent.source === 'fallback')) {
+      // 去重·同 turn 同 memorialId 不重复推送（renderQiju 会被分页/筛选/切 tab 多次调用）
+      var _curTurn_qj = (typeof GM !== 'undefined' && GM && typeof GM.turn === 'number') ? GM.turn : 0;
+      var _curMemId_qj = _recent.memorialId || _recent.id || _recent.ts || null;
+      var _lastState_qj = (typeof window !== 'undefined' && window._lastPushedQijuState)
+        ? window._lastPushedQijuState : null;
+      if (_lastState_qj && _lastState_qj.turn === _curTurn_qj && _lastState_qj.memorialId === _curMemId_qj) {
+        // 同 turn 同条目已推送·跳过
+      } else {
+        TM.PlayerEdictCard.show({
+          type: 'memorial-reply',
+          memorialId: _recent.memorialId || _recent.id || null,
+          title: _recent.title || _recent.text || '',
+          verdict: _recent.verdict || '',
+          comment: _recent.comment || '',
+          grade: _recent.grade || '',
+          consequences: _recent.consequences || null,
+          ts: _recent.ts || Date.now()
+        });
+        if (typeof window !== 'undefined') {
+          window._lastPushedQijuState = { turn: _curTurn_qj, memorialId: _curMemId_qj };
+        }
+      }
+    }
+  }
+} catch (_) {}
 }
 
 /** 御批——为起居注条目添加批注 */

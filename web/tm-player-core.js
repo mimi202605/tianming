@@ -143,6 +143,9 @@ function _confirmAbdication(heirName) {
 }
 
 // Task 29 · 穿越模式身份变更路径（按 playerRole 分支）
+// FIXME: A10 will replace this legacy UI; triggerRoleChange is now lookup-only.
+// 过渡性问题：(1) 未按 condition 过滤可见路径；(2) triggerRoleChange 不再执行转线。
+// A10 新 evolution 场景会接管身份演进面板，本入口将被废弃。
 function openRoleChange() {
   var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
   if (!_pi || !_pi.transmigrationMode || !_pi.playerRole || _pi.playerRole === 'emperor') {
@@ -151,21 +154,19 @@ function openRoleChange() {
   }
   var paths = (typeof TM !== 'undefined' && TM.Transmigration && typeof TM.Transmigration.getRoleChangePaths === 'function')
     ? TM.Transmigration.getRoleChangePaths(_pi.playerRole) : null;
-  if (!paths) {
+  if (!paths || paths.length === 0) {
     if (typeof toast === 'function') toast('当前角色无可变更的身份路径');
     return;
   }
-  var pathKeys = Object.keys(paths);
   var html = '<div style="padding:1.5rem;max-width:480px;">';
   html += '<div style="text-align:center;margin-bottom:1rem;"><div style="font-size:1.2rem;color:var(--gold);font-weight:700;">\u8EAB \u4EFD \u53D8 \u66F4</div>';
   html += '<div style="font-size:0.8rem;color:var(--txt-d);margin-top:0.3rem;">\u5F53\u524D\u8EAB\u4EFD\uFF1A' + escHtml(_pi.characterTitle || _pi.playerRole || '') + ' \u00B7 \u62E9\u62E9\u53D8\u66F4\u8DEF\u5F84\uFF08\u4E0D\u53EF\u64A4\u56DE\uFF09</div></div>';
   html += '<div style="max-height:280px;overflow-y:auto;">';
-  pathKeys.forEach(function(k) {
-    var p = paths[k];
-    var _safeK = escHtml(k).replace(/'/g, '&#39;').replace(/\\/g, '\\\\');
+  paths.forEach(function(p) {
+    var _safeK = escHtml(p.kind).replace(/'/g, '&#39;').replace(/\\/g, '\\\\');
     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem;margin-bottom:0.3rem;background:var(--bg-2);border-radius:6px;cursor:pointer;" onclick="_confirmRoleChange(\'' + _safeK + '\')">';
     html += '<div><div style="font-size:0.88rem;font-weight:700;color:var(--gold-l);">' + escHtml(p.label) + '</div>';
-    html += '<div style="font-size:0.72rem;color:var(--txt-d);margin-top:0.2rem;">' + escHtml(p.msg) + '</div></div>';
+    html += '<div style="font-size:0.72rem;color:var(--txt-d);margin-top:0.2rem;">' + escHtml(p.desc) + '</div></div>';
     html += '<span style="font-size:0.75rem;color:var(--gold);">\u9009\u5B9A</span></div>';
   });
   html += '</div>';
@@ -181,14 +182,16 @@ function _confirmRoleChange(kind) {
   if (!_pi || !_pi.playerRole) return;
   var paths = (typeof TM !== 'undefined' && TM.Transmigration && typeof TM.Transmigration.getRoleChangePaths === 'function')
     ? TM.Transmigration.getRoleChangePaths(_pi.playerRole) : null;
-  if (!paths || !paths[kind]) return;
-  var p = paths[kind];
+  if (!paths) return;
+  var p = null;
+  for (var i = 0; i < paths.length; i++) { if (paths[i].kind === kind) { p = paths[i]; break; } }
+  if (!p) return;
   if (!confirm('\u786E\u5B9A\u300C' + p.label + '\u300D\uFF1F\u6B64\u53D8\u66F4\u4E0D\u53EF\u64A4\u56DE\u3002')) return;
   var res = (typeof TM !== 'undefined' && TM.Transmigration && typeof TM.Transmigration.triggerRoleChange === 'function')
     ? TM.Transmigration.triggerRoleChange(kind, {}) : null;
   document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
   if (res && res.ok) {
-    if (typeof toast === 'function') toast('\u8EAB\u4EFD\u53D8\u66F4\uFF1A' + p.label + '\uFF08' + p.msg + '\uFF09');
+    if (typeof toast === 'function') toast('\u8EAB\u4EFD\u53D8\u66F4\uFF1A' + p.label + '\uFF08' + p.desc + '\uFF09');
     if (typeof renderGameState === 'function') renderGameState();
   } else {
     if (typeof toast === 'function') toast('\u53D8\u66F4\u5931\u8D25\uFF1A' + (res && res.reason ? res.reason : '\u672A\u77E5\u9519\u8BEF'));

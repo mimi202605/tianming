@@ -54,7 +54,35 @@ function _renderEdictArchiveBody() {
   _bodyEl.innerHTML = _h;
 }
 
+// ── 双轨渲染分派（Phase A · Task A1）─────────────────────────
+// 皇帝模式走 renderEmperorState（原 renderGameState 主体改名·零改动）
+// 穿越模式走 renderPlayerState（调 TM.PlayerUI.* 系列）
 function renderGameState(){
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  if (_isTrans) return renderPlayerState();
+  return renderEmperorState();
+}
+
+// 穿越模式渲染入口·TM.PlayerUI 系列缺席时降级到皇帝模式
+function renderPlayerState(){
+  if (typeof window === 'undefined' || !window.TM || !TM.PlayerUI) {
+    return renderEmperorState();  // 降级·避免 UI 黑屏
+  }
+  try {
+    document.body.classList.add('transmigration-mode');
+    document.body.classList.add('player-role-' + (P.playerInfo.playerRole || 'commoner'));
+    TM.PlayerUI.renderTopBar();
+    TM.PlayerUI.renderLeftTabs();
+    TM.PlayerUI.render('home');
+    TM.PlayerUI.renderRightPanel();
+  } catch(_e) {
+    try { console.error('[renderPlayerState]', _e); } catch(_){}
+    return renderEmperorState();  // 异常降级
+  }
+}
+
+function renderEmperorState(){
   // ★ 财政三字段同步守卫·防 money/balance/ledgers.stock 跑偏导致顶栏与面板数值不一致
   try { if (typeof _syncFiscalScalars === 'function' && typeof GM !== 'undefined') _syncFiscalScalars(GM); } catch(_syE) { try { window.TM && TM.errors && TM.errors.captureSilent && TM.errors.captureSilent(_syE, 'renderGameState/sync'); } catch(__){} }
   // 旧 UI

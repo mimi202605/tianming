@@ -61,6 +61,7 @@
 </script>
 <link id="tm-main-css" rel="stylesheet" href="styles.css?v=20260710-fontscale" data-css-base="styles.css?v=20260710-fontscale" data-css-fallback="https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/web/styles.css?v=20260710-fontscale" onload="window.TM_CSS_LOADED&&window.TM_CSS_LOADED(this)" onerror="window.TM_CSS_RETRY&&window.TM_CSS_RETRY(this)">
 <link rel="stylesheet" href="tm-keju-paradigm-panel.css?v=20260524-L2">
+<link rel="stylesheet" href="tm-transmigration-ui.css">
 <script src="map-converter.js?v=20260709"></script>
 <script src="map-integration.js?v=20260709"></script>
 <script src="map-display.js?v=2026042816"></script>
@@ -252,6 +253,17 @@
     <div class="bar-seal" onclick="openWentian()" title="天命·问天">天<br>命</div>
     <button onclick="openWentian()" class="bar-wentian" title="问天——与推演AI直接对话">问　天</button>
   </div>
+  <!-- 穿越模式玩家身份条·皇帝模式 display:none -->
+  <div id="bar-player-identity" class="bar-player-identity" style="display:none;">
+    <span class="player-portrait" id="player-portrait"></span>
+    <span class="player-name" id="player-name"></span>
+    <span class="player-role-chip" id="player-role-chip"></span>
+    <span class="player-divider">·</span>
+    <span class="player-location" id="player-location"></span>
+    <span class="player-clan" id="player-clan"></span>
+    <span class="player-age" id="player-age"></span>
+    <span class="player-sovereign" id="player-sovereign"></span>
+  </div>
   <div class="bar-era-stack" id="bar-era-stack">
     <div class="dynasty" id="bar-dynasty"></div>
     <div class="date" id="bar-date"></div>
@@ -329,7 +341,10 @@
       <button class="gs-drawer-close" onclick="TM.UI.shell.closeSideDrawer('left')">×</button>
     </div>
     <div class="gs-drawer-body">
-      <div class="gl" id="gl"></div>
+      <div class="gl" id="gl">
+        <!-- 穿越模式左栏 7 场景 tab·皇帝模式 hidden-emperor -->
+        <div id="player-left-tabs" class="player-left-tabs hidden-emperor"></div>
+      </div>
     </div>
   </div>
   <!-- 右 drawer（overlay） -->
@@ -339,7 +354,10 @@
       <button class="gs-drawer-close" onclick="TM.UI.shell.closeSideDrawer('right')">×</button>
     </div>
     <div class="gs-drawer-body">
-      <div class="gr" id="gr"></div>
+      <div class="gr" id="gr">
+        <!-- 穿越模式右栏玩家身份卡·皇帝模式 hidden-emperor -->
+        <div id="player-right-panel" class="player-right-panel hidden-emperor"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -586,6 +604,9 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-promotion.js?v=20260604-gongming"></script>
 <script src="tm-gongming.js?v=20260613-gongming-sys"></script>
 <script src="tm-transmigration.js?v=20260719-transmigration"></script>
+<script src="tm-player-ui-render.js"></script>
+<script src="tm-player-systems-ui.js"></script>
+<script src="tm-player-ui-edict-card.js"></script>
 <script src="tm-launch.js?v=20260711-scnimport"></script>
 <script src="tm-player-settings.js?v=20260622-wfswitches"></script>
 <script src="tm-player-core.js?v=2026062003-custombuild"></script>

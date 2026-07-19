@@ -1,206 +1,115 @@
-#!/usr/bin/env node
-// scripts/smoke-transmigration-role-change.js — Phase 5·Task 29 角色变更路径 smoke
-// 验证：TM.Transmigration.getRoleChangePaths / triggerRoleChange
-//   - getRoleChangePaths(role)：返回该 role 的变更路径表（或 null）
-//   - triggerRoleChange(kind, payload)：应用 playerRole 变更 + 同步 underlying character
-//   - 守卫：非穿越模式 / emperor / 未知 kind / 未知 role 全拒绝
-//   - 路径覆盖：minister·general·prince·merchant·eunuch·maid·commoner·bandit·retired_official·monk·artisan·actor·infant·custom
+// ============================================================
+// smoke-transmigration-role-change.js — 穿越模式身份变更路径 smoke（A9 重写）
+// ------------------------------------------------------------
+// 断言：_ROLE_CHANGE_PATHS 结构 / getRoleChangePaths 数组返回 /
+//      triggerRoleChange 查表语义 / 16 种 playerRole 覆盖
+// 末尾打印 [smoke-transmigration-role-change] PASS · N sub-tests
+// ============================================================
 
 'use strict';
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-const ROOT = path.resolve(__dirname, '..');
+var vm = require('vm');
+var fs = require('fs');
+var path = require('path');
 
-function fail(msg) { throw new Error(msg); }
-function assert(cond, msg) { if (!cond) fail(msg); }
-
-function buildContext() {
-  var ctx = {
-    console: { log: function(){}, warn: function(){} },
-    Math: Math, Date: Date, JSON: JSON, Object: Object, Array: Array,
-    Number: Number, String: String, Boolean: Boolean, RegExp: RegExp,
-    isFinite: isFinite, parseInt: parseInt, parseFloat: parseFloat, isNaN: isNaN, Set: Set,
-    Promise: Promise, setTimeout: setTimeout, clearTimeout: clearTimeout
-  };
-  ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
-  ctx.TM = {};
-  vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync(path.join(ROOT, 'tm-transmigration.js'), 'utf8'), ctx, { filename: 'tm-transmigration.js' });
-  return ctx;
+var WEB_DIR = path.resolve(__dirname, '..');
+var fail = 0, pass = 0;
+function ok(name, cond, detail) {
+  if (cond) { pass++; console.log('  ✓ ' + name); }
+  else { fail++; console.log('  ✗ ' + name + (detail ? ' :: ' + detail : '')); }
 }
 
-function setupCtx(ctx, playerRole, characterName) {
-  ctx.GM = {
-    turn: 7,
-    chars: [
-      { name: '测试君主', alive: true, officialTitle: '皇帝', role: '皇帝', isEmperor: true },
-      { name: characterName || '李大臣', alive: true, isPlayer: true, officialTitle: '尚书', role: '臣' }
-    ],
-    _edictTracker: []
-  };
-  ctx.P = {
-    playerInfo: {
-      transmigrationMode: true,
-      playerRole: playerRole || 'minister',
-      characterName: characterName || '李大臣',
-      characterTitle: '尚书',
-      sovereignName: '测试君主'
-    }
-  };
-  ctx.uid = function() { return 'smoke-uid-' + Math.random().toString(36).slice(2,8); };
-  ctx.toast = function() {};
-  ctx.addEB = function() {};
-  ctx.NpcMemorySystem = { addMemory: function() {} };
+var sandbox = {
+  console: console,
+  setTimeout: setTimeout, clearTimeout: clearTimeout,
+  Date: Date, Math: Math, JSON: JSON,
+  Array: Array, Object: Object, String: String, Number: Number, Boolean: Boolean, Error: Error,
+  window: null, TM: {}, P: { playerInfo: null }, GM: null,
+  module: { exports: null }
+};
+sandbox.global = sandbox;
+sandbox.window = sandbox;
+vm.createContext(sandbox);
+
+function loadFile(rel) {
+  var code = fs.readFileSync(path.join(WEB_DIR, rel), 'utf8');
+  vm.runInContext(code, sandbox, { filename: rel });
 }
 
-function getPathsTest(ctx) {
-  setupCtx(ctx, 'minister', '李大臣');
-  var p = ctx.TM.Transmigration.getRoleChangePaths('minister');
-  assert(p !== null, 'getPaths-minister: 非空');
-  assert(p.resign && p.retire, 'getPaths-minister: resign+retire 在');
-  assert(p.resign.label && p.resign.newRole, 'getPaths-minister: 字段齐全');
+loadFile('tm-transmigration.js');
+var T = sandbox.TM.Transmigration;
+ok('Transmigration 导出', !!T);
+ok('getRoleChangePaths 是函数', typeof T.getRoleChangePaths === 'function');
+ok('triggerRoleChange 是函数', typeof T.triggerRoleChange === 'function');
+ok('_ROLE_CHANGE_PATHS 导出', !!T._ROLE_CHANGE_PATHS);
 
-  var p2 = ctx.TM.Transmigration.getRoleChangePaths('emperor');
-  assert(p2 === null, 'getPaths-emperor: null（emperor 无变更路径）');
+// ── getRoleChangePaths 结构断言 ─────────────────────────────
+ok('commoner 路径数 3', T.getRoleChangePaths('commoner').length === 3,
+   'got: ' + T.getRoleChangePaths('commoner').length);
+ok('emperor 路径数 0（隐式兜底）', T.getRoleChangePaths('emperor').length === 0);
+ok('unknown role 兜底为空数组', T.getRoleChangePaths('xxx_unknown').length === 0);
+ok('custom 路径数 0（显式空数组）', T.getRoleChangePaths('custom').length === 0);
 
-  var p3 = ctx.TM.Transmigration.getRoleChangePaths('bogusRole');
-  assert(p3 === null, 'getPaths-bogus: null');
+// 路径对象字段结构
+var commonerPaths = T.getRoleChangePaths('commoner');
+ok('路径对象含 kind 字段', commonerPaths.every(function (p) { return typeof p.kind === 'string'; }));
+ok('路径对象含 label 字段', commonerPaths.every(function (p) { return typeof p.label === 'string'; }));
+ok('路径对象含 nextRole 字段', commonerPaths.every(function (p) { return typeof p.nextRole === 'string'; }));
+ok('路径对象含 desc 字段', commonerPaths.every(function (p) { return typeof p.desc === 'string'; }));
+ok('路径对象含 condition 函数', commonerPaths.every(function (p) { return typeof p.condition === 'function'; }));
 
-  // 验证所有 14 种 playerRole 都有路径
-  ['minister','general','prince','merchant','eunuch','maid','commoner','bandit','retired_official','monk','artisan','actor','infant','custom'].forEach(function(r){
-    var pp = ctx.TM.Transmigration.getRoleChangePaths(r);
-    assert(pp !== null, 'getPaths-' + r + ': 非空');
-    assert(Object.keys(pp).length >= 1, 'getPaths-' + r + ': 至少 1 条路径');
-  });
-}
+// 不变性：getRoleChangePaths 返回 .slice() 副本
+var arr1 = T.getRoleChangePaths('commoner');
+arr1.push({ fake: true });
+var arr2 = T.getRoleChangePaths('commoner');
+ok('getRoleChangePaths 返回副本（外部修改不影响内部）', arr2.length === 3,
+   'got: ' + arr2.length);
 
-function triggerResignTest(ctx) {
-  setupCtx(ctx, 'minister', '李大臣');
-  var r = ctx.TM.Transmigration.triggerRoleChange('resign', {});
-  assert(r.ok === true, 'trigger-resign: ok');
-  assert(r.kind === 'resign', 'trigger-resign: kind');
-  assert(r.fromRole === 'minister', 'trigger-resign: fromRole');
-  assert(r.newRole === 'commoner', 'trigger-resign: newRole=commoner');
-  assert(ctx.P.playerInfo.playerRole === 'commoner', 'trigger-resign: P.playerInfo 已更新');
-  // underlying character 同步
-  var pc = ctx.GM.chars.find(function(c){ return c.isPlayer; });
-  assert(pc.playerRole === 'commoner', 'trigger-resign: char.playerRole 已同步');
-}
+// ── 16 种 playerRole 覆盖断言 ──────────────────────────────
+var ROLES = ['minister','general','regent','prince','merchant','commoner','infant',
+             'retired_official','bandit','monk','eunuch','maid','artisan','actor','custom'];
+ROLES.forEach(function (role) {
+  var paths = T.getRoleChangePaths(role);
+  ok(role + ' 路径为数组', Array.isArray(paths));
+});
 
-function triggerRetireTest(ctx) {
-  setupCtx(ctx, 'minister', '王老臣');
-  var r = ctx.TM.Transmigration.triggerRoleChange('retire', {});
-  assert(r.ok === true, 'trigger-retire: ok');
-  assert(r.newRole === 'retired_official', 'trigger-retire: newRole=retired_official');
-  assert(ctx.P.playerInfo.playerRole === 'retired_official', 'trigger-retire: P.playerInfo 已更新');
-}
+// ── triggerRoleChange 查表语义断言 ─────────────────────────
+sandbox.P.playerInfo = { playerRole: 'commoner' };
 
-function triggerReinstateTest(ctx) {
-  // retired_official → minister（起复）
-  setupCtx(ctx, 'retired_official', '赵归田');
-  var r = ctx.TM.Transmigration.triggerRoleChange('reinstate', {});
-  assert(r.ok === true, 'trigger-reinstate: ok');
-  assert(r.fromRole === 'retired_official', 'trigger-reinstate: fromRole');
-  assert(r.newRole === 'minister', 'trigger-reinstate: newRole=minister');
-}
+var r1 = T.triggerRoleChange('study');
+ok('triggerRoleChange(study) 返回 ok', r1.ok === true);
+ok('triggerRoleChange(study).path.nextRole === minister', r1.path.nextRole === 'minister');
+ok('triggerRoleChange(study).path.label === 读书考科举', r1.path.label === '读书考科举');
 
-function generalDemobilizeTest(ctx) {
-  setupCtx(ctx, 'general', '周将军');
-  var r = ctx.TM.Transmigration.triggerRoleChange('demobilize', {});
-  assert(r.ok === true, 'trigger-demobilize: ok');
-  assert(r.newRole === 'retired_official', 'trigger-demobilize: newRole=retired_official');
-}
+var r2 = T.triggerRoleChange('unknown_kind');
+ok('triggerRoleChange(unknown) 返回 not ok', r2.ok === false);
+ok('triggerRoleChange(unknown).reason === unknown-kind', r2.reason === 'unknown-kind');
 
-function generalReinstateTest(ctx) {
-  setupCtx(ctx, 'general', '吴将军');
-  var r = ctx.TM.Transmigration.triggerRoleChange('reinstate', {});
-  assert(r.ok === true, 'trigger-general-reinstate: ok');
-  assert(r.newRole === 'minister', 'trigger-general-reinstate: newRole=minister（改授文衔）');
-}
+// 无 role 场景
+sandbox.P.playerInfo = null;
+var r3 = T.triggerRoleChange('study');
+ok('triggerRoleChange 无 role 返回 no-role', r3.ok === false && r3.reason === 'no-role');
 
-function princeInheritTest(ctx) {
-  setupCtx(ctx, 'prince', '朱宗亲');
-  var r = ctx.TM.Transmigration.triggerRoleChange('inherit', { newTitle: '嗣王' });
-  assert(r.ok === true, 'trigger-inherit: ok');
-  assert(r.newRole === 'prince', 'trigger-inherit: newRole=prince（仍宗室）');
-  // newTitle 同步
-  var pc = ctx.GM.chars.find(function(c){ return c.isPlayer; });
-  assert(pc.officialTitle === '嗣王', 'trigger-inherit: newTitle 已同步');
-  assert(ctx.P.playerInfo.characterTitle === '嗣王', 'trigger-inherit: characterTitle 已同步');
-}
+// payload 透传
+sandbox.P.playerInfo = { playerRole: 'commoner' };
+var r4 = T.triggerRoleChange('study', { note: 'test' });
+ok('triggerRoleChange payload 透传', r4.ok && r4.payload && r4.payload.note === 'test');
 
-function banditAmnestyTest(ctx) {
-  setupCtx(ctx, 'bandit', '山大王');
-  var r = ctx.TM.Transmigration.triggerRoleChange('amnesty', {});
-  assert(r.ok === true, 'trigger-amnesty: ok');
-  assert(r.newRole === 'general', 'trigger-amnesty: newRole=general（从军效用）');
-}
+// ── 特定 role 路径断言 ─────────────────────────────────────
+sandbox.P.playerInfo = { playerRole: 'minister' };
+ok('minister 有 retire 路径', T.triggerRoleChange('retire').ok === true);
+ok('minister 有 dismissed 路径', T.triggerRoleChange('dismissed').ok === true);
+ok('minister 无 rebel 路径', T.triggerRoleChange('rebel').ok === false);
 
-function monkSecularizeTest(ctx) {
-  setupCtx(ctx, 'monk', '慧明');
-  var r = ctx.TM.Transmigration.triggerRoleChange('secularize', {});
-  assert(r.ok === true, 'trigger-secularize: ok');
-  assert(r.newRole === 'commoner', 'trigger-secularize: newRole=commoner');
-}
+sandbox.P.playerInfo = { playerRole: 'general' };
+ok('general 有 rebel 路径', T.triggerRoleChange('rebel').ok === true);
+ok('general rebel nextRole === emperor', T.triggerRoleChange('rebel').path.nextRole === 'emperor');
 
-function infantGrowUpTest(ctx) {
-  setupCtx(ctx, 'infant', '小皇子');
-  var r = ctx.TM.Transmigration.triggerRoleChange('growUp', {});
-  assert(r.ok === true, 'trigger-growUp: ok');
-  assert(r.newRole === 'prince', 'trigger-growUp: newRole=prince（依宗亲例授爵）');
-}
-
-function guardNonTransmigrationTest(ctx) {
-  setupCtx(ctx, 'minister', '李大臣');
-  ctx.P.playerInfo.transmigrationMode = false;
-  var r = ctx.TM.Transmigration.triggerRoleChange('resign', {});
-  assert(r.ok === false, 'guard-nonTrans: 拒绝');
-  assert(/非穿越模式/.test(r.reason), 'guard-nonTrans: reason');
-}
-
-function guardEmperorTest(ctx) {
-  setupCtx(ctx, 'emperor', '测试君主');
-  var r = ctx.TM.Transmigration.triggerRoleChange('resign', {});
-  assert(r.ok === false, 'guard-emperor: 拒绝');
-  assert(/非穿越角色/.test(r.reason), 'guard-emperor: reason');
-}
-
-function guardUnknownKindTest(ctx) {
-  setupCtx(ctx, 'minister', '李大臣');
-  var r = ctx.TM.Transmigration.triggerRoleChange('bogusKind', {});
-  assert(r.ok === false, 'guard-unknownKind: 拒绝');
-  assert(/未知变更类型/.test(r.reason), 'guard-unknownKind: reason');
-}
-
-function guardUnknownRoleTest(ctx) {
-  setupCtx(ctx, 'custom', '某角色'); // custom 在表中，但先改 playerRole 为表中不存在的值
-  ctx.P.playerInfo.playerRole = 'bogusRole';
-  var r = ctx.TM.Transmigration.triggerRoleChange('anyKind', {});
-  assert(r.ok === false, 'guard-unknownRole: 拒绝');
-  assert(/无变更路径/.test(r.reason), 'guard-unknownRole: reason');
-}
-
-try {
-  var ctx = buildContext();
-  getPathsTest(ctx);
-  triggerResignTest(ctx);
-  triggerRetireTest(ctx);
-  triggerReinstateTest(ctx);
-  generalDemobilizeTest(ctx);
-  generalReinstateTest(ctx);
-  princeInheritTest(ctx);
-  banditAmnestyTest(ctx);
-  monkSecularizeTest(ctx);
-  infantGrowUpTest(ctx);
-  guardNonTransmigrationTest(ctx);
-  guardEmperorTest(ctx);
-  guardUnknownKindTest(ctx);
-  guardUnknownRoleTest(ctx);
-  console.log('[smoke-transmigration-role-change] PASS · 14 sub-tests · getRoleChangePaths + triggerRoleChange (minister/general/prince/bandit/monk/infant) + 4 守卫');
+// ── 总结 ───────────────────────────────────────────────────
+console.log('');
+if (fail === 0) {
+  console.log('[smoke-transmigration-role-change] PASS · ' + pass + ' sub-tests');
   process.exit(0);
-} catch (e) {
-  console.error('[smoke-transmigration-role-change] FAIL:', e.message);
-  console.error(e.stack);
+} else {
+  console.log('[smoke-transmigration-role-change] FAIL · ' + fail + ' failed, ' + pass + ' passed');
   process.exit(1);
 }
