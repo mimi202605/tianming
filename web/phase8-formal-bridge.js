@@ -2495,14 +2495,18 @@
       if (action === 'wendui') {
         if (window.GM) { GM.wenduiTarget = name; GM._pendingWenduiChar = name; }
         state.modulePerson = personKey(p) || id;
-        openModule('wendui');
+        // 真问对·调 window.openWenduiModal(name,'formal')(与右栏 rightrail 同款)·避免落 openModule('wendui') 的 mockup textarea
+        if (typeof window.openWenduiModal === 'function') { closeModule(); closeRightDrawer(); window.openWenduiModal(name, 'formal'); returnFormalHomeSoon(); }
+        else openModule('wendui');
       } else if (action === 'letter') {
         if (window.GM) GM._pendingLetterTo = name;
         state.modulePerson = personKey(p) || id;
-        openModule('letter');
+        // 真鸿雁·openHongyanPreviewPanel 消费上面已置的 GM._pendingLetterTo 预填收信人(旧 openModule('letter') 落 mockup)
+        openHongyanPreviewPanel();
       } else if (action === 'office') {
         state.modulePerson = personKey(p) || id;
-        openModule('office');
+        // 真官制树·openOfficeStandalone(bridge 真官制面板)·旧 openModule('office') 落 mockup
+        openOfficeStandalone();
       } else if (action === 'detail') {
         state.modulePerson = personKey(p) || id;
         if (typeof window.openCharRenwuPage === 'function') window.openCharRenwuPage(name);
