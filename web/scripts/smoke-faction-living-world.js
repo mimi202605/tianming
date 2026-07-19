@@ -487,6 +487,28 @@ function b5WarIdHonorTest() {
   const joined = ctx.GM.activeWars.find(function(w){ return w.attacker === '甲势力' && w.defender === '乙势力'; });
   assert(joined && joined.parentWarId === 'w-old', 'B5: join_war honors specified warId=w-old (not array-first w-first / not latest)');
 }
+// B5b·inactive/ended warId 不合法：指定死战→拒 honor·回退最新活战；唯一涉目标战已结束→join 拒
+function b5InactiveWarIdTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  ctx.GM.facs.push({ name: '丙' });
+  ctx.GM.activeWars.push({ id: 'w-dead', attacker: '丙', defender: '乙势力', startTurn: 9, status: 'ended' });   // 残留死战(startTurn 最大)
+  ctx.GM.activeWars.push({ id: 'w-live', attacker: '玩家朝廷', defender: '乙势力', startTurn: 4 });               // 进行中
+  eng.applyDecision(ctx.GM.facs[0], mkDecision([{ type: 'join_war', targetFaction: '乙势力', casusBelli: 'holy', warId: 'w-dead' }]), { turn: 10 });
+  const joined = ctx.GM.activeWars.find(function(w){ return w.attacker === '甲势力' && w.defender === '乙势力'; });
+  assert(joined && joined.parentWarId === 'w-live', 'B5b: inactive warId=w-dead is rejected → falls back to latest ONGOING war (w-live), not the ended w-dead');
+}
+function b5AllInactiveRejectTest() {
+  const ctx = buildContext(); installCasusBelli(ctx);
+  baseGM(ctx, { livingWorld: true });
+  const eng = ctx.TM.FactionActionEngine;
+  ctx.GM.facs.push({ name: '丙' });
+  ctx.GM.activeWars.push({ id: 'w-dead', attacker: '丙', defender: '乙势力', startTurn: 9, active: false });   // 残留(active:false)
+  const sum = eng.applyDecision(ctx.GM.facs[0], mkDecision([{ type: 'join_war', targetFaction: '乙势力', casusBelli: 'holy' }]), { turn: 10 });
+  assert(!sum.wars, 'B5b: when the only war involving target is inactive/ended, join_war is rejected (no ongoing war to join)');
+}
+
 // B7·过期是每回合必经：无新事件也过期(旧=清理挂在非空事件检查之后)
 function b7UnconditionalExpireTest() {
   const ctx = buildContext(); installCasusBelli(ctx);
@@ -544,6 +566,8 @@ function main() {
   b2cMatchFailClosedTest();
   b4MigrationTest();
   b5WarIdHonorTest();
+  b5InactiveWarIdTest();
+  b5AllInactiveRejectTest();
   b7UnconditionalExpireTest();
   b8AgentModeInertTest();
   console.log('[smoke-faction-living-world] all pass · ' + PASS + ' assertions');

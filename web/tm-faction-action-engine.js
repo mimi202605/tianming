@@ -850,6 +850,11 @@
     if (!cbMatched || cbMatched === 'none') return { reason: 'player-war blocked: needs an explicit legitimate casus belli (fail-closed)' };
     return null;
   }
+  function _lwWarOngoing(w) {
+    if (!w || w.active === false || w.ended === true || w.endedTurn) return false;
+    var st = String(w.status || '');
+    return st !== 'ended' && st !== 'peace' && st !== 'truce';   // 与 hasPeaced 谓词对齐
+  }
   function _lwAlreadyAtWar(a, b) {
     return _arr((global.GM || {}).activeWars).some(function(w){ return w && ((w.attacker === a && w.defender === b) || (w.attacker === b && w.defender === a)); });
   }
@@ -887,7 +892,7 @@
     if (!joiner || !enemy || joiner === enemy) return { ok: false, reason: 'missing/invalid war target', targetFaction: enemy };
     if (!_findFac(enemy)) return { ok: false, reason: 'target faction not found', targetFaction: enemy };
     // 必须已有涉 enemy 的进行中战争(=加入非另起)。优先 honor LLM 指定的合法 warId·缺失/非法→确定性规则=取涉目标最新一场(startTurn 最大·并列取数组末位)
-    var _joinWars = _arr((global.GM || {}).activeWars).filter(function(w){ return w && (w.attacker === enemy || w.defender === enemy); });
+    var _joinWars = _arr((global.GM || {}).activeWars).filter(function(w){ return _lwWarOngoing(w) && (w.attacker === enemy || w.defender === enemy); });   // 仅进行中(过滤 inactive/ended 残留·防死战 warId 误判合法)
     if (!_joinWars.length) return { ok: false, reason: 'no ongoing war involving target (join needs an existing war)', targetFaction: enemy };
     var _wantWarId = p.warId || p.warID || p.war || '';
     var origWar = _wantWarId ? (_joinWars.filter(function(w){ return String(w.id) === String(_wantWarId); })[0] || null) : null;
