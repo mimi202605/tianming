@@ -1207,8 +1207,8 @@ async function generateDianshiQuestion() {
       '5. \u7ED3\u5C3E\u4EE5\u201C\u5B50\u5176\u8BD5\u4E3A\u8054\u5BF9\u4E4B\u201D\u6216\u201C\u4F55\u4EE5\u6559\u8054\u201D\u53E5\u5F0F\u53D1\u95EE\n\n' +
       '\u76F4\u63A5\u8F93\u51FA\u9898\u76EE\uFF0C\u4E0D\u8981JSON\u683C\u5F0F\u3002';
 
-    // 时空约束·扫描近期事件涉议人物·殿试策问(自由文·full·天子亲策无当事人ch=null)（typeof守卫·防加载序）
-    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMDianQ = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((_recentEvents || ''), [], 10) : []; prompt += _buildTemporalConstraint(null, { mentionedNames: _tcMDianQ }); } catch (_tcE) {} }
+    // 时空约束·扫描近期事件涉议人物·殿试策问(JSON外自由文但改clauseOnly·天子亲策·防塞全朝无关活人名成正向姓名诱导)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMDianQ = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((_recentEvents || ''), [], 10) : []; prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMDianQ }); } catch (_tcE) {} }
     var question = await callAISmart(prompt, 500, {minLength: 80, maxRetries: 2});
     var _dqEl = document.getElementById('dianshi-question');
     if (_dqEl) _dqEl.value = question; // 弹窗未开时无此元素·裸赋值曾抛错被吞→playerQuestion 永不落→整场殿试空产(2026-07-04 审查定罪)

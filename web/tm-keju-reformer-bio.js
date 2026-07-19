@@ -112,10 +112,17 @@
       var raw = await callAISmart(prompt, 1000, { maxRetries: 1, priority: 'low', timeoutMs: 25000 });
       var parsed = _parseJson(raw);
       if (!parsed || !parsed.text) return fallback;
+      // 条2·确定性闸·传主本局在世(或系玩家君主)则禁书卒——不依赖模型服从·清 deathYear + 剔正文书卒句
+      var _bioText = String(parsed.text).slice(0, 600);
+      var _bioDeath = parsed.deathYear || null;
+      if (_kjpL12SubjectAliveInGame(name, isPlayerEmperor)) {
+        if (_bioDeath != null) { try { console.warn('[L12·bio·闸] 传主本局在世·强清模型 deathYear=' + _bioDeath + '·' + name); } catch(_){} _bioDeath = null; }
+        _bioText = _kjpL12ScrubDeathClaims(_bioText, name);
+      }
       return {
-        text: String(parsed.text).slice(0, 600),
+        text: _bioText,
         birthYear: parsed.birthYear || null,
-        deathYear: parsed.deathYear || null,
+        deathYear: _bioDeath,
         faction: parsed.faction || '中立'
       };
     } catch (e) {
@@ -134,6 +141,29 @@
             '等' + reforms.length + '事·后世评待补)',
       birthYear: null, deathYear: null, faction: '中立'
     };
+  }
+
+  // 条2·确定性生死闸辅助·传主本局在世判定（玩家君主=当朝在世；GM 人物册 alive!==false && !dead）
+  function _kjpL12SubjectAliveInGame(name, isPlayerEmperor) {
+    if (isPlayerEmperor) return true;
+    if (!name || typeof findCharByName !== 'function') return false;
+    var c = null; try { c = findCharByName(name); } catch (_) { c = null; }
+    return !!(c && c.alive !== false && !c.dead);
+  }
+
+  // 条2·剔除正文中对传主的明显书卒宣称句（按中文句读切分·命中书卒标记的整句剔除+console 留痕）
+  var _KJP_L12_DEATH_RE = /(卒于|卒年|病逝|病故|薨于|薨逝|殁于|殁年|死于|逝世|去世|身故|身死|溘逝|寿终|享年|殉难|遇害)/;
+  function _kjpL12ScrubDeathClaims(text, name) {
+    var t = String(text == null ? '' : text);
+    if (!_KJP_L12_DEATH_RE.test(t)) return t;
+    var parts = t.split('。'), kept = [], removed = 0;
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i] && _KJP_L12_DEATH_RE.test(parts[i])) { removed++; continue; }
+      kept.push(parts[i]);
+    }
+    if (removed > 0) { try { console.warn('[L12·bio·闸] 传主本局在世·剔除书卒句 ' + removed + ' 处·' + name); } catch (_) {} }
+    var out = kept.join('。').trim();
+    return out || ('（' + String(name || '') + '·本局在世·后世评未定）');
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -572,6 +602,8 @@
     window._kjpL12RenderBioPanel               = _kjpL12RenderBioPanel;
     window._kjpL12EvictLRU                     = _kjpL12EvictLRU;
     window._kjpL12BioFallback                  = _kjpL12BioFallback;
+    window._kjpL12SubjectAliveInGame           = _kjpL12SubjectAliveInGame;   // 条2·smoke 用
+    window._kjpL12ScrubDeathClaims             = _kjpL12ScrubDeathClaims;      // 条2·smoke 用
     window._kjpL12GetBioCache                  = _kjpL12GetBioCache;
     window._kjpL12ClearBioCache                = _kjpL12ClearBioCache;
   }

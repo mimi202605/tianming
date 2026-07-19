@@ -774,8 +774,8 @@
       '- 史评·客观持中·50 字·非褒非贬·叙方向 + 后世评价倾向\n\n' +
       '返 JSON·{canonicalName: "5-12 字", historicalEvaluation: "50 字 史评"}';
     try {
-      // 时空约束·改革命名+史评(JSON·clauseOnly)（typeof守卫·防加载序）
-      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
+      // 时空约束·主导者(entry.by)+史评涉议人物·改革命名(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: (entry && entry.by ? [entry.by] : []) }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 600, { maxRetries: 1, priority: 'low', timeoutMs: 20000 });
       var parsed = _parseJson(raw);
       if (!parsed || !parsed.canonicalName) return fallback;

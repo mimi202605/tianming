@@ -1107,8 +1107,8 @@ async function viewAnswer(index) {
       '4. 展现治国理政见解\n\n' +
       '直接输出答卷内容，不要JSON格式。';
 
-    // 时空约束·扫描殿试题面+考生涉议人物·考生答卷(自由文·full·考生=当事人)（typeof守卫·防加载序）
-    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMView = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.playerQuestion) || ''), (candidate && candidate.name ? [candidate.name] : []), 10) : (candidate && candidate.name ? [candidate.name] : []); prompt += _buildTemporalConstraint((typeof findCharByName === 'function' && candidate ? findCharByName(candidate.name) : null), { mentionedNames: _tcMView }); } catch (_tcE) {} }
+    // 时空约束·扫描殿试题面+考生涉议人物·考生答卷(改clauseOnly·虚构考生未入GM·防塞全朝无关活人名成正向姓名诱导)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMView = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.playerQuestion) || ''), (candidate && candidate.name ? [candidate.name] : []), 10) : (candidate && candidate.name ? [candidate.name] : []); prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMView }); } catch (_tcE) {} }
     var answer = await callAISmart(prompt, 1500, {minLength: 300, maxRetries: 2});
     candidate.fullAnswer = answer;
     hideLoading();

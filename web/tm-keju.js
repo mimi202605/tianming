@@ -1002,9 +1002,14 @@ async function pickHistoricalCandidates(exam) {
     if (c.officialTitle || (c.title && c.title.length > 0) || c.spouse || c.isPlayer) existingOfficialsSet[c.name] = true;
   });
   var existingOfficials = Object.keys(existingOfficialsSet);
+  // \u67611\u00B7\u672C\u5C40\u5DF2\u6545\u8005\u540D\u5355\uFF08\u4E0D\u53D7\u5B98\u804C/\u5728\u4E16 gate\u00B7\u4EFB\u4F55\u672C\u5C40\u6B7B\u8005\u4E25\u7981\u4F5C\u4E3A\u8003\u751F\u590D\u6D3B\uFF09\u00B7\u5E76\u5165 prompt \u4E25\u7981\u8FD4\u56DE\u540D\u5355
+  var _deadSet = {};
+  (GM.chars || []).forEach(function(c){ if (c && c.name && (c.alive === false || c.dead)) _deadSet[c.name] = true; });
+  var deadNames = Object.keys(_deadSet);
   var usedNames = P.keju._historicalFiguresUsed.concat(
     (GM.chars || []).filter(function(c){ return c && c.isHistorical && c.source === '\u79D1\u4E3E'; }).map(function(c){ return c.name; }),
-    existingOfficials
+    existingOfficials,
+    deadNames
   );
 
   var prompt = '\u4F60\u662F\u5386\u53F2\u8003\u636E AI\u3002\u4E3A' + (P.dynasty || P.era || '') + '\u671D ' + year +
@@ -1033,11 +1038,16 @@ async function pickHistoricalCandidates(exam) {
     }
     if (!Array.isArray(parsed)) return [];
 
+    // 条1·判定口径：GM 人物册有明确死亡记录者(alive===false||dead)一律剔除防复活；不在册的史实名臣按 prompt 硬规则(应试年龄20-55+year前后活跃 era-gate)视为应考在世·GM 无据判其死·不在此后置硬闸内。
     var valid = parsed.filter(function(c){
       if (!c || !c.name) return false;
       if (usedNames.indexOf(c.name) >= 0) return false;
+      // 条1·硬闸·本局已故者名单命中一律剔除（不查官职·直查生死·防 AI 复活本局死者）
+      if (_deadSet[c.name]) { try { console.warn('[科举·滤] 丢弃本局已故候选(名单命中):', c.name); } catch(_){} return false; }
       // 再次过滤：若此名已在 GM.chars 且有官职·强制剔除（AI 硬性违规）
       var _existCh = (typeof findCharByName === 'function') ? findCharByName(c.name) : null;
+      // 条1·硬闸·GM 在册且已死者(alive===false||dead)一律剔除（防名单未命中的别名/异写死者复活）
+      if (_existCh && (_existCh.alive === false || _existCh.dead)) { try { console.warn('[科举·滤] 丢弃本局已故候选(GM在册已死):', c.name); } catch(_){} return false; }
       if (_existCh && (_existCh.officialTitle || _existCh.title || _existCh.spouse || _existCh.isPlayer)) {
         console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u5DF2\u4EFB\u5B98\u5019\u9009:', c.name, _existCh.officialTitle||_existCh.title);
         return false;
