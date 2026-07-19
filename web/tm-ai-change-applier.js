@@ -512,12 +512,12 @@
     return _TM_IMPRISON_RE.test(s) && !_TM_IMPRISON_NEG_RE.test(s);
   }
 
-  function onDismissal(charName, reason) {
+  function onDismissal(charName, reason, aiOutput) {
     var G = global.GM;
     var ch = _findChar(charName);
     if (!ch) return { ok: false, reason: '未找到 ' + charName };
     // 重复抄家(reason 含抄/查抄且此人已被抄)·跳过移交/追亏·免二次进账(与下方抄家三标记守卫一致)
-    var _repeatConfisc = /抄|籍没|没官|查抄/.test(String(reason || '')) && (ch._confiscated || ch.confiscated || ch._confiscatedTurn != null);
+    var _wgD = global.TM && global.TM.__acaParts; if (_wgD && _wgD._gateDeathRoutingSource && _wgD._gateDeathRoutingSource(G, ch, String(reason || ''), aiOutput)) return { ok: false, reason: 'no-source-bare-death(write-gate·返工issue4·死亡管线收口)' };     var _repeatConfisc = /抄|籍没|没官|查抄/.test(String(reason || '')) && (ch._confiscated || ch.confiscated || ch._confiscatedTurn != null);
     var binding = ch.resources && ch.resources.publicTreasury && ch.resources.publicTreasury.binding;
     if (binding && !_repeatConfisc) {
       var entity = _resolveBinding(binding);
@@ -1170,7 +1170,7 @@
     (aiOutput.appointments || []).forEach(function(a) {
       var r;
       if (a.action === 'appoint') r = onAppointment(a.charName, a.position, a.binding);
-      else if (a.action === 'dismiss') r = onDismissal(a.charName, a.reason);
+      else if (a.action === 'dismiss') r = onDismissal(a.charName, a.reason, aiOutput);
       else if (a.action === 'transfer') r = onTransfer(a.charName, a.fromPosition, a.toPosition, a.binding);
       if (r && r.ok) {
         applied.appointments++;
@@ -1562,7 +1562,7 @@
         posList.forEach(function(singlePost, idx) {
           var rr;
           if (action === 'appoint') rr = onAppointment(oa.name, singlePost, { dept: oa.dept, concurrent: isConcurrentOffice, reason: oa.reason || '' });
-          else if (action === 'dismiss') rr = onDismissal(oa.name, oa.reason);
+          else if (action === 'dismiss') rr = onDismissal(oa.name, oa.reason, aiOutput);
           else if (action === 'transfer') rr = onTransfer(oa.name, oa.fromPost, singlePost, { dept: oa.dept });
           if (rr && rr.ok) {
             if (idx === 0) r = rr;
@@ -1631,7 +1631,7 @@
       if (action === 'dismiss') { var _c2b = global.TM && global.TM.__acaParts; if (_c2b && _c2b._gateJudicialPersonnelChange && _c2b._gateJudicialPersonnelChange(G, aiOutput, pc, changeText, applied)) return; }   // 刀C·C2·司法类人事无源判据(逻辑在 validators·alias 内联·免堆巨石)
       var r = null;
       if (action === 'appoint' && post) r = onAppointment(pc.name, post, { concurrent: isConcurrentPersonnel, reason: reason });
-      else if (action === 'dismiss') r = onDismissal(pc.name, reason);
+      else if (action === 'dismiss') r = onDismissal(pc.name, reason, aiOutput);
       if (r && r.ok) {
         personnelFromPcCount++;
         handledNames[pc.name] = true;

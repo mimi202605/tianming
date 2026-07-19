@@ -330,6 +330,55 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
     ok(facOf(ctx.GM, '祖大寿') === '后金', 'issue5-pos(诏令) 玩家诏令点名=有源→放行');
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  返工·issue4·死亡动词经人事通道(personnel/appointments/office)入死亡管线的收口闸
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== 返工·issue4·死亡动词人事通道收口 =====');
+  function aliveOf(GM, n) { const c = findCh(GM, n); return c && c.alive; }
+  // issue4-neg-A·personnel_changes『暴毙』(C2 旧司法词表漏·解析器映射进死亡)无源→拦(不死)+弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', position: '司礼', officialTitle: '司礼', alive: true, faction: '明朝廷', resources: {} }]);
+    ctx.applyAITurnChanges({ personnel_changes: [{ name: '魏忠贤', change: '暴毙于府' }] });
+    ok(aliveOf(ctx.GM, '魏忠贤') === true, 'issue4-neg-A personnel『暴毙』无源→不落死(此前零提示落死)');
+    ok(hintNames(ctx.GM).indexOf('魏忠贤') >= 0, 'issue4-neg-A 拒写降级→弱自查纸条留痕');
+  }
+  // issue4-neg-B·appointments dismiss+reason『病故』无源→onDismissal 收口拦(不死)+弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '孙传庭', isPlayer: true, alive: true, faction: '明朝廷', resources: {} },
+                     { name: '某巡抚', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }]);
+    ctx.P = { playerInfo: { characterName: '孙传庭' }, adminHierarchy: {} };
+    ctx.applyAITurnChanges({ appointments: [{ charName: '某巡抚', action: 'dismiss', reason: '病故' }] });
+    ok(aliveOf(ctx.GM, '某巡抚') === true, 'issue4-neg-B appointments dismiss+病故 无源→死亡管线收口拦(不死)');
+    ok(hintNames(ctx.GM).indexOf('某巡抚') >= 0, 'issue4-neg-B 拒写降级→弱自查纸条留痕');
+  }
+  // issue4-neg-C·office_assignments dismiss+reason『病故』无源→收口拦(不死)
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '某主事', officialTitle: '主事', alive: true, faction: '明朝廷', resources: {} }]);
+    ctx.applyAITurnChanges({ office_assignments: [{ name: '某主事', action: 'dismiss', reason: '病故' }] });
+    ok(aliveOf(ctx.GM, '某主事') === true, 'issue4-neg-C office dismiss+病故 无源→死亡管线收口拦(不死)');
+    ok(hintNames(ctx.GM).indexOf('某主事') >= 0, 'issue4-neg-C 拒写降级→弱自查纸条留痕');
+  }
+  // issue4-pos-A·personnel『暴毙』+玩家诏令点名(有源)→照常落死
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', position: '司礼', officialTitle: '司礼', alive: true, faction: '明朝廷', resources: {} }],
+      { _playerDirectives: [{ id: 'd1', content: '究治魏忠贤诸罪，勿使漏网' }] });
+    ctx.applyAITurnChanges({ personnel_changes: [{ name: '魏忠贤', change: '暴毙于狱' }] });
+    ok(aliveOf(ctx.GM, '魏忠贤') === false && hintCount(ctx.GM) === 0, 'issue4-pos-A personnel暴毙+玩家诏令=有源→照常落死(不误拦)');
+  }
+  // issue4-pos-B·appointments dismiss+reason『奉旨处决』(active·含本局事由)→照常落死(不误拦)
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '孙传庭', isPlayer: true, alive: true, faction: '明朝廷', resources: {} },
+                     { name: '逆首某', officialTitle: '游击', alive: true, faction: '明朝廷', resources: {} }]);
+    ctx.P = { playerInfo: { characterName: '孙传庭' }, adminHierarchy: {} };
+    ctx.applyAITurnChanges({ appointments: [{ charName: '逆首某', action: 'dismiss', reason: '奉旨明正典刑' }] });
+    ok(aliveOf(ctx.GM, '逆首某') === false, 'issue4-pos-B appointments『奉旨明正典刑』=active→照常落死(active 不入 bare 闸)');
+  }
+
   console.log('');
   console.log('[smoke-write-gate-expansion] ' + passed + ' passed / ' + failed + ' failed');
   if (failed > 0) process.exit(1);

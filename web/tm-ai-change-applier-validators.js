@@ -65,11 +65,15 @@
     }
     // 刀C·扩面复用(2026-07-19)：opts.excludeStructuredKey 排除「本键自证」——校验某结构化键自身合法性时不得拿该键自证
     //   (C1 死条查 character_deaths 不算自身自证 / C2 司法查 personnel_changes 不算自身自证)。未传则全键计入(刀9 原行为·零变)。
-    var _selfKey = opts && opts.excludeStructuredKey;
-    if (_selfKey !== 'character_deaths' && _named(aiOutput.character_deaths, ['name'])) return true;
-    if (_selfKey !== 'personnel_changes' && _named(aiOutput.personnel_changes, ['name'])) return true;
-    if (_selfKey !== 'char_updates' && _named(aiOutput.char_updates, ['name'])) return true;
-    if (_named(aiOutput.office_assignments, ['name'])) return true;
+    // ★返工issue4(2026-07-19)：excludeStructuredKey 支持单键(字符串·向后兼容)或 excludeStructuredKeys 多键(数组)。死亡经
+    //   office_assignments/personnel 通道路由时·该通道键本身不得自证(否则『office dismiss 病故』自己给自己当源→漏杀)。
+    var _exSet = {};
+    if (opts && opts.excludeStructuredKey) _exSet[opts.excludeStructuredKey] = true;
+    if (opts && Array.isArray(opts.excludeStructuredKeys)) opts.excludeStructuredKeys.forEach(function(k){ _exSet[k] = true; });
+    if (!_exSet['character_deaths'] && _named(aiOutput.character_deaths, ['name'])) return true;
+    if (!_exSet['personnel_changes'] && _named(aiOutput.personnel_changes, ['name'])) return true;
+    if (!_exSet['char_updates'] && _named(aiOutput.char_updates, ['name'])) return true;
+    if (!_exSet['office_assignments'] && _named(aiOutput.office_assignments, ['name'])) return true;
     if (_named(aiOutput.npc_actions, ['name', 'actor', 'target'])) return true;
     // ④ 玩家诏令/裁决提及该人：玩家意志有源(最长实体匹配·防「起复王安石」误命中「王安」)
     var allNames = (G && Array.isArray(G.chars)) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
@@ -153,7 +157,9 @@
   //   返回 true=已拦(调用方应 return 跳过该条)·false=有源或非司法·照常落。★宁漏勿误杀。
   function _gateJudicialPersonnelChange(G, aiOutput, pc, changeText, applied) {
     if (!G || !pc || !pc.name) return false;
-    var judicial = /下狱|入狱|系狱|收押|收监|关押|囚禁|捉拿|逮捕|抓捕|缉拿|锁拿|拿问|逮治|械系|下诏狱|抄家|抄没|籍没|查抄|没官|流放|发配|戍边|充军|斩|诛|处决|处斩|处死|正法|凌迟|枭首|问斩|赐死|杖毙|廷杖|杖责|夺职拿问/.test(String(changeText || ''));
+    // ★返工issue4(2026-07-19)：并入裸/自然死词表(暴毙/病故/薨/自尽/伏诛/卒…)——personnel 解析器(applier:1614)把这些映射进死亡管线·
+    //   C2 旧司法词表漏之→personnel『魏忠贤暴毙』零提示落死。与 onDismissal:554 死亡面对齐·统一过同款来源判据。
+    var judicial = /下狱|入狱|系狱|收押|收监|关押|囚禁|捉拿|逮捕|抓捕|缉拿|锁拿|拿问|逮治|械系|下诏狱|抄家|抄没|籍没|查抄|没官|流放|发配|戍边|充军|斩|诛|处决|处斩|处死|正法|凌迟|枭首|问斩|赐死|杖毙|廷杖|杖责|夺职拿问|暴毙|暴卒|暴亡|猝死|病故|病逝|病殁|病卒|病亡|亡故|物故|身故|溘逝|薨逝|薨|寿终|自尽|自缢|自刎|自裁|服毒|伏诛|伏法|弃市|殒命|毙命/.test(String(changeText || ''));
     if (!judicial) return false;
     var ch = (typeof _findEntity === 'function') ? _findEntity(G, 'char', pc.name) : (Array.isArray(G.chars) ? G.chars.filter(function(c){ return c && c.name === pc.name; })[0] : null);
     if (!ch) return false;   // 查无此人·实体存在性另由既有 onDismissal 兜底·此闸只管来源
@@ -252,6 +258,25 @@
     if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
     try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源改换门庭', itemName: ch.name || charRef }); } catch(_ae) {}
     if (applied && Array.isArray(applied.failed)) applied.failed.push({ field: 'allegiance_changes', text: (ch.name || charRef) + ' → ' + newName, reason: '无源改换门庭·未落库(疑史实幻觉)' });
+    return true;
+  }
+
+  // ── 刀C·返工issue4(2026-07-19)·死亡动词经人事通道(appointments/office_assignments dismiss+reason)入死亡管线的收口闸 ──
+  //   收口点=onDismissal 死亡分支前(单一位置)。凡 reason 映射进死亡管线(与 onDismissal:554 词表对齐)·且是 bare 裸死(病故/薨/暴毙/
+  //   自尽/伏诛)·且本回合无源→拒路由死亡+弱提示。主动致死/暴力殉难/含本局事由=active→照常落。★只在 AI-apply 通道(aiOutput 传入)生效·
+  //   玩家/迁移直调 onDismissal(无 aiOutput)不拦。玩家角色恒经裁决器·绝不拦。返 true=已拦(onDismissal 应返失败·不路由死亡)。
+  function _gateDeathRoutingSource(G, ch, reasonText, aiOutput) {
+    if (!G || !ch || !ch.name || !aiOutput) return false;
+    if (ch.isPlayer === true) return false;
+    var rs = String(reasonText || '');
+    if (!/处决|处斩|处死|斩首|斩决|斩杀|戮杀|正法|明正典刑|诛杀|诛戮|诛九族|凌迟|腰斩|弃市|枭首|枭示|问斩|赐死|赐自尽|绞刑|绞死|伏诛|伏法|就戮|授首|自尽|自缢|自刎|自裁|自杀|服毒自尽|畏罪自尽|磔|死刑|身故|病故|病逝|病殁|病卒|病亡|亡故|暴毙|暴卒|暴亡|猝死|物故|殒命|毙命|殉国|殉难|殉城|殉职|罹难|遇害|遇难|遭难|薨逝|溘逝|寿终|城破身死/.test(rs)) return false;
+    if (_classifyStructuredDeathKind(rs) !== 'bare') return false;
+    if (_writeActionSourced(G, aiOutput, ch, { excludeStructuredKeys: ['character_deaths', 'office_assignments', 'personnel_changes'], scanInputs: true })) return false;
+    console.warn('[death-route/返工] 无源裸死亡经人事通道入死亡管线·拦(疑史实幻觉·转弱自查纸条留痕): ' + ch.name + ' ← 「' + rs.slice(0, 30) + '」');
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源人事死亡', reason: '裸死亡经 personnel/appointments/office→onDismissal 死亡管线·本回合无任一源头·疑史实幻觉·死因「' + rs.slice(0, 20) + '」', itemName: ch.name, source: 'death-routing-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源人事死亡', itemName: ch.name }); } catch(_de) {}
     return true;
   }
 
@@ -1473,5 +1498,5 @@
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
   // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
-  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint; __acaP._gateAllegianceSource = _gateAllegianceSource;
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint; __acaP._gateAllegianceSource = _gateAllegianceSource; __acaP._gateDeathRoutingSource = _gateDeathRoutingSource;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
