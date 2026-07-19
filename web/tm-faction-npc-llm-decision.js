@@ -242,7 +242,7 @@
     return !!(token && token.turn !== _currentTurn());
   }
 
-  function _finishLedgerRun(token, status, reason, diagnostics) {
+  function _finishLedgerRun(token, status, reason, diagnostics, extra) {
     if (!token) return;
     var ledger = _readLedger(token.turn);
     if (!ledger || !ledger.runs || !ledger.runs[token.fac]) return;
@@ -264,6 +264,9 @@
         };
       }
       row.diagnostics = diagnostics;
+    }
+    if (extra && typeof extra === 'object') {
+      Object.keys(extra).forEach(function(k){ row[k] = extra[k]; });
     }
     var turnLedger = _ensureFactionAiTurnLedger(token.turn);
     if (turnLedger) turnLedger.runs = ledger.runs;
@@ -2196,10 +2199,10 @@
   // ──────────────────────────────────────────────────────────
   // Apply decision·按 schema 改 fac/chars 数据
   // ──────────────────────────────────────────────────────────
-  function _applyDecision(fac, decision) {
+  function _applyDecision(fac, decision, opts) {
     var engine = _actionEngine();
     if (engine && typeof engine.applyDecision === 'function') {
-      return engine.applyDecision(fac, decision);
+      return engine.applyDecision(fac, decision, opts || {});
     }
     // F0·2026-05-22·~260 行 fallback 应已死 (action-engine 在 index.html 中先于 decision 加载)·warn 一次以便回收·下个 sprint 评估删除
     try { console.warn('[npc-llm-decision] _applyDecision fallback fired·FactionActionEngine missing — please report'); } catch(_){}
@@ -2459,6 +2462,69 @@
   // ──────────────────────────────────────────────────────────
 
   // 单 fac LLM 决策·async·返回 summary
+  // Slice 2·本地启发式兜底·LLM 决策解析彻底失败时据势力当前态势择一保守之策(edict)·免整回合躺平·走同一 applyDecision 管线
+  function _buildTemplateFallbackDecision(fac, opts) {
+    opts = opts || {};
+    var reasons = _arr(opts.reasons);
+    var de = (fac && fac.derivedEconomy) || {};
+    var has = function(k){ return reasons.indexOf(k) >= 0; };
+    var fiscalStress = _safeNum(de.fiscalStress) >= 40 || _safeNum(de.netFlow) < 0
+      || has('fiscal') || has('stress') || has('empty-treasury')
+      || !!(fac && fac.treasury && _safeNum(fac.treasury.money) <= 0);
+    var inWar = has('war');
+    var edictType, content, trigger, loyaltyDeltas, cause;
+    if (fiscalStress) {
+      edictType = '减俸'; trigger = '财政危'; cause = '库藏吃紧';
+      loyaltyDeltas = { court: 0, general: 0, clan: 0 };
+      content = '国用维艰，着有司核实钱粮，量入为出，暂省冗费，共纾度支之急，毋得虚糜。';
+    } else if (inWar) {
+      edictType = '整军'; trigger = '兵事急'; cause = '战事在身';
+      loyaltyDeltas = { court: 0, general: 1, clan: 0 };
+      content = '边衅未息，着诸营申严号令，勤加训练，修缮甲仗，谨守汛地，毋得懈弛，以固藩篱。';
+    } else {
+      edictType = '安抚'; trigger = '守成'; cause = '局势暂稳·宜镇静守成';
+      loyaltyDeltas = { court: 1, general: 0, clan: 0 };
+      content = '时值多故，着有司安辑士民，抚循将吏，庶政悉遵旧章，务在镇静，以俟从容。';
+    }
+    return {
+      rationale: '（模板兜底·LLM 决策解析失败·据本势力当前态势择一保守之策，免整回合空转）Phase 1·' + edictType + '（cause: ' + cause + '）。',
+      memorials: [],
+      edict: { type: edictType, content: content, trigger: trigger, treasuryDelta: 0, loyaltyDeltas: loyaltyDeltas },
+      chaoyi: null,
+      office: [],
+      actions: []
+    };
+  }
+
+  function _runTemplateFallback(fac, ledgerToken, opts) {
+    opts = opts || {};
+    if (!fac || !fac.name) return null;
+    if (_isLedgerTokenStale(ledgerToken)) return null;
+    var turn = _safeNum(opts.turn) || (ledgerToken && ledgerToken.turn) || _currentTurn();
+    var engine = _actionEngine();
+    var reasons = [];
+    // 复用 action-engine 候选评分·取本势力压力 reasons 以择策(rank/template 能力复用·失败则默认保守 edict)
+    try {
+      if (engine && typeof engine.scoreFactionCandidate === 'function') {
+        var sc = engine.scoreFactionCandidate(fac, { turn: turn, playerFactionNames: _resolvePlayerFactionNames() });
+        reasons = _arr(sc && sc.reasons);
+      }
+    } catch (_scE) {}
+    var decision = _buildTemplateFallbackDecision(fac, { reasons: reasons });
+    var fbId = 'npc_llm_fb_' + turn + '_' + fac.name;
+    var summary = _applyDecision(fac, decision, { turn: turn, decisionId: fbId });
+    var appliedN = summary && _safeNum(summary.actions);
+    // 观测·标记本次兜底所产动作 _source(ledger 行·同引用亦入 turnLedger.actions)
+    try {
+      _arr(fac._npcLlmActionLedger).forEach(function(row) {
+        if (row && row.decisionId === fbId) row._source = 'template-fallback';
+      });
+    } catch (_mkE) {}
+    if (summary && typeof summary === 'object') summary._source = 'template-fallback';
+    if (!appliedN) return null;  // 兜底也没落地(极少·如被去重)·回落原 skipped 语义
+    return { summary: summary, decisionId: fbId, rationale: decision.rationale };
+  }
+
   async function decideFor(facName, opts) {
     opts = opts || {};
     if (!_isEnabled()) return { skipped: true, reason: 'LLM mode off' };
@@ -2485,6 +2551,11 @@
       return { skipped: true, reason: 'stale turn', turn: ledgerToken.turn, currentTurn: _currentTurn() };
     }
     if (!raw) {
+      var _fbA = _runTemplateFallback(fac, ledgerToken, { turn: (ledgerToken && ledgerToken.turn) || opts.turn || _currentTurn(), source: opts.source });
+      if (_fbA) {
+        _finishLedgerRun(ledgerToken, 'applied', 'template-fallback', null, { templateFallback: true, parseFailed: true, parseFailure: callDiagnostics || { kind: 'parse', error: 'empty parsed decision' } });
+        return { applied: true, templateFallback: true, summary: _fbA.summary, rationale: _fbA.rationale, diagnostics: callDiagnostics };
+      }
       _finishLedgerRun(ledgerToken, 'failed', 'LLM call/parse failed', callDiagnostics || { kind:'parse', error:'empty parsed decision' });
       return { skipped: true, reason: 'LLM call/parse failed', fallbackToTemplate: true, diagnostics: callDiagnostics };
     }
@@ -2493,6 +2564,11 @@
       return { skipped: true, reason: 'stale turn', turn: ledgerToken.turn, currentTurn: _currentTurn() };
     }
     if (!decision) {
+      var _fbB = _runTemplateFallback(fac, ledgerToken, { turn: (ledgerToken && ledgerToken.turn) || opts.turn || _currentTurn(), source: opts.source });
+      if (_fbB) {
+        _finishLedgerRun(ledgerToken, 'applied', 'template-fallback', null, { templateFallback: true, parseFailed: true, parseFailure: { kind: 'schema', error: 'decision invalid' } });
+        return { applied: true, templateFallback: true, summary: _fbB.summary, rationale: _fbB.rationale };
+      }
       _finishLedgerRun(ledgerToken, 'failed', 'decision invalid', { kind:'schema', error:'decision invalid', rawPreview:'' });
       return { skipped: true, reason: 'decision invalid', fallbackToTemplate: true };
     }
@@ -2826,6 +2902,28 @@
       estimatedTokensThisTurn = appliedThisTurn * (3000 + maxTok);
     } catch(_){}
 
+    // Slice 2·turn 级落地率聚合·观测(parseFail/skipped/merged/templateFallback)·消费兜底后 parse 失败不再=整回合躺平
+    var turnAggregate = { turn: turn, runs: 0, applied: 0, failed: 0, parseFail: 0, templateFallback: 0, skippedActions: 0, mergedActions: 0 };
+    try {
+      Object.keys(runs).forEach(function(name) {
+        var r = runs[name];
+        if (!r || _safeNum(r.turn) !== turn) return;
+        turnAggregate.runs++;
+        if (r.status === 'applied') turnAggregate.applied++;
+        if (r.status === 'failed') turnAggregate.failed++;
+        if (r.templateFallback) turnAggregate.templateFallback++;
+        var kind = (r.failure && r.failure.kind) || '';
+        if (r.parseFailed || (r.status === 'failed' && /parse|truncat|schema|empty|call_or_parse/i.test(kind))) turnAggregate.parseFail++;
+      });
+      _arr(G.facs).forEach(function(f) {
+        if (!f || _isPlayerFaction(f, playerFacNames)) return;
+        var sm = f._lastLlmApplySummary;
+        if (!sm || _safeNum(sm.turn) !== turn) return;
+        turnAggregate.skippedActions += _safeNum(sm.skippedActions);
+        turnAggregate.mergedActions += _safeNum(sm.mergedActions);
+      });
+    } catch (_taE) {}
+
     return {
       turn: turn,
       enabled: !!settings.enabled,
@@ -2839,6 +2937,7 @@
       recentApplications: recentApplications,
       recentFailures: recentFailures,
       estimatedTokensThisTurn: estimatedTokensThisTurn,
+      turnAggregate: turnAggregate,
       facCount: perFacStatus.length,
       activeJobs: _safeNum(dispatchStats.running) + _safeNum(dispatchStats.scheduled)
     };
@@ -2863,6 +2962,8 @@
     _validateDecision: _validateDecision,
     _normalizeDecisionActions: _normalizeDecisionActions,
     _applyDecision: _applyDecision,
+    _buildTemplateFallbackDecision: _buildTemplateFallbackDecision,   // Slice 2·测试/观测用
+    _runTemplateFallback: _runTemplateFallback,                       // Slice 2·测试/观测用
     _formatBuildOpportunities: _formatBuildOpportunities,   // S5·测试/观测用
     _landFactionBuilds: _landFactionBuilds,                 // S5·测试/观测用
     _repairFactionBuildings: _repairFactionBuildings,       // S5 完善·NPC 自修(测试/观测用)
