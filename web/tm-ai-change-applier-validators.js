@@ -128,6 +128,21 @@
         var q = iss[j]; if (!q) continue;
         if (_hit(q.title) || _hit(q.description) || _hit(q.desc)) return true;
       }
+      // 刀C·返工(2026-07-19)·朝议/常朝/廷议裁决面(玩家批红/口诏落点·喂 AI 的『上回合圣意』)：GM._lastChangchaoDecisions(本回合决议)
+      //   + GM._courtRecords(常朝/廷议统一快照·近 8 条)点名此人→合法裁决有源。治『合法罢黜/失势裁决后写 stance/faction 被误拦』。
+      var lcc = (G && Array.isArray(G._lastChangchaoDecisions)) ? G._lastChangchaoDecisions : [];
+      for (var k = 0; k < lcc.length; k++) {
+        var dd = lcc[k]; if (!dd) continue;
+        if (_hit(dd.title) || _hit(dd.extra) || _hit(dd.dept)) return true;
+      }
+      var crs = (G && Array.isArray(G._courtRecords)) ? G._courtRecords : [];
+      for (var c = 0; c < crs.length; c++) {
+        var rec = crs[c]; if (!rec) continue;
+        var decs = Array.isArray(rec.decisions) ? rec.decisions : [];
+        for (var di = 0; di < decs.length; di++) { var de = decs[di]; if (de && (_hit(de.title) || _hit(de.detail) || _hit(de.content) || _hit(de.presenter) || _hit(de.dept))) return true; }
+        var tr = Array.isArray(rec.transcript) ? rec.transcript : [];
+        for (var ti = 0; ti < tr.length; ti++) { var te = tr[ti]; if (te && (_hit(te.text) || _hit(te.speaker))) return true; }
+      }
     }
     return false;
   }
@@ -189,10 +204,13 @@
       if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
       try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: label, itemName: e.title || e.name || '' }); } catch(_ge){}
     }
-    // 当前游戏年：TimeUtils.turnToDate(权威·由 turn+剧本 startYear 算) 优先·回落 G.year/currentYear。无从确定→不硬拦(保守)。
+    // 当前游戏年·权威=calcDateFromTurn(tm-ai-infra·读 P.time.year 真开局年·手工历法·无 new Date(1,..)→1901 两位年毒值)；
+    //   ★返工(2026-07-19)：旧用 TimeUtils.turnToDate 读 P.time.startYear(缺→1→new Date→1901毒值)误判时点。回落 G.year/currentYear。
+    //   ★异常年值(非公元 1000-2099·如 0/1901毒值/公元前朝代)一律视为『无从确定』→curYear=0→不硬拦(宁漏勿误杀)。
     var curYear = 0;
-    try { var _td = global.TimeUtils && global.TimeUtils.turnToDate; if (_td && G.turn != null) curYear = Number(_td(G.turn).year) || 0; } catch(_te){}
-    if (!curYear) curYear = Number(G.year) || Number(G.currentYear) || 0;
+    try { if (typeof global.calcDateFromTurn === 'function' && G.turn != null) { var _cd = global.calcDateFromTurn(G.turn); curYear = Number(_cd && _cd.adYear) || 0; } } catch(_te){}
+    if (!(curYear >= 1000 && curYear <= 2099)) curYear = Number(G.year) || Number(G.currentYear) || 0;
+    if (!(curYear >= 1000 && curYear <= 2099)) curYear = 0;   // 仍异常→无从确定·不拦
     // ① 硬闸：明确未来年份
     var evYear = _extractEventYear(e);
     if (curYear && evYear && evYear > curYear) {
