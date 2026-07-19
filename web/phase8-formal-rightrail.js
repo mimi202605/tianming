@@ -530,7 +530,9 @@
     var people = rightIssuePeople();
     var gm = window.GM || {};
     var rawPendingAudiences = Array.isArray(gm._pendingAudiences) ? gm._pendingAudiences : [];
-    var pendingAudiences = rawPendingAudiences.filter(function(q){
+    // 清洗谓词(保留使节/剧本预置/后妃/本朝在场者·滤除混入的明确异势力求见者)。写口统一走 tm-wendui 的唯一
+    // 清洗 mutator(按谓词·非 index)，与旧 UI/各删除点同口，杜绝两套 UI 各持 render-time index 删错人。
+    var _wdKeep = function(q){
       if (!q || !q.name) return false;
       if (!q.isConsort) {
         // 阵营闸(2026-07-04)：滤除旧版混入的明确异势力求见者(外邦君主)·使节/剧本预置/空 faction 者放行·与 tm-wendui 渲染清洗同款
@@ -547,8 +549,14 @@
         try { p = window.findCharByName(q.name); } catch(_) {}
       }
       return !!(p && rightIssueIsPlayerConsort(p));
-    });
-    if (pendingAudiences.length !== rawPendingAudiences.length) gm._pendingAudiences = pendingAudiences;
+    };
+    var pendingAudiences;
+    if (typeof window._wdCleansePendingAudiences === 'function') {
+      window._wdCleansePendingAudiences(_wdKeep);   // 唯一写口·仅在真有剔除时写回
+      pendingAudiences = Array.isArray(gm._pendingAudiences) ? gm._pendingAudiences : [];
+    } else {
+      pendingAudiences = rawPendingAudiences.filter(_wdKeep);   // 兜底：mutator 未载入时不写回·仅供本次渲染
+    }
     var atCourt = people.filter(rightIssueAtCourt);
     var seekers = atCourt.filter(rightWenduiIsSeeker);
     var waiting = atCourt.filter(function(p){ return seekers.indexOf(p) < 0; });
@@ -1999,8 +2007,8 @@
       window._wdDismissPending(idx);
     } else if (typeof _wdDismissPending === 'function') {
       _wdDismissPending(idx);
-    } else if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences[idx]) {
-      GM._pendingAudiences.splice(idx, 1);
+    } else if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences[idx] && typeof window._wdRemovePendingAudience === 'function') {
+      window._wdRemovePendingAudience(GM._pendingAudiences[idx]);   // 即时把 idx 解析成 q 引用后按稳定标识删·非裸 splice
       toast('已暂却待见');
     }
     openPanel('issue');

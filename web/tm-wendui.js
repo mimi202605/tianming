@@ -152,7 +152,7 @@ function renderWenduiChars(force){
   // 【阶下待见】使节/外藩/AI推送
   // 存量清洗(2026-07-04)：旧版 NPC 社交行动无阵营闸·外邦君主(皇太极等)曾被排进求见队列并喂入推演。渲染时滤除已混入的明确异势力人物·救活污染存档免回档。使节(isEnvoy/fromFaction)/后妃(isConsort·消费侧另有专检)/剧本预置(_sid/_opening·作者意图)/空 faction 者均放行;查无此人留给消费侧既有兜底。
   if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences.length > 0) {
-    GM._pendingAudiences = GM._pendingAudiences.filter(function(q) {
+    _wdCleansePendingAudiences(function(q) {
       if (!q || !q.name) return true;
       if (q.isEnvoy || q.fromFaction || q.isConsort || q._sid || q._opening) return true;
       var _qCh = (typeof findCharByName === 'function') ? findCharByName(q.name) : null;
@@ -1143,6 +1143,28 @@ function _wdDeriveAudienceAgenda(ch) {
 }
 if (typeof window !== 'undefined') window._wdDeriveAudienceAgenda = _wdDeriveAudienceAgenda;
 
+// ── 待见队列(_pendingAudiences)唯一删除/清洗写口(2026-07-19·求见写口收口) ──
+//   病根：新旧两套 UI 各在 render 时按 render-time index splice/filter 重写数组·下标源于各自 render 顺序→
+//   跨 UI 删错人。收口：所有「删一条/清洗一批」都走此二函数·按稳定标识(对象引用/名/谓词)·
+//   render-time index 仅在调用侧入口即时解析成 q 引用后即弃。只管删除/清洗·推入(push)逻辑不在此。
+function _wdRemovePendingAudience(ref) {
+  var arr = (typeof GM !== 'undefined' && GM && Array.isArray(GM._pendingAudiences)) ? GM._pendingAudiences : null;
+  if (!arr || !arr.length) return null;
+  var idx = -1;
+  if (ref && typeof ref === 'object') idx = arr.indexOf(ref);           // 稳定标识：对象引用(优先)
+  else if (typeof ref === 'string') { for (var i = 0; i < arr.length; i++) { if (arr[i] && arr[i].name === ref) { idx = i; break; } } }
+  if (idx < 0 || idx >= arr.length) return null;
+  return arr.splice(idx, 1)[0];
+}
+function _wdCleansePendingAudiences(keepFn) {
+  var arr = (typeof GM !== 'undefined' && GM && Array.isArray(GM._pendingAudiences)) ? GM._pendingAudiences : null;
+  if (!arr || typeof keepFn !== 'function') return arr;
+  var kept = arr.filter(keepFn);
+  if (kept.length !== arr.length) GM._pendingAudiences = kept;   // 仅在真有剔除时写回(保引用稳定·同原行为)
+  return GM._pendingAudiences;
+}
+if (typeof window !== 'undefined') { window._wdRemovePendingAudience = _wdRemovePendingAudience; window._wdCleansePendingAudiences = _wdCleansePendingAudiences; }
+
 async function _wdNpcInitiateSpeak(name) {
   var ch = findCharByName(name);
   if (!ch) return;
@@ -1330,7 +1352,7 @@ function _wdDenyAudience(name) {
     NpcMemorySystem.remember(name, _urgent ? '有紧要事求见，竟被拒于殿外——心寒' : '求见皇帝被拒于殿外', _urgent ? '怨' : '忧', _urgent ? 6 : 4, '天子');
   }
   // 移出待见队列（已处置）
-  if (Array.isArray(GM._pendingAudiences)) GM._pendingAudiences = GM._pendingAudiences.filter(function(q){ return q && q.name !== name; });
+  if (Array.isArray(GM._pendingAudiences)) _wdCleansePendingAudiences(function(q){ return q && q.name !== name; });
   if (typeof addEB === 'function') addEB('问对·拒见', name + '求见被拒' + (_urgent ? '（其事紧要·恐生怨怼）' : ''));
   toast(name + '的求见被拒' + (_urgent ? '——其有紧要事，恐生怨怼' : '——已记入其记忆'));
   renderWenduiChars();
@@ -1391,27 +1413,27 @@ function _wdOpenAudienceQueue(qi) {
   }
   var isPlayerConsortQueue = !!(ch && q.isConsort && _wdIsPlayerConsort(ch));
   if (q.isConsort && !isPlayerConsortQueue) {
-    GM._pendingAudiences.splice(qi, 1);
+    _wdRemovePendingAudience(q);
     if (typeof toast === 'function') toast(name + '并非本朝后宫，已移出求见。');
     renderWenduiChars();
     return;
   }
   if (!q.isEnvoy) {
     if (!ch) {
-      GM._pendingAudiences.splice(qi, 1);
+      _wdRemovePendingAudience(q);
       if (typeof toast === 'function') toast('求见人物不存在，已移出队列。');
       renderWenduiChars();
       return;
     }
     if (!_wdCanDirectAudience(ch)) {
-      GM._pendingAudiences.splice(qi, 1);
+      _wdRemovePendingAudience(q);
       if (typeof toast === 'function') toast(name + '不在御前，不能直接接见。');
       renderWenduiChars();
       return;
     }
   }
   // 移出队列
-  GM._pendingAudiences.splice(qi, 1);
+  _wdRemovePendingAudience(q);
   // 后妃请见：标记情绪/留宿上下文
   if (isPlayerConsortQueue) {
     ch._audienceMood = q.consortMood || '企盼';
@@ -1502,7 +1524,7 @@ function _wdDismissPending(qi) {
   if (typeof NpcMemorySystem !== 'undefined') {
     NpcMemorySystem.remember(q.name, '求见陛下被拒——' + (q.reason || ''), '忧', 4);
   }
-  GM._pendingAudiences.splice(qi, 1);
+  _wdRemovePendingAudience(q);
   toast('已拒见 ' + q.name);
   renderWenduiChars();
 }
@@ -1739,7 +1761,7 @@ function closeWenduiModal() {
   // ── 已见：移出待接见队列、压抑动态求见到下一回合 ──
   if (_targetName) {
     if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences.length) {
-      GM._pendingAudiences = GM._pendingAudiences.filter(function(q){ return q && q.name !== _targetName; });
+      _wdCleansePendingAudiences(function(q){ return q && q.name !== _targetName; });
     }
     var _ch = findCharByName(_targetName);
     if (_ch) {
