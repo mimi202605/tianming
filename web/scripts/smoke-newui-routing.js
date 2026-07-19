@@ -111,5 +111,44 @@ ok(count(bridgeSrc, 'state.legacyView = true') === 0, '⑥ 无 state.legacyView=
 ok(count(bridgeSrc, 'state.legacyView = false') <= 1, '⑥ state.legacyView=false 仅剩顶部 init(转换点走 setter)');
 ok(count(bridgeSrc, 'setLegacyView(false)') >= 2 && count(bridgeSrc, 'setLegacyView(true)') === 1, '⑥ showHome/leaveFormalRuntime→setLegacyView(false)·openLegacyTab→setLegacyView(true)');
 
+// ══ Codex 复审返工四条·各配红绿(死rail探针/缺drafts降级/徽标口径/签名状态敏感) ══
+
+// 返① 闻徽标挂生效 rail(死rail探针)：ensureRail=ensurePreviewRail 是生效者·须含 rumor 槽
+ok(/ensureRail = ensurePreviewRail/.test(bridgeSrc), '返①ㆍensurePreviewRail 为生效 rail(ensureRail 被其覆盖)');
+const previewRailFn = bridgeSrc.slice(bridgeSrc.indexOf('function ensurePreviewRail'), bridgeSrc.indexOf('ensureRail = ensurePreviewRail'));
+ok(/\['rumor',SVG_RUMOR,'风闻情报'/.test(previewRailFn) && /var SVG_RUMOR =/.test(previewRailFn), '返①ㆍ生效 rail 补 rumor(闻)槽+SVG_RUMOR·闻入口在生效 DOM 存在(非死rail)');
+ok(/RAIL_DYNAMIC_BADGE_SLOTS = \{[^}]*rumor:1/.test(bridgeSrc), '返①ㆍrumor ∈ 动态槽·生效 rail 徽标生成器发 data-phase8-badge=rumor(徽标真显示)');
+
+// 返② drafts 缺席=死按钮 → 降级 toast+回退 openModule(真跑包装器)
+function runWrapper(name){
+  const line = bridgeSrc.match(new RegExp('function ' + name + '\\(\\)\\{[^\\n]*\\}'))[0];
+  let toasted = null, opened = null;
+  const w = new Function('window', 'toast', 'openModule', line + '\nreturn ' + name + ';')(
+    { TMPhase8FormalBridge: {} }, function(t){ toasted = t; }, function(k){ opened = k; return 'MOD:' + k; });
+  w();
+  return { toasted, opened };
+}
+const r2a = runWrapper('openYueZouPreviewPanel');
+ok(!!r2a.toasted && r2a.opened === 'memorial', '返②ㆍdrafts 缺席·openYueZou(朱批)→toast+回退 openModule(memorial)·非死按钮');
+const r2b = runWrapper('openHongyanPreviewPanel');
+ok(!!r2b.toasted && r2b.opened === 'letter', '返②ㆍdrafts 缺席·openHongyan(人物传书)→toast+回退 openModule(letter)');
+
+// 返③ 纲徽标计数口径：只数待批·approved/rejected 不计
+const rdbcBody = bridgeSrc.slice(bridgeSrc.indexOf('function railDynamicBadgeCount'), bridgeSrc.indexOf('function updateRailBadges'));
+const rdbc = new Function('getMemorials', 'getIssues', 'issueIsResolved', 'collectRecentEvents', 'window',
+  rdbcBody + '\nreturn railDynamicBadgeCount;')(
+  function(){ return [{ status: 'pending' }, { status: 'approved' }, { status: 'rejected' }]; },
+  function(){ return []; }, function(){ return false; }, function(){ return []; }, { GM: {} });
+ok(rdbc('ol') === 1, '返③ㆍ纲徽标只数待批(pending/approved/rejected→1·非 getMemorials 全量3)');
+
+// 返④ listSig 状态敏感：原地改末条 status → 签名变；无 status 数组零回归
+const lsStart = bridgeSrc.indexOf('function listSig');
+const lsBody = bridgeSrc.slice(lsStart, bridgeSrc.indexOf('return [', lsStart));
+const listSig = new Function('compactText', lsBody + '\nreturn listSig;')(function(s, n){ return String(s).slice(0, n); });
+const sigA = listSig([{ title: 'a', status: 'pending' }, { title: 'b', status: 'pending' }]);
+const sigB = listSig([{ title: 'a', status: 'pending' }, { title: 'b', status: 'approved' }]);
+ok(sigA !== sigB, '返④ㆍlistSig 状态敏感·末条 pending→approved 签名变(原不变=漏刷)');
+ok(listSig([{ title: 'x' }, { title: 'y' }]) === listSig([{ title: 'x' }, { title: 'y' }]), '返④ㆍ无 status 数组零回归');
+
 console.log('\nsmoke-newui-routing ' + (F === 0 ? 'PASS' : 'FAIL') + ' ' + A + '/' + (A + F));
 process.exit(F === 0 ? 0 : 1);

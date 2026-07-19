@@ -1616,10 +1616,11 @@
 
   // 2026-05-27·拆分 wave 4 遗留·9 个 drafts 函数迁出 bridge 后裸引用未 wrap·导致 IIFE crash·全 UI 失效
   // 与 ensureMainShell / renderFormalMap 同 paradigm·lazy 走 bridge.drafts.X
-  function openZhaoPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openZhaoPreviewPanel) return d.openZhaoPreviewPanel.apply(null, arguments); }
-  function openYueZouPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openYueZouPreviewPanel) return d.openYueZouPreviewPanel.apply(null, arguments); }
-  function openHongyanPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openHongyanPreviewPanel) return d.openHongyanPreviewPanel.apply(null, arguments); }
-  function openShiluPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openShiluPreviewPanel) return d.openShiluPreviewPanel.apply(null, arguments); }
+  // 降级·drafts 未装载时(资源部分装载场景) toast 提示 + 回退 openModule 对应 mockup 模块·避免死按钮(无面板无 toast 无回退)
+  function openZhaoPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openZhaoPreviewPanel) return d.openZhaoPreviewPanel.apply(null, arguments); toast('御笔面板未就绪，暂用简版'); return openModule('edict'); }
+  function openYueZouPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openYueZouPreviewPanel) return d.openYueZouPreviewPanel.apply(null, arguments); toast('朱批面板未就绪，暂用简版'); return openModule('memorial'); }
+  function openHongyanPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openHongyanPreviewPanel) return d.openHongyanPreviewPanel.apply(null, arguments); toast('鸿雁面板未就绪，暂用简版'); return openModule('letter'); }
+  function openShiluPreviewPanel(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.openShiluPreviewPanel) return d.openShiluPreviewPanel.apply(null, arguments); toast('实录面板未就绪，暂用简版'); return openModule('records'); }
   function syncFormalEdictDraftsToLegacyInputs(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.syncFormalEdictDraftsToLegacyInputs) return d.syncFormalEdictDraftsToLegacyInputs.apply(null, arguments); }
   function getFormalEdictDraftSnapshot(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.getFormalEdictDraftSnapshot) return d.getFormalEdictDraftSnapshot.apply(null, arguments); }
   function clearFormalEdictDrafts(){ var d = (window.TMPhase8FormalBridge||{}).drafts; if (d && d.clearFormalEdictDrafts) return d.clearFormalEdictDrafts.apply(null, arguments); }
@@ -2134,7 +2135,7 @@
   var RAIL_DYNAMIC_BADGE_SLOTS = { ol:1, issue:1, army:1, rumor:1 };
   function railDynamicBadgeCount(slot){
     try {
-      if (slot === 'ol') return getMemorials().length;
+      if (slot === 'ol') return getMemorials().filter(function(m){ return !m.status || m.status === 'pending'; }).length;
       if (slot === 'issue') return getIssues().filter(function(x){ return !issueIsResolved(x); }).length;
       if (slot === 'army') { var g = window.GM || {}; return Array.isArray(g._junqingBrief) ? g._junqingBrief.length : 0; }
       if (slot === 'rumor') return collectRecentEvents().length;
@@ -2242,6 +2243,8 @@
     var SVG_FINANCE = '<svg class="tm-rc-svg" viewBox="0 0 48 48"><rect x="6" y="8" width="36" height="32" fill="none" stroke="#8a6d2b" stroke-width="2.5" rx="1"/><rect x="6" y="20" width="36" height="2" fill="#6b5010"/><g stroke="#6b5010" stroke-width=".7"><line x1="10" y1="10" x2="10" y2="38"/><line x1="14.5" y1="10" x2="14.5" y2="38"/><line x1="19" y1="10" x2="19" y2="38"/><line x1="24" y1="10" x2="24" y2="38"/><line x1="29" y1="10" x2="29" y2="38"/><line x1="33.5" y1="10" x2="33.5" y2="38"/><line x1="38" y1="10" x2="38" y2="38"/></g><g fill="#d4be7a"><rect x="8.4" y="13" width="3.2" height="2.4" rx=".8"/><rect x="17.4" y="13" width="3.2" height="2.4" rx=".8"/><rect x="27.4" y="13" width="3.2" height="2.4" rx=".8"/><rect x="36.4" y="13" width="3.2" height="2.4" rx=".8"/><rect x="8.4" y="32" width="3.2" height="2.4" rx=".8"/><rect x="17.4" y="32" width="3.2" height="2.4" rx=".8"/><rect x="27.4" y="32" width="3.2" height="2.4" rx=".8"/><rect x="36.4" y="32" width="3.2" height="2.4" rx=".8"/></g></svg>';
     var SVG_ARCHIVE = '<svg class="tm-rc-svg" viewBox="0 0 48 48"><rect x="19" y="4" width="10" height="6.5" rx=".8" fill="#c04030" stroke="#d4be7a" stroke-width=".7"/><line x1="24" y1="10.5" x2="24" y2="14.5" stroke="#d4be7a" stroke-width=".9"/><line x1="9" y1="14.5" x2="39" y2="14.5" stroke="#d4be7a" stroke-width=".8"/><g fill="#d4be7a" stroke="#6b5010" stroke-width=".5"><rect x="7" y="16.5" width="8" height="5.5" rx=".6"/><rect x="20" y="16.5" width="8" height="5.5" rx=".6"/><rect x="33" y="16.5" width="8" height="5.5" rx=".6"/></g><line x1="4" y1="25" x2="44" y2="25" stroke="#d4be7a" stroke-width=".6"/><g fill="#8a6d2b"><rect x="3.5" y="25" width="6" height="4" rx=".4"/><rect x="10.5" y="25" width="6" height="4" rx=".4"/><rect x="17.5" y="25" width="6" height="4" rx=".4"/><rect x="24.5" y="25" width="6" height="4" rx=".4"/><rect x="31.5" y="25" width="6" height="4" rx=".4"/><rect x="38.5" y="25" width="6" height="4" rx=".4"/></g><g fill="#d4be7a"><circle cx="6.5" cy="35" r="1.1"/><circle cx="13.5" cy="35" r="1.1"/><circle cx="20.5" cy="35" r="1.1"/><circle cx="27.5" cy="35" r="1.1"/><circle cx="34.5" cy="35" r="1.1"/><circle cx="41.5" cy="35" r="1.1"/></g></svg>';
 
+    // 风闻情报·闻(生效 rail 原缺此槽·致 updateRailBadges 算闻计数却更新空 NodeList)·openPanel('rumor')→rightrail.renderRumorRich
+    var SVG_RUMOR = '<svg class="tm-rc-svg" viewBox="0 0 48 48"><path d="M17 40 Q13 40 12 34 Q11 29 11 23 Q11 11 22 11 Q33 11 33 22 Q33 28 27 29 Q24 30 24 33 Q24 37 20 39 Q18 40 17 40 Z" fill="none" stroke="#d4be7a" stroke-width="1.6"/><path d="M17 22 Q17 17 22 17 Q27 17 27 22" fill="none" stroke="#d4be7a" stroke-width="1.3"/><g stroke="#c04030" stroke-width="1.2" fill="none"><path d="M36 15 Q39 20 39 24 Q39 28 36 33"/><path d="M40 11 Q45 18 45 24 Q45 30 40 37"/></g></svg>';
     var buttons = [
       ['ol',SVG_OL,'纲纪总览','6','hot'],
       ['issue',SVG_ISSUE,'政务问对','3','hot'],
@@ -2250,6 +2253,7 @@
       ['army',SVG_ARMY,'军务边防','2','hot'],
       ['map',SVG_MAP,'舆图政区','',''],
       ['finance',SVG_FINANCE,'户部财计','','ok'],
+      ['rumor',SVG_RUMOR,'风闻情报','',''],
       ['archive',SVG_ARCHIVE,'官制衙门','','']
     ];
     rail.innerHTML = '<div class="tm-rc-cap" aria-hidden="true">国事</div>' + buttons.map(function(b, i){
@@ -2327,7 +2331,11 @@
       if (!Array.isArray(arr)) return '0';
       var last = arr[arr.length - 1] || {};
       var text = last.title || last.name || last.topic || last.text || last.desc || last.type || last.kind || '';
-      return arr.length + ':' + (last.turn || last.t || last.raisedTurn || '') + ':' + compactText(text, 48);
+      // 状态摘要·并入各 status 计数分布(有界·任意条 status 原地变→分布串变→签名变)·无 status 数组=空串(零回归)
+      var _stc = {};
+      for (var _i = 0; _i < arr.length; _i++){ var _s = arr[_i] && arr[_i].status; if (_s != null && _s !== '') _stc[_s] = (_stc[_s] || 0) + 1; }
+      var _stSig = Object.keys(_stc).sort().map(function(k){ return k + _stc[k]; }).join(',');
+      return arr.length + ':' + (last.turn || last.t || last.raisedTurn || '') + ':' + compactText(text, 48) + (_stSig ? ':' + _stSig : '');
     }
     return [
       formalRuntimeChromeSignature(),
