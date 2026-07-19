@@ -2189,12 +2189,14 @@ function bindMainMenuButtons() {
   var btnLoadSave = document.getElementById('btn-load-save');
   var btnEditor = document.getElementById('btn-editor');
   var btnSettings = document.getElementById('btn-settings');
+  var btnTransmigration = document.getElementById('btn-transmigration');
 
   _dbg('[bindMainMenuButtons] 按钮查找结果:');
   _dbg('  btn-new-game:', btnNewGame ? '找到' : '未找到');
   _dbg('  btn-load-save:', btnLoadSave ? '找到' : '未找到');
   _dbg('  btn-editor:', btnEditor ? '找到' : '未找到');
   _dbg('  btn-settings:', btnSettings ? '找到' : '未找到');
+  _dbg('  btn-transmigration:', btnTransmigration ? '找到' : '未找到');
 
   if (btnNewGame) {
     btnNewGame.onclick = function() {
@@ -2234,6 +2236,23 @@ function bindMainMenuButtons() {
     _dbg('  ✓ 绑定 btn-settings 成功');
   } else {
     console.error('  ✗ btn-settings 不存在');
+  }
+
+  if (btnTransmigration) {
+    btnTransmigration.onclick = function() {
+      _dbg('[按钮点击] btn-transmigration 被点击');
+      if (typeof doTransmigration === 'function') {
+        doTransmigration();
+      } else if (window.TM && TM.Transmigration && typeof TM.Transmigration.startFlow === 'function') {
+        TM.Transmigration.startFlow();
+      } else {
+        console.error('[btn-transmigration] 穿越模块未就绪');
+        if (typeof toast === 'function') toast('穿越模块未就绪，请刷新页面重试');
+      }
+    };
+    _dbg('  ✓ 绑定 btn-transmigration 成功');
+  } else {
+    console.error('  ✗ btn-transmigration 不存在');
   }
 
   _dbg('[bindMainMenuButtons] 主菜单按钮事件绑定完成！');

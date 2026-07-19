@@ -429,6 +429,7 @@ input,textarea,select{pointer-events:auto!important;position:relative;z-index:10
 .home-card.c-load{--ic-c:#83bda2;}
 .home-card.c-edit{--ic-c:#7790c8;}
 .home-card.c-set{--ic-c:#f2ce6b;}
+.home-card.c-trans{--ic-c:#b08fd6;}
 .home-card-icon{width:54px;height:54px;justify-self:center;display:grid;place-items:center;border-radius:50%;border:1px solid color-mix(in srgb,var(--ic-c) 80%,transparent);background:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--ic-c) 16%,transparent),rgba(0,0,0,0.3));box-shadow:inset 0 0 18px rgba(0,0,0,0.34),0 0 0 3px rgba(0,0,0,0.28),0 0 0 4px color-mix(in srgb,var(--ic-c) 34%,transparent),0 0 22px color-mix(in srgb,var(--ic-c) 20%,transparent);color:var(--ic-c);font-family:"STKaiti","KaiTi","楷体",serif;font-size:25px;flex-shrink:0;}
 .c-new .home-card-icon{width:66px;height:66px;font-size:31px;}
 .home-card-copy{display:flex;flex-direction:column;min-width:0;}
