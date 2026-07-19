@@ -118,22 +118,26 @@ async function run() {
   assert(CA({ _imprisoned: true }) === true, '_imprisoned 判受限');
   assert(CA({ name: '在朝者', health: 90, loyalty: 60 }) === false, '正常在朝者不判受限');
 
-  // ── 时空约束·行为锁(2026-07-19·Codex 复审加固)：真跑 _cyInterjectRespond·锁"约束落进每个 responder 的 prompt" ──
-  console.log('===== 时空约束·诸卿·每个 responder 的 prompt 都注入(守卫/扫描/ch 三向锁) =====');
+  // ── 时空约束·行为锁(2026-07-19·Codex 二轮复审加固)：真跑 _cyInterjectRespond·锁"约束落进每个 responder 的 prompt"。
+  //   关键：解析 sentinel 标记的 mn=[…] 字段"内容"·而非整段 prompt 搜"魏忠贤"(玩家原话本就含此名·搜整段会假绿——
+  //   Codex 实测把 tm-chaoyi.js:152 突变成 var _ciMentioned=[nm];(跳过扫描)后旧断言仍全绿·下面 parseTC 令其必红)。
+  const parseTC = (p) => { const m = /<<TC ch=(\S+?) mn=\[([^\]]*)\]>>/.exec(String(p || '')); return m ? { ch: m[1], mn: m[2] ? m[2].split('|') : [] } : null; };
+  console.log('===== 时空约束·诸卿·每个 responder 的 prompt 都注入(守卫/扫描/ch 三向锁·抠 mn 字段) =====');
   ctx = makeCtx(); bubbles = [];
   await ctx._cyInterjectRespond('诸卿都说说，魏忠贤当如何处置？', { kind:'tinyi', topic:'阉党清算', attendees: ATT, stances: {} });
   var proms = ctx._prompts;
   assert(proms.length >= 2, '诸卿→多 responder 各发一次 prompt (得 ' + proms.length + ')');
-  assert(proms.every(p => p.indexOf('<<TC ch=') >= 0), '每个 responder 的 prompt 都须含时空约束(守卫改 if(false)/删注入则红)');
-  assert(proms.every(p => p.indexOf('魏忠贤') >= 0), '玩家话中"魏忠贤"须经扫描进每个 prompt 的 mentionedNames(删扫描则红)');
-  assert(proms.every(p => { var m = p.match(/你扮演([^（(]+)[（(]/); var who = m ? m[1].trim() : '?'; return p.indexOf('<<TC ch=' + who + ' ') >= 0; }), '每个 prompt 的约束 ch 须为该 responder 本人=findCharByName(nm)(换 ch 则红)');
+  assert(proms.every(p => parseTC(p) !== null), '每个 responder 的 prompt 都须含时空约束 sentinel(守卫改 if(false)/删注入则红)');
+  assert(proms.every(p => { const tc = parseTC(p); return tc && tc.mn.indexOf('魏忠贤') >= 0; }), '"魏忠贤"须经扫描进每个 prompt 的 sentinel mn 字段(把扫描换成[nm]则红·不是搜整段 prompt)');
+  assert(proms.every(p => { const tc = parseTC(p); const m = p.match(/你扮演([^（(]+)[（(]/); const who = m ? m[1].trim() : '?'; return tc && tc.ch === who; }), '每个 prompt 的约束 ch 须为该 responder 本人=findCharByName(nm)(换 ch 则红)');
 
-  console.log('===== 时空约束·点名单人也注入·扫描命中涉议人 =====');
+  console.log('===== 时空约束·点名单人也注入·扫描命中涉议人(抠 mn 字段) =====');
   ctx = makeCtx(); bubbles = [];
   await ctx._cyInterjectRespond('温体仁，魏忠贤之事你怎么看？', { kind:'yuqian', topic:'阉党', attendees: ATT, stances: {} });
   assert(ctx._prompts.length === 1, '点名温体仁→只一次 prompt (得 ' + ctx._prompts.length + ')');
-  assert(ctx._prompts[0].indexOf('<<TC ch=温体仁 ') >= 0, '点名口·prompt 注入约束且 ch=温体仁(响应者)');
-  assert(ctx._prompts[0].indexOf('魏忠贤') >= 0, '点名口·话中魏忠贤(非在场者)经扫描进 mentionedNames·防按史实答"已伏诛"');
+  var tc0 = parseTC(ctx._prompts[0]);
+  assert(tc0 && tc0.ch === '温体仁', '点名口·prompt 注入约束且 ch=温体仁(响应者)');
+  assert(tc0 && tc0.mn.indexOf('魏忠贤') >= 0, '点名口·话中魏忠贤(非在场者)经扫描进 mn 字段·防按史实答"已伏诛"·mn=[' + (tc0 && tc0.mn.join('|')) + ']');
 
   console.log('');
   console.log(`[smoke-chaoyi-interject-respond] ${passed} passed / ${failed} failed`);

@@ -18,6 +18,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const ROOT = path.resolve(__dirname, '..');
 
 let PASS = 0;
@@ -134,99 +135,116 @@ function slice4_notApplicable() {
   console.log('  [slice4-notApplicable] ' + (PASS - start) + ' 断言通过（mechanics-world 三口未被误注）');
 }
 
-// ── Slice 5：行为级断言(不是源码 grep 假绿)——从源码抽出真注入 if 块·喂 sentinel 版
-//   _buildTemporalConstraint/_tcScanMentionedNames 实跑·断言"守卫改 if(false)/删扫描/换 ch"任一都会变红。
-//   sentinel 返回可识别标记串(含 ch 值与 mentionedNames)·扫描 sentinel 命中"魏忠贤"即回填名单。
-//   chaoyi 口的行为断言在 smoke-chaoyi-interject-respond.js(真跑 _cyInterjectRespond·锁每 responder 的 prompt)。
+// ── Slice 5：行为级断言(VM 真调真实入口·非源码 grep·非脆弱花括号抽取)——
+//   Codex 二轮指出①整段 prompt 搜名会被玩家原话含名假绿·②brace-counting 被合法字符串(var note='}')击穿。
+//   本 slice 照朝议 smoke 做法：load 整文件 + sentinel 版 _buildTemporalConstraint/_tcScanMentionedNames +
+//   stub 依赖·真调 _executeAction/aiGenerateCompleteCharacter/run 捕获 prompt·再 parseTC 抠 sentinel 的 mn=[…]
+//   字段内容断言(不搜整段)。守卫改 if(false)→无 sentinel(parseTC null)·换 ch→ch 字段不符·删扫描→mn 无魏忠贤·三向皆红。
+//   chaoyi 口的同款行为断言在 smoke-chaoyi-interject-respond.js(真跑 _cyInterjectRespond·锁每 responder 的 prompt)。
 
-// 抽出含 markerVar 的那个 if(typeof ... _buildTemporalConstraint ...) { ... } 完整块(花括号配平)
-function extractGuardBlock(src, markerVar) {
-  const mi = src.indexOf(markerVar);
-  if (mi < 0) return null;
-  const gi = src.lastIndexOf('if (typeof', mi);
-  if (gi < 0) return null;
-  let i = src.indexOf('{', gi);
-  if (i < 0) return null;
-  let depth = 0;
-  for (let j = i; j < src.length; j++) {
-    if (src[j] === '{') depth++;
-    else if (src[j] === '}') { depth--; if (depth === 0) return src.slice(gi, j + 1); }
-  }
-  return null;
-}
-// sentinel TC·把 ch 值与 mentionedNames 编进可识别标记
+// sentinel TC·把 ch/clauseOnly/mentionedNames 编进可识别标记(供 parseTC 抠字段)
 function sentinelTC(ch, opts) {
-  return '<<TC ch=' + (ch === null ? 'null' : (ch && ch.name) || '?') +
+  return '\n<<TC ch=' + (ch === null ? 'null' : (ch && ch.name) || '?') +
     ' clause=' + !!(opts && opts.clauseOnly) +
     ' mn=[' + (((opts && opts.mentionedNames) || []).join('|')) + ']>>';
 }
-// sentinel 扫描·种子恒留·文本命中"魏忠贤"则回填(用于验"删扫描"会红)
+// sentinel 扫描·种子恒留·文本命中"魏忠贤"则回填(用于验"删扫描/换空名单"会红)
 function sentinelScan(text, seeds, cap) {
   const out = (seeds || []).slice();
   if (String(text || '').indexOf('魏忠贤') >= 0 && out.indexOf('魏忠贤') < 0) out.push('魏忠贤');
   return out;
 }
+// 解析 sentinel 标记·抠出 ch/clause/mn 字段——断言 mn 字段"内容"而非整段 prompt 搜名(防玩家原话含名假绿)
+function parseTC(text) {
+  const m = /<<TC ch=(\S+?) clause=(\S+) mn=\[([^\]]*)\]>>/.exec(String(text || ''));
+  if (!m) return null;
+  return { ch: m[1], clause: m[2] === 'true', mn: m[3] ? m[3].split('|') : [] };
+}
+// 干净 vm 上下文(自身即 global/window)·注入 sentinel
+function newVmCtx() {
+  const ctx = {
+    console: { log() {}, warn() {}, info() {}, error() {} },
+    Math, Date, JSON, Object, Array, Number, String, Boolean, RegExp,
+    isFinite, isNaN, parseInt, parseFloat, Error, Promise,
+    setTimeout: (fn) => { setImmediate(fn); return 0; }, clearTimeout: () => {}
+  };
+  ctx.window = ctx; ctx.global = ctx; ctx.globalThis = ctx;
+  ctx._buildTemporalConstraint = sentinelTC;
+  ctx._tcScanMentionedNames = sentinelScan;
+  vm.createContext(ctx);
+  return ctx;
+}
+function load(ctx, file) { vm.runInContext(readSrc(file), ctx, { filename: file }); }
 
-function slice5_behavior() {
+async function slice5_behavior() {
   const start = PASS;
 
-  // (a) 狱中对话 tm-wendui-prison.js·full·ch=囚犯·扫描 freeText。块用 global. 前缀·free vars: global/freeText/charName/ch/sysP
+  // (a) 狱中对话·真调 WenduiPrison._executeAction→_generateAIResponse·捕获 sysP(msgs[0].content)
   {
-    const src = readSrc('tm-wendui-prison.js');
-    const block = extractGuardBlock(src, '_wpMentioned');
-    assert(!!block && block.indexOf('_wpMentioned') >= 0, 'prison·未能抽出注入块');
-    const fn = new Function('global', 'freeText', 'charName', 'ch', 'sysP', block + '\n; return sysP;');
-    const g = { _buildTemporalConstraint: sentinelTC, _tcScanMentionedNames: sentinelScan };
-    const out = fn(g, '魏忠贤近来如何？', '客氏', { name: '客氏' }, 'BASE_SYSP');
-    assert(out.indexOf('BASE_SYSP') === 0, 'prison·须 append 到 sysP(不替换)');
-    assert(out.indexOf('<<TC ch=客氏') >= 0, 'prison·须以 ch=囚犯(客氏)调用约束(换 ch 则红)');
-    assert(out.indexOf('魏忠贤') >= 0, 'prison·freeText 里的人名须经扫描进 mentionedNames(删扫描则红)');
-    assert(out.indexOf('clause=false') >= 0, 'prison·应为 full(非 clauseOnly)');
-    // 守卫真拦：guard 为 false 时块内不执行→sysP 不变
-    const gOff = {};   // 无 _buildTemporalConstraint→typeof 守卫 false
-    assert(fn(gOff, '魏忠贤', '客氏', { name: '客氏' }, 'BASE') === 'BASE', 'prison·守卫应真拦(函数未定义则 sysP 不变)');
-    // placement：注入 marker 须在 callAIMessagesStream 之前
-    assert(src.indexOf('_wpMentioned') < src.indexOf('callAIMessagesStream(msgs'), 'prison·注入须在 AI 调用之前');
+    const ctx = newVmCtx();
+    load(ctx, 'tm-minxin-ledger.js'); load(ctx, 'tm-qiju-ledger.js'); load(ctx, 'tm-wendui-prison.js');
+    ctx.GM = { turn: 5, chars: [], minxin: { trueIndex: 50, value: 50 }, huangwei: { index: 60, value: 60 }, partyStrife: 0, memorials: [] };
+    ctx.P = { ai: { key: 'x' } };
+    ctx.document = { getElementById: (id) => id === 'wd-prison-input' ? { value: '魏忠贤近来可有异动？' } : null };  // freeText=玩家问话·含涉议人
+    let capSysP = '';
+    ctx.callAIMessagesStream = async (msgs) => { capSysP = (msgs && msgs[0] && msgs[0].content) || ''; return '罪臣叩首'; };
+    const ch = { name: '客氏', position: '奉圣夫人', loyalty: 60, alive: true, faction: '明朝廷', _imprisoned: true, _imprisonReason: '交结近侍', _imprisonedTurn: 3, health: 90 };
+    ctx.GM.chars.push(ch);
+    await ctx.WenduiPrison._executeAction('客氏', ch, 'inquire', null);
+    const tc = parseTC(capSysP);
+    assert(!!tc, 'prison·真调 _executeAction→_generateAIResponse·sysP 须含时空约束(守卫改 if(false)/删注入则红)');
+    assert(tc && tc.ch === '客氏', 'prison·约束 ch 须为囚犯本人(客氏)(换 ch 则红)·得 ' + (tc && tc.ch));
+    assert(tc && tc.mn.indexOf('魏忠贤') >= 0, 'prison·玩家问话里的"魏忠贤"须经扫描进 mn 字段(把扫描换成[charName]则红)·mn=[' + (tc && tc.mn.join('|')) + ']');
+    assert(tc && tc.clause === false, 'prison·应为 full(非 clauseOnly)');
   }
 
-  // (b) 在局人物 bio tm-char-autogen.js·full·ch=null·扫描 sourceContext+reason。free vars: _buildTemporalConstraint/_tcScanMentionedNames/sourceContext/reason/prompt
+  // (b) 在局人物 bio·真调 aiGenerateCompleteCharacter·callAISmart 捕获 prompt 后抛错止损
   {
-    const src = readSrc('tm-char-autogen.js');
-    const block = extractGuardBlock(src, '_cgMentioned');
-    assert(!!block && block.indexOf('_cgMentioned') >= 0, 'bio·未能抽出注入块');
-    const fn = new Function('_buildTemporalConstraint', '_tcScanMentionedNames', 'sourceContext', 'reason', 'prompt', block + '\n; return prompt;');
-    const out = fn(sentinelTC, sentinelScan, '议及魏忠贤旧事', '推演涌现', 'BASE_PROMPT');
-    assert(out.indexOf('BASE_PROMPT') === 0, 'bio·须 append 到 prompt(不替换)');
-    assert(out.indexOf('<<TC ch=null') >= 0, 'bio·生成对象未入 GM·须 ch=null(换 ch 则红)');
-    assert(out.indexOf('魏忠贤') >= 0, 'bio·sourceContext 里的人名须经扫描进 mentionedNames(删扫描则红)');
-    assert(out.indexOf('clause=false') >= 0, 'bio·应为 full(带在世/已故名单)');
-    assert(fn(undefined, sentinelScan, 'x', 'y', 'BASE') === 'BASE', 'bio·守卫应真拦');
-    assert(src.indexOf('_cgMentioned') < src.indexOf('callAISmart(prompt'), 'bio·注入须在 AI 调用之前');
+    const ctx = newVmCtx();
+    load(ctx, 'tm-char-autogen.js');
+    ctx.GM = { chars: [], year: 1627, _generatingChars: {} };
+    ctx.P = { ai: { key: 'x' }, dynasty: '明' };
+    ctx.findCharByName = () => null;
+    ctx.isCharNameDeleted = () => false;
+    ctx._tmGetFactionList = () => [];
+    ctx._tmGetPartyList = () => [];
+    ctx.extractJSON = () => null;
+    let capPrompt = '';
+    ctx.callAISmart = async (prompt) => { capPrompt = String(prompt || ''); throw new Error('__STOP_AFTER_CAPTURE__'); };
+    try { await ctx.aiGenerateCompleteCharacter('新科进士', { sourceContext: '因议及魏忠贤旧党事而涌现', reason: '推演涌现' }); } catch (_) {}
+    const tc = parseTC(capPrompt);
+    assert(!!tc, 'bio·真调 aiGenerateCompleteCharacter·prompt 须含时空约束(守卫改则红)');
+    assert(tc && tc.ch === 'null', 'bio·生成对象未入 GM·须 ch=null(换 ch 则红)·得 ' + (tc && tc.ch));
+    assert(tc && tc.mn.indexOf('魏忠贤') >= 0, 'bio·sourceContext 里的"魏忠贤"须经扫描进 mn 字段(删扫描则红)·mn=[' + (tc && tc.mn.join('|')) + ']');
+    assert(tc && tc.clause === false, 'bio·应为 full(带在世/已故名单)');
   }
 
-  // (c) 反思偏差画像 tm-reflection-agent.js·clauseOnly·ch=null·扫描 lastPred+actual。块用 global. 前缀·free vars: global/lastPred/actual/sys
+  // (c) 反思偏差画像·真调 TM.ReflectionAgent.run→buildRequest·callAIMessages 捕获 system
   {
-    const src = readSrc('tm-reflection-agent.js');
-    const block = extractGuardBlock(src, '_raMentioned');
-    assert(!!block && block.indexOf('_raMentioned') >= 0, 'reflection·未能抽出注入块');
-    const fn = new Function('global', 'lastPred', 'actual', 'sys', block + '\n; return sys;');
-    const g = { _buildTemporalConstraint: sentinelTC, _tcScanMentionedNames: sentinelScan };
-    const out = fn(g, '上回合预测魏忠贤将失势', '势力变动', 'BASE_SYS');
-    assert(out.indexOf('BASE_SYS') === 0, 'reflection·须 append 到 sys(不替换)');
-    assert(out.indexOf('<<TC ch=null') >= 0, 'reflection·须 ch=null 调用');
-    assert(out.indexOf('魏忠贤') >= 0, 'reflection·lastPred/actual 里的人名须经扫描进 mentionedNames(删扫描则红)');
-    assert(out.indexOf('clause=true') >= 0, 'reflection·JSON 偏差画像口须 clauseOnly(反哺 sc0·防大名单干扰结构)');
-    assert(fn({}, 'x', 'y', 'BASE') === 'BASE', 'reflection·守卫应真拦');
-    assert(src.indexOf('_raMentioned') < src.indexOf('callAIMessages('), 'reflection·注入须在 AI 调用之前');
+    const ctx = newVmCtx();
+    load(ctx, 'tm-reflection-agent.js');
+    ctx.GM = { turn: 5, _lastTurnPredictions: { turn: 4, thinking: '上回合预测魏忠贤将失势党羽离散' }, _turnAiResults: {} };
+    ctx.P = { ai: { key: 'x' } };
+    let capSys = '';
+    ctx.callAIMessages = async (msgs) => { capSys = (msgs && msgs[0] && msgs[0].content) || ''; return '{"divergence":"low","lesson":"x","systematic_biases":[]}'; };
+    ctx.extractJSON = (r) => { try { return JSON.parse(r); } catch (e) { return null; } };
+    await ctx.TM.ReflectionAgent.run(ctx.GM, { thinking: '本回合再判局势' });
+    const tc = parseTC(capSys);
+    assert(!!tc, 'reflection·真调 run→buildRequest·system 须含时空约束(守卫改则红)');
+    assert(tc && tc.ch === 'null', 'reflection·须 ch=null·得 ' + (tc && tc.ch));
+    assert(tc && tc.mn.indexOf('魏忠贤') >= 0, 'reflection·lastPred/actual 里的"魏忠贤"须经扫描进 mn 字段(删扫描则红)·mn=[' + (tc && tc.mn.join('|')) + ']');
+    assert(tc && tc.clause === true, 'reflection·JSON 偏差画像口须 clauseOnly(反哺 sc0·防大名单干扰结构)');
   }
 
-  console.log('  [slice5-behavior] ' + (PASS - start) + ' 断言通过（狱中/bio/反思 真跑注入块·守卫/扫描/ch 三向锁）');
+  console.log('  [slice5-behavior] ' + (PASS - start) + ' 断言通过（狱中/bio/反思 VM 真调入口·parseTC 抠 mn 字段·守卫/扫描/ch 三向锁）');
 }
 
-slice0_infra();
-slice1_full();
-slice2_clauseOnly();
-slice3_officeMaterialize();
-slice4_notApplicable();
-slice5_behavior();
-console.log('PASS smoke-tc-dialogue-wave · 共 ' + PASS + ' 断言（9 注入口 grep + 狱中/bio/反思行为锁 + mechanics-world 不适用 + infra 前提）');
+(async function main() {
+  slice0_infra();
+  slice1_full();
+  slice2_clauseOnly();
+  slice3_officeMaterialize();
+  slice4_notApplicable();
+  await slice5_behavior();
+  console.log('PASS smoke-tc-dialogue-wave · 共 ' + PASS + ' 断言（9 注入口 grep + 狱中/bio/反思 VM 真调行为锁 + mechanics-world 不适用 + infra 前提）');
+})().catch(function (e) { console.error('FAIL(异常): ' + (e && e.stack || e)); process.exit(1); });
