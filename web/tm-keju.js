@@ -586,6 +586,8 @@ async function _kejuGenChiefExaminerMemorial(exam) {
     '}\n\u53EA\u8F93\u51FA JSON\u3002';
 
   try {
+    // 时空约束·扫描时局背景涉议人物·主考题本(JSON策问·clauseOnly)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMMemorial = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((GM.eraState && GM.eraState.contextDescription) || ''), (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []), 10) : (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []); prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMMemorial }); } catch (_tcE) {} }
     var raw = await callAISmart(prompt, 2000, { maxRetries: 2 });
     var data = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!data) data = JSON.parse(raw.replace(/```json|```/g, '').trim());
@@ -1022,6 +1024,7 @@ async function pickHistoricalCandidates(exam) {
 
   try {
     var _tokBudget = (P.conf && P.conf.maxOutputTokens) || (P.conf && P.conf._detectedMaxOutput) || 4000;
+    // 时空约束·不适用：此口为史实检索器·契约要求返回真实名臣+史料原文摘引且只取应考(在世)候选·注入平行时空约束(别信史实记忆)会与其契约直接冲突并诱发虚构·targeted书卒/时间线既成之害在此口不成立·故不注入
     var raw = await callAISmart(prompt, _tokBudget, { maxRetries: 2 });
     var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!parsed) {

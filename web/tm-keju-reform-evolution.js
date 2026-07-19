@@ -213,6 +213,8 @@
       '}';
 
     try {
+      // 时空约束·支持/反对NPC涉议人物·改革逐年演进(JSON叙事·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: allNpcsForReact }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 1000, { maxRetries: 1, priority: 'low', timeoutMs: 25000 });
       var parsed = _parseJson(raw);
       if (!parsed || typeof parsed !== 'object' || !parsed.text) return fallback;
@@ -262,6 +264,8 @@
       '}';
 
     try {
+      // 时空约束·跨代承袭诏书(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 1500, { maxRetries: 1, priority: 'low', timeoutMs: 30000 });
       var parsed = _parseJson(raw);
       if (!parsed || typeof parsed !== 'object' || !parsed.mode) return fallback;
@@ -770,6 +774,8 @@
       '- 史评·客观持中·50 字·非褒非贬·叙方向 + 后世评价倾向\n\n' +
       '返 JSON·{canonicalName: "5-12 字", historicalEvaluation: "50 字 史评"}';
     try {
+      // 时空约束·改革命名+史评(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 600, { maxRetries: 1, priority: 'low', timeoutMs: 20000 });
       var parsed = _parseJson(raw);
       if (!parsed || !parsed.canonicalName) return fallback;
@@ -814,6 +820,8 @@
       '- memorialTrigger·examiner_corrupt + student_boycott·{topic, ideologyHint}\n\n' +
       '返 JSON·{type, severity, target, narrative, dimDelta?, npcImpact?, memorialTrigger?}';
     try {
+      // 时空约束·支持/反对NPC涉议人物·改革黑天鹅(JSON叙事·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: pool }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 900, { maxRetries: 1, priority: 'low', timeoutMs: 25000 });
       var parsed = _parseJson(raw);
       if (!parsed || !parsed.type) return fallback;
