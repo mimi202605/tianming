@@ -5,6 +5,7 @@
       "dangling": [
         "AuthoringAgent",
         "AuthorityEngines",
+        "PlayerSystemsUI",
         "PlayerUI",
         "TMPhase8FormalBridge",
         "ThreeSystems",
