@@ -575,6 +575,17 @@ async function genMemorialsAI(count){
       var minReq = (subt === '密折' || subt === '密揭' || subt === '密报' || subt === '表' || subt === '笺') ? Math.round(_secretRange[0] * 0.85) : Math.round(_normalRange[0] * 0.85);
       return m.content.length >= minReq;
     }
+    // ★ 平行历史时空约束·扫描奏疏主题上下文（矛盾/近事/候选事件·非呈奏候选人列表）中涉及人物·逐人标生死
+    if (typeof _buildTemporalConstraint === 'function') {
+      try {
+        var _memTopicText = '';
+        if (P.playerInfo && Array.isArray(P.playerInfo.coreContradictions)) _memTopicText += P.playerInfo.coreContradictions.map(function(x){ return (x && (x.title || '')) + ' ' + (x && (x.parties || '')); }).join(' ');
+        if (Array.isArray(GM.evtLog)) _memTopicText += ' ' + GM.evtLog.slice(-6).map(function(e){ return (e && e.text) || ''; }).join(' ');
+        if (Array.isArray(GM._candidateEvents)) _memTopicText += ' ' + GM._candidateEvents.slice(0, 12).map(function(e){ return (e && (e.title || '')) + ' ' + (e && (e.payload || '')); }).join(' ');
+        var _memMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_memTopicText, [], 10) : [];
+        prompt += _buildTemporalConstraint(null, { mentionedNames: _memMentioned });
+      } catch (_tcMemE) {}
+    }
     var c = await callAISmart(prompt, _dynamicMaxTok, {
       minLength: count * _strictMin,
       maxRetries: 2,

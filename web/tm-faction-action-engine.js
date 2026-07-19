@@ -44,6 +44,9 @@
   var VALID_CHAOYI_TYPES = ['cooperate','attack','compromise','infight'];
   var VALID_OFFICE_KINDS = ['promote','demote','appoint','dismiss','transfer'];
   var TYPES = ['memorial','edict','court_alignment','office_change','fiscal_policy','military_order','diplomacy','province_policy','rebellion_policy','spy_or_intrigue'];
+  // 【F2·势力活世界】总闸 GM._factionLivingWorld(默认OFF·本局存档·御驾亲征式)门控的额外动作类型·OFF 时 validateDecision 不收=零回归
+  var LIVING_WORLD_TYPES = ['declare_war', 'join_war'];
+  var VALID_CASUS_BELLI = ['rebellion', 'border', 'claim', 'holy', 'subjugation', 'none'];
   var ACTION_CONTRACT = {
     memorial: {
       required: ['from','type','content','rulerDecision'],
@@ -104,18 +107,34 @@
       optional: ['target','relationDelta','pressure','reason'],
       mutates: ['targetFac._intriguePressure','GM.factionRelations','fac.npcIntrigueActions'],
       visible: ['faction AI ledger','qijuHistory']
+    },
+    declare_war: {
+      required: ['targetFaction'],
+      optional: ['casusBelli','reason'],
+      mutates: ['GM.activeWars (via CasusBelliSystem.declareWar·真开战·停战/重复/盟友连坐一并结算)'],
+      visible: ['war UI','faction relation UI','qijuHistory','御案时政']
+    },
+    join_war: {
+      required: ['targetFaction'],
+      optional: ['casusBelli','reason','warId'],
+      mutates: ['GM.activeWars (加入已有战争·可选 warId 指定加入哪一场·缺失取涉目标最新一场·对 targetFaction 宣战·走 CasusBelliSystem·新战 parentWarId 关联原战)'],
+      visible: ['war UI','faction relation UI','qijuHistory','御案时政']
     }
   };
 
   function getActionContract() {
-    return _clonePlain(ACTION_CONTRACT);
+    var c = _clonePlain(ACTION_CONTRACT);
+    if (!_livingWorldOn()) LIVING_WORLD_TYPES.forEach(function(t){ delete c[t]; });   // OFF 时不公开 living-world 类型(绝对零泄露)
+    return c;
   }
 
   function formatActionContractForPrompt(opts) {
     opts = opts || {};
     var maxChars = _safeNum(opts.maxChars) || 1800;
     var lines = ['Use actions[] only with these canonical action types. Required fields must use visible candidate names.'];
-    TYPES.forEach(function(type) {
+    var _types = TYPES.slice();
+    if (_livingWorldOn()) { maxChars = Math.max(maxChars, 2800); _types = LIVING_WORLD_TYPES.concat(TYPES); lines.push('LIVING WORLD ENABLED — TWO EXTRA VALID action types (declare_war / join_war) are listed FIRST below and route through the real war system: casus belli REQUIRED (missing/none/invalid is rejected when the target is the player). The canonical action-type list is 12 (not 10) while this is on; use these for genuine strategic war, not idle threats.'); }
+    _types.forEach(function(type) {
       var c = ACTION_CONTRACT[type] || {};
       lines.push('- ' + type + ': required=' + _arr(c.required).join(',')
         + '; optional=' + _arr(c.optional).join(',')
@@ -189,7 +208,9 @@
     }).slice(0, 2);
     if (!Array.isArray(d.actions)) d.actions = [];
     d.actions = d.actions.filter(function(a) {
-      return a && typeof a === 'object' && TYPES.indexOf(a.type || a.actionType) >= 0;
+      if (!a || typeof a !== 'object') return false;
+      var _at = a.type || a.actionType;
+      return TYPES.indexOf(_at) >= 0 || (_livingWorldOn() && LIVING_WORLD_TYPES.indexOf(_at) >= 0);
     }).slice(0, 8);
     return d;
   }
@@ -308,7 +329,7 @@
 
   function validateActionTarget(fac, action, ctx) {
     ctx = ctx || {};
-    if (!fac || !action || TYPES.indexOf(action.type) < 0) return { ok:false, reason:'invalid action' };
+    if (!fac || !action || (TYPES.indexOf(action.type) < 0 && LIVING_WORLD_TYPES.indexOf(action.type) < 0)) return { ok:false, reason:'invalid action' };
     var p = action.payload || {};
     var alive = ctx.alive || _aliveFor(fac);
     if (action.type === 'memorial') {
@@ -351,6 +372,12 @@
       var wantsOwnerChange = owner || String(p.policy || '').indexOf('transfer') >= 0 || String(p.policy || '').indexOf('owner') >= 0;
       if (wantsOwnerChange && !_findFac(owner)) return { ok:false, reason:'owner faction not found', ownerFaction:owner };
       return { ok:true };
+    }
+    if (action.type === 'declare_war' || action.type === 'join_war') {
+      var _wt = p.targetFaction || p.target || p.toFaction || p.defender || p.against || p.enemy || p.to || '';
+      _wt = String((_wt && (_wt.name || _wt)) || '').trim();
+      if (!_wt || _wt === (fac && fac.name)) return { ok:false, reason:'missing faction target', targetFaction:_wt };
+      return _findFac(_wt) ? { ok:true } : { ok:false, reason:'target faction not found', targetFaction:_wt };
     }
     if (action.type === 'spy_or_intrigue' || action.type === 'rebellion_policy') {
       var targetFac = _payloadTargetFor(action);
@@ -605,7 +632,10 @@
     var rec = { id:action.actionId, turn:action.turn || _turn(), action:p.order || p.kind || 'military_order', army:army.name || armyName, commanderFrom:oldCommander, commanderTo:commander || _armyCommander(army), soldiersDelta:soldiersDelta, moraleDelta:moraleDelta, trainingDelta:trainingDelta, reason:p.reason || p.rationale || '', _generatedByLlm:action.source !== 'local', _decisionId:action.decisionId, _actionId:action.actionId, _actionType:action.type };
     _pushFacTrajectory(fac, 'npcMilitaryActions', rec);
     if (global.TM && global.TM.FactionNpcNewsBridge && typeof global.TM.FactionNpcNewsBridge.pushMilitaryAction === 'function') try { global.TM.FactionNpcNewsBridge.pushMilitaryAction(fac, rec); } catch(_){}
-    return { ok:true, summaryKey:'military', detail:{ army:rec.army, commanderFrom:oldCommander, commanderTo:rec.commanderTo, soldiersDelta:soldiersDelta, moraleDelta:moraleDelta, trainingDelta:trainingDelta } };
+    var _milEvent = null;
+    var _ord = String(p.order || p.kind || '');
+    if (/move|reinforce|移防|调动|增兵|开拔|进兵|移屯/i.test(_ord) || Math.abs(_safeNum(soldiersDelta)) >= 5000) _milEvent = { kind:'troop_move', actor:(fac && fac.name), target:(p.destination || p.location || p.garrison || '') };
+    return { ok:true, summaryKey:'military', detail:{ army:rec.army, commanderFrom:oldCommander, commanderTo:rec.commanderTo, soldiersDelta:soldiersDelta, moraleDelta:moraleDelta, trainingDelta:trainingDelta }, worldEvent:_milEvent };
   }
 
   function _findRelationRecord(from, to) {
@@ -665,7 +695,11 @@
     var rec = { id:action.actionId, turn:action.turn || _turn(), from:from, to:to, relationFrom:oldValue, relationTo:nextValue, relationType:relType, treaty:treatyTitle || '', reason:desc, _generatedByLlm:action.source !== 'local', _decisionId:action.decisionId, _actionId:action.actionId, _actionType:action.type };
     _pushFacTrajectory(fac, 'npcDiplomacyActions', rec);
     if (global.TM && global.TM.FactionNpcNewsBridge && typeof global.TM.FactionNpcNewsBridge.pushDiplomacyAction === 'function') try { global.TM.FactionNpcNewsBridge.pushDiplomacyAction(fac, rec); } catch(_){}
-    return { ok:true, summaryKey:'diplomacy', detail:{ from:from, to:to, relationFrom:oldValue, relationTo:nextValue, treaty:treatyTitle || '', treatyRecord:!!treatyRec } };
+    var _dipEvent = null;
+    var _relDelta = _safeNum(nextValue) - _safeNum(oldValue);
+    if (treatyTitle || /盟|结盟|alliance|同盟/i.test(String(relType)) || _relDelta >= 40) _dipEvent = { kind:'alliance', actor:from, target:to, rel:String(relType||''), treaty:String(treatyTitle||'') };
+    else if (_relDelta <= -40 || /敌|绝交|背盟|反目|betray|hostile/i.test(String(relType))) _dipEvent = { kind:'betrayal', actor:from, target:to, rel:String(relType||'') };
+    return { ok:true, summaryKey:'diplomacy', detail:{ from:from, to:to, relationFrom:oldValue, relationTo:nextValue, treaty:treatyTitle || '', treatyRecord:!!treatyRec }, worldEvent:_dipEvent };
   }
 
   function _adjustProvinceField(st, keys, delta, lo, hi) {
@@ -775,6 +809,116 @@
     return { ok:true, summaryKey:'rebellionPolicy', detail:{ targetFaction:targetFacName, support:support } };
   }
 
+  // ── 【F2·势力活世界】总闸读口 + 真战争接线(declare_war/join_war 走 CasusBelliSystem·绝不自写 activeWars) ──
+  function _livingWorldOn() {
+    if (!global.GM || global.GM._factionLivingWorld !== true) return false;
+    if (typeof global.agentModeOn === 'function' && global.agentModeOn()) return false;   // B8·agent 模式(mode-b·平行回合引擎)下总闸不生效·功能不可达·与 agent-flags「子 flag 不点亮」同一语义
+    return true;
+  }
+  var _LW_PLAYER_WAR_REL_THRESHOLD = -40;   // 对玩家宣战/参战门槛：关系值须 <= 此值 且 有正当 casus belli·防开局乱咬
+  function _lwPlayerFacNames() {
+    var G = global.GM || {}, P0 = global.P || {}, out = [];
+    function push(v){ v = String(v == null ? '' : v).trim(); if (v && out.indexOf(v) < 0) out.push(v); }
+    push(P0.playerInfo && P0.playerInfo.factionName); push(P0.playerFactionName); push(P0.playerFaction);
+    push(G.playerFactionName); push(G.playerFaction); if (G.playerInfo) push(G.playerInfo.factionName);
+    _arr(G.facs).forEach(function(f){ if (f && (f.isPlayer || f.playerControlled || f.controlledBy === 'player' || f.controller === 'player')) push(f.name); });
+    return out;
+  }
+  function _lwResolveFacName(v) {
+    var name = String((v && (v.name || v.factionName)) || v || '').trim();
+    if (!name) return '';
+    var f = _findFac(name);
+    return f ? f.name : name;
+  }
+  function _lwResolveCasusBelli(v) {
+    var s0 = String(v == null ? '' : v).trim().toLowerCase();
+    if (VALID_CASUS_BELLI.indexOf(s0) >= 0) return s0;
+    var z = String(v == null ? '' : v);
+    if (/rebel|叛|逆|平叛/i.test(z)) return 'rebellion';
+    if (/border|边|疆/i.test(z)) return 'border';
+    if (/claim|宣称|领土|故土/i.test(z)) return 'claim';
+    if (/holy|讨不臣|天子|勤王/i.test(z)) return 'holy';
+    if (/subjug|征服|吞并/i.test(z)) return 'subjugation';
+    return '';   // 未识别·不擅自归一(玩家门槛 fail-closed 用；NPC 侧调用处补 'border' 宽松默认)
+  }
+  function _lwPlayerWarBlocked(attacker, target, cbMatched) {
+    if (_lwPlayerFacNames().indexOf(target) < 0) return null;   // 非玩家势力·无额外门槛(NPC-vs-NPC 宽松)
+    var rel = _findRelationRecord(attacker, target) || _findRelationRecord(target, attacker);
+    var relVal = rel && rel.value != null ? _safeNum(rel.value) : 0;
+    if (relVal > _LW_PLAYER_WAR_REL_THRESHOLD) return { reason: 'player-war blocked: relation ' + relVal + ' > ' + _LW_PLAYER_WAR_REL_THRESHOLD, relValue: relVal };
+    // fail-closed：对玩家宣战/参战·casus belli 必须是明确正当法理(缺失/none/非法一律拒·不走宽松归一)
+    if (!cbMatched || cbMatched === 'none') return { reason: 'player-war blocked: needs an explicit legitimate casus belli (fail-closed)' };
+    return null;
+  }
+  function _lwWarOngoing(w) {
+    if (!w || w.active === false || w.ended === true || w.endedTurn) return false;
+    var st = String(w.status || '');
+    return st !== 'ended' && st !== 'peace' && st !== 'truce';   // 与 hasPeaced 谓词对齐
+  }
+  function _lwAlreadyAtWar(a, b) {
+    return _arr((global.GM || {}).activeWars).some(function(w){ return w && ((w.attacker === a && w.defender === b) || (w.attacker === b && w.defender === a)); });
+  }
+  function _lwDeclareViaCasusBelli(attacker, target, cbId) {
+    var CB = global.CasusBelliSystem;
+    if (!CB || typeof CB.declareWar !== 'function') return { ok: false, reason: 'CasusBelliSystem unavailable' };
+    var res;
+    try { res = CB.declareWar(attacker, target, cbId); } catch (e) { return { ok: false, reason: 'declareWar threw: ' + ((e && e.message) || e) }; }
+    if (!res || res.success !== true) return { ok: false, reason: (res && res.message) || 'declareWar failed' };
+    return { ok: true, war: res.war || null };
+  }
+  function _applyDeclareWar(fac, action) {
+    if (!_livingWorldOn()) return { ok: false, reason: 'living world off' };
+    var p = action.payload || {};
+    var attacker = fac && fac.name;
+    var target = _lwResolveFacName(p.targetFaction || p.target || p.toFaction || p.defender || p.to);
+    if (!attacker || !target || attacker === target) return { ok: false, reason: 'missing/invalid war target', targetFaction: target };
+    if (!_findFac(target)) return { ok: false, reason: 'target faction not found', targetFaction: target };
+    if (_lwAlreadyAtWar(attacker, target)) return { ok: false, reason: 'already at war', targetFaction: target };
+    var cbMatched = _lwResolveCasusBelli(p.casusBelli || p.cb);   // 只认 casusBelli/cb 作法理·reason 不充数
+    var blocked = _lwPlayerWarBlocked(attacker, target, cbMatched);
+    if (blocked) return { ok: false, reason: blocked.reason, targetFaction: target };
+    var cbId = cbMatched || 'border';   // NPC-vs-NPC 未识别时宽松默认 border(玩家侧已 fail-closed 拦下)
+    var dr = _lwDeclareViaCasusBelli(attacker, target, cbId);
+    if (!dr.ok) return { ok: false, reason: dr.reason, targetFaction: target };
+    var rec = { id: action.actionId, turn: action.turn || _turn(), targetFaction: target, casusBelli: (dr.war && dr.war.casusBelli) || cbId, warId: (dr.war && dr.war.id) || '', reason: p.reason || '', _generatedByLlm: action.source !== 'local', _decisionId: action.decisionId, _actionId: action.actionId, _actionType: action.type };
+    _pushFacTrajectory(fac, 'npcWarActions', rec);
+    return { ok: true, summaryKey: 'wars', detail: { targetFaction: target, warId: rec.warId, casusBelli: rec.casusBelli }, worldEvent: { kind: 'declare_war', actor: attacker, target: target, cb: rec.casusBelli } };
+  }
+  function _applyJoinWar(fac, action) {
+    if (!_livingWorldOn()) return { ok: false, reason: 'living world off' };
+    var p = action.payload || {};
+    var joiner = fac && fac.name;
+    var enemy = _lwResolveFacName(p.targetFaction || p.against || p.enemy || p.target || p.to);
+    if (!joiner || !enemy || joiner === enemy) return { ok: false, reason: 'missing/invalid war target', targetFaction: enemy };
+    if (!_findFac(enemy)) return { ok: false, reason: 'target faction not found', targetFaction: enemy };
+    // 必须已有涉 enemy 的进行中战争(=加入非另起)。优先 honor LLM 指定的合法 warId·缺失/非法→确定性规则=取涉目标最新一场(startTurn 最大·并列取数组末位)
+    var _joinWars = _arr((global.GM || {}).activeWars).filter(function(w){ return _lwWarOngoing(w) && (w.attacker === enemy || w.defender === enemy); });   // 仅进行中(过滤 inactive/ended 残留·防死战 warId 误判合法)
+    if (!_joinWars.length) return { ok: false, reason: 'no ongoing war involving target (join needs an existing war)', targetFaction: enemy };
+    var _wantWarId = p.warId || p.warID || p.war || '';
+    var origWar = _wantWarId ? (_joinWars.filter(function(w){ return String(w.id) === String(_wantWarId); })[0] || null) : null;
+    if (!origWar) origWar = _joinWars.reduce(function(best, w){ return (!best || _safeNum(w.startTurn) >= _safeNum(best.startTurn)) ? w : best; }, null);
+    if (_lwAlreadyAtWar(joiner, enemy)) return { ok: false, reason: 'already at war', targetFaction: enemy };
+    var cbMatched = _lwResolveCasusBelli(p.casusBelli || p.cb);
+    var blocked = _lwPlayerWarBlocked(joiner, enemy, cbMatched);
+    if (blocked) return { ok: false, reason: blocked.reason, targetFaction: enemy };
+    var cbId = cbMatched || 'holy';   // 参战默认「天子讨不臣」(玩家侧已 fail-closed)
+    var dr = _lwDeclareViaCasusBelli(joiner, enemy, cbId);
+    if (!dr.ok) return { ok: false, reason: dr.reason, targetFaction: enemy };
+    // war 结构为双边(无盟军侧·盟友参战本就靠独立 war 对象·见 tm-feudal-warfare _ty_callAlliesToWar)·
+    //   故「加入」= 对 enemy 新起双边战 + parentWarId 关联原战·语义取舍注此。
+    if (dr.war) { dr.war.parentWarId = origWar.id || ''; dr.war._joinedWar = true; }
+    var rec = { id: action.actionId, turn: action.turn || _turn(), targetFaction: enemy, casusBelli: (dr.war && dr.war.casusBelli) || cbId, warId: (dr.war && dr.war.id) || '', parentWarId: origWar.id || '', joinedWar: true, reason: p.reason || '', _generatedByLlm: action.source !== 'local', _decisionId: action.decisionId, _actionId: action.actionId, _actionType: action.type };
+    _pushFacTrajectory(fac, 'npcWarActions', rec);
+    return { ok: true, summaryKey: 'wars', detail: { targetFaction: enemy, warId: rec.warId, parentWarId: origWar.id || '', joinedWar: true }, worldEvent: { kind: 'join_war', actor: joiner, target: enemy, cb: rec.casusBelli } };
+  }
+  // 设置面板「势力活世界·实验」开关处理器(tm-patches.js 设置渲染调·切 GM._factionLivingWorld·本局存档生效·御驾亲征式 pill 类切换)
+  function setFactionLivingWorld(on, btn) {
+    on = !!on;
+    try { if (global.GM) global.GM._factionLivingWorld = on; } catch (e) {}   // arch-ok: F2 势力活世界总闸·本局存档·御驾亲征式设置开关(唯一写口)
+    try { if (btn && btn.parentNode) { var bs = btn.parentNode.querySelectorAll('button[data-slhs]'); for (var i = 0; i < bs.length; i++) { var want = bs[i].getAttribute('data-slhs') === '1'; bs[i].className = 'bt ' + (want === on ? 'bp' : 'bs') + ' bsm'; } } } catch (e) {}
+    try { if (typeof global.toast === 'function') global.toast(on ? '势力活世界已开启 · 列国将真宣战/结盟/立志/兴事(本局存档生效)' : '势力活世界已关闭 · 列国维持现状'); } catch (e) {}
+  }
+
   var APPLIERS = {
     memorial: _applyMemorial,
     edict: _applyEdict,
@@ -785,7 +929,9 @@
     diplomacy: _applyDiplomacy,
     province_policy: _applyProvince,
     spy_or_intrigue: _applyIntrigue,
-    rebellion_policy: _applyRebellion
+    rebellion_policy: _applyRebellion,
+    declare_war: _applyDeclareWar,
+    join_war: _applyJoinWar
   };
 
   function ensureStrategy(fac, decision, actions) {
@@ -795,6 +941,15 @@
     if (!Array.isArray(s.goals)) s.goals = [];
     if (!Array.isArray(s.grudges)) s.grudges = [];
     if (!Array.isArray(s.warAims)) s.warAims = [];
+    // B4·目标栈激活(总闸带动/独立开)时 s.goals 归 FactionGoalStack 结构化对象所有·字符串行为标签改落 s.recentActionLabels(objectives 亦已收同标签)·防混合数组撞契约
+    var _gsOn = (typeof agentFlagOn === 'function') ? !!agentFlagOn('factionGoalStackEnabled') : !!(global.P && global.P.conf && global.P.conf.factionGoalStackEnabled);
+    if (_gsOn) {
+      if (!Array.isArray(s.recentActionLabels)) s.recentActionLabels = [];
+      if (s.goals.some(function(g){ return typeof g === 'string'; })) {   // B4·一次性迁移·幂等(迁完再跑无字符串项)
+        s.goals.forEach(function(g){ if (typeof g === 'string' && s.recentActionLabels.indexOf(g) < 0) s.recentActionLabels.push(g); });
+        s.goals = s.goals.filter(function(g){ return g && typeof g === 'object'; });
+      }
+    }
     // 【势力 agent·posture 自著·2026-06-19】开关开 + LLM 给了 posture → 用势力自己宣告的战略姿态(替冻结的启发式默认·随局势演进)·否则保留现有或启发式种子(零回归)
     if (decision && decision.posture && (typeof agentFlagOn === 'function' ? agentFlagOn('factionAgentEnabled') : (global.P && global.P.conf && global.P.conf.factionAgentEnabled))) {
       s.posture = String(decision.posture).slice(0, 16);
@@ -806,7 +961,7 @@
     _arr(actions).forEach(function(a) {
       var p = a.payload || {};
       var label = a.type + (p.targetFaction ? ':' + p.targetFaction : p.province ? ':' + p.province : p.army ? ':' + p.army : '');
-      if (s.goals.indexOf(label) < 0) s.goals.push(label);
+      if (_gsOn) { if (s.recentActionLabels.indexOf(label) < 0) s.recentActionLabels.push(label); } else if (s.goals.indexOf(label) < 0) { s.goals.push(label); }
       if ((a.type === 'diplomacy' && _safeNum(p.relationDelta) < 0) || a.type === 'spy_or_intrigue') {
         var g = p.targetFaction || p.toFaction || p.target || '';
         if (g && s.grudges.indexOf(g) < 0) s.grudges.push(g);
@@ -816,13 +971,37 @@
         if (aim && s.warAims.indexOf(aim) < 0) s.warAims.push(aim);
       }
     });
-    if (s.goals.length > 12) s.goals = s.goals.slice(-12);
+    if (_gsOn) { if (s.recentActionLabels.length > 12) s.recentActionLabels = s.recentActionLabels.slice(-12); } else if (s.goals.length > 12) { s.goals = s.goals.slice(-12); }
     if (s.grudges.length > 12) s.grudges = s.grudges.slice(-12);
     if (s.warAims.length > 12) s.warAims = s.warAims.slice(-12);
     s.lastUpdatedTurn = turn;
     return s;
   }
 
+  // 【F2·Slice2】目标生命周期修剪·仅总闸 ON 时跑(OFF 时 ensureStrategyV2 行为不变=零回归)：
+  //   claims 已占(本势力现掌该地)→达成移除·threats 已亡(不在现存势力)/已结盟→失效移除·alliances 已亡→移除·
+  //   结构化目标栈 FactionGoalStack.pruneGoals(超期未推进→abandoned·降权)。
+  function _pruneStrategyLifecycle(fac, s, turn) {
+    var G = global.GM || {};
+    var facNames = {};
+    _arr(G.facs).forEach(function(f){ if (f && f.name) facNames[f.name] = true; });
+    var p2f = (G._provinceToFaction && typeof G._provinceToFaction === 'object') ? G._provinceToFaction : null;
+    var myName = fac && fac.name;
+    var pruned = { claims: 0, threats: 0, alliances: 0 };
+    if (Array.isArray(s.claims) && p2f && myName) {
+      s.claims = s.claims.filter(function(c){ var n = String(c || '').trim(); if (n && p2f[n] === myName) { pruned.claims++; return false; } return true; });
+    }
+    var allySet = {};
+    _arr(s.alliances).forEach(function(a){ allySet[String(a)] = true; });
+    if (Array.isArray(s.threats)) {
+      s.threats = s.threats.filter(function(t){ var n = String(t || '').trim(); if (n && (!facNames[n] || allySet[n])) { pruned.threats++; return false; } return true; });
+    }
+    if (Array.isArray(s.alliances)) {
+      s.alliances = s.alliances.filter(function(a){ var n = String(a || '').trim(); if (n && !facNames[n]) { pruned.alliances++; return false; } return true; });
+    }
+    try { if (global.TM && global.TM.FactionGoalStack && typeof global.TM.FactionGoalStack.pruneGoals === 'function') global.TM.FactionGoalStack.pruneGoals(fac, turn); } catch (_) {}
+    return pruned;
+  }
   function ensureStrategyV2(fac, decision, actions) {
     var s = ensureStrategy(fac, decision, actions);
     if (!s) return s;
@@ -888,6 +1067,7 @@
       actionTypes: _arr(actions).map(function(a){ return a.type; }).slice(0, 12)
     };
     s.lastUpdatedTurn = turn;
+    if (_livingWorldOn()) { try { _pruneStrategyLifecycle(fac, s, turn); } catch (_) {} }   // F2·Slice2·目标生命周期修剪(仅总闸 ON)
     return s;
   }
 
@@ -1100,6 +1280,58 @@
     });
   }
 
+  // 【F2·Slice3】重大势力决策(宣战/参战/背刺/结盟/大军调动)→ 世界事件入御案时政(玩家下回合可见须应对)。
+  //   防洪：全局 cap 3/回合·每势力 cap 1/回合·同 id 去重·只发本势力最重的一条。走 currentIssues 既有 shape(phase8-formal-bridge 读)。
+  var _FLW_EVENT_RANK = { declare_war: 5, join_war: 4, betrayal: 3, alliance: 2, troop_move: 1 };
+  function _flwAllianceWord(rel, treaty) {
+    var z = String(rel || '') + '|' + String(treaty || '');
+    if (/互不侵犯|nonaggr|中立|互不|不侵/i.test(z)) return '议互不侵犯';
+    if (/互市|通商|trade|deal|贸易|商约/i.test(z)) return '通商互市';
+    if (/媾和|议和|peace|和约/i.test(z)) return '媾和';
+    return '结盟';
+  }
+  // B7·过期清理(每回合必经·无新事件也跑)·直接删(与 phase8 消费面对齐·不留半死条)·只碰本系统 _flw
+  function _expireWorldEvents(G, turn) {
+    if (!G || !Array.isArray(G.currentIssues)) return;
+    G.currentIssues = G.currentIssues.filter(function(x){ return !(x && x._flw && x.status === 'pending' && (turn - _safeNum(x.raisedTurn) > 2)); });   // arch-ok: F2 世界事件跨回合过期(只剔本系统 _flw)
+    var _activeFlw = G.currentIssues.filter(function(x){ return x && x._flw && x.status === 'pending'; });
+    if (_activeFlw.length > 5) {   // 全局活跃上限 5·超则删最老
+      _activeFlw.sort(function(a, b){ return _safeNum(a.raisedTurn) - _safeNum(b.raisedTurn); });
+      var _drop = {};
+      _activeFlw.slice(0, _activeFlw.length - 5).forEach(function(x){ _drop[x.id] = true; });
+      G.currentIssues = G.currentIssues.filter(function(x){ return !(x && _drop[x.id]); });   // arch-ok: F2 世界事件全局活跃上限(只剔本系统 _flw)
+    }
+  }
+  function _emitWorldEvents(fac, events, turn) {
+    events = _arr(events); if (!events.length || !fac || !fac.name) return 0;
+    var G = global.GM || {};
+    if (!Array.isArray(G.currentIssues)) G.currentIssues = [];   // arch-ok: F2 世界事件入御案时政(currentIssues 既有子树)
+    _expireWorldEvents(G, turn);
+    var mineTurn = G.currentIssues.filter(function(x){ return x && x._flw && _safeNum(x.raisedTurn) === turn; });
+    if (mineTurn.length >= 3) return 0;
+    if (mineTurn.some(function(x){ return x._flwActor === fac.name; })) return 0;
+    var ev = events.slice().sort(function(a, b){ return (_FLW_EVENT_RANK[b && b.kind] || 0) - (_FLW_EVENT_RANK[a && a.kind] || 0); })[0];
+    if (!ev || !ev.kind) return 0;
+    var actor = fac.name, target = String(ev.target || '');
+    var id = 'iss_flw_' + turn + '_' + _slugId(ev.kind) + '_' + _slugId(actor) + '_' + _slugId(target);
+    if (G.currentIssues.some(function(x){ return x && x.id === id; })) return 0;
+    var CN = {
+      declare_war: { t: actor + ' 向 ' + target + ' 宣战', d: actor + '以「' + (ev.cb || '边衅') + '」为名对 ' + target + ' 兴兵。列国相攻·牵动天下·陛下当早为之备。', sev: '紧要' },
+      join_war:    { t: actor + ' 参战攻 ' + target, d: actor + ' 加入对 ' + target + ' 之战事·战端愈广。', sev: '紧要' },
+      betrayal:    { t: actor + ' 与 ' + target + ' 交恶', d: actor + ' 与 ' + target + ' 邦交骤裂·恐启衅端。', sev: '要事' },
+      alliance:    { t: actor + ' 与 ' + target + ' ' + _flwAllianceWord(ev.rel, ev.treaty), d: actor + ' 与 ' + target + ' ' + _flwAllianceWord(ev.rel, ev.treaty) + '·邦交生变·陛下宜察其向背。', sev: '要事' },
+      troop_move:  { t: actor + ' 大军调动', d: actor + ' 大举调兵' + (target ? '·指向 ' + target : '') + '·边情叵测。', sev: '要事' }
+    }[ev.kind] || { t: actor + ' 有重大动向', d: actor + ' 近有异动。', sev: '要事' };
+    var issue = {
+      id: id, title: CN.t, description: CN.d, category: '外交军务', severity: CN.sev,
+      status: 'pending', raisedTurn: turn,
+      raisedDate: (typeof global.getTSText === 'function' ? global.getTSText(turn) : (G._gameDate || '')),
+      linkedFactions: [actor, target].filter(Boolean), proposer: '边报', dept: '兵部',
+      _info: true, _flw: true, _flwActor: actor, _flwKind: ev.kind
+    };
+    G.currentIssues.push(issue);   // arch-ok: F2 势力活世界·重大势力决策入御案时政(currentIssues 既有子树·经裁定·非写主入口)
+    return 1;
+  }
   function applyDecision(fac, decision, opts) {
     opts = opts || {};
     var d = validateDecision(decision);
@@ -1111,6 +1343,7 @@
     var summary = { memorials:0, edicts:0, chaoyi:0, office:0, actions:0, attemptedActions: actions.length, skippedActions:0, mergedActions:0, skippedDetails:[], mergedDetails:[] };
     // F1·2026-05-22·in-batch 去重·防 LLM 同一 decision 重复 emit (legacy+native 双填或纯 native 双填)
     var seenBatchKeys = {};
+    var _worldEvents = [];   // F2·Slice3·收集重大决策世界事件(仅总闸 ON 时消费)
     actions.forEach(function(action) {
       var preflight = validateActionTarget(fac, action, ctx);
       if (!preflight || !preflight.ok) {
@@ -1141,6 +1374,7 @@
         var key = res.summaryKey || action.type;
         summary[key] = (summary[key] || 0) + 1;
         summary.actions++;
+        if (_livingWorldOn() && res && res.worldEvent) _worldEvents.push(res.worldEvent);
         if (batchKey) seenBatchKeys[batchKey] = { source: action.source, actionId: action.actionId };
         _recordAction(fac, action, 'applied', res.detail || null);
       } else {
@@ -1150,6 +1384,7 @@
         _recordAction(fac, action, 'skipped', { reason:failReason });
       }
     });
+    if (_livingWorldOn()) { try { _expireWorldEvents(global.GM || {}, turn); if (_worldEvents.length) _emitWorldEvents(fac, _worldEvents, turn); } catch (_) {} }   // F2·Slice3·后果事件化(过期清理每回合必经·再判新事件)
     if (d && d.rationale) fac._lastLlmRationale = { turn:turn, text:d.rationale };
     ensureStrategyV2(fac, d, actions);
     // G3-C·2026-05-22·决策风格 rolling memory·写在 strategy 后·只算 applied actions·skipped 不入
@@ -1329,8 +1564,16 @@
     ensureStrategy: ensureStrategyV2,
     scoreFactionCandidate: scoreFactionCandidate,
     rankFactionCandidates: rankFactionCandidates,
-    getSc16Compliance: getSc16Compliance
+    getSc16Compliance: getSc16Compliance,
+    livingWorldOn: _livingWorldOn,
+    setFactionLivingWorld: setFactionLivingWorld,
+    _applyDeclareWar: _applyDeclareWar,
+    _applyJoinWar: _applyJoinWar,
+    _pruneStrategyLifecycle: _pruneStrategyLifecycle,
+    _emitWorldEvents: _emitWorldEvents,
+    _expireWorldEvents: _expireWorldEvents
   };
+  if (typeof global !== 'undefined') { try { global._tmSetFactionLivingWorld = setFactionLivingWorld; } catch (e) {} }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = global.TM.FactionActionEngine;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : globalThis));

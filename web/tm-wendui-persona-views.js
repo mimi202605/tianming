@@ -566,7 +566,13 @@ function _wdBuildPrompt(ch, name) {
   }
   // ★ 时空约束·防 NPC 说还活着的人已死/用未来史实
   if (typeof _buildTemporalConstraint === 'function') {
-    try { p += _buildTemporalConstraint(ch); } catch(_){}
+    try {
+      // 扫描源：玩家提问(GM.wenduiHistory[name] 的 player/system 近条·即问对议题)·对话NPC name 作种子恒入
+      var _wdHist = (GM.wenduiHistory && GM.wenduiHistory[name]) || [];
+      var _wdTopic = _wdHist.filter(function(h){ return h && (h.role === 'player' || h.role === 'system'); }).slice(-4).map(function(h){ return h.content || ''; }).join(' ');
+      var _wdMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_wdTopic, name ? [name] : [], 10) : (name ? [name] : []);
+      p += _buildTemporalConstraint(ch, { mentionedNames: _wdMentioned });
+    } catch(_){}
   }
   // v1·PromptComposer·注入 phase 6 字段·让 NPC 真用 aiPersonaText / recognitionState
   if (typeof TM !== 'undefined' && TM.PromptComposer) {

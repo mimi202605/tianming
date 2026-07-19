@@ -1650,7 +1650,12 @@ function buildNpcPrompt(name, item, playerText, stance, intent, isMentioned) {
 
   // 时空约束·防 AI 引用未来史实
   if (typeof _buildTemporalConstraint === 'function') {
-    try { p += _buildTemporalConstraint(gmCh); } catch (_) {}
+    try {
+      // 扫描源：早朝正议题(item.title/detail) + 陛下方才所言(playerText)·发言人 name 作种子恒入
+      var _ccTopic = ((item && item.title) || '') + ' ' + ((item && (item.detail || item.content)) || '') + ' ' + (playerText || '');
+      var _ccMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_ccTopic, name ? [name] : [], 10) : (name ? [name] : []);
+      p += _buildTemporalConstraint(gmCh, { mentionedNames: _ccMentioned });
+    } catch (_) {}
   }
 
   return p;

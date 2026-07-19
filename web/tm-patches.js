@@ -585,6 +585,15 @@ openSettings=function(){
         + '<div style="display:flex;gap:0.3rem;">' + pillOb(true,'开启 · 观之') + pillOb(false,'关闭 · 不观') + '</div>'
         + '</div>';
     })()+
+    // 势力活世界·实验(F2·开关 GM._factionLivingWorld·本局存档生效·总闸 OFF=零行为变更)
+    (function(){
+      var on = false; try { on = !!(typeof GM!=='undefined' && GM && GM._factionLivingWorld); } catch(_){}
+      function pill(want, label){ return '<button class="bt '+((on===want)?'bp':'bs')+' bsm" data-slhs="'+(want?1:0)+'" onclick="_tmSetFactionLivingWorld('+want+',this)" style="flex:1;">'+label+'</button>'; }
+      return '<div class="settings-section"><h4>势力活世界 · 实验</h4>'
+        + '<div style="font-size:0.78rem;color:var(--txt-d);margin:-0.2rem 0 0.4rem;">开启后，列国势力不再只作壁上观：可<b>真宣战/参战</b>（走正当法理·非乱咬）、<b>结盟背刺</b>结出真外交后果、跨回合<b>立志兴事</b>，重大动向<b>入御案时政</b>待陛下应对。默认关（零行为变更），本局存档生效。</div>'
+        + '<div style="display:flex;gap:0.3rem;">' + pill(true,'开启 · 活世界') + pill(false,'关闭 · 现状') + '</div>'
+        + '</div>';
+    })()+
     // API
     "<div class=\"settings-section\"><h4>API\u8FDE\u63A5</h4>"+
     // 2026-07-10 \u65B0\u624B\u6307\u5F15\uFF1A\u5199\u7ED9\u5B8C\u5168\u6CA1\u63A5\u89E6\u8FC7 AI / API \u7684\u73A9\u5BB6\u2014\u2014\u5148\u8BB2\u53BB\u54EA\u5F04\u8D26\u53F7\uFF0C\u518D\u9010\u680F\u8BB2\u600E\u4E48\u586B
