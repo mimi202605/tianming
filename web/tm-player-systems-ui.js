@@ -179,7 +179,19 @@
     }
     var blocks = SCENE_BLOCKS[sceneKey] || [];
     var html = '<div class="player-scene" data-scene="' + _esc(sceneKey) + '">';
-    if (!blocks.length) {
+
+    // 摄政代诏区块（仅 regent·office 场景首位）
+    if (sceneKey === 'office' && role === 'regent') {
+      html += '<div class="player-block player-block-regent-decree" data-system="RegentDecree">';
+      html += '<div class="player-block-title">代诏</div>';
+      html += '<div class="player-block-body">';
+      html += '<p>摄政权臣可代君主下诏。代诏需承担架空危机风险。</p>';
+      html += '<button type="button" class="bt bp" data-system="Transmigration" data-action="runRegentAction" data-payload="proxyEdict">代下诏令</button>';
+      html += '<button type="button" class="bt bs" data-system="Transmigration" data-action="runRegentAction" data-payload="returnPower">还政</button>';
+      html += '</div></div>';
+    }
+
+    if (!blocks.length && !(sceneKey === 'office' && role === 'regent')) {
       html += '<div class="player-scene-empty">该场景无内容</div>';
       html += '</div>';
       return html;
