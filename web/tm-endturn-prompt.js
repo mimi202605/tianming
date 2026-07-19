@@ -565,7 +565,7 @@
       tp += '\n\n╔══════════════════════════════════════════════════════════════╗\n';
       tp += '║  【★ 本回合玩家圣旨·核心指令·字面执行·必须落到数据 ★】          ║\n';
       tp += '╠══════════════════════════════════════════════════════════════╣\n';
-      tp += '║  以下是本回合皇帝亲颁诏令原文。AI 必须：                       ║\n';
+      tp += '║  以下是本回合' + ((typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝') + '亲颁诏令原文。AI 必须：                       ║\n';
       tp += '║  (1) shizhengji/shilu 正文中每一道诏令都有对应叙事段落         ║\n';
       tp += '║  (2) 涉及任命→office_assignments·涉及钱粮→fiscal_adjustments  ║\n';
       tp += '║  (3) edict_feedback 每条必填 status+assignee+feedback          ║\n';

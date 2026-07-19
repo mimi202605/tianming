@@ -59,13 +59,25 @@ function openPause(){
   // 回合推演中禁止暂停（防止状态竞争）
   if (GM._endTurnBusy) return;
   var _pi = typeof tmIcon === 'function' ? tmIcon : function(){return '';};
-  _$("pause-bg").innerHTML="<div class=\"pause-menu\"><div class=\"pause-title\">\u3014 \u5929 \u547D \u3015</div><button class=\"pause-btn\" onclick=\"closePause()\">\u7EE7 \u7EED</button><button class=\"pause-btn\" onclick=\"closePause();openSaveManager()\">"+_pi('save',16)+" \u6848\u5377\u7BA1\u7406</button><button class=\"pause-btn\" onclick=\"closePause();openSettings()\">"+_pi('settings',16)+" \u8BBE \u7F6E</button><button class=\"pause-btn\" onclick=\"closePause();openShiji()\">"+_pi('history',16)+" \u53F2 \u8BB0</button><button class=\"pause-btn\" onclick=\"closePause();openAbdication()\">\u7985\u8BA9\u9000\u4F4D</button><button class=\"pause-btn\" style=\"color:var(--vermillion-400);\" onclick=\"closePause();backToLaunch()\">\u5F52\u53BB\u6765\u516E</button></div>";
+  // Task 29 · 穿越模式下「禅让退位」改作「身份变更」
+  var _piPause = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTransPause = _piPause && _piPause.transmigrationMode === true && _piPause.playerRole && _piPause.playerRole !== 'emperor';
+  var _roleLabel = _isTransPause ? '身 份 变 更' : '\u7985\u8BA9\u9000\u4F4D';
+  var _roleAction = _isTransPause ? 'openRoleChange()' : 'openAbdication()';
+  _$("pause-bg").innerHTML="<div class=\"pause-menu\"><div class=\"pause-title\">\u3014 \u5929 \u547D \u3015</div><button class=\"pause-btn\" onclick=\"closePause()\">\u7EE7 \u7EED</button><button class=\"pause-btn\" onclick=\"closePause();openSaveManager()\">"+_pi('save',16)+" \u6848\u5377\u7BA1\u7406</button><button class=\"pause-btn\" onclick=\"closePause();openSettings()\">"+_pi('settings',16)+" \u8BBE \u7F6E</button><button class=\"pause-btn\" onclick=\"closePause();openShiji()\">"+_pi('history',16)+" \u53F2 \u8BB0</button><button class=\"pause-btn\" onclick=\"closePause();"+_roleAction+"\">"+_roleLabel+"</button><button class=\"pause-btn\" style=\"color:var(--vermillion-400);\" onclick=\"closePause();backToLaunch()\">\u5F52\u53BB\u6765\u516E</button></div>";
   _$("pause-bg").classList.add("show");
 }
 function closePause(){_$("pause-bg").classList.remove("show");}
 
 // N8: 退位/禅让系统
 function openAbdication() {
+  // Task 29 · 穿越模式下禁用禅让·改走角色变更路径
+  var _pi29 = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  if (_pi29 && _pi29.transmigrationMode === true && _pi29.playerRole && _pi29.playerRole !== 'emperor') {
+    if (typeof toast === 'function') toast('穿越模式下不可禅让·请改用「身份变更」');
+    if (typeof openRoleChange === 'function') openRoleChange();
+    return;
+  }
   var pc = GM.chars && GM.chars.find(function(c){ return c.isPlayer; });
   if (!pc) { toast('未找到玩家角色'); return; }
   // 候选继承人：同势力存活角色——国本刀(2026-07-07)：储君/皇嗣置顶(此前只按官阶·亲子沉底甚至挤出前十)
@@ -128,6 +140,59 @@ function _confirmAbdication(heirName) {
   document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
   toast('\u7985\u8BA9\u5B8C\u6210\uFF0C' + heir.name + '\u5DF2\u7EE7\u4F4D');
   if (typeof renderGameState === 'function') renderGameState();
+}
+
+// Task 29 · 穿越模式身份变更路径（按 playerRole 分支）
+function openRoleChange() {
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  if (!_pi || !_pi.transmigrationMode || !_pi.playerRole || _pi.playerRole === 'emperor') {
+    if (typeof toast === 'function') toast('当前模式不支持身份变更');
+    return;
+  }
+  var paths = (typeof TM !== 'undefined' && TM.Transmigration && typeof TM.Transmigration.getRoleChangePaths === 'function')
+    ? TM.Transmigration.getRoleChangePaths(_pi.playerRole) : null;
+  if (!paths) {
+    if (typeof toast === 'function') toast('当前角色无可变更的身份路径');
+    return;
+  }
+  var pathKeys = Object.keys(paths);
+  var html = '<div style="padding:1.5rem;max-width:480px;">';
+  html += '<div style="text-align:center;margin-bottom:1rem;"><div style="font-size:1.2rem;color:var(--gold);font-weight:700;">\u8EAB \u4EFD \u53D8 \u66F4</div>';
+  html += '<div style="font-size:0.8rem;color:var(--txt-d);margin-top:0.3rem;">\u5F53\u524D\u8EAB\u4EFD\uFF1A' + escHtml(_pi.characterTitle || _pi.playerRole || '') + ' \u00B7 \u62E9\u62E9\u53D8\u66F4\u8DEF\u5F84\uFF08\u4E0D\u53EF\u64A4\u56DE\uFF09</div></div>';
+  html += '<div style="max-height:280px;overflow-y:auto;">';
+  pathKeys.forEach(function(k) {
+    var p = paths[k];
+    var _safeK = escHtml(k).replace(/'/g, '&#39;').replace(/\\/g, '\\\\');
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem;margin-bottom:0.3rem;background:var(--bg-2);border-radius:6px;cursor:pointer;" onclick="_confirmRoleChange(\'' + _safeK + '\')">';
+    html += '<div><div style="font-size:0.88rem;font-weight:700;color:var(--gold-l);">' + escHtml(p.label) + '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--txt-d);margin-top:0.2rem;">' + escHtml(p.msg) + '</div></div>';
+    html += '<span style="font-size:0.75rem;color:var(--gold);">\u9009\u5B9A</span></div>';
+  });
+  html += '</div>';
+  html += '<button class="bt bs" style="width:100%;margin-top:0.8rem;" onclick="this.closest(\'.modal-bg\').remove();">\u53D6\u6D88</button>';
+  html += '</div>';
+  var ov = document.createElement('div');
+  ov.className = 'modal-bg show';
+  ov.innerHTML = '<div class="modal" style="max-width:500px;">' + html + '</div>';
+  document.body.appendChild(ov);
+}
+function _confirmRoleChange(kind) {
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  if (!_pi || !_pi.playerRole) return;
+  var paths = (typeof TM !== 'undefined' && TM.Transmigration && typeof TM.Transmigration.getRoleChangePaths === 'function')
+    ? TM.Transmigration.getRoleChangePaths(_pi.playerRole) : null;
+  if (!paths || !paths[kind]) return;
+  var p = paths[kind];
+  if (!confirm('\u786E\u5B9A\u300C' + p.label + '\u300D\uFF1F\u6B64\u53D8\u66F4\u4E0D\u53EF\u64A4\u56DE\u3002')) return;
+  var res = (typeof TM !== 'undefined' && TM.Transmigration && typeof TM.Transmigration.triggerRoleChange === 'function')
+    ? TM.Transmigration.triggerRoleChange(kind, {}) : null;
+  document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
+  if (res && res.ok) {
+    if (typeof toast === 'function') toast('\u8EAB\u4EFD\u53D8\u66F4\uFF1A' + p.label + '\uFF08' + p.msg + '\uFF09');
+    if (typeof renderGameState === 'function') renderGameState();
+  } else {
+    if (typeof toast === 'function') toast('\u53D8\u66F4\u5931\u8D25\uFF1A' + (res && res.reason ? res.reason : '\u672A\u77E5\u9519\u8BEF'));
+  }
 }
 
 // 史记浮动按钮
@@ -1582,7 +1647,20 @@ function renderLeftPanel(){
   var _sc=findScenarioById&&findScenarioById(GM.sid);
   if(barEra){ barEra.textContent=(_sc?_sc.name:'')+(GM.eraName?' · '+GM.eraName:''); }
   var _barDyn=_$("bar-dynasty"), _barDate=_$("bar-date"), _barTurnT=_$("bar-turn-text");
-  if(_barDyn){ _barDyn.textContent=(_sc?_sc.name:'')+(GM.eraName?' · '+GM.eraName:''); }
+  // Task 27 · 穿越模式顶栏按 playerRole 分支：
+  //   皇帝模式：剧本名 · 年号（如 "天启七年 · 天启"）
+  //   穿越模式：玩家官职 · 年号 · 君主（如 "兵部尚书 · 天启 · 皇上朱由检"）
+  var _piBar = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTransBar = _piBar && _piBar.transmigrationMode === true && _piBar.playerRole && _piBar.playerRole !== 'emperor';
+  if(_barDyn){
+    if(_isTransBar){
+      var _title = _piBar.characterTitle || _piBar.playerRole || '臣';
+      var _sovereign = _piBar.sovereignName || '君上';
+      _barDyn.textContent = _title + ' · ' + (GM.eraName || '') + ' · 君上 ' + _sovereign;
+    } else {
+      _barDyn.textContent=(_sc?_sc.name:'')+(GM.eraName?' · '+GM.eraName:'');
+    }
+  }
   if(_barDate){ _barDate.textContent=(typeof getTSText==='function'?getTSText(GM.turn):''); }
   if(_barTurnT){ _barTurnT.textContent='第 '+(GM.turn||1)+' 回合'; }
   // 右上时间区·B 方案 LOCKED §3.1·主 = getTSText / 副 = 公元 N 年

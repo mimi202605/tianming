@@ -149,7 +149,7 @@ function _ty3_phase5_pick(name, source) {
   }
   if (typeof addCYBubble === 'function') {
     var src = (source==='conventional') ? '惯例' : (source==='proposer') ? '主奏方' : (source==='s_free') ? 'S档钦定' : '钦定';
-    addCYBubble('皇帝', '——着' + name + '草诏。（' + src + '·名望+3·恩眷+5）', false);
+    addCYBubble((typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝', '——着' + name + '草诏。（' + src + '·名望+3·恩眷+5）', false);
   }
   if (typeof toast === 'function') toast(name + ' 草诏·名望+3 恩眷+5');
   if (typeof addEB === 'function') addEB('草诏', name + ' 草诏 · ' + ((CY._ty2&&CY._ty2.topic)||''));
@@ -446,7 +446,7 @@ function _ty3_phase3_qinDing(name, partyKey) {
     var bp = _ty3_getPartyObj(biggestParty);
     if (bp) bp.cohesion = Math.max(0, (parseInt(bp.cohesion, 10) || 50) - 3);
   }
-  if (typeof addCYBubble === 'function') addCYBubble('皇帝', '钦点 ' + name + (contested ? '·' + biggestParty + ' 凝聚 -3' : ''), false);
+  if (typeof addCYBubble === 'function') addCYBubble((typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝', '钦点 ' + name + (contested ? '·' + biggestParty + ' 凝聚 -3' : ''), false);
   if (typeof addEB === 'function') addEB('廷推', '任命·' + name + ((CY._ty2 && CY._ty2.topic) ? '·' + CY._ty2.topic : ''));
   var cb = CY._ty3_phase3_callback;
   CY._ty3_phase3_callback = null;

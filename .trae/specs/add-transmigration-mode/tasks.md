@@ -369,24 +369,24 @@
 
 ## Phase 5 · UI 文案与身份展示动态化
 
-- [ ] Task 27: 顶栏身份展示按 playerRole 分支
-  - [ ] SubTask 27.1: 在 `tm-game-ui-shell.js` 顶栏渲染处读 `P.playerInfo.playerRole`
-  - [ ] SubTask 27.2: 皇帝模式：显示"年号 · 尊号"（如"崇祯十五年 · 明思宗"）
-  - [ ] SubTask 27.3: 穿越模式：显示"玩家官职 · 当前皇帝年号"（如"兵部尚书 · 崇祯十五年"）
+- [x] Task 27: 顶栏身份展示按 playerRole 分支
+  - [x] SubTask 27.1: 在 `tm-game-ui-shell.js` 顶栏渲染处读 `P.playerInfo.playerRole`
+  - [x] SubTask 27.2: 皇帝模式：显示"年号 · 尊号"（如"崇祯十五年 · 明思宗"）
+  - [x] SubTask 27.3: 穿越模式：显示"玩家官职 · 当前皇帝年号"（如"兵部尚书 · 崇祯十五年"）
   - 验证：浏览器实查两种模式渲染
 
-- [ ] Task 28: 字面量 `'皇帝'` 全面动态化
-  - [ ] SubTask 28.1: 在 `tm-chaoyi.js` line 35/141/186/189 替换为读 `P.playerInfo.sovereignName || '皇帝'`
-  - [ ] SubTask 28.2: 在 `tm-chaoyi-yuqian.js` line 215/493/658 同样替换
-  - [ ] SubTask 28.3: 在 `tm-tinyi-v3.js` line 219/2629 与 `tm-tinyi-v3-edict-personnel.js` line 152/449 同样替换
-  - [ ] SubTask 28.4: 在 `tm-endturn-prompt.js` line 568 `'本回合皇帝亲颁诏令原文'` 改为读 `P.playerInfo` 动态拼接
-  - [ ] SubTask 28.5: 在 `tm-edict-oversight.js` line 89 `'代陛下核查诏令'` 同样动态化
+- [x] Task 28: 字面量 `'皇帝'` 全面动态化
+  - [x] SubTask 28.1: 在 `tm-chaoyi.js` line 35/141/186/189 替换为读 `P.playerInfo.sovereignName || '皇帝'`
+  - [x] SubTask 28.2: 在 `tm-chaoyi-yuqian.js` line 215/493/658 同样替换
+  - [x] SubTask 28.3: 在 `tm-tinyi-v3.js` line 219/2629 与 `tm-tinyi-v3-edict-personnel.js` line 152/449 同样替换
+  - [x] SubTask 28.4: 在 `tm-endturn-prompt.js` line 568 `'本回合皇帝亲颁诏令原文'` 改为读 `P.playerInfo` 动态拼接
+  - [x] SubTask 28.5: 在 `tm-edict-oversight.js` line 89 `'代陛下核查诏令'` 同样动态化
   - 验证：grep `'皇帝'` 字面量，确认穿越模式下所有用户可见处已动态化（保留 schema 数据中的 `'皇帝'` 不动）
 
-- [ ] Task 29: 退位/禅让系统穿越模式禁用
-  - [ ] SubTask 29.1: 在 `tm-player-core.js:68 openAbdication` 入口判定 `transmigrationMode`，true 时隐藏入口并提示"穿越模式下不可禅让"
-  - [ ] SubTask 29.2: 改为角色定位匹配的身份变更路径：minister→"辞职/告老"，prince→"袭爵/夺嫡"，general→"卸甲/起复"等
-  - [ ] SubTask 29.3: 调用 `TM.Transmigration.triggerRoleChange(kind, payload)` 触发身份变更
+- [x] Task 29: 退位/禅让系统穿越模式禁用
+  - [x] SubTask 29.1: 在 `tm-player-core.js:68 openAbdication` 入口判定 `transmigrationMode`，true 时隐藏入口并提示"穿越模式下不可禅让"
+  - [x] SubTask 29.2: 改为角色定位匹配的身份变更路径：minister→"辞职/告老"，prince→"袭爵/夺嫡"，general→"卸甲/起复"等
+  - [x] SubTask 29.3: 调用 `TM.Transmigration.triggerRoleChange(kind, payload)` 触发身份变更
   - 验证：跑 `node web/scripts/smoke-transmigration-role-change.js`（新增 smoke）
 
 ## Phase 6 · 回合流程编排
