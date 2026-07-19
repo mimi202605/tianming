@@ -2126,11 +2126,29 @@
     });
   }
 
+  // 右栏徽标动态计数槽·经 updateRailBadges 填真值(廉价标量·待批奏疏/未决议题/军情预警/近事)·非此列表的槽保持静态或无数字
+  var RAIL_DYNAMIC_BADGE_SLOTS = { ol:1, issue:1, army:1, rumor:1 };
+  function railDynamicBadgeCount(slot){
+    try {
+      if (slot === 'ol') return getMemorials().length;
+      if (slot === 'issue') return getIssues().filter(function(x){ return !issueIsResolved(x); }).length;
+      if (slot === 'army') { var g = window.GM || {}; return Array.isArray(g._junqingBrief) ? g._junqingBrief.length : 0; }
+      if (slot === 'rumor') return collectRecentEvents().length;
+    } catch(_) {}
+    return 0;
+  }
   function updateRailBadges(){
     var n = (state.pinnedPeople || []).length;
     document.querySelectorAll('[data-phase8-badge="pinned"]').forEach(function(el){
       el.textContent = n;
       el.style.display = n ? '' : 'none';
+    });
+    ['ol','issue','army','rumor'].forEach(function(slot){
+      var c = railDynamicBadgeCount(slot);
+      document.querySelectorAll('[data-phase8-badge="' + slot + '"]').forEach(function(el){
+        el.textContent = c;
+        el.style.display = c ? '' : 'none';
+      });
     });
   }
 
@@ -2186,7 +2204,8 @@
     rail.innerHTML = '<div class="tmf-rail-cap">国事</div>' + buttons.map(function(b){
       var badge = b[3] === 'pin'
         ? '<span class="tmf-rail-count" data-phase8-badge="pinned"></span>'
-        : (b[3] ? '<span class="tmf-rail-count">' + esc(b[3]) + '</span>' : '');
+        : (RAIL_DYNAMIC_BADGE_SLOTS[b[0]] ? '<span class="tmf-rail-count" data-phase8-badge="' + esc(b[0]) + '"></span>'
+        : (b[3] ? '<span class="tmf-rail-count">' + esc(b[3]) + '</span>' : ''));
       return '<button type="button" class="tmf-rail-btn ' + esc(b[4] || '') + '" data-slot="' + esc(b[0]) + '" title="' + esc(b[2]) + '" onclick="TMPhase8FormalBridge.openPanel(\'' + esc(b[0]) + '\')"><span>' + esc(b[1]) + '</span>' + badge + '</button>';
     }).join('');
     updateRailBadges();
@@ -2232,7 +2251,8 @@
     rail.innerHTML = '<div class="tm-rc-cap" aria-hidden="true">国事</div>' + buttons.map(function(b, i){
       var badge = b[3] === 'pin'
         ? '<span class="tm-rc-count" data-phase8-badge="pinned"></span>'
-        : (b[3] ? '<span class="tm-rc-count">' + esc(b[3]) + '</span>' : '');
+        : (RAIL_DYNAMIC_BADGE_SLOTS[b[0]] ? '<span class="tm-rc-count" data-phase8-badge="' + esc(b[0]) + '"></span>'
+        : (b[3] ? '<span class="tm-rc-count">' + esc(b[3]) + '</span>' : ''));
       var divider = (i === 0 || i === 3 || i === 6) ? '<div class="tm-rc-divider" aria-hidden="true"></div>' : '';
       // b[1] 是 raw SVG·不转义
       return '<button type="button" class="tm-rc-icon ' + esc(b[4] || '') + '" aria-label="' + esc(b[2]) + '" data-slot="' + esc(b[0]) + '" data-tip="' + esc(b[2]) + '" onclick="TMPhase8FormalBridge.openPanel(\'' + esc(b[0]) + '\')">' + b[1] + badge + '</button>' + divider;
@@ -2317,6 +2337,8 @@
       listSig(gm.events),
       listSig(gm.recentEvents),
       listSig(gm.currentIssues),
+      listSig(gm.memorials),
+      (Array.isArray(gm._pendingAudiences) ? gm._pendingAudiences.length : 0),
       listSig(gm._turnReport),
       listSig(eb.items)
     ].join('|');
