@@ -35,3 +35,5 @@ web/tm-ai-change-applier-reconcile.js whitespace=blank-at-eol,blank-at-eof,space
 web/tm-endturn-apply-stages.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # 刀C(2026-07-19)触及的历史 CRLF 文件：同上契约(applier 主体亦 2882 CRLF 行·写端反向闸扩面新增行随 CRLF)。
 web/tm-ai-change-applier.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# 刀C返工(2026-07-19·Codex复审)触及的历史 CRLF 文件：扁平 char_updates 真实消费点判源(同上契约)。
+web/tm-endturn-apply.js whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

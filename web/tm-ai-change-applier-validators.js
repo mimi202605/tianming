@@ -237,6 +237,24 @@
     return false;
   }
 
+  // ── 刀C·返工issue5(2026-07-19)·allegiance_changes 改 canonical faction 补来源判据(applier 叛降段调用) ──
+  //   叛降/归附本是带因事件：reason 含具体军政诱因(战败/围城/策反/反正/归降/俘/胁迫/拥立)或经 _writeActionSourced
+  //   (玩家诏令/朝议裁决/结构化互证)有源→放行；纯凭史实幻觉的裸改换门庭(无诱因无来源)→拒+弱提示。返 true=已拦。★宁漏勿误杀。
+  function _gateAllegianceSource(G, aiOutput, charRef, newName, reason, applied) {
+    if (!G || !charRef) return false;
+    var ch = (typeof _findEntity === 'function') ? _findEntity(G, 'char', charRef) : (Array.isArray(G.chars) ? G.chars.filter(function(c){ return c && (c.name === charRef || c.id === charRef); })[0] : null);
+    if (!ch) return false;   // 查无此人·另由 applyAllegianceChange 兜底
+    if (/战败|兵败|大败|溃败|败绩|围城|城破|城陷|陷城|破城|策反|反正|反水|归降|归附|来降|来附|投诚|投降|纳降|请降|乞降|招抚|招降|抚定|胁迫|挟持|俘获|被俘|就擒|拥立|劫盟|叛降|叛附|献城|献关|举城|哗变|倒戈/.test(String(reason || ''))) return false;
+    if (_writeActionSourced(G, aiOutput, ch, { scanInputs: true })) return false;
+    console.warn('[allegiance/返工] 无源改换门庭·不执行(疑史实幻觉·转弱自查纸条留痕): ' + (ch.name || charRef) + ' → ' + newName);
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源改换门庭', reason: '改换门庭本回合无军政诱因(战败/围城/策反)亦无玩家诏令/朝议来源·疑史实幻觉·目标势力「' + String(newName || '').slice(0, 20) + '」', itemName: ch.name || charRef, source: 'allegiance-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源改换门庭', itemName: ch.name || charRef }); } catch(_ae) {}
+    if (applied && Array.isArray(applied.failed)) applied.failed.push({ field: 'allegiance_changes', text: (ch.name || charRef) + ' → ' + newName, reason: '无源改换门庭·未落库(疑史实幻觉)' });
+    return true;
+  }
+
   function _validatePersonnelConsistency(G, aiOutput, applied) {
     if (!G || !aiOutput) return;
     var narrativeText = '';
@@ -1455,5 +1473,5 @@
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
   // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
-  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint;
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint; __acaP._gateAllegianceSource = _gateAllegianceSource;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));

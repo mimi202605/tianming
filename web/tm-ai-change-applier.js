@@ -1161,7 +1161,7 @@
       var charRef = a.character || a.char || a.name || a.who || a.subject;
       var newFac = a.newFaction || a.toFaction || a.to_faction || a.faction || a.to || a.newAllegiance;
       if (!charRef || !newFac) return;
-      var r = applyAllegianceChange(G, charRef, newFac, { reason: a.reason || a.cause || '', type: a.type || a.kind || a.mode || '' });
+      var _wgAl = global.TM && global.TM.__acaParts; var r = (_wgAl && _wgAl._gateAllegianceSource && _wgAl._gateAllegianceSource(G, aiOutput, charRef, newFac, a.reason || a.cause || '', applied)) ? { ok: false, reason: 'no-source-faction(write-gate)' } : applyAllegianceChange(G, charRef, newFac, { reason: a.reason || a.cause || '', type: a.type || a.kind || a.mode || '' });   // 刀C·返工issue5·改换门庭判源
       if (r.ok) { applied.changes++; }
       else applied.failed.push({ field: 'allegiance_changes', text: charRef + ' → ' + newFac, reason: r.reason });
     });

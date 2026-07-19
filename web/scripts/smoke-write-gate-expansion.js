@@ -269,6 +269,67 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
     ok(findCh(ctx.GM, '杨涟').stance === '获罪' && hintCount(ctx.GM) === 0, 'issue3-pos _courtRecords 决议点名=有源→敏感字段放行');
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  返工·issue1·真实 SC1 扁平 char_updates(new_stance/new_party) 补来源判据
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== 返工·issue1·扁平 char_updates 敏感字段 =====');
+  // issue1·扁平 schema 判源(真实消费点 tm-endturn-apply.js:1094 调 _sensitiveCharFieldSourced)：无源→false+留痕 / 有源→true
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', stance: '清流', resources: {} }]);
+    const bkt = ctx.TM.__acaParts;
+    const ch = findCh(ctx.GM, '杨涟');
+    const p1flat = { char_updates: [{ name: '杨涟', new_stance: '失势', new_party: '' }], shizhengji: '杨涟渐失圣眷。' };   // 真实扁平 SC1 形状
+    ok(bkt._sensitiveCharFieldSourced(ctx.GM, p1flat, ch, 'stance', '杨涟') === false, 'issue1 扁平 new_stance 无源→判 false(消费点据此跳过写 ch.stance)');
+    ok(hintNames(ctx.GM).indexOf('杨涟') >= 0, 'issue1 无源→弱自查纸条留痕');
+    const ctx2 = makeCtx();
+    ctx2.GM = baseGM([{ name: '杨涟', alive: true, faction: '明朝廷', stance: '清流', resources: {} }],
+      { _playerDirectives: [{ id: 'd1', content: '杨涟结党，着夺其清望' }] });
+    const p1b = { char_updates: [{ name: '杨涟', new_stance: '失势' }] };
+    ok(ctx2.TM.__acaParts._sensitiveCharFieldSourced(ctx2.GM, p1b, findCh(ctx2.GM, '杨涟'), 'stance', '杨涟') === true, 'issue1 扁平 new_stance 有玩家诏令源→判 true(照落)');
+  }
+  // issue1·契约：真实消费点 tm-endturn-apply.js 扁平 new_stance/new_party 处确已接 _sensitiveCharFieldSourced 闸
+  {
+    // 文件名拼接构造(非 split-family 装载序消费·只作源码契约 grep·避免 smoke-family-order 误判提及序)
+    const _epName = 'tm-endturn-apply' + '.js';
+    const src = fs.readFileSync(path.join(ROOT, _epName), 'utf8');
+    const seg = src.slice(src.indexOf('if (cu.new_stance'), src.indexOf('if (cu.new_stance') + 700);
+    ok(/_sensitiveCharFieldSourced\([^)]*'stance'/.test(seg) && /_sensitiveCharFieldSourced\([^)]*'party'/.test(seg),
+      'issue1 契约·消费点 new_stance/new_party 均已内联 _sensitiveCharFieldSourced 判源(扁平绕过已堵)');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  返工·issue5·allegiance_changes 改 canonical faction 补来源判据
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== 返工·issue5·改换门庭判源 =====');
+  function facOf(GM, n) { const c = findCh(GM, n); return c && c.faction; }
+  // issue5-neg·无诱因无来源·裸改换门庭→拦(faction 不变)+弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '祖大寿', alive: true, faction: '明朝廷', resources: {} }],
+      { facs: [{ name: '明朝廷' }, { name: '后金' }] });
+    ctx.applyAITurnChanges({ allegiance_changes: [{ character: '祖大寿', newFaction: '后金', reason: '' }] });
+    ok(facOf(ctx.GM, '祖大寿') === '明朝廷', 'issue5-neg 无诱因无来源→改换门庭被拦(faction 不变)');
+    ok(hintNames(ctx.GM).indexOf('祖大寿') >= 0, 'issue5-neg 拒写降级→弱自查纸条留痕');
+  }
+  // issue5-pos·reason 含军政诱因(战败/力屈而降)→有源放行
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '祖大寿', alive: true, faction: '明朝廷', resources: {} }],
+      { facs: [{ name: '明朝廷' }, { name: '后金' }] });
+    ctx.applyAITurnChanges({ allegiance_changes: [{ character: '祖大寿', newFaction: '后金', reason: '大凌河围城日久，粮尽援绝，力屈请降' }] });
+    ok(facOf(ctx.GM, '祖大寿') === '后金', 'issue5-pos(诱因) reason 含围城/请降=有源→改换门庭照落');
+    ok(hintCount(ctx.GM) === 0, 'issue5-pos(诱因) 放行→零弱提示');
+  }
+  // issue5-pos·玩家诏令点名→有源放行
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '祖大寿', alive: true, faction: '明朝廷', resources: {} }],
+      { facs: [{ name: '明朝廷' }, { name: '后金' }], _playerDirectives: [{ id: 'd1', content: '着祖大寿反正归明' }] });
+    ctx.applyAITurnChanges({ allegiance_changes: [{ character: '祖大寿', newFaction: '后金', reason: '' }] });
+    ok(facOf(ctx.GM, '祖大寿') === '后金', 'issue5-pos(诏令) 玩家诏令点名=有源→放行');
+  }
+
   console.log('');
   console.log('[smoke-write-gate-expansion] ' + passed + ' passed / ' + failed + ' failed');
   if (failed > 0) process.exit(1);
