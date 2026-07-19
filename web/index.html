@@ -486,9 +486,9 @@ console.log('天命游戏脚本开始加载...');
 <!-- 2026-07-04 起居注单一写口(gm:qijuHistory 收口)·须在所有写手之前 -->
 <script src="tm-qiju-ledger.js?v=2026070401"></script>
 <script src="tm-prompt-composer.js?v=2026052201"></script>
-<script src="tm-ai-infra.js?v=20260719-histanchors"></script>
+<script src="tm-ai-infra.js?v=20260719-memsanitize"></script>
 <!-- 勿动位置·第二十三拆：tm-ai-infra-model-detect.js 必须紧接 tm-ai-infra.js 之后装载(顶层函数型中段切·保序切割) -->
-<script src="tm-ai-infra-model-detect.js?v=20260719-histanchors"></script>
+<script src="tm-ai-infra-model-detect.js?v=20260719-memsanitize"></script>
 <script src="tm-memory-trace.js?v=20260531-traceonly"></script>
 <script src="tm-memory-evidence-registry.js?v=20260531-evidence"></script>
 <script src="tm-memory-source-bound.js?v=20260601-sourcebound"></script>
@@ -496,7 +496,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-context-zones.js?v=20260601-zones"></script>
 <script src="tm-memory-envelope.js?v=20260531-envelope"></script>
 <script src="tm-memory-governance.js?v=20260531-governance"></script>
-<script src="tm-memory-writegate.js?v=20260531-writegate"></script>
+<script src="tm-memory-writegate.js?v=20260719-memsanitize"></script>
 <script src="tm-memory-turn-inference.js?v=20260601-turn-inference"></script>
 <script src="tm-memory-turn-archive.js?v=20260601-turn-archive"></script>
 <script src="tm-memory-turn-rollup.js?v=20260601-turn-rollup"></script>
@@ -532,8 +532,8 @@ console.log('天命游戏脚本开始加载...');
 <!-- 2026-04-30 Phase 4.5 标准外部记忆适配器（XML/JSON/DSL 入口） -->
 <script src="tm-memory-adapter.js?v=2026050101"></script>
 <!-- R128 (2026-04-25) tm-mechanics.js 拆分 → mechanics + mechanics-world -->
-<script src="tm-mechanics.js?v=20260706-splitsync"></script>
-<script src="tm-mechanics-memory.js?v=20260706-splitsync"></script>
+<script src="tm-mechanics.js?v=20260719-memsanitize"></script>
+<script src="tm-mechanics-memory.js?v=20260719-memsanitize"></script>
 <script src="tm-mechanics-world.js?v=20260621-renownfix"></script>
 <!-- S2 (2026-06-18) 按需取数 agent 工具层：包现有检索 API 为 LLM 可调用工具·供 SC_RECALL agent 分支（开关 P.conf.agentRecallEnabled 默认关） -->
 <script src="tm-agent-flags.js?v=20260623-liveworld"></script>
@@ -547,8 +547,8 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-indices.js?v=20260711-scnimport"></script>
 <script src="tm-world.js?v=20260621-renownfix"></script>
 <script src="tm-memorials.js?v=2026050105"></script>
-<script src="tm-wendui.js?v=2026070401"></script>
-<script src="tm-wendui-persona-views.js?v=2026070401"></script>
+<script src="tm-wendui.js?v=20260719-memsanitize"></script>
+<script src="tm-wendui-persona-views.js?v=20260719-memsanitize"></script>
 <!-- 2026-05-21·狱中问对模式·6 动作 + AI 解析 + 频率限制 + 朝议反应 -->
 <script src="tm-wendui-prison.js?v=20260521-prison"></script>
 <!-- R161 R6 (2026-05-03) tm-office-system 从 tm-hongyan-office 拆出·官制 system (~700 行) -->
@@ -653,7 +653,7 @@ console.log('天命游戏脚本开始加载...');
 <!-- R209 (2026-05-04) Phase 7 P7-γ·§1 prompt 从 ai-infer 拆出·prompt 必先 load -->
 <!-- DA-Q2 (2026-06-21)·史记 record 提示词共享 builder·sc1 与 agent deepen_narrative 同源零 drift·须先于 ai.js load -->
 <script src="tm-endturn-record-specs.js?v=20260622-shiluwenyan"></script>
-<script src="tm-endturn-prompt.js?v=2026062002-custombuild"></script>
+<script src="tm-endturn-prompt.js?v=20260719-memsanitize"></script>
 <script src="tm-endturn-ai.js?v=20260707-aiwarmup"></script>
 <script src="tm-endturn-apply.js?v=20260706-applyS2"></script>
 <script src="tm-endturn-apply-stages.js?v=20260706-applyS2"></script><!-- apply解构S2·stages须紧随origin(运行时ns.stages解析·writeBack dispatcher调用期取)·勿动位置 -->
@@ -669,7 +669,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-endturn-validity.js?v=2026051701"></script>
 <script src="tm-endturn-pipeline-steps.js?v=20260523-1251"></script>
 <!-- 回合推演「模式 b · agent 模式」平行引擎(开关 agentModeEnabled 默认关)·详设 docs/agent-mode-design.md -->
-<script src="tm-endturn-agent-mode.js?v=20260623-liveworld"></script>
+<script src="tm-endturn-agent-mode.js?v=20260719-memsanitize"></script>
 <script src="tm-endturn-agent-read-tools.js?v=20260621-toolcall"></script>
 <script src="tm-wentian-agent.js?v=20260703-wtagent"></script><!-- 问天 agent 模式·先查证后裁定(复用只读工具+callAIWithTools)·默认开可关 -->
 <script src="tm-endturn-agent-write-tools.js?v=20260622-geo2"></script>
