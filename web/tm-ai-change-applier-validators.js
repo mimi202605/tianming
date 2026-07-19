@@ -152,6 +152,20 @@
     return true;
   }
 
+  // ── 刀C·C3(2026-07-19)·char_update 敏感字段来源判据(narrative._mergeUpdatesToEntity 调用) ──
+  //   过 _writeActionSourced 同款判据·有源返 true(调用方照常落该字段)；无源返 false 并就地留痕(弱自查纸条·此文件已是 _aiWeakWriteHints
+  //   既有 arch-ok 写手·集中在此免 narrative 闯入子树)+console.warn+诊断。★宁漏勿误杀。
+  function _sensitiveCharFieldSourced(G, aiOutput, entity, realKey, entityName) {
+    if (!G || !entity) return true;
+    if (_writeActionSourced(G, aiOutput, entity, { excludeStructuredKey: 'char_updates', scanInputs: true })) return true;
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源敏感字段', reason: 'char.' + realKey + ' 更新本回合无任一源头(玩家诏令/司法态/结构化互证/弹劾朝议输入)·疑 AI 史实幻觉失势向量', itemName: entityName || entity.name || entity.id, source: 'char-update-c3-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { console.warn('[char_update/C3] 无源敏感字段·跳过·不落库(转弱自查纸条): ' + (entityName || '') + '.' + realKey); } catch(_c3w){}
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源敏感字段', itemName: entityName || '', field: realKey }); } catch(_c3d){}
+    return false;
+  }
+
   function _validatePersonnelConsistency(G, aiOutput, applied) {
     if (!G || !aiOutput) return;
     var narrativeText = '';
@@ -1370,5 +1384,5 @@
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
   // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
-  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange;
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));

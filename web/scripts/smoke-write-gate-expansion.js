@@ -132,6 +132,46 @@ function findCh(GM, n) { return (GM.chars || []).find(c => c && c.name === n); }
     ok(hintCount(ctx.GM) === 0, 'C2-pos(致仕) 普通任免不入司法闸→零弱提示(宁漏勿误杀)');
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  //  C3·char_updates 敏感字段来源判据 + 万能键(anyPathChanges)禁区
+  // ══════════════════════════════════════════════════════════════════
+  console.log('===== C3·char_updates 敏感字段来源判据 + 万能键禁区 =====');
+  // C3-neg·无源敏感字段(stance/fame)跳过+弱提示·非敏感字段(age)照常 merge
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', alive: true, faction: '明朝廷', stance: '忠', fame: 50, age: 59, resources: {} }]);
+    ctx.applyAITurnChanges({ char_updates: [{ name: '魏忠贤', updates: { stance: '奸佞', fame: 5, age: 60 } }] });
+    const ch = findCh(ctx.GM, '魏忠贤');
+    ok(ch.stance === '忠' && ch.fame === 50, 'C3-neg 无源敏感字段(stance/fame)→跳过不落库(原值不变)');
+    ok(ch.age === 60, 'C3-neg 非敏感字段(age)→照常 merge(其余字段不受影响)');
+    ok(hintNames(ctx.GM).indexOf('魏忠贤') >= 0, 'C3-neg 拒写降级→弱自查纸条留痕');
+  }
+  // C3-pos·玩家诏令点名(有源)→敏感字段照常落·无弱提示
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', alive: true, faction: '明朝廷', stance: '忠', resources: {} }],
+      { _playerDirectives: [{ id: 'd1', content: '魏忠贤结党营私，着夺其清誉' }] });
+    ctx.applyAITurnChanges({ char_updates: [{ name: '魏忠贤', updates: { stance: '奸佞' } }] });
+    ok(findCh(ctx.GM, '魏忠贤').stance === '奸佞', 'C3-pos(诏令) 玩家诏令点名=有源→敏感字段照常落');
+    ok(hintCount(ctx.GM) === 0, 'C3-pos(诏令) 放行→零弱提示(不误杀)');
+  }
+  // C3-pos·本回合弹劾奏疏点名(输入面·有源)→敏感字段照常落
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', alive: true, faction: '明朝廷', fame: 80, resources: {} }],
+      { memorials: [{ from: '御史', text: '劾魏忠贤欺君罔上、党同伐异' }] });
+    ctx.applyAITurnChanges({ char_updates: [{ name: '魏忠贤', updates: { fame: 10 } }] });
+    ok(findCh(ctx.GM, '魏忠贤').fame === 10, 'C3-pos(弹劾) 本回合弹劾输入点名=有源→敏感字段照常落');
+    ok(hintCount(ctx.GM) === 0, 'C3-pos(弹劾) 放行→零弱提示');
+  }
+  // C3-backdoor·万能键 anyPathChanges 改敏感字段→禁区拦(不落库)
+  {
+    const ctx = makeCtx();
+    ctx.GM = baseGM([{ name: '魏忠贤', alive: true, faction: '明朝廷', stance: '忠', resources: {} }]);
+    ctx.applyAITurnChanges({ anyPathChanges: [{ path: 'chars.魏忠贤.stance', op: 'set', value: '奸佞' }] });
+    ok(findCh(ctx.GM, '魏忠贤').stance === '忠', 'C3-backdoor anyPathChanges 改敏感字段→_isPathBlocked 禁区拦(不落库·不绕闸)');
+  }
+
   console.log('');
   console.log('[smoke-write-gate-expansion] ' + passed + ' passed / ' + failed + ' failed');
   if (failed > 0) process.exit(1);

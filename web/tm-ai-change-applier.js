@@ -1428,7 +1428,7 @@
       var ch = _findEntity(G, 'char', cu.name);
       if (!ch) { applied.failed.push({char_update: cu, reason: 'char not found'}); return; }
       // updates：任意字段
-      if (cu.updates) charUpdCount += _mergeUpdatesToEntity(ch, cu.updates, 'char_update', ch.name, cu.reason || '', applied.failed);
+      if (cu.updates) charUpdCount += _mergeUpdatesToEntity(ch, cu.updates, 'char_update', ch.name, cu.reason || '', applied.failed, aiOutput);   // 刀C·C3·透传 aiOutput 供敏感字段来源判据(结构化互证)
       // careerEvent：仕途条目追加
       if (cu.careerEvent) {
         if (!Array.isArray(ch.careerHistory)) ch.careerHistory = [];
