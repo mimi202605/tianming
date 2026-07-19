@@ -164,6 +164,8 @@ ok(ADP.deriveWeather({ turn: 1 }, '蓟州') === 'clear', '⑲ 春·蓟州→clea
 ok(ADP.deriveWeather({ turn: 4 }, '开封') === 'snow', '⑲ 冬雪优先于雾(即便省址会起雾)');
 ok(ADP.deriveWeather({ turn: 2 }, '开封') === 'clear', '⑲ 夏无雾(仅春秋)');
 ok(ADP.deriveWeather({ turn: 1 }) === 'clear' && ADP.deriveWeather({ turn: 3 }) === 'clear', '⑲ 裸调无省名→不起雾(需真实战场上下文)');
+ok(ADP.deriveWeather({ turn: 7 }, '   ') === 'clear' && ADP.deriveWeather({ turn: 3 }, '\t ') === 'clear', '⑲ 纯空白省名(trim后空)→不起雾(边界)');
+ok(ADP.deriveWeather({ turn: 3 }, ' 开封 ') === ADP.deriveWeather({ turn: 3 }, '开封'), '⑲ 首尾空格 trim 标准化(" 开封 "≡"开封")');
 const fogScan = ['宁远', '广州', '南京', '开封', '兰州', '昆明', '长沙', '蓟州', '大同', '福州'].map(p => ADP.deriveWeather({ turn: 3 }, p));
 ok(fogScan.includes('fog') && fogScan.includes('clear'), '⑲ 秋季省份雾/晴皆可达(概率roll生效·非全雾/全晴)');
 /* buildBattleConfig 端到端:春季军队→terrainProfile 带语义位透传 config */

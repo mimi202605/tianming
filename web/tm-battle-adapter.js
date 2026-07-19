@@ -213,10 +213,11 @@
     try {
       var s = seasonOf(GMref);
       if (s === '冬') return 'snow';
-      if ((s === '春' || s === '秋') && provinceName) {
+      var pn = (provinceName == null ? '' : String(provinceName)).trim();   // 标准化:纯空白/首尾空格→归一(空白省名不起雾·需真实战场上下文)
+      if ((s === '春' || s === '秋') && pn) {
         var g = GMref || (typeof window !== 'undefined' && window.GM) || (typeof GM !== 'undefined' ? GM : null);
         var turn = Number(g && g.turn) || 1;
-        var seed = (provinceSeed(provinceName) ^ Math.imul(turn, 0x9e3779b9)) >>> 0;
+        var seed = (provinceSeed(pn) ^ Math.imul(turn, 0x9e3779b9)) >>> 0;
         if (_detRoll(seed) < 0.16) return 'fog';
       }
       return 'clear';
