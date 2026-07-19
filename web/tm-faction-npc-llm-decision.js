@@ -333,9 +333,7 @@
     return lines;
   }
 
-  // Slice 1·PLAYER_INTEL·结构化玩家对本势力动态(确定性派生·有界·每条一行·cap 6)
-  //   病：_formatPlayerRecent 只喂玩家诏令文本、玩家又被排除出 OPPONENT_MIND_MODEL——势力对「玩家对本势力做了什么」无结构化感知。
-  //   本段从战争态/近战/省份(claims 对照 _provinceToFaction)/点名诏令派生·无内容整段省略·拿不到的省略勿造。
+  // Slice 1·PLAYER_INTEL·结构化玩家对本势力动态(战争/近战/失地/点名诏令·确定性派生·有界 cap 6·无内容整段省略·拿不到勿造·补 PLAYER_RECENT 只喂诏令、玩家又被排除出对手心智模型之缺)
   function _formatPlayerIntel(fac) {
     if (!fac || !fac.name) return [];
     var G = global.GM || {};
@@ -345,20 +343,16 @@
     var CAP = 6;
     var body = [];
     function involvesBoth(text, sides) {
-      var t = String(text || '');
-      var arr = _arr(sides);
+      var t = String(text || ''); var arr = _arr(sides);
       var hasMe = t.indexOf(myName) >= 0 || arr.indexOf(myName) >= 0;
-      var hasPlayer = playerNames.some(function(pn){ return pn && (t.indexOf(pn) >= 0 || arr.indexOf(pn) >= 0); });
-      return hasMe && hasPlayer;
+      return hasMe && playerNames.some(function(pn){ return pn && (t.indexOf(pn) >= 0 || arr.indexOf(pn) >= 0); });
     }
     // 1) 与玩家的战争态(GM.activeWars·双方均在)
     _arr(G.activeWars).forEach(function(w) {
       if (body.length >= CAP || !w) return;
       var sides = _arr(w.sides).concat([w.attacker, w.defender, w.enemy, w.opponent].filter(Boolean));
       if (!involvesBoth(_txt(w, 300), sides)) return;
-      body.push('  ⚔ 与君上(玩家)交兵：' + _txt(w.name || w.title || '未名战事', 40)
-        + ((w.status || w.phase) ? '·' + _txt(w.status || w.phase, 30) : '')
-        + (w.frontline ? '·前线' + _txt(w.frontline, 24) : ''));
+      body.push('  ⚔ 与君上(玩家)交兵：' + _txt(w.name || w.title || '未名战事', 40) + ((w.status || w.phase) ? '·' + _txt(w.status || w.phase, 30) : '') + (w.frontline ? '·前线' + _txt(w.frontline, 24) : ''));
     });
     // 2) 近期与玩家的战斗(GM.battleHistory·涉双方)
     _arr(G.battleHistory).slice(-8).forEach(function(b) {
@@ -368,8 +362,7 @@
       var atk = _txt(b.attackerFaction || b.attacker, 24);
       var def = _txt(b.defenderFaction || b.defender, 24);
       var win = _txt(b.winner || b.winnerFactionId, 24);
-      body.push('  近战 ' + _fmtTurn(b) + ' ' + atk + '攻' + def + (win ? '·胜' + win : '')
-        + ((b.attackerLoss != null || b.defenderLoss != null) ? '·损' + _safeNum(b.attackerLoss) + '/' + _safeNum(b.defenderLoss) : ''));
+      body.push('  近战 ' + _fmtTurn(b) + ' ' + atk + '攻' + def + (win ? '·胜' + win : '') + ((b.attackerLoss != null || b.defenderLoss != null) ? '·损' + _safeNum(b.attackerLoss) + '/' + _safeNum(b.defenderLoss) : ''));
     });
     // 3) 省份易手(本势力所图之地今为玩家所据·claims 对照 _provinceToFaction·拿不到则省略)
     var p2f = G._provinceToFaction;
@@ -1234,6 +1227,29 @@
     return lines;
   }
 
+  // Slice 3·心智模型冷启动·没跑过 decideFor 的势力 aiStrategy 恒空(ensureStrategyV2 只在 applyDecision 写)——
+  //   回落剧本 profile(goal/strategy/openingProblems/strategicPriorities) + 据关系值/战争推断姿态(敌对/戒备/亲善/观望一档)·标注区分实测心智。
+  function _inferMindModelFromProfile(other, ctx) {
+    ctx = ctx || {};
+    var out = { posture: '', objectives: [], note: '' };
+    if (ctx.inWar) out.posture = '敌对';
+    else if (_safeNum(ctx.relValue) <= -30) out.posture = '戒备';
+    else if (_safeNum(ctx.relValue) >= 30) out.posture = '亲善';
+    else out.posture = '观望';
+    var objs = [];
+    if (other.goal) objs.push(_txt(other.goal, 50));
+    if (Array.isArray(other.strategicPriorities)) other.strategicPriorities.slice(0, 3).forEach(function(x){ objs.push(_txt(x, 40)); });
+    if (Array.isArray(other.openingProblems)) other.openingProblems.slice(0, 2).forEach(function(x){ objs.push(_txt(x, 40)); });
+    if (!objs.length && other.strategy) objs.push(_txt(other.strategy, 60));
+    if (!objs.length && other.longTermStrategy) objs.push(_txt(other.longTermStrategy, 60));
+    out.objectives = objs.filter(Boolean).slice(0, 5);
+    var noteBits = [];
+    if (other.strategy && out.objectives.indexOf(_txt(other.strategy, 60)) < 0) noteBits.push('strategy·' + _txt(other.strategy, 60));
+    if (other.personality) noteBits.push('性·' + _txt(other.personality, 40));
+    out.note = noteBits.join(' / ');
+    return out;
+  }
+
   // G2-A·敌情心智模型·读对手势力的 aiStrategy·top 3 by threat·让 LLM 预测对手下一步
   function _formatOpponentMindModel(fac) {
     var G = global.GM || {};
@@ -1268,7 +1284,7 @@
         var attackingMe = theirStrategy.objectives.some(function(o){ return String(o).indexOf(myName) >= 0; });
         if (attackingMe) { score += 40; reasons.push('targeting-me'); }
       }
-      if (score >= 30) candidates.push({ fac: other, score: score, reasons: reasons });
+      if (score >= 30) candidates.push({ fac: other, score: score, reasons: reasons, relValue: rel ? _safeNum(rel.value) : 0, inWar: inWar });
     });
     candidates.sort(function(a, b){ return b.score - a.score; });
     candidates = candidates.slice(0, 3);
@@ -1277,6 +1293,15 @@
     lines.push('  Top opponents (≤3)·mind-model·use to predict their next move and time your own actions / defense.');
     candidates.forEach(function(c, i) {
       var o = c.fac;
+      if (!o.aiStrategy || typeof o.aiStrategy !== 'object') {   // Slice 3·冷启动·aiStrategy 缺失(未跑过 decideFor)回落剧本 profile + 关系/战争推姿态
+        var inf = _inferMindModelFromProfile(o, { relValue: c.relValue, inWar: c.inWar });
+        var ih = '  #' + (i + 1) + ' ' + o.name + ' [' + c.reasons.join('+') + ' / score=' + c.score + '] (据剧本推定·未实测决策)';
+        if (inf.posture) ih += ' posture≈' + inf.posture;
+        lines.push(ih);
+        if (inf.objectives.length) lines.push('     objectives(推定)·' + inf.objectives.map(function(x){ return _txt(x, 40); }).join(' / '));
+        if (inf.note) lines.push('     ' + inf.note);
+        return;
+      }
       var s = o.aiStrategy || {};
       var head = '  #' + (i + 1) + ' ' + o.name + ' [' + c.reasons.join('+') + ' / score=' + c.score + ']';
       if (s.posture) head += ' posture=' + _txt(s.posture, 20);
@@ -1329,7 +1354,7 @@
         var sharedThreats = fac.aiStrategy.threats.filter(function(t){ return theirStrategy.threats.indexOf(t) >= 0; });
         if (sharedThreats.length) { score += 30 + sharedThreats.length * 10; reasons.push('shared-threats:' + sharedThreats.slice(0, 2).join(',')); }
       }
-      if (score >= 30) candidates.push({ fac: other, score: score, reasons: reasons });
+      if (score >= 30) candidates.push({ fac: other, score: score, reasons: reasons, relValue: rel ? _safeNum(rel.value) : 0, inWar: false });
     });
     candidates.sort(function(a, b){ return b.score - a.score; });
     candidates = candidates.slice(0, 3);
@@ -1338,6 +1363,15 @@
     lines.push('  Top allies (≤3)·use to coordinate (don\'t duplicate their effort·don\'t act against shared interest).');
     candidates.forEach(function(c, i) {
       var o = c.fac;
+      if (!o.aiStrategy || typeof o.aiStrategy !== 'object') {   // Slice 3·冷启动·aiStrategy 缺失回落剧本 profile + 关系推姿态
+        var infA = _inferMindModelFromProfile(o, { relValue: c.relValue, inWar: c.inWar });
+        var ihA = '  #' + (i + 1) + ' ' + o.name + ' [' + c.reasons.join('+') + ' / score=' + c.score + '] (据剧本推定·未实测决策)';
+        if (infA.posture) ihA += ' posture≈' + infA.posture;
+        lines.push(ihA);
+        if (infA.objectives.length) lines.push('     theirObjectives(推定)·' + infA.objectives.map(function(x){ return _txt(x, 40); }).join(' / '));
+        if (infA.note) lines.push('     ' + infA.note);
+        return;
+      }
       var s = o.aiStrategy || {};
       var head = '  #' + (i + 1) + ' ' + o.name + ' [' + c.reasons.join('+') + ' / score=' + c.score + ']';
       if (s.posture) head += ' posture=' + _txt(s.posture, 20);
@@ -2474,26 +2508,17 @@
     var inWar = has('war');
     var edictType, content, trigger, loyaltyDeltas, cause;
     if (fiscalStress) {
-      edictType = '减俸'; trigger = '财政危'; cause = '库藏吃紧';
-      loyaltyDeltas = { court: 0, general: 0, clan: 0 };
+      edictType = '减俸'; trigger = '财政危'; cause = '库藏吃紧'; loyaltyDeltas = { court: 0, general: 0, clan: 0 };
       content = '国用维艰，着有司核实钱粮，量入为出，暂省冗费，共纾度支之急，毋得虚糜。';
     } else if (inWar) {
-      edictType = '整军'; trigger = '兵事急'; cause = '战事在身';
-      loyaltyDeltas = { court: 0, general: 1, clan: 0 };
+      edictType = '整军'; trigger = '兵事急'; cause = '战事在身'; loyaltyDeltas = { court: 0, general: 1, clan: 0 };
       content = '边衅未息，着诸营申严号令，勤加训练，修缮甲仗，谨守汛地，毋得懈弛，以固藩篱。';
     } else {
-      edictType = '安抚'; trigger = '守成'; cause = '局势暂稳·宜镇静守成';
-      loyaltyDeltas = { court: 1, general: 0, clan: 0 };
+      edictType = '安抚'; trigger = '守成'; cause = '局势暂稳·宜镇静守成'; loyaltyDeltas = { court: 1, general: 0, clan: 0 };
       content = '时值多故，着有司安辑士民，抚循将吏，庶政悉遵旧章，务在镇静，以俟从容。';
     }
-    return {
-      rationale: '（模板兜底·LLM 决策解析失败·据本势力当前态势择一保守之策，免整回合空转）Phase 1·' + edictType + '（cause: ' + cause + '）。',
-      memorials: [],
-      edict: { type: edictType, content: content, trigger: trigger, treasuryDelta: 0, loyaltyDeltas: loyaltyDeltas },
-      chaoyi: null,
-      office: [],
-      actions: []
-    };
+    return { rationale: '（模板兜底·LLM 决策解析失败·据本势力当前态势择一保守之策，免整回合空转）Phase 1·' + edictType + '（cause: ' + cause + '）。',
+      memorials: [], edict: { type: edictType, content: content, trigger: trigger, treasuryDelta: 0, loyaltyDeltas: loyaltyDeltas }, chaoyi: null, office: [], actions: [] };
   }
 
   function _runTemplateFallback(fac, ledgerToken, opts) {
@@ -2502,8 +2527,7 @@
     if (_isLedgerTokenStale(ledgerToken)) return null;
     var turn = _safeNum(opts.turn) || (ledgerToken && ledgerToken.turn) || _currentTurn();
     var engine = _actionEngine();
-    var reasons = [];
-    // 复用 action-engine 候选评分·取本势力压力 reasons 以择策(rank/template 能力复用·失败则默认保守 edict)
+    var reasons = [];   // 复用 action-engine 候选评分取本势力压力 reasons 择策(rank/template 复用·失败则默认保守 edict)
     try {
       if (engine && typeof engine.scoreFactionCandidate === 'function') {
         var sc = engine.scoreFactionCandidate(fac, { turn: turn, playerFactionNames: _resolvePlayerFactionNames() });
@@ -2514,8 +2538,7 @@
     var fbId = 'npc_llm_fb_' + turn + '_' + fac.name;
     var summary = _applyDecision(fac, decision, { turn: turn, decisionId: fbId });
     var appliedN = summary && _safeNum(summary.actions);
-    // 观测·标记本次兜底所产动作 _source(ledger 行·同引用亦入 turnLedger.actions)
-    try {
+    try {   // 观测·标记本次兜底所产动作 _source(ledger 行·同引用亦入 turnLedger.actions)
       _arr(fac._npcLlmActionLedger).forEach(function(row) {
         if (row && row.decisionId === fbId) row._source = 'template-fallback';
       });
@@ -2909,18 +2932,15 @@
         var r = runs[name];
         if (!r || _safeNum(r.turn) !== turn) return;
         turnAggregate.runs++;
-        if (r.status === 'applied') turnAggregate.applied++;
-        if (r.status === 'failed') turnAggregate.failed++;
+        if (r.status === 'applied') turnAggregate.applied++; else if (r.status === 'failed') turnAggregate.failed++;
         if (r.templateFallback) turnAggregate.templateFallback++;
-        var kind = (r.failure && r.failure.kind) || '';
-        if (r.parseFailed || (r.status === 'failed' && /parse|truncat|schema|empty|call_or_parse/i.test(kind))) turnAggregate.parseFail++;
+        if (r.parseFailed || (r.status === 'failed' && /parse|truncat|schema|empty|call_or_parse/i.test((r.failure && r.failure.kind) || ''))) turnAggregate.parseFail++;
       });
       _arr(G.facs).forEach(function(f) {
         if (!f || _isPlayerFaction(f, playerFacNames)) return;
         var sm = f._lastLlmApplySummary;
         if (!sm || _safeNum(sm.turn) !== turn) return;
-        turnAggregate.skippedActions += _safeNum(sm.skippedActions);
-        turnAggregate.mergedActions += _safeNum(sm.mergedActions);
+        turnAggregate.skippedActions += _safeNum(sm.skippedActions); turnAggregate.mergedActions += _safeNum(sm.mergedActions);
       });
     } catch (_taE) {}
 
