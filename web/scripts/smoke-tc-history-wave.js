@@ -27,6 +27,10 @@ const CLAUSE = '非历史上的卒年';
 let pass = 0, fail = 0;
 function ok(cond, msg) { if (cond) { pass++; } else { fail++; console.log('FAIL: ' + msg); } }
 function count(hay, needle) { return hay.split(needle).length - 1; }
+// 空白不敏感匹配：压缩所有空白后比对关键 token 序 → 等价改写(守卫/try 拆多行·缩进变化)不误红·删注入必红
+function wsNorm(s) { return String(s).replace(/\s+/g, ''); }
+function wsHas(hay, needle) { return wsNorm(hay).indexOf(wsNorm(needle)) !== -1; }
+function wsCount(hay, needle) { const h = wsNorm(hay), n = wsNorm(needle); return n ? h.split(n).length - 1 : 0; }
 
 const chronicle = R('tm-chronicle-system.js');
 const core = R('tm-endturn-core.js');
@@ -79,32 +83,32 @@ function hasClause(s) { return s.indexOf(SHARED) >= 0 && s.indexOf(CLAUSE) >= 0;
 // ══════════════════════════════════════════════════════════════
 // 口1 chronicle full — 局部包裹整句(含 try/catch)连续验证·非全文件搜 try
 ok(chronicle.indexOf('时空约束·年度编年正史修史·full') !== -1, '口1 缺注释');
-ok(chronicle.indexOf("if (typeof _buildTemporalConstraint === 'function') { try { prompt += '\\n' + _buildTemporalConstraint(null, {}); } catch (_) {} }") !== -1, '口1 缺局部包裹的 full 注入整句(守卫+try+catch+调用一体)');
+ok(wsHas(chronicle, "if (typeof _buildTemporalConstraint === 'function') { try { prompt += '\\n' + _buildTemporalConstraint(null, {}); } catch (_) {} }"), '口1 缺 full 注入整句(守卫+try+catch+调用一体·空白不敏感)');
 ok(chronicle.indexOf('clauseOnly') === -1, '口1 应 full·chronicle 不应现 clauseOnly');
 // 口2 monthly full
 ok(core.indexOf('时空约束·月度纪事修史·full') !== -1, '口2 缺注释');
-ok(core.indexOf("if (typeof _buildTemporalConstraint === 'function') { try { _mPrompt += '\\n' + _buildTemporalConstraint(null, {}); } catch (_) {} }") !== -1, '口2 缺局部包裹的 full 注入整句');
+ok(wsHas(core, "if (typeof _buildTemporalConstraint === 'function') { try { _mPrompt += '\\n' + _buildTemporalConstraint(null, {}); } catch (_) {} }"), '口2 缺 full 注入整句(空白不敏感)');
 ok(core.indexOf('独立callAIMessages不继承主sysP') !== -1, '口2 未标裸口理由');
 ok(count(core, '时空约束·') === 1, '口7 不适用核实：endturn-core 时空约束注释应恰1处(hist_check零注入)');
 // 口3 benji clauseOnly (global.)
 ok(benji.indexOf('时空约束·本纪终局修史·clauseOnly裁剪版') !== -1, '口3 缺注释');
-ok(benji.indexOf("if (typeof global._buildTemporalConstraint === 'function') { try { s += '\\n' + global._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }") !== -1, '口3 缺局部包裹的 clauseOnly 注入整句(global.)');
+ok(wsHas(benji, "if (typeof global._buildTemporalConstraint === 'function') { try { s += '\\n' + global._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }"), '口3 缺 clauseOnly 注入整句(global.·空白不敏感)');
 // 口4 xinshi + 口5 depth (root.)
 ok(depth.indexOf('时空约束·史记四体') !== -1, '口4 缺注释');
-ok(depth.indexOf("_xinshi += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });") !== -1, '口4 缺 _xinshi 追加(clauseOnly)');
+ok(wsHas(depth, "_xinshi += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });"), '口4 缺 _xinshi 追加(clauseOnly·空白不敏感)');
 const depthSysComments = ['世界态势快照深析', '人物内心深析', '人物关系深析', '记忆/脉络固化', '人物书信深析', '御案朝务深析', '人物认知深析', '势力/外交深析', '财政经济深析', '军事边防深析'];
 depthSysComments.forEach((c) => ok(depth.indexOf('时空约束·' + c) !== -1, '口5 缺注释: ' + c));
-ok(count(depth, "sys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });") === 10, '口5 十个深析 sys+=clauseOnly 应恰10处·实=' + count(depth, "sys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });"));
-ok(depth.indexOf("_tcBeats = '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });") !== -1, '口5 缺 _tcBeats(clauseOnly)');
+ok(wsCount(depth, "sys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });") === 10, '口5 十个深析 sys+=clauseOnly 应恰10处(空白不敏感)·实=' + wsCount(depth, "sys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });"));
+ok(wsHas(depth, "_tcBeats = '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });"), '口5 缺 _tcBeats(clauseOnly·空白不敏感)');
 ok(depth.indexOf('+ _tcBeats }], 900') !== -1, '口5 _tcBeats 未穿进 beats user');
-ok(depth.indexOf('_buildTemporalConstraint(null, {})') === -1, '口4/5 depth 应全 clauseOnly·不应现 full(null,{})');
+ok(wsCount(depth, '_buildTemporalConstraint(null,{})') === 0, '口4/5 depth 应全 clauseOnly·不应现 full(null,{})');
 // 口6 agent 128/138 + 主transcript + 脚手架(全 clauseOnly·root.)
 ok(agent.indexOf('时空约束·史记质量审读·clauseOnly') !== -1, '口6-128 缺注释');
-ok(agent.indexOf("sys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });") !== -1, '口6-128 缺 sys+=clauseOnly');
+ok(wsHas(agent, "sys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });"), '口6-128 缺 sys+=clauseOnly(空白不敏感)');
 ok(agent.indexOf('时空约束·据审读修订史记正文·clauseOnly') !== -1, '口6-138 缺注释');
-ok(agent.indexOf("fixSys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });") !== -1, '口6-138 缺 fixSys+=clauseOnly');
+ok(wsHas(agent, "fixSys += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });"), '口6-138 缺 fixSys+=clauseOnly(空白不敏感)');
 ok(agent.indexOf('时空约束·agent执政-史官主transcript') !== -1, '口6-主transcript 缺注释');
-ok(agent.indexOf("_sysP += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });") !== -1, '口6-主transcript 缺 _sysP+=clauseOnly');
+ok(wsHas(agent, "_sysP += '\\n' + root._buildTemporalConstraint(null, { clauseOnly: true });"), '口6-主transcript 缺 _sysP+=clauseOnly(空白不敏感)');
 ok(agent.indexOf('时空约束·弱模型动作脚手架') !== -1, '口6-脚手架 缺注释');
 ok(agent.indexOf('scaffoldSystemHasSentinel=false') !== -1, '口6-脚手架 注释未标 Codex 实证');
 ok(count(agent, '时空约束·') === 4, '口6 计数：agent-mode 时空约束注释应恰4处(128/138/主transcript/脚手架)·177 anomaly 零注入·实=' + count(agent, '时空约束·'));
@@ -204,13 +208,24 @@ behaviorPromises.push((function () {
   });
 })());
 
-// B5 agent 主 transcript(总口) → clauseOnly·运行态断言
-(function () {
-  const sb = baseSandbox({});
+// B5 agent 主 transcript(总口) → 真跑 run()·stub callAIWithTools 捕获真实 transcript
+//   锁的是「_buildSystemPrompt() 的产出真流进了发给 LLM 的 transcript」这条线——
+//   把 :806 的 sys:_buildSystemPrompt() 改成 sys:'' 后·捕获的 transcript 无 sentinel → 变红。
+behaviorPromises.push((function () {
+  const captured = [];
+  const sb = baseSandbox({ showLoading: () => {} });
+  sb.callAIWithTools = function (transcript) { captured.push(String(transcript || '')); return Promise.resolve({ text: '', toolCalls: [] }); };
+  sb.callAIMessages = function () { return Promise.resolve('{"actions":[]}'); };   // 循环后脚手架/深化兜底(不影响本断言)
   vm.runInContext(agent, sb, { filename: 'agent-mode' });
-  const sysPrompt = sb.TM.Endturn.AgentMode.buildSystemPrompt();
-  ok(hasClause(sysPrompt), 'B5 agent 主transcript(buildSystemPrompt) 运行态未含 clauseOnly(SHARED+CLAUSE)');
-})();
+  sb.TM.Endturn.AgentReadTools = { defs: () => [] };
+  sb.TM.Endturn.AgentWriteTools = { defs: () => [{ name: 'set_field' }] };
+  const gm = { turn: 7, sid: 's1', chars: sb.GM.chars, _turnReport: [] };
+  const done = (function () { try { return sb.TM.Endturn.AgentMode.run({ GM: gm, input: {} }); } catch (e) { return Promise.resolve(); } })();
+  return Promise.resolve(done).catch(() => {}).then(function () {
+    ok(captured.length >= 1, 'B5 run() 未跑到 callAIWithTools(无 transcript 捕获)');
+    ok(captured.length >= 1 && captured.every(hasClause), 'B5 agent 主transcript(真跑run·捕获cawt) 未含 clauseOnly(SHARED+CLAUSE)·主循环丢约束');
+  });
+})());
 
 // B6 agent 脚手架 → clauseOnly·运行态断言
 behaviorPromises.push((function () {
