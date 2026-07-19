@@ -132,8 +132,11 @@
         var q = iss[j]; if (!q) continue;
         if (_hit(q.title) || _hit(q.description) || _hit(q.desc)) return true;
       }
-      // 刀C·返工(2026-07-19)·朝议/常朝/廷议裁决面(玩家批红/口诏落点·喂 AI 的『上回合圣意』)：GM._lastChangchaoDecisions(本回合决议)
-      //   + GM._courtRecords(常朝/廷议统一快照·近 8 条)点名此人→合法裁决有源。治『合法罢黜/失势裁决后写 stance/faction 被误拦』。
+      // 刀C·返工(2026-07-19·含 perf 修)·朝议/常朝/廷议裁决面(玩家批红/口诏落点·喂 AI 的『上回合圣意』)：GM._lastChangchaoDecisions
+      //   + GM._courtRecords 点名此人→合法裁决有源。治『合法罢黜/失势裁决后写 stance/faction 被误拦』。
+      //   ★perf：只查本回合条目(turn/targetTurn===当前回合·历史快照不重扫)·且每条记录拼一次文本作单次匹配——避免
+      //   records×decisions×transcript×字段×花名册 在真实剧本(数百角色+长转录)下 O(n^k) 爆炸拖垮 endturn(full-turn-flow 实测)。
+      var _curT = G.turn || 0;
       var lcc = (G && Array.isArray(G._lastChangchaoDecisions)) ? G._lastChangchaoDecisions : [];
       for (var k = 0; k < lcc.length; k++) {
         var dd = lcc[k]; if (!dd) continue;
@@ -142,10 +145,13 @@
       var crs = (G && Array.isArray(G._courtRecords)) ? G._courtRecords : [];
       for (var c = 0; c < crs.length; c++) {
         var rec = crs[c]; if (!rec) continue;
+        if (Number(rec.turn) !== _curT && Number(rec.targetTurn) !== _curT) continue;   // 只本回合裁决
+        var _rtxt = '';
         var decs = Array.isArray(rec.decisions) ? rec.decisions : [];
-        for (var di = 0; di < decs.length; di++) { var de = decs[di]; if (de && (_hit(de.title) || _hit(de.detail) || _hit(de.content) || _hit(de.presenter) || _hit(de.dept))) return true; }
+        for (var di = 0; di < decs.length; di++) { var de = decs[di]; if (de) _rtxt += ' ' + (de.title || '') + ' ' + (de.detail || '') + ' ' + (de.content || '') + ' ' + (de.presenter || '') + ' ' + (de.dept || ''); }
         var tr = Array.isArray(rec.transcript) ? rec.transcript : [];
-        for (var ti = 0; ti < tr.length; ti++) { var te = tr[ti]; if (te && (_hit(te.text) || _hit(te.speaker))) return true; }
+        for (var ti = 0; ti < tr.length; ti++) { var te = tr[ti]; if (te) _rtxt += ' ' + (te.text || '') + ' ' + (te.speaker || ''); }
+        if (_rtxt && _hit(_rtxt)) return true;   // 单条记录一次匹配(_textMentionsName 内先 indexOf 廉价短路)
       }
     }
     return false;
