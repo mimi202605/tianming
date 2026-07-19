@@ -450,6 +450,17 @@
         if (typeof global.addEB === 'function') {
           try { global.addEB('诏令', '【君主 AI 颁旨】' + _str(content, 80)); } catch (_) {}
         }
+        // Task 31·起居注标注君主 AI 决策来源
+        if (typeof global.TM !== 'undefined' && global.TM.Qiju && typeof global.TM.Qiju.record === 'function') {
+          try {
+            global.TM.Qiju.record('【君主 AI 颁旨】' + content, {
+              turn: turn,
+              date: (typeof global.getTSText === 'function') ? global.getTSText(turn) : '',
+              category: '诏令',
+              source: 'sovereign-ai'
+            });
+          } catch (_) {}
+        }
         applied.push(rec);
       } catch (ex) {
         failed.push({ edict: e, reason: (ex && ex.message) || 'exception' });

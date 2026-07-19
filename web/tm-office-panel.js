@@ -1628,13 +1628,17 @@ function confirmEndTurn(){
   if(pendingMem>0) warningHtml='<div style="font-size:0.78rem;color:#e67e22;margin-bottom:0.5rem;">尚有 '+pendingMem+' 份奏疏未批复</div>';
   // 检查是否有昏君活动选中
   var _hasTyActs = typeof TyrantActivitySystem !== 'undefined' && TyrantActivitySystem.selectedActivities && TyrantActivitySystem.selectedActivities.length > 0;
+  // Phase 6·Task 30.5·穿越模式按 playerRole 切换文案：皇帝"诏令颁行"/穿越"上奏呈递"
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  var _okLabel = _isTrans ? '上奏呈递' : '颁行天下';
   var msg;
   if (empty && !_hasTyActs) {
-    msg = '\u4ECA\u65E5\u65E0\u4E8B\uFF0C\u4E0D\u5982\u4F11\u606F\u4E00\u756A\uFF1F\u5929\u4E0B\u592A\u5E73\uFF0C\u4F55\u5FC5\u4E8B\u4E8B\u64CD\u5FC3\u3002';
+    msg = _isTrans ? '\u4ECA\u65E5\u65E0\u4E8B\u53EF\u594F\uFF0C\u4E14\u7B49\u4E0B\u56DE\u540E\u518D\u8BAE\u3002' : '\u4ECA\u65E5\u65E0\u4E8B\uFF0C\u4E0D\u5982\u4F11\u606F\u4E00\u756A\uFF1F\u5929\u4E0B\u592A\u5E73\uFF0C\u4F55\u5FC5\u4E8B\u4E8B\u64CD\u5FC3\u3002';
   } else if (_hasTyActs && empty) {
     msg = '\u4E0D\u7406\u671D\u653F\uFF0C\u53EA\u987E\u4EAB\u4E50\u2014\u2014\u5982\u6B64\u751A\u597D\uFF01';
   } else {
-    msg = '\u8BCF\u4EE4\u5DF2\u62DF\uFF0C\u662F\u5426\u9881\u884C\u5929\u4E0B\uFF1F';
+    msg = _isTrans ? '\u594F\u758F\u5DF2\u62DF\uFF0C\u662F\u5426\u5448\u9012\u541B\u524D\uFF1F' : '\u8BCF\u4EE4\u5DF2\u62DF\uFF0C\u662F\u5426\u9881\u884C\u5929\u4E0B\uFF1F';
   }
   var bg=document.createElement('div');
   bg.style.cssText='position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;';
@@ -1644,7 +1648,7 @@ function confirmEndTurn(){
     warningHtml+
     '<div style="font-size:0.75rem;color:var(--txt-d);margin-bottom:1.2rem;">'+getTSText(GM.turn)+' → 第'+(GM.turn+1)+'回合</div>'+
     '<div style="display:flex;gap:0.8rem;justify-content:center;">'+
-    '<button class="bt bp" id="cet-ok" style="padding:0.5rem 1.5rem;">颁行天下</button>'+
+    '<button class="bt bp" id="cet-ok" style="padding:0.5rem 1.5rem;">'+_okLabel+'</button>'+
     '<button class="bt bs" id="cet-cancel" style="padding:0.5rem 1.5rem;">再斟酌</button>'+
     '</div></div>';
   document.body.appendChild(bg);

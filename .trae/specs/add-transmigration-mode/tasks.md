@@ -391,18 +391,18 @@
 
 ## Phase 6 · 回合流程编排
 
-- [ ] Task 30: 穿越模式回合流程接入
-  - [ ] SubTask 30.1: 在 `tm-endturn-pipeline-steps.js` 新增 `_endturnStep_sovereignAI(root, ctx)` 步骤
-  - [ ] SubTask 30.2: 步骤位置：玩家上奏收集之后、派系 NPC 决策之前
-  - [ ] SubTask 30.3: 调用 `TM.SovereignAI.runTurn(root, ctx)`，将其输出转化为回合变更
-  - [ ] SubTask 30.4: 在 `tm-endturn-prep.js:341 _endTurn_collectInput` 按 playerRole 分支收集（诏令 vs 上奏）
-  - [ ] SubTask 30.5: `confirmEndTurn`（tm-office-panel.js:1600）按 playerRole 切换文案：皇帝模式"诏令颁行"，穿越模式"上奏呈递"
+- [x] Task 30: 穿越模式回合流程接入
+  - [x] SubTask 30.1: 在 `tm-endturn-pipeline-steps.js` 新增 `_endturnStep_sovereignAI(root, ctx)` 步骤
+  - [x] SubTask 30.2: 步骤位置：玩家上奏收集之后、派系 NPC 决策之前
+  - [x] SubTask 30.3: 调用 `TM.SovereignAI.runTurn(root, ctx)`，将其输出转化为回合变更
+  - [x] SubTask 30.4: 在 `tm-endturn-prep.js:341 _endTurn_collectInput` 按 playerRole 分支收集（诏令 vs 上奏）
+  - [x] SubTask 30.5: `confirmEndTurn`（tm-office-panel.js:1600）按 playerRole 切换文案：皇帝模式"诏令颁行"，穿越模式"上奏呈递"
   - 验证：跑 `node web/scripts/smoke-transmigration-endturn.js`（新增 smoke）
 
-- [ ] Task 31: 起居注/编年标注决策来源
-  - [ ] SubTask 31.1: 在 `tm-shiji-qiju-ui.js` 渲染条目时读 `entry.source` 字段（'player' / 'sovereign-ai' / 'npc'）
-  - [ ] SubTask 31.2: 不同来源用不同图标/颜色标识，便于玩家回看
-  - [ ] SubTask 31.3: 编年史（`tm-chronicle-system.js`）月稿自动区分"君主自动决策"与"玩家行动"两段
+- [x] Task 31: 起居注/编年标注决策来源
+  - [x] SubTask 31.1: 在 `tm-shiji-qiju-ui.js` 渲染条目时读 `entry.source` 字段（'player' / 'sovereign-ai' / 'npc'）
+  - [x] SubTask 31.2: 不同来源用不同图标/颜色标识，便于玩家回看
+  - [x] SubTask 31.3: 编年史（`tm-chronicle-system.js`）月稿自动区分"君主自动决策"与"玩家行动"两段
   - 验证：跑 `node web/scripts/smoke-transmigration-chronicle.js`（新增 smoke）
 
 ## Phase 7 · 集成与回归

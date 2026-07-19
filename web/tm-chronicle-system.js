@@ -28,12 +28,36 @@ var ChronicleSystem = {
     var season = Math.min(seasonIdx, (t.seasons||[]).length - 1);
     var key = year + '-' + season;
 
+    // Task 31·SubTask 31.3: 月稿区分「君主自动决策」与「玩家行动」两段
+    //   - sovereignDecisions: 本回合 _edictTracker 中 source='sovereign-ai'/'fallback' 的条目
+    //   - playerActions: 本回合 _edictTracker 中 source='player-memorial'/'sovereign-player' 的条目
+    //   - 老存档无 source 字段时归类为 unknown（不进入两段，避免历史数据干扰）
+    var _sovDec = [], _plyAct = [];
+    try {
+      var _G = (typeof GM !== 'undefined') ? GM : null;
+      if (_G && Array.isArray(_G._edictTracker)) {
+        _G._edictTracker.forEach(function(et) {
+          if (!et || et.turn !== turn) return;
+          var _etSrc = et.source || '';
+          var _etContent = String(et.content || '').slice(0, 80);
+          if (!_etContent) return;
+          if (_etSrc === 'sovereign-ai' || _etSrc === 'fallback') {
+            _sovDec.push({ content: _etContent, category: et.category || '诏令' });
+          } else if (_etSrc === 'player-memorial' || _etSrc === 'sovereign-player' || _etSrc === 'player') {
+            _plyAct.push({ content: _etContent, category: et.category || '奏疏' });
+          }
+        });
+      }
+    } catch (_) {}
+
     ChronicleSystem.monthDrafts[key] = {
       turn: turn,
       year: year,
       season: season,
       summary: (shizhengji || '').substring(0, 300),
       narrative: (zhengwen || '').substring(0, 200),
+      sovereignDecisions: _sovDec,
+      playerActions: _plyAct,
       timestamp: Date.now()
     };
 
@@ -148,7 +172,32 @@ var ChronicleSystem = {
     drafts.forEach(function(d) {
       var seasonName = (P.time.seasons || ['\u6625','\u590F','\u79CB','\u51AC'])[d.season] || '';
       prompt += '\u3010' + seasonName + '\u3011' + d.summary + '\n';
+      // Task 31·SubTask 31.3: 月稿区分「君主自动决策」与「玩家行动」两段
+      //   穿越模式下编年史需明确区分君主 AI 的自动决策与玩家的上奏/行动·增强叙事层次
+      if (Array.isArray(d.sovereignDecisions) && d.sovereignDecisions.length > 0) {
+        prompt += '  \u3014\u541B\u4E3B\u81EA\u52A8\u51B3\u7B56\u3015';
+        d.sovereignDecisions.forEach(function(sd) {
+          prompt += sd.category + '\uFF1A' + sd.content + '\uFF1B';
+        });
+        prompt += '\n';
+      }
+      if (Array.isArray(d.playerActions) && d.playerActions.length > 0) {
+        prompt += '  \u3014\u73A9\u5BB6\u884C\u52A8\u3015';
+        d.playerActions.forEach(function(pa) {
+          prompt += pa.category + '\uFF1A' + pa.content + '\uFF1B';
+        });
+        prompt += '\n';
+      }
     });
+    // 穿越模式额外提示：编年史应分两段叙事
+    try {
+      var _isTransMode = (typeof P !== 'undefined' && P && P.playerInfo &&
+        P.playerInfo.transmigrationMode === true && P.playerInfo.playerRole &&
+        P.playerInfo.playerRole !== 'emperor');
+      if (_isTransMode) {
+        prompt += '\n\u203B \u672C\u5E74\u4E3A\u7A7F\u8D8A\u6A21\u5F0F\uFF1A\u7F16\u5E74\u5E94\u660E\u786E\u533A\u5206\u300C\u541B\u4E3B\u81EA\u52A8\u51B3\u7B56\u300D\u4E0E\u300C\u73A9\u5BB6\u884C\u52A8\u300D\u4E24\u7C7B\u53D9\u4E8B\uFF0C\u541B\u4E3B\u51B3\u7B56\u4EE5\u541B\u4E3B\u53E3\u543B\u53D9\u8FF0\uFF0C\u73A9\u5BB6\u884C\u52A8\u4EE5\u53F2\u5B98\u4FA7\u89C2\u53D9\u8FF0\u3002\n';
+      }
+    } catch (_) {}
     prompt += '\n请返回 JSON: {"chronicle":"正史正文' + _charRangeText('chronicle') + '","afterword":"史评/论赞' + _charRangeScaled('comment', 1.0) + '"}';
 
     // 异步生成，不阻塞；年度编年不应抢占玩家正在等待的主推演通道。
