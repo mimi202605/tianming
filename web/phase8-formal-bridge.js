@@ -178,8 +178,14 @@
     return setFormalGameActive(isGameVisible());
   }
 
+  // 单一 setter 收敛·JS flag(state.legacyView) 与 body class(tm-phase8-legacy) 成对切换·避免旧手动分置两处的双显 race
+  function setLegacyView(v){
+    state.legacyView = !!v;
+    if (document.body) document.body.classList.toggle('tm-phase8-legacy', !!v);
+  }
+
   function leaveFormalRuntime(){
-    state.legacyView = false;
+    setLegacyView(false);
     state.runtimeChromeSig = '';
     state.runtimeRefreshSig = '';
     if (state.runtimeRefreshTimer) {
@@ -189,7 +195,7 @@
     try { closeRightDrawer(); } catch(_) {}
     try { closeMapDossier(); } catch(_) {}
     if (document.body) {
-      document.body.classList.remove('tm-phase8-game-active', 'tm-phase8-home', 'tm-phase8-legacy', 'province-panel-open');
+      document.body.classList.remove('tm-phase8-game-active', 'tm-phase8-home', 'province-panel-open');
       document.body.classList.add('tm-phase8-outgame');
     }
   }
@@ -359,10 +365,9 @@
   }
 
   function showHome(){
-    state.legacyView = false;
+    setLegacyView(false);
     clearOfficeStandaloneMode();
     document.body.classList.add('tm-phase8-home');
-    document.body.classList.remove('tm-phase8-legacy');
     dismissLegacyIntro();
     closeRightDrawer();
     ensureMainShell();
@@ -422,8 +427,7 @@
     if (tabId !== 'gt-office') clearOfficeStandaloneMode();
     dismissLegacyIntro();
     ensureMainShell();
-    state.legacyView = true;
-    document.body.classList.add('tm-phase8-legacy');
+    setLegacyView(true);
     document.body.classList.remove('tm-phase8-home');
     if (!ensureLegacyTabPanel(tabId)) return false;
     if (window.TM && TM.UI && TM.UI.tabs && typeof TM.UI.tabs.switchGameTab === 'function') {
