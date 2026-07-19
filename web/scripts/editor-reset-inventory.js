@@ -703,7 +703,8 @@ function detectRisks(root, editorSummary) {
 function buildScenarioEditorResetInventory(options) {
   const root = path.resolve((options && options.root) || path.resolve(__dirname, '..'));
   const official = loadOfficialScenario(root);
-  const officialSummary = summarizeOfficialScenario(official.scenario, official.source);
+  // 可移植 source：相对 repo root + 正斜杠（绝对路径会随构建机漂移·CI 重生成派生物 git diff 报 stale·对齐 build-scenario-editor-reset-data.js 的 payload.source）
+  const officialSummary = summarizeOfficialScenario(official.scenario, path.relative(path.resolve(root, '..'), official.source).replace(/\\/g, '/'));
   const editorSummary = parseEditorHtml(root);
   return {
     generatedAt: new Date().toISOString(),
