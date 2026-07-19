@@ -607,6 +607,16 @@
     if (!GM) return null;
     ensureQueues(GM);
     var item = candidate && candidate.type && candidate.status && candidate.body ? enrichMemoryItem(candidate, candidate) : evaluateCandidate(candidate, opts);
+    // P1·写闸旁路封堵（Codex 二轮）：带 type+status+body 的候选直走 enrichMemoryItem 跳过 evaluateCandidate·
+    //   公开 API enqueue 能带 accepted 状态绕生死对账；此处对最终 item 再对账·两路径都过·不可绕。
+    if (typeof _tmDetectVitalConflict === 'function' && item && item.status !== 'quarantined') {
+      var _evc = _tmDetectVitalConflict(clean(item.body || item.safeBody || ''));
+      if (_evc) {
+        item.status = 'quarantined'; item.reviewStatus = 'quarantined';
+        item.reasons = (Array.isArray(item.reasons) ? item.reasons : []).concat([reason('memory_hist_conflict', 'claim conflicts with GM life/death state: ' + (_evc.claimTarget || ''))]);
+        if (typeof _tmRecordVitalConflictHint === 'function') { try { _tmRecordVitalConflictHint(clean(candidate.actor || candidate.ownerScope || item.ownerScope || ''), _evc, item.body); } catch (_ve) {} }
+      }
+    }
     item.id = item.id || nowId('mem-write');
     item.enqueuedAtTurn = Number((GM && GM.turn) || item.turn || 0);
     GM._memoryWriteQueue.push(item);
