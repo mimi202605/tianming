@@ -1799,6 +1799,13 @@ async function _wd_extractCommitments(targetName) {
   var dialog = records.map(function(r){ return (r.playerSaid||'') + '\n' + (r.npcSaid||''); }).join('\n').slice(-3000);
   var ch = findCharByName(targetName);
   if (!ch) return;
+  // ★2026-07-16 落库契约硬化刀③·死人闸:已死者不收新承诺(承诺直写 GM._npcCommitments·不经 remember 内闸)·
+  //   与下方 relays 死亡守卫(:1885)对齐;目标人名实体存在性由上方 findCharByName 精确解析保证(查无此人已 return)·
+  //   此处补死活面。不落账候选留痕走既有 console.warn 通道(带姓名·不造 UI)。
+  if (ch.alive === false || ch.dead || ch._fakeDeath) {
+    try { console.warn('[_wd_extractCommitments] 死者不收新承诺·未落账(已留痕):', targetName); } catch(_wdcE) {}
+    return;
+  }
 
   var prompt = '以下是皇帝与' + targetName + '（' + (ch.officialTitle||ch.title||'') + '，忠' + (ch.loyalty||50) + '，性' + (ch.personality||'').slice(0,15) + '）的问对片段。请提取玩家（皇帝）向此人下达的指令/任务/期望，以及该人在对话中的应答与承诺。\n\n';
   prompt += dialog + '\n\n';
@@ -1838,7 +1845,7 @@ async function _wd_extractCommitments(targetName) {
       if (_dupCommit) {
         _dupCommit.category = c.category || _dupCommit.category || 'other';
         _dupCommit.deadline = parseInt(c.deadline,10) || _dupCommit.deadline || 3;
-        _dupCommit.willingness = parseFloat(c.willingness) || _dupCommit.willingness || 0.6;
+        _dupCommit.willingness = Math.max(0, Math.min(1, parseFloat(c.willingness) || _dupCommit.willingness || 0.6));   // ★刀③·数值钳制:willingness 属 [0,1](prompt 明示)·防 AI 越界
         if (c.npcPromise && !_dupCommit.npcPromise) _dupCommit.npcPromise = c.npcPromise;
         if (c.conditions && !_dupCommit.conditions) _dupCommit.conditions = c.conditions;
         _dupCommit.responsibility = 'npc';
@@ -1850,7 +1857,7 @@ async function _wd_extractCommitments(targetName) {
         category: c.category || 'other',
         assignedTurn: GM.turn,
         deadline: Math.max(1, Math.min(10, parseInt(c.deadline,10) || 3)),   // ★codex-fix W4:clamp 1-10·防 AI 写负数/超大 deadline(负数会被立即判逾期)
-        willingness: parseFloat(c.willingness) || 0.6,
+        willingness: Math.max(0, Math.min(1, parseFloat(c.willingness) || 0.6)),   // ★刀③·数值钳制:willingness ∈ [0,1](prompt 明示)·防越界
         npcPromise: c.npcPromise || '',
         conditions: c.conditions || '',
         status: 'pending',       // pending/executing/completed/failed/delayed
@@ -2228,6 +2235,11 @@ async function sendWendui(){
       _wdStreamFlush();
 
       if(rawReply){
+        // ★2026-07-16 落库契约硬化刀③·死人闸(防御纵深):入口 openWenduiModal 已挡「已薨」不得召对(:363)·
+        //   但本函数 async(await 流式回复)·万一目标于窗口内转殁·仍不应把 AI 推演的忠诚/压力/亲信直写给死者
+        //   (记忆写入已由 NpcMemorySystem.remember 内闸挡)。目标存在性由外层 `if(P.ai.key&&ch)` 保证·此处补死活面·留痕走 console.warn。
+        var _wdTargetDead = !!(ch && (ch.alive === false || ch.dead));
+        if (_wdTargetDead) { try { console.warn('[sendWendui] 目标已殁·忠诚/压力/亲信增量不落账(已留痕):', name); } catch(_wdDE) {} }
         var replyText = rawReply, loyaltyDelta = 0;
         var parsed = (typeof extractJSON==='function') ? extractJSON(rawReply) : null;
         // 深诊断(2026-06-26)：定位"问对AI返回史记格式{shizhengji,zhengwen,player_status}"——
@@ -2264,7 +2276,7 @@ async function sendWendui(){
         } else {
           try { console.log('[问对诊断] 无标记+非JSON回复·raw前120=' + String(rawReply).slice(0,120)); } catch(_e){}
         }
-        if (loyaltyDelta !== 0) {
+        if (loyaltyDelta !== 0 && !_wdTargetDead) {   // ★刀③·死者不收忠诚增量
           if (typeof adjustCharacterLoyalty === 'function') {
             var _wdReason = parsed && parsed.memoryImpact && parsed.memoryImpact.event ? parsed.memoryImpact.event : ((_wenduiMode === 'private' ? '\u79C1\u4E0B\u95EE\u5BF9' : '\u9762\u5723\u95EE\u5BF9') + '\uFF1A' + (msg || '').slice(0, 20));
             adjustCharacterLoyalty(ch, loyaltyDelta, _wdReason, { source:'wendui-dialogue', ai:true, defaultReason:'AI\u63A8\u6F14' });
@@ -2279,7 +2291,7 @@ async function sendWendui(){
           if (loyEl) { loyEl.textContent = '忠' + (typeof _fmtNum1==='function'?_fmtNum1(ch.loyalty):ch.loyalty); loyEl.style.color = ch.loyalty > 70 ? 'var(--green)' : ch.loyalty < 30 ? 'var(--red)' : 'var(--txt-s)'; }
         }
         // 压力(2026-06-26·owner需求)：问对也影响对象压力·标记驱动·受逼问/惊惧→升·被宽慰/赏赐→降
-        if (_stressDelta !== 0 && ch) {
+        if (_stressDelta !== 0 && ch && !_wdTargetDead) {   // ★刀③·死者不收压力增量
           var _oldStress = (typeof ch.stress === 'number' && isFinite(ch.stress)) ? ch.stress : 0;
           ch.stress = clamp(_oldStress + _stressDelta, 0, 100);
         }
@@ -2337,7 +2349,7 @@ async function sendWendui(){
         // 性能·2026-06-10·写入端封顶:单人 400 条(AI 上下文只用 slice(-10)·UI 只渲最近 60·起居注/纪事另有完整留痕)·防长局单人史无界膨胀存档
         if (GM.wenduiHistory[name].length > 400) GM.wenduiHistory[name] = GM.wenduiHistory[name].slice(-400);
         // #4·君臣私交长弧：每次问对累积亲信度（私下更快·负面交流不涨·封顶100）
-        if (ch) { var _rapGain = (loyaltyDelta < 0) ? 0 : ((_wenduiMode === 'private') ? 2 : 1); ch._rapport = Math.max(0, Math.min(100, ((typeof ch._rapport === 'number') ? ch._rapport : 50) + _rapGain)); }
+        if (ch && !_wdTargetDead) { var _rapGain = (loyaltyDelta < 0) ? 0 : ((_wenduiMode === 'private') ? 2 : 1); ch._rapport = Math.max(0, Math.min(100, ((typeof ch._rapport === 'number') ? ch._rapport : 50) + _rapGain)); }   // ★刀③·死者不增亲信度
         // NPC记忆——D3 优先使用 AI 返回的 memoryImpact，否则回退默认
         if (typeof NpcMemorySystem !== 'undefined') {
           var _playerName = (P.playerInfo && P.playerInfo.characterName) || '陛下';

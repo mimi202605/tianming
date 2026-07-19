@@ -1222,7 +1222,7 @@
     },
     {
       name: 'readQuickTestReport',
-      description: '读最新一次「快测·首回合真跑」报告（玩家在快测工作台点按钮后·真游戏带 key 启动+过一回合·boot/回合统计与错误清单写回）。大改后建议玩家跑一次快测·你据报告修真问题——这是唯一的运行时真后果来源(preflight 只是静态预测)。报告不存在=玩家尚未跑过。',
+      description: '读最新一次「快测·playtest 前一键体检」报告（玩家在快测工作台点按钮后·真游戏带 key 启动+默认连跑 3 回合·每回合跑四类确定性体检:死人任职/幽灵键/账面守恒/叙事错名·逐回合累积）。报告新形态(schema:2)：verdict.level=绿/黄/红总判·verdict.anomalies[]带 turn 回合号与 excerpt 原句/原账摘录·turns[]每回合含 health 四检结果·同时保留旧字段(bootOk/turnOk/turn/errors)向后兼容。大改后建议玩家跑一次快测·你据 verdict 与 anomalies 修真问题——这是唯一的运行时真后果来源(preflight 只是静态预测)。报告不存在=玩家尚未跑过。',
       parameters: { type: 'object', properties: {} }
     },
     {
@@ -1763,7 +1763,7 @@
         var _buCapped = _buMatched - _buChanged.length - _buSkipped;
         return { ok: true, matched: _buMatched, changed: _buChanged.length, skippedNonNumeric: _buSkipped, cappedByLimit: _buCapped > 0 ? _buCapped : 0, sample: _buChanged.slice(0, 8) };
       }
-      case 'readQuickTestReport': {   // 刀④乙(2026-07-10 智能升级A)：读沙盒首回合真跑报告(★DB/store/id 与 scenario-editor-sandbox-bridge.js 镜像·改须同步)
+      case 'readQuickTestReport': {   // 刀④乙(2026-07-10 智能升级A·2026-07-16 扩多回合体检)：读沙盒快测报告(★DB名/store/id='quickTestReport:latest' 与 scenario-editor-sandbox-bridge.js 镜像·改须同步·报告 schema:2 整体透传·加字段天然向后兼容)
         if (typeof global.indexedDB === 'undefined' || !global.indexedDB) return { ok: false, reason: '当前环境无 IndexedDB(需在编辑器页运行)·无法读快测报告' };
         return new Promise(function (resolve) {
           try {
@@ -1777,7 +1777,7 @@
                 g.onsuccess = function () {
                   db.close();
                   var rep = g.result && g.result.quickTest;
-                  if (!rep) return resolve({ ok: false, reason: '尚无快测报告——请玩家在「正式沙盒测试」工作台点「快测·首回合真跑」(会真实消耗一轮 AI 调用)·跑完再来读。' });
+                  if (!rep) return resolve({ ok: false, reason: '尚无快测报告——请玩家在「正式沙盒测试」工作台点「快测·一键体检」(会真实消耗数轮 AI 调用·默认连跑 3 回合)·跑完再来读。' });
                   resolve({ ok: true, report: rep, ageHint: '报告生成于 ' + (rep.createdAt || '?') + '·若你之后又改过草稿·报告反映的是旧版本' });
                 };
                 g.onerror = function () { db.close(); resolve({ ok: false, reason: '快测报告读取失败' }); };

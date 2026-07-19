@@ -15,7 +15,7 @@ var NoArmy= { id:'none',  name:'无兵', troops:0,     fiscalDetail:{ retainedBu
 var Broke = { id:'broke', name:'赤贫', troops:3000,  fiscalDetail:{ retainedBudget:0 } };
 
 global.GM = { turn:1, adminHierarchy:{ player:{ divisions:[Rich, Tight, NoArmy, Broke] } } };
-global.P = { conf:{ armyPressureEnabled:false } };
+global.P = { conf:{} };
 global.IntegrationBridge = {
   getLeafDivisions: function (ah, facId) {
     var fac = ah[facId] || {}; if (!fac.divisions) return [];
@@ -24,12 +24,7 @@ global.IntegrationBridge = {
   }
 };
 
-// ── T1：开关关·不算(死值不被动) ──
-BorderRisk.tickArmyPressure();
-var T1 = (Rich.armyPressure === '剧本死值40');
-
-// ── 开关开·结算 ──
-global.P.conf.armyPressureEnabled = true;
+// ── 结算(恒开) ──
 BorderRisk.tickArmyPressure();
 console.log('[A2a] 富安(养得起)=' + Rich.armyPressure + ' · 吃紧(军费=留用)=' + Tight.armyPressure + ' · 无兵=' + NoArmy.armyPressure + ' · 赤贫(无留用)=' + Broke.armyPressure);
 console.log('  派生 吃紧:月军费=' + Tight.localMilitaryCost + ' 净留用=' + Tight.retainedNet + ' · 赤贫:净留用=' + Broke.retainedNet + '(赤字)');
@@ -42,7 +37,6 @@ var T6 = (Tight.localMilitaryCost === 5000);                                    
 var T7 = (Tight.retainedNet === 0 && Broke.retainedNet < 0);                    // 净留用:吃紧60000-60000=0·赤贫赤字
 var T8 = (Tight.armyPressure > Rich.armyPressure);                             // 同省·吃紧>富安
 
-console.log('  [T1] 开关关不算(死值不被动)：' + (T1 ? 'OK' : 'FAIL'));
 console.log('  [T2] 富安养得起低压(<15)：' + (T2 ? 'OK' : 'FAIL'));
 console.log('  [T3] 吃紧军费≈留用高压(≥55)：' + (T3 ? 'OK' : 'FAIL'));
 console.log('  [T4] 无驻军零压：' + (T4 ? 'OK' : 'FAIL'));
@@ -50,6 +44,6 @@ console.log('  [T5] 有兵无留用养不起(85)：' + (T5 ? 'OK' : 'FAIL'));
 console.log('  [T6] localMilitaryCost 派生(兵×0.5)：' + (T6 ? 'OK' : 'FAIL'));
 console.log('  [T7] retainedNet 派生(吃紧0/赤贫赤字)：' + (T7 ? 'OK' : 'FAIL'));
 console.log('  [T8] 同省·吃紧>富安：' + (T8 ? 'OK' : 'FAIL'));
-var all = T1 && T2 && T3 && T4 && T5 && T6 && T7 && T8;
+var all = T2 && T3 && T4 && T5 && T6 && T7 && T8;
 console.log('\n=== ' + (all ? 'ALL PASS' : 'FAIL') + ' ===');
 process.exit(all ? 0 : 1);

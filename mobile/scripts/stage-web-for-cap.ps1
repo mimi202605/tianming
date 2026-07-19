@@ -17,7 +17,7 @@ $WebDir = (Resolve-Path $WebDir).Path
 # 单一真源排除清单
 $exPath = Join-Path $PSScriptRoot '..\..\scripts\release-excludes.json'
 if (-not (Test-Path $exPath)) { throw "排除清单缺失: $exPath" }
-$ex = Get-Content $exPath -Raw | ConvertFrom-Json
+$ex = Get-Content $exPath -Raw -Encoding UTF8 | ConvertFrom-Json  # PS5.1 默认 GBK 读 UTF-8 JSON→中文乱码呛死 ConvertFrom-Json·必须显式 UTF8
 
 # 目录排除(/XD)·扩展名排除(/XF)·均取自单一真源 JSON。
 # robocopy /XD /XF 对「精确全路径 / 就地扩展名」最稳；对前缀型通配名不可靠，故前缀走下方枚举→精确路径。

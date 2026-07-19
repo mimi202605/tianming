@@ -8,7 +8,7 @@
 //     · 敌方压强 = faction 级敌对态势(复用 borderThreatAgg 的敌对判定·generalize 到任意 faction)。
 //     · 本地防御 = 该叶驻军相对其丁口的充分度。敌强 × 本地空虚 → 边境风险高。
 //     · 不碰 P.map.regions 的地块邻接(地块 id ↔ 省名 两套 key 桥接)——地理前线/腹地暂不分(精度可低)。
-//   开关 P.conf.borderRiskEnabled 默认开(owner 拍板·活化修复直接生效·显式 false 可关)。
+//   边境风险结算恒开(owner 拍板·活化修复直接生效·2026-07 斩旗转正删 flag)。
 //   后续：A1b 接 AI 出征读 borderRisk 攻软肋·A1c 烽燧预警·未来用 region.neighbors 精化地理前线。
 (function (global) {
   'use strict';
@@ -117,7 +117,6 @@
 
   function tickBorderRisk() {
     var P = global.P || {};
-    if (P.conf && P.conf.borderRiskEnabled === false) return;        // 默认开·显式 false 才关(owner 拍板·活化修复直接生效)
     var G = global.GM;
     if (!G || !G.adminHierarchy) return;
     var IB = global.IntegrationBridge;
@@ -164,7 +163,7 @@
   //   armyPressure = 本地养兵的经济压力 = 月军费(驻军×饷) / 月留用(retainedBudget/12)。
   //   与 borderRisk(军事威胁)正交：边警=会不会被打·军压=养不养得起。契合明末辽饷压垮地方。
   //   派生 localMilitaryCost(本地月军费)+retainedNet(养兵后净留用·可负=赤字)·不改 fiscal 的 retainedBudget(它每回合重算)。
-  //   开关 P.conf.armyPressureEnabled 默认开(owner 拍板·活化修复直接生效·显式 false 可关)。留用月耗下游(tm-audit 可用预算改读 retainedNet)留 A2b。
+  //   军费负担结算恒开(owner 拍板·活化修复直接生效·2026-07 斩旗转正删 flag)。留用月耗下游(tm-audit 可用预算改读 retainedNet)留 A2b。
   // ───────────────────────────────────────────────────────────
   function _leafRetained(leaf) {
     var fd = leaf.fiscalDetail || leaf.fiscal || {};
@@ -173,8 +172,6 @@
   }
 
   function tickArmyPressure() {
-    var P = global.P || {};
-    if (P.conf && P.conf.armyPressureEnabled === false) return;   // 默认开·显式 false 才关(owner 拍板·活化修复直接生效)
     var G = global.GM;
     if (!G || !G.adminHierarchy) return;
     var IB = global.IntegrationBridge;

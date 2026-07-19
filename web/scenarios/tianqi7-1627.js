@@ -64550,6 +64550,11 @@
       "name": "魏忠贤自缢阜城",
       "trigger": "阉党权势值 < 50 且 皇威 > 50",
       "historical": true,
+      "deathTarget": "魏忠贤",
+      "deathReason": "自缢阜城",
+      "triggerCondAll": [
+        { "path": "GM.huangwei.index", "op": ">", "val": 50 }
+      ],
       "narrative": "去凤阳路上，闻钱嘉徵劾章传下，夜宿阜城，闻\"歌小曲骂九千岁\"，遂自缢。",
       "sid": "sc-tianqi7-1627"
     },
@@ -64559,6 +64564,9 @@
       "name": "客氏杖毙",
       "trigger": "魏忠贤已死",
       "historical": true,
+      "deathTarget": "客氏",
+      "deathReason": "杖毙于浣衣局",
+      "requiresDead": ["魏忠贤"],
       "narrative": "杖毙于浣衣局，尸被分。",
       "sid": "sc-tianqi7-1627"
     }

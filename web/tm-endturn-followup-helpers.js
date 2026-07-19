@@ -79,6 +79,22 @@
     return { actor: actor, text: text };
   }
 
+  // ★2026-07-16 落库契约硬化刀③·记忆写口实体+死人预解析(镜像 NpcMemorySystem.remember 内闸)：
+  //   remember 本身对幻影/死者会静默丢弃(tm-mechanics-memory.js:145-146 `if(!ch||ch.alive===false)return`)·
+  //   但本口旧写法不看返回值·照旧 n++/covered 置位=错计·且不落账候选无留痕。此处按 remember 同一解析路径
+  //   (findCharByName·内含索引+canonicalize·等价 remember 的 _tmMemoryFindChar；回退 GM.chars 精确)预解析·
+  //   幻影(查无此人)/死者→提前拦截·不计数·不置 covered·留痕(下方 console.warn)。守住行为(remember 本会丢弃)·只加显式闸+留痕。
+  function _mwResolveLiveChar(name) {
+    if (!name) return null;
+    var ch = null;
+    try { if (typeof findCharByName === 'function') ch = findCharByName(name); } catch(_mrE) {}
+    if (!ch && typeof GM !== 'undefined' && Array.isArray(GM.chars)) {
+      ch = GM.chars.find(function(c){ return c && c.name === name; }) || null;
+    }
+    if (!ch || ch.alive === false) return null;
+    return ch;
+  }
+
   // 应用一批 memory_writes(供 sc_memwrite 首轮 + 截断续写复用)·covered 记已录入 char·续写据此去重。
   // skipCovered:仅续写阶段传 true→拦截已录入角色(不重复补);首轮不传→全录(同一角色多件不同事件都录·不吞·
   //   完全重复的 event 由 NpcMemorySystem.remember 内部近窗去重挡)。
@@ -86,9 +102,12 @@
     if (!Array.isArray(list) || typeof NpcMemorySystem === 'undefined' || !NpcMemorySystem.remember) return 0;
     var n = 0;
     var witTotal = 0;  // ★2026-07-04 目击传播每批封顶·防 witnesses 滥填爆记忆
+    var mwSkipped = [];  // ★2026-07-16 刀③·幻影/死者不落账候选留痕(实体/死活面)
     list.forEach(function(mw) {
       if (!mw || !mw.char || !mw.event) return;
       if (skipCovered && covered && covered[mw.char]) return;  // 仅续写阶段拦截已录入角色
+      // ★2026-07-16 刀③·实体+死人闸:幻影人物/已死者不建记忆(与 remember 内闸同判·提前拦截并留痕)
+      if (!_mwResolveLiveChar(mw.char)) { mwSkipped.push({ char: mw.char, event: String(mw.event).slice(0, 40) }); return; }
       try {
         NpcMemorySystem.remember(mw.char, mw.event, mw.emotion || '平', mw.importance || 5, mw.relatedPerson || '',
           { type: mw.type, source: mw.source, credibility: mw.credibility, location: mw.location, witnesses: mw.witnesses, participants: mw.participants, arcId: mw.arcId });
@@ -110,6 +129,8 @@
         }
       } catch(_amwE) { if (typeof _dbg === 'function') _dbg('[MemWrite] remember failed for', mw.char, _amwE); }
     });
+    // ★2026-07-16 刀③·不落账候选留痕(既有日志通道·不造 UI)：原句摘录供 playtest 排查幻影/死者记忆
+    if (mwSkipped.length) { try { console.warn('[MemWrite] 幻影/死者不建记忆·未落账(已留痕):', mwSkipped); } catch(_mwLE) {} }
     return n;
   }
 

@@ -138,7 +138,7 @@ async function aiDeepReadScenario() {
   var sc = findScenarioById(GM.sid);
   if (!sc) return;
 
-  // 剧本已人工深化·跳过 28 次 AI 深读·用剧本原文本直接兜底 _aiScenarioDigest
+  // 剧本已人工深化·跳过 27 次 AI 深读·用剧本原文本直接兜底 _aiScenarioDigest
   if (sc.aiAutoEnrich === false || sc.isFullyDetailed === true) {
     var pi0 = P.playerInfo || {};
     var overviewText = (sc.overview || '') + '\n' + (sc.openingText || '');
@@ -170,14 +170,17 @@ async function aiDeepReadScenario() {
     };
     // 记录初始官制哈希（检测后续改革）
     try { GM._officeTreeHash = _computeOfficeHash(); } catch(_){}
-    _dbg && _dbg('[AI DeepRead] 剧本已深化·跳过 28 次 AI·用原文本兜底');
+    _dbg && _dbg('[AI DeepRead] 剧本已深化·跳过 27 次 AI·用原文本兜底');
     return;
   }
   var url = P.ai.url; if (url.indexOf('/chat/completions') < 0) url = url.replace(/\/+$/, '') + '/chat/completions';
   var model = P.ai.model || 'gpt-4o';
   var pi = P.playerInfo || {};
 
-  async function _call(sysMsg, userMsg, maxTok) {
+  // ── AI 调用（带一次重试·issue #6①）───────────────────────────
+  // 波次并行后单次静默失败=整层缺料概率放大，故网络失败/非 200 重试一次；
+  // JSON 解析失败不重试（内容问题非网络问题·保留 _raw 原文）。
+  async function _callOnce(sysMsg, userMsg, maxTok) {
     // 根据模型上下文窗口动态调整max_tokens
     // 基础倍率×3 + 上下文缩放因子（大模型可以输出更多内容）
     var _drCp = (typeof getCompressionParams === 'function') ? getCompressionParams() : {scale:1.0,contextK:32};
@@ -189,13 +192,40 @@ async function aiDeepReadScenario() {
     _actualTok = Math.max(_actualTok, 500);
     var resp = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+P.ai.key},
       body:JSON.stringify({model:model, messages:[{role:'system',content:sysMsg},{role:'user',content:userMsg}], temperature:0.5, max_tokens:_actualTok})});
-    if (!resp.ok) return {};
+    if (!resp.ok) throw new Error('deep-read HTTP ' + resp.status);
     var j = await resp.json(); var raw = (j.choices&&j.choices[0]&&j.choices[0].message) ? j.choices[0].message.content : '';
     try { return JSON.parse(raw.match(/\{[\s\S]*\}/)[0]); } catch(e) { return {_raw: raw}; }
   }
+  async function _call(sysMsg, userMsg, maxTok) {
+    try { return await _callOnce(sysMsg, userMsg, maxTok); }
+    catch (e1) {
+      await new Promise(function(_res){ setTimeout(_res, 1500); });
+      try { return await _callOnce(sysMsg, userMsg, maxTok); }
+      catch (e2) { console.warn('[AI DeepRead] _call 重试后仍失败·该块缺料继续:', (e2 && e2.message) || e2); return {}; }
+    }
+  }
 
-  var totalSteps = 28;
-  function prog(step, label) { showLoading(label, Math.round(step / totalSteps * 100)); }
+  // ── 波内并行池（issue #6①）────────────────────────────────
+  // 并发上限沿用 _runSubcallBatch(tm-endturn-ai.js) 同款约定：
+  // 安卓 CapacitorHttp 原生路整段响应 materialize 再跨桥·多份大响应并发=OOM 闪退雷 → 默认串行(1)；
+  // 桌面默认 4；玩家显式设 P.conf.aiDeepReadConcurrency 则尊重其选择。
+  function _waveLimit() {
+    var _confLimit = parseInt(P.conf && P.conf.aiDeepReadConcurrency, 10);
+    if (_confLimit > 0) return _confLimit;
+    var _isCap = (function(){ try { if (window.TM && TM.platform && TM.platform.kind) return TM.platform.kind === 'capacitor'; return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); } catch(_) { return false; } })();
+    return _isCap ? 1 : 4;
+  }
+  async function _runWave(tasks) {
+    var _limit = Math.max(1, Math.min(_waveLimit(), tasks.length));
+    var _cursor = 0;
+    async function _worker() { while (_cursor < tasks.length) { await tasks[_cursor++](); } }
+    var _workers = []; for (var _i = 0; _i < _limit; _i++) _workers.push(_worker());
+    await Promise.all(_workers);
+  }
+
+  // ── 真实进度：按完成计数（27 次调用）────────────────────────
+  var _totalCalls = 27, _done = 0;
+  function _tick(label) { _done++; showLoading('深度阅读·' + label + '（' + _done + '/' + _totalCalls + '）', Math.round(_done / _totalCalls * 100)); }
 
   // ═══ 构建全量数据块（完全不截断） ═══
 
@@ -1055,40 +1085,68 @@ async function aiDeepReadScenario() {
   var sysPre = '你是一个顶级历史模拟AI的记忆核心模块。你即将开始模拟' + (sc.era||sc.dynasty||'一个历史时期') + '。请极其仔细地阅读以下内容，记住每一个角色、每一个势力、每一条规则、每一件物品、每一项制度。你的分析质量将直接决定后续数十回合的叙事深度。不要遗漏任何细节。';
 
   try {
+    // ═══ 波次并行深读（issue #6①·2026-07-12）═══════════════════════════
+    // 27 次调用按依赖 DAG 分四波·波内并行(_runWave)·波间串行：
+    //   波1(17)=r1-r12 分域深读 + rH2/3/4/5/7/8 史料（只读剧本静态数据块·互不依赖）
+    //   波2(2) =r10 终极综合（依赖波1全部）+ rH6 制度典章（依赖 r5）
+    //   波3(5) =rQ1-4 交叉质询 + rH1 政治军事史料（依赖 r10.master_digest）
+    //   波4(3) =rR1-3 条件推演（依赖质询与史料）
+    // 下方各 _waveN.push 仅是登记·真正执行在「执行四波」段——
+    // 提示词/变量名/输出合同与串行时代逐字一致。
+    var _wave1 = [], _wave2 = [], _wave3 = [], _wave4 = [];
+    var r1, r2, r3, r4, r5, r6admin, r7mil, r8evt, r9, r10, r11, r12;
+    var rQ1, rQ2, rQ3, rQ4, rH1, rH2, rH3, rH4, rH5, rH6, rH7, rH8, rR1, rR2, rR3;
+    var allAnalysis, r8, masterText, allQ;
+
     // ═══ Call 1/10: 剧本概要+矛盾 ═══
-    prog(1, '深度阅读(1/12) 剧本概要与矛盾...');
-    var r1 = await _call(sysPre, blockA + '\n\n请返回JSON：{"era_essence":"这个时代的本质特征和核心氛围(150字)","contradiction_analysis":"各矛盾之间的联动关系和演化趋势(150字)","player_dilemma":"玩家面临的核心两难困境(100字)"}', 600);
+    _wave1.push(async function(){
+      r1 = await _call(sysPre, blockA + '\n\n请返回JSON：{"era_essence":"这个时代的本质特征和核心氛围(150字)","contradiction_analysis":"各矛盾之间的联动关系和演化趋势(150字)","player_dilemma":"玩家面临的核心两难困境(100字)"}', 600);
+      _tick('剧本概要与矛盾');
+    });
 
     // ═══ Call 2/8: 角色深度分析 ═══
-    prog(2, '深度阅读(2/8) 全部角色...');
-    var r2 = await _call(sysPre, blockB + '\n\n请返回JSON：{"character_web":"角色间的关系网络——忠诚、对立、暗流(200字)","dangerous_figures":"最危险的3个NPC及其可能行动(150字)","loyal_allies":"玩家最可靠的盟友及其弱点(100字)","hidden_agendas":"可能隐藏野心或秘密目标的角色(100字)"}', 800);
+    _wave1.push(async function(){
+      r2 = await _call(sysPre, blockB + '\n\n请返回JSON：{"character_web":"角色间的关系网络——忠诚、对立、暗流(200字)","dangerous_figures":"最危险的3个NPC及其可能行动(150字)","loyal_allies":"玩家最可靠的盟友及其弱点(100字)","hidden_agendas":"可能隐藏野心或秘密目标的角色(100字)"}', 800);
+      _tick('全部角色');
+    });
 
     // ═══ Call 3/8: 势力+党派+阶层分析 ═══
-    prog(3, '深度阅读(3/8) 势力与党派格局...');
-    var r3 = await _call(sysPre, blockC + '\n\n请返回JSON：{"faction_balance":"势力间的力量平衡和战略态势(200字)","alliance_possibilities":"可能形成的联盟和对抗阵营(100字)","party_struggle":"党争的核心焦点和可能走向(100字)","class_tensions":"阶层间的主要矛盾和爆发点(100字)","vassal_risks":"封臣体系中的不稳定因素(80字)"}', 800);
+    _wave1.push(async function(){
+      r3 = await _call(sysPre, blockC + '\n\n请返回JSON：{"faction_balance":"势力间的力量平衡和战略态势(200字)","alliance_possibilities":"可能形成的联盟和对抗阵营(100字)","party_struggle":"党争的核心焦点和可能走向(100字)","class_tensions":"阶层间的主要矛盾和爆发点(100字)","vassal_risks":"封臣体系中的不稳定因素(80字)"}', 800);
+      _tick('势力与党派格局');
+    });
 
     // ═══ Call 4/8: 世界设定+规则 ═══
-    prog(4, '深度阅读(4/10) 世界设定与规则...');
-    var r4 = await _call(sysPre, blockD + '\n\n请返回JSON：{"world_atmosphere":"世界的整体氛围和时代精神——从视觉、听觉、情感三个层面描述(250字)","rule_implications":"规则对推演的核心约束——哪些事不能做、哪些事必须做、哪些事有代价(200字)","cultural_dynamics":"文化和宗教对政治的深层影响——信仰冲突、礼制之争、文化认同(200字)","economic_logic":"经济体系的完整运作逻辑——收入来源、支出项目、脆弱点、改革空间(200字)"}', 1200);
+    _wave1.push(async function(){
+      r4 = await _call(sysPre, blockD + '\n\n请返回JSON：{"world_atmosphere":"世界的整体氛围和时代精神——从视觉、听觉、情感三个层面描述(250字)","rule_implications":"规则对推演的核心约束——哪些事不能做、哪些事必须做、哪些事有代价(200字)","cultural_dynamics":"文化和宗教对政治的深层影响——信仰冲突、礼制之争、文化认同(200字)","economic_logic":"经济体系的完整运作逻辑——收入来源、支出项目、脆弱点、改革空间(200字)"}', 1200);
+      _tick('世界设定与规则');
+    });
 
     // ═══ Call 5/10: 官制体系深度 ═══
-    prog(5, '深度阅读(5/10) 官制体系...');
-    var r5 = await _call(sysPre, blockE + '\n\n请返回JSON：{"bureaucratic_state":"官僚体系的运作状态——各部门效率、人员构成、派系分布(200字)","power_network":"权力网络——谁控制什么、谁依附谁、哪些职位是关键节点(200字)","vacant_critical":"最需要填补的关键空缺及最佳人选建议(150字)","succession_risks":"继任风险——哪些关键岗位的现任者可能出问题(100字)","governance_reform":"治理改革空间——哪些制度可以优化、风险是什么(150字)"}', 1200);
+    _wave1.push(async function(){
+      r5 = await _call(sysPre, blockE + '\n\n请返回JSON：{"bureaucratic_state":"官僚体系的运作状态——各部门效率、人员构成、派系分布(200字)","power_network":"权力网络——谁控制什么、谁依附谁、哪些职位是关键节点(200字)","vacant_critical":"最需要填补的关键空缺及最佳人选建议(150字)","succession_risks":"继任风险——哪些关键岗位的现任者可能出问题(100字)","governance_reform":"治理改革空间——哪些制度可以优化、风险是什么(150字)"}', 1200);
+      _tick('官制体系');
+    });
 
     // ═══ Call 6/10: 行政区划深度 ═══
-    prog(6, '深度阅读(6/10) 行政区划与地方治理...');
-    var r6admin = await _call(sysPre, blockE + '\n\n请返回JSON：{"regional_strengths":"各行政区的经济军事优势——哪里富庶、哪里有兵、哪里产粮(200字)","regional_risks":"各区域的风险——哪里可能叛乱、哪里治理薄弱、哪里边防空虚(200字)","governor_assessment":"各地方官的能力评估——谁称职、谁贪腐、谁可能反叛(150字)","territorial_strategy":"领土战略——应优先发展哪里、防守哪里、进攻哪里(150字)"}', 1000);
+    _wave1.push(async function(){
+      r6admin = await _call(sysPre, blockE + '\n\n请返回JSON：{"regional_strengths":"各行政区的经济军事优势——哪里富庶、哪里有兵、哪里产粮(200字)","regional_risks":"各区域的风险——哪里可能叛乱、哪里治理薄弱、哪里边防空虚(200字)","governor_assessment":"各地方官的能力评估——谁称职、谁贪腐、谁可能反叛(150字)","territorial_strategy":"领土战略——应优先发展哪里、防守哪里、进攻哪里(150字)"}', 1000);
+      _tick('行政区划与地方治理');
+    });
 
     // ═══ Call 7/10: 军事+经济深度 ═══
-    prog(7, '深度阅读(7/10) 军事与经济...');
-    var r7mil = await _call(sysPre, blockF + '\n\n请返回JSON：{"military_assessment":"军事力量的完整评估——各军实力对比、统帅能力、士气状况、装备水平(250字)","economic_outlook":"财政完整状况——收入结构、支出压力、储备情况、经济前景(200字)","war_scenarios":"最可能的战争场景——谁打谁、何时、在哪里、胜算几何(200字)","resource_crises":"资源危机预警——哪些资源即将耗尽、影响什么、如何应对(150字)","military_reform":"军事改革方向——当前军制的缺陷和改进空间(100字)"}', 1200);
+    _wave1.push(async function(){
+      r7mil = await _call(sysPre, blockF + '\n\n请返回JSON：{"military_assessment":"军事力量的完整评估——各军实力对比、统帅能力、士气状况、装备水平(250字)","economic_outlook":"财政完整状况——收入结构、支出压力、储备情况、经济前景(200字)","war_scenarios":"最可能的战争场景——谁打谁、何时、在哪里、胜算几何(200字)","resource_crises":"资源危机预警——哪些资源即将耗尽、影响什么、如何应对(150字)","military_reform":"军事改革方向——当前军制的缺陷和改进空间(100字)"}', 1200);
+      _tick('军事与经济');
+    });
 
     // ═══ Call 8/10: 事件+时间线深度 ═══
-    prog(8, '深度阅读(8/10) 事件与时间线...');
-    var r8evt = await _call(sysPre, blockG + '\n\n请返回JSON：{"event_priorities":"最应优先触发的事件及详细时机和触发方式(200字)","timeline_foreshadow":"时间线中需要提前铺垫的未来事件——具体铺垫方式(200字)","goal_strategy":"实现各目标的详细策略路径——步骤和风险(200字)","narrative_arcs":"最有戏剧张力的5条叙事弧线——起承转合设计(200字)","chain_reactions":"事件间的连锁反应链——A发生→B必然→C可能(150字)"}', 1200);
+    _wave1.push(async function(){
+      r8evt = await _call(sysPre, blockG + '\n\n请返回JSON：{"event_priorities":"最应优先触发的事件及详细时机和触发方式(200字)","timeline_foreshadow":"时间线中需要提前铺垫的未来事件——具体铺垫方式(200字)","goal_strategy":"实现各目标的详细策略路径——步骤和风险(200字)","narrative_arcs":"最有戏剧张力的5条叙事弧线——起承转合设计(200字)","chain_reactions":"事件间的连锁反应链——A发生→B必然→C可能(150字)"}', 1200);
+      _tick('事件与时间线');
+    });
 
     // ═══ Call 9/10: 角色个体深度分析 ═══
-    prog(9, '深度阅读(9/10) 角色个体深度分析...');
     var topChars = (GM.chars||[]).filter(function(c){return c.alive!==false;}).sort(function(a,b){
       var sa = (a.isPlayer?100:0) + Math.abs(50-(a.loyalty||50)) + (a.ambition||50);
       var sb = (b.isPlayer?100:0) + Math.abs(50-(b.loyalty||50)) + (b.ambition||50);
@@ -1104,58 +1162,72 @@ async function aiDeepReadScenario() {
       if (c.party) charDeepBlock += ' 党派:' + c.party;
       if (typeof _tmIsPlayerConsort === 'function' ? _tmIsPlayerConsort(c) : c.spouse === true) charDeepBlock += ' [有配偶]';
     });
-    var r9 = await _call(sysPre, charDeepBlock + '\n\n请返回JSON：{"character_profiles":"每个角色的内心独白——他们真正想要什么、害怕什么、会为什么铤而走险(300字)","relationship_tensions":"角色间最紧张的5对关系及爆发条件(200字)","betrayal_risks":"最可能背叛的角色及其动机和时机(150字)","alliance_opportunities":"最可能结盟的角色组合及其共同利益(150字)","emotional_triggers":"各角色的情感触发点——什么事件会让他们暴怒/崩溃/感动(200字)"}', 1500);
+    _wave1.push(async function(){
+      r9 = await _call(sysPre, charDeepBlock + '\n\n请返回JSON：{"character_profiles":"每个角色的内心独白——他们真正想要什么、害怕什么、会为什么铤而走险(300字)","relationship_tensions":"角色间最紧张的5对关系及爆发条件(200字)","betrayal_risks":"最可能背叛的角色及其动机和时机(150字)","alliance_opportunities":"最可能结盟的角色组合及其共同利益(150字)","emotional_triggers":"各角色的情感触发点——什么事件会让他们暴怒/崩溃/感动(200字)"}', 1500);
+      _tick('角色个体深度');
+    });
 
     // ═══ Call 11/12: 制度+物品+科技+外交（新增数据源） ═══
-    prog(11, '深度阅读(11/12) 制度·物品·科技·外交...');
     var blockH1 = blockH.substring(0, Math.min(blockH.length, 6000)); // 前半
-    var r11 = await _call(sysPre, blockH1 + '\n\n请返回JSON：{"tech_strategy":"科技发展路线和优先研究方向(150字)","item_significance":"关键物品的政治象征意义和使用策略(100字)","diplomatic_landscape":"与外部势力的完整外交格局和最佳策略(200字)","vassal_title_dynamics":"封臣体系和爵位制度对权力的影响(150字)","succession_politics":"继承制度和后宫政治对国运的影响(150字)"}', 1200);
+    _wave1.push(async function(){
+      r11 = await _call(sysPre, blockH1 + '\n\n请返回JSON：{"tech_strategy":"科技发展路线和优先研究方向(150字)","item_significance":"关键物品的政治象征意义和使用策略(100字)","diplomatic_landscape":"与外部势力的完整外交格局和最佳策略(200字)","vassal_title_dynamics":"封臣体系和爵位制度对权力的影响(150字)","succession_politics":"继承制度和后宫政治对国运的影响(150字)"}', 1200);
+      _tick('制度·物品·科技·外交');
+    });
 
     // ═══ Call 12/12: 经济·省份·建筑·完整世界理解 ═══
-    prog(12, '深度阅读(12/12) 经济·省份·建筑...');
     var blockH2 = blockH.substring(Math.min(blockH.length, 6000)); // 后半（如果有）
     if (!blockH2) blockH2 = '以上数据已在前一轮提供。';
-    var r12 = await _call(sysPre, blockH2 + '\n补充数据：\n' + blockF.substring(0, 3000) + '\n\n请返回JSON：{"province_assessment":"各省份的经济健康度和发展潜力(200字)","building_priorities":"最应优先建设的建筑及理由(100字)","reform_agenda":"前10回合的治国改革议程(200字)","risk_matrix":"政治/经济/军事/社会四维度的风险矩阵(200字)","opening_narrative":"开局第一回合最佳的叙事开场方式(150字)"}', 1200);
+    _wave1.push(async function(){
+      r12 = await _call(sysPre, blockH2 + '\n补充数据：\n' + blockF.substring(0, 3000) + '\n\n请返回JSON：{"province_assessment":"各省份的经济健康度和发展潜力(200字)","building_priorities":"最应优先建设的建筑及理由(100字)","reform_agenda":"前10回合的治国改革议程(200字)","risk_matrix":"政治/经济/军事/社会四维度的风险矩阵(200字)","opening_narrative":"开局第一回合最佳的叙事开场方式(150字)"}', 1200);
+      _tick('经济·省份·建筑');
+    });
 
     // ═══ Call 13/12: 终极综合大摘要 ═══
-    prog(13, '深度阅读 生成终极综合分析...');
-    var allAnalysis = JSON.stringify(r1) + '\n' + JSON.stringify(r2) + '\n' + JSON.stringify(r3) + '\n' + JSON.stringify(r4) + '\n' + JSON.stringify(r5) + '\n' + JSON.stringify(r6admin) + '\n' + JSON.stringify(r7mil) + '\n' + JSON.stringify(r8evt) + '\n' + JSON.stringify(r9) + '\n' + JSON.stringify(r11) + '\n' + JSON.stringify(r12);
-    var r10 = await _call(
+    _wave2.push(async function(){
+      r10 = await _call(
       '你是历史模拟AI的总设计师。基于前9轮的极其详尽的深度分析，生成一份终极剧本理解文档。这份文档将永久注入你的记忆核心，指导后续数十回合的每一个推演决策。请确保涵盖所有关键维度，不遗漏任何重要信息。',
       allAnalysis + '\n\n请返回JSON：{"master_digest":"剧本终极摘要——这是你对整个世界的终极理解，必须涵盖：时代本质、核心矛盾、关键人物关系网、势力均衡、制度特点、经济军事状况、文化宗教背景、治理风险、战争风险。不要吝惜字数，写得越详细越好(1500-2000字)","first_turn_plan":"第一回合的完整推演计划——应发生的所有事件、每个NPC的具体行动、矛盾如何体现、氛围如何营造、叙事的起承转合(600字)","npc_behaviors":"前5回合各主要NPC的详细行为时间线——逐人逐回合(600字)","crisis_forecast":"即将爆发的5个危机——触发条件、爆发时间、影响范围、应对方案、玩家可利用的机会(500字)","narrative_style":"本剧本最适合的叙事风格——文学基调、用典方向、情感色彩、节奏把控、参考的文学作品(300字)","world_rules":"这个世界的底层运行规则——什么行为会被奖励、什么会被惩罚、什么是不可逆的、哪些是隐藏规则(400字)"}',
       2000
     );
-    var r8 = r10; // 兼容旧变量名
+      _tick('终极综合分析');
+    });
 
     // ════════════════════════════════════════════
     // 第二层：交叉质询（AI自问自答，发现遗漏和矛盾）
     // ════════════════════════════════════════════
     var sysQuestioner = '你是一个极其严苛的历史学家和剧本审查官。你的任务是质疑前面的分析，找出遗漏、矛盾和不合理之处。不要客气，尽管挑刺。';
-    var masterText = r10.master_digest || '';
 
     // ═══ Q1: 人物关系质询 ═══
-    prog(14, '交叉质询(1/4) 审查人物关系...');
-    var rQ1 = await _call(sysQuestioner,
+    _wave3.push(async function(){
+      rQ1 = await _call(sysQuestioner,
       '前面的分析认为：\n角色关系网：' + (r2.character_web||'') + '\n危险人物：' + (r2.dangerous_figures||'') + '\n角色内心：' + (r9.character_profiles||'') + '\n背叛风险：' + (r9.betrayal_risks||'') + '\n\n原始角色数据：\n' + blockB.substring(0, 4000) +
       '\n\n请严格审查并返回JSON：{"missed_relationships":"被遗漏的重要人物关系——检查每对有关联的角色(200字)","logic_flaws":"分析中的逻辑矛盾——哪些判断不合理(150字)","deeper_motives":"被忽视的深层动机——哪些角色的真实目的被低估(200字)","wildcard_characters":"被忽视的变数人物——哪些看似不重要的角色可能有大作为(150字)"}', 1000);
+      _tick('质询·人物关系');
+    });
 
     // ═══ Q2: 势力战略质询 ═══
-    prog(15, '交叉质询(2/4) 审查势力战略...');
-    var rQ2 = await _call(sysQuestioner,
+    _wave3.push(async function(){
+      rQ2 = await _call(sysQuestioner,
       '前面的分析认为：\n势力态势：' + (r3.faction_balance||'') + '\n战争风险：' + (r7mil.war_scenarios||'') + '\n危机预测：' + (r10.crisis_forecast||'') + '\n\n原始势力数据：\n' + blockC.substring(0, 3000) +
       '\n\n请严格审查并返回JSON：{"strategic_blind_spots":"战略分析的盲点——哪些威胁被低估(200字)","alliance_shifts":"可能的联盟翻转——哪些看似稳固的联盟可能瓦解(150字)","cascade_scenarios":"多米诺效应场景——一个势力覆灭会引发什么连锁(200字)","player_vulnerabilities":"玩家势力的隐藏弱点——从敌人视角看玩家(150字)"}', 1000);
+      _tick('质询·势力战略');
+    });
 
     // ═══ Q3: 制度经济质询 ═══
-    prog(16, '交叉质询(3/4) 审查制度经济...');
-    var rQ3 = await _call(sysQuestioner,
+    _wave3.push(async function(){
+      rQ3 = await _call(sysQuestioner,
       '前面的分析认为：\n经济状况：' + (r7mil.economic_outlook||'') + '\n官僚状态：' + (r5.bureaucratic_state||'') + '\n治理改革：' + (r5.governance_reform||'') + '\n风险矩阵：' + (r12.risk_matrix||'') + '\n\n原始数据：\n' + blockD.substring(0, 2000) + '\n' + blockF.substring(0, 2000) +
       '\n\n请严格审查并返回JSON：{"economic_time_bombs":"被忽视的经济定时炸弹(150字)","institutional_decay":"制度衰败的隐性信号(150字)","reform_paradoxes":"改革的悖论——为什么改也错不改也错(200字)","social_undercurrents":"社会暗流——底层正在发生什么(150字)"}', 1000);
+      _tick('质询·制度经济');
+    });
 
     // ═══ Q4: 叙事逻辑质询 ═══
-    prog(17, '交叉质询(4/4) 审查叙事逻辑...');
-    var rQ4 = await _call(sysQuestioner,
+    _wave3.push(async function(){
+      rQ4 = await _call(sysQuestioner,
       '终极摘要：' + masterText + '\n叙事弧线：' + (r8evt.narrative_arcs||'') + '\n连锁反应：' + (r8evt.chain_reactions||'') + '\n推演计划：' + (r10.first_turn_plan||'') +
       '\n\n请严格审查并返回JSON：{"narrative_gaps":"叙事中的逻辑断裂——哪些因果链不成立(200字)","tone_conflicts":"基调矛盾——哪些场景的情感处理可能冲突(150字)","pacing_advice":"节奏建议——前5回合的叙事节奏应该怎样起伏(200字)","dramatic_irony":"戏剧反讽机会——玩家不知道但AI知道的秘密(200字)"}', 1000);
+      _tick('质询·叙事逻辑');
+    });
 
     // ════════════════════════════════════════════
     // 第三层：史料研究（让AI回忆真实历史，建立知识底座）
@@ -1163,51 +1235,66 @@ async function aiDeepReadScenario() {
     var dynasty = sc.era || sc.dynasty || '';
     var year = P.time && P.time.year ? P.time.year : '';
     var sysHistorian = '你是一位学识渊博的' + dynasty + '历史学家，精通该时期的所有正史、野史、笔记小说。请调动你对' + dynasty + '的全部知识。';
-    var allQ = JSON.stringify(rQ1) + '\n' + JSON.stringify(rQ2) + '\n' + JSON.stringify(rQ3) + '\n' + JSON.stringify(rQ4);
 
     // ═══ H1: 史料·政治军事 ═══
-    prog(18, '史料研究(1/4) 政治军事史料...');
-    var rH1 = await _call(sysHistorian,
+    _wave3.push(async function(){
+      rH1 = await _call(sysHistorian,
       '本剧本设定在' + dynasty + (year ? '(约公元'+year+'年)' : '') + '。\n玩家势力：' + (pi.factionName||'') + '\n当前局势：' + masterText.substring(0, 500) +
       '\n\n请根据你对该时期历史的了解，返回JSON：{"real_political_events":"这一时期真实发生的重大政治事件——按时间顺序列举，包括政变、废立、改制、党争等(300字)","real_military_events":"这一时期的真实军事冲突——战役名称、交战双方、结果、影响(300字)","key_historical_figures":"这一时期最关键的历史人物——他们的真实结局和历史评价(250字)","institutional_reality":"这一时期制度的真实运作状况——正史记载的吏治、财政、军制实况(200字)"}', 1500);
+      _tick('史料·政治军事');
+    });
 
     // ═══ H2: 史料·社会经济 ═══
-    prog(19, '史料研究(2/4) 社会经济史料...');
-    var rH2 = await _call(sysHistorian,
+    _wave1.push(async function(){
+      rH2 = await _call(sysHistorian,
       '继续研究' + dynasty + '的社会经济状况。\n剧本概述：' + (sc.overview||'').substring(0, 400) +
       '\n\n请返回JSON：{"real_social_conditions":"这一时期的真实社会状况——人口、阶级矛盾、民变、灾荒、疫病、流民(300字)","real_economic_data":"这一时期的真实经济数据——赋税制度、物价、通货、贸易路线、财政收支(250字)","real_cultural_scene":"这一时期的文化思想状况——学术流派、宗教势力、礼制之争、文学艺术(200字)","real_daily_life":"这一时期普通人的日常生活——衣食住行、婚丧嫁娶、市井风俗(200字)"}', 1500);
+      _tick('史料·社会经济');
+    });
 
     // ═══ H3: 史料·人物与典故 ═══
-    prog(20, '史料研究(3/4) 人物典故与文学素材...');
     var charNames = (GM.chars||[]).filter(function(c){return c.alive!==false;}).map(function(c){return c.name;}).join('\u3001');
-    var rH3 = await _call(sysHistorian,
+    _wave1.push(async function(){
+      rH3 = await _call(sysHistorian,
       '剧本中的关键角色：' + charNames + '\n\n请返回JSON：{"historical_anecdotes":"与这些人物（或同名/同类型历史人物）相关的真实历史典故和逸事——可用于游戏叙事中(300字)","literary_references":"这一时期最适合引用的诗词歌赋、典籍名句——按场景分类：朝堂、战争、宴饮、离别、感慨(250字)","famous_dialogues":"这一时期流传的著名对话或奏疏名句——可在角色对白中化用(200字)","historical_turning_points":"这一时期的历史转折点——哪些关键决策改变了历史走向(200字)"}', 1500);
+      _tick('史料·人物典故');
+    });
 
     // ═══ H4: 史料·细节与氛围 ═══
-    prog(21, '史料研究(4/4) 细节氛围素材...');
-    var rH4 = await _call(sysHistorian,
+    _wave1.push(async function(){
+      rH4 = await _call(sysHistorian,
       '这个剧本需要营造极其真实的' + dynasty + '氛围。\n\n请返回JSON：{"sensory_details":"这一时期的感官细节——宫殿什么样、街道什么样、战场什么样、朝堂什么气味什么声音(300字)","etiquette_norms":"这一时期的礼仪规范——君臣之间、官场之间、军中的称呼方式、行礼方式、禁忌(250字)","period_vocabulary":"这一时期应该使用的特有词汇和表达方式——官职称谓、日常用语、骂人话、赞美话(200字)","seasonal_customs":"这一时期的节令风俗——四季不同的朝政活动、祭祀、农事、军事行动时机(200字)"}', 1500);
+      _tick('史料·细节氛围');
+    });
 
     // ═══ H5: 史料·民俗风情与日常 ═══
-    prog(22, '史料研究(5/8) 民俗风情...');
-    var rH5 = await _call(sysHistorian,
+    _wave1.push(async function(){
+      rH5 = await _call(sysHistorian,
       '请详细描述' + dynasty + '时期的民间风俗习惯。\n\n返回JSON：{"folk_customs":"民间婚丧嫁娶、生育、命名、成人礼的完整习俗(300字)","festival_rituals":"主要节日（元旦、上巳、端午、中秋、重阳、冬至等）的庆祝方式和禁忌(300字)","food_culture":"饮食文化——主食、副食、酒、茶、宴席规格、席次讲究(250字)","clothing_norms":"服饰规范——不同阶层不同场合的穿着要求、颜色禁忌、首饰佩戴(200字)","housing_patterns":"居住形制——宫殿/官邸/民居/军营的建筑形式和空间布局(200字)"}', 1800);
+      _tick('史料·民俗风情');
+    });
 
     // ═══ H6: 史料·制度典章深度 ═══
-    prog(23, '史料研究(6/8) 制度典章...');
-    var rH6 = await _call(sysHistorian,
+    _wave2.push(async function(){
+      rH6 = await _call(sysHistorian,
       '请详细描述' + dynasty + '时期的制度典章。\n当前剧本的官制：' + (r5.bureaucratic_state||'').substring(0,300) +
       '\n\n返回JSON：{"court_procedure":"朝会制度——常朝/朔望朝/大朝的流程、时间、地点、参加者、议事规则(300字)","legal_system":"法律制度——刑法体系、审判流程、量刑标准、特赦制度、株连规则(300字)","tax_system":"赋税制度——税种名称、征收方式、税率、减免条件、地方截留比例(250字)","military_system":"兵制详情——兵源(征/募/世兵)、编制名称、粮饷标准、调兵手续、战时动员流程(250字)","selection_system":"选官制度——' + (P.keju&&P.keju.enabled?'科举各级考试流程、阅卷标准、录取比例、座主门生关系':'察举/九品中正/军功等选拔流程') + '(200字)"}', 1800);
+      _tick('史料·制度典章');
+    });
 
     // ═══ H7: 史料·称谓与语言习惯 ═══
-    prog(24, '史料研究(7/8) 称谓语言...');
-    var rH7 = await _call(sysHistorian,
+    _wave1.push(async function(){
+      rH7 = await _call(sysHistorian,
       '请详细描述' + dynasty + '时期的称呼方式和语言习惯。\n\n返回JSON：{"imperial_address":"帝王的自称和被称——朕/寡人/孤/陛下/圣上/天子等使用场合(200字)","official_address":"官场称呼——上下级之间、同僚之间、奏对时的称谓规范(250字)","family_address":"家族称呼——父母/兄弟/妻妾/子女的称谓、嫡庶区分(200字)","written_style":"公文行文风格——奏疏/诏书/檄文/私信的开头结尾格式和固定用语(250字)","taboo_words":"避讳制度——皇帝名讳如何避、先人名讳如何避、犯讳的后果(200字)","common_expressions":"时代口语——日常打招呼、表示同意/反对、骂人/赞美的习惯用语(200字)"}', 1800);
+      _tick('史料·称谓语言');
+    });
 
     // ═══ H8: 史料·礼仪典礼深度 ═══
-    prog(25, '史料研究(8/8) 礼仪典礼...');
-    var rH8 = await _call(sysHistorian,
+    _wave1.push(async function(){
+      rH8 = await _call(sysHistorian,
       '请详细描述' + dynasty + '时期的礼仪典礼。\n\n返回JSON：{"court_etiquette":"上朝礼仪——入殿顺序、站位、奏事流程、叩拜方式、退朝规矩(300字)","audience_protocol":"觐见礼仪——外臣/使节/将领觐见皇帝的完整流程(200字)","military_rituals":"军事礼仪——出征誓师、犒赏三军、凯旋献俘、阵前对话的规矩(250字)","religious_ceremonies":"祭祀礼仪——天坛/太庙/社稷/山川的祭祀流程和意义(200字)","life_ceremonies":"人生礼仪——册封/赐婚/丧葬/祭祖的具体流程(200字)","diplomatic_protocol":"外交礼仪——接待外国使节/属国朝贡/互市谈判的礼节(200字)"}', 1800);
+      _tick('史料·礼仪典礼');
+    });
 
     // ════════════════════════════════════════════
     // 第五层：条件分支式推演（不预定剧本，而是准备多种走向）
@@ -1215,22 +1302,39 @@ async function aiDeepReadScenario() {
     var sysDirector = '你是这个历史世界的总导演。重要原则：玩家的选择必须能真正影响世界走向。不要预定剧本，而是准备多种可能性。你拥有前面24轮积累的全部知识。';
 
     // ═══ R1: 条件分支·世界走向 ═══
-    prog(26, '条件推演(1/3) 世界走向分支树...');
-    var rR1 = await _call(sysDirector,
+    _wave4.push(async function(){
+      rR1 = await _call(sysDirector,
       '终极摘要：' + masterText + '\n质询补充：' + allQ.substring(0, 2000) + '\n史料参考：' + JSON.stringify(rH1).substring(0, 1500) +
       '\n\n【重要】不要写固定脚本！要写条件分支。玩家的每个决策都应导向不同结果。\n返回JSON：{"world_branches":"世界走向分支树——列出3-5个关键决策点，每个决策点有2-3个分支走向(400字)","npc_reaction_matrix":"NPC对玩家不同决策的反应矩阵——如果玩家做X则NPC-A会Y(300字)","crisis_triggers":"危机触发条件——不是固定时间触发，而是当特定变量/关系达到阈值时触发(200字)","opportunity_windows":"机会窗口——哪些时机稍纵即逝，玩家必须在特定条件下才能抓住(200字)"}', 1800);
+      _tick('推演·世界走向分支');
+    });
 
     // ═══ R2: 条件分支·NPC自主性 ═══
-    prog(27, '条件推演(2/3) NPC自主行为逻辑...');
-    var rR2 = await _call(sysDirector,
+    _wave4.push(async function(){
+      rR2 = await _call(sysDirector,
       '角色内心：' + (r9.character_profiles||'') + '\n被忽视的动机：' + (rQ1.deeper_motives||'') + '\n史料人物：' + (rH3.historical_anecdotes||'').substring(0, 500) +
       '\n\n【重要】NPC不是预设脚本的演员，而是有自主意志的个体。他们的行为取决于当前局势，而非预定时间表。\n返回JSON：{"npc_decision_logic":"每个重要NPC的决策逻辑树——什么条件下做什么(400字)","secret_agendas":"各NPC的秘密议程——他们不会告诉玩家的真实目的(200字)","emotional_triggers":"情感触发点——什么事件会让哪个NPC做出非理性行为(200字)","loyalty_breaking_points":"忠诚断裂点——每个NPC在什么条件下会背叛(200字)"}', 1500);
+      _tick('推演·NPC自主逻辑');
+    });
 
     // ═══ R3: 条件分支·世界演化规律 ═══
-    prog(28, '条件推演(3/3) 世界演化规律...');
-    var rR3 = await _call(sysDirector,
+    _wave4.push(async function(){
+      rR3 = await _call(sysDirector,
       '宏观分析：' + (r12.risk_matrix||'') + '\n史料经济：' + (rH2.real_economic_data||'').substring(0, 500) + '\n史料社会：' + (rH2.real_social_conditions||'').substring(0, 500) +
       '\n\n返回JSON：{"macro_trajectory":"世界宏观走向——政治/经济/军事/社会四维度在不同玩家策略下的演化(400字)","tipping_points":"不可逆临界点——一旦跨过就无法回头的5个关键阈值(250字)","butterfly_effects":"蝴蝶效应清单——10个看似微小但影响深远的决策(250字)","historical_parallels":"历史平行——这个局面最像哪些真实历史场景，那些场景最终如何收场(200字)","decay_patterns":"衰亡模式——如果玩家不作为，世界会按什么规律自然衰败(200字)"}', 1500);
+      _tick('推演·世界演化规律');
+    });
+
+    // ═══ 执行四波（波间有真依赖·波内并行·issue #6①）═══
+    showLoading('深度阅读·第一波并行研读（' + _wave1.length + ' 项）…', 1);
+    await _runWave(_wave1);
+    allAnalysis = JSON.stringify(r1) + '\n' + JSON.stringify(r2) + '\n' + JSON.stringify(r3) + '\n' + JSON.stringify(r4) + '\n' + JSON.stringify(r5) + '\n' + JSON.stringify(r6admin) + '\n' + JSON.stringify(r7mil) + '\n' + JSON.stringify(r8evt) + '\n' + JSON.stringify(r9) + '\n' + JSON.stringify(r11) + '\n' + JSON.stringify(r12);
+    await _runWave(_wave2);
+    r8 = r10; // 兼容旧变量名
+    masterText = r10.master_digest || '';
+    await _runWave(_wave3);
+    allQ = JSON.stringify(rQ1) + '\n' + JSON.stringify(rQ2) + '\n' + JSON.stringify(rQ3) + '\n' + JSON.stringify(rQ4);
+    await _runWave(_wave4);
 
     // ═══ 合并存储 ═══
     GM._aiScenarioDigest = {
@@ -1381,7 +1485,7 @@ async function aiDeepReadScenario() {
     // 记录初始官制哈希（检测后续改革）
     GM._officeTreeHash = _computeOfficeHash();
 
-    _dbg('[AI DeepRead 8-call] Master digest:', (GM._aiScenarioDigest.masterDigest||'').substring(0, 150));
+    _dbg('[AI DeepRead 27-call/4-wave] Master digest:', (GM._aiScenarioDigest.masterDigest||'').substring(0, 150));
     showLoading('\u6DF1\u5EA6\u9605\u8BFB\u5B8C\u6210\uFF01', 100);
   } catch(e) {
     console.warn('[AI DeepRead] Failed:', e);

@@ -557,7 +557,6 @@
   function tick(GM, P) {
     if (!GM || !P) return { completed: 0, building: 0, neglected: 0, upkeepPaid: 0, damaged: 0, repaired: 0 };
     var stat = { completed: 0, building: 0, neglected: 0, upkeepPaid: 0, damaged: 0, repaired: 0 };
-    var _hazardOn = !(P.conf && P.conf.buildingHazardEnabled === false);   // S6·灾损·默认开·显式 false 可关
     // 2026-07-03·工期不推进根治：历史 P/GM 双 admin 树并存(开局 GM.adminHierarchy=deepClone(P)·独立对象·
     //   运行时活树多为 GM·P 树可能为空{})。自拟营建/写工具经 _adminSources 双源搜索落库·P 树空时工程落 GM 树·
     //   而本 tick 旧只扫 P.adminHierarchy 单树→落 GM 树的在建工程 remainingTurns 永不递减「永远工役中」。
@@ -577,7 +576,7 @@
           if (!div || _divSeen(div)) return;
           if (Array.isArray(div.buildings) && div.buildings.length) {
             var money = div.publicTreasury && div.publicTreasury.money;
-            var _freshSev = _hazardOn ? _freshDisasterSeverity(div, GM && GM.turn) : 0;   // S6·本回合该叶灾情(0/1/2/3·读 disasterRecord)
+            var _freshSev = _freshDisasterSeverity(div, GM && GM.turn);   // S6·本回合该叶灾情(0/1/2/3·读 disasterRecord·恒开)
             div.buildings.forEach(function (bld) {
               tickBuilding(div, bld, money, _freshSev, P, GM, stat);
             });

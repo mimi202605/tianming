@@ -11113,7 +11113,7 @@
     var payload = saveFormalSandboxPayload();
     var url = formalSandboxUrl(payload, !!opts.quickTest);
     setStatus(opts.quickTest
-      ? '已写入沙盒·正在打开游戏做「首回合真跑」——会真实消耗一轮 AI 调用·跑完报告自动写回（国师可用 readQuickTestReport 读取）。'
+      ? '已写入沙盒·正在打开游戏做「一键体检」——默认连跑 3 回合并做四类体检·会真实消耗数轮 AI 调用（配了次要 API 会自动走快模型档）·跑完报告自动写回（国师可用 readQuickTestReport 读取）。'
       : '已写入正式沙盒，正在打开正式游戏。', 'good');
     var opened = global.open ? global.open(url, '_blank', 'noopener') : null;
     if (!opened && global.location) global.location.href = url;
@@ -21426,7 +21426,7 @@
         '<div data-panel="edit-history"><h3>编辑回退</h3><div class="prompt-row"><button class="ai-button" data-editor-command="undo-edit">撤销一步</button><button class="ai-button" data-editor-command="redo-edit">重做一步</button></div><div id="edit-history-list"><p>暂无可撤销编辑。</p></div></div>',
         '<div data-panel="scenario-diff"><h3>变更清册</h3><div id="scenario-diff-list"><p>正在比对。</p></div></div>',
         '<div data-panel="preflight-gate"><h3>发布预检</h3><div id="preflight-gate-list"><p>尚未运行预检。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-preflight">运行预检</button><button class="ai-button" data-editor-command="preflight-export">预检导出</button></div></div>',
-        '<div data-panel="quick-test-workbench"><h3>正式沙盒测试</h3><div id="quick-test-list"><p>尚未运行快速测试。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-quick-test">快速预检</button><button class="ai-button" data-editor-command="launch-sandbox-test">启动正式沙盒</button><button class="ai-button" data-editor-command="launch-quicktest-run" title="真开游戏跑一回合·真实消耗一轮 AI 调用·跑完报告自动写回·国师可读">快测·首回合真跑</button><button class="ai-button" data-editor-command="return-to-formal-runtime">写回正式页</button></div></div>',
+        '<div data-panel="quick-test-workbench"><h3>正式沙盒测试</h3><div id="quick-test-list"><p>尚未运行快速测试。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-quick-test">快速预检</button><button class="ai-button" data-editor-command="launch-sandbox-test">启动正式沙盒</button><button class="ai-button" data-editor-command="launch-quicktest-run" title="真开游戏连跑 3 回合并做四类体检(死人任职/幽灵键/账面守恒/叙事错名)·真实消耗数轮 AI 调用(配次要 API 自动走快模型档)·跑完报告自动写回·国师可读">快测·一键体检</button><button class="ai-button" data-editor-command="return-to-formal-runtime">写回正式页</button></div></div>',
         '<div data-panel="release-notes"><h3>发布说明</h3><div id="release-notes-list"><p>正在生成发布说明。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="refresh-release-notes">刷新说明</button><button class="ai-button" data-editor-command="copy-release-notes">复制说明</button></div></div>',
         '<div data-panel="project-library"><h3>案卷版本库</h3><div class="library-save-row"><input id="project-snapshot-name" placeholder="案卷名 / 版本名"><button class="ai-button" data-editor-command="save-project-snapshot">存入案卷</button><button class="ai-button" data-editor-command="fork-project-snapshot">另存副本</button></div><div id="project-library-list"><p>案卷库为空。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="export-project-snapshot">导出当前包</button><button class="ai-button" data-editor-command="import-project-package">导入案卷包</button><button class="ai-button" data-ai-action="derive" data-field-ai="name">AI 命名</button></div></div>',
         '<div data-panel="api-settings-workbench"><h3>API 设置</h3><div id="api-settings-status"><p>正在读取本机 API 设置。</p></div></div>',
@@ -21782,7 +21782,7 @@
     if (command === 'preflight-export') preflightExport();
     if (command === 'run-quick-test') buildQuickTestReport();
     if (command === 'launch-sandbox-test') launchFormalSandbox();
-    if (command === 'launch-quicktest-run') launchFormalSandbox({ quickTest: true });   // 刀④乙·首回合真跑(烧一轮 AI·玩家显式触发)
+    if (command === 'launch-quicktest-run') launchFormalSandbox({ quickTest: true });   // 刀④乙·快测一键体检(默认3回合+四类体检·烧数轮 AI·玩家显式触发)
     if (command === 'return-to-formal-runtime') returnToFormalRuntime();
     if (command === 'refresh-release-notes') {
       renderReleaseNotes();

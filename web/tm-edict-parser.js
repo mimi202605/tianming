@@ -1770,9 +1770,26 @@
     return event;
   }
 
+  // 动态机构归一为数组（兜旧版/老档对象池 {ministries,regions,militaryUnits}·防 push/forEach on object 崩·与 ai-change-applier 数组表示统一）
+  function _ensureDynInstArray(G) {
+    if (!G) return [];
+    if (Array.isArray(G.dynamicInstitutions)) return G.dynamicInstitutions;
+    var pool = G.dynamicInstitutions, out = [];
+    if (pool && typeof pool === 'object') {
+      [['ministries', 'ministry'], ['regions', 'region'], ['militaryUnits', 'military']].forEach(function (pair) {
+        var p = pool[pair[0]];
+        if (p && typeof p === 'object') Object.keys(p).forEach(function (k) {
+          if (p[k] && typeof p[k] === 'object') { if (p[k].type == null) p[k].type = pair[1]; out.push(p[k]); }
+        });
+      });
+    }
+    G.dynamicInstitutions = out;
+    return out;
+  }
+
   function registerDynamicInstitution(spec) {
     var G = global.GM;
-    if (!G.dynamicInstitutions) G.dynamicInstitutions = [];
+    _ensureDynInstArray(G);
     var hq = (G.huangquan && G.huangquan.index) || 50;
     var inst = {
       id: 'inst_' + (G.turn || 0) + '_' + Math.floor(Math.random()*10000),
@@ -1827,6 +1844,7 @@
   function _tickDynamicInstitutions(ctx, mr) {
     var G = global.GM;
     if (!G || !G.dynamicInstitutions) return;
+    _ensureDynInstArray(G);
     var isFiscalYear = (typeof global.isYearBoundary === 'function') ? global.isYearBoundary(ctx.turn || G.turn || 0) : ((G.month || 1) === 1 && G.turn > 0);
     G.dynamicInstitutions.forEach(function(inst) {
       if (inst.stage === 'abolished') return;

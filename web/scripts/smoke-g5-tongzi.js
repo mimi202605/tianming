@@ -1,6 +1,10 @@
 // scripts/smoke-g5-tongzi.js·Phase G·G5·童子科 mini-keju smoke
 // 10 section·40 case
 'use strict';
+// 确定性种子(2026-07-16)：tm-keju-tongzi 引擎内有 11 处 Math.random·概率断言在 CI --no-retry 严格模式下
+//   天然 flaky(5f3e10ea 撞出首例·与当次 diff 无关——本测只载 tm-keju-tongzi.js 一件)。以固定种子 LCG 顶掉
+//   本测试进程的 Math.random·同种子必同路径·零漂移；引擎与其他测试不受影响。
+(function(){ var _s = 20260716 >>> 0; Math.random = function(){ _s = (_s * 1664525 + 1013904223) >>> 0; return _s / 4294967296; }; })();
 function _resetGM() {
   global.GM = {
     chars: [

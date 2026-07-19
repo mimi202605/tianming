@@ -99,14 +99,6 @@ function mkSave() {
 (async function () {
   var REQ = { name: '龙江矿场', category: 'economic', description: '于此地开矿冶铁，增矿课。' };
 
-  // 4. 关闭 → disabled 回落
-  (function () {
-    var P = mkSave(); P.conf.customBuildAgentEnabled = false; global.P = P;
-    global.callAIWithTools = async function () { return { toolCalls: [], text: '' }; };
-  })();
-  var r4 = await CBA.appraise('顺天府', REQ, {});
-  ok(!r4.ok && r4.reason === 'disabled', '关闭(customBuildAgentEnabled=false) → reason=disabled');
-
   // 5. 无 callAIWithTools → no-cawt
   (function () { var P = mkSave(); global.P = P; delete global.callAIWithTools; })();
   var r5 = await CBA.appraise('顺天府', REQ, {});
@@ -123,9 +115,9 @@ function mkSave() {
   // 7. 桩 LLM 成功 → ok + 解析核议 + prompt 含勘地与请求
   var capturedPrompt = null, capturedTools = null, capturedOpts = null;
   (function () {
-    var P = mkSave(); P.conf.customBuildCriticEnabled = false; P.conf.customBuildAgentRounds = 1; global.P = P;  // A5:此测专验单发 appraise(关谏官·单轮)
+    var P = mkSave(); P.conf.customBuildAgentRounds = 1; global.P = P;  // A5:此测专验单发 appraise(单轮·谏官恒开但桩不回 critique→不改核议)
     global.callAIWithTools = async function (prompt, tools, opts) {
-      capturedPrompt = prompt; capturedTools = tools; capturedOpts = opts;
+      if (capturedPrompt === null) { capturedPrompt = prompt; capturedTools = tools; capturedOpts = opts; }  // 只捕首调(appraise)·谏官复调不覆写
       return {
         toolCalls: [{
           name: 'submit_appraisal',
@@ -247,11 +239,9 @@ function mkSave() {
   ok(div14.buildings[0].remainingTurns === 1, '准奏·timeActual<1 钳为 1 回合(无瞬成魔法)');
   ok(r14.spent.money === 5000 && r14.spent.deficit === 15000, '准奏·国库不继·扣5000欠15000(deficit报告·不阻断)');
 
-  // 9. enabled() 默认开
+  // 9. enabled() 恒开(斩旗转正·customBuildAgentEnabled flag 已删)
   (function () { var P = mkSave(); global.P = P; })();
-  ok(CBA.enabled() === true, 'enabled() 默认开(空 conf)');
-  (function () { var P = mkSave(); P.conf.customBuildAgentEnabled = false; global.P = P; })();
-  ok(CBA.enabled() === false, 'enabled() 显式 false 关');
+  ok(CBA.enabled() === true, 'enabled() 恒开(空 conf)');
 
   // 15. A5 多步 + 谏官对抗审：inspect_region 续轮 → submit → critique 回调(过誉缩效/虚短延工期·全走 secondary)
   var a5Log = [];

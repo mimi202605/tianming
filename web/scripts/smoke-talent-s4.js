@@ -42,7 +42,7 @@ ok('既无 ref 也无新范式名 → null（非有效人才源）', CBA._normal
 
 // ── ④ appraise 把 talentSource 并入 effectsStructured（mock cawt）──
 (async function () {
-  global.P = { conf: { customBuildAgentEnabled: true, customBuildCriticEnabled: false, talentCohortEnabled: true }, ai: { key: 'x' } };
+  global.P = { conf: { talentCohortEnabled: true }, ai: { key: 'x' } };
   global.GM = GMi;
   global.callAIWithTools = async function () {
     return { toolCalls: [{ name: 'submit_appraisal', input: {

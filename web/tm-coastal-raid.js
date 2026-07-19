@@ -3,11 +3,9 @@
 //   本模块是读端：沿海地块在夏秋风季遭海寇劫掠，海防越高→袭击概率越低 + 损失抵扣越高（双重保护）。
 //   owner 拍板「确定性事件闭环」(2026-06-20)：概率触发 + 公式抵损(非 AI 裁定)·像危机引擎。
 //   跨朝代铁律：引擎用通用「海寇/沿海袭击」(非「倭寇」明专名)·季节用通用风季(夏秋)·倭患归剧本。
-//   开关 P.conf.coastalRaidEnabled 默认开(owner 拍板·剧本/场景可关海寇)。navy「水师」面板已与 coastalDefense 合显。
+//   沿海袭击结算恒开(owner 拍板·2026-07 斩旗转正删 coastalRaidEnabled flag)。剧本/场景仍可经无沿海地块(不设 coastalDefense/无海贸)自然无海寇。navy「水师」面板已与 coastalDefense 合显。
 (function (global) {
   'use strict';
-
-  function _conf() { return (global.P && global.P.conf) || {}; }
 
   // 沿海地块判定：剧本标了 coastalDefense(沿海初值·内陆无此字段) 或有海贸账。
   function _isCoastal(leaf) {
@@ -32,7 +30,6 @@
   }
 
   function tickCoastalRaid() {
-    if (_conf().coastalRaidEnabled === false) return;          // 默认开·显式 false 才关(owner 拍板·剧本/场景可关海寇)
     var G = global.GM;
     if (!G) return;
     var month = Number(G.month) || 1;

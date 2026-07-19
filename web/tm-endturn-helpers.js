@@ -2054,12 +2054,14 @@ function _tickDeptTasksReply() {
     var title, desc;
     if (!holder) {
       t.status = 'overdue';
+      t.overdueAtTurn = turn;   // 逾期戳·不盖 repliedAtTurn(逾期未奏≠已回奏·2026-07-16 字段语义修正)
       title = '有司逾期未奏 · ' + taskName;
       desc = '前交' + deptName + '部议之「' + taskName + '」限期已满，而该衙门主官虚悬，竟无人具本回奏。部务积压若此，可补授主官，或下诏申饬督办。';
     } else {
       var ch = (typeof findCharByName === 'function') ? findCharByName(holder) : null;
       var slack = !!(ch && typeof ch.loyalty === 'number' && ch.loyalty < 40);
       t.status = 'replied';
+      t.repliedAtTurn = turn;
       if (slack) {
         title = '有司回奏 · ' + taskName + '（辞气含混）';
         desc = deptName + offTitle + holder + '就「' + taskName + '」具本回奏，然辞气含混，语多敷衍，所报难征。' + (brief ? '（原议：' + brief + '）' : '') + '若欲穷究其实，可下诏督办，或命科道核查。';
@@ -2068,7 +2070,6 @@ function _tickDeptTasksReply() {
         desc = deptName + offTitle + holder + '就「' + taskName + '」具本回奏：所议已按部议定，覆奏御前。' + (brief ? '（原议：' + brief + '）' : '');
       }
     }
-    t.repliedAtTurn = turn;
     if (Array.isArray(GM.currentIssues)) {
       GM.currentIssues.push({ // arch-ok: 有司回奏入御案时政·S2 密探回禀同款信息条(第六轮①·2026-07-07)
         id: 'iss_deptreply_' + turn + '_' + replied,

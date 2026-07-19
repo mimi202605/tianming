@@ -1059,7 +1059,7 @@ function checkPersonalityEvolution() {
 function abolishInstitutionExtended(instId, reason) {
   var _tmMechanicsGlobal = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));
   var G = _tmMechanicsGlobal.GM;
-  if (!G.dynamicInstitutions) return;
+  if (!G || !Array.isArray(G.dynamicInstitutions)) return;
   var inst = G.dynamicInstitutions.find(function(i) { return i.id === instId; });
   if (!inst) return { ok: false, reason: '未知机构' };
   inst.stage = 'abolished';

@@ -341,6 +341,33 @@ function _offPendingReformsBanner() {
     + '</div>';
 }
 
+// 官制活化·新设机构子栏：dynamicInstitutions(圣旨直落/AI 变更设立·不进 officeTree)在官制面板露出·
+// 让玩家在最直觉处看到圣旨新设的部门(否则仅制度志抽屉可见·官制树查无)·形状归一兜对象池老档/异形
+function _offDynamicInstitutionsPanel() {
+  if (typeof GM === 'undefined') return '';
+  var di = GM.dynamicInstitutions;
+  var list = Array.isArray(di) ? di : (di && typeof di === 'object'
+    ? ['ministries', 'regions', 'militaryUnits'].reduce(function (acc, pool) {
+        var p = di[pool];
+        if (p && typeof p === 'object') Object.keys(p).forEach(function (k) { if (p[k]) acc.push(p[k]); });
+        return acc;
+      }, [])
+    : []);
+  var live = list.filter(function (inst) { return inst && inst.stage !== 'abolished'; });
+  if (!live.length) return '';
+  var items = live.slice(0, 12).map(function (inst) {
+    var stg = inst.stage || '';
+    var stCn = stg === 'running' ? '施行' : stg === 'proposal' ? '拟议' : stg === 'pendingReform' ? '待裁' : stg === 'underfunded' ? '缺饷' : stg === 'failed' ? '流产' : stg;
+    var col = stg === 'running' ? '#6aa88a' : (stg === 'underfunded' || stg === 'failed') ? 'var(--vermillion-400,#b45)' : 'var(--gold,#c9a84a)';
+    return '<span style="display:inline-block;margin:1px 6px 1px 0;padding:1px 7px;border-radius:6px;background:rgba(180,140,60,0.15);color:' + col + ';">'
+      + escHtml(inst.name || '新设机构') + (inst.rank != null ? ('·品' + escHtml(String(inst.rank))) : '') + (stCn ? ' <i style="opacity:.75;font-style:normal;">' + escHtml(stCn) + '</i>' : '') + '</span>';
+  }).join('');
+  return '<div class="og-dynamic-inst" style="margin:0 0 8px;padding:7px 10px;border-radius:8px;background:rgba(90,140,110,0.10);border:1px solid rgba(90,140,110,0.35);font-size:12px;line-height:1.8;color:var(--gold,#c9a84a);">'
+    + '<b>〔新设机构〕</b> ' + items
+    + (live.length > 12 ? ' <span style="opacity:.7;">…另' + (live.length - 12) + '项</span>' : '')
+    + '</div>';
+}
+
 // 预览样式·位置卡渲染（list 视图专用·与 _ogRenderPosCard 独立）
 function _ogpRenderPosCard(p, deptName, pathArr) {
   if (!p) return '';
@@ -628,6 +655,7 @@ function renderOfficeTree(force){
     }
   }
   // \u5B98\u5236\u6D3B\u5316 Slice\u2463c\u00B7\u62DF\u5236\u6001\u6A2A\u5E45 prepend \u5230\u9762\u677F\u9876\uFF08\u65E0\u62DF\u5236\u9879\u5219\u7A7A\u00B7\u96F6\u56DE\u5F52\uFF09
+  try { var _diPanelHtml = (typeof _offDynamicInstitutionsPanel === 'function') ? _offDynamicInstitutionsPanel() : ''; if (_diPanelHtml) el.insertAdjacentHTML('afterbegin', _diPanelHtml); } catch (_diPanelE) {}
   try { var _prbHtml = (typeof _offPendingReformsBanner === 'function') ? _offPendingReformsBanner() : ''; if (_prbHtml) el.insertAdjacentHTML('afterbegin', _prbHtml); } catch (_prbE) {}
 }
 

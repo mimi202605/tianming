@@ -16,6 +16,12 @@ console.log('smoke-history-trigger');
 const hist = fs.readFileSync(path.join(ROOT,'tm-history-events.js'),'utf8');
 const checkSrc = sliceFn(hist, 'function checkHistoryEvents()');
 ok(!!checkSrc, 'checkHistoryEvents 抽取成功');
+// checkHistoryEvents 调用 _rigid* / _applyRigidHistoryDeath 这一簇顶层 helper（刚性史实事件·2026-07-08 加）·
+// 隔离跑须把整簇一并纳入 vm·否则 ReferenceError（簇内对 GM/P/_fuzzyFindChar 等均 typeof 守卫·vm 缺位优雅回退）。
+const _rh_a = hist.indexOf('function _rigidDeathTargetAlreadyDead');
+const _rh_b = hist.indexOf('function _historyEventToIssue');
+const rigidHelpers = (_rh_a >= 0 && _rh_b > _rh_a) ? hist.slice(_rh_a, _rh_b) : '';
+ok(!!rigidHelpers, '刚性 _rigid* helper 簇抽取成功');
 
 function runTurn(turn, rigids, year){
   const fired = [];
@@ -27,7 +33,7 @@ function runTurn(turn, rigids, year){
   ctx.GM = { turn: turn, rigidHistoryEvents: rigids, triggeredHistoryEvents: {} };
   ctx.P = {};
   vm.createContext(ctx);
-  vm.runInContext(checkSrc + '\nthis.run = checkHistoryEvents;', ctx);
+  vm.runInContext(rigidHelpers + '\n' + checkSrc + '\nthis.run = checkHistoryEvents;', ctx);
   ctx.run();
   return fired;
 }

@@ -179,19 +179,56 @@
     });
     if (!missing.length) return;
 
-    // 直接补调 onDismissal·让其状态字段写入·不修改 aiOutput.personnel_changes(已处理过)
+    // 补录·分两类落库(2026-07-16·落库契约硬化刀①)：
+    //   ①死亡类(execute)：★不再 onDismissal 直写 ch.alive=false★——旧路径绕过「玩家之死裁决器」
+    //     (adjudicatePlayerDeath·合法继统门)与死亡级联(军队摘帅/丁忧/势力首领/头衔/governor/后宫)：
+    //     narrative 里「赐死玩家角色」经此会静默置死、既不路由继统也不触终局(尸政/无嗣不终局)。
+    //     改为合成 character_deaths 同构条目投喂既有死亡管线 applyOneDeath(实体解析+玩家裁决器+全级联)·
+    //     与 AI 正经填 character_deaths 落到的 sink 完全一致。极端沙箱(管线缺位)才回落 onDismissal 保「死者必落库」不丢兜底。
+    //   ②非致死类(下狱/抄家/流放/致仕/逃亡/罢官)：保留 onDismissal 直写·但前置实体存在性(精确命中 GM.chars)
+    //     + 死人防线(死人不下狱)·含糊/查无此人/已死者→不落账·入 skipped 留痕(原句摘录)供 playtest 排查。
     var patched = 0;
-    missing.forEach(function(m) {
-      // 找该人物
-      var ch = charNameSet[m.name];
-      if (!ch) return;
+    var skipped = [];   // 不落账候选·留痕(实体缺失/死者/路由失败·非静默)
+    function _routeDeathToPipeline(ch, reason) {
+      // 投喂既有死亡管线·吃实体解析+已死早退+玩家之死裁决器(applyOneDeath→adjudicatePlayerDeath)·非 onDismissal 直写
+      var cd = { name: ch.name, reason: reason };
       try {
-        // 调 onDismissal·reason 用 verb 让函数内部 regex 命中状态分支
-        var r = onDismissal(ch.name, m.verb);
-        if (r && r.ok) {
-          patched++;
-          if (global.addEB) {
-            global.addEB('校验补录', '人事校验器·' + ch.name + '『' + m.verb + '』补录入库(原文: ' + m.raw + ')');
+        if (typeof global.applyOneDeath === 'function') { global.applyOneDeath(cd); return ch.alive === false; }
+        if (typeof global.applyCharacterDeaths === 'function') { global.applyCharacterDeaths({ character_deaths: [cd] }); return ch.alive === false; }
+      } catch(_de) {
+        try { window.TM && TM.errors && TM.errors.captureSilent && TM.errors.captureSilent(_de, 'personnel-validator-death'); } catch(__){}
+      }
+      return false;
+    }
+    missing.forEach(function(m) {
+      // 实体存在性·须精确命中 GM.chars(charNameSet 仅收 alive!==false 的正名/字)·含糊/多义匹配自然落空
+      var ch = charNameSet[m.name];
+      if (!ch) { skipped.push({ name: m.name, action: m.action, reason: 'entity-not-found', raw: m.raw }); return; }
+      // 死人防线：非致死动作对已死者不落账(死人不下狱/不抄家)·致死动作已由 _alreadyResolvedState 幂等过滤
+      if (m.action !== 'execute' && ch.alive === false) { skipped.push({ name: ch.name, action: m.action, reason: 'already-dead', raw: m.raw }); return; }
+      try {
+        if (m.action === 'execute') {
+          if (_routeDeathToPipeline(ch, m.verb)) {
+            patched++;
+            if (global.addEB) global.addEB('校验补录', '人事校验器·' + ch.name + '『' + m.verb + '』经死亡管线补录入库(原文: ' + m.raw + ')');
+          } else {
+            // 回落·环境无死亡管线(极端沙箱)→仍走 onDismissal 保死者落库·不丢兜底
+            var rf = onDismissal(ch.name, m.verb);
+            if (rf && rf.ok) {
+              patched++;
+              if (global.addEB) global.addEB('校验补录', '人事校验器·' + ch.name + '『' + m.verb + '』补录入库(回落·原文: ' + m.raw + ')');
+            } else {
+              skipped.push({ name: ch.name, action: m.action, reason: (rf && rf.reason) || 'death-route-failed', raw: m.raw });
+            }
+          }
+        } else {
+          // 非致死类·调 onDismissal·reason 用 verb 让函数内部 regex 命中状态分支
+          var r = onDismissal(ch.name, m.verb);
+          if (r && r.ok) {
+            patched++;
+            if (global.addEB) global.addEB('校验补录', '人事校验器·' + ch.name + '『' + m.verb + '』补录入库(原文: ' + m.raw + ')');
+          } else {
+            skipped.push({ name: ch.name, action: m.action, reason: (r && r.reason) || 'onDismissal-failed', raw: m.raw });
           }
         }
       } catch(_e) {
@@ -200,14 +237,15 @@
     });
 
     if (!G._personnelValidatorLog) G._personnelValidatorLog = [];
-    G._personnelValidatorLog.push({ turn: G.turn || 0, missing: missing, patched: patched });
+    G._personnelValidatorLog.push({ turn: G.turn || 0, missing: missing, patched: patched, skipped: skipped });
     if (G._personnelValidatorLog.length > 20) G._personnelValidatorLog = G._personnelValidatorLog.slice(-20);
 
     if (G._turnReport) {
-      G._turnReport.push({ type: 'personnel_validation', missing: missing, patched: patched, turn: G.turn || 0 });
+      G._turnReport.push({ type: 'personnel_validation', missing: missing, patched: patched, skipped: skipped, turn: G.turn || 0 });
     }
 
     console.warn('[PersonnelValidator] 叙事提及但 AI 未填结构化的人物状态变化(已自动补录 ' + patched + '/' + missing.length + '):', missing);
+    if (skipped.length) console.warn('[PersonnelValidator] 存疑未落账(实体缺失/死者/路由失败·已留痕):', skipped);
   }
 
   // ═══════════════════════════════════════════════════════════════════
