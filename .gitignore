@@ -119,3 +119,5 @@ release-hot/_workshop-*/
 # 运维凭据外置：release-hot SSH 脚本读环境变量·真值不入库·仅 .example 模板入库
 release-hot/.env.local
 !release-hot/.env.local.example
+
+release-hot/hot-latest.json
