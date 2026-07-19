@@ -15,10 +15,13 @@ const repoRoot = path.resolve(arg('repo-root', path.resolve(__dirname, '..')));
 const sourceRoot = path.resolve(arg('source', path.join(repoRoot, 'web')));
 const targetArg = arg('target', '');
 const label = arg('label', 'web-release');
+// --tracked-only(默认关·opt-in)：只 stage git 跟踪文件·供 OTA(Capgo 安卓热更)用；
+// 全量安装包(APK/Pages)不传此旗标·行为不变·继续带 assets/vendor 等未跟踪运行素材。
+const trackedOnly = flag('tracked-only');
 
 try {
   const configInfo = releaseTree.loadConfig(repoRoot);
-  const source = releaseTree.walkTree(sourceRoot, configInfo.config);
+  const source = releaseTree.walkTree(sourceRoot, configInfo.config, { trackedOnly });
   const problems = releaseTree.validateSource(sourceRoot, source, configInfo.config);
   const limits = releaseTree.enforceLimits(source.kept, configInfo.config);
   problems.push.apply(problems, limits.problems);
@@ -34,7 +37,7 @@ try {
     const result = releaseTree.verifyTree({ repoRoot, sourceRoot, targetRoot });
     console.log('[release-tree] verify PASS · files=' + result.fileCount + ' bytes=' + result.totalBytes + ' sha256=' + result.treeSha256);
   } else {
-    const result = releaseTree.stageTree({ repoRoot, sourceRoot, targetRoot, label });
+    const result = releaseTree.stageTree({ repoRoot, sourceRoot, targetRoot, label, trackedOnly });
     console.log('[release-tree] stage PASS · files=' + result.manifest.fileCount + ' bytes=' + result.manifest.totalBytes + ' sha256=' + result.manifest.sourceTreeSha256);
   }
 } catch (err) {

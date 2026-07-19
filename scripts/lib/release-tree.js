@@ -6,6 +6,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const MANIFEST_NAME = '.tm-release-manifest.json';
 
@@ -76,8 +77,32 @@ function excludedReason(relValue, config) {
   return '';
 }
 
-function walkTree(root, config) {
+// OTA 专用·取 root 下的 git 跟踪文件集（相对 root 的正斜杠路径），供 --tracked-only 用。
+// 返回 null 表示「取不到跟踪集」（root 不在 git 仓、git 缺失、或空集）——调用方据此决定是
+// 兜底放行（合成树/离线）还是 fail-closed（正式 OTA）。-z 免引号且原样输出 UTF-8 中文名。
+function trackedRelSet(root) {
+  try {
+    const res = spawnSync('git', ['ls-files', '-z'], {
+      cwd: path.resolve(root), encoding: 'buffer', maxBuffer: 256 * 1024 * 1024
+    });
+    if (!res || res.status !== 0 || !res.stdout || !res.stdout.length) return null;
+    const set = new Set();
+    for (const piece of res.stdout.toString('utf8').split('\0')) {
+      const rel = normalizeRel(piece);
+      if (rel) set.add(rel);
+    }
+    return set.size ? set : null;
+  } catch (_) { return null; }
+}
+
+function walkTree(root, config, options) {
   root = path.resolve(root);
+  options = options || {};
+  // --tracked-only(仅 OTA)：只保留 git 跟踪文件·跳过本机散落的未跟踪资产/dev 产物。
+  // 取不到跟踪集(root 不在 git 仓·如合成测试树/离线)→ 不过滤·保留旧行为(与 build-hot-update
+  // 收集器同口径兜底)；真实 OTA 恒在仓内跑·git 必返非空跟踪集→过滤生效·绝不夹带未跟踪污染。
+  let tracked = null;
+  if (options.trackedOnly) tracked = trackedRelSet(root);
   const kept = [];
   const excluded = [];
   function walk(dir) {
@@ -93,6 +118,7 @@ function walkTree(root, config) {
       if (entry.isSymbolicLink()) { excluded.push({ rel, reason: 'symlink', directory: false }); continue; }
       if (entry.isDirectory()) { walk(abs); continue; }
       if (!entry.isFile() || rel === MANIFEST_NAME) continue;
+      if (tracked && !tracked.has(rel)) { excluded.push({ rel, reason: 'untracked', directory: false }); continue; }
       const stat = fs.statSync(abs);
       kept.push({ abs, rel, size: stat.size });
     }
@@ -226,7 +252,9 @@ function assertSafeStageTarget(repoRoot, sourceRoot, targetRoot) {
 function stageTree(options) {
   const safe = assertSafeStageTarget(options.repoRoot, options.sourceRoot, options.targetRoot);
   const configInfo = loadConfig(options.repoRoot);
-  const tree = walkTree(safe.source, configInfo.config);
+  // trackedOnly 仅作用于「源」的枚举（OTA 只收跟踪文件）；目标是刚拷出的临时树、非 git 仓，
+  // 重扫时不能再要求 tracked，否则会 fail-closed。目标只含已过滤后的文件，重扫集合本就一致。
+  const tree = walkTree(safe.source, configInfo.config, { trackedOnly: !!options.trackedOnly });
   const problems = validateSource(safe.source, tree, configInfo.config);
   const limits = enforceLimits(tree.kept, configInfo.config);
   problems.push.apply(problems, limits.problems);
@@ -285,6 +313,6 @@ function verifyTree(options) {
 
 module.exports = {
   MANIFEST_NAME, normalizeRel, sha256, sha256File, loadConfig, excludedReason,
-  walkTree, localIndexReferences, validateSource, enforceLimits, hashEntries,
+  trackedRelSet, walkTree, localIndexReferences, validateSource, enforceLimits, hashEntries,
   treeHash, assertSafeTarget, assertSafeStageTarget, stageTree, verifyTree
 };

@@ -9,7 +9,7 @@
 # 2026-06-11·S8 升级·差量发布打通（客户端 tm-capacitor-boot.js 早已支持 latest.manifest·一直缺发布侧）
 param(
   [Parameter(Mandatory=$true)][string]$Version,
-  [string]$WebDir  = "$PSScriptRoot\..\..\web",
+  [string]$WebDir  = "",
   [string]$OutDir  = "$PSScriptRoot\..\capgo-dist",
   [string]$BaseUrl = "https://api.themisfitserspeople.top/tianming/capgo",
   [string]$BaselineManifest = '',
@@ -17,6 +17,26 @@ param(
   [switch]$PackFiles
 )
 $ErrorActionPreference = 'Stop'
+function Resolve-TianmingRepoRoot {
+  param([string]$ScriptDir = $PSScriptRoot)
+  # 以 marker scripts\stage-web-release.js 为准逐级上溯仓根。mobile 是指向 E:\MovedFromC 的 junction，
+  # 某些 shell 会把 $PSScriptRoot 解到物理盘 -> $PSScriptRoot\..\.. 落到错处；故先从脚本目录上溯、
+  # 命不中再从当前工作目录(这些脚本恒以仓根为 cwd 被调用)上溯，两条都靠 marker 命中即仓根真源。
+  $marker = Join-Path 'scripts' 'stage-web-release.js'
+  foreach ($start in @($ScriptDir, (Get-Location).Path)) {
+    if (-not $start) { continue }
+    $dir = $start
+    while ($dir) {
+      if (Test-Path -LiteralPath (Join-Path $dir $marker)) { return (Resolve-Path -LiteralPath $dir).Path }
+      $parent = Split-Path -Parent $dir
+      if (-not $parent -or $parent -eq $dir) { break }
+      $dir = $parent
+    }
+  }
+  throw "找不到天命仓根(marker=$marker)·PSScriptRoot=$ScriptDir·cwd=$((Get-Location).Path) 逐级上溯均未命中"
+}
+$repoRoot = Resolve-TianmingRepoRoot
+if (-not $WebDir) { $WebDir = Join-Path $repoRoot 'web' }
 $WebDir = (Resolve-Path $WebDir).Path
 if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir -Force | Out-Null }
 $OutDir = (Resolve-Path $OutDir).Path
@@ -29,13 +49,12 @@ function Write-JsonNoBom([string]$Path, $Obj) {
 
 # 1) web → staging·统一排除、forbidden path、体积与 SHA256 manifest 闸
 $stage = Join-Path $OutDir "_stage-$Version"
-$repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..')).Path
 $stageScript = Join-Path $repoRoot 'scripts\stage-web-release.js'
 $officialSync = Join-Path $repoRoot 'web\scripts\sync-official-scenarios.js'
 Write-Host "复制 web → staging（统一 release-tree）..." -ForegroundColor Cyan
 & node $officialSync
 if ($LASTEXITCODE -ne 0) { throw "官方剧本生成失败·exit=$LASTEXITCODE" }
-& node $stageScript --repo-root $repoRoot --source $WebDir --target $stage --label capgo
+& node $stageScript --repo-root $repoRoot --source $WebDir --target $stage --label capgo --tracked-only
 if ($LASTEXITCODE -ne 0) { throw "Capgo staging 闸失败·exit=$LASTEXITCODE" }
 $sz = [math]::Round((Get-ChildItem $stage -Recurse -File | Measure-Object Length -Sum).Sum/1MB,1)
 Write-Host "  staging = $sz MB" -ForegroundColor Gray
