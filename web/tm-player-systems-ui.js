@@ -94,6 +94,51 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // ── 解析真实玩家角色状态（身份演进路径门控用） ─────────────
+  // 优先级：GM.chars 中 isPlayer 角色 > P.playerInfo 缓存 > {} 兜底
+  function _resolvePlayerChar() {
+    try {
+      if (typeof GM !== 'undefined' && GM && Array.isArray(GM.chars)) {
+        for (var i = 0; i < GM.chars.length; i++) {
+          if (GM.chars[i] && GM.chars[i].isPlayer) return GM.chars[i];
+        }
+      }
+    } catch (_) {}
+    try {
+      if (typeof P !== 'undefined' && P && P.playerInfo) return P.playerInfo;
+    } catch (_) {}
+    return {};
+  }
+
+  // ── 身份演进路径面板（evolution 场景专用） ─────────────────
+  function renderRoleChangePaths(role) {
+    var paths = (global.TM && global.TM.Transmigration && global.TM.Transmigration.getRoleChangePaths)
+      ? global.TM.Transmigration.getRoleChangePaths(role) : [];
+    var ch = _resolvePlayerChar();
+    var html = '<div class="player-evolution">';
+    html += '<div class="player-evolution-current">当前身份：' + _esc(role) + '</div>';
+    if (!paths.length) {
+      html += '<div class="player-evolution-empty">无可行走变更路径</div>';
+      html += '</div>';
+      return html;
+    }
+    html += '<div class="player-evolution-paths">';
+    paths.forEach(function (p) {
+      var condOk = !p.condition || (typeof p.condition === 'function' && p.condition(ch));
+      html += '<div class="player-evolution-path' + (condOk ? '' : ' locked') + '" data-kind="' + _esc(p.kind) + '">';
+      html += '<div class="player-evolution-path-head">';
+      html += '<span class="player-evolution-path-label">' + _esc(p.label) + '</span>';
+      html += '<span class="player-evolution-path-arrow">→</span>';
+      html += '<span class="player-evolution-path-next">' + _esc(p.nextRole) + '</span>';
+      html += '</div>';
+      html += '<div class="player-evolution-path-desc">' + _esc(p.desc) + '</div>';
+      html += '<button type="button" class="player-evolution-path-btn" data-kind="' + _esc(p.kind) + '" data-system="Transmigration" data-action="triggerRoleChange" ' + (condOk ? '' : 'disabled') + '>触发</button>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
   // ── 单区块渲染 ─────────────────────────────────────────────
   function renderBlock(blockDef, role) {
     var sys = _sys(blockDef.systemKey);
@@ -128,6 +173,10 @@
 
   // ── 单场景 tab 渲染 ────────────────────────────────────────
   function renderTab(sceneKey, role) {
+    // evolution 场景：走专用面板·不走通用 SCENE_BLOCKS 渲染
+    if (sceneKey === 'evolution') {
+      return '<div class="player-scene" data-scene="' + _esc(sceneKey) + '">' + renderRoleChangePaths(role) + '</div>';
+    }
     var blocks = SCENE_BLOCKS[sceneKey] || [];
     var html = '<div class="player-scene" data-scene="' + _esc(sceneKey) + '">';
     if (!blocks.length) {
@@ -158,6 +207,8 @@
     try {
       gc.querySelectorAll('[data-action]').forEach(function (btn) {
         if (btn.__playerBound) return;
+        // triggerRoleChange 由专属包装处理·跳过通用转发以避免重复绑定
+        if (btn.getAttribute('data-action') === 'triggerRoleChange') return;
         btn.__playerBound = true;
         btn.addEventListener('click', function () {
           var sysKey = btn.getAttribute('data-system');
@@ -167,6 +218,21 @@
             try { sys[action](btn.getAttribute('data-payload') || {}); } catch (e) {
               if (typeof toast === 'function') toast('动作异常：' + e);
             }
+          }
+        });
+      });
+      // triggerRoleChange 专属包装：调 TM.Transmigration.triggerRoleChange 并 toast 反馈
+      gc.querySelectorAll('[data-action="triggerRoleChange"]').forEach(function (btn) {
+        if (btn.__playerBound) return;
+        btn.__playerBound = true;
+        btn.addEventListener('click', function () {
+          var kind = btn.getAttribute('data-kind');
+          var r = (global.TM && global.TM.Transmigration && global.TM.Transmigration.triggerRoleChange)
+            ? global.TM.Transmigration.triggerRoleChange(kind) : { ok: false };
+          if (r.ok) {
+            if (typeof toast === 'function') toast('已触发：' + (r.path ? r.path.label : kind));
+          } else {
+            if (typeof toast === 'function') toast('触发失败：' + (r.reason || '未知'));
           }
         });
       });
