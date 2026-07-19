@@ -357,7 +357,8 @@ function _offDynamicInstitutionsPanel() {
   if (!live.length) return '';
   var items = live.slice(0, 12).map(function (inst) {
     var stg = inst.stage || '';
-    var stCn = stg === 'running' ? '施行' : stg === 'proposal' ? '拟议' : stg === 'pendingReform' ? '待裁' : stg === 'underfunded' ? '缺饷' : stg === 'failed' ? '流产' : stg;
+    // 未知态兜底「未明」(药丸条空间小·不带原值)·空 stage 保持空(优雅降级)·stage 非闭集防裸英文
+    var stCn = stg === 'running' ? '施行' : stg === 'proposal' ? '拟议' : stg === 'debate' ? '廷议' : stg === 'trial' ? '试行' : stg === 'pendingReform' ? '待裁' : stg === 'underfunded' ? '缺饷' : stg === 'failed' ? '流产' : stg === 'abolished' ? '已废' : (stg ? '未明' : stg);
     var col = stg === 'running' ? '#6aa88a' : (stg === 'underfunded' || stg === 'failed') ? 'var(--vermillion-400,#b45)' : 'var(--gold,#c9a84a)';
     return '<span style="display:inline-block;margin:1px 6px 1px 0;padding:1px 7px;border-radius:6px;background:rgba(180,140,60,0.15);color:' + col + ';">'
       + escHtml(inst.name || '新设机构') + (inst.rank != null ? ('·品' + escHtml(String(inst.rank))) : '') + (stCn ? ' <i style="opacity:.75;font-style:normal;">' + escHtml(stCn) + '</i>' : '') + '</span>';
@@ -365,6 +366,16 @@ function _offDynamicInstitutionsPanel() {
   return '<div class="og-dynamic-inst" style="margin:0 0 8px;padding:7px 10px;border-radius:8px;background:rgba(90,140,110,0.10);border:1px solid rgba(90,140,110,0.35);font-size:12px;line-height:1.8;color:var(--gold,#c9a84a);">'
     + '<b>〔新设机构〕</b> ' + items
     + (live.length > 12 ? ' <span style="opacity:.7;">…另' + (live.length - 12) + '项</span>' : '')
+    + '</div>';
+}
+
+// 官制活化·制度志入口按钮：常显于官制面板头部工具区(随药丸条挂载点·三朝 tab/列/树视图皆可见)·
+// 点击弹专用「制度志」弹窗(动态机构沿革全览+永制遗产)·走 PhaseF5 命名空间调用·刻意绕开被
+// tm-var-drawers.js _redirectOrphan 覆盖成「跳官制 tab」的全局名 openInstitutionsChronicle·
+// 补活此前零调用的孤儿弹窗(玩家原先无入口)·防再孤儿化。
+function _offInstitutionsChronicleBar() {
+  return '<div class="og-inst-chronicle-bar" style="margin:0 0 8px;text-align:right;">'
+    + '<button class="og-fb-btn" onclick="if(window.PhaseF5&&PhaseF5.openInstitutionsChronicle){PhaseF5.openInstitutionsChronicle();}" title="历代动态设立机构沿革与永制遗产一览">📜 制度志</button>'
     + '</div>';
 }
 
@@ -623,7 +634,9 @@ function renderOfficeTree(force){
     try { GM.officeTree = deepClone(P.officeTree); } catch(_e) { GM.officeTree = P.officeTree; }
   }
   if(!GM.officeTree||GM.officeTree.length===0){
-    el.innerHTML='<div style="color:var(--txt-d);font-size:0.82rem;padding:1rem;text-align:center;">\u5B98\u5236\u672A\u914D\u7F6E\u3002\u8BF7\u5728\u5267\u672C\u7F16\u8F91\u5668\u7684\u300C\u653F\u5E9C\u300D\u6216\u300C\u5B98\u5236\u300D\u9762\u677F\u4E2D\u914D\u7F6E\uFF0C\u6216\u70B9\u4E0A\u65B9\u300C\uFF0B \u90E8\u95E8\u300D\u6DFB\u52A0</div>';
+    // \u7A7A\u6001\u5206\u652F\u63D0\u524D\u8FD4\u56DE\u00B7\u6B64\u5904\u4E5F\u987B\u6302\u5236\u5EA6\u5FD7\u6309\u94AE(\u5426\u5219\u5B98\u5236\u672A\u914D\u7F6E\u65F6\u4F11\u7720 shim \u8DF3\u6765\u65E0\u5165\u53E3\u00B7\u300C\u5E38\u663E\u300D\u4E0D\u6210\u7ACB)
+    var _icBarEmpty = (typeof _offInstitutionsChronicleBar === 'function') ? _offInstitutionsChronicleBar() : '';
+    el.innerHTML=_icBarEmpty+'<div style="color:var(--txt-d);font-size:0.82rem;padding:1rem;text-align:center;">\u5B98\u5236\u672A\u914D\u7F6E\u3002\u8BF7\u5728\u5267\u672C\u7F16\u8F91\u5668\u7684\u300C\u653F\u5E9C\u300D\u6216\u300C\u5B98\u5236\u300D\u9762\u677F\u4E2D\u914D\u7F6E\uFF0C\u6216\u70B9\u4E0A\u65B9\u300C\uFF0B \u90E8\u95E8\u300D\u6DFB\u52A0</div>';
     return;
   }
   // 单一真相源:渲染前从人物 officialTitle 派生官制树任职者(状态未变则跳过)
@@ -657,6 +670,8 @@ function renderOfficeTree(force){
   // \u5B98\u5236\u6D3B\u5316 Slice\u2463c\u00B7\u62DF\u5236\u6001\u6A2A\u5E45 prepend \u5230\u9762\u677F\u9876\uFF08\u65E0\u62DF\u5236\u9879\u5219\u7A7A\u00B7\u96F6\u56DE\u5F52\uFF09
   try { var _diPanelHtml = (typeof _offDynamicInstitutionsPanel === 'function') ? _offDynamicInstitutionsPanel() : ''; if (_diPanelHtml) el.insertAdjacentHTML('afterbegin', _diPanelHtml); } catch (_diPanelE) {}
   try { var _prbHtml = (typeof _offPendingReformsBanner === 'function') ? _offPendingReformsBanner() : ''; if (_prbHtml) el.insertAdjacentHTML('afterbegin', _prbHtml); } catch (_prbE) {}
+  // 制度志入口按钮·常显于面板头部(不随机构增减隐现)·点击弹专用弹窗·走 PhaseF5 命名空间绕开被覆盖的全局名
+  try { var _icBarHtml = (typeof _offInstitutionsChronicleBar === 'function') ? _offInstitutionsChronicleBar() : ''; if (_icBarHtml) el.insertAdjacentHTML('afterbegin', _icBarHtml); } catch (_icBarE) {}
 }
 
 /** v2 helper：每个节点的可视高度（部门 ~120，职位 ~196·有「待下诏书」条时 +34） */

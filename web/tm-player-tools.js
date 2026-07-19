@@ -225,7 +225,25 @@
 
   function openInstitutionsChronicle() {
     var G = global.GM;
-    var insts = G.dynamicInstitutions || [];
+    // 形状归一：dynamicInstitutions 当前为数组表示（圣旨/AI 路径一致）；老档/异形可能存成对象池
+    // {ministries,regions,militaryUnits}——与药丸条 _offDynamicInstitutionsPanel／皇权抽屉同一兜法，
+    // 防对象上调 .forEach 抛错致整个弹窗空白（.length===undefined 静默消失）。
+    var di = G.dynamicInstitutions;
+    var insts = Array.isArray(di) ? di : (di && typeof di === 'object'
+      ? ['ministries', 'regions', 'militaryUnits'].reduce(function(acc, pool) {
+          var p = di[pool];
+          if (p && typeof p === 'object') Object.keys(p).forEach(function(k) { if (p[k]) acc.push(p[k]); });
+          return acc;
+        }, [])
+      : []);
+    // 阶段中文化（与药丸条镜像）：避免玩家见到 proposal/running 等英文态；abolished 补「已废」
+    function _stageCn(stg) {
+      return stg === 'running' ? '施行' : stg === 'proposal' ? '拟议'
+        : stg === 'debate' ? '廷议' : stg === 'trial' ? '试行'
+        : stg === 'pendingReform' ? '待裁' : stg === 'underfunded' ? '缺饷'
+        : stg === 'failed' ? '流产' : stg === 'abolished' ? '已废'
+        : (stg ? ('未明（' + stg + '）') : '—');   // 未知态兜底中文·带原值便于排查(stage 非闭集·AI 旧格式可写任意串)
+    }
     var body = '<div style="max-width:720px;font-family:inherit;">';
     body += '<div style="font-size:1.0rem;color:var(--gold-300);margin-bottom:0.6rem;">📜 制度志</div>';
     if (insts.length === 0) {
@@ -234,7 +252,7 @@
       insts.forEach(function(inst) {
         body += '<div style="padding:10px;margin-bottom:8px;background:var(--bg-2);border-left:3px solid ' + (inst.stage === 'abolished' ? 'var(--vermillion-400)' : 'var(--gold-500)') + ';border-radius:4px;">';
         body += '<div style="font-size:0.86rem;color:var(--gold-300);">' + inst.name + ' · 品 ' + inst.rank + '</div>';
-        body += '<div style="font-size:0.72rem;color:#d4be7a;">设 ' + inst.createdTurn + ' 回合 · 状态 ' + inst.stage + ' · 员额 ' + (inst.staffSize||0) + ' · 岁支 ' + (inst.annualBudget||0);
+        body += '<div style="font-size:0.72rem;color:#d4be7a;">设 ' + inst.createdTurn + ' 回合 · 状态 ' + _stageCn(inst.stage) + ' · 员额 ' + (inst.staffSize||0) + ' · 岁支 ' + (inst.annualBudget||0);
         if (inst.abolishedTurn) body += ' · 废 ' + inst.abolishedTurn;
         body += '</div>';
         body += '<div style="font-size:0.72rem;color:var(--ink-300);margin-top:4px;">效率 ' + ((inst.effectiveness||0)*100).toFixed(0) + '% · 腐败 ' + (inst.corruption||0).toFixed(0) + '</div>';
