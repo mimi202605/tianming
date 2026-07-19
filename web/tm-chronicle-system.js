@@ -151,6 +151,9 @@ var ChronicleSystem = {
     });
     prompt += '\n请返回 JSON: {"chronicle":"正史正文' + _charRangeText('chronicle') + '","afterword":"史评/论赞' + _charRangeScaled('comment', 1.0) + '"}';
 
+    // 时空约束·年度编年正史修史·full(带在世/已故名单·防给在世者书卒/越今引后事·本局事以GM为准)（typeof守卫防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { prompt += '\n' + _buildTemporalConstraint(null, {}); } catch (_) {} }
+
     // 异步生成，不阻塞；年度编年不应抢占玩家正在等待的主推演通道。
     callAI(prompt, 1500, null, 'primary', {
       priority: 'background',

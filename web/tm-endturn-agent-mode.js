@@ -218,6 +218,8 @@
     } catch (_fe) {}
     var changes = (Array.isArray(gm._turnReport) ? gm._turnReport : []).filter(function (e) { return e && e.type === 'change'; }).slice(0, 16).map(function (e) { return (e.path || '') + (e.reason ? '(' + _brief(e.reason, 24) + ')' : ''); });
     var sys = '你是史官兼审读官·审查本回合推演成文的质量。三审:① 因果合理(后果是否从玩家举措+局势自然推出·有无无源突变) ② 信史(有无时代错乱/杜撰人名/反历史常识) ③ 既定事实一致(有无让已故者行动、无视已发生之事)。严格但不吹毛求疵·仅返回 JSON。';
+    // 时空约束·史记质量审读·clauseOnly(防审读官据真实史实误判本局在世者为「反历史」而触发错误修订)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var u = '【本回合史记·时政记】\n' + String(szj).slice(0, 1400) + '\n'
       + ((ch.shiluText || ch.shilu) ? ('【实录】\n' + String(ch.shiluText || ch.shilu).slice(0, 600) + '\n') : '')
       + '\n【本回合关键改动】' + (changes.join('；') || '(无)') + '\n'
@@ -233,6 +235,8 @@
     if (!issues.length) return { narrative: narrative, pass: true };
     // 一轮定向修补:据 issues 重写史记(只改成文·不动状态/数值)
     var fixSys = '你是史官。据审读意见修订本回合史记·只修正被指出的问题(因果/信史/一致)·保持原有信息与文风·勿大改、勿新增杜撰。仅返回 JSON。';
+    // 时空约束·据审读修订史记正文·clauseOnly(改写玩家可见史记·防「修订」把本局在世者拉回史实卒/引后事)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { fixSys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var fixU = '【原时政记】\n' + String(szj).slice(0, 1600) + '\n\n【审读意见(逐条修正)】\n' + issues.slice(0, 6).map(function (i) { return '· [' + (i.dim || '') + '] ' + i.problem + ' → ' + (i.fix || '修正'); }).join('\n') + '\n\n返回 JSON:{"shizhengji":"修订后时政记","shilu":"修订后实录(无改动则照原)","zhengwen":"修订后政文(无改动则照原)"}';
     var fixRaw;
     if (!_claimAI(ctx, 'quality-fix', 2000, true).ok) return { narrative: narrative, pass: false, issues: issues, skipped: 'budget' };
@@ -388,7 +392,7 @@
 
   // ── prompts ──
   function _buildSystemPrompt() {
-    return [
+    var _sysP = [
       '你是天命·回合推演的「局内执政-史官」agent(实验·agent 模式)。',
       '【你的职责 = 推演后果·不是替玩家做操作】玩家(君上)本回合的决定——任免官员、颁诏、批奏疏、问对、朝会、书信——**已由玩家做出**(见下方依据·过回合前已定)。',
       '你的任务:**推演这些决定引发的后果 + 这一回合天下自走的一切**·并用守护写工具把推演出的后果落到存档。',
@@ -412,6 +416,9 @@
       '· 收尾:深度达标后调 finalize_turn·给史记(narrative·建议先 deepen_narrative 打磨)与摘要(summary)·须忠实反映你**实际改了什么**。',
       _spineText()
     ].join('\n');
+    // 时空约束·agent执政-史官主transcript(整条agent线总口·自组装system不吃主sysP·Codex实证agentTranscriptHasSentinel=false)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { _sysP += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
+    return _sysP;
   }
 
   function _buildTurnPrompt(ctx, gm) {
@@ -575,6 +582,8 @@
     // 系统提示用局势原料(非 agentic 的"勿输出 JSON"包装·此处恰要 JSON)
     //   ⚠ 命门职责分离:玩家做决定(任免/诏令/朱批·过回合前已定·见依据)·agent 只推演后果·绝不替玩家做新决定。
     var sys = '你是当朝宰相级的回合「推演」AI——只推演后果·不替玩家做决定。引擎已结算本回合基础局势(下方依据含真实数字)。玩家本回合的操作(任免/诏令/朱批/朝议/书信)已由玩家做出·见依据。你的任务:推演这些操作引发的**后果**与世界自走的连锁变化·按 JSON 落地为状态变更。\n\n' + situation;
+    // 时空约束·弱模型动作脚手架(单发裁断落地诏令后果)·clauseOnly·无条件注入(不倚赖ctx.prompt.sysP是否含约束·Codex实证scaffoldSystemHasSentinel=false)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var user = [
       '请推演本回合的**后果与连锁反应**(玩家的任免/诏令已定·你不重做·只推演其引发的变化 + 各方应对 + 世界自走):',
       '· 财政增减(诏令耗费 / 查抄所得 / 赏赉) · 民心民生 · 关键变量(党争烈度 / 军务等) · 官员境遇(因事问责擢黜·非玩家的任命) · 势力态度。',
@@ -1272,6 +1281,7 @@
     depthGate: _depthGate,
     buildSystemPrompt: _buildSystemPrompt,
     buildTurnPrompt: _buildTurnPrompt,
+    scaffoldAction: _scaffoldAction,   // 弱模型动作脚手架(测试用·时空约束运行态断言)
     _basisDossier: _basisDossier,
     memoryDossier: _memoryDossier,   // DA-Q3·跨回合记忆地板(parity)
     agentSelfReflectOn: _agentSelfReflectOn,   // 切片1·自我反思开关(测试用)
