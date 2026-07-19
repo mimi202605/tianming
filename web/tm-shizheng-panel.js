@@ -665,7 +665,14 @@ function _mzSpeakMinister(ch, blockId, roundNum) {
   if (ch.loyalty != null) sysP += '\n对君忠诚：' + ch.loyalty;
   if (memCtx) sysP += '\n近期心绪：' + memCtx;
   sysP += _mzPromptComposerAddon(ch);
-  if (typeof _buildTemporalConstraint === 'function') { try { sysP += _buildTemporalConstraint(ch); } catch(_){} }
+  if (typeof _buildTemporalConstraint === 'function') {
+    try {
+      // 扫描源：时政议题(d.issue.title/description) + 已往对答中玩家问句(d.history player 条)·大臣 ch.name 作种子恒入
+      var _szTopic = ((d.issue && d.issue.title) || '') + ' ' + ((d.issue && d.issue.description) || '') + ' ' + ((d.history || []).filter(function(m){ return m && m.role === 'player'; }).slice(-3).map(function(m){ return m.content || ''; }).join(' '));
+      var _szMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_szTopic, (ch && ch.name) ? [ch.name] : [], 10) : ((ch && ch.name) ? [ch.name] : []);
+      sysP += _buildTemporalConstraint(ch, { mentionedNames: _szMentioned });
+    } catch(_){}
+  }
 
   // 议题完整上下文
   sysP += '\n\n【议题】' + (d.issue.title||'') + '\n' + String(d.issue.description||'').slice(0, 400);

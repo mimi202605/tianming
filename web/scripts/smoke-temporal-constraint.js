@@ -210,9 +210,32 @@ function sliceB() {
   console.log('  [sliceB] ' + (PASS - start) + ' 断言通过（四入口 grep + 真传递）');
 }
 
+// ── Slice B2：owner 点名的老入口（SliceA 前就有约束者）议题扫描补齐（各含 _tcScanMentionedNames 调用或说明不可达）──
+function sliceB2() {
+  const start = PASS;
+  const guard = /typeof\s+(?:global\.)?_buildTemporalConstraint\s*===\s*'function'/;
+  const oldEntries = [
+    { f: 'tm-chaoyi-changchao-adapter.js',  note: '朔朝 NPC 台词·扫描 item.title/detail' },
+    { f: 'tm-chaoyi-changchao.js',          note: '常朝 buildNpcPrompt·扫描 item.title/detail+playerText' },
+    { f: 'tm-wendui-persona-views.js',      note: '问对·扫描玩家提问(wenduiHistory)' },
+    { f: 'tm-hongyan-office.js',            note: '鸿雁御案·扫描来信 letter.content+往来' },
+    { f: 'tm-shizheng-panel.js',            note: '时政面板·扫描 d.issue+已往对答' }
+  ];
+  oldEntries.forEach(function(it){
+    const src = fs.readFileSync(path.join(ROOT, it.f), 'utf8');
+    assert(guard.test(src), it.f + ' 老入口须保留 typeof 守卫（' + it.note + '）');
+    // 议题扫描已接上（存在 _tcScanMentionedNames 调用）·或（若不可达）显式说明——本批五处皆可达
+    assert(/_tcScanMentionedNames\s*\(/.test(src), it.f + ' 老入口须接上议题扫描 _tcScanMentionedNames（' + it.note + '）');
+    assert(/扫描源/.test(src), it.f + ' 每处须一行注释说明扫描源（' + it.note + '）');
+    assert(/_buildTemporalConstraint\s*\([^)]*mentionedNames/.test(src.replace(/\s+/g, ' ')), it.f + ' 须把扫描所得作 mentionedNames 传入（' + it.note + '）');
+  });
+  console.log('  [sliceB2] ' + (PASS - start) + ' 断言通过（五老入口议题扫描补齐）');
+}
+
 sliceA_body();
 sliceA_deadCap();
 sliceA_realScenario();
 sliceA_scan();
 sliceB();
+sliceB2();
 console.log('PASS smoke-temporal-constraint · 共 ' + PASS + ' 断言');
