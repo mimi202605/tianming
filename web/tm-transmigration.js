@@ -179,11 +179,381 @@
     return '';
   }
 
+  // ── 角色定位 → 中文分组标签（朝代中立·不挂任何朝代专有官署名）──
+  var _ROLE_GROUP_LABELS = {
+    emperor: '君主（不可选）',
+    regent: '摄政权臣',
+    general: '军中将领',
+    minister: '朝中重臣',
+    prince: '宗室外戚',
+    merchant: '商贾富户',
+    custom: '后宫内命',
+    eunuch: '内廷宦官',
+    maid: '宫娥女使',
+    commoner: '布衣平民',
+    bandit: '江湖草莽',
+    infant: '婴幼稚子',
+    retired_official: '致仕旧臣',
+    monk: '方外僧道',
+    artisan: '百工匠人',
+    actor: '伶人乐师'
+  };
+  var _ROLE_GROUP_ORDER = [
+    ROLE.MINISTER, ROLE.GENERAL, ROLE.PRINCE, ROLE.REGENT,
+    ROLE.MERCHANT, ROLE.CUSTOM, ROLE.EUNUCH, ROLE.MAID,
+    ROLE.RETIRED_OFFICIAL, ROLE.MONK, ROLE.ARTISAN, ROLE.ACTOR,
+    ROLE.COMMONER, ROLE.BANDIT, ROLE.INFANT
+  ];
+
+  var _BAG_LABELS = {
+    intelligence: '智', valor: '勇', military: '军', administration: '政',
+    management: '理', charisma: '魅', diplomacy: '交', benevolence: '仁'
+  };
+
+  function _esc(s) {
+    if (typeof escHtml === 'function') return escHtml(s);
+    if (s == null) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function _icon(name, size) {
+    if (typeof tmIcon === 'function') { try { return tmIcon(name, size || 12); } catch (_) {} }
+    return '';
+  }
+  function _page() {
+    if (typeof _$ === 'function') return _$("scn-page");
+    return document.getElementById("scn-page");
+  }
+  function _toast(m) {
+    if (typeof toast === 'function') { try { toast(m); return; } catch (_) {} }
+    try { console.warn('[Transmigration]', m); } catch (_) {}
+  }
+
+  function _groupByRole(chars) {
+    var groups = {};
+    for (var i = 0; i < chars.length; i++) {
+      var c = chars[i];
+      if (!c) continue;
+      var r = derivePlayerRole(c);
+      if (!groups[r]) groups[r] = [];
+      groups[r].push(c);
+    }
+    return groups;
+  }
+
+  function _fmtNameLine(ch) {
+    var n = ch.name || '（无名）';
+    var zi = ch.zi ? '　字 ' + ch.zi : '';
+    var hao = ch.haoName ? '　号 ' + ch.haoName : '';
+    return n + zi + hao;
+  }
+  function _fmtBrief(ch) {
+    var parts = [];
+    if (ch.officialTitle) parts.push(ch.officialTitle);
+    else if (ch.title) parts.push(ch.title);
+    else if (ch.role) parts.push(ch.role);
+    if (typeof ch.rankLevel === 'number' && ch.rankLevel > 0) parts.push(ch.rankLevel + ' 品');
+    if (ch.faction) parts.push(ch.faction);
+    return parts.join('　·　');
+  }
+  function _fmtPersonality(ch) {
+    if (ch.personality) return ch.personality;
+    var tags = [];
+    if (typeof ch.loyalty === 'number') tags.push('忠 ' + ch.loyalty);
+    if (typeof ch.ambition === 'number') tags.push('志 ' + ch.ambition);
+    if (typeof ch.intelligence === 'number') tags.push('智 ' + ch.intelligence);
+    if (typeof ch.valor === 'number') tags.push('勇 ' + ch.valor);
+    return tags.join('　·　');
+  }
+
+  function _renderCharacterCard(ch) {
+    var name = _esc(ch.name || '');
+    var nameLine = _esc(_fmtNameLine(ch));
+    var brief = _esc(_fmtBrief(ch));
+    var pers = _esc(_fmtPersonality(ch));
+    var ft = ch.familyTier ? _esc(ch.familyTier) : '';
+    var rankBadge = (typeof ch.rankLevel === 'number' && ch.rankLevel > 0)
+      ? '<span class="trk-rank">' + ch.rankLevel + '品</span>' : '';
+    var h = '<div class="trk-card" data-name="' + name + '">';
+    h += '<div class="trk-card-head">';
+    h += '<div class="trk-name">' + nameLine + '</div>';
+    h += rankBadge;
+    h += '</div>';
+    if (brief) h += '<div class="trk-brief">' + brief + '</div>';
+    if (ft) h += '<div class="trk-fam"><span class="trk-lbl">门第</span>' + ft + '</div>';
+    if (pers) h += '<div class="trk-pers"><span class="trk-lbl">性请</span>' + pers + '</div>';
+    h += '<div class="trk-actions">';
+    h += '<button type="button" class="bt bs trk-btn-detail" data-name="' + name + '">' + _icon('person', 12) + ' 档案详情</button>';
+    h += '<button type="button" class="bt bp trk-btn-pick" data-name="' + name + '">' + _icon('scroll', 12) + ' 选定</button>';
+    h += '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function _showCharacterDetail(ch) {
+    var existing = document.getElementById('_charDetailOv');
+    if (existing) existing.remove();
+    if (!ch) return;
+
+    var h = '<div id="_charDetailOv" style="position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;animation:fi 0.2s ease;" onclick="if(event.target===this)this.remove();">';
+    h += '<div class="scn-preview-modal" onclick="event.stopPropagation();" style="max-width:680px;max-height:88vh;overflow-y:auto;">';
+    h += '<div style="height:2px;background:linear-gradient(90deg,transparent,var(--gold-500),var(--gold-400),var(--gold-500),transparent);margin-bottom:var(--space-4);"></div>';
+    h += '<div style="text-align:center;margin-bottom:var(--space-4);">';
+    h += '<div style="font-size:var(--text-xl);font-weight:var(--weight-bold);color:var(--color-primary);letter-spacing:0.2em;">' + _esc(_fmtNameLine(ch)) + '</div>';
+    if (ch.officialTitle || ch.title) h += '<div style="font-size:var(--text-sm);color:var(--color-foreground-secondary);margin-top:var(--space-1);">' + _esc(ch.officialTitle || ch.title) + '</div>';
+    h += '</div>';
+
+    var rows = [];
+    if (typeof ch.age === 'number') rows.push(['年龄', ch.age + ' 岁']);
+    if (ch.birthplace) rows.push(['籍贯', ch.birthplace]);
+    if (ch.gender) rows.push(['性别', ch.gender]);
+    if (ch.role) rows.push(['身份', ch.role]);
+    if (ch.faction) rows.push(['势力', ch.faction]);
+    if (ch.party) rows.push(['党派', ch.party]);
+    if (ch.familyTier) rows.push(['门第', ch.familyTier]);
+    if (ch.familyRole) rows.push(['族中位次', ch.familyRole]);
+    if (ch.faith) rows.push(['信仰', ch.faith]);
+    if (ch.learning) rows.push(['学识', ch.learning]);
+    if (ch.diction) rows.push(['辞令', ch.diction]);
+    if (ch.location) rows.push(['所在', ch.location]);
+    if (rows.length) {
+      h += '<div style="display:grid;grid-template-columns:auto 1fr;gap:var(--space-1) var(--space-3);padding:var(--space-3);background:var(--color-sunken);border-radius:var(--radius-md);border-left:3px solid var(--gold-400);margin-bottom:var(--space-3);font-size:var(--text-sm);">';
+      rows.forEach(function (r) {
+        h += '<div style="color:var(--gold-400);letter-spacing:0.1em;">' + _esc(r[0]) + '</div>';
+        h += '<div style="color:var(--color-foreground);">' + _esc(r[1]) + '</div>';
+      });
+      h += '</div>';
+    }
+
+    var bag = ['intelligence', 'valor', 'military', 'administration', 'management', 'charisma', 'diplomacy', 'benevolence'].filter(function (k) { return typeof ch[k] === 'number'; });
+    if (bag.length) {
+      h += '<div style="margin-bottom:var(--space-3);"><div style="font-size:var(--text-xs);color:var(--gold-400);margin-bottom:var(--space-1);letter-spacing:0.1em;">八 才</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-1);">';
+      bag.forEach(function (k) {
+        h += '<div style="text-align:center;padding:var(--space-1);background:var(--color-surface);border-radius:var(--radius-sm);border:1px solid var(--color-border-subtle);"><div style="font-size:var(--text-xs);color:var(--color-foreground-muted);">' + (_BAG_LABELS[k] || k) + '</div><div style="color:var(--color-primary);font-weight:var(--weight-bold);">' + ch[k] + '</div></div>';
+      });
+      h += '</div></div>';
+    }
+
+    if (ch.personality) {
+      h += '<div style="padding:var(--space-2) var(--space-3);background:var(--color-sunken);border-radius:var(--radius-md);margin-bottom:var(--space-3);font-size:var(--text-sm);"><span style="color:var(--gold-400);letter-spacing:0.1em;">性 情　</span>' + _esc(ch.personality) + '</div>';
+    }
+
+    var relParts = [];
+    if (ch.mentor) relParts.push('师：' + ch.mentor);
+    if (ch.superior) relParts.push('上官：' + ch.superior);
+    if (ch.friends) {
+      var f = Array.isArray(ch.friends) ? ch.friends.join('、') : ch.friends;
+      if (f) relParts.push('友：' + f);
+    }
+    if (ch.family) relParts.push('家族：' + ch.family);
+    if (relParts.length) {
+      h += '<div style="padding:var(--space-2) var(--space-3);background:var(--color-sunken);border-radius:var(--radius-md);margin-bottom:var(--space-3);font-size:var(--text-sm);"><span style="color:var(--gold-400);letter-spacing:0.1em;">关 系　</span>' + _esc(relParts.join('　')) + '</div>';
+    }
+
+    var txt = ch.bio || ch.desc || ch.appearance;
+    if (txt) {
+      h += '<div class="narrative-text" style="padding:var(--space-3);background:var(--color-sunken);border-radius:var(--radius-md);border-left:3px solid var(--gold-400);font-size:var(--text-sm);margin-bottom:var(--space-3);">' + _esc(txt) + '</div>';
+    }
+
+    var safeName = String(ch.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    h += '<div style="display:flex;gap:var(--space-2);justify-content:flex-end;">';
+    h += '<button class="bt bp" onclick="document.getElementById(\'_charDetailOv\').remove();TM.Transmigration.confirmCharacter(\'' + safeName + '\')">' + _icon('scroll', 14) + ' 选定此人</button>';
+    h += '<button class="bt bs" onclick="document.getElementById(\'_charDetailOv\').remove();">关闭</button>';
+    h += '</div>';
+    h += '<div style="height:1px;background:linear-gradient(90deg,transparent,var(--gold-500),transparent);margin-top:var(--space-3);"></div>';
+    h += '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', h);
+  }
+
+  function _showTransScnSelect() {
+    var page = _page();
+    if (!page) { _toast('启动页未就绪'); return; }
+    page.classList.add("show");
+    var scenarios = (typeof P !== 'undefined' && P && Array.isArray(P.scenarios)) ? P.scenarios : [];
+
+    var h = '<button class="bt bs" onclick="backToLaunch()" style="position:fixed;top:1rem;left:1rem;z-index:1000;font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;letter-spacing:0.15em;">◁ 返 回 启 幕</button>';
+    h += '<div class="scn-page-title">穿 越 · 择 世</div>';
+    h += '<div style="font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;font-size:12px;color:var(--ink-400);letter-spacing:0.3em;text-align:center;margin-top:8px;margin-bottom:16px;font-style:italic;">—— 择一时日，化身其一，俯瞰朝局 ——</div>';
+    h += '<div class="scn-grid">';
+    if (scenarios.length === 0) {
+      h += '<div style="color:var(--ink-400);text-align:center;padding:2rem;grid-column:1/-1;font-style:italic;font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;letter-spacing:0.2em;">暂无剧本，请先创作</div>';
+    } else {
+      h += scenarios.map(function (s) {
+        var srcBadge = s._workshopPackId ? '<div style="position:absolute;right:0.55rem;top:0.55rem;border:1px solid var(--gold-d);color:var(--gold);background:rgba(0,0,0,0.35);font-size:0.7rem;padding:0.08rem 0.35rem;letter-spacing:0.08em;">工坊</div>' : "";
+        return '<div class="scn-card" style="position:relative;" onclick="TM.Transmigration.showCharacterSelect(\'' + _esc(s.id) + '\')">' +
+          srcBadge +
+          '<div class="scn-era">' + _esc(s.era) + '</div>' +
+          '<div class="scn-name">' + _esc(s.name) + '</div>' +
+          '<div class="scn-role">' + _esc(s.role) + '</div>' +
+          '<div class="scn-bg">' + _esc((s.background || '').substring(0, 80)) + (s.background && s.background.length > 80 ? '…' : '') + '</div></div>';
+      }).join('');
+    }
+    h += '</div>';
+    page.innerHTML = h;
+  }
+
+  // ── 入口：从主界面「穿越」按钮进入 ──
+  function startFlow() {
+    if (typeof _cleanupOverlays === 'function') _cleanupOverlays();
+    var launch = (typeof _$ === 'function') ? _$("launch") : document.getElementById('launch');
+    if (launch) launch.style.display = "none";
+    if (typeof P !== 'undefined' && P) {
+      if (!P.playerInfo) P.playerInfo = {}; // arch-ok
+      P.playerInfo.transmigrationMode = true; // arch-ok
+    }
+    _showTransScnSelect();
+  }
+
+  // ── 角色选择面板 ──
+  function showCharacterSelect(scnId) {
+    if (!scnId) { _toast('未指定剧本'); return; }
+    var sc = (typeof findScenarioById === 'function') ? findScenarioById(scnId) : null;
+    if (!sc) { _toast('未找到剧本'); return; }
+
+    var allChars = (typeof P !== 'undefined' && Array.isArray(P.characters)) ? P.characters : [];
+    var pickable = allChars.filter(function (c) {
+      if (!c || c.sid !== scnId) return false;
+      if (c.alive === false) return false;
+      if (_isSovereignChar(c)) return false;
+      return true;
+    });
+    var groups = _groupByRole(pickable);
+
+    var page = _page();
+    if (!page) { _toast('启动页未就绪'); return; }
+    page.classList.add("show");
+
+    var h = '<button class="bt bs" onclick="TM.Transmigration.startFlow()" style="position:fixed;top:1rem;left:1rem;z-index:1000;font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;letter-spacing:0.15em;">◁ 返 回 剧 本</button>';
+    h += '<div class="scn-page-title">穿 越 · 择 一 臣 子</div>';
+    h += '<div style="font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;font-size:12px;color:var(--ink-400);letter-spacing:0.3em;text-align:center;margin-top:8px;margin-bottom:8px;font-style:italic;">〔' + _esc(sc.name || '') + '〕—— 共 ' + pickable.length + ' 人可选</div>';
+
+    if (pickable.length === 0) {
+      h += '<div style="color:var(--ink-400);text-align:center;padding:3rem;font-style:italic;font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;letter-spacing:0.2em;">此剧本无可选臣子</div>';
+    } else {
+      h += '<style>' +
+        '.trk-section{margin:1.2rem 0;}' +
+        '.trk-section-title{font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;font-size:1.05rem;color:var(--gold-400);letter-spacing:0.2em;margin-bottom:0.6rem;padding-left:0.6rem;border-left:3px solid var(--gold-500);}' +
+        '.trk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.8rem;}' +
+        '.trk-card{padding:0.8rem 1rem;background:linear-gradient(90deg,rgba(22,15,8,0.84),rgba(40,28,14,0.70) 46%,rgba(15,10,6,0.82));border:1px solid rgba(215,185,104,0.30);border-radius:3px;}' +
+        '.trk-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;}' +
+        '.trk-name{font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;font-size:1.1rem;color:var(--color-primary);font-weight:700;letter-spacing:0.05em;}' +
+        '.trk-rank{font-size:0.78rem;color:var(--gold-400);border:1px solid var(--gold-500);padding:0.05rem 0.4rem;border-radius:2px;}' +
+        '.trk-brief{font-size:0.85rem;color:var(--color-foreground-secondary);margin-bottom:0.3rem;}' +
+        '.trk-fam,.trk-pers{font-size:0.8rem;color:var(--color-foreground-muted);margin-bottom:0.2rem;}' +
+        '.trk-lbl{color:var(--gold-400);margin-right:0.4rem;letter-spacing:0.1em;}' +
+        '.trk-actions{display:flex;gap:0.4rem;margin-top:0.5rem;}' +
+        '.trk-btn-detail{flex:1;font-size:0.85rem;padding:0.35rem 0.5rem;}' +
+        '.trk-btn-pick{flex:1;font-size:0.85rem;padding:0.35rem 0.5rem;font-weight:600;}' +
+        '</style>';
+
+      _ROLE_GROUP_ORDER.forEach(function (r) {
+        var list = groups[r];
+        if (!list || !list.length) return;
+        h += '<div class="trk-section">';
+        h += '<div class="trk-section-title">' + (_ROLE_GROUP_LABELS[r] || r) + ' · ' + list.length + ' 人</div>';
+        h += '<div class="trk-grid">';
+        list.forEach(function (ch) { h += _renderCharacterCard(ch); });
+        h += '</div></div>';
+      });
+
+      var unknownList = [];
+      Object.keys(groups).forEach(function (r) {
+        if (_ROLE_GROUP_LABELS[r]) return;
+        if (r === ROLE.EMPEROR) return;
+        unknownList = unknownList.concat(groups[r] || []);
+      });
+      if (unknownList.length) {
+        h += '<div class="trk-section">';
+        h += '<div class="trk-section-title">其 他 · ' + unknownList.length + ' 人</div>';
+        h += '<div class="trk-grid">';
+        unknownList.forEach(function (ch) { h += _renderCharacterCard(ch); });
+        h += '</div></div>';
+      }
+    }
+
+    page.innerHTML = h;
+
+    page.querySelectorAll('.trk-btn-detail').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var name = btn.getAttribute('data-name');
+        var ch = pickable.find(function (c) { return c.name === name; });
+        if (ch) _showCharacterDetail(ch);
+      });
+    });
+    page.querySelectorAll('.trk-btn-pick').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var name = btn.getAttribute('data-name');
+        confirmCharacter(name);
+      });
+    });
+  }
+
+  // ── 角色选定后写入 P.playerInfo 并启动游戏 ──
+  function confirmCharacter(charId) {
+    if (typeof P === 'undefined' || !P) { _toast('剧本未就绪'); return; }
+    if (!charId) { _toast('未选定角色'); return; }
+
+    var chars = Array.isArray(P.characters) ? P.characters : [];
+    var ch = null;
+    for (var i = 0; i < chars.length; i++) {
+      if (chars[i] && chars[i].name === charId) { ch = chars[i]; break; }
+    }
+    if (!ch) { _toast('未找到角色：' + charId); return; }
+
+    if (_isSovereignChar(ch)) { _toast('君主不可选，请择一臣子'); return; }
+
+    var sid = ch.sid;
+    if (!sid) { _toast('角色未挂剧本'); return; }
+
+    var scnChars = chars.filter(function (c) { return c && c.sid === sid; });
+    var scnRoot = { chars: scnChars };
+    var sovereignName = getSovereignName(scnRoot);
+    var sovereignTitle = getSovereignTitle(scnRoot);
+
+    if (!P.playerInfo) P.playerInfo = {}; // arch-ok
+    P.playerInfo.transmigrationMode = true; // arch-ok
+    P.playerInfo.characterName = ch.name; // arch-ok
+    P.playerInfo.selectedCharId = ch.name; // arch-ok
+    P.playerInfo.playerRole = derivePlayerRole(ch); // arch-ok
+    P.playerInfo.sovereignName = sovereignName; // arch-ok
+    P.playerInfo.sovereignTitle = sovereignTitle; // arch-ok
+    if (ch.officialTitle) P.playerInfo.characterTitle = ch.officialTitle; // arch-ok
+    if (ch.faction) P.playerInfo.characterFaction = ch.faction; // arch-ok
+    if (typeof ch.age === 'number') P.playerInfo.characterAge = ch.age; // arch-ok
+    if (ch.gender) P.playerInfo.characterGender = ch.gender; // arch-ok
+    if (ch.personality) P.playerInfo.characterPersonality = ch.personality; // arch-ok
+
+    var page = _page();
+    if (page) { page.classList.remove("show"); page.innerHTML = ''; }
+    var detail = document.getElementById('_charDetailOv');
+    if (detail) detail.remove();
+
+    if (typeof startGame === 'function') {
+      startGame(sid);
+    } else {
+      console.error('[Transmigration] startGame 函数未就绪');
+      _toast('启动失败：startGame 未就绪');
+    }
+  }
+
+  window.doTransmigration = function () {
+    if (window.TM && TM.Transmigration && typeof TM.Transmigration.startFlow === 'function') {
+      TM.Transmigration.startFlow();
+    } else {
+      console.error('[doTransmigration] TM.Transmigration 未就绪');
+      _toast('穿越模块未就绪');
+    }
+  };
+
   window.TM.Transmigration = {
     ROLE: ROLE,
     isTransmigrationMode: isTransmigrationMode,
     derivePlayerRole: derivePlayerRole,
     getSovereignName: getSovereignName,
-    getSovereignTitle: getSovereignTitle
+    getSovereignTitle: getSovereignTitle,
+    startFlow: startFlow,
+    showCharacterSelect: showCharacterSelect,
+    confirmCharacter: confirmCharacter
   };
 })();

@@ -21,28 +21,28 @@
 
 ## Phase 2 · 主界面入口与角色选择
 
-- [ ] Task 3: 主界面新增「穿越」按钮
-  - [ ] SubTask 3.1: 在 `web/index.html` 的 `#launch` 区（line 86-160 范围）「开卷」按钮旁加「穿越」按钮，文案"穿越 / 择一臣子，化身其身，俯瞰朝局"
-  - [ ] SubTask 3.2: 按钮文案朝代中立（不出现"朕/御极/临朝"等）
-  - [ ] SubTask 3.3: 绑定点击事件 `doTransmigration()` → 调用 `TM.Transmigration.startFlow()`
+- [x] Task 3: 主界面新增「穿越」按钮
+  - [x] SubTask 3.1: 在 `web/index.html` 的 `#launch` 区（line 86-160 范围）「开卷」按钮旁加「穿越」按钮，文案"穿越 / 择一臣子，化身其身，俯瞰朝局"
+  - [x] SubTask 3.2: 按钮文案朝代中立（不出现"朕/御极/临朝"等）
+  - [x] SubTask 3.3: 绑定点击事件 `doTransmigration()` → 调用 `TM.Transmigration.startFlow()`
   - 验证：浏览器打开 `index.html`，主界面看到「穿越」按钮且点击不报错
 
-- [ ] Task 4: 实现角色选择面板
-  - [ ] SubTask 4.1: 在 `tm-transmigration.js` 实现 `TM.Transmigration.showCharacterSelect(scnId)` —— 加载剧本后过滤非皇帝角色
-  - [ ] SubTask 4.2: 角色过滤逻辑：`!_offIsSovereign(c)` 且 `c.alive !== false`，按 `derivePlayerRole(c)` 分组
-  - [ ] SubTask 4.3: 渲染角色条目：姓名、字/号、官职、品级、势力、家族层级、性格摘要（取自 `tm-char-full-schema.js` SCHEMA）
-  - [ ] SubTask 4.4: 皇帝角色不出现在列表中（或显式禁用并标注"君主不可选"）
-  - [ ] SubTask 4.5: "档案详情"展开按钮：显示完整 SCHEMA 关键字段（年龄/籍贯/性格五常/关系网摘要）
-  - [ ] SubTask 4.6: "选定"按钮 → 调用 `TM.Transmigration.confirmCharacter(charId)`
-  - [ ] SubTask 4.7: "返回"按钮 → 回到主界面
+- [x] Task 4: 实现角色选择面板
+  - [x] SubTask 4.1: 在 `tm-transmigration.js` 实现 `TM.Transmigration.showCharacterSelect(scnId)` —— 加载剧本后过滤非皇帝角色
+  - [x] SubTask 4.2: 角色过滤逻辑：`!_offIsSovereign(c)` 且 `c.alive !== false`，按 `derivePlayerRole(c)` 分组
+  - [x] SubTask 4.3: 渲染角色条目：姓名、字/号、官职、品级、势力、家族层级、性格摘要（取自 `tm-char-full-schema.js` SCHEMA）
+  - [x] SubTask 4.4: 皇帝角色不出现在列表中（或显式禁用并标注"君主不可选"）
+  - [x] SubTask 4.5: "档案详情"展开按钮：显示完整 SCHEMA 关键字段（年龄/籍贯/性格五常/关系网摘要）
+  - [x] SubTask 4.6: "选定"按钮 → 调用 `TM.Transmigration.confirmCharacter(charId)`
+  - [x] SubTask 4.7: "返回"按钮 → 回到主界面
   - 验证：用 `scenarios/天启七年·九月（官方）.json` 测试，列出崇祯帝之外的所有主要角色
 
-- [ ] Task 5: 角色选定后进入游戏
-  - [ ] SubTask 5.1: 在 `tm-transmigration.js` 实现 `confirmCharacter(charId)` —— 设置 `c.isPlayer=true`（清除其他角色的 `isPlayer`），调用 `derivePlayerRole` 写入 `P.playerInfo.playerRole`
-  - [ ] SubTask 5.2: 设置 `P.playerInfo.transmigrationMode = true`
-  - [ ] SubTask 5.3: 调用 `getSovereignName(root)` 写入 `P.playerInfo.sovereignName` 与 `sovereignTitle`
-  - [ ] SubTask 5.4: 校验：`_offIsSovereign(playerChar) === false`，否则报错并阻止
-  - [ ] SubTask 5.5: 调用 `enterGame()`（复用 `tm-launch.js:6943`）
+- [x] Task 5: 角色选定后进入游戏
+  - [x] SubTask 5.1: 在 `tm-transmigration.js` 实现 `confirmCharacter(charId)` —— 设置 `c.isPlayer=true`（清除其他角色的 `isPlayer`），调用 `derivePlayerRole` 写入 `P.playerInfo.playerRole`
+  - [x] SubTask 5.2: 设置 `P.playerInfo.transmigrationMode = true`
+  - [x] SubTask 5.3: 调用 `getSovereignName(root)` 写入 `P.playerInfo.sovereignName` 与 `sovereignTitle`
+  - [x] SubTask 5.4: 校验：`_offIsSovereign(playerChar) === false`，否则报错并阻止
+  - [x] SubTask 5.5: 调用 `enterGame()`（复用 `tm-launch.js:6943`）
   - 验证：进入游戏后控制台检查 `P.playerInfo.transmigrationMode === true` 且玩家角色非皇帝
 
 ## Phase 3 · 皇帝 AI 自动决策引擎
