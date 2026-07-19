@@ -143,6 +143,16 @@
     if (hasPromptInjection(body)) reasons.push(reason('prompt_injection', 'candidate text looks like prompt injection'));
     if (type === 'hard_state' && !trusted) reasons.push(reason('unauthorized_hard_state', 'AI/external source cannot directly write hard_state'));
     if (!Array.isArray(env.sourceRefs) || env.sourceRefs.length === 0) reasons.push(reason('missing_source_refs', 'candidate has no sourceRefs'));
+    // P0-3·记忆管家生死对账（刀B）：AI 自撰记忆若与本局 GM 生死态冲突（如「张三深信魏忠贤已伏诛」而本局魏在世）→
+    //   隔离(quarantined·不自动接受)+落弱提示账·防污染经 GM._memoryAccepted 被 envelope 再投影自强化。
+    //   检测器/记账安家 tm-mechanics-memory.js·此处 typeof 守卫（运行时用全局 GM 对账·非唯一 sink 详见其头注）。
+    if (typeof _tmDetectVitalConflict === 'function') {
+      var _vc = _tmDetectVitalConflict(body);
+      if (_vc) {
+        reasons.push(reason('memory_hist_conflict', 'claim conflicts with GM life/death state: ' + (_vc.claimTarget || '')));
+        if (typeof _tmRecordVitalConflictHint === 'function') { try { _tmRecordVitalConflictHint(clean(candidate.actor || candidate.ownerScope || env.ownerScope || ''), _vc, body); } catch (_vh) {} }
+      }
+    }
 
     env.reasons = reasons;
     env.reviewStatus = trusted && reasons.length === 0 ? 'accepted' : 'pending_review';
