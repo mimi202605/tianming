@@ -115,6 +115,69 @@ node scripts/verify-all.js   # syntax→ref→orphans→smoke 4 项 18s · smoke
 
 ---
 
+## 🎭 穿越模式文件注册（17 个新模块 · Phase 1-4.5）
+
+> 穿越模式打破北极星第 4 条「玩家=皇帝」，允许玩家扮演除皇帝外的任意角色（minister/general/prince/regent/eunuch/maid/commoner/bandit/monk/...）。
+> 架构详见 [ARCHITECTURE.md](ARCHITECTURE.md) § 11「穿越模式架构」。
+> 跨朝代铁律：引擎层绝不硬编明清专名（内阁/票拟/司礼监/东厂/八股等），全部由剧本 hook。
+
+### 入口与基础设施（Phase 1 + Phase 3）
+
+| 文件 | 命名空间 | 职责 |
+|------|---------|------|
+| [tm-transmigration.js](tm-transmigration.js) | `TM.Transmigration` | 穿越模式总入口：`startFlow` / `showCharacterSelect` / `confirmCharacter` / `triggerRoleChange`；维护 `P.playerInfo.transmigrationMode` / `sovereignName` / `playerRole` |
+| [tm-sovereign-ai.js](tm-sovereign-ai.js) | `TM.SovereignAI` | 皇帝 AI 自动决策引擎：`runTurn`（异步·LLM 路径）+ `runTurnSync`（同步·presetOutput·供 smoke）；下旨/朝议/批奏/任免四动作 |
+
+### 玩家专属系统（Phase 4.5 · 14 大系统）
+
+| 文件 | 命名空间 | 职责 |
+|------|---------|------|
+| [tm-player-interaction.js](tm-player-interaction.js) | `TM.PlayerInteraction` | 玩家×NPC 互动：访/密谈/托付/结交/赠礼/联姻/构陷/收徒 10 类动作；更新 5 维关系；联姻/密谋钩子 |
+| [tm-player-economy.js](tm-player-economy.js) | `TM.PlayerEconomy` | 玩家个人银钱账本：官俸/贪墨/产业/放贷/囤货/被抄家/派系勒索 |
+| [tm-player-trade.js](tm-player-trade.js) | `TM.PlayerTrade` | 玩家跑商：组队/派遣/路线风险/盈亏结算；跨朝代通用框架（丝路/茶马/漕运/海贸由剧本 hook） |
+| [tm-player-tech.js](tm-player-tech.js) | `TM.PlayerTech` | 玩家科技研发：启动研发/前置解锁/匠人加速/上奏推广 vs 私藏自用；含固定科技路线数据 |
+| [tm-tech-routes-data.js](tm-tech-routes-data.js) | `window.TECH_ROUTES_DEFAULT` | 5 线 × 5 级预设科技链（农业/军事/工艺/医药/水利）；中国古代通用脉络·朝代中立·剧本可覆盖 |
+| [tm-player-family.js](tm-player-family.js) | `TM.PlayerFamily` | 玩家家族：父母/兄弟/配偶/子女/宗族；结婚/生育/成长/教育/联姻/出仕/继承/绝嗣/夺嫡 |
+| [tm-player-marriage.js](tm-player-marriage.js) | `TM.PlayerMarriage` | 婚姻礼制：六礼流程/赘婿/招赘/再婚/和离/休妻/平妻；守制期校验；嫡庶之争 |
+| [tm-player-private-army.js](tm-player-private-army.js) | `TM.PlayerPrivateArmy` | 玩家私军：家丁/门客/部曲/死士；招募/维护/训练/装备；护卫/自卫/政变/私斗；僭越风险 |
+| [tm-player-movement.js](tm-player-movement.js) | `TM.PlayerMovement` | 玩家自由移动：步行/骑马/车驾/舟船/驿站；路上事件；地点决定动作集；携带随从 |
+| [tm-player-industry.js](tm-player-industry.js) | `TM.PlayerIndustry` | 玩家产业建设：庄园/农场/牧场/矿场/林场/渔场/工坊/商号；选址/施工/经营/升级/风险 |
+| [tm-player-reclaim.js](tm-player-reclaim.js) | `TM.PlayerReclaim` | 玩家开垦荒地：勘探/许可/施工/产出/副作用；屯田/占田/均田政策由剧本 hook |
+| [tm-player-keju.js](tm-player-keju.js) | `TM.PlayerKeju` | 玩家科举：县试→府试→院试→乡试→会试→殿试；拜师求学；科场弊案；考中授官 |
+| [tm-player-annual-review.js](tm-player-annual-review.js) | `TM.PlayerAnnualReview` | 玩家官员年终考核：履职/政务/廉洁/人际/上评/口碑；九等评语；运作考核 |
+| [tm-player-rebel.js](tm-player-rebel.js) | `TM.PlayerRebel` | 玩家反叛：筹备（军权/粮草/势力/舆论）→ 举事 → 交战 → 成败；沿用 `tm-feudal.js` + `tm-class-radical-revolt.js` |
+| [tm-player-skill.js](tm-player-skill.js) | `TM.PlayerSkill` | 玩家自我技能提升：学塾/拜师/自学/游学/历练/江湖习武/修道礼佛；属性上限与年龄影响；关键突破事件 |
+| [tm-player-special-identity.js](tm-player-special-identity.js) | `TM.PlayerSpecialIdentity` | 特殊身份路线：太监/宫女/布衣/盗贼/婴儿/退休官员/僧道/匠人/伶人 9 类专有动作 |
+
+### 玩家身份与决策来源（Phase 5）
+
+| 文件 | 命名空间 | 职责 |
+|------|---------|------|
+| [tm-player-action-signals.js](tm-player-action-signals.js) | `TM.PlayerActionSignals` | 玩家动作信号聚合：将 14 大玩家系统的动作产出统一打标 `source` 字段，注入起居注/编年史/皇帝 AI prompt |
+
+### 关键集成点（Phase 6 · 既有文件被改造）
+
+| 文件 | 改造点 |
+|------|-------|
+| [tm-endturn-pipeline-steps.js](tm-endturn-pipeline-steps.js) | 新增 `sovereign-ai` pipeline step（玩家上奏后、派系 NPC 决策前） |
+| [tm-endturn-prep.js](tm-endturn-prep.js) | `_endTurn_collectInput` 按 `playerRole` 分支收集（诏令 vs 上奏）；`recordEntry` 带 `source` 字段 |
+| [tm-shiji-qiju-ui.js](tm-shiji-qiju-ui.js) | `_qijuSourceClass` / `_qijuSourceLabel` / chip 渲染；老存档兜底 `_qijuNormalize` |
+| [tm-chronicle-system.js](tm-chronicle-system.js) | `addMonthDraft` 两段制：`sovereignDecisions[]` + `playerActions[]`；prompt 注入区分 |
+| [tm-office-panel.js](tm-office-panel.js) | `confirmEndTurn` 文案按 `playerRole` 切换：「诏令颁行」/「上奏呈递」 |
+
+### 决策来源标识系统
+
+| source 值 | CSS 类 | 起居注标签 | 含义 |
+|----------|--------|-----------|------|
+| `player-memorial` | `src-player` | 玩家·上奏 | 玩家以臣子身份上奏 |
+| `sovereign-player` | `src-sovereign` | 玩家·君主 | 玩家以皇帝身份下旨（皇帝模式） |
+| `player` | `src-player` | 玩家 | 玩家其他动作 |
+| `sovereign-ai` | `src-sovereign` | 君主AI | 皇帝 AI 自动决策（穿越模式） |
+| `fallback` | `src-sovereign` | 君主AI·兜底 | LLM 失败时规则引擎兜底 |
+| `npc` | `src-npc` | NPC | 派系 NPC 决策 |
+
+---
+
 ## 🧰 基础设施工具清单（按功能）
 
 ### 数据访问

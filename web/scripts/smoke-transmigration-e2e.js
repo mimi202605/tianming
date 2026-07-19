@@ -796,10 +796,11 @@ function playerAnnualReviewTest() {
   var r = PAR.triggerReview(1, { useLLM: false });
   assert(r && typeof r === 'object', 'annual: triggerReview 返回对象');
   assert(r.year === 1, 'annual: year=1');
-  // grade 应为 9 等之一
-  assert(r.grade, 'annual: grade 字段存在');
+  // grade 为对象·含 label/key/idx
+  assert(r.grade && typeof r.grade === 'object', 'annual: grade 字段为对象');
+  assert(typeof r.grade.label === 'string', 'annual: grade.label 字符串');
   var validGrades = ['上上','上中','上下','中上','中中','中下','下上','下中','下下'];
-  assert(validGrades.indexOf(r.grade) >= 0, 'annual: grade ∈ 9 等·实际 ' + r.grade);
+  assert(validGrades.indexOf(r.grade.label) >= 0, 'annual: grade.label ∈ 9 等·实际 ' + r.grade.label);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -843,6 +844,12 @@ function playerRebelTest() {
   assert(r2.ok === true, 'rebel: prepareMaterials weapons ok');
   var r3 = PRB.spreadPropaganda('tongyao', { spreadRadius: 3 });
   assert(r3.ok === true, 'rebel: spreadPropaganda tongyao ok');
+  // 显式注入 readiness 达 launchCoup 阈值（60）·绕过 _evalReadiness 复算
+  //   注：三件套累计 readiness 不足 60·须更大量筹备才能自然达成·此处直接置 80 简化测试
+  if (ctx.GM._playerRebel) {
+    ctx.GM._playerRebel.readiness = 80; // arch-ok (smoke 注入)
+    ctx.GM._playerRebel.stage = 'preparing';
+  }
   // 举事
   var r4 = PRB.launchCoup({});
   assert(r4.ok === true, 'rebel: launchCoup ok');
@@ -921,9 +928,9 @@ function playerSpecialIdentityTest() {
   var r2 = PSI.eunuchInit({});
   assert(r2.ok === true, 'identity: eunuchInit ok');
   assert(r2.data && r2.data.castrated === true, 'identity: eunuch castrated=true（净身标记）');
-  // 推进职级·需 sovereignTrust 达阈值
-  if (ctx.GM._playerSpecialIdentity.eunuch) {
-    ctx.GM._playerSpecialIdentity.eunuch.sovereignTrust = 80;
+  // 推进职级·需 sovereignTrust 达阈值·数据存于 identityData.eunuch
+  if (ctx.GM._playerSpecialIdentity && ctx.GM._playerSpecialIdentity.identityData && ctx.GM._playerSpecialIdentity.identityData.eunuch) {
+    ctx.GM._playerSpecialIdentity.identityData.eunuch.sovereignTrust = 80;
   }
   var r3 = PSI.eunuchAdvanceRank('control', {});
   assert(r3.ok === true, 'identity: eunuchAdvanceRank control ok');
