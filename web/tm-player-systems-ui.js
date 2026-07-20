@@ -94,6 +94,51 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // ── 解析真实玩家角色状态（身份演进路径门控用） ─────────────
+  // 优先级：GM.chars 中 isPlayer 角色 > P.playerInfo 缓存 > {} 兜底
+  function _resolvePlayerChar() {
+    try {
+      if (typeof GM !== 'undefined' && GM && Array.isArray(GM.chars)) {
+        for (var i = 0; i < GM.chars.length; i++) {
+          if (GM.chars[i] && GM.chars[i].isPlayer) return GM.chars[i];
+        }
+      }
+    } catch (_) {}
+    try {
+      if (typeof P !== 'undefined' && P && P.playerInfo) return P.playerInfo;
+    } catch (_) {}
+    return {};
+  }
+
+  // ── 身份演进路径面板（evolution 场景专用） ─────────────────
+  function renderRoleChangePaths(role) {
+    var paths = (global.TM && global.TM.Transmigration && global.TM.Transmigration.getRoleChangePaths)
+      ? global.TM.Transmigration.getRoleChangePaths(role) : [];
+    var ch = _resolvePlayerChar();
+    var html = '<div class="player-evolution">';
+    html += '<div class="player-evolution-current">当前身份：' + _esc(role) + '</div>';
+    if (!paths.length) {
+      html += '<div class="player-evolution-empty">无可行走变更路径</div>';
+      html += '</div>';
+      return html;
+    }
+    html += '<div class="player-evolution-paths">';
+    paths.forEach(function (p) {
+      var condOk = !p.condition || (typeof p.condition === 'function' && p.condition(ch));
+      html += '<div class="player-evolution-path' + (condOk ? '' : ' locked') + '" data-kind="' + _esc(p.kind) + '">';
+      html += '<div class="player-evolution-path-head">';
+      html += '<span class="player-evolution-path-label">' + _esc(p.label) + '</span>';
+      html += '<span class="player-evolution-path-arrow">→</span>';
+      html += '<span class="player-evolution-path-next">' + _esc(p.nextRole) + '</span>';
+      html += '</div>';
+      html += '<div class="player-evolution-path-desc">' + _esc(p.desc) + '</div>';
+      html += '<button type="button" class="player-evolution-path-btn" data-kind="' + _esc(p.kind) + '" data-system="Transmigration" data-action="triggerRoleChange" ' + (condOk ? '' : 'disabled') + '>触发</button>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
   // ── 单区块渲染 ─────────────────────────────────────────────
   function renderBlock(blockDef, role) {
     var sys = _sys(blockDef.systemKey);
@@ -128,9 +173,25 @@
 
   // ── 单场景 tab 渲染 ────────────────────────────────────────
   function renderTab(sceneKey, role) {
+    // evolution 场景：走专用面板·不走通用 SCENE_BLOCKS 渲染
+    if (sceneKey === 'evolution') {
+      return '<div class="player-scene" data-scene="' + _esc(sceneKey) + '">' + renderRoleChangePaths(role) + '</div>';
+    }
     var blocks = SCENE_BLOCKS[sceneKey] || [];
     var html = '<div class="player-scene" data-scene="' + _esc(sceneKey) + '">';
-    if (!blocks.length) {
+
+    // 摄政代诏区块（仅 regent·office 场景首位）
+    if (sceneKey === 'office' && role === 'regent') {
+      html += '<div class="player-block player-block-regent-decree" data-system="RegentDecree">';
+      html += '<div class="player-block-title">代诏</div>';
+      html += '<div class="player-block-body">';
+      html += '<p>摄政权臣可代君主下诏。代诏需承担架空危机风险。</p>';
+      html += '<button type="button" class="bt bp" data-system="Transmigration" data-action="runRegentAction" data-payload="proxyEdict">代下诏令</button>';
+      html += '<button type="button" class="bt bs" data-system="Transmigration" data-action="runRegentAction" data-payload="returnPower">还政</button>';
+      html += '</div></div>';
+    }
+
+    if (!blocks.length && !(sceneKey === 'office' && role === 'regent')) {
       html += '<div class="player-scene-empty">该场景无内容</div>';
       html += '</div>';
       return html;
@@ -158,6 +219,8 @@
     try {
       gc.querySelectorAll('[data-action]').forEach(function (btn) {
         if (btn.__playerBound) return;
+        // triggerRoleChange 由专属包装处理·跳过通用转发以避免重复绑定
+        if (btn.getAttribute('data-action') === 'triggerRoleChange') return;
         btn.__playerBound = true;
         btn.addEventListener('click', function () {
           var sysKey = btn.getAttribute('data-system');
@@ -167,6 +230,21 @@
             try { sys[action](btn.getAttribute('data-payload') || {}); } catch (e) {
               if (typeof toast === 'function') toast('动作异常：' + e);
             }
+          }
+        });
+      });
+      // triggerRoleChange 专属包装：调 TM.Transmigration.triggerRoleChange 并 toast 反馈
+      gc.querySelectorAll('[data-action="triggerRoleChange"]').forEach(function (btn) {
+        if (btn.__playerBound) return;
+        btn.__playerBound = true;
+        btn.addEventListener('click', function () {
+          var kind = btn.getAttribute('data-kind');
+          var r = (global.TM && global.TM.Transmigration && global.TM.Transmigration.triggerRoleChange)
+            ? global.TM.Transmigration.triggerRoleChange(kind) : { ok: false };
+          if (r.ok) {
+            if (typeof toast === 'function') toast('已触发：' + (r.path ? r.path.label : kind));
+          } else {
+            if (typeof toast === 'function') toast('触发失败：' + (r.reason || '未知'));
           }
         });
       });
@@ -193,7 +271,59 @@
     ROLE_SCENES: ROLE_SCENES
   };
 
+  // ── PlayerCourtDebate 系统 stub（B5） ──────────────────────────
+  // 朝议活跃状态用 CY.open 判断（非 GM.courtDebate·后者不存在）
+  // 君主 AI 准否反馈链路推迟到 Phase C·此处只写 CY._pendingCourtierSpeech 队列留接口
+  var PlayerCourtDebate = {
+    state: function () {
+      try {
+        if (typeof CY === 'undefined' || !CY || !CY.open) return { active: false };
+        // topic 兜底链：v3 优先（_ty3）→ v2（_ty2）→ 御前（_yq2）→ 顶层（CY.topic）
+        // 注：v3 重构后 _ty3 是优先字段·仅查 _ty2 在 v3 模式下会读到空字符串
+        var topic = '';
+        if (CY._ty3 && CY._ty3.topic) topic = CY._ty3.topic;
+        else if (CY._ty2 && CY._ty2.topic) topic = CY._ty2.topic;
+        else if (CY._yq2 && CY._yq2.topic) topic = CY._yq2.topic;
+        else if (CY.topic) topic = CY.topic;
+        return { active: true, topic: topic, phase: CY.phase || '' };
+      } catch (_) { return { active: false }; }
+    },
+    petitionToSpeak: function () {
+      try {
+        if (typeof CY === 'undefined' || !CY || !CY.open) {
+          if (typeof toast === 'function') toast('朝议未开·无法请旨');
+          return { ok: false, reason: 'not_active' };
+        }
+        // 写入待审队列·供君主 AI 准否（Phase C 接 SovereignAI.runTurn）
+        // 含 topic 字段·避免 Phase C 异步窗口切议题后无法回溯
+        if (!CY._pendingCourtierSpeech) CY._pendingCourtierSpeech = [];
+        var ch = _resolvePlayerChar();
+        var name = (ch && ch.name) || '玩家';
+        var st = this.state();
+        CY._pendingCourtierSpeech.push({ name: name, line: '臣请旨发言', topic: st.topic || '', ts: Date.now() });
+        if (typeof toast === 'function') toast('已请旨发言·待君主裁决');
+        return { ok: true };
+      } catch (e) {
+        if (typeof toast === 'function') toast('请旨异常：' + e);
+        return { ok: false, reason: String(e) };
+      }
+    },
+    renderBlockHTML: function (role) {
+      var st = this.state();
+      if (!st.active) {
+        return '<div class="player-block-empty">（君主未开朝议）</div>';
+      }
+      var html = '<div class="player-court-debate-active">';
+      if (st.topic) html += '<div class="player-court-debate-topic">当前议题：' + _esc(st.topic) + '</div>';
+      else html += '<div class="player-court-debate-topic">（议题未明）</div>';
+      html += '<button type="button" class="bt bp" data-system="PlayerCourtDebate" data-action="petitionToSpeak">请旨发言</button>';
+      html += '</div>';
+      return html;
+    }
+  };
+
   global.TM.PlayerSystemsUI = PlayerSystemsUI;
+  global.TM.PlayerCourtDebate = PlayerCourtDebate;
 
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = PlayerSystemsUI;
