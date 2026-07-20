@@ -175,6 +175,20 @@
   }
 
   function syncFormalShellVisibility(){
+    // 穿越模式守卫(2026-07-20 根治「穿越模式进入后还是皇帝界面」):
+    // 玩家 UI 由 TM.PlayerUI.render* 写入 #gc·phase8 御案 shell 不得激活·否则
+    // CSS `body.tm-phase8-formal:not(.tm-phase8-legacy) .gc > :not(#tm-phase8-main-shell){display:none!important}`
+    // 会隐藏玩家 UI·并显示 ensureMainShell 创建的 #tm-phase8-main-shell(皇帝御案)。
+    // 此处为单一 chokepoint·所有 phase8 函数(refresh/ensureMainShell/ensureFormalChrome/...)
+    // 进入主体前都先调本函数·此处返回 false 即整体降级·并切 tm-phase8-legacy body class 让 CSS 规则不适用。
+    try {
+      if (typeof P !== 'undefined' && P && P.playerInfo &&
+          P.playerInfo.transmigrationMode === true &&
+          P.playerInfo.playerRole && P.playerInfo.playerRole !== 'emperor') {
+        if (!state.legacyView) setLegacyView(true);
+        return false;
+      }
+    } catch(_){}
     return setFormalGameActive(isGameVisible());
   }
 
@@ -182,6 +196,19 @@
   function setLegacyView(v){
     state.legacyView = !!v;
     if (document.body) document.body.classList.toggle('tm-phase8-legacy', !!v);
+  }
+
+  // 穿越模式接管 #gc 时调用·切 legacy view 让 phase8 御案 shell 不再激活
+  // (CSS `body.tm-phase8-formal:not(.tm-phase8-legacy) .gc > :not(#tm-phase8-main-shell){display:none!important}` 不再适用)
+  // 并清出 #tm-phase8-main-shell·让 TM.PlayerUI.render 写入的玩家 UI 显形。
+  // 调用方:renderPlayerState(tm-game-ui-shell.js)·覆盖游戏启动 + 存档加载两条路径。
+  function enterLegacyMode(){
+    setLegacyView(true);
+    try {
+      var gc = document.getElementById('gc');
+      var shell = gc && document.getElementById('tm-phase8-main-shell');
+      if (shell && gc) shell.remove();
+    } catch(_){}
   }
 
   function leaveFormalRuntime(){
@@ -2458,6 +2485,8 @@
     leaveRuntime: leaveFormalRuntime,
     backToLaunch: leaveFormalRuntime,
     resetOutgame: leaveFormalRuntime,
+    // 穿越模式接管 UI 时调用·切 legacy view 让 phase8 御案 shell 不再激活(根治穿越模式显示皇帝界面)
+    enterLegacyMode: enterLegacyMode,
     openModule: openModule,
     openPanel: openPanel,
     topbar: topbarApi(),
