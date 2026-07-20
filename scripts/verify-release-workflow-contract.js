@@ -41,14 +41,14 @@ function main() {
   ok(release.includes("facts.branch === 'main'") && release.includes('!facts.originMainAncestor'), 'prepare 拒绝 main 与陈旧分支');
   ok(release.includes("--offline 仅可与 --publish --no-upload 合用"), 'offline 不能绕过正式发布线上闸');
 
+  // 在线版只经 workflow_dispatch 从 main 部署（github-pages 环境不放行 ship-* tag）·安全=actor==owner + ref 在 origin/main
+  ok(!pages.includes('release:\n    types: [published]') && !pages.includes("github.event.release"), 'Pages 无 release/tag 触发（改 workflow_dispatch/main）');
+  ok(release.includes("'workflow', 'run', 'pages.yml'") && release.includes("'--ref', 'main'"), 'publish 以仓主身份自触发 Pages（workflow_dispatch·ref=main）');
   const requiredPagesFragments = [
-    'release:\n    types: [published]',
     'workflow_dispatch:',
     'fetch-depth: 0',
     'npm ci --ignore-scripts',
-    "if: github.event_name == 'release'",
     'github.actor == github.repository_owner',
-    'github.event.release.author.login == github.repository_owner',
     'git merge-base --is-ancestor HEAD origin/main',
     'node web/scripts/sync-official-scenarios.js',
     'git diff --exit-code',
@@ -75,7 +75,7 @@ function main() {
     'actions/deploy-pages@v4'
   ].map(fragment => pages.indexOf(fragment));
   ok(gateOrder.every((value, index) => value >= 0 && (index === 0 || value > gateOrder[index - 1])), 'Pages 完整门禁严格先于部署');
-  ok(pages.includes("ref: ${{ github.event.release.tag_name || inputs.ref }}"), 'release/manual ref 共用同一受检 deploy job');
+  ok(pages.includes("ref: ${{ inputs.ref }}"), 'deploy 只 checkout dispatch 指定的 ref（默认 main）');
   ok(contributing.includes('--prepare') && contributing.includes('--publish'), 'CONTRIBUTING 记录两阶段发版');
   ok(claude.includes('--prepare') && claude.includes('--publish'), 'CLAUDE 协作约定记录两阶段发版');
   console.log('PASS assertions=' + assertions);
