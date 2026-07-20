@@ -109,7 +109,9 @@ ok(/function setLegacyView\(v\)/.test(bridgeSrc), '⑥ 新增单一 setter setLe
 ok(/document\.body\.classList\.toggle\('tm-phase8-legacy'/.test(bridgeSrc), '⑥ setter 派生 body class tm-phase8-legacy(flag+class 成对)');
 ok(count(bridgeSrc, 'state.legacyView = true') === 0, '⑥ 无 state.legacyView=true 裸置(全走 setter)');
 ok(count(bridgeSrc, 'state.legacyView = false') <= 1, '⑥ state.legacyView=false 仅剩顶部 init(转换点走 setter)');
-ok(count(bridgeSrc, 'setLegacyView(false)') >= 2 && count(bridgeSrc, 'setLegacyView(true)') === 1, '⑥ showHome/leaveFormalRuntime→setLegacyView(false)·openLegacyTab→setLegacyView(true)');
+// setLegacyView(true) 现有 3 处合法调用点: openLegacyTab(经典 tab 切换) + enterLegacyMode(穿越模式接管 #gc) + syncFormalShellVisibility 守卫(refresh 防御)
+// 全部走 setter·不裸置 state.legacyView=true·架构不变量(单一 setter 收敛)保持
+ok(count(bridgeSrc, 'setLegacyView(false)') >= 2 && count(bridgeSrc, 'setLegacyView(true)') === 3, '⑥ showHome/leaveFormalRuntime→setLegacyView(false)·openLegacyTab/enterLegacyMode/syncFormalShellVisibility 守卫→setLegacyView(true)·全走 setter');
 
 // ══ Codex 复审返工四条·各配红绿(死rail探针/缺drafts降级/徽标口径/签名状态敏感) ══
 

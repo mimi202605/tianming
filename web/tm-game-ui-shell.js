@@ -72,6 +72,20 @@ function renderPlayerState(){
   try {
     document.body.classList.add('transmigration-mode');
     document.body.classList.add('player-role-' + (P.playerInfo.playerRole || 'commoner'));
+    // 穿越模式接管 #gc·须让 phase8 御案 shell 不激活·否则 CSS 规则
+    // `body.tm-phase8-formal:not(.tm-phase8-legacy) .gc > :not(#tm-phase8-main-shell){display:none!important}`
+    // 会隐藏 TM.PlayerUI.render 写入 #gc 的玩家 UI·显示历史遗留/被 refresh() 重建的 #tm-phase8-main-shell(皇帝御案)。
+    // 调 enterLegacyMode 切 tm-phase8-legacy body class + 清 #tm-phase8-main-shell·覆盖游戏启动+存档加载两条路径。
+    // (2026-07-20 根治「穿越模式进入后还是皇帝界面」·历史根因: doActualStart L1863 _tmStartRefreshFormalShell
+    //  → TMPhase8FormalBridge.refresh → ensureMainShell 在 #gc 创建 #tm-phase8-main-shell·覆盖玩家 UI)
+    try {
+      if (window.TMPhase8FormalBridge && typeof window.TMPhase8FormalBridge.enterLegacyMode === 'function') {
+        window.TMPhase8FormalBridge.enterLegacyMode();
+      } else if (document.body) {
+        // 降级·TMPhase8FormalBridge 缺席时直接加 body class(同步 state 由 syncFormalShellVisibility 后续兜底)
+        document.body.classList.add('tm-phase8-legacy');
+      }
+    } catch(_){}
     TM.PlayerUI.renderTopBar();
     TM.PlayerUI.renderLeftTabs();
     TM.PlayerUI.render('home');
