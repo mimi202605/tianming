@@ -629,7 +629,10 @@ startGame=async function(sid){
 function _tmShowOpeningCeremony(sc, sid) {
   var _esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   // 玩家角色（容错去注解·跨剧本：绍宋 characterName 形如「赵构(穿越者赵玖)」）
-  var _pi = sc.playerInfo || {};
+  // 穿越模式：confirmCharacter 已写入 P.playerInfo·优先用穿越选择的角色·剧本默认 playerInfo（皇帝）退为底
+  var _scPi = sc.playerInfo || {};
+  var _livePi = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.transmigrationMode === true) ? P.playerInfo : null;
+  var _pi = _livePi ? _livePi : _scPi;
   var _pName = _pi.characterName || '';
   var _pClean = (_pName.replace(/[（(].*$/, '').trim()) || _pName;
   var _pChar = null;
@@ -763,7 +766,26 @@ function doActualStart(sid){
   if (sc.offendGroups) P.offendGroups = deepClone(sc.offendGroups);
   if (sc.keju) P.keju = deepClone(sc.keju);
   else if (P.keju) { P.keju.currentExam = null; P.keju.currentEnke = null; } // arch-ok 换剧本清残局考试·旧局currentExam曾串新局继续推进/归档进新局history(2026-07-04 审查定罪)
-  if (sc.playerInfo) P.playerInfo = deepClone(sc.playerInfo);
+  // 穿越模式守卫：confirmCharacter 已写入 P.playerInfo{transmigrationMode,playerRole,characterName,...}·
+  // 此处若用 sc.playerInfo 整体覆盖会清掉穿越选择·导致 renderGameState 走皇帝分支并弹「临朝第一日」。
+  // 故穿越模式下以剧本 playerInfo 为底·穿越字段覆盖剧本字段（穿越选择优先）。
+  if (sc.playerInfo) {
+    var _transPi = (P.playerInfo && P.playerInfo.transmigrationMode === true) ? P.playerInfo : null;
+    P.playerInfo = deepClone(sc.playerInfo);
+    if (_transPi) {
+      P.playerInfo.transmigrationMode = true;
+      P.playerInfo.playerRole = _transPi.playerRole;
+      P.playerInfo.characterName = _transPi.characterName;
+      P.playerInfo.selectedCharId = _transPi.selectedCharId;
+      P.playerInfo.sovereignName = _transPi.sovereignName;
+      P.playerInfo.sovereignTitle = _transPi.sovereignTitle;
+      if (_transPi.characterTitle) P.playerInfo.characterTitle = _transPi.characterTitle;
+      if (_transPi.characterFaction) P.playerInfo.characterFaction = _transPi.characterFaction;
+      if (typeof _transPi.characterAge === 'number') P.playerInfo.characterAge = _transPi.characterAge;
+      if (_transPi.characterGender) P.playerInfo.characterGender = _transPi.characterGender;
+      if (_transPi.characterPersonality) P.playerInfo.characterPersonality = _transPi.characterPersonality;
+    }
+  }
   if (sc.engineConstants) {
     GM.engineConstants = deepClone(sc.engineConstants);
     P.engineConstants = deepClone(sc.engineConstants);
