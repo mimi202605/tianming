@@ -408,12 +408,39 @@
   }
 
   // ── 角色选择面板 ──
+  // 官方剧本首屏注册的是 _lazyOfficial 占位（无 characters 字段）·
+  // 须先 await TMOfficialScenarioLoader.ensure(scnId) 把占位换成完整剧本·再渲染选角面板。
+  // 自定义/工坊剧本无 _lazyOfficial 标记·直接走同步渲染。
   function showCharacterSelect(scnId) {
     if (!scnId) { _toast('未指定剧本'); return; }
     var sc = (typeof findScenarioById === 'function') ? findScenarioById(scnId) : null;
     if (!sc) { _toast('未找到剧本'); return; }
 
     _pendingScnId = scnId; // arch-ok · 供 confirmCharacter 取剧本角色
+
+    if (sc._lazyOfficial === true &&
+        typeof window !== 'undefined' && window.TMOfficialScenarioLoader &&
+        typeof window.TMOfficialScenarioLoader.ensure === 'function') {
+      var lazyPage = _page();
+      if (lazyPage) {
+        lazyPage.classList.add("show");
+        lazyPage.innerHTML = '<div style="color:var(--ink-400);text-align:center;padding:3rem;font-style:italic;font-family:\'STKaiti\',\'KaiTi\',\'楷体\',serif;letter-spacing:0.2em;">读 取 剧 本 中…</div>';
+      }
+      window.TMOfficialScenarioLoader.ensure(scnId).then(function () {
+        _renderCharacterSelect(scnId);
+      }).catch(function (err) {
+        _toast('剧本加载失败：' + (err && err.message || err));
+      });
+      return;
+    }
+
+    _renderCharacterSelect(scnId);
+  }
+
+  // 选角面板渲染（showCharacterSelect 内部用·同步·假设 sc 已是完整剧本对象）
+  function _renderCharacterSelect(scnId) {
+    var sc = (typeof findScenarioById === 'function') ? findScenarioById(scnId) : null;
+    if (!sc) { _toast('未找到剧本'); return; }
 
     // 选角发生在 doActualStart 之前·P.characters 尚未填充该剧本角色·
     // 故直接用剧本自带的 sc.characters 作为角色源（修复「此剧本无可选臣子」）

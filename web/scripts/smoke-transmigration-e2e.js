@@ -172,9 +172,13 @@ function transmigrationEntryTest() {
 
 // ─────────────────────────────────────────────────────────────
 // 2b. 选角面板从剧本自带 characters 渲染（修复「此剧本无可选臣子」回归）
-//   根因：showCharacterSelect 原从 P.characters 过滤 c.sid===scnId·
-//         但 P.characters 的 sid 在 doActualStart 才赋值·选角阶段为空 → pickable 永远空。
-//   修复：直接用剧本对象自带的 sc.characters。
+//   根因 v1：showCharacterSelect 原从 P.characters 过滤 c.sid===scnId·
+//           但 P.characters 的 sid 在 doActualStart 才赋值·选角阶段为空 → pickable 永远空。
+//   修复 v1：直接用剧本对象自带的 sc.characters。
+//   根因 v2（2026-07-20）：官方剧本首屏注册的是 _lazyOfficial 占位（无 characters 字段）·
+//           须先 await TMOfficialScenarioLoader.ensure(scnId) 才有完整剧本。
+//           旧修复在懒载场景下 sc.characters 仍为 undefined → 仍显示无可选臣子。
+//   修复 v2：showCharacterSelect 检测 _lazyOfficial → ensure 异步加载后再渲染。
 // ─────────────────────────────────────────────────────────────
 function characterSelectFromScenarioTest() {
   var ctx = buildCtx();
@@ -219,6 +223,90 @@ function characterSelectFromScenarioTest() {
   assert(ctx.P.playerInfo.characterName === '李大臣', 'pick: confirmCharacter 写入 characterName=李大臣');
   assert(startGameCalls.length === 1 && startGameCalls[0] === sid,
     'pick: confirmCharacter 调用 startGame·sid=' + sid + '（实际 ' + JSON.stringify(startGameCalls) + '）');
+}
+
+// ─────────────────────────────────────────────────────────────
+// 2c. 懒加载官方剧本选角（修复 v2 回归）
+//   场景：sc._lazyOfficial===true · 初始无 characters · ensure() 后才有完整数据
+//   验证：showCharacterSelect 先调 ensure → 占位被换成完整剧本 → 渲染臣子卡片
+// ─────────────────────────────────────────────────────────────
+function characterSelectFromLazyScenarioTest() {
+  var ctx = buildCtx();
+  vm.runInContext(readFile('tm-transmigration.js'), ctx, { filename: 'tm-transmigration.js' });
+
+  var sid = 'scn-lazy-test';
+  ctx.P = { characters: [] };
+
+  // 初始占位剧本（懒载·无 characters）
+  var lazyScn = {
+    id: sid, name: '懒加载本', era: '测试', role: '测试',
+    _lazyOfficial: true,
+    _officialManifest: { counts: { characters: 3 } }
+  };
+  // 完整剧本（ensure 后替换占位）
+  var fullScn = {
+    id: sid, name: '懒加载本', era: '测试', role: '测试',
+    characters: [
+      { name: '今上', alive: true, officialTitle: '皇帝', role: '皇帝', isEmperor: true },
+      { name: '李大臣', alive: true, officialTitle: '尚书', role: '臣', personality: '刚直' },
+      { name: '王将军', alive: true, officialTitle: '禁军大将', role: '武将', personality: '豪迈' }
+    ]
+  };
+  ctx.P.scenarios = [lazyScn];
+
+  // findScenarioById：返回 P.scenarios 中当前对象（live 引用·ensure 会原地替换）
+  ctx.findScenarioById = function(id) {
+    if (id !== sid) return null;
+    for (var i = 0; i < ctx.P.scenarios.length; i++) {
+      if (ctx.P.scenarios[i] && ctx.P.scenarios[i].id === id) return ctx.P.scenarios[i];
+    }
+    return null;
+  };
+
+  // mock TMOfficialScenarioLoader.ensure：同步把占位换成完整剧本·返回同步 thenable
+  // （真实 ensure 是 async·测试用同步 thenable 避免依赖 microtask 调度）
+  var ensureCalls = [];
+  ctx.TMOfficialScenarioLoader = {
+    ensure: function(id) {
+      ensureCalls.push(id);
+      for (var i = 0; i < ctx.P.scenarios.length; i++) {
+        if (ctx.P.scenarios[i] && ctx.P.scenarios[i].id === id) {
+          ctx.P.scenarios[i] = fullScn;
+        }
+      }
+      return { then: function(cb) { if (cb) cb(fullScn); return this; }, catch: function() { return this; } };
+    }
+  };
+
+  ctx._offIsSovereign = function(c) { return !!(c && c.isEmperor); };
+  ctx.toast = function() {};
+  var pageMock = { classList: { add: function(){}, remove: function(){} }, innerHTML: '',
+                   querySelectorAll: function() { return []; } };
+  ctx._$ = function(id) { return id === 'scn-page' ? pageMock : null; };
+  ctx.document = { getElementById: function() { return null; } };
+
+  ctx.TM.Transmigration.showCharacterSelect(sid);
+
+  // ensure 被调用一次
+  assert(ensureCalls.length === 1 && ensureCalls[0] === sid,
+    'lazy-pick: 调用 TMOfficialScenarioLoader.ensure·sid=' + sid + '（实际 ' + JSON.stringify(ensureCalls) + '）');
+  // ensure 完成后渲染了臣子卡片（不再显示无可选臣子）
+  assert(pageMock.innerHTML.indexOf('此剧本无可选臣子') < 0,
+    'lazy-pick: 不显示「此剧本无可选臣子」（实际 html 长度 ' + pageMock.innerHTML.length + '）');
+  assert(pageMock.innerHTML.indexOf('共 2 人可选') >= 0, 'lazy-pick: 标题显示「共 2 人可选」');
+  assert(pageMock.innerHTML.indexOf('李大臣') >= 0, 'lazy-pick: 渲染臣子李大臣');
+  assert(pageMock.innerHTML.indexOf('王将军') >= 0, 'lazy-pick: 渲染武将王将军');
+  assert(pageMock.innerHTML.indexOf('今上') < 0, 'lazy-pick: 君主「今上」被过滤');
+
+  // confirmCharacter 应能从 ensure 后的 sc.characters 找到角色并启动
+  var startGameCalls = [];
+  ctx.startGame = function(scnId) { startGameCalls.push(scnId); };
+  ctx.P.playerInfo = {};
+  ctx.TM.Transmigration.confirmCharacter('李大臣');
+  assert(ctx.P.playerInfo.transmigrationMode === true, 'lazy-pick: confirmCharacter 后 transmigrationMode=true');
+  assert(ctx.P.playerInfo.characterName === '李大臣', 'lazy-pick: confirmCharacter 写入 characterName=李大臣');
+  assert(startGameCalls.length === 1 && startGameCalls[0] === sid,
+    'lazy-pick: confirmCharacter 调用 startGame·sid=' + sid);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1033,6 +1121,7 @@ try {
   staticFlowTest();
   transmigrationEntryTest();
   characterSelectFromScenarioTest();
+  characterSelectFromLazyScenarioTest();
   sovereignAIDecisionTest();
   memorialReplyTest();
   qijuReviewTest();
@@ -1052,7 +1141,7 @@ try {
   playerSkillTest();
   playerSpecialIdentityTest();
   e2eIntegrationAssertionTest();
-  console.log('[smoke-transmigration-e2e] PASS · 22 sub-tests · 端到端穿越模式：入口→选角→AI决策→批答→起居注→14+玩家系统各1核心动作→反叛→整合断言');
+  console.log('[smoke-transmigration-e2e] PASS · 23 sub-tests · 端到端穿越模式：入口→选角（含懒载）→AI决策→批答→起居注→14+玩家系统各1核心动作→反叛→整合断言');
   process.exit(0);
 } catch (e) {
   console.error('[smoke-transmigration-e2e] FAIL:', e.message);
