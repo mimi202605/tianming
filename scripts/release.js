@@ -698,7 +698,7 @@ function buildRunbookText(hasInstaller) {
   L.push('   curl -s ' + PUBLIC_BASE + '/capgo/latest.json | head -3');
   L.push('   桌面端打开游戏 → 启动 8s 内应弹「发现新版本」更新卡');
   L.push('');
-  L.push('4) GitHub Pages 在线版：ship-' + CFG.version + ' Release 发布事件会触发 pages-production；该 workflow 会重新跑完整 guards 并证明 tag 提交来自 origin/main 后才部署');
+  L.push('4) GitHub Pages 在线版：publish 已经 workflow_dispatch 从 main 自触发 pages-production（github-pages 环境只放行 main·不放行 ship-* tag）；如未触发/失败，手动补：gh workflow run pages.yml --ref main');
   return L.join('\n') + '\n';
 }
 
@@ -751,6 +751,13 @@ function uploadRelease(staging) {
     if (byName.get(e.name) !== localSize) die('审计失败·' + e.name + ' 大小不符·release=' + byName.get(e.name) + ' local=' + localSize);
   }
   log('⑪ 上传完成 + 审计通过·' + staging.entries.length + ' 个资产');
+  // ⑪½ 在线版(GitHub Pages)自触发：github-pages 环境只放行 main·ship-* tag 被拒·
+  //   故经 workflow_dispatch 从 main 部署(gh 以仓主身份触发→actor=owner)。非致命·失败不阻断发版。
+  try {
+    const pr = spawnSync('gh', ['workflow', 'run', 'pages.yml', '--repo', 'misfit-user/tianming', '--ref', 'main'], { encoding: 'utf-8' });
+    if (pr.status === 0) log('⑪½ 在线版 Pages 部署已自触发（workflow_dispatch · ref=main）');
+    else log('⑪½ WARN·在线版 Pages 自触发失败（不阻断热更发版）·可手动补：gh workflow run pages.yml --ref main\n      ' + String(pr.stderr || pr.stdout || '').trim().slice(0, 160));
+  } catch (e) { log('⑪½ WARN·在线版 Pages 自触发异常（不阻断）·' + (e && e.message)); }
 }
 
 // ── ⑫ 自动部署指针（2026-07-07·发版零人工的 dev 半边）────────────────────────

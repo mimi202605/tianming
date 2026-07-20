@@ -1,12 +1,13 @@
 name: pages-production
 
+# 在线版(GitHub Pages)只经 workflow_dispatch 从 main 部署——github-pages 环境保护只放行 main/gh-pages
+# 分支、不放行 ship-* tag。发版时由 scripts/release.js --publish 以仓主身份自触发本工作流
+# (gh workflow run pages.yml --ref main)；也可手动 `gh workflow run pages.yml --ref main`。
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       ref:
-        description: Exact tag, branch, or commit to publish
+        description: 要发布的分支或提交(须为 github-pages 环境放行的 ref·默认 main)
         required: true
         default: main
 
@@ -21,9 +22,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
-      (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'ship-') && github.event.release.author.login == github.repository_owner)
+    if: github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment:
@@ -32,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name || inputs.ref }}
+          ref: ${{ inputs.ref }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -40,12 +39,11 @@ jobs:
           cache: npm
       - name: Install release-gate dependencies
         run: npm ci --ignore-scripts
-      - name: Prove release tag commit came from origin/main
-        if: github.event_name == 'release'
+      - name: Prove ref is on origin/main
         run: |
           git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
           git merge-base --is-ancestor HEAD origin/main || {
-            echo "release tag ${GITHUB_REF_NAME} is not on origin/main" >&2
+            echo "ref ${{ inputs.ref }} 不在 origin/main 上·拒绝部署在线版" >&2
             exit 1
           }
       - name: Regenerate official scenario products
