@@ -64,6 +64,10 @@
   // 后宫特征
   var _HAREM_RE = /皇后|皇贵妃|贵妃|淑妃|德妃|贤妃|庄妃|宸妃|选侍|嫔|婕妤|才人|昭仪|贵人|夫人|妃子/;
 
+  // 当前选角剧本 id·showCharacterSelect 设·confirmCharacter 读
+  // 选角发生在 doActualStart 之前·P.characters 尚未填充该剧本角色·须直接用 sc.characters
+  var _pendingScnId = null;
+
   function _isStr(v) { return typeof v === 'string'; }
   function _nonEmpty(v) { return v != null && v !== ''; }
 
@@ -409,10 +413,13 @@
     var sc = (typeof findScenarioById === 'function') ? findScenarioById(scnId) : null;
     if (!sc) { _toast('未找到剧本'); return; }
 
-    var allChars = (typeof P !== 'undefined' && Array.isArray(P.characters)) ? P.characters : [];
-    var pickable = allChars.filter(function (c) {
-      if (!c || c.sid !== scnId) return false;
-      if (c.alive === false) return false;
+    _pendingScnId = scnId; // arch-ok · 供 confirmCharacter 取剧本角色
+
+    // 选角发生在 doActualStart 之前·P.characters 尚未填充该剧本角色·
+    // 故直接用剧本自带的 sc.characters 作为角色源（修复「此剧本无可选臣子」）
+    var scChars = Array.isArray(sc.characters) ? sc.characters : [];
+    var pickable = scChars.filter(function (c) {
+      if (!c || c.alive === false) return false;
       if (_isSovereignChar(c)) return false;
       return true;
     });
@@ -494,7 +501,11 @@
     if (typeof P === 'undefined' || !P) { _toast('剧本未就绪'); return; }
     if (!charId) { _toast('未选定角色'); return; }
 
-    var chars = Array.isArray(P.characters) ? P.characters : [];
+    // 优先从当前选角剧本 sc.characters 取角色（选角发生在 doActualStart 之前·
+    // P.characters 尚未填充）；_pendingScnId 缺席时回退 P.characters（兼容已启动/测试路径）
+    var sc = _pendingScnId && (typeof findScenarioById === 'function') ? findScenarioById(_pendingScnId) : null;
+    var chars = sc && Array.isArray(sc.characters) ? sc.characters
+              : (Array.isArray(P.characters) ? P.characters : []);
     var ch = null;
     for (var i = 0; i < chars.length; i++) {
       if (chars[i] && chars[i].name === charId) { ch = chars[i]; break; }
@@ -503,10 +514,11 @@
 
     if (_isSovereignChar(ch)) { _toast('君主不可选，请择一臣子'); return; }
 
-    var sid = ch.sid;
+    var sid = ch.sid || (sc && sc.id) || _pendingScnId;
     if (!sid) { _toast('角色未挂剧本'); return; }
 
-    var scnChars = chars.filter(function (c) { return c && c.sid === sid; });
+    var scnChars = sc && Array.isArray(sc.characters) ? sc.characters
+                 : chars.filter(function (c) { return c && c.sid === sid; });
     var scnRoot = { chars: scnChars };
     var sovereignName = getSovereignName(scnRoot);
     var sovereignTitle = getSovereignTitle(scnRoot);

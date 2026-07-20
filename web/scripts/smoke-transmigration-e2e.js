@@ -171,6 +171,57 @@ function transmigrationEntryTest() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 2b. 选角面板从剧本自带 characters 渲染（修复「此剧本无可选臣子」回归）
+//   根因：showCharacterSelect 原从 P.characters 过滤 c.sid===scnId·
+//         但 P.characters 的 sid 在 doActualStart 才赋值·选角阶段为空 → pickable 永远空。
+//   修复：直接用剧本对象自带的 sc.characters。
+// ─────────────────────────────────────────────────────────────
+function characterSelectFromScenarioTest() {
+  var ctx = buildCtx();
+  vm.runInContext(readFile('tm-transmigration.js'), ctx, { filename: 'tm-transmigration.js' });
+
+  var sid = 'scn-pick-test';
+  // 选角阶段：P.characters 为空（doActualStart 尚未填充）·剧本自带 characters
+  ctx.P = { characters: [] };
+  var scenario = {
+    id: sid, name: '测试本', era: '测试', role: '测试',
+    characters: [
+      { name: '今上', alive: true, officialTitle: '皇帝', role: '皇帝', isEmperor: true },
+      { name: '李大臣', alive: true, officialTitle: '尚书', role: '臣', personality: '刚直' },
+      { name: '王将军', alive: true, officialTitle: '禁军大将', role: '武将', personality: '豪迈' }
+    ]
+  };
+  ctx.findScenarioById = function(id) { return id === sid ? scenario : null; };
+  ctx._offIsSovereign = function(c) { return !!(c && c.isEmperor); };
+  ctx.toast = function() {};
+  // mock page 元素：记录 innerHTML·querySelectorAll 返回空数组（无事件绑定）
+  var pageMock = { classList: { add: function(){}, remove: function(){} }, innerHTML: '',
+                   querySelectorAll: function() { return []; } };
+  ctx._$ = function(id) { return id === 'scn-page' ? pageMock : null; };
+  ctx.document = { getElementById: function() { return null; } };
+
+  ctx.TM.Transmigration.showCharacterSelect(sid);
+
+  // 断言：不显示「此剧本无可选臣子」·且渲染了臣子/武将卡片·君主被过滤
+  assert(pageMock.innerHTML.indexOf('此剧本无可选臣子') < 0,
+    'pick: 不显示「此剧本无可选臣子」（修复回归·实际 html 长度 ' + pageMock.innerHTML.length + '）');
+  assert(pageMock.innerHTML.indexOf('共 2 人可选') >= 0, 'pick: 标题显示「共 2 人可选」');
+  assert(pageMock.innerHTML.indexOf('李大臣') >= 0, 'pick: 渲染臣子李大臣');
+  assert(pageMock.innerHTML.indexOf('王将军') >= 0, 'pick: 渲染武将王将军');
+  assert(pageMock.innerHTML.indexOf('今上') < 0, 'pick: 君主「今上」被过滤·不出现在可选列表');
+
+  // 2b-续：confirmCharacter 应能从 sc.characters 找到角色并启动（不依赖 P.characters）
+  var startGameCalls = [];
+  ctx.startGame = function(scnId) { startGameCalls.push(scnId); };
+  ctx.P.playerInfo = {};
+  ctx.TM.Transmigration.confirmCharacter('李大臣');
+  assert(ctx.P.playerInfo.transmigrationMode === true, 'pick: confirmCharacter 后 transmigrationMode=true');
+  assert(ctx.P.playerInfo.characterName === '李大臣', 'pick: confirmCharacter 写入 characterName=李大臣');
+  assert(startGameCalls.length === 1 && startGameCalls[0] === sid,
+    'pick: confirmCharacter 调用 startGame·sid=' + sid + '（实际 ' + JSON.stringify(startGameCalls) + '）');
+}
+
+// ─────────────────────────────────────────────────────────────
 // 3. 结束回合→皇帝 AI 决策（断言：至少生成 1 个决策）
 // ─────────────────────────────────────────────────────────────
 function sovereignAIDecisionTest() {
@@ -981,6 +1032,7 @@ function e2eIntegrationAssertionTest() {
 try {
   staticFlowTest();
   transmigrationEntryTest();
+  characterSelectFromScenarioTest();
   sovereignAIDecisionTest();
   memorialReplyTest();
   qijuReviewTest();
@@ -1000,7 +1052,7 @@ try {
   playerSkillTest();
   playerSpecialIdentityTest();
   e2eIntegrationAssertionTest();
-  console.log('[smoke-transmigration-e2e] PASS · 21 sub-tests · 端到端穿越模式：入口→选角→AI决策→批答→起居注→14+玩家系统各1核心动作→反叛→整合断言');
+  console.log('[smoke-transmigration-e2e] PASS · 22 sub-tests · 端到端穿越模式：入口→选角→AI决策→批答→起居注→14+玩家系统各1核心动作→反叛→整合断言');
   process.exit(0);
 } catch (e) {
   console.error('[smoke-transmigration-e2e] FAIL:', e.message);
