@@ -186,6 +186,18 @@ sandbox._chooseIssueOption = function(id, choiceIndex) {
   issue.chosenIndex = choiceIndex;
   issue.chosenText = issue.choices[choiceIndex] && issue.choices[choiceIndex].text;
 };
+// 生产恒由 tm-memorials.js 提供的奏疏决定 mutator(此 smoke 不装载该大文件·补等价桩)·
+// deskStageMemorial 走此正路落状态·再下沉 recordDeskActionSignal 喂党争/阶层信号(本 smoke 主题)。
+// 2026-07-19：phase8-formal-drafts.js 删除了 mutator 缺席时的 m.status 裸写降级(伪批·丢皇权/EB/回传)·
+// 故此桩须显式提供·与生产装载一致。
+sandbox._stageMemorialDecision = function(m, action, reply){
+  if (!m) return;
+  m.status = action;
+  m.reply = reply || '';
+  m._commitApplied = false;
+  if (!sandbox.GM._approvedMemorials) sandbox.GM._approvedMemorials = [];
+  sandbox.GM._approvedMemorials.push({ from: m.from, type: m.type, content: m.content || '', turn: sandbox.GM.turn, reply: m.reply, action: action });
+};
 
 const bridge = {
   _state: { activePanel: 'desk', letterDraft: {}, edictDrafts: {} },

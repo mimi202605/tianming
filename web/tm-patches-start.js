@@ -19,20 +19,7 @@ function _tmStartIsOfficialTianqi(sid) {
   return String(sid || '') === 'sc-tianqi7-1627';
 }
 
-function _tmStartApplyOfficialSnapshot(sid, reason) {
-  if (!_tmStartIsOfficialTianqi(sid)) return;
-  if (typeof window === 'undefined' || typeof window.TM_TIANQI_APPLY_OFFICIAL_RUNTIME_SNAPSHOT !== 'function') return;
-  try {
-    window.TM_TIANQI_APPLY_OFFICIAL_RUNTIME_SNAPSHOT();
-  } catch(e) {
-    try {
-      if (window.TM && TM.errors && TM.errors.captureSilent) TM.errors.captureSilent(e, 'start-snapshot-' + (reason || 'unknown'));
-    } catch(_) {}
-  }
-}
-
 function _tmStartFindScenario(sid, reason) {
-  _tmStartApplyOfficialSnapshot(sid, reason);
   return (typeof findScenarioById === 'function') ? findScenarioById(sid) : null;
 }
 
@@ -177,10 +164,6 @@ function _tmStartApplyMapChoice(sid, sc) {
 function _tmStartRepairRuntimeData(sid, sc, reason) {
   if (typeof GM === 'undefined' || !GM || typeof P === 'undefined' || !P) return null;
   var official = _tmStartIsOfficialTianqi(sid);
-  if (official) {
-    _tmStartApplyOfficialSnapshot(sid, reason || 'repair');
-    sc = (typeof findScenarioById === 'function') ? findScenarioById(sid) : sc;
-  }
   var report = { reason: reason || '', chars: 0, facs: 0, vars: 0, mapRegions: 0, fixed: [] };
   var minChars = official ? 30 : 1;
   var minFacs = official ? 5 : 1;
@@ -388,16 +371,115 @@ function _tmStartConfirmModelRequirementsBeforeLaunch(sc){
   return true;
 }
 
+function _tmStartRequestCurrent(token) {
+  return token == null || (typeof window !== 'undefined' && window._tmStartRequestEpoch === token);
+}
+
+function _tmStartRestoreSelectionAfterFailure(token) {
+  if (!_tmStartRequestCurrent(token)) return;
+  try { hideLoading(); } catch(_) {}
+  var page = _$('scn-page');
+  if (page) {
+    page.classList.add('show');
+    page.style.pointerEvents = '';
+    try { page.removeAttribute('aria-busy'); } catch(_) {}
+  }
+}
+
+function _tmStartNeedsHistoricalCheck(sc) {
+  var mode = P && P.conf && P.conf.gameMode;
+  if ((mode !== 'light_hist' && mode !== 'strict_hist') || !sc || !sc.opening || sc.opening.length <= 50) return false;
+  var loader = typeof window !== 'undefined' && window.TMOfficialScenarioLoader;
+  return !(loader && typeof loader.entry === 'function' && loader.entry(sc.id));
+}
+
+async function _tmStartCheckOpeningHistory(sc, requestToken) {
+  if (!_tmStartNeedsHistoricalCheck(sc)) return true;
+  if (!P.ai || !P.ai.key || typeof callAISmart !== 'function') {
+    if (_tmStartRequestCurrent(requestToken) && typeof toast === 'function') toast('史实模式未配置 AI，已保留原开场白');
+    return true;
+  }
+  showLoading('\u53F2\u5B9E\u6821\u9A8C\u4E2D...', 92);
+  var prompt = '\u4F60\u662F\u5386\u53F2\u987E\u95EEAI\u3002\u8BF7\u68C0\u4EE5\u4E0B\u5F00\u573A\u767D\u662F\u5426\u5B58\u5728\u660E\u663E\u7684\u53F2\u5B9E\u9519\u8BEF\uFF08\u4EBA\u7269\u5E74\u4EE3\u3001\u4E8B\u4EF6\u987A\u5E8F\u3001\u5730\u7406\u7B49\uFF09\u3002\n\n'
+    + '\u3010\u5267\u672C\u3011' + (sc.name || '') + '\n\u3010\u65F6\u4EE3\u3011' + (sc.era || '') + '\n\u3010\u89D2\u8272\u3011' + (sc.role || '')
+    + '\n\u3010\u5F00\u573A\u767D\u3011\n' + sc.opening
+    + '\n\n\u53EA\u8FD4\u56DEJSON: {"hasErrors":true/false,"errorCount":0,"errors":["\u9519\u8BEF"],"correctedText":"\u4FEE\u6B63\u6587\u672C"}\u3002';
+  try {
+    var raw = await callAISmart(prompt, 2000, { maxRetries: 2, timeoutMs: 60000, fetchMaxRetries: 1 });
+    if (!_tmStartRequestCurrent(requestToken)) return false;
+    var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : JSON.parse(String(raw || '').replace(/```json|```/g, '').trim());
+    if (parsed && parsed.hasErrors && typeof parsed.correctedText === 'string' && parsed.correctedText.trim()) {
+      sc.opening = parsed.correctedText.trim();
+      _dbg('[\u5386\u53F2\u68C0\u67E5] \u5FEB\u542F\u94FE\u4FEE\u6B63 ' + Number(parsed.errorCount || (parsed.errors && parsed.errors.length) || 0) + ' \u5904');
+    }
+    return true;
+  } catch(e) {
+    if (!_tmStartRequestCurrent(requestToken)) return false;
+    console.error('[\u5386\u53F2\u68C0\u67E5] \u5FEB\u542F\u94FE\u68C0\u67E5\u5931\u8D25\uFF1A', e);
+    if (typeof toast === 'function') toast('\u53F2\u5B9E\u68C0\u67E5\u5931\u8D25\uFF0C\u5DF2\u4FDD\u7559\u539F\u5F00\u573A\u767D');
+    return true;
+  }
+}
+
 startGame=async function(sid){
+  var _startRequestToken = Number(window._tmStartRequestEpoch || 0) + 1;
+  window._tmStartRequestEpoch = _startRequestToken;
+  if (typeof window._tmStartOpeningCleanup === 'function') {
+    try { window._tmStartOpeningCleanup(); } catch(_) {}
+  }
+  var _startPage = _$("scn-page");
+  if (_startPage) _startPage.classList.remove("show");
+  var _startLaunch = _$("launch");
+  if (_startLaunch) _startLaunch.style.display = "none";
+  showLoading('\u8BFB\u53D6\u5267\u672C...', 0);
+  if (window.TMOfficialScenarioLoader) {
+    try {
+      await window.TMOfficialScenarioLoader.ready();
+      if (!_tmStartRequestCurrent(_startRequestToken)) return;
+      if (window.TMOfficialScenarioLoader.isLazy(sid)) {
+        showLoading('\u8BFB\u53D6\u5B98\u65B9\u5267\u672C...', 5);
+        await window.TMOfficialScenarioLoader.ensure(sid);
+        if (!_tmStartRequestCurrent(_startRequestToken)) return;
+      }
+    } catch(e) {
+      if (!_tmStartRequestCurrent(_startRequestToken)) return;
+      _tmStartRestoreSelectionAfterFailure(_startRequestToken);
+      toast('\u5267\u672C\u52A0\u8F7D\u5931\u8D25: ' + (e && e.message || e));
+      return;
+    }
+  }
   var sc=_tmStartFindScenario(sid, 'startGame-pre') || findScenarioById(sid);
-  if(!sc){toast("\u672A\u627E\u5230");return;}
-  if (!_tmStartValidateScenarioBeforeLaunch(sc)) return;
-  if (!_tmStartConfirmModelRequirementsBeforeLaunch(sc)) return;
+  if(!sc){_tmStartRestoreSelectionAfterFailure(_startRequestToken);toast("\u672A\u627E\u5230");return;}
+  if (!_tmStartValidateScenarioBeforeLaunch(sc)) { _tmStartRestoreSelectionAfterFailure(_startRequestToken); return; }
+  if (!_tmStartConfirmModelRequirementsBeforeLaunch(sc)) { _tmStartRestoreSelectionAfterFailure(_startRequestToken); return; }
   _$("scn-page").classList.remove("show");
   _$("launch").style.display="none";
 
   // 加载流程
   showLoading("\u751F\u6210\u4E16\u754C\u4E2D",0);
+
+  // 新启动链：本地数据已随剧本装载，不再用 10 段定时器伪装“读取”，也不等待模型探测、
+  // 开场白生成/复核或 AI 统筹。模型能力探测后台刷新配置；开场文本缺失时先用剧本概述兜底。
+  // 保留旧链仅供显式诊断开关使用，默认玩家路径不会进入。
+  if (window.TM_START_LEGACY_BOOT !== true) {
+    if (P.ai && P.ai.key && typeof detectModelContextSize === 'function') {
+      Promise.resolve().then(function(){ return detectModelContextSize(); }).catch(function(e){
+        (window.TM && TM.errors && TM.errors.captureSilent) ? TM.errors.captureSilent(e, 'start-model-detect-background') : console.warn('[start-model-detect-background]', e);
+      });
+    }
+    if (!sc.opening || sc.opening.length <= 20) {
+      var _openingFallback = sc.openingText || sc.overview || sc.background || '';
+      if (_openingFallback) sc.opening = String(_openingFallback).slice(0, 600);
+    }
+    if (_tmStartNeedsHistoricalCheck(sc)) {
+      await _tmStartCheckOpeningHistory(sc, _startRequestToken);
+      if (!_tmStartRequestCurrent(_startRequestToken)) return;
+    }
+    hideLoading();
+    if (sc.opening && sc.opening.length > 20) _tmShowOpeningCeremony(sc, sid, _startRequestToken);
+    else doActualStart(sid, _startRequestToken);
+    return;
+  }
 
   // 第一阶段：读取剧本数据
   var steps=[
@@ -616,9 +698,9 @@ startGame=async function(sid){
   }
   if(sc.opening&&sc.opening.length>20){
     // 2026-06 重制·入世仪典（跨剧本通用·数据全取 sc·缺则兜底）
-    _tmShowOpeningCeremony(sc, sid);
+    _tmShowOpeningCeremony(sc, sid, _startRequestToken);
   }else{
-    doActualStart(sid);
+    doActualStart(sid, _startRequestToken);
   }
 };
 
@@ -626,7 +708,8 @@ startGame=async function(sid){
 // 时机：在 doActualStart 之前展示·此刻 P/GM 尚未初始化·所有数据均从 sc（剧本对象）取，缺则兜底。
 // 数据：题署=sc.name/sc.era；身份=sc.playerInfo.characterName(去注解)→sc.characters 找立绘/称谓/bio；
 //       戏眼=sc.events 里 isOpeningEvent/triggerTurn:1 的前 3 条（每剧本皆有·绝不写死单朝专名）。
-function _tmShowOpeningCeremony(sc, sid) {
+function _tmShowOpeningCeremony(sc, sid, requestToken) {
+  if (!_tmStartRequestCurrent(requestToken)) return;
   var _esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   // 玩家角色（容错去注解·跨剧本：绍宋 characterName 形如「赵构(穿越者赵玖)」）
   // 穿越模式：confirmCharacter 已写入 P.playerInfo·优先用穿越选择的角色·剧本默认 playerInfo（皇帝）退为底
@@ -711,7 +794,17 @@ function _tmShowOpeningCeremony(sc, sid) {
     idx++;
   }, 50);
   function showAll() { clearInterval(timer); for (var k = 0; k < spans.length; k++) spans[k].style.opacity = '1'; allShown = true; }
-  function enter() { clearInterval(timer); document.removeEventListener('keydown', onKey); if (ov.parentElement) ov.remove(); doActualStart(sid); }
+  function cleanup() {
+    clearInterval(timer);
+    document.removeEventListener('keydown', onKey);
+    if (ov.parentElement) ov.remove();
+    if (window._tmStartOpeningCleanup === cleanup) window._tmStartOpeningCleanup = null;
+  }
+  function enter() {
+    if (!_tmStartRequestCurrent(requestToken)) { cleanup(); return; }
+    cleanup();
+    doActualStart(sid, requestToken);
+  }
   var skipBtn = ov.querySelector('#tm-op-skip'); if (skipBtn) skipBtn.addEventListener('click', function () { if (!allShown) showAll(); });
   var entBtn = ov.querySelector('#tm-op-enter'); if (entBtn) entBtn.addEventListener('click', enter);
   var onKey = function (e) {
@@ -719,9 +812,91 @@ function _tmShowOpeningCeremony(sc, sid) {
     else if (e.key === 'Escape') { e.preventDefault(); enter(); }
   };
   document.addEventListener('keydown', onKey);
+  window._tmStartOpeningCleanup = cleanup;
 }
 
-function doActualStart(sid){
+function _tmStartPrewarmSessionCurrent(session) {
+  if (!session || typeof GM === 'undefined' || !GM) return false;
+  return GM === session.gmRef && GM.sid === session.sid && GM.turn === session.turn &&
+    (typeof window === 'undefined' || window._tmStartPrewarmEpoch === session.epoch);
+}
+
+function _tmStartCapturePrewarmSession(sid, epoch) {
+  var mems = Array.isArray(GM && GM.memorials) ? GM.memorials : [];
+  return {
+    gmRef: GM,
+    sid: sid,
+    turn: GM.turn,
+    epoch: epoch,
+    hasPresetMemorials: mems.some(function(m){ return m && m._sid; }),
+    initialMemorialFingerprint: _tmStartMemorialFingerprint(mems)
+  };
+}
+
+function _tmStartMemorialFingerprint(mems) {
+  if (!Array.isArray(mems)) return '[]';
+  return JSON.stringify(mems.map(function(m){
+    if (!m) return null;
+    return [
+      m.id || '', m.from || '', m.title || '',
+      m.content || '', m.body || '', m.text || '',
+      m.status || '', m.reply || '', m.response || '', m.approved === true
+    ];
+  }));
+}
+
+function _tmStartSetPrewarmStatus(status) {
+  window.TM = window.TM || {};
+  window.TM.startPrewarm = status;
+}
+
+function _tmStartLaunchBackgroundPrewarm(sc, session) {
+  Promise.resolve().then(async function() {
+    var opts = { background: true, session: session };
+    if (!_tmStartPrewarmSessionCurrent(session)) return;
+    // 首回合候选池不依赖 27 次深读，立即并行规划；生成完成后才发起首批 AI 奏疏，
+    // 这样既不阻塞入局，也不会让 generateMemorials 抢跑而永远看不到候选事件。
+    var candidateTask = Promise.resolve().then(function(){
+      return (typeof aiPlanFirstTurnEvents === 'function') ? aiPlanFirstTurnEvents(opts) : null;
+    }).then(function(){
+      if (!_tmStartPrewarmSessionCurrent(session) || GM.turn !== 1 || session.memorialGenerationStarted || session.hasPresetMemorials) return;
+      if (_tmStartMemorialFingerprint(GM.memorials) !== session.initialMemorialFingerprint) return;
+      session.memorialGenerationStarted = true;
+      if (typeof generateMemorials === 'function') generateMemorials();
+    });
+    var analysisTask = Promise.resolve().then(async function(){
+      if (typeof _logicAuditOnStart === 'function') await _logicAuditOnStart(sc, opts);
+      if (!_tmStartPrewarmSessionCurrent(session)) return;
+      if (typeof aiDeepReadScenario === 'function') await aiDeepReadScenario(opts);
+      if (!_tmStartPrewarmSessionCurrent(session)) return;
+      await Promise.all([
+        (typeof aiPlanScenarioForInference === 'function') ? aiPlanScenarioForInference(opts) : Promise.resolve(),
+        (typeof aiPlanFactionMatrix === 'function') ? aiPlanFactionMatrix(opts) : Promise.resolve()
+      ]);
+    });
+    await Promise.all([candidateTask, analysisTask]);
+    if (_tmStartPrewarmSessionCurrent(session)) {
+      _tmStartSetPrewarmStatus({ state: 'ready', sid: session.sid, turn: session.turn, completedAt: Date.now() });
+      try { if (typeof renderMemorials === 'function') renderMemorials(); } catch(_) {}
+    }
+  }).catch(function(e) {
+    if (_tmStartPrewarmSessionCurrent(session)) {
+      if (GM.turn === 1 && !session.memorialGenerationStarted && !session.hasPresetMemorials
+        && _tmStartMemorialFingerprint(GM.memorials) === session.initialMemorialFingerprint) {
+        session.memorialGenerationStarted = true;
+        try { if (typeof generateMemorials === 'function') generateMemorials(); } catch(_) {}
+      }
+      _tmStartSetPrewarmStatus({ state: 'failed', sid: session.sid, turn: session.turn, error: String(e && e.message || e) });
+    }
+    (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'start-background-prewarm') : console.warn('[start-background-prewarm]', e);
+  });
+}
+
+function doActualStart(sid, requestToken){
+  if (!_tmStartRequestCurrent(requestToken)) return;
+  // 每次开新局先废止上一局仍在飞行中的 AI 预热结果。
+  window._tmStartPrewarmEpoch = Number(window._tmStartPrewarmEpoch || 0) + 1;
+  var _startPrewarmEpoch = window._tmStartPrewarmEpoch;
   showLoading('\u52A0\u8F7D\u5267\u672C\u914D\u7F6E...', 5);
   // 应用难度设置
   if (window._pendingDifficulty) {
@@ -729,7 +904,6 @@ function doActualStart(sid){
     P.conf.difficulty = window._pendingDifficulty;
     delete window._pendingDifficulty;
   }
-  _tmStartApplyOfficialSnapshot(sid, 'doActualStart-pre');
   // 初始化GM（完整版，包含所有必要属性）
   var sc=_tmStartFindScenario(sid, 'doActualStart-find') || findScenarioById(sid);
   if(!sc){toast("\u672A\u627E\u5230");return;}
@@ -738,6 +912,8 @@ function doActualStart(sid){
   // 非 sid 隔离的「整个世界」字段,缺则保持空,绝不继承别的剧本(sid 隔离的 characters/factions/... 已自带过滤,不在此列)。
   ['government','military','map','mapData','mapRuntimeContract'].forEach(function(_lk){ try { delete P[_lk]; } catch(_le) { P[_lk] = undefined; } });
   var _prevSaveName=GM.saveName||'';GM={running:true,sid:sid,turn:1,vars:{},rels:{},chars:[],facs:[],items:[],armies:[],evtLog:[],conv:[],busy:false,memorials:[],qijuHistory:[],jishiRecords:[],biannianItems:[],officeTree:P.officeTree?deepClone(P.officeTree):[],wenduiTarget:null,wenduiHistory:{},officeChanges:[],shijiHistory:[],allCharacters:[],classes:[],parties:[],techTree:[],civicTree:[],autoSummary:"",summarizedTurns:[],currentDay:0,eraName:"",eraNames:[],eraState:sc.eraState?deepClone(sc.eraState):(P.eraState?deepClone(P.eraState):{politicalUnity:0.7,centralControl:0.6,legitimacySource:'hereditary',socialStability:0.6,economicProsperity:0.6,culturalVibrancy:0.7,bureaucracyStrength:0.6,militaryProfessionalism:0.5,landSystemType:'mixed',dynastyPhase:'peak',contextDescription:''}),taxPressure:52,playerAbilities:{management:0,military:0,scholarship:0,politics:0},currentIssues:[],pendingConsequences:[],memoryAnchors:[],provinceStats:{},playerPendingTasks:[],playerCharacterId:null,regentSignal:null,regentState:{},npcContext:null,turnChanges:{variables:[],characters:[],factions:[],parties:[],classes:[],military:[],map:[]},_listeners:{},_changeQueue:[],triggeredHistoryEvents:{},rigidTriggers:{},offendGroupScores:{},activeRebounds:[],triggeredOffendEvents:{},_indices:null,postSystem:null,mapData:null,eraStateHistory:[],factionRelations:[],factionEvents:[],_tyrantDecadence:0,_tyrantHistory:[],_varMapping:null,stateTreasury:0,privateTreasury:0,_bankruptcyTurns:0,enYuanRecords:[],patronNetwork:[],activeSchemes:[],schemeCooldowns:{},eventCooldowns:{},yearlyChronicles:[],activeBattles:[],battleHistory:[],_turnBattleResults:[],activeWars:[],treaties:[],marchOrders:[],activeSieges:[],_rngCheckpoints:[]};if(_prevSaveName)GM.saveName=_prevSaveName;
+  try { if (typeof _tmRotateDesktopAutoSaveSession === 'function') _tmRotateDesktopAutoSaveSession('new-game'); }
+  catch (_asStartE) { try { console.warn('[autoSave] 新局 session 切换失败:', _asStartE); } catch (_) {} }
 
   // 根据era智能推断eraState缺失字段（当剧本未定义eraState时使用合理默认值）
   if (!sc.eraState && sc.era && GM.eraState) {
@@ -772,18 +948,18 @@ function doActualStart(sid){
   if (sc.playerInfo) {
     var _transPi = (P.playerInfo && P.playerInfo.transmigrationMode === true) ? P.playerInfo : null;
     P.playerInfo = deepClone(sc.playerInfo);
-    if (_transPi) {
-      P.playerInfo.transmigrationMode = true;
-      P.playerInfo.playerRole = _transPi.playerRole;
-      P.playerInfo.characterName = _transPi.characterName;
-      P.playerInfo.selectedCharId = _transPi.selectedCharId;
-      P.playerInfo.sovereignName = _transPi.sovereignName;
-      P.playerInfo.sovereignTitle = _transPi.sovereignTitle;
-      if (_transPi.characterTitle) P.playerInfo.characterTitle = _transPi.characterTitle;
-      if (_transPi.characterFaction) P.playerInfo.characterFaction = _transPi.characterFaction;
-      if (typeof _transPi.characterAge === 'number') P.playerInfo.characterAge = _transPi.characterAge;
-      if (_transPi.characterGender) P.playerInfo.characterGender = _transPi.characterGender;
-      if (_transPi.characterPersonality) P.playerInfo.characterPersonality = _transPi.characterPersonality;
+    if (_transPi) { // arch-ok 穿越模式守卫·恢复 confirmCharacter 写入的穿越选择(被 sc.playerInfo 整体覆盖·11处 P直写经裁定)
+      P.playerInfo.transmigrationMode = true; // arch-ok
+      P.playerInfo.playerRole = _transPi.playerRole; // arch-ok
+      P.playerInfo.characterName = _transPi.characterName; // arch-ok
+      P.playerInfo.selectedCharId = _transPi.selectedCharId; // arch-ok
+      P.playerInfo.sovereignName = _transPi.sovereignName; // arch-ok
+      P.playerInfo.sovereignTitle = _transPi.sovereignTitle; // arch-ok
+      if (_transPi.characterTitle) P.playerInfo.characterTitle = _transPi.characterTitle; // arch-ok
+      if (_transPi.characterFaction) P.playerInfo.characterFaction = _transPi.characterFaction; // arch-ok
+      if (typeof _transPi.characterAge === 'number') P.playerInfo.characterAge = _transPi.characterAge; // arch-ok
+      if (_transPi.characterGender) P.playerInfo.characterGender = _transPi.characterGender; // arch-ok
+      if (_transPi.characterPersonality) P.playerInfo.characterPersonality = _transPi.characterPersonality; // arch-ok
     }
   }
   if (sc.engineConstants) {
@@ -1076,7 +1252,8 @@ function doActualStart(sid){
     }
     if(Array.isArray(sc.openingAudiences)){
       // 问对「阶下待见」运行时读 GM._pendingAudiences；开局远来求见(使节·告急·特请·非在京者动态浮现不了)由 openingAudiences 预置·打 sid·幂等。
-      GM._pendingAudiences = (GM._pendingAudiences||[]).filter(function(x){return x && x._sid!==sid;});
+      if (typeof _wdCleansePendingAudiences === 'function' && Array.isArray(GM._pendingAudiences)) _wdCleansePendingAudiences(function(x){return x && x._sid!==sid;});   // 唯一清洗写口(剔本 sid 旧预置)
+      else GM._pendingAudiences = (GM._pendingAudiences||[]).filter(function(x){return x && x._sid!==sid;});   // 兜底兼作数组 ensure
       sc.openingAudiences.forEach(function(x){var c=deepClone(x); c._sid=sid; if(c._opening==null)c._opening=true; GM._pendingAudiences.push(c);});
     }
   }
@@ -1238,6 +1415,10 @@ function doActualStart(sid){
   // GM 没有对应数组→处理器/AI 被迫读 P 库→玩绍宋时会看到/触发天启的「魏忠贤自缢」等剧本事件。此处给当前局
   // 建一份只含本剧本的干净副本·让 gameplay 只读 GM(单剧本世界)·不再伸手进多剧本的 P 库。
   GM.rigidHistoryEvents=(P.rigidHistoryEvents||[]).filter(function(e){return e&&e.sid===sid;}).map(function(e){return deepClone(e);});
+  // 史实锚点(认知背景·非强制剧情)：本剧本关键人物的史实原线结局(sc.histAnchors)装入 GM.histAnchors 单剧本干净副本·
+  // 只作 AI 分歧账(_buildTemporalConstraint)的背景素养——读锚点·不杀人。与刚性史事(强制剧情死·已从官方剧本删)分家：
+  // 平行历史下「强制剧情死·认知背景活」。工坊老剧本/无此键的剧本→空数组·全程无害。
+  GM.histAnchors=(sc && Array.isArray(sc.histAnchors)) ? sc.histAnchors.map(function(a){return deepClone(a);}) : [];
   // 天机·改命(穿越/上帝视角剧本)：开局建天机录(预知未来刚性史事)+注入御案时政。gated sc.tianjiEnabled(默认关·绍宋赵玖穿越开)·跨朝代。
   GM._tianjiEnabled = !!(sc && sc.tianjiEnabled);
   if (GM._tianjiEnabled && typeof TMTianji !== 'undefined') { try { TMTianji.build(GM); } catch(_tjE){} }
@@ -1666,46 +1847,25 @@ function doActualStart(sid){
   if (typeof PromptLayerCache !== 'undefined') PromptLayerCache.clear();
   if (typeof TokenUsageTracker !== 'undefined') TokenUsageTracker.reset();
 
-  // ── 逻辑审查：AI检查剧本数据中的矛盾冲突并自动修正 ──
-  if (P.ai && P.ai.key && GM.chars && GM.chars.length > 0) {
-    (async function() {
-      try {
-        showLoading('\u903B\u8F91\u5BA1\u67E5\uFF1A\u68C0\u67E5\u5267\u672C\u6570\u636E\u77DB\u76FE...', 90);
-        await _logicAuditOnStart(sc);
-      } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'LogicAudit] error:') : console.warn('[LogicAudit] error:', e); }
+  // 先用剧本文本建立本地摘要并进入游戏；AI 审查/27 次深读/三项规划转后台，绝不阻塞首屏。
+  var _hasStartAI = !!(P.ai && P.ai.key && GM.chars && GM.chars.length > 0);
+  if (typeof _tmPrimeScenarioDigestFromText === 'function') _tmPrimeScenarioDigestFromText(sc);
+  showLoading('\u8FDB\u5165\u6E38\u620F\u4E16\u754C...', 95);
+  _tmStartRepairRuntimeData(sid, sc, _hasStartAI ? 'before-enter-api' : 'before-enter-local');
+  _tmStartPrimeFormalRuntime(sid, sc, _hasStartAI ? 'before-enter-api' : 'before-enter-local');
+  var _hasPresetMemorials = Array.isArray(GM.memorials) && GM.memorials.some(function(m){ return m && m._sid; });
+  if (!_hasStartAI || _hasPresetMemorials) generateMemorials();
+  else {
+    if (typeof renderMemorials === 'function') renderMemorials();
+  }
+  hideLoading();
+  enterGame();
+  _tmStartRefreshFormalShell();
 
-      // AI深度预热（剧本标 isFullyDetailed 时内部跳过·用剧本文本兜底）
-      if (typeof aiDeepReadScenario === 'function') {
-        try {
-          await aiDeepReadScenario();
-        } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'DeepRead in doActualStart] error:') : console.warn('[DeepRead in doActualStart] error:', e); }
-      }
-      // 三项推演规划·并行发射（节省等待）·各 1 次 AI：
-      //   · aiPlanScenarioForInference: NPC 议程/危机分岔/行文指纹
-      //   · aiPlanFactionMatrix: 势力关系矩阵/轨迹/黑天鹅
-      //   · aiPlanFirstTurnEvents: 首 3 回合候选事件池
-      showLoading('\u89C4\u5212\u63A8\u6F14\u9519\u70B9\u00B7\u5E76\u884C 3 \u9879\u2026', 92);
-      try {
-        await Promise.all([
-          (typeof aiPlanScenarioForInference === 'function') ? aiPlanScenarioForInference().catch(function(e){ (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'aiPlan') : console.warn('[aiPlan]', e); }) : Promise.resolve(),
-          (typeof aiPlanFactionMatrix === 'function') ? aiPlanFactionMatrix().catch(function(e){ (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'aiFacMatrix') : console.warn('[aiFacMatrix]', e); }) : Promise.resolve(),
-          (typeof aiPlanFirstTurnEvents === 'function') ? aiPlanFirstTurnEvents().catch(function(e){ (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'aiFTE') : console.warn('[aiFTE]', e); }) : Promise.resolve()
-        ]);
-      } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, '3 plans parallel') : console.warn('[3 plans parallel]', e); }
-      showLoading('\u751F\u6210\u521D\u59CB\u594F\u758F...', 98);
-      _tmStartRepairRuntimeData(sid, sc, 'before-enter-api');
-      _tmStartPrimeFormalRuntime(sid, sc, 'before-enter-api');
-      generateMemorials();
-      hideLoading();
-      enterGame();
-      _tmStartRefreshFormalShell();
-    })();
-  } else {
-    showLoading('\u8FDB\u5165\u6E38\u620F\u4E16\u754C...', 95);
-    _tmStartRepairRuntimeData(sid, sc, 'before-enter-local');
-    _tmStartPrimeFormalRuntime(sid, sc, 'before-enter-local');
-    generateMemorials();
-    setTimeout(function(){hideLoading();enterGame();_tmStartRefreshFormalShell();},100);
+  if (_hasStartAI) {
+    var _prewarmSession = _tmStartCapturePrewarmSession(sid, _startPrewarmEpoch);
+    _tmStartSetPrewarmStatus({ state: 'running', sid: sid, turn: GM.turn, startedAt: Date.now() });
+    setTimeout(function() { _tmStartLaunchBackgroundPrewarm(sc, _prewarmSession); }, 0);
   }
   var hd=_$("qiju-history");if(hd&&sc)hd.innerHTML="<div class=\"qiju-record\"><div class=\"qiju-turn\">"+getTS(1)+" \u5F00\u7BC7</div><div class=\"nt\">"+sc.opening+"</div></div>";
 

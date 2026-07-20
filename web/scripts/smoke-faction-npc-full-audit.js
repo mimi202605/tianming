@@ -195,8 +195,8 @@ function main() {
     console.log('Q5·存储 + 推演关联');
     console.log('═══════════════════════════════════════════════════════');
 
-    // Q5.1 序列化·simulate JSON.stringify(GM)·检 fac.npcXxx 是否在
-    console.log('Q5.1 序列化测试 (saveToSlot path = JSON.stringify(GM)):');
+    // Q5.1 序列化·检 mutable facs 内 npcXxx 是否可持久化（统一 selective builder 会深拷 facs）
+    console.log('Q5.1 序列化测试 (unified snapshot 的 mutable facs):');
     var ctx4 = buildContext();
     loadGM(ctx4, sc);
     for (var t = 1; t <= 3; t++) { ctx4.GM.turn = t; simulateEndturn(ctx4); }
@@ -208,7 +208,7 @@ function main() {
     var hasLedgerKey = serialized.indexOf('"npcFiscalLedger"') >= 0;
     console.log('  含 npcMemorials: ' + hasMemKey + '·npcEdicts: ' + hasEdictKey + '·npcFiscalLedger: ' + hasLedgerKey);
     if (hasMemKey && hasEdictKey && hasLedgerKey) {
-      console.log('  ✓ saveToSlot 走 deepClone(GM)·所有 NPC trajectory 都被保存');
+      console.log('  ✓ selective snapshot 深拷 mutable facs·所有 NPC trajectory 都被保存');
     }
 
     // 反序列化·还原后能用?

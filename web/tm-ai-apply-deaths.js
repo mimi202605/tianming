@@ -40,6 +40,9 @@ function applyOneDeath(cd) {
   if (!cd.name || !cd.reason) return;
   var ch = (typeof _fuzzyFindChar === 'function' ? _fuzzyFindChar(cd.name) : null) || findCharByName(cd.name);
   if (!ch) return;
+  // 唯一死亡 sink 必须幂等：同回合多个结构化入口指向同一人时，只执行一次级联/事件/声望结算。
+  if (ch.alive === false || ch.dead === true) return;
+  cd.name = ch.name || cd.name;
   ch.alive = false;
   ch.dead = true;
   ch.deathTurn = GM.turn;

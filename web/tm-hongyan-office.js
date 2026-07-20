@@ -1528,7 +1528,14 @@ function _generateLetterReply(letter) {
     if (recentEdictCtx) prompt += recentEdictCtx;
     if (priorHistory) prompt += priorHistory;
     prompt += toneHint;
-    if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(ch); } catch(_){} }
+    if (typeof _buildTemporalConstraint === 'function') {
+      try {
+        // 扫描源：来自京城的来信(letter.content) + 往来背景 + 近期涉君诏令·回信者 ch.name 作种子恒入
+        var _hyTopic = ((letter && letter.content) || '') + ' ' + (priorHistory || '') + ' ' + (recentEdictCtx || '');
+        var _hyMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_hyTopic, (ch && ch.name) ? [ch.name] : [], 10) : ((ch && ch.name) ? [ch.name] : []);
+        prompt += _buildTemporalConstraint(ch, { mentionedNames: _hyMentioned });
+      } catch(_){}
+    }
     prompt += '\n\n收到来自京城天子的' + typeLabel + '('+cipherLabel+')：\n「' + letter.content + '」';
     prompt += '\n\n【回信要求】';
     prompt += '\n1. 以该角色口吻/身份/性格·100-200 字古典中文';

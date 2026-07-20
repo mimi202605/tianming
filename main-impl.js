@@ -2025,26 +2025,119 @@ ipcMain.handle('delete-save', async (event, filename) => {
 // --- 自动存档 ---·2026-05-22 C1 fix·
 // 老版 fs.writeFileSync 同步阻塞主进程·MB 级 JSON 在 Win 上 1-3 秒·IPC 回包前 renderer await 卡住
 // 新版·async fs.promises.writeFile 到 .tmp + rename·atomic·不阻塞·失败半写不污染最终文件
-ipcMain.handle('auto-save', async (event, data) => {
+const AUTO_SAVE_FILE = path.join(SAVE_DIR, '__autosave__.json');
+const AUTO_SAVE_SESSION_FILE = path.join(SAVE_DIR, '__autosave__.session');
+let autoSaveSessionToken = '';
+let autoSaveSessionLoaded = false;
+
+function normalizeAutoSaveSessionToken(token) {
+  token = String(token || '').trim();
+  return token.length >= 16 && token.length <= 200 && /^[A-Za-z0-9._:-]+$/.test(token) ? token : '';
+}
+
+function getAutoSaveSessionToken() {
+  if (autoSaveSessionLoaded) return autoSaveSessionToken;
+  autoSaveSessionLoaded = true;
   try {
-    ensureSaveDir();
-    const finalFile = path.join(SAVE_DIR, '__autosave__.json');
-    const tmpFile = finalFile + '.tmp';
-    // 2026-06-10·紧凑写盘:pretty-print 缩进占存档体积 55%(实测 113MB→48MB)·机器读写无人看·JSON.parse 两者通吃
-    await fs.promises.writeFile(tmpFile, JSON.stringify(data), 'utf-8');
-    await fs.promises.rename(tmpFile, finalFile);
-    return { success: true };
+    autoSaveSessionToken = normalizeAutoSaveSessionToken(fs.readFileSync(AUTO_SAVE_SESSION_FILE, 'utf-8'));
+  } catch (_) { autoSaveSessionToken = ''; }
+  return autoSaveSessionToken;
+}
+
+function persistAutoSaveSessionToken(token) {
+  token = normalizeAutoSaveSessionToken(token);
+  if (!token) throw new Error('自动存档 session token 非法');
+  ensureSaveDir();
+  const tmp = AUTO_SAVE_SESSION_FILE + '.tmp';
+  fs.writeFileSync(tmp, token, 'utf-8');
+  fs.renameSync(tmp, AUTO_SAVE_SESSION_FILE);
+  autoSaveSessionToken = token;
+  autoSaveSessionLoaded = true;
+  return token;
+}
+
+function autoSaveSessionMatches(token) {
+  token = normalizeAutoSaveSessionToken(token);
+  return !!token && token === getAutoSaveSessionToken();
+}
+
+ipcMain.on('auto-save-session-current', (event) => {
+  event.returnValue = { success: true, token: getAutoSaveSessionToken() };
+});
+
+ipcMain.on('auto-save-session-rotate', (event, requestedToken) => {
+  try {
+    event.returnValue = { success: true, token: persistAutoSaveSessionToken(requestedToken) };
   } catch (e) {
-    return { success: false, error: e.message };
+    event.returnValue = { success: false, error: e.message };
   }
+});
+
+let autoSaveWriteQueue = Promise.resolve();
+ipcMain.handle('auto-save', (event, payload) => {
+  const wrapped = !!(payload && payload.__tmAutoSaveEnvelope === 1);
+  const data = wrapped ? payload.data : payload;
+  let requestToken = normalizeAutoSaveSessionToken(wrapped ? payload.sessionToken : (data && data._tmAutoSaveSessionToken));
+  // 所有 renderer 调用共享同一 .tmp；主进程串行化才可保证 write+rename 这一对不互踩。
+  const task = autoSaveWriteQueue.then(async () => {
+    try {
+      ensureSaveDir();
+      let currentToken = getAutoSaveSessionToken();
+      // 新桥第一次运行且尚无 sidecar 时，由主进程创建 token 并随回包同步给 preload。
+      if (wrapped && !requestToken && !currentToken) {
+        requestToken = persistAutoSaveSessionToken(crypto.randomUUID());
+        currentToken = requestToken;
+      } else if (wrapped && !requestToken && currentToken) {
+        requestToken = currentToken;
+      } else if (requestToken && !currentToken) {
+        currentToken = persistAutoSaveSessionToken(requestToken);
+      }
+      // 一旦启用 session 契约，旧桥/旧局的无 token 请求与已失效 token 一律不得覆盖 canonical 文件。
+      if (currentToken && !autoSaveSessionMatches(requestToken)) {
+        return { success: false, stale: true, error: '自动存档请求已跨档失效', sessionToken: currentToken };
+      }
+      const tmpFile = AUTO_SAVE_FILE + '.tmp';
+      const diskPayload = requestToken
+        ? { __tmAutoSaveEnvelope: 1, sessionToken: requestToken, data: data }
+        : data;
+      // 2026-06-10·紧凑写盘:pretty-print 缩进占存档体积 55%(实测 113MB→48MB)·机器读写无人看·JSON.parse 两者通吃
+      await fs.promises.writeFile(tmpFile, JSON.stringify(diskPayload), 'utf-8');
+      // writeFile 在途可跨越 renderer 的同步 rotate；rename 前必须按 sidecar 再验。
+      if (requestToken && !autoSaveSessionMatches(requestToken)) {
+        try { await fs.promises.unlink(tmpFile); } catch (_) {}
+        return { success: false, stale: true, error: '自动存档写入期间已跨档失效', sessionToken: getAutoSaveSessionToken() };
+      }
+      await fs.promises.rename(tmpFile, AUTO_SAVE_FILE);
+      // rotate 可与原子 rename 的系统调用并行完成；即使旧 envelope 已落下，sidecar 不匹配也使其不可恢复。
+      if (requestToken && !autoSaveSessionMatches(requestToken)) {
+        return { success: false, stale: true, error: '自动存档提交期间已跨档失效', sessionToken: getAutoSaveSessionToken() };
+      }
+      return { success: true, sessionToken: requestToken || '' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+  autoSaveWriteQueue = task.then(() => undefined, () => undefined);
+  return task;
 });
 
 ipcMain.handle('load-auto-save', async () => {
   try {
-    const filepath = path.join(SAVE_DIR, '__autosave__.json');
-    if (!fs.existsSync(filepath)) return { success: false };
-    const data = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
-    return { success: true, data };
+    if (!fs.existsSync(AUTO_SAVE_FILE)) return { success: false };
+    const parsed = JSON.parse(fs.readFileSync(AUTO_SAVE_FILE, 'utf-8'));
+    if (parsed && parsed.__tmAutoSaveEnvelope === 1) {
+      const fileToken = normalizeAutoSaveSessionToken(parsed.sessionToken);
+      let currentToken = getAutoSaveSessionToken();
+      // 兼容 sidecar 丢失但 canonical envelope 完整的安装：以文件 token 自愈 sidecar。
+      if (!currentToken && fileToken) currentToken = persistAutoSaveSessionToken(fileToken);
+      if (!fileToken || fileToken !== currentToken) {
+        return { success: false, stale: true, error: '自动存档属于已失效的旧局' };
+      }
+      return { success: true, data: parsed.data, sessionToken: fileToken };
+    }
+    // 首次升级前的无 envelope 旧档仅在 sidecar 尚不存在时兼容读取。
+    if (getAutoSaveSessionToken()) return { success: false, stale: true, error: '旧自动存档已被新局失效' };
+    return { success: true, data: parsed, sessionToken: '' };
   } catch (e) {
     return { success: false, error: e.message };
   }

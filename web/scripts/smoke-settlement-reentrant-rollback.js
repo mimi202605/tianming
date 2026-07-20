@@ -4,10 +4,10 @@
 //   bug:agent engine-first 跑结算后自检不过/引擎抛错 → _rollback 只 deepClone(GM) 复位·
 //       但结算还累加了两个「活在 GM 之外的 module 级单例」:
 //       ① AccountingSystem.ledger(收支 push+=) ② StateCouplingSystem.previousValues(耦合基线)
-//       回滚盖不到 → LLM 模式重跑结算二次累加 → 账本双记 / 耦合基线污染漂进已提交回合。
+//       回滚盖不到 → 玩家重试当前模式时结算二次累加 → 账本双记 / 耦合基线污染漂进下一次尝试。
 //   修:随 GM 快照一并快照这两单例(_snapshotExternals)·回滚一并还原(_rollback extSnap 第4参)。
 //   验:①②真模块 API+agent 接线源码守卫 ③直调 rollback 还原单例+3参向后兼容
-//       ④引擎抛错→显式回滚还原单例 ⑤自检不过→bail 回滚还原单例 ⑥happy 不还原(已提交)
+//       ④引擎抛错→留在 Agent 支路并显式回滚单例 ⑤自检不过→留在 Agent 支路并回滚 ⑥happy 不还原(已提交)
 //   注:真 50-tick 引擎 node 跑不动·单例用记录型 stub 挂 globalThis 验编排闭环(同 s5 范式)。
 // ============================================================
 const fs = require('fs');
@@ -97,9 +97,9 @@ function setScript(arr) { let i = 0; globalThis.callAIWithTools = async function
   };
   setScript([{ toolCalls: [], text: '' }]);
   let res = await AM.run(ctx);
-  assert(res.fallback === true && /引擎基线/.test(res.reason || ''), '④ 引擎抛错 → 回落 LLM');
+  assert(res.fallback === false && res.mode === 'agent' && /引擎基线/.test(res.reason || ''), '④ 引擎抛错 → 留在 Agent 支路并报错');
   assert(gm.turn === 7 && gm.guoku === 12000, '④ GM 回滚(turn/guoku 还原)');
-  assert(globalThis.AccountingSystem._peek().items.length === 0, '④ 账本单例随显式回滚还原(防 LLM 重跑双记)');
+  assert(globalThis.AccountingSystem._peek().items.length === 0, '④ 账本单例随显式回滚还原(防重试双记)');
   assert(Object.keys(globalThis.StateCouplingSystem._peek()).length === 0, '④ 耦合基线单例随显式回滚还原(防基线污染)');
 
   // ── ⑤ 自检不过(引擎留 NaN·已污染单例)→ bail 回滚还原单例 ──
@@ -115,7 +115,7 @@ function setScript(arr) { let i = 0; globalThis.callAIWithTools = async function
     { toolCalls: [{ name: 'finalize_turn', input: { summary: '推演' } }], text: '' }
   ]);
   res = await AM.run(ctx);
-  assert(res.fallback === true && /自检/.test(res.reason || ''), '⑤ 自检不过 → 回落 LLM');
+  assert(res.fallback === false && res.mode === 'agent' && /自检/.test(res.reason || ''), '⑤ 自检不过 → 留在 Agent 支路并报错');
   assert(gm.turn === 7 && gm.guoku === 12000, '⑤ GM 回滚还原');
   assert(globalThis.AccountingSystem._peek().items.length === 0, '⑤ 账本单例随 bail 回滚还原');
   assert(Object.keys(globalThis.StateCouplingSystem._peek()).length === 0, '⑤ 耦合基线单例随 bail 回滚还原');

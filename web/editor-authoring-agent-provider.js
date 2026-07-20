@@ -217,7 +217,21 @@
     return lines.join('\n');
   }
 
-  function _delay(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+  function _abortError(reason) {
+    var e = new Error(String(reason || '请求已取消'));
+    e.name = 'AbortError'; e.aborted = true;
+    return e;
+  }
+  function _delay(ms, signal) {
+    return new Promise(function(resolve, reject) {
+      if (signal && signal.aborted) return reject(_abortError(signal.reason));
+      var timer = setTimeout(done, ms);
+      function cleanup() { if (signal && signal.removeEventListener) signal.removeEventListener('abort', onAbort); }
+      function done() { cleanup(); resolve(); }
+      function onAbort() { clearTimeout(timer); cleanup(); reject(_abortError(signal && signal.reason)); }
+      if (signal && signal.addEventListener) signal.addEventListener('abort', onAbort, { once: true });
+    });
+  }
 
   // 带重试/超时的 fetch（429 Retry-After·5xx/网络错误指数退避·AbortController 超时）
   function _fetchJSON(url, options, opts) {
@@ -225,30 +239,44 @@
     var maxRetries = opts.maxRetries != null ? opts.maxRetries : 3;
     var timeoutMs = opts.timeoutMs || 180000;
     var base = opts.retryBaseMs || 1000;
+    var outerSignal = opts.signal || null;
     function attempt(n) {
+      if (outerSignal && outerSignal.aborted) return Promise.reject(_abortError(outerSignal.reason));
       var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, timeoutMs) : null;
+      var timedOut = false;
+      var timer = ctrl ? setTimeout(function() { timedOut = true; ctrl.abort('timeout'); }, timeoutMs) : null;
+      var onOuterAbort = null;
+      if (ctrl && outerSignal && outerSignal.addEventListener) {
+        onOuterAbort = function() { try { ctrl.abort(outerSignal.reason || 'aborted'); } catch (_) {} };
+        outerSignal.addEventListener('abort', onOuterAbort, { once: true });
+      }
       var fopt = Object.assign({}, options);
       if (ctrl) fopt.signal = ctrl.signal;
-      return global.fetch(url, fopt).then(function(r) {
+      else if (outerSignal) fopt.signal = outerSignal;
+      function cleanup() {
         if (timer) clearTimeout(timer);
+        if (onOuterAbort && outerSignal && outerSignal.removeEventListener) outerSignal.removeEventListener('abort', onOuterAbort);
+      }
+      return global.fetch(url, fopt).then(function(r) {
+        cleanup();
         if (r.status === 429 && n < maxRetries) {
           var ra = parseInt((r.headers && r.headers.get && r.headers.get('Retry-After')) || '0', 10);
-          return _delay(ra > 0 ? ra * 1000 : Math.min(30000, base * Math.pow(2, n))).then(function() { return attempt(n + 1); });
+          return _delay(ra > 0 ? ra * 1000 : Math.min(30000, base * Math.pow(2, n)), outerSignal).then(function() { return attempt(n + 1); });
         }
         if (!r.ok) {
           return r.text().then(function(t) {
             var err = new Error('HTTP ' + r.status + ': ' + String(t).slice(0, 200));
             err.status = r.status;
-            if (r.status >= 500 && n < maxRetries) return _delay(base * Math.pow(2, n)).then(function() { return attempt(n + 1); });
+            if (r.status >= 500 && n < maxRetries) return _delay(base * Math.pow(2, n), outerSignal).then(function() { return attempt(n + 1); });
             throw err;
           });
         }
         return r.json();
       }).catch(function(e) {
-        if (timer) clearTimeout(timer);
+        cleanup();
+        if (outerSignal && outerSignal.aborted) throw _abortError(outerSignal.reason);
         if (e && e.status) throw e;               // 已分类的 HTTP 错误
-        if (n < maxRetries) return _delay(base * Math.pow(2, n)).then(function() { return attempt(n + 1); }); // 网络/超时
+        if (n < maxRetries && (timedOut || !(e && e.aborted))) return _delay(base * Math.pow(2, n), outerSignal).then(function() { return attempt(n + 1); }); // 网络/超时
         throw e;
       });
     }
@@ -316,6 +344,8 @@
       if (fromText.length) return { text: parsed.text, toolCalls: fromText, fallback: true };
       return parsed; // 纯文本无工具 → 交给 loop 判 noToolCalls
     }).catch(function(e) {
+      // 玩家停止属于控制流，不做文本兜底、不重试、不改写成“网络抖动”。
+      if ((opts.signal && opts.signal.aborted) || (e && e.aborted)) throw _abortError((opts.signal && opts.signal.reason) || (e && e.message));
       // 刀G8 · 超限识别:400+超窗文案 → 不做注定失败的文本兜底(更长)·标 overflow 供 loop 压缩自救
       var _msg0 = String((e && e.message) || '');
       var _ovf0 = !!(e && e.status === 400 && _OVERFLOW_RE.test(_msg0));
@@ -348,7 +378,7 @@
     if (!cfg.key) return Promise.resolve({ ok: false, detail: '未配置 API Key（请先在设置面板填写）' });
     if (!cfg.url) return Promise.resolve({ ok: false, detail: '未配置 API 地址' });
     var ping = [{ name: 'ping', description: '连通性测试·回声', parameters: { type: 'object', properties: { ok: { type: 'boolean', description: '固定填 true' } }, required: ['ok'] } }];
-    return callWithTools('调用 ping 工具，参数 ok=true，确认连通。', ping, { cfg: cfg, maxTok: 64, maxRetries: 1, timeoutMs: 30000 })
+    return callWithTools('调用 ping 工具，参数 ok=true，确认连通。', ping, { cfg: cfg, maxTok: 64, maxRetries: 1, timeoutMs: 30000, signal: opts.signal })
       .then(function(r) {
         return {
           ok: true,

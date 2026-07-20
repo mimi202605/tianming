@@ -1059,7 +1059,13 @@ async function _cc3_aiGenReact(name, item, role, onChunk) {
 
   // 时空约束·防 AI 引用未来史实（"崇祯朝某事"等）
   if (typeof _buildTemporalConstraint === 'function') {
-    try { p += _buildTemporalConstraint(gmCh); } catch (_) {}
+    try {
+      // 扫描源：今日朝会议题(item.title/detail)·发言人(gmCh||ch).name 作种子恒入
+      var _ccaTopic = ((item && item.title) || '') + ' ' + ((item && (item.detail || item.content)) || '');
+      var _ccaSeed = (gmCh && gmCh.name) || (ch && ch.name) || '';
+      var _ccaMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_ccaTopic, _ccaSeed ? [_ccaSeed] : [], 10) : (_ccaSeed ? [_ccaSeed] : []);
+      p += _buildTemporalConstraint(gmCh, { mentionedNames: _ccaMentioned });
+    } catch (_) {}
   }
 
   // 调用 AI（流式·拆 JSON 中的 line 实时回调）

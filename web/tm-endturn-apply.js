@@ -62,6 +62,54 @@
     ctx.meta.timing = ctx.meta.timing || {};
     return ctx;
   }
+  function _tmRecordSemanticFailure(kind, ref, reason) {
+    var sink = global.TM && global.TM.Endturn && global.TM.Endturn.AI && global.TM.Endturn.AI.apply && global.TM.Endturn.AI.apply.recordUnappliedChange;
+    if (typeof sink === 'function') sink({ kind:kind, ref:ref, reason:reason }, 'endturn-writeback');
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_gate', { label:kind, ref:ref, reason:reason }); } catch (_) {}
+    return false;
+  }
+  function _tmExactChar(ref) {
+    var G = global.GM;
+    var raw = String(ref == null ? '' : ref).trim();
+    if (!raw || !G || !Array.isArray(G.chars)) return null;
+    return G.chars.find(function(ch) {
+      return ch && ((ch.name != null && String(ch.name).trim() === raw) || (ch.id != null && String(ch.id).trim() === raw));
+    }) || null;
+  }
+  function _tmExactLivingChar(ref) {
+    var ch = _tmExactChar(ref);
+    return ch && ch.alive !== false && ch.dead !== true ? ch : null;
+  }
+  function _tmApplyCanonicalDeath(ref, reason, kind) {
+    var ch = _tmExactChar(ref);
+    if (!ch) return _tmRecordSemanticFailure(kind || 'character_death', ref, 'death target not in active roster');
+    if (ch.alive === false || ch.dead === true) return false; // 已由唯一 sink 处理过；调用方不得重复记“死亡”日志
+    var cd = { name:ch.name || String(ref), reason:String(reason || '死亡') };
+    try {
+      if (typeof global.applyOneDeath === 'function') global.applyOneDeath(cd);
+      else if (typeof global.applyCharacterDeaths === 'function') global.applyCharacterDeaths({ character_deaths:[cd] });
+      else return _tmRecordSemanticFailure(kind || 'character_death', ref, 'death pipeline unavailable');
+    } catch (e) {
+      return _tmRecordSemanticFailure(kind || 'character_death', ref, 'death pipeline exception: ' + ((e && e.message) || e));
+    }
+    return (ch.alive === false || ch.dead === true) || _tmRecordSemanticFailure(kind || 'character_death', ref, 'death pipeline did not apply');
+  }
+  function _tmSetFactionLeaderCanonical(fac, ref, reason, kind) {
+    var living = _tmExactLivingChar(ref);
+    if (!living) return _tmRecordSemanticFailure(kind || 'faction_leader', ref, 'leader must be an existing living character');
+    var sink = global.TM && global.TM.AIChange && global.TM.AIChange.Narrative && global.TM.AIChange.Narrative.setFactionLeader;
+    if (typeof sink !== 'function') return _tmRecordSemanticFailure(kind || 'faction_leader', ref, 'faction leader sink unavailable');
+    sink(fac, living.name, global.GM, reason || '势力首领变更');
+    return fac && fac.leader === living.name ? true : _tmRecordSemanticFailure(kind || 'faction_leader', ref, 'faction leader sink rejected write');
+  }
+  function _tmSetPartyLeaderCanonical(party, ref, reason, kind) {
+    var living = _tmExactLivingChar(ref);
+    if (!living) return _tmRecordSemanticFailure(kind || 'party_leader', ref, 'leader must be an existing living character');
+    var sink = global.TM && global.TM.AIChange && global.TM.AIChange.Narrative && global.TM.AIChange.Narrative.setPartyLeader;
+    if (typeof sink !== 'function') return _tmRecordSemanticFailure(kind || 'party_leader', ref, 'party leader sink unavailable');
+    sink(party, living.name, global.GM, reason || '党派首领变更');
+    return party && party.leader === living.name && party.head === living.name ? true : _tmRecordSemanticFailure(kind || 'party_leader', ref, 'party leader sink rejected write');
+  }
   function _tmApplyLoyaltyDelta(ch, delta, reason, source, opts) {
     if (!ch) return null;
     opts = opts || {};
@@ -1042,12 +1090,14 @@
                 if (typeof addEB === 'function') addEB('人事', cu.name + '从' + _oldLoc + '赴' + cu.new_location);
               }
             }
-            // 立场变化
-            if (cu.new_stance && typeof cu.new_stance === 'string') {
+            // 立场变化 ── 刀C·返工issue1(2026-07-19)·扁平 new_stance/new_party 是真实 SC1 消费点(此前 C3 只识别嵌套 updates.{}·扁平绕过)。
+            //   过 C3 同款字段级来源判据 _sensitiveCharFieldSourced(无源→跳过该字段+留痕·有源→照落)。玩家目标字段已在上方 1027 行删除·此处只作非玩家。
+            var _wgFlat = global.TM && global.TM.__acaParts;
+            if (cu.new_stance && typeof cu.new_stance === 'string' && (!(_wgFlat && _wgFlat._sensitiveCharFieldSourced) || _wgFlat._sensitiveCharFieldSourced(GM, p1, ch, 'stance', ch.name))) {
               ch.stance = cu.new_stance;
             }
             // 党派变化
-            if (cu.new_party !== undefined) {
+            if (cu.new_party !== undefined && (!(_wgFlat && _wgFlat._sensitiveCharFieldSourced) || _wgFlat._sensitiveCharFieldSourced(GM, p1, ch, 'party', ch.name))) {
               ch.party = cu.new_party || '';
             }
             // 压力-特质挂钩
@@ -1186,7 +1236,7 @@
                 _coupFac.strength = Math.max(5, (_coupFac.strength||50) - 15); // 内部动荡大减实力
                 if (fe.result && (fe.result.indexOf('成功') >= 0 || fe.result.indexOf('胜') >= 0)) {
                   // 政变成功——可能更换首领
-                  if (fe.newLeader) _coupFac.leader = fe.newLeader;
+                  if (fe.newLeader) _tmSetFactionLeaderCanonical(_coupFac, fe.newLeader, fe.reason || fe.result || '政变成功', 'faction_events.newLeader');
                   _coupFac.strength = Math.min(100, (_coupFac.strength||30) + 10); // 稳定后回升
                 }
               }
@@ -1286,7 +1336,7 @@
               } catch(_psSyncE) {}
             }
             if (pc.new_status) { party.status = pc.new_status; addEB('\u515A\u6D3E', pc.name + '\u72B6\u6001\u53D8\u4E3A' + pc.new_status); }
-            if (pc.new_leader) { party.leader = pc.new_leader; addEB('\u515A\u6D3E', pc.name + '\u65B0\u9996\u9886:' + pc.new_leader); }
+            if (pc.new_leader && _tmSetPartyLeaderCanonical(party, pc.new_leader, pc.reason || '党派首领变更', 'party_changes.new_leader')) { addEB('\u515A\u6D3E', pc.name + '\u65B0\u9996\u9886:' + party.leader); }
             if (pc.new_agenda) { party.currentAgenda = pc.new_agenda; party._agendaTurn = GM.turn; party._agendaSource = 'ai'; }
             if (pc.new_shortGoal) party.shortGoal = pc.new_shortGoal;
           });
@@ -1562,7 +1612,8 @@
             var newParty = {
               name: sp.newName,
               ideology: sp.ideology || parent.ideology || '',
-              leader: sp.newLeader || '',
+              leader: '',
+              head: '',
               influence: Math.floor((parent.influence||50) * 0.4),
               status: '活跃',
               splinterFrom: parent.name,
@@ -1573,6 +1624,7 @@
               description: '自' + parent.name + '分裂，' + (sp.reason||''),
               _createdTurn: GM.turn
             };
+            if (sp.newLeader && !_tmSetPartyLeaderCanonical(newParty, sp.newLeader, sp.reason || '党派分裂立首', 'party_splinter.newLeader')) return;
             GM.parties.push(newParty);
             parent.influence = Math.max(5, (parent.influence||50) - 15);
             parent.cohesion = Math.max(10, (parent.cohesion||60) - 15);
@@ -1614,8 +1666,7 @@
             var fObj = GM.facs.find(function(f){return f.name === sc.faction;});
             if (!fObj) return;
             var oldLeader = fObj.leader;
-            fObj.leader = sc.newLeader;
-            if (fObj.leaderInfo) fObj.leaderInfo.name = sc.newLeader;
+            if (!_tmSetFactionLeaderCanonical(fObj, sc.newLeader, sc.narrative || '势力继统', 'faction_succession.newLeader')) return;
             if (!fObj.succession) fObj.succession = { rule: 'primogeniture', designatedHeir: '', stability: 60 };
             fObj.succession.stability = Math.max(0, Math.min(100, (fObj.succession.stability||60) + (parseInt(sc.stability_delta)||0)));
             if (!Array.isArray(fObj.historicalEvents)) fObj.historicalEvents = [];
@@ -2187,10 +2238,10 @@
             }
             // 领袖伤亡
             if (ru.leaderCasualty) {
-              addEB('\u8D77\u4E49', '\u3010' + r.leaderName + '\u3011' + ru.leaderCasualty);
-              if (/\u6B7B|\u6218\u6B7B|\u88AB\u6740|\u906E\u6BD9/.test(ru.leaderCasualty)) {
-                var _lCh = findCharByName(r.leaderName);
-                if (_lCh) { _lCh.alive = false; _lCh.dead = true; _lCh.deathTurn = GM.turn; _lCh.deathReason = ru.leaderCasualty; if (typeof GameEventBus !== 'undefined') GameEventBus.emit('character:death', { name: _lCh.name, reason: ru.leaderCasualty }); }
+              var _fatalLeaderCasualty = /\u6B7B|\u6218\u6B7B|\u88AB\u6740|\u906E\u6BD9/.test(ru.leaderCasualty);
+              var _leaderCasualtyApplied = !_fatalLeaderCasualty || _tmApplyCanonicalDeath(r.leaderName, ru.leaderCasualty, 'revolt_update.leaderCasualty');
+              if (_leaderCasualtyApplied) addEB('\u8D77\u4E49', '\u3010' + r.leaderName + '\u3011' + ru.leaderCasualty);
+              if (_fatalLeaderCasualty && _leaderCasualtyApplied) {
                 // 领袖死亡通常推向 decline（除非已转 establishment）
                 if (r.phase !== 'establishment') r.phase = 'decline';
               }
@@ -2227,8 +2278,7 @@
               // 移除 activeWars
               if (Array.isArray(GM.activeWars)) GM.activeWars = GM.activeWars.filter(function(w){return w.revoltId !== r.id;});
               // 领袖被杀
-              var _l = findCharByName(r.leaderName);
-              if (_l) { _l.alive = false; _l.dead = true; _l.deathTurn = GM.turn; _l.deathReason = '起义失败被剿'; if (typeof GameEventBus !== 'undefined') GameEventBus.emit('character:death', { name: _l.name, reason: '起义失败被剿' }); }
+              _tmApplyCanonicalDeath(r.leaderName, '起义失败被剿', 'revolt_suppress.leader');
             } else if (sp.outcome === 'defeat') {
               // 官军反被击溃——起义壮大
               r.militaryStrength = Math.min(999999, (r.militaryStrength||0) + 3000);
@@ -2380,7 +2430,8 @@
             var newP = {
               name: pc.name,
               ideology: pc.ideology || '',
-              leader: pc.leader || '',
+              leader: '',
+              head: '',
               influence: parseInt(pc.influence, 10) || 20,
               status: pc.status || '活跃',
               cohesion: parseInt(pc.cohesion, 10) || 70,
@@ -2394,13 +2445,14 @@
               description: pc.reason || '',
               _createdTurn: GM.turn
             };
+            if (pc.leader && !_tmSetPartyLeaderCanonical(newP, pc.leader, pc.reason || pc.trigger || '党派新建', 'party_create.leader')) return;
             GM.parties.push(newP);
             // 党魁如是已有角色，则标记其 party
-            if (pc.leader) {
-              var _ldr = findCharByName(pc.leader);
+            if (newP.leader) {
+              var _ldr = _tmExactLivingChar(newP.leader);
               if (_ldr) _ldr.party = pc.name;
             }
-            addEB('\u515A\u4E89', '\u3010\u65B0\u515A\u5D1B\u8D77\u3011' + pc.name + (pc.leader ? '\uFF08\u9996\uFF1A' + pc.leader + '\uFF09' : '') + (pc.trigger ? '\u2014\u2014' + pc.trigger : '') + (pc.reason ? '\uFF1A' + pc.reason : ''));
+            addEB('\u515A\u4E89', '\u3010\u65B0\u515A\u5D1B\u8D77\u3011' + pc.name + (newP.leader ? '\uFF08\u9996\uFF1A' + newP.leader + '\uFF09' : '') + (pc.trigger ? '\u2014\u2014' + pc.trigger : '') + (pc.reason ? '\uFF1A' + pc.reason : ''));
             if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({ turn: GM.turn, date: typeof getTSText==='function'?getTSText(GM.turn):'', content: '\u3010\u65B0\u515A\u3011' + pc.name + '\u6210\u7ACB\u3002' + (pc.reason||''), category: '\u515A\u6D3E' });
           });
         }
@@ -2449,7 +2501,7 @@
               id: 'faction_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
               name: fc.name,
               type: fc.type || '起义军',
-              leader: fc.leader || '',
+              leader: '',
               territory: fc.territory || '',
               strength: parseInt(fc.strength, 10) || 30,
               militaryStrength: parseInt(fc.militaryStrength, 10) || 10000,
@@ -2466,11 +2518,12 @@
               color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
               _createdTurn: GM.turn
             };
+            if (fc.leader && !_tmSetFactionLeaderCanonical(newF, fc.leader, fc.reason || fc.triggerEvent || '势力新建', 'faction_create.leader')) return;
             GM.facs.push(newF);
             if (typeof addToIndex === 'function') addToIndex('fac', newF.name, newF);
             // 关联现有角色·新势力立国·领袖入籍·走 Membership API (Slice J)
-            if (fc.leader) {
-              var _fLdr = findCharByName(fc.leader);
+            if (newF.leader) {
+              var _fLdr = _tmExactLivingChar(newF.leader);
               if (_fLdr) {
                 if (typeof window !== 'undefined' && window.TM && TM.FactionMembership) {
                   TM.FactionMembership.assignChar(_fLdr, fc.name, { reason: '新势力立国·领袖入籍' });
@@ -4053,16 +4106,10 @@
                 addEB('\u540E\u5BAB', he.character + '\u664B\u5C01\u4E3A' + _rankDisplayName);
               }
             } else if (he.type === 'death') {
-              var spd = GM.chars ? GM.chars.find(function(c) { return c.name === he.character; }) : null;
-              if (spd) {
-                spd.alive = false; spd.dead = true; spd.deathTurn = GM.turn; spd.deathReason = he.detail || '';
-                // 触发完整死亡级联（官职清理/军队统帅/事件总线/叙事事实）
-                if (typeof PostTransfer !== 'undefined') PostTransfer.cascadeVacate(he.character);
-                if (typeof GameEventBus !== 'undefined') GameEventBus.emit('character:death', { name: he.character, reason: he.detail || '薨逝' });
-                // 军队统帅清理
-                if (GM.armies) GM.armies.forEach(function(a) { if (a.commander === he.character) { a.commander = ''; a.morale = Math.max(0, (a.morale||50) - 15); } });
+              if (_tmApplyCanonicalDeath(he.character, he.detail || '薨逝', 'harem_events.death')) {
+                var _haremDead = _tmExactChar(he.character);
+                addEB('\u540E\u5BAB', ((_haremDead && _haremDead.name) || he.character) + '\u85A8\u901D' + (he.detail ? '\uFF1A' + he.detail : ''));
               }
-              addEB('\u540E\u5BAB', he.character + '\u85A8\u901D' + (he.detail ? '\uFF1A' + he.detail : ''));
             } else if (he.type === 'favor_change') {
               // 宠爱变化
               var spf = GM.chars ? GM.chars.find(function(c) { return c.name === he.character && (typeof _tmIsPlayerConsort === 'function' ? _tmIsPlayerConsort(c) : c.spouse === true); }) : null;

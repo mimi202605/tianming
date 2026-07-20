@@ -928,7 +928,7 @@
         Object.keys(GM.wenduiHistory).forEach(function(name) {
           if (!onStageNames[name]) return;
           var msgs = GM.wenduiHistory[name] || [];
-          var recent = msgs.filter(function(m){ return (curTurn - (m.turn || curTurn)) <= recentTurns; }).slice(-4);
+          var recent = (typeof _tmFilterWenduiEntries === 'function' ? _tmFilterWenduiEntries(msgs, GM) : msgs).filter(function(m){ return (curTurn - (m.turn || curTurn)) <= recentTurns; }).slice(-4);
           if (recent.length > 0) {
             var innerXml = recent.map(function(m){
               var who = (m.role === 'player' || m.role === 'user') ? '帝' : '臣';
@@ -1068,7 +1068,9 @@
           }
           return s;
         };
-        var sorted = c._memory.slice().sort(function(a,b){ return _memScore(b) - _memScore(a); });
+        // 刀B·过滤与本局 GM 生死态冲突的记忆条目（治老玩家已污染 ch._memory·npc-hearts 不喂污染条）
+        var _cleanMem = (typeof _tmFilterMemories === 'function') ? _tmFilterMemories(c._memory, GM) : (c._memory || []);
+        var sorted = _cleanMem.slice().sort(function(a,b){ return _memScore(b) - _memScore(a); });
         // ★2026-07-01 codex-fix S1:hearts 门槛 impMin 随模型上下文动态(3~9·见 tm-ai-infra heartsImportanceMin)·中/小上下文可到 7~8·
         //   会把 imp6 的正式问对记忆挡在推演外。额外放行「近2回合内 importance>=6」的记忆(典型=刚发生的问对/奏疏交谈)·
         //   令新近君臣交谈无论动态门槛多高都能进推演·不改其 importance(避伤疤膨胀)。先过滤后截断·以保其入选。
@@ -1081,8 +1083,8 @@
         //   取最近回合中(turn 最新、同 turn 取 importance 最高)一条·若未入选则占最后 1 槽(perChar<=1 时独占·定义性伤疤已在 <self>)。
         var _lastTurnGate = (GM.turn || 0) - 1;
         var _freshest = null;
-        for (var _fi = 0; _fi < c._memory.length; _fi++) {
-          var _fm = c._memory[_fi];
+        for (var _fi = 0; _fi < _cleanMem.length; _fi++) {
+          var _fm = _cleanMem[_fi];
           if (!_fm || (_fm.turn||0) < _lastTurnGate) continue;
           if (!_freshest || (_fm.turn||0) > (_freshest.turn||0) || ((_fm.turn||0) === (_freshest.turn||0) && (_fm.importance||0) > (_freshest.importance||0))) _freshest = _fm;
         }
@@ -1138,7 +1140,7 @@
         //   已入上方 <memory> 的不重挂)显式挂 <with>·令两人同场时 AI 见得到"他们之间发生过什么"·对手戏不靠猜。
         try {
           var _gBest = {};
-          (c._memory || []).forEach(function(m) {
+          _cleanMem.forEach(function(m) {
             var w = m && m.who;
             if (!w || w === c.name || !_present[w] || (m.importance || 0) < 5) return;
             if (top.indexOf(m) >= 0) return;  // 已作 <memory> 注入·不重挂
@@ -1179,7 +1181,7 @@
               var _sc = c2._scars[c2._scars.length - 1];
               if (_sc) _defMem = String(_sc.event || '').slice(0, 26) + (_sc.emotion ? '[' + _sc.emotion + ']' : '');
             } else if (Array.isArray(c2._memory) && c2._memory.length) {
-              var _mm = c2._memory.slice().sort(function(a, b){ return (b.importance || 0) - (a.importance || 0); })[0];
+              var _mm = ((typeof _tmFilterMemories === 'function') ? _tmFilterMemories(c2._memory, GM) : c2._memory).slice().sort(function(a, b){ return (b.importance || 0) - (a.importance || 0); })[0];
               if (_mm && _mm.event) _defMem = String(_mm.event).slice(0, 26);
             }
           } catch (_dmE) {}
@@ -1307,21 +1309,21 @@
     tp += '\n═══ 【叙事-状态同步·核心原则】═══\n';
     tp += '※ 凡推演叙事中描写的"实际发生的变化"·均须通过对应的语义通道落回游戏状态字段·不得只停留在文字描述：\n';
     tp += '  · 皇帝赐名/改名 X 为 Y → char_updates:[{name:"X",updates:{name:"Y",原名:"X"}}]·同步刷新 careerHistory 标题\n';
-    tp += '  · 玩家改官职名（例"户部尚书"→"度支令"）→ anyPathChanges 改 P.officeTree 对应节点·并对所有 officialTitle==旧名 的 char 同步 char_updates.updates.officialTitle\n';
+    tp += '  · 玩家改官职名（例"户部尚书"→"度支令"）→ 必须优先走 office_changes；不得用 anyPathChanges 直写 holder/officialTitle 等任职敏感字段\n';
     tp += '  · 授官 → office_assignments:[{name,post,dept,action:"appoint",toLocation?,reason}]·若需赴任则留走位；同时 careerEvent 自动追加，无需单独写\n';
     tp += '  · 罢免/贬谪/外放 → office_assignments action:"dismiss"/"transfer"；如外放须 toLocation+走位\n';
     tp += '    ★【强制·不要只写 personnel_changes】personnel_changes 仅供史记弹窗展示·不会真正改动官制树/人物仕途·必须同时在 office_assignments 里写结构化条目·否则官职不生效\n';
     tp += '    ★ 映射：玩家诏令"命 X 为 Y" → office_assignments:[{name:"X",post:"Y",action:"appoint"}]·且 personnel_changes 里同步写一条供展示\n';
     tp += '    ★ 玩家罢某人 → office_assignments action:"dismiss" + personnel_changes 同写·两处必配套\n';
     tp += '  · 封爵/赐号/追谥 → char_updates.updates 里更新 title/爵位/封号·并 careerEvent 记录\n';
-    tp += '  · 赐死/诛戮 → char_updates.updates.alive:false 或 personnel_changes change:"赐死"\n';
+    tp += '  · 赐死/诛戮/病故/战死 → 统一走 character_deaths:[{name:"真实在册人物名",reason:"具体死因"}]；严禁 char_updates.updates.alive/dead 裸写（后端会规范化并拒绝幻影人物）\n';
     tp += '  · 下狱/捉拿/逮捕 → personnel_changes change 含『下狱/捉拿/逮捕』·将设 char._imprisoned=true·使其不参朝议\n';
     tp += '  · 抄家/抄没/籍没 → personnel_changes change 含『抄家』·将自动 EconomyLinkage.confiscate·私产入内帑+追隐匿·禁直接 fiscal_adjustments 写抄家收入(会双计)\n';
     tp += '  · 流放/发配/戍边 → personnel_changes change 含『流放/发配』·设 _exiled\n';
     tp += '  · 致仕/退休/乞骸 → personnel_changes change 含『致仕/退休』·设 _retired\n';
     tp += '    ★【强制·一致性铁律】narrative(实录/起居注/御批/史记/事件 desc)中提到任何人物状态变化(下狱/赐死/抄家/流放/致仕/逃亡/革职)·必须 100% 同步在 personnel_changes 或 office_assignments 或 char_updates 里·后端 PersonnelValidator 会扫 narrative 自动补录但记警告·不要靠它兜底\n';
     tp += '    ★ 反例(已修): 实录写"严贵崔呈秀贪墨·命方正化捉拿抄家下狱·得银八十万"·但 personnel_changes 不写崔呈秀·导致他还在朝议·80 万也不入账。正例: 实录同上文·personnel_changes:[{name:"崔呈秀",change:"捉拿抄家下狱",reason:"...贪墨..."}]·fiscal_adjustments:[]空(因抄家由 personnel_changes 触发 confiscate·重复写会双计)\n';
-    tp += '  · 新设/裁撤衙门 → anyPathChanges 改 P.officeTree；同时建立/解除对应 publicTreasury 绑定\n';
+    tp += '  · 新设/裁撤衙门 → office_changes（运行态真源为 GM.officeTree）；同时建立/解除对应 publicTreasury 绑定·不得写 P.*\n';
     tp += '  · 财政调整（赐金/征发/专款/缴获/贡品/赔款/罚没/赈济/长期财源/长期开支）→ fiscal_adjustments:[{action:"add|update|stop|remove",target:"guoku|neitang|province:X",kind:"income|expense",resource:"money|grain|cloth",amount,name,reason,recurring:false}]\n';
     tp += '    ★【强制·核心 bug 历史教训】任何钱/粮/布流动——无论是玩家诏令所引（赏银万两·赈粮千石·修宫殿·发军饷）·还是推演中的 NPC 行为（贪污·贡纳·缴获·赔款·走私入库）·必须一条一条写入 fiscal_adjustments·绝不可只在叙事/戏说/实录里提及数字而不落账\n';
     tp += '    ★ 常见映射：皇帝赐赏私人→target:neitang/kind:expense；诏令赈济地方→target:guoku/kind:expense；战争缴获→target:guoku/kind:income；地方贡物→target:guoku/kind:income（贵重珍宝则 neitang）；抄家罚没→guoku 或 neitang（视情）\n';
@@ -1342,7 +1344,8 @@
     tp += '        - 叙事里一定要写明"帑廪已空·户部尚书泣请/南京仓无可调/漕运绝流"而不得回避\n';
     tp += '  · 势力/党派/阶层/区域变化 → faction_updates / party_updates / class_updates / region_updates\n';
     tp += '  · 工程/运动/战役启动 → project_updates 保存进度；相应 fiscal_adjustments 记支出\n';
-    tp += '  · 任何其他深层字段（人物属性、忠诚、好感、记忆、派系关系、异象、科举阶段等）→ anyPathChanges op:"set/delta/push/merge"\n';
+    tp += '  · 任何其他非敏感深层字段（人物属性、忠诚、好感、记忆、派系关系、异象、科举阶段等）→ anyPathChanges op:"set/delta/push/merge"\n';
+    tp += '    ★ anyPathChanges/changes 严禁写任意层级 _内部字段、__proto__/constructor/prototype、人物死亡、官职 holder、势力首领、军队统帅；这些必须走上列结构化语义字段。delta 必须是真数值，不得用字符串数字。\n';
     tp += '  · 重大事件名望(resources.fame ±·经 char_updates/anyPathChanges)：平叛克捷/外交建功/百姓立生祠/退隐著书/著文传世 名望涨；重大冤案/党争失势贬谪/私德家族丑闻 名望跌；投敌叛乱 名望崩。仅限重大事件——日常往来好恶另有系统结算·勿在此重复。' + String.fromCharCode(10);
     tp += '※ 功名(gongming·见 npc-hearts·累积政绩资历·六阶 未识/有闻/清誉/儒望/朝宗/师表)是升迁举荐主要依据：擢人补缺优先功名高者(任人唯贤)；功名浅者骤擢高位=幸进，会招言官非议、清议哗然(应在叙事/npc_actions 体现)。功名低者勿越级保举。三品以上大员擢用尤重功名与资历。\n';
     tp += '※ 出身(chushen·见 npc-hearts·功名的资格半边=入仕所凭)：路径(科举/门荫/纳赀捐纳/军功/吏进/布衣) · 科第(进士/举人/生员…) · 荣衔(翰林/庶吉士/科道) · 正途/异途 · 清流/中流/浊流 · 仕途天花板。规则：①仕途循资不得逾出身天花板——举人/监生/生员/捐纳之流难入阁部清要(政治区三品以上)，越次擢用招清议大哗、皇威损；②清流(翰林/科道)名望素著、阁部储望，异途(捐纳/恩幸)易为清议所讥；③党派归属顺出身——清流出身亲清流党、异途亲浊流恩幸。授功名走 gongming_grants(奏荫 menyin/捐例 nazi/录军功 junggong/吏进 lijin/特赐进士 enci/馆选加衔 honor)；捐纳卖官解国库燃眉但败坏铨政清议。\n';
@@ -2212,13 +2215,13 @@
     if (_mp.mode === 'strict_hist') {
       gameModeDesc = '\n\n\u3010\u6A21\u5F0F\uFF1A\u4E25\u683C\u53F2\u5B9E\u3011';
       gameModeDesc += '\n\u2022 NPC\u6027\u683C\u4E25\u683C\u6309\u53F2\u6599\u2014\u2014\u65E0\u89E3\u8BFB\u7A7A\u95F4\uFF0C\u6838\u5FC3\u4EBA\u8BBE\u4E0D\u53EF\u6539\u53D8';
-      gameModeDesc += '\n\u2022 \u5386\u53F2\u4E8B\u4EF6\u6309\u771F\u5B9E\u65F6\u95F4\u7EBF\u53D1\u751F\u2014\u2014\u4E0D\u53EF\u63D0\u524D\u6216\u63A8\u8FDF\uFF08\u4F46\u73A9\u5BB6\u53EF\u6539\u53D8\u7ED3\u679C\uFF09';
+      gameModeDesc += '\n\u2022 \u5386\u53F2\u5927\u52BF\u4E0E\u80CC\u666F\u53EF\u53C2\u7167\u53F2\u5B9E\uFF0C\u4F46\u672C\u5C40\u5177\u4F53\u4EBA\u7269\u751F\u6B7B\u3001\u4E8B\u4EF6\u7ED3\u5C40\u4EE5\u5F53\u524D\u6E38\u620F\u6001\u4E3A\u51C6\uFF1B\u73A9\u5BB6\u5DF2\u6539\u53D8\u4E4B\u4E8B\u7EDD\u4E0D\u56DE\u9000\u53F2\u5B9E\uFF08\u4F46\u73A9\u5BB6\u53EF\u6539\u53D8\u7ED3\u679C\uFF09';
       gameModeDesc += '\n\u2022 \u6570\u503C\u6E10\u53D8\u4E3A\u4E3B\u2014\u2014\u6BCF\u56DE\u5408loyalty\u00B110/strength\u00B15\u4E3A\u4E0A\u9650';
       gameModeDesc += '\n\u2022 \u53D9\u4E8B\u4EFF\u300A\u8D44\u6CBB\u901A\u9274\u300B\u2014\u2014\u7EAA\u4E8B\u4F53\u3001\u7F16\u5E74\u3001\u6587\u8A00\u3001\u5BA2\u89C2\u514B\u5236';
       gameModeDesc += '\n\u2022 \u4FE1\u606F\u4E0D\u5BF9\u79F0\u6781\u7AEF\u2014\u2014\u5B98\u65B9\u62A5\u544A\u7C89\u9970\u7387\u66F4\u9AD8\uFF0C\u73A9\u5BB6\u6536\u5230\u7684\u4FE1\u606F\u504F\u5DEE\u66F4\u5927';
       gameModeDesc += '\n\u2022 \u653F\u7B56\u6548\u679C\u5EF6\u8FDF\u66F4\u957F\u2014\u2014\u6539\u9769\u9700\u6570\u5E74\u624D\u89C1\u6548';
       gameModeDesc += '\n\u2022 \u73A9\u5BB6\u89D2\u8272\u53EF\u80FD\u56E0\u75BE\u75C5/\u6697\u6740/\u610F\u5916\u6B7B\u4EA1\u2014\u2014\u5386\u53F2\u4E0D\u4FDD\u62A4\u4EFB\u4F55\u4EBA';
-      gameModeDesc += '\n\u2022 AI\u5E94\u53C2\u7167\u8BE5\u65F6\u671F\u53F2\u6599\u548C\u5B66\u672F\u7814\u7A76';
+      gameModeDesc += '\n\u2022 AI\u53F2\u6599\u4EC5\u4F5C\u80CC\u666F\u7D20\u517B\uFF0C\u4E0D\u5F97\u8986\u76D6\u5F53\u524D\u6E38\u620F\u6001';
       historicalCharLimit = '\n\u5386\u53F2\u4EBA\u7269\u9650\u5236:\u53EA\u80FD\u51FA\u73B0\u5267\u672C\u5F00\u59CB\u5E74\u4EFD\u524D\u540E100\u5E74\u5185\u7684\u5386\u53F2\u540D\u81E3\u3002';
     } else if (_mp.mode === 'light_hist') {
       gameModeDesc = '\n\n\u3010\u6A21\u5F0F\uFF1A\u8F7B\u5EA6\u53F2\u5B9E\u3011';
@@ -3592,7 +3595,7 @@
     sysP += '\n  · 多数行政领域之间有共通性——财政/人事/民政的底层逻辑相近，不应将其视为完全隔离的知识孤岛';
     sysP += '\n  · 真正的"外行"是：从未接触过、能力也低(对应值<40)、从政时间短的角色';
     _mark('personnel');
-    sysP += '\n- character_deaths: 让任何角色死亡（包括玩家角色→游戏结束）';
+    sysP += '\n- character_deaths: 让当前真实在册角色死亡（包括玩家角色→继统裁决或游戏结束），每项必须含 name+reason；不得改 char_updates.alive/dead 代替';
     sysP += '\n- faction_changes: \u4FEE\u6539\u52BF\u529B\u5C5E\u6027\uFF08strength_delta\u5B9E\u529B\uFF0Ceconomy_delta\u7ECF\u6D4E\uFF0CplayerRelation_delta\u5BF9\u7389\u5173\u7CFB\u3002strength\u964D\u81F30\u2192\u52BF\u529B\u8986\u706D\uFF09';
     sysP += '\n- faction_events: 创造势力间自主事件（战争/联盟/政变/行军/围城等）';
     sysP += '\n  ⚠ 涉及行军/围城的事件，必须在geoData中提供地理推算数据！';

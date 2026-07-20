@@ -513,9 +513,9 @@ console.log('天命游戏脚本开始加载...');
 <!-- 2026-07-04 起居注单一写口(gm:qijuHistory 收口)·须在所有写手之前 -->
 <script src="tm-qiju-ledger.js?v=2026070401"></script>
 <script src="tm-prompt-composer.js?v=2026052201"></script>
-<script src="tm-ai-infra.js?v=20260707-deadcode"></script>
+<script src="tm-ai-infra.js?v=20260719-memsanitize"></script>
 <!-- 勿动位置·第二十三拆：tm-ai-infra-model-detect.js 必须紧接 tm-ai-infra.js 之后装载(顶层函数型中段切·保序切割) -->
-<script src="tm-ai-infra-model-detect.js?v=20260707-deadcode"></script>
+<script src="tm-ai-infra-model-detect.js?v=20260719-memsanitize"></script>
 <script src="tm-memory-trace.js?v=20260531-traceonly"></script>
 <script src="tm-memory-evidence-registry.js?v=20260531-evidence"></script>
 <script src="tm-memory-source-bound.js?v=20260601-sourcebound"></script>
@@ -523,7 +523,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-context-zones.js?v=20260601-zones"></script>
 <script src="tm-memory-envelope.js?v=20260531-envelope"></script>
 <script src="tm-memory-governance.js?v=20260531-governance"></script>
-<script src="tm-memory-writegate.js?v=20260531-writegate"></script>
+<script src="tm-memory-writegate.js?v=20260719-memsanitize"></script>
 <script src="tm-memory-turn-inference.js?v=20260601-turn-inference"></script>
 <script src="tm-memory-turn-archive.js?v=20260601-turn-archive"></script>
 <script src="tm-memory-turn-rollup.js?v=20260601-turn-rollup"></script>
@@ -559,10 +559,11 @@ console.log('天命游戏脚本开始加载...');
 <!-- 2026-04-30 Phase 4.5 标准外部记忆适配器（XML/JSON/DSL 入口） -->
 <script src="tm-memory-adapter.js?v=2026050101"></script>
 <!-- R128 (2026-04-25) tm-mechanics.js 拆分 → mechanics + mechanics-world -->
-<script src="tm-mechanics.js?v=20260706-splitsync"></script>
-<script src="tm-mechanics-memory.js?v=20260706-splitsync"></script>
+<script src="tm-mechanics.js?v=20260719-memsanitize"></script>
+<script src="tm-mechanics-memory.js?v=20260719-memsanitize"></script>
 <script src="tm-mechanics-world.js?v=20260621-renownfix"></script>
 <!-- S2 (2026-06-18) 按需取数 agent 工具层：包现有检索 API 为 LLM 可调用工具·供 SC_RECALL agent 分支（开关 P.conf.agentRecallEnabled 默认关） -->
+<script src="tm-agent-kernel.js?v=20260719-kernel1"></script>
 <script src="tm-agent-flags.js?v=20260623-liveworld"></script>
 <script src="tm-memory-agent-tools.js?v=20260618-s2"></script>
 <script src="tm-memory-steward.js?v=20260619-steward-s5"></script>
@@ -573,9 +574,9 @@ console.log('天命游戏脚本开始加载...');
 <!-- R123+R124 (2026-04-25) 拆分 tm-index-world.js → indices + world + memorials + office-panel -->
 <script src="tm-indices.js?v=20260711-scnimport"></script>
 <script src="tm-world.js?v=20260621-renownfix"></script>
-<script src="tm-memorials.js?v=2026050105"></script>
-<script src="tm-wendui.js?v=2026070401"></script>
-<script src="tm-wendui-persona-views.js?v=2026070401"></script>
+<script src="tm-memorials.js?v=20260719-memsanitize"></script>
+<script src="tm-wendui.js?v=20260719-memsanitize"></script>
+<script src="tm-wendui-persona-views.js?v=20260719-memsanitize"></script>
 <!-- 2026-05-21·狱中问对模式·6 动作 + AI 解析 + 频率限制 + 朝议反应 -->
 <script src="tm-wendui-prison.js?v=20260521-prison"></script>
 <!-- R161 R6 (2026-05-03) tm-office-system 从 tm-hongyan-office 拆出·官制 system (~700 行) -->
@@ -650,7 +651,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-endturn-systems.js?v=20260623-metacog"></script>
 <script src="tm-endturn-ai-helpers.js?v=2026042714"></script>
 <script src="tm-endturn-ai-context.js?v=2026050401"></script>
-<script src="tm-history-events.js?v=2026042714"></script>
+<script src="tm-history-events.js?v=20260719-histanchors"></script>
 <script src="tm-tianji.js?v=2026062501"></script><!-- 史实「天机」·改命(穿越/上帝视角剧本预知正史+改命追踪)·gated tianjiEnabled默认关·跨朝代·依赖rigidHistoryEvents -->
 <script src="tm-junqing-brief.js?v=2026062501"></script><!-- 边报·天下军情(从活势力关系算敌我大势digest·开局即见每回合刷)·gated junqingBriefEnabled默认关·跨朝代 -->
 <script src="tm-xinjun-observe.js?v=2026062501"></script><!-- 新君观政·百日(即位之初百官观望/政令初行阻·相位+AI framing)·gated xinjunObserveEnabled默认关·跨朝代 -->
@@ -684,7 +685,7 @@ console.log('天命游戏脚本开始加载...');
 <!-- R209 (2026-05-04) Phase 7 P7-γ·§1 prompt 从 ai-infer 拆出·prompt 必先 load -->
 <!-- DA-Q2 (2026-06-21)·史记 record 提示词共享 builder·sc1 与 agent deepen_narrative 同源零 drift·须先于 ai.js load -->
 <script src="tm-endturn-record-specs.js?v=20260622-shiluwenyan"></script>
-<script src="tm-endturn-prompt.js?v=2026062002-custombuild"></script>
+<script src="tm-endturn-prompt.js?v=20260719-memsanitize"></script>
 <script src="tm-endturn-ai.js?v=20260707-aiwarmup"></script>
 <script src="tm-endturn-apply.js?v=20260706-applyS2"></script>
 <script src="tm-endturn-apply-stages.js?v=20260706-applyS2"></script><!-- apply解构S2·stages须紧随origin(运行时ns.stages解析·writeBack dispatcher调用期取)·勿动位置 -->
@@ -695,24 +696,26 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-endturn-core.js?v=20260531-party-class-llm"></script>
 <!-- slice 1·2026-05-07·endTurn 管道执行器骨架·feature flag P.flags.useNewPipeline 触发·见 web/docs/endturn-data-flow.md -->
 <script src="tm-endturn-pipeline-types.js?v=2026050701"></script>
+<script src="tm-endturn-mode-contract.js?v=20260719-parallel1"></script>
 <script src="tm-endturn-timing-ledger.js?v=2026051801"></script>
 <script src="tm-endturn-pipeline-executor.js?v=2026050701"></script>
 <script src="tm-endturn-validity.js?v=2026051701"></script>
-<script src="tm-endturn-pipeline-steps.js?v=20260523-1251"></script>
+<script src="tm-endturn-pipeline-steps.js?v=20260719-agentparallel1"></script>
 <!-- 回合推演「模式 b · agent 模式」平行引擎(开关 agentModeEnabled 默认关)·详设 docs/agent-mode-design.md -->
-<script src="tm-endturn-agent-mode.js?v=20260623-liveworld"></script>
-<script src="tm-endturn-agent-read-tools.js?v=20260621-toolcall"></script>
+<script src="tm-endturn-agent-mode.js?v=20260719-r1349"></script>
+<script src="tm-endturn-agent-read-tools.js?v=20260719-r1349"></script>
 <script src="tm-wentian-agent.js?v=20260703-wtagent"></script><!-- 问天 agent 模式·先查证后裁定(复用只读工具+callAIWithTools)·默认开可关 -->
-<script src="tm-endturn-agent-write-tools.js?v=20260622-geo2"></script>
-<script src="tm-endturn-agent-depth-tools.js?v=20260623-narrparallel"></script>
+<script src="tm-endturn-agent-write-tools.js?v=20260719-agentparallel1"></script>
+<script src="tm-endturn-agent-depth-tools.js?v=20260719-agentparallel1"></script>
+<script src="tm-endturn-agent-intent-plan.js?v=20260719-single-committer1"></script>
 <script src="tm-endturn-shiji-compose.js?v=20260706-shijivolumes"></script><!-- 史记弹窗·御览分卷组装·须先于 render 加载（render 调 _composeShijiHtml·alias _renderUnifiedChanges 在此） -->
 <script src="tm-endturn-render.js?v=20260706-shijivolumes"></script>
 <!-- 过回合进度拍表引擎 + 电影化加载层·2026-06-10·见 web/docs/endturn-progress-precision-backlog.md·agent 拍表 2026-06-20 -->
 <script src="tm-endturn-progress.js?v=20260620-agentbeats"></script>
 <script src="tm-endturn-loading.js?v=20260620-agentbeats"></script>
 <script src="tm-theme-font.js?v=20260520-theme-font-scopes"></script>
-<script src="tm-patches.js?v=20260711-noautofill"></script>
-<script src="tm-patches-start.js?v=20260711-noautofill"></script><!-- 立项拆分：剧本启动链(_tmStart*/开场仪典/startGame/doActualStart)·紧挨 patches 之后保序·勿动位置 -->
+<script src="tm-patches.js?v=20260719-histanchors"></script>
+<script src="tm-patches-start.js?v=20260719-histanchors"></script><!-- 立项拆分：剧本启动链(_tmStart*/开场仪典/startGame/doActualStart)·紧挨 patches 之后保序·勿动位置 -->
 <!-- R17-R22: 从 tm-patches.js 抽离的子模块（加载在 patches 之后覆盖原版） -->
 <script src="tm-military-ui.js?v=2026042714"></script>
 <script src="tm-world-view.js?v=2026042714"></script>
@@ -741,7 +744,7 @@ console.log('天命游戏脚本开始加载...');
 <!-- 2026-05-10·Phase F4·NPC 内政 LLM 润色·cosmetic·依赖 npc-settings (开关) + callAI -->
 <script src="tm-faction-npc-llm-enrich.js?v=2026051001"></script>
 <!-- 2026-05-10·Phase G·NPC LLM 决策接管·真改机制·替代模板 -->
-<script src="tm-faction-npc-llm-decision.js?v=2026062102-npcbuild2"></script>
+<script src="tm-faction-npc-llm-decision.js?v=20260719-memsanitize"></script>
 <!-- 2026-07-19·Phase 3·穿越模式·君主 AI 自动决策引擎（Task 6-10） -->
 <script src="tm-sovereign-ai.js?v=20260719-phase3"></script>
 <!-- 2026-07-19·Phase 4.5·穿越模式·玩家专属系统批次 A（Task 15/16/21） -->
@@ -797,7 +800,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-keju-presets.js?v=2026052302"></script>
 <script src="tm-keju-paradigm-presets.js?v=20260523-L1"></script>
 <script src="tm-keju-paradigm.js?v=20260523-L1"></script>
-<script src="tm-keju-reform-llm.js?v=20260524-L3"></script>
+<script src="tm-keju-reform-llm.js?v=20260719-memsanitize"></script>
 <script src="tm-keju-paradigm-panel-render.js?v=20260706-splitsync"></script><!-- 立项拆分alias首例：渲染族+常量表·须紧挨 panel 之前(alias 装载期解析)·勿动位置 -->
 <script src="tm-keju-paradigm-panel.js?v=20260706-splitsync"></script>
 <script src="tm-keju-topic-router.js?v=2026052303"></script>
@@ -946,58 +949,11 @@ console.log('天命游戏脚本开始加载...');
 <script src="editor-division-deep.js?v=2026050301" defer></script>
 <script src="editor-office-deep.js?v=2026050301" defer></script>
 <script src="editor-presets.js?v=2026050301" defer></script>
-<!-- 官方剧本 -->
-<script src="scenarios/tianqi7-1627.js?v=2026062502"></script>
-<script src="scenarios/shaosong-jianyan-1127.js?v=2026062501"></script>
-<!-- 性能·7MB 官方运行时快照延迟到首屏后空闲注入（原为同步解析·占首屏 JS 约 32%）。
-     快照 IIFE 加载即自应用·自带 setTimeout 重试 + tm:p-restored 自愈·幂等去重·
-     远早于玩家在启动页点选剧本（需数秒）；启动路径 _tmStartApplyOfficialSnapshot 再幂等兜底。 -->
-<script>
-(function(){
-  // 2026-06-06 在线版地图修复：天启 7MB 运行时快照（内含 43 地块的整份地图）原本只从相对路径
-  // （github.io）拉取。国内访问 github.io 时这个大文件常超时/拉不下来，导致 getMapData() 取空、
-  // 玩家看到「剧本没有配备地图」。这里仿照本文件顶部 styles.css 的 data-css-fallback 范式，
-  // 给快照加 CDN 兜底：相对路径失败（onerror）或迟迟未应用（超时）时改从 jsDelivr 镜像拉。
-  // 桌面端读本地文件仍走相对路径首选，不受影响。
-  var SNAP_QS = '?v=20260616-renli-shaanxi-pilot';
-  var SNAP_REL = 'data/scenario-supplements/tianqi7-official-runtime-snapshot.js' + SNAP_QS;
-  var SNAP_CDN = 'https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/web/data/scenario-supplements/tianqi7-official-runtime-snapshot.js' + SNAP_QS;
-  var _snapFallbackUsed = false;
-  function _applied(){ return !!window.TM_TIANQI_OFFICIAL_RUNTIME_SNAPSHOT; }
-  function _injectSnap(src, isFallback){
-    var s = document.createElement('script');
-    s.src = src;
-    s.async = true;
-    s.onerror = function(){
-      if (!isFallback && !_snapFallbackUsed && !_applied()) {
-        _snapFallbackUsed = true;
-        console.warn('[tianqi-snap] 相对路径加载失败，改用 CDN 兜底：' + SNAP_CDN);
-        _injectSnap(SNAP_CDN, true);
-      }
-    };
-    (document.head || document.documentElement).appendChild(s);
-  }
-  function _loadTianqiSnapshot(){
-    if (window.__tmTianqiSnapLoaded) return;
-    window.__tmTianqiSnapLoaded = true;
-    _injectSnap(SNAP_REL, false);
-    // 超时兜底：onerror 不会在「连上但下载卡住」时触发，故再加一道计时器——
-    // 12s 内快照仍未应用，则直接从 CDN 拉一份（幂等去重由快照 IIFE 自身保证）。
-    setTimeout(function(){
-      if (!_applied() && !_snapFallbackUsed) {
-        _snapFallbackUsed = true;
-        console.warn('[tianqi-snap] 相对路径 12s 内未应用，改用 CDN 兜底：' + SNAP_CDN);
-        _injectSnap(SNAP_CDN, true);
-      }
-    }, 12000);
-  }
-  if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(_loadTianqiSnapshot, { timeout: 3000 });
-  } else {
-    window.addEventListener('load', function(){ setTimeout(_loadTianqiSnapshot, 600); });
-  }
-})();
-</script>
+<!-- 官方剧本：首屏只载生成的轻量 manifest；完整 24.4MiB 数据在玩家选定剧本后按需注入。 -->
+<script src="bundled-scenarios/manifest.js?v=20260718-lazy-official"></script>
+<script src="tm-official-scenario-loader.js?v=20260718-lazy-official"></script>
+<!-- 旧 Tianqi runtime snapshot 仍可作为兼容产物生成，但在线入口不再空闲时无条件下载。
+     完整官方脚本已包含同源地图与运行时数组，由 TMOfficialScenarioLoader 在选中剧本时一次性加载。 -->
 
 <!-- 测试框架（?test=1 自动运行） -->
 <script src="tm-test-harness.js?v=2026042714" defer></script>
