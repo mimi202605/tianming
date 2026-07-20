@@ -83,7 +83,31 @@ function _tmPrepareSc2Messages(sysP, conv, userPrompt, maybeCacheSys) {
 // 1 次 AI 调用·生成 5-8 条首 3 回合可能触发的事件候选
 // generateMemorials 优先从此池抽取·保证首回合剧情契合剧本开局
 // ============================================================
-async function aiPlanFirstTurnEvents() {
+function _tmAIHelperCaptureSession(provided) {
+  if (typeof _tmPlanningCaptureSession === 'function') return _tmPlanningCaptureSession(provided);
+  if (provided) return provided;
+  return {
+    gmRef: (typeof GM !== 'undefined') ? GM : null,
+    sid: (typeof GM !== 'undefined' && GM) ? GM.sid : null,
+    turn: (typeof GM !== 'undefined' && GM) ? GM.turn : null,
+    epoch: (typeof window !== 'undefined') ? window._tmStartPrewarmEpoch : undefined
+  };
+}
+
+function _tmAIHelperSessionCurrent(session) {
+  if (typeof _tmPlanningSessionCurrent === 'function') return _tmPlanningSessionCurrent(session);
+  if (!session) return true;
+  if (typeof GM === 'undefined' || !GM || GM !== session.gmRef) return false;
+  if (session.sid != null && GM.sid !== session.sid) return false;
+  if (session.turn != null && GM.turn !== session.turn) return false;
+  if (session.epoch != null && typeof window !== 'undefined' && window._tmStartPrewarmEpoch !== session.epoch) return false;
+  return true;
+}
+
+async function aiPlanFirstTurnEvents(options) {
+  options = options || {};
+  var _background = options.background === true;
+  var _session = _tmAIHelperCaptureSession(options.session);
   if (!P.ai || !P.ai.key) return;
   if (GM._candidateEvents && GM._candidateEvents.length > 0) return;
   if (GM.turn > 1) return;
@@ -136,13 +160,17 @@ async function aiPlanFirstTurnEvents() {
   prompt += '}\n只输出 JSON。';
 
   try {
-    if (typeof showLoading === 'function') showLoading('规划首回合候选事件…', 70);
+    if (!_background && typeof showLoading === 'function') showLoading('规划首回合候选事件…', 70);
     var raw = await callAISmart(prompt, 2500, {
       maxRetries: 2,
       minLength: 400,
       timeoutMs: 60000,
       fetchMaxRetries: 1
     });
+    if (!_tmAIHelperSessionCurrent(_session)) {
+      console.warn('[aiFTE] 丢弃过期的开局预热结果');
+      return;
+    }
     var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!parsed || !Array.isArray(parsed.candidateEvents)) { console.warn('[aiFTE] 解析失败'); return; }
     GM._candidateEvents = parsed.candidateEvents.map(function(e) {
@@ -167,7 +195,7 @@ async function aiPlanFirstTurnEvents() {
   } catch(e) {
     console.warn('[aiFTE] 失败:', e && e.message);
   } finally {
-    if (typeof hideLoading === 'function') hideLoading();
+    if (!_background && typeof hideLoading === 'function') hideLoading();
   }
 }
 

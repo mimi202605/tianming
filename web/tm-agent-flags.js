@@ -40,6 +40,10 @@
       if (agentModeOn()) return false;
       // 总闸（任一命名空间设了都认）
       if (ai.agentUpgradesEnabled || conf.agentUpgradesEnabled) return true;
+      // 【势力活世界·F2】GM._factionLivingWorld(本局存档·御驾亲征式总闸) 连带启用势力社会(双向外交)+前瞻式目标栈两子系统。
+      //   B8·置于 agent-mode 互斥闸【之后】——总闸只在【非】agent 模式生效(与引擎 _livingWorldOn 同步:mode-b 下战争/事件亦被 _livingWorldOn 挡下)·
+      //   避免 mode-b 下「prompt 注入 goalUpdates/proposalResponses 却无决策循环消费」的半开状态。mode-b 的势力社会仍走 agentLiveWorld 专闸(上面独立放行)。
+      if ((name === 'factionAgentEnabled' || name === 'factionGoalStackEnabled') && global.GM && global.GM._factionLivingWorld === true) return true;
       // 否则各自独立开关（同时认两个命名空间·解决历史不一致）
       return !!(ai[name] || conf[name]);
     } catch (e) { return false; }

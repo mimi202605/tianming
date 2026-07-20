@@ -44,6 +44,19 @@
       function dock() {
         var fab = document.getElementById('tm-aa-fab');
         if (!fab) return false;                         // adapter 未就绪 / 非编辑器页
+        if (!document._jeGuoshiDockToggleBound) {
+          document._jeGuoshiDockToggleBound = true;
+          // × 会撤掉坞态并归还正文宽度；之后从入口重开时恢复工坊右栏，而不是退化成遮挡正文的悬浮窗。
+          // 用 document 委托，兼容 launcher 被宿主重建；延后一拍读取 FAB 自己完成 toggle 后的最终状态。
+          document.addEventListener('click', function (event) {
+            if (!event.target || !event.target.closest || !event.target.closest('#tm-aa-fab')) return;
+            setTimeout(function () {
+              var livePanel = document.getElementById('tm-aa-panel');
+              if (livePanel && livePanel.classList.contains('open')) document.body.classList.add('je-guoshi-docked');
+              else document.body.classList.remove('je-guoshi-docked', 'je-guoshi-settings-open');
+            }, 0);
+          });
+        }
         document.body.classList.add('je-guoshi-docked');   // 先声明坞态·再开面板（共创面板首开自动全屏据此让位于坞）
         var panel = document.getElementById('tm-aa-panel');
         if (!panel) { fab.click(); panel = document.getElementById('tm-aa-panel'); }

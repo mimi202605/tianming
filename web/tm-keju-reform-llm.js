@@ -76,6 +76,7 @@
       '}';
 
     try {
+      // 时空约束·不适用：纯 descriptor→{scale,years,reversible} 分类打分·无人物无本局时间线内容·历史仅作 scale 校准锚(引前朝古事为训·约束本身允许)·故不注入
       var raw = await callAISmart(prompt, 400, { maxRetries: 1, priority: 'low', timeoutMs: 20000 });
       var data = _kjpParseJson(raw);
       if (!data || typeof data.scale !== 'number') return fallback;
@@ -155,6 +156,8 @@
       '  - historicalParallel 引真实历史改革';
 
     try {
+      // 时空约束·试点候选推荐(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 800, { maxRetries: 1, priority: 'low', timeoutMs: 30000 });
       var data = _kjpParseJson(raw);
       if (!Array.isArray(data) || !data.length) return fallback;
@@ -253,6 +256,8 @@
       '}';
 
     try {
+      // 时空约束·扫描议题文本涉议人物·朝议预判(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { var _tcMMood = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((topicText || ''), [], 10) : []; prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMMood }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 600, { maxRetries: 1, priority: 'low', timeoutMs: 25000 });
       var data = _kjpParseJson(raw);
       if (!data || !data.narrative) return fallback;
@@ -344,6 +349,8 @@
       '  - "探口风"·无 cost·获取信息·supportDelta 0';
 
     try {
+      // 时空约束·扫描议题+召对大臣涉议人物·私谈(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { var _tcMAud = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((topicText || ''), (npc && npc.name ? [npc.name] : []), 10) : (npc && npc.name ? [npc.name] : []); prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMAud }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 800, { maxRetries: 1, priority: 'low', timeoutMs: 30000 });
       var data = _kjpParseJson(raw);
       if (!data || !data.speech) return fallback;
@@ -494,7 +501,7 @@
                         ? _kjpSummarizeDiff(topicData.paradigmDiff)
                         : '');
     if (!topicDigest) return promptBuf;
-    var history = GM.wenduiHistory[ch.name];
+    var history = (typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries(GM.wenduiHistory[ch.name], GM) : GM.wenduiHistory[ch.name];
     var curTurn = (typeof GM !== 'undefined' && GM.turn) || 0;
     var matches = [];
     for (var i = history.length - 1; i >= 0; i--) {
@@ -760,8 +767,8 @@
   // 读两 advisor 的 cedui 最新 entry·LLM 抽 consensus + disagreements + advisorRelations
   async function _kjpLlmMergeAdvisorViews(advisorAName, advisorBName, paradigmDigest) {
     var GM_ = (typeof GM !== 'undefined') ? GM : (typeof window !== 'undefined' ? (window.GM || {}) : {});
-    var histA = ((GM_.wenduiHistory && GM_.wenduiHistory[advisorAName]) || []).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
-    var histB = ((GM_.wenduiHistory && GM_.wenduiHistory[advisorBName]) || []).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
+    var histA = ((typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries((GM_.wenduiHistory && GM_.wenduiHistory[advisorAName]) || [], GM_) : ((GM_.wenduiHistory && GM_.wenduiHistory[advisorAName]) || [])).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
+    var histB = ((typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries((GM_.wenduiHistory && GM_.wenduiHistory[advisorBName]) || [], GM_) : ((GM_.wenduiHistory && GM_.wenduiHistory[advisorBName]) || [])).filter(function(m) { return m.mode === 'cedui'; }).slice(-3);
     if (!histA.length || !histB.length) return _kjpMergeViewsFallback(advisorAName, advisorBName, paradigmDigest);
 
     var npcA = (typeof findCharByName === 'function') ? findCharByName(advisorAName) : null;
@@ -786,6 +793,8 @@
       '}';
 
     try {
+      // 时空约束·两策对大臣涉议人物·advisor合并(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: [advisorAName, advisorBName] }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 2500, { maxRetries: 1, priority: 'low', timeoutMs: 30000 });
       var data = _kjpParseJson(raw);
       if (!data || !data.consensusForecast) return _kjpMergeViewsFallback(advisorAName, advisorBName, paradigmDigest);
@@ -1041,6 +1050,8 @@
                  '- 跟朝代 + 局势贴 (e.g. 边事重→武学 / 灾多→农政 / 商兴→盐铁)\n' +
                  '返 JSON·`[{...}, {...}, ...]`·共 ' + count + ' 条';
     try {
+      // 时空约束·新科目推荐(JSON配置·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 1500, { maxRetries: 1, priority: 'low', timeoutMs: 30000 });
       var parsed = _kjpParseJson(raw);
       if (!Array.isArray(parsed) || !parsed.length) return fallback;
@@ -1072,6 +1083,8 @@
                  'historicalAnalog (本朝或前朝最接近的实例·若无·标"无先例"), ' +
                  'rationale (合理化解释 100 字·为何这个朝代可有此科·哪派 NPC 支持)}';
     try {
+      // 时空约束·科目合理化(JSON配置·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 800, { maxRetries: 1, priority: 'low', timeoutMs: 25000 });
       var parsed = _kjpParseJson(raw);
       if (!parsed || typeof parsed !== 'object') return fallback;

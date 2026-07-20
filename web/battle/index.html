@@ -556,7 +556,7 @@ const PERSONA={
 };
 let TERR=null;
 function riverYAt(x){if(!TERR||!TERR.river)return 1e9;const p=TERR.river;for(let i=0;i<p.length-1;i++)if(x>=p[i].x&&x<=p[i+1].x){const t=(x-p[i].x)/(p[i+1].x-p[i].x);return p[i].y+(p[i+1].y-p[i].y)*t;}return p[p.length-1].y;}
-function terrainAt(x,y){if(!TERR)return"plain";if(TERR.river&&Math.abs(y-riverYAt(x))<TERR.riverW/2)return"river";for(const h of TERR.hills)if(Math.hypot(x-h.x,y-h.y)<h.r)return"hill";for(const f of TERR.forests)if(Math.hypot(x-f.x,y-f.y)<f.r)return"forest";if(TERR.ponds)for(const p of TERR.ponds)if(Math.hypot(x-p.x,y-p.y)<p.r)return"marsh";if(MAP&&MAP.features)for(const f of MAP.features)if(f.t==="marsh"&&Math.hypot(x-f.x,y-f.y)<f.r)return"marsh";return"plain";}
+function terrainAt(x,y){if(!TERR)return"plain";if(TERR.river&&Math.abs(y-riverYAt(x))<TERR.riverW/2)return"river";for(const h of TERR.hills)if(Math.hypot(x-h.x,y-h.y)<h.r)return"hill";for(const f of TERR.forests)if(Math.hypot(x-f.x,y-f.y)<f.r)return"forest";if(TERR.ponds)for(const p of TERR.ponds)if(Math.hypot(x-p.x,y-p.y)<p.r)return"marsh";if(TERR.coast){if(TERR.coast.leftX!=null&&x<TERR.coast.leftX)return"marsh";if(TERR.coast.rightX!=null&&x>TERR.coast.rightX)return"marsh";}if(MAP&&MAP.features)for(const f of MAP.features)if(f.t==="marsh"&&Math.hypot(x-f.x,y-f.y)<f.r)return"marsh";return"plain";}
 function inForest(x,y){if(!TERR)return false;for(const f of TERR.forests)if(Math.hypot(x-f.x,y-f.y)<f.r)return true;return false;}
 let units=[],floaters=[],shots=[],fx=[],decals=[],duels=[],state={},start0={},sel=new Set(),terrainCanvas=null;let duelAccum=0;
 let terrainCanvas3D=null,_bakeFlat=false;   // ★3D:扁平 albedo 地形纹理(无浮雕方向阴影/无隆起域·光照交给 WebGL shader)+ 烤制开关
@@ -590,8 +590,14 @@ function stopDrums(){if(drumT){clearInterval(drumT);drumT=null;}}
 
 /* ---------- 阵容（满编≈1000；将领 valor勇武/mil军事/int智谋） ---------- */
 /* 按地图比例自动铺排：地图多大、阵列就铺多开（cols 列 × rows 行，明军南、后金北） */
-function layout(arr,side){const n=arr.length,cols=Math.min(13,Math.max(4,Math.ceil(Math.sqrt(n*3.4)))),rows=Math.ceil(n/cols),sx=Math.min(WORLD.w*0.42/cols,1080),sy=720,cx=WORLD.w*0.5,cy=side==="ming"?WORLD.h*0.62:WORLD.h*0.38;   // ★宽正面布阵(配特大图):军成长横列·上下间距收紧些(过远走太久)留机动纵深
-  return arr.map((u,i)=>{const r=(i/cols)|0,c=i%cols,nC=Math.min(cols,n-r*cols),x=cx+(c-(nC-1)/2)*sx,y=cy+(r-(rows-1)/2)*sy;return {...u,side,x,y};});}
+function layout(arr,side){const n=arr.length,cols=Math.min(13,Math.max(4,Math.ceil(Math.sqrt(n*3.4)))),rows=Math.ceil(n/cols),sx=Math.min(WORLD.w*0.42/cols,1080),sy=720;   // ★宽正面布阵(配特大图):军成长横列·纵深收紧留机动
+  const dir=(typeof _battleDir==="string"&&_battleDir)||"N";let cx,cy,vertical=false;   // ★来向布阵(梯队三E):敌自dir侧·我对侧·N默认与旧式一字不差(内置/自由对战/proc-null哈希不变)
+  if(dir==="E"){cx=side==="ming"?WORLD.w*0.5-WORLD.h*0.12:WORLD.w*0.5+WORLD.h*0.12;cy=WORLD.h*0.5;vertical=true;}        // 敌自东(右)·横向对阵·半间距=0.12H(与南北接敌距离等同·防特大宽图接不上敌)
+  else if(dir==="W"){cx=side==="ming"?WORLD.w*0.5+WORLD.h*0.12:WORLD.w*0.5-WORLD.h*0.12;cy=WORLD.h*0.5;vertical=true;}   // 敌自西(左)
+  else if(dir==="S"){cx=WORLD.w*0.5;cy=side==="ming"?WORLD.h*0.38:WORLD.h*0.62;}                 // 敌自南(下)·南北翻转
+  else {cx=WORLD.w*0.5;cy=side==="ming"?WORLD.h*0.62:WORLD.h*0.38;}                               // N默认:敌北我南(旧式·byte-identical)
+  return arr.map((u,i)=>{const r=(i/cols)|0,c=i%cols,nC=Math.min(cols,n-r*cols),fo=(c-(nC-1)/2)*sx,dp=(r-(rows-1)/2)*sy;
+    const x=vertical?cx+dp:cx+fo,y=vertical?cy+fo:cy+dp;return {...u,side,x,y};});}
 /* 浑河·萨尔浒(1621)：明军川浙精锐+辽东杂军——步阵长枪/火器为墙·寡而坚；后金八旗铁骑洪流·众而锐·炮甚少 */
 function rosterHunhe(){
  const M=[
@@ -834,44 +840,109 @@ const MAPS={
 /* ===== 程序化生图(随机战场)：从一个种子确定性生成整套 MAP —— 尺寸/河流/连绵山岭/林莽/争夺高地/生物群系主题/天候。
    ★确定性铁律:地形仍走 richTerr(_trng·不触 Math.random);唯「挑哪张图」的种子选取(_pickSeed)在 sim 之外用 Math.random。
    默认种子固定(_GENSEED)→可纳入 protoverify 回归;玩家每点「程序化战场」按钮换新种子=新战场。兵力沿用历史名册(layout 按 WORLD 重新布阵·尺寸自适应)。 */
-let _GENSEED=20260619, _GENPROFILE=null;   // _GENPROFILE=接入时省地形档{dens,biome,weather}·null=随机(自由对战/protoverify路径不变)
+let _GENSEED=20260619, _GENPROFILE=null;   // _GENPROFILE=接入时省地形档{dens,biome,weather,provinceMeta}·null=随机(自由对战/protoverify路径不变)
+let _battleDir=null;   // ★敌军来向(梯队三E:N/S/E/W·来自provinceMeta.neighborDir)·null='N'默认(内置图/自由对战/protoverify路径=旧式南北布阵·哈希不变)
+/* ── 对阵轴抽象(梯队三E):两军沿「主轴」对峙·正面沿「侧轴」展开·敌(jin)在dir侧·我(ming)对侧。
+   所有旧「南北向」硬编码经此换轴;★N默认(_battleDir=null/'N')一律返回旧式exact表达式→内置/proc-null逐字节等价·四哈希不变。 */
+function _dirHoriz(){return _battleDir==="E"||_battleDir==="W";}                                       // 东西向=横轴对阵(主轴=x)
+function _mainC(u){return _dirHoriz()?u.x:u.y;}                                                        // 主轴(对峙)坐标·N=y
+function _sideC(u){return _dirHoriz()?u.y:u.x;}                                                        // 侧轴(正面展开)坐标·N=x
+function _mainW(){return _dirHoriz()?WORLD.w:WORLD.h;}                                                 // 主轴世界尺寸·N=H
+function _dirVec(){switch(_battleDir){case "S":return {x:0,y:1};case "E":return {x:1,y:0};case "W":return {x:-1,y:0};default:return {x:0,y:-1};}}   // 中心→敌(jin)侧·N北=-y
+function _rearSign(){var v=_dirVec();return _dirHoriz()?v.x:v.y;}                                      // 敌后撤沿主轴符号·N=-1
+function _faceVec(side){var v=_dirVec(),s=side==="ming"?1:-1;return {x:v.x*s,y:v.y*s};}                // 某方朝敌单位向量(ming朝dir侧=敌·jin反)
+function _faceAng(side){switch(_battleDir){case "S":return side==="ming"?Math.PI/2:-Math.PI/2;case "E":return side==="ming"?0:Math.PI;case "W":return side==="ming"?Math.PI:0;default:return side==="ming"?-Math.PI/2:Math.PI/2;}}   // 初始facing朝敌·N默认=旧式exact(-π/2 : π/2)
+function _dirAnchor(side,off){var v=_dirVec(),s=side==="jin"?1:-1,d=off*WORLD.h;return {cx:WORLD.w*0.5+v.x*d*s,cy:WORLD.h*0.5+v.y*d*s};}   // 某方布阵锚心(jin在dir侧·间距沿主轴=off*H·东西向亦用H保接敌距离对称)
+function _retreatMain(lineMain,back){if(_battleDir==="S")return Math.min(WORLD.h-60,lineMain+back);if(_battleDir==="E")return Math.min(WORLD.w-60,lineMain+back);return Math.max(60,lineMain-back);}   // 沿主轴后撤目标(向敌方rear=dir侧)·N/W默认=Math.max(60,lineMain-back)exact
+function _setRetreat(u,lineMain,back){var rt=_retreatMain(lineMain,back);if(_dirHoriz()){u.tx=rt;u.ty=u.y;}else{u.tx=u.x;u.ty=rt;}}   // 后撤=主轴退·侧轴保持·N默认=u.tx=u.x;u.ty=Max(60,lineMain-back)exact
+function _routGoal(u){if(!_battleDir||_battleDir==="N")return {x:u.x,y:u.side==="ming"?WORLD.h+80:-80};if(_battleDir==="S")return {x:u.x,y:u.side==="ming"?-80:WORLD.h+80};if(_battleDir==="E")return {x:u.side==="ming"?-80:WORLD.w+80,y:u.y};return {x:u.side==="ming"?WORLD.w+80:-80,y:u.y};}   // 溃逃奔己方后缘(背敌)·N默认=旧式exact(ming朝y=H+80南·jin朝y=-80北)
+function _routOff(u){return (u.y<-60||u.y>WORLD.h+60)||((_battleDir==="E"||_battleDir==="W")&&(u.x<-60||u.x>WORLD.w+60));}   // 溃卒逃出界判定·N默认仅查y(exact)·东西向补查x缘
 function _pickSeed(){return ((Math.random()*4294967296)>>>0)||1;}   // sim外·只决定生成哪张图(种子定后战斗全确定性)
+/* 新生物群系主题(接入 desert/wetland 省地形档时启用·纯渲染·MAPS内置图不受影响)。键集镜像 yaoshan.theme(全键齐)·+zoneTint 供地表分区着色 */
+const DESERT_THEME={g:["#cbb884","#d6c28e","#dfcd98","#e6d6a4"],splotch:["rgba(150,120,64,.10)","rgba(180,150,90,.09)","rgba(160,134,84,.08)"],dirt:"rgba(178,150,96,.14)",grass:["rgba(150,138,80,.20)","rgba(176,158,96,.16)"],bush:"rgba(120,110,60,.42)",hill:["#d8c088","#c2a660","#a68848"],hillLight:"rgba(244,228,170,.30)",hillShade:"rgba(120,92,48,.32)",hillTop:"rgba(246,232,176,.5)",rock:"rgba(168,142,92,.5)",forestBase:"rgba(96,110,58,.5)",tree:["rgba(96,112,54,.9)","rgba(128,140,72,.9)"],treeLight:"rgba(180,180,110,.5)",veg:"broadleaf",water:["rgba(96,150,150,.7)","rgba(72,124,132,.72)"],waterEdge:"rgba(190,168,110,.5)",wave:"rgba(206,224,214,.4)",reed:"rgba(150,150,90,.5)",vignette:"rgba(60,44,16,.4)",zoneTint:["rgba(200,168,96,.12)","rgba(176,140,72,.13)","rgba(214,190,120,.10)","rgba(190,160,100,.09)"]};
+const WETLAND_THEME={g:["#7c9a70","#88a67a","#94b285","#a2be92"],splotch:["rgba(56,104,64,.12)","rgba(84,128,80,.10)","rgba(64,110,72,.09)"],dirt:"rgba(120,124,84,.10)",grass:["rgba(64,120,72,.28)","rgba(96,140,84,.22)"],bush:"rgba(44,98,54,.5)",hill:["#a6c088","#88a862","#6e8e50"],hillLight:"rgba(206,228,168,.28)",hillShade:"rgba(48,78,40,.32)",hillTop:"rgba(212,232,172,.48)",rock:"rgba(108,128,84,.4)",forestBase:"rgba(36,88,54,.55)",tree:["rgba(36,92,52,.92)","rgba(66,124,68,.92)"],treeLight:"rgba(120,168,96,.55)",veg:"broadleaf",water:["rgba(58,120,160,.78)","rgba(42,98,142,.8)"],waterEdge:"rgba(132,150,104,.5)",wave:"rgba(190,222,240,.46)",reed:"rgba(84,132,72,.62)",vignette:"rgba(18,34,20,.42)",zoneTint:["rgba(72,118,96,.12)","rgba(96,132,88,.11)","rgba(80,124,120,.10)","rgba(110,138,96,.09)"]};
 const PROC_BIOMES=[
   {nm:"雪原",theme:()=>MAPS.hunhe.theme,  weather:"snow", riverNm:"大　河",hillNm:["凤凰冈","吉林崖","白石岭","乌　岭","中　岭"],forNm:"密 林"},
   {nm:"旷野",theme:()=>MAPS.songjin.theme,weather:"clear",riverNm:"长　川",hillNm:["北　冈","南　冈","东　冈","西　冈","中　岭"],forNm:"松 林"},
   {nm:"青野",theme:()=>MAPS.yaoshan.theme,weather:"clear",riverNm:"碧　水",hillNm:["翠　冈","柳　冈","桑　冈","槐　冈","中　岭"],forNm:"柳 林"},
+  {nm:"瀚海",theme:()=>DESERT_THEME,      weather:"clear",riverNm:"弱　水",hillNm:["鸣沙岭","黑石垄","戈壁墩","红柳冈","驼　岭"],forNm:"胡 杨",nmPool:["流沙","戈壁","瀚海","弱水","鸣沙","黑石","红柳","白碱","居延","楼兰"],townNm:["绿　洲","泉　驿","沙　井","胡杨镇","戈壁堡"]},   // desert·黄褐·绿洲意象
+  {nm:"泽国",theme:()=>WETLAND_THEME,     weather:"clear",riverNm:"沧　浪",hillNm:["菱　冈","荷　冈","苇　洲","渔　矶","烟　渚"],forNm:"柳 荡",nmPool:["泽国","菱塘","荷汊","芦荡","烟渚","鸥浦","渔湾","菰蒲","沧浪","柳汀"],townNm:["水　村","菱　泊","渔　村","苇　荡","泽　畔"]},   // wetland·水乡·密水意象
 ];
 const PROC_NAMES=["落雁","黑石","白沟","乱柳","断岭","平冈","野狐","清河","苍崖","鹰愁","枯榆","狼望","赤亭","云台","荒原"];
+const _FORT_WALLNM=["长　壕","边　墙","拒马壕","鹿角栅","栅　垒"];   // 边堡语义位:军事地貌命名池(纯渲染)
+const _FORT_NM=["关　城","戍　堡","靖边堡","镇边堡","烽　堡"];
+const _TOWN_NM=["村　落","市　集","驿　镇","坞　壁","集　镇"];
+const _MARSH_NM=["沮　洳","泥　淖","沮　泽","苇　泽","菰　泽","沼　泽"];   // 水乡/沿海类具名沼泽命名池(仿固定图沮洳/泥淖·terrainAt消费入sim)
+const _RES_LANDMARK=[[/盐/,"盐　场"],[/漕/,"漕河码头"],[/铁|矿|煤/,"矿　峒"],[/马/,"马　场"],[/港|海贸|海船|船|贸/,"市　舶"],[/茶/,"茶　寮"],[/丝|绸/,"织　造"],[/瓷|窑/,"窑　场"],[/糖/,"糖　寮"],[/木/,"木　场"]];   // 省实况资源→风物feat命名(梯队三E·纯渲染)
+function _resLandmark(res){const s=String(res||"");for(let i=0;i<_RES_LANDMARK.length;i++)if(_RES_LANDMARK[i][0].test(s))return _RES_LANDMARK[i][1];return null;}
 function genMap(seed){
   seed=(seed>>>0)||1;const R=_trng(seed^0x9e3779b9);   // 配置层RNG(种子异或·与richTerr内部jitter种子分流)
   const W=Math.round(112000+R()*32000),H=Math.round(72000+R()*15000);
   const wr=R();const weather=(_GENPROFILE&&_GENPROFILE.weather)?_GENPROFILE.weather:(wr<0.5?"clear":wr<0.78?"snow":"fog");   // ★接入:省天候优先;否则均衡晴50%/雪28%/雾22%
-  const _BIK={snow:0,plain:1,verdant:2};                                      // 省地形档 biome→PROC_BIOMES 序
+  const _BIK={snow:0,plain:1,verdant:2,desert:3,wetland:4};                    // 省地形档 biome→PROC_BIOMES 序(desert/wetland=新增·null/未知回退随天候不变)
   const bi=(_GENPROFILE&&_GENPROFILE.biome!=null&&_BIK[_GENPROFILE.biome]!=null)?PROC_BIOMES[_BIK[_GENPROFILE.biome]]:((weather==="snow")?PROC_BIOMES[0]:PROC_BIOMES[1+((R()*2)|0)]);   // 接入:省 biome 优先;否则随天候(null路径R()消耗不变→protoverify哈希不变)
-  const hasRiver=R()<0.72,ry=0.30+R()*0.40,riverWf=0.022+R()*0.03;            // 河:七成有·横贯·基线起伏
+  const _riverP=(_GENPROFILE&&_GENPROFILE.biome==='wetland')?1.01:(_GENPROFILE&&_GENPROFILE.biome==='desert')?0.35:0.9;   // ★河流保证率(梯队二重基线):水乡必有河·荒漠罕河0.35·余(含null默认)0.9——治旧0.72=28%无河坑。阈值变·R()调用数不变
+  const hasRiver=R()<_riverP,ry=0.30+R()*0.40,riverWf=0.022+R()*0.03;          // 河:横贯·基线起伏
   const river=hasRiver?Array.from({length:6},(_,i)=>({xf:i/5,yf:clamp(ry+(R()-0.5)*0.16,0.08,0.92)})):null;
   const hills=[];const nH=2+((R()*3)|0);                                       // 锚山2-4·偏两翼(richTerr沿向成岭+补满)
   for(let i=0;i<nH;i++)hills.push({xf:(R()<0.5?0.14+R()*0.20:0.66+R()*0.20),yf:0.18+R()*0.64,rf:0.05+R()*0.05});
   const objH={xf:0.42+R()*0.16,yf:0.36+R()*0.26,rf:0.06+R()*0.03};hills.push(objH);   // 中央争夺高地(适度·不独占中央)
   const forests=[];const nF=2+((R()*3)|0);                                     // 锚林2-4
   for(let i=0;i<nF;i++)forests.push({xf:0.08+R()*0.84,yf:0.16+R()*0.66,rf:0.05+R()*0.035});
-  const nm=(PROC_NAMES[(R()*PROC_NAMES.length)|0])+["原","野","坡","川","岭"][(R()*5)|0];
+  const _np=(_GENPROFILE&&bi.nmPool)?bi.nmPool:PROC_NAMES;   // 接入desert/wetland用biome命名池;null路径=PROC_NAMES(同长·R()消耗与索引全不变→哈希不动)
+  const nm=(_np[(R()*_np.length)|0])+["原","野","坡","川","岭"][(R()*5)|0];
   const rosters=[rosterHunhe,rosterSongjin,rosterYaoshan];const rosterFn=rosters[(R()*rosters.length)|0];
   const lead=["皇太极","代善","完颜兀术","多尔衮","岳讬"][(R()*5)|0];
   const tseed=((seed*2654435761)>>>0)||7;                                      // 地形内部jitter种子
   return {name:"程序战场·"+nm,w:W,h:H,roster:rosterFn,lead,sideName:{ming:"我军",jin:"敌军"},weather,theme:bi.theme(),_proc:true,_seed:seed,
-    terr:(Wd,Hd)=>richTerr(Wd,Hd,{seed:tseed,dens:(_GENPROFILE&&_GENPROFILE.dens!=null?_GENPROFILE.dens:0.3),
+    terr:(Wd,Hd)=>{const _t=richTerr(Wd,Hd,{seed:tseed,dens:(_GENPROFILE&&_GENPROFILE.dens!=null?_GENPROFILE.dens:0.3),
       river:river?river.map(p=>({x:Math.round(p.xf*Wd),y:Math.round(p.yf*Hd)})):null,
       riverW:river?Math.round(Hd*riverWf):0,
       hills:hills.map(h=>({x:Math.round(h.xf*Wd),y:Math.round(h.yf*Hd),r:Math.round(h.rf*Wd)})),
-      forests:forests.map(f=>({x:Math.round(f.xf*Wd),y:Math.round(f.yf*Hd),r:Math.round(f.rf*Wd)}))}),
+      forests:forests.map(f=>({x:Math.round(f.xf*Wd),y:Math.round(f.yf*Hd),r:Math.round(f.rf*Wd)}))});
+      if(_GENPROFILE&&(_GENPROFILE.coast||_GENPROFILE.island)){   /* ★海岸(梯队二·语义位驱动):一侧(island两侧)边缘海水带·带内terrainAt返marsh入sim(骑兵怯水既有机制生效)·独立RNG·null路径零海岸。co仅存leftX/rightX(海带岸线x·terrainAt+drawCoast共同消费) */
+        const _cr=_trng(((seed^0x5eac0a57)>>>0)||11),both=!!_GENPROFILE.island;
+        const bandW=Math.round(Wd*(0.05+_cr()*0.025)),co={};
+        const _os=_GENPROFILE.provinceMeta&&_GENPROFILE.provinceMeta.oceanSide;   // ★省实况海岸方位(oceanSide)驱动海带在哪侧·无meta则随机侧(island恒双侧)
+        const edgeLeft=both||(_os?_os==="left":_cr()<0.5);if(edgeLeft)co.leftX=bandW;if(both||!edgeLeft)co.rightX=Wd-bandW;
+        const _clip=arr=>arr.filter(o=>!((co.leftX!=null&&o.x-(o.r||0)<co.leftX)||(co.rightX!=null&&o.x+(o.r||0)>co.rightX)));   // ★生成时裁剪:锚山/锚林/水塘落点侵入海带→剔除(drawCoast海面会盖·须与sim同为marsh·杜绝"看着海水却给高地/森林加成"·渲染sim双侧一致·不动terrainAt热路径优先级)
+        _t.hills=_clip(_t.hills);_t.forests=_clip(_t.forests);if(_t.ponds)_t.ponds=_clip(_t.ponds);
+        _t.coast=co;
+      }
+      return _t;},
     labels:{riverName:bi.riverNm,riverAtX:0.5,ford:river?0.5:null,road:true,hills:hills.map((_,i)=>bi.hillNm[i%bi.hillNm.length]),forests:forests.map(()=>bi.forNm)},
     reinf:(Wd,Hd)=>[],
     intro:(s)=>({a:`〔${nm}〕两军会于${nm}，敌帅 ${lead} 督 ${s.jin} 众列阵以待；我军 ${s.ming}，御营亲临，须夺<b>中央高地</b>、破敌全军！`,b:`此乃程序推演之野——<b>据高列阵、林中设伏、凭河拒马</b>，因地制胜。`}),
     objective:(Wd,Hd)=>({x:Math.round(objH.xf*Wd),y:Math.round(objH.yf*Hd),r:Math.round(objH.rf*Wd*1.25),name:"高地"}),
-    feats:(Wd,Hd)=>[{t:"camp",x:Math.round(Wd*0.5),y:Math.round(Hd*0.955),r:Math.round(Wd*0.05),name:"我　营"},{t:"town",x:Math.round(Wd*0.5),y:Math.round(Hd*0.045),r:Math.round(Wd*0.05),name:"敌　营"}]};
+    feats:(Wd,Hd)=>{
+      const _nd=(_GENPROFILE&&_GENPROFILE.provinceMeta&&_GENPROFILE.provinceMeta.neighborDir)||"N";   // ★敌营/我营随来向(N默认=旧式敌北我南·null路径值一字不变)
+      const _cp=m=>_nd==="E"?(m?{x:0.045,y:0.5}:{x:0.955,y:0.5}):_nd==="W"?(m?{x:0.955,y:0.5}:{x:0.045,y:0.5}):_nd==="S"?(m?{x:0.5,y:0.045}:{x:0.5,y:0.955}):(m?{x:0.5,y:0.955}:{x:0.5,y:0.045});
+      const _mc=_cp(true),_fc=_cp(false);
+      const _F=[{t:"camp",x:Math.round(Wd*_mc.x),y:Math.round(Hd*_mc.y),r:Math.round(Wd*0.05),name:"我　营"},{t:"town",x:Math.round(Wd*_fc.x),y:Math.round(Hd*_fc.y),r:Math.round(Wd*0.05),name:"敌　营"}];
+      if(_GENPROFILE){   /* ★接入态:按省语义位追加纯渲染军事地貌·独立RNG(_trng种子异或·不扰genMap配置R序)·null路径不进此支→feats恒2枚→protoverify哈希不变 */
+        const _FR=_trng(((seed^0x7f4a7c15)>>>0)||9),_pk=a=>a[(_FR()*a.length)|0];
+        if(_GENPROFILE.fort){   /* 边堡/边塞:横贯长壕/边墙(1-2·补中点x/y供标签层fillText·drawFeature仍读x1..y2) + 具名关堡(1-2) */
+          const _wall=(x1,y1,x2,y2)=>({t:"wall",x1:x1,y1:y1,x2:x2,y2:y2,x:Math.round((x1+x2)/2),y:Math.round((y1+y2)/2),name:_pk(_FORT_WALLNM)});
+          const wy=0.12+_FR()*0.10,wj=(_FR()-0.5)*0.05;_F.push(_wall(Math.round(Wd*0.08),Math.round(Hd*wy),Math.round(Wd*0.92),Math.round(Hd*(wy+wj))));
+          if(_FR()<0.4){const sy=0.78+_FR()*0.10,sj=(_FR()-0.5)*0.04;_F.push(_wall(Math.round(Wd*0.30),Math.round(Hd*sy),Math.round(Wd*0.70),Math.round(Hd*(sy+sj))));}
+          const nb=1+(_FR()<0.5?0:1);for(let i=0;i<nb;i++)_F.push({t:"town",x:Math.round(Wd*(0.16+_FR()*0.68)),y:Math.round(Hd*(0.13+_FR()*0.12)),r:Math.round(Wd*0.036),name:_pk(_FORT_NM)});
+        }else{   /* 通用:1-2 具名次级城镇(biome命名池) + 偶发沟壑 */
+          const nt=1+(_FR()<0.5?0:1),_tp=(bi&&bi.townNm)?bi.townNm:_TOWN_NM;
+          for(let i=0;i<nt;i++)_F.push({t:"town",x:Math.round(Wd*(0.12+_FR()*0.74)),y:Math.round(Hd*(0.60+_FR()*0.30)),r:Math.round(Wd*0.033),name:_pk(_tp)});
+          if(_FR()<0.5){const rx=0.20+_FR()*0.55,ry0=0.20+_FR()*0.18;_F.push({t:"ravine",w:Math.round(Wd*0.009),pts:[{x:Math.round(Wd*rx),y:Math.round(Hd*ry0)},{x:Math.round(Wd*(rx+0.09)),y:Math.round(Hd*(ry0+0.24))},{x:Math.round(Wd*(rx-0.04)),y:Math.round(Hd*(ry0+0.48))}]});}
+        }
+        if(_GENPROFILE.biome==='wetland'||_GENPROFILE.wetland||_GENPROFILE.coast||_GENPROFILE.island){   /* 水乡biome/湿地/沿海类:偶发1-2处具名沼泽——与fort正交(fort海防要塞亦可有沼泽·故解嵌于fort/else之外)·门控认biome==='wetland'(契约主送biome而非wetland位)·t:marsh→terrainAt消费入sim·骑兵怯水 */
+          const nm2=1+(_FR()<0.5?0:1);for(let i=0;i<nm2;i++)_F.push({t:"marsh",x:Math.round(Wd*(0.14+_FR()*0.66)),y:Math.round(Hd*(0.28+_FR()*0.44)),r:Math.round(Wd*(0.038+_FR()*0.022)),name:_pk(_MARSH_NM)});
+        }
+        const _pm=_GENPROFILE.provinceMeta||{};   /* ★省实况:省会具名城池(真名·避海岸侧) + 资源风物(盐场/漕河码头/矿峒·纯渲染) */
+        if(_pm.capitalName){const _cs=(_pm.oceanSide==="left")?0.60:0.24;_F.push({t:"town",x:Math.round(Wd*(_cs+_FR()*0.16)),y:Math.round(Hd*(0.40+_FR()*0.20)),r:Math.round(Wd*0.05),name:_pm.capitalName});}
+        if(Array.isArray(_pm.resources)){for(let i=0;i<Math.min(2,_pm.resources.length);i++){const _ln=_resLandmark(_pm.resources[i]);if(_ln)_F.push({t:"town",x:Math.round(Wd*(0.16+_FR()*0.66)),y:Math.round(Hd*(0.30+_FR()*0.42)),r:Math.round(Wd*0.03),name:_ln});}}
+      }
+      if(typeof TERR!=="undefined"&&TERR&&TERR.coast){const _cb=TERR.coast,_pad=Math.round(Wd*0.018);   // ★营/城feat向陆侧clamp避让海带(勿落海·复用M2裁剪几何·terr先于feats在loadMap算好coast)
+        for(const f of _F){if(f.t==="camp"||f.t==="town"){if(_cb.leftX!=null){const _l=_cb.leftX+(f.r||0)+_pad;if(f.x<_l)f.x=_l;}if(_cb.rightX!=null){const _r=_cb.rightX-(f.r||0)-_pad;if(f.x>_r)f.x=_r;}}}}
+      return _F;}};
 }
-function loadMap(id){MAP=(id==="proc")?genMap(_GENSEED):(MAPS[id]||MAPS.hunhe);if(id==="proc"&&$("weather"))$("weather").value=MAP.weather;WORLD={w:MAP.w,h:MAP.h};TERR=MAP.terr(WORLD.w,WORLD.h);MAP._obj=MAP.objective?MAP.objective(WORLD.w,WORLD.h):null;MAP.features=MAP.feats?MAP.feats(WORLD.w,WORLD.h):[];buildStructures();buildTerrain();}
+function loadMap(id){MAP=(id==="proc")?genMap(_GENSEED):(MAPS[id]||MAPS.hunhe);if(id==="proc"&&$("weather"))$("weather").value=MAP.weather;WORLD={w:MAP.w,h:MAP.h};TERR=MAP.terr(WORLD.w,WORLD.h);MAP._obj=MAP.objective?MAP.objective(WORLD.w,WORLD.h):null;MAP.features=MAP.feats?MAP.feats(WORLD.w,WORLD.h):[];buildObjectives();buildStructures();buildTerrain();}
 /* ★结构化地形(向《全战三国》看齐·纯渲染数据·绝不入 terrainAt → 不碰 sim/确定性):
    农田阡陌 + 道路网 + 村落聚邑 + 跨河桥 + 地表分区 + 山坡梯田。用独立本地 rng(种子异或·不扰 richTerr 山林流·绝不触 Math.random)。
    生成于 loadMap(此时 MAP.features/labels 已就绪·可锚定城/营/渡口),挂在 TERR 上供 drawTerrain 读。 */
@@ -927,9 +998,28 @@ function objectiveControl(dt){const o=MAP&&MAP._obj;if(!o)return;state.obj=state
   let mm=0,jj=0;for(const u of units){if(!u.alive||u.state==="rout")continue;if(Math.hypot(u.x-o.x,u.y-o.y)<o.r){if(u.side==="ming")mm+=u.soldiers;else jj+=u.soldiers;}}
   state.obj.ming=mm;state.obj.jin=jj;const prev=state.obj.owner,owner=(mm>jj*1.15&&mm>200)?"ming":(jj>mm*1.15&&jj>200)?"jin":prev;
   if(owner&&owner!==prev){state.obj.owner=owner;log(`<b>${sideCN(owner)}占据 ${o.name}</b>，居高临下、全军得势！`,owner);shake(5);playSfx("horn");banner(owner==="ming"?"夺取要地":"要地失守",o.name+" 易主",owner==="ming"?"aid":"kill");}
-  if(state.obj.owner){const own=state.obj.owner,foe=own==="ming"?"jin":"ming";state.obj.vp[own]=(state.obj.vp[own]||0)+dt;
+  if(state.obj.owner){const own=state.obj.owner,foe=own==="ming"?"jin":"ming";   /* (原 state.obj.vp 累加删除:全文件无读者=死账·中央计分实由下方士气增减体现) */
     for(const u of fighting(own))u.mor=clamp(u.mor+CFG.objMoraleUp*dt,0,100);
-    for(const u of fighting(foe))u.mor=clamp(u.mor-CFG.objMoraleDn*dt,0,100);}}
+    for(const u of fighting(foe))u.mor=clamp(u.mor-CFG.objMoraleDn*dt,0,100);}
+  if(MAP._objs&&MAP._objs.length>1){   /* ★多要地(梯队三G·profile路径):各要地控制追踪(沿用中央圈判定)·仅计分/显示/AI用·不额外drain morale(中央高地保原语义)·null路径length1不进此支→哈希不变 */
+    state.objs=state.objs||MAP._objs.map(function(){return {owner:null,ming:0,jin:0};});
+    for(let k=0;k<MAP._objs.length;k++){const ob=MAP._objs[k];let m2=0,j2=0;
+      for(const u of units){if(!u.alive||u.state==="rout")continue;if(Math.hypot(u.x-ob.x,u.y-ob.y)<ob.r){if(u.side==="ming")m2+=u.soldiers;else j2+=u.soldiers;}}
+      const s=state.objs[k],pv=s.owner,ow=(m2>j2*1.15&&m2>200)?"ming":(j2>m2*1.15&&j2>200)?"jin":pv;s.ming=m2;s.jin=j2;
+      if(ow!==pv){s.owner=ow;if(k>0&&ow){log(`<b>${sideCN(ow)}${ow==="ming"?"夺据":"攻占"} ${ob.name}</b>！`,ow);playSfx("horn");banner(ow==="ming"?"夺取要地":"要地失守",ob.name+" 易主",ow==="ming"?"aid":"kill");}}}   // 中央(k=0)易主已由上方state.obj日志·此处跳
+  }}
+/* ★战役要地集(梯队三G):中央高地恒有;profile路径追加省会城池+(河渡口/关隘择一)→2-3要地。null/内置=单中央(哈希不变) */
+function buildObjectives(){MAP._objs=MAP._obj?[MAP._obj]:[];
+  if(!_GENPROFILE||!MAP._obj)return;
+  const F=(MAP&&MAP.features)||[],pm=(_GENPROFILE.provinceMeta)||{},R=Math.round(WORLD.w*0.06),_hz=_dirHoriz();   // ★E/W横轴:省会/关隘的固定x/y会落一方后场/侧翼(开局免费点)→重定位入「两军间争夺带」(主轴0.4-0.6·侧轴错开中央)+同步feat渲染;N/S保feat原坐标(N/null逐字节exact)
+  // E/W争夺带落位:主轴(x)近中心>各军R(0.42/0.58军心·避开局免费点)·侧轴(y)近0.5H(单位密带·大半径R≈9%H可及)·错开中央高地
+  if(pm.capitalName){const cf=F.find(f=>f.t==="town"&&f.name===pm.capitalName);if(cf){let ox=cf.x,oy=cf.y;if(_hz){ox=Math.round(WORLD.w*0.47);oy=Math.round(WORLD.h*0.42);cf.x=ox;cf.y=oy;}MAP._objs.push({x:ox,y:oy,r:Math.max(cf.r||0,R),name:pm.capitalName,key:"city"});}}
+  const L=(MAP&&MAP.labels)||{},_wall=F.find(f=>f.t==="wall"&&f.x!=null);
+  function _pushPass(){let wx=_wall.x,wy=_wall.y;if(_hz){wx=Math.round(WORLD.w*0.53);wy=Math.round(WORLD.h*0.58);_wall.x=wx;_wall.y=wy;_wall.x1=Math.round(WORLD.w*0.50);_wall.y1=Math.round(WORLD.h*0.50);_wall.x2=Math.round(WORLD.w*0.56);_wall.y2=Math.round(WORLD.h*0.66);}MAP._objs.push({x:wx,y:wy,r:R,name:_wall.name||"关隘",key:"pass"});}
+  if(_GENPROFILE.fort&&_wall)_pushPass();   // 边塞(fort)省→关隘(fort墙中点)优先
+  else if(TERR&&TERR.river&&TERR.riverW>0&&L.ford!=null){let fx=WORLD.w*L.ford,fy=riverYAt(fx);if(_hz){fx=Math.round(WORLD.w*0.53);fy=Math.round(WORLD.h*0.58);}MAP._objs.push({x:Math.round(fx),y:Math.round(fy),r:R,name:(L.riverName?String(L.riverName).replace(/　/g,"")+"渡":"渡口"),key:"ford"});}   // 渡口(N/S=河ford位·E/W入争夺带)
+  else if(_wall)_pushPass();   // 无河兜底关隘
+}
 function scenario(injected){const r=injected||MAP.roster();return layout(r.M,"ming").concat(layout(r.J,"jin"));}   // injected={M,J}→接入主游戏注入花名册(替 MAP.roster)
 
 /* ---------- 工具 ---------- */
@@ -980,11 +1070,11 @@ function spawnGenerals(){
     if(pool.length<2)continue;
     pool.sort((a,b)=>((b._marshal?1e6:0)+(b.gen.valor||0)+(b.gen.mil||0))-((a._marshal?1e6:0)+(a.gen.valor||0)+(a.gen.mil||0)));
     const n=clamp(Math.round(pool.length/3),2,4);
-    for(let k=0;k<n;k++){const src=pool[k],g=Object.assign({},src.gen),ahead=side==="ming"?-1:1;
+    for(let k=0;k<n;k++){const src=pool[k],g=Object.assign({},src.gen),fv=_faceVec(side),_hj=(_nz(k*3.1+src.x*0.01)-0.5)*46;   // ★英雄前置沿对阵轴朝敌·jitter沿侧轴(N默认exact:x得jitter·y前置-72)
       const hero={type:"cav",sub:"shock",side,name:g.n,gen:g,_hero:true,_marshal:!!src._marshal,emperor:false,
         soldiers:36,soldiers0:36,mor:100,leadership:100,training:92,quality:"精锐",supply:100,
-        x:clamp(src.x+(_nz(k*3.1+src.x*0.01)-0.5)*46,30,WORLD.w-30),y:clamp(src.y+ahead*72,30,WORLD.h-30),
-        facing:side==="ming"?-Math.PI/2:Math.PI/2,id:"g_"+side+"_"+k,vet:66,vet0:66,sta:100,ammo:999,
+        x:clamp(src.x+fv.x*72+(_dirHoriz()?0:_hj),30,WORLD.w-30),y:clamp(src.y+fv.y*72+(_dirHoriz()?_hj:0),30,WORLD.h-30),
+        facing:_faceAng(side),id:"g_"+side+"_"+k,vet:66,vet0:66,sta:100,ammo:999,
         _inspireCd:0,_duelCd:0,_archeryCd:0,_chargeRun:0,_skillCd:0,_field:true,_holdFire:false,_prio:"near",
         state:"steady",stance:"line",order:null,tx:null,ty:null,target:null,hidden:false,alive:true,_fcd:0,_meleeT:0,
         commander:null,_retinue:false};
@@ -1093,14 +1183,14 @@ function step(dt){
   defAccum+=dt;if(defAccum>1.2){defAccum=0;defectionCheck();}
   objAccum+=dt;if(objAccum>1){objectiveControl(objAccum);objAccum=0;}
   panelAccum+=dt;if(panelAccum>0.35){panelAccum=0;if(sel.size)refreshPanel();}
-  units=units.filter(u=>{if(u.soldiers<=0){spawnFx("dust",u.x,u.y);spawnFx("fling",u.x,u.y);for(let i=0;i<10;i++)addDecal(u.x+(Math.random()*50-25),u.y+(Math.random()*40-20));shake(5);u.alive=false;return false;}if(u.state==="rout"&&(u.y<-60||u.y>WORLD.h+60))return u.alive=false;return true;});
+  units=units.filter(u=>{if(u.soldiers<=0){spawnFx("dust",u.x,u.y);spawnFx("fling",u.x,u.y);for(let i=0;i<10;i++)addDecal(u.x+(Math.random()*50-25),u.y+(Math.random()*40-20));shake(5);u.alive=false;return false;}if(u.state==="rout"&&_routOff(u))return u.alive=false;return true;});
   victoryCheck();updateHUD();
 }
 function turnTo(u,goal,dt){let dd=goal-u.facing;while(dd>Math.PI)dd-=Math.PI*2;while(dd<-Math.PI)dd+=Math.PI*2;const rate=(u.type==="art"?1.9:u.type==="cav"?4.2:u.type==="guard"?2.5:3.0)*dt;u.facing+=Math.abs(dd)<=rate?dd:Math.sign(dd)*rate;}   // 转向限速·被抄侧背须回身耗时(炮慢·骑快)
 function moveUnit(u,dt){
   u._inMelee=false;if(u.hidden){return;}
   const sp=unitSpd(u)*terrMove(u)*(u.sta<25?0.8:1)*(u._vigorUntil>state.time?1.25:1)*(state.weather==="snow"?0.9:1);
-  if(u.state==="rout"){const gy=u.side==="ming"?WORLD.h+80:-80;u.facing=ang(u,{x:u.x,y:gy});const rs=unitSpd(u)*1.2*slopeMove(u);u.x+=Math.cos(u.facing)*rs*dt;u.y+=Math.sin(u.facing)*rs*dt;return;}
+  if(u.state==="rout"){u.facing=ang(u,_routGoal(u));const rs=unitSpd(u)*1.2*slopeMove(u);u.x+=Math.cos(u.facing)*rs*dt;u.y+=Math.sin(u.facing)*rs*dt;return;}   // ★溃逃奔己方后缘(换轴·N向逐字节等价)
   if(u._balk)return;
   // ★散兵放风筝(全战 skirmish):无令的弓手/游骑遇敌近身→边射边后撤(结阵hold/受令攻/受令移者不动·玩家可定身)
   if(isShooter(u)&&u.type!=="art"&&u.order!=="attack"&&u.stance!=="hold"&&u.tx==null&&u.ammo>0){
@@ -1207,8 +1297,13 @@ function endDuel(d,winner,loser){d._done=true;const a=byId(d.a),b=byId(d.b);if(a
     loser.gen={n:nm+(fate==="重伤"?"(伤)":"(殁)"),valor:32,mil:32,int:40};loser.mor=clamp(loser.mor-30,0,100);loser._hitThisTick=true;winner.mor=clamp(winner.mor+12,0,100);
     floater(loser.x,loser.y,fate+"！","#e8c64a");spawnFx("duel",loser.x,loser.y);shake(13);playSfx("duel");log(`<b>⚔ ${winner.gen.n} ${fate} ${nm}！</b>${loser.name}夺气，${winner.name}士气大振！`,"fate");banner("斩 将",winner.gen.n+" "+fate+" "+nm,"kill");state._slowmo=performance.now()+550;if(loser._marshal){for(const al of fighting(loser.side))al.mor=clamp(al.mor-16,0,100);log("<b>主帅授首！</b>"+sideCN(loser.side)+"全军夺气！","fate");banner("主帅授首",sideCN(loser.side)+"全军夺气","kill");}}
   else if(a&&b)log(`${a.gen.n}与${b.gen.n}斗将数合，不分胜负，各归本阵。`,a.side);}
-function spawnReinf(r){for(const u of r.units){const id="r"+(state.reinfId=(state.reinfId||0)+1),ty=r.side==="ming"?WORLD.h*0.6:WORLD.h*0.42,sub=u.sub||assignSub(u,99);
-  units.push({...u,id,sub,soldiers0:u.soldiers,training:u.training||60,supply:u.supply||80,quality:u.quality||"普通",vet:vetInit(u.quality),vet0:vetInit(u.quality),sta:100,ammo:isShooterSub(sub)?ammoCapSub(sub):999,_inspireCd:0,_duelCd:0,_archeryCd:0,_chargeRun:0,_holdFire:false,_prio:"near",facing:r.side==="ming"?-Math.PI/2:Math.PI/2,state:"steady",stance:"line",order:"move",tx:u.x,ty:ty,target:null,hidden:false,alive:true,_fcd:0,_meleeT:0});}
+function spawnReinf(r){for(const u of r.units){const id="r"+(state.reinfId=(state.reinfId||0)+1),sub=u.sub||assignSub(u,99);
+  var tx,ty;   /* ★援军入场目标沿主轴内移·N默认exact(ty=H*0.6|0.42·tx=u.x) */
+  if(!_battleDir||_battleDir==="N"){ty=r.side==="ming"?WORLD.h*0.6:WORLD.h*0.42;tx=u.x;}
+  else if(_battleDir==="S"){ty=r.side==="ming"?WORLD.h*0.4:WORLD.h*0.58;tx=u.x;}
+  else if(_battleDir==="E"){tx=r.side==="ming"?WORLD.w*0.4:WORLD.w*0.58;ty=u.y;}
+  else{tx=r.side==="ming"?WORLD.w*0.6:WORLD.w*0.42;ty=u.y;}
+  units.push({...u,id,sub,soldiers0:u.soldiers,training:u.training||60,supply:u.supply||80,quality:u.quality||"普通",vet:vetInit(u.quality),vet0:vetInit(u.quality),sta:100,ammo:isShooterSub(sub)?ammoCapSub(sub):999,_inspireCd:0,_duelCd:0,_archeryCd:0,_chargeRun:0,_holdFire:false,_prio:"near",facing:_faceAng(r.side),state:"steady",stance:"line",order:"move",tx:tx,ty:ty,target:null,hidden:false,alive:true,_fcd:0,_meleeT:0});}
   log(`<b>${r.side==="ming"?"我军援至":sideCN("jin")+"援至"}</b>：${r.units.map(u=>u.name).join("、")} 自${r.side==="ming"?"南":"北"}面杀到！`,"fate");shake(11);playSfx("horn");banner(r.side==="ming"?"援军抵达":"敌援抵达",r.units.map(u=>u.name).join("、"),r.side==="ming"?"aid":"kill");}
 function checkReinf(){if(!state.reinf)return;for(const r of state.reinf)if(!r.done&&state.time>=r.t){r.done=true;spawnReinf(r);}}
 function revealAmbush(h){if(!h.hidden)return;h.hidden=false;h._forceReveal=false;spawnFx("reveal",h.x,h.y);shake(9);playSfx("horn");log(`${h.name} 自林中杀出，<b>中伏</b>！`,h.side);banner("中 伏",h.name+" 自林杀出",h.side==="ming"?"aid":"kill");
@@ -1239,18 +1334,21 @@ function enemyAI(){
   const myMor=armyMorale("jin"),enMor=armyMorale("ming"),winning=myMor>=enMor-4,tgtLoad={},enemyCracking=units.some(u=>u.side==="ming"&&u.state==="rout"),
         cav=mine.filter(u=>u.type==="cav"&&!(SUB[u.sub]&&SUB[u.sub].kite)),
         lineUnits=mine.filter(u=>u.type==="step"||(u.type==="cav"&&!(SUB[u.sub]&&SUB[u.sub].kite))),
-        lineY=lineUnits.length?lineUnits.reduce((s,u)=>s+u.y,0)/lineUnits.length:WORLD.h*0.28;
+        lineY=lineUnits.length?lineUnits.reduce((s,u)=>s+_mainC(u),0)/lineUnits.length:_mainW()*0.28;   // ★阵线主轴均位(N=y)·换轴
   const flank=new Set(),reserve=new Set();
-  if(cav.length>2&&P.cunning>0.4){const s=cav.slice().sort((a,b)=>a.x-b.x);flank.add(s[0].id);flank.add(s[s.length-1].id);}
-  if(cav.length>3&&P.caut>0.4)reserve.add(cav.slice().sort((a,b)=>b.y-a.y)[0].id);
-  const obj=MAP&&MAP._obj;let objTaker=null;                                  // 夺要：遣最近健康一阵去占要地
-  if(obj&&(!state.obj||state.obj.owner!=="jin")){const cand=mine.filter(u=>u.type!=="art"&&u.sta>40&&!flank.has(u.id)).sort((a,b)=>dist(a,obj)-dist(b,obj))[0];if(cand)objTaker=cand.id;}
+  if(cav.length>2&&P.cunning>0.4){const s=cav.slice().sort((a,b)=>_sideC(a)-_sideC(b));flank.add(s[0].id);flank.add(s[s.length-1].id);}   // 两翼=侧轴两端(N=x)
+  if(cav.length>3&&P.caut>0.4)reserve.add(cav.slice().sort((a,b)=>_mainC(b)-_mainC(a))[0].id);   // 预备=主轴最前(N=y大)
+  const obj=MAP&&MAP._obj;let objTaker=null,objTgt=obj;                       // 夺要：遣最近健康一阵去占要地
+  if(MAP._objs&&MAP._objs.length>1&&state.objs){                              // ★多要地:选最近「未被jin控」的要地去争(攻防感·别过度设计)·null单点走exact旧支
+    const mid=mine.filter(u=>u.type!=="art"&&u.sta>40&&!flank.has(u.id));let bd=1e18;
+    if(mid.length)for(let k=0;k<MAP._objs.length;k++){if(state.objs[k]&&state.objs[k].owner==="jin")continue;const ob=MAP._objs[k],c=mid.slice().sort((a,b)=>dist(a,ob)-dist(b,ob))[0],d=dist(c,ob);if(d<bd){bd=d;objTaker=c.id;objTgt=ob;}}
+  }else if(obj&&(!state.obj||state.obj.owner!=="jin")){const cand=mine.filter(u=>u.type!=="art"&&u.sta>40&&!flank.has(u.id)).sort((a,b)=>dist(a,obj)-dist(b,obj))[0];if(cand)objTaker=cand.id;}
   {const ms=mine.find(u=>u._marshal);if(ms&&skillReady(ms)&&skillFor(ms)==="duzhan"&&myMor<42)fireSkill(ms);   // 主帅督战/整军
    const insp=mine.filter(u=>(u._inspireCd||0)<=0&&u.gen&&u.gen.mil>=78).sort((a,b)=>b.gen.mil-a.gen.mil)[0];if(insp&&fighting("jin").some(a=>a.state==="shaken"&&dist(a,insp)<220))inspire(insp);}
 
   // —— 集火破阵 / 火炮反制 / 砧锤(锁定被我步兵咬住之敌) ——
   let breakTgt=null,_bb=-1e9;
-  for(const t of foe){if(t.hidden)continue;const sc=(t.mor<CFG.shakenAt?2.2:0)+(t._inMelee?1.4:0)+(t.soldiers<t.soldiers0*0.5?1.1:0)+(t._marshal?0.7:0)-Math.abs(t.y-lineY)/2600;if(sc>_bb){_bb=sc;breakTgt=t;}}
+  for(const t of foe){if(t.hidden)continue;const sc=(t.mor<CFG.shakenAt?2.2:0)+(t._inMelee?1.4:0)+(t.soldiers<t.soldiers0*0.5?1.1:0)+(t._marshal?0.7:0)-Math.abs(_mainC(t)-lineY)/2600;if(sc>_bb){_bb=sc;breakTgt=t;}}   // 破阵评分:偏离阵线主轴距(换轴)
   const enArt=foe.filter(t=>!t.hidden&&t.type==="art").sort((a,b)=>b.soldiers-a.soldiers)[0]||null;
   const pinned=new Set();for(const a of mine){if(a.type!=="step"||!a._inMelee)continue;for(const t of foe)if(t._inMelee&&dist(a,t)<CFG.engage+12)pinned.add(t.id);}
   for(const u of mine){const ts=foe,sub=SUB[u.sub]||{};
@@ -1268,14 +1366,14 @@ function enemyAI(){
       if(dd>rng(u)*0.92){u.order="move";u.target=null;u.stance="line";u.tx=dn.x;u.ty=dn.y;continue;}
       u.order="hold";u.stance="hold";u.tx=u.x;u.ty=u.y;continue;}
     if(isShooter(u)){                                                          // —— 远程：殿后·护炮·遇骑则避·射软目标 ——
-      if(u.ammo<=0){u.order="move";u.target=null;u.stance="line";u.tx=u.x;u.ty=Math.max(60,lineY-190);continue;}
+      if(u.ammo<=0){u.order="move";u.target=null;u.stance="line";_setRetreat(u,lineY,190);continue;}
       const cavTh=ts.filter(t=>t.type==="cav"&&dist(t,u)<260).sort((a,b)=>dist(a,u)-dist(b,u))[0];
       if(cavTh&&dist(cavTh,u)<200){const aw=ang(cavTh,u);u.order="move";u.target=null;u.stance="line";u.tx=clamp(u.x+Math.cos(aw)*210,40,WORLD.w-40);u.ty=clamp(u.y+Math.sin(aw)*210,40,WORLD.h-40);continue;}
       u._prio=(u.type==="art")?"shoot":"weak";let tgt=null;
       if(u.type==="art"&&enArt&&dist(u,enArt)<=rng(u))tgt=enArt;                       // 火炮反制敌炮
       else if(breakTgt&&dist(u,breakTgt)<=rng(u)*0.98)tgt=breakTgt;                     // 集火濒溃/陷战之敌
       tgt=tgt||pickFoeInRange(u)||ts.slice().sort((a,b)=>dist(u,a)-dist(u,b))[0];
-      if(dist(u,tgt)>rng(u)*0.96){u.order="move";u.target=null;u.stance="line";u.tx=tgt.x;u.ty=u.y+Math.sign(tgt.y-u.y)*Math.min(140,Math.abs(tgt.y-u.y));}
+      if(dist(u,tgt)>rng(u)*0.96){u.order="move";u.target=null;u.stance="line";if(_dirHoriz()){u.ty=tgt.y;u.tx=u.x+Math.sign(tgt.x-u.x)*Math.min(140,Math.abs(tgt.x-u.x));}else{u.tx=tgt.x;u.ty=u.y+Math.sign(tgt.y-u.y)*Math.min(140,Math.abs(tgt.y-u.y));}}   // 远程压近敌:侧轴对齐·主轴渐进(换轴)
       else{u.order="hold";u.stance="hold";u.tx=u.x;u.ty=u.y;}
       continue;}
     if(u.type==="step"&&(sub.wall||sub.antiCav)){                             // —— 反骑步兵：御冲结阵 ——
@@ -1284,10 +1382,10 @@ function enemyAI(){
         if((u._wallCd||0)<=0){u._wallUntil=state.time+10;u._wallCd=22;}u.stance=multi?"square":"hold";u.order="hold";u.target=null;u.tx=u.x;u.ty=u.y;continue;}}
     if(u.type==="cav"){                                                        // —— 骑兵循环冲锋 ——
       if((u._vigorCd||0)<=0&&u.sta<28){u.sta=100;u._chargedOn=null;u._vigorUntil=state.time+5;u._vigorCd=24;}
-      if((u.sta<26||u._meleeT>3.6||u._meleers>=2)&&u._inMelee){u.order="move";u.target=null;u.stance="line";u.tx=u.x;u.ty=Math.max(60,lineY-210);continue;}}  // 疲/久战/被合围则脱离
-    if(objTaker===u.id&&obj){if(dist(u,obj)>obj.r*0.55){u.order="move";u.target=null;u.stance="line";u.tx=obj.x;u.ty=obj.y;continue;}else{u.order="hold";u.stance="hold";u.tx=u.x;u.ty=u.y;continue;}}
+      if((u.sta<26||u._meleeT>3.6||u._meleers>=2)&&u._inMelee){u.order="move";u.target=null;u.stance="line";_setRetreat(u,lineY,210);continue;}}  // 疲/久战/被合围则脱离(沿主轴退)
+    if(objTaker===u.id&&objTgt){if(dist(u,objTgt)>objTgt.r*0.55){u.order="move";u.target=null;u.stance="line";u.tx=objTgt.x;u.ty=objTgt.y;continue;}else{u.order="hold";u.stance="hold";u.tx=u.x;u.ty=u.y;continue;}}
     if(reserve.has(u.id)&&!((winning&&enMor<46)||enemyCracking)){u.order="hold";u.stance="hold";u.tx=u.x;u.ty=u.y;continue;}   // 预备队(敌阵崩则投入扩大突破)
-    if(P.caut>0.35&&u.mor<32&&u.soldiers<u.soldiers0*0.42){u.order="move";u.target=null;u.tx=u.x;u.ty=Math.max(60,lineY-170);u.stance="line";continue;}
+    if(P.caut>0.35&&u.mor<32&&u.soldiers<u.soldiers0*0.42){u.order="move";u.target=null;_setRetreat(u,lineY,170);u.stance="line";continue;}
     let best=null;                                                            // —— 选目标(焦点·相克·避枪·绕翼) ——
     for(const t of ts){const fav=meleeMul(u,t),d=dist(u,t),
         braced=(t.type==="step"&&(t.stance==="hold"||t.stance==="square"||t._wallUntil>state.time)&&(SUB[t.sub]&&(SUB[t.sub].wall||SUB[t.sub].antiCav))),
@@ -1302,8 +1400,8 @@ function enemyAI(){
     if(u.type==="cav"){
       if(best.intoSpear){const soft=ts.filter(x=>!(x.type==="step"&&(x.stance==="hold"||x.stance==="square"||x._wallUntil>state.time)&&hitArc(x,u)==="front")).sort((a,b)=>dist(u,a)-dist(u,b))[0];
         if(soft&&dist(u,soft)<dist(u,t)+280){u.order="attack";u.target=soft.id;u.tx=soft.x;u.ty=soft.y;u.stance="charge";continue;}
-        const fa=t.facing+Math.PI*(u.x<t.x?-0.82:0.82);u.order="move";u.target=null;u.tx=clamp(t.x+Math.cos(fa)*210,40,WORLD.w-40);u.ty=clamp(t.y+Math.sin(fa)*210,40,WORLD.h-40);u.stance="line";continue;}  // 兜侧翼,不正面撞枪
-      if(flank.has(u.id)||t._inMelee||P.cunning>0.55){const fa=t.facing+Math.PI*(u.x<t.x?-0.7:0.7);u.order="attack";u.target=t.id;u.tx=clamp(t.x+Math.cos(fa)*150,40,WORLD.w-40);u.ty=clamp(t.y+Math.sin(fa)*150,40,WORLD.h-40);u.stance="charge";continue;}
+        const fa=t.facing+Math.PI*(_sideC(u)<_sideC(t)?-0.82:0.82);u.order="move";u.target=null;u.tx=clamp(t.x+Math.cos(fa)*210,40,WORLD.w-40);u.ty=clamp(t.y+Math.sin(fa)*210,40,WORLD.h-40);u.stance="line";continue;}  // 兜侧翼(侧轴判绕向),不正面撞枪
+      if(flank.has(u.id)||t._inMelee||P.cunning>0.55){const fa=t.facing+Math.PI*(_sideC(u)<_sideC(t)?-0.7:0.7);u.order="attack";u.target=t.id;u.tx=clamp(t.x+Math.cos(fa)*150,40,WORLD.w-40);u.ty=clamp(t.y+Math.sin(fa)*150,40,WORLD.h-40);u.stance="charge";continue;}
       u.order="attack";u.target=t.id;u.tx=t.x;u.ty=t.y;u.stance="charge";continue;}
     u.order="attack";u.target=t.id;u.tx=t.x;u.ty=t.y;u.stance="line";}
   const acts=fighting("jin");let line=P.line.replace(/皇太极|代善|岳讬/g,LEAD);
@@ -1326,12 +1424,14 @@ function victoryCheck(){if(state.over)return;let res=null;
   if(state.captured)res={t:"社稷动摇",p:`天子北狩，为${sideCN("jin")}所执。留守朝廷仓皇议立新君，四方震恐——一场亲征，几覆国本。`,win:false};
   else if(broken("jin")&&!broken("ming")){const ra=liveTroops("ming")/start0.ming;res={t:ra>0.6?"大 捷":"惨 胜",p:ra>0.6?`${sideCN("jin")}全线崩溃，弃尸盈野。天子亲临，三军用命，威加海内。`:"两军俱疲，幸而破敌，御营无恙。",win:true};}
   else if(broken("ming"))res={t:"败 北",p:`${sideCN("ming")}溃不成军，仓皇南渡。御营拼死护驾，天子得脱，然丧师辱国。`,win:false};
-  else if(state.time>CFG.battleTime){const pm=armyPower("ming"),pj=armyPower("jin");   // ★战场计时:鏖战竟日未决→按势收束(全战:限时未胜按战局判定)
+  else if(state.time>CFG.battleTime){let pm=armyPower("ming"),pj=armyPower("jin");   // ★战场计时:鏖战竟日未决→按势收束(全战:限时未胜按战局判定)
+    if(MAP._objs&&MAP._objs.length>1&&state.objs){let cm=0,cj=0;for(let k=1;k<state.objs.length;k++){const s=state.objs[k];if(s.owner==="ming")cm++;else if(s.owner==="jin")cj++;}const ob=(pm+pj)/2*0.06;pm+=cm*ob;pj+=cj*ob;}   // ★仅「非中央」要地(k≥1)吃+6%均势——中央高地计分=它既有的士气增减机制(已进armyPower)·跳过防双计;null单点length1不进→哈希不变
     if(pm>=pj*1.04)res={t:"日暮·全师",p:`鏖战竟日，胜负难分。天子持重，敛兵全师而还、御营无恙——挫敌锋而不浪战。`,win:true};
     else if(pj>pm*1.04)res={t:"日暮·敛兵",p:`鏖战竟日，师老无功。天色向晚，我军不能克敌，从容敛兵而退。`,win:false};
     else res={t:"日暮·两罢",p:`鏖战竟日，两军俱疲，各自鸣金。胜负未分，天下之势犹未可知。`,win:false};}
   if(res){state.over=true;stopDrums();playSfx(res.win?"win":"lose");showOver(res);}}
-function showOver(res){if(_activeBattleConfig&&typeof window!=="undefined"&&window.parent&&window.parent!==window){try{window.parent.postMessage({type:"battleResult",result:_collectResult()},"*");}catch(_){}}   /* ★接入:嵌入态战斗落幕→回吐 result 给主游戏 */
+function showOver(res){if(res&&typeof res.win==="boolean"&&typeof state!=="undefined"&&state)state._finalVerdict={outcome:res.win?"win":"loss"};   /* ★裁定单一真相源:victoryCheck/代战的最终胜负存此·UI与battleResult共用·杜绝二套公式重算 */
+  if(_activeBattleConfig&&typeof window!=="undefined"&&window.parent&&window.parent!==window){try{window.parent.postMessage({type:"battleResult",result:_collectResult()},"*");}catch(_){}}   /* ★接入:嵌入态战斗落幕→回吐 result 给主游戏 */
   $("overT").textContent=res.t;$("overT").style.color=res.win?"#4f7a3a":"#a8342a";const k=state.kia||{ming:0,jin:0};
   const oo=MAP&&MAP._obj,so=state.obj||{},objLine=oo?`　|　${oo.name}：${so.owner?(so.owner==="ming"?"我据":"敌据"):"未决"}`:"";
   $("overP").innerHTML=res.p+`<br><br><b>战报</b>　歼敌 ${k.jin||0} · 我损 ${k.ming||0} · 斩将 ${state.duels||0}${objLine}<br>${sideCN("ming")}余 ${liveTroops("ming")} · ${sideCN("jin")}余 ${liveTroops("jin")}`;$("over").style.display="flex";log(`【${res.t}】${res.p}`,"fate");}
@@ -1359,10 +1459,11 @@ function draw(){
   {const ct=performance.now()/1000;for(let i=0;i<4;i++){const cx=(((i*0.41+ct*0.010)%1.35)-0.18)*WORLD.w,cy=(0.16+i*0.22)*WORLD.h+Math.sin(ct*0.09+i*1.7)*WORLD.h*0.05,rw=WORLD.w*(0.30+(i%2)*0.13),g=ctx.createRadialGradient(cx,cy,rw*0.12,cx,cy,rw*0.5);g.addColorStop(0,"rgba(16,12,7,0.11)");g.addColorStop(1,"rgba(16,12,7,0)");ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,cy,rw*0.5,rw*0.27,0,0,7);ctx.fill();}}
   for(const dc of decals){ctx.fillStyle=dc.pool?"rgba(94,20,14,.5)":dc.b?"rgba(120,30,22,.45)":"rgba(45,36,24,.5)";ctx.beginPath();ctx.ellipse(dc.x,dc.y,dc.r,dc.r*(dc.pool?0.62:0.82),0,0,7);ctx.fill();}
   if(state.phase==="deploy"){const dy=WORLD.h*0.6;ctx.fillStyle="rgba(120,170,90,.10)";ctx.fillRect(0,dy,WORLD.w,WORLD.h-dy);ctx.strokeStyle="rgba(120,200,110,.5)";ctx.lineWidth=5;ctx.setLineDash([28,18]);ctx.beginPath();ctx.moveTo(0,dy);ctx.lineTo(WORLD.w,dy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle="rgba(60,110,50,.5)";ctx.font="52px serif";ctx.textAlign="center";ctx.fillText("◤ 布 阵 区 ◢",WORLD.w/2,dy+50);}
-  if(MAP&&MAP._obj){const o=MAP._obj,so=state.obj||{},pre=so.owner==="ming"?"224,160,96":so.owner==="jin"?"126,156,196":"200,180,120",pulse=0.10+0.06*Math.sin(performance.now()/520);  // 夺要控制圈
-    ctx.fillStyle="rgba("+pre+","+pulse.toFixed(3)+")";ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.fill();
-    ctx.strokeStyle="rgba("+pre+",.5)";ctx.lineWidth=4;ctx.setLineDash([20,14]);ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle="rgba("+pre+",.92)";ctx.font="bold 40px serif";ctx.textAlign="center";ctx.fillText("◎ "+o.name+(so.owner?(so.owner==="ming"?"（明据）":"（金据）"):"（争夺）"),o.x,o.y-o.r-14);}
+  if(MAP&&MAP._objs&&MAP._objs.length){const pulse=0.10+0.06*Math.sin(performance.now()/520);  // 夺要控制圈(多要地逐个)
+    for(let k=0;k<MAP._objs.length;k++){const o=MAP._objs[k],so=(state.objs&&state.objs[k])||(k===0?(state.obj||{}):{}),pre=so.owner==="ming"?"224,160,96":so.owner==="jin"?"126,156,196":"200,180,120";
+      ctx.fillStyle="rgba("+pre+","+pulse.toFixed(3)+")";ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.fill();
+      ctx.strokeStyle="rgba("+pre+",.5)";ctx.lineWidth=4;ctx.setLineDash([20,14]);ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,7);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle="rgba("+pre+",.92)";ctx.font="bold 40px serif";ctx.textAlign="center";ctx.fillText("◎ "+o.name+(so.owner?(so.owner==="ming"?"（明据）":"（金据）"):"（争夺）"),o.x,o.y-o.r-14);}}
   if(!_3d)for(const id of sel){const u=byId(id);if(!u||!u.alive)continue;   /* 2.5D:世界层选中指示(3D走屏幕层 drawCmdOverlay·drape会把细线压成亚像素) */
     if(isShooter(u)){ctx.strokeStyle="rgba(120,90,40,.3)";ctx.lineWidth=2;ctx.setLineDash([4,7]);ctx.beginPath();ctx.arc(u.x,u.y,rng(u),0,7);ctx.stroke();ctx.setLineDash([]);}
     const t=u.order==="attack"?byId(u.target):null,tx=t?t.x:u.tx,ty=t?t.y:u.ty;
@@ -1727,7 +1828,7 @@ function drawMinimap(){
   if(TERR.river&&TERR.river.length){ctx.strokeStyle="rgba(70,120,160,.7)";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(m.x+TERR.river[0].x*sx,m.y+TERR.river[0].y*sy);for(const p of TERR.river)ctx.lineTo(m.x+p.x*sx,m.y+p.y*sy);ctx.stroke();}   // ★proc 图约28%无河(river=null)→须守卫(否则 drawMinimap 抛错停 rAF=卡死+无小地图)
   for(const h of TERR.hills){ctx.fillStyle="rgba(150,115,60,.4)";ctx.beginPath();ctx.arc(m.x+h.x*sx,m.y+h.y*sy,h.r*sx,0,7);ctx.fill();}
   for(const f of TERR.forests){ctx.fillStyle="rgba(60,95,50,.5)";ctx.beginPath();ctx.arc(m.x+f.x*sx,m.y+f.y*sy,f.r*sx,0,7);ctx.fill();}
-  if(MAP&&MAP._obj){const o=MAP._obj,so=state.obj||{},pp=0.55+0.45*Math.sin(now/430);ctx.strokeStyle=so.owner==="ming"?"#e0a060":so.owner==="jin"?"#9ec3e0":"#e8d28a";ctx.lineWidth=1.5;ctx.globalAlpha=0.55+0.45*Math.abs(pp);ctx.beginPath();ctx.arc(m.x+o.x*sx,m.y+o.y*sy,5,0,7);ctx.stroke();ctx.globalAlpha=1;}
+  if(MAP&&MAP._objs){const pp=0.55+0.45*Math.sin(now/430);for(let k=0;k<MAP._objs.length;k++){const o=MAP._objs[k],so=(state.objs&&state.objs[k])||(k===0?(state.obj||{}):{});ctx.strokeStyle=so.owner==="ming"?"#e0a060":so.owner==="jin"?"#9ec3e0":"#e8d28a";ctx.lineWidth=1.5;ctx.globalAlpha=0.55+0.45*Math.abs(pp);ctx.beginPath();ctx.arc(m.x+o.x*sx,m.y+o.y*sy,5,0,7);ctx.stroke();ctx.globalAlpha=1;}}
   for(const u of units){if(!u.alive)continue;if(u.hidden&&u.side!=="ming")continue;const bx=m.x+u.x*sx,by=m.y+u.y*sy;
     if(u.emperor){ctx.save();ctx.translate(bx,by);ctx.rotate(Math.PI/4);ctx.fillStyle="#e8c64a";ctx.fillRect(-3,-3,6,6);ctx.restore();ctx.strokeStyle="rgba(232,198,74,"+(0.4+0.4*Math.abs(Math.sin(now/300))).toFixed(2)+")";ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(bx,by,6.5,0,7);ctx.stroke();continue;}
     ctx.fillStyle=u.side==="ming"?"#d65040":"#7f97ad";ctx.globalAlpha=u.hidden?0.5:u.state==="rout"?0.5:1;ctx.fillRect(bx-2,by-2,4,4);ctx.globalAlpha=1;
@@ -1773,6 +1874,15 @@ function drawPond(c,p){const T=TH(),r=p.r;   // 水塘/湿地(功能同沼泽·�
   c.fillStyle=T.water[0];c.beginPath();c.ellipse(p.x,p.y,r,r*0.8,0,0,7);c.fill();c.fillStyle=T.water[1];c.beginPath();c.ellipse(p.x,p.y,r*0.66,r*0.5,0,0,7);c.fill();
   c.fillStyle=T.wave;c.beginPath();c.ellipse(p.x-r*0.22,p.y-r*0.2,r*0.42,r*0.16,0,0,7);c.fill();
   for(let i=0;i<22;i++){const a=i*2.39996,rr=r*(0.92+((i%3)*0.06)),mx=p.x+Math.cos(a)*rr,my=p.y+Math.sin(a)*rr*0.82;c.strokeStyle=T.reed;c.lineWidth=1.4;c.beginPath();c.moveTo(mx,my);c.lineTo(mx-1,my-11);c.moveTo(mx,my);c.lineTo(mx+3,my-8);c.stroke();}}
+function drawCoast(c){if(!TERR.coast)return;const T=TH(),co=TERR.coast,W=WORLD.w,H=WORLD.h;   // ★海岸带渲染(纯离屏底图·融入water图层序·不入terrainAt/sim)
+  const wA=(T.water&&T.water[0])||"rgba(58,120,160,.82)",wB=(T.water&&T.water[1])||"rgba(40,92,140,.86)",wave=T.wave||"rgba(196,224,240,.5)",edge=T.waterEdge||"rgba(150,150,104,.5)";
+  const one=(outer,shoreX)=>{const x0=Math.min(outer,shoreX),bw=Math.abs(shoreX-outer)||1;
+    const g=c.createLinearGradient(outer,0,shoreX,0);g.addColorStop(0,wB);g.addColorStop(0.55,wA);g.addColorStop(1,"rgba(120,172,176,.5)");
+    c.fillStyle=g;c.fillRect(x0,0,bw,H);   // 海面(深→浅渐入岸)
+    c.strokeStyle=wave;c.lineWidth=Math.max(2,W*0.0015);
+    for(let i=0;i<5;i++){const wx=outer+(shoreX-outer)*(0.32+i*0.14);c.beginPath();for(let y=0;y<=H;y+=Math.max(28,H/54)){const off=Math.sin(y*0.0011+i*1.6)*bw*0.05;c.lineTo(wx+off,y);}c.stroke();}   // 浪线(平行岸)
+    c.strokeStyle=edge;c.lineWidth=Math.max(3,W*0.0022);c.beginPath();for(let y=0;y<=H;y+=Math.max(24,H/70)){const off=Math.sin(y*0.0014)*bw*0.045;c.lineTo(shoreX+off,y);}c.stroke();};   // 岸线泡沫
+  if(co.leftX!=null)one(0,co.leftX);if(co.rightX!=null)one(W,co.rightX);}
 function drawRiver(c,L){const rv=TERR.river,w=TERR.riverW,T=TH();c.lineJoin="round";c.lineCap="round";
   c.strokeStyle=T.waterEdge;c.lineWidth=w+26;c.beginPath();c.moveTo(rv[0].x,rv[0].y);for(const p of rv)c.lineTo(p.x,p.y);c.stroke();    // 河滩泥
   c.strokeStyle=T.water[0];c.lineWidth=w;c.beginPath();c.moveTo(rv[0].x,rv[0].y);for(const p of rv)c.lineTo(p.x,p.y);c.stroke();
@@ -1802,7 +1912,7 @@ function drawFeature(c,f){
     c.strokeStyle="rgba(40,30,18,.5)";c.lineWidth=wd;c.beginPath();c.moveTo(p[0].x,p[0].y);for(const q of p)c.lineTo(q.x,q.y);c.stroke();
     c.strokeStyle="rgba(78,60,38,.7)";c.lineWidth=wd*0.55;c.beginPath();c.moveTo(p[0].x,p[0].y);for(const q of p)c.lineTo(q.x,q.y);c.stroke();}}
 /* ★结构化地形渲染(纯离屏底图·烤一次·不入 terrainAt) */
-function drawGroundZones(c){if(!TERR.zones)return;const tints=["rgba(96,112,52,.10)","rgba(140,110,64,.12)","rgba(120,124,70,.09)","rgba(150,140,100,.08)"];
+function drawGroundZones(c){if(!TERR.zones)return;const tints=(MAP&&MAP.theme&&MAP.theme.zoneTint)||["rgba(96,112,52,.10)","rgba(140,110,64,.12)","rgba(120,124,70,.09)","rgba(150,140,100,.08)"];   // 接入desert/wetland时用biome沙地/水乡分区色·内置图无zoneTint→原默认(哈希/观感不变)
   for(const z of TERR.zones){c.fillStyle=tints[z.k%4];c.beginPath();c.ellipse(z.x,z.y,z.rx,z.ry,z.rot,0,7);c.fill();}}
 const _FIELDPAL=[
   {f:"rgba(126,84,42,.66)", r:"rgba(58,38,20,.6)",  d:"rgba(176,152,108,.72)"},   // 犁田(褐)
@@ -1902,6 +2012,7 @@ function drawTerrain(c){const L=(MAP&&MAP.labels)||{},hasRiver=!!(TERR&&TERR.riv
   drawHamlets(c);       // ★村落聚邑(农舍簇)
   F.forEach(f=>drawFeature(c,f));
   if(hasRiver)drawRiver(c,L);
+  if(TERR.coast)drawCoast(c);   // ★海岸带(边缘海面/浪线/岸线泡沫·profile.coast/island驱动·内置图无coast跳过)
   drawBridges(c);       // ★跨河桥(压于河面·接御道两端)
   c.textAlign="center";c.fillStyle="rgba(40,30,18,.5)";c.font="46px serif";(L.hills||[]).forEach((nm,i)=>{if(TERR.hills[i])c.fillText(nm,TERR.hills[i].x,TERR.hills[i].y+8);});
   c.fillStyle="rgba(28,52,28,.6)";(L.forests||[]).forEach((nm,i)=>{if(TERR.forests[i])c.fillText(nm,TERR.forests[i].x,TERR.forests[i].y+6);});
@@ -2254,7 +2365,12 @@ function updateHUD(){const _pM=armyPower("ming"),_pJ=armyPower("jin"),_tot=_pM+_
   const skb=document.querySelector('[data-cmd="skill"]');if(skb){if(s2.length){const u=s2[0],cd=Math.max(0,Math.ceil(u._skillCd||0));skb.textContent=cd>0?SKILL[skillFor(u)].cn+cd:SKILL[skillFor(u)].cn;skb.style.opacity=s2.some(x=>skillReady(x))?"1":"0.5";skb.style.setProperty("--cd",clamp((u._skillCd||0)/SKILL[skillFor(u)].cd,0,1));skb.classList.toggle("cooling",(u._skillCd||0)>0);}else{skb.textContent="战法";skb.style.opacity="0.4";skb.classList.remove("cooling");}}
   {const ds=document.querySelector('#detail .dskill');if(ds&&ds.style){const du=[...sel].map(byId).filter(x=>x&&x.alive&&x.side==="ming");if(du.length===1){const u=du[0],cd=u._skillCd||0,tot=SKILL[skillFor(u)].cd||1;ds.style.setProperty("--cd",clamp(cd/tot,0,1));ds.classList.toggle("cooling",cd>0);ds.classList.toggle("ready",cd<=0);}}}   // ★详情战法环每帧刷
   const rb=$("reinf");if(rb){const nx=(state.reinf||[]).filter(r=>!r.done).sort((a,b)=>a.t-b.t)[0];if(nx&&state.phase==="battle"&&!state.over){const lf=Math.max(0,Math.ceil(nx.t-state.time));rb.style.display="block";rb.innerHTML=(nx.side==="ming"?"<b style='color:#e6a690'>我军援军</b> 自南将至 ":`<b style='color:#9ec3e0'>${sideCN("jin")}援军</b> 自北将至 `)+Math.floor(lf/60)+":"+("0"+lf%60).slice(-2);}else rb.style.display="none";}
-  const ob=$("objbar"),oo=MAP&&MAP._obj;if(ob){if(oo&&state.phase==="battle"&&!state.over){const so=state.obj||{ming:0,jin:0,owner:null},oc=so.owner==="ming"?"#e0a060":so.owner==="jin"?"#9ec3e0":"#c3b08a";ob.style.display="block";ob.innerHTML=`<span style="color:#e6a690">${sideCN("ming")} ${so.ming||0}</span> ◢ <b style="color:${oc}">${oo.name}·${so.owner?sideCN(so.owner):"争夺"}</b> ◣ <span style="color:#9ec3e0">${so.jin||0} ${sideCN("jin")}</span>`;}else ob.style.display="none";}updateCmdVisibility(s2);syncRoster();}
+  const ob=$("objbar"),objs=(MAP&&MAP._objs)||[];if(ob){if(objs.length&&state.phase==="battle"&&!state.over){
+    if(objs.length===1){const oo=objs[0],so=state.obj||{ming:0,jin:0,owner:null},oc=so.owner==="ming"?"#e0a060":so.owner==="jin"?"#9ec3e0":"#c3b08a";ob.innerHTML=`<span style="color:#e6a690">${sideCN("ming")} ${so.ming||0}</span> ◢ <b style="color:${oc}">${oo.name}·${so.owner?sideCN(so.owner):"争夺"}</b> ◣ <span style="color:#9ec3e0">${so.jin||0} ${sideCN("jin")}</span>`;}   // 单要地(原样)
+    else{let cm=0,cj=0;if(state.objs)for(const s of state.objs){if(s.owner==="ming")cm++;else if(s.owner==="jin")cj++;}   // 多要地:控制数+要地列表
+      const parts=objs.map((oo,k)=>{const so=(state.objs&&state.objs[k])||{},oc=so.owner==="ming"?"#e0a060":so.owner==="jin"?"#9ec3e0":"#c3b08a";return `<b style="color:${oc}">${oo.name}·${so.owner?sideCN(so.owner):"争"}</b>`;});
+      ob.innerHTML=`<span style="color:#e6a690">${sideCN("ming")}据${cm}</span> ◢ ${parts.join(" ")} ◣ <span style="color:#9ec3e0">据${cj} ${sideCN("jin")}</span>`;}
+    ob.style.display="block";}else ob.style.display="none";}updateCmdVisibility(s2);syncRoster();}
 function setPlay(p){state.paused=p;$("btnPlay").textContent=p?"▶ 继续":"⏸ 暂停";$("btnPlay").classList.toggle("go",p);if(p)stopDrums();else if(!state.over)startDrums();updateHUD();}
 $("btnPlay").onclick=()=>{initAudio();if(state.phase==="compose")return;if(state.phase==="deploy"){state.phase="battle";state.paused=false;$("btnPlay").textContent="⏸ 暂停";$("btnPlay").classList.remove("go");startDrums();log("〔开战〕鼓声大作，两军相向！","big");updateHUD();}else setPlay(!state.paused);};
 $("sp1").onclick=()=>setSpeed(1);$("sp2").onclick=()=>setSpeed(2);$("sp3").onclick=()=>setSpeed(3);$("sp4").onclick=()=>setSpeed(4);
@@ -2268,7 +2384,7 @@ function renderCompose(){const g=$("cmpGrid");if(!g)return;const ming=units.filt
   const f=ming.filter(u=>u._field),tot=f.reduce((s,u)=>s+u.soldiers,0),cnt={step:0,cav:0,bow:0,art:0,guard:0};f.forEach(u=>cnt[u.type]++);
   if($("cmpSum"))$("cmpSum").innerHTML=`出阵 <b>${f.length}</b>/${ming.length} 阵 · <b>${tot}</b> 众　|　步<b>${cnt.step}</b> 骑<b>${cnt.cav}</b> 射<b>${cnt.bow}</b> 炮<b>${cnt.art}</b> 御<b>${cnt.guard}</b>`;
   if($("cmpScene"))$("cmpScene").textContent=(MAP&&MAP.name)||"";
-  const sc=(state&&state.map)||"hunhe";if($("compose"))$("compose").querySelectorAll(".scen").forEach(b=>{b.classList.toggle("on",b.dataset.scene===sc);b.onclick=()=>{const isProc=b.dataset.scene==="proc";if(!isProc&&b.dataset.scene===((state&&state.map)||""))return;if(isProc){_GENSEED=_pickSeed();_GENPROFILE=null;}   /* 程序图:每点换新种子=新战场·清地形档(自由对战=随机·不沿用上场注入) */ $("scene").value=b.dataset.scene;const dm=MAPS[b.dataset.scene];if($("weather")&&dm&&dm.weather)$("weather").value=dm.weather;start();};});  // 战役按钮直接绑定·点击即切换
+  const sc=(state&&state.map)||"hunhe";if($("compose"))$("compose").querySelectorAll(".scen").forEach(b=>{b.classList.toggle("on",b.dataset.scene===sc);b.onclick=()=>{const isProc=b.dataset.scene==="proc";if(!isProc&&b.dataset.scene===((state&&state.map)||""))return;if(isProc){_GENSEED=_pickSeed();_GENPROFILE=null;_battleDir=null;}   /* 程序图:每点换新种子=新战场·清地形档+来向(自由对战=随机南北·不沿用上场注入) */ $("scene").value=b.dataset.scene;const dm=MAPS[b.dataset.scene];if($("weather")&&dm&&dm.weather)$("weather").value=dm.weather;start();};});  // 战役按钮直接绑定·点击即切换
   if($("cmpDesc"))$("cmpDesc").innerHTML=SCEN_DESC[sc]||"";
   if($("cmpEnemy"))$("cmpEnemy").value=(state&&state.persona)||"huangtaiji";if($("cmpWeather"))$("cmpWeather").value=(state&&state.weather)||"clear";}
 function composePreset(p){for(const u of units.filter(u=>u.side==="ming")){if(u.emperor){u._field=true;continue;}
@@ -2276,9 +2392,9 @@ function composePreset(p){for(const u of units.filter(u=>u.side==="ming")){if(u.
   else if(p==="infantry")u._field=(u.type==="step"||u.type==="art"||u.type==="bow");
   else if(p==="cavalry")u._field=(u.type==="cav"||u.type==="art");}
   renderCompose();}
-function relayoutMing(){const ming=units.filter(u=>u.side==="ming"&&!u._hero),n=ming.length,cols=Math.min(8,Math.max(3,Math.ceil(Math.sqrt(n*1.8)))),rows=Math.ceil(n/cols),sx=Math.min(WORLD.w*0.62/cols,200),sy=175,cx=WORLD.w*0.5,cy=WORLD.h*0.66;   // ★紧凑居中布阵(与 layout 一致)
-  ming.forEach((u,i)=>{const r=(i/cols)|0,cc=i%cols,nC=Math.min(cols,n-r*cols);u.x=cx+(cc-(nC-1)/2)*sx;u.y=cy+(r-(rows-1)/2)*sy;});
-  for(const h of units.filter(u=>u.side==="ming"&&u._hero)){const ret=units.filter(t=>t.commander===h.id&&t.alive);if(ret.length){h.x=clamp(ret.reduce((s,t)=>s+t.x,0)/ret.length,30,WORLD.w-30);h.y=clamp(ret.reduce((s,t)=>s+t.y,0)/ret.length-58,30,WORLD.h-30);}}}   // ★将领英雄立于麾下之前
+function relayoutMing(){const ming=units.filter(u=>u.side==="ming"&&!u._hero),n=ming.length,cols=Math.min(8,Math.max(3,Math.ceil(Math.sqrt(n*1.8)))),rows=Math.ceil(n/cols),sx=Math.min(WORLD.w*0.62/cols,200),sy=175,an=_dirAnchor("ming",0.16);   // ★编组后我军锚心随来向(与 layout 同轴·_dirAnchor 防再分叉)
+  ming.forEach((u,i)=>{const r=(i/cols)|0,cc=i%cols,nC=Math.min(cols,n-r*cols),fo=(cc-(nC-1)/2)*sx,dp=(r-(rows-1)/2)*sy;if(_dirHoriz()){u.x=an.cx+dp;u.y=an.cy+fo;}else{u.x=an.cx+fo;u.y=an.cy+dp;}});
+  for(const h of units.filter(u=>u.side==="ming"&&u._hero)){const ret=units.filter(t=>t.commander===h.id&&t.alive);if(ret.length){const fv=_faceVec("ming");h.x=clamp(ret.reduce((s,t)=>s+t.x,0)/ret.length+fv.x*58,30,WORLD.w-30);h.y=clamp(ret.reduce((s,t)=>s+t.y,0)/ret.length+fv.y*58,30,WORLD.h-30);}}}   // ★将领英雄立于麾下朝敌之前(沿对阵轴)
 function composeConfirm(){const benched=units.filter(u=>u.side==="ming"&&!u._field&&!u.emperor).length;
   units=units.filter(u=>!(u.side==="ming"&&!u._field&&!u.emperor));relayoutMing();
   start0.ming=units.filter(u=>u.side==="ming").reduce((s,u)=>s+u.soldiers,0);
@@ -2296,7 +2412,7 @@ if($("scene"))$("scene").onchange=start;
 function start(opts){opts=opts||{};
   const mapId=$("scene")?$("scene").value:"hunhe";loadMap(mapId);
   if(opts.sideName)MAP.sideName=opts.sideName;if(opts.lead)MAP.lead=opts.lead;   // ★接入:攻守 faction 名/敌帅覆盖(朝代中立)
-  units=scenario(opts.armies?{M:opts.armies.ming,J:opts.armies.jin}:null).map((u,i)=>{const sub=u.sub||assignSub(u,i);return {...u,_srcId:(u.id!=null?u.id:null),id:"u"+i,sub,soldiers0:u.soldiers,leadership:u.mor,training:u.training||60,supply:u.supply||80,quality:u.quality||"普通",vet:vetInit(u.quality),vet0:vetInit(u.quality),sta:100,ammo:isShooterSub(sub)?ammoCapSub(sub):999,_inspireCd:0,_duelCd:0,_archeryCd:0,_chargeRun:0,_skillCd:0,_field:true,_holdFire:false,_prio:"near",facing:u.side==="ming"?-Math.PI/2:Math.PI/2,state:"steady",stance:"line",order:null,tx:null,ty:null,target:null,hidden:false,alive:true,_fcd:0,_meleeT:0};});
+  units=scenario(opts.armies?{M:opts.armies.ming,J:opts.armies.jin}:null).map((u,i)=>{const sub=u.sub||assignSub(u,i);return {...u,_srcId:(u.id!=null?u.id:null),id:"u"+i,sub,soldiers0:u.soldiers,leadership:u.mor,training:u.training||60,supply:u.supply||80,quality:u.quality||"普通",vet:vetInit(u.quality),vet0:vetInit(u.quality),sta:100,ammo:isShooterSub(sub)?ammoCapSub(sub):999,_inspireCd:0,_duelCd:0,_archeryCd:0,_chargeRun:0,_skillCd:0,_field:true,_holdFire:false,_prio:"near",facing:_faceAng(u.side),state:"steady",stance:"line",order:null,tx:null,ty:null,target:null,hidden:false,alive:true,_fcd:0,_meleeT:0};});
   units.forEach(u=>{if(u.emperor)u._marshal=true;if(hasFlag(u,"elite")){u.mor=clamp((u.mor||70)+8,0,100);u.leadership=u.mor;}});const _jm=units.find(u=>u.side==="jin"&&u.gen&&PERSONA[$("persona").value]&&u.gen.n===PERSONA[$("persona").value].label)||units.filter(u=>u.side==="jin").sort((a,b)=>(b.gen?b.gen.mil:0)-(a.gen?a.gen.mil:0))[0];if(_jm)_jm._marshal=true;
   spawnGenerals();   // ★抽出将领英雄单位·源阵列降麾下
   _battleUnits0=units.map(u=>({id:u.id,_srcId:u._srcId,parentArmyId:u.parentArmyId!=null?u.parentArmyId:null,side:u.side,genName:u.gen?u.gen.n:null,emperor:!!u.emperor}));   // ★接入:开局花名册快照(结算回填·含战中被全歼移除者)
@@ -2315,16 +2431,17 @@ function start(opts){opts=opts||{};
 function startBattle(config){config=config||{};_activeBattleConfig=config;   // ★主游戏注入:armies花名册/地图种子/天候/faction名/敌帅/地形档
   ['title','over','tip'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none';});   // ★嵌入:隐藏标题屏/结算/提示·直奔列阵
   if(config.mapSeed!=null)_GENSEED=(config.mapSeed>>>0)||1;
-  _GENPROFILE=(config.terrainProfile||config.weather)?Object.assign({},config.terrainProfile||{},config.weather?{weather:config.weather}:{}):null;   // 省地形档→genMap(dens/biome/weather)
+  _GENPROFILE=(config.terrainProfile||config.weather)?Object.assign({},config.terrainProfile||{},config.weather?{weather:config.weather}:{}):null;   // 省地形档→genMap(dens/biome/weather/provinceMeta)
+  _battleDir=(_GENPROFILE&&_GENPROFILE.provinceMeta&&_GENPROFILE.provinceMeta.neighborDir)||null;   // ★敌军来向→layout布阵方位(无meta=null='N'默认南北)
   if($("scene"))$("scene").value=config.mapId||"proc";                        // proc=genMap(_GENSEED)·或固定图id(hunhe/songjin/yaoshan)
   if(config.weather&&$("weather"))$("weather").value=config.weather;
   start({armies:config.armies,sideName:config.sideName,lead:config.lead,emperorSide:config.emperorSide});
   if(config.observe&&typeof state!=="undefined"&&state){state.observe=true;try{banner("旁观战事","此战非御驾所将·天命自定·唯观之","aid");}catch(_o){}}   // ★旁观(O12·战况重演):封指挥·战果主游戏侧丢弃
   if(config.reserves&&typeof state!=="undefined"&&state){   // ★溢出队(>35/方)→援军波次涌入(接 reinf·从友方后缘·分波抱团)
-    var waves=[];["ming","jin"].forEach(function(side){var res=config.reserves[side]||[];if(!res.length)return;
-      var per=12,ey=side==="ming"?WORLD.h*0.97:WORLD.h*0.03;
+    var waves=[],_hz=_dirHoriz();["ming","jin"].forEach(function(side){var res=config.reserves[side]||[];if(!res.length)return;   // ★援军自己方后缘沿主轴入场(jin=dir侧·ming对侧)·侧轴铺开·N默认=旧式南北缘
+      var per=12,edge=(side==="jin")?(0.5+_rearSign()*0.47):(0.5-_rearSign()*0.47);
       for(var i=0;i<res.length;i+=per){var chunk=res.slice(i,i+per),wi=i/per;
-        waves.push({t:38+wi*42,side:side,done:false,units:chunk.map(function(u,j){var x=clamp(WORLD.w*(0.30+0.40*(chunk.length>1?j/(chunk.length-1):0.5)),40,WORLD.w-40);var o={};for(var k in u)if(u.hasOwnProperty(k))o[k]=u[k];o.side=side;o.x=x;o.y=ey;return o;})});}});
+        waves.push({t:38+wi*42,side:side,done:false,units:chunk.map(function(u,j){var sp=0.30+0.40*(chunk.length>1?j/(chunk.length-1):0.5);var o={};for(var k in u)if(u.hasOwnProperty(k))o[k]=u[k];o.side=side;if(_hz){o.x=clamp(WORLD.w*edge,40,WORLD.w-40);o.y=clamp(WORLD.h*sp,40,WORLD.h-40);}else{o.x=clamp(WORLD.w*sp,40,WORLD.w-40);o.y=clamp(WORLD.h*edge,40,WORLD.h-40);}return o;})});}});
     if(waves.length)state.reinf=(state.reinf||[]).concat(waves);
   }
   return {ok:true,map:MAP&&MAP.name,units:units.length,reinfWaves:(state&&state.reinf&&state.reinf.length)||0};
@@ -2332,20 +2449,20 @@ function startBattle(config){config=config||{};_activeBattleConfig=config;   // 
 function _collectResult(){                                                    // ★§13.6 result 契约:逐队幸存/将领命运/要地/御营/对账损失
   const byid={};for(const u of units)byid[u.id]=u;
   const reg=_battleUnits0||units.map(u=>({id:u.id,_srcId:u._srcId,parentArmyId:u.parentArmyId!=null?u.parentArmyId:null,side:u.side,genName:u.gen?u.gen.n:null,emperor:!!u.emperor}));
-  const outcome=state.captured?"loss":(broken("jin")&&!broken("ming"))?"win":broken("ming")?"loss":(armyPower("ming")>=armyPower("jin")?"win":"loss");
+  const outcome=(state._finalVerdict&&state._finalVerdict.outcome)||(state.captured?"loss":(broken("jin")&&!broken("ming"))?"win":broken("ming")?"loss":(armyPower("ming")>=armyPower("jin")?"win":"loss"));   // ★复用 victoryCheck/代战 落定的裁定(含要地加成)·仅裸调无裁定时回退原公式·绝不二套重算
   return {
     outcome, flipped:false,                                                  /* flipped 待抽象带预测器(§13.2)接入后判 swing 翻盘 */
     units:reg.map(r=>{const u=byid[r.id];return {id:r._srcId!=null?r._srcId:r.id,parentArmyId:r.parentArmyId,side:r.side,survivors:u?Math.max(0,Math.round(u.soldiers||0)):0};}),   // 全歼者 survivors=0
     commanders:reg.filter(r=>r.genName).map(r=>{const u=byid[r.id];return {id:r._srcId!=null?r._srcId:r.id,name:r.genName,side:r.side,fate:(r.emperor&&state.captured)?"captured":!u?"killed":u.state==="rout"?"fled":"safe"};}),
-    objective:{holder:(state.obj&&state.obj.owner)||null},
+    objective:{holder:(state.obj&&state.obj.owner)||null,points:(MAP&&MAP._objs&&MAP._objs.length>1)?MAP._objs.map(function(o,k){return {name:o.name,key:o.key||"hill",holder:((state.objs&&state.objs[k])||{}).owner||null};}):undefined},   // ★多要地控制表(单点省略·§13.6扩)
     emperorSafe:!state.captured,
     casualtiesBySide:{ming:Math.max(0,(start0?start0.ming:0)-liveTroops("ming")),jin:Math.max(0,(start0?start0.jin:0)-liveTroops("jin"))}
   };
 }
 try{if(typeof window!=="undefined"){
   window.addEventListener("message",function(e){const d=(e&&e.data)||{};
-    if(d.type==="startBattle"){try{startBattle(d.config);}catch(err){try{window.parent.postMessage({type:"battleError",error:String((err&&err.message)||err)},"*");}catch(_){}}}
-    else if(d.type==="abort"){try{window.parent.postMessage({type:"battleAborted"},"*");}catch(_){}}   // 放弃→主游戏侧转抽象自动解算
+    if(d.type==="startBattle"){try{startBattle(d.config);}catch(err){_battleDir=null;try{window.parent.postMessage({type:"battleError",error:String((err&&err.message)||err)},"*");}catch(_){}}}
+    else if(d.type==="abort"){_battleDir=null;try{window.parent.postMessage({type:"battleAborted"},"*");}catch(_){}}   // 放弃→主游戏侧转抽象自动解算·清来向(standalone残留堵)
   });
   if(window.parent&&window.parent!==window){try{window.parent.postMessage({type:"battleReady"},"*");}catch(_){}}   // 就绪握手
 }}catch(_){}

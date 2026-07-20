@@ -586,6 +586,8 @@ async function _kejuGenChiefExaminerMemorial(exam) {
     '}\n\u53EA\u8F93\u51FA JSON\u3002';
 
   try {
+    // 时空约束·扫描时局背景涉议人物·主考题本(JSON策问·clauseOnly)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMMemorial = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((GM.eraState && GM.eraState.contextDescription) || ''), (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []), 10) : (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []); prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMMemorial }); } catch (_tcE) {} }
     var raw = await callAISmart(prompt, 2000, { maxRetries: 2 });
     var data = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!data) data = JSON.parse(raw.replace(/```json|```/g, '').trim());
@@ -1000,6 +1002,22 @@ async function pickHistoricalCandidates(exam) {
     if (c.officialTitle || (c.title && c.title.length > 0) || c.spouse || c.isPlayer) existingOfficialsSet[c.name] = true;
   });
   var existingOfficials = Object.keys(existingOfficialsSet);
+  // \u67611\u00B7\u672C\u5C40\u5DF2\u6545\u8005\u540D\u5355\uFF08\u4E0D\u53D7\u5B98\u804C/\u5728\u4E16 gate\u00B7\u4EFB\u4F55\u672C\u5C40\u6B7B\u8005\u4E25\u7981\u4F5C\u4E3A\u8003\u751F\u590D\u6D3B\uFF09\u00B7\u5E76\u5165 prompt \u4E25\u7981\u8FD4\u56DE\u540D\u5355
+  // 条1/条2·本局已故者异名键集·真实 schema 字段(name/displayName/字zi/号haoName/alias/aliases数组/曾用名formerNames数组·hao/courtesyName 系猜测死代码已剔·经 scenarios JSON grep 核实)·两侧空白归一(剔全部内部空白)防 displayName/内插空格穿透
+  // 条2·别名(displayName/字/号/曾用名)撞在世者身份则不入键集·让位在世者(明确可应考)·残余仅"死者本名恰撞在世者本名"极低概率(假设本名全局唯一)
+  function _kjNormNameKey(s){ return String(s == null ? '' : s).replace(/\s+/g, ''); }
+  var _kjAliveKeys = {};   // 在世者 name/displayName 归一键·防死者别名撞在世者误杀
+  (GM.chars || []).forEach(function(c){ if (c && !(c.alive === false || c.dead)) { [c.name, c.displayName].forEach(function(v){ var k = _kjNormNameKey(v); if (k) _kjAliveKeys[k] = true; }); } });
+  var _deadKeys = {};   // 归一异名 → true·后置硬闸比对
+  var deadNames = [];   // 可读死者名·条2·独立进 prompt 排除段(不与官员名单抢 slice 额度)
+  (GM.chars || []).forEach(function(c){
+    if (!c || !(c.alive === false || c.dead)) return;
+    var _readable = c.displayName || c.name;
+    if (_readable && deadNames.indexOf(_readable) < 0) deadNames.push(_readable);
+    var _primaryKey = _kjNormNameKey(c.name);
+    if (_primaryKey) _deadKeys[_primaryKey] = true;   // 本名恒入(即便撞在世者·本名假设全局唯一)
+    [c.displayName, c.zi, c.haoName, c.alias].concat(Array.isArray(c.aliases) ? c.aliases : []).concat(Array.isArray(c.formerNames) ? c.formerNames : []).forEach(function(v){ var k = _kjNormNameKey(v); if (k && !_kjAliveKeys[k]) _deadKeys[k] = true; });   // 条2·别名撞在世者则跳过
+  });
   var usedNames = P.keju._historicalFiguresUsed.concat(
     (GM.chars || []).filter(function(c){ return c && c.isHistorical && c.source === '\u79D1\u4E3E'; }).map(function(c){ return c.name; }),
     existingOfficials
@@ -1021,7 +1039,10 @@ async function pickHistoricalCandidates(exam) {
     '}]\n\n\u53EA\u8F93\u51FA JSON\u3002';
 
   try {
+    // 条2·本局死者独立成段并入 prompt 排除(不与官员名单抢 slice 额度·保证死者恒在排除段)
+    if (deadNames.length) prompt += '\n\u3010\u786C\u89C4\u5219\u00B7\u52FF\u590D\u6D3B\u3011\u672C\u5C40\u5DF2\u6545\u8005\u4E25\u7981\u4F5C\u4E3A\u8003\u751F\uFF08\u4E0B\u5217\u672C\u5C40\u5DF2\u6B7B\uFF09\uFF1A' + deadNames.slice(0, 30).join('\u3001') + (deadNames.length > 30 ? '\u7B49' : '');
     var _tokBudget = (P.conf && P.conf.maxOutputTokens) || (P.conf && P.conf._detectedMaxOutput) || 4000;
+    // 时空约束·不适用：此口为史实检索器·契约要求返回真实名臣+史料原文摘引且只取应考(在世)候选·注入平行时空约束(别信史实记忆)会与其契约直接冲突并诱发虚构·targeted书卒/时间线既成之害在此口不成立·故不注入
     var raw = await callAISmart(prompt, _tokBudget, { maxRetries: 2 });
     var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!parsed) {
@@ -1030,11 +1051,29 @@ async function pickHistoricalCandidates(exam) {
     }
     if (!Array.isArray(parsed)) return [];
 
+    // 条1·判定口径：GM 人物册有明确死亡记录者(alive===false||dead)一律剔除防复活；不在册的史实名臣按 prompt 硬规则(应试年龄20-55+year前后活跃 era-gate)视为应考在世·GM 无据判其死·不在此后置硬闸内。
     var valid = parsed.filter(function(c){
       if (!c || !c.name) return false;
       if (usedNames.indexOf(c.name) >= 0) return false;
+      // 条1·硬闸·本局已故者名单命中一律剔除（不查官职·直查生死·防 AI 复活本局死者）
+      if (_deadKeys[_kjNormNameKey(c.name)]) { try { console.warn('[科举·滤] 丢弃本局已故候选(名单命中):', c.name); } catch(_){} return false; }
       // 再次过滤：若此名已在 GM.chars 且有官职·强制剔除（AI 硬性违规）
       var _existCh = (typeof findCharByName === 'function') ? findCharByName(c.name) : null;
+      // 条1·硬闸·GM 在册且已死者(alive===false||dead)一律剔除（防名单未命中的别名/异写死者复活）
+      if (_existCh && (_existCh.alive === false || _existCh.dead)) { try { console.warn('[科举·滤] 丢弃本局已故候选(GM在册已死):', c.name); } catch(_){} return false; }
+      // 条4·off-GM 史实候选后置校验时代窗(strict/light 模式)·防 AI 塞窗外年份/跨朝代人物(era-gate 不只写在提示词)
+      if (!_existCh && window != null) {
+        // 条3·era-gate fail-closed·coerce 数字字符串·缺失/null/非有限值一律拒收(不 fail-open)
+        var _hym = c.historicalYearMet;
+        if (typeof _hym === 'string' && _hym.trim() !== '') _hym = Number(_hym);
+        if (typeof _hym !== 'number' || !isFinite(_hym)) { try { console.warn('[科举·滤] 丢弃缺/非法 historicalYearMet 的史实候选(严谨模式):', c.name, c.historicalYearMet); } catch(_){} return false; }
+        if (_hym < year - window || _hym > year + window) {
+          try { console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u7A97\u5916\u53F2\u5B9E\u5019\u9009:', c.name, c.historicalYearMet, '[' + (year - window) + ',' + (year + window) + ']'); } catch(_){} return false;
+        }
+        if (c.nativeEra && (P.dynasty || '') && (P.dynasty || '').indexOf(c.nativeEra) < 0) {
+          try { console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u8DE8\u671D\u4EE3\u53F2\u5B9E\u5019\u9009:', c.name, c.nativeEra); } catch(_){} return false;
+        }
+      }
       if (_existCh && (_existCh.officialTitle || _existCh.title || _existCh.spouse || _existCh.isPlayer)) {
         console.warn('[\u79D1\u4E3E\u00B7\u6EE4] \u4E22\u5F03\u5DF2\u4EFB\u5B98\u5019\u9009:', c.name, _existCh.officialTitle||_existCh.title);
         return false;

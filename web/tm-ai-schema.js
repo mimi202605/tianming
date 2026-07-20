@@ -69,13 +69,13 @@
     // ──────────────────────────────────────────────
     character_deaths: {
       type: 'array',
-      desc: '让角色死亡（含玩家→游戏结束）',
+      desc: '让真实在册角色死亡（唯一存亡写口；含玩家→继统裁决或游戏结束）',
       requiredSubFields: ['name'],
       consumedBy: ['endturn:9636', 'endturn:14205']
     },
     char_updates: {
       type: 'array',
-      desc: '角色属性增量（忠诚/智力/野心/loyalty 等）',
+      desc: '角色属性增量（忠诚/智力/野心/loyalty 等；禁止 alive/dead/死亡元数据）',
       consumedBy: ['applier:954']
     },
     relations: {
@@ -227,6 +227,7 @@
     // 财政与事件
     // ──────────────────────────────────────────────
     fiscal_adjustments: { type: 'array', desc: '财政调整（income/expense，会写 guoku）', consumedBy: ['applier:1136', 'applier:1444'] },
+    tax_reforms: { type: 'array', desc: '税制结构改革（rate/add/remove）', consumedBy: ['endturn-apply-stages', 'ai-change-applier'] },
     currency_adjustments: { type: 'array', desc: '货币政策结构化动作（禁私铸/发行纸币/废止纸币/减铸贬值），经 EdictParser 政务桥落账', consumedBy: ['ai-change-applier:structured-policy'] },
     population_adjustments: { type: 'array', desc: '户口政策结构化动作（清查隐户/招抚逃户/编设保甲/重造黄册），经 EdictParser 政务桥落账', consumedBy: ['ai-change-applier:structured-policy'] },
     central_local_actions: { type: 'array', desc: '央地财政结构化动作（下拨/强征/监察/调整起运存留），经 EdictParser 政务桥落账', consumedBy: ['ai-change-applier:structured-policy'] },
@@ -247,12 +248,12 @@
     fengwen_snippets:   { type: 'array', desc: '风闻录事条目', consumedBy: ['endturn-ai-infer:sc1c'] },
     call_court_works:   { type: 'array', desc: '朝会/廷议衍生事项（兼容字段）', consumedBy: ['endturn-ai-infer'] },
     events:             { type: 'array', desc: '本回合事件列表·元素可标 critical:true+choices:[{text,aiHint}] → 收编进御案时政 currentIssues 成待决要务(玩家在御案时政抉择·AI 据局面裁·节制)', consumedBy: ['ai-change-applier'] },
-    changes:            { type: 'array', desc: '通用变化列表（旧格式）', consumedBy: ['ai-change-applier'] },
+    changes:            { type: 'array', desc: '通用变化列表（旧格式；delta 必须为有限 number，敏感语义路径拒绝）', consumedBy: ['ai-change-applier'] },
     appointments:       { type: 'array', desc: '任命列表（旧格式，官方用 office_changes）', consumedBy: ['ai-change-applier'] },
     institutions:       { type: 'array', desc: '制度（旧格式）', consumedBy: ['ai-change-applier'] },
     regions:            { type: 'array', desc: '地区（旧格式）', consumedBy: ['ai-change-applier'] },
     localActions:       { type: 'array', desc: '地方行动（旧格式）', consumedBy: ['ai-change-applier'] },
-    anyPathChanges:     { type: 'array', desc: '任意路径变更（通用出口）', consumedBy: ['applier:1332'] },
+    anyPathChanges:     { type: 'array', desc: '运行态 GM 任意路径变更（set/delta/push/merge/delete；拒绝 P.*、内部/原型/死亡/任职/首领/统帅路径）', consumedBy: ['endturn-apply-stages', 'ai-change-applier'] },
     geoData:            { type: 'object', desc: '地理推算数据（行军/围城需要）' },
     memorials:          { type: 'array', desc: '奏疏文本' },
     letters:            { type: 'array', desc: 'NPC 主动传书' },

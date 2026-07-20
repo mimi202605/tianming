@@ -526,6 +526,8 @@
     if (!_isG5Enabled()) { if (cb) cb(); return; }
     if (!list || !list.length) { if (cb) cb(); return; }
     var prompt = _kjG5BuildFumoCeremonyPrompt(list, examiner, td);
+    // 时空约束·主考+受抚童子涉议人物·抚摩大典纪事(自由文·full)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMFumo = (examiner && examiner.name ? [examiner.name] : []).concat((list || []).map(function(j){ return j && j.name; }).filter(Boolean)); prompt += _buildTemporalConstraint(null, { mentionedNames: _tcMFumo }); } catch (_tcE) {} }
     var pendingNames = list.map(function(j) { return j.name; });
     GM._tongziCeremonyQueue = GM._tongziCeremonyQueue || [];
     var queueEntry = {

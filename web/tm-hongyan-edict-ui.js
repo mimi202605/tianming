@@ -244,6 +244,15 @@ async function _polishEdicts() {
   prompt += '5. \u5B57\u6570\uFF1A' + _charRangeText('zw') + '\n\n';
   prompt += '\u76F4\u63A5\u8F93\u51FA\u8BCF\u4E66\u5168\u6587\uFF0C\u4E0D\u8981\u52A0\u4EFB\u4F55\u89E3\u91CA\u3002';
 
+  // \u65F6\u7A7A\u7EA6\u675F\u00B7clauseOnly(\u81EA\u7531\u6587\u672C\u8BCF\u4E66\u00B7\u907F 30 \u540D\u5355\u585E\u8FDB\u6B63\u5F0F\u516C\u6587)\u00B7\u626B\u63CF\u6E90=\u73A9\u5BB6\u8349\u62DF\u5404\u7C7B\u65E8\u610F(parts.content)\u00B7\u4EE4\u8BCF\u4E66\u70B9\u540D\u4EBA\u7269\u4E0D\u88AB AI \u6309\u53F2\u4E66\u5352\u5E74\u6539\u5199\u63AA\u8F9E(typeof \u5B88\u536B\u9632\u52A0\u8F7D\u5E8F)
+  if (typeof _buildTemporalConstraint === 'function') {
+    try {
+      var _edScan = (parts || []).map(function(p){ return (p && p.content) || ''; }).join(' ');
+      var _edMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_edScan, [], 10) : [];
+      prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _edMentioned });
+    } catch (_edTcE) {}
+  }
+
   try {
     var result = await callAI(prompt, 2000, null, (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined);  // 【降本2026-06-19】诏书润色(机械文体)走次 API
     if (result) _renderPolishedEdict(panel, result);

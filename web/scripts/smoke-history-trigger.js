@@ -23,7 +23,7 @@ const _rh_b = hist.indexOf('function _historyEventToIssue');
 const rigidHelpers = (_rh_a >= 0 && _rh_b > _rh_a) ? hist.slice(_rh_a, _rh_b) : '';
 ok(!!rigidHelpers, '刚性 _rigid* helper 簇抽取成功');
 
-function runTurn(turn, rigids, year){
+function runTurn(turn, rigids, year, conf){
   const fired = [];
   const ctx = {};
   ctx.getCurrentYear = function(){ return year || 1627; };
@@ -31,7 +31,8 @@ function runTurn(turn, rigids, year){
   ctx.showHistoryEventModal = function(ev){ fired.push(ev.id); };
   ctx._dbg = function(){};
   ctx.GM = { turn: turn, rigidHistoryEvents: rigids, triggeredHistoryEvents: {} };
-  ctx.P = {};
+  // conf 缺省 {} 与旧行为一致:_rigidHistoryEventShouldFire 读 P.conf.gameMode||'yanyi'、P.conf.rigidHistEventsOff(undefined→照旧触发)
+  ctx.P = { conf: conf || {} };
   vm.createContext(ctx);
   vm.runInContext(rigidHelpers + '\n' + checkSrc + '\nthis.run = checkHistoryEvents;', ctx);
   ctx.run();
@@ -65,5 +66,18 @@ ok(runTurn(1, [objMiss], 1627).indexOf('obj_miss') < 0, '④ object trigger year
 
 // ⑤ narrative 显示契约
 ok(/event\.narrative \|\| event\.description/.test(hist), '⑤ modal 正文取 narrative||description(原只读 description 致空白)');
+
+// ⑥ ★还账·演义模式一键关注定史实事件(P.conf.rigidHistEventsOff=true)→注定事件不触发(由玩家改写历史)
+var t3off = runTurn(3, [wei, ke], 1627, { gameMode:'yanyi', rigidHistEventsOff:true });
+ok(t3off.indexOf('rh_weiSuicide') < 0, '⑥ ★演义 rigidHistEventsOff=true → turn 3 魏忠贤注定事件不触发(一键全关)');
+ok(t3off.length === 0, '⑥ 演义关注定事件后·本回合无任何刚性史事触发');
+// ⑥对照:演义默认(未关)同回合仍触发·证明是开关起效而非恒不触发
+var t3on = runTurn(3, [wei, ke], 1627, { gameMode:'yanyi' });
+ok(t3on.indexOf('rh_weiSuicide') >= 0, '⑥ 对照:演义未关时 turn 3 仍触发(证开关语义·非恒关)');
+
+// ⑦ ★反退化(设flag必配设置开关):设置面板代码里须存在写 rigidHistEventsOff 的开关·防再退化成有读端无写端的死 flag
+const patches = fs.readFileSync(path.join(ROOT,'tm-patches.js'),'utf8');
+var _hasWriteToggle = /_togglePConf\(\\?['"]rigidHistEventsOff/.test(patches) || /P\.conf\.rigidHistEventsOff\s*=/.test(patches);
+ok(_hasWriteToggle, '⑦ ★设置面板(tm-patches.js)存在写 rigidHistEventsOff 的开关(防有读端无写端退化)');
 
 console.log('\n结果: '+A+' 通过 / 0 失败');

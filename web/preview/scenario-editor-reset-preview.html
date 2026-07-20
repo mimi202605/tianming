@@ -7,7 +7,7 @@
   <link rel="icon" href="data:,">
   <!-- 移动端「固定宽度缩放」适配（仅 capacitor/?fit=1 生效·桌面 no-op）：1280 画布宽·zoom 缩到设备宽·纵向滚 -->
   <script src="../tm-editor-fit.js?v=20260604-editorfit"></script>
-  <link rel="stylesheet" href="scenario-editor-reset-style.css">
+  <link rel="stylesheet" href="scenario-editor-reset-style.css?v=20260719-guoshi-dock">
 </head>
 <body>
   <a class="skip-to-main" href="#editor-grid" data-skip-link>跳到正文</a>
@@ -325,7 +325,7 @@
   </main>
 
   <div class="drawer-backdrop" id="ai-drawer-backdrop" aria-hidden="true"></div>
-  <aside class="ai-drawer" data-ai-drawer="coauthor" id="ai-drawer" aria-label="AI 生成抽屉">
+  <aside class="ai-drawer" data-ai-drawer="coauthor" id="ai-drawer" role="dialog" aria-modal="true" aria-label="AI 生成抽屉" aria-hidden="true" inert>
     <div class="drawer-head">
       <div>
         <h2>AI 生成抽屉</h2>
@@ -469,6 +469,7 @@
     const aiContextTitle = document.getElementById("ai-context-title");
     const aiContextRoute = document.getElementById("ai-context-route");
     const aiResultPreview = document.getElementById("ai-result-preview");
+    let aiDrawerReturnFocus = null;
 
     const actionLabels = {
       "generate": "生成草稿",
@@ -535,13 +536,23 @@
         <strong>草稿审阅 · ${actionLabels[action] || action}</strong>
         <p>将先生成一份可回滚草稿，标出新增字段、可能覆盖项、引用来源与冲突风险。制作者确认后才会写入模块。</p>
       `;
+      aiDrawerReturnFocus = trigger;
+      drawer.removeAttribute("inert");
+      drawer.inert = false;
+      drawer.setAttribute("aria-hidden", "false");
       drawer.classList.add("open");
       drawerBackdrop.classList.add("open");
+      requestAnimationFrame(() => drawerClose.focus());
     }
 
     function closeAiDrawer() {
       drawer.classList.remove("open");
       drawerBackdrop.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      drawer.setAttribute("inert", "");
+      drawer.inert = true;
+      if (aiDrawerReturnFocus && aiDrawerReturnFocus.isConnected) aiDrawerReturnFocus.focus();
+      aiDrawerReturnFocus = null;
     }
 
     function renderDetail(id) {
@@ -597,20 +608,24 @@
 
     drawerClose.addEventListener("click", closeAiDrawer);
     drawerBackdrop.addEventListener("click", closeAiDrawer);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && drawer.classList.contains("open")) closeAiDrawer();
+    });
 
     renderDetail("scenarioOpening");
   </script>
   <script src="scenario-editor-reset-data.js"></script>
   <script src="official-scenarios-bundle.js"></script>
   <script src="../map-editor-to-game.js"></script>
-  <script src="scenario-editor-reset-app.js"></script>
-  <script src="../editor-authoring-agent-provider.js"></script>
-  <script src="../editor-authoring-agent.js"></script>
+  <script src="scenario-editor-reset-app.js?v=20260719-guoshi-dock"></script>
+  <script src="../tm-agent-kernel.js?v=20260719-kernel1"></script>
+  <script src="../editor-authoring-agent-provider.js?v=20260719-agentkernel1"></script>
+  <script src="../editor-authoring-agent.js?v=20260719-agentkernel1"></script>
   <!-- 第十八拆(20260706)：ui 巨石→icons(前)+origin+render(后)·装载序契约见 lint-split-contracts -->
-  <script src="../editor-authoring-agent-ui-icons.js"></script>
-  <script src="../editor-authoring-agent-ui.js"></script>
-  <script src="../editor-authoring-agent-ui-render.js"></script>
-  <script src="scenario-editor-reset-adapters.js"></script>
+  <script src="../editor-authoring-agent-ui-icons.js?v=20260719-agentkernel1"></script>
+  <script src="../editor-authoring-agent-ui.js?v=20260719-agentkernel1"></script>
+  <script src="../editor-authoring-agent-ui-render.js?v=20260719-agentkernel1"></script>
+  <script src="scenario-editor-reset-adapters.js?v=20260719-guoshi-dock"></script>
 
 
 

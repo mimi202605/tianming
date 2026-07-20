@@ -157,6 +157,7 @@
       copy('variable_changes', ['variableChanges','七变','变量变化','七变变化']);
       copy('changes', ['delta','变化','本回合变化','变更']);
       copy('fiscal_adjustments', ['fiscalAdjustments','财政调整','财政变化']);
+      copy('tax_reforms', ['taxReforms','税制改革','税制调整']);
       copy('currency_adjustments', ['currencyAdjustments','currency_actions','currencyActions','货币调整','货币政策','币制动作']);
       copy('population_adjustments', ['populationAdjustments','huji_actions','hujiActions','户口调整','户籍调整','户口政策']);
       copy('central_local_actions', ['centralLocalActions','central_local_adjustments','centralLocalAdjustments','央地财政动作','央地财政调整','央地动作']);
@@ -179,6 +180,7 @@
       copy('cultural_works', ['culturalWorks','文苑','文学作品','文苑作品']);
       // 势力/外交
       copy('faction_changes', ['factionChanges','势力变化','势力变动']);
+      copy('faction_updates', ['factionUpdates','势力更新']);
       copy('faction_events', ['factionEvents','势力事件','势力间事件']);
       copy('faction_ai_outcomes', ['factionAiOutcomes','faction_ai_results','factionAiResults','势力AI结果','势力AI推演结果']);
       copy('faction_relation_changes', ['factionRelationChanges','势力关系变化','势力关系变动']);
@@ -197,6 +199,8 @@
       copy('army_changes', ['armyChanges','军队变化','军备变化','兵力变化']);
       copy('province_changes', ['provinceChanges','行省变化','州县变化']);
       copy('region_updates', ['regionUpdates','地区更新','区域更新']);
+      copy('project_updates', ['projectUpdates','工程更新','项目更新']);
+      copy('anyPathChanges', ['any_path_changes','anypath_changes','任意路径变化']);
       // 诏令/反馈
       copy('edict_feedback', ['edictFeedback','诏令反馈','诏令执行','政令反馈']);
       copy('edict_relations', ['edictRelations','诏令关系']);
@@ -996,7 +1000,7 @@
         var _why = reason && (reason.message || String(reason)) || 'SC1 returned no usable structured JSON';
         var _brief = (_dateText ? (_dateText + '，') : '') + '朝廷诸务照常，所颁诏令俱已分发有司奉行，一时未有大变上闻，余事俟后报。';
         var _p = { shizhengji:_brief, zhengwen:_brief, shilu_text:_brief, szj_title:'时移事去', szj_summary:'主推演结构化结果暂缺，系统采用保守降级账本。', turn_summary:'SC1 emergency fallback: no synthetic gameplay deltas applied.', player_status:'朝局暂按既有状态延续。', player_inner:'', events:[{ type:'AI降级', title:'主推演结构化结果暂缺', text:_brief, turn:_turn }], _g2Fallback:true, _emergencyFallback:true, _fallbackReason:String(_why).slice(0, 200) };
-        ['changes','resource_changes','variable_changes','char_updates','character_deaths','npc_actions','npc_interactions','npc_letters','npc_correspondence','cultural_works','faction_changes','faction_events','faction_ai_outcomes','faction_relation_changes','faction_interactions','fiscal_adjustments','currency_adjustments','population_adjustments','central_local_actions','environment_actions','institution_changes','office_assignments','office_dismissals','personnel_changes','army_changes','province_changes','table_updates','suggestions'].forEach(function(k){ _p[k] = []; });
+        ['changes','resource_changes','variable_changes','char_updates','character_deaths','npc_actions','npc_interactions','npc_letters','npc_correspondence','cultural_works','faction_changes','faction_updates','faction_events','faction_ai_outcomes','faction_relation_changes','faction_interactions','fiscal_adjustments','tax_reforms','currency_adjustments','population_adjustments','central_local_actions','environment_actions','institution_changes','office_assignments','office_dismissals','personnel_changes','army_changes','province_changes','region_updates','class_updates','project_updates','anyPathChanges','table_updates','suggestions'].forEach(function(k){ _p[k] = []; });
         try {
           if (!GM._turnAiResults) GM._turnAiResults = {};
           if (!Array.isArray(GM._turnAiResults._fallbacks)) GM._turnAiResults._fallbacks = [];
@@ -2517,6 +2521,7 @@
         "\"office_assignments\":[{\"name\":\"角色名\",\"post\":\"职位\",\"dept\":\"部门\",\"action\":\"appoint/dismiss/transfer\",\"concurrent\":false,\"fromLocation\":\"原地(可选)\",\"toLocation\":\"任职地(不同于原地则走位)\",\"estimatedDays\":30,\"reason\":\"原因；若为兼职/兼任/加兼须写明并置 concurrent:true\"}],"+
         // 岁入岁出动态增删（派人经商、大工程、新税目等）
         "\"fiscal_adjustments\":[{\"action\":\"add/update/stop/remove\",\"target\":\"guoku/neitang/province:某省\",\"kind\":\"income/expense\",\"resource\":\"money/grain/cloth\",\"category\":\"商贸/工程/赈济/军饷/杂税\",\"name\":\"项目名(如:派郑和下西洋商队)\",\"amount\":50000,\"reason\":\"依据/推演得出\",\"recurring\":true,\"stopAfterTurn\":null}],"+
+        "\"tax_reforms\":[{\"op\":\"rate/add/remove\",\"taxId\":\"既有税目id(rate/remove时必填)\",\"rate\":0.05,\"tax\":{\"id\":\"新税id\",\"name\":\"税名\",\"base\":\"税基\",\"rate\":0.02,\"storeAs\":\"money\"},\"reason\":\"税制改革原因\"}],"+
         // 专题政策动作：只记录 AI 明确推出的硬政策，applier 会经 EdictParser 复用诏令政务桥落账
         "\"currency_adjustments\":[{\"action\":\"ban_private_mint/issue_paper/abolish_paper/debase_coin\",\"paperName\":\"会子/宝钞(可选)\",\"coinType\":\"copper/silver/iron/gold(可选)\",\"amount\":1000000,\"reserveRatio\":0.3,\"reason\":\"依据\"}],"+
         "\"population_adjustments\":[{\"action\":\"purge_hidden/resettle_refugees/baojia_setup/recount\",\"region\":\"地区(可选)\",\"amount\":0,\"reason\":\"依据\"}],"+
@@ -2532,7 +2537,7 @@
         "\"region_updates\":[{\"id或name\":\"行政区划\",\"updates\":{\"任何字段\":\"任何值\"}}],"+
         // 长期工程/商队/学堂·跨回合追踪
         "\"project_updates\":[{\"name\":\"工程名\",\"type\":\"工程/商队/学堂/道路/造船\",\"status\":\"planning/active/completed/abandoned\",\"cost\":10000,\"progress\":30,\"leader\":\"负责人\",\"region\":\"地点\",\"description\":\"概述\",\"endTurn\":50}],"+
-        // 兜底·可用 dotted.path 改任意字段（除禁区：P.ai P.conf GM.saveName turn/year/month/day/sid _开头）
+        // 兜底·只写 GM 运行态；P.*、内部/原型链、死亡/任职/首领/统帅等语义字段一律拒绝
         "\"anyPathChanges\":[{\"path\":\"GM.任意嵌套路径\",\"op\":\"set/push/delta/merge/delete\",\"value\":\"值\",\"reason\":\"原因\"}]," +
         // ★ 12 表结构化记忆增量更新（Phase 5.3 修 OpenAI response_format='json_object' 屏蔽 <tableEdit> 的致命 bug）
         "\"table_updates\":[{\"sheet\":\"courtNpc/charProfile/edictsActive/specialMeans/importantItems/organizations/importantPlaces/relationNet/curStatus 之一\",\"op\":\"insert/update/delete\",\"rowIdx\":\"update/delete 时填行号\",\"values\":{\"colIdx数字\":\"值\"}}]," +

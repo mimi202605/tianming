@@ -156,7 +156,7 @@ function _wdConsortContext(ch) {
         _spouseCtx += '  在 JSON 中加字段 {"requestOvernight":true} 表达此请求·reply 文本内也要含相关话语\n';
       }
       // 注入最近问对记录（自有记忆里）
-      var _recentHist = (GM.wenduiHistory && GM.wenduiHistory[ch.name]) || [];
+      var _recentHist = (typeof _tmFilterWenduiEntries === 'function') ? _tmFilterWenduiEntries((GM.wenduiHistory && GM.wenduiHistory[ch.name]) || [], GM) : ((GM.wenduiHistory && GM.wenduiHistory[ch.name]) || []);   /* 刀B·生死矛盾问对条不注入后妃承续上下文 */
       if (_recentHist.length > 0) {
         var _lastFew = _recentHist.slice(-4);
         _spouseCtx += '\n  【最近问对记录·请自然承续】';
@@ -566,7 +566,13 @@ function _wdBuildPrompt(ch, name) {
   }
   // ★ 时空约束·防 NPC 说还活着的人已死/用未来史实
   if (typeof _buildTemporalConstraint === 'function') {
-    try { p += _buildTemporalConstraint(ch); } catch(_){}
+    try {
+      // 扫描源：玩家提问(GM.wenduiHistory[name] 的 player/system 近条·即问对议题)·对话NPC name 作种子恒入
+      var _wdHist = (GM.wenduiHistory && GM.wenduiHistory[name]) || [];
+      var _wdTopic = _wdHist.filter(function(h){ return h && (h.role === 'player' || h.role === 'system'); }).slice(-4).map(function(h){ return h.content || ''; }).join(' ');
+      var _wdMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_wdTopic, name ? [name] : [], 10) : (name ? [name] : []);
+      p += _buildTemporalConstraint(ch, { mentionedNames: _wdMentioned });
+    } catch(_){}
   }
   // v1·PromptComposer·注入 phase 6 字段·让 NPC 真用 aiPersonaText / recognitionState
   if (typeof TM !== 'undefined' && TM.PromptComposer) {

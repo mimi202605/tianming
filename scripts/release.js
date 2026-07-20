@@ -1,23 +1,25 @@
 #!/usr/bin/env node
 // ============================================================
-//  release.js — 天命一键发版工具（dev 侧）
-//  2026-06-11·更新功能全面升级 S10·取代「每版手改 6 处版本号 + 手跑两个构建器 + 手传 gh」
+//  release.js — 天命两阶段发版工具（dev 侧）
+//  2026-07-18·prepare 在短命分支盖戳并产出可审查基线；publish 只接受已合入、
+//  clean 且与 origin/main 同步的 main，构建期不再修改 tracked 版本文件。
 //
-//  一条命令：版本扇出盖戳 → 双端构建 → 独立复验闸 → 基线刷新 → staging(仅小件) →
-//            gh release 直传（大件从构建位·含按版补好的 deploy.py）→ 打印 owner 服务器一行命令
+//  prepare：版本扇出盖戳 → 桌面热更构建 → 基线刷新（提交这些 tracked 改动并走 PR）
+//  publish：已盖戳版本复验 → 双端重建 → 基线一致性复验 → staging → gh release
 //  2026-07-07·大制品不再复制进 staging（旧法多拷 ~3.4GB·两度双盘满 ENOSPC）
 //
 //  用法：
-//    node scripts/release.js --version 1.3.4.0 --notes "本版说明" [选项]
+//    node scripts/release.js --prepare --version 1.3.4.9 --notes "本版说明"
+//    node scripts/release.js --publish --version 1.3.4.9 --notes "本版说明"
 //  选项：
 //    --with-installer        把 E:\版本\测试版<V> 的 latest.yml/exe/blockmap 一起发（exe 同卷别名零拷贝直传）
 //    --min-app-version X     热更 feed 标注所需最低本体版本（触发客户端「需更新本体」流程）
 //    --no-delta              capgo 只出全量（不出差量 manifest/对象包）
-//    --no-upload             只构建+staging·不动 GitHub
-//    --offline               跳过线上版本闸 + 差量基线拉取（断网时）
+//    --no-upload             publish 的本地构建模式·允许非 main/dirty·绝不写 GitHub/服务器
+//    --offline               仅可与 --publish --no-upload 合用·跳过线上只读版本闸
 //    --dry-run               只跑闸门并打印计划·不写任何文件
 //    --version-code N        显式安卓 versionCode（默认数字拼接·任一段>9 时必须显式给）
-//    --self-test             fanOut 对临时副本自测后退出
+//    --self-test             两阶段状态机 + fanOut 对临时副本自测后退出
 //    --repo-root DIR         合成仓自测用（默认本仓）
 // ============================================================
 'use strict';
@@ -60,6 +62,19 @@ function cmpVersions(a, b) {
   return 0;
 }
 
+function gateReleaseContracts() {
+  const scripts = [
+    { path: path.join(CFG.root, 'web', 'scripts', 'sync-official-scenarios.js'), args: ['--check'] },
+    { path: path.join(CFG.root, 'web', 'scripts', 'verify-official-scenario-parity.js'), args: [] },
+    { path: path.join(CFG.root, 'scripts', 'verify-release-contract.js'), args: [] }
+  ];
+  for (const script of scripts) {
+    const result = spawnSync(process.execPath, [script.path].concat(script.args), { cwd: CFG.root, stdio: 'inherit' });
+    if (result.status !== 0) die('release contract failed: ' + path.relative(CFG.root, script.path));
+  }
+  log('⓪ release contracts·official truth + cross-pipeline parity ✓');
+}
+
 const CFG = {
   root: path.resolve(arg('repo-root', REAL_ROOT)),
   version: String(arg('version', '') || '').trim(),
@@ -68,22 +83,28 @@ const CFG = {
   withInstaller: flag('with-installer'),
   noDelta: flag('no-delta'),
   noUpload: flag('no-upload'),
+  prepare: flag('prepare'),
+  publish: flag('publish'),
   offline: flag('offline'),
   dryRun: flag('dry-run'),
   versionCodeArg: arg('version-code', ''),
-  ts: new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
+  ts: new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14),
+  publishHead: ''
 };
 const P = {
   pkg: () => path.join(CFG.root, 'package.json'),
   gradle: () => path.join(CFG.root, 'mobile', 'android', 'app', 'build.gradle'),
+  mobileReleaseVersion: () => path.join(CFG.root, 'mobile', 'release-version.json'),
   web: () => path.join(CFG.root, 'web'),
   versionJson: () => path.join(CFG.root, 'web', 'version.json'),
   indexHtml: () => path.join(CFG.root, 'web', 'index.html'),
   changelog: () => path.join(CFG.root, 'web', 'changelog.json'),
+  hotBaseline: () => path.join(CFG.root, 'web', '.hot-update-manifest.json'),
   releaseHot: () => path.join(CFG.root, 'release-hot'),
   capgoDist: () => path.join(CFG.root, 'mobile', 'capgo-dist'),
   staging: () => path.join(CFG.root, 'release-hot', '_release-' + CFG.version),
   hotBuilder: () => path.join(CFG.root, 'web', 'tools', 'build-hot-update-package.js'),
+  hotBaselineSync: () => path.join(CFG.root, 'scripts', 'sync-hot-baseline.js'),
   capgoBuilder: () => path.join(CFG.root, 'mobile', 'scripts', 'build-capgo-bundle.ps1'),
   deployPy: () => path.join(REAL_ROOT, 'scripts', 'deploy.py'),       // deploy 永远取真仓最新版
   verifyArtifacts: () => path.join(REAL_ROOT, 'scripts', 'lib', 'verify-artifacts.js'),
@@ -91,13 +112,130 @@ const P = {
 };
 const PUBLIC_BASE = 'https://api.themisfitserspeople.top/tianming';
 
+// ── ⓪ 两阶段/仓库真值闸 ──────────────────────────────────────────────────────
+function validateModeFacts(facts) {
+  const problems = [];
+  if ((facts.prepare ? 1 : 0) + (facts.publish ? 1 : 0) !== 1) problems.push('须且只能选择 --prepare 或 --publish');
+  if (facts.noUpload && !facts.publish) problems.push('--no-upload 仅可与 --publish 合用');
+  if (facts.offline && !(facts.publish && facts.noUpload)) problems.push('--offline 仅可与 --publish --no-upload 合用');
+  return problems;
+}
+
+function gateMode() {
+  const problems = validateModeFacts(CFG);
+  if (!CFG.noUpload && CFG.root !== REAL_ROOT) problems.push('prepare/正式 publish 不允许 --repo-root 指向其他仓库');
+  if (problems.length) die(problems.join('；'));
+}
+
+function gitRun(args, root) {
+  return spawnSync('git', args, { cwd: root || CFG.root, encoding: 'utf-8' });
+}
+
+function gitOutput(args, label, root) {
+  const result = gitRun(args, root);
+  if (result.status !== 0) die((label || ('git ' + args.join(' '))) + '失败·' + String(result.stderr || result.stdout || '').trim());
+  return String(result.stdout || '').trim();
+}
+
+function collectRepositoryFacts(root) {
+  const cwd = root || CFG.root;
+  const status = gitRun(['status', '--porcelain=v1', '--untracked-files=all'], cwd);
+  const branch = gitRun(['symbolic-ref', '--quiet', '--short', 'HEAD'], cwd);
+  const head = gitRun(['rev-parse', 'HEAD'], cwd);
+  const originMain = gitRun(['rev-parse', '--verify', 'refs/remotes/origin/main'], cwd);
+  const originUrlResult = gitRun(['remote', 'get-url', 'origin'], cwd);
+  const originUrl = originUrlResult.status === 0 ? String(originUrlResult.stdout || '').trim() : '';
+  const ancestor = originMain.status === 0 && head.status === 0
+    ? gitRun(['merge-base', '--is-ancestor', 'refs/remotes/origin/main', 'HEAD'], cwd)
+    : { status: 1 };
+  return {
+    isGit: status.status === 0,
+    clean: status.status === 0 && !String(status.stdout || '').trim(),
+    dirtySummary: String(status.stdout || '').trim(),
+    branch: branch.status === 0 ? String(branch.stdout || '').trim() : '',
+    head: head.status === 0 ? String(head.stdout || '').trim() : '',
+    originMain: originMain.status === 0 ? String(originMain.stdout || '').trim() : '',
+    originUrl,
+    officialOrigin: /github\.com[:/]misfit-user\/tianming(?:\.git)?\/?$/i.test(originUrl),
+    originMainAncestor: ancestor.status === 0
+  };
+}
+
+function validatePrepareRepositoryFacts(facts) {
+  const problems = [];
+  if (!facts.isGit) problems.push('不是 git 工作树');
+  if (!facts.clean) problems.push('工作树不干净');
+  if (!facts.branch) problems.push('HEAD detached');
+  else if (facts.branch === 'main') problems.push('prepare 必须在短命分支，不能直接改 main');
+  if (!facts.originMain) problems.push('缺 origin/main');
+  else if (!facts.originMainAncestor) problems.push('当前分支不是最新 origin/main 的后代');
+  if (!facts.officialOrigin) problems.push('origin 不是 misfit-user/tianming');
+  return problems;
+}
+
+function validatePublishRepositoryFacts(facts, expectedHead) {
+  const problems = [];
+  if (!facts.isGit) problems.push('不是 git 工作树');
+  if (!facts.clean) problems.push('工作树不干净');
+  if (facts.branch !== 'main') problems.push('publish 只允许 main，当前为 ' + (facts.branch || 'detached HEAD'));
+  if (!facts.originMain) problems.push('缺 origin/main');
+  else if (!facts.head || facts.head !== facts.originMain) problems.push('HEAD 未与 origin/main 精确同步');
+  if (!facts.officialOrigin) problems.push('origin 不是 misfit-user/tianming');
+  if (expectedHead && facts.head !== expectedHead) problems.push('构建期间 HEAD 改变');
+  return problems;
+}
+
+function fetchOriginMain() {
+  const result = gitRun(['fetch', '--quiet', '--no-tags', 'origin', '+refs/heads/main:refs/remotes/origin/main']);
+  if (result.status !== 0) die('读取 origin/main 失败·' + String(result.stderr || result.stdout || '').trim());
+}
+
+function gatePrepareRepository() {
+  const before = collectRepositoryFacts();
+  if (!before.isGit || !before.clean || !before.branch || before.branch === 'main') {
+    const p = validatePrepareRepositoryFacts(before).filter(x => !x.includes('origin/main'));
+    die('prepare 仓库闸·' + p.join('；') + (before.dirtySummary ? '\n' + before.dirtySummary : ''));
+  }
+  fetchOriginMain();
+  const facts = collectRepositoryFacts();
+  const problems = validatePrepareRepositoryFacts(facts);
+  if (problems.length) die('prepare 仓库闸·' + problems.join('；') + (facts.dirtySummary ? '\n' + facts.dirtySummary : ''));
+  log('⓪ prepare 仓库闸·clean ' + facts.branch + '·origin/main 是 HEAD 祖先 ✓');
+  return facts;
+}
+
+function gatePublishRepository(label) {
+  fetchOriginMain();
+  const facts = collectRepositoryFacts();
+  const problems = validatePublishRepositoryFacts(facts, CFG.publishHead);
+  if (problems.length) die('publish 仓库闸(' + label + ')·' + problems.join('；') + (facts.dirtySummary ? '\n' + facts.dirtySummary : ''));
+  if (!CFG.publishHead) CFG.publishHead = facts.head;
+  log('⓪ publish 仓库闸(' + label + ')·clean main = origin/main @ ' + facts.head.slice(0, 12) + ' ✓');
+  return facts;
+}
+
+function validateGitHubOwnerFacts(viewer, owner) {
+  if (!viewer || !owner) return ['无法读取 GitHub 当前账号或仓库 owner'];
+  if (String(viewer).toLowerCase() !== String(owner).toLowerCase()) return ['当前 gh 账号 ' + viewer + ' 不是仓库 owner ' + owner];
+  return [];
+}
+
+function gateGitHubOwner() {
+  const viewerResult = spawnSync('gh', ['api', 'user', '--jq', '.login'], { cwd: CFG.root, encoding: 'utf-8' });
+  if (viewerResult.status !== 0) die('读取 gh 当前账号失败·' + String(viewerResult.stderr || viewerResult.stdout || '').trim());
+  const ownerResult = spawnSync('gh', ['api', 'repos/misfit-user/tianming', '--jq', '.owner.login'], { cwd: CFG.root, encoding: 'utf-8' });
+  if (ownerResult.status !== 0) die('读取 GitHub 仓库 owner 失败·' + String(ownerResult.stderr || ownerResult.stdout || '').trim());
+  const viewer = String(viewerResult.stdout || '').trim();
+  const owner = String(ownerResult.stdout || '').trim();
+  const problems = validateGitHubOwnerFacts(viewer, owner);
+  if (problems.length) die('production owner 闸·' + problems.join('；'));
+  log('⓪ production owner 闸·gh=' + viewer + ' ✓');
+}
+
 // ── ① 版本闸 ─────────────────────────────────────────────────────────────────
-function gateVersion() {
+function targetVersionCode() {
   if (!CFG.version) die('缺 --version（如 1.3.4.0）');
   if (!/^\d+\.\d+\.\d+\.\d+$/.test(CFG.version)) die('--version 须 4 段数字（如 1.3.4.0）·拿到 ' + CFG.version);
-  const pkg = readJson(P.pkg());
-  const cur = (pkg.build && pkg.build.buildVersion) || pkg.version;
-  if (cmpVersions(CFG.version, cur) <= 0) die('版本不单调·--version ' + CFG.version + ' ≤ 本仓 buildVersion ' + cur);
   const parts = CFG.version.split('.').map(Number);
   let code;
   if (CFG.versionCodeArg) {
@@ -107,11 +245,51 @@ function gateVersion() {
     if (parts.some(p => p > 9)) die('版本某段 >9·数字拼接 versionCode 会歧义（如 1.3.10.0 vs 1.31.0.0）·请显式 --version-code');
     code = parseInt(parts.join(''), 10);
   }
-  const gradleSrc = fs.readFileSync(P.gradle(), 'utf-8');
-  const m = gradleSrc.match(/versionCode\s+(\d+)/);
-  if (!m) die('build.gradle 找不到 versionCode');
-  if (code <= parseInt(m[1], 10)) die('versionCode ' + code + ' ≤ gradle 现值 ' + m[1] + '（安卓升级要求严格递增）');
-  log('① 版本闸·' + cur + ' → ' + CFG.version + '·versionCode ' + m[1] + ' → ' + code);
+  return code;
+}
+
+function gatePrepareVersion() {
+  const code = targetVersionCode();
+  const pkg = readJson(P.pkg());
+  const cur = (pkg.build && pkg.build.buildVersion) || pkg.version;
+  if (cmpVersions(CFG.version, cur) <= 0) die('版本不单调·--version ' + CFG.version + ' ≤ 本仓 buildVersion ' + cur);
+  const mobileVersion = readJson(P.mobileReleaseVersion());
+  if (mobileVersion.version !== cur) die('mobile/release-version.json 与 package buildVersion 漂移·' + mobileVersion.version + ' ≠ ' + cur);
+  if (code <= Number(mobileVersion.versionCode)) die('versionCode ' + code + ' ≤ canonical 现值 ' + mobileVersion.versionCode + '（安卓升级要求严格递增）');
+  log('① 版本闸·' + cur + ' → ' + CFG.version + '·versionCode ' + mobileVersion.versionCode + ' → ' + code);
+  return code;
+}
+
+function preparedVersionProblems(code, requireBaseline) {
+  const problems = [];
+  const pkg = readJson(P.pkg());
+  if (!pkg.build || pkg.build.buildVersion !== CFG.version) problems.push('package.json buildVersion 未盖戳');
+  if (pkg.version !== mapBuildToSemver(CFG.version)) problems.push('package.json semver 未按四段版本映射');
+  if (pkg.build && pkg.build.directories && !String(pkg.build.directories.output || '').endsWith('测试版' + CFG.version)) problems.push('package.json output 未盖戳');
+  if (pkg.build && typeof pkg.build.artifactName === 'string' && !pkg.build.artifactName.includes(CFG.version)) problems.push('package.json artifactName 未盖戳');
+  if (!fs.existsSync(P.mobileReleaseVersion())) problems.push('缺 mobile/release-version.json');
+  else {
+    const mobileVersion = readJson(P.mobileReleaseVersion());
+    if (mobileVersion.version !== CFG.version) problems.push('mobile canonical version 未盖戳');
+    if (Number(mobileVersion.versionCode) !== code) problems.push('mobile canonical versionCode 未盖戳');
+  }
+  if (!fs.existsSync(P.versionJson()) || readJson(P.versionJson()).version !== CFG.version) problems.push('web/version.json 未盖戳');
+  const html = fs.readFileSync(P.indexHtml(), 'utf-8');
+  const escaped = CFG.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!(new RegExp('<meta\\s+name="tm-version"\\s+content="' + escaped + '"')).test(html)) problems.push('index.html meta tm-version 未盖戳');
+  if (!(new RegExp('<span id="tm-foot-ver">' + escaped + '<\\/span>')).test(html)) problems.push('index.html footer 未盖戳');
+  if (requireBaseline) {
+    if (!fs.existsSync(P.hotBaseline())) problems.push('缺 web/.hot-update-manifest.json');
+    else if (readJson(P.hotBaseline()).version !== CFG.version) problems.push('热更基线版本未盖戳');
+  }
+  return problems;
+}
+
+function gatePreparedVersion(requireBaseline) {
+  const code = targetVersionCode();
+  const problems = preparedVersionProblems(code, requireBaseline);
+  if (problems.length) die('publish 只接受 prepare 后已合入的版本·' + problems.join('；'));
+  log('① 已盖戳版本闸·' + CFG.version + '·versionCode ' + code + (requireBaseline ? '·基线同版' : '') + ' ✓');
   return code;
 }
 
@@ -181,8 +359,14 @@ function fanOutVersions(code) {
     if (back.build.buildVersion !== CFG.version) die('扇出回读失败·package.json buildVersion');
     edits.push('package.json·version/buildVersion/output/artifactName');
   }
-  regexEdit(P.gradle(), 'build.gradle versionCode', /versionCode\s+\d+/, 'versionCode ' + code);
-  regexEdit(P.gradle(), 'build.gradle versionName', /versionName\s+"[\d.]+"/, 'versionName "' + CFG.version + '"');
+  {
+    const file = P.mobileReleaseVersion();
+    if (fs.existsSync(file)) backup(file);
+    fs.writeFileSync(file, JSON.stringify({ version: CFG.version, versionCode: code }, null, 2) + '\n', 'utf-8');
+    const back = readJson(file);
+    if (back.version !== CFG.version || Number(back.versionCode) !== code) die('扇出回读失败·mobile/release-version.json');
+    edits.push('mobile/release-version.json·version/versionCode');
+  }
   {
     const file = P.versionJson();
     if (fs.existsSync(file)) backup(file);
@@ -192,6 +376,26 @@ function fanOutVersions(code) {
   regexEdit(P.indexHtml(), 'index.html meta tm-version', /(<meta\s+name="tm-version"\s+content=")[\d.]+(")/, '$1' + CFG.version + '$2');
   regexEdit(P.indexHtml(), 'index.html footer 版本号', /(<span id="tm-foot-ver">)[\d.]+(<\/span>)/, '$1' + CFG.version + '$2');
   log('④ 版本扇出·' + edits.length + ' 处盖戳完成（各留 .bak-release-' + CFG.ts + '）');
+}
+
+function syncGeneratedAndroidVersion() {
+  if (!fs.existsSync(P.gradle())) {
+    log('  WARN·本机无 ignored mobile/android/app/build.gradle·Capgo Web bundle 可继续；构建原生 APK 前先 cap add/sync android');
+    return false;
+  }
+  const canonical = readJson(P.mobileReleaseVersion());
+  const src = fs.readFileSync(P.gradle(), 'utf-8');
+  const codeMatches = src.match(/versionCode\s+\d+/g) || [];
+  const nameMatches = src.match(/versionName\s+"[\d.]+"/g) || [];
+  if (codeMatches.length !== 1 || nameMatches.length !== 1) die('ignored build.gradle 版本锚点须各恰一处');
+  const next = src
+    .replace(/versionCode\s+\d+/, 'versionCode ' + canonical.versionCode)
+    .replace(/versionName\s+"[\d.]+"/, 'versionName "' + canonical.version + '"');
+  fs.writeFileSync(P.gradle(), next, 'utf-8');
+  const verify = fs.readFileSync(P.gradle(), 'utf-8');
+  if (!verify.includes('versionCode ' + canonical.versionCode) || !verify.includes('versionName "' + canonical.version + '"')) die('ignored build.gradle 同步回读失败');
+  log('⑦ native 派生版本同步·mobile/release-version.json → ignored build.gradle ✓');
+  return true;
 }
 
 // ── ⑤ 桌面构建 ───────────────────────────────────────────────────────────────
@@ -208,15 +412,46 @@ function buildDesktop() {
 
 // ── ⑥ 首装增量基线刷新（治「基线腐坏在 1.3.3.4」类沉疴） ─────────────────────
 function refreshBaseline() {
-  const src = path.join(P.releaseHot(), 'manifests', CFG.version + '.json');
-  const dst = path.join(P.web(), '.hot-update-manifest.json');
-  if (fs.existsSync(dst)) fs.copyFileSync(dst, dst + '.bak-release-' + CFG.ts);
-  fs.copyFileSync(src, dst);
-  log('⑥ 首装增量基线刷新·web/.hot-update-manifest.json ← manifests/' + CFG.version + '.json');
+  // self-test 的极小合成树没有完整 hot builder；正式仓只走同生产 collector 的可复用同步器。
+  if (CFG.root !== REAL_ROOT) {
+    const src = path.join(P.releaseHot(), 'manifests', CFG.version + '.json');
+    if (fs.existsSync(P.hotBaseline())) fs.copyFileSync(P.hotBaseline(), P.hotBaseline() + '.bak-release-' + CFG.ts);
+    fs.copyFileSync(src, P.hotBaseline());
+    log('⑥ self-test 基线刷新·manifest fixture → canonical');
+    return;
+  }
+  const result = spawnSync(process.execPath, [P.hotBaselineSync(), '--write', '--version', CFG.version], { cwd: CFG.root, stdio: 'inherit' });
+  if (result.status !== 0) die('canonical 热更基线同步失败');
+  log('⑥ canonical 基线刷新·production hot collector → web/.hot-update-manifest.json');
+}
+
+function comparableManifest(manifest) {
+  const copy = Object.assign({}, manifest);
+  delete copy.generatedAt;
+  return copy;
+}
+
+function verifyBuiltBaseline(strict) {
+  const builtPath = path.join(P.releaseHot(), 'manifests', CFG.version + '.json');
+  if (!fs.existsSync(builtPath)) die('缺重建热更 manifest·' + builtPath);
+  const built = comparableManifest(readJson(builtPath));
+  const committed = comparableManifest(readJson(P.hotBaseline()));
+  const a = JSON.stringify(built);
+  const b = JSON.stringify(committed);
+  if (a !== b) {
+    const message = '重建热更 manifest 与已提交基线不一致·prepare 后源码/发布树发生漂移';
+    if (strict) die(message + '·请回短命分支重新 --prepare 并走 PR');
+    log('  WARN·' + message + '（--no-upload 本地构建允许继续，不可外写）');
+    return false;
+  }
+  const digest = crypto.createHash('sha256').update(a).digest('hex').slice(0, 16);
+  log('⑥ 已提交基线复验·忽略 generatedAt 后语义全等·sha256 ' + digest + ' ✓');
+  return true;
 }
 
 // ── ⑦ 安卓构建 ───────────────────────────────────────────────────────────────
 function buildAndroid(liveCapgoManifest) {
+  syncGeneratedAndroidVersion();
   log('⑦ 安卓 capgo 构建（全量 zip' + (CFG.noDelta ? '' : ' + 差量 manifest + 新对象包') + '）...');
   const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', P.capgoBuilder(),
     '-Version', CFG.version, '-WebDir', P.web(), '-OutDir', P.capgoDist()];
@@ -463,11 +698,20 @@ function buildRunbookText(hasInstaller) {
   L.push('   curl -s ' + PUBLIC_BASE + '/capgo/latest.json | head -3');
   L.push('   桌面端打开游戏 → 启动 8s 内应弹「发现新版本」更新卡');
   L.push('');
-  L.push('4) GitHub Pages 在线版：照旧 push 源码到 main（_push_main 流程）·在线玩家会收到「线上新版已颁」刷新提示');
+  L.push('4) GitHub Pages 在线版：publish 已经 workflow_dispatch 从 main 自触发 pages-production（github-pages 环境只放行 main·不放行 ship-* tag）；如未触发/失败，手动补：gh workflow run pages.yml --ref main');
   return L.join('\n') + '\n';
 }
 
 // ── ⑪ gh release 上传 + 资产审计 ─────────────────────────────────────────────
+function remoteTagCommit(tag) {
+  const result = gitRun(['ls-remote', '--tags', 'origin', 'refs/tags/' + tag, 'refs/tags/' + tag + '^{}']);
+  if (result.status !== 0) die('读取远端 tag 失败·' + String(result.stderr || result.stdout || '').trim());
+  const rows = String(result.stdout || '').trim().split(/\r?\n/).filter(Boolean).map(line => line.split(/\s+/));
+  const peeled = rows.find(row => row[1] === 'refs/tags/' + tag + '^{}');
+  const direct = rows.find(row => row[1] === 'refs/tags/' + tag);
+  return (peeled || direct || [])[0] || '';
+}
+
 function uploadRelease(staging) {
   if (CFG.noUpload) {
     log('⑪ --no-upload·跳过 GitHub 上传·直传清单（小件在 staging·大件在构建位）：');
@@ -475,13 +719,21 @@ function uploadRelease(staging) {
     return;
   }
   const tag = 'ship-' + CFG.version;
+  if (!CFG.publishHead) die('publish HEAD 未锁定·拒绝外写');
+  const existingTagCommit = remoteTagCommit(tag);
+  if (existingTagCommit && existingTagCommit !== CFG.publishHead) {
+    die('远端 tag ' + tag + ' 指向 ' + existingTagCommit.slice(0, 12) + '，不是已锁定 main ' + CFG.publishHead.slice(0, 12));
+  }
   let r = spawnSync('gh', ['release', 'view', tag, '--repo', 'misfit-user/tianming'], { encoding: 'utf-8' });
   if (r.status !== 0) {
     log('⑪ 创建 release ' + tag + ' ...');
     r = spawnSync('gh', ['release', 'create', tag, '--repo', 'misfit-user/tianming',
-      '--title', '天命 ' + CFG.version, '--notes', CFG.notes || ('天命 ' + CFG.version)], { encoding: 'utf-8' });
+      '--target', CFG.publishHead, '--title', '天命 ' + CFG.version, '--notes', CFG.notes || ('天命 ' + CFG.version)], { encoding: 'utf-8' });
     if (r.status !== 0) die('gh release create 失败·' + (r.stderr || r.stdout));
   }
+  const tagCommit = remoteTagCommit(tag);
+  if (tagCommit !== CFG.publishHead) die('release tag 提交复验失败·期望 ' + CFG.publishHead + '·实得 ' + (tagCommit || 'missing'));
+  log('  tag 真值 ✓ ' + tag + ' → locked main ' + CFG.publishHead.slice(0, 12));
   for (const e of staging.entries) {
     log('  上传 ' + e.name + ' ...');
     r = spawnSync('gh', ['release', 'upload', tag, e.path, '--clobber', '--repo', 'misfit-user/tianming'],
@@ -499,6 +751,13 @@ function uploadRelease(staging) {
     if (byName.get(e.name) !== localSize) die('审计失败·' + e.name + ' 大小不符·release=' + byName.get(e.name) + ' local=' + localSize);
   }
   log('⑪ 上传完成 + 审计通过·' + staging.entries.length + ' 个资产');
+  // ⑪½ 在线版(GitHub Pages)自触发：github-pages 环境只放行 main·ship-* tag 被拒·
+  //   故经 workflow_dispatch 从 main 部署(gh 以仓主身份触发→actor=owner)。非致命·失败不阻断发版。
+  try {
+    const pr = spawnSync('gh', ['workflow', 'run', 'pages.yml', '--repo', 'misfit-user/tianming', '--ref', 'main'], { encoding: 'utf-8' });
+    if (pr.status === 0) log('⑪½ 在线版 Pages 部署已自触发（workflow_dispatch · ref=main）');
+    else log('⑪½ WARN·在线版 Pages 自触发失败（不阻断热更发版）·可手动补：gh workflow run pages.yml --ref main\n      ' + String(pr.stderr || pr.stdout || '').trim().slice(0, 160));
+  } catch (e) { log('⑪½ WARN·在线版 Pages 自触发异常（不阻断）·' + (e && e.message)); }
 }
 
 // ── ⑫ 自动部署指针（2026-07-07·发版零人工的 dev 半边）────────────────────────
@@ -536,6 +795,7 @@ function selfTest() {
   }, null, 2));
   fs.writeFileSync(path.join(tmp, 'mobile', 'android', 'app', 'build.gradle'),
     'android {\n  defaultConfig {\n        versionCode 1335\n        versionName "1.3.3.5"\n  }\n}\n');
+  fs.writeFileSync(path.join(tmp, 'mobile', 'release-version.json'), JSON.stringify({ version: '1.3.3.5', versionCode: 1335 }, null, 2));
   fs.writeFileSync(path.join(tmp, 'web', 'version.json'), JSON.stringify({ version: '1.3.3.5' }));
   fs.writeFileSync(path.join(tmp, 'web', 'index.html'),
     '<meta name="tm-version" content="1.3.3.5"><div class="f-ver">天 命　测试版 <span id="tm-foot-ver">1.3.3.5</span></div>');
@@ -543,15 +803,50 @@ function selfTest() {
   CFG.root = tmp; CFG.version = '9.9.9.9'; CFG.versionCodeArg = '9999';
   let n = 0;
   const ok = (c, l) => { if (!c) die('selftest FAIL·' + l); n++; console.log('  ok·' + l); };
-  const code = gateVersion();
+  ok(validateModeFacts({ prepare: true, publish: false, noUpload: false, offline: false }).length === 0, 'mode·prepare 单选合法');
+  ok(validateModeFacts({ prepare: false, publish: true, noUpload: true, offline: true }).length === 0, 'mode·本地 publish offline 合法');
+  ok(validateModeFacts({ prepare: false, publish: false, noUpload: false, offline: false }).length > 0, 'mode·缺阶段被拒');
+  ok(validateModeFacts({ prepare: true, publish: true, noUpload: false, offline: false }).length > 0, 'mode·双阶段被拒');
+  ok(validateModeFacts({ prepare: true, publish: false, noUpload: true, offline: false }).length > 0, 'mode·prepare 不可 no-upload');
+  ok(validateModeFacts({ prepare: false, publish: true, noUpload: false, offline: true }).length > 0, 'mode·外发不可 offline');
+  const cleanMain = { isGit: true, clean: true, branch: 'main', head: 'abc', originMain: 'abc', originMainAncestor: true, officialOrigin: true };
+  ok(validatePublishRepositoryFacts(cleanMain, '').length === 0, 'publish repo·clean main 与 origin/main 同步');
+  ok(validatePublishRepositoryFacts(Object.assign({}, cleanMain, { clean: false }), '').some(x => x.includes('不干净')), 'publish repo·dirty 被拒');
+  ok(validatePublishRepositoryFacts(Object.assign({}, cleanMain, { branch: 'release/9' }), '').some(x => x.includes('只允许 main')), 'publish repo·非 main 被拒');
+  ok(validatePublishRepositoryFacts(Object.assign({}, cleanMain, { head: 'local' }), '').some(x => x.includes('精确同步')), 'publish repo·ahead/behind 被拒');
+  ok(validatePublishRepositoryFacts(Object.assign({}, cleanMain, { officialOrigin: false }), '').some(x => x.includes('misfit-user/tianming')), 'publish repo·错误 origin 被拒');
+  ok(validatePublishRepositoryFacts(cleanMain, 'old').some(x => x.includes('HEAD 改变')), 'publish repo·构建期间换 HEAD 被拒');
+  ok(validateGitHubOwnerFacts('misfit-user', 'misfit-user').length === 0, 'owner·仓主账号允许 production');
+  ok(validateGitHubOwnerFacts('scaredpenguin627', 'misfit-user').some(x => x.includes('不是仓库 owner')), 'owner·Write 协作者不能 production');
+  const cleanPrepare = Object.assign({}, cleanMain, { branch: 'release/9', head: 'def' });
+  ok(validatePrepareRepositoryFacts(cleanPrepare).length === 0, 'prepare repo·clean 短命分支且基于 origin/main');
+  ok(validatePrepareRepositoryFacts(Object.assign({}, cleanPrepare, { branch: 'main' })).some(x => x.includes('短命分支')), 'prepare repo·main 被拒');
+  ok(validatePrepareRepositoryFacts(Object.assign({}, cleanPrepare, { originMainAncestor: false })).some(x => x.includes('不是最新')), 'prepare repo·陈旧分支被拒');
+  const code = gatePrepareVersion();
   ok(code === 9999, 'versionCode 显式');
   gateChangelog();
   fanOutVersions(code);
+  ok(preparedVersionProblems(code, false).length === 0, 'publish 读取已盖戳版本·不再 fanOut');
+  ok(!fs.existsSync(P.hotBaseline()), 'fresh tree·prepare 前可无 canonical 基线');
+  fs.mkdirSync(path.join(tmp, 'release-hot', 'manifests'), { recursive: true });
+  const freshManifestPath = path.join(tmp, 'release-hot', 'manifests', '9.9.9.9.json');
+  fs.writeFileSync(freshManifestPath, JSON.stringify({
+    type: 'tianming-hot-update', version: '9.9.9.9', entry: 'index.html', generatedAt: 'first', files: [], remove: []
+  }));
+  refreshBaseline();
+  ok(fs.existsSync(P.hotBaseline()) && readJson(P.hotBaseline()).version === '9.9.9.9', 'fresh tree·prepare 生成 canonical tracked 基线');
+  ok(preparedVersionProblems(code, true).length === 0, 'fresh tree·publish 可读取同版 canonical 基线');
+  fs.writeFileSync(freshManifestPath, JSON.stringify({
+    type: 'tianming-hot-update', version: '9.9.9.9', entry: 'index.html', generatedAt: 'second', files: [], remove: []
+  }));
+  ok(verifyBuiltBaseline(true), 'fresh tree·publish 重建基线语义全等');
   const pkg = readJson(path.join(tmp, 'package.json'));
   ok(pkg.version === '9.9.909', 'pkg.version 三段 semver·映射自四段(9.9.9.9→9.9.909·每版递增·不再截断冻结)');
   ok(pkg.build.buildVersion === '9.9.9.9', 'buildVersion 4 段');
   ok(pkg.build.directories.output.endsWith('测试版9.9.9.9'), 'output 目录');
   ok(pkg.build.artifactName === '天命-9.9.9.9-${arch}.${ext}', 'artifactName');
+  ok(readJson(path.join(tmp, 'mobile', 'release-version.json')).versionCode === 9999, 'mobile canonical 版本盖戳');
+  ok(syncGeneratedAndroidVersion(), '从 canonical 同步本机 ignored Gradle');
   const gradle = fs.readFileSync(path.join(tmp, 'mobile', 'android', 'app', 'build.gradle'), 'utf-8');
   ok(/versionCode 9999/.test(gradle) && /versionName "9\.9\.9\.9"/.test(gradle), 'gradle 两处');
   ok(readJson(path.join(tmp, 'web', 'version.json')).version === '9.9.9.9', 'version.json');
@@ -560,6 +855,7 @@ function selfTest() {
   ok(fs.readdirSync(tmp).some(f => f.indexOf('package.json.bak-release-') === 0), '.bak 备份在');
   // 重跑同版本必被单调闸拒·buildVersion 已盖成目标值 → gateVersion 的 ≤ 判定必触发
   ok(cmpVersions('9.9.9.9', readJson(path.join(tmp, 'package.json')).build.buildVersion) === 0, '重跑同版本会被单调闸拒（buildVersion 已盖戳等值）');
+  ok(JSON.stringify(comparableManifest({ generatedAt: 'a', version: '9.9.9.9', files: [] })) === JSON.stringify(comparableManifest({ generatedAt: 'b', version: '9.9.9.9', files: [] })), '基线语义复验只忽略 generatedAt');
   // ensureAlias·同卷零拷贝别名（2026-07-07 直传改造）
   const aSrc = path.join(tmp, 'alias-src.bin');
   fs.writeFileSync(aSrc, 'alias-payload');
@@ -595,28 +891,60 @@ function selfTest() {
 }
 
 // ── 主流程 ───────────────────────────────────────────────────────────────────
-(async function main() {
-  if (flag('self-test')) return selfTest();
-  log('═══ 天命发版·v' + CFG.version + (CFG.dryRun ? '·DRY-RUN' : '') + ' ═══');
-  const code = gateVersion();
+async function prepareRelease() {
+  gatePrepareRepository();
+  gateReleaseContracts();
+  const code = gatePrepareVersion();
   gateChangelog();
-  const live = await gateLive();
+  await gateLive();
   if (CFG.dryRun) {
-    log('（dry-run）将执行·④版本扇出(versionCode ' + code + ') → ⑤桌面构建 → ⑥基线刷新 → ⑦安卓构建'
-      + (CFG.noDelta ? '(全量)' : '(差量' + (live.capgoManifest ? '·有线上基线' : '·无基线全打') + ')')
-      + ' → ⑧复验 → ⑨⑩staging' + (CFG.withInstaller ? '(含安装包)' : '') + ' → ⑪' + (CFG.noUpload ? '不上传' : 'gh 上传'));
-    log('dry-run 结束·未写任何文件');
+    log('（dry-run）prepare 将执行·④版本扇出(versionCode ' + code + ') → ⑤桌面热更构建 → ⑥基线刷新；不构建安卓、不上传');
+    log('prepare dry-run 结束·未写 tracked 文件');
     return;
   }
   fanOutVersions(code);
   buildDesktop();
   refreshBaseline();
+  gatePreparedVersion(true);
+  verifyBuiltBaseline(true);
+  log('');
+  log('prepare 完成·请只提交 package.json、mobile/release-version.json、web/version.json、web/index.html、web/.hot-update-manifest.json，并经 PR 合入 main 后再 --publish');
+}
+
+async function publishRelease() {
+  if (CFG.noUpload) log('⓪ --no-upload 本地构建模式·允许非 main/dirty；所有 GitHub/服务器写入硬关闭');
+  else gatePublishRepository('构建前');
+  gateReleaseContracts();
+  gatePreparedVersion(true);
+  gateChangelog();
+  const live = await gateLive();
+  if (CFG.dryRun) {
+    log('（dry-run）publish 将执行·⑤桌面重建 → ⑥已提交基线复验 → ⑦安卓构建'
+      + (CFG.noDelta ? '(全量)' : '(差量' + (live.capgoManifest ? '·有线上基线' : '·无基线全打') + ')')
+      + ' → ⑧复验 → ⑨⑩staging' + (CFG.withInstaller ? '(含安装包)' : '') + ' → ⑪' + (CFG.noUpload ? '不上传' : '锁定 HEAD 后 gh 上传'));
+    log('publish dry-run 结束·未写 tracked 文件、未外写');
+    return;
+  }
+  buildDesktop();
+  verifyBuiltBaseline(!CFG.noUpload);
   buildAndroid(live.capgoManifest);
   const { latestJson } = composeAndGate();
   const report = preflightReport();
   const staging = stageRelease(latestJson, report);
+  if (!CFG.noUpload) {
+    gatePublishRepository('上传前');
+    gateGitHubOwner();
+  }
   uploadRelease(staging);
   updateAutodeployPointer();
   log('');
   log(fs.readFileSync(path.join(staging.dir, 'OWNER-RUNBOOK-' + CFG.version + '.txt'), 'utf-8'));
+}
+
+(async function main() {
+  if (flag('self-test')) return selfTest();
+  gateMode();
+  log('═══ 天命发版·' + (CFG.prepare ? 'PREPARE' : (CFG.noUpload ? 'LOCAL-PUBLISH' : 'PUBLISH')) + '·v' + CFG.version + (CFG.dryRun ? '·DRY-RUN' : '') + ' ═══');
+  if (CFG.prepare) return prepareRelease();
+  return publishRelease();
 })().catch(e => { console.error('✗ 发版中断·', e && e.stack || e); process.exit(1); });

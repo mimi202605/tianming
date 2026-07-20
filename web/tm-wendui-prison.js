@@ -536,6 +536,14 @@
       (freeText ? '陛下还说·「' + freeText + '」\n' : '') +
       '请用古白话写罪臣的反应 (≤ 80 字)·只回正文·不要任何元注释。';
 
+    // 时空约束·扫描源=玩家问话 freeText·囚犯 charName 作种子恒入·防 AI 按史书卒年令狱中罪臣说他人「已死/已伏诛」(typeof 守卫防加载序)
+    if (typeof global._buildTemporalConstraint === 'function') {
+      try {
+        var _wpMentioned = (typeof global._tcScanMentionedNames === 'function') ? global._tcScanMentionedNames(String(freeText || ''), [charName], 10) : [charName];
+        sysP += global._buildTemporalConstraint(ch, { mentionedNames: _wpMentioned });
+      } catch (_wpTcE) {}
+    }
+
     var msgs = [
       { role: 'system', content: sysP },
       { role: 'user', content: '罪臣' + charName + '·答' }

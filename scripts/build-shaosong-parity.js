@@ -1,16 +1,12 @@
 #!/usr/bin/env node
-// build-shaosong-parity.js — 把绍宋补全数据块(shaosong-parity-data.js)外科手术注入 4 制品。
-// 通用:patch 里有哪些 key 就只覆盖绍宋的哪些 key,绝不动天启;逐 slice 累加调用即可。
+// build-shaosong-parity.js — 把绍宋补全数据块写入唯一真源，再统一重建所有派生物。
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 const DATA = require('./shaosong-parity-data.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const SS_SRC = path.join(ROOT, 'scenarios', '绍宋·建炎元年八月（官方）.json');
-const EDITOR_BUNDLE = path.join(ROOT, 'web', 'preview', 'official-scenarios-bundle.js');
-const GAME_BUNDLE = path.join(ROOT, 'web', 'tm-official-scenario-bundle.js');
 const GODOT_SS = path.join(ROOT, 'web', 'godot', 'data', 'scenarios', '绍宋·建炎元年八月（官方）.json');
 const SS_ID = 'sc-jianyan1-1127-shaosong';
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -49,26 +45,6 @@ function buildCanonical() {
   return sc;
 }
 
-// 第二步:把 canonical 绍宋整体同步到各 bundle 的绍宋条目(消除基底分歧·绝不动天启)
-function syncBundle(file, globalName, isArray, canonical, label) {
-  const src = fs.readFileSync(file, 'utf8');
-  const ctx = { console }; ctx.global = ctx; ctx.window = ctx; ctx.globalThis = ctx;
-  vm.runInNewContext(src, ctx, { filename: 'b.js' });
-  const obj = ctx[globalName];
-  if (isArray) {
-    const e = obj.find((x) => x && x.data && x.data.id === SS_ID);
-    if (!e) { console.warn('  ! ' + label + ' 未找到绍宋·跳过'); return; }
-    e.data = clone(canonical);
-  } else {
-    if (!obj.shaosong) { console.warn('  ! ' + label + ' 未找到绍宋·跳过'); return; }
-    obj.shaosong = clone(canonical);
-  }
-  const head = src.slice(0, src.indexOf('global.' + globalName)) + 'global.' + globalName + ' = ';
-  const tail = src.slice(src.lastIndexOf('})('));
-  fs.writeFileSync(file, head + JSON.stringify(obj) + ';\n' + tail, 'utf8');
-  console.log('  ✓ ' + label + '(绍宋整体同步自源)');
-}
-
 function syncGodot(canonical) {
   if (!fs.existsSync(GODOT_SS)) { console.log('  - godot 副本不存在·跳过'); return; }
   fs.writeFileSync(GODOT_SS, JSON.stringify(canonical, null, 2), 'utf8');
@@ -78,10 +54,9 @@ function syncGodot(canonical) {
 function main() {
   console.log('[build-shaosong-parity] 字段: ' + Object.keys(PATCH).join(', ') + ' + 合并(' + Object.keys(MERGE).join(',') + ')+troopsAdd');
   const canonical = buildCanonical();
-  syncBundle(EDITOR_BUNDLE, 'TM_OFFICIAL_SCENARIOS', false, canonical, '编辑器 bundle');
-  syncBundle(GAME_BUNDLE, 'TMOfficialScenarioBundle', true, canonical, '游戏 seeder bundle');
   syncGodot(canonical);
-  console.log('[build-shaosong-parity] 完成·源=编辑器=游戏=godot 绍宋一致。');
+  require('../web/scripts/sync-official-scenarios.js').sync({ check: false });
+  console.log('[build-shaosong-parity] 完成·根 JSON 已同步到全部运行时/编辑器/发布制品。');
 }
 if (require.main === module) main();
 module.exports = { PATCH };

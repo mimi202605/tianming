@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { materializeScenarioRows } = require('./lib/official-scenario-fixture.js');
 
 const ROOT = path.resolve(__dirname, '..');
 let ASSERTS = 0;
@@ -54,13 +55,14 @@ const html = fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
 const re = /<script[^>]+src="([^"]+\.js)/g;
 let m;
 while ((m = re.exec(html))) {
+  if (m[1].split('?')[0] === 'tm-official-scenario-loader.js') continue; // dedicated smoke owns this async contract
   const fp = path.join(ROOT, m[1].split('?')[0]);
   if (!fs.existsSync(fp)) continue;
   try { vm.runInContext(fs.readFileSync(fp,'utf8'), sandbox, { filename: m[1] }); } catch(e) {}
 }
 try { vm.runInContext(fs.readFileSync(path.join(ROOT,'scenarios/tianqi7-1627.js'),'utf8'), sandbox); } catch(e) {}
-// 壳+快照:显式加载运行时快照,平铺官方花名册到 P.characters(sid)·复刻真游戏动态注入(静态正则扫不到)
-try { vm.runInContext(fs.readFileSync(path.join(ROOT,'data/scenario-supplements/tianqi7-official-runtime-snapshot.js'),'utf8'), sandbox); } catch(e) {}
+// 测试适配器复刻 startGame 对完整官方剧本的数组物化。
+try { materializeScenarioRows(sandbox.P, 'sc-tianqi7-1627'); } catch(e) {}
 
 setTimeout(() => {
   try {

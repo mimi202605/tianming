@@ -1,8 +1,8 @@
 'use strict';
 // ============================================================
 // smoke-agent-mode-s1.js — 「模式 b · agent 模式」S1 骨架守卫
-//   验:① 开关 agentModeEnabled 独立于总闸 ② AgentMode 模块 S1 契约(run→fallback)
-//       ③ ai 步分叉点已就位且关=零回归(整段 if 守卫·不动原 _endTurn_aiInfer) ④ index.html 已注册
+//   验:① 开关 agentModeEnabled 独立于总闸 ② AgentMode 模块失败留在 Agent 支路
+//       ③ ai 步使用互斥平行入口 ④ index.html 已注册
 // ============================================================
 
 const fs = require('fs');
@@ -43,9 +43,9 @@ assert(AM && typeof AM.run === 'function', 'TM.Endturn.AgentMode.run 已导出')
 assert(typeof AM._stage === 'string', 'AgentMode._stage 存在(进度标记)');  // S4 起 = 'S4-loop'
 
 (async function () {
-  // 无前置依赖(无 GM / 无 callAIWithTools)时·run 必须优雅回落 {fallback:true}(保回合·这是 S1 分叉的安全底)
+  // 无前置依赖时明确失败；正式 Agent 不得在同一回合静默穿越到 LLM。
   const r = await AM.run({ input: {}, results: {} });
-  assert(r && r.ok === false && r.fallback === true, 'run() 无前置依赖时优雅回落 {ok:false, fallback:true}');
+  assert(r && r.ok === false && r.fallback === false && r.mode === 'agent', 'run() 无前置依赖时留在 Agent 支路失败');
 
   // status 暴露 _agentMode
   const st = globalThis.TM.AgentFlags.status();
@@ -66,14 +66,14 @@ assert(typeof AM._stage === 'string', 'AgentMode._stage 存在(进度标记)'); 
   assert(aiIdx >= 0 && aiEndIdx > aiIdx, '定位到 ai 步区间');
   const aiBlock = stepsSrc.slice(aiIdx, aiEndIdx);
 
-  // 分叉点在 ai 步内·且被 typeof+agentModeOn() 守卫(关=跳过=零回归)
-  assert(/typeof agentModeOn === 'function' && agentModeOn\(\)/.test(aiBlock), 'ai 步分叉受 typeof+agentModeOn() 守卫(关则整段跳过)');
+  // ModeContract 只选择一个正式入口；Agent 失败抛出，不回落 LLM。
+  assert(/_selectedMode === 'agent'/.test(aiBlock), 'ai 步由 selectedMode 选择唯一 Agent 入口');
   assert(/TM\.Endturn\.AgentMode\.run/.test(aiBlock), 'ai 步调用 AgentMode.run');
   assert(/_agentModeRan/.test(aiBlock), 'ai 步标记 _agentModeRan');
-  assert(/_agentRes\.ok && !_agentRes\.fallback/.test(aiBlock), '仅 ok&&!fallback 才接管(否则回落)');
+  assert(/throw new _mc\.ModeExecutionError\('agent'/.test(aiBlock), 'Agent 失败抛出且不穿越 LLM');
 
   // 分叉点在原 _endTurn_aiInfer 调用之前(=顶部 fork)·且原调用仍在(未删=零回归)
-  const branchPos = aiBlock.indexOf('agentModeOn()');
+  const branchPos = aiBlock.indexOf("_selectedMode === 'agent'");
   const inferPos = aiBlock.indexOf('_endTurn_aiInfer(');
   assert(branchPos >= 0 && inferPos > branchPos, '分叉在原 _endTurn_aiInfer 调用之前(顶部 fork)');
   assert(/var aiResult = await _endTurn_aiInfer\(/.test(aiBlock), '原 sc0-sc28 主调用 _endTurn_aiInfer 仍在(未删·零回归)');

@@ -1206,15 +1206,18 @@
         rgba(16,12,8,.98);
       box-shadow: 0 28px 80px rgba(0,0,0,.56), inset 0 1px rgba(255,255,255,.08);
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
       transform: translateX(12px);
-      transition: transform .28s ease, opacity .2s ease;
+      transition: transform .28s ease, opacity .2s ease, visibility 0s linear .28s;
     }
 
     .ai-drawer.open {
       opacity: 1;
+      visibility: visible;
       pointer-events: auto;
       transform: translateX(0);
+      transition-delay: 0s;
     }
 
     .drawer-head {
@@ -12125,7 +12128,7 @@
       body.je-guoshi-docked .reset-shell { padding-right: calc(var(--tm-aa-dock-w, 420px) + 14px); }   /* UI·AI · 国师调宽时槽宽随动（回退值与面板 width 回退 420 对齐·差 80px 会让内容钻到面板底下） */
       body.je-guoshi-docked #tm-aa-fab { display: none; }
       body.je-guoshi-docked #tm-aa-panel {
-        display: flex !important;   /* 常驻：即便 × 去掉 .open 也不消失 */
+        display: none !important;
         position: fixed; top: 14px; right: 12px; bottom: 14px;
         width: var(--tm-aa-dock-w, 420px); max-width: 60vw; max-height: none; height: auto;   /* UI·AI · 可调宽（默认加宽到 420 容纳新版式） */
         flex-direction: column;
@@ -12134,6 +12137,7 @@
         overflow: hidden;
         animation: none;   /* 常驻坞不重播开场动画 */
       }
+      body.je-guoshi-docked #tm-aa-panel.open { display: flex !important; }
       /* 治执行时大片死黑空白：极淡居中印记，让空白读作"留白"而非黑洞（在内容之下·不挡操作） */
       body.je-guoshi-docked #tm-aa-panel::after {
         content: "國\00A0師"; position: absolute; left: 0; right: 0; top: 54%;

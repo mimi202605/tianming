@@ -28,6 +28,46 @@ function _getSaveIndex() {
   try { return JSON.parse(localStorage.getItem('tm_save_index') || '{}'); } catch(e) { return {}; }
 }
 
+// pre_endturn 恢复契约：IDB record、内嵌快照信封与（崩溃自动恢复时）localStorage marker
+// 必须在 snapshotId / turn / committed 三项上完全一致。旧的无信封快照不冒充新回合，安全回退 autosave。
+function _validatePreEndturnSnapshot(record, marker, requireMarker) {
+  if (!record || !record.gameState) return { ok: false, reason: 'missing-record' };
+  var envelope = record.gameState && record.gameState._preEndturn;
+  if (!envelope || !envelope.snapshotId || !envelope.turn) return { ok: false, reason: 'missing-envelope' };
+  if (record.commitState !== 'committed' || envelope.commitState !== 'committed') return { ok: false, reason: 'not-committed' };
+  if (!record.snapshotId || record.snapshotId !== envelope.snapshotId) return { ok: false, reason: 'record-snapshot-mismatch' };
+  if (Number(record.turn) !== Number(envelope.turn)) return { ok: false, reason: 'record-turn-mismatch' };
+  var savedGM = record.gameState.GM || record.gameState;
+  if (!savedGM || Number(savedGM.turn) !== Number(envelope.turn)) return { ok: false, reason: 'state-turn-mismatch' };
+  if (requireMarker) {
+    if (!marker || marker.commitState !== 'committed' || !marker.snapshotId) return { ok: false, reason: 'marker-not-committed' };
+    if (marker.snapshotId !== envelope.snapshotId) return { ok: false, reason: 'marker-snapshot-mismatch' };
+    if (Number(marker.turn) !== Number(envelope.turn)) return { ok: false, reason: 'marker-turn-mismatch' };
+  }
+  return { ok: true, snapshotId: envelope.snapshotId, turn: Number(envelope.turn) };
+}
+if (typeof window !== 'undefined') window._validatePreEndturnSnapshot = _validatePreEndturnSnapshot;
+
+// 读档形状守卫（纵深防御）：交给 SaveMigrations/fullLoadGame 前先验 record.gameState 形状，
+// 让历史上写了半截的坏档（解压后解析失败置空、残留压缩 Blob / 字符串 / 空对象 / 畸形嵌套）明确报损，
+// 而不是把坏数据塞进游戏造成二次崩溃。判别必须与 fullLoadGame(tm-save-lifecycle.js:816) 的分派镜像，
+// 且「判真」集合是 fullLoadGame 能正确加载集合的子集，别自创标准：
+//   · fullLoadGame 分派：gameState.GM && gameState.P 同真 → 格式B（GM=gameState.GM, P=gameState.P）；否则格式A（GM=gameState）。
+//   · 格式B（SaveManager 手动/自动档 {GM,P}）：嵌套 GM、P 都须是像样对象，且 GM 含 GM 特征键——
+//     否则如 {GM:{turn:1}}（缺 P）/{GM:[]} 会被 fullLoadGame 当格式A 把整个外层对象误当 GM 加载。
+//   · 格式A（老迁移档：gameState 本身即 GM）：外层对象含 chars/turn/sid 特征键（与 importSave 同标准）。
+// 校验宁松勿严：只拦明确坏形状（Blob/字符串/数组/空对象/无特征/畸形嵌套），绝不误杀正常好档。
+function _isLoadableGameState(gs) {
+  function _obj(o) { return !!o && typeof o === 'object' && !Array.isArray(o) && !(typeof Blob !== 'undefined' && o instanceof Blob); }
+  function _looksLikeGM(o) { return _obj(o) && (o.turn !== undefined || o.chars !== undefined || o.sid !== undefined); }
+  if (!_obj(gs)) return false;                                     // null / 字符串 / 数字 / 数组 / Blob → 坏
+  if (gs.GM && gs.P) {                                             // 镜像 fullLoadGame：GM && P 同真 → 走格式B
+    return _obj(gs.GM) && _obj(gs.P) && _looksLikeGM(gs.GM);       // 嵌套 GM/P 须像样·GM 须像 GM
+  }
+  return _looksLikeGM(gs);                                         // 否则走格式A：外层对象须像 GM
+}
+if (typeof window !== 'undefined') window._isLoadableGameState = _isLoadableGameState;
+
 // 存档管理器
 var SaveManager = {
   maxSlots: 10,
@@ -65,7 +105,8 @@ var SaveManager = {
     if (typeof _prepareGMForSave === 'function') _prepareGMForSave();
 
     var _sc = typeof findScenarioById === 'function' ? findScenarioById(GM.sid) : null;
-    var gameState = { GM: deepClone(GM), P: _tmStripAiKeyInPlace(deepClone(P)) };
+    if (typeof _buildSaveState !== 'function') throw new Error('存档快照构造器未就绪');
+    var gameState = _buildSaveState({ format: 'idb', prepare: false });
     // 打上存档版本号，避免旧存档被误判为 v1 触发全链迁移
     if (typeof SaveMigrations !== 'undefined' && typeof SaveMigrations.stamp === 'function') {
       SaveMigrations.stamp(gameState);
@@ -104,7 +145,20 @@ var SaveManager = {
     TM_SaveDB.load(slotKey).then(function(record) {
       hideLoading();
       console.log('[loadFromSlot] 加载结果:', record ? ('有数据, keys:' + Object.keys(record).join(',')) : 'null');
-      if (!record || !record.gameState) { toast('该槽位没有存档'); return; }
+      // 真空槽（IndexedDB 无此记录）唯一判据 = TM_SaveDB.load 返回 null。
+      // record 存在即「有记录」：gameState 缺失/为 null（含解出合法 JSON null）/形状损坏一律报损，
+      // 绝不静默当空槽（否则坏档看起来像从未存过·玩家以为没存丢进度）。半损档不下传·防二次崩溃。
+      if (!record) { toast('该槽位没有存档'); return; }
+      if (record._loadError) {
+        toast('❌ 存档已损坏，无法读取（' + (record._loadError === 'parse_failed' ? '存档数据解析失败' : record._loadError) + '）');
+        console.error('[loadFromSlot] 存档报损·slot=' + slotKey + '·_loadError=' + record._loadError);
+        return;
+      }
+      if (!_isLoadableGameState(record.gameState)) {
+        toast('❌ 存档已损坏，无法读取');
+        console.error('[loadFromSlot] 存档形状校验失败·slot=' + slotKey + '·gameState=' + (record.gameState instanceof Blob ? 'Blob' : (record.gameState == null ? String(record.gameState) : typeof record.gameState)));
+        return;
+      }
 
       // record.gameState = {GM, P}
       // fullLoadGame期望格式B: data.gameState = {GM, P}
@@ -145,12 +199,12 @@ var SaveManager = {
     return true;
   },
 
-  // 自动存档（每回合调用）
+  // 兼容入口：核心端回合不再调用它（由 tm-endturn-render 统一写 autosave + slot_0）；
+  // 旧扩展若显式调用仍保留原语义，并复用 saveToSlot 的统一 snapshot builder。
   autoSave: function() {
     if (!GM.running) return;
-    // 每N回合自动存到slot_0
     if (GM.turn % this.autoSaveInterval === 0) {
-      this.saveToSlot(0, '自动封存 · 第' + GM.turn + '回合');
+      return this.saveToSlot(0, '自动封存 · 第' + GM.turn + '回合');
     }
   },
 
@@ -401,7 +455,9 @@ function openSaveManager() {
         var idx = parseInt(s.id.replace('slot_', ''));
         if (!isNaN(idx)) savesBySlot[idx] = { slotId: idx, name: s.name, turn: s.turn, timestamp: s.timestamp, scenarioName: s.scenarioName, eraName: s.eraName, date: s.date || '', dynastyPhase: s.dynastyPhase || '' };
       } else if (s.id === 'pre_endturn') {
-        preEndturnRec = { name: s.name, turn: s.turn, timestamp: s.timestamp, scenarioName: s.scenarioName, eraName: s.eraName };
+        if (s.commitState === 'committed' && s.snapshotId && s.turn) {
+          preEndturnRec = { name: s.name, turn: s.turn, timestamp: s.timestamp, scenarioName: s.scenarioName, eraName: s.eraName, snapshotId: s.snapshotId };
+        }
       }
     });
     // 同时补充 localStorage 索引中的记录（兼容）
@@ -722,18 +778,21 @@ function loadPreEndturnSnapshot() {
         return;
       }
       TM_SaveDB.load('pre_endturn').then(function(record) {
-        if (record && record.gameState) {
+        var _preCheck = (typeof _validatePreEndturnSnapshot === 'function')
+          ? _validatePreEndturnSnapshot(record, null, false)
+          : { ok: false, reason: 'validator-missing' };
+        if (_preCheck.ok) {
           try {
             fullLoadGame({ gameState: record.gameState });
             try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_){}
-            toast('已恢复至过回合前·第' + (record.turn || GM.turn) + '回合');
+            toast('已恢复至过回合前·第' + _preCheck.turn + '回合');
             closeSaveManager();
           } catch (_e) {
             (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(_e, 'loadPreEndturnSnapshot') : console.error('[loadPreEndturnSnapshot]', _e);
             toast('恢复失败：' + (_e.message || _e));
           }
         } else {
-          toast('过回合前快照已损坏');
+          toast('过回合前快照校验失败（' + _preCheck.reason + '）·未恢复');
         }
       }).catch(function(e) { toast('恢复失败：' + (e && e.message || e)); });
     }

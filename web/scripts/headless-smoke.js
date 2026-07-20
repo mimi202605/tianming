@@ -272,7 +272,8 @@ function makeStubs() {
 // ─────────────────────────────────────────────
 // 脚本加载顺序 · 照搬 index.html 的 <script src="..."> 顺序
 // ─────────────────────────────────────────────
-function parseIndexHtmlScripts() {
+function parseIndexHtmlScripts(options) {
+  options = options || {};
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   const scripts = [];
   const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/g;
@@ -293,6 +294,18 @@ function parseIndexHtmlScripts() {
       if (!/^https?:\/\//.test(src)) scripts.push(src);
     }
   }
+  // 浏览器首屏按需加载官方剧本；需要完整运行时数据的 Node smoke 仍从同一生成 manifest
+  // 注入这些脚本。boot-only 明确关闭，以测量真实首屏而非测试夹具负载。
+  if (options.includeLazyScenarios !== false) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'bundled-scenarios', 'manifest.json'), 'utf8'));
+      const lazyScripts = (manifest.entries || []).map(e => e && (e.scriptUrl || e.builtinScript)).filter(Boolean);
+      const insertAt = scripts.indexOf('tm-test-harness.js');
+      scripts.splice(insertAt >= 0 ? insertAt : scripts.length, 0, ...lazyScripts.filter(src => scripts.indexOf(src) < 0));
+    } catch (e) {
+      throw new Error('cannot load official scenario manifest for headless smoke: ' + e.message);
+    }
+  }
   return scripts;
 }
 
@@ -301,7 +314,7 @@ function parseIndexHtmlScripts() {
 // ─────────────────────────────────────────────
 function main() {
   if (flag('--list-scripts')) {
-    const scripts = parseIndexHtmlScripts();
+    const scripts = parseIndexHtmlScripts({ includeLazyScenarios: flag('--include-lazy-scenarios') });
     scripts.forEach(s => console.log(s));
     console.log(`\n${scripts.length} scripts`);
     return;
@@ -310,7 +323,7 @@ function main() {
   const { win } = makeStubs();
   const sandbox = vm.createContext(win);
 
-  const scripts = parseIndexHtmlScripts();
+  const scripts = parseIndexHtmlScripts({ includeLazyScenarios: !bootOnly });
   const bootCutoffName = 'tm-test-harness.js';
   const bootCutoffIndex = bootOnly ? scripts.findIndex(s => path.basename(s) === bootCutoffName) : -1;
   if (bootOnly && bootCutoffIndex < 0) {

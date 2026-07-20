@@ -562,6 +562,15 @@
       }
     }
 
+    // 时空约束·full 带在世/已故名单(ch=null·生成对象本人尚未入 GM·不作种子免「不在人物册」噪声)·扫描源=触发生成的上下文 opts.sourceContext + reason·令普通同代人物 bio 不按史书叙他人生死(typeof 守卫防加载序)
+    if (typeof _buildTemporalConstraint === 'function') {
+      try {
+        var _cgScan = String(sourceContext || '') + ' ' + String(reason || '');
+        var _cgMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_cgScan, [], 10) : [];
+        prompt += _buildTemporalConstraint(null, { mentionedNames: _cgMentioned });
+      } catch (_cgTcE) {}
+    }
+
     var attempt = 0;
     var lastErr = null;
     while (attempt < 3) {
@@ -959,7 +968,7 @@
     var results = [];
     var patterns = [
       // 征召 徐鸿渐 入朝
-      /[\u5F81\u8BCF](?:\s*)([^\uff0c\uff0e\u3002\uff01\uff1f\u3001\s，。]{2,4})(?:\s*)(?:\u5165\u671D|\u5165\u5173|\u5165\u9663|\u4E3A\u58EB|\u5165\u90FD|\u5F92\u5165)/g,
+      /(?:\u5F81\u53EC|\u5F81|\u8BCF)(?:\s*)([^\uff0c\uff0e\u3002\uff01\uff1f\u3001\s，。]{2,4})(?:\s*)(?:\u5165\u671D|\u5165\u5173|\u5165\u9663|\u4E3A\u58EB|\u5165\u90FD|\u5F92\u5165)/g,
       // 诏 郑成功 为 福建巡抚 / 诏 X 为 Y
       /\u8BCF(?:\s*)([^\uff0c\uff0e\u3002\uff01\uff1f\u3001\s，。]{2,4})(?:\s*)\u4E3A(?:\s*)([^\uff0c\uff0e\u3002\uff01\uff1f\u3001\s，。]{2,8})/g,
       // 起复 袁崇焕

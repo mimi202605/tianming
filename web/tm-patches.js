@@ -112,7 +112,8 @@ if (typeof _togglePConf === 'undefined') {
       semanticRecallAutoload: { on: '已启用语义检索自动加载', off: '已关闭语义检索自动加载·SC_RECALL 第 5 源失效' },
       npcAiPrecision: { on: '已启用 NPC 势力真决策·会真实改动数据并写入账本', off: '已关闭 NPC 势力真决策·走本地模板 + 人格 hints' },
       npcAiCosmeticEnrich: { on: '已启用 NPC 文字润色·仅改显示文辞', off: '已关闭 NPC 文字润色·不影响真决策' },
-      useTinyiV3: { on: '已启用廷议 v3 (默认·8 阶段·新框架)', off: '已关闭 v3·退回 v2 廷议 (简陋·5 阶段·已加 ChronicleTracker/ClassEngine 集成 fallback)' }
+      useTinyiV3: { on: '已启用廷议 v3 (默认·8 阶段·新框架)', off: '已关闭 v3·退回 v2 廷议 (简陋·5 阶段·已加 ChronicleTracker/ClassEngine 集成 fallback)' },
+      rigidHistEventsOff: { on: '已关闭注定史实事件·演义模式下史实人物的注定命运（如史实死亡）不再自动触发', off: '已恢复注定史实事件·演义模式下史实注定命运照常触发（轻度/严格史实模式一向照旧）' }
     };
     var l = labels[confKey] || { on: '已启用 ' + confKey, off: '已关闭 ' + confKey };
     if (typeof toast === 'function') toast('✅ ' + (on ? l.on : l.off));
@@ -582,6 +583,15 @@ openSettings=function(){
         + '<div style="display:flex;gap:0.3rem;">' + pill(true,'开启 · 亲征') + pill(false,'关闭 · 庙算') + '</div>'
         + '<div style="font-size:0.78rem;color:var(--txt-d);margin:0.6rem 0 0.4rem;">他方战事旁观：开启后，与朕无涉之战每回合末可<b>遣人观之</b>（战况重演·不改战果）。</div>'
         + '<div style="display:flex;gap:0.3rem;">' + pillOb(true,'开启 · 观之') + pillOb(false,'关闭 · 不观') + '</div>'
+        + '</div>';
+    })()+
+    // 势力活世界·实验(F2·开关 GM._factionLivingWorld·本局存档生效·总闸 OFF=零行为变更)
+    (function(){
+      var on = false; try { on = !!(typeof GM!=='undefined' && GM && GM._factionLivingWorld); } catch(_){}
+      function pill(want, label){ return '<button class="bt '+((on===want)?'bp':'bs')+' bsm" data-slhs="'+(want?1:0)+'" onclick="_tmSetFactionLivingWorld('+want+',this)" style="flex:1;">'+label+'</button>'; }
+      return '<div class="settings-section"><h4>势力活世界 · 实验</h4>'
+        + '<div style="font-size:0.78rem;color:var(--txt-d);margin:-0.2rem 0 0.4rem;">开启后，列国势力不再只作壁上观：可<b>真宣战/参战</b>（走正当法理·非乱咬）、<b>结盟背刺</b>结出真外交后果、跨回合<b>立志兴事</b>，重大动向<b>入御案时政</b>待陛下应对。默认关（零行为变更），本局存档生效。</div>'
+        + '<div style="display:flex;gap:0.3rem;">' + pill(true,'开启 · 活世界') + pill(false,'关闭 · 现状') + '</div>'
         + '</div>';
     })()+
     // API
@@ -1205,7 +1215,16 @@ openSettings=function(){
     "<label><input type=\"checkbox\" "+(P.ai && P.ai.sc28Enabled===true?'checked':'')+" onchange=\"if(!P.ai)P.ai={};P.ai.sc28Enabled=this.checked;saveP();\"> sc28 世界快照</label>"+
     "</div>"+
     "<span style=\"font-size:0.7rem;color:var(--ink-300,#888);\">\u6CE8\uFF1A\u6539\u52A8\u540E\u9996\u56DE\u5408\u4F1A\u91CD\u5EFA\u63D0\u793A\u7F13\u5B58\uFF0C\u7565\u589E\u4E00\u6B21\u5C0F\u989D\u5F00\u9500\u3002</span>"+
-    "</details></div></div>"+
+    "</details></div>"+
+    // ★还账(设flag必配设置开关)：rigidHistEventsOff 有读端(tm-history-events.js _rigidHistoryEventShouldFire)却无任何写端·changelog 曾承诺「可在设置里一键关闭」但玩家点不到。此处补开关·落「游戏模式」段(rw 行后·section 内)·走 _togglePConf→saveP 现有 conf 持久化管线(不自创路径)。默认未写=undefined=注定事件照常触发(保持现状)。
+    '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.5rem 0 0.2rem;margin-top:0.3rem;border-top:1px dotted var(--bdr);cursor:pointer;">' +
+      '<input type="checkbox" id="s-rigid-hist-off" ' + (P.conf && P.conf.rigidHistEventsOff===true ? 'checked ' : '') + 'onchange="_togglePConf(\'rigidHistEventsOff\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+      '<div style="flex:1;">' +
+        '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">演义模式·关闭注定史实事件</div>' +
+        '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后，演义模式下史实人物的注定命运事件（如史实死亡）不再自动触发，交由你改写历史。轻度 / 严格史实模式不受影响。</div>' +
+      '</div>' +
+    '</label>' +
+    "</div>"+
 
     // ⚠️ P.conf.showRelation 当前是僵尸字段——UI 写但无消费者读·将来或补 renderCharProfile 端读取或删此 UI
     // 人物志
@@ -1364,18 +1383,24 @@ function _sUpdateMaxoutInfo() {
 var DEFAULT_PROMPT="\u4F60\u662F\u5386\u53F2\u6A21\u62DF\u63A8\u6F14AI\u3002\u5267\u672C:{scenario_name} \u65F6\u4EE3:{era} \u89D2\u8272:{role}\n\u65F6\u95F4:{time_display} \u7B2C{turn}\u56DE\u5408\n\u96BE\u5EA6:{difficulty} \u6587\u98CE:{narrative_style}\n\u8D44\u6E90:{resources_json}\n\u5173\u7CFB:{relations_json}\n\u4EBA\u7269:{characters_json}\n\u89C4\u5219:{custom_rules}";
 var DEFAULT_RULES="1.\u6570\u503C\u5408\u7406 2.\u89D2\u8272\u72EC\u7ACB 3.\u6218\u4E89\u6D88\u8017 4.\u5B63\u8282\u5F71\u54CD 5.\u5386\u53F2\u540D\u81E3\u7B26\u5408\u53F2\u5B9E";
 
-function sSaveAPI(){
+function _sApplyPrimaryApiFields(){
   P.ai.key=_$("s-key")?_$("s-key").value:"";P.ai.url=_$("s-url")?_$("s-url").value:"";P.ai.model=_$("s-model")?_$("s-model").value:"";var _tv=parseFloat(_$("s-temp")?_$("s-temp").value:"");P.ai.temp=isNaN(_tv)?0.8:_tv;var _mv=parseInt(_$("s-mem")?_$("s-mem").value:"");P.ai.mem=isNaN(_mv)?20:_mv;P.ai.provider=_$("s-prov")?_$("s-prov").value:"openai";
+}
+function sSaveAPI(){
+  _sApplyPrimaryApiFields();
   try{ if(typeof tmApplyInsecureTlsConfig==='function') tmApplyInsecureTlsConfig(); }catch(_){}
   // ★2026-07-01·修「桌面端保存主 API key·关游戏再进就丢」:key 真源在 localStorage.tm_api(启动时 tm-player-core.js:257
   //   从此水合 P.ai)·桌面 autoSave 走 _tmStripAiKeyView 故意剥掉 key(不进可分享存档·安全)。原实现桌面分支只 autoSave、
   //   漏写 localStorage.tm_api → 主 key 只活内存·重启即失。改为两端都写 localStorage.tm_api(与 sSaveSecondaryAPI 同范式)·桌面再 autoSave。
   try{localStorage.setItem("tm_api",JSON.stringify(P.ai));}catch(e){ console.warn("[catch] 静默异常:", e.message || e); }
-  if(window.tianming&&window.tianming.isDesktop){window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(e){ (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'catch] async:') : console.warn('[catch] async:', e); });}
+  // 统一交给 saveP：对局中只写 IDB/lite，绝不以纯 P 覆盖桌面崩溃恢复档；非对局再由 saveP 写 Electron。
+  if(typeof saveP==='function') saveP();
   toast("\u2705 API\u5DF2\u4FDD\u5B58");
 }
 function sSaveAll(){
-  sSaveAPI();
+  // 先把主/次 API 面板全部合入内存，最后一次性写 tm_api；旧实现先持久化旧 secondary，
+  // 随后只改内存，导致重启恢复旧次 key。
+  _sApplyPrimaryApiFields();
   // M3·次 API 字段同步保存（若面板上有填）
   if(_$("s-sec-key")||_$("s-sec-url")||_$("s-sec-model")){
     var _sk=_$("s-sec-key")?_$("s-sec-key").value.trim():"";
@@ -1432,6 +1457,8 @@ function sSaveAll(){
   P.conf.style=_$("s-style")?_$("s-style").value:"";P.conf.difficulty=_$("s-diff")?_$("s-diff").value:"";
   P.conf.customStyle=_$("s-cstyle")?_$("s-cstyle").value:"";P.conf.gameMode=_$("s-mode")?_$("s-mode").value:"yanyi";P.conf.aiCallDepth=_$("s-aidepth")?_$("s-aidepth").value:"full";
   P.ai.prompt=_$("s-prompt")?_$("s-prompt").value:"";P.ai.rules=_$("s-rules")?_$("s-rules").value:"";
+  try{ if(typeof tmApplyInsecureTlsConfig==='function') tmApplyInsecureTlsConfig(); }catch(_){}
+  try{localStorage.setItem("tm_api",JSON.stringify(P.ai));}catch(e){ console.warn("[catch] 静默异常:", e.message || e); }
   saveP(); // 持久化所有设置（含记忆容量配置）
   toast("\u2705 \u5168\u90E8\u5DF2\u4FDD\u5B58");
 }
@@ -1468,7 +1495,6 @@ function sSaveSecondaryAPI(){
     toast("\u2705 \u5DF2\u6E05\u7A7A\u6B21 API\u00B7\u56DE\u9000\u4E3B API");
   }
   try{localStorage.setItem("tm_api",JSON.stringify(P.ai));}catch(e){}
-  if(window.tianming&&window.tianming.isDesktop){try{window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(){});}catch(e){try{window.TM&&TM.errors&&TM.errors.captureSilent(e,'tm-patches');}catch(_){}}}
   try{ if(typeof tmApplyInsecureTlsConfig==='function') tmApplyInsecureTlsConfig(); }catch(_){}  // 次 API 地址变了·刷新放行白名单
   saveP();
   // 刷新面板以更新徽标和清除按钮可见性
@@ -1726,7 +1752,12 @@ function renderScnTab(em,sc){
 // ============================================================
 //  开局逻辑审查：AI生成缺失所在地 + 检查剧本数据矛盾
 // ============================================================
-async function _logicAuditOnStart(sc) {
+async function _logicAuditOnStart(sc, options) {
+  options = options || {};
+  var _background = options.background === true;
+  var _session = (typeof _tmPlanningCaptureSession === 'function')
+    ? _tmPlanningCaptureSession(options.session)
+    : (options.session || { gmRef: GM, sid: GM && GM.sid, turn: GM && GM.turn });
   if (!P.ai.key || !GM.chars || GM.chars.length === 0) return;
   // 剧本已人工深化·跳过 AI 逻辑审查（角色 location/矛盾已手工填妥）
   if (sc && (sc.aiAutoEnrich === false || sc.isFullyDetailed === true)) {
@@ -1852,6 +1883,10 @@ async function _logicAuditOnStart(sc) {
 
   try {
     var result = await callAISmart(prompt, 6000, { maxRetries: 2 });
+    if (typeof _tmPlanningSessionCurrent === 'function' && !_tmPlanningSessionCurrent(_session)) {
+      console.warn('[LogicAudit] 丢弃过期的开局审查结果');
+      return;
+    }
     var data = (typeof extractJSON === 'function') ? extractJSON(result) : null;
     if (!data) return;
 
@@ -1895,7 +1930,7 @@ async function _logicAuditOnStart(sc) {
     // ── 汇总 ──
     var totalChanges = genCount + fixCount;
     if (totalChanges > 0) {
-      showLoading('\u903B\u8F91\u5BA1\u67E5: \u751F\u6210' + genCount + '\u5904\u6240\u5728\u5730\uFF0C\u4FEE\u6B63' + fixCount + '\u5904\u77DB\u76FE', 92);
+      if (!_background && typeof showLoading === 'function') showLoading('\u903B\u8F91\u5BA1\u67E5: \u751F\u6210' + genCount + '\u5904\u6240\u5728\u5730\uFF0C\u4FEE\u6B63' + fixCount + '\u5904\u77DB\u76FE', 92);
       console.log('[LogicAudit] 生成所在地 ' + genCount + ' 处，修正矛盾 ' + fixCount + ' 处');
       if (GM.qijuHistory) {
         var logParts = [];
@@ -1907,7 +1942,7 @@ async function _logicAuditOnStart(sc) {
         });
       }
     } else {
-      showLoading('\u903B\u8F91\u5BA1\u67E5: \u6570\u636E\u65E0\u77DB\u76FE', 92);
+      if (!_background && typeof showLoading === 'function') showLoading('\u903B\u8F91\u5BA1\u67E5: \u6570\u636E\u65E0\u77DB\u76FE', 92);
     }
   } catch(e) {
     console.warn('[LogicAudit] 审查失败:', e.message || e);

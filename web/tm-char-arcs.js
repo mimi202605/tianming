@@ -149,6 +149,14 @@
 
     try {
       var prompt = _buildPrompt(keyChars);
+      // 时空约束·full(命运弧叙事口·roster 生死是叙事安全底座)·批量口 ch=null(多 NPC 无单一当事角色)·扫描源/种子=本批当事 NPC(keyChars)名·防命运弧按史书卒年杀在世角色(typeof 守卫防加载序)
+      if (typeof _buildTemporalConstraint === 'function') {
+        try {
+          var _arcSeed = keyChars.map(function(c){ return c && c.name; }).filter(Boolean);
+          var _arcMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_arcSeed.join(' '), _arcSeed, 10) : _arcSeed;
+          prompt += _buildTemporalConstraint(null, { mentionedNames: _arcMentioned });
+        } catch (_arcTcE) {}
+      }
       if (typeof toast === 'function' && options.showToast) toast('史官正录人物心路…');
       var raw;
       try {

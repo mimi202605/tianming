@@ -2,7 +2,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 //  tm-ai-change-applier-reconcile.js — AI 变化「复核/善后」分片
 //  （巨石拆分第二十二拆·20260706·自 tm-ai-change-applier.js 行 3253-4055 迁出）
-//  内容：死亡墓志铭/玩家走位复核/职掌巡行/政令遵从/摄政裁决/写前预检(preflight)/战果结算/赤字惩罚。共 27 个成员。
+//  内容：死亡规范化/墓志铭/玩家走位复核/职掌巡行/政令遵从/摄政裁决/写前预检(preflight)/战果结算/赤字惩罚。
 //  【装载序·硬约束】须在 tm-ai-change-applier.js（origin）【之后】装载（index.html 紧随其后）：
 //    origin 装载期已向 bucket TM.__acaParts 导出本片捕获的 origin 成员（下方 var 捕获行）；
 //    本片把复核/善后族函数回填 bucket 供 origin 委托 shim 调用期解析。错序=捕获 undefined 立崩。契约见 lint-split-contracts。
@@ -13,6 +13,102 @@
   // ── reverse 捕获：origin 成员（origin 装载期已 __acaP.X=X 导出；本地名与迁出体一致·体内 0 改字节）──
   var _findEntity = __acaP._findEntity, _estimateTravelDays = __acaP._estimateTravelDays, _arriveCharNow = __acaP._arriveCharNow, _sameTravelLocation = __acaP._sameTravelLocation, _travelMirrorFields = __acaP._travelMirrorFields, _syncCharacterLocationMirrors = __acaP._syncCharacterLocationMirrors, _refreshCharacterLocationUiAfterTravel = __acaP._refreshCharacterLocationUiAfterTravel;
   //>>ACA-SPLIT22-RECONCILE-BODY-START
+  // ═══════════════════════════════════════════════════════════════════
+  //  AI 人物死亡写回完整性：char_updates 敏感键 → character_deaths → 唯一死亡 sink
+  // ═══════════════════════════════════════════════════════════════════
+  var _CHAR_DEATH_FIELD_RE = /^(?:alive|dead|isDead|deceased|positionAtDeath|diedAt|death[a-zA-Z0-9_]*|_death[a-zA-Z0-9_]*)$/i;
+
+  function _strictLivingChar(G, ref) {
+    var name = String(ref == null ? '' : ref).trim();
+    if (!name || !G || !Array.isArray(G.chars)) return null;
+    var ch = G.chars.find(function(c) {
+      return c && ((c.name != null && String(c.name).trim() === name) || (c.id != null && String(c.id).trim() === name));
+    });
+    return ch && ch.alive !== false && ch.dead !== true ? ch : null;
+  }
+
+  function normalizeAIWriteBackDeaths(aiOutput, opts) {
+    opts = opts || {};
+    var G = global.GM;
+    var result = { added: [], routed: [], failed: [], normalized: 0 };
+    if (!G || !aiOutput || typeof aiOutput !== 'object' || !Array.isArray(aiOutput.char_updates)) return result;
+    if (!Array.isArray(aiOutput.character_deaths)) aiOutput.character_deaths = [];
+
+    aiOutput.char_updates.forEach(function(cu) {
+      if (!cu || typeof cu !== 'object') return;
+      var updates = (cu.updates && typeof cu.updates === 'object' && !Array.isArray(cu.updates)) ? cu.updates : null;
+      var wantsDeath = !!((updates && (updates.alive === false || updates.dead === true || updates.isDead === true || updates.deceased === true)) ||
+        cu.alive === false || cu.dead === true || cu.isDead === true || cu.deceased === true);
+      var hadSensitive = false;
+      var reason = String(cu.reason || cu.deathReason || cu.deathCause ||
+        (updates && (updates.deathReason || updates.deathCause || updates._deathCause)) || 'AI人物死亡').trim();
+
+      if (updates) Object.keys(updates).forEach(function(key) {
+        if (_CHAR_DEATH_FIELD_RE.test(key)) { hadSensitive = true; delete updates[key]; }
+      });
+      Object.keys(cu).forEach(function(key) {
+        if (_CHAR_DEATH_FIELD_RE.test(key)) { hadSensitive = true; delete cu[key]; }
+      });
+      if (!hadSensitive) return;
+      if (!wantsDeath) {
+        result.failed.push({ char_update: cu.name || '', reason: 'sensitive death fields require character_deaths' });
+        return;
+      }
+      var ch = _strictLivingChar(G, cu.name);
+      if (!ch) {
+        result.failed.push({ char_update: cu.name || '', reason: 'death target must be an existing living character' });
+        return;
+      }
+      var existing = aiOutput.character_deaths.find(function(cd) {
+        var ref = cd && String(cd.name || '').trim();
+        return ref && (ref === String(ch.name || '').trim() || ref === String(ch.id || '').trim());
+      });
+      if (!existing) {
+        existing = { name: ch.name || ch.id, reason: reason || 'AI人物死亡' };
+        aiOutput.character_deaths.push(existing);
+        result.added.push(existing);
+      } else if (!existing.reason && !existing.cause && !existing.deathReason) {
+        existing.reason = reason || 'AI人物死亡';
+      }
+      if (!result.routed.some(function(cd) { return cd === existing; })) result.routed.push(existing);
+      result.normalized++;
+    });
+    return result;
+  }
+
+  function applyNormalizedAIWriteBackDeaths(G, normalization, applied) {
+    normalization = normalization || { routed: [], added: [], failed: [] };
+    applied = applied || { failed: [] };
+    if (!Array.isArray(applied.failed)) applied.failed = [];
+    if (Array.isArray(normalization.failed) && normalization.failed.length) {
+      Array.prototype.push.apply(applied.failed, normalization.failed);
+    }
+    var routed = Array.isArray(normalization.routed) ? normalization.routed : (normalization.added || []);
+    var appliedChars = [];
+    routed.forEach(function(cd) {
+      var ch = _strictLivingChar(G, cd && cd.name);
+      if (!ch) { applied.failed.push({ character_death: cd, reason: 'death target no longer living' }); return; }
+      if (appliedChars.indexOf(ch) >= 0) return;
+      try {
+        if (typeof global.applyOneDeath === 'function') global.applyOneDeath(cd);
+        else if (typeof global.applyCharacterDeaths === 'function') global.applyCharacterDeaths({ character_deaths: [cd] });
+        else { applied.failed.push({ character_death: cd, reason: 'death pipeline unavailable' }); return; }
+        if (ch.alive === false || ch.dead === true) appliedChars.push(ch);
+        else applied.failed.push({ character_death: cd, reason: 'death pipeline did not apply' });
+      } catch (e) {
+        applied.failed.push({ character_death: cd, reason: (e && e.message) || 'death pipeline exception' });
+      }
+    });
+    if (appliedChars.length) {
+      applied.semantic = applied.semantic || {};
+      applied.semantic.character_deaths_normalized = appliedChars.length;
+    }
+    return appliedChars.length;
+  }
+
+  global.normalizeAIWriteBackDeaths = normalizeAIWriteBackDeaths;
+  global.applyNormalizedAIWriteBackDeaths = applyNormalizedAIWriteBackDeaths;
+
   // ═══════════════════════════════════════════════════════════════════
   //  死亡墓志铭 & 诈死holding
   // ═══════════════════════════════════════════════════════════════════
@@ -307,7 +403,16 @@
   global._applyTaxAuthorityGate = _applyTaxAuthorityGate;
 
   function _applyDirectiveCompliance(G, aiOutput) {
-    if (!G || !Array.isArray(G._playerDirectives) || G._playerDirectives.length === 0) return;
+    if (!G) return;
+    // 刀9·本回合已执行一次性纠正指令暂存：下方 filter 删除 _pendingRemovalAfterApply 指令·validator 本 pass 稍后读其文本判源。
+    //   ★turn 级重置(非每 pass 清)：同回合多 pass(sc1/问天/奏疏各调一次 applier)时·后续 pass 不得清掉先前 pass 快照·
+    //   否则「王安病故」在后续 pass 被误判无源。按 GM.turn 换回合才清·同 turn 保留并去重 append·重入结算安全。
+    var _curTurn = G.turn || 0;
+    if (!Array.isArray(G._directivesAppliedThisTurn) || G._directivesAppliedTurn !== _curTurn) {
+      G._directivesAppliedThisTurn = [];   // arch-ok
+      G._directivesAppliedTurn = _curTurn;   // arch-ok
+    }
+    if (!Array.isArray(G._playerDirectives) || G._playerDirectives.length === 0) return;
     var reports = aiOutput && Array.isArray(aiOutput.directive_compliance) ? aiOutput.directive_compliance : [];
     // 按 id 索引指令
     var idMap = {};
@@ -338,9 +443,18 @@
         d._lastCheckTurn = G.turn || 0;
       }
     });
-    // 合规处理完·清理本回合标记的一次性 directive（纠正类执行后移除）
+    // 合规处理完·清理本回合标记的一次性 directive（纠正类执行后移除）·删前把文本快照到本回合暂存(供刀9 源头判据·去重防重入双记)
     G._playerDirectives = G._playerDirectives.filter(function(d){
-      return !(d && d._pendingRemovalAfterApply);
+      if (d && d._pendingRemovalAfterApply) {
+        try {
+          var _dc = (d.content != null ? String(d.content) : '');
+          if (!G._directivesAppliedThisTurn.some(function(x){ return x && x.content === _dc; })) {
+            G._directivesAppliedThisTurn.push({ turn: _curTurn, content: _dc });   // arch-ok
+          }
+        } catch(_) {}
+        return false;
+      }
+      return true;
     });
   }
   global._applyDirectiveCompliance = _applyDirectiveCompliance;
@@ -574,14 +688,58 @@
       aiOutput[field] = kept;
     }
 
+    function canonicalLeaderFields(item, fields, outputField, label) {
+      if (!item || typeof item !== 'object') return { present:false, ok:true };
+      var present = fields.filter(function(key) { return Object.prototype.hasOwnProperty.call(item, key); });
+      if (!present.length) return { present:false, ok:true };
+      var refs = present.map(function(key) { return String(item[key] == null ? '' : item[key]).trim(); });
+      if (refs.every(function(ref) { return !ref; })) {
+        present.forEach(function(key) { delete item[key]; });
+        item[outputField] = '';
+        return { present:true, ok:true, name:'' };
+      }
+      var resolved = refs.map(function(ref) { return ref ? _strictLivingChar(G, ref) : null; });
+      if (resolved.some(function(ch) { return !ch; })) {
+        _tmGateReason(label, 'leader/head must resolve exactly to a living active character', item);
+        return { present:true, ok:false };
+      }
+      var first = resolved[0];
+      if (resolved.some(function(ch) { return ch !== first; })) {
+        _tmGateReason(label, 'conflicting leader/head mirrors', item);
+        return { present:true, ok:false };
+      }
+      present.forEach(function(key) { delete item[key]; });
+      item[outputField] = first.name || refs[0];
+      return { present:true, ok:true, name:item[outputField] };
+    }
+
     keepArray('character_deaths', 'character_deaths', function(d) {
       if (!d || !d.name) return _tmGateReason('character_deaths', 'missing name', d);
-      var chRes = _tmResolveChar(G, d.name);
-      if (!chRes) return _tmWeakEntityHint('character_deaths', 'char seems not in current known lists: ' + d.name, d, chRes);
-      var ch = chRes.entity;
-      if (!chRes.active) _tmPushAIWeakHint('character_deaths', 'char seems known but not in active roster: ' + d.name, d, chRes);
+      // 死亡是不可逆语义：只接受当前 GM.chars 精确 name/id；不使用 alias/fuzzy/scenario 库外候选。
+      var rawDeathName = String(d.name).trim();
+      var ch = (G.chars || []).find(function(c) {
+        return c && ((c.name != null && String(c.name).trim() === rawDeathName) || (c.id != null && String(c.id).trim() === rawDeathName));
+      });
+      if (!ch) return _tmGateReason('character_deaths', 'death target not in active roster: ' + d.name, d);
       if (ch.alive === false || ch.dead === true) return _tmGateReason('character_deaths', 'char already dead: ' + d.name, d);
-      if (!(d.cause || d.reason || d.deathReason)) return _tmGateReason('character_deaths', 'missing cause/reason: ' + d.name, d);
+      var deathReason = d.reason || d.cause || d.deathReason;
+      if (!deathReason) return _tmGateReason('character_deaths', 'missing cause/reason: ' + d.name, d);
+      d.name = ch.name || rawDeathName;
+      if (!d.reason) d.reason = String(deathReason);
+      // ── 刀C·C1(2026-07-19)·结构化死亡来源判据(裸伏诛/自缢/纯病故=bare·无源→疑史实幻觉·不落库) ──
+      //   复用刀9：_classifyStructuredDeathKind 分类 bare/active·仅 gate bare 且本回合无任何源头(玩家诏令三源/司法危难态/
+      //   其他结构化键互证[排 character_deaths 自证]/npc_actions 涉及·_narrativeDeathSourced)。主动致死/暴力殉难/含本局
+      //   具体事由(战殁/奉旨赐死/被斩)=active·照常落。★宁漏勿误杀：非 bare 或有任一源即放行。拒写降级=转弱自查纸条+console 留痕·不静默丢弃。
+      try {
+        var _c1bkt = global.TM && global.TM.__acaParts;
+        var _c1classify = _c1bkt && _c1bkt._classifyStructuredDeathKind;
+        var _c1sourced = _c1bkt && _c1bkt._narrativeDeathSourced;
+        if (_c1classify && _c1sourced && _c1classify(d.reason) === 'bare' &&
+            !_c1sourced(G, aiOutput, ch, { excludeStructuredKey: 'character_deaths' })) {
+          console.warn('[preflight/character_deaths] 无源孤立结构化死亡·不落库(疑 AI 史实幻觉·转弱自查纸条留痕): ' + d.name + ' ← 「' + String(d.reason).slice(0, 40) + '」');
+          return _tmGateReason('character_deaths', '无源孤立结构化死亡(疑史实幻觉·bare 死因无任何源头): ' + d.name + '·死因「' + String(d.reason).slice(0, 30) + '」', d);
+        }
+      } catch (_c1e) {}
       return true;
     });
 
@@ -591,17 +749,57 @@
       if (fcRes && fcRes.active) return _tmGateReason('faction_create', 'duplicate active faction: ' + fc.name, fc);
       if (fcRes && !fcRes.active) _tmPushAIWeakHint('faction_create', 'faction name seems known outside active roster: ' + fc.name, fc, fcRes);
       if (!(fc.reason || fc.triggerEvent || fc.origin || fc.parentFaction)) return _tmGateReason('faction_create', 'missing reason/trigger: ' + fc.name, fc);
+      if (!canonicalLeaderFields(fc, ['leader','head','newLeader','new_leader','leaderName','leader_name','ruler'], 'leader', 'faction_create').ok) return false;
       return true;
+    });
+
+    keepArray('party_create', 'party_create', function(pc) {
+      if (!pc || !pc.name) return _tmGateReason('party_create', 'missing name', pc);
+      if ((G.parties || []).some(function(p) { return p && p.name === pc.name; })) return _tmGateReason('party_create', 'duplicate active party: ' + pc.name, pc);
+      if (!canonicalLeaderFields(pc, ['leader','head','newLeader','new_leader','leaderName','leader_name','ruler'], 'leader', 'party_create').ok) return false;
+      return true;
+    });
+
+    keepArray('party_splinter', 'party_splinter', function(sp) {
+      if (!sp || !sp.parent || !sp.newName) return _tmGateReason('party_splinter', 'missing parent/newName', sp);
+      if (!(G.parties || []).some(function(p) { return p && p.name === sp.parent; })) return _tmGateReason('party_splinter', 'parent party not active: ' + sp.parent, sp);
+      if (!canonicalLeaderFields(sp, ['newLeader','new_leader','leader','head','leaderName','leader_name','ruler'], 'newLeader', 'party_splinter').ok) return false;
+      return true;
+    });
+
+    (Array.isArray(aiOutput.faction_events) ? aiOutput.faction_events : []).forEach(function(fe) {
+      var gate = canonicalLeaderFields(fe, ['newLeader','new_leader','leader','head','leaderName','leader_name','ruler'], 'newLeader', 'faction_events');
+      if (gate.present && !gate.ok) blocked++;
+    });
+    (Array.isArray(aiOutput.party_changes) ? aiOutput.party_changes : []).forEach(function(pc) {
+      var gate = canonicalLeaderFields(pc, ['new_leader','newLeader','leader','head','leaderName','leader_name','ruler'], 'new_leader', 'party_changes');
+      if (gate.present && !gate.ok) blocked++;
+    });
+    (Array.isArray(aiOutput.party_updates) ? aiOutput.party_updates : []).forEach(function(pu) {
+      if (!pu || !pu.updates || typeof pu.updates !== 'object' || Array.isArray(pu.updates)) return;
+      var gate = canonicalLeaderFields(pu.updates, ['leader','head','newLeader','new_leader','leaderName','leader_name','ruler'], 'leader', 'party_updates');
+      if (gate.present && !gate.ok) blocked++;
     });
 
     keepArray('faction_succession', 'faction_succession', function(sc) {
       if (!sc || !sc.faction || !sc.newLeader) return _tmGateReason('faction_succession', 'missing faction/newLeader', sc);
-      var facRes = _tmResolveFaction(G, sc.faction);
-      var leaderRes = _tmResolveChar(G, sc.newLeader);
-      if (!facRes) return _tmWeakEntityHint('faction_succession', 'faction seems not in current known lists: ' + sc.faction, sc, facRes);
-      if (!facRes.active) _tmPushAIWeakHint('faction_succession', 'faction seems known but not active: ' + sc.faction, sc, facRes);
-      if (!leaderRes) return _tmWeakEntityHint('faction_succession', 'newLeader seems not in current known lists: ' + sc.newLeader, sc, leaderRes);
-      if (!leaderRes.active) _tmPushAIWeakHint('faction_succession', 'newLeader seems known but not active: ' + sc.newLeader, sc, leaderRes);
+      // 继统会在 endturn 主链直接改 leader，必须像死亡一样只接受当前活跃对象的精确 name/id；
+      // 不让模糊名、场景库幽灵人物或已死亡人物穿过后续直写 consumer。
+      var rawFaction = String(sc.faction).trim();
+      var fac = (G.facs || []).find(function(f) {
+        return f && ((f.name != null && String(f.name).trim() === rawFaction) || (f.id != null && String(f.id).trim() === rawFaction));
+      });
+      if (!fac) return _tmGateReason('faction_succession', 'faction not in active roster: ' + sc.faction, sc);
+      var rawLeader = String(sc.newLeader).trim();
+      var leader = (G.chars || []).find(function(c) {
+        return c && ((c.name != null && String(c.name).trim() === rawLeader) || (c.id != null && String(c.id).trim() === rawLeader));
+      });
+      if (!leader) return _tmGateReason('faction_succession', 'newLeader not in active roster: ' + sc.newLeader, sc);
+      if (leader.alive === false || leader.dead === true) return _tmGateReason('faction_succession', 'newLeader is dead: ' + sc.newLeader, sc);
+      // sc 是 AI 的继统事件载荷，不是人物/军队成员关系对象；这里只归一化引用，
+      // 不触碰任何运行态 entity.faction（后者必须走 FactionMembership API）。
+      Object.assign(sc, { faction: fac.name || rawFaction });
+      sc.newLeader = leader.name || rawLeader;
       return true;
     });
 
