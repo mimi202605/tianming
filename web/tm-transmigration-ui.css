@@ -393,6 +393,38 @@ body.transmigration-mode .ps-bar-stat b {
   color: var(--player-text-strong, #1a5490);
   font-weight: 600;
 }
+/* 动作区·结束回合按钮（2026-07-22 修「无法推进时间」） */
+body.transmigration-mode .ps-bar-actions {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+  padding-left: 10px;
+}
+body.transmigration-mode .ps-bar-turn-hint {
+  font-size: 11px;
+  color: var(--ink-300, #6b5d47);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+body.transmigration-mode .ps-bar-end-turn {
+  padding: 6px 18px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  color: var(--gold-300, #d4be7a);
+  background: linear-gradient(180deg, rgba(184,154,83,0.22), rgba(184,154,83,0.10));
+  border: 1px solid var(--gold-400, #b89a53);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+body.transmigration-mode .ps-bar-end-turn:hover {
+  background: linear-gradient(180deg, rgba(184,154,83,0.38), rgba(184,154,83,0.20));
+  box-shadow: 0 2px 10px rgba(184,154,83,0.30);
+}
+body.transmigration-mode .ps-bar-end-turn:active {
+  transform: scale(0.97);
+}
 
 /* ── §7.2 左栏 8 tab ────────────────────────────────────── */
 body.transmigration-mode .player-left-tabs-shell {
@@ -1042,4 +1074,168 @@ body.transmigration-mode .ps-drawer-empty {
   border-radius: 4px;
   font-style: italic;
   font-size: 12px;
+}
+
+/* ============================================================
+ * §7.11 穿越大地图·独立 SVG 容器（2026-07-22 修「显示有问题·无法缩放」）
+ * ------------------------------------------------------------
+ * 历史根因：tm-player-map.js 用 .player-map-* 类名渲染·但 CSS 中只有
+ *   旧的 .pms-* 类名样式（phase8 formal bridge 残留）·新类名零样式→
+ *   toolbar 无布局·canvas 无尺寸→SVG 塌陷→"地图显示有问题"。
+ * 修复：补齐 .player-map-* 基础布局 + 缩放控件视觉·全部包在
+ *   body.transmigration-mode 下·皇帝模式零视觉回归。
+ * ============================================================ */
+body.transmigration-mode .player-map-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #1a1a2e;
+  border-bottom: 2px solid var(--player-accent, #4a90e2);
+  overflow: hidden;
+  position: relative;
+}
+body.transmigration-mode .player-map-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #e8e8e8;
+  font-size: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+body.transmigration-mode .player-map-title {
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--gold-300, #d4be7a);
+  margin-right: 6px;
+}
+body.transmigration-mode .player-map-modes {
+  display: inline-flex;
+  gap: 2px;
+}
+body.transmigration-mode .player-map-mode-btn {
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid rgba(212, 190, 122, 0.4);
+  color: #cfcfcf;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 120ms;
+}
+body.transmigration-mode .player-map-mode-btn:hover {
+  background: rgba(212, 190, 122, 0.15);
+  color: #fff;
+}
+body.transmigration-mode .player-map-mode-btn.active {
+  background: var(--gold-400, #b89a53);
+  color: #1a1a2e;
+  border-color: var(--gold-300, #d4be7a);
+  font-weight: 600;
+}
+body.transmigration-mode .player-map-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+body.transmigration-mode .player-map-zoom-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  line-height: 20px;
+  border: 1px solid rgba(212, 190, 122, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gold-300, #d4be7a);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 120ms;
+}
+body.transmigration-mode .player-map-zoom-btn:hover {
+  background: var(--gold-400, #b89a53);
+  color: #1a1a2e;
+}
+body.transmigration-mode .player-map-zoom-level {
+  display: inline-block;
+  min-width: 38px;
+  text-align: center;
+  font-size: 11px;
+  color: #cfcfcf;
+  font-variant-numeric: tabular-nums;
+}
+body.transmigration-mode .player-map-toggle,
+body.transmigration-mode .player-map-collapse {
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid rgba(212, 190, 122, 0.4);
+  color: #cfcfcf;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+body.transmigration-mode .player-map-toggle:hover,
+body.transmigration-mode .player-map-collapse:hover {
+  background: rgba(212, 190, 122, 0.15);
+  color: #fff;
+}
+body.transmigration-mode .player-map-canvas {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #1a1a2e;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.transmigration-mode .player-map-canvas:active {
+  cursor: grabbing;
+}
+body.transmigration-mode .player-map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+body.transmigration-mode .player-map-bg {
+  fill: #1a1a2e;
+}
+body.transmigration-mode .player-map-region {
+  fill: rgba(212, 160, 23, 0.18);
+  stroke: #8b6914;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: fill 150ms ease;
+}
+body.transmigration-mode .player-map-region:hover {
+  fill: rgba(212, 160, 23, 0.38);
+}
+body.transmigration-mode .player-map-region-highlight {
+  fill: rgba(231, 76, 60, 0.45) !important;
+  stroke: #c0392b;
+  stroke-width: 2;
+}
+body.transmigration-mode .player-map-region-flyto {
+  fill: rgba(74, 144, 226, 0.35) !important;
+  stroke: var(--player-accent, #4a90e2);
+  stroke-width: 2;
+}
+body.transmigration-mode .player-map-marker {
+  filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.8));
+  pointer-events: none;
+}
+body.transmigration-mode .player-map-error {
+  padding: 16px;
+  text-align: center;
+  color: #c0392b;
+  font-size: 12px;
+  background: #fff;
+}
+body.transmigration-mode .player-map-error a {
+  color: var(--player-accent, #4a90e2);
+  margin-left: 4px;
 }

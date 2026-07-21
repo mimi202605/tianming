@@ -1378,6 +1378,44 @@ function doActualStart(sid, requestToken){
     });
     if (typeof _dbg === 'function') _dbg('[被俘态] 标记 _captured ' + n + ' 人');
   })();
+  // ═══ 穿越模式·玩家私产种子（2026-07-22 修）═══
+  // 历史根因：穿越模式下 GM._playerEconomy.cash 预初始化为 0（见上方 C9 预初始化块）·
+  //   但剧本角色自带的 resources.privateWealth.money（如翰林学士 85000 两）从不迁移到玩家账本·
+  //   导致私产面板/顶栏恒显 0 两·玩家「所有人没有银两」。
+  // 修复：GM.chars 装载完毕后·找到玩家角色·把其 resources.privateWealth.money 种入 cash。
+  //   铁律：仅在穿越模式 + 玩家角色命中时执行·幂等（cash 仍为 0 时才种·避免覆盖运行中已变动余额）。
+  (function _seedPlayerEconomyFromChar(){
+    try {
+      if (typeof GM === 'undefined' || !GM || !Array.isArray(GM.chars)) return;
+      var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+      if (!_pi || _pi.transmigrationMode !== true || !_pi.playerRole || _pi.playerRole === 'emperor') return;
+      if (!GM._playerEconomy || typeof GM._playerEconomy.cash !== 'number') return;
+      // 仅在 cash 仍为初始 0 时种入·避免覆盖已运行的余额（如 collectSalary 后）
+      if (GM._playerEconomy.cash !== 0) return;
+      var _pName = _pi.characterName || _pi.selectedCharId;
+      if (!_pName) return;
+      var _pch = null;
+      for (var i = 0; i < GM.chars.length; i++) {
+        var c = GM.chars[i];
+        if (!c) continue;
+        if (c.isPlayer === true || (c.name && c.name === _pName)) { _pch = c; break; }
+      }
+      if (!_pch) return;
+      var _pw = _pch.resources && _pch.resources.privateWealth;
+      var _seed = 0;
+      if (_pw) {
+        _seed = Number(_pw.money != null ? _pw.money : _pw.cash) || 0;
+      }
+      // 兜底：角色无显式私产时按 playerRole 给起步银（朝臣/武将 500·商贾 5000·其余 200）
+      if (!_seed) {
+        var _roleSeed = { merchant: 5000, minister: 500, regent: 1000, general: 500,
+                          prince: 800, eunuch: 600, custom: 300 };
+        _seed = _roleSeed[_pi.playerRole] || 200;
+      }
+      GM._playerEconomy.cash = _seed; // arch-ok · 穿越模式开局一次性种子·经裁定合法
+      if (typeof _dbg === 'function') _dbg('[穿越·私产种子] ' + _pName + ' 起步银 ' + _seed + ' 两');
+    } catch(_seedE) { try { console.warn('[doActualStart·seedPlayerEconomy]', _seedE); } catch(_){} }
+  })();
   GM.items=(P.items||[]).filter(function(t){return t.sid===sid;}).map(function(t){var c=deepClone(t);c.acquired=false;return c;});
   // 军队加载：优先 initialTroops（编辑器新 schema 完整部队表），armies 仅作兜底（旧字段通常只有少量代表部队）
   var _initTroops = (P.military && P.military.initialTroops) || [];

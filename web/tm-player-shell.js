@@ -192,6 +192,22 @@
     return h;
   }
 
+  // 5) 动作：结束回合按钮（穿越模式专属·2026-07-22 修「无法推进时间」）
+  //   历史根因：穿越模式 PlayerShell 只渲染顶栏/左栏/地图/场景/右栏·
+  //     无结束回合入口·btn-end 仅在皇帝御案 edict 面板内·穿越模式不渲染该面板。
+  //   修复：顶栏末端加「上奏呈进」按钮·onclick 调 confirmEndTurn()（已含 _isTrans 分支）。
+  function _renderBarActions(pi) {
+    var turn = '—';
+    try { if (typeof GM !== 'undefined' && GM && GM.turn != null) turn = GM.turn; } catch (_) {}
+    var nextTurn = (typeof turn === 'number') ? turn + 1 : '—';
+    var h = '';
+    h += '<div class="ps-bar-actions">';
+    h += '<span class="ps-bar-turn-hint">第' + _esc(turn) + ' → ' + _esc(nextTurn) + '回合</span>';
+    h += '<button class="ps-bar-end-turn" id="ps-end-turn-btn" title="上奏呈进·推进时局">⏳ 上奏呈进</button>';
+    h += '</div>';
+    return h;
+  }
+
   function renderTopBar() {
     if (!_isTrans()) return;
     var bar = _$('player-shell-topbar');
@@ -203,7 +219,21 @@
     h += _renderBarAffiliation(pi);
     h += _renderBarTime();
     h += _renderBarStats(pi, role);
+    h += _renderBarActions(pi);
     bar.innerHTML = h;
+    // 绑定结束回合按钮（innerHTML 后需重新绑定·不能走 onclick 内联因 confirmEndTurn 是全局函数）
+    try {
+      var endBtn = bar.querySelector('#ps-end-turn-btn');
+      if (endBtn) {
+        endBtn.addEventListener('click', function () {
+          if (typeof global.confirmEndTurn === 'function') {
+            global.confirmEndTurn();
+          } else if (typeof confirmEndTurn === 'function') {
+            confirmEndTurn();
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   // ═══ 左栏 8 tab ═══════════════════════════════════════════
