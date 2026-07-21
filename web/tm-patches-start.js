@@ -961,6 +961,40 @@ function doActualStart(sid, requestToken){
       if (_transPi.characterGender) P.playerInfo.characterGender = _transPi.characterGender; // arch-ok
       if (_transPi.characterPersonality) P.playerInfo.characterPersonality = _transPi.characterPersonality; // arch-ok
     }
+
+    // ═══ 穿越模式 GM._playerXxx 预初始化（2026-07-21 修·C9 根治）═══
+    // 历史根因：所有玩家系统状态懒初始化（首次访问 _getState() 才创建）·
+    //   初始化前 ui-render 读取 GM._playerEconomy.cash 等读到 undefined·顶栏变量显示「—」·
+    //   某些系统初始化路径上有边界条件风险（ui-render 比 doActualStart 早执行）。
+    // 修复：穿越模式下预初始化全部 GM._playerXxx 字段为默认空 state·
+    //   后续 _getState() 检测到已存在不会重建·保证状态连续性。
+    // 铁律：只在穿越模式（transmigrationMode=true && playerRole!=='emperor'）下预初始化·
+    //   皇帝模式不受影响（皇帝模式无 GM._playerXxx 玩家状态）。
+    if (P.playerInfo && P.playerInfo.transmigrationMode === true &&
+        P.playerInfo.playerRole && P.playerInfo.playerRole !== 'emperor') {
+      try {
+        if (typeof GM !== 'undefined' && GM) {
+          // 各系统默认空 state·字段名与各系统 _defaultState() 对齐
+          // arch-ok: C9 预初始化·穿越模式开局一次性写口·经裁定合法（懒初始化导致顶栏显示「—」）
+          if (!GM._playerFamily)       GM._playerFamily       = { members: [], events: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerMarriage)     GM._playerMarriage     = { status: '未婚', spouse: null, spouses: [], history: [], mourningPeriod: null, activeRites: null, disputes: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerEconomy)      GM._playerEconomy      = { cash: 0, properties: [], investments: [], grayIncome: [], corruption: 0, factionRelations: {}, confiscated: false, ledger: [] }; // arch-ok
+          if (!GM._playerIndustry)     GM._playerIndustry     = { industries: [], haoqiangLevel: 'none', haoqiangScore: 0, notoriety: 0, events: [], createdAt: 0 }; // arch-ok
+          if (!GM._playerInteraction)  GM._playerInteraction  = { relations: {}, interactions: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerMovement)     GM._playerMovement     = { currentLocation: '', traveling: false, route: [], arrivedAt: 0 }; // arch-ok
+          if (!GM._playerPrivateArmy)  GM._playerPrivateArmy  = { troops: [], totalSize: 0, readiness: 0, equipment: 0, updatedAt: 0 }; // arch-ok
+          if (!GM._playerSkill)        GM._playerSkill        = { skills: [], mastery: {}, updatedAt: 0 }; // arch-ok
+          if (!GM._playerTech)         GM._playerTech         = { researching: null, completed: [], log: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerRebel)        GM._playerRebel        = { readiness: 0, agents: [], contacts: [], events: [], createdAt: 0 }; // arch-ok
+          if (!GM._playerTrade)        GM._playerTrade        = { caravans: [], routes: [], networks: [], cashFlow: 0, updatedAt: 0 }; // arch-ok
+          if (!GM._playerKeju)         GM._playerKeju         = { status: 'idle', exams: [], currentExam: null, masters: [], history: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerAnnualReview) GM._playerAnnualReview = { indicators: {}, history: [], notifications: [], bribeRate: 1, updatedAt: 0 }; // arch-ok
+          if (!GM._playerSpecialIdentity) GM._playerSpecialIdentity = { currentPath: null, actions: [], stats: {}, events: [], updatedAt: 0 }; // arch-ok
+        }
+      } catch(_playerInitE) {
+        try { console.warn('[doActualStart·player-init]', _playerInitE); } catch(_){}
+      }
+    }
   }
   if (sc.engineConstants) {
     GM.engineConstants = deepClone(sc.engineConstants);

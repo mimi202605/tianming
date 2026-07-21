@@ -1742,8 +1742,86 @@
       h += '</div>';
     }
 
+    // 可选动作（2026-07-21·C2 根治·从空壳改为调用内部 API·参照 tm-player-marriage.js）
+    //   举事为高风险动作·launchCoup 内部带筹备度/状态闸·不达标返回 ok:false reason
+    var canLaunch = (s.stage === STAGES.PREPARING || s.stage === STAGES.READY);
+    var canPrep = (s.stage !== STAGES.LAUNCHED && s.stage !== STAGES.SUCCEEDED && s.stage !== STAGES.SUPPRESSED);
+    if (canPrep || canLaunch) {
+      h += '<div class="pr-section"><div class="pr-section-title">可 选 · 动 作</div>';
+      h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+      if (canPrep) {
+        h += '<button class="bt bs" onclick="TM.PlayerRebel._uiContactAlly()">联络同盟</button>';
+        h += '<button class="bt bs" onclick="TM.PlayerRebel._uiSpreadPropaganda()">散布舆论</button>';
+      }
+      if (canLaunch) {
+        h += '<button class="bt bs" onclick="TM.PlayerRebel._uiLaunchCoup()">举事</button>';
+      }
+      h += '</div>';
+      h += '</div>';
+    }
+
     h += '</div>';
     return h;
+  }
+
+  // UI 钩子（2026-07-21·C2 根治·从空壳改为调用内部 API）
+  //   历史根因：renderPanel 只展示反叛筹备状态·无任何动作按钮·玩家无法推进图谋。
+  //   修复：联络同盟用 showPrompt 收 NPC 名（默认江湖豪强类型）·散布舆论/举事直接调内部 API → toast 反馈 → refreshAll 刷面板。
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  function _uiContactAlly() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('反叛账本未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _addEB('反叛', 'showPrompt 缺席·请在剧本面板中选择联络 NPC');
+      return;
+    }
+    // 默认江湖豪强·招募难度最低·泄密风险最小·剧本可后续扩展选择面板
+    showPrompt('联络同盟 NPC 姓名（默认江湖豪强·招募最易）：', '', function (name) {
+      if (!name) return;
+      var r = contactAlly(name, 'jianghu', {});
+      if (r.ok) {
+        var ally = r.ally || {};
+        _toast('联络同盟·「' + name + '」入盟·战力 +' + (ally.strength || 0) + '·钱粮 +' + (ally.finance || 0));
+      } else {
+        _toast('联络同盟失败：' + (r.reason || '未知') + (r.leakGain ? '·泄密 +' + Math.round(r.leakGain) : ''));
+      }
+      _refreshPanel();
+    });
+  }
+
+  function _uiSpreadPropaganda() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('反叛账本未就绪'); return; }
+    // 默认童谣·成本最低·泄密最小·适合低调筹备
+    var r = spreadPropaganda('tongyao', {});
+    if (r.ok) {
+      _toast('散布童谣·民心 +' + Math.round(r.supportGain) + '·耗银 ' + r.cost + '·弹劾风险 ' + Math.round(r.impeachmentRisk * 100) + '%');
+    } else {
+      _toast('散布舆论失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  function _uiLaunchCoup() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('反叛账本未就绪'); return; }
+    var r = launchCoup({});
+    if (r.ok) {
+      _toast('举事！' + (r.rebelLabel || '') + '·我方战力 ' + Math.round(r.playerForce || 0) + ' vs 朝廷 ' + Math.round(r.courtForce || 0));
+    } else {
+      _toast('举事失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
   }
 
   function _stageLabel(stage) {
@@ -1991,7 +2069,13 @@
     _runScenarioHooks: _runScenarioHooks, _isTrans: _isTrans,
     _getPlayerName: _getPlayerName, _getPlayerRole: _getPlayerRole, _getPlayerChar: _getPlayerChar,
     _findSovereign: _findSovereign, _stageLabel: _stageLabel, _allyTypeLabel: _allyTypeLabel,
-    _prepTypeLabel: _prepTypeLabel, _propLabel: _propLabel, _rebelLabel: _rebelLabel
+    _prepTypeLabel: _prepTypeLabel, _propLabel: _propLabel, _rebelLabel: _rebelLabel,
+
+    // UI 钩子（C2·面板动作按钮入口·onclick 调用）
+    _refreshPanel: _refreshPanel,
+    _uiContactAlly: _uiContactAlly,
+    _uiSpreadPropaganda: _uiSpreadPropaganda,
+    _uiLaunchCoup: _uiLaunchCoup
   };
 
   // 双路径挂载：浏览器走 window.TM.PlayerRebel；node smoke 走 module.exports

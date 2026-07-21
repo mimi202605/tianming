@@ -1074,8 +1074,76 @@
       h += '</div>';
     }
 
+    // 可选动作
+    h += '<div style="margin-top:0.5rem;border-top:1px dashed var(--ink-200);padding-top:0.4rem;">';
+    h += '<div style="font-size:0.85em;color:var(--txt-d);margin-bottom:0.3rem;">可选动作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerAnnualReview._uiTriggerReview()">触发本年考核</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerAnnualReview._uiOperateBribe()">行贿打点</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerAnnualReview._uiDismissPendingReview()">查阅考核通知</button>';
+    h += '</div>';
+    h += '</div>';
+
     h += '</div>';
     return h;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  §11.5 UI 钩子（2026-07-21·沿用 tm-player-marriage.js C2 模式）
+  //    showPrompt 收输入 → 调内部 API → toast 反馈 → refreshAll 刷面板
+  // ════════════════════════════════════════════════════════════
+
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  // 触发本年考核：由 GM.turn 推导年份（year = floor(turn/12)+1）·ctx = {turn}
+  function _uiTriggerReview() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('考核账本未就绪'); return; }
+    var t = _turn();
+    var year = Math.floor(t / 12) + 1;
+    var ctx = { turn: t };
+    var r = triggerReview(year, ctx);
+    if (r.ok) {
+      _toast('已触发 ' + year + ' 年考核·等级 ' + (r.grade ? r.grade.label : '?'));
+    } else {
+      _toast('触发失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  // 行贿打点：调 operateBribe({})（默认银钱 1000·boost +10·风险 0.30）
+  function _uiOperateBribe() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('考核账本未就绪'); return; }
+    var r = operateBribe({});
+    if (r.ok) {
+      _toast('已贿赂考官·银钱 ' + r.cost + (r.detected ? '·被发现！' : '·未被发现'));
+    } else {
+      _toast('贿赂失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  // 查阅考核通知：toast 概要 → dismissPendingReview 清空待查阅
+  function _uiDismissPendingReview() {
+    var s = _ensureState();
+    if (!s) { _toast('考核账本未就绪'); return; }
+    if (!s.pendingReview) {
+      _toast('无待查阅的考核通知');
+      return;
+    }
+    var rv = s.pendingReview;
+    _toast('已查阅·' + rv.year + ' 年·等级 ' + (rv.grade ? rv.grade.label : '?'));
+    dismissPendingReview();
+    _refreshPanel();
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1129,7 +1197,12 @@
     _dismissPlayer: _dismissPlayer,
     _pushNotification: _pushNotification,
     _pushOperation: _pushOperation,
-    _pushHistory: _pushHistory
+    _pushHistory: _pushHistory,
+
+    // UI 钩子
+    _uiTriggerReview: _uiTriggerReview,
+    _uiOperateBribe: _uiOperateBribe,
+    _uiDismissPendingReview: _uiDismissPendingReview
   };
 
   // 双路径挂载：浏览器走 window.TM.PlayerAnnualReview；node smoke 走 module.exports

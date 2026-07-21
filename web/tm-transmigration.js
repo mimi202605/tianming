@@ -780,8 +780,76 @@
         if (paths[i].kind === kind) { path = paths[i]; break; }
       }
       if (!path) return { ok: false, reason: 'unknown-kind' };
-      // 实际转线由 PlayerSpecialIdentity / PlayerRoleChange 处理·这里只返回路径定义
-      return { ok: true, path: path, payload: payload || {} };
+
+      // ═══ 2026-07-21 修·C1：triggerRoleChange 空壳根治 ═══
+      // 历史根因：原只返回路径定义对象 { ok:true, path }·不执行任何实际角色转换·
+      //   evolution 面板按钮点击 toast「已触发」但不切换角色·身份演进完全失效。
+      // 修复：按 role+kind 分发到 PlayerSpecialIdentity 对应转线函数·
+      //   最终统一调 _setPlayerRole(newRole) 真改 P.playerInfo.playerRole。
+      // 铁律：转线函数缺席时返回 { ok:false, reason:'no-handler' }·不抛异常不崩 UI。
+      payload = payload || {};
+      var _TM = (typeof window !== 'undefined' && window.TM) ? window.TM : null;
+      var _psi = (_TM && _TM.PlayerSpecialIdentity) ? _TM.PlayerSpecialIdentity : null;
+      var result = null;
+
+      if (_psi) {
+        // 按 role → kind 映射到 PlayerSpecialIdentity 转线函数
+        if (role === 'bandit' && kind === 'amnesty' && typeof _psi.banditLaunchRebellion === 'function') {
+          // bandit 招安走 banditLaunchRebellion（内部会按 opts 处理招安/反叛）
+          result = _psi.banditLaunchRebellion(payload);
+        } else if (role === 'commoner' && kind === 'study' && typeof _psi.commonerChoosePath === 'function') {
+          result = _psi.commonerChoosePath('study', payload);
+        } else if (role === 'commoner' && kind === 'trade' && typeof _psi.commonerChoosePath === 'function') {
+          result = _psi.commonerChoosePath('trade', payload);
+        } else if (role === 'commoner' && kind === 'enlist' && typeof _psi.commonerChoosePath === 'function') {
+          result = _psi.commonerChoosePath('enlist', payload);
+        } else if (role === 'eunuch' && kind === 'redbrush' && typeof _psi.eunuchInit === 'function') {
+          result = _psi.eunuchInit(payload);
+        } else if (role === 'maid' && kind === 'promote_to_fei' && typeof _psi.maidInit === 'function') {
+          result = _psi.maidInit(payload);
+        } else if (role === 'infant' && kind === 'grow_up' && typeof _psi.infantAutoGrow === 'function') {
+          result = _psi.infantAutoGrow(1, payload);
+        } else if (role === 'retired_official' && kind === 'comeback' && typeof _psi.retiredTriggerComeback === 'function') {
+          result = _psi.retiredTriggerComeback(payload);
+        } else if (role === 'monk' && kind === 'summon_to_court' && typeof _psi.monkPracticeService === 'function') {
+          result = _psi.monkPracticeService('summon', payload);
+        } else if (role === 'merchant' && kind === 'enlist' && typeof _psi.merchantCrossBorderTrade === 'function') {
+          // merchant 投军·暂复用 merchantCrossBorderTrade 的军需贸易路径
+          result = _psi.merchantCrossBorderTrade({ type: 'enlist' }, payload);
+        } else if (role === 'artisan' && kind === 'royal_artisan' && typeof _psi.artisanTributeToCourt === 'function') {
+          result = _psi.artisanTributeToCourt(payload);
+        } else if (role === 'general' && kind === 'rebel' && typeof _psi.banditLaunchRebellion === 'function') {
+          // general 举旗反叛·复用 bandit 反叛逻辑
+          result = _psi.banditLaunchRebellion(payload);
+        } else {
+          // 未映射的 kind（retire/dismissed/usurp/return_power 等）·
+          // 这些多由君主 AI 或特殊事件触发·evolution 面板按钮点击时走 _setPlayerRole 直接切
+          if (_psi && typeof _psi._setPlayerRole === 'function') {
+            _psi._setPlayerRole(path.nextRole, 'evolution:' + kind);
+            result = { ok: true, newRole: path.nextRole };
+          } else {
+            // PlayerSpecialIdentity 缺席·直接改 P.playerInfo.playerRole
+            if (P && P.playerInfo) {
+              P.playerInfo.playerRole = path.nextRole; // arch-ok
+              result = { ok: true, newRole: path.nextRole };
+            }
+          }
+        }
+      } else {
+        // PlayerSpecialIdentity 缺席·直接改 P.playerInfo.playerRole
+        if (P && P.playerInfo) {
+          P.playerInfo.playerRole = path.nextRole; // arch-ok
+          result = { ok: true, newRole: path.nextRole };
+        }
+      }
+
+      // 转线后刷新 UI
+      try {
+        if (typeof refreshPlayerUI === 'function') refreshPlayerUI();
+        else if (_TM && _TM.PlayerUI && typeof _TM.PlayerUI.render === 'function') _TM.PlayerUI.render();
+      } catch (_) {}
+
+      return { ok: true, path: path, payload: payload, result: result };
     } catch (e) {
       return { ok: false, reason: 'exception', error: String(e) };
     }

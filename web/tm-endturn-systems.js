@@ -585,6 +585,69 @@ async function _endTurn_updateSystems(timeRatio, zhengwen) {
     (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'endTurn] 世界缓存清理失败:') : console.error('[endTurn] 世界缓存清理失败:', e);
   }
   _markSystemStage('cleanup', '清理回合缓存', _cleanupTimingStart);
+
+  // ═══ 7. 穿越模式玩家系统 tick（2026-07-21 修·C8 根治）═══
+  // 历史根因：endturn systems step 完全不调用玩家系统 tick → 商队不动/考核不触发/
+  //   特殊身份事件不发生/移动不推进/研发不进展/私军不训练 → 穿越模式被动推进全断。
+  // 修复：穿越模式下逐系统调 tick，每个独立 try/catch 失败不阻断过回合。
+  // 铁律：只在穿越模式（transmigrationMode=true && playerRole!=='emperor'）下跑，
+  //   皇帝模式不受影响（皇帝模式无 GM._playerXxx 玩家状态）。
+  var _playerTickStart = Date.now();
+  try {
+    var _isTransMode = (typeof P !== 'undefined' && P && P.playerInfo &&
+                       P.playerInfo.transmigrationMode === true &&
+                       P.playerInfo.playerRole && P.playerInfo.playerRole !== 'emperor');
+    if (_isTransMode && typeof window !== 'undefined' && window.TM) {
+      var _TM = window.TM;
+      var _tickCtx = { turn: (typeof GM !== 'undefined' && GM) ? GM.turn : 0 };
+
+      // 7.1 跑商·商队推进（每回合推进所有活跃商队一格）
+      if (_TM.PlayerTrade && typeof _TM.PlayerTrade.advanceCaravan === 'function') {
+        try {
+          var _caravans = (GM._playerTrade && GM._playerTrade.caravans) || [];
+          for (var _ci = 0; _ci < _caravans.length; _ci++) {
+            if (_caravans[_ci] && _caravans[_ci].status === 'traveling') {
+              try { _TM.PlayerTrade.advanceCaravan(_caravans[_ci].id); } catch(_) {}
+            }
+          }
+        } catch(_e) { try { console.warn('[endTurn.systems·PlayerTrade.tick]', _e); } catch(_){} }
+      }
+
+      // 7.2 科技·研发进度推进
+      if (_TM.PlayerTech && typeof _TM.PlayerTech.tickResearch === 'function') {
+        try { _TM.PlayerTech.tickResearch(_tickCtx); } catch(_e) { try { console.warn('[endTurn.systems·PlayerTech.tick]', _e); } catch(_){} }
+      }
+
+      // 7.3 移动·旅行推进（每回合推进玩家行程）
+      if (_TM.PlayerMovement && typeof _TM.PlayerMovement.advanceTravel === 'function') {
+        try { _TM.PlayerMovement.advanceTravel(); } catch(_e) { try { console.warn('[endTurn.systems·PlayerMovement.tick]', _e); } catch(_){} }
+      }
+
+      // 7.4 私军·训练度推进
+      if (_TM.PlayerPrivateArmy && typeof _TM.PlayerPrivateArmy.tick === 'function') {
+        try { _TM.PlayerPrivateArmy.tick(_tickCtx); } catch(_e) { try { console.warn('[endTurn.systems·PlayerPrivateArmy.tick]', _e); } catch(_){} }
+      }
+
+      // 7.5 特殊身份·事件检查（eunuch/maid/bandit/monk/infant/retired/merchant/artisan 等）
+      if (_TM.PlayerSpecialIdentity && typeof _TM.PlayerSpecialIdentity.checkEvents === 'function') {
+        try { _TM.PlayerSpecialIdentity.checkEvents(_tickCtx); } catch(_e) { try { console.warn('[endTurn.systems·PlayerSpecialIdentity.tick]', _e); } catch(_){} }
+      }
+
+      // 7.6 年终考核·每 12 回合触发一次（GM.turn % 12 === 0）
+      if (_TM.PlayerAnnualReview && typeof _TM.PlayerAnnualReview.triggerReview === 'function') {
+        try {
+          var _turn = (typeof GM !== 'undefined' && GM) ? GM.turn : 0;
+          if (_turn > 0 && _turn % 12 === 0) {
+            _TM.PlayerAnnualReview.triggerReview(Math.floor(_turn / 12), _tickCtx);
+          }
+        } catch(_e) { try { console.warn('[endTurn.systems·PlayerAnnualReview.tick]', _e); } catch(_){} }
+      }
+    }
+  } catch(_playerTickE) {
+    try { console.warn('[endTurn.systems·player-tick]', _playerTickE); } catch(_){}
+  }
+  _markSystemStage('playerTick', '穿越模式玩家系统 tick', _playerTickStart);
+
   _markSystemStage('systemsTotal', '系统结算总耗时', _systemsWholeStart);
   try { GM._lastEndturnSystemsTimings = _systemsStageTimings; } catch(_) {}
 

@@ -262,6 +262,7 @@
   var PANEL_METHOD_MAP = {
     PlayerFamily:      'renderFamilyPanel',
     PlayerMarriage:    'renderMarriagePanel',
+    PlayerMemorial:    'renderMemorialPanel',
     PlayerTech:        'renderTechPanel',
     PlayerMovement:    'renderMovementPanel',
     PlayerRebel:       'renderPanel',      // 戎机 tab 反叛账本
@@ -348,10 +349,6 @@
     PlayerAdversity: {
       label: '变故',
       hint: '变故系统正在筹备中·当前版本可暂且专注日常事务。后续版本将接入天灾、人祸、家变、病厄等突发变故。'
-    },
-    PlayerMemorial: {
-      label: '上奏',
-      hint: '上奏系统正在筹备中·当前版本可通过「朝议」槽参与朝政。后续版本将接入本章上奏、密奏、请旨等。'
     },
     PlayerOffice: {
       label: '官职',

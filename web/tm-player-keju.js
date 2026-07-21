@@ -1349,6 +1349,15 @@
     });
     h += '</div>';
 
+    // 可选动作
+    h += '<div class="pk-section"><div class="pk-section-title">可 选 动 作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerKeju._uiApplyForExam()">报名应试</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerKeju._uiSeekMaster()">拜师求学</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerKeju._uiAnswerQuestion()">应试答题</button>';
+    h += '</div>';
+    h += '</div>';
+
     h += '</div>';
 
     // 内嵌样式（与 tm-player-trade.js / tm-player-economy.js 同风格·暗金主调）
@@ -1385,6 +1394,80 @@
       promoted: '已授官'
     };
     return map[status] || status;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  §9.5 UI 钩子（2026-07-21·沿用 tm-player-marriage.js C2 模式）
+  //    showPrompt 收输入 → 调内部 API → toast 反馈 → refreshAll 刷面板
+  // ════════════════════════════════════════════════════════════
+
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  // 报名应试：默认从童试起步·调 applyForExam({})（剧本 hook 报名时机）
+  function _uiApplyForExam() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('账本未就绪'); return; }
+    var r = applyForExam({});
+    if (r.ok) {
+      _toast('已报名应' + _stageToLevel(r.stage) + '·报名费 ' + r.fee + ' 两');
+    } else {
+      _toast('报名失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  // 拜师求学：showPrompt 收师父名 → 调 seekMaster（束脩默认 100 两·门类自动推导）
+  function _uiSeekMaster() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('账本未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _addEB('科举', 'showPrompt 缺席·请在剧本面板中选择师父 NPC');
+      return;
+    }
+    showPrompt('拜师对象姓名（束脩 100 两·门类自动推导）：', '', function (name) {
+      if (!name) return;
+      var r = seekMaster(name, {});
+      if (r.ok) {
+        _toast('已拜「' + name + '」为师·门类 ' + r.masterTypeLabel);
+      } else {
+        _toast('拜师失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
+
+  // 应试答题：showPrompt 收答卷内容 → 调 answerQuestion
+  //   守卫：状态须为 registered/answering·否则 toast
+  function _uiAnswerQuestion() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('账本未就绪'); return; }
+    if (s.status !== EXAM_STATUS.REGISTERED && s.status !== EXAM_STATUS.ANSWERING) {
+      _toast('当前状态不可作答·须先报名');
+      return;
+    }
+    if (typeof showPrompt !== 'function') {
+      _addEB('科举', 'showPrompt 缺席·请在剧本面板中作答');
+      return;
+    }
+    showPrompt('答卷内容（经义/策论/诗赋·至少 30 字）：', '', function (answer) {
+      if (!answer) return;
+      var r = answerQuestion({ answer: answer });
+      if (r.ok) {
+        _toast('已交卷·' + r.typeLabel + '·得分 ' + r.score + '·' + (r.passed ? '通过' : '未通过'));
+      } else {
+        _toast('交卷失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1489,7 +1572,12 @@
     _kjApplyAllocations: _kjApplyAllocations,
     _kjpInitSchoolNetwork: _kjpInitSchoolNetwork,
     _kjpGetActiveAcademies: _kjpGetActiveAcademies,
-    _kjpSpawnShanzhang: _kjpSpawnShanzhang
+    _kjpSpawnShanzhang: _kjpSpawnShanzhang,
+
+    // UI 钩子
+    _uiApplyForExam: _uiApplyForExam,
+    _uiSeekMaster: _uiSeekMaster,
+    _uiAnswerQuestion: _uiAnswerQuestion
   };
 
   TM.PlayerKeju = ns;

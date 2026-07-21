@@ -72,14 +72,20 @@ ROLES.forEach(function (role) {
   ok(role + ' 路径为数组', Array.isArray(paths));
 });
 
-// ── triggerRoleChange 查表语义断言 ─────────────────────────
+// ── triggerRoleChange 查表 + 执行语义断言 ─────────────────
+// 2026-07-21 修·C1：triggerRoleChange 现在会真正执行角色转换（不再空壳）·
+//   每次 triggerRoleChange 调用会改变 P.playerInfo.playerRole·故每次调用前须重置 role。
 sandbox.P.playerInfo = { playerRole: 'commoner' };
 
 var r1 = T.triggerRoleChange('study');
 ok('triggerRoleChange(study) 返回 ok', r1.ok === true);
-ok('triggerRoleChange(study).path.nextRole === minister', r1.path.nextRole === 'minister');
-ok('triggerRoleChange(study).path.label === 读书考科举', r1.path.label === '读书考科举');
+ok('triggerRoleChange(study).path.nextRole === minister', r1.path && r1.path.nextRole === 'minister');
+ok('triggerRoleChange(study).path.label === 读书考科举', r1.path && r1.path.label === '读书考科举');
+ok('triggerRoleChange(study) 真正切换了 playerRole', sandbox.P.playerInfo.playerRole === 'minister',
+   'got: ' + sandbox.P.playerInfo.playerRole);
 
+// 重置·测 unknown kind
+sandbox.P.playerInfo = { playerRole: 'commoner' };
 var r2 = T.triggerRoleChange('unknown_kind');
 ok('triggerRoleChange(unknown) 返回 not ok', r2.ok === false);
 ok('triggerRoleChange(unknown).reason === unknown-kind', r2.reason === 'unknown-kind');
@@ -94,15 +100,20 @@ sandbox.P.playerInfo = { playerRole: 'commoner' };
 var r4 = T.triggerRoleChange('study', { note: 'test' });
 ok('triggerRoleChange payload 透传', r4.ok && r4.payload && r4.payload.note === 'test');
 
-// ── 特定 role 路径断言 ─────────────────────────────────────
+// ── 特定 role 路径断言（每次调用前重置 role·因 trigger 会改 role）──
 sandbox.P.playerInfo = { playerRole: 'minister' };
 ok('minister 有 retire 路径', T.triggerRoleChange('retire').ok === true);
+
+sandbox.P.playerInfo = { playerRole: 'minister' };
 ok('minister 有 dismissed 路径', T.triggerRoleChange('dismissed').ok === true);
+
+sandbox.P.playerInfo = { playerRole: 'minister' };
 ok('minister 无 rebel 路径', T.triggerRoleChange('rebel').ok === false);
 
 sandbox.P.playerInfo = { playerRole: 'general' };
-ok('general 有 rebel 路径', T.triggerRoleChange('rebel').ok === true);
-ok('general rebel nextRole === emperor', T.triggerRoleChange('rebel').path.nextRole === 'emperor');
+var rRebel = T.triggerRoleChange('rebel');
+ok('general 有 rebel 路径', rRebel.ok === true);
+ok('general rebel nextRole === emperor', rRebel.path && rRebel.path.nextRole === 'emperor');
 
 // ── 总结 ───────────────────────────────────────────────────
 console.log('');

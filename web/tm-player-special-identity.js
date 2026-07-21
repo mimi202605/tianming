@@ -25,6 +25,7 @@
 //   merchantInit, merchantCrossBorderTrade, merchantTriggerMagnate, merchantBestowCourtMerchant,
 //   artisanInit, artisanTributeToCourt, artisanTriggerRoyalArtisan, artisanPetitionToPromulgate,
 //   renderIdentityPanel,
+//   _uiAction, _refreshPanel,
 //   _ensureState, _getState, _defaultState, _callLLM, _spendPlayerCash, _addPlayerCash,
 //   _interactSoft, _kejuApplySoft, _tradeDispatchSoft, _techStartSoft, _techPetitionSoft,
 //   _rebelLaunchSoft, _movementTravelSoft, _familyMarrySoft, _familyBirthSoft,
@@ -1350,17 +1351,18 @@
     }
     h += '</div>';
 
-    // 动作集
+    // 动作集（C2 修复·2026-07：从 <ul><li> 纯文本罗列改为可点击按钮）
     var route = getRoute(role);
     if (route.ok && route.actions && route.actions.length) {
       h += '<div class="psi-section"><div class="psi-section-title" style="font-weight:bold;margin-bottom:0.2rem;">可 用 动 作</div>';
-      h += '<ul class="psi-actions" style="margin:0;padding:0 0 0 1rem;">';
+      h += '<div class="player-block-actions" style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
       route.actions.forEach(function (a) {
-        h += '<li><span class="psi-act-key">' + _escHtml(a.key) + '</span> · <span class="psi-act-label">' + _escHtml(a.label) + '</span>';
-        if (a.hint) h += ' <span class="psi-act-hint" style="color:var(--txt-d,#888);">（' + _escHtml(a.hint) + '）</span>';
-        h += '</li>';
+        var safeLabel = _escHtml(a.label);
+        var jsKey = String(a.key).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        var titleAttr = a.hint ? (' title="' + _escHtml(a.hint) + '"') : '';
+        h += '<button class="bt bs"' + titleAttr + ' onclick="TM.PlayerSpecialIdentity._uiAction(\'' + jsKey + '\')">' + safeLabel + '</button>';
       });
-      h += '</ul></div>';
+      h += '</div></div>';
     }
 
     // 近事
@@ -1444,6 +1446,133 @@
     return String(s).replace(/[&<>"']/g, function (c) {
       return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;';
     });
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  §15B 面板交互·动作按钮派发器（C2 修复·2026-07）
+  // ------------------------------------------------------------
+  // 历史根因：renderIdentityPanel 仅以 <ul><li> 罗列 route.actions·
+  //   玩家可见动作名却无法触发·9 类特殊身份路线面板完全不可玩。
+  //   修复：将动作列表渲染为按钮·统一经 _uiAction 派发到对应 API·
+  //   需要额外参数的动作（如 infant_grow 的 yearsDelta·artisan_petition 的 techId）
+  //   用 showPrompt 收集；参数已嵌入 action key 的（如 eunuch_advance:attend）
+  //   由 _uiAction 拆 ':' 后直接传入 fn。
+  // ════════════════════════════════════════════════════════════
+
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  // (baseAction, promptFor?) → 派发闭包
+  //   baseAction 与 _buildActionsForIdentity 推入的 a.key 中 ':' 之前部分对齐
+  //   嵌入参数（如 eunuch_advance:attend 的 attend）由 _uiAction 拆出后传入 fn
+  //   promptFor 标记需经 showPrompt 收集的额外参数
+  var _ACTION_MAP = {
+    // 太监路线
+    'eunuch_init':     { fn: function () { return eunuchInit({}); } },
+    'eunuch_advance':  { fn: function (p) { return eunuchAdvanceRank(p, {}); } },
+    'eunuch_classify': { fn: function () { return eunuchClassifyFaction(); } },
+    'eunuch_qingliu':  { fn: function () { return eunuchTriggerQingliuBackfire({ force: true }); } },
+    // 宫女路线
+    'maid_init':       { fn: function () { return maidInit({}); } },
+    'maid_promote':    { fn: function (p) { return maidPromote(p, {}); } },
+    'maid_intrigue':   { fn: function () { return maidTriggerCourtIntrigue({ force: true }); } },
+    // 布衣路线
+    'commoner_init':   { fn: function () { return commonerInit({}); } },
+    'commoner_choose': { fn: function (p) { return commonerChoosePath(p, {}); } },
+    'commoner_baiyi':  { fn: function () { return commonerTriggerBaiyiQingxiang({ force: true }); } },
+    // 盗贼路线
+    'bandit_init':     { fn: function () { return banditInit({}); } },
+    'bandit_occupy':   { fn: function () { return banditOccupyMountain({}); } },
+    'bandit_amnesty':  { fn: function () { return banditAcceptAmnesty({}); } },
+    'bandit_rebel':    { fn: function () { return banditLaunchRebellion({}); } },
+    // 婴儿路线
+    'infant_init':        { fn: function () { return infantInit({}); } },
+    'infant_grow':        { fn: function (p) { return infantAutoGrow(p, {}); }, promptFor: 'yearsDelta' },
+    'infant_prodigy':     { fn: function () { return infantTriggerProdigyOrMischievous('prodigy', { force: true }); } },
+    'infant_mischievous': { fn: function () { return infantTriggerProdigyOrMischievous('mischievous', { force: true }); } },
+    // 退休官员路线
+    'retired_init':     { fn: function () { return retiredInit({}); } },
+    'retired_comeback': { fn: function () { return retiredTriggerComeback({ force: true }); } },
+    'retired_peaceful': { fn: function () { return retiredTriggerPeacefulAging({}); } },
+    // 方外路线
+    'monk_init':    { fn: function () { return monkInit({}); } },
+    'monk_service': { fn: function (p) { return monkPracticeService(p, {}); } },
+    'monk_summon':  { fn: function () { return monkTriggerSummonToCourt({ force: true }); } },
+    // 商贾扩展路线
+    'merchant_init':         { fn: function () { return merchantInit({}); } },
+    'merchant_cross_border': { fn: function (p) { return merchantCrossBorderTrade(p || null, {}); }, promptFor: 'caravanSpec' },
+    'merchant_magnate':      { fn: function () { return merchantTriggerMagnate({ force: true }); } },
+    'merchant_bestow':       { fn: function () { return merchantBestowCourtMerchant({ force: true }); } },
+    // 匠人扩展路线
+    'artisan_init':     { fn: function () { return artisanInit({}); } },
+    'artisan_tribute':  { fn: function () { return artisanTributeToCourt({}); } },
+    'artisan_royal':    { fn: function () { return artisanTriggerRoyalArtisan({ force: true }); } },
+    'artisan_petition': { fn: function (p) { return artisanPetitionToPromulgate(p, {}); }, promptFor: 'techId' }
+  };
+
+  function _promptLabelFor(promptFor) {
+    if (promptFor === 'yearsDelta') return '成长年数（如 0.5 / 1 / 2）：';
+    if (promptFor === 'caravanSpec') return '商队标识（可留空·走默认跨国贸易）：';
+    if (promptFor === 'techId') return '请输入要推广的技艺 ID：';
+    return '请输入「' + promptFor + '」：';
+  }
+
+  function _coercePromptParam(promptFor, val) {
+    if (promptFor === 'yearsDelta') {
+      var n = parseFloat(val);
+      return isNaN(n) ? 0.5 : n;
+    }
+    // caravanSpec / techId — 空串视为 null
+    if (val === '') return null;
+    return val;
+  }
+
+  function _toastActionResult(actionKey, r) {
+    if (!r) return;
+    if (r.ok) {
+      _toast('动作「' + actionKey + '」执行成功');
+    } else {
+      _toast('动作「' + actionKey + '」失败：' + (r.reason || '未知'));
+    }
+  }
+
+  function _uiAction(actionKey) {
+    if (!actionKey) return;
+    var keyStr = String(actionKey);
+    var parts = keyStr.split(':');
+    var base = parts[0];
+    var embeddedParam = parts.length > 1 ? parts.slice(1).join(':') : null;
+    var entry = _ACTION_MAP[base];
+    if (!entry) {
+      _addEBSoft('身份', '未知动作：' + keyStr);
+      return;
+    }
+    if (entry.promptFor) {
+      if (typeof showPrompt !== 'function') {
+        _addEBSoft('身份', 'showPrompt 缺席·请在剧本面板中提供「' + entry.promptFor + '」');
+        return;
+      }
+      showPrompt(_promptLabelFor(entry.promptFor), '', function (val) {
+        if (val == null) return; // showPrompt 取消
+        // caravanSpec 允许空串（走默认跨国贸易）；其余空串视为取消
+        if (val === '' && entry.promptFor !== 'caravanSpec') return;
+        var converted = _coercePromptParam(entry.promptFor, val);
+        var r;
+        try { r = entry.fn(converted); } catch (e) { r = { ok: false, reason: '调用异常：' + (e && e.message) }; }
+        _toastActionResult(keyStr, r);
+        _refreshPanel();
+      });
+      return;
+    }
+    var r2;
+    try { r2 = entry.fn(embeddedParam); } catch (e) { r2 = { ok: false, reason: '调用异常：' + (e && e.message) }; }
+    _toastActionResult(keyStr, r2);
+    _refreshPanel();
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1579,6 +1708,8 @@
 
     // 26C.13 面板
     renderIdentityPanel: renderIdentityPanel,
+    _uiAction: _uiAction,
+    _refreshPanel: _refreshPanel,
 
     // 内部函数暴露（smoke/调试·非游戏调用入口）
     _ensureState: _ensureState,

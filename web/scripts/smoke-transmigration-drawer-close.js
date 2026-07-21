@@ -146,10 +146,14 @@ var adapterSrc = fs.readFileSync(path.join(WEB_DIR, 'tm-player-systems-adapter.j
      'PANEL_METHOD_MAP 须登记 ' + k + '·否则退化到 getState JSON dump');
 });
 
-// 场景 10b: FRIENDLY_FALLBACK 含 PlayerMemorial / PlayerOffice
-ok('FRIENDLY_FALLBACK 含 PlayerMemorial（友好占位）',
-   /PlayerMemorial:\s*\{[\s\S]*?hint:/.test(adapterSrc),
-   '未实现的 PlayerMemorial 须走友好占位·不显示「待接入」');
+// 场景 10b: PlayerMemorial 已实现 → 不在 FRIENDLY_FALLBACK·改走 PANEL_METHOD_MAP
+ok('FRIENDLY_FALLBACK 不含 PlayerMemorial（已实现·不走友好占位）',
+   !/PlayerMemorial:\s*\{[\s\S]*?hint:/.test(adapterSrc),
+   'PlayerMemorial 已有真实实现·不应再走友好占位');
+
+ok('PANEL_METHOD_MAP 含 PlayerMemorial: \'renderMemorialPanel\'',
+   /PlayerMemorial:\s*'renderMemorialPanel'/.test(adapterSrc),
+   'PlayerMemorial 须登记 renderMemorialPanel·否则退化到 getState JSON dump');
 
 ok('FRIENDLY_FALLBACK 含 PlayerOffice（友好占位）',
    /PlayerOffice:\s*\{[\s\S]*?hint:/.test(adapterSrc),

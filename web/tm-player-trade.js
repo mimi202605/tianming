@@ -1421,6 +1421,15 @@
     }
     h += '</div>';
 
+    // 可选动作
+    h += '<div class="pt-section"><div class="pt-section-title">可 选 动 作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerTrade._uiCreateCaravan()">编组商队</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerTrade._uiAdvanceCaravan()">推进商队</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerTrade._uiSettleArrival()">结算抵达</button>';
+    h += '</div>';
+    h += '</div>';
+
     h += '</div>';
 
     // 内嵌样式（与 tm-player-economy.js / tm-player-movement.js 同风格·暗金主调）
@@ -1464,6 +1473,145 @@
       settled: '已结算', cancelled: '已取消', lost: '全军覆没'
     };
     return map[status] || status;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  §12.5 UI 钩子（2026-07-21·沿用 tm-player-marriage.js C2 模式）
+  //    showPrompt 收输入 → 调内部 API → toast 反馈 → refreshAll 刷面板
+  // ════════════════════════════════════════════════════════════
+
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  // 编组商队：showPrompt 收「起点|终点|货物名|数量|护卫|车数」→ 调 createCaravan
+  function _uiCreateCaravan() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('商队账本未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _addEB('跑商', 'showPrompt 缺席·请在剧本面板中编组商队');
+      return;
+    }
+    showPrompt('编组商队（起点|终点|货物名|数量|护卫|车数）：', '洛阳|长安|silk|5|5|1', function (input) {
+      if (!input) return;
+      var parts = String(input).split('|').map(function (x) { return (x || '').trim(); });
+      if (parts.length < 4 || !parts[0] || !parts[1] || !parts[2]) {
+        _toast('格式错误·须至少「起点|终点|货物名|数量」');
+        return;
+      }
+      var from = parts[0], to = parts[1], goodsName = parts[2];
+      var qty = parseInt(parts[3], 10) || 5;
+      var guards = parts[4] ? (parseInt(parts[4], 10) || 0) : 5;
+      var carts = parts[5] ? (parseInt(parts[5], 10) || 1) : 1;
+      var r = createCaravan({
+        from: from, to: to,
+        goods: [{ name: goodsName, qty: qty }],
+        guards: guards, carts: carts,
+        permit: 'local'
+      });
+      if (r.ok) {
+        _toast('商队已组建·' + from + '→' + to + '·共费 ' + r.cost.total + ' 两');
+      } else {
+        _toast('组建失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
+
+  // 推进商队：若仅一个派遣中商队·直调；否则 showPrompt 选序号
+  function _uiAdvanceCaravan() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('商队账本未就绪'); return; }
+    var dispatched = (s.caravans || []).filter(function (c) {
+      return c && c.status === CARAVAN_STATUS.DISPATCHED;
+    });
+    if (dispatched.length === 0) {
+      _toast('无派遣中的商队可推进');
+      return;
+    }
+    if (dispatched.length === 1) {
+      _doAdvance(dispatched[0].id);
+      return;
+    }
+    if (typeof showPrompt !== 'function') {
+      _addEB('跑商', 'showPrompt 缺席·有多个派遣中商队·须指定');
+      return;
+    }
+    var list = dispatched.map(function (c, i) {
+      return (i + 1) + '.' + c.route.from + '→' + c.route.to + '(' + (c.progress || 0) + '/' + (c.arrivalTurns || 0) + ')';
+    }).join(' ');
+    showPrompt('多个派遣中商队·输入序号推进：' + list, '1', function (idxStr) {
+      var idx = parseInt(idxStr, 10) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= dispatched.length) {
+        _toast('序号无效');
+        return;
+      }
+      _doAdvance(dispatched[idx].id);
+    });
+  }
+
+  function _doAdvance(caravanId) {
+    var r = advanceCaravan(caravanId);
+    if (r.ok) {
+      if (r.arrived) {
+        _toast('商队已抵达·净盈亏 ' + (r.settlement ? r.settlement.actualProfit : '?'));
+      } else {
+        _toast('推进 1 回合·进度 ' + r.progress + '/' + r.totalTurns +
+               (r.event ? '·路上遇' + r.event.title : ''));
+      }
+    } else {
+      _toast('推进失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  // 结算抵达：若仅一个已到达商队·直调；否则 showPrompt 选序号
+  function _uiSettleArrival() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('商队账本未就绪'); return; }
+    var arrived = (s.caravans || []).filter(function (c) {
+      return c && c.status === CARAVAN_STATUS.ARRIVED;
+    });
+    if (arrived.length === 0) {
+      _toast('无已抵达待结算的商队');
+      return;
+    }
+    if (arrived.length === 1) {
+      _doSettle(arrived[0].id);
+      return;
+    }
+    if (typeof showPrompt !== 'function') {
+      _addEB('跑商', 'showPrompt 缺席·有多个待结算商队·须指定');
+      return;
+    }
+    var list = arrived.map(function (c, i) {
+      return (i + 1) + '.' + c.route.from + '→' + c.route.to;
+    }).join(' ');
+    showPrompt('多个待结算商队·输入序号结算：' + list, '1', function (idxStr) {
+      var idx = parseInt(idxStr, 10) - 1;
+      if (isNaN(idx) || idx < 0 || idx >= arrived.length) {
+        _toast('序号无效');
+        return;
+      }
+      _doSettle(arrived[idx].id);
+    });
+  }
+
+  function _doSettle(caravanId) {
+    var r = settleArrival(caravanId);
+    if (r.ok) {
+      _toast('已结算·净盈亏 ' + r.actualProfit + '·银钱 ' + r.cash);
+    } else {
+      _toast('结算失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1518,7 +1666,12 @@
     _applyMagnateImpact: _applyMagnateImpact,
     _findProvince: _findProvince,
     _applyReputationGain: _applyReputationGain,
-    _isTransmigration: _isTransmigration
+    _isTransmigration: _isTransmigration,
+
+    // UI 钩子
+    _uiCreateCaravan: _uiCreateCaravan,
+    _uiAdvanceCaravan: _uiAdvanceCaravan,
+    _uiSettleArrival: _uiSettleArrival
   };
 
   TM.PlayerTrade = ns;

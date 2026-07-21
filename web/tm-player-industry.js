@@ -1442,6 +1442,16 @@
       });
       h += '</div>';
     }
+
+    // 可选产业动作
+    h += '<div class="pi-section"><div class="pi-section-title">操 作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerIndustry._uiAdvanceConstruction()">推进施工</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerIndustry._uiOperateMonthly()">月度经营</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerIndustry._uiUpgrade()">升级产业</button>';
+    h += '</div>';
+    h += '</div>';
+
     h += '</div>';
     return h;
   }
@@ -1454,6 +1464,93 @@
     if (status === STATUS.CONFISCATED) return '抄没';
     if (status === STATUS.ABANDONED) return '废弃';
     return status || '—';
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  §10.1 UI 钩子（2026-07-21·仿 PlayerMarriage C2 模式·让面板可玩）
+  //    历史根因：renderPanel 只显示状态·玩家无法手动推进施工/经营/升级。
+  //    修复：调内部 API → toast 反馈 → refreshAll 刷面板（升级用 showPrompt 收参数）。
+  // ════════════════════════════════════════════════════════════
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  // 推进施工·对所有施工中/待开工且募工满的产业各推进 1 月
+  function _uiAdvanceConstruction() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('产业账本未就绪'); return; }
+    var advanced = 0, completed = 0, failed = 0;
+    for (var i = 0; i < s.industries.length; i++) {
+      var ind = s.industries[i];
+      if (!ind) continue;
+      if (ind.status !== STATUS.CONSTRUCTING && ind.status !== STATUS.PLANNING) continue;
+      var r = advanceConstruction(ind.id, { months: 1 });
+      if (r.ok) {
+        advanced++;
+        if (r.completed) completed++;
+      } else {
+        failed++;
+      }
+    }
+    if (advanced === 0) {
+      _toast('无可推进施工的产业（须先募工满·进入施工态）');
+    } else {
+      _toast('推进施工·' + advanced + ' 座前进 1 月' + (completed ? '·完工 ' + completed + ' 座' : '') + (failed ? '·受阻 ' + failed + ' 座' : ''));
+    }
+    _refreshPanel();
+  }
+
+  // 月度经营·对所有投产产业结算产出
+  function _uiOperateMonthly() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var r = operateMonthly({});
+    if (r.ok) {
+      _toast('月度经营·入银 ' + (r.totalCash || 0) + ' 两·产货 ' + (r.totalGoods || 0) + ' 担·共 ' + ((r.operated && r.operated.length) || 0) + ' 座');
+    } else {
+      _toast('经营失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  // 升级产业·showPrompt 收「类型名或ID:方式」·默认扩建
+  function _uiUpgrade() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('产业账本未就绪'); return; }
+    if (!s.industries || !s.industries.length) { _toast('尚无产业可升·先购地建产'); return; }
+    if (typeof showPrompt !== 'function') {
+      _toast('showPrompt 缺席·请直接调 TM.PlayerIndustry.upgrade(id, kind)');
+      return;
+    }
+    showPrompt('产业类型名或ID:升级方式（expand 扩建 / improve 改良 / specialize 特化·默认 expand）：', '', function (input) {
+      if (!input) return;
+      var parts = input.split(':');
+      var key = (parts[0] || '').trim();
+      var kind = (parts[1] || 'expand').trim();
+      if (!key) { _toast('未指定产业'); return; }
+      var s2 = _ensureState();
+      if (!s2) { _refreshPanel(); return; }
+      // 先按 ID 查·再按 typeLabel 查
+      var ind = _findIndustry(s2, key);
+      if (!ind) {
+        for (var i = 0; i < s2.industries.length; i++) {
+          if (s2.industries[i] && s2.industries[i].typeLabel === key) { ind = s2.industries[i]; break; }
+        }
+      }
+      if (!ind) { _toast('未找到产业：' + key); _refreshPanel(); return; }
+      var r = upgrade(ind.id, kind, {});
+      if (r.ok) {
+        _toast((ind.typeLabel || ind.type) + ' ' + r.kindLabel + '·等级 ' + r.prevLevel + '→' + r.newLevel + '·耗银 ' + r.cost + ' 两');
+      } else {
+        _toast('升级失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1593,6 +1690,11 @@
 
     // 22.11 面板
     renderPanel: renderPanel,
+
+    // UI 钩子
+    _uiAdvanceConstruction: _uiAdvanceConstruction,
+    _uiOperateMonthly: _uiOperateMonthly,
+    _uiUpgrade: _uiUpgrade,
 
     // 月度 tick
     tick: tick,
