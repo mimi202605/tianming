@@ -19,10 +19,11 @@
 - 遇 GBK→UTF-8 乱码：**禁 ASCII-safe 替换**，从 1.1.6 备份做参考还原。
 - 对齐 schema 以**运行时渲染器**（`_peRender*` / `_render*Panel`）为权威，preview-*.html 只是 mockup。
 
-## 协作·推送（双人短命分支 + PR · 详见 CONTRIBUTING.md）
-- 主干 = 受保护的 `main`，**远端为唯一真相源**。开工先更新 main，再建一事一分支。
-- 一把刀验证全绿（`lint-arch-all` 8/8 + 定向 smoke）后推分支、开 PR；等 `guards` + `mobile-release-contracts` 全绿和对方 1 次 approval 后合并。
-- 禁：直接推 main、force-push、守卫红着合、半成品占坑式提交、`--no-verify` 绕 hook。
+## 协作·推送（详见 CONTRIBUTING.md）
+- 主干 = `main`，**远端为唯一真相源**。开工先更新 main，在隔离 worktree 上一事一分支地做。
+- **仓主侧（本机）验证全绿后直推 main**（owner 2026-07-21 拍板：PR 逐个批红太繁·`gh pr merge` 在助手环境被分类器拦死）。直推前置门槛不降：`lint-arch-all` 8/8 + 全量 ci-smokes + 基线对齐；高风险大改仍可自愿走 PR 留一道预审。
+- 协作者仍走短命分支 + PR：等 `guards` + `mobile-release-contracts` 全绿和 approval 后合并。
+- 禁：force-push、守卫红着合、半成品占坑式提交、`--no-verify` 绕 hook。
 - 新协作者只使用自己的 GitHub 账号和 `Write` 权限；禁止共享仓主 PAT/SSH/API key，生产发布凭据仍由仓主持有。
 - 磁铁文件/跨领地改动先认领；PR 合并后删短命分支。
 - 磁铁文件（`arch-baselines/*.json`）rebase 冲突时**不手合**，取一侧后重跑对应 lint `--update` 重生成。
