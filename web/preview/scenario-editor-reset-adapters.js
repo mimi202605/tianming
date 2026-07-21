@@ -1530,7 +1530,7 @@
           '</div>';
       }
     }
-    return '<article class="ws-card" data-ws-card="' + esc(p.id || '') + '">' +
+    return '<article class="ws-card" data-ws-card="' + esc(p.id || '') + '"' + (S.feat && S.feat[p.id] ? ' data-feat="true"' : '') + '>' +
       '<div class="ws-card-hd"><b>' + esc(p.title || p.id) + '</b><span class="ws-v">v' + esc(p.version || '?') + '</span>' +
       (p.author ? '<span class="ws-au">' + esc(p.author) + '</span>' : '') + badge + '</div>' +
       (p.description ? '<p class="ws-desc">' + esc(p.description) + '</p>' : '') +
@@ -1609,7 +1609,7 @@
     } else {
       html += '<div class="ws-desk-row"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="' + esc(S.pub.version) + '" style="width:5.5em;"><span class="ws-dim">← 自动 +1 · 可改' + (S.pubBase ? '（线上 v' + esc(S.pubBase.version || '?') + '）' : '') + '</span></div>';
     }
-    html += '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input ws-grow" rows="2">' + esc(S.pub.desc) + '</textarea></div>' +
+    html += '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input ws-grow" rows="3">' + esc(S.pub.desc) + '</textarea></div>' +
       '<div class="ws-desk-row"><label>标签</label><input id="ws-pub-tags" class="ws-desk-input ws-grow" value="' + esc(S.pub.tags) + '" placeholder="以逗号分隔"></div>';
     // 预检牌先亮再让点：红牌封提交+直达清账
     var pf = u ? preflightGate() : null;
@@ -1620,7 +1620,7 @@
       else html += '<div class="ws-desk-row"><button type="button" class="ws-gate" data-tone="bad" data-editor-command="focus-runtime-panel" data-runtime-panel="preflight-gate"><i></i>预检 ' + (pf.errors || '?') + ' 项错误——点此直达「发布预检」清账</button></div>';
     }
     html += '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (u && !S.busy && !pfBlock ? '' : ' disabled') + '>' +
-      (S.busy ? '正在提交…' : (u ? (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布（预检守门·过审后上架）') : '登录后可发布')) + '</button></div>' +
+      (S.busy ? '正在提交…' : (u ? (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布 v' + esc(S.pub.version) + '（过审后上架）') : '登录后可发布')) + '</button></div>' +
       '</div>';
     // 提交台账
     var led = reconcileLedger();
@@ -1940,79 +1940,90 @@
       var st = document.createElement('style');
       st.id = 'ws-desk-style';
       st.textContent =
+        /* 批四·尺度对齐 mockup（owner「依旧不是很好，特别是ui上」）：
+           实装曾沿用编辑器子面板微缩字号(.64-.78rem小字+24px迷你钮)·拍板的 mockup 是
+           13-16.5px 敞亮商店。本刀全站放大一档：卡题1.05rem/正文.82rem/正经按钮30px·
+           案台四段从虚线分隔升独立分区卡·精选卡通栏金底。 */
         '.ws-full{grid-column:1/-1;}' +
-        '.ws-dim{color:var(--je-tx-dim,#7b7264);font-size:.78rem;}' +
+        '.ws-dim{color:var(--je-tx-dim,#7b7264);font-size:.8rem;}' +
         '.ws-grow{flex:1;min-width:12em;}' +
         '.ws-right{margin-left:auto;}' +
-        '.ws-desk-input{font-family:inherit;font-size:.78rem;background:rgba(0,0,0,.28);border:1px solid rgba(184,154,83,.3);border-radius:5px;color:inherit;padding:.32rem .5rem;}' +
-        '.ws-desk-sec{border-top:1px dotted rgba(184,154,83,.25);padding:.55rem 0;}' +
-        '.ws-desk-h{font-size:.8rem;color:var(--je-gold-400,#b89a53);margin-bottom:.3rem;letter-spacing:.06em;}' +
-        '.ws-desk-row{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:.76rem;margin:.28rem 0;}' +
-        '.ws-desk-row label{color:var(--je-tx-dim,#8a8378);min-width:2.6em;}' +
-        '.ws-desk-msg{font-size:.74rem;margin-top:.4rem;padding:.35rem .5rem;border-radius:4px;background:rgba(184,154,83,.12);}' +
+        '[data-panel="workshop-browse"] .mini-ai,[data-panel="workshop-desk"] .mini-ai{min-height:30px;font-size:.8rem;padding:.28rem .9rem;border-radius:6px;}' +
+        '[data-panel="workshop-desk"] .mini-ai.primary{font-size:.85rem;padding:.4rem 1.2rem;}' +
+        '.ws-desk-input{font-family:inherit;font-size:.85rem;background:rgba(0,0,0,.28);border:1px solid rgba(184,154,83,.3);border-radius:6px;color:inherit;padding:.4rem .6rem;}' +
+        '.ws-desk-input:focus-visible{outline:none;border-color:var(--je-gold-300,#d4be7a);}' +
+        '.ws-desk-sec{background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:9px;padding:.85rem 1rem;margin:.65rem 0;}' +
+        '.ws-desk-h{display:flex;align-items:center;gap:.6rem;font-size:.82rem;color:var(--je-gold-400,#b89a53);margin-bottom:.55rem;letter-spacing:.12em;}' +
+        '.ws-desk-h::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(184,154,83,.28),transparent);}' +
+        '.ws-desk-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.82rem;margin:.35rem 0;}' +
+        '.ws-desk-row label{color:var(--je-tx-dim,#8a8378);min-width:3em;}' +
+        '.ws-desk-msg{font-size:.8rem;margin-top:.5rem;padding:.5rem .7rem;border-radius:6px;background:rgba(184,154,83,.12);}' +
         '.ws-desk-msg[data-tone="error"]{background:rgba(169,79,63,.2);color:#ef9a86;}' +
         '.ws-desk-msg[data-tone="good"]{background:rgba(95,157,140,.16);color:#bde6d9;}' +
         '.ws-desk-msg[data-tone="warn"]{background:rgba(184,154,83,.18);}' +
-        '.ws-desk-foot{margin-top:.5rem;font-size:.72rem;}.ws-desk-foot a{color:var(--je-gold-400,#b89a53);}' +
+        '.ws-desk-foot{margin-top:.6rem;font-size:.78rem;}.ws-desk-foot a{color:var(--je-gold-400,#b89a53);}' +
         // 账号印徽
-        '.ws-acct{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;}' +
-        '.ws-seal{width:34px;height:34px;border-radius:7px;display:grid;place-items:center;font-size:1rem;color:#2a2014;background:linear-gradient(180deg,#d4be7a,#b89a53);box-shadow:inset 0 1px rgba(255,255,255,.35);}' +
-        '.ws-who b{font-size:.88rem;font-weight:400;color:var(--je-tx-hi,#f0e9d8);}' +
+        '.ws-acct{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;}' +
+        '.ws-seal{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font-size:1.15rem;color:#2a2014;background:linear-gradient(180deg,#d4be7a,#b89a53);box-shadow:inset 0 1px rgba(255,255,255,.35);}' +
+        '.ws-who b{font-size:.95rem;font-weight:400;color:var(--je-tx-hi,#f0e9d8);}' +
         // 双轨
-        '.ws-track{display:flex;gap:2px;background:rgba(10,9,8,.55);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:7px;padding:3px;width:max-content;margin:.2rem 0 .4rem;}' +
-        '.ws-track button{font-family:inherit;font-size:.78rem;letter-spacing:.08em;color:var(--je-tx-mid,#a89f8d);cursor:pointer;border:1px solid transparent;border-radius:5px;background:transparent;padding:.28rem 1rem;}' +
+        '.ws-track{display:flex;gap:2px;background:rgba(10,9,8,.55);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:8px;padding:4px;width:max-content;margin:.25rem 0 .5rem;}' +
+        '.ws-track button{font-family:inherit;font-size:.85rem;letter-spacing:.08em;color:var(--je-tx-mid,#a89f8d);cursor:pointer;border:1px solid transparent;border-radius:6px;background:transparent;padding:.35rem 1.1rem;}' +
         '.ws-track button[data-on="true"]{color:var(--je-gold-300,#d4be7a);border-color:rgba(184,154,83,.45);background:rgba(184,154,83,.12);}' +
         '.ws-track button[disabled]{opacity:.45;cursor:default;}' +
-        '.ws-lock{font-size:.66rem;color:var(--je-tx-dim,#7b7264);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:3px;padding:.05rem .4rem;}' +
+        '.ws-lock{font-size:.7rem;color:var(--je-tx-dim,#7b7264);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:4px;padding:.08rem .5rem;}' +
         // 预检牌
-        '.ws-gate{display:inline-flex;align-items:center;gap:.5rem;font-family:inherit;font-size:.74rem;border-radius:6px;padding:.28rem .7rem;border:1px solid var(--je-hairline-2,rgba(245,240,232,.16));color:var(--je-tx-dim,#7b7264);background:transparent;}' +
-        '.ws-gate i{font-style:normal;width:7px;height:7px;border-radius:50%;background:currentColor;}' +
+        '.ws-gate{display:inline-flex;align-items:center;gap:.5rem;font-family:inherit;font-size:.8rem;border-radius:7px;padding:.35rem .8rem;border:1px solid var(--je-hairline-2,rgba(245,240,232,.16));color:var(--je-tx-dim,#7b7264);background:transparent;}' +
+        '.ws-gate i{font-style:normal;width:8px;height:8px;border-radius:50%;background:currentColor;}' +
         '.ws-gate[data-tone="good"]{border-color:rgba(126,184,167,.4);background:rgba(126,184,167,.12);color:var(--je-celadon-300,#a3d4c7);}' +
         '.ws-gate[data-tone="bad"]{border-color:rgba(192,64,48,.45);background:rgba(192,64,48,.12);color:var(--je-vermillion-300,#d4706a);cursor:pointer;}' +
         // 台账
-        '.ws-ledger{width:100%;border-collapse:collapse;font-size:.74rem;}' +
-        '.ws-ledger th{text-align:left;font-weight:400;font-size:.66rem;letter-spacing:.14em;color:var(--je-tx-dim,#7b7264);border-bottom:1px solid var(--je-hairline-2,rgba(245,240,232,.16));padding:.15rem .5rem .3rem;}' +
-        '.ws-ledger td{border-bottom:1px solid var(--je-hairline,rgba(245,240,232,.08));padding:.32rem .5rem;color:var(--je-tx-mid,#a89f8d);font-variant-numeric:tabular-nums;}' +
-        '.ws-st{font-size:.66rem;border-radius:3px;padding:.05rem .5rem;white-space:nowrap;}' +
+        '.ws-ledger{width:100%;border-collapse:collapse;font-size:.8rem;}' +
+        '.ws-ledger th{text-align:left;font-weight:400;font-size:.7rem;letter-spacing:.14em;color:var(--je-tx-dim,#7b7264);border-bottom:1px solid var(--je-hairline-2,rgba(245,240,232,.16));padding:.2rem .6rem .35rem;}' +
+        '.ws-ledger td{border-bottom:1px solid var(--je-hairline,rgba(245,240,232,.08));padding:.45rem .6rem;color:var(--je-tx-mid,#a89f8d);font-variant-numeric:tabular-nums;}' +
+        '.ws-ledger tr:last-child td{border-bottom:none;}' +
+        '.ws-st{font-size:.7rem;border-radius:4px;padding:.08rem .55rem;white-space:nowrap;}' +
         '.ws-st[data-st="wait"]{color:var(--je-gold-300,#d4be7a);border:1px solid rgba(184,154,83,.45);background:rgba(184,154,83,.1);}' +
         '.ws-st[data-st="live"]{color:var(--je-celadon-300,#a3d4c7);border:1px solid rgba(126,184,167,.45);background:rgba(126,184,167,.12);}' +
         '.ws-st[data-st="stale"]{color:var(--je-vermillion-300,#d4706a);border:1px solid rgba(192,64,48,.45);background:rgba(192,64,48,.12);}' +
-        '.ws-mine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.7rem;align-items:start;}' +
+        '.ws-mine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:.8rem;align-items:start;}' +
         // 橱窗
-        '.ws-shop-bar{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin-bottom:.7rem;}' +
-        '.ws-chip{font-family:inherit;font-size:.74rem;color:var(--je-tx-mid,#a89f8d);cursor:pointer;background:rgba(184,154,83,.06);border:1px solid rgba(184,154,83,.26);border-radius:999px;padding:.22rem .8rem;}' +
+        '.ws-shop-bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.85rem;}' +
+        '.ws-chip{font-family:inherit;font-size:.8rem;color:var(--je-tx-mid,#a89f8d);cursor:pointer;background:rgba(184,154,83,.06);border:1px solid rgba(184,154,83,.26);border-radius:999px;padding:.3rem 1rem;}' +
         '.ws-chip:hover{color:var(--je-gold-300,#d4be7a);}' +
         '.ws-chip[data-on="true"]{color:var(--je-gold-300,#d4be7a);background:rgba(184,154,83,.16);border-color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.7rem;align-items:start;}' +
-        '.ws-card{background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:8px;padding:.7rem .8rem;display:flex;flex-direction:column;gap:.4rem;transition:border-color .15s ease;}' +
+        '.ws-shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:.8rem;align-items:start;}' +
+        '.ws-card{background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:9px;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.5rem;transition:border-color .15s ease;}' +
         '.ws-card:hover{border-color:rgba(184,154,83,.45);}' +
-        '.ws-card-hd{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;}' +
-        '.ws-card-hd b{font-size:.95rem;font-weight:400;color:var(--je-tx-hi,#f0e9d8);}' +
-        '.ws-v{font-size:.72rem;color:var(--je-tx-dim,#7b7264);font-variant-numeric:tabular-nums;}' +
-        '.ws-au{font-size:.74rem;color:var(--je-gold-400,#b89a53);}' +
-        '.ws-badges{margin-left:auto;display:flex;gap:.3rem;flex-wrap:wrap;}' +
-        '.ws-badge{font-size:.64rem;letter-spacing:.1em;border-radius:3px;padding:.05rem .5rem;white-space:nowrap;}' +
+        '.ws-card[data-feat="true"]{grid-column:1/-1;border-color:rgba(184,154,83,.35);background:linear-gradient(180deg,rgba(184,154,83,.07),transparent 55%),var(--je-chrome-1,#1b1917);}' +
+        '.ws-card-hd{display:flex;align-items:baseline;gap:.55rem;flex-wrap:wrap;}' +
+        '.ws-card-hd b{font-size:1.05rem;font-weight:400;color:var(--je-tx-hi,#f0e9d8);}' +
+        '.ws-v{font-size:.78rem;color:var(--je-tx-dim,#7b7264);font-variant-numeric:tabular-nums;}' +
+        '.ws-au{font-size:.8rem;color:var(--je-gold-400,#b89a53);}' +
+        '.ws-badges{margin-left:auto;display:flex;gap:.35rem;flex-wrap:wrap;}' +
+        '.ws-badge{font-size:.68rem;letter-spacing:.1em;border-radius:4px;padding:.08rem .55rem;white-space:nowrap;}' +
         '.ws-badge[data-kind="open"]{color:var(--je-celadon-300,#a3d4c7);border:1px solid rgba(126,184,167,.45);background:rgba(126,184,167,.12);}' +
         '.ws-badge[data-kind="pack"]{color:var(--je-tx-mid,#a89f8d);border:1px solid var(--je-hairline-2,rgba(245,240,232,.16));background:rgba(245,240,232,.04);}' +
         '.ws-badge[data-kind="feat"]{color:var(--je-gold-300,#d4be7a);border:1px solid rgba(184,154,83,.5);background:rgba(184,154,83,.1);}' +
-        '.ws-rate{display:flex;align-items:center;gap:.15rem;font-size:.74rem;color:var(--je-tx-mid,#a89f8d);flex-wrap:wrap;}' +
-        '.ws-rate-star{background:none;border:none;color:var(--je-gold-400,#b89a53);cursor:pointer;font-size:.95rem;padding:0 .1rem;}' +
-        '.ws-rate-star:hover{color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-desc{font-size:.76rem;color:var(--je-tx-mid,#a89f8d);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
-        '.ws-desc-full{font-size:.76rem;color:var(--je-tx-mid,#a89f8d);margin:.2rem 0;}' +
-        '.ws-tags{display:flex;flex-wrap:wrap;gap:.3rem;}' +
-        '.ws-tags span{font-size:.64rem;color:var(--je-tx-dim,#7b7264);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:3px;padding:0 .4rem;}' +
-        '.ws-stat{display:flex;gap:.8rem;font-size:.7rem;color:var(--je-tx-dim,#7b7264);font-variant-numeric:tabular-nums;flex-wrap:wrap;}' +
+        '.ws-desc{font-size:.82rem;line-height:1.6;color:var(--je-tx-mid,#a89f8d);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
+        '.ws-desc-full{font-size:.82rem;line-height:1.65;color:var(--je-tx-mid,#a89f8d);margin:.2rem 0;}' +
+        '.ws-tags{display:flex;flex-wrap:wrap;gap:.35rem;}' +
+        '.ws-tags span{font-size:.68rem;color:var(--je-tx-dim,#7b7264);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:4px;padding:.02rem .45rem;}' +
+        '.ws-stat{display:flex;gap:1rem;font-size:.76rem;color:var(--je-tx-dim,#7b7264);font-variant-numeric:tabular-nums;flex-wrap:wrap;}' +
         '.ws-star{color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-act-row{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.1rem;}' +
-        '.ws-golink{font-size:.74rem;color:var(--je-tx-mid,#a89f8d);align-self:center;}' +
+        '.ws-act-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.15rem;align-items:center;}' +
+        '.ws-golink{font-size:.8rem;color:var(--je-tx-mid,#a89f8d);align-self:center;}' +
         '.ws-golink:hover{color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-detail{border-top:1px solid var(--je-hairline,rgba(245,240,232,.08));margin-top:.3rem;padding-top:.5rem;display:grid;gap:.3rem;}' +
-        '.ws-detail-h{font-size:.68rem;letter-spacing:.14em;color:var(--je-gold-400,#b89a53);margin-top:.2rem;}' +
-        '.ws-lin{font-size:.74rem;color:var(--je-tx-mid,#a89f8d);line-height:1.8;}' +
+        '.ws-detail{border-top:1px solid var(--je-hairline,rgba(245,240,232,.08));margin-top:.35rem;padding-top:.6rem;display:grid;gap:.35rem;}' +
+        '.ws-detail-h{font-size:.72rem;letter-spacing:.14em;color:var(--je-gold-400,#b89a53);margin-top:.25rem;}' +
+        '.ws-lin{font-size:.8rem;color:var(--je-tx-mid,#a89f8d);line-height:1.85;}' +
         '.ws-lin-root{color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-cmt{font-size:.74rem;color:var(--je-tx-mid,#a89f8d);border-left:2px solid var(--je-hairline-2,rgba(245,240,232,.16));padding-left:.6rem;margin:.15rem 0;}' +
-        '.ws-cmt b{color:var(--je-tx-hi,#f0e9d8);font-weight:400;}';
+        '.ws-cmt{font-size:.8rem;color:var(--je-tx-mid,#a89f8d);border-left:2px solid var(--je-hairline-2,rgba(245,240,232,.16));padding-left:.65rem;margin:.2rem 0;}' +
+        '.ws-cmt b{color:var(--je-tx-hi,#f0e9d8);font-weight:400;}' +
+        '.ws-rate{display:flex;align-items:center;gap:.2rem;font-size:.8rem;color:var(--je-tx-mid,#a89f8d);flex-wrap:wrap;}' +
+        '.ws-rate-star{background:none;border:none;color:var(--je-gold-400,#b89a53);cursor:pointer;font-size:1.1rem;padding:0 .12rem;}' +
+        '.ws-rate-star:hover{color:var(--je-gold-300,#d4be7a);}' +
+        '@media (prefers-reduced-motion:reduce){.ws-card{transition:none;}}';
       document.head.appendChild(st);
     }
     render();
