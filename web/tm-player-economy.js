@@ -75,6 +75,35 @@
 
   function _getState() {
     try {
+      // 2026-07-21 修·C3：统一数据位置到 GM._playerEconomy（与其它 13 系统一致）
+      // 历史根因：原挂 P.playerInfo.playerEconomy·但 ui-render 读 GM._playerEconomy.cash·
+      //   数据位置不一致导致顶栏银钱永远显示「—」·玩家看不到自己资产。
+      // 修复：优先读 GM._playerEconomy·若 P.playerInfo.playerEconomy 有旧数据则迁移过去。
+      // 兼容：存档若有旧 P.playerInfo.playerEconomy·首次访问时迁移到 GM·之后统一走 GM。
+      // arch-ok: C3 数据位置统一·本文件即 _playerEconomy 写口本体·经裁定合法直写
+      if (typeof GM !== 'undefined' && GM) {
+        if (!GM._playerEconomy) {
+          GM._playerEconomy = _defaultState(); // arch-ok
+          // 迁移旧存档数据
+          if (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.playerEconomy) {
+            try {
+              var _old = P.playerInfo.playerEconomy;
+              GM._playerEconomy.cash = (typeof _old.cash === 'number') ? _old.cash : 0; // arch-ok
+              GM._playerEconomy.properties = Array.isArray(_old.properties) ? _old.properties : []; // arch-ok
+              GM._playerEconomy.investments = Array.isArray(_old.investments) ? _old.investments : []; // arch-ok
+              GM._playerEconomy.grayIncome = Array.isArray(_old.grayIncome) ? _old.grayIncome : []; // arch-ok
+              GM._playerEconomy.corruption = (typeof _old.corruption === 'number') ? _old.corruption : 0; // arch-ok
+              GM._playerEconomy.factionRelations = _old.factionRelations || {}; // arch-ok
+              GM._playerEconomy.confiscated = !!_old.confiscated; // arch-ok
+              GM._playerEconomy.ledger = Array.isArray(_old.ledger) ? _old.ledger : []; // arch-ok
+            } catch (_) {}
+            // 迁移完成·清旧位置防后续读写错位
+            try { delete P.playerInfo.playerEconomy; } catch (_) {} // arch-ok
+          }
+        }
+        return GM._playerEconomy;
+      }
+      // GM 缺席降级（如 smoke 测试环境）·仍走 P
       if (typeof P === 'undefined' || !P || !P.playerInfo) return null;
       if (!P.playerInfo.playerEconomy) {
         P.playerInfo.playerEconomy = _defaultState(); // arch-ok

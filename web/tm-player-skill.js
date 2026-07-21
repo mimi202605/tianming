@@ -1506,8 +1506,78 @@
       });
       h += '</div>';
     }
+
+    // 可选动作（2026-07-21·C2 根治·从空壳改为调用内部 API·参照 tm-player-marriage.js）
+    h += '<div class="ps-section"><div class="ps-section-title">可 选 · 动 作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerSkill._uiSelfStudy()">自学苦读</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerSkill._uiTempleRetreat()">寺观清修</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerSkill._uiCheckBreakthrough()">试图突破</button>';
+    h += '</div>';
+    h += '</div>';
+
     h += '</div>';
     return h;
+  }
+
+  // UI 钩子（2026-07-21·C2 根治·从空壳改为调用内部 API）
+  //   历史根因：renderPanel 只展示状态·无任何动作按钮·玩家看得见技能但无法操作。
+  //   修复：用 showPrompt 收技能键（自学/清修直接调内部 API）→ toast 反馈 → refreshAll 刷面板。
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  function _uiSelfStudy() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('技能账本未就绪'); return; }
+    var r = selfStudy({});
+    if (r.ok) {
+      _toast('自学苦读·' + (r.summary || '完成') + (r.illness ? '·染微恙' : ''));
+    } else {
+      _toast('自学苦读失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  function _uiTempleRetreat() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('技能账本未就绪'); return; }
+    var r = templeRetreat({});
+    if (r.ok) {
+      _toast('寺观清修·' + (r.summary || '完成') + (r.enlightenment ? '·悟道！' : ''));
+    } else {
+      _toast('寺观清修失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  function _uiCheckBreakthrough() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('技能账本未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _toast('showPrompt 缺席·请在剧本面板中选择突破技能');
+      return;
+    }
+    // 列出可突破技能键提示
+    var keys = Object.keys(s.skills);
+    var hint = keys.length ? '可选：' + keys.join('/') : '（暂无技能）';
+    showPrompt('突破技能键（' + hint + '）：', '', function (skillKey) {
+      if (!skillKey) return;
+      var r = checkBreakthrough(skillKey, {});
+      if (r.ok) {
+        _toast('突破·' + (r.passed ? '成功！' + (r.summary || '') : '失败·' + (r.summary || '')));
+      } else {
+        _toast('突破失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
   }
 
   // 面板辅助·路径可用性快速判定（粗略·不真正扣费）
@@ -1728,7 +1798,13 @@
     _isAcademyLocation: _isAcademyLocation,
     _isTempleLocation: _isTempleLocation,
     _getCurrentLocation: _getCurrentLocation,
-    _canPath: _canPath
+    _canPath: _canPath,
+
+    // UI 钩子（C2·面板动作按钮入口·onclick 调用）
+    _refreshPanel: _refreshPanel,
+    _uiSelfStudy: _uiSelfStudy,
+    _uiTempleRetreat: _uiTempleRetreat,
+    _uiCheckBreakthrough: _uiCheckBreakthrough
   };
 
   // 双路径挂载：浏览器走 window.TM.PlayerSkill；node smoke 走 module.exports

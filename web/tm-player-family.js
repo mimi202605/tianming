@@ -1296,6 +1296,16 @@
       h += '</div>';
     }
 
+    // 可选家族动作
+    h += '<div style="margin-top:0.5rem;border-top:1px dashed var(--ink-200);padding-top:0.4rem;">';
+    h += '<div style="font-size:0.85em;color:var(--txt-d);margin-bottom:0.3rem;">可选动作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerFamily._uiMarry()">议婚</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerFamily._uiBirthChild()">生育</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerFamily._uiEducateChild()">教导子女</button>';
+    h += '</div>';
+    h += '</div>';
+
     // 家族史
     if (s.events.length) {
       h += '<details style="margin-top:0.4rem;"><summary style="cursor:pointer;font-size:0.85em;color:var(--txt-d);">家族史（' + s.events.length + '）</summary>';
@@ -1308,6 +1318,76 @@
 
     h += '</div>';
     return h;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  §16.1 UI 钩子（2026-07-21·仿 PlayerMarriage C2 模式·让面板可玩）
+  //    历史根因：renderFamilyPanel 只显示状态·玩家无法手动触发议婚/生育/教导。
+  //    修复：showPrompt 收参数 → 调内部 API → toast 反馈 → refreshAll 刷面板。
+  // ════════════════════════════════════════════════════════════
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  function _uiMarry() {
+    if (!_isTransmigration()) { if (typeof toast === 'function') toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { if (typeof toast === 'function') toast('家族状态未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _addEB('家族', 'showPrompt 缺席·请在剧本面板中选择议婚对象');
+      return;
+    }
+    showPrompt('议婚对象姓名（须为已登记 NPC）：', '', function (name) {
+      if (!name) return;
+      var r = marry(name, {});
+      if (r.ok) {
+        if (typeof toast === 'function') toast('已与「' + name + '」成婚');
+      } else {
+        if (typeof toast === 'function') toast('议婚失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
+
+  function _uiBirthChild() {
+    if (!_isTransmigration()) { if (typeof toast === 'function') toast('非穿越模式'); return; }
+    var r = birthChild({});
+    if (r.ok) {
+      var ch = r.child || {};
+      if (typeof toast === 'function') toast('生育子女「' + (ch.name || '') + '」·' + (ch.gender || ''));
+    } else {
+      if (typeof toast === 'function') toast('生育失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  function _uiEducateChild() {
+    if (!_isTransmigration()) { if (typeof toast === 'function') toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { if (typeof toast === 'function') toast('家族状态未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _addEB('家族', 'showPrompt 缺席·请在剧本面板中指定子女与教导方式');
+      return;
+    }
+    showPrompt('子女名:教导方式（hire_tutor 延师 / self_teach 亲教 / academy 书院·默认 self_teach）：', '', function (input) {
+      if (!input) return;
+      var parts = input.split(':');
+      var childName = (parts[0] || '').trim();
+      var modeKey = (parts[1] || 'self_teach').trim();
+      if (!childName) { if (typeof toast === 'function') toast('未指定子女名'); return; }
+      var r = educateChild(childName, modeKey, {});
+      if (r.ok) {
+        var ch = r.child || {}, mode = r.mode || {};
+        if (typeof toast === 'function') toast('已教导「' + childName + '」·' + (mode.label || '') + '·学识 ' + (ch.learning || 0));
+      } else {
+        if (typeof toast === 'function') toast('教导失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1372,6 +1452,11 @@
 
     // 御案面板
     renderFamilyPanel: renderFamilyPanel,
+
+    // UI 钩子
+    _uiMarry: _uiMarry,
+    _uiBirthChild: _uiBirthChild,
+    _uiEducateChild: _uiEducateChild,
 
     // 内部函数暴露（smoke/调试·非游戏调用入口）
     _ensureState: _ensureState,

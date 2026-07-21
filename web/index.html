@@ -604,9 +604,9 @@ console.log('天命游戏脚本开始加载...');
 <!-- R111+R127 拆分 tm-game-engine.js → launch + player-settings + player-core + hongyan-office + game-loop -->
 <script src="tm-promotion.js?v=20260604-gongming"></script>
 <script src="tm-gongming.js?v=20260613-gongming-sys"></script>
-<script src="tm-transmigration.js?v=20260719-transmigration"></script>
+<script src="tm-transmigration.js?v=20260722-playability"></script>
 <!-- 穿越模式 UI 重建（2026-07-20）：adapter/ai-bridge/map/shell/rail 五件套 -->
-<script src="tm-player-systems-adapter.js?v=20260721-ux-overhaul"></script>
+<script src="tm-player-systems-adapter.js?v=20260722-playability"></script>
 <script src="tm-player-ai-bridge.js?v=20260720-shell-rebuild"></script>
 <script src="tm-player-map.js?v=20260720-shell-rebuild"></script>
 <script src="tm-player-shell.js?v=20260721-ux-overhaul"></script>
@@ -654,7 +654,7 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-world-digest.js?v=20260630"></script><!-- 天下牵动·因果综述·W1a·把割裂的系统反应重组成连贯因果注入推演 -->
 <script src="tm-benji.js?v=20260707"></script><!-- 帝王本纪·终局回顾式修史(鼎革R1g·每12回合一卷串行修纂·flag benjiEnabled) -->
 <script src="tm-world-reactors.js?v=20260630"></script><!-- 世界反应总线·跨系统reactor·W2a军事→势力·flag-gated默认关 -->
-<script src="tm-endturn-systems.js?v=20260623-metacog"></script>
+<script src="tm-endturn-systems.js?v=20260722-playability"></script>
 <script src="tm-endturn-ai-helpers.js?v=2026042714"></script>
 <script src="tm-endturn-ai-context.js?v=2026050401"></script>
 <script src="tm-history-events.js?v=20260719-histanchors"></script>
@@ -720,8 +720,8 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-endturn-progress.js?v=20260620-agentbeats"></script>
 <script src="tm-endturn-loading.js?v=20260620-agentbeats"></script>
 <script src="tm-theme-font.js?v=20260520-theme-font-scopes"></script>
-<script src="tm-patches.js?v=20260719-histanchors"></script>
-<script src="tm-patches-start.js?v=20260719-histanchors"></script><!-- 立项拆分：剧本启动链(_tmStart*/开场仪典/startGame/doActualStart)·紧挨 patches 之后保序·勿动位置 -->
+<script src="tm-patches.js?v=20260722-playability"></script>
+<script src="tm-patches-start.js?v=20260722-playability"></script><!-- 立项拆分：剧本启动链(_tmStart*/开场仪典/startGame/doActualStart)·紧挨 patches 之后保序·勿动位置 -->
 <!-- R17-R22: 从 tm-patches.js 抽离的子模块（加载在 patches 之后覆盖原版） -->
 <script src="tm-military-ui.js?v=2026042714"></script>
 <script src="tm-world-view.js?v=2026042714"></script>
@@ -755,23 +755,24 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-sovereign-ai.js?v=20260719-phase3"></script>
 <!-- 2026-07-19·Phase 4.5·穿越模式·玩家专属系统批次 A（Task 15/16/21） -->
 <script src="tm-player-interaction.js?v=20260719-phase45a"></script>
-<script src="tm-player-economy.js?v=20260719-phase45a"></script>
+<script src="tm-player-economy.js?v=20260722-playability"></script>
 <script src="tm-player-movement.js?v=20260719-phase45a"></script>
 <!-- 2026-07-19·Phase 4.5·穿越模式·玩家专属系统批次 B（Task 17/18/19/19B/20） -->
-<script src="tm-player-trade.js?v=20260719-phase45b"></script>
+<script src="tm-player-trade.js?v=20260722-playability"></script>
 <script src="tm-tech-routes-data.js?v=20260719-phase45b"></script>
-<script src="tm-player-tech.js?v=20260719-phase45b"></script>
-<script src="tm-player-marriage.js?v=20260719-phase45b"></script>
-<script src="tm-player-family.js?v=20260719-phase45b"></script>
-<script src="tm-player-private-army.js?v=20260719-phase45b"></script>
+<script src="tm-player-tech.js?v=20260722-playability"></script>
+<script src="tm-player-marriage.js?v=20260722-playability"></script>
+<script src="tm-player-family.js?v=20260722-playability"></script>
+<script src="tm-player-memorial.js?v=20260722-playability"></script>
+<script src="tm-player-private-army.js?v=20260722-playability"></script>
 <!-- 2026-07-19·Phase 4.5·穿越模式·玩家专属系统批次 C（Task 22/23/24/25/26/26B/26C） -->
-<script src="tm-player-industry.js?v=20260719-phase45c"></script>
+<script src="tm-player-industry.js?v=20260722-playability"></script>
 <script src="tm-player-reclaim.js?v=20260719-phase45c"></script>
-<script src="tm-player-keju.js?v=20260719-phase45c"></script>
-<script src="tm-player-annual-review.js?v=20260719-phase45c"></script>
-<script src="tm-player-rebel.js?v=20260719-phase45c"></script>
-<script src="tm-player-skill.js?v=20260719-phase45c"></script>
-<script src="tm-player-special-identity.js?v=20260719-phase45c"></script>
+<script src="tm-player-keju.js?v=20260722-playability"></script>
+<script src="tm-player-annual-review.js?v=20260722-playability"></script>
+<script src="tm-player-rebel.js?v=20260722-playability"></script>
+<script src="tm-player-skill.js?v=20260722-playability"></script>
+<script src="tm-player-special-identity.js?v=20260722-playability"></script>
 <script src="tm-faction-diplomacy.js?v=20260619-diplomacy-s1"></script>
 <script src="tm-faction-decision-tools.js?v=20260619-fdtools-s1"></script>
 <!-- 2026-05-10 Phase H3: in-turn NPC background LLM driver -->

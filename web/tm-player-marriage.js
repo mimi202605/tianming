@@ -1061,11 +1061,112 @@
     return h;
   }
 
-  // UI 钩子（剧本可覆盖·引擎层提供默认空实现）
-  function _uiPropose() { _addEB('家族', '请在剧本面板中选择议婚对象'); }
-  function _uiPingqi() { _addEB('家族', '请在剧本面板中选择平妻对象'); }
-  function _uiDivorce() { _addEB('家族', '请确认与当前配偶和离'); }
-  function _uiRemarry() { _addEB('家族', '请在剧本面板中选择再婚对象'); }
+  // UI 钩子（2026-07-21 修·C2 根治·从空壳改为调用内部 API）
+  //   历史根因：4 个钩子只 _addEB 提示「请在剧本面板中选择 XX 对象」但无任何实际操作·
+  //   玩家点击「议婚/纳平妻/和离/再婚」按钮毫无反馈·婚姻系统完全不可玩。
+  //   修复：用 showPrompt 收 NPC 名（和离直接读当前配偶名）→ 调内部 API → toast 反馈 → refreshAll 刷面板。
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  function _uiPropose() {
+    var s = _ensureState();
+    if (!s) { if (typeof toast === 'function') toast('婚姻状态未就绪'); return; }
+    if (s.activeRites) {
+      // 已有进行中的六礼 → 直接推进一步
+      var adv = advanceRite({});
+      if (adv.ok) {
+        if (typeof toast === 'function') toast('六礼「' + adv.rite.label + '」已成·下一步「' + (adv.next ? adv.next.label : '成婚') + '」');
+      } else {
+        if (typeof toast === 'function') toast(adv.reason || '推进失败');
+      }
+      _refreshPanel();
+      return;
+    }
+    if (typeof showPrompt !== 'function') {
+      _addEB('家族', 'showPrompt 缺席·请在剧本面板中选择议婚对象');
+      return;
+    }
+    showPrompt('议婚对象姓名（六礼·纳采起步·需银 100 两）：', '', function (name) {
+      if (!name) return;
+      var r = proposeMarriage(name, { path: 'regular' });
+      if (r.ok) {
+        if (typeof toast === 'function') toast('已启议婚·对象「' + name + '」·待推进六礼');
+      } else {
+        if (typeof toast === 'function') toast('议婚失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
+
+  function _uiPingqi() {
+    var s = _ensureState();
+    if (!s) { if (typeof toast === 'function') toast('婚姻状态未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _addEB('家族', 'showPrompt 缺席·请在剧本面板中选择平妻对象');
+      return;
+    }
+    showPrompt('平妻对象姓名（须已有正室·平妻入门不替换正室）：', '', function (name) {
+      if (!name) return;
+      var r = takePingqi(name, {});
+      if (r.ok) {
+        if (typeof toast === 'function') toast('平妻「' + name + '」入门' + (r.dispute ? '·嫡庶之争风险！' : ''));
+      } else {
+        if (typeof toast === 'function') toast('纳平妻失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
+
+  function _uiDivorce() {
+    var s = _ensureState();
+    if (!s) { if (typeof toast === 'function') toast('婚姻状态未就绪'); return; }
+    if (!s.spouse) {
+      if (typeof toast === 'function') toast('当前无配偶·无法和离');
+      return;
+    }
+    var spouseName = s.spouse.name;
+    if (typeof showPrompt !== 'function') {
+      _addEB('家族', '请确认与当前配偶「' + spouseName + '」和离');
+      return;
+    }
+    showPrompt('确认与「' + spouseName + '」和离？（输入「确认」继续）', '', function (answer) {
+      if (!answer || answer.trim() !== '确认') {
+        if (typeof toast === 'function') toast('已取消和离');
+        return;
+      }
+      var r = mutualDivorce(spouseName, {});
+      if (r.ok) {
+        if (typeof toast === 'function') toast('已与「' + spouseName + '」和离·子女归：' + r.childCustody);
+      } else {
+        if (typeof toast === 'function') toast('和离失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
+
+  function _uiRemarry() {
+    var s = _ensureState();
+    if (!s) { if (typeof toast === 'function') toast('婚姻状态未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _addEB('家族', 'showPrompt 缺席·请在剧本面板中选择再婚对象');
+      return;
+    }
+    showPrompt('再婚对象姓名（仅和离/丧偶可再婚·默认继室）：', '', function (name) {
+      if (!name) return;
+      var r = remarry(name, { kind: '继室' });
+      if (r.ok) {
+        if (typeof toast === 'function') toast('已与「' + name + '」再婚（继室）');
+      } else {
+        if (typeof toast === 'function') toast('再婚失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
 
   // ════════════════════════════════════════════════════════════
   //  §13 查询接口

@@ -1024,6 +1024,15 @@
     });
     h += '</div>'; // pt-tree
 
+    // 可选动作（2026-07-21·C2 根治·从空壳改为调用内部 API·参照 tm-player-marriage.js）
+    h += '<div class="pt-section"><div class="pt-section-title">可 选 · 动 作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerTech._uiRecruitArtisan()">招揽匠人</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerTech._uiTickResearch()">推进研发</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerTech._uiPetitionToPromulgate()">上奏推广</button>';
+    h += '</div>';
+    h += '</div>';
+
     h += '</div>'; // pt-panel
 
     // 内嵌样式（与 tm-player-movement.js / tm-transmigration.js 同风格·暗金主调·朝代中立）
@@ -1056,6 +1065,79 @@
       try { targetEl.innerHTML = h; return null; } catch (_) { return h; }
     }
     return h;
+  }
+
+  // UI 钩子（2026-07-21·C2 根治·从空壳改为调用内部 API）
+  //   历史根因：renderTechPanel 只展示科技树状态·无任何动作按钮·玩家无法推进研发。
+  //   修复：招揽匠人/上奏推广用 showPrompt 收 NPC/科技 id·推进研发直接调 tickResearch → toast 反馈 → refreshAll 刷面板。
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  function _uiRecruitArtisan() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var l = _ledger();
+    if (!l) { _toast('科技账本未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _toast('showPrompt 缺席·请在剧本面板中选择招揽 NPC');
+      return;
+    }
+    showPrompt('招揽匠人 NPC 姓名：', '', function (name) {
+      if (!name) return;
+      var r = recruitArtisan(name, {});
+      if (r.ok) {
+        _toast('招揽匠人「' + name + '」' + (r.field ? '·领域 ' + r.field + '·加成 +' + r.bonus : '·专长未匹配') + (r.appliedToCurrent ? '·已套用研发' : ''));
+      } else {
+        _toast('招揽匠人失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
+  }
+
+  function _uiTickResearch() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var l = _ledger();
+    if (!l) { _toast('科技账本未就绪'); return; }
+    var ctx = {};
+    try { if (typeof GM !== 'undefined' && GM && typeof GM.turn === 'number') ctx.turn = GM.turn; } catch (_) {}
+    var r = tickResearch(ctx);
+    if (r.ok) {
+      if (r.completed) {
+        _toast('研发推进·进度满 100·已自动完成');
+      } else {
+        _toast('研发推进·+' + r.tickGain + '·当前 ' + r.progress + '%');
+      }
+    } else {
+      _toast('推进研发失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  function _uiPetitionToPromulgate() {
+    if (!_isTransmigration()) { _toast('非穿越模式'); return; }
+    var l = _ledger();
+    if (!l) { _toast('科技账本未就绪'); return; }
+    if (typeof showPrompt !== 'function') {
+      _toast('showPrompt 缺席·请在剧本面板中选择上奏科技');
+      return;
+    }
+    // 列出已完成科技提示
+    var completed = Array.isArray(l.completed) ? l.completed.slice() : [];
+    var hint = completed.length ? '已完成：' + completed.join('/') : '（暂无已完成科技）';
+    showPrompt('上奏推广科技 id（' + hint + '）：', '', function (techId) {
+      if (!techId) return;
+      var r = petitionToPromulgate(techId, {});
+      if (r.ok) {
+        _toast('上奏推广·' + r.name + '·' + (r.adopt ? '皇帝准奏·全国推广' : '皇帝未准·仍可私藏'));
+      } else {
+        _toast('上奏推广失败：' + (r.reason || '未知'));
+      }
+      _refreshPanel();
+    });
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1104,7 +1186,13 @@
     _eraLevel: _eraLevel,
     _nextAvailableLevel: _nextAvailableLevel,
     _countCompletedInField: _countCompletedInField,
-    _emperorAdopts: _emperorAdopts
+    _emperorAdopts: _emperorAdopts,
+
+    // UI 钩子（C2·面板动作按钮入口·onclick 调用）
+    _refreshPanel: _refreshPanel,
+    _uiRecruitArtisan: _uiRecruitArtisan,
+    _uiTickResearch: _uiTickResearch,
+    _uiPetitionToPromulgate: _uiPetitionToPromulgate
   };
 
   global.TM.PlayerTech = ns;

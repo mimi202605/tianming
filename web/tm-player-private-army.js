@@ -826,8 +826,75 @@
       });
       h += '</div>';
     }
+
+    // 可选私军动作
+    h += '<div class="pa-section"><div class="pa-section-title">操 作</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+    h += '<button class="bt bs" onclick="TM.PlayerPrivateArmy._uiRecruit()">招募兵卒</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerPrivateArmy._uiTrain()">操练</button>';
+    h += '<button class="bt bs" onclick="TM.PlayerPrivateArmy._uiEquip()">装备</button>';
+    h += '</div>';
+    h += '</div>';
+
     h += '</div>';
     return h;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  §13.1 UI 钩子（2026-07-21·仿 PlayerMarriage C2 模式·让面板可玩）
+  //    历史根因：renderPanel 只显示状态·玩家无法手动招募/操练/装备。
+  //    修复：调内部 API（带默认参数）→ toast 反馈 → refreshAll 刷面板。
+  // ════════════════════════════════════════════════════════════
+  function _refreshPanel() {
+    try {
+      if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.refreshAll === 'function') {
+        global.TM.PlayerShell.refreshAll();
+      }
+    } catch (_) {}
+  }
+
+  // 招募兵卒·默认招募 10 名家丁（来自流民·最廉常用组合）
+  function _uiRecruit() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var r = recruit('jiading', 'liumin', 10, {});
+    if (r.ok) {
+      _toast('招募 10 名家丁（来自流民）·耗银 ' + (r.cost || 0) + ' 两·月维护 ' + (r.monthlyCost || 0) + ' 两');
+    } else {
+      _toast('招募失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  // 操练·对编制中第一个单位推进训练
+  function _uiTrain() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('私军账本未就绪'); return; }
+    if (!s.units || !s.units.length) { _toast('无私军单位可训·先招募'); return; }
+    var u = s.units[0];
+    var r = train(u.id, {});
+    if (r.ok) {
+      _toast('已操练「' + (u.typeLabel || u.type) + '」·训练度 +' + (r.gain || 0) + '（→ ' + (r.training || 0) + '）·耗银 ' + (r.cost || 0));
+    } else {
+      _toast('操练失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
+  }
+
+  // 装备·给编制中第一个单位配发兵器（最廉标配）
+  function _uiEquip() {
+    if (!_isTrans()) { _toast('非穿越模式'); return; }
+    var s = _ensureState();
+    if (!s) { _toast('私军账本未就绪'); return; }
+    if (!s.units || !s.units.length) { _toast('无私军单位可装备·先招募'); return; }
+    var u = s.units[0];
+    var r = equip(u.id, 'weapon', {});
+    if (r.ok) {
+      _toast('已为「' + (u.typeLabel || u.type) + '」配发兵器·装备度 +' + (r.boost || 0) + '（→ ' + (r.equipment || 0) + '）·耗银 ' + (r.cost || 0));
+    } else {
+      _toast('装备失败：' + (r.reason || '未知'));
+    }
+    _refreshPanel();
   }
 
   // ════════════════════════════════════════════════════════════
@@ -1026,6 +1093,11 @@
     listRecruitSources: listRecruitSources,
     listEquipmentTypes: listEquipmentTypes,
     renderPanel: renderPanel,
+
+    // UI 钩子
+    _uiRecruit: _uiRecruit,
+    _uiTrain: _uiTrain,
+    _uiEquip: _uiEquip,
 
     // 暴露内部函数（smoke/调试·非游戏调用入口）
     _ensureState: _ensureState,
