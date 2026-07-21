@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// smoke-wentian-light-theme.js — 玩家群 2026-07-22 实拍立案：素宣(浅)主题下问天确认卡
-// 金字浅底糊成一片。防腐线：#wt-chat 在浅主题族(light/paper)作用域内把暗底调原色 token
-// 重定标为深色档(ink-200/300→600/500·gold-300/400→600/500·celadon→500·vermillion-300→500)，
-// 行内样式自动翻正；暗主题族不得被波及。
+// smoke-wentian-light-theme.js — 玩家群 2026-07-22 实拍立案（二拍改根治）：
+// 过回合后问天/问对/朝会等聊天区整体洗白，根因=根元素偶发被挂 data-theme=light/paper，
+// styles.css 的素宣主题块把 sunken/elevated/accent-subtle 族 token 全翻浅（外壳被
+// _tmThemeOverride 钉暗 → 外暗内白）。白底主题运行时早已停用（setTheme 拒收），
+// 根治=①拆除 light/paper 活 CSS 块（负向棘轮）②根元素 setAttribute 守卫拒写留案底。
 
 'use strict';
 
@@ -19,18 +20,21 @@ function assert(cond, msg) {
 console.log('smoke-wentian-light-theme');
 
 const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
-const i = css.indexOf('[data-theme="light"] #wt-chat');
-assert(i >= 0, '浅主题问天重定标块在（light 族选择器挂 #wt-chat）');
-const block = css.slice(i, css.indexOf('}', i) + 1);
-assert(block.indexOf('[data-theme="paper"] #wt-chat') >= 0, 'paper 主题同享（素宣双别名）');
-assert(/--ink-300:\s*var\(--ink-500\)/.test(block) && /--ink-200:\s*var\(--ink-600\)/.test(block),
-  'ink 浅字重定标到深档（正文/注脚在浅底可读）');
-assert(/--gold-300:\s*var\(--gold-600\)/.test(block) && /--gold-400:\s*var\(--gold-500\)/.test(block),
-  'gold 金字重定标到深金（标签/题头在浅底可读）');
-assert(/--celadon-400:\s*var\(--celadon-500\)/.test(block) && /--vermillion-300:\s*var\(--vermillion-500\)/.test(block),
-  'celadon/vermillion 语义色同步压深');
-assert(css.indexOf('[data-theme="sepia"] #wt-chat') < 0 && css.indexOf('[data-theme="blue"] #wt-chat') < 0,
-  '暗主题族(sepia/blue 等)不被波及（只修浅族）');
+// ① 负向棘轮：停用主题不得再有活 CSS 规则块（注释里提及不算——只查选择器起始位形态）
+assert(!/^\s*\[data-theme="light"\]/m.test(css) && !/\[data-theme="light"\]\s*[,{]/.test(css),
+  '素宣 light 主题块已拆除（无活选择器）');
+assert(!/\[data-theme="paper"\]\s*[,{]/.test(css), 'paper 别名同拆（无活选择器）');
+assert(!/\[data-theme="light"\]\s+#wt-chat/.test(css), '旧 #wt-chat 单点重定标块已随根治撤除');
+// 暗主题族保持完好（sepia 仍是暗色·turn-modal 隔离由 smoke-turn-result-theme-guard 另守）
+assert(/\[data-theme="sepia"\],\[data-theme="scroll"\]/.test(css), '古卷 sepia/scroll 暗主题块仍在');
+
+// ② 守卫契约：tm-audio-theme.js 在实例层遮蔽根元素 setAttribute·拒写 light/paper·留案底
+const js = fs.readFileSync(path.join(ROOT, 'tm-audio-theme.js'), 'utf8');
+assert(/__tmThemeTrace/.test(js), '守卫案底 window.__tmThemeTrace 在（复现取证用）');
+assert(/value === 'light' \|\| value === 'paper'/.test(js), '守卫拦截名单=light/paper 两值');
+assert(/_origSet\(name, value\)/.test(js), '非拦截属性原样放行（不破坏其他 setAttribute）');
+assert(/setTheme:\s*function[\s\S]{0,200}light.*paper|themeName === 'light' \|\| themeName === 'paper'/.test(js),
+  'ThemeSystem.setTheme 白底拒收闸仍在（守卫是第二道·不是替代）');
 
 console.log('smoke-wentian-light-theme ' + (F === 0 ? 'PASS' : 'FAIL') + ' ' + A + '/' + (A + F));
 process.exit(F === 0 ? 0 : 1);

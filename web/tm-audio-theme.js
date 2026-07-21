@@ -674,6 +674,29 @@ GameHooks.on('enterGame:after', function() {
 //  主题系统
 // ============================================================
 
+// 根元素主题守卫（2026-07-22·玩家实拍立案）：白底主题已停用，但线上仍偶发「过回合后
+// 根元素被挂 data-theme=light/paper」——写点至今不明（全库无 setTheme('light') 活路径），
+// 一旦挂上，问天/问对/朝会等聊天区的 sunken/elevated 族 token 全翻浅整体洗白。
+// 此守卫在实例层遮蔽 documentElement.setAttribute：拒写 light/paper 并把调用栈存进
+// window.__tmThemeTrace（复现时开 F12 取证真凶）；其余属性原样放行。
+(function () {
+  try {
+    var _root = document.documentElement;
+    var _origSet = _root.setAttribute.bind(_root);
+    window.__tmThemeTrace = [];
+    _root.setAttribute = function (name, value) {
+      if (name === 'data-theme' && (value === 'light' || value === 'paper')) {
+        var st = '';
+        try { st = String(new Error().stack || '').split('\n').slice(1, 7).join(' | '); } catch (_) {}
+        window.__tmThemeTrace.push({ value: String(value), at: st, turn: (window.GM && GM.turn) || null });
+        try { console.warn('[theme-guard] 拒写 data-theme=' + value + ' · 调用栈已存 window.__tmThemeTrace'); } catch (_) {}
+        return;
+      }
+      return _origSet(name, value);
+    };
+  } catch (_) {}
+})();
+
 var ThemeSystem = {
   currentTheme: 'dark',
   themes: {

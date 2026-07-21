@@ -66,31 +66,13 @@
   --shadow-gold:0 0 12px rgba(184,154,83,0.1);--ease:var(--ease-out);
 }
 
-/* ═══ Layer 2 续: 5套主题 (仅覆盖semantic tokens) ═══ */
-/* 素宣 (Paper Light) */
-[data-theme="light"],[data-theme="paper"] {
-  --color-background:var(--ink-50);--color-surface:#fff;--color-elevated:var(--ink-100);--color-sunken:var(--ink-200);
-  --color-foreground:var(--ink-800);--color-foreground-secondary:var(--ink-400);--color-foreground-muted:var(--ink-300);
-  --color-border:var(--ink-200);--color-border-subtle:var(--ink-100);--color-border-emphasis:var(--gold-500);
-  --bg-0:var(--ink-50);--bg-1:#fff;--bg-2:var(--ink-100);--bg-3:var(--ink-200);--bg-4:var(--ink-300);
-  --txt:var(--ink-800);--txt-s:var(--ink-400);--txt-d:var(--ink-300);--bdr:var(--ink-200);
-  --bg-0:#f8f8f8;
-  --bg-1:#ffffff;
-  --bg-2:#f0f0f0;
-  --bg-3:#e8e8e8;
-  --bg-4:#d8d8d8;
-  --gold:#b8860b;
-  --gold-l:#daa520;
-  --gold-d:#8b6914;
-  --red:#c0392b;
-  --green:#27ae60;
-  --blue:#2980b9;
-  --purple:#8e44ad;
-  --txt:#2c2c2c;
-  --txt-s:#666666;
-  --txt-d:#999999;
-  --bdr:#cccccc;
-}
+/* ═══ Layer 2 续: 主题 (仅覆盖semantic tokens) ═══ */
+/* 素宣 (Paper Light) —— 已拆除（2026-07-22·玩家实拍立案）。
+   白底主题在运行时早已停用（ThemeSystem.setTheme 拒收 light/paper·init 强制清洗回 dark），
+   但这块 CSS 一直活着：一旦根元素被挂上 data-theme=light（写点不明·过回合后偶发），
+   sunken/elevated/accent-subtle 等未被 _tmThemeOverride 钉住的 token 全翻浅——
+   问天/问对/朝会等聊天区整体洗白而外壳仍暗。停用的主题不留活 CSS，块整体拆除；
+   根元素另有 setAttribute 守卫留案底（tm-audio-theme.js）。 */
 
 /* 古卷 (Aged Scroll) */
 [data-theme="sepia"],[data-theme="scroll"] {
@@ -6272,13 +6254,6 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;o
 #tm-opening ._ot-ch{transition:opacity .45s ease;}
 
 
-/* 问天浅主题可读性（玩家群 2026-07-22 实拍：素宣主题下确认卡金字浅底糊成一片）——
-   气泡/确认卡的行内样式用的是暗底调原色 token(ink-200/300·gold-300/400·celadon-400 等)不随主题翻转，
-   底色却吃语义 token 随主题变浅 → 浅字浅底。在 #wt-chat 作用域内把这几支原色按浅底重定标，
-   行内样式全体自动翻正；暗主题族零变化。 */
-[data-theme="light"] #wt-chat,[data-theme="paper"] #wt-chat{
-  --ink-200:var(--ink-600);--ink-300:var(--ink-500);
-  --gold-300:var(--gold-600);--gold-400:var(--gold-500);
-  --celadon-300:var(--celadon-500);--celadon-400:var(--celadon-500);
-  --amber-400:#7a5c12;--vermillion-300:var(--vermillion-500);
-}
+/* 问天浅主题可读性重定标（2026-07-22 当日撤）：随素宣主题块整体拆除而失效——
+   根因是全局 token 翻浅（问天/问对/朝会全洗白），只救 #wt-chat 一处治标不治本，
+   已改为拆除 light/paper 主题块 + 根元素 setAttribute 守卫（见 Layer 2 注）。 */

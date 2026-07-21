@@ -3436,8 +3436,8 @@
     },
     {
       "path": "styles.css",
-      "sha256": "3db0c7d73b244509084521638a30e635a4688cfa39de732cee6f4cfd04203432",
-      "size": 676686
+      "sha256": "87998c2b28079c07240ff5d941a3792d0dc479138f31334ce8b46aa2d06c6e1a",
+      "size": 675929
     },
     {
       "path": "tm-agent-flags.js",
@@ -3536,8 +3536,8 @@
     },
     {
       "path": "tm-audio-theme.js",
-      "sha256": "9fcb45a04a9efae3c790d282f2f0076a1ecbea2a9feccff9f59ed9469622dc10",
-      "size": 43247
+      "sha256": "2e0987c6ee41adc6b6abba6c6641b9f2d8edaa5e3da7eda336c49770893fca9b",
+      "size": 44514
     },
     {
       "path": "tm-audit.js",
