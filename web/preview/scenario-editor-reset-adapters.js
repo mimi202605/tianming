@@ -1548,6 +1548,7 @@
     if (!grid || grid.querySelector('[data-panel="workshop-desk"]')) return;
     var div = document.createElement('div');
     div.setAttribute('data-panel', 'workshop-desk');
+    div.setAttribute('data-stage', 'qiben chupin');   // 五幕：淘剧本=起本·发布=出品·两幕皆现
     div.innerHTML = '<h3>创意工坊 · 工坊案台</h3><div id="workshop-desk-body"><p>正在准备工坊案台。</p></div>';
     grid.appendChild(div);
     if (nav && !nav.querySelector('[data-runtime-panel="workshop-desk"]')) {

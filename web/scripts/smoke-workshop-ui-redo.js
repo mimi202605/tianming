@@ -61,7 +61,7 @@ console.log('— Z 逐章走查收尾 —');
 ok(/function oftObjChip\(val\)/.test(app) && /oftObjChip\(val\) \|\| '<input /.test(app), 'Z 官制对象值渲只读结构签(不再 [object Object] 进可回写 input·防编辑毁结构)');
 ok(/::selection \{ background: rgba\(184, 154, 83, \.32\)/.test(css) && /\.inspector ::selection/.test(css), 'Z ::selection 墨面金晕/纸面朱晕(去浏览器默认蓝)');
 ok(!/open-api-settings-modal/.test(app) && !/openApiSettingsModal/.test(app), 'Z 顶栏⚙API设置模态退役(owner指认·主API配置在国师模型徽弹层)');
-ok(/data-runtime-panel="api-settings-workbench"/.test(app) && /renderApiSettingsWorkbench/.test(app), 'Z 生图API面板(api-settings-workbench)保留·能力不失');
+ok(/data-panel="api-settings-workbench"/.test(app) && /renderApiSettingsWorkbench/.test(app), 'Z 生图API面板(api-settings-workbench)保留·能力不失(五幕重构后胶囊没了·面板与渲染器仍在·归更多幕)');
 
 console.log('— C 内容整备 —');
 ok(/'worldview': '世界观/.test(app) && /'influenceGroups': '影响集团/.test(app) && /'presetRelations': '预置关系/.test(app), 'C 蓝图差集6字段描述补齐(喂字段搜索·据runtimeSurface证据)');

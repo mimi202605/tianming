@@ -3281,13 +3281,13 @@
     },
     {
       "path": "preview/scenario-editor-reset-adapters.js",
-      "sha256": "ce275e0791aa1d5c82bbe4580cf985aa25538a11df35b06235d23c0954e98674",
-      "size": 124749
+      "sha256": "c57cd4935386cf0050f560499b442c3b336f37f353a3f5872b5e6fc355be7715",
+      "size": 124862
     },
     {
       "path": "preview/scenario-editor-reset-app.js",
-      "sha256": "114f5fc5014408291fee5b51ed80665defeb5eded8b0638ae08cfdc12e3267e4",
-      "size": 1385177
+      "sha256": "10df7a6709e8e48189bc8a312296e7bc22cc8558364347db4bbc5be5cbff10f7",
+      "size": 1384336
     },
     {
       "path": "preview/scenario-editor-reset-data.js",
@@ -3296,13 +3296,13 @@
     },
     {
       "path": "preview/scenario-editor-reset-preview.html",
-      "sha256": "48c533e02e83c0cf72b9b925009127f1866ff1043d778bce88253f85635fa08c",
-      "size": 35468
+      "sha256": "13407492252475e736090da58149176db75df6bfab6264ed5478ebe201b190e7",
+      "size": 35195
     },
     {
       "path": "preview/scenario-editor-reset-style.css",
-      "sha256": "0f512b742e7a2370a0ac7d9c18bb680aa9035209fa5f72350054c3643234b9d1",
-      "size": 383040
+      "sha256": "95ac97453b8b54fd23b60f4e09158983dfc55432633962882112c131c4c158a8",
+      "size": 385917
     },
     {
       "path": "preview/scenario-editor-sandbox-bridge.js",

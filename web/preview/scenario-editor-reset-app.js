@@ -13233,6 +13233,12 @@
       if (deckToggle && typeof deckToggle.click === 'function') deckToggle.click();
       else document.body.classList.add('je-deck-open');
     }
+    // 五幕：目标面板不在当前幕→先切到它的幕(取其挂幕表首幕)·再定位
+    var stageHost = target.closest ? (target.getAttribute('data-stage') ? target : target.closest('[data-stage]')) : null;
+    if (stageHost) {
+      var stages = String(stageHost.getAttribute('data-stage') || '').split(/\s+/).filter(Boolean);
+      if (stages.length && stages.indexOf(currentDeckStage()) < 0) switchDeckStage(stages[0]);
+    }
     var hostPanel = target.closest ? target.closest('.panel[data-panel]') : null;
     if (hostPanel && hostPanel.dataset.panelCollapsed === 'true') togglePanelCollapse(hostPanel.dataset.panel);
     document.querySelectorAll('[data-runtime-focus="true"]').forEach(function(node) {
@@ -21077,26 +21083,57 @@
     { panel: 'ai-coverage-matrix', label: 'AI 覆盖矩阵' }
   ];
 
+  /* 五幕重构批一：八大区胶囊+「全部收起/展开」裁撤——总控台按创作动线切五幕+更多·一次只见一幕。
+   * 顶层大区(main-stack>.panel)与实装 grid 面板皆按 data-stage 挂幕(可多幕·空格分隔)·CSS 幕门 gating。
+   * runtime-editor 本体不挂幕恒显(其内 grid 面板各自挂幕)。 */
+  var DECK_STAGES = [
+    { key: 'qiben', label: '起本' },
+    { key: 'zhizuo', label: '制作' },
+    { key: 'kanwu', label: '勘误' },
+    { key: 'shiyan', label: '试演' },
+    { key: 'chupin', label: '出品' },
+    { key: 'gengduo', label: '更多' }
+  ];
+  var SECTION_STAGE_MAP = {
+    'ai-desk': 'zhizuo', 'freedom-lab': 'zhizuo', 'generation-queue': 'zhizuo',
+    'health-panel': 'kanwu',
+    'flow-panel': 'gengduo', 'creator-shortcuts': 'gengduo', 'ai-coverage-matrix': 'gengduo'
+  };
+  function currentDeckStage() {
+    var s = document.body ? document.body.getAttribute('data-deck-stage') : '';
+    return s || 'qiben';
+  }
+  function switchDeckStage(stageKey) {
+    var valid = DECK_STAGES.some(function (s) { return s.key === stageKey; });
+    if (!valid) stageKey = 'qiben';
+    document.body.setAttribute('data-deck-stage', stageKey);
+    try { localStorage.setItem('tmDeckStage', stageKey); } catch (_eLS) {}
+    document.querySelectorAll('.deck-stage-tab').forEach(function (t) {
+      t.dataset.active = (t.dataset.deckStage === stageKey) ? 'true' : 'false';
+    });
+    return stageKey;
+  }
   function bootstrapSectionNav() {
     var stack = document.querySelector('.main-stack');
     if (!stack || document.getElementById('section-nav-strip')) return;
-    var pillsHtml = SECTION_NAV_ENTRIES.map(function(entry) {
-      return '<button type="button" class="section-nav-pill" data-editor-command="jump-section-panel" data-section-nav="' +
-        escapeHtml(entry.panel) + '" title="跳转到 ' + escapeHtml(entry.label) +
-        '">' + escapeHtml(entry.label) + '</button>';
+    // 顶层大区挂幕(html 侧零改动·此处统一盖章)
+    Object.keys(SECTION_STAGE_MAP).forEach(function (pid) {
+      var el = stack.querySelector('.panel[data-panel="' + pid + '"]');
+      if (el && !el.getAttribute('data-stage')) el.setAttribute('data-stage', SECTION_STAGE_MAP[pid]);
+    });
+    var tabsHtml = DECK_STAGES.map(function (s) {
+      return '<button type="button" class="deck-stage-tab" data-editor-command="switch-deck-stage" data-deck-stage="' +
+        s.key + '">' + escapeHtml(s.label) + '</button>';
     }).join('');
     var nav = document.createElement('nav');
     nav.id = 'section-nav-strip';
-    nav.className = 'section-nav-strip';
-    nav.setAttribute('aria-label', '主工作区分节导航');
-    nav.innerHTML =
-      '<div class="section-nav-pills">' + pillsHtml + '</div>' +
-      '<div class="section-nav-actions">' +
-        '<button type="button" class="section-nav-toggle" data-editor-command="collapse-all-stack-panels" title="收起所有可折叠面板">全部收起</button>' +
-        '<button type="button" class="section-nav-toggle" data-editor-command="expand-all-stack-panels" title="展开所有可折叠面板">全部展开</button>' +
-      '</div>';
+    nav.className = 'section-nav-strip deck-stage-nav';
+    nav.setAttribute('aria-label', '总控台五幕导航');
+    nav.innerHTML = '<div class="deck-stage-tabs" role="tablist">' + tabsHtml + '</div>';
     stack.insertBefore(nav, stack.firstChild);
-    setupSectionNavScrollSpy();
+    var saved = 'qiben';
+    try { saved = localStorage.getItem('tmDeckStage') || 'qiben'; } catch (_eLS) {}
+    switchDeckStage(saved);
   }
 
   function setupSectionNavScrollSpy() {
@@ -21523,61 +21560,34 @@
       runtimeAnchor.insertAdjacentHTML(runtimePosition, [
         '<section class="panel runtime-panel" data-panel="runtime-editor">',
         '<div class="section-head"><h2>实装工作台</h2><span id="editor-live-status" data-tone="neutral">正在载入</span></div>',
-        '<div class="runtime-subnav" role="tablist" aria-label="实装工作台子面板导航">',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="new-scenario-starter">新建剧本</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="creator-workflow">制作流程</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="production-dashboard">制作驾驶舱</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="scenario-wizard">剧本向导</button>',
-        '<span class="runtime-subnav-sep" aria-hidden="true"></span>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="runtime-field-audit">字段审计</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="validation-results-panel">校验结果</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="old-editor-parity">旧编辑器审计</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="official-comparison">剧本对照</button>',
-        '<span class="runtime-subnav-sep" aria-hidden="true"></span>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="global-search">全局检索</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="reference-repair-workbench">引用修复</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="edit-history">编辑回退</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="scenario-diff">变更清册</button>',
-        '<span class="runtime-subnav-sep" aria-hidden="true"></span>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="ai-draft-queue">AI 草稿队列</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="ai-call-log">AI 调用日志</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="events-merge-wizard">事件合并</button>',
-        '<span class="runtime-subnav-sep" aria-hidden="true"></span>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="preflight-gate">发布预检</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="quick-test-workbench">沙盒测试</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="release-notes">发布说明</button>',
-        '<span class="runtime-subnav-sep" aria-hidden="true"></span>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="project-library">案卷版本库</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="api-settings-workbench">API 设置</button>',
-        '<span class="runtime-subnav-sep" aria-hidden="true"></span>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="status-log">状态日志</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="watch-list">字段关注</button>',
-        '<button class="runtime-subnav-pill" data-editor-command="focus-runtime-panel" data-runtime-panel="history-log">修改日志</button>',
-        '</div>',
+        /* 五幕重构批一(2026-07-21 owner「总控台5分」拍板)：24 胶囊子导航裁撤——幕页签(bootstrapSectionNav)
+         * 取代两套胶囊·面板按创作动线挂幕(data-stage·可多幕空格分隔)·一次只渲一幕(CSS 幕门)。
+         * 幕谱：qiben起本/zhizuo制作/kanwu勘误/shiyan试演/chupin出品/gengduo更多。 */
         '<div class="runtime-grid">',
-        '<div data-panel="new-scenario-starter" class="starter-template-panel"><h3>新建剧本</h3><div id="new-scenario-starter-list"><p>正在准备剧本模板。</p></div></div>',
-        '<div data-panel="creator-workflow" class="creator-workflow-panel"><h3>制作流程导航</h3><div id="creator-workflow-list"><p>正在生成制作流程。</p></div></div>',
-        '<div data-panel="production-dashboard"><h3>制作驾驶舱</h3><div id="production-dashboard-list"><p>正在汇总制作待办。</p></div></div>',
-        '<div data-panel="runtime-field-audit"><h3>正式游戏字段审计</h3><div id="runtime-field-audit-list"><p>正在对照官方剧本与正式运行字段。</p></div></div>',
-        '<div data-panel="validation-results-panel"><h3>校验结果</h3><div id="validation-results"><p>尚未运行校验。</p></div></div>',
-        '<div data-panel="ai-draft-queue"><h3>AI 草稿队列</h3><div id="generation-queue-list"><p>暂无 AI 草稿。</p></div></div>',
-        '<div data-panel="global-search"><h3>全局检索</h3><div class="global-search-bar"><input id="global-search-input" placeholder="搜索人物、势力、地块、字段、id、官职"></div><div id="global-search-results"><p>输入关键词开始检索。</p></div></div>',
-        '<div data-panel="reference-repair-workbench"><h3>引用修复</h3><div id="reference-repair-list"><p>正在扫描断裂引用。</p></div></div>',
-        '<div data-panel="edit-history"><h3>编辑回退</h3><div class="prompt-row"><button class="ai-button" data-editor-command="undo-edit">撤销一步</button><button class="ai-button" data-editor-command="redo-edit">重做一步</button></div><div id="edit-history-list"><p>暂无可撤销编辑。</p></div></div>',
-        '<div data-panel="scenario-diff"><h3>变更清册</h3><div id="scenario-diff-list"><p>正在比对。</p></div></div>',
-        '<div data-panel="preflight-gate"><h3>发布预检</h3><div id="preflight-gate-list"><p>尚未运行预检。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-preflight">运行预检</button><button class="ai-button" data-editor-command="preflight-export">预检导出</button></div></div>',
-        '<div data-panel="quick-test-workbench"><h3>正式沙盒测试</h3><div id="quick-test-list"><p>尚未运行快速测试。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-quick-test">快速预检</button><button class="ai-button" data-editor-command="launch-sandbox-test">启动正式沙盒</button><button class="ai-button" data-editor-command="launch-quicktest-run" title="真开游戏连跑 3 回合并做四类体检(死人任职/幽灵键/账面守恒/叙事错名)·真实消耗数轮 AI 调用(配次要 API 自动走快模型档)·跑完报告自动写回·国师可读">快测·一键体检</button><button class="ai-button" data-editor-command="return-to-formal-runtime">写回正式页</button></div></div>',
-        '<div data-panel="release-notes"><h3>发布说明</h3><div id="release-notes-list"><p>正在生成发布说明。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="refresh-release-notes">刷新说明</button><button class="ai-button" data-editor-command="copy-release-notes">复制说明</button></div></div>',
-        '<div data-panel="project-library"><h3>案卷版本库</h3><div class="library-save-row"><input id="project-snapshot-name" placeholder="案卷名 / 版本名"><button class="ai-button" data-editor-command="save-project-snapshot">存入案卷</button><button class="ai-button" data-editor-command="fork-project-snapshot">另存副本</button></div><div id="project-library-list"><p>案卷库为空。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="export-project-snapshot">导出当前包</button><button class="ai-button" data-editor-command="import-project-package">导入案卷包</button><button class="ai-button" data-ai-action="derive" data-field-ai="name">AI 命名</button></div></div>',
-        '<div data-panel="api-settings-workbench"><h3>API 设置</h3><div id="api-settings-status"><p>正在读取本机 API 设置。</p></div></div>',
-        '<div data-panel="old-editor-parity"><h3>旧编辑器迁移审计</h3><div id="old-editor-parity-list"><p>正在比对旧编辑器入口。</p></div></div>',
-        '<div data-panel="official-comparison"><h3>剧本对照</h3><p>正在准备剧本对照。</p></div>',
-        '<div data-panel="events-merge-wizard"><h3>事件跨剧本合并</h3><p>正在准备事件合并面板。</p></div>',
-        '<div data-panel="status-log"><h3>状态日志</h3><p>正在准备状态日志。</p></div>',
-        '<div data-panel="ai-call-log"><h3>AI 调用日志</h3><p>正在准备 AI 调用日志。</p></div>',
-        '<div data-panel="watch-list"><h3>字段关注列表</h3><p>正在准备关注列表。</p></div>',
-        '<div data-panel="history-log"><h3>修改日志</h3><p>正在准备修改日志。</p></div>',
-        '<div data-panel="scenario-wizard"><h3>剧本生成向导</h3><p>正在准备向导。</p></div>',
+        '<div data-panel="new-scenario-starter" data-stage="qiben" class="starter-template-panel"><h3>新建剧本</h3><div id="new-scenario-starter-list"><p>正在准备剧本模板。</p></div></div>',
+        '<div data-panel="creator-workflow" data-stage="qiben zhizuo" class="creator-workflow-panel"><h3>制作流程导航</h3><div id="creator-workflow-list"><p>正在生成制作流程。</p></div></div>',
+        '<div data-panel="production-dashboard" data-stage="zhizuo"><h3>制作驾驶舱</h3><div id="production-dashboard-list"><p>正在汇总制作待办。</p></div></div>',
+        '<div data-panel="runtime-field-audit" data-stage="kanwu"><h3>正式游戏字段审计</h3><div id="runtime-field-audit-list"><p>正在对照官方剧本与正式运行字段。</p></div></div>',
+        '<div data-panel="validation-results-panel" data-stage="kanwu"><h3>校验结果</h3><div id="validation-results"><p>尚未运行校验。</p></div></div>',
+        '<div data-panel="ai-draft-queue" data-stage="zhizuo"><h3>AI 草稿队列</h3><div id="generation-queue-list"><p>暂无 AI 草稿。</p></div></div>',
+        '<div data-panel="global-search" data-stage="zhizuo"><h3>全局检索</h3><div class="global-search-bar"><input id="global-search-input" placeholder="搜索人物、势力、地块、字段、id、官职"></div><div id="global-search-results"><p>输入关键词开始检索。</p></div></div>',
+        '<div data-panel="reference-repair-workbench" data-stage="kanwu"><h3>引用修复</h3><div id="reference-repair-list"><p>正在扫描断裂引用。</p></div></div>',
+        '<div data-panel="edit-history" data-stage="gengduo"><h3>编辑回退</h3><div class="prompt-row"><button class="ai-button" data-editor-command="undo-edit">撤销一步</button><button class="ai-button" data-editor-command="redo-edit">重做一步</button></div><div id="edit-history-list"><p>暂无可撤销编辑。</p></div></div>',
+        '<div data-panel="scenario-diff" data-stage="gengduo"><h3>变更清册</h3><div id="scenario-diff-list"><p>正在比对。</p></div></div>',
+        '<div data-panel="preflight-gate" data-stage="chupin"><h3>发布预检</h3><div id="preflight-gate-list"><p>尚未运行预检。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-preflight">运行预检</button><button class="ai-button" data-editor-command="preflight-export">预检导出</button></div></div>',
+        '<div data-panel="quick-test-workbench" data-stage="shiyan"><h3>正式沙盒测试</h3><div id="quick-test-list"><p>尚未运行快速测试。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-quick-test">快速预检</button><button class="ai-button" data-editor-command="launch-sandbox-test">启动正式沙盒</button><button class="ai-button" data-editor-command="launch-quicktest-run" title="真开游戏连跑 3 回合并做四类体检(死人任职/幽灵键/账面守恒/叙事错名)·真实消耗数轮 AI 调用(配次要 API 自动走快模型档)·跑完报告自动写回·国师可读">快测·一键体检</button><button class="ai-button" data-editor-command="return-to-formal-runtime">写回正式页</button></div></div>',
+        '<div data-panel="playtest-launchers" data-stage="shiyan"><h3>以玩家之眼</h3><p>不开沙盒·就地过一遍成色。</p><div class="prompt-row"><button class="ai-button" data-pv-launch="preview">👁 玩家视角预览</button><button class="ai-button" data-pv-launch="audit">📊 数值体检</button></div></div>',
+        '<div data-panel="release-notes" data-stage="chupin"><h3>发布说明</h3><div id="release-notes-list"><p>正在生成发布说明。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="refresh-release-notes">刷新说明</button><button class="ai-button" data-editor-command="copy-release-notes">复制说明</button></div></div>',
+        '<div data-panel="project-library" data-stage="qiben"><h3>案卷版本库</h3><div class="library-save-row"><input id="project-snapshot-name" placeholder="案卷名 / 版本名"><button class="ai-button" data-editor-command="save-project-snapshot">存入案卷</button><button class="ai-button" data-editor-command="fork-project-snapshot">另存副本</button></div><div id="project-library-list"><p>案卷库为空。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="export-project-snapshot">导出当前包</button><button class="ai-button" data-editor-command="import-project-package">导入案卷包</button><button class="ai-button" data-ai-action="derive" data-field-ai="name">AI 命名</button></div></div>',
+        '<div data-panel="api-settings-workbench" data-stage="gengduo"><h3>API 设置</h3><div id="api-settings-status"><p>正在读取本机 API 设置。</p></div></div>',
+        '<div data-panel="old-editor-parity" data-stage="gengduo"><h3>旧编辑器迁移审计</h3><div id="old-editor-parity-list"><p>正在比对旧编辑器入口。</p></div></div>',
+        '<div data-panel="official-comparison" data-stage="kanwu"><h3>剧本对照</h3><p>正在准备剧本对照。</p></div>',
+        '<div data-panel="events-merge-wizard" data-stage="zhizuo"><h3>事件跨剧本合并</h3><p>正在准备事件合并面板。</p></div>',
+        '<div data-panel="status-log" data-stage="gengduo"><h3>状态日志</h3><p>正在准备状态日志。</p></div>',
+        '<div data-panel="ai-call-log" data-stage="gengduo"><h3>AI 调用日志</h3><p>正在准备 AI 调用日志。</p></div>',
+        '<div data-panel="watch-list" data-stage="kanwu"><h3>字段关注列表</h3><p>正在准备关注列表。</p></div>',
+        '<div data-panel="history-log" data-stage="gengduo"><h3>修改日志</h3><p>正在准备修改日志。</p></div>',
+        '<div data-panel="scenario-wizard" data-stage="zhizuo"><h3>剧本生成向导</h3><p>正在准备向导。</p></div>',
         '</div>',
         '</section>'
       ].join(''));
@@ -21595,6 +21605,7 @@
     }
     if (command === 'undo-edit') undoEdit();
     if (command === 'redo-edit') redoEdit();
+    if (command === 'switch-deck-stage') switchDeckStage(target && target.dataset && target.dataset.deckStage);   // 五幕页签
     if (command === 'save-field') saveSelectedField();
     if (command === 'save-game-settings') saveGameSettingsWorkbench();
     if (command === 'save-player-info') savePlayerInfoWorkbench();

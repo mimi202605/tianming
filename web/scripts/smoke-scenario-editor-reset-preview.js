@@ -1604,7 +1604,7 @@ assert(appJs.includes("if (command === 'select-comparison-field')"),
   'event router should dispatch the select-comparison-field jump command');
 assert(html.includes('[data-panel="official-comparison"]'),
   'preview shell should ship dedicated comparison panel styling');
-assert(appJs.includes("'<div data-panel=\"official-comparison\">"),
+assert(appJs.includes("'<div data-panel=\"official-comparison\" data-stage=\"kanwu\">"),
   'preview app should mount the official-comparison panel into the workbench area');
 assert(appJs.includes('renderOfficialComparison();'),
   'renderAll should refresh the comparison panel each pass');
@@ -1841,7 +1841,7 @@ assert(appJs.includes("data-events-merge-key"),
   'merge wizard checkboxes should carry data-events-merge-key for selection state');
 assert(appJs.includes("cloned._mergedFrom = sourceId"),
   'merged events should be tagged with _mergedFrom provenance');
-assert(appJs.includes('<div data-panel="events-merge-wizard">'),
+assert(appJs.includes('<div data-panel="events-merge-wizard" data-stage="zhizuo">'),
   'preview app should mount the events-merge-wizard panel in the workbench area');
 assert(appJs.includes('renderEventsMergeWizard();'),
   'renderAll should refresh the events merge wizard each pass');
@@ -1901,7 +1901,7 @@ assert(appJs.includes('pushStatusLog(text, tone)'),
   'setStatus should record entries into the ring buffer');
 assert(appJs.includes("if (command === 'clear-status-log')"),
   'event router should dispatch clear-status-log');
-assert(appJs.includes('<div data-panel="status-log">'),
+assert(appJs.includes('<div data-panel="status-log" data-stage="gengduo">'),
   'preview app should mount the status-log panel in the workbench area');
 assert(appJs.includes('renderStatusLog();'),
   'renderAll should refresh the status log');
@@ -2034,7 +2034,7 @@ assert(appJs.includes('durationMs: Date.now() - startedAt'),
   'AI call log entries should include duration');
 assert(appJs.includes("if (command === 'clear-ai-call-log')"),
   'event router should dispatch clear-ai-call-log');
-assert(appJs.includes('<div data-panel="ai-call-log">'),
+assert(appJs.includes('<div data-panel="ai-call-log" data-stage="gengduo">'),
   'preview app should mount the ai-call-log panel');
 assert(appJs.includes('renderAiCallLog();'),
   'renderAll should refresh the AI call log');
@@ -2071,7 +2071,7 @@ assert(appJs.includes('field-chip-star'),
   'field chip should render the watch star icon');
 assert(appJs.includes("event.target.closest('[data-editor-command]') || event.target.closest('[data-ai-action]')"),
   'field-pick handler should defer to inner star/AI buttons');
-assert(appJs.includes('<div data-panel="watch-list">'),
+assert(appJs.includes('<div data-panel="watch-list" data-stage="kanwu">'),
   'preview app should mount the watch-list panel');
 assert(appJs.includes('renderWatchList();'),
   'renderAll should refresh the watch list');
@@ -2092,7 +2092,7 @@ assert(appJs.includes('function clearHistoryLog'),
   'preview app should expose clearHistoryLog');
 assert(appJs.includes("if (command === 'clear-history-log')"),
   'event router should dispatch clear-history-log');
-assert(appJs.includes('<div data-panel="history-log">'),
+assert(appJs.includes('<div data-panel="history-log" data-stage="gengduo">'),
   'preview app should mount the history-log panel');
 assert(appJs.includes('renderHistoryLogPanel();'),
   'renderAll should refresh the history log');
@@ -2960,8 +2960,9 @@ assert(!html.includes('可制作预览'),
   'no surface text should still mention 可制作预览');
 assert(html.includes('剧本工坊 · 历史模拟剧本总控台'),
   'brand sub should describe the workshop without 预览');
-assert(html.includes('<p class="hero-kicker">剧本工坊总控台</p>'),
-  'hero kicker should be Chinese, not Scenario Authoring Desk');
+// 五幕重构批一：hero 大标语+统计卡 → 一行状态条(kicker 收作 strip-kicker「总控台」)
+assert(html.includes('deck-status-strip') && html.includes('strip-kicker'),
+  'hero should be a slim status strip after the five-stage rework');
 assert(!html.includes('Scenario Authoring Desk'),
   'no surface text should still carry the English kicker');
 assert(!html.includes('从旧侧栏表单'),
@@ -3074,28 +3075,30 @@ assert(/\.editor-grid\[data-inspector-collapsed="true"\]\s*\{[^}]*52px/.test(htm
 assert(!appJs.includes('此处承接旧编辑器顶部'),
   'API settings panel should no longer carry the 承接旧编辑器 transition copy');
 
-// Round 16 · Slice 107: runtime-panel should expose a sub-nav with 23 jump
-// pills for its sub-panels, grouped into categories.
-assert(appJs.includes('<div class="runtime-subnav"'),
-  'runtime-panel should render a .runtime-subnav strip');
-assert(appJs.includes('data-runtime-panel="new-scenario-starter">新建剧本'),
-  'runtime sub-nav should include 新建剧本 pill targeting new-scenario-starter');
-assert(appJs.includes('data-runtime-panel="ai-draft-queue">AI 草稿队列'),
-  'runtime sub-nav should include AI 草稿队列 pill');
-assert(appJs.includes('data-runtime-panel="history-log">修改日志'),
-  'runtime sub-nav should include 修改日志 pill');
-assert(appJs.includes('data-panel="validation-results-panel"'),
-  '校验结果 sub-panel should carry a data-panel attr so the sub-nav can target it');
-assert(appJs.includes('data-panel="ai-draft-queue"'),
-  'AI 草稿队列 sub-panel should carry a data-panel attr');
-assert(appJs.includes('data-panel="scenario-diff"'),
-  '变更清册 sub-panel should carry a data-panel attr');
-assert(html.includes('.runtime-subnav'),
-  'preview should style the runtime sub-nav');
-assert(html.includes('.runtime-subnav-pill'),
-  'preview should style the runtime sub-nav pills');
-assert(html.includes('.runtime-subnav-sep'),
-  'preview should style the runtime sub-nav group separators');
+// Round 16 · Slice 107 → 五幕重构批一(2026-07-21)改写：23 胶囊子导航裁撤·
+// 五幕页签(deck-stage-tab)取代两套胶囊·面板按 data-stage 挂幕·一次只渲一幕。
+assert(!appJs.includes('<div class="runtime-subnav"'),
+  'runtime sub-nav pill strip must stay removed (五幕页签取而代之)');
+assert(appJs.includes('deck-stage-tab') && appJs.includes("data-editor-command=\"switch-deck-stage\""),
+  'section nav should render five-stage tabs driving switch-deck-stage');
+assert(appJs.includes("{ key: 'qiben', label: '起本' }") && appJs.includes("{ key: 'chupin', label: '出品' }"),
+  'DECK_STAGES should define the五幕 keys');
+assert(appJs.includes('data-panel="validation-results-panel" data-stage="kanwu"'),
+  '校验结果 sub-panel should be staged to 勘误');
+assert(appJs.includes('data-panel="ai-draft-queue" data-stage="zhizuo"'),
+  'AI 草稿队列 sub-panel should be staged to 制作');
+assert(appJs.includes('data-panel="scenario-diff" data-stage="gengduo"'),
+  '变更清册 sub-panel should be staged to 更多');
+assert(appJs.includes('data-panel="creator-workflow" data-stage="qiben zhizuo"'),
+  '制作流程导航 may span 起本+制作 (多幕挂载)');
+assert(appJs.includes('data-panel="playtest-launchers" data-stage="shiyan"'),
+  '试演幕 should carry the 玩家视角/数值体检 launcher card');
+assert(html.includes('.deck-stage-tab') && html.includes('body[data-deck-stage="qiben"]'),
+  'style should carry stage tabs and per-stage gating rules');
+assert(appJs.includes("stages.indexOf(currentDeckStage()) < 0) switchDeckStage(stages[0])"),
+  'focusRuntimePanel must auto-switch to the target panel stage');
+assert(!appJs.includes('collapse-all-stack-panels" title="收起所有可折叠面板'),
+  '全部收起/展开 strip buttons must stay removed (一次一幕后无此需要)');
 
 // Round 17 · Slice 109: scenario pill dropdown must show an explicit ✕
 // close button at the top + close when the user clicks the menu background.

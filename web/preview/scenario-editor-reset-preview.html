@@ -107,19 +107,14 @@
       </aside>
 
       <div class="main-stack">
-        <section class="hero-board">
-          <p class="hero-kicker">剧本工坊总控台</p>
-          <h2>可校验、可追踪、可导出的历史模拟剧本总控台。</h2>
-          <p class="hero-copy">
-            工坊集合字段编辑、专业表单、引用修复、批量导入、AI 任务队列、发布预检和正式游戏沙盒测试；制作时可按模块推进，所有 AI 结果先进入待审草稿。
-          </p>
-          <div class="hero-metrics" aria-label="官方剧本摘要">
-            <div class="metric"><b data-live-metric="top-level-keys">83</b><span>顶层字段</span></div>
-            <div class="metric"><b data-live-metric="characters">203</b><span>人物</span></div>
-            <div class="metric"><b data-live-metric="factions">22</b><span>势力</span></div>
-            <div class="metric"><b data-live-metric="admin-systems">23</b><span>行政体系</span></div>
-            <div class="metric"><b data-live-metric="map-regions">43+8</b><span>陆海地块</span></div>
-          </div>
+        <!-- 五幕重构批一(2026-07-21)：大标语+推介段+五张统计卡 → 一行状态条(对天天用的人·数字比宣传有用) -->
+        <section class="hero-board deck-status-strip" aria-label="剧本现况一览">
+          <span class="strip-kicker">总控台</span>
+          <span class="strip-m">顶层字段 <b data-live-metric="top-level-keys">83</b></span>
+          <span class="strip-m">人物 <b data-live-metric="characters">203</b></span>
+          <span class="strip-m">势力 <b data-live-metric="factions">22</b></span>
+          <span class="strip-m">行政 <b data-live-metric="admin-systems">23</b></span>
+          <span class="strip-m">地块 <b data-live-metric="map-regions">43+8</b></span>
         </section>
 
         <section class="panel ai-desk" data-panel="ai-desk">
