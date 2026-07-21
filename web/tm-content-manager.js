@@ -2416,4 +2416,24 @@
       window.showScnSelect._tmWorkshopWrapped = true;
     }
   }, 0);
+
+  // 剧本工坊编辑器「创意工坊」入口(2026-07-21)：?tmOpenWorkshop=1 → 载入后自动开内容管理·在线目录页。
+  // 开完即 replaceState 剥参·防之后任何刷新都再弹。任何一步失手静默(入口便利·非关键路径)。
+  try {
+    if (/[?&]tmOpenWorkshop=1/.test(window.location.search)) {
+      window.addEventListener('load', function () {
+        setTimeout(function () {
+          try {
+            if (window.TMContentManager && typeof TMContentManager.open === 'function') {
+              TMContentManager.open();
+              if (typeof TMContentManager.switchTab === 'function') TMContentManager.switchTab('online');
+            }
+            if (window.history && typeof history.replaceState === 'function') {
+              history.replaceState(null, '', window.location.pathname + window.location.hash);
+            }
+          } catch (_eOW) {}
+        }, 1200);
+      });
+    }
+  } catch (_eOWq) {}
 })();

@@ -2424,8 +2424,9 @@ assert(appJs.includes("if (command === 'copy-share-url')"),
   'event router should dispatch copy-share-url');
 assert(appJs.includes('importScenarioFromHash()'),
   'init should attempt to import from URL hash');
-assert(appJs.includes('data-editor-command="copy-share-url"'),
-  'top actions should expose 复制分享链接 button');
+// 2026-07-21 owner 裁：真剧本 MB 级 URL 装不下·分享钮点了只报「剧本过大」=死重→入口裁撤·装载机留(旧链接照开)
+assert(!appJs.includes('data-editor-command="copy-share-url"'),
+  '复制分享链接 entry must stay removed (dead weight at real scenario sizes)');
 
 // Slice 52: focus-visible ring discipline + active module accent.
 assert(html.includes('Slice 52: Focus discipline & active accent'),
@@ -2468,8 +2469,15 @@ assert(appJs.includes('aria-label="重做上一步撤销"'),
   'redo icon-btn should expose an explicit aria-label');
 assert(appJs.includes('aria-label="校验剧本冲突"'),
   'validate icon-btn should expose an explicit aria-label');
-assert(appJs.includes('data-editor-command="copy-share-url">复制分享链接'),
-  'share-url should live in the ⋯ more-menu with readable text (顶栏收纳 2026-07-21)');
+assert(appJs.includes('data-editor-command="open-workshop-hub">创意工坊'),
+  '⋯ more-menu should carry the 创意工坊 entry (owner 2026-07-21 点名)');
+assert(appJs.includes("if (command === 'open-workshop-hub')") && appJs.includes('tmOpenWorkshop=1'),
+  'workshop hub entry should navigate back to the game with the tmOpenWorkshop flag');
+var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
+assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
+  'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');
+assert(/\.top-more-menu\[hidden\]\s*\{[^}]*display:\s*none/.test(html),
+  'hidden attr must be explicitly re-armed on .top-more-menu (author display:flex would override UA [hidden])');
 assert(appJs.includes('title="撤销 (Ctrl+Z)"'),
   'undo icon-btn title should surface the keyboard shortcut');
 assert(appJs.includes('title="重做 (Ctrl+Y)"'),

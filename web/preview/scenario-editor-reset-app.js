@@ -21491,7 +21491,8 @@
         '<button type="button" class="top-more-item" data-editor-command="import">导入剧本</button>',
         '<button type="button" class="top-more-item" data-editor-command="run-preflight">发布预检</button>',
         '<button type="button" class="top-more-item" data-pv-launch="audit">数值体检</button>',
-        '<button type="button" class="top-more-item" data-editor-command="copy-share-url">复制分享链接</button>',
+        /* 复制分享链接已裁(2026-07-21·owner：真剧本 MB 级 URL 装不下·点了只报「剧本过大」=死重)·分享链接装载机仍在(旧链接照开) */
+        '<button type="button" class="top-more-item" data-editor-command="open-workshop-hub">创意工坊</button>',
         '<button type="button" class="top-more-item" data-editor-command="open-shortcut-cheatsheet" aria-keyshortcuts="Shift+?">键盘快捷键 (Shift+?)</button>',
         '<span class="top-more-sep" role="separator"></span>',
         '<button type="button" class="top-more-item top-more-danger" data-editor-command="reset">⚠ 重置到官方基线</button>',
@@ -21930,6 +21931,10 @@
     if (command === 'copy-release-notes') copyReleaseNotes();
     if (command === 'export') exportScenario();
     if (command === 'toggle-more-menu') toggleTopMoreMenu();
+    // 创意工坊入口(2026-07-21 owner 点名)：跳回游戏并自动开内容管理·在线目录页(草稿已持续落库·跳转不丢)
+    if (command === 'open-workshop-hub') {
+      try { window.location.href = '../index.html?tmOpenWorkshop=1'; } catch (_eWk) {}
+    }
     // 重置=丢弃全部改动+清编辑历史·此前一点即毁无确认(地雷)·今必二次确认(仅按钮路径·API/工坊程序化重置不走此)
     if (command === 'reset') {
       var _rstOk = true;

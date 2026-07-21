@@ -11451,6 +11451,11 @@
       display: inline-flex;
     }
 
+    /* hidden 属性会被下面的 display:flex 盖掉（作者样式特异性 > UA [hidden]）——显式补回·否则菜单默认敞开 */
+    .top-more-menu[hidden] {
+      display: none !important;
+    }
+
     .top-more-menu {
       position: absolute;
       top: calc(100% + 6px);

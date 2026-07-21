@@ -3286,8 +3286,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-app.js",
-      "sha256": "316b07b928d6c580506ab8da313376d46f1179bac941690c6c0e0af908b76e6c",
-      "size": 1384495
+      "sha256": "20b404425be955a78397f8937ef059fe8fd882882211473d4bfb3939b4be0e56",
+      "size": 1384948
     },
     {
       "path": "preview/scenario-editor-reset-data.js",
@@ -3301,8 +3301,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-style.css",
-      "sha256": "16fe76c28d50db60419968791594fd109374e492745e21fe81eea0cd7ffec198",
-      "size": 382823
+      "sha256": "0f512b742e7a2370a0ac7d9c18bb680aa9035209fa5f72350054c3643234b9d1",
+      "size": 383040
     },
     {
       "path": "preview/scenario-editor-sandbox-bridge.js",
@@ -3821,8 +3821,8 @@
     },
     {
       "path": "tm-content-manager.js",
-      "sha256": "48b88c8aad64b2d73db38b018a70c8c840042e700c10e5b47e8f27e66db6def6",
-      "size": 147947
+      "sha256": "682ecdd75cae5f28c3f0c45ef167f6645d774a27cc5a59cea0172bc25f185906",
+      "size": 148927
     },
     {
       "path": "tm-context-zones.js",
