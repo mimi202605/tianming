@@ -21931,9 +21931,14 @@
     if (command === 'copy-release-notes') copyReleaseNotes();
     if (command === 'export') exportScenario();
     if (command === 'toggle-more-menu') toggleTopMoreMenu();
-    // 创意工坊入口(2026-07-21 owner 点名)：跳回游戏并自动开内容管理·在线目录页(草稿已持续落库·跳转不丢)
+    // 创意工坊入口(2026-07-21 二稿·owner 批「跳游戏不友好」)：聚焦编辑器内工坊案台面板(adapters 注入·
+    // 账号/发布/我的发布不离编辑器)·面板缺席(adapters 未载)才兜底跳游戏工坊
     if (command === 'open-workshop-hub') {
-      try { window.location.href = '../index.html?tmOpenWorkshop=1'; } catch (_eWk) {}
+      var _wsKey = null;
+      try { _wsKey = focusRuntimePanel('workshop-desk'); } catch (_eWs) {}
+      if (!_wsKey) {
+        try { window.location.href = '../index.html?tmOpenWorkshop=1'; } catch (_eWk) {}
+      }
     }
     // 重置=丢弃全部改动+清编辑历史·此前一点即毁无确认(地雷)·今必二次确认(仅按钮路径·API/工坊程序化重置不走此)
     if (command === 'reset') {

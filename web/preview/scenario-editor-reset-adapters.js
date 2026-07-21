@@ -1321,3 +1321,183 @@
   function boot() { enh(); try { var tgt = document.getElementById('editor-reset-shell') || document.body; new MutationObserver(sched).observe(tgt, { childList: true, subtree: true }); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
+
+/* ── 工坊案台（创意工坊连接重设计·2026-07-21 owner 拍板全套·批一=账号+发布+我的发布）──
+   此前「创意工坊」=跳回游戏(丢编辑现场·整游戏重载)·owner 批「不友好」。今在编辑器内长出一等
+   runtime 面板：账号(登录态经 localStorage 与游戏同源互通·游戏登过=这里已登录)/一键提交发布
+   (预检守门 canExport·uploadScenario 直传待审)/我的发布(workshop/author 列表)。
+   在线客户端 ../tm-online-client.js 懒加载(零依赖 UMD)·「⋯」菜单 open-workshop-hub 聚焦本面板·
+   跳游戏工坊(评分/评论/圈子)降级为面板底部辅助链。批二=淘剧本/在编辑器中打开改编(parentId 世界线)。 */
+(function () {
+  'use strict';
+  var S = { clientLoading: false, clientFail: '', busy: false, msg: '', msgTone: '', mine: null, mineLoading: false };
+  function app() { return window.TM_SCENARIO_EDITOR_RESET_APP || null; }
+  function client() { return (window.TM && window.TM.OnlineClient) || null; }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  function ensureClient() {
+    if (client() || S.clientLoading) return;
+    S.clientLoading = true;
+    var s = document.createElement('script');
+    s.src = '../tm-online-client.js';
+    s.onload = function () { S.clientLoading = false; S.clientFail = ''; render(); };
+    s.onerror = function () { S.clientLoading = false; S.clientFail = '在线客户端载入失败（离线或路径异常）'; render(); };
+    document.head.appendChild(s);
+  }
+
+  function setMsg(m, tone) { S.msg = m || ''; S.msgTone = tone || ''; render(); }
+  function sessionUser() {
+    var c = client(); if (!c) return null;
+    var ses = c.getSession();
+    return ses && ses.token ? (ses.user || { username: '作者' }) : null;
+  }
+  function userLabel(u) { return (u && (u.nickname || u.username || u.name)) || '作者'; }
+
+  // ── 渲染 ──────────────────────────────────────────────────────────────
+  function render() {
+    var box = document.getElementById('workshop-desk-body');
+    if (!box) return;
+    var c = client();
+    if (!c) {
+      ensureClient();
+      box.innerHTML = '<p class="tm-copy">' + (S.clientFail ? esc(S.clientFail) : '正在接通在线服务…') + '</p>';
+      return;
+    }
+    var u = sessionUser();
+    var sc = (app() && app().state && app().state.scenario) || {};
+    var html = '';
+    // 账号条
+    html += '<div class="ws-desk-sec"><div class="ws-desk-h">账号</div>';
+    if (u) {
+      html += '<div class="ws-desk-row">已登录：<b>' + esc(userLabel(u)) + '</b>（与游戏内工坊同一账号·互通）<button type="button" class="mini-ai" data-ws-act="logout">登出</button></div>';
+    } else {
+      html += '<div class="ws-desk-row">未登录——游戏里登过号会自动带入；也可在此直接登录。</div>' +
+        '<div class="ws-desk-row"><input id="ws-login-user" class="ws-desk-input" placeholder="用户名" autocomplete="username">' +
+        '<input id="ws-login-pass" class="ws-desk-input" type="password" placeholder="密码" autocomplete="current-password">' +
+        '<button type="button" class="mini-ai" data-ws-act="login">登录</button>' +
+        '<button type="button" class="mini-ai" data-ws-act="register">注册新号</button></div>';
+    }
+    html += '</div>';
+    // 发布区
+    html += '<div class="ws-desk-sec"><div class="ws-desk-h">发布当前剧本</div>' +
+      '<div class="ws-desk-row"><label>标题</label><input id="ws-pub-title" class="ws-desk-input wide" value="' + esc(sc.name || '') + '"></div>' +
+      '<div class="ws-desk-row"><label>ID</label><input id="ws-pub-id" class="ws-desk-input" value="' + esc(sc.id || '') + '" placeholder="唯一英文id·同id再发=更新"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="1.0.0" style="width:5.5em;"></div>' +
+      '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input wide" rows="2">' + esc(String(sc.description || sc.overview || '').slice(0, 300)) + '</textarea></div>' +
+      '<div class="ws-desk-row"><label>标签</label><input id="ws-pub-tags" class="ws-desk-input wide" value="' + esc(Array.isArray(sc.tags) ? sc.tags.join('，') : '') + '" placeholder="以逗号分隔"></div>' +
+      '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (u && !S.busy ? '' : ' disabled') + '>' + (S.busy ? '正在提交…' : (u ? '提交发布（预检守门·过审后上架）' : '登录后可发布')) + '</button></div>' +
+      '</div>';
+    // 我的发布
+    html += '<div class="ws-desk-sec"><div class="ws-desk-h">我的发布 <button type="button" class="mini-ai" data-ws-act="refresh-mine"' + (u ? '' : ' disabled') + '>刷新</button></div>';
+    if (!u) html += '<div class="ws-desk-row ws-desk-dim">登录后可见。</div>';
+    else if (S.mineLoading) html += '<div class="ws-desk-row ws-desk-dim">正在取回…</div>';
+    else if (!S.mine) html += '<div class="ws-desk-row ws-desk-dim">点「刷新」取回已上架作品（审核中的暂不在列·过审后出现）。</div>';
+    else if (!S.mine.length) html += '<div class="ws-desk-row ws-desk-dim">尚无已上架作品。</div>';
+    else S.mine.forEach(function (p) {
+      html += '<div class="ws-desk-row">「' + esc(p.title || p.id) + '」 v' + esc(p.version || '?') +
+        ' · ↓' + (p.downloads || 0) + (p.rating ? ' · ★' + p.rating : '') + '</div>';
+    });
+    html += '</div>';
+    if (S.msg) html += '<div class="ws-desk-msg" data-tone="' + esc(S.msgTone) + '">' + esc(S.msg) + '</div>';
+    html += '<div class="ws-desk-foot"><a href="../index.html?tmOpenWorkshop=1">去游戏内工坊（评分 / 评论 / 圈子）→</a></div>';
+    box.innerHTML = html;
+  }
+
+  // ── 动作 ──────────────────────────────────────────────────────────────
+  function doLogin(isRegister) {
+    var c = client(); if (!c) return;
+    var user = (document.getElementById('ws-login-user') || {}).value || '';
+    var pass = (document.getElementById('ws-login-pass') || {}).value || '';
+    if (!user.trim() || !pass) { setMsg('用户名与密码都要填。', 'warn'); return; }
+    S.busy = true; setMsg(isRegister ? '正在注册…' : '正在登录…');
+    var call = isRegister ? c.register({ username: user, password: pass, nickname: user }) : c.login({ username: user, password: pass });
+    call.then(function (res) {
+      S.busy = false;
+      if (res && res.success) {
+        // register 成功未必带 token→补一次 login
+        if (isRegister && !c.isLoggedIn()) return c.login({ username: user, password: pass }).then(function () { setMsg('注册并登录成功。', 'good'); refreshMine(); });
+        setMsg(isRegister ? '注册并登录成功。' : '登录成功。', 'good'); refreshMine();
+      } else setMsg((isRegister ? '注册失败：' : '登录失败：') + ((res && res.error) || '未知错误'), 'error');
+    }).catch(function (e) { S.busy = false; setMsg('在线服务不可达：' + ((e && e.message) || e), 'error'); });
+  }
+  function doLogout() {
+    var c = client(); if (!c) return;
+    c.logout().then(function () { S.mine = null; setMsg('已登出。', 'good'); });
+  }
+  function refreshMine() {
+    var c = client(); var u = sessionUser();
+    if (!c || !u) { render(); return; }
+    S.mineLoading = true; render();
+    c.authorPacks(u.id != null ? { authorId: u.id } : { name: u.username || u.name || '' }).then(function (res) {
+      S.mineLoading = false;
+      S.mine = (res && res.packs) || [];
+      render();
+    }).catch(function () { S.mineLoading = false; S.mine = []; render(); });
+  }
+  function doPublish() {
+    var a = app(); var c = client();
+    if (!a || !c) return;
+    if (!c.isLoggedIn()) { setMsg('先登录。', 'warn'); return; }
+    // 预检守门：canExport=false 一律拦（与「出」同一道门·不给半成品上架的口子）
+    var report = null;
+    try { report = a.runPreflight(); } catch (_e) {}
+    if (!report || !report.canExport) {
+      setMsg('发布已拦：发布预检有 ' + ((report && report.errors) || '?') + ' 项错误——先在「发布预检」面板清账再来。', 'error');
+      return;
+    }
+    var meta = {
+      title: (document.getElementById('ws-pub-title') || {}).value || '',
+      id: (document.getElementById('ws-pub-id') || {}).value || '',
+      version: (document.getElementById('ws-pub-version') || {}).value || '1.0.0',
+      description: (document.getElementById('ws-pub-desc') || {}).value || '',
+      tags: (document.getElementById('ws-pub-tags') || {}).value || '',
+      type: 'scenario'
+    };
+    if (!meta.title.trim()) { setMsg('标题不能为空。', 'warn'); return; }
+    S.busy = true; render();
+    c.uploadScenario(meta, a.state.scenario).then(function (res) {
+      S.busy = false;
+      if (res && res.success) setMsg('已提交「' + meta.title + '」v' + meta.version + '——待审核·过审后上架在线目录。', 'good');
+      else setMsg('提交失败：' + ((res && res.error) || '未知错误'), 'error');
+    }).catch(function (e) { S.busy = false; setMsg('提交失败（网络）：' + ((e && e.message) || e), 'error'); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('[data-ws-act]');
+    if (!t) return;
+    var act = t.getAttribute('data-ws-act');
+    if (act === 'login') doLogin(false);
+    else if (act === 'register') doLogin(true);
+    else if (act === 'logout') doLogout();
+    else if (act === 'publish') doPublish();
+    else if (act === 'refresh-mine') refreshMine();
+  });
+
+  // ── 面板注入（与 👁📊 注入器同范式·等 app 起完） ─────────────────────────
+  function injectPanel() {
+    var grid = document.querySelector('.runtime-grid');
+    var nav = document.querySelector('.runtime-subnav');
+    if (!grid || grid.querySelector('[data-panel="workshop-desk"]')) return;
+    var div = document.createElement('div');
+    div.setAttribute('data-panel', 'workshop-desk');
+    div.innerHTML = '<h3>创意工坊 · 工坊案台</h3><div id="workshop-desk-body"><p>正在准备工坊案台。</p></div>';
+    grid.appendChild(div);
+    if (nav && !nav.querySelector('[data-runtime-panel="workshop-desk"]')) {
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'runtime-subnav-pill';
+      pill.setAttribute('data-editor-command', 'focus-runtime-panel');
+      pill.setAttribute('data-runtime-panel', 'workshop-desk');
+      pill.textContent = '创意工坊';
+      nav.appendChild(pill);
+    }
+    if (!document.getElementById('ws-desk-style')) {
+      var st = document.createElement('style');
+      st.id = 'ws-desk-style';
+      st.textContent = '.ws-desk-sec{border-top:1px dotted rgba(184,154,83,.25);padding:.5rem 0;}.ws-desk-h{font-size:.8rem;color:var(--je-gold-400,#b89a53);margin-bottom:.3rem;letter-spacing:.06em;}.ws-desk-row{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;font-size:.76rem;margin:.25rem 0;}.ws-desk-row label{color:var(--je-ink-400,#8a8378);min-width:2.6em;}.ws-desk-input{font-family:inherit;font-size:.76rem;background:rgba(0,0,0,.25);border:1px solid rgba(184,154,83,.3);border-radius:4px;color:inherit;padding:.28rem .45rem;}.ws-desk-input.wide{flex:1;min-width:12em;}.ws-desk-dim{color:var(--je-ink-400,#8a8378);}.ws-desk-msg{font-size:.74rem;margin-top:.4rem;padding:.35rem .5rem;border-radius:4px;background:rgba(184,154,83,.12);}.ws-desk-msg[data-tone="error"]{background:rgba(169,79,63,.2);color:#ef9a86;}.ws-desk-msg[data-tone="good"]{background:rgba(95,157,140,.16);color:#bde6d9;}.ws-desk-msg[data-tone="warn"]{background:rgba(184,154,83,.18);}.ws-desk-foot{margin-top:.5rem;font-size:.72rem;}.ws-desk-foot a{color:var(--je-gold-400,#b89a53);}';
+      document.head.appendChild(st);
+    }
+    render();
+  }
+  function boot() { setTimeout(injectPanel, 600); setTimeout(injectPanel, 1800); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();

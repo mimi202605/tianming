@@ -2473,6 +2473,19 @@ assert(appJs.includes('data-editor-command="open-workshop-hub">创意工坊'),
   '⋯ more-menu should carry the 创意工坊 entry (owner 2026-07-21 点名)');
 assert(appJs.includes("if (command === 'open-workshop-hub')") && appJs.includes('tmOpenWorkshop=1'),
   'workshop hub entry should navigate back to the game with the tmOpenWorkshop flag');
+// 工坊案台二稿(owner 批「跳游戏不友好」)：入口首选聚焦编辑器内案台面板·adapters 缺席才兜底跳游戏
+assert(appJs.includes("focusRuntimePanel('workshop-desk')"),
+  'workshop hub entry should first focus the in-editor workshop desk panel');
+assert(adaptersJs.includes("'data-panel', 'workshop-desk'") && adaptersJs.includes('workshop-desk-body'),
+  'adapters should inject the workshop desk runtime panel');
+assert(adaptersJs.includes("'../tm-online-client.js'"),
+  'workshop desk should lazy-load the online client (zero-dep UMD·session 与游戏同源互通)');
+assert(adaptersJs.includes('uploadScenario') && adaptersJs.includes('canExport'),
+  'publish flow should call uploadScenario behind the preflight canExport gate');
+assert(adaptersJs.includes('authorPacks'),
+  'workshop desk should list my published packs via workshop/author');
+assert(adaptersJs.includes('data-ws-act="publish"') && adaptersJs.includes('data-ws-act="login"'),
+  'workshop desk should expose publish and login actions');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');

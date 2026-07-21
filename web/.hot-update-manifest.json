@@ -3281,13 +3281,13 @@
     },
     {
       "path": "preview/scenario-editor-reset-adapters.js",
-      "sha256": "4a859d4293b04b1431c14fbbe3c40b4dbd1c311040f073b9b23deb341057dc83",
-      "size": 106899
+      "sha256": "61e418054648ddf9f3dd190873cb824cfa2f873a02dcdbdfc51bed24d5b6fadc",
+      "size": 119404
     },
     {
       "path": "preview/scenario-editor-reset-app.js",
-      "sha256": "20b404425be955a78397f8937ef059fe8fd882882211473d4bfb3939b4be0e56",
-      "size": 1384948
+      "sha256": "114f5fc5014408291fee5b51ed80665defeb5eded8b0638ae08cfdc12e3267e4",
+      "size": 1385177
     },
     {
       "path": "preview/scenario-editor-reset-data.js",
