@@ -2513,6 +2513,21 @@ assert(adaptersJs.includes('data-ws-act="cat-detail"') && adaptersJs.includes('c
   'card detail should expand with lineage 世界线 and read-only comment preview');
 assert(adaptersJs.includes('即输即滤'),
   'storefront search should filter as you type');
+// 三稿批二：出品案台（双轨发布·预检牌先亮·提交台账·作品卡）
+assert(adaptersJs.includes('data-ws-act="pub-mode"') && adaptersJs.includes('更新已有'),
+  'desk should offer dual-track publish (new vs update-existing)');
+assert(adaptersJs.includes('function bumpVersion') && adaptersJs.includes('ID 锁定'),
+  'update track should auto-bump the version and lock the id to the online entry');
+assert(adaptersJs.includes('tm_ws_submissions') && adaptersJs.includes('function reconcileLedger'),
+  'submission ledger must persist locally and reconcile against authorPacks (审核中不再失踪)');
+assert(adaptersJs.includes('久未上架'),
+  'ledger should surface the possibly-rejected state, not just wait/live');
+assert(adaptersJs.includes('function preflightGate') && adaptersJs.includes('data-runtime-panel="preflight-gate"'),
+  'preflight verdict must show before submit, red gate linking straight to the preflight panel');
+assert(adaptersJs.includes('data-ws-act="mine-newver"') && adaptersJs.includes('data-ws-act="mine-lineage"'),
+  'my-uploads cards should offer re-publish and lineage actions');
+assert(adaptersJs.includes('function maybeAutoMine'),
+  'my uploads should auto-load once when logged in (ledger reconcile + update dropdown need it)');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');
