@@ -3099,6 +3099,15 @@ assert(appJs.includes("stages.indexOf(currentDeckStage()) < 0) switchDeckStage(s
   'focusRuntimePanel must auto-switch to the target panel stage');
 assert(!appJs.includes('collapse-all-stack-panels" title="收起所有可折叠面板'),
   '全部收起/展开 strip buttons must stay removed (一次一幕后无此需要)');
+// 五幕批二·体检一览：勘误幕首位聚合(校验错/提+审计必需缺口/蓝图外)·深入面板直达·随校验刷新
+assert(appJs.includes('data-panel="health-overview" data-stage="kanwu"'),
+  '勘误幕 should lead with the health-overview aggregate panel');
+assert(appJs.includes('function renderHealthOverview') && appJs.includes("command === 'run-health-overview'"),
+  'health overview should render aggregates and expose the 一键体检 command');
+assert(appJs.includes('data-runtime-panel="validation-results-panel"><b>') || appJs.includes('health-ov-stat'),
+  'health overview stats should jump into the deep panels');
+assert(html.includes('.health-ov-summary') && html.includes('.health-ov-row'),
+  'style should carry health overview summary and row styles');
 
 // Round 17 · Slice 109: scenario pill dropdown must show an explicit ✕
 // close button at the top + close when the user clicks the menu background.

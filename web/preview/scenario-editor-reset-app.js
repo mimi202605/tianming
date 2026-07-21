@@ -10632,6 +10632,7 @@
     renderScenarioDashboard();
     renderProductionDashboard();
     renderPreflightGate();
+    renderHealthOverview();   // 五幕批二·体检一览随校验刷新
     setStatus(issues.length ? ('校验完成：' + issues.length + ' 项提示') : '校验通过：未发现关键问题', issues.length ? 'warn' : 'good');
     return issues;
   }
@@ -13479,6 +13480,7 @@
     renderEditHistory();
     renderApiSettingsWorkbench();
     renderRuntimeFieldAudit();
+    renderHealthOverview();   // 批二·体检一览随全局渲染(校验未跑时字段审计仍是现账)
     renderEditorParityAudit();
     renderOfficialComparison();
     renderEventsMergeWizard();
@@ -19979,6 +19981,52 @@
     return Object.assign({}, surface, { present: true, created: !existed });
   }
 
+  /* 五幕批二·体检一览(2026-07-21)：勘误幕首位聚合视图——校验(错/提)+字段审计(必需缺口/蓝图外)
+   * 并成一张按严重度排的问题清单·各深入面板一键直达·旧面板保留为深入口。
+   * 剧本对照(官方间对照噪音大)不入清单·只留深入链。数据每次现算(buildRuntimeFieldAudit)不留陈账。 */
+  function renderHealthOverview() {
+    var box = document.getElementById('health-overview-list');
+    if (!box) return;
+    var issues = Array.isArray(state.validations) ? state.validations : [];
+    var errors = issues.filter(function (i) { return i && i.level === 'error'; });
+    var warns = issues.filter(function (i) { return i && i.level !== 'error'; });
+    var audit = null;
+    try { audit = buildRuntimeFieldAudit(); } catch (_eHA) {}
+    var reqMissing = (audit && audit.summary && audit.summary.requiredMissing) || 0;
+    var outBlueprint = (audit && audit.summary && audit.summary.notInBlueprint) || 0;
+    var html = '<div class="prompt-row"><button class="ai-button" data-editor-command="run-health-overview">一键体检（跑校验并汇总）</button></div>';
+    html += '<div class="health-ov-summary">' +
+      '<button type="button" class="health-ov-stat" data-tone="' + (errors.length ? 'error' : 'good') + '" data-editor-command="focus-runtime-panel" data-runtime-panel="validation-results-panel"><b>' + errors.length + '</b><span>错误</span></button>' +
+      '<button type="button" class="health-ov-stat" data-tone="' + (warns.length ? 'warn' : 'good') + '" data-editor-command="focus-runtime-panel" data-runtime-panel="validation-results-panel"><b>' + warns.length + '</b><span>提醒</span></button>' +
+      '<button type="button" class="health-ov-stat" data-tone="' + (reqMissing ? 'error' : 'good') + '" data-editor-command="focus-runtime-panel" data-runtime-panel="runtime-field-audit"><b>' + reqMissing + '</b><span>必需缺口</span></button>' +
+      '<button type="button" class="health-ov-stat" data-tone="neutral" data-editor-command="focus-runtime-panel" data-runtime-panel="runtime-field-audit"><b>' + outBlueprint + '</b><span>蓝图外</span></button>' +
+      '</div>';
+    if (!state.validationRan) {
+      html += '<p class="health-ov-hint">校验尚未运行——上面数字里只有字段审计是现账。</p>';
+    }
+    var rows = [];
+    errors.slice(0, 12).forEach(function (i) { rows.push({ badge: '错', tone: 'error', text: i.text }); });
+    warns.slice(0, Math.max(0, 20 - rows.length)).forEach(function (i) { rows.push({ badge: '提', tone: 'warn', text: i.text }); });
+    if (audit && Array.isArray(audit.visibleRows)) {
+      audit.visibleRows.filter(function (r) { return r && !r.present && r.required; }).slice(0, 8).forEach(function (r) {
+        rows.push({ badge: '缺', tone: 'error', text: (r.title || r.field) + '（' + r.field + '）', field: r.field });
+      });
+    }
+    if (rows.length) {
+      html += rows.map(function (r) {
+        return '<div class="health-ov-row" data-tone="' + r.tone + '"><i>' + r.badge + '</i><span>' + escapeHtml(r.text) + '</span>' +
+          (r.field ? '<button class="mini-ai" data-editor-command="jump-runtime-field" data-runtime-field="' + escapeHtml(r.field) + '">生成</button>' : '') +
+          '</div>';
+      }).join('');
+      var total = errors.length + warns.length + reqMissing;
+      if (total > rows.length) html += '<p class="health-ov-hint">只列前 ' + rows.length + ' 条·其余在「校验结果」「字段审计」深入面板。</p>';
+    } else if (state.validationRan) {
+      html += '<p class="health-ov-hint">三路查错皆净——可去「试演」幕过成色，或直赴「出品」。</p>';
+    }
+    html += '<p class="health-ov-hint">深入：<button class="mini-ai" data-editor-command="focus-runtime-panel" data-runtime-panel="reference-repair-workbench">引用修复</button> <button class="mini-ai" data-editor-command="focus-runtime-panel" data-runtime-panel="official-comparison">剧本对照</button></p>';
+    box.innerHTML = html;
+  }
+
   function renderRuntimeFieldAudit() {
     var mount = document.querySelector('[data-panel="runtime-field-audit"]');
     var report = buildRuntimeFieldAudit();
@@ -21567,6 +21615,7 @@
         '<div data-panel="new-scenario-starter" data-stage="qiben" class="starter-template-panel"><h3>新建剧本</h3><div id="new-scenario-starter-list"><p>正在准备剧本模板。</p></div></div>',
         '<div data-panel="creator-workflow" data-stage="qiben zhizuo" class="creator-workflow-panel"><h3>制作流程导航</h3><div id="creator-workflow-list"><p>正在生成制作流程。</p></div></div>',
         '<div data-panel="production-dashboard" data-stage="zhizuo"><h3>制作驾驶舱</h3><div id="production-dashboard-list"><p>正在汇总制作待办。</p></div></div>',
+        '<div data-panel="health-overview" data-stage="kanwu" class="health-overview-panel"><h3>体检一览</h3><div id="health-overview-list"><p>尚未体检。点「一键体检」跑校验并汇总三路查错。</p></div></div>',
         '<div data-panel="runtime-field-audit" data-stage="kanwu"><h3>正式游戏字段审计</h3><div id="runtime-field-audit-list"><p>正在对照官方剧本与正式运行字段。</p></div></div>',
         '<div data-panel="validation-results-panel" data-stage="kanwu"><h3>校验结果</h3><div id="validation-results"><p>尚未运行校验。</p></div></div>',
         '<div data-panel="ai-draft-queue" data-stage="zhizuo"><h3>AI 草稿队列</h3><div id="generation-queue-list"><p>暂无 AI 草稿。</p></div></div>',
@@ -21606,6 +21655,7 @@
     if (command === 'undo-edit') undoEdit();
     if (command === 'redo-edit') redoEdit();
     if (command === 'switch-deck-stage') switchDeckStage(target && target.dataset && target.dataset.deckStage);   // 五幕页签
+    if (command === 'run-health-overview') { validateScenario(); renderHealthOverview(); }   // 批二·一键体检
     if (command === 'save-field') saveSelectedField();
     if (command === 'save-game-settings') saveGameSettingsWorkbench();
     if (command === 'save-player-info') savePlayerInfoWorkbench();

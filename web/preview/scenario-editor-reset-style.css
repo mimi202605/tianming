@@ -802,6 +802,37 @@
       margin-left: 2px;
     }
 
+    /* 批二·体检一览 */
+    .health-ov-summary { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+    .health-ov-stat {
+      font-family: inherit;
+      display: flex; flex-direction: column; align-items: center;
+      min-width: 74px; padding: 8px 12px; cursor: pointer;
+      background: rgba(184,154,83,.06);
+      border: 1px solid rgba(202,162,76,.28); border-radius: 6px;
+      color: var(--ink-300, #8a8378);
+    }
+    .health-ov-stat b { font-size: 20px; font-variant-numeric: tabular-nums; color: var(--gold-bright, #d8bc74); }
+    .health-ov-stat[data-tone="error"] b { color: var(--vermillion, #c96a56); }
+    .health-ov-stat[data-tone="warn"] b { color: var(--gold-bright, #d8bc74); }
+    .health-ov-stat[data-tone="good"] b { color: var(--jade, #7eb8a7); }
+    .health-ov-stat span { font-size: 11px; margin-top: 2px; }
+    .health-ov-stat:hover { border-color: var(--gold-bright, #d8bc74); }
+    .health-ov-row {
+      display: flex; align-items: baseline; gap: 8px;
+      font-size: 12.5px; padding: 5px 2px;
+      border-top: 1px dotted rgba(202,162,76,.16);
+    }
+    .health-ov-row i {
+      font-style: normal; flex-shrink: 0;
+      font-size: 11px; padding: 0 6px; border-radius: 3px;
+      border: 1px solid rgba(202,162,76,.35);
+    }
+    .health-ov-row[data-tone="error"] i { color: var(--vermillion, #c96a56); border-color: rgba(201,106,86,.5); }
+    .health-ov-row[data-tone="warn"] i { color: var(--gold-bright, #d8bc74); }
+    .health-ov-row span { flex: 1; }
+    .health-ov-hint { font-size: 11.5px; color: var(--ink-300, #8a8378); margin: 8px 0 0; }
+
     /* 五幕页签 */
     .deck-stage-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
     .deck-stage-tab {
