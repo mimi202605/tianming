@@ -774,3 +774,272 @@ body.transmigration-mode .player-block-state-more {
   font-style: italic;
   font-size: 11px;
 }
+
+/* ───────────────────────────────────────────────────────────
+   §7.1 友好占位（FRIENDLY_FALLBACK · PlayerFortune/Adversity/Memorial/Office）
+   替代冷冰冰的「XXX 待接入」·显示中文化筹备中提示
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .player-block-soon {
+  padding: 10px 12px;
+  margin: 6px 0;
+  background: linear-gradient(135deg, #fafafa 0%, #f0f4f8 100%);
+  border-left: 3px solid #d4a017;
+  border-radius: 4px;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.6;
+}
+body.transmigration-mode .player-block-soon-hint {
+  color: #666;
+  font-style: italic;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §7.2 PlayerInteraction 专用面板（人际名录 + 5 维关系 chip）
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .pi-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+}
+body.transmigration-mode .pi-section {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 8px 10px;
+  background: #fafafa;
+}
+body.transmigration-mode .pi-section-title {
+  font-weight: 600;
+  color: #1a5490;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+  font-size: 12px;
+}
+body.transmigration-mode .pi-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+body.transmigration-mode .pi-val {
+  color: #1a5490;
+  font-weight: 600;
+}
+body.transmigration-mode .pi-empty {
+  color: #aaa;
+  font-style: italic;
+  padding: 8px 0;
+  text-align: center;
+}
+body.transmigration-mode .pi-npc {
+  border-bottom: 1px dashed #e8e8e8;
+  padding: 6px 0;
+}
+body.transmigration-mode .pi-npc:last-child {
+  border-bottom: none;
+}
+body.transmigration-mode .pi-npc-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+body.transmigration-mode .pi-npc-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+}
+body.transmigration-mode .pi-npc-title {
+  color: #1a5490;
+  font-size: 11px;
+  background: #e6f0fa;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+body.transmigration-mode .pi-npc-faction {
+  color: #d4a017;
+  font-size: 11px;
+  background: #fffbe6;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+body.transmigration-mode .pi-npc-mil {
+  color: #fff;
+  font-size: 10px;
+  background: #8b4513;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+body.transmigration-mode .pi-npc-dims {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+body.transmigration-mode .pi-dim {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  background: #888;
+}
+body.transmigration-mode .pi-dim-master    { background: #6a4c93; }  /* 师徒·紫 */
+body.transmigration-mode .pi-dim-friend   { background: #4a7c59; }  /* 亲友·绿 */
+body.transmigration-mode .pi-dim-rival    { background: #c0392b; }  /* 政敌·红 */
+body.transmigration-mode .pi-dim-colleague { background: #2980b9; } /* 同僚·蓝 */
+body.transmigration-mode .pi-dim-enmity   { background: #2c3e50; }  /* 仇雠·黑 */
+body.transmigration-mode .pi-dim-none {
+  background: transparent;
+  color: #aaa;
+  font-style: italic;
+}
+body.transmigration-mode .pi-more {
+  color: #aaa;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 0;
+  font-style: italic;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §7.3 PlayerRail 槽状态 class（enabled/disabled/restricted/special-*）
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .ps-rail-slot.state-enabled {
+  background: #fff;
+  border-color: #d9d9d9;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+}
+body.transmigration-mode .ps-rail-slot.state-enabled:hover,
+body.transmigration-mode .ps-rail-slot.state-enabled.clickable:hover {
+  background: #e6f0fa;
+  border-color: #1a5490;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(26,84,144,0.15);
+}
+body.transmigration-mode .ps-rail-slot.state-disabled {
+  background: #f5f5f5;
+  border-color: #e8e8e8;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+body.transmigration-mode .ps-rail-slot.state-disabled .ps-rail-slot-icon,
+body.transmigration-mode .ps-rail-slot.state-disabled .ps-rail-slot-label {
+  filter: grayscale(1);
+}
+body.transmigration-mode .ps-rail-slot.state-restricted {
+  background: #fffbe6;
+  border-color: #d4a017;
+  border-style: dashed;
+  cursor: pointer;
+}
+body.transmigration-mode .ps-rail-slot.state-restricted:hover {
+  background: #fff5cc;
+}
+body.transmigration-mode .ps-rail-slot.state-special-caravan,
+body.transmigration-mode .ps-rail-slot.state-special-guardian,
+body.transmigration-mode .ps-rail-slot.state-special-advice {
+  background: linear-gradient(135deg, #fffbe6 0%, #ffe5b4 100%);
+  border-color: #d4a017;
+  cursor: pointer;
+}
+body.transmigration-mode .ps-rail-slot.state-special-caravan:hover,
+body.transmigration-mode .ps-rail-slot.state-special-guardian:hover,
+body.transmigration-mode .ps-rail-slot.state-special-advice:hover {
+  background: linear-gradient(135deg, #ffe5b4 0%, #ffd789 100%);
+}
+
+/* ───────────────────────────────────────────────────────────
+   §7.5 + §7.6 drawer（右栏抽屉·点 X 关闭）
+   历史根因（2026-07-21）：CSS 缺 .player-rail-drawer 默认隐藏 + .open 状态切换
+   → drawer 创建后始终可见→点 X 调 closeDrawer 移除 .open 但无 CSS 效果→用户无法关闭
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .player-rail-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease-out, visibility 200ms ease-out;
+}
+body.transmigration-mode .player-rail-drawer-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+body.transmigration-mode .player-rail-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(420px, 90vw);
+  height: 100vh;
+  z-index: 9999;
+  transform: translateX(100%);  /* 默认滑出视口外 */
+  transition: transform 220ms ease-out;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;  /* 滑出时不可点击 */
+}
+body.transmigration-mode .player-rail-drawer.open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+body.transmigration-mode .player-rail-drawer-panel {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+body.transmigration-mode .player-rail-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f5f7fa;
+  flex-shrink: 0;
+}
+body.transmigration-mode .player-rail-drawer-title {
+  font-weight: 600;
+  color: #1a5490;
+  letter-spacing: 2px;
+  font-size: 14px;
+}
+body.transmigration-mode .player-rail-drawer-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  color: #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 120ms;
+}
+body.transmigration-mode .player-rail-drawer-close:hover {
+  background: #f0f0f0;
+  color: #c0392b;
+}
+body.transmigration-mode .player-rail-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+body.transmigration-mode .ps-drawer-err {
+  color: #c0392b;
+  background: #fdecea;
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 3px solid #c0392b;
+  font-size: 12px;
+}
+body.transmigration-mode .ps-drawer-empty {
+  color: #888;
+  background: #fafafa;
+  padding: 10px;
+  border-radius: 4px;
+  font-style: italic;
+  font-size: 12px;
+}
