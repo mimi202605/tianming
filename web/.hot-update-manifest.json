@@ -3931,8 +3931,8 @@
     },
     {
       "path": "tm-edict-parser.js",
-      "sha256": "de38adec81f94b9113d441b9fe4afbe0fe052628ef09c761b690c35e51dfe2ee",
-      "size": 108687
+      "sha256": "2cbde93ca7b45373706bb093bd699a669f67929e451f3a2a44b98963db071af0",
+      "size": 113017
     },
     {
       "path": "tm-edict-thresholds.js",

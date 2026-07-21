@@ -754,7 +754,7 @@
   function _inferOfficeReformFromText(text) {
     text = String(text || '');
     var name = '';
-    var m = text.match(/(?:设|立|置|创|新设|添设)\s*([^，。、；;\s]{1,16}?(?:司|部|院|监|处|局|署|府|所|馆))/);
+    var m = text.match(/(?:设|立|置|创|新设|添设)\s*([^，。、；;\s]{1,16}?(?:司|部|院|监|处|局|署|府|所|馆|行|台|寺|卫|厂|库|坊|科|仓|驿))/);
     if (m) name = m[1];
     var duties = '';
     var d = text.match(/(?:掌|管|司|辖)\s*([^。；;，,]{2,40})/);
@@ -769,15 +769,15 @@
   function _isOfficeAbolishText(text) {
     text = String(text || '');
     return /裁撤|裁革|裁汰|废止|废除|撤销|罢撤|罢废|并归|归并/.test(text) &&
-      /司|部|院|监|处|局|署|府|所|馆|机构|官署|衙门/.test(text);
+      /司|部|院|监|处|局|署|府|所|馆|行|台|寺|卫|厂|库|坊|科|仓|驿|机构|官署|衙门/.test(text);
   }
 
   function _inferOfficeAbolishFromText(text) {
     text = String(text || '');
     if (!_isOfficeAbolishText(text)) return {};
     var name = '';
-    var m = text.match(/(?:裁撤|裁革|裁汰|废止|废除|撤销|罢撤|罢废)\s*([^，。、；;\s]{1,16}?(?:司|部|院|监|处|局|署|府|所|馆))/);
-    if (!m) m = text.match(/([^，。、；;\s]{1,16}?(?:司|部|院|监|处|局|署|府|所|馆))(?:机构|官署|衙门)?\s*(?:并归|归并|改隶)/);
+    var m = text.match(/(?:裁撤|裁革|裁汰|废止|废除|撤销|罢撤|罢废)\s*([^，。、；;\s]{1,16}?(?:司|部|院|监|处|局|署|府|所|馆|行|台|寺|卫|厂|库|坊|科|仓|驿))/);
+    if (!m) m = text.match(/([^，。、；;\s]{1,16}?(?:司|部|院|监|处|局|署|府|所|馆|行|台|寺|卫|厂|库|坊|科|仓|驿))(?:机构|官署|衙门)?\s*(?:并归|归并|改隶)/);
     if (m) name = m[1];
     return {
       action: 'abolish',
@@ -793,6 +793,61 @@
     return list.find(function(inst) {
       return inst && inst.stage !== 'abolished' && String(inst.name || '') === name;
     }) || null;
+  }
+  function _findDynamicInstitutionByContains(name) {
+    var G = global.GM || {};
+    var list = Array.isArray(G.dynamicInstitutions) ? G.dynamicInstitutions : [];
+    name = String(name || '').trim();
+    if (!name) return null;
+    return list.find(function(inst) {
+      if (!inst || inst.stage === 'abolished') return false;
+      var n = String(inst.name || '');
+      return n && (n.indexOf(name) >= 0 || name.indexOf(n) >= 0);
+    }) || null;
+  }
+
+  // ── 补监察（玩家群 2026-07-21 立案·缺b）────────────────────────────────
+  // 病根：新设衙门在吏治账(corruption institutional gap)恒按「无审计/无任期/无监察/无问责」
+  // 记欠·全库无一处能把 hasAudit/hasTermLimit/hasSupervision/hasAccountability 设上。
+  // 修法：诏书动词「为X衙门设监察/派御史/立考成/定任期/立问责」→ 对应旗即设·欠账即销。
+  var _SUPERV_WORDS = /(监察|御史|督察|巡视|考成|审计|稽核|查账|任期|轮换|问责|考核|究责)/;
+  function _isInstSupervisionText(text) {
+    text = String(text || '');
+    return _SUPERV_WORDS.test(text) &&
+      /(设|置|派|立|定|纳入|挂|补|驻)/.test(text) &&
+      /(司|部|院|监|处|局|署|府|所|馆|行|台|寺|卫|厂|库|坊|科|仓|驿|机构|官署|衙门)/.test(text);
+  }
+  function _inferInstSupervisionFromText(text) {
+    text = String(text || '');
+    if (!_isInstSupervisionText(text)) return {};
+    // 先剜掉监察词再抓衙门名·免得「设监察」的「监」被当机构后缀吞掉
+    var scrubbed = text.replace(new RegExp(_SUPERV_WORDS.source, 'g'), '·');
+    var name = '';
+    var m = scrubbed.match(/(?:为|给|命|着|向)?\s*([^，。、；;\s·]{1,16}?(?:司|部|院|监|处|局|署|府|所|馆|行|台|寺|卫|厂|库|坊|科|仓|驿))/);
+    if (m) name = m[1];
+    var aspects = [];
+    if (/(监察|御史|督察|巡视|驻)/.test(text)) aspects.push('supervision');
+    if (/(审计|稽核|查账|考成)/.test(text)) aspects.push('audit');
+    if (/(任期|轮换)/.test(text)) aspects.push('term');
+    if (/(问责|考核|究责)/.test(text)) aspects.push('accountability');
+    return { action: 'supervise', officeName: name, superviseAspects: aspects };
+  }
+  function superviseInstitution(inst, aspects, why) {
+    if (!inst) return false;
+    var set = [];
+    var want = (aspects && aspects.length) ? aspects : ['supervision', 'audit'];   // 泛言「设监察」=监察+稽核
+    if (want.indexOf('supervision') >= 0 && !inst.hasSupervision) { inst.hasSupervision = true; set.push('监察'); }
+    if (want.indexOf('audit') >= 0 && !inst.hasAudit) { inst.hasAudit = true; set.push('考成稽核'); }
+    if (want.indexOf('term') >= 0 && !inst.hasTermLimit) { inst.hasTermLimit = true; set.push('任期轮换'); }
+    if (want.indexOf('accountability') >= 0 && !inst.hasAccountability) { inst.hasAccountability = true; set.push('问责'); }
+    if (!set.length) {
+      if (global.addEB) global.addEB('机构', inst.name + ' 所请诸制均已在册·无须重设');
+      return true;
+    }
+    inst.corruption = Math.max(0, (inst.corruption || 0) - 5 * set.length);   // 新制上身·衙内风气当期小幅收敛
+    if (global.addEB) global.addEB('机构', '为 ' + inst.name + ' 补设 ' + set.join('、') + '——制度漏洞欠账即销');
+    _recordInstitutionLifecycleEvent(inst, 'supervision_added', { aspects: set, why: String(why || '').slice(0, 80) });
+    return true;
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -1013,9 +1068,17 @@
       aiEntry: function(params) {
         if (!global.GM.officeTree) return false;
         var edictText = params && params._edictText || '';
-        params = Object.assign({}, _inferOfficeReformFromText(edictText), _inferOfficeAbolishFromText(edictText), params || {});
+        params = Object.assign({}, _inferOfficeReformFromText(edictText), _inferOfficeAbolishFromText(edictText), _inferInstSupervisionFromText(edictText), params || {});
         if (!params.officeName) params.officeName = params.institutionName || params.name || params.target || '';
         if (!params.officeName) return false;
+        if (params.action === 'supervise') {
+          var svTarget = _findDynamicInstitutionByName(params.officeName) || _findDynamicInstitutionByContains(params.officeName);
+          if (!svTarget) {
+            if (global.addEB) global.addEB('机构', '所指「' + params.officeName + '」不在在册衙门中·补监察无从落账');
+            return false;
+          }
+          return superviseInstitution(svTarget, params.superviseAspects, edictText);
+        }
         if (params.action === 'abolish') {
           var targetInst = _findDynamicInstitutionByName(params.officeName);
           if (!targetInst || typeof abolishInstitution !== 'function') return false;
@@ -1193,6 +1256,7 @@
     if (/徭役|役法|差役|均徭|一条鞭|摊丁|役银/.test(text)) return 'corvee_reform';
     if (/府兵|募兵|卫所|八旗|绿营|兵制|军制|常备/.test(text)) return 'military_reform';
     if (_isOfficeAbolishText(text)) return 'office_reform';
+    if (_isInstSupervisionText(text)) return 'office_reform';
     if (/设.*司|立.*部|置.*院|创.*监|官制|职官|机构/.test(text)) return 'office_reform';
     return null;
   }
@@ -2074,6 +2138,7 @@
     advanceInstitutionLifecycle: advanceInstitutionLifecycle,
     getInstitutionLifecycleView: getInstitutionLifecycleView,
     enhanceOfficeReformDraft: enhanceOfficeReformDraft,
+    superviseInstitution: superviseInstitution,
     VERSION: 2
   };
 
