@@ -13352,3 +13352,284 @@
     .inspector ::selection { background: rgba(192, 64, 48, .22); color: #262014; }
     .inspector input::selection,
     .inspector textarea::selection { background: rgba(168, 131, 58, .3); color: #262014; }
+
+    /* ════════════════════════════════════════════════════════════════
+       重做 2026-07 · 玄墨案头 X4 —— 五幕总控台视觉提质
+       五幕骨架(批一~三)落定后的纯视觉收整刀·零 JS/零结构变动：
+       ① 幕签导航：旧金框扁盒 → 暗玻璃分段签(CJK 计数器标幕序·「更多」
+          靠右让位五正幕)；② 状态条：清除旧 hero 的青斑 radial 残迹与
+          粗金框(实拍在 72% 处糊成一块浅斑)，金印题签+账目链分隔；
+       ③ 实装格子面板卡片化(半透墨面+眉题金线) · 等高拉伸改顶对齐；
+       ④ 体检一览四计数卡等宽+语义顶色条；⑤ 日志合订签改底线签；
+       ⑥ 按钮分层：金 CTA(模板载入/一键体检/primary)从青瓷常规键中
+          拔出+按压反馈；⑦ 一致性横幅下移让位顶栏；⑧ 工作流状态签
+          (就绪/提醒/阻断)随卡署色。动效全部尊重 prefers-reduced-motion。
+       ════════════════════════════════════════════════════════════════ */
+
+    /* ① 幕签导航条：沿用 sticky·换暗玻璃底 */
+    .section-nav-strip.deck-stage-nav {
+      padding: 6px 8px;
+      border: 1px solid var(--je-hairline);
+      border-radius: 8px;
+      background: rgba(19, 17, 16, .9);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+    }
+    .deck-stage-nav .deck-stage-tabs {
+      flex: 1 1 auto;
+      gap: 2px;
+      counter-reset: tm-mu;
+    }
+    .deck-stage-tabs .deck-stage-tab {
+      counter-increment: tm-mu;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 7px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      font-family: var(--je-font-display);
+      font-size: 15px;
+      letter-spacing: .14em;
+      color: var(--je-tx-mid);
+      padding: 6px 16px 6px 13px;
+      transition: color .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .deck-stage-tabs .deck-stage-tab::before {
+      content: counter(tm-mu, cjk-ideographic);
+      font-size: 10.5px;
+      letter-spacing: 0;
+      color: var(--je-tx-dim);
+    }
+    .deck-stage-tabs .deck-stage-tab:hover {
+      color: var(--je-tx-hi);
+      border-color: var(--je-hairline-2);
+      background: rgba(245, 240, 232, .04);
+    }
+    .deck-stage-tabs .deck-stage-tab[data-active="true"] {
+      color: var(--je-gold-300);
+      border-color: rgba(184, 154, 83, .45);
+      background: linear-gradient(180deg, rgba(184, 154, 83, .16), rgba(184, 154, 83, .05));
+      box-shadow: inset 0 1px rgba(255, 255, 255, .05);
+    }
+    .deck-stage-tabs .deck-stage-tab[data-active="true"]::before { color: var(--je-gold-400); }
+    .deck-stage-tabs .deck-stage-tab:focus-visible {
+      outline: 2px solid var(--je-gold-300);
+      outline-offset: 1px;
+    }
+    /* 「更多」非正幕：不标序·靠右自成一角 */
+    .deck-stage-tabs .deck-stage-tab[data-deck-stage="gengduo"] { margin-left: auto; }
+    .deck-stage-tabs .deck-stage-tab[data-deck-stage="gengduo"]::before { content: none; }
+
+    /* ② 状态条：去旧 hero 装饰残迹·压成一行账目链
+       (批一只撤了 ::after·240px「印」章水印 ::before 漏网·39px 条上裁成一块浅斑) */
+    .deck-status-strip::before { content: none; }
+    .hero-board.deck-status-strip {
+      border: 1px solid var(--je-hairline-2);
+      border-radius: 8px;
+      background: var(--je-chrome-1);
+      gap: 6px 14px;
+      padding: 8px 16px;
+    }
+    .deck-status-strip .strip-kicker {
+      font-family: var(--je-font-display);
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: .22em;
+      color: var(--je-gold-300);
+      padding: 2px 4px 2px 12px;
+      border: 1px solid rgba(184, 154, 83, .4);
+      border-radius: 4px;
+      background: rgba(184, 154, 83, .08);
+    }
+    .deck-status-strip .strip-m {
+      font-size: 12px;
+      letter-spacing: .04em;
+      color: var(--je-tx-dim);
+    }
+    .deck-status-strip .strip-m + .strip-m {
+      border-left: 1px solid var(--je-hairline);
+      padding-left: 14px;
+    }
+    .deck-status-strip .strip-m b {
+      font-size: 14px;
+      color: var(--je-tx-hi);
+      margin-left: 4px;
+    }
+    .deck-status-strip .strip-m b[data-metric-delta="up"] { color: var(--je-celadon-300); }
+    .deck-status-strip .strip-m b[data-metric-delta="down"] { color: var(--je-vermillion-300); }
+
+    /* ③ 实装格：子面板卡片化·顶对齐防空壳拉伸·眉题金线 */
+    .runtime-grid {
+      gap: 14px;
+      align-items: start;
+    }
+    .runtime-grid > [data-panel] {
+      background: rgba(36, 33, 32, .5);
+      border: 1px solid var(--je-hairline);
+      border-radius: 8px;
+      padding: 12px 14px;
+      transition: border-color .15s ease;
+    }
+    .runtime-grid > [data-panel]:hover { border-color: var(--je-hairline-2); }
+    .runtime-grid > div[data-runtime-focus="true"] {
+      outline: 2px solid rgba(212, 190, 122, .7);
+      outline-offset: 2px;
+    }
+    .runtime-grid > [data-panel] > h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 10px;
+      font-size: 13.5px;
+      letter-spacing: .12em;
+      color: var(--je-gold-400);
+    }
+    .runtime-grid > [data-panel] > h3::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(184, 154, 83, .3), transparent);
+    }
+    /* 壳面板题头退位：幕签已带语境·「实装工作台」降为哑题 */
+    .runtime-panel > .section-head h2 {
+      font-size: 15px;
+      letter-spacing: .1em;
+      color: var(--je-tx-mid);
+    }
+    #editor-live-status[data-tone="good"] { color: var(--je-celadon-300); }
+    #editor-live-status[data-tone="warn"] { color: var(--je-gold-300); }
+    #editor-live-status[data-tone="error"] { color: var(--je-vermillion-300); }
+
+    /* ④ 体检一览：四计数卡等宽·语义顶色条·行清单悬停 */
+    .health-ov-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 10px 0 12px;
+    }
+    .health-ov-stat {
+      min-width: 0;
+      background: var(--je-chrome-2);
+      border: 1px solid var(--je-hairline);
+      border-top: 2px solid var(--je-hairline-2);
+      border-radius: 8px;
+      padding: 10px 8px 8px;
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .health-ov-stat b {
+      font-family: var(--je-font-display);
+      font-size: 24px;
+      line-height: 1.1;
+    }
+    .health-ov-stat span {
+      font-size: 11.5px;
+      letter-spacing: .08em;
+      color: var(--je-tx-dim);
+      margin-top: 3px;
+    }
+    .health-ov-stat[data-tone="good"] { border-top-color: rgba(126, 184, 167, .75); }
+    .health-ov-stat[data-tone="warn"] { border-top-color: rgba(212, 190, 122, .8); }
+    .health-ov-stat[data-tone="error"] { border-top-color: rgba(212, 112, 106, .85); }
+    .health-ov-stat:hover {
+      border-color: rgba(184, 154, 83, .5);
+      background: var(--je-chrome-3);
+    }
+    .health-ov-row {
+      border-top: 1px solid var(--je-hairline);
+      padding: 6px 4px;
+    }
+    .health-ov-row:hover { background: rgba(245, 240, 232, .03); }
+    .health-ov-row i {
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 10.5px;
+    }
+    .health-ov-row[data-tone="warn"] i {
+      background: rgba(184, 154, 83, .12);
+      border-color: rgba(184, 154, 83, .4);
+    }
+    .health-ov-row[data-tone="error"] i { background: rgba(192, 64, 48, .14); }
+
+    /* ⑤ 日志合订签：金框小钮 → 册页底线签 */
+    .log-binder-tabs {
+      gap: 0;
+      border-bottom: 1px solid var(--je-hairline-2);
+      margin-bottom: 10px;
+    }
+    .log-binder-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      margin-bottom: -1px;
+      padding: 5px 14px 7px;
+      color: var(--je-tx-dim);
+      transition: color .15s ease, border-color .15s ease;
+    }
+    .log-binder-tab:hover { color: var(--je-tx-hi); background: transparent; }
+    .log-binder-tab[data-active="true"] {
+      color: var(--je-gold-300);
+      background: transparent;
+      border-color: transparent;
+      border-bottom-color: var(--je-gold-300);
+    }
+    .log-binder-tab:focus-visible {
+      outline: 2px solid var(--je-gold-300);
+      outline-offset: -1px;
+    }
+
+    /* ⑥ 按钮分层：金 CTA 拔出青瓷常规键·全族按压反馈 */
+    .mini-ai,
+    .ai-button {
+      transition: border-color .15s ease, background .15s ease, color .15s ease, transform .06s ease;
+    }
+    .mini-ai:active,
+    .ai-button:active { transform: translateY(1px); }
+    .mini-ai.primary,
+    .starter-template-card .mini-ai,
+    .ai-button[data-editor-command="run-health-overview"] {
+      border-color: rgba(184, 154, 83, .6);
+      background: linear-gradient(180deg, rgba(184, 154, 83, .24), rgba(18, 13, 8, .6));
+      color: var(--je-gold-300);
+    }
+    .mini-ai.primary:hover,
+    .starter-template-card .mini-ai:hover,
+    .ai-button[data-editor-command="run-health-overview"]:hover {
+      border-color: var(--je-gold-300);
+      background: linear-gradient(180deg, rgba(184, 154, 83, .34), rgba(18, 13, 8, .62));
+    }
+
+    /* ⑦ 一致性横幅：让位顶栏(原 top:14 压住工具栏) */
+    .je-guard-toast { top: 74px; }
+
+    /* ⑧ 工作流状态签随卡署色 + 卡片悬停浮起 */
+    .workflow-step-card { transition: border-color .15s ease, transform .12s ease; }
+    .workflow-step-card:hover { transform: translateY(-1px); }
+    .workflow-step-card[data-level="ok"] em {
+      color: var(--je-celadon-300);
+      border-color: rgba(126, 184, 167, .4);
+      background: rgba(126, 184, 167, .08);
+    }
+    .workflow-step-card[data-level="warn"] em {
+      color: var(--je-gold-300);
+      border-color: rgba(184, 154, 83, .45);
+      background: rgba(184, 154, 83, .08);
+    }
+    .workflow-step-card[data-level="error"] em {
+      color: var(--je-vermillion-300);
+      border-color: rgba(212, 112, 106, .5);
+      background: rgba(192, 64, 48, .1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .deck-stage-tabs .deck-stage-tab,
+      .runtime-grid > [data-panel],
+      .health-ov-stat,
+      .log-binder-tab,
+      .mini-ai,
+      .ai-button,
+      .workflow-step-card { transition: none; }
+      .workflow-step-card:hover,
+      .mini-ai:active,
+      .ai-button:active { transform: none; }
+    }

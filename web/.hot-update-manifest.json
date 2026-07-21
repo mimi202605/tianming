@@ -3301,8 +3301,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-style.css",
-      "sha256": "49bc859f0615d5fe407b56efb014d20732fc8b7300f1f76655b1a938446f03aa",
-      "size": 388825
+      "sha256": "ab5059baf5a4b96d1944b89e2ae238e64d7d135789e05aa524d2caa918fe4c28",
+      "size": 399795
     },
     {
       "path": "preview/scenario-editor-sandbox-bridge.js",
