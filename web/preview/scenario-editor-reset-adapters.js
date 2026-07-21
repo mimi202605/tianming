@@ -1332,7 +1332,7 @@
   'use strict';
   var S = { clientLoading: false, clientFail: '', busy: false, msg: '', msgTone: '', msgZone: '',
             mine: null, mineLoading: false, mineAutoTried: false, mineX: {}, mineLin: '',
-            cat: null, catLoading: false, catQuery: '', catSort: 'new', catOpenOnly: false, catAutoTried: false,
+            cat: null, catLoading: false, catQuery: '', catSort: 'new', catType: 'scenario', catOpenOnly: false, catAutoTried: false,
             feat: null, favs: null, favAutoTried: false,
             expanded: '', detail: {}, forkFrom: null,
             pubMode: 'new', pubBase: null, pub: null, pf: null, pfAt: 0 };
@@ -1504,6 +1504,9 @@
   // ── 橱窗渲染（起本幕） ──────────────────────────────────────────────────
   function catList() {
     var list = (S.cat || []).slice();
+    // 批Ⅳ·类型页签过滤（默认剧本）
+    var ct = S.catType || 'scenario';
+    list = list.filter(function (p) { return p && (String(p.type || 'scenario') === ct); });
     var q = S.catQuery.trim().toLowerCase();
     if (q) list = list.filter(function (p) {
       if (!p) return false;
@@ -1549,8 +1552,17 @@
             return '<div class="ws-cmt"><b>' + esc(cm.author || cm.username || '匿名') + '</b>：' + esc(String(cm.text || cm.content || '').slice(0, 120)) + '</div>';
           }).join('');
         } else cms = '<div class="ws-dim">还没有评论。</div>';
+        // 批Ⅳ·资产包详情附清单（服务器 v2 下发 assets 后点亮·剧本类无此段）
+        var assetLine = '';
+        if (p.type && p.type !== 'scenario' && Array.isArray(p.assets) && p.assets.length) {
+          assetLine = '<div class="ws-detail-h">' + ({ music: '曲目', portrait: '立绘', map: '图幅' }[p.type] || '资源') + ' · ' + p.assets.length + '</div>' +
+            '<div class="ws-dim">' + p.assets.slice(0, 12).map(function (a) {
+              return esc((a && a.name) || '') + (a && a.duration ? '（' + esc(a.duration) + '）' : '');
+            }).join(' · ') + (p.assets.length > 12 ? ' …' : '') + '</div>';
+        }
         detail = '<div class="ws-detail">' +
           (p.description ? '<p class="ws-desc-full">' + esc(p.description) + '</p>' : '') +
+          assetLine +
           '<div class="ws-detail-h">世界线谱系</div>' + lineageHtml(p, d) +
           '<div class="ws-detail-h">评论（前 3 条 · 长评去游戏内工坊）</div>' + cms +
           '<div class="ws-rate">我来打分：' + [1, 2, 3, 4, 5].map(function (n) {
@@ -1573,17 +1585,25 @@
     if (!box) return;
     var c = client();
     if (!c) { box.innerHTML = '<p class="ws-dim">' + (S.clientFail ? esc(S.clientFail) : '正在接通在线服务…') + '</p>'; return; }
-    var html = '<div class="ws-shop-bar">' +
+    // 批Ⅳ·类型页签（剧本/立绘/音乐/地图·目录里真有 mod 包才多出 mod 签·缓议类型不空造）
+    var _ct = S.catType || 'scenario';
+    var _typeTabs = [['scenario', '剧本'], ['portrait', '立绘'], ['music', '音乐'], ['map', '地图']];
+    if ((S.cat || []).some(function (p) { return p && p.type === 'mod'; })) _typeTabs.push(['mod', 'MOD']);
+    var _tabsHtml = _typeTabs.map(function (t) {
+      var n = (S.cat || []).filter(function (p) { return p && String(p.type || 'scenario') === t[0]; }).length;
+      return '<button type="button" class="ws-chip" data-on="' + (_ct === t[0]) + '" data-ws-act="cat-type" data-ws-type="' + t[0] + '">' + t[1] + (n ? ' ' + n : '') + '</button>';
+    }).join('');
+    var html = '<div class="ws-shop-bar">' + _tabsHtml + '<span class="ws-dim" style="margin:0 4px;">·</span>' +
       '<input id="ws-cat-q" class="ws-desk-input ws-grow" value="' + esc(S.catQuery) + '" placeholder="搜标题 / 作者 / 简介 / 标签…（即输即滤）">' +
       sortChip('new', '最新') + sortChip('hot', '最热') + sortChip('rating', '评分') +
-      '<button type="button" class="ws-chip" data-on="' + S.catOpenOnly + '" data-ws-act="cat-openonly">只看可改编</button>' +
+      (_ct === 'scenario' ? '<button type="button" class="ws-chip" data-on="' + S.catOpenOnly + '" data-ws-act="cat-openonly">只看可改编</button>' : '') +
       '<button type="button" class="mini-ai" data-ws-act="cat-refresh">' + (S.catLoading ? '正在取回…' : '刷新') + '</button>' +
       '</div>';
     if (S.catLoading && !S.cat) html += '<p class="ws-dim">正在取回在线目录…</p>';
     else if (!S.cat) html += '<p class="ws-dim">目录尚未取回——点「刷新」重试（离线时不可用）。</p>';
     else {
       var list = catList();
-      if (!list.length) html += '<p class="ws-dim">' + (S.cat.length ? '没有匹配的剧本——换个搜法。' : '目录还是空的——第一个上架的没准就是你。') + '</p>';
+      if (!list.length) html += '<p class="ws-dim">' + (S.cat.length ? ((S.catType && S.catType !== 'scenario') ? '这一类还没有上架条目——去游戏内创意工坊发第一个。' : '没有匹配的剧本——换个搜法。') : '目录还是空的——第一个上架的没准就是你。') + '</p>';
       else html += '<div class="ws-shop-grid">' + list.map(renderCard).join('') + '</div>';
     }
     if (S.msg && S.msgZone === 'browse') html += '<div class="ws-desk-msg" data-tone="' + esc(S.msgTone) + '">' + esc(S.msg) + '</div>';
@@ -1664,6 +1684,8 @@
     pubSec += '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (!S.busy && !pfBlock ? '' : ' disabled') + '>' +
       (S.busy ? '正在提交…' : (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布 v' + esc(S.pub.version) + '（过审后上架）')) + '</button>' +
       (S.pubSize ? '<span class="ws-dim">' + esc(fmtSize(S.pubSize)) + ' · 纯文本剧本 · 运行时私有字段(_开头)出门前自动剔除</span>' : '') + '</div>' +
+      // 批Ⅲ(2026-07-22)：资产包发布指路——案台专营剧本·音乐/立绘/地图打包件归游戏内工坊发布口（勿重复建设）
+      '<div class="ws-desk-row"><span class="ws-dim">发音乐 / 立绘 / 地图资产包？</span><a class="ws-golink" href="../index.html?tmOpenWorkshop=1">去游戏内创意工坊 · 发布 →</a></div>' +
       '</div>';
     var led = reconcileLedger();
     var ledSec = '';
@@ -1842,8 +1864,9 @@
     }).catch(function () {});
     c.catalog().then(function (cat) {
       S.catLoading = false;
-      // 橱窗只列剧本类(纯文本可开进编辑器·打包件亮牌后引去游戏装)·立绘/音乐/地图类归游戏内工坊
-      S.cat = ((cat && cat.packs) || []).filter(function (p) { return p && (!p.type || p.type === 'scenario'); });
+      // 批Ⅳ(2026-07-22)：橱窗收全类·按 S.catType 页签分列——剧本可开进编辑器·
+      // 立绘/音乐/地图打包件亮「须游戏内安装」牌引去游戏装（发现面在此·装载面在游戏）
+      S.cat = ((cat && cat.packs) || []).filter(function (p) { return !!p; });
       render();
     }).catch(function (e) { S.catLoading = false; S.cat = null; setMsg('目录取回失败：' + ((e && e.message) || e), 'error', 'browse'); });
   }
@@ -1927,6 +1950,7 @@
     else if (act === 'cat-open') doCatOpen(t.getAttribute('data-ws-pack'));
     else if (act === 'cat-detail') doCatDetail(t.getAttribute('data-ws-pack'));
     else if (act === 'cat-sort') { S.catSort = t.getAttribute('data-ws-sort') || 'new'; renderBrowse(); }
+    else if (act === 'cat-type') { S.catType = t.getAttribute('data-ws-type') || 'scenario'; S.expanded = ''; renderBrowse(); }
     else if (act === 'cat-openonly') { S.catOpenOnly = !S.catOpenOnly; renderBrowse(); }
     else if (act === 'fav') doFav(t.getAttribute('data-ws-pack'));
     else if (act === 'rate') doRate(t.getAttribute('data-ws-pack'), parseInt(t.getAttribute('data-ws-score'), 10) || 0);

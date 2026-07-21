@@ -1995,15 +1995,32 @@
         entries.push({ name: files[i].name, data: new Uint8Array(buf) });
       }
       var assets = files.map(function(f){ return { name: String(f.name).replace(/\.[^.]+$/, '') }; });
+      // 批Ⅱ刀A(2026-07-22)：zip 内置 manifest.json——桌面安装器 validateWorkshopPack 强制要求·
+      // 旧版裸文件 zip 在桌面「工坊包缺少 manifest.json」装不上。id 与服务器同规则预生成·
+      // files 带真实文件名(含扩展名·BGM 生效链靠它定位曲目)。
+      var packIdSlug = String(title).trim().toLowerCase().replace(/[^a-z0-9_\-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80)
+        || ('pack-' + Date.now().toString(36).slice(-6));
+      var manifest = {
+        id: packIdSlug,
+        title: title,
+        type: pt,
+        version: (verEl && verEl.value.trim()) || '1.0.0',
+        description: (descEl && descEl.value.trim()) || '',
+        entry: files[0] ? String(files[0].name) : '',
+        assets: assets,
+        files: files.map(function(f){ return String(f.name); })
+      };
+      entries.unshift({ name: 'manifest.json', data: new TextEncoder().encode(JSON.stringify(manifest, null, 2)) });
       var zip = TMZipStore.buildZip(entries);
       var b64 = TMZipStore.bytesToBase64(zip);
       var meta = {
-        title: title, id: '',
+        title: title, id: packIdSlug,
         version: (verEl && verEl.value.trim()) || '1.0.0',
         description: (descEl && descEl.value.trim()) || '',
         type: pt,
         tags: tagsEl ? tagsEl.value : '',
         assets: assets,
+        packageKind: 'store-zip',
         filename: 'pack.zip'
       };
       var res = await TM.OnlineClient.uploadPack(meta, b64, state.onlineApiUrl || undefined);

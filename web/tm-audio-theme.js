@@ -118,6 +118,8 @@ var AudioSystem = {
     this.loadPlaylist();
     // 恢复用户导入的 BGM(IndexedDB·异步·就绪后刷新音声面板)
     try { this.loadUserTracks(function() { if (window.TM && TM.UI && TM.UI.shell && typeof TM.UI.shell.refreshLeft === 'function') TM.UI.shell.refreshLeft(); }); } catch (_) {}
+    // 批Ⅱ刀B·并入已安装工坊音乐包(桌面·异步·就绪后刷新音声面板)
+    try { this.loadWorkshopTracks(function(n) { if (n > 0 && window.TM && TM.UI && TM.UI.shell && typeof TM.UI.shell.refreshLeft === 'function') TM.UI.shell.refreshLeft(); }); } catch (_) {}
     // 创建音效（使用 Web Audio API 生成简单音效）
     this.generateSounds();
   },
@@ -136,7 +138,8 @@ var AudioSystem = {
   loadPlaylist: function() {
     var tracks = Array.isArray(window.TM_BGM_TRACKS) ? window.TM_BGM_TRACKS : [];
     // 2026-07-04 重建内置列表时保导入轨（原先硬替换→设置声乐页每次渲染调本函数·把本会话导入轨从曲库冲掉）
-    var userTracks = Array.isArray(this.playlist) ? this.playlist.filter(function(t) { return t && t.user; }) : [];
+    // 批Ⅱ刀B(2026-07-22)：工坊音乐包轨(t.workshop)同保——与导入轨同命·重建不冲掉
+    var userTracks = Array.isArray(this.playlist) ? this.playlist.filter(function(t) { return t && (t.user || t.workshop); }) : [];
     this.playlist = tracks.filter(function(track) {
       return track && track.src;
     }).map(function(track, idx) {
@@ -153,6 +156,46 @@ var AudioSystem = {
       this.currentTrackId = this.playlist[0].id;
     }
     return this.playlist;
+  },
+
+  // 批Ⅱ刀B(2026-07-22)·工坊音乐包并入轮播：桌面端读已安装 type=music 的工坊包·
+  // 经 tm-content://workshop/<id>/manifest.json 取曲目清单·真曲文件同协议直供 <audio>。
+  // 生效链从此闭环：网页发包(刀A带manifest)→审核上架→桌面安装→重启/进设置即入曲库。
+  loadWorkshopTracks: function(done) {
+    var self = this;
+    if (!(window.tianming && typeof window.tianming.listWorkshopPacks === 'function')) { if (done) done(0); return; }
+    window.tianming.listWorkshopPacks().then(function(res) {
+      var packs = (res && res.success && Array.isArray(res.packs)) ? res.packs : [];
+      var musicPacks = packs.filter(function(p) { return p && p.type === 'music' && p.enabled !== false; });
+      if (!musicPacks.length) { if (done) done(0); return; }
+      var pending = musicPacks.length, added = 0;
+      var finish = function() { if (--pending <= 0 && done) done(added); };
+      musicPacks.forEach(function(p) {
+        fetch('tm-content://workshop/' + encodeURIComponent(p.id) + '/manifest.json')
+          .then(function(r) { return r.ok ? r.json() : null; })
+          .then(function(mf) {
+            var files = (mf && Array.isArray(mf.files)) ? mf.files : [];
+            var audio = files.filter(function(f) { return /\.(mp3|ogg|wav)$/i.test(String(f || '')); });
+            var assets = (mf && Array.isArray(mf.assets)) ? mf.assets : [];
+            audio.forEach(function(f, i) {
+              var tid = 'ws-' + p.id + '-' + i;
+              if ((self.playlist || []).some(function(t) { return t && t.id === tid; })) return;
+              var label = (assets[i] && assets[i].name) || String(f).replace(/\.[^.]+$/, '');
+              if (!Array.isArray(self.playlist)) self.playlist = [];
+              self.playlist.push({
+                id: tid,
+                title: label,
+                meta: '工坊·' + (mf.title || p.title || p.id),
+                src: 'tm-content://workshop/' + encodeURIComponent(p.id) + '/' + encodeURIComponent(String(f)),
+                workshop: true
+              });
+              added++;
+            });
+            finish();
+          })
+          .catch(finish);
+      });
+    }).catch(function() { if (done) done(0); });
   },
 
   getCurrentTrack: function() {

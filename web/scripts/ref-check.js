@@ -49,8 +49,8 @@ function extractFetches(content) {
     const url = m[1];
     // 跳过 http(s) URL
     if (/^https?:/.test(url) || url.startsWith('//')) continue;
-    // 跳过 data: / blob:
-    if (url.startsWith('data:') || url.startsWith('blob:')) continue;
+    // 跳过 data: / blob: / tm-content:(Electron 工坊包自定义协议·主进程 registerContentProtocol 供给·非文件路径)
+    if (url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('tm-content:')) continue;
     // 跳过带变量拼接的（只能启发式·/${var}/ 之类无法静态判断）
     out.push(url);
   }

@@ -3281,8 +3281,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-adapters.js",
-      "sha256": "4eb68fb6f348de51d05f93513a0acdb0f4258fd2d3c13dab1a935aa362a75405",
-      "size": 166476
+      "sha256": "5842a586689b544067e0c65fb51732d6a9cd971367856a6d9beb1cd35eddab66",
+      "size": 168908
     },
     {
       "path": "preview/scenario-editor-reset-app.js",
@@ -3536,8 +3536,8 @@
     },
     {
       "path": "tm-audio-theme.js",
-      "sha256": "2e0987c6ee41adc6b6abba6c6641b9f2d8edaa5e3da7eda336c49770893fca9b",
-      "size": 44514
+      "sha256": "ad62ccf4ae422e4c1a6335727c14e42aff1d51454d2da267a2d4fb6d8065a0c6",
+      "size": 47189
     },
     {
       "path": "tm-audit.js",
@@ -3821,8 +3821,8 @@
     },
     {
       "path": "tm-content-manager.js",
-      "sha256": "682ecdd75cae5f28c3f0c45ef167f6645d774a27cc5a59cea0172bc25f185906",
-      "size": 148927
+      "sha256": "d9611eaac7c0e28ecc914f888eddfb76b0c316317c499a68bf6b2d2611421060",
+      "size": 149965
     },
     {
       "path": "tm-context-zones.js",
