@@ -2538,6 +2538,15 @@ assert(adaptersJs.includes('data-ws-act="rate"') && adaptersJs.includes('ratePac
 // 三稿批六：案台两层制（owner 拍板：登录/注册一层·发布一层）
 assert(adaptersJs.includes('ws-gatehouse') && adaptersJs.includes('淘剧本与改编无需登录'),
   'logged-out desk must show only the login gatehouse layer (and say browsing needs no account)');
+// 三稿批七：发布健全化（对齐游戏内工坊投稿档次）
+assert(adaptersJs.includes("k.charAt(0) !== '_'"),
+  'publish must strip _-prefixed runtime/private fields, same law as the in-game workshop publish');
+assert(adaptersJs.includes('稿版核对'),
+  'update-track must cross-check current scenario vs selected entry (warn + confirm)');
+assert(adaptersJs.includes("type: 'publish'") && adaptersJs.includes('postFeed'),
+  'successful publish should auto-post a feed entry like the in-game workshop');
+assert(adaptersJs.includes('版本号请用数字点分格式') && adaptersJs.includes('简介不能为空'),
+  'publish must validate version format and require a description');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');

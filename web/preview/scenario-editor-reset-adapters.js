@@ -1480,6 +1480,7 @@
                 desc: String(sc.description || sc.overview || '').slice(0, 300),
                 tags: Array.isArray(sc.tags) ? sc.tags.join('，') : '' };
     }
+    try { S.pubSize = JSON.stringify(sc).length; } catch (_eSz) { S.pubSize = 0; }
   }
   // 预检牌：常驻先亮（4s 缓存·红牌封提交并给直达门）
   function preflightGate() {
@@ -1627,6 +1628,11 @@
           return '<option value="' + esc(p.id) + '"' + (S.pubBase && S.pubBase.id === p.id ? ' selected' : '') + '>' + esc(p.title || p.id) + '（线上 v' + esc(p.version || '?') + '）</option>';
         }).join('') + '</select>' +
         '<span class="ws-lock">ID 锁定 ' + esc(S.pub.id || '?') + '</span></div>';
+      // 稿版核对：编辑器里开的稿 ≠ 要更新的条目·先亮黄牌(提交时再 confirm 一道)
+      var curScn = (app() && app().state && app().state.scenario) || {};
+      if (curScn.id && S.pubBase && curScn.id !== S.pubBase.id) {
+        pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="warn"><i></i>稿版核对：当前编辑的是「' + esc(curScn.name || curScn.id) + '」·要更新的条目是「' + esc(S.pubBase.title || S.pubBase.id) + '」——提交内容以当前稿为准</span></div>';
+      }
     }
     pubSec += '<div class="ws-desk-row"><label>标题</label><input id="ws-pub-title" class="ws-desk-input ws-grow" value="' + esc(S.pub.title) + '"></div>';
     if (S.pubMode !== 'update') {
@@ -1642,7 +1648,8 @@
     else if (pf.canExport) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="good"><i></i>发布预检通过 · ' + (pf.errors || 0) + ' 错 ' + (pf.warnings || 0) + ' 提醒</span></div>';
     else pubSec += '<div class="ws-desk-row"><button type="button" class="ws-gate" data-tone="bad" data-editor-command="focus-runtime-panel" data-runtime-panel="preflight-gate"><i></i>预检 ' + (pf.errors || '?') + ' 项错误——点此直达「发布预检」清账</button></div>';
     pubSec += '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (!S.busy && !pfBlock ? '' : ' disabled') + '>' +
-      (S.busy ? '正在提交…' : (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布 v' + esc(S.pub.version) + '（过审后上架）')) + '</button></div>' +
+      (S.busy ? '正在提交…' : (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布 v' + esc(S.pub.version) + '（过审后上架）')) + '</button>' +
+      (S.pubSize ? '<span class="ws-dim">' + esc(fmtSize(S.pubSize)) + ' · 纯文本剧本 · 运行时私有字段(_开头)出门前自动剔除</span>' : '') + '</div>' +
       '</div>';
     var led = reconcileLedger();
     var ledSec = '';
@@ -1763,17 +1770,36 @@
     };
     if (!meta.title.trim()) { setMsg('标题不能为空。', 'warn'); return; }
     if (!meta.id.trim()) { setMsg('ID 不能为空。', 'warn'); return; }
+    // 发布健全化(批七·对齐游戏内工坊投稿的必填与校验档次)
+    if (!/^[A-Za-z0-9._-]+$/.test(meta.id.trim())) { setMsg('ID 只能用英文字母、数字、点、横线、下划线（含中文或空格会在服务器端出岔）。', 'warn'); return; }
+    if (!/^\d+(\.\d+){0,3}$/.test(meta.version.trim())) { setMsg('版本号请用数字点分格式（如 1.0.0）。', 'warn'); return; }
+    if (!meta.description.trim()) { setMsg('简介不能为空——橱窗卡片上全靠它揽客。', 'warn'); return; }
     if (S.forkFrom) {
       meta.parentId = S.forkFrom.id;   // 改编谱系：记入原作世界线(服务器 lineage 已支持)
       if (meta.id === S.forkFrom.id) { setMsg('改编发布请换一个自己的 ID（与原作同 ID 会顶撞原作条目）。', 'warn'); return; }
     }
+    // 稿版核对：更新轨下当前稿与所选条目对不上·confirm 一道再放行(内容永远以当前稿为准)
+    if (S.pubMode === 'update' && S.pubBase) {
+      var curId = (a.state.scenario || {}).id || '';
+      if (curId && curId !== S.pubBase.id && typeof window.confirm === 'function' &&
+          !window.confirm('稿版核对：编辑器里开的是「' + curId + '」，要更新的工坊条目是「' + S.pubBase.id + '」——上传内容以当前稿为准。确定把当前稿发成该条目的新版本？')) return;
+    }
+    // 与游戏侧发布同律：_ 前缀运行时/私有字段不出门
+    var rawScn = a.state.scenario || {};
+    var cleanScn = {};
+    Object.keys(rawScn).forEach(function (k) { if (k.charAt(0) !== '_') cleanScn[k] = rawScn[k]; });
     S.busy = true; render();
-    c.uploadScenario(meta, a.state.scenario).then(function (res) {
+    c.uploadScenario(meta, cleanScn).then(function (res) {
       S.busy = false;
       if (res && res.success) {
         var led = loadLedger();
         led.unshift({ t: Date.now(), id: meta.id, title: meta.title, version: meta.version, st: 'wait' });
         saveLedger(led);
+        // 与游戏侧同律：发布后自动发一条「新作发布」动态(fire-and-forget·失败静默)
+        try {
+          c.postFeed({ type: 'publish', body: '发布了剧本《' + meta.title + '》。',
+                       refs: { packId: (res.pack && res.pack.id) || meta.id, packTitle: meta.title } }).catch(function () {});
+        } catch (_eFd) {}
         setMsg('已提交「' + meta.title + '」v' + meta.version + '——待审核·过审后上架在线目录（进度看提交台账）。', 'good');
       }
       else setMsg('提交失败：' + ((res && res.error) || '未知错误'), 'error');
@@ -2030,6 +2056,7 @@
         '.ws-gate{display:inline-flex;align-items:center;gap:.5rem;font-family:inherit;font-size:.8rem;border-radius:7px;padding:.35rem .8rem;border:1px solid var(--je-hairline-2,rgba(245,240,232,.16));color:var(--je-tx-dim,#7b7264);background:transparent;}' +
         '.ws-gate i{font-style:normal;width:8px;height:8px;border-radius:50%;background:currentColor;}' +
         '.ws-gate[data-tone="good"]{border-color:rgba(126,184,167,.4);background:rgba(126,184,167,.12);color:var(--je-celadon-300,#a3d4c7);}' +
+        '.ws-gate[data-tone="warn"]{border-color:rgba(184,154,83,.45);background:rgba(184,154,83,.1);color:var(--je-gold-300,#d4be7a);}' +
         '.ws-gate[data-tone="bad"]{border-color:rgba(192,64,48,.45);background:rgba(192,64,48,.12);color:var(--je-vermillion-300,#d4706a);cursor:pointer;}' +
         // 台账
         '.ws-ledger{width:100%;border-collapse:collapse;font-size:.78rem;}' +
