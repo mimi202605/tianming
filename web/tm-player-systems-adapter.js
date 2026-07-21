@@ -289,15 +289,32 @@
     return null;
   }
 
-  /** PlayerInteraction 专用面板：人际列表 + 维度概要 */
+  /** PlayerInteraction 专用面板：人际列表 + 维度概要 + 互动动作菜单 + 结果区
+   * 2026-07-22 修「交往界面无法实现与他人交往交互」：
+   *   历史根因：本函数原只渲染只读人际名录（NPC 名号+头衔+派系+维度概要）·
+   *     完全没有调用 TM.PlayerInteraction.interact 的按钮·
+   *     导致"关系模式下的交往界面无法实现与他人交往交互"。
+   *   修复：每个 NPC 行加「行动 ▾」按钮 + 折叠动作菜单（10 种互动类型·
+   *     每种显示 label + 精力/时间 hint） + 结果区（场景描述 + 关系变化 +
+   *     精力/时间消耗 + 事件钩子提示）。
+   *     按钮走 data-npc / data-kind 属性 + 内联 onclick 调 adapter 暴露的
+   *     _toggleInteractionMenu / _doInteraction（避免 NPC 名含引号时的转义问题）。
+   */
   function _renderInteractionPanel(sys) {
     if (typeof sys.listInteractableNpcs !== 'function') return null;
     var npcs = [];
     try { npcs = sys.listInteractableNpcs() || []; } catch (_) { npcs = []; }
+    // 取动作菜单（getActionMenu 与 NPC 无关·只需取一次）
+    var menu = [];
+    try { menu = (typeof sys.getActionMenu === 'function') ? (sys.getActionMenu() || []) : []; } catch (_) { menu = []; }
+
     var h = '';
     h += '<div class="pi-panel">';
     h += '<div class="pi-section"><div class="pi-section-title">人 际 · 概 览</div>';
     h += '<div class="pi-row"><span>可互动者</span><span class="pi-val">' + npcs.length + ' 人</span></div>';
+    if (menu.length) {
+      h += '<div class="pi-row"><span>可行动作</span><span class="pi-val">' + menu.length + ' 种</span></div>';
+    }
     h += '</div>';
     if (!npcs.length) {
       h += '<div class="pi-empty">暂无可互动人物（剧本中无可接触 NPC·或尚未进入游戏回合）</div>';
@@ -305,12 +322,13 @@
       return h;
     }
     h += '<div class="pi-section"><div class="pi-section-title">人 际 名 录</div>';
+    h += '<div class="pi-hint">点「行动 ▾」展开 10 种互动·选定动作后即与该 NPC 行事</div>';
     for (var i = 0; i < npcs.length && i < 20; i++) {
       var n = npcs[i] || {};
       var dims = n.dims || {};
-      // 5 维概要（master/friend/rival/colleague/enmity）·0 不显示
+      // 5 维概要（master/friend/rival/colleague/enemy）·0 不显示
       var dimChips = '';
-      var dimLabels = { master: '师徒', friend: '亲友', rival: '政敌', colleague: '同僚', enmity: '仇雠' };
+      var dimLabels = { master: '师徒', friend: '亲友', rival: '政敌', colleague: '同僚', enemy: '仇雠' };
       Object.keys(dimLabels).forEach(function (k) {
         var v = dims[k];
         if (typeof v === 'number' && v !== 0) {
@@ -318,14 +336,36 @@
         }
       });
       if (!dimChips) dimChips = '<span class="pi-dim pi-dim-none">无交情</span>';
-      h += '<div class="pi-npc">';
+      var npcName = n.name || ('NPC' + i);
+      // data-npc 同时挂在 NPC 行、行动按钮、菜单、结果区上·供 _doInteraction/_toggleInteractionMenu 定位
+      h += '<div class="pi-npc" data-npc="' + _esc(npcName) + '">';
       h += '<div class="pi-npc-head">';
-      h += '<span class="pi-npc-name">' + _esc(n.name || '—') + '</span>';
+      h += '<span class="pi-npc-name">' + _esc(npcName) + '</span>';
       if (n.title) h += '<span class="pi-npc-title">' + _esc(n.title) + '</span>';
       if (n.faction) h += '<span class="pi-npc-faction">' + _esc(n.faction) + '</span>';
       if (n.military) h += '<span class="pi-npc-mil">武</span>';
+      h += '<button class="pi-npc-action-btn" data-npc="' + _esc(npcName) + '" ' +
+           'onclick="TM.PlayerSystemsAdapter._toggleInteractionMenu(this)">行动 ▾</button>';
       h += '</div>';
       h += '<div class="pi-npc-dims">' + dimChips + '</div>';
+      // 折叠动作菜单（默认隐藏）
+      if (menu.length) {
+        h += '<div class="pi-npc-menu" data-npc="' + _esc(npcName) + '" hidden>';
+        h += '<div class="pi-menu-grid">';
+        for (var m = 0; m < menu.length; m++) {
+          var it = menu[m] || {};
+          h += '<button class="pi-menu-btn" data-npc="' + _esc(npcName) + '" data-kind="' + _esc(it.kind || '') + '" ' +
+               'onclick="TM.PlayerSystemsAdapter._doInteraction(this)">';
+          h += '<span class="pi-menu-btn-label">' + _esc(it.label || it.kind) + '</span>';
+          h += '<span class="pi-menu-btn-meta">精' + _esc(it.energy) + ' · ' + _esc(it.time) + '时 · ' + _esc(it.dimLabel) + '</span>';
+          if (it.hint) h += '<span class="pi-menu-btn-hint">' + _esc(it.hint) + '</span>';
+          h += '</button>';
+        }
+        h += '</div>';
+        h += '</div>';
+      }
+      // 结果区（默认空·interact 后填充）
+      h += '<div class="pi-result" data-npc="' + _esc(npcName) + '" hidden></div>';
       h += '</div>';
     }
     if (npcs.length > 20) {
@@ -334,6 +374,155 @@
     h += '</div>';
     h += '</div>';
     return h;
+  }
+
+  // ── PlayerInteraction 交互处理（2026-07-22 新增）──────────────
+  // 通过 data-npc 属性查找元素·避免 CSS 选择器对中文/特殊字符的转义问题
+  function _findElByDataNpc(container, selector, npcName) {
+    try {
+      var els = container.querySelectorAll(selector);
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].getAttribute('data-npc') === npcName) return els[i];
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /** 展开/收起指定 NPC 的动作菜单 */
+  function _toggleInteractionMenu(btn) {
+    try {
+      if (!btn) return;
+      var npc = btn.getAttribute('data-npc');
+      if (!npc) return;
+      var doc = global.document;
+      if (!doc) return;
+      // 在最近的 .pi-panel 容器中查找·避免误中其他面板
+      var panel = btn.closest ? btn.closest('.pi-panel') : null;
+      var container = panel || doc;
+      var menu = _findElByDataNpc(container, '.pi-npc-menu', npc);
+      if (!menu) return;
+      var isHidden = menu.hasAttribute('hidden');
+      if (isHidden) {
+        menu.removeAttribute('hidden');
+        btn.textContent = '行动 ▴';
+        btn.classList.add('open');
+      } else {
+        menu.setAttribute('hidden', '');
+        btn.textContent = '行动 ▾';
+        btn.classList.remove('open');
+      }
+    } catch (e) {
+      try { console.warn('[PlayerSystemsAdapter._toggleInteractionMenu]', e); } catch (_) {}
+    }
+  }
+
+  /** 维度 key → 中文标签（从 TM.PlayerInteraction.DIMS 取·缺席兜底） */
+  function _dimLabel(k) {
+    var labels = { master: '师徒', friend: '亲友', rival: '政敌', colleague: '同僚', enemy: '仇雠' };
+    try {
+      if (global.TM && global.TM.PlayerInteraction && global.TM.PlayerInteraction.DIMS &&
+          global.TM.PlayerInteraction.DIMS[k] && global.TM.PlayerInteraction.DIMS[k].label) {
+        return global.TM.PlayerInteraction.DIMS[k].label;
+      }
+    } catch (_) {}
+    return labels[k] || k;
+  }
+
+  /** 执行互动·把结果写入该 NPC 的结果区·成功后刷新维度 chip */
+  function _doInteraction(btn) {
+    try {
+      if (!btn) return;
+      var npc = btn.getAttribute('data-npc');
+      var kind = btn.getAttribute('data-kind');
+      if (!npc || !kind) return;
+      var doc = global.document;
+      if (!doc) return;
+      var panel = btn.closest ? btn.closest('.pi-panel') : null;
+      var container = panel || doc;
+
+      var sys = (global.TM && global.TM.PlayerInteraction) ? global.TM.PlayerInteraction : null;
+      if (!sys || typeof sys.interact !== 'function') {
+        _renderInteractionResult(container, npc, { ok: false, reason: '交往系统未就绪' });
+        return;
+      }
+
+      // 调用引擎层 interact
+      var res;
+      try { res = sys.interact(npc, kind, {}); }
+      catch (e) { res = { ok: false, reason: '调用异常: ' + (e && e.message ? e.message : String(e)) }; }
+
+      // 渲染结果
+      _renderInteractionResult(container, npc, res);
+
+      // 成功后刷新该 NPC 行的维度 chip
+      if (res && res.ok && typeof sys.getRelationDims === 'function') {
+        try { _refreshNpcDims(container, npc, sys.getRelationDims(npc)); } catch (_) {}
+      }
+    } catch (e) {
+      try { console.warn('[PlayerSystemsAdapter._doInteraction]', e); } catch (_) {}
+    }
+  }
+
+  /** 把 interact 结果渲染进该 NPC 的结果区 */
+  function _renderInteractionResult(container, npc, res) {
+    var box = _findElByDataNpc(container, '.pi-result', npc);
+    if (!box) return;
+    if (!res || !res.ok) {
+      box.innerHTML = '<div class="pi-result-err">✗ ' + _esc((res && res.reason) || '未知错误') + '</div>';
+      box.removeAttribute('hidden');
+      return;
+    }
+    var h = '<div class="pi-result-ok">';
+    h += '<div class="pi-result-head">✓ ' + _esc(res.label || res.kind) + ' · ' + _esc(res.npc || npc) + '</div>';
+    if (res.scene) h += '<div class="pi-result-scene">' + _esc(res.scene) + '</div>';
+    h += '<div class="pi-result-stats">';
+    if (res.energy && typeof res.energy.cost === 'number') h += '<span>精力 −' + res.energy.cost + '</span>';
+    if (res.time) {
+      h += '<span>耗时 ' + _esc(res.time.hours) + ' 时';
+      if (res.time.turnAdvanced) h += ' · 时局推进至第 ' + _esc(res.time.turn) + ' 回合';
+      h += '</span>';
+    }
+    h += '</div>';
+    if (res.relation && res.relation.dims) {
+      h += '<div class="pi-result-dims">';
+      Object.keys(res.relation.dims).forEach(function (k) {
+        var v = res.relation.dims[k];
+        if (typeof v === 'number') {
+          h += '<span class="pi-dim pi-dim-' + k + '">' + _dimLabel(k) + ' ' + v + '</span>';
+        }
+      });
+      h += '</div>';
+    }
+    if (res.eventHooks && res.eventHooks.length) {
+      h += '<div class="pi-result-hooks">';
+      for (var i = 0; i < res.eventHooks.length; i++) {
+        var hk = res.eventHooks[i] || {};
+        h += '<div class="pi-result-hook pi-result-hook-' + _esc(hk.severity || 'info') + '">' + _esc(hk.message || '') + '</div>';
+      }
+      h += '</div>';
+    }
+    if (res.marriage) {
+      h += '<div class="pi-result-hook pi-result-hook-info">姻亲已立：' + _esc(res.marriage.player) + ' ⇆ ' + _esc(res.marriage.npc) + '</div>';
+    }
+    h += '</div>';
+    box.innerHTML = h;
+    box.removeAttribute('hidden');
+  }
+
+  /** 成功互动后刷新该 NPC 行的维度 chip */
+  function _refreshNpcDims(container, npc, dims) {
+    if (!dims) return;
+    var dimBox = _findElByDataNpc(container, '.pi-npc-dims', npc);
+    if (!dimBox) return;
+    var labels = { master: '师徒', friend: '亲友', rival: '政敌', colleague: '同僚', enemy: '仇雠' };
+    var h = '';
+    Object.keys(labels).forEach(function (k) {
+      var item = dims[k];
+      var v = (item && typeof item.value === 'number') ? item.value : 0;
+      if (v !== 0) h += '<span class="pi-dim pi-dim-' + k + '">' + labels[k] + ' ' + v + '</span>';
+    });
+    if (!h) h = '<span class="pi-dim pi-dim-none">无交情</span>';
+    dimBox.innerHTML = h;
   }
 
   /**
@@ -449,7 +638,12 @@
   TM.PlayerSystemsAdapter = {
     renderBlock: renderBlock,
     RENDER_ADAPTERS: RENDER_ADAPTERS,
-    _wrapBlock: _wrapBlock
+    _wrapBlock: _wrapBlock,
+    // 2026-07-22 新增：PlayerInteraction 交往界面交互入口（供内联 onclick 调用）
+    _doInteraction: _doInteraction,
+    _toggleInteractionMenu: _toggleInteractionMenu,
+    _renderInteractionResult: _renderInteractionResult,
+    _refreshNpcDims: _refreshNpcDims
   };
 
   if (typeof module !== 'undefined' && module.exports) {
