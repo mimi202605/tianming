@@ -41,10 +41,20 @@
   }
 
   /** 软依赖守卫调用器：按方法名优先级链尝试渲染 */
-  // 链：renderBlockHTML(role, title) → render<Short>Panel() → getState() → null
+  // 链：_customRender(专用) → renderBlockHTML(role, title) → render<Short>Panel() → getState() → null
   // 注：不吞异常——异常让 renderBlock 顶层 try/catch 捕获返回「渲染异常」
   function _callSystemRender(systemKey, role, title) {
     var sys = (global.TM && global.TM[systemKey]) ? global.TM[systemKey] : null;
+
+    // 0) 专用渲染器（针对无标准 API 但有特定数据接口的系统·如 PlayerInteraction）
+    if (sys) {
+      var custom = _customRender(systemKey);
+      if (custom) return custom;
+    } else if (FRIENDLY_FALLBACK[systemKey]) {
+      // 系统完全未实现·但登记了友好占位 → 直接走友好占位
+      return _friendlyFallback(systemKey, title);
+    }
+
     if (!sys) return null;
 
     // 1) 标准 renderBlockHTML(role, title)
@@ -253,8 +263,98 @@
     PlayerFamily:    'renderFamilyPanel',
     PlayerMarriage:  'renderMarriagePanel',
     PlayerTech:      'renderTechPanel',
-    PlayerMovement:  'renderMovementPanel'
+    PlayerMovement:  'renderMovementPanel',
+    PlayerRebel:     'renderPanel'  // 2026-07-21：戎机 tab 反叛账本面板（已有完整 HTML）
   };
+
+  /**
+   * systemKey 专用渲染器（绕过标准链·针对无 renderBlockHTML/getState 但有特定数据接口的系统）
+   * 返回 HTML 字符串·出错返回 null 让上层走 fallback
+   */
+  function _customRender(systemKey) {
+    var sys = (global.TM && global.TM[systemKey]) ? global.TM[systemKey] : null;
+    if (!sys) return null;
+
+    // PlayerInteraction：无 getState/renderBlockHTML·但有 listInteractableNpcs/getRelationDims
+    // 渲染人际列表（按维度分组·显示 NPC 名号+头衔+派系+关系维度概要）
+    if (systemKey === 'PlayerInteraction') {
+      try { return _renderInteractionPanel(sys); }
+      catch (_) { return null; }
+    }
+    return null;
+  }
+
+  /** PlayerInteraction 专用面板：人际列表 + 维度概要 */
+  function _renderInteractionPanel(sys) {
+    if (typeof sys.listInteractableNpcs !== 'function') return null;
+    var npcs = [];
+    try { npcs = sys.listInteractableNpcs() || []; } catch (_) { npcs = []; }
+    var h = '';
+    h += '<div class="pi-panel">';
+    h += '<div class="pi-section"><div class="pi-section-title">人 际 · 概 览</div>';
+    h += '<div class="pi-row"><span>可互动者</span><span class="pi-val">' + npcs.length + ' 人</span></div>';
+    h += '</div>';
+    if (!npcs.length) {
+      h += '<div class="pi-empty">暂无可互动人物（剧本中无可接触 NPC·或尚未进入游戏回合）</div>';
+      h += '</div>';
+      return h;
+    }
+    h += '<div class="pi-section"><div class="pi-section-title">人 际 名 录</div>';
+    for (var i = 0; i < npcs.length && i < 20; i++) {
+      var n = npcs[i] || {};
+      var dims = n.dims || {};
+      // 5 维概要（master/friend/rival/colleague/enmity）·0 不显示
+      var dimChips = '';
+      var dimLabels = { master: '师徒', friend: '亲友', rival: '政敌', colleague: '同僚', enmity: '仇雠' };
+      Object.keys(dimLabels).forEach(function (k) {
+        var v = dims[k];
+        if (typeof v === 'number' && v !== 0) {
+          dimChips += '<span class="pi-dim pi-dim-' + k + '">' + dimLabels[k] + ' ' + v + '</span>';
+        }
+      });
+      if (!dimChips) dimChips = '<span class="pi-dim pi-dim-none">无交情</span>';
+      h += '<div class="pi-npc">';
+      h += '<div class="pi-npc-head">';
+      h += '<span class="pi-npc-name">' + _esc(n.name || '—') + '</span>';
+      if (n.title) h += '<span class="pi-npc-title">' + _esc(n.title) + '</span>';
+      if (n.faction) h += '<span class="pi-npc-faction">' + _esc(n.faction) + '</span>';
+      if (n.military) h += '<span class="pi-npc-mil">武</span>';
+      h += '</div>';
+      h += '<div class="pi-npc-dims">' + dimChips + '</div>';
+      h += '</div>';
+    }
+    if (npcs.length > 20) {
+      h += '<div class="pi-more">… 共 ' + npcs.length + ' 人（仅显示前 20）</div>';
+    }
+    h += '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  /**
+   * 未实现系统的友好占位（替代冷冰冰的「XXX 待接入」）
+   * 显示中文化的「该系统将在后续版本接入」提示 + 该 tab 可暂且专注的他事引导
+   */
+  var FRIENDLY_FALLBACK = {
+    PlayerFortune: {
+      label: '际遇',
+      hint: '际遇系统正在筹备中·当前版本可暂且专注修习、交往、戎机等事。后续版本将接入随机机缘、奇遇事件、人物造化等。'
+    },
+    PlayerAdversity: {
+      label: '变故',
+      hint: '变故系统正在筹备中·当前版本可暂且专注日常事务。后续版本将接入天灾、人祸、家变、病厄等突发变故。'
+    }
+  };
+
+  function _friendlyFallback(systemKey, title) {
+    var cfg = FRIENDLY_FALLBACK[systemKey];
+    if (!cfg) return null;
+    var h = '<div class="player-block-soon">';
+    h += '<div class="player-block-soon-title">' + _esc(title || cfg.label) + '</div>';
+    h += '<div class="player-block-soon-hint">' + _esc(cfg.hint) + '</div>';
+    h += '</div>';
+    return h;
+  }
 
   /** fallback 模板生成器 */
   function _fallback(systemKey, title) {
