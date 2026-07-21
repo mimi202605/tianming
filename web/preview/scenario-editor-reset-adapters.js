@@ -1330,7 +1330,8 @@
    跳游戏工坊(评分/评论/圈子)降级为面板底部辅助链。批二=淘剧本/在编辑器中打开改编(parentId 世界线)。 */
 (function () {
   'use strict';
-  var S = { clientLoading: false, clientFail: '', busy: false, msg: '', msgTone: '', mine: null, mineLoading: false };
+  var S = { clientLoading: false, clientFail: '', busy: false, msg: '', msgTone: '', mine: null, mineLoading: false,
+            cat: null, catLoading: false, catQuery: '', forkFrom: null };   // 批二·淘剧本/改编
   function app() { return window.TM_SCENARIO_EDITOR_RESET_APP || null; }
   function client() { return (window.TM && window.TM.OnlineClient) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -1380,6 +1381,7 @@
     html += '</div>';
     // 发布区
     html += '<div class="ws-desk-sec"><div class="ws-desk-h">发布当前剧本</div>' +
+      (S.forkFrom ? '<div class="ws-desk-row" style="color:var(--je-gold-400,#b89a53);">改编自「' + esc(S.forkFrom.title || S.forkFrom.id) + '」——发布将记入其世界线（谱系有账）。<button type="button" class="mini-ai" data-ws-act="fork-clear">取消改编</button></div>' : '') +
       '<div class="ws-desk-row"><label>标题</label><input id="ws-pub-title" class="ws-desk-input wide" value="' + esc(sc.name || '') + '"></div>' +
       '<div class="ws-desk-row"><label>ID</label><input id="ws-pub-id" class="ws-desk-input" value="' + esc(sc.id || '') + '" placeholder="唯一英文id·同id再发=更新"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="1.0.0" style="width:5.5em;"></div>' +
       '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input wide" rows="2">' + esc(String(sc.description || sc.overview || '').slice(0, 300)) + '</textarea></div>' +
@@ -1396,6 +1398,28 @@
       html += '<div class="ws-desk-row">「' + esc(p.title || p.id) + '」 v' + esc(p.version || '?') +
         ' · ↓' + (p.downloads || 0) + (p.rating ? ' · ★' + p.rating : '') + '</div>';
     });
+    html += '</div>';
+    // 淘剧本·改编（批二·纯文本剧本可直接开进编辑器·打包资源类须桌面版装）
+    html += '<div class="ws-desk-sec"><div class="ws-desk-h">淘剧本 · 拿来改编</div>' +
+      '<div class="ws-desk-row"><input id="ws-cat-q" class="ws-desk-input wide" value="' + esc(S.catQuery) + '" placeholder="搜标题 / 作者 / 标签…">' +
+      '<button type="button" class="mini-ai" data-ws-act="cat-refresh">' + (S.catLoading ? '正在取回…' : '搜索 / 刷新') + '</button></div>';
+    if (!S.cat) html += '<div class="ws-desk-row ws-desk-dim">点「搜索 / 刷新」浏览在线目录——看中的一键开进编辑器改编，发布时自动记入原作世界线。</div>';
+    else {
+      var q = S.catQuery.trim().toLowerCase();
+      var list = S.cat.filter(function (p) {
+        if (!p) return false;
+        if (!q) return true;
+        var hay = ((p.title || '') + ' ' + (p.author || '') + ' ' + (Array.isArray(p.tags) ? p.tags.join(' ') : '')).toLowerCase();
+        return hay.indexOf(q) >= 0;
+      });
+      if (!list.length) html += '<div class="ws-desk-row ws-desk-dim">目录里没有匹配的剧本。</div>';
+      list.slice(0, 12).forEach(function (p) {
+        html += '<div class="ws-desk-row">「' + esc(p.title || p.id) + '」 v' + esc(p.version || '?') +
+          (p.author ? ' · ' + esc(p.author) : '') + ' · ↓' + (p.downloads || 0) + (p.rating ? ' · ★' + p.rating : '') +
+          ' <button type="button" class="mini-ai" data-ws-act="cat-open" data-ws-pack="' + esc(p.id || '') + '">开进编辑器改编</button></div>';
+      });
+      if (list.length > 12) html += '<div class="ws-desk-row ws-desk-dim">共 ' + list.length + ' 个·搜索可缩小范围（只列前 12）。</div>';
+    }
     html += '</div>';
     if (S.msg) html += '<div class="ws-desk-msg" data-tone="' + esc(S.msgTone) + '">' + esc(S.msg) + '</div>';
     html += '<div class="ws-desk-foot"><a href="../index.html?tmOpenWorkshop=1">去游戏内工坊（评分 / 评论 / 圈子）→</a></div>';
@@ -1453,12 +1477,54 @@
       type: 'scenario'
     };
     if (!meta.title.trim()) { setMsg('标题不能为空。', 'warn'); return; }
+    if (S.forkFrom) {
+      meta.parentId = S.forkFrom.id;   // 改编谱系：记入原作世界线(服务器 lineage 已支持)
+      if (meta.id === S.forkFrom.id) { setMsg('改编发布请换一个自己的 ID（与原作同 ID 会顶撞原作条目）。', 'warn'); return; }
+    }
     S.busy = true; render();
     c.uploadScenario(meta, a.state.scenario).then(function (res) {
       S.busy = false;
       if (res && res.success) setMsg('已提交「' + meta.title + '」v' + meta.version + '——待审核·过审后上架在线目录。', 'good');
       else setMsg('提交失败：' + ((res && res.error) || '未知错误'), 'error');
     }).catch(function (e) { S.busy = false; setMsg('提交失败（网络）：' + ((e && e.message) || e), 'error'); });
+  }
+
+  // ── 批二·淘剧本/改编 ──────────────────────────────────────────────────
+  function doCatRefresh() {
+    var c = client(); if (!c) return;
+    S.catQuery = ((document.getElementById('ws-cat-q') || {}).value || '');
+    S.catLoading = true; render();
+    c.catalog().then(function (cat) {
+      S.catLoading = false;
+      // 只列纯文本剧本类(编辑器能开)·打包资源类(立绘/音乐/地图/MOD)归游戏内工坊装
+      S.cat = ((cat && cat.packs) || []).filter(function (p) { return p && (!p.type || p.type === 'scenario'); });
+      render();
+    }).catch(function (e) { S.catLoading = false; S.cat = []; setMsg('目录取回失败：' + ((e && e.message) || e), 'error'); });
+  }
+  function doCatOpen(packId) {
+    var a = app(); var c = client();
+    if (!a || !c || !S.cat) return;
+    var p = null;
+    for (var i = 0; i < S.cat.length; i++) if (S.cat[i] && S.cat[i].id === packId) { p = S.cat[i]; break; }
+    if (!p) { setMsg('目录里找不到这个包·先刷新。', 'warn'); return; }
+    if (a.state && a.state.dirty && typeof window.confirm === 'function' &&
+        !window.confirm('载入「' + (p.title || p.id) + '」将替换当前编辑中的剧本（当前草稿已自动存于浏览器/案卷）。继续？')) return;
+    var pkgUrl = p.packageUrl || p.url || '';
+    if (!pkgUrl) { setMsg('此包没有可下载地址。', 'error'); return; }
+    var resolved = pkgUrl;
+    try { resolved = new URL(pkgUrl, c.getApiUrl()).toString(); } catch (_eU) {}
+    setMsg('正在下载「' + (p.title || p.id) + '」…');
+    fetch(resolved, { mode: 'cors', cache: 'no-store' }).then(function (resp) {
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return resp.text();
+    }).then(function (text) {
+      var data;
+      try { data = JSON.parse(text); }
+      catch (_eJ) { throw new Error('此包是打包资源（含立绘/音频等）·编辑器只能开纯文本剧本——请在游戏内工坊安装后再说。'); }
+      a.loadScenario(data);
+      S.forkFrom = { id: p.id, title: p.title || p.id };
+      setMsg('已载入「' + (p.title || p.id) + '」·改编模式——发布前记得换成自己的 ID。', 'good');
+    }).catch(function (e) { setMsg('载入失败：' + ((e && e.message) || e), 'error'); });
   }
 
   document.addEventListener('click', function (e) {
@@ -1470,6 +1536,9 @@
     else if (act === 'logout') doLogout();
     else if (act === 'publish') doPublish();
     else if (act === 'refresh-mine') refreshMine();
+    else if (act === 'cat-refresh') doCatRefresh();
+    else if (act === 'cat-open') doCatOpen(t.getAttribute('data-ws-pack'));
+    else if (act === 'fork-clear') { S.forkFrom = null; render(); }
   });
 
   // ── 面板注入（与 👁📊 注入器同范式·等 app 起完） ─────────────────────────

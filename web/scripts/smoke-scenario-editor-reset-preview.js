@@ -2486,6 +2486,17 @@ assert(adaptersJs.includes('authorPacks'),
   'workshop desk should list my published packs via workshop/author');
 assert(adaptersJs.includes('data-ws-act="publish"') && adaptersJs.includes('data-ws-act="login"'),
   'workshop desk should expose publish and login actions');
+// 批二：淘剧本/改编
+assert(adaptersJs.includes('data-ws-act="cat-open"') && adaptersJs.includes('c.catalog()'),
+  'workshop desk should browse the online catalog and open packs into the editor');
+assert(adaptersJs.includes('meta.parentId = S.forkFrom.id'),
+  'remix publish should carry parentId so lineage records the 世界线');
+assert(adaptersJs.includes('将替换当前编辑中的剧本'),
+  'opening a workshop pack over dirty edits must confirm first');
+assert(adaptersJs.includes('打包资源'),
+  'non-JSON packed assets must be rejected with a readable hint');
+assert(adaptersJs.includes('与原作同 ID'),
+  'remix with unchanged id must be blocked (would clash with the original entry)');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');
