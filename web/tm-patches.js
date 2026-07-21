@@ -87,6 +87,20 @@
 
 // 覆盖openSettings为完整版
 
+// 速度批二·_setAiSubcallConcurrency 兜底副本（同文件保证·防被回滚）
+if (typeof _setAiSubcallConcurrency === 'undefined') {
+  window._setAiSubcallConcurrency = function (v) {
+    if (typeof P === 'undefined' || !P) return;
+    if (!P.conf) P.conf = {}; // arch-ok 兜底副本惯例初始化·同 _togglePConf 兜底
+    var n = parseInt(v, 10) || 0;
+    if (n < 0) n = 0;
+    if (n > 4) n = 4;
+    P.conf.aiSubcallConcurrency = n; // arch-ok 玩家设置项写入·与 tm-player-settings.js 正本同款
+    if (typeof saveP === 'function') saveP();
+    if (typeof toast === 'function') toast(n === 0 ? '✅ 回合并发已设为跟随平台默认(桌面3·安卓1·最稳)' : '✅ 回合并发档位设为 ' + n);
+  };
+}
+
 // P15.2 _togglePConf 工具函数（同文件保证·不依赖 player-settings.js·防被回滚）
 if (typeof _togglePConf === 'undefined') {
   window._togglePConf = function(confKey, on) {
@@ -664,6 +678,30 @@ openSettings=function(){
             '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">开启后·常规回合跳过 SC_RECALL 5 源召回·节省 40-60% API 成本。关闭时（默认）每回合都跑全量召回·AI 记忆富度最高。</div>' +
           '</div>' +
         '</label>' +
+        // 速度批二2026-07-22·回合并发档位(安卓过回合 40-50 分钟的主因=平台默认串行)+SC1 修复帽开关
+        (function(){
+          var _aiConc = parseInt(typeof P !== 'undefined' && P && P.conf && P.conf.aiSubcallConcurrency, 10) || 0;
+          var _sc1Unc = !!(typeof P !== 'undefined' && P && P.conf && P.conf.sc1RepairUncapped === true);
+          var _opts = [[0, '跟随平台默认（桌面3·安卓1·最稳）'], [1, '1 · 串行（最省内存）'], [2, '2 · 稳健提速'], [3, '3 · 桌面默认档'], [4, '4 · 激进（高配机）']];
+          var _sel = '';
+          for (var _oi = 0; _oi < _opts.length; _oi++) {
+            _sel += '<option value="' + _opts[_oi][0] + '"' + (_aiConc === _opts[_oi][0] ? ' selected' : '') + '>' + _opts[_oi][1] + '</option>';
+          }
+          return '<div style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">📱 回合推演并发档位（安卓提速关键）</div>' +
+              '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">过回合时 AI 子调用同时并发几路。安卓平台默认串行（防低内存机型闪退）·<b>安卓机内存充裕者调到 2-3 可显著缩短过回合等待</b>·若过回合闪退请调回默认。桌面端默认 3·一般无需改。</div>' +
+              '<select onchange="if(window._setAiSubcallConcurrency)_setAiSubcallConcurrency(this.value)" style="margin-top:0.3rem;background:var(--bg-d,#1a1a1a);color:var(--txt);border:1px solid var(--bdr);border-radius:4px;padding:0.2rem 0.4rem;">' + _sel + '</select>' +
+            '</div>' +
+          '</div>' +
+          '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
+            '<input type="checkbox" id="s-sc1-uncap" ' + (_sc1Unc ? 'checked ' : '') + 'onchange="_togglePConf(\'sc1RepairUncapped\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">主台账修复不设帽（默认关闭）</div>' +
+              '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">回合主台账(SC1)结果不完整时·引擎会追加修复调用。默认每回合只追加一次（省时·推荐）；开启后允许增量修补与轻量救援连跑（更耗时·极端网络差时或可救回更完整的台账）。</div>' +
+            '</div>' +
+          '</label>';
+        })() +
         (function(){
           var _wtAgOn = !(P.conf && P.conf.wentianAgentMode === false);
           return '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +

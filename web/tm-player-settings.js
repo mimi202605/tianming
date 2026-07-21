@@ -349,6 +349,19 @@ function _setAgentTranscriptRounds(v) {
   if (typeof toast === 'function') toast('✅ 工作上下文窗口设为最近 ' + n + ' 轮(更早折叠为摘要·省 token)');
 }
 
+// 速度批二·AI 子调用并发档位(过回合批内并发数)·0=跟随平台默认(桌面3·安卓1)·安卓玩家自选 2-4 可大幅提速
+function _setAiSubcallConcurrency(v) {
+  if (!P.conf) P.conf = {}; // arch-ok 设置面板 setter 惯例初始化·同 _setAgentMemoryDepth
+  var n = parseInt(v, 10) || 0;
+  if (n < 0) n = 0;
+  if (n > 4) n = 4;
+  P.conf.aiSubcallConcurrency = n; // arch-ok 玩家设置项写入·钳位 0-4·同档既有 setter 范式
+  if (typeof saveP === 'function') saveP();
+  if (typeof toast === 'function') toast(n === 0
+    ? '✅ 回合并发已设为跟随平台默认(桌面3·安卓1·最稳)'
+    : '✅ 回合并发档位设为 ' + n + (n > 1 ? '(提速·安卓低内存机型若闪退请调回)' : '(串行·最省内存)'));
+}
+
 // 【S6·实验模式】总闸 + 模式选择(LLM / Agent·互斥)·切换即时生效·重渲设置面板
 //   关=零回归;LLM 模式=对现回合管线的增量增强(原"实验玩法");Agent 模式=模式 b 平行引擎(替换管线)。
 function _toggleExperimentalEnabled(on) {

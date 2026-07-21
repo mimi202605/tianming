@@ -3755,9 +3755,14 @@
         console.warn('[SC1] parse/repair failed·will continue to fallback chain:', _sc1ParseErr && (_sc1ParseErr.message || _sc1ParseErr));
       }
       // Phase 7 Q4·SC1 增量 retry·若 p1 有但缺关键字段·先 incremental retry·再 rescue
+      // 速度批二2026-07-22·修复预算帽：旧最坏路径=增量修完仍不达标→救援再吃一整段(串行轴上
+      // 连烧两次)。现每回合两者合计只放一次(增量跑过就不再救援·p1 全空时增量本就不触发·救援照常)；
+      // P.conf.sc1RepairUncapped===true 恢复不设帽旧行为(设置面板有开关)。
+      var _sc1ExtraPassUsed = false;
       if (p1 && typeof p1 === 'object' && !_hasSc1StructuredResult(p1)) {
         var _missing = _findMissingSc1Fields(p1);
         if (_missing.length > 3) {
+          _sc1ExtraPassUsed = true;
           var _incFilled = await _runIncrementalSc1Retry(p1, _missing);
           if (_incFilled && _hasSc1StructuredResult(_incFilled)) {
             p1 = _incFilled;
@@ -3765,7 +3770,7 @@
           }
         }
       }
-      if (!p1 || !_hasSc1StructuredResult(p1)) {
+      if ((!p1 || !_hasSc1StructuredResult(p1)) && (!_sc1ExtraPassUsed || (P.conf && P.conf.sc1RepairUncapped === true))) {
         var _rescuedSc1 = await _trySc1Rescue(_sc1CriticalError || 'primary SC1 empty');
         if (_rescuedSc1 && _rescuedSc1.parsed) {
           p1 = _rescuedSc1.parsed;
