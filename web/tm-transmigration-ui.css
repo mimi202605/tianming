@@ -715,3 +715,32 @@ body.transmigration-mode .ps-tab.ps-tab-locked::after {
   font-size: 10px;
   margin-left: 2px;
 }
+
+/* ── §7.10 系统状态概要列表（adapter _renderStateAsHTML） ── */
+body.transmigration-mode .player-block-state-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+body.transmigration-mode .player-block-state-key {
+  color: #888;
+  font-weight: normal;
+}
+body.transmigration-mode .player-block-state-key::after {
+  content: '：';
+}
+body.transmigration-mode .player-block-state-val {
+  color: var(--player-text-strong, #1a5490);
+  font-weight: 600;
+  word-break: break-all;
+}
+body.transmigration-mode .player-block-state-more {
+  grid-column: 1 / -1;
+  color: #aaa;
+  font-style: italic;
+  font-size: 11px;
+}
