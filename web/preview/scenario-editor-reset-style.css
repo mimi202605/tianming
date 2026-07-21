@@ -802,6 +802,33 @@
       margin-left: 2px;
     }
 
+    /* 批三·日志合订 */
+    .log-binder-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .log-binder-tab {
+      font-family: inherit; font-size: 12.5px; letter-spacing: .06em;
+      color: var(--ink-300, #8a8378); cursor: pointer;
+      background: rgba(184,154,83,.06);
+      border: 1px solid rgba(202,162,76,.28); border-radius: 5px;
+      padding: 5px 14px;
+    }
+    .log-binder-tab:hover { color: var(--gold-bright, #d8bc74); }
+    .log-binder-tab[data-active="true"] {
+      color: var(--gold-bright, #d8bc74);
+      background: rgba(184,154,83,.16);
+      border-color: var(--gold-bright, #d8bc74);
+    }
+    .runtime-grid[data-log-tab="status-log"] [data-log-bind]:not([data-panel="status-log"]),
+    .runtime-grid[data-log-tab="history-log"] [data-log-bind]:not([data-panel="history-log"]),
+    .runtime-grid[data-log-tab="ai-call-log"] [data-log-bind]:not([data-panel="ai-call-log"]),
+    .runtime-grid[data-log-tab="scenario-diff"] [data-log-bind]:not([data-panel="scenario-diff"]) {
+      display: none;
+    }
+    .creator-workflow-dash-head {
+      margin-top: 10px; padding-top: 8px;
+      border-top: 1px dotted rgba(202,162,76,.22);
+      font-size: 12.5px; color: var(--gold-400, #b89a53); letter-spacing: .08em;
+    }
+
     /* 批二·体检一览 */
     .health-ov-summary { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
     .health-ov-stat {

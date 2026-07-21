@@ -970,8 +970,9 @@ assert(appJs.includes('activateCreatorWorkflowStep: activateCreatorWorkflowStep'
 assert(appJs.includes('continueCreatorWorkflow: continueCreatorWorkflow'), 'preview app facade should expose next-step workflow continuation');
 assert(appJs.includes('applyCreatorWorkflowStep: applyCreatorWorkflowStep'), 'preview app facade should expose workflow step fix helper');
 assert(appJs.includes('applyNextCreatorWorkflow: applyNextCreatorWorkflow'), 'preview app facade should expose next-step fix helper');
-assert(appJs.includes('data-panel="production-dashboard"'), 'preview app should mount the production dashboard panel');
-assert(appJs.includes('id="production-dashboard-list"'), 'preview app should render production dashboard rows');
+// 批三·驾驶舱三合一：独立面板裁撤·待办清单(id 原样)并入制作流程导航面板·渲染器零改
+assert(!appJs.includes('data-panel="production-dashboard"'), 'production dashboard standalone panel must stay removed (三合一)');
+assert(appJs.includes('creator-workflow-dash-head') && appJs.includes('id="production-dashboard-list"'), 'production checklist should live inside the creator-workflow panel');
 assert(appJs.includes('data-editor-command="jump-production-task"'), 'preview app should expose production task jump commands');
 assert(appJs.includes('data-editor-command="scaffold-production-minimum"'), 'preview app should expose one-click production scaffolding');
 assert(appJs.includes('buildScenarioProductionChecklist: buildScenarioProductionChecklist'), 'preview app facade should expose production checklist builder');
@@ -1901,7 +1902,7 @@ assert(appJs.includes('pushStatusLog(text, tone)'),
   'setStatus should record entries into the ring buffer');
 assert(appJs.includes("if (command === 'clear-status-log')"),
   'event router should dispatch clear-status-log');
-assert(appJs.includes('<div data-panel="status-log" data-stage="gengduo">'),
+assert(appJs.includes('<div data-panel="status-log" data-stage="gengduo" data-log-bind="1">'),
   'preview app should mount the status-log panel in the workbench area');
 assert(appJs.includes('renderStatusLog();'),
   'renderAll should refresh the status log');
@@ -2034,7 +2035,7 @@ assert(appJs.includes('durationMs: Date.now() - startedAt'),
   'AI call log entries should include duration');
 assert(appJs.includes("if (command === 'clear-ai-call-log')"),
   'event router should dispatch clear-ai-call-log');
-assert(appJs.includes('<div data-panel="ai-call-log" data-stage="gengduo">'),
+assert(appJs.includes('<div data-panel="ai-call-log" data-stage="gengduo" data-log-bind="1">'),
   'preview app should mount the ai-call-log panel');
 assert(appJs.includes('renderAiCallLog();'),
   'renderAll should refresh the AI call log');
@@ -2092,7 +2093,7 @@ assert(appJs.includes('function clearHistoryLog'),
   'preview app should expose clearHistoryLog');
 assert(appJs.includes("if (command === 'clear-history-log')"),
   'event router should dispatch clear-history-log');
-assert(appJs.includes('<div data-panel="history-log" data-stage="gengduo">'),
+assert(appJs.includes('<div data-panel="history-log" data-stage="gengduo" data-log-bind="1">'),
   'preview app should mount the history-log panel');
 assert(appJs.includes('renderHistoryLogPanel();'),
   'renderAll should refresh the history log');
@@ -3022,28 +3023,17 @@ assert(/focusRuntimePanel\(target\.dataset\.runtimePanel\);[\s\S]{0,500}toggleSc
   'focus-runtime-panel handler should close the scenario pill menu after focusing');
 
 // Round 14 · Slice 102: sticky section nav strip at the top of .main-stack.
+// 批三改写：SECTION_NAV_ENTRIES/滚动spy/jump-section-panel/收展全 随大区胶囊退役——五幕页签为唯一顶导航
 assert(appJs.includes('bootstrapSectionNav'),
   'preview app should declare a bootstrapSectionNav function');
-assert(/SECTION_NAV_ENTRIES\s*=\s*\[/.test(appJs),
-  'preview app should declare a SECTION_NAV_ENTRIES list');
-assert(appJs.includes("panel: 'runtime-editor'") && appJs.includes("label: '实装工作台'"),
-  'section nav should include the runtime workbench entry');
-assert(appJs.includes("panel: 'ai-coverage-matrix'") && appJs.includes("label: 'AI 覆盖矩阵'"),
-  'section nav should include the AI coverage matrix entry');
-assert(appJs.includes("command === 'jump-section-panel'"),
-  'handleEditorCommand should route jump-section-panel');
-assert(appJs.includes("command === 'collapse-all-stack-panels'"),
-  'handleEditorCommand should route collapse-all-stack-panels');
-assert(appJs.includes("command === 'expand-all-stack-panels'"),
-  'handleEditorCommand should route expand-all-stack-panels');
+assert(!/SECTION_NAV_ENTRIES\s*=\s*\[/.test(appJs),
+  'SECTION_NAV_ENTRIES must stay removed (五幕页签取代)');
+assert(!appJs.includes("command === 'jump-section-panel'") && !appJs.includes("command === 'collapse-all-stack-panels'"),
+  'section pill commands must stay removed');
 assert(appJs.includes('bootstrapSectionNav();'),
   'init() should call bootstrapSectionNav after bootstrapChrome');
 assert(html.includes('.section-nav-strip'),
-  'preview should style the section nav strip');
-assert(html.includes('.section-nav-pill'),
-  'preview should style section nav pills');
-assert(html.includes('.section-nav-toggle'),
-  'preview should style section nav batch toggles');
+  'preview should style the section nav strip (五幕页签容器沿用)');
 const navStripBlock = html.match(/\.section-nav-strip\s*\{[^}]*\}/);
 assert(navStripBlock && /position:\s*sticky/.test(navStripBlock[0]),
   'section nav strip should be position:sticky');
@@ -3244,10 +3234,19 @@ assert(/body\.je-guoshi-docked #tm-aa-panel\s*\{[^}]*display:\s*none !important/
   && /body\.je-guoshi-docked #tm-aa-panel\.open\s*\{\s*display:\s*flex !important/.test(html),
   'docked CSS should only display an explicitly open Guoshi panel');
 
-// 首屏密度：运行/健康保留展开，低频六区默认折叠；本地旧状态通过 v2 迁移。
-['ai-desk', 'freedom-lab', 'flow-panel', 'generation-queue', 'creator-shortcuts', 'ai-coverage-matrix'].forEach(function(panel) {
+// 首屏密度：运行/健康保留展开，低频四区默认折叠(批三：捷径迁grid面板·覆盖矩阵退役——出折叠册)。
+['ai-desk', 'freedom-lab', 'flow-panel', 'generation-queue'].forEach(function(panel) {
   assert(new RegExp("'" + panel + "': true").test(appJs), panel + ' should default collapsed');
 });
+// 批三·日志合订+裁撤契约
+assert(appJs.includes('data-panel="log-binder" data-stage="gengduo"') && appJs.includes("command === 'switch-log-tab'"),
+  'gengduo stage should carry the log binder with tab switching');
+assert(html.includes('.runtime-grid[data-log-tab="status-log"]'),
+  'style should gate bound logs to the active binder tab');
+assert(appJs.includes('data-panel="creator-shortcuts" data-stage="zhizuo"'),
+  'creator shortcuts should live as a zhizuo grid panel (大区退役·功能保留)');
+assert(!/<section class="panel ai-coverage-matrix"/.test(html),
+  'AI coverage matrix static section must stay removed (CSS 残留选择器不碍事)');
 
 // 草稿必须绑定运行起点、应用到实时剧本，冲突/选择后坏引用一律 fail closed；diff 不隐藏第 41 条以后改动。
 assert(/ui\.baseScenario = AA\.makeDraft\(live\)/.test(authoringUiJs)

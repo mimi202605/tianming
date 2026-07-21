@@ -261,47 +261,8 @@
           </div>
         </section>
 
-        <section class="panel creator-shortcuts" data-panel="creator-shortcuts">
-          <div class="section-head">
-            <h2>制作者捷径</h2>
-            <span>把旧资料、地图、人物关系直接转成可审草稿</span>
-          </div>
-          <div class="shortcut-grid">
-            <article class="shortcut-card">
-              <span class="shortcut-icon">旧</span>
-              <span><strong>旧 UI 职能迁移</strong>扫描旧编辑器标签页，生成新版模块待办与字段补齐草稿。</span>
-              <button class="ai-button" data-ai-action="seed-from-old-ui">迁移</button>
-            </article>
-            <article class="shortcut-card">
-              <span class="shortcut-icon">图</span>
-              <span><strong>从地图生成区划</strong>读取地块、海洋、势力归属，反推行政区划与绑定清单。</span>
-              <button class="ai-button" data-ai-action="seed-from-map">生区划</button>
-            </article>
-            <article class="shortcut-card">
-              <span class="shortcut-icon">谱</span>
-              <span><strong>从人物关系扩写家族</strong>把人物志、亲缘、门生故吏扩成家族谱系与关系网。</span>
-              <button class="ai-button" data-ai-action="derive">扩写</button>
-            </article>
-            <article class="shortcut-card">
-              <span class="shortcut-icon">史</span>
-              <span><strong>从史料拆事件链</strong>把大段史料拆成事件、触发条件、后果与史官记录。</span>
-              <button class="ai-button" data-ai-action="generate">拆史料</button>
-            </article>
-          </div>
-        </section>
-
-        <section class="panel ai-coverage-matrix" data-panel="ai-coverage-matrix">
-          <div class="section-head">
-            <h2>AI 覆盖矩阵</h2>
-            <span>模块级、字段级、批量、校验全部要有入口</span>
-          </div>
-          <div class="coverage-list">
-            <div class="coverage-row"><strong>总览与开局</strong><span class="coverage-tag">模块生成</span><span class="coverage-tag">字段补全</span><span class="coverage-tag">开场信</span><span class="coverage-tag">冲突校验</span></div>
-            <div class="coverage-row"><strong>人物与家族</strong><span class="coverage-tag">立绘占位</span><span class="coverage-tag">家谱扩写</span><span class="coverage-tag">批量人物</span><span class="coverage-tag">关系校验</span></div>
-            <div class="coverage-row"><strong>势力与社会</strong><span class="coverage-tag">势力志</span><span class="coverage-tag">阶层党派</span><span class="coverage-tag">外交矩阵</span><span class="coverage-tag">NPC 边界</span></div>
-            <div class="coverage-row"><strong>行政地图</strong><span class="coverage-tag">地块绑定</span><span class="coverage-tag">海陆分类</span><span class="coverage-tag">区划反推</span><span class="coverage-tag">导出守门</span></div>
-          </div>
-        </section>
+        <!-- 五幕批三裁撤：制作者捷径大区(四张真功能卡降级迁入制作幕小面板·renderCreatorShortcuts 原样命中)
+             与 AI 覆盖矩阵大区(纯静态装饰·零渲染器)退役 -->
       </div>
 
       <aside class="panel inspector" aria-label="模块详情">

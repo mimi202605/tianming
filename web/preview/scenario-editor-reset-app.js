@@ -712,7 +712,7 @@
     { id: 'people-library', icon: '人', title: '制作人物库', detail: '进入人物专业表单，批量检查身份、派系、官职、AI 人格和立绘字段。', command: 'jump-field-workbench', field: 'characters', panel: 'specialist-editor', label: '编辑人物' },
     { id: 'bulk-authoring', icon: '批', title: '批量导入资料', detail: '把 CSV、JSONL、表格资料导入人物、势力、事件等大列表，先预览再写入。', command: 'jump-field-workbench', field: 'characters', panel: 'bulk-data-workbench', label: '打开批量' },
     { id: 'reference-repair', icon: '引', title: '修断裂引用', detail: '扫描人物、势力、事件之间的断引用，并一键生成占位条目或跳转修名。', command: 'focus-runtime-panel', runtimePanel: 'reference-repair-workbench', label: '查引用' },
-    { id: 'production-dashboard', icon: '制', title: '制作待办', detail: '按可运行剧本的最低要求查看缺口，并用处理按钮补核心骨架。', command: 'focus-runtime-panel', runtimePanel: 'production-dashboard', label: '看待办' },
+    { id: 'production-dashboard', icon: '制', title: '制作待办', detail: '按可运行剧本的最低要求查看缺口，并用处理按钮补核心骨架。', command: 'focus-runtime-panel', runtimePanel: 'creator-workflow', label: '看待办' },   // 批三·驾驶舱并入流程导航
     { id: 'runtime-field-audit', icon: '验', title: '查正式字段', detail: '对照官方剧本、旧编辑器和正式开局读取面，找出导入后仍不可编辑的配置。', command: 'focus-runtime-panel', runtimePanel: 'runtime-field-audit', label: '查字段' },
     { id: 'preflight', icon: '预', title: '发布预检', detail: '导出前检查结构错误、警告、待审草稿和改动清单。', command: 'run-preflight', label: '运行预检' },
     { id: 'project-library', icon: '案', title: '保存案卷', detail: '把当前制作状态存成可回滚、可导入导出的案卷版本。', command: 'focus-runtime-panel', runtimePanel: 'project-library', label: '存案卷' },
@@ -13240,6 +13240,8 @@
       var stages = String(stageHost.getAttribute('data-stage') || '').split(/\s+/).filter(Boolean);
       if (stages.length && stages.indexOf(currentDeckStage()) < 0) switchDeckStage(stages[0]);
     }
+    // 批三·日志合订：目标是被订日志→先翻到那一本
+    if (target.getAttribute && target.getAttribute('data-log-bind')) switchLogTab(target.getAttribute('data-panel'));
     var hostPanel = target.closest ? target.closest('.panel[data-panel]') : null;
     if (hostPanel && hostPanel.dataset.panelCollapsed === 'true') togglePanelCollapse(hostPanel.dataset.panel);
     document.querySelectorAll('[data-runtime-focus="true"]').forEach(function(node) {
@@ -21060,9 +21062,8 @@
     'ai-desk': true,
     'freedom-lab': true,
     'flow-panel': true,
-    'generation-queue': true,
-    'creator-shortcuts': true,
-    'ai-coverage-matrix': true
+    'generation-queue': true
+    // 批三裁撤：creator-shortcuts 迁 grid 小面板·ai-coverage-matrix 退役——默认折叠表随之出册
   };
 
   function readPanelCollapse() {
@@ -21120,16 +21121,7 @@
   // pill, jumps + auto-expands on click, and offers batch collapse/expand.
   // Order matches the rendered DOM order after bootstrapChrome inserts the
   // runtime workbench right after .hero-board.
-  var SECTION_NAV_ENTRIES = [
-    { panel: 'runtime-editor', label: '实装工作台' },
-    { panel: 'ai-desk', label: 'AI 共创' },
-    { panel: 'freedom-lab', label: '创作模式' },
-    { panel: 'health-panel', label: '健康总览' },
-    { panel: 'flow-panel', label: '重置流程' },
-    { panel: 'generation-queue', label: '生成队列' },
-    { panel: 'creator-shortcuts', label: '制作捷径' },
-    { panel: 'ai-coverage-matrix', label: 'AI 覆盖矩阵' }
-  ];
+  /* 批三：SECTION_NAV_ENTRIES/滚动 spy/jump-section-panel/收展全按钮 已随五幕页签退役(死代码清账) */
 
   /* 五幕重构批一：八大区胶囊+「全部收起/展开」裁撤——总控台按创作动线切五幕+更多·一次只见一幕。
    * 顶层大区(main-stack>.panel)与实装 grid 面板皆按 data-stage 挂幕(可多幕·空格分隔)·CSS 幕门 gating。
@@ -21145,8 +21137,20 @@
   var SECTION_STAGE_MAP = {
     'ai-desk': 'zhizuo', 'freedom-lab': 'zhizuo', 'generation-queue': 'zhizuo',
     'health-panel': 'kanwu',
-    'flow-panel': 'gengduo', 'creator-shortcuts': 'gengduo', 'ai-coverage-matrix': 'gengduo'
+    'flow-panel': 'gengduo'
+    // 批三裁撤：creator-shortcuts 大区→降级迁入制作幕小面板·ai-coverage-matrix(纯静态装饰)→退役
   };
+  /* 批三·日志合订：更多幕四本日志(状态/修改/AI调用/变更清册)只显当前订选一本·CSS 订门 gating */
+  function switchLogTab(tab) {
+    var grid = document.querySelector('.runtime-grid');
+    if (!grid) return;
+    var valid = ['status-log', 'history-log', 'ai-call-log', 'scenario-diff'];
+    if (valid.indexOf(tab) < 0) tab = 'status-log';
+    grid.setAttribute('data-log-tab', tab);
+    document.querySelectorAll('.log-binder-tab').forEach(function (t) {
+      t.dataset.active = (t.dataset.logTab === tab) ? 'true' : 'false';
+    });
+  }
   function currentDeckStage() {
     var s = document.body ? document.body.getAttribute('data-deck-stage') : '';
     return s || 'qiben';
@@ -21182,51 +21186,7 @@
     var saved = 'qiben';
     try { saved = localStorage.getItem('tmDeckStage') || 'qiben'; } catch (_eLS) {}
     switchDeckStage(saved);
-  }
-
-  function setupSectionNavScrollSpy() {
-    if (!window.IntersectionObserver) return;
-    var pills = document.querySelectorAll('[data-section-nav]');
-    if (!pills.length) return;
-    function setActive(panelId) {
-      pills.forEach(function(p) {
-        p.dataset.active = (p.dataset.sectionNav === panelId) ? 'true' : 'false';
-      });
-    }
-    var observer = new IntersectionObserver(function(entries) {
-      // Track all currently-intersecting entries and pick the topmost one
-      // so the active pill always reflects what the creator is reading.
-      var visible = entries.filter(function(e) { return e.isIntersecting; });
-      if (!visible.length) return;
-      visible.sort(function(a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; });
-      var top = visible[0].target;
-      if (top && top.dataset && top.dataset.panel) setActive(top.dataset.panel);
-    }, { rootMargin: '-25% 0px -65% 0px', threshold: [0, 0.05, 0.2] });
-    SECTION_NAV_ENTRIES.forEach(function(entry) {
-      var el = document.querySelector('.main-stack [data-panel="' + entry.panel + '"]');
-      if (el) observer.observe(el);
-    });
-  }
-
-  function jumpToSectionPanel(panelId) {
-    if (!panelId) return;
-    var el = document.querySelector('.main-stack [data-panel="' + panelId + '"]');
-    if (!el) return;
-    if (el.dataset.panelCollapsed === 'true') togglePanelCollapse(panelId);
-    if (el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function setAllStackPanelsCollapsed(shouldCollapse) {
-    var panels = document.querySelectorAll('.main-stack .panel[data-panel]');
-    var map = readPanelCollapse();
-    panels.forEach(function(p) {
-      var id = p.dataset.panel;
-      if (!id) return;
-      if (shouldCollapse) map[id] = true;
-      else delete map[id];
-    });
-    writePanelCollapse(map);
-    applyPanelCollapseState();
+    switchLogTab('status-log');   // 批三·日志合订默认翻状态一本
   }
 
   function readModuleOrder() {
@@ -21613,8 +21573,10 @@
          * 幕谱：qiben起本/zhizuo制作/kanwu勘误/shiyan试演/chupin出品/gengduo更多。 */
         '<div class="runtime-grid">',
         '<div data-panel="new-scenario-starter" data-stage="qiben" class="starter-template-panel"><h3>新建剧本</h3><div id="new-scenario-starter-list"><p>正在准备剧本模板。</p></div></div>',
-        '<div data-panel="creator-workflow" data-stage="qiben zhizuo" class="creator-workflow-panel"><h3>制作流程导航</h3><div id="creator-workflow-list"><p>正在生成制作流程。</p></div></div>',
-        '<div data-panel="production-dashboard" data-stage="zhizuo"><h3>制作驾驶舱</h3><div id="production-dashboard-list"><p>正在汇总制作待办。</p></div></div>',
+        /* 批三·驾驶舱三合一：production-dashboard 独立面板裁撤·其待办清单(id 不动·渲染器零改)并入流程导航面板 */
+        '<div data-panel="creator-workflow" data-stage="qiben zhizuo" class="creator-workflow-panel"><h3>制作流程导航</h3><div id="creator-workflow-list"><p>正在生成制作流程。</p></div><div class="creator-workflow-dash-head">制作待办</div><div id="production-dashboard-list"><p>正在汇总制作待办。</p></div></div>',
+        /* 批三·制作捷径降级迁入制作幕(原顶层大区裁撤·四张真功能卡保留·renderCreatorShortcuts 选择器原样命中) */
+        '<div data-panel="creator-shortcuts" data-stage="zhizuo"><h3>制作捷径</h3><div class="shortcut-grid"></div></div>',
         '<div data-panel="health-overview" data-stage="kanwu" class="health-overview-panel"><h3>体检一览</h3><div id="health-overview-list"><p>尚未体检。点「一键体检」跑校验并汇总三路查错。</p></div></div>',
         '<div data-panel="runtime-field-audit" data-stage="kanwu"><h3>正式游戏字段审计</h3><div id="runtime-field-audit-list"><p>正在对照官方剧本与正式运行字段。</p></div></div>',
         '<div data-panel="validation-results-panel" data-stage="kanwu"><h3>校验结果</h3><div id="validation-results"><p>尚未运行校验。</p></div></div>',
@@ -21622,7 +21584,7 @@
         '<div data-panel="global-search" data-stage="zhizuo"><h3>全局检索</h3><div class="global-search-bar"><input id="global-search-input" placeholder="搜索人物、势力、地块、字段、id、官职"></div><div id="global-search-results"><p>输入关键词开始检索。</p></div></div>',
         '<div data-panel="reference-repair-workbench" data-stage="kanwu"><h3>引用修复</h3><div id="reference-repair-list"><p>正在扫描断裂引用。</p></div></div>',
         '<div data-panel="edit-history" data-stage="gengduo"><h3>编辑回退</h3><div class="prompt-row"><button class="ai-button" data-editor-command="undo-edit">撤销一步</button><button class="ai-button" data-editor-command="redo-edit">重做一步</button></div><div id="edit-history-list"><p>暂无可撤销编辑。</p></div></div>',
-        '<div data-panel="scenario-diff" data-stage="gengduo"><h3>变更清册</h3><div id="scenario-diff-list"><p>正在比对。</p></div></div>',
+        '<div data-panel="scenario-diff" data-stage="gengduo" data-log-bind="1"><h3>变更清册</h3><div id="scenario-diff-list"><p>正在比对。</p></div></div>',
         '<div data-panel="preflight-gate" data-stage="chupin"><h3>发布预检</h3><div id="preflight-gate-list"><p>尚未运行预检。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-preflight">运行预检</button><button class="ai-button" data-editor-command="preflight-export">预检导出</button></div></div>',
         '<div data-panel="quick-test-workbench" data-stage="shiyan"><h3>正式沙盒测试</h3><div id="quick-test-list"><p>尚未运行快速测试。</p></div><div class="prompt-row"><button class="ai-button" data-editor-command="run-quick-test">快速预检</button><button class="ai-button" data-editor-command="launch-sandbox-test">启动正式沙盒</button><button class="ai-button" data-editor-command="launch-quicktest-run" title="真开游戏连跑 3 回合并做四类体检(死人任职/幽灵键/账面守恒/叙事错名)·真实消耗数轮 AI 调用(配次要 API 自动走快模型档)·跑完报告自动写回·国师可读">快测·一键体检</button><button class="ai-button" data-editor-command="return-to-formal-runtime">写回正式页</button></div></div>',
         '<div data-panel="playtest-launchers" data-stage="shiyan"><h3>以玩家之眼</h3><p>不开沙盒·就地过一遍成色。</p><div class="prompt-row"><button class="ai-button" data-pv-launch="preview">👁 玩家视角预览</button><button class="ai-button" data-pv-launch="audit">📊 数值体检</button></div></div>',
@@ -21632,10 +21594,17 @@
         '<div data-panel="old-editor-parity" data-stage="gengduo"><h3>旧编辑器迁移审计</h3><div id="old-editor-parity-list"><p>正在比对旧编辑器入口。</p></div></div>',
         '<div data-panel="official-comparison" data-stage="kanwu"><h3>剧本对照</h3><p>正在准备剧本对照。</p></div>',
         '<div data-panel="events-merge-wizard" data-stage="zhizuo"><h3>事件跨剧本合并</h3><p>正在准备事件合并面板。</p></div>',
-        '<div data-panel="status-log" data-stage="gengduo"><h3>状态日志</h3><p>正在准备状态日志。</p></div>',
-        '<div data-panel="ai-call-log" data-stage="gengduo"><h3>AI 调用日志</h3><p>正在准备 AI 调用日志。</p></div>',
+        /* 批三·日志合订：四本日志并一册·页签切换(switch-log-tab)·各日志渲染器零改(面板还在只是被订) */
+        '<div data-panel="log-binder" data-stage="gengduo" class="log-binder-panel"><h3>日志合订</h3><div class="log-binder-tabs">' +
+          '<button type="button" class="log-binder-tab" data-editor-command="switch-log-tab" data-log-tab="status-log">状态</button>' +
+          '<button type="button" class="log-binder-tab" data-editor-command="switch-log-tab" data-log-tab="history-log">修改</button>' +
+          '<button type="button" class="log-binder-tab" data-editor-command="switch-log-tab" data-log-tab="ai-call-log">AI 调用</button>' +
+          '<button type="button" class="log-binder-tab" data-editor-command="switch-log-tab" data-log-tab="scenario-diff">变更清册</button>' +
+        '</div></div>',
+        '<div data-panel="status-log" data-stage="gengduo" data-log-bind="1"><h3>状态日志</h3><p>正在准备状态日志。</p></div>',
+        '<div data-panel="ai-call-log" data-stage="gengduo" data-log-bind="1"><h3>AI 调用日志</h3><p>正在准备 AI 调用日志。</p></div>',
         '<div data-panel="watch-list" data-stage="kanwu"><h3>字段关注列表</h3><p>正在准备关注列表。</p></div>',
-        '<div data-panel="history-log" data-stage="gengduo"><h3>修改日志</h3><p>正在准备修改日志。</p></div>',
+        '<div data-panel="history-log" data-stage="gengduo" data-log-bind="1"><h3>修改日志</h3><p>正在准备修改日志。</p></div>',
         '<div data-panel="scenario-wizard" data-stage="zhizuo"><h3>剧本生成向导</h3><p>正在准备向导。</p></div>',
         '</div>',
         '</section>'
@@ -21656,6 +21625,7 @@
     if (command === 'redo-edit') redoEdit();
     if (command === 'switch-deck-stage') switchDeckStage(target && target.dataset && target.dataset.deckStage);   // 五幕页签
     if (command === 'run-health-overview') { validateScenario(); renderHealthOverview(); }   // 批二·一键体检
+    if (command === 'switch-log-tab') switchLogTab(target && target.dataset && target.dataset.logTab);   // 批三·日志合订
     if (command === 'save-field') saveSelectedField();
     if (command === 'save-game-settings') saveGameSettingsWorkbench();
     if (command === 'save-player-info') savePlayerInfoWorkbench();
@@ -21933,9 +21903,7 @@
       toggleScenarioPillMenu(false);
     }
     if (command === 'close-scenario-pill-menu') toggleScenarioPillMenu(false);
-    if (command === 'jump-section-panel') jumpToSectionPanel(target && target.dataset && target.dataset.sectionNav);
-    if (command === 'collapse-all-stack-panels') setAllStackPanelsCollapsed(true);
-    if (command === 'expand-all-stack-panels') setAllStackPanelsCollapsed(false);
+    /* 批三：jump-section-panel/collapse-all/expand-all 三命令随大区胶囊退役 */
     if (command === 'continue-creator-workflow') continueCreatorWorkflow();
     if (command === 'apply-creator-workflow-step') applyCreatorWorkflowStep(target.dataset.workflowStepFix);
     if (command === 'apply-next-creator-workflow') applyNextCreatorWorkflow();
