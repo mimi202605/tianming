@@ -138,7 +138,51 @@ ok('PCD.petitionToSpeak 朝议未开 toast"朝议未开·无法请旨"',
 // 清理 CY·避免污染后续测试
 sandbox.CY = undefined;
 
-// ── Sub-test 6: Phase A smoke 仍通过 ───────────────────────
+// ── Sub-test 6: PlayerSystemsAdapter.renderBlock 不再返回"无可用渲染入口" ──
+// Phase 5.1 重建：adapter 统一 15 个 PlayerXxx 渲染入口·消除"无可用渲染入口"提示
+// 4 条断言覆盖：已知系统 / 未知系统 / 异常路径 / _wrapBlock 防双包
+loadFile('tm-player-systems-adapter.js');
+var PSA = sandbox.TM.PlayerSystemsAdapter;
+ok('PlayerSystemsAdapter 命名空间注册', !!PSA);
+ok('PlayerSystemsAdapter.renderBlock 是函数', typeof PSA.renderBlock === 'function');
+
+// 6.1 已知 systemKey（PlayerFamily·无真实系统挂载→走 fallback）不返回"无可用渲染入口"
+var rbKnown = PSA.renderBlock('PlayerFamily', 'minister', '家族');
+ok('renderBlock(已知系统) 返回非空 HTML', typeof rbKnown === 'string' && rbKnown.length > 0,
+   'got len: ' + (rbKnown || '').length);
+ok('renderBlock(已知系统) 不再返回"无可用渲染入口"', rbKnown.indexOf('无可用渲染入口') < 0,
+   'got: ' + rbKnown.slice(0, 120));
+ok('renderBlock(已知系统) 含 player-block 容器', rbKnown.indexOf('player-block') >= 0);
+
+// 6.2 未知 systemKey 返回"未知系统："·不返回"无可用渲染入口"
+var rbUnknown = PSA.renderBlock('PlayerNonExistent', 'minister', '幽灵系统');
+ok('renderBlock(未知系统) 返回"未知系统："', rbUnknown.indexOf('未知系统') >= 0,
+   'got: ' + rbUnknown.slice(0, 120));
+ok('renderBlock(未知系统) 不返回"无可用渲染入口"', rbUnknown.indexOf('无可用渲染入口') < 0);
+ok('renderBlock(未知系统) 含 player-block-error 类', rbUnknown.indexOf('player-block-error') >= 0);
+
+// 6.3 异常路径返回"渲染异常"·不返回"无可用渲染入口"
+// 注入一个会抛异常的 fake 系统（PlayerFortune 在 phase-b 未加载·可安全注入）
+sandbox.TM.PlayerFortune = { renderBlockHTML: function () { throw new Error('boom-for-test'); } };
+var rbErr = PSA.renderBlock('PlayerFortune', 'minister', '气运');
+ok('renderBlock(异常系统) 返回"渲染异常"', rbErr.indexOf('渲染异常') >= 0,
+   'got: ' + rbErr.slice(0, 120));
+ok('renderBlock(异常系统) 不返回"无可用渲染入口"', rbErr.indexOf('无可用渲染入口') < 0);
+ok('renderBlock(异常系统) 含 boom-for-test 错误信息', rbErr.indexOf('boom-for-test') >= 0);
+delete sandbox.TM.PlayerFortune;  // 清理·避免污染后续
+
+// 6.4 _wrapBlock 检测 class="player-block" 避免双重包裹
+var inner = '<div class="player-block" data-system="X">已包</div>';
+var wrapped = PSA._wrapBlock(inner, 'X', '标题');
+ok('_wrapBlock 已含 player-block 时直接返回原 HTML（不双包）', wrapped === inner,
+   'got: ' + wrapped.slice(0, 120));
+var plain = '<div>裸 HTML</div>';
+var wrapped2 = PSA._wrapBlock(plain, 'X', '标题');
+ok('_wrapBlock 裸 HTML 时包一层 player-block 容器',
+   wrapped2.indexOf('class="player-block"') >= 0 && wrapped2.indexOf('裸 HTML') >= 0,
+   'got: ' + wrapped2.slice(0, 120));
+
+// ── Sub-test 7: Phase A smoke 仍通过 ───────────────────────
 // 通过分别跑 smoke-transmigration-ui.js 验证（外部 CI 跑）
 
 // ── 总结 ──────────────────────────────────────────────────

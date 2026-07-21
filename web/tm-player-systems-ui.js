@@ -14,27 +14,28 @@
   if (!global.TM) global.TM = {};
   if (global.TM.PlayerSystemsUI) return;
 
-  var SCENES = ['home','office','social','cultivation','force','special','evolution'];
+  var SCENES = ['home','office','social','cultivation','tech','force','special','evolution'];
 
   // §3.2 角色可见性矩阵
   // ✓ = 1, — = 0
+  // tech（格物）tab：所有非 emperor 角色可见（maid/infant 由门控灰显）
   var ROLE_SCENES = {
     emperor:           [],
-    regent:            ['home','office','social','cultivation','force','evolution'],
-    minister:          ['home','office','social','cultivation','evolution'],
-    general:           ['home','office','social','cultivation','force','evolution'],
-    prince:            ['home','office','social','cultivation','force','evolution'],
-    custom:            ['home','social','cultivation','evolution'],
-    merchant:          ['home','social','cultivation','force','evolution'],
-    eunuch:            ['home','office','social','cultivation','special','evolution'],
-    maid:              ['social','cultivation','special','evolution'],
-    commoner:          ['home','social','cultivation','force','evolution'],  // Phase A 简化：暂不显 office·STUDY 科举路径留 Phase B（与 renderTab PlayerKeju 门控叠加致 PlayerKeju 暂不可达）
-    bandit:            ['home','social','cultivation','force','special','evolution'],
-    monk:              ['home','social','cultivation','special','evolution'],
-    artisan:           ['home','social','cultivation','force','special','evolution'],
-    infant:            ['home','special','evolution'],
-    retired_official:  ['home','office','social','cultivation','special','evolution'],
-    actor:             ['home','social','cultivation','special','evolution']
+    regent:            ['home','office','social','cultivation','tech','force','evolution'],
+    minister:          ['home','office','social','cultivation','tech','evolution'],
+    general:           ['home','office','social','cultivation','tech','force','evolution'],
+    prince:            ['home','office','social','cultivation','tech','force','evolution'],
+    custom:            ['home','social','cultivation','tech','evolution'],
+    merchant:          ['home','social','cultivation','tech','force','evolution'],
+    eunuch:            ['home','office','social','cultivation','tech','special','evolution'],
+    maid:              ['social','cultivation','tech','special','evolution'],
+    commoner:          ['home','social','cultivation','tech','force','evolution'],
+    bandit:            ['home','social','cultivation','tech','force','special','evolution'],
+    monk:              ['home','social','cultivation','tech','special','evolution'],
+    artisan:           ['home','social','cultivation','tech','force','special','evolution'],
+    infant:            ['home','tech','special','evolution'],
+    retired_official:  ['home','office','social','cultivation','tech','special','evolution'],
+    actor:             ['home','social','cultivation','tech','special','evolution']
   };
 
   function scenesForRole(role) {
@@ -66,6 +67,10 @@
       { systemKey: 'PlayerTech',          blockTitle: '科技研发' },
       { systemKey: 'PlayerSkill',         blockTitle: '修习' },
       { systemKey: 'PlayerSkill',         blockTitle: '游学', alt: true }
+    ],
+    tech: [
+      { systemKey: 'PlayerTech',          blockTitle: '格物' },
+      { systemKey: 'PlayerTech',          blockTitle: '研发日志', alt: true }
     ],
     force: [
       { systemKey: 'PlayerPrivateArmy',   blockTitle: '私军' },
@@ -140,7 +145,19 @@
   }
 
   // ── 单区块渲染 ─────────────────────────────────────────────
+  // 优先委托 TM.PlayerSystemsAdapter.renderBlock（Phase 5.1 重建·15 systemKey 适配表）
+  // adapter 缺席时降级到本文件原有逻辑（sys.renderBlockHTML / state / list）
+  // 绝不返回「无可用渲染入口」——adapter 总有 fallback
   function renderBlock(blockDef, role) {
+    var adapter = (global.TM && global.TM.PlayerSystemsAdapter && typeof global.TM.PlayerSystemsAdapter.renderBlock === 'function')
+      ? global.TM.PlayerSystemsAdapter : null;
+    if (adapter) {
+      try {
+        return adapter.renderBlock(blockDef.systemKey, role, blockDef.blockTitle);
+      } catch (e) {
+        // adapter 抛异常 → 走本文件降级路径
+      }
+    }
     var sys = _sys(blockDef.systemKey);
     var html = '<div class="player-block" data-system="' + _esc(blockDef.systemKey) + '">';
     html += '<div class="player-block-title">' + _esc(blockDef.blockTitle) + '</div>';

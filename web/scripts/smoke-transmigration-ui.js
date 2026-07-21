@@ -89,8 +89,11 @@ loadFile('tm-player-systems-ui.js');
 var PS = sandbox.TM.PlayerSystemsUI;
 ok('PlayerSystemsUI 导出', !!PS);
 ok('scenesForRole(emperor) 为空数组', PS.scenesForRole('emperor').length === 0);
-ok('scenesForRole(minister) 含 5 项', PS.scenesForRole('minister').length === 5);
-ok('scenesForRole(infant) 仅 3 项', PS.scenesForRole('infant').length === 3,
+// Phase 5.1 重建：新增 tech（格物）tab·minister 含 6 项（home/office/social/cultivation/tech/evolution）
+ok('scenesForRole(minister) 含 6 项（含 tech）', PS.scenesForRole('minister').length === 6);
+ok('scenesForRole(minister) 含 tech', PS.scenesForRole('minister').indexOf('tech') >= 0);
+// infant 也加 tech（门控灰显）·含 4 项（home/tech/special/evolution）
+ok('scenesForRole(infant) 含 4 项（含 tech 灰显）', PS.scenesForRole('infant').length === 4,
    'got: ' + PS.scenesForRole('infant').join(','));
 ok('scenesForRole(minister) 含 home', PS.scenesForRole('minister').indexOf('home') >= 0);
 ok('scenesForRole(minister) 不含 force', PS.scenesForRole('minister').indexOf('force') < 0);
@@ -243,6 +246,39 @@ try {
   ok('emperor 模式 renderTopBar 不抛错', false, String(e));
 }
 ok('emperor 模式 renderTopBar 控制流零回归（到达此处即未抛错）', true);
+
+// ── Sub-test 7: 5 新模块命名空间存在性（Phase 5.1 重建·防回归） ──
+// 分别 load 5 个新模块文件·断言各自在 sandbox.TM 上注册成功
+// 任一模块文件丢失 / IIFE 未挂载 → 立即暴露（防 Phase 5.1 重建文件被误删）
+loadFile('tm-player-systems-adapter.js');
+ok('TM.PlayerSystemsAdapter 命名空间注册', !!sandbox.TM.PlayerSystemsAdapter,
+   'got: ' + typeof sandbox.TM.PlayerSystemsAdapter);
+ok('PlayerSystemsAdapter.renderBlock 是函数',
+   !!(sandbox.TM.PlayerSystemsAdapter && typeof sandbox.TM.PlayerSystemsAdapter.renderBlock === 'function'));
+
+loadFile('tm-player-ai-bridge.js');
+ok('TM.PlayerAIBridge 命名空间注册', !!sandbox.TM.PlayerAIBridge,
+   'got: ' + typeof sandbox.TM.PlayerAIBridge);
+ok('PlayerAIBridge.invoke 是函数',
+   !!(sandbox.TM.PlayerAIBridge && typeof sandbox.TM.PlayerAIBridge.invoke === 'function'));
+
+loadFile('tm-player-map.js');
+ok('TM.PlayerMap 命名空间注册', !!sandbox.TM.PlayerMap,
+   'got: ' + typeof sandbox.TM.PlayerMap);
+ok('PlayerMap.render 是函数',
+   !!(sandbox.TM.PlayerMap && typeof sandbox.TM.PlayerMap.render === 'function'));
+
+loadFile('tm-player-shell.js');
+ok('TM.PlayerShell 命名空间注册', !!sandbox.TM.PlayerShell,
+   'got: ' + typeof sandbox.TM.PlayerShell);
+ok('PlayerShell.render 是函数',
+   !!(sandbox.TM.PlayerShell && typeof sandbox.TM.PlayerShell.render === 'function'));
+
+loadFile('tm-player-rail.js');
+ok('TM.PlayerRail 命名空间注册', !!sandbox.TM.PlayerRail,
+   'got: ' + typeof sandbox.TM.PlayerRail);
+ok('PlayerRail.render 是函数',
+   !!(sandbox.TM.PlayerRail && typeof sandbox.TM.PlayerRail.render === 'function'));
 
 // ── 总结 ──────────────────────────────────────────────────
 console.log('');
