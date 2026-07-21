@@ -1399,6 +1399,24 @@
     if (!m) return '1.0.1';
     return m[1] + (parseInt(m[2], 10) + 1);
   }
+  // 典籍封面（书肆化·批五）：无美术资产就用字造封面——玄底大字+竖排签条+印
+  function coverHue(id) {
+    var h = 0; var s = String(id || '');
+    for (var i = 0; i < s.length; i++) h = (h + s.charCodeAt(i)) % 5;
+    return h;
+  }
+  function coverHtml(p, small) {
+    var t = String(p.title || p.id || '');
+    var m = t.match(/[一-鿿]/);
+    var glyph = m ? m[0] : (t.charAt(0) || '书');
+    var slip = (t.replace(/[（(].*$/, '').slice(0, 10) || t.slice(0, 10)).replace(/[·、，。—-]+$/, '');
+    var seal = '';
+    if (S.feat && S.feat[p.id]) seal = '<span class="ws-cseal" data-k="feat">荐</span>';
+    else if ((p.author || '') === '天命官方') seal = '<span class="ws-cseal" data-k="off">官</span>';
+    return '<div class="ws-cover' + (small ? ' ws-cover--s' : '') + '" data-hue="' + coverHue(p.id) + '" aria-hidden="true">' +
+      '<span class="ws-glyph">' + esc(glyph) + '</span>' +
+      '<span class="ws-slip">' + esc(slip) + '</span>' + seal + '</div>';
+  }
   function statLine(p) {
     var bits = ['↓ ' + (p.downloads || 0)];
     if (p.rating) bits.push('<span class="ws-star">★ ' + esc(p.rating) + (p.ratingCount ? '（' + p.ratingCount + ' 人评）' : '') + '</span>');
@@ -1531,11 +1549,13 @@
       }
     }
     return '<article class="ws-card" data-ws-card="' + esc(p.id || '') + '"' + (S.feat && S.feat[p.id] ? ' data-feat="true"' : '') + '>' +
+      coverHtml(p) +
+      '<div class="ws-card-main">' +
       '<div class="ws-card-hd"><b>' + esc(p.title || p.id) + '</b><span class="ws-v">v' + esc(p.version || '?') + '</span>' +
       (p.author ? '<span class="ws-au">' + esc(p.author) + '</span>' : '') + badge + '</div>' +
       (p.description ? '<p class="ws-desc">' + esc(p.description) + '</p>' : '') +
       tags + statLine(p) + acts + detail +
-      '</article>';
+      '</div></article>';
   }
   function renderBrowse() {
     var box = document.getElementById('workshop-browse-body');
@@ -1559,7 +1579,7 @@
     box.innerHTML = html;
   }
 
-  // ── 案台渲染（出品幕·批二重做） ──────────────────────────────────────────
+  // ── 案台渲染（出品幕·批五书肆化：左=发布正案·右=账号印徽+台账·下=我的书架） ──
   function renderDesk() {
     var box = document.getElementById('workshop-desk-body');
     if (!box) return;
@@ -1571,76 +1591,75 @@
     }
     var u = sessionUser();
     pubInit();
-    var html = '';
-    // 账号印徽条
-    html += '<div class="ws-desk-sec">';
+    // ── 账号卡 ──
+    var acctSec = '<div class="ws-desk-sec">';
     if (u) {
       var label = userLabel(u);
-      html += '<div class="ws-acct"><div class="ws-seal">' + esc(label.charAt(0)) + '</div>' +
+      acctSec += '<div class="ws-acct"><div class="ws-seal">' + esc(label.charAt(0)) + '</div>' +
         '<div class="ws-who"><b>' + esc(label) + '</b><div class="ws-dim">已登录 · 与游戏内工坊同一账号互通</div></div>' +
         '<button type="button" class="mini-ai ws-right" data-ws-act="logout">登出</button></div>';
     } else {
-      html += '<div class="ws-desk-h">账号</div>' +
+      acctSec += '<div class="ws-desk-h">账号</div>' +
         '<div class="ws-desk-row">未登录——游戏里登过号会自动带入；也可在此直接登录。</div>' +
-        '<div class="ws-desk-row"><input id="ws-login-user" class="ws-desk-input" placeholder="用户名" autocomplete="username">' +
-        '<input id="ws-login-pass" class="ws-desk-input" type="password" placeholder="密码" autocomplete="current-password">' +
-        '<button type="button" class="mini-ai" data-ws-act="login">登录</button>' +
+        '<div class="ws-desk-row"><input id="ws-login-user" class="ws-desk-input ws-grow" placeholder="用户名" autocomplete="username"></div>' +
+        '<div class="ws-desk-row"><input id="ws-login-pass" class="ws-desk-input ws-grow" type="password" placeholder="密码" autocomplete="current-password"></div>' +
+        '<div class="ws-desk-row"><button type="button" class="mini-ai" data-ws-act="login">登录</button>' +
         '<button type="button" class="mini-ai" data-ws-act="register">注册新号</button></div>';
     }
-    html += '</div>';
-    // 发布：双轨（发新作/更新已有）
+    acctSec += '</div>';
+    // ── 发布正案 ──
     var canUpdate = !!(S.mine && S.mine.length);
-    html += '<div class="ws-desk-sec" id="ws-pub-sec"><div class="ws-desk-h">发布</div>' +
+    var pubSec = '<div class="ws-desk-sec" id="ws-pub-sec"><div class="ws-desk-h">发布</div>' +
       '<div class="ws-track">' +
       '<button type="button" data-on="' + (S.pubMode === 'new') + '" data-ws-act="pub-mode" data-ws-mode="new">发新作</button>' +
       '<button type="button" data-on="' + (S.pubMode === 'update') + '" data-ws-act="pub-mode" data-ws-mode="update"' + (canUpdate ? '' : ' disabled title="尚无已上架条目"') + '>更新已有</button>' +
       '</div>';
-    if (S.forkFrom) html += '<div class="ws-desk-row" style="color:var(--je-gold-400,#b89a53);">改编自「' + esc(S.forkFrom.title || S.forkFrom.id) + '」——发布将记入其世界线（谱系有账）。<button type="button" class="mini-ai" data-ws-act="fork-clear">取消改编</button></div>';
+    if (S.forkFrom) pubSec += '<div class="ws-desk-row" style="color:var(--je-gold-400,#b89a53);">改编自「' + esc(S.forkFrom.title || S.forkFrom.id) + '」——发布将记入其世界线（谱系有账）。<button type="button" class="mini-ai" data-ws-act="fork-clear">取消改编</button></div>';
     if (S.pubMode === 'update') {
-      html += '<div class="ws-desk-row"><label>条目</label><select id="ws-pub-base" class="ws-desk-input">' +
+      pubSec += '<div class="ws-desk-row"><label>条目</label><select id="ws-pub-base" class="ws-desk-input">' +
         (S.mine || []).map(function (p) {
           return '<option value="' + esc(p.id) + '"' + (S.pubBase && S.pubBase.id === p.id ? ' selected' : '') + '>' + esc(p.title || p.id) + '（线上 v' + esc(p.version || '?') + '）</option>';
         }).join('') + '</select>' +
         '<span class="ws-lock">ID 锁定 ' + esc(S.pub.id || '?') + '</span></div>';
     }
-    html += '<div class="ws-desk-row"><label>标题</label><input id="ws-pub-title" class="ws-desk-input ws-grow" value="' + esc(S.pub.title) + '"></div>';
+    pubSec += '<div class="ws-desk-row"><label>标题</label><input id="ws-pub-title" class="ws-desk-input ws-grow" value="' + esc(S.pub.title) + '"></div>';
     if (S.pubMode !== 'update') {
-      html += '<div class="ws-desk-row"><label>ID</label><input id="ws-pub-id" class="ws-desk-input" value="' + esc(S.pub.id) + '" placeholder="唯一英文id·同id再发=更新"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="' + esc(S.pub.version) + '" style="width:5.5em;"></div>';
+      pubSec += '<div class="ws-desk-row"><label>ID</label><input id="ws-pub-id" class="ws-desk-input" value="' + esc(S.pub.id) + '" placeholder="唯一英文id·同id再发=更新"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="' + esc(S.pub.version) + '" style="width:5.5em;"></div>';
     } else {
-      html += '<div class="ws-desk-row"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="' + esc(S.pub.version) + '" style="width:5.5em;"><span class="ws-dim">← 自动 +1 · 可改' + (S.pubBase ? '（线上 v' + esc(S.pubBase.version || '?') + '）' : '') + '</span></div>';
+      pubSec += '<div class="ws-desk-row"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="' + esc(S.pub.version) + '" style="width:5.5em;"><span class="ws-dim">← 自动 +1 · 可改' + (S.pubBase ? '（线上 v' + esc(S.pubBase.version || '?') + '）' : '') + '</span></div>';
     }
-    html += '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input ws-grow" rows="3">' + esc(S.pub.desc) + '</textarea></div>' +
+    pubSec += '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input ws-grow" rows="3">' + esc(S.pub.desc) + '</textarea></div>' +
       '<div class="ws-desk-row"><label>标签</label><input id="ws-pub-tags" class="ws-desk-input ws-grow" value="' + esc(S.pub.tags) + '" placeholder="以逗号分隔"></div>';
-    // 预检牌先亮再让点：红牌封提交+直达清账
     var pf = u ? preflightGate() : null;
     var pfBlock = !!(pf && !pf.canExport);
     if (u) {
-      if (!pf) html += '<div class="ws-desk-row"><span class="ws-gate" data-tone="dim"><i></i>预检未跑——提交前会自动跑一遍守门。</span></div>';
-      else if (pf.canExport) html += '<div class="ws-desk-row"><span class="ws-gate" data-tone="good"><i></i>发布预检通过 · ' + (pf.errors || 0) + ' 错 ' + (pf.warnings || 0) + ' 提醒</span></div>';
-      else html += '<div class="ws-desk-row"><button type="button" class="ws-gate" data-tone="bad" data-editor-command="focus-runtime-panel" data-runtime-panel="preflight-gate"><i></i>预检 ' + (pf.errors || '?') + ' 项错误——点此直达「发布预检」清账</button></div>';
+      if (!pf) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="dim"><i></i>预检未跑——提交前会自动跑一遍守门。</span></div>';
+      else if (pf.canExport) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="good"><i></i>发布预检通过 · ' + (pf.errors || 0) + ' 错 ' + (pf.warnings || 0) + ' 提醒</span></div>';
+      else pubSec += '<div class="ws-desk-row"><button type="button" class="ws-gate" data-tone="bad" data-editor-command="focus-runtime-panel" data-runtime-panel="preflight-gate"><i></i>预检 ' + (pf.errors || '?') + ' 项错误——点此直达「发布预检」清账</button></div>';
     }
-    html += '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (u && !S.busy && !pfBlock ? '' : ' disabled') + '>' +
+    pubSec += '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (u && !S.busy && !pfBlock ? '' : ' disabled') + '>' +
       (S.busy ? '正在提交…' : (u ? (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布 v' + esc(S.pub.version) + '（过审后上架）') : '登录后可发布')) + '</button></div>' +
       '</div>';
-    // 提交台账
+    // ── 提交台账 ──
     var led = reconcileLedger();
+    var ledSec = '';
     if (u && led.length) {
-      html += '<div class="ws-desk-sec"><div class="ws-desk-h">提交台账（审核中不再失踪）</div>' +
+      ledSec = '<div class="ws-desk-sec"><div class="ws-desk-h">提交台账（审核中不再失踪）</div>' +
         '<table class="ws-ledger"><tr><th>时间</th><th>条目</th><th>版本</th><th>状态</th></tr>' +
         led.slice(0, 8).map(function (en) {
           var st = en.st === 'live' ? '<span class="ws-st" data-st="live">已上架 ✓</span>'
-                 : en.st === 'stale' ? '<span class="ws-st" data-st="stale">久未上架 · 可能被驳（去游戏内私信站长）</span>'
+                 : en.st === 'stale' ? '<span class="ws-st" data-st="stale">久未上架 · 可能被驳</span>'
                  : '<span class="ws-st" data-st="wait">待审核</span>';
           return '<tr><td>' + esc(fmtStamp(en.t)) + '</td><td>' + esc(en.title || en.id) + '</td><td>v' + esc(en.version || '?') + '</td><td>' + st + '</td></tr>';
         }).join('') + '</table></div>';
     }
-    // 我的发布：作品卡带经营数据
-    html += '<div class="ws-desk-sec"><div class="ws-desk-h">我的发布 <button type="button" class="mini-ai" data-ws-act="refresh-mine"' + (u ? '' : ' disabled') + '>刷新</button></div>';
-    if (!u) html += '<div class="ws-desk-row ws-dim">登录后可见。</div>';
-    else if (S.mineLoading) html += '<div class="ws-desk-row ws-dim">正在取回…</div>';
-    else if (!S.mine || !S.mine.length) html += '<div class="ws-desk-row ws-dim">尚无已上架作品（审核中的看上方台账·过审后出现在这里）。</div>';
+    // ── 我的书架 ──
+    var mineSec = '<div class="ws-desk-sec"><div class="ws-desk-h">我的发布 <button type="button" class="mini-ai" data-ws-act="refresh-mine"' + (u ? '' : ' disabled') + '>刷新</button></div>';
+    if (!u) mineSec += '<div class="ws-desk-row ws-dim">登录后可见。</div>';
+    else if (S.mineLoading) mineSec += '<div class="ws-desk-row ws-dim">正在取回…</div>';
+    else if (!S.mine || !S.mine.length) mineSec += '<div class="ws-desk-row ws-dim">尚无已上架作品（审核中的看提交台账·过审后出现在这里）。</div>';
     else {
-      html += '<div class="ws-mine-grid">' + S.mine.map(function (p) {
+      mineSec += '<div class="ws-mine-grid">' + S.mine.map(function (p) {
         var x = S.mineX[p.id] || {};
         var bits = ['↓ ' + (p.downloads || 0)];
         if (p.rating) bits.push('<span class="ws-star">★ ' + esc(p.rating) + (p.ratingCount ? '（' + p.ratingCount + ' 人评）' : '') + '</span>');
@@ -1651,21 +1670,24 @@
           var d = S.detail[p.id];
           lin = '<div class="ws-detail">' + (!d || d.loading ? '<span class="ws-dim">正在取回世界线…</span>' : lineageHtml(p, d)) + '</div>';
         }
-        return '<article class="ws-card"><div class="ws-card-hd"><b>' + esc(p.title || p.id) + '</b><span class="ws-v">v' + esc(p.version || '?') + '</span></div>' +
+        return '<article class="ws-card">' + coverHtml(p, true) + '<div class="ws-card-main">' +
+          '<div class="ws-card-hd"><b>' + esc(p.title || p.id) + '</b><span class="ws-v">v' + esc(p.version || '?') + '</span></div>' +
           '<div class="ws-stat">' + bits.map(function (b) { return '<span>' + b + '</span>'; }).join('') + '</div>' +
           '<div class="ws-act-row">' +
           '<button type="button" class="mini-ai" data-ws-act="mine-newver" data-ws-pack="' + esc(p.id) + '">发新版</button>' +
           '<button type="button" class="mini-ai" data-ws-act="mine-lineage" data-ws-pack="' + esc(p.id) + '">' + (S.mineLin === p.id ? '收起世界线' : '看世界线') + '</button>' +
           '<a class="ws-golink" href="../index.html?tmOpenWorkshop=1">去游戏看评论 →</a>' +
-          '</div>' + lin + '</article>';
+          '</div>' + lin + '</div></article>';
       }).join('') + '</div>';
     }
-    html += '</div>';
+    mineSec += '</div>';
+    // ── 组装：左正案·右账房·下书架 ──
+    var html = '<div class="ws-desk-cols"><div class="ws-desk-main">' + pubSec + '</div>' +
+      '<div class="ws-desk-side">' + acctSec + ledSec + '</div></div>' + mineSec;
     if (S.msg && S.msgZone !== 'browse') html += '<div class="ws-desk-msg" data-tone="' + esc(S.msgTone) + '">' + esc(S.msg) + '</div>';
     html += '<div class="ws-desk-foot"><a href="../index.html?tmOpenWorkshop=1">去游戏内工坊（评分 / 评论 / 圈子）→</a></div>';
     box.innerHTML = html;
   }
-
   function render() { renderBrowse(); renderDesk(); maybeAutoCat(); maybeAutoMine(); maybeAutoFavs(); }
 
   // ── 动作 ──────────────────────────────────────────────────────────────
@@ -1940,28 +1962,48 @@
       var st = document.createElement('style');
       st.id = 'ws-desk-style';
       st.textContent =
-        /* 批四·尺度对齐 mockup（owner「依旧不是很好，特别是ui上」）：
-           实装曾沿用编辑器子面板微缩字号(.64-.78rem小字+24px迷你钮)·拍板的 mockup 是
-           13-16.5px 敞亮商店。本刀全站放大一档：卡题1.05rem/正文.82rem/正经按钮30px·
-           案台四段从虚线分隔升独立分区卡·精选卡通栏金底。 */
+        /* 批五·书肆化（owner「这块的ui重新设计」）：脱掉网页表单皮·换典籍语言——
+           每包一张字造封面(玄底大字+竖排签条+朱印官/金印荐·id哈希五色墨彩)·橱窗=书架·
+           案台=左发布正案+右账房(印徽/台账)+下我的书架。 */
         '.ws-full{grid-column:1/-1;}' +
         '.ws-dim{color:var(--je-tx-dim,#7b7264);font-size:.8rem;}' +
-        '.ws-grow{flex:1;min-width:12em;}' +
+        '.ws-grow{flex:1;min-width:9em;}' +
         '.ws-right{margin-left:auto;}' +
         '[data-panel="workshop-browse"] .mini-ai,[data-panel="workshop-desk"] .mini-ai{min-height:30px;font-size:.8rem;padding:.28rem .9rem;border-radius:6px;}' +
         '[data-panel="workshop-desk"] .mini-ai.primary{font-size:.85rem;padding:.4rem 1.2rem;}' +
         '.ws-desk-input{font-family:inherit;font-size:.85rem;background:rgba(0,0,0,.28);border:1px solid rgba(184,154,83,.3);border-radius:6px;color:inherit;padding:.4rem .6rem;}' +
         '.ws-desk-input:focus-visible{outline:none;border-color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-desk-sec{background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:9px;padding:.85rem 1rem;margin:.65rem 0;}' +
+        '.ws-desk-sec{background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:9px;padding:.85rem 1rem;margin:0 0 .65rem;}' +
         '.ws-desk-h{display:flex;align-items:center;gap:.6rem;font-size:.82rem;color:var(--je-gold-400,#b89a53);margin-bottom:.55rem;letter-spacing:.12em;}' +
         '.ws-desk-h::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(184,154,83,.28),transparent);}' +
         '.ws-desk-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;font-size:.82rem;margin:.35rem 0;}' +
         '.ws-desk-row label{color:var(--je-tx-dim,#8a8378);min-width:3em;}' +
+        '.ws-desk-cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,3fr);gap:.65rem;align-items:start;}' +
+        '@media (max-width:1100px){.ws-desk-cols{grid-template-columns:1fr;}}' +
         '.ws-desk-msg{font-size:.8rem;margin-top:.5rem;padding:.5rem .7rem;border-radius:6px;background:rgba(184,154,83,.12);}' +
         '.ws-desk-msg[data-tone="error"]{background:rgba(169,79,63,.2);color:#ef9a86;}' +
         '.ws-desk-msg[data-tone="good"]{background:rgba(95,157,140,.16);color:#bde6d9;}' +
         '.ws-desk-msg[data-tone="warn"]{background:rgba(184,154,83,.18);}' +
         '.ws-desk-foot{margin-top:.6rem;font-size:.78rem;}.ws-desk-foot a{color:var(--je-gold-400,#b89a53);}' +
+        // 典籍封面
+        '.ws-cover{position:relative;flex:0 0 96px;height:128px;border-radius:6px;overflow:hidden;border:1px solid rgba(184,154,83,.35);background:linear-gradient(160deg,#272218,#161310);box-shadow:inset 0 1px rgba(255,255,255,.05),0 2px 8px rgba(0,0,0,.3);}' +
+        '.ws-cover::before{content:"";position:absolute;inset:5px;border:1px solid rgba(212,190,122,.22);border-radius:3px;pointer-events:none;}' +
+        '.ws-cover[data-hue="1"]{background:linear-gradient(160deg,#1e2426,#121517);}' +
+        '.ws-cover[data-hue="2"]{background:linear-gradient(160deg,#282020,#171212);}' +
+        '.ws-cover[data-hue="3"]{background:linear-gradient(160deg,#232028,#141318);}' +
+        '.ws-cover[data-hue="4"]{background:linear-gradient(160deg,#25231c,#151410);}' +
+        '.ws-glyph{position:absolute;left:54%;top:50%;transform:translate(-50%,-50%);font-family:var(--je-font-display,inherit);font-size:3.2rem;line-height:1;color:rgba(212,190,122,.42);user-select:none;}' +
+        '.ws-cover[data-hue="1"] .ws-glyph{color:rgba(126,184,167,.4);}' +
+        '.ws-cover[data-hue="2"] .ws-glyph{color:rgba(212,112,106,.36);}' +
+        '.ws-cover[data-hue="3"] .ws-glyph{color:rgba(130,148,196,.4);}' +
+        '.ws-slip{position:absolute;top:7px;left:7px;max-height:104px;overflow:hidden;background:rgba(16,14,12,.88);border:1px solid rgba(184,154,83,.42);border-radius:2px;padding:.4rem .18rem;writing-mode:vertical-rl;font-size:.7rem;letter-spacing:.12em;color:var(--je-tx-hi,#f0e9d8);}' +
+        '.ws-cseal{position:absolute;right:6px;bottom:6px;width:21px;height:21px;display:grid;place-items:center;font-size:.7rem;border-radius:4px;}' +
+        '.ws-cseal[data-k="off"]{color:#f6e7e2;background:linear-gradient(180deg,#c04030,#8b2e25);box-shadow:inset 0 1px rgba(255,255,255,.25);}' +
+        '.ws-cseal[data-k="feat"]{color:#2a2014;background:linear-gradient(180deg,#d4be7a,#b89a53);box-shadow:inset 0 1px rgba(255,255,255,.35);}' +
+        '.ws-cover--s{flex-basis:64px;height:88px;}' +
+        '.ws-cover--s .ws-glyph{font-size:2rem;}' +
+        '.ws-cover--s .ws-slip{font-size:.6rem;padding:.28rem .12rem;max-height:70px;top:5px;left:5px;}' +
+        '.ws-cover--s .ws-cseal{width:17px;height:17px;font-size:.6rem;right:4px;bottom:4px;}' +
         // 账号印徽
         '.ws-acct{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;}' +
         '.ws-seal{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font-size:1.15rem;color:#2a2014;background:linear-gradient(180deg,#d4be7a,#b89a53);box-shadow:inset 0 1px rgba(255,255,255,.35);}' +
@@ -1978,26 +2020,28 @@
         '.ws-gate[data-tone="good"]{border-color:rgba(126,184,167,.4);background:rgba(126,184,167,.12);color:var(--je-celadon-300,#a3d4c7);}' +
         '.ws-gate[data-tone="bad"]{border-color:rgba(192,64,48,.45);background:rgba(192,64,48,.12);color:var(--je-vermillion-300,#d4706a);cursor:pointer;}' +
         // 台账
-        '.ws-ledger{width:100%;border-collapse:collapse;font-size:.8rem;}' +
-        '.ws-ledger th{text-align:left;font-weight:400;font-size:.7rem;letter-spacing:.14em;color:var(--je-tx-dim,#7b7264);border-bottom:1px solid var(--je-hairline-2,rgba(245,240,232,.16));padding:.2rem .6rem .35rem;}' +
-        '.ws-ledger td{border-bottom:1px solid var(--je-hairline,rgba(245,240,232,.08));padding:.45rem .6rem;color:var(--je-tx-mid,#a89f8d);font-variant-numeric:tabular-nums;}' +
+        '.ws-ledger{width:100%;border-collapse:collapse;font-size:.78rem;}' +
+        '.ws-ledger th{text-align:left;font-weight:400;font-size:.68rem;letter-spacing:.14em;color:var(--je-tx-dim,#7b7264);border-bottom:1px solid var(--je-hairline-2,rgba(245,240,232,.16));padding:.2rem .5rem .35rem;}' +
+        '.ws-ledger td{border-bottom:1px solid var(--je-hairline,rgba(245,240,232,.08));padding:.42rem .5rem;color:var(--je-tx-mid,#a89f8d);font-variant-numeric:tabular-nums;}' +
         '.ws-ledger tr:last-child td{border-bottom:none;}' +
-        '.ws-st{font-size:.7rem;border-radius:4px;padding:.08rem .55rem;white-space:nowrap;}' +
+        '.ws-st{font-size:.68rem;border-radius:4px;padding:.08rem .5rem;white-space:nowrap;}' +
         '.ws-st[data-st="wait"]{color:var(--je-gold-300,#d4be7a);border:1px solid rgba(184,154,83,.45);background:rgba(184,154,83,.1);}' +
         '.ws-st[data-st="live"]{color:var(--je-celadon-300,#a3d4c7);border:1px solid rgba(126,184,167,.45);background:rgba(126,184,167,.12);}' +
         '.ws-st[data-st="stale"]{color:var(--je-vermillion-300,#d4706a);border:1px solid rgba(192,64,48,.45);background:rgba(192,64,48,.12);}' +
-        '.ws-mine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:.8rem;align-items:start;}' +
-        // 橱窗
+        '.ws-mine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:.8rem;align-items:start;}' +
+        // 橱窗书架
         '.ws-shop-bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.85rem;}' +
         '.ws-chip{font-family:inherit;font-size:.8rem;color:var(--je-tx-mid,#a89f8d);cursor:pointer;background:rgba(184,154,83,.06);border:1px solid rgba(184,154,83,.26);border-radius:999px;padding:.3rem 1rem;}' +
         '.ws-chip:hover{color:var(--je-gold-300,#d4be7a);}' +
         '.ws-chip[data-on="true"]{color:var(--je-gold-300,#d4be7a);background:rgba(184,154,83,.16);border-color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:.8rem;align-items:start;}' +
-        '.ws-card{background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:9px;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.5rem;transition:border-color .15s ease;}' +
+        '.ws-shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:.8rem;align-items:start;}' +
+        '.ws-card{background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:9px;padding:.85rem;display:flex;flex-direction:row;gap:.9rem;transition:border-color .15s ease;}' +
         '.ws-card:hover{border-color:rgba(184,154,83,.45);}' +
+        '.ws-card-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:.45rem;}' +
         '.ws-card[data-feat="true"]{grid-column:1/-1;border-color:rgba(184,154,83,.35);background:linear-gradient(180deg,rgba(184,154,83,.07),transparent 55%),var(--je-chrome-1,#1b1917);}' +
+        '.ws-card[data-feat="true"] .ws-cover{flex-basis:112px;height:150px;}' +
         '.ws-card-hd{display:flex;align-items:baseline;gap:.55rem;flex-wrap:wrap;}' +
-        '.ws-card-hd b{font-size:1.05rem;font-weight:400;color:var(--je-tx-hi,#f0e9d8);}' +
+        '.ws-card-hd b{font-size:1.08rem;font-weight:400;color:var(--je-tx-hi,#f0e9d8);font-family:var(--je-font-display,inherit);letter-spacing:.03em;}' +
         '.ws-v{font-size:.78rem;color:var(--je-tx-dim,#7b7264);font-variant-numeric:tabular-nums;}' +
         '.ws-au{font-size:.8rem;color:var(--je-gold-400,#b89a53);}' +
         '.ws-badges{margin-left:auto;display:flex;gap:.35rem;flex-wrap:wrap;}' +
@@ -2011,7 +2055,7 @@
         '.ws-tags span{font-size:.68rem;color:var(--je-tx-dim,#7b7264);border:1px solid var(--je-hairline,rgba(245,240,232,.08));border-radius:4px;padding:.02rem .45rem;}' +
         '.ws-stat{display:flex;gap:1rem;font-size:.76rem;color:var(--je-tx-dim,#7b7264);font-variant-numeric:tabular-nums;flex-wrap:wrap;}' +
         '.ws-star{color:var(--je-gold-300,#d4be7a);}' +
-        '.ws-act-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.15rem;align-items:center;}' +
+        '.ws-act-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:auto;align-items:center;padding-top:.15rem;}' +
         '.ws-golink{font-size:.8rem;color:var(--je-tx-mid,#a89f8d);align-self:center;}' +
         '.ws-golink:hover{color:var(--je-gold-300,#d4be7a);}' +
         '.ws-detail{border-top:1px solid var(--je-hairline,rgba(245,240,232,.08));margin-top:.35rem;padding-top:.6rem;display:grid;gap:.35rem;}' +
@@ -2023,6 +2067,7 @@
         '.ws-rate{display:flex;align-items:center;gap:.2rem;font-size:.8rem;color:var(--je-tx-mid,#a89f8d);flex-wrap:wrap;}' +
         '.ws-rate-star{background:none;border:none;color:var(--je-gold-400,#b89a53);cursor:pointer;font-size:1.1rem;padding:0 .12rem;}' +
         '.ws-rate-star:hover{color:var(--je-gold-300,#d4be7a);}' +
+        '@media (max-width:760px){.ws-card{flex-direction:column;}.ws-cover{flex-basis:auto;width:96px;}}' +
         '@media (prefers-reduced-motion:reduce){.ws-card{transition:none;}}';
       document.head.appendChild(st);
     }

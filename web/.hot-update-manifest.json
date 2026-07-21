@@ -3281,8 +3281,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-adapters.js",
-      "sha256": "25c6c27459968a8da04534585a257734f5772572d7cb2347d05d47b7f3c2db68",
-      "size": 155465
+      "sha256": "ed46cb141d7d3c1e23cffc9b1299b10a4e05c17fad8f88c38f1299807f180821",
+      "size": 159431
     },
     {
       "path": "preview/scenario-editor-reset-app.js",
