@@ -368,6 +368,21 @@
     sys += '\n决策须切合时代质感·古文风·考虑阻力与阶层向背·勿滥颁诏令。';
     sys += '\n可用诏令类型(type): amnesty|reward|personnel|tax_reduction|tax_increase|admin_reform|economic_reform|military_mobilize|diplomacy|imperial_ritual|criminal_justice|education_culture|enke';
     sys += '\n奏疏批答决策(decision): approved(准)|rejected(驳)|hold(留中)|debate(下议/发廷议)|referred(交部)';
+    // 2026-07-22 修「AI 皇帝对所有上奏都同意并招付有司」：
+    //   历史根因：原 prompt 仅列 5 种 decision 枚举值·未给决策指导·
+    //     LLM 受 sycophancy bias 影响·倾向对玩家上奏一律 approved 或 referred·
+    //     缺乏多样性·违背君主 AI 应"因人因事因势而断"的设计意图。
+    //   修复：prompt 新增「批答决策指导」段·明确 5 种决策的适用情境·
+    //     强调依君主性情/国库/民心/派系力量对比"差异化断事"·
+    //     反 sycophancy·明确"勿一味准奏·勿一律付有司"。
+    sys += '\n批答决策指导(必读·须严格依此裁断)：';
+    sys += '\n  approved(准): 仅当上奏与君主志向/仁德相合·且国库/民心可承时方准·勿滥准。';
+    sys += '\n  rejected(驳): 上奏伤民·耗国·违君主性情·或派系阻力过大则驳·批语须明言驳回之因。';
+    sys += '\n  hold(留中): 国本·建储·改制等敏感议题·或时机未至·宜留中再议·勿遽发。';
+    sys += '\n  debate(发廷议): 朝臣分歧大·或需借众议衡平派系·则发廷议公议之。';
+    sys += '\n  referred(交部): 上奏涉具体部务·须由该部详议方有着落·方付有司·勿作甩手推诿之具。';
+    sys += '\n铁律: 勿对所有上奏用同一决策·须因事因人而异·依君主性情/国库/民心/派系矩阵差异化断事。';
+    sys += '\n反 sycophancy: 你是君主非应声虫·若上奏不当·须敢驳·勿一味准奏讨好玩家；亦勿一律付有司以避责。';
     sys += '\n任免动作(kind): promote|demote|dismiss|appoint';
 
     var user = '回合:' + turn + '\n';
@@ -388,6 +403,8 @@
     user += '  "officeActions": [{"kind":"promote|demote|dismiss|appoint","target":"人物名","newPosition":"新职(若有)","reason":"动因","loyaltyDelta":-10到10}]\n';
     user += '}\n';
     user += '约束: edicts 长度 0-3·宁少勿多·空数组亦允；memorialDecisions 仅对应【玩家上奏】中真实 id；officeActions.target 必须来自 GM.chars 真实姓名；勿臆造人物/官职。';
+    // 2026-07-22 反 sycophancy 末端加固：再次提示 LLM 勿雷同决策
+    user += '\n本回合须依君主性情与上述国情·对每道上奏独立裁决·勿雷同·勿一味准奏·勿一律付有司。';
 
     return { system: sys, user: user };
   }
