@@ -429,6 +429,11 @@ function testSelfStudy(ctx) {
   resetPlayerCash(ctx, 100000);
 
   // 默认修文学/治术
+  // 注：selfStudy 有 15% 概率触发「读出病」额外 -1 精力·导致 _energy 为 97 而非 98。
+  //   此处为确定性断言·故 stub Math.random 返回 1.0 强制走「无读出病」路径·
+  //   读出病概率路径由下方 200 次循环单独覆盖。原断言曾因 15% 随机性在 CI 偶发 FAIL。
+  var _origRandom = ctx.Math.random;
+  ctx.Math.random = function () { return 1.0; }; // arch-ok: smoke 临时 stub·强制无读出病
   var r = ns.selfStudy({});
   assert(r.ok === true, 'self: 自学 ok');
   assert(r.path === 'self', 'self: path=self');
@@ -446,6 +451,7 @@ function testSelfStudy(ctx) {
   var r2 = ns.selfStudy({ skillFocus: ['yishu', 'nongxue'], intensity: 1.5 });
   assert(r2.ok === true, 'self: skillFocus 自定义 ok');
   assert(r2.skills.indexOf('yishu') >= 0, 'self: skillFocus 生效');
+  ctx.Math.random = _origRandom; // 恢复·供下方读出病循环用真随机
 
   // 读出病·高强度多次尝试
   var illnessSeen = false;
