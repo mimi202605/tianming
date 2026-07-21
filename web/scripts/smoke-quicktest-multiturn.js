@@ -11,7 +11,7 @@
 //        报告 schema:2 向后兼容(旧 bootOk/turnOk/turn/errors 保留)·verdict 总判绿/黄/红+
 //        异常清单带回合号与原句/原账摘录·写回 IndexedDB quickTestReport:latest(镜像契约见 C6)。
 //   刀C 快档路由+入口：次要 API 配置完整且启用 → 快测全程 P.ai 临时指向 secondary·
-//        finish 全路径必还原·report.aiTier 记档·TM_SCENARIO_QUICKTEST.runById console 入口·
+//        正常 finish 全路径还原；超时则冻结 GM + 清凭据 + 销毁独立沙盒，绝不向晚到任务暴露主 key·
 //        URL 参数 tmScenarioQuickTestTurns 可调。
 // 全程 mock LLM（_endTurnInternal 由脚本编排·零真 AI 调用·真 key 留给 owner 手跑）。
 
@@ -75,6 +75,7 @@ function makeCtx(plan) {
   ctx.location = { search: '' };
   ctx.document = { readyState: 'complete', addEventListener() {} };
   ctx.addEventListener = () => {}; ctx.removeEventListener = () => {};
+  ctx.__closed = 0; ctx.__stopped = 0; ctx.close = () => { ctx.__closed++; }; ctx.stop = () => { ctx.__stopped++; };
   ctx.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
   ctx.indexedDB = idb;
   ctx.toast = () => {};
@@ -95,6 +96,11 @@ function makeCtx(plan) {
     const step = plan[attempt] || {};
     if (step.throw) return Promise.reject(new Error(step.throw));
     if (step.hang) return new Promise(() => {});
+    if (step.lateMs) return new Promise(resolve => setTimeout(() => {
+      ctx.__lateSeenKey = ctx.P.ai.key;
+      try { ctx.GM.turn = (ctx.GM.turn || 0) + (step.lateAdvance || 10); } catch (_) {}
+      resolve();
+    }, step.lateMs));
     const n = (ctx.GM.turn || 0) + 1;
     ctx.GM.turn = n;
     if (step.fiscal) ctx.GM._fiscalValidatorLog.push({ turn: n, warnings: step.fiscal.warnings, samples: step.fiscal.samples || [] });
@@ -176,6 +182,22 @@ async function main() {
     ok(rep.turns.some(t => /超时/.test(t.error || '')), '回合2超时如实记录');
     ok(rep.turns.some(t => t.skipped), '回合3被安全中止(skipped·不与挂死回合争抢)');
     ok(rep.verdict.level === 'red', '超时 → 红判');
+    ok(ctx.P.ai.key === '' && ctx.__closed === 1 && ctx.__stopped === 1, '超时清空运行时凭据并 teardown 独立沙盒(不恢复主 key)');
+  }
+
+  // ═══ 4b. 晚到 Promise：报告返回后不得再改 GM / 读取主 key ═══
+  console.log('— 4b: 超时后 late-resolve 被冻结隔离 —');
+  {
+    const { ctx, idb } = makeCtx({ 1: { lateMs: 120, lateAdvance: 99 } });
+    ctx._useSecondaryTier = () => true;
+    await wait(20);
+    await ctx.TM_SCENARIO_QUICKTEST.run({ id: 'sc4b', name: 'Late' }, { turns: 1, bootWaitMs: 5, perTurnTimeoutMs: 35 });
+    const turnAtReport = ctx.GM.turn;
+    await wait(180);
+    const rep = idb.__store['quickTestReport:latest'].quickTest;
+    ok(rep.teardown === 'window-close' && /超时/.test(rep.turns[0].error || ''), 'late-resolve 场景先写超时报告再销毁');
+    ok(ctx.GM.turn === turnAtReport && turnAtReport === 0, '晚到 _endTurnInternal 无法继续变异已冻结 GM');
+    ok(ctx.__lateSeenKey === '' && ctx.P.ai.key === '' && ctx.P.ai.secondary.key === '', '晚到任务只见空凭据·从未见恢复后的主/次 key');
   }
 
   // ═══ 5. 全清 → 绿判 ═══

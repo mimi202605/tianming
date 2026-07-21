@@ -9,10 +9,10 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-11T09:27:28.737Z",
+  "updatedAt": "2026-07-19T13:13:17.540Z",
   "totals": {
-    "gm": 4496,
-    "p": 733
+    "gm": 4497,
+    "p": 738
   },
   "files": {
     "map-converter.js": {
@@ -203,12 +203,13 @@
       }
     },
     "tm-mechanics-memory.js": {
-      "gm": 7,
+      "gm": 10,
       "p": 0,
       "roots": {
         "gm:_charInteractionCount": 4,
         "gm:_charInteractionCountTurn": 1,
-        "gm:_memoryArchiveFull": 2
+        "gm:_memoryArchiveFull": 2,
+        "gm:_aiWeakWriteHints": 3
       }
     },
     "tm-mechanics-world.js": {
@@ -1198,7 +1199,7 @@
       }
     },
     "tm-patches-start.js": {
-      "gm": 93,
+      "gm": 94,
       "p": 93,
       "roots": {
         "p:<dynamic>": 4,
@@ -1290,6 +1291,7 @@
         "gm:civicTree": 1,
         "gm:events": 1,
         "gm:rigidHistoryEvents": 1,
+        "gm:histAnchors": 1,
         "gm:_tianjiEnabled": 1,
         "gm:_junqingBriefEnabled": 1,
         "gm:_xinjunObserveEnabled": 1,
@@ -1385,6 +1387,13 @@
         "gm:factionRelations": 2,
         "gm:_provinceToFaction": 2,
         "gm:provinceStats": 3
+      }
+    },
+    "tm-player-tech.js": {
+      "gm": 1,
+      "p": 0,
+      "roots": {
+        "gm:_playerTech": 1
       }
     },
     "tm-faction-diplomacy.js": {
@@ -1877,7 +1886,7 @@
     },
     "tm-save-lifecycle.js": {
       "gm": 382,
-      "p": 77,
+      "p": 82,
       "roots": {
         "gm:shijiHistory": 1,
         "gm:allCharacters": 1,
@@ -1976,6 +1985,7 @@
         "p:_varFormulas": 2,
         "p:mechanicsConfig": 17,
         "p:militaryConfig": 4,
+        "p:playerInfo": 5,
         "gm:_chronicleSysState": 2,
         "gm:_warTruces": 1,
         "gm:_rngState": 1,

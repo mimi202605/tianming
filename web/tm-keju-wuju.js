@@ -700,6 +700,8 @@
         typeof P !== 'undefined' && P.ai && P.ai.key) {
       try {
         var prompt = _kjG3BuildWuJiaoyueDaPrompt(wujinshiList, examiner, td);
+        // 时空约束·主考涉议人物·武举校阅奏疏(自由文·full·武进士群体口吻ch=null)（typeof守卫·防加载序）
+        if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { mentionedNames: (examiner && examiner.name ? [examiner.name] : []) }); } catch (_tcE) {} }
         window.callAI(prompt, 600).then(function(text) {
           var memorial = (typeof text === 'string') ? text.trim() : '';
           if (!memorial) memorial = _kjG3GenWuJiaoyueDaFallback(wujinshiList, examiner, td);

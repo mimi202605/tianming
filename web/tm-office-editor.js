@@ -386,6 +386,11 @@ function openEditorHtml(scnId){
       preMark = localStorage.getItem('tm_pre_endturn_mark');
       if (preMark) preInfo = JSON.parse(preMark);
     } catch(_pmE) { preInfo = null; }
+    // pending / 旧版无 snapshotId marker 都不是可恢复提交；不弹误导提示，直接走常规 autosave。
+    if (preMark && (!preInfo || preInfo.commitState !== 'committed' || !preInfo.snapshotId || !preInfo.turn)) {
+      try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_) {}
+      preInfo = null;
+    }
 
     var autoMark = localStorage.getItem('tm_autosave_mark');
     var autoInfo = null;
@@ -407,22 +412,39 @@ function openEditorHtml(scnId){
         if (confirm(preMsg)) {
           showLoading('展卷恢复中……', 40);
           TM_SaveDB.load('pre_endturn').then(function(record) {
-            if (record && record.gameState) {
+            var _preCheck = (typeof _validatePreEndturnSnapshot === 'function')
+              ? _validatePreEndturnSnapshot(record, preInfo, true)
+              : { ok: false, reason: 'validator-missing' };
+            if (_preCheck.ok) {
               if (typeof fullLoadGame === 'function') {
                 try {
                   fullLoadGame({ gameState: record.gameState });
-                  toast('已恢复至过回合前·第' + preInfo.turn + '回合');
+                  toast('已恢复至过回合前·第' + _preCheck.turn + '回合');
                   try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_){}
-                } catch (_psrE) { console.error('[pre_endturn] 恢复失败', _psrE); toast('恢复失败: ' + (_psrE.message||_psrE)); }
+                } catch (_psrE) {
+                  console.error('[pre_endturn] 恢复失败', _psrE);
+                  toast('过回合前恢复失败·尝试加载常规自动存档');
+                  try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_){}
+                  setTimeout(function(){ _tryLoadAutosave(autoInfo); }, 0);
+                }
                 finally { hideLoading(); }
-              } else { hideLoading(); }
+              } else {
+                hideLoading();
+                try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_){}
+                setTimeout(function(){ _tryLoadAutosave(autoInfo); }, 0);
+              }
             } else {
               hideLoading();
-              toast('过回合前快照已损坏·尝试加载常规自动存档');
+              toast('过回合前快照校验失败（' + _preCheck.reason + '）·尝试加载常规自动存档');
               try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_){}
               _tryLoadAutosave(autoInfo);
             }
-          }).catch(function(e) { hideLoading(); toast('恢复失败: ' + (e && e.message || e)); });
+          }).catch(function(e) {
+            hideLoading();
+            toast('过回合前快照读取失败·尝试加载常规自动存档');
+            try { localStorage.removeItem('tm_pre_endturn_mark'); } catch(_){}
+            _tryLoadAutosave(autoInfo);
+          });
           return;
         } else {
           // 用户拒绝 pre_endturn 恢复·清除标记·继续询问 autosave
@@ -2189,12 +2211,14 @@ function bindMainMenuButtons() {
   var btnLoadSave = document.getElementById('btn-load-save');
   var btnEditor = document.getElementById('btn-editor');
   var btnSettings = document.getElementById('btn-settings');
+  var btnTransmigration = document.getElementById('btn-transmigration');
 
   _dbg('[bindMainMenuButtons] 按钮查找结果:');
   _dbg('  btn-new-game:', btnNewGame ? '找到' : '未找到');
   _dbg('  btn-load-save:', btnLoadSave ? '找到' : '未找到');
   _dbg('  btn-editor:', btnEditor ? '找到' : '未找到');
   _dbg('  btn-settings:', btnSettings ? '找到' : '未找到');
+  _dbg('  btn-transmigration:', btnTransmigration ? '找到' : '未找到');
 
   if (btnNewGame) {
     btnNewGame.onclick = function() {
@@ -2234,6 +2258,23 @@ function bindMainMenuButtons() {
     _dbg('  ✓ 绑定 btn-settings 成功');
   } else {
     console.error('  ✗ btn-settings 不存在');
+  }
+
+  if (btnTransmigration) {
+    btnTransmigration.onclick = function() {
+      _dbg('[按钮点击] btn-transmigration 被点击');
+      if (typeof doTransmigration === 'function') {
+        doTransmigration();
+      } else if (window.TM && TM.Transmigration && typeof TM.Transmigration.startFlow === 'function') {
+        TM.Transmigration.startFlow();
+      } else {
+        console.error('[btn-transmigration] 穿越模块未就绪');
+        if (typeof toast === 'function') toast('穿越模块未就绪，请刷新页面重试');
+      }
+    };
+    _dbg('  ✓ 绑定 btn-transmigration 成功');
+  } else {
+    console.error('  ✗ btn-transmigration 不存在');
   }
 
   _dbg('[bindMainMenuButtons] 主菜单按钮事件绑定完成！');

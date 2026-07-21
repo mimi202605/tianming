@@ -460,9 +460,55 @@ function ok(cond, msg) { if (!cond) { console.error('  ✗ FAIL: ' + msg); throw
   ok(rG1.ok === true && /images\/generations$/.test(_imgReq.url) && _imgReq.body.model === 'flux-1' && _imgReq.body.response_format === 'b64_json', 'H7 真调生图端点(模型/回参形制对)');
   ok(dG.characters[0].portrait === 'data:image/png;base64,aGVsbG8=', 'H7 图片以 data URL 写入指定字段(经 applyEdit 管线)');
   var agSrc7 = require('fs').readFileSync(path.join(__dirname, '..', 'editor-authoring-agent.js'), 'utf8');
-  ok(/renameRegion: 1, generateImage: 1, copyField: 1 \}/.test(agSrc7) && /case 'generateImage': return \[_topOf\(input\.path\)\]/.test(agSrc7), 'H7 注册进写工具/权限沙箱/指纹管线(范围与危险闸同管·copyField 同帐 2026-07-10)');
+  ok(/var _MUT_TOOLS = \{[^}]*renameRegion: 1[^}]*generateImage: 1[^}]*copyField: 1[^}]*\}/.test(agSrc7)
+    && /var _WRITE_TOOLS = _MUT_TOOLS/.test(agSrc7)
+    && /if \(!perms \|\| !_MUT_TOOLS\[name\]\) return null/.test(agSrc7)
+    && /case 'generateImage': return \[_topOf\(input\.path\)\]/.test(agSrc7), 'H7 单一致变工具表同时驱动权限/指纹/写后回读(copyField 与生图同帐)');
   ok(/case 'copyField': return \[_topOf\(input\.to\)\]/.test(agSrc7), 'H7b copyField 危险闸按目标路径记账');
   delete global.fetch;
+
+  // ───────── H7c · 全致变工具共用范围沙箱（曾可由批量/地图工具绕过） ─────────
+  console.log('— H7c 单一权限注册表 —');
+  var permDraft = AA.makeDraft({
+    name: '权限沙箱',
+    characters: [{ name: '甲', faction: '明', factionId: 'f1' }],
+    factions: [{ id: 'f1', name: '明', power: 1 }, { id: 'f2', name: '清', power: 2 }],
+    map: { regions: [{ id: 'r1', name: '京师', ownerKey: 'f1' }] }
+  });
+  var permRound = 0;
+  var permResult = await AA.runAuthoringLoop(permDraft, '只能改人物，尝试越权工具', {
+    caller: function () {
+      permRound++;
+      if (permRound === 1) return Promise.resolve({ text: '', toolCalls: [
+        { id: 'pb', name: 'bulkUpdate', input: { collection: 'factions', where: {}, field: 'power', op: 'set', value: 99 } },
+        { id: 'pm', name: 'mapAssignOwner', input: { region: '京师', owner: 'f2' } },
+        { id: 'pr', name: 'renameRegion', input: { region: '京师', newName: '北京' } },
+        { id: 'pc', name: 'copyField', input: { from: 'name', to: 'factions.0.name' } }
+      ] });
+      return Promise.resolve({ text: '', toolCalls: [{ id: 'pf', name: 'finish', input: { summary: '权限校验完成' } }] });
+    },
+    noMemoryRecall: true, conventions: '', blockingChecks: [], qualityGate: false,
+    allowedCollections: ['characters'], maxTokens: 5000000
+  });
+  var permDenied = permResult.transcript.filter(function(t) { return ['bulkUpdate', 'mapAssignOwner', 'renameRegion', 'copyField'].indexOf(t.name) >= 0; });
+  ok(permResult.finished && permDenied.length === 4 && permDenied.every(function(t) { return t.result && t.result.ok === false && /范围沙箱/.test(t.result.reason || ''); }), 'H7c 批量/地图/改名/复制四种旁路均被 allowedCollections 拦截');
+  ok(permDraft.factions[0].name === '明' && permDraft.factions[0].power === 1 && permDraft.map.regions[0].name === '京师' && permDraft.map.regions[0].ownerKey === 'f1', 'H7c 越权调用未留下任何写入');
+
+  // ───────── H7d · 并行会审停止覆盖全部在途 caller ─────────
+  console.log('— H7d 并行中止 —');
+  var abortReleases = [], abortEntered = 0;
+  function heldCaller() {
+    abortEntered++;
+    return new Promise(function(resolve) { abortReleases.push(function() { resolve({ text: '已停止', toolCalls: [] }); }); });
+  }
+  var abortOpts = { caller: heldCaller, noMemoryRecall: true, conventions: '', blockingChecks: [], qualityGate: false, maxNoToolNudges: 0, maxTokens: 5000000 };
+  var abortP1 = AA.runAuthoringLoop(AA.makeDraft({ name: '并行甲' }), '会审甲', abortOpts);
+  var abortP2 = AA.runAuthoringLoop(AA.makeDraft({ name: '并行乙' }), '会审乙', abortOpts);
+  for (var abortSpin = 0; abortSpin < 50 && abortEntered < 2; abortSpin++) await new Promise(function(resolve) { setTimeout(resolve, 0); });
+  ok(abortEntered === 2 && AA.abort() === true, 'H7d 两个并行运行均注册后，停止命令命中活跃集合');
+  abortReleases.forEach(function(release) { release(); });
+  var abortResults = await Promise.all([abortP1, abortP2]);
+  ok(abortResults.every(function(r) { return r.stopReason === 'aborted' && r.finished === false; }), 'H7d 两个并行 caller 返回后都以 aborted 收口，均未继续施改');
 
   // ───────── H8 · 附件与视觉(拖拽/粘贴截图/文件导入·Claude 桌面端对照) ─────────
   console.log('— H8 附件与视觉 —');

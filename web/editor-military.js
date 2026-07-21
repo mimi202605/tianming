@@ -15,7 +15,11 @@
     updateBadge('military', total);
   }
 
+  // 纯读渲染器：旧格式军事数据（troops/organization）的迁移在数据入口层
+  // （editor-schema-adapter.js importScenario）完成，此处不做任何 mutate/迁移，
+  // 避免「删除最后一条被旧桶复活」「canonical scriptData 被渲染副作用污染」等问题。
   function renderMilitaryNew() {
+    if (!scriptData.military) scriptData.military = { troops: [], facilities: [], organization: [], campaigns: [], initialTroops: [], militarySystem: [] };
     if (!scriptData.military.initialTroops) scriptData.military.initialTroops = [];
     if (!scriptData.military.militarySystem) scriptData.military.militarySystem = [];
 
@@ -124,9 +128,15 @@
     body += '<div style="display:flex;gap:12px;">';
     body += '<div class="form-group" style="flex:2;"><label>部队名称 *</label><input type="text" id="it_name" value="' + escHtml(t.name||'') + '"></div>';
     body += '<div class="form-group" style="flex:1;"><label>部队类型</label><select id="it_armyType" style="width:100%;">';
-    ['禁军','边军','藩镇军','地方守备','水师','乡勇/民兵','自定义'].forEach(function(at) {
+    var _armyTypes = ['禁军','边军','藩镇军','地方守备','水师','乡勇/民兵','自定义'];
+    _armyTypes.forEach(function(at) {
       body += '<option value="' + at + '"' + (t.armyType === at ? ' selected' : '') + '>' + at + '</option>';
     });
+    // 未知/旧值域的 armyType（如旧剧本「海岛边军」映射不到七枚举）：补动态选项保留原值，
+    // 防止浏览器把未匹配的 select 静默落成首项「禁军」，打开编辑再保存即丢原值。
+    if (t.armyType && _armyTypes.indexOf(t.armyType) < 0) {
+      body += '<option value="' + escHtml(t.armyType) + '" selected>' + escHtml(t.armyType) + '（原值·保留）</option>';
+    }
     body += '</select></div></div>';
     body += '<div style="display:flex;gap:12px;">';
     body += '<div class="form-group" style="flex:1;"><label>总兵力</label><input type="number" id="it_soldiers" min="0" value="' + (t.soldiers||t.strength||t.size||0) + '"></div>';

@@ -466,6 +466,8 @@
         typeof P !== 'undefined' && P.ai && P.ai.key) {
       try {
         var prompt = _kjG2BuildEnkeQuestionPrompt(td, examiner);
+        // 时空约束·主考涉议人物·恩科题面(JSON·clauseOnly)（typeof守卫·防加载序）
+        if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: (examiner && examiner.name ? [examiner.name] : []) }); } catch (_tcE) {} }
         window.callAI(prompt, 800).then(function(text) {
           try {
             var parsed = JSON.parse(text);
@@ -820,6 +822,8 @@
         typeof P !== 'undefined' && P.ai && P.ai.key) {
       try {
         var prompt = _kjG2BuildXieendaPrompt(jinshiList, examiner, td);
+        // 时空约束·主考涉议人物·恩科谢恩奏疏(自由文·full·新进士群体口吻ch=null)（typeof守卫·防加载序）
+        if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { mentionedNames: (examiner && examiner.name ? [examiner.name] : []) }); } catch (_tcE) {} }
         window.callAI(prompt, 600).then(function(text) {
           var memorial = (typeof text === 'string') ? text.trim() : '';
           if (!memorial) memorial = _kjG2GenXieendaFallback(jinshiList, examiner, td);

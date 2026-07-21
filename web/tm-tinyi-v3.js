@@ -216,7 +216,7 @@ function _ty3_pickPlayerSpeakRespondents(playerText, intent) {
 async function _ty3_onPlayerSpeak(text) {
   if (!text || !text.trim()) return;
   var trimmed = text.trim();
-  if (typeof addCYBubble === 'function') addCYBubble('皇帝', trimmed, false);
+  if (typeof addCYBubble === 'function') addCYBubble((typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝', trimmed, false);
 
   if (CY._ty3 && CY._ty3.done) {
     if (typeof addCYBubble === 'function') addCYBubble('内侍', '（朝会已散·陛下回乾清宫。）', true);
@@ -2626,7 +2626,7 @@ async function _ty3_phase2_run() {
 
   if (typeof addCYBubble === 'function') {
     addCYBubble('内侍', '〔 三班已立·同 ' + CY._ty3.bench.left.length + '·中 ' + CY._ty3.bench.center.length + '·反 ' + CY._ty3.bench.right.length + ' 〕', true);
-    addCYBubble('皇帝', '议：' + CY._ty3.topic, false);
+    addCYBubble((typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝', '议：' + CY._ty3.topic, false);
   }
 
   CY._abortChaoyi = false;

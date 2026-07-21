@@ -103,8 +103,17 @@ var TM_SaveDB = (function() {
   }
 
   // ── R103·quota 满时自动清最老 auto 存档（type='auto'），手动存档永不删 ──
-  function _dropOldestAutoSave() {
+  function _writeGuardAllows(writeGuard) {
+    if (typeof writeGuard !== 'function') return true;
+    try { return writeGuard() === true; }
+    catch (_) { return false; }
+  }
+
+  function _dropOldestAutoSave(writeGuard) {
+    if (!_writeGuardAllows(writeGuard)) return Promise.resolve(false);
     return _listAll(SAVE_STORE).then(function(records) {
+      // 列表读取本身是异步的；失效请求不得为了一个已取消的写入删除仍可恢复的旧 autosave。
+      if (!_writeGuardAllows(writeGuard)) return false;
       var autos = (records || []).filter(function(r){ return r.type === 'auto'; })
                                  .sort(function(a,b){ return (a.timestamp||0) - (b.timestamp||0); });
       if (autos.length === 0) return false; // 没 auto 可清
@@ -115,7 +124,10 @@ var TM_SaveDB = (function() {
   }
 
   // ── 通用写入（R103·加 QuotaExceededError 自动回收） ──
-  function _put(storeName, record, _retryCount) {
+  function _put(storeName, record, _retryCount, writeGuard) {
+    // 每一次真正落盘（包括 quota 回收后的重试）都必须重新验证租约。
+    // 调用方在压缩前的检查只能挡住正常路径，不能覆盖异步回收窗口。
+    if (!_writeGuardAllows(writeGuard)) return Promise.resolve(false);
     if (!_available || !_db) {
       // localStorage 回退
       try {
@@ -135,11 +147,13 @@ var TM_SaveDB = (function() {
           var err = e.target && e.target.error;
           var isQuota = err && (err.name === 'QuotaExceededError' || err.name === 'QuotaExceededError');
           if (isQuota && storeName === SAVE_STORE && !_retryCount) {
+            if (!_writeGuardAllows(writeGuard)) { resolve(false); return; }
             console.warn('[SaveDB] 配额已满·尝试清最老自动存档后重试');
-            _dropOldestAutoSave().then(function(dropped) {
+            _dropOldestAutoSave(writeGuard).then(function(dropped) {
+              if (!_writeGuardAllows(writeGuard)) { resolve(false); return; }
               if (dropped) {
                 // 重试（带 flag 防止无限递归）
-                _put(storeName, record, 1).then(resolve);
+                _put(storeName, record, 1, writeGuard).then(resolve);
               } else {
                 // 没 auto 可清·通知用户手动清理
                 if (typeof window.toast === 'function') {
@@ -228,9 +242,20 @@ var TM_SaveDB = (function() {
   }
 
   /** 保存游戏存档（7.1: 支持gzip压缩） */
-  function save(id, gameState, meta) {
+  function save(id, gameState, meta, options) {
+    options = options || {};
+    function _writeStillAllowed() {
+      if (typeof options.writeGuard !== 'function') return true;
+      try { return options.writeGuard() === true; }
+      catch (_) { return false; }
+    }
+    // 在调用栈内立即固化 JSON。_ensureOpen / gzip 都是异步；若延后 stringify，
+    // selective snapshot 中安全复用的 append-only 引用可能在过回合期间继续增长，污染 pre_endturn 时点。
+    var jsonStr;
+    try { jsonStr = JSON.stringify(gameState); }
+    catch (e) { return Promise.reject(e); }
+    if (!_writeStillAllowed()) return Promise.resolve(false);
     return _ensureOpen().then(function() {
-      var jsonStr = JSON.stringify(gameState);
       return SaveCompression.compress(jsonStr).then(function(compressed) {
         var isCompressed = compressed !== jsonStr; // Blob vs string
         var record = {
@@ -243,6 +268,9 @@ var TM_SaveDB = (function() {
           eraName: (meta && meta.eraName) || '',
           date: (meta && meta.date) || '',
           dynastyPhase: (meta && meta.dynastyPhase) || '',
+          // pre_endturn 两阶段恢复校验元数据；普通/旧存档保持空值兼容。
+          snapshotId: (meta && meta.snapshotId) || '',
+          commitState: (meta && meta.commitState) || '',
           gameState: compressed,
           _compressed: isCompressed
         };
@@ -250,7 +278,9 @@ var TM_SaveDB = (function() {
           var origKB = (jsonStr.length / 1024).toFixed(1);
           console.log('[SaveDB] 存档压缩: ' + origKB + 'KB -> gzip Blob');
         }
-        return _put(SAVE_STORE, record);
+        // 压缩/开库可能跨越读档或下一回合；真正开启写事务前再验一次租约。
+        if (!_writeStillAllowed()) return false;
+        return _put(SAVE_STORE, record, 0, _writeStillAllowed);
       });
     });
   }
@@ -264,7 +294,14 @@ var TM_SaveDB = (function() {
       // 7.1: 解压压缩的gameState
       if (record._compressed && record.gameState) {
         return SaveCompression.decompress(record.gameState).then(function(jsonStr) {
-          try { record.gameState = JSON.parse(jsonStr); } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'SaveDB] 解压后JSON解析失败:') : console.error('[SaveDB] 解压后JSON解析失败:', e); }
+          try { record.gameState = JSON.parse(jsonStr); }
+          catch(e) {
+            // 纵深防御：历史上写了半截的坏档解压后无法解析。显式把 gameState 置空并标错，
+            // 别让残留的压缩 Blob 冒充 gameState 继续下传——下游读到 Blob 会二次崩溃。
+            record.gameState = null;
+            record._loadError = 'parse_failed';
+            (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'SaveDB] 解压后JSON解析失败:') : console.error('[SaveDB] 解压后JSON解析失败:', e);
+          }
           delete record._compressed;
           return record;
         });
@@ -280,7 +317,7 @@ var TM_SaveDB = (function() {
       return _listAll(SAVE_STORE);
     }).then(function(records) {
       return records.map(function(r) {
-        return { id:r.id, name:r.name, type:r.type, timestamp:r.timestamp, turn:r.turn, scenarioName:r.scenarioName, eraName:r.eraName, date:r.date||'', dynastyPhase:r.dynastyPhase||'' };
+        return { id:r.id, name:r.name, type:r.type, timestamp:r.timestamp, turn:r.turn, scenarioName:r.scenarioName, eraName:r.eraName, date:r.date||'', dynastyPhase:r.dynastyPhase||'', snapshotId:r.snapshotId||'', commitState:r.commitState||'' };
       }).sort(function(a,b) { return b.timestamp - a.timestamp; });
     });
   }

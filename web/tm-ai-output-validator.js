@@ -64,7 +64,7 @@
     npc_actions: 'array', npc_interactions: 'array',
     npc_letters: 'array', npc_correspondence: 'array', cultural_works: 'array',
     directive_compliance: 'array',
-    fiscal_adjustments: 'array', region_updates: 'array', project_updates: 'array',
+    fiscal_adjustments: 'array', tax_reforms: 'array', region_updates: 'array', project_updates: 'array',
     currency_adjustments: 'array', population_adjustments: 'array',
     central_local_actions: 'array', environment_actions: 'array', institution_changes: 'array', reform_effects: 'array',
     edict_feedback: 'array', edict_lifecycle_update: 'array',

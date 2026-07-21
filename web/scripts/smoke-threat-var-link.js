@@ -11,6 +11,7 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
+const officialSync = require('./sync-official-scenarios.js');
 let N = 0;
 function assert(cond, msg) { N++; if (!cond) { console.error('ASSERT FAIL [' + N + ']:', msg); process.exit(1); } }
 
@@ -94,8 +95,12 @@ assert(riskWith(true, 50) === base, '⑬ 威胁50=中性·×1.0 与旧行为等�
 // ── 静态契约：开关+绍宋声明在位（家族序契约：tm-patches.js 先于 tm-patches-start.js 提及）──
 const patches = fs.readFileSync(path.join(ROOT, 'tm-patches.js'), 'utf8');
 assert(patches.indexOf("'threatVarLinkEnabled'") >= 0, '⑭a tm-patches 设置开关已挂(threatVarLinkEnabled)');
-const sc = fs.readFileSync(path.join(ROOT, 'scenarios', 'shaosong-jianyan-1127.js'), 'utf8');
-assert(sc.indexOf('"linkedFaction": "fac_jin"') >= 0, '⑭b 绍宋「金军威胁等级」已声明所系势力 fac_jin');
+const shaosongEntry = officialSync.ENTRIES.find(function (entry) { return entry.key === 'shaosong'; });
+const shaosong = JSON.parse(fs.readFileSync(path.join(officialSync.SOURCE_DIR, shaosongEntry.filename), 'utf8'));
+const threatVar = Object.values(shaosong.variables || {}).reduce(function (all, rows) {
+  return all.concat(Array.isArray(rows) ? rows : []);
+}, []).find(function (row) { return row && row.name === '金军威胁等级'; });
+assert(threatVar && threatVar.linkedFaction === 'fac_jin', '⑭b 绍宋真源「金军威胁等级」已声明所系势力 fac_jin');
 
 // ── loader range 修（切片直驱 _tmStartLoadVars）──
 const psSrc = fs.readFileSync(path.join(ROOT, 'tm-patches-start.js'), 'utf8');

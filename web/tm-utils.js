@@ -1728,13 +1728,9 @@ function saveP(){
     localStorage.setItem('tm_P_lite', JSON.stringify(lite));
     localStorage.removeItem('tm_P');
   } catch(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'saveP] localStorage骨架写入失败:') : console.warn('[saveP] localStorage骨架写入失败:', e); }
-  // 3. 桌面端额外保存
-  //    GM.running 时不写：此写与 60s 崩溃恢复档同写 __autosave__.json(last-writer-wins)——对局中改一次设置
-  //    曾把恢复档降级成纯 P 无 gameState·随后崩溃=本局进度静默丢且无恢复弹窗(2026-07-04 审查定罪)。
-  //    对局中 P 已由上方 IDB+lite 即时持久化·桌面档由 60s 周期档(P+gameState 全量)接力·至多 60s 滞后。
-  if (window.tianming && window.tianming.isDesktop && !(typeof GM !== 'undefined' && GM && GM.running)) {
-    window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(e) { (window.TM && TM.errors && TM.errors.capture) ? TM.errors.capture(e, 'saveP] desktop failed:') : console.warn('[saveP] desktop failed:', e); });
-  }
+  // 桌面 canonical __autosave__.json 只允许完整 P+GM 对局快照。
+  // 纯 P 已由上方 IndexedDB project + tm_P_lite 持久化；再写 canonical 会在启动恢复前或退出对局后
+  // 把最后一份可恢复游戏降级成无 gameState 的项目文件。
 }
 
 function _tmCountSidRowsInProject(project, key, sid) {

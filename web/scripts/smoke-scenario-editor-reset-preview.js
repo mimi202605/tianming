@@ -10,6 +10,7 @@ const file = path.join(ROOT, 'preview', 'scenario-editor-reset-preview.html');
 const dataFile = path.join(ROOT, 'preview', 'scenario-editor-reset-data.js');
 const appFile = path.join(ROOT, 'preview', 'scenario-editor-reset-app.js');
 const bridgeFile = path.join(ROOT, 'preview', 'scenario-editor-sandbox-bridge.js');
+const adaptersFile = path.join(ROOT, 'preview', 'scenario-editor-reset-adapters.js');
 const indexFile = path.join(ROOT, 'index.html');
 const launchFile = path.join(ROOT, 'tm-launch.js');
 const officeEditorFile = path.join(ROOT, 'tm-office-editor.js');
@@ -24,6 +25,7 @@ assert(fs.existsSync(file), 'scenario editor reset preview html should exist');
 assert(fs.existsSync(dataFile), 'scenario editor reset preview data should exist');
 assert(fs.existsSync(appFile), 'scenario editor reset preview app script should exist');
 assert(fs.existsSync(bridgeFile), 'scenario editor formal sandbox bridge should exist');
+assert(fs.existsSync(adaptersFile), 'scenario editor runtime adapters should exist');
 
 /* R1 架构整备(2026-07-03)：CSS 已外提 scenario-editor-reset-style.css——此 smoke 的
    2000+ 断言历史语义=『整页(内联时代)包含…』·故 html 取 html+css 合体·语义不变。 */
@@ -31,6 +33,7 @@ const html = fs.readFileSync(file, 'utf8') + fs.readFileSync(path.join(ROOT, 'pr
 const dataJs = fs.readFileSync(dataFile, 'utf8');
 const appJs = fs.readFileSync(appFile, 'utf8');
 const bridgeJs = fs.readFileSync(bridgeFile, 'utf8');
+const adaptersJs = fs.readFileSync(adaptersFile, 'utf8');
 const indexHtml = fs.readFileSync(indexFile, 'utf8');
 const launchJs = fs.readFileSync(launchFile, 'utf8');
 const officeEditorJs = fs.readFileSync(officeEditorFile, 'utf8');
@@ -76,9 +79,10 @@ assert(html.includes('203') && html.includes('22') && html.includes('83'),
 /* 2026-07-03 玄墨案头重做：照片纹理(img/ancient-tabletop-board.png)按设计退役，
    背景改程序化墨底+微噪点；「使用天命自有视觉资产」的守卫改钉随游戏分发的自带字体。 */
 assert(html.includes('../assets/fonts/ZCOOLXiaoWei-Regular.ttf'),
-  'preview should use an existing Tianming visual asset (bundled fonts)');
-assert(fs.existsSync(path.join(ROOT, 'assets', 'fonts', 'ZCOOLXiaoWei-Regular.ttf')),
-  'preview font asset should exist');
+  'preview should reference the Tianming release font when assets are present');
+assert(html.includes('font-display: swap') &&
+  /--je-font-display:[^;]*var\(--je-font-kai\)/.test(html),
+  'preview should remain usable through its tracked fallback stack when large release fonts are absent in CI');
 assert(html.includes('scenario-editor-reset-data.js'), 'preview should load generated official scenario data');
 assert(html.includes('scenario-editor-reset-app.js'), 'preview should load standalone functional app script');
 assert(html.includes('id="scenario-editor-reset-static-prototype"'), 'preview should keep the old static prototype inert');
@@ -891,7 +895,7 @@ assert(html.includes('.military-force-empty'), 'preview CSS should style militar
 assert(html.includes('.diplomacy-war-empty'), 'preview CSS should style war and diplomacy empty-state starters');
 assert(html.includes('.config-default-starter'), 'preview CSS should style config default-starter callouts');
 assert(appJs.includes('data-editor-command="batch-normalize"'), 'preview app should expose a batch normalize command');
-assert(appJs.includes('linkedChars') && appJs.includes('linkedFactions'), 'preview app validation should cover event character/faction links');
+assert(appJs.includes('linkedChars') && appJs.includes('linkedFactions'), 'preview app should keep event character/faction link authoring fields');
 assert(appJs.includes('function renderScenarioDashboard'), 'preview app should render live scenario dashboard metrics');
 assert(appJs.includes('data-live-metric'), 'preview app should update live metric nodes');
 assert(appJs.includes("pill.dataset.source = state.dirty ? 'draft' : 'official'"), 'preview app should mark whether the current scenario is a draft or official baseline');
@@ -1707,14 +1711,15 @@ const combo = path.join(ROOT, 'scripts', 'build-scenario-editor-reset-all.js');
 assert(fs.existsSync(combo),
   'combo build runner should exist');
 const comboSrc = fs.readFileSync(combo, 'utf8');
-assert(comboSrc.includes("require('./build-scenario-editor-reset-data.js')"),
-  'combo runner should depend on the baked data builder');
-assert(comboSrc.includes("require('./build-official-scenarios-bundle.js')"),
-  'combo runner should depend on the bundle builder');
-assert(comboSrc.includes('buildBundle.build()'),
-  'combo runner should invoke the bundle build');
-assert(comboSrc.includes('module.exports = { main, rewriteData }'),
-  'combo runner should expose its main + rewriteData entry points');
+assert(comboSrc.includes("require('./sync-official-scenarios.js')"),
+  'combo runner should delegate to the unified official-scenario synchronizer');
+assert(comboSrc.includes('syncer.sync({ check: false })'),
+  'combo runner should refresh every derived official artifact atomically');
+assert(!comboSrc.includes("require('./build-scenario-editor-reset-data.js')") &&
+  !comboSrc.includes("require('./build-official-scenarios-bundle.js')"),
+  'combo runner should not rebuild editor artifacts through partial legacy paths');
+assert(comboSrc.includes('module.exports = { main }'),
+  'combo runner should expose only its unified main entry point');
 
 // Slice 20: batch 采纳 buttons in the comparison panel. The single-row
 // buttons from Slice 16 don't scale when migrating tens of fields between
@@ -2774,7 +2779,7 @@ assert(/\.panel\[data-panel-collapsed="true"\] > \*:not\(\.section-head\)\s*\{[^
   'collapsed panels should hide everything except the section-head');
 assert(/\.panel-collapse-toggle\s*\{/.test(html),
   'preview shell should ship .panel-collapse-toggle baseline');
-assert(appJs.includes("var PANEL_COLLAPSE_KEY = 'tm.scenarioEditorReset.panelCollapse.v1'"),
+assert(appJs.includes("var PANEL_COLLAPSE_KEY = 'tm.scenarioEditorReset.panelCollapse.v2'"),
   'preview app should declare PANEL_COLLAPSE_KEY');
 assert(appJs.includes('function applyPanelCollapseState'),
   'preview app should expose applyPanelCollapseState');
@@ -3110,5 +3115,96 @@ const preloadImplJs = fs.readFileSync(path.join(ROOT, '..', 'preload-impl.js'), 
 assert(/ipcMain\.handle\('dialog-export', async \(event, data, opts\)/.test(mainImplJs), 'dialog-export handler should accept opts (filename/title)');
 assert(mainImplJs.indexOf("o.filename || '天命项目.json'") >= 0, 'dialog-export should use opts.filename as defaultPath with legacy fallback');
 assert(/dialogExport: \(data, opts\)/.test(preloadImplJs), 'preload dialogExport should pass opts through');
+
+// ── 2026-07-19 剧本工坊 + 国师联合加固回归 ──
+const authoringUiJs = fs.readFileSync(path.join(ROOT, 'editor-authoring-agent-ui.js'), 'utf8');
+const authoringRenderJs = fs.readFileSync(path.join(ROOT, 'editor-authoring-agent-ui-render.js'), 'utf8');
+
+// 默认上下文不能落到 _version/id/ai/conf/meta 等国师不可写内部字段。
+assert(appJs.includes('function isAgentEditableFieldKey') && appJs.includes('function firstAgentEditableField'),
+  'workshop should centralize the Agent-editable default-field predicate');
+assert(/key\.charAt\(0\) !== '_'/.test(appJs) && /!\/\^\(ai\|conf\|meta\)\$\/i\.test\(key\)/.test(appJs),
+  'default-field predicate should exclude private and AI/config/meta roots');
+assert(/state\.selectedField = firstAgentEditableField\(mod\.topLevelKeys/.test(appJs),
+  'module switching should select the first Agent-editable field');
+
+// linkedChars/linkedFactions 是多态标签：保留传播能力，但不应制造假断引用占位实体。
+['events', 'rigidHistoryEvents', 'timeline'].forEach(function(field) {
+  assert(new RegExp("field: '" + field + "', key: 'linkedChars'[^\\n]*validate: false").test(appJs)
+    && new RegExp("field: '" + field + "', key: 'linkedFactions'[^\\n]*validate: false").test(appJs),
+  field + ' linked* fields should be soft references');
+});
+assert(!/validateRefs\(sc\.(events|rigidHistoryEvents)/.test(appJs),
+  'global validation should not treat event tags as strict entity foreign keys');
+assert(/field: 'characters', key: 'faction'[^\n]*shape: 'scalar'/.test(appJs)
+  && /field: 'factionRelations', key: 'to'[^\n]*shape: 'relation'/.test(appJs),
+  'true character-faction and faction-relation foreign keys should remain strict');
+assert(/field: 'relations', key: 'from'[^\n]*validate: false/.test(appJs)
+  && /field: 'relations', key: 'to'[^\n]*validate: false/.test(appJs)
+  && !/validateRefs\(sc\.relations/.test(appJs),
+  'open relation graph nodes should not be forced into the current character roster');
+
+// 顶栏、保存标签与案卷元信息都必须读取同一份 live diff truth。
+assert(appJs.includes('function workspaceTruth') && appJs.includes('changedFields: changes.length') && appJs.includes('dirty: changes.length > 0'),
+  'workspace state should derive from the live scenario diff');
+assert(appJs.includes('state.dirty = truth.dirty') && appJs.includes("label = truth.dirty ? '有未保存改动' : '官方快照'"),
+  'workspace pill and save indicator should agree on official/draft truth');
+assert(/renderWorkspaceMeta\(\);\s*renderSaveIndicator\(\);/.test(appJs),
+  'renderAll should refresh truth-bearing chrome after mutating renderers');
+assert(appJs.includes('recordExternalEdit: recordExternalEdit') && /recordExternalEdit\('设置世界类型'/.test(authoringUiJs),
+  'Guoshi direct world-kind edits should enter workshop history/dirty/autosave flow');
+
+// 顶栏“运行发布预检”必须真打开全局总览，再展开并聚焦目标。
+assert(/function focusRuntimePanel[\s\S]{0,900}?je-deck-open[\s\S]{0,400}?deckToggle\.click\(\)/.test(appJs),
+  'runtime focus should open the global deck before scrolling');
+assert(/hostPanel\.dataset\.panelCollapsed === 'true'\) togglePanelCollapse/.test(appJs),
+  'runtime focus should expand a collapsed host panel');
+
+// AI drawer 闭合态必须从无障碍树和键盘顺序中移除，打开后聚焦关闭键，Escape 可退回。
+assert(/id="ai-drawer"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-hidden="true"[^>]*inert/.test(html),
+  'AI drawer should start as an inert hidden dialog');
+assert(/function openDrawerForApp[\s\S]{0,500}?removeAttribute\('inert'\)[\s\S]{0,180}?aria-hidden', 'false'[\s\S]{0,180}?closeButton\.focus/.test(appJs),
+  'opening the runtime AI drawer should expose it and move focus inside');
+assert(/function closeDrawerForApp[\s\S]{0,500}?aria-hidden', 'true'[\s\S]{0,120}?setAttribute\('inert'[\s\S]{0,500}?returnFocus\.focus/.test(appJs),
+  'closing the runtime AI drawer should restore inert state and trigger focus');
+assert(/TM_SCENARIO_EDITOR_DRAWER\s*=\s*\{ open: openDrawerForApp, close: closeDrawerForApp \}/.test(appJs)
+  && /drawerClose\.addEventListener\('click', closeDrawerForApp\)/.test(appJs)
+  && /drawerBackdrop\.addEventListener\('click', closeDrawerForApp\)/.test(appJs),
+  'runtime AI drawer should own executable open/close bindings');
+assert(/event\.key === 'Escape'[^\n]*closeDrawerForApp/.test(appJs)
+  && /\.ai-drawer\s*\{[^}]*visibility:\s*hidden/.test(html)
+  && /\.ai-drawer\.open\s*\{[^}]*visibility:\s*visible/.test(html),
+  'drawer should support Escape and be visually absent while closed');
+
+// 停靠国师的 × 必须真关闭，并归还工坊正文宽度。
+assert(/#tm-aa-x'[\s\S]{0,260}?panel\.classList\.remove\('open'\)[\s\S]{0,260}?classList\.remove\('je-guoshi-docked', 'je-guoshi-settings-open'/.test(authoringUiJs),
+  'Guoshi close button should remove both panel-open and docked body states');
+assert(/_jeGuoshiDockToggleBound[\s\S]{0,520}?document\.addEventListener\('click'[\s\S]{0,520}?classList\.add\('je-guoshi-docked'\)/.test(adaptersJs),
+  'reopening Guoshi from the workshop launcher should restore the docked layout');
+assert(/scenario-editor-reset-adapters\.js\?v=[^"']+/.test(html),
+  'workshop should version the Guoshi adapter asset so reopen fixes are not masked by stale browser cache');
+assert(/body\.je-guoshi-docked #tm-aa-panel\s*\{[^}]*display:\s*none !important/.test(html)
+  && /body\.je-guoshi-docked #tm-aa-panel\.open\s*\{\s*display:\s*flex !important/.test(html),
+  'docked CSS should only display an explicitly open Guoshi panel');
+
+// 首屏密度：运行/健康保留展开，低频六区默认折叠；本地旧状态通过 v2 迁移。
+['ai-desk', 'freedom-lab', 'flow-panel', 'generation-queue', 'creator-shortcuts', 'ai-coverage-matrix'].forEach(function(panel) {
+  assert(new RegExp("'" + panel + "': true").test(appJs), panel + ' should default collapsed');
+});
+
+// 草稿必须绑定运行起点、应用到实时剧本，冲突/选择后坏引用一律 fail closed；diff 不隐藏第 41 条以后改动。
+assert(/ui\.baseScenario = AA\.makeDraft\(live\)/.test(authoringUiJs)
+  && /AA\.computeDiff\(ui\.baseScenario/.test(authoringUiJs),
+  'Guoshi draft diff should bind to the run-start baseline');
+assert(/AA\.applySelectedDiffs\(ui\.adapter\.getScenario\(\), ui\.draft/.test(authoringUiJs)
+  && /e\.code === 'edit-conflict'/.test(authoringUiJs),
+  'Guoshi apply should merge into live state and surface same-path conflicts');
+assert(/function _validateSelectedScenario[\s\S]{0,1200}?AA\.preflight\(candidate\)/.test(authoringUiJs)
+  && /_validateSelectedScenario\(_liveBefore, _finalSc\)/.test(authoringUiJs),
+  'partial diff selection should be revalidated before commit');
+assert(/diffs\.forEach\(function\(d\)/.test(authoringRenderJs)
+  && /var inner = es\.map\(function\(d\)/.test(authoringRenderJs)
+  && !/var inner = es\.slice\(0,\s*40\)/.test(authoringRenderJs),
+  'every diff hunk should remain visible and individually rejectable');
 
 console.log('smoke-scenario-editor-reset-preview OK: ' + passed + ' assertions');

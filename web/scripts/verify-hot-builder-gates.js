@@ -38,7 +38,8 @@ function resetTree(ver) {
   fs.writeFileSync(path.join(WEB, 'version.json'), JSON.stringify({ version: ver }));
   fs.writeFileSync(path.join(APP, 'main-impl.js'), '// main impl');
   fs.writeFileSync(path.join(APP, 'preload-impl.js'), '// preload impl');
-  fs.writeFileSync(path.join(APP, 'scenarios', '官方剧本.json'), '{"id":"x"}');
+  fs.writeFileSync(path.join(APP, 'scenarios', '合成（官方）.json'), '{"id":"official"}');
+  fs.writeFileSync(path.join(APP, 'scenarios', '绍宋_182区草案.json'), '{"id":"draft-must-not-ship"}');
 }
 function build(args) {
   return spawnSync('node', [BUILDER].concat(args, ['--web-root', WEB, '--app-root', APP]), { encoding: 'utf-8' });
@@ -53,8 +54,9 @@ const feedA = JSON.parse(fs.readFileSync(path.join(outA, 'hot-latest.json'), 'ut
 assert(feedA.version === '9.0.0.1', 'A·feed 版本正确');
 const manifestA = JSON.parse(fs.readFileSync(path.join(outA, 'manifests', '9.0.0.1.json'), 'utf-8'));
 const paths = manifestA.files.map(f => f.path);
-['index.html', 'a.js', 'b.js', 'styles.css', 'changelog.json', 'version.json', '_app_main.js', '_app_preload.js', 'bundled-scenarios/官方剧本.json']
+['index.html', 'a.js', 'b.js', 'styles.css', 'changelog.json', 'version.json', '_app_main.js', '_app_preload.js', 'bundled-scenarios/合成（官方）.json']
   .forEach(p => assert(paths.indexOf(p) !== -1, 'A·清单含 ' + p));
+assert(paths.indexOf('bundled-scenarios/绍宋_182区草案.json') === -1, 'A·草案/自用剧本不进入热更');
 
 // ── B·GATE-0·--files 部分包默认禁 ──
 r = build(['--version', '9.0.0.2', '--files', 'a.js', '--out', path.join(TMP, 'outB')]);

@@ -130,57 +130,111 @@
  * @param {string} funcKeyword - 职能关键词（如"铨选""科举""军务""刑狱""礼仪""户口"）
  * @returns {{dept:string, deptDesc:string, official:string, holder:string, duties:string}|null}
  */
-async function aiDeepReadScenario() {
-  if (!P.ai || !P.ai.key) return;
-  if (GM._aiScenarioDigest) return;
+function _tmPlanningCaptureSession(provided) {
+  if (provided) return provided;
+  return {
+    gmRef: (typeof GM !== 'undefined') ? GM : null,
+    sid: (typeof GM !== 'undefined' && GM) ? GM.sid : null,
+    turn: (typeof GM !== 'undefined' && GM) ? GM.turn : null,
+    epoch: (typeof window !== 'undefined') ? window._tmStartPrewarmEpoch : undefined
+  };
+}
+
+function _tmPlanningSessionCurrent(session) {
+  if (!session) return true;
+  if (typeof GM === 'undefined' || !GM || GM !== session.gmRef) return false;
+  if (session.sid != null && GM.sid !== session.sid) return false;
+  if (session.turn != null && GM.turn !== session.turn) return false;
+  if (session.epoch != null && typeof window !== 'undefined' && window._tmStartPrewarmEpoch !== session.epoch) return false;
+  return true;
+}
+
+// 开局先给推演链一个可立即消费的本地摘要；非 fully-detailed 剧本随后可在后台用 AI 结果原子替换。
+function _tmPrimeScenarioDigestFromText(sc) {
+  if (typeof GM === 'undefined' || !GM || !sc) return null;
+  if (GM._aiScenarioDigest && !GM._aiScenarioDigest._fromScenarioText) return GM._aiScenarioDigest;
+  var pi0 = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : {};
+  var overviewText = (sc.overview || sc.background || '') + '\n' + (sc.openingText || sc.opening || '');
+  var rulesText = sc.globalRules || '';
+  var playerBgText = [pi0.characterBio, pi0.characterPersonality, pi0.factionGoal].filter(Boolean).join('·');
+  var contradictText = '';
+  if (pi0.coreContradictions && pi0.coreContradictions.length > 0) {
+    contradictText = pi0.coreContradictions.map(function(c) { return '[' + c.dimension + ']' + c.title + (c.description ? '：' + c.description : ''); }).join('；');
+  }
+  GM._aiScenarioDigest = {
+    masterDigest: (overviewText + '\n' + contradictText).slice(0, 1200),
+    worldAtmosphere: (sc.overview || sc.background || '').slice(0, 400),
+    narrativeStyle: (sc.openingText || sc.opening || '').slice(0, 400),
+    worldRules: rulesText,
+    characterWeb: playerBgText,
+    factionBalance: '剧本势力格局见 GM.facs',
+    powerNetwork: '见官制树',
+    contradictionAnalysis: contradictText,
+    playerDilemma: pi0.characterBio || '',
+    characterProfiles: '', dangerousFigures: '', betrayalRisks: '',
+    emotionalTriggers: '', narrativeArcs: '',
+    periodVocabulary: '', etiquetteNorms: '', sensoryDetails: '',
+    firstTurnFocus: pi0.factionGoal || '',
+    scenarioDigest: (sc.overview || sc.background || '').slice(0, 800),
+    generatedAt: GM.turn,
+    _fromScenarioText: true
+  };
+  try { GM._officeTreeHash = _computeOfficeHash(); } catch(_) {}
+  return GM._aiScenarioDigest;
+}
+
+async function aiDeepReadScenario(options) {
+  options = options || {};
+  var _background = options.background === true;
+  var _session = _tmPlanningCaptureSession(options.session);
+  var _aiAtStart = P.ai || {};
+  var _configuredTimeout = Number(options.requestTimeoutMs != null
+    ? options.requestTimeoutMs
+    : (P.conf && P.conf.aiDeepReadTimeoutMs));
+  var _deepReadConfig = {
+    key: String(_aiAtStart.key || ''),
+    url: String(_aiAtStart.url || ''),
+    model: String(_aiAtStart.model || 'gpt-4o'),
+    timeoutMs: isFinite(_configuredTimeout) && _configuredTimeout > 0 ? Math.max(1000, _configuredTimeout) : 120000
+  };
+  if (!_deepReadConfig.key) return;
+  if (GM._aiScenarioDigest && !GM._aiScenarioDigest._fromScenarioText) return;
   if (GM.turn > 1) return;
 
   var sc = findScenarioById(GM.sid);
   if (!sc) return;
+  var _fallbackDigest = _tmPrimeScenarioDigestFromText(sc);
 
   // 剧本已人工深化·跳过 27 次 AI 深读·用剧本原文本直接兜底 _aiScenarioDigest
   if (sc.aiAutoEnrich === false || sc.isFullyDetailed === true) {
-    var pi0 = P.playerInfo || {};
-    var overviewText = (sc.overview || '') + '\n' + (sc.openingText || '');
-    var rulesText = sc.globalRules || '';
-    var playerBgText = [pi0.characterBio, pi0.characterPersonality, pi0.factionGoal].filter(Boolean).join('·');
-    // 矛盾列表
-    var contradictText = '';
-    if (pi0.coreContradictions && pi0.coreContradictions.length > 0) {
-      contradictText = pi0.coreContradictions.map(function(c) { return '[' + c.dimension + ']' + c.title + (c.description ? '：' + c.description : ''); }).join('；');
-    }
-    GM._aiScenarioDigest = {
-      masterDigest: (overviewText + '\n' + contradictText).slice(0, 1200),
-      worldAtmosphere: (sc.overview || '').slice(0, 400),
-      narrativeStyle: (sc.openingText || '').slice(0, 400),
-      worldRules: rulesText,
-      characterWeb: playerBgText,
-      factionBalance: '剧本势力格局见 GM.facs',
-      powerNetwork: '见官制树',
-      contradictionAnalysis: contradictText,
-      playerDilemma: pi0.characterBio || '',
-      // 字段兜底·避免 undefined
-      characterProfiles: '', dangerousFigures: '', betrayalRisks: '',
-      emotionalTriggers: '', narrativeArcs: '',
-      periodVocabulary: '', etiquetteNorms: '', sensoryDetails: '',
-      firstTurnFocus: pi0.factionGoal || '',
-      scenarioDigest: (sc.overview || '').slice(0, 800),
-      generatedAt: GM.turn,
-      _fromScenarioText: true  // 标记·非 AI 生成
-    };
-    // 记录初始官制哈希（检测后续改革）
-    try { GM._officeTreeHash = _computeOfficeHash(); } catch(_){}
     _dbg && _dbg('[AI DeepRead] 剧本已深化·跳过 27 次 AI·用原文本兜底');
     return;
   }
-  var url = P.ai.url; if (url.indexOf('/chat/completions') < 0) url = url.replace(/\/+$/, '') + '/chat/completions';
-  var model = P.ai.model || 'gpt-4o';
+  var url = _deepReadConfig.url; if (url.indexOf('/chat/completions') < 0) url = url.replace(/\/+$/, '') + '/chat/completions';
+  var model = _deepReadConfig.model;
   var pi = P.playerInfo || {};
+
+  function _staleSessionError() {
+    var error = new Error('deep-read session is no longer current');
+    error.tmStaleSession = true;
+    return error;
+  }
+
+  function _assertSessionCurrent() {
+    if (!_tmPlanningSessionCurrent(_session)) throw _staleSessionError();
+  }
+
+  function _requestTimeoutError() {
+    var error = new Error('deep-read request timed out after ' + _deepReadConfig.timeoutMs + 'ms');
+    error.code = 'TM_DEEP_READ_TIMEOUT';
+    return error;
+  }
 
   // ── AI 调用（带一次重试·issue #6①）───────────────────────────
   // 波次并行后单次静默失败=整层缺料概率放大，故网络失败/非 200 重试一次；
   // JSON 解析失败不重试（内容问题非网络问题·保留 _raw 原文）。
   async function _callOnce(sysMsg, userMsg, maxTok) {
+    _assertSessionCurrent();
     // 根据模型上下文窗口动态调整max_tokens
     // 基础倍率×3 + 上下文缩放因子（大模型可以输出更多内容）
     var _drCp = (typeof getCompressionParams === 'function') ? getCompressionParams() : {scale:1.0,contextK:32};
@@ -190,18 +244,67 @@ async function aiDeepReadScenario() {
     var _drOutputCap = Math.round(_drCp.contextK * 1024 / 4);
     _actualTok = Math.min(_actualTok, _drOutputCap);
     _actualTok = Math.max(_actualTok, 500);
-    var resp = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+P.ai.key},
-      body:JSON.stringify({model:model, messages:[{role:'system',content:sysMsg},{role:'user',content:userMsg}], temperature:0.5, max_tokens:_actualTok})});
-    if (!resp.ok) throw new Error('deep-read HTTP ' + resp.status);
-    var j = await resp.json(); var raw = (j.choices&&j.choices[0]&&j.choices[0].message) ? j.choices[0].message.content : '';
-    try { return JSON.parse(raw.match(/\{[\s\S]*\}/)[0]); } catch(e) { return {_raw: raw}; }
+    return new Promise(function(resolve, reject){
+      var settled = false;
+      var controller = (typeof AbortController === 'function') ? new AbortController() : null;
+      var timeoutTimer = null;
+      var staleTimer = null;
+      function cleanup(){
+        if (timeoutTimer) clearTimeout(timeoutTimer);
+        if (staleTimer) clearInterval(staleTimer);
+      }
+      function finish(callback, value){
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback(value);
+      }
+      function abortRequest(){ try { if (controller) controller.abort(); } catch(_) {} }
+      timeoutTimer = setTimeout(function(){
+        abortRequest();
+        finish(reject, _requestTimeoutError());
+      }, _deepReadConfig.timeoutMs);
+      staleTimer = setInterval(function(){
+        if (_tmPlanningSessionCurrent(_session)) return;
+        abortRequest();
+        finish(reject, _staleSessionError());
+      }, 100);
+      try {
+        Promise.resolve(fetch(url, {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+_deepReadConfig.key},
+          body:JSON.stringify({model:model, messages:[{role:'system',content:sysMsg},{role:'user',content:userMsg}], temperature:0.5, max_tokens:_actualTok}),
+          signal: controller ? controller.signal : undefined
+        })).then(function(resp){
+          if (!_tmPlanningSessionCurrent(_session)) throw _staleSessionError();
+          if (!resp.ok) throw new Error('deep-read HTTP ' + resp.status);
+          return resp.json();
+        }).then(function(j){
+          if (!_tmPlanningSessionCurrent(_session)) throw _staleSessionError();
+          var raw = (j.choices&&j.choices[0]&&j.choices[0].message) ? j.choices[0].message.content : '';
+          try { finish(resolve, JSON.parse(raw.match(/\{[\s\S]*\}/)[0])); }
+          catch(e) { finish(resolve, {_raw: raw}); }
+        }, function(error){
+          if (!_tmPlanningSessionCurrent(_session)) finish(reject, _staleSessionError());
+          else finish(reject, error);
+        });
+      } catch(error) {
+        finish(reject, error);
+      }
+    });
   }
   async function _call(sysMsg, userMsg, maxTok) {
     try { return await _callOnce(sysMsg, userMsg, maxTok); }
     catch (e1) {
+      if (e1 && e1.tmStaleSession) throw e1;
       await new Promise(function(_res){ setTimeout(_res, 1500); });
+      _assertSessionCurrent();
       try { return await _callOnce(sysMsg, userMsg, maxTok); }
-      catch (e2) { console.warn('[AI DeepRead] _call 重试后仍失败·该块缺料继续:', (e2 && e2.message) || e2); return {}; }
+      catch (e2) {
+        if (e2 && e2.tmStaleSession) throw e2;
+        console.warn('[AI DeepRead] _call 重试后仍失败·该块缺料继续:', (e2 && e2.message) || e2);
+        return {};
+      }
     }
   }
 
@@ -216,16 +319,28 @@ async function aiDeepReadScenario() {
     return _isCap ? 1 : 4;
   }
   async function _runWave(tasks) {
+    _assertSessionCurrent();
     var _limit = Math.max(1, Math.min(_waveLimit(), tasks.length));
     var _cursor = 0;
-    async function _worker() { while (_cursor < tasks.length) { await tasks[_cursor++](); } }
+    async function _worker() {
+      while (_cursor < tasks.length) {
+        _assertSessionCurrent();
+        var _taskIndex = _cursor++;
+        await tasks[_taskIndex]();
+        _assertSessionCurrent();
+      }
+    }
     var _workers = []; for (var _i = 0; _i < _limit; _i++) _workers.push(_worker());
     await Promise.all(_workers);
+    _assertSessionCurrent();
   }
 
   // ── 真实进度：按完成计数（27 次调用）────────────────────────
   var _totalCalls = 27, _done = 0;
-  function _tick(label) { _done++; showLoading('深度阅读·' + label + '（' + _done + '/' + _totalCalls + '）', Math.round(_done / _totalCalls * 100)); }
+  function _tick(label) {
+    _done++;
+    if (!_background && typeof showLoading === 'function') showLoading('深度阅读·' + label + '（' + _done + '/' + _totalCalls + '）', Math.round(_done / _totalCalls * 100));
+  }
 
   // ═══ 构建全量数据块（完全不截断） ═══
 
@@ -1326,7 +1441,7 @@ async function aiDeepReadScenario() {
     });
 
     // ═══ 执行四波（波间有真依赖·波内并行·issue #6①）═══
-    showLoading('深度阅读·第一波并行研读（' + _wave1.length + ' 项）…', 1);
+    if (!_background && typeof showLoading === 'function') showLoading('深度阅读·第一波并行研读（' + _wave1.length + ' 项）…', 1);
     await _runWave(_wave1);
     allAnalysis = JSON.stringify(r1) + '\n' + JSON.stringify(r2) + '\n' + JSON.stringify(r3) + '\n' + JSON.stringify(r4) + '\n' + JSON.stringify(r5) + '\n' + JSON.stringify(r6admin) + '\n' + JSON.stringify(r7mil) + '\n' + JSON.stringify(r8evt) + '\n' + JSON.stringify(r9) + '\n' + JSON.stringify(r11) + '\n' + JSON.stringify(r12);
     await _runWave(_wave2);
@@ -1337,6 +1452,11 @@ async function aiDeepReadScenario() {
     await _runWave(_wave4);
 
     // ═══ 合并存储 ═══
+    // AI 可能在玩家换档/推进回合后才返回；旧会话结果不得污染当前 GM。
+    if (!_tmPlanningSessionCurrent(_session)) {
+      console.warn('[AI DeepRead] 丢弃过期的开局预热结果');
+      return;
+    }
     GM._aiScenarioDigest = {
       // Call 1
       eraEssence: (r1.era_essence||''),
@@ -1486,12 +1606,15 @@ async function aiDeepReadScenario() {
     GM._officeTreeHash = _computeOfficeHash();
 
     _dbg('[AI DeepRead 27-call/4-wave] Master digest:', (GM._aiScenarioDigest.masterDigest||'').substring(0, 150));
-    showLoading('\u6DF1\u5EA6\u9605\u8BFB\u5B8C\u6210\uFF01', 100);
+    if (!_background && typeof showLoading === 'function') showLoading('\u6DF1\u5EA6\u9605\u8BFB\u5B8C\u6210\uFF01', 100);
   } catch(e) {
-    console.warn('[AI DeepRead] Failed:', e);
-    GM._aiScenarioDigest = { scenarioDigest: '', firstTurnFocus: '', npcIntentions: '', masterDigest: '', generatedAt: 0 };
+    if (e && e.tmStaleSession) console.warn('[AI DeepRead] 会话已变化·停止剩余排队请求');
+    else console.warn('[AI DeepRead] Failed:', e);
+    if (_tmPlanningSessionCurrent(_session) && !GM._aiScenarioDigest) {
+      GM._aiScenarioDigest = _fallbackDigest || { scenarioDigest: '', firstTurnFocus: '', npcIntentions: '', masterDigest: '', generatedAt: 0 };
+    }
   }
-  setTimeout(hideLoading, 500);
+  if (!_background && typeof hideLoading === 'function') setTimeout(hideLoading, 500);
 }
 
 // ============================================================
@@ -1505,7 +1628,10 @@ async function aiDeepReadScenario() {
 // 即使剧本 isFullyDetailed=true 也运行（替代 aiDeepReadScenario 后的价值补偿）
 // 除非剧本显式 skipInferencePlanning:true
 // ============================================================
-async function aiPlanScenarioForInference() {
+async function aiPlanScenarioForInference(options) {
+  options = options || {};
+  var _background = options.background === true;
+  var _session = _tmPlanningCaptureSession(options.session);
   if (!P.ai || !P.ai.key) return;
   if (GM._aiInferencePlan && GM._aiInferencePlan.generatedAt) return; // 已规划过
   if (GM.turn > 1) return;
@@ -1577,8 +1703,12 @@ async function aiPlanScenarioForInference() {
   prompt += '只输出 JSON。npcHiddenAgenda 和 npcFirstTurnReaction 覆盖主要 NPC 即可·不必全覆盖。';
 
   try {
-    if (typeof showLoading === 'function') showLoading('规划推演锚点·NPC 动机与危机分岔…', 50);
+    if (!_background && typeof showLoading === 'function') showLoading('规划推演锚点·NPC 动机与危机分岔…', 50);
     var raw = await callAISmart(prompt, 4000, { maxRetries: 2, minLength: 400 });
+    if (!_tmPlanningSessionCurrent(_session)) {
+      console.warn('[aiPlan] 丢弃过期的开局预热结果');
+      return;
+    }
     var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!parsed || typeof parsed !== 'object') {
       console.warn('[aiPlan] 解析失败·跳过');
@@ -1608,7 +1738,7 @@ async function aiPlanScenarioForInference() {
   } catch(e) {
     console.warn('[aiPlan] 失败:', e && e.message);
   } finally {
-    if (typeof hideLoading === 'function') hideLoading();
+    if (!_background && typeof hideLoading === 'function') hideLoading();
   }
 }
 
@@ -1617,7 +1747,10 @@ async function aiPlanScenarioForInference() {
 // 1 次 AI 调用·生成每两个势力间的当前关系+10 回合轨迹+升级/和解触发条件
 // 注入推演：势力互动依据此表·避免"魏忠贤一夜降金"之类荒谬演绎
 // ============================================================
-async function aiPlanFactionMatrix() {
+async function aiPlanFactionMatrix(options) {
+  options = options || {};
+  var _background = options.background === true;
+  var _session = _tmPlanningCaptureSession(options.session);
   if (!P.ai || !P.ai.key) return;
   if (GM._aiFactionMatrix && GM._aiFactionMatrix.generatedAt) return;
   if (GM.turn > 1) return;
@@ -1662,8 +1795,12 @@ async function aiPlanFactionMatrix() {
   prompt += '}\n只输出 JSON。';
 
   try {
-    if (typeof showLoading === 'function') showLoading('规划势力动态·国际格局预判…', 60);
+    if (!_background && typeof showLoading === 'function') showLoading('规划势力动态·国际格局预判…', 60);
     var raw = await callAISmart(prompt, 2500, { maxRetries: 2, minLength: 300 });
+    if (!_tmPlanningSessionCurrent(_session)) {
+      console.warn('[aiFacMatrix] 丢弃过期的开局预热结果');
+      return;
+    }
     var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
     if (!parsed || typeof parsed !== 'object') { console.warn('[aiFacMatrix] 解析失败'); return; }
     GM._aiFactionMatrix = {
@@ -1677,7 +1814,7 @@ async function aiPlanFactionMatrix() {
   } catch(e) {
     console.warn('[aiFacMatrix] 失败:', e && e.message);
   } finally {
-    if (typeof hideLoading === 'function') hideLoading();
+    if (!_background && typeof hideLoading === 'function') hideLoading();
   }
 }
 

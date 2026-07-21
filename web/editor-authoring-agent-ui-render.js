@@ -226,10 +226,10 @@
     diffs.forEach(function(d) { var top = String(d.path || '').split(/[.\[]/)[0] || '(根)'; if (!groups[top]) { groups[top] = []; order.push(top); } groups[top].push(d); });
     ui.els.diff.innerHTML = order.map(function(field) {
       var es = groups[field];
-      var inner = es.slice(0, 40).map(function(d) { return _diffEntryHtml(d, _uncReasonFor(d.path, unc), d.__idx); }).join('');
-      if (es.length > 40) inner += '<div class="ln">… 还有 ' + (es.length - 40) + ' 处（默认接受）</div>';
+      // 每一处都必须可见、可拒绝；禁止把第 41 项后的未展示改动默认为接受。
+      var inner = es.map(function(d) { return _diffEntryHtml(d, _uncReasonFor(d.path, unc), d.__idx); }).join('');
       var gUnc = es.filter(function(d) { return _uncReasonFor(d.path, unc); }).length;
-      var idxs = es.slice(0, 40).map(function(d) { return d.__idx; });
+      var idxs = es.map(function(d) { return d.__idx; });
       var allRej = idxs.every(function(i) { return ui._diffRejected.has(i); });
       var firstPath = (es[0] && es[0].path) || field;
       return '<div class="tm-aa-diff-group" data-group="' + esc(field) + '"><div class="tm-aa-diff-head"><b class="tm-aa-diff-jump" data-reveal-field="' + esc(field) + '" data-first-path="' + esc(firstPath) + '" title="在折子里定位此字段（跳首处改动）">' + esc(_COLL_CN[field] || field) + ' \u2197</b> <span style="color:#8f8a7e">(' + es.length + ' 处' + (gUnc ? ' · 待核' + gUnc : '') + ')</span><button type="button" class="grp-tog" data-group-idxs="' + idxs.join(',') + '">' + (allRej ? '全收' : '全拒') + '</button></div>' + inner + '</div>';

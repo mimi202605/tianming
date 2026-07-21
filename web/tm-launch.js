@@ -135,6 +135,16 @@ function doEditor(){_dbg('[doEditor] 执行开始');_cleanupOverlays();_$("launc
 
 function showScnSelect(){
   var page=_$("scn-page");
+  var _officialLoader = window.TMOfficialScenarioLoader;
+  if (_officialLoader && typeof _officialLoader.reconcile === 'function') _officialLoader.reconcile();
+  if (_officialLoader && !_officialLoader.isMetadataReady()) {
+    page.classList.add("show");
+    page.innerHTML='<div class="scn-page-title">选 择 剧 本</div><div style="text-align:center;padding:3rem;color:var(--ink-400);">正在读取剧本目录…</div>';
+    _officialLoader.ready().then(function(){ showScnSelect(); }).catch(function(e){
+      page.innerHTML='<button class="bt bs" onclick="backToLaunch()">返回</button><div style="text-align:center;padding:3rem;color:var(--vermillion-400);">官方剧本目录加载失败：'+escHtml(e && e.message || String(e))+'</div>';
+    });
+    return;
+  }
   page.classList.add("show");
   page.innerHTML="<button class=\"bt bs\" onclick=\"backToLaunch()\" style=\"position:fixed;top:1rem;left:1rem;z-index:1000;font-family:'STKaiti','KaiTi','楷体',serif;letter-spacing:0.15em;\">\u25C1 \u8FD4 \u56DE \u542F \u5E55</button>"+
     "<div class=\"scn-page-title\">\u9009 \u62E9 \u5267 \u672C</div>"+
@@ -159,8 +169,9 @@ function previewScenario(sid) {
   if (!sc) { startGame(sid); return; }
 
   // 统计
-  var charCount = (P.characters||[]).filter(function(c){return c.sid===sid;}).length;
-  var facCount = (P.factions||[]).filter(function(f){return f.sid===sid;}).length;
+  var _lazyCounts = (sc._lazyOfficial && window.TMOfficialScenarioLoader) ? window.TMOfficialScenarioLoader.counts(sid) : {};
+  var charCount = _lazyCounts.characters || (P.characters||[]).filter(function(c){return c.sid===sid;}).length;
+  var facCount = _lazyCounts.factions || (P.factions||[]).filter(function(f){return f.sid===sid;}).length;
   var partyCount = (P.parties||[]).filter(function(p){return p.sid===sid;}).length;
   var eventCount = (P.events||[]).filter(function(e){return e && e.sid===sid;}).length;
   if (!eventCount && sc.events) {
@@ -267,6 +278,7 @@ function _startWithDifficulty(sid) {
   var sc = findScenarioById(sid);
   var scenarioMap = sc && ((sc.map && sc.map.regions && sc.map.regions.length > 0) ? sc.map : sc.mapData);
   var hasMapData = !!(scenarioMap && scenarioMap.regions && scenarioMap.regions.length > 0);
+  if (!hasMapData && sc && sc._lazyOfficial && window.TMOfficialScenarioLoader) hasMapData = window.TMOfficialScenarioLoader.hasMap(sid);
 
   // 弹窗让玩家选择地图模式
   _showMapModeChoice(sid, hasMapData);
@@ -608,7 +620,8 @@ function enterEditor(sid){
 }
 
 function saveAndBack(){
-  if(window.tianming&&window.tianming.isDesktop){window.tianming.autoSave(_tmStripAiKeyView(P)).then(function(){toast("\u2705 \u5DF2\u4FDD\u5B58");}).catch(function(e){(window.TM&&TM.errors&&TM.errors.capture)?TM.errors.capture(e,'saveAndBack'):console.warn('[saveAndBack]',e);toast("\u2705 \u5DF2\u4FDD\u5B58");});}else{toast("\u2705 \u5DF2\u4FDD\u5B58");}
+  try { if (typeof saveP === 'function') saveP(); toast("\u2705 \u5DF2\u4FDD\u5B58"); }
+  catch(e) { (window.TM&&TM.errors&&TM.errors.capture)?TM.errors.capture(e,'saveAndBack'):console.warn('[saveAndBack]',e);toast("\u274C \u4FDD\u5B58\u5931\u8D25"); }
   setTimeout(backToLaunch,300);
 }
 

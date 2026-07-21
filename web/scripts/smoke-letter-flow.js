@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { materializeScenarioRows } = require('./lib/official-scenario-fixture.js');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -91,6 +92,7 @@ while ((m = scriptRe.exec(indexHtml)) !== null) {
 
 let loaded = 0, failed = 0;
 for (const s of scripts) {
+  if (s === 'tm-official-scenario-loader.js') continue; // dedicated smoke owns the async lazy-loader contract
   const fp = path.join(ROOT, s);
   if (!fs.existsSync(fp)) continue;
   try {
@@ -110,6 +112,13 @@ try {
   vm.runInContext(scenarioCode, sandbox);
 } catch (e) {
   console.error('scenario load fail:', e.message);
+}
+// startGame normally materializes the lazily loaded official scenario rows into P;
+// this smoke deliberately bypasses startGame, so mirror that one production step.
+try {
+  materializeScenarioRows(sandbox.P, 'sc-tianqi7-1627');
+} catch (e) {
+  console.error('scenario materialization fail:', e.message);
 }
 
 // 等剧本注册（setTimeout 50）

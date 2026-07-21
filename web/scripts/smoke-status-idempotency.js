@@ -25,6 +25,17 @@ function makeCtx() {
   ctx.GameEventBus = { emit(){}, on(){} };
   ctx.addEB = () => {};
   ctx.getTSText = () => '';
+  // onDismissal 的致死分支必须经统一死亡 sink；完整级联另有专项 smoke，这里只验证路由与状态。
+  ctx._deathSinkCalls = [];
+  ctx.applyOneDeath = (death) => {
+    const target = ((ctx.GM && ctx.GM.chars) || []).find(c => c && c.name === (death && death.name));
+    ctx._deathSinkCalls.push(death && death.name);
+    if (!target || target.alive === false || target.dead === true) return { ok: false };
+    target.alive = false;
+    target.dead = true;
+    target.deathReason = String((death && (death.reason || death.cause)) || '');
+    return { ok: true };
+  };
   // 抄家引擎 mock·计数并返回成功
   ctx.EconomyLinkage = {
     triggerConfiscationByName(name, dest, intensity) {
@@ -109,6 +120,7 @@ console.log('===== Codex Bug5·onDismissal 认「斩杀」为处决(置死) ====
   freshGM(ctx, [li]);
   ctx.AIChangeApplier.onDismissal('李贼', '斩杀');
   assert(li.alive === false, 'reason=斩杀 应置死 (alive=' + li.alive + ')');
+  assert(ctx._deathSinkCalls.length === 1 && ctx._deathSinkCalls[0] === '李贼', 'reason=斩杀 应且仅应路由一次统一死亡 sink');
 })();
 
 console.log('===== ★Codex Bug4·已抄+仍有binding·重复抄家dismiss不再追亏 =====');

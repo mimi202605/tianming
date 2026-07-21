@@ -33,19 +33,29 @@ assert(/localStorage\.setItem\("tm_api"/.test(body), 'sSaveAPI 写 localStorage.
 assert(!/\}else\{try\{localStorage\.setItem\("tm_api"/.test(body),
   'sSaveAPI 不再把 localStorage.tm_api 写在 else 分支(桌面会漏写=旧 bug)');
 
-// 结构正例：localStorage.tm_api 写在桌面 autoSave 之前(=两端都会执行·桌面不漏)
+// 结构正例：localStorage.tm_api 写在 saveP 之前。saveP 会按「运行局/非运行局」选择安全存储，
+// 不允许 API 设置用纯 P 直接覆盖桌面 canonical autosave。
 const iLS = body.indexOf('localStorage.setItem("tm_api"');
-const iAuto = body.indexOf('window.tianming.autoSave');
-assert(iLS >= 0 && iAuto >= 0 && iLS < iAuto,
-  'sSaveAPI 先写 localStorage.tm_api 再(桌面)autoSave → 桌面主 key 也持久');
+const iSaveP = body.indexOf('saveP');
+assert(iLS >= 0 && iSaveP >= 0 && iLS < iSaveP,
+  'sSaveAPI 先写 localStorage.tm_api 再 saveP → key 持久且不覆盖 canonical autosave');
+assert(!/tianming\.autoSave\s*\(/.test(body),
+  'sSaveAPI 不再用纯 P 直接覆盖 Electron canonical autosave');
 
 // _tmStripAiKeyView 仍剥 key（存档脱敏不变·key 只在 localStorage）
 assert(/function _tmStripAiKeyView[\s\S]*?delete ai\.key/.test(UTILS),
   '_tmStripAiKeyView 仍 delete ai.key(存档脱敏·安全不变)');
 
-// 次 API sSaveSecondaryAPI 本就两端都写 localStorage(同范式·参照正确实现)
-assert(/function sSaveSecondaryAPI[\s\S]*?localStorage\.setItem\("tm_api"[\s\S]*?window\.tianming\.autoSave/.test(SRC),
-  'sSaveSecondaryAPI 参照:localStorage.tm_api 在 autoSave 前(一致范式)');
+// 次 API 同样必须走 localStorage + saveP，且不得恢复旧的纯 P autoSave 写口。
+const sm = SRC.match(/function sSaveSecondaryAPI\(\)\{([\s\S]*?)\}\s*\nfunction sClearSecondaryAPI/);
+assert(!!sm, 'sSaveSecondaryAPI 函数存在且可定位');
+const secondaryBody = sm ? sm[1] : '';
+const iSecondaryLS = secondaryBody.indexOf('localStorage.setItem("tm_api"');
+const iSecondarySaveP = secondaryBody.indexOf('saveP');
+assert(iSecondaryLS >= 0 && iSecondarySaveP >= 0 && iSecondaryLS < iSecondarySaveP,
+  'sSaveSecondaryAPI 先写 localStorage.tm_api 再 saveP(一致范式)');
+assert(!/tianming\.autoSave\s*\(/.test(secondaryBody),
+  'sSaveSecondaryAPI 不以纯 P 覆盖 Electron canonical autosave');
 
 // ── 读回侧(真正修复桌面重启丢 key 的另一半·此前无测才漏网)────────────────
 // 桌面启动分支须先从 localStorage.tm_api 回读主 key·再 loadAutoSave(autoSave 已剥 key)。

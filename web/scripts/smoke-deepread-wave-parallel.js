@@ -57,6 +57,9 @@ function buildSandbox(opts) {
     console: console,
     setTimeout: setTimeout,
     clearTimeout: clearTimeout,
+    setInterval: setInterval,
+    clearInterval: clearInterval,
+    AbortController: AbortController,
     P: {
       ai: { key: 'mock-key', url: 'http://mock.local/v1', model: 'mock-model' },
       conf: { aiDeepReadConcurrency: opts.concurrency },

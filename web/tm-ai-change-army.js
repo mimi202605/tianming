@@ -200,13 +200,30 @@
 
   function _armyCommanderField(change) {
     if (!change || typeof change !== 'object') return null;
-    var keys = ['commander', 'commanderName', 'general', 'leader', 'newCommander', 'newGeneral', 'chiefCommander', '统帅', '主帅', '主将', '将领', '将帅'];
+    var keys = ['commander', 'commanderName', 'commanderDisplayName', 'commander_name', 'general', 'generalName',
+      'leader', 'leaderName', 'commandingOfficer', 'newCommander', 'newGeneral', 'chiefCommander', 'chiefGeneral', 'mainGeneral',
+      '统帅', '主帅', '主将', '将领', '将帅'];
+    var values = [];
     for (var i = 0; i < keys.length; i += 1) {
       if (Object.prototype.hasOwnProperty.call(change, keys[i]) && change[keys[i]] != null) {
-        return String(change[keys[i]] || '').trim();
+        var value = String(change[keys[i]] || '').trim();
+        if (values.indexOf(value) < 0) values.push(value);
       }
     }
-    return null;
+    if (values.length > 1) return { conflict: true, values: values };
+    return values.length ? { conflict: false, value: values[0] } : null;
+  }
+
+  function _resolveLivingCommanderName(G, raw) {
+    var name = String(raw == null ? '' : raw).trim();
+    if (!name) return { ok: true, name: '' }; // 明确清空主帅
+    var chars = Array.isArray(G && G.chars) ? G.chars : [];
+    var ch = chars.find(function(c) {
+      return c && ((c.name != null && String(c.name).trim() === name) || (c.id != null && String(c.id).trim() === name));
+    });
+    if (!ch) return { ok: false, reason: 'commander not found: ' + name };
+    if (ch.alive === false || ch.dead === true) return { ok: false, reason: 'commander is dead: ' + name };
+    return { ok: true, name: String(ch.name || name).trim(), char: ch };
   }
 
   function _armyTextField(change, keys) {
@@ -235,7 +252,8 @@
 
   function _armyCurrentCommander(army) {
     if (!army) return '';
-    var keys = ['commander', 'commanderName', 'general', 'leader'];
+    var keys = ['commander', 'commanderName', 'commanderDisplayName', 'commander_name', 'general', 'generalName',
+      'leader', 'leaderName', 'commandingOfficer', 'chiefCommander', 'chiefGeneral', 'mainGeneral'];
     for (var i = 0; i < keys.length; i += 1) {
       var v = army[keys[i]];
       if (v != null && String(v).trim()) return String(v).trim();
@@ -314,7 +332,16 @@
     var delta = _armyChangeDelta(change);
     var army = _findArmyForAIChange(G, name);
     var reason = change.reason || change.rationale || opts.reason || 'AI推演';
-    var commanderInput = _armyCommanderField(change);
+    var commanderFields = _armyCommanderField(change);
+    if (commanderFields && commanderFields.conflict) {
+      return { ok:false, reason:'conflicting commander mirrors: ' + commanderFields.values.join(' / '), name:name };
+    }
+    var commanderInput = commanderFields ? commanderFields.value : null;
+    if (commanderFields) {
+      var commanderResolution = _resolveLivingCommanderName(G, commanderInput);
+      if (!commanderResolution.ok) return { ok:false, reason:commanderResolution.reason, name:name, commander:commanderInput };
+      commanderInput = commanderResolution.name;
+    }
     var qualityInput = _armyQualityField(change);
     var equipmentInput = _armyEquipmentField(change);
     var factionInput = (change.faction != null) ? change.faction
@@ -382,7 +409,7 @@
       if (!opts.silentEB && typeof global.addEB === 'function') global.addEB('军事', '新建' + name + '·' + delta + '兵' + (reason ? '：' + reason : ''));
       _chargeRecruitment(G, army, Math.max(0, delta), change, reason, opts.source); // 募兵开销·新建即扣
     } else {
-      if (commanderInput !== null) {
+      if (commanderFields) {
         var oldCommander = _armyCurrentCommander(army);
         var aliasesChanged = _syncArmyCommanderAliases(army, commanderInput, oldCommander);
         if (aliasesChanged) {
@@ -535,6 +562,9 @@
     (list || []).forEach(function(change) {
       var res = applyAIArmyChange(change, Object.assign({}, opts || {}, { source: source }));
       if (res && res.ok && res.changed) count++;
+      else if (res && !res.ok && opts && Array.isArray(opts.failed)) {
+        opts.failed.push({ army_change: change, reason: res.reason || 'army change rejected' });
+      }
     });
     return count;
   }
@@ -701,15 +731,13 @@
     var pos = String(position);
     var ROLE = '督师|经略|总兵官|总兵|提督|总督|镇守|节制|挂印|大将军|戎政|练兵|督理军务|协理京营';
     if (!(new RegExp(ROLE)).test(pos)) return false;     // 非军事统帅类官职——不绑
-    // 朝无此人 / 已殁 → 不绑：免得把幽灵或死人挂成主帅（死人还会被回合末 reconciler 当死帅倒扣 15 士气）。与官制任命路(edict:209「朝无此人」)同口径。
-    var _findCh = (typeof global.findCharByName === 'function') ? global.findCharByName : null;
-    if (_findCh) {
-      var _ch = _findCh(String(charName).trim());
-      if (!_ch || _ch.alive === false || _ch.dead === true) {
-        if (typeof global.addEB === 'function') global.addEB('军事', '诏任' + charName + '为' + pos + '·然朝无此人或已殁，主帅未绑定', { credibility: 'low' });
-        return false;
-      }
+    // 朝无此人 / 已殁 → 不绑；不能因 findCharByName helper 缺位就跳过校验。
+    var _commanderResolution = _resolveLivingCommanderName(G, charName);
+    if (!_commanderResolution.ok) {
+      if (typeof global.addEB === 'function') global.addEB('军事', '诏任' + charName + '为' + pos + '·然朝无此人或已殁，主帅未绑定', { credibility: 'low' });
+      return false;
     }
+    charName = _commanderResolution.name;
     var hintM = pos.match(new RegExp('^([\\u4e00-\\u9fa5]{2,6}?)(?:' + ROLE + ')'));
     var hint = (hintM && hintM[1]) ? hintM[1] : '';
     var army = _findArmyForAIChange(G, pos) || (hint ? _findArmyForAIChange(G, hint) : null) || null;
@@ -748,6 +776,7 @@
     findArmyForAIChange: _findArmyForAIChange,
     refreshMilitaryViews: _refreshMilitaryViews,
     armyLooseNamePattern: _armyLooseNamePattern,
+    resolveLivingCommanderName: _resolveLivingCommanderName,
     armyNarrativeAliases: _armyNarrativeAliases,
     resolveNarrativeCommanderName: _resolveNarrativeCommanderName,
     applyNarrativeArmyCommanderFallback: _applyNarrativeArmyCommanderFallback,

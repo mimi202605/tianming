@@ -1,14 +1,12 @@
 'use strict';
-/* patch-official-scenarios-armory.js — 给官方剧本注入武库军备/原料初值(JSON源 + 运行时bundle)
- * 背景:官方剧本运行时走预烤 tm-official-scenario-bundle.js·源为 ../scenarios/*.json。
+/* patch-official-scenarios-armory.js — 给官方剧本唯一真源注入武库军备/原料初值。
  * 新增 guoku.armory(甲胄/兵刃/弓弩/火器/战马) + guoku.materials(铁/硝石/皮革/木)。
- * JSON源=targeted 注入(保 pretty 格式·最小 diff);bundle=re-serialize(generated file)。幂等(已有则跳过)·留 .bak。
+ * JSON源=targeted 注入(保 pretty 格式·最小 diff)，随后统一重建全部派生物。幂等(已有则跳过)·留 .bak。
  */
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');                 // web/
 const SCEN_DIR = path.resolve(ROOT, '..', 'scenarios');     // tianming/scenarios/
-const BUNDLE = path.join(ROOT, 'tm-official-scenario-bundle.js');
 const STAMP = '.bak-armory-20260620';
 
 /* 各官方剧本军备/原料初值(历史背景) */
@@ -52,15 +50,6 @@ Object.keys(DATA).forEach(function (id) {
   console.log('[ok] JSON源注入 ' + id + ' (' + DATA[id].json + ')');
 });
 
-/* 2) 运行时 bundle·re-serialize */
-var btxt = fs.readFileSync(BUNDLE, 'utf8');
-var m = btxt.match(/global\.TMOfficialScenarioBundle\s*=\s*(\[[\s\S]*\]);?\s*\}\)\(window\);?\s*$/);
-if (!m) { console.error('[err] bundle 正则提取失败'); process.exit(1); }
-var arr = JSON.parse(m[1]);
-var bn = 0;
-arr.forEach(function (e) { var d = (e && e.data) || {}; if (setGuoku(d.guoku, d.id)) bn++; });
-fs.writeFileSync(BUNDLE + STAMP, btxt);
-var out = '// GENERATED FILE. Source: ../scenarios official JSON files.\n(function(global){\n  global.TMOfficialScenarioBundle = ' + JSON.stringify(arr) + ';\n})(window);\n';
-fs.writeFileSync(BUNDLE, out);
-console.log('[ok] bundle 注入 ' + bn + ' 条目');
+/* 2) 唯一生成入口·不再直接改任一 bundle */
+require('./sync-official-scenarios.js').sync({ check: false });
 console.log('完成。');

@@ -41,6 +41,28 @@ function ok(cond, msg) {
     ok(!AA.applyEdit({}, 'id', 'x').ok, 'applyEdit 拒绝 id');
     ok(!AA.applyEdit({}, 'gameSettings.ai.model', 'x').ok, 'applyEdit 拒绝嵌套 .ai. 段');
 
+    console.log('— 路径安全：原型污染/强制写入也拒绝 —');
+    const pollutionKey = 'tmGuoshiPolluted';
+    delete Object.prototype[pollutionKey];
+    [
+      '__proto__.' + pollutionKey,
+      'constructor.prototype.' + pollutionKey,
+      'worldSettings.prototype.' + pollutionKey
+    ].forEach(function(unsafePath) {
+      ok(!AA.applyEdit({}, unsafePath, '污染', { force: true }).ok, 'applyEdit 拒绝危险路径 ' + unsafePath);
+      ok(!AA.applyPush({}, unsafePath, '污染', { force: true }).ok, 'applyPush 拒绝危险路径 ' + unsafePath);
+      ok(!AA.applyRemove({}, unsafePath, { force: true }).ok, 'applyRemove 拒绝危险路径 ' + unsafePath);
+    });
+    ok(Object.prototype[pollutionKey] === undefined && ({}[pollutionKey]) === undefined, 'Object.prototype 未被污染');
+
+    console.log('— preflight 纯读取：不偷偷规范化草稿 —');
+    const preflightInput = { name: '缺规范字段', startYear: 1627, factions: [{ id: 'f1', name: '明' }], characters: [{ name: '甲', faction: '明' }] };
+    const preflightBefore = JSON.stringify(preflightInput);
+    const preflightReport = AA.preflight(preflightInput);
+    ok(JSON.stringify(preflightInput) === preflightBefore, 'preflight 前后输入逐字节一致');
+    ok(preflightReport.bootable === false && preflightReport.blockers.some(function(x) { return /gameSettings/.test(x); }), '缺 gameSettings 被报告为阻断而非静默补写');
+    ok(!Object.prototype.hasOwnProperty.call(preflightInput.characters[0], 'factionId'), 'preflight 不回填人物 factionId');
+
     console.log('— applyPush —');
     const d4 = AA.makeDraft({ factions: [{ name: '明' }] });
     const r4 = AA.applyPush(d4, 'characters', { name: '张三' });
@@ -350,6 +372,16 @@ function ok(cond, msg) {
     ok(byPath['characters.0.loyalty'] && byPath['characters.0.loyalty'].type === 'changed', 'diff 抓到嵌套数组元素改');
     ok(byPath['characters.1'] && byPath['characters.1'].type === 'added', 'diff 抓到新增数组元素');
     ok(AA.computeDiff({ a: 1 }, { a: 1 }).length === 0, '无变更时 diff 为空');
+    const manyBefore = {}, manyAfter = {};
+    for (let manyI = 0; manyI < 350; manyI++) manyAfter['field' + manyI] = manyI;
+    const fullDiff = AA.computeDiff(manyBefore, manyAfter);
+    ok(fullDiff.length === 350 && fullDiff.truncated === false, '默认 diff 完整返回 350 条，不再静默截断');
+    const cappedDiff = AA.computeDiff(manyBefore, manyAfter, { maxEntries: 300 });
+    ok(cappedDiff.length === 300 && cappedDiff.truncated === true, '显式上限会标记 truncated');
+    let truncatedRejected = false;
+    try { AA.applySelectedDiffs(manyBefore, manyAfter, cappedDiff, function() { return true; }); }
+    catch (e) { truncatedRejected = e && e.code === 'diff-truncated'; }
+    ok(truncatedRejected, '不完整 diff 在应用端 fail closed');
 
     console.log('— S4: 旧编辑器 adapter —');
     let renderAllCalls = 0, saveScriptCalls = 0;
@@ -555,7 +587,7 @@ function ok(cond, msg) {
     console.log('— C3: relation-consistency + finish 质量闸（刀①2026-07-10 智能升级B）—');
     const dRel = AA.makeDraft({ characters: [{ name: '甲' }, { name: '乙' }], relations: [
       { from: '甲', to: '乙', type: '好友' },
-      { from: '甲', to: '不存在的人', type: '仇' },
+      { from: '甲', to: '不存在的人', type: '仇', strictRefs: true },
       { from: '乙', to: '乙', type: '自恋' },
       { from: '甲', to: '乙', type: '好友' }
     ] });
@@ -563,15 +595,16 @@ function ok(cond, msg) {
     ok(vr.ok === false && vr.violations.length === 3, 'relation-consistency 悬空/自环/重复三类全报');
     ok(/不存在的人/.test(vr.violations.join('')), '悬空引用点名');
     ok(AA.validateDraft(AA.makeDraft({ characters: [{ name: '甲' }, { name: '乙' }], relations: [{ from: '甲', to: '乙', type: '好友' }] }), 'relation-consistency').ok === true, '干净关系网通过');
+    ok(AA.validateDraft(AA.makeDraft({ characters: [{ name: '甲' }], relations: [{ from: '东林党', to: '阉党', type: '群体血仇' }, { from: '甲', to: '已故人物', type: '追思' }] }), 'relation-consistency').ok === true, '开放关系图允许党派/阶层/已故或未出场人物节点');
 
     // finish 质量闸：增量语义——存量坏账不追责·引入新病顶回·修掉放行
-    const dGate = AA.makeDraft({ characters: [{ name: '甲' }], relations: [{ from: '甲', to: '旧悬空', type: '旧账' }] });
+    const dGate = AA.makeDraft({ characters: [{ name: '甲' }], relations: [{ from: '甲', to: '旧悬空', type: '旧账', strictRefs: true }] });
     let gRound = 0;
     const gateCaller = function () {
       gRound++;
-      if (gRound === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'g1', name: 'applyPush', input: { path: 'relations', value: { from: '甲', to: '新悬空', type: '新病' } } }] });
+      if (gRound === 1) return Promise.resolve({ text: '', toolCalls: [{ id: 'g1', name: 'applyPush', input: { path: 'relations', value: { from: '甲', to: '新悬空', type: '新病', strictRefs: true } } }] });
       if (gRound === 2) return Promise.resolve({ text: '', toolCalls: [{ id: 'g2', name: 'finish', input: { summary: '带病收尾试探' } }] });
-      if (gRound === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'g3', name: 'applyEdit', input: { path: 'relations', value: [{ from: '甲', to: '旧悬空', type: '旧账' }] } }] });
+      if (gRound === 3) return Promise.resolve({ text: '', toolCalls: [{ id: 'g3', name: 'applyEdit', input: { path: 'relations', value: [{ from: '甲', to: '旧悬空', type: '旧账', strictRefs: true }] } }] });
       return Promise.resolve({ text: '', toolCalls: [{ id: 'g4', name: 'finish', input: { summary: '修好了' } }] });
     };
     const gRes = await AA.runAuthoringLoop(dGate, '加一条关系', { caller: gateCaller, conventions: '', blockingChecks: [], maxTokens: 1000000 });
@@ -593,6 +626,15 @@ function ok(cond, msg) {
     ok(xRejName.name === '原名' && xRejName.factions.length === 3 && xRejName.factions[0].name === '甲改', '拒绝单个标量改：仅该字段回原·其余仍是 draft');
     const xRejRemove = AA.applySelectedDiffs({ items: ['a', 'b', 'c'] }, { items: ['a', 'c'] }, AA.computeDiff({ items: ['a', 'b', 'c'] }, { items: ['a', 'c'] }), () => false);
     ok(JSON.stringify(xRejRemove.items) === JSON.stringify(['a', 'b', 'c']), '拒绝删除：放回 before·原数组复原');
+    const xBase = { name: '原名', overview: '运行前' };
+    const xAgent = { name: '国师新名', overview: '运行前' };
+    const xLive = { name: '原名', overview: '玩家并行补写' };
+    const xMerged = AA.applySelectedDiffs(xLive, xAgent, AA.computeDiff(xBase, xAgent), function() { return true; });
+    ok(xMerged.name === '国师新名' && xMerged.overview === '玩家并行补写', '应用从实时剧本起步，保留国师运行期间的无关人工改动');
+    let conflictRejected = false;
+    try { AA.applySelectedDiffs({ name: '玩家并行改名', overview: '运行前' }, xAgent, AA.computeDiff(xBase, xAgent), function() { return true; }); }
+    catch (e) { conflictRejected = e && e.code === 'edit-conflict' && e.conflicts && e.conflicts[0].path === 'name'; }
+    ok(conflictRejected, '同路径人工改动触发 edit-conflict，整次应用不落盘');
 
     console.log('\n全部通过 (' + pass + ' 断言)');
   } catch (e) {

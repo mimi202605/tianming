@@ -546,6 +546,9 @@ function _tmFirstTurnGuide() {
   try {
     var _GM = (typeof window !== 'undefined' && window.GM) || (typeof GM !== 'undefined' ? GM : null);
     if (!_GM || (_GM.turn || 1) !== 1) return;            // 仅开局首回合
+    // 穿越模式不进入皇帝临朝流程·此引导为皇帝专属（时政→拟诏→朝议→诏付有司）·跳过
+    var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+    if (_pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor') return;
     var KEY = 'tm_seen_firstturn_guide';
     try { if (localStorage.getItem(KEY)) return; } catch (_) {}   // 看过→不再打扰
     if (typeof document === 'undefined' || !document.body || document.getElementById('tm-firstturn-guide')) return;

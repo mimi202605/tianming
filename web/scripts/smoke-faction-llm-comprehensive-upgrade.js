@@ -216,7 +216,7 @@ function expandedActionExecutionTest() {
 
 async function failureDiagnosticsTest() {
   const ctx = makeFactionLlmContext();
-  const fac = { name: 'DiagNpc', treasury: { money: 1000 }, derivedStrength: { value: 20 } };
+  const fac = { name: 'DiagNpc', treasury: { money: 1000 }, derivedStrength: { value: 20 }, derivedEconomy: { fiscalStress: 80, netFlow: -500 } };
   ctx.P = {
     playerInfo: { factionName: 'PlayerRealm' },
     ai: { key: 'fake' },
@@ -227,11 +227,19 @@ async function failureDiagnosticsTest() {
     return Promise.resolve('plain text without json object');
   };
   const ret = await ctx.TM.FactionNpcLlmDecision.decideFor('DiagNpc', { source: 'manual', turn: 33, maxAttempts: 1 });
-  assert(ret && ret.skipped, 'bad LLM output should skip with fallback');
+  // Slice 2·parse 失败不再整回合躺平·本地启发式兜底救回 >=1 保守动作(走同一 applyDecision 管线)
+  assert(ret && ret.applied && ret.templateFallback === true, 'bad LLM output should now be rescued by template fallback (not skip the whole turn)');
+  assert(ret.summary && ret.summary.actions >= 1, 'template fallback should apply at least one conservative action');
+  assert(ret.summary._source === 'template-fallback', 'fallback summary should be tagged template-fallback');
   const row = ctx.GM._npcFactionLlmLedger.runs.DiagNpc;
-  assert(row && row.status === 'failed', 'failed run should stay in faction LLM ledger');
-  assert(row.failure && row.failure.kind, 'failed run should record failure kind');
-  assert(row.failure.rawPreview && row.failure.rawPreview.indexOf('plain text') >= 0, 'failed run should record raw output preview');
+  assert(row && row.status === 'applied', 'rescued run should be marked applied in faction LLM ledger');
+  assert(row.templateFallback === true && row.parseFailed === true, 'rescued run should flag templateFallback + parseFailed');
+  // parse 失败诊断仍保留(即便救回·仍可观测 LLM 为何失败)
+  assert(row.parseFailure && row.parseFailure.kind, 'rescued run should still record the parse failure kind');
+  assert(row.parseFailure.rawPreview && row.parseFailure.rawPreview.indexOf('plain text') >= 0, 'rescued run should still record raw output preview');
+  // 兜底所产动作 ledger 行带 _source 标记
+  const fbRow = (fac._npcLlmActionLedger || []).find(function(r) { return r && r._source === 'template-fallback'; });
+  assert(fbRow, 'fallback action ledger row should be tagged _source=template-fallback');
 
   const ctx2 = makeFactionLlmContext();
   const fac2 = { name: 'TruncNpc', treasury: { money: 1000 }, derivedStrength: { value: 20 } };
@@ -246,8 +254,13 @@ async function failureDiagnosticsTest() {
   };
   await ctx2.TM.FactionNpcLlmDecision.decideFor('TruncNpc', { source: 'manual', turn: 34, maxAttempts: 1 });
   const row2 = ctx2.GM._npcFactionLlmLedger.runs.TruncNpc;
-  assert(row2 && row2.failure && row2.failure.rawLength > 1000, 'failed run should record raw output length');
-  assert(row2.failure.possibleTruncation === true, 'failed run should flag likely truncated JSON output');
+  assert(row2 && row2.parseFailure && row2.parseFailure.rawLength > 1000, 'rescued run should still record raw output length');
+  assert(row2.parseFailure.possibleTruncation === true, 'rescued run should still flag likely truncated JSON output');
+
+  // Slice 2·turn 级落地率聚合应记 templateFallback / parseFail
+  const status = ctx2.TM.FactionNpcLlmDecision.getGlobalNpcLlmStatus();
+  assert(status.turnAggregate && status.turnAggregate.templateFallback >= 1, 'global status should aggregate templateFallback count for the turn');
+  assert(status.turnAggregate.parseFail >= 1, 'global status should aggregate parseFail count for the turn');
 }
 
 function inTurnForcedPoolTest() {

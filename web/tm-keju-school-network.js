@@ -1021,6 +1021,8 @@
         typeof P !== 'undefined' && P.ai && P.ai.key) {
       try {
         var prompt = _kjpHBuildLectureMeetingPrompt(academy, opposingAcademy, template);
+        // 时空约束·扫描讲会主稿涉议人物(大儒/山长)·书院讲会纪事(自由文·full)（typeof守卫·防加载序）
+        if (typeof _buildTemporalConstraint === 'function') { try { var _tcMLecture = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(prompt, [], 10) : []; prompt += _buildTemporalConstraint(null, { mentionedNames: _tcMLecture }); } catch (_tcE) {} }
         window.callAI(prompt, 600).then(function(text) {
           var record = (typeof text === 'string') ? text.trim() : '';
           if (!record) record = _kjpHGenLectureMeetingFallback(academy, opposingAcademy, template);

@@ -1,61 +1,61 @@
 #!/usr/bin/env node
-// smoke-official-bundle-parity.js — 剧本单一真源守卫。
-//
-// 从 scenarios/*（官方）.json 重建 bundle 到内存串·与在树 web/tm-official-scenario-bundle.js
-// 逐字节比对。不等即 FAIL——说明官方剧本源与预烤 bundle 漂移了（改了剧本没重烤·或反之改了
-// bundle 没回灌剧本）。桌面端 seeder（tm-official-scenario-seeder.js）落地的就是这份 bundle，
-// 漂移会让玩家装到与真源不一致的官方剧本。
-//
-// 修复：node web/scripts/rebuild-official-scenario-bundle.js 重烤后复跑本 smoke。
-// run-smokes.js 按 /^smoke-.*\.js$/ 自动发现本文件（PASS=exit 0 且无行首 FAIL）。
+// Official scenario single-source guard.
+// The root scenarios/*（官方）.json files are the only truth source. This smoke
+// checks the compatibility entrypoint and the generated Electron seeder against
+// the unified synchronizer without reintroducing an independent serializer.
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+const assert = require('assert');
+const syncer = require('./sync-official-scenarios.js');
+const compatibilityBuilder = require('./rebuild-official-scenario-bundle.js');
 
-let A = 0;
-function assert(c, m) { if (!c) { console.log('FAIL: ' + m); process.exit(1); } A++; }
-
-// 取在树重建器（require 不触发写盘·build 仅在直接执行时跑）
-const builder = require('./rebuild-official-scenario-bundle.js');
-
-// 1) 重建器公共契约
-assert(typeof builder.serialize === 'function', 'rebuild-official-scenario-bundle 须导出 serialize()');
-assert(typeof builder.buildBundleArray === 'function', 'rebuild-official-scenario-bundle 须导出 buildBundleArray()');
-assert(Array.isArray(builder.ENTRIES) && builder.ENTRIES.length > 0, 'rebuild 脚本须暴露非空 ENTRIES');
-
-// 2) 从 scenarios/ 源全量重建·数组形状自检
-const arr = builder.buildBundleArray();
-assert(Array.isArray(arr) && arr.length === builder.ENTRIES.length, '重建数组条目数须等于 ENTRIES (' + builder.ENTRIES.length + ')');
-arr.forEach(function (e) {
-  assert(e && typeof e.filename === 'string', '条目须含 string filename');
-  assert(e.source === '../scenarios/' + e.filename + '.json', e.filename + ' 的 source 须为 ../scenarios/<filename>.json');
-  assert(e.data && typeof e.data === 'object' && e.data.id, e.filename + ' 的 data 须为含 id 的剧本对象');
-});
-
-// 3) seeder 消费契约：filename 无 .json 后缀·且 data 可克隆存盘（结构化）
-arr.forEach(function (e) {
-  assert(!/\.json$/i.test(e.filename), 'seeder 按无后缀 filename 匹配·' + e.filename + ' 不得带 .json');
-});
-
-// 4) 核心断言：重建串 === 在树 bundle（逐字节）
-const rebuilt = builder.serialize(arr);
-const current = fs.readFileSync(builder.OUT, 'utf8');
-
-if (rebuilt !== current) {
-  const n = Math.min(rebuilt.length, current.length);
-  let i = 0; while (i < n && rebuilt.charCodeAt(i) === current.charCodeAt(i)) i++;
-  const around = function (s) { return JSON.stringify(s.slice(Math.max(0, i - 40), i + 40)); };
-  console.log('FAIL: 在树 tm-official-scenario-bundle.js 与从 scenarios/ 重建结果不一致（剧本单一真源漂移）');
-  console.log('  在树长度=' + current.length + ' · 重建长度=' + rebuilt.length + ' · 首个分歧@' + i);
-  console.log('  在树 : ' + around(current));
-  console.log('  重建 : ' + around(rebuilt));
-  console.log('  修复 : node web/scripts/rebuild-official-scenario-bundle.js  然后复跑本 smoke');
-  process.exit(1);
+let assertions = 0;
+function ok(condition, message) {
+  assert.ok(condition, message);
+  assertions += 1;
 }
-A++;
 
-// 5) 头部契约（生成文件标记不得丢·否则误当手改文件）
-assert(current.indexOf('// GENERATED FILE. Source: ../scenarios official JSON files.\n') === 0, 'bundle 头部须为 GENERATED FILE 标记');
-assert(/global\.TMOfficialScenarioBundle\s*=/.test(current), 'bundle 须挂 window.TMOfficialScenarioBundle');
+ok(typeof compatibilityBuilder.build === 'function',
+  'compatibility entrypoint must expose build()');
+ok(compatibilityBuilder.ENTRIES === syncer.ENTRIES,
+  'compatibility entrypoint must reuse the unified source registry');
+ok(!Object.prototype.hasOwnProperty.call(compatibilityBuilder, 'serialize'),
+  'compatibility entrypoint must not own a second serializer');
 
-console.log('✓ smoke-official-bundle-parity PASS — ' + A + ' assertions · bundle ' + current.length + ' 字节 · ' + arr.length + ' 官方剧本逐字节一致 (' + arr.map(function (e) { return e.filename; }).join(', ') + ')');
+const built = syncer.buildArtifacts();
+ok(Array.isArray(built.entries) && built.entries.length === syncer.ENTRIES.length,
+  'unified build must include every registered official scenario');
+
+const out = path.join(syncer.WEB_ROOT, 'tm-official-scenario-bundle.js');
+const expected = built.files.get(out);
+const current = fs.readFileSync(out, 'utf8');
+ok(typeof expected === 'string' && current === expected,
+  'Electron seeder must be byte-identical to the unified root-JSON artifact');
+ok(current.indexOf('// GENERATED FILE.') === 0,
+  'Electron seeder must retain the generated-file marker');
+
+const context = { window: null, globalThis: null };
+context.window = context;
+context.globalThis = context;
+vm.createContext(context);
+vm.runInContext(current, context, { filename: out });
+const bundle = context.TMOfficialScenarioBundle;
+ok(Array.isArray(bundle) && bundle.length === built.entries.length,
+  'Electron seeder must publish every official scenario');
+
+built.entries.forEach((entry) => {
+  const row = bundle.find((item) => item && item.data && item.data.id === entry.id);
+  ok(!!row, entry.key + ' must exist in the Electron seeder');
+  ok(row.filename === entry.filename.replace(/\.json$/i, ''),
+    entry.key + ' must use the seeder filename without .json');
+  ok(row.source === '../' + entry.sourceRel,
+    entry.key + ' must point back to its root JSON truth source');
+  ok(JSON.stringify(row.data) === JSON.stringify(entry.data),
+    entry.key + ' seeder payload must structurally equal its root JSON');
+});
+
+console.log('smoke-official-bundle-parity PASS: ' + assertions
+  + ' assertions, ' + built.entries.length + ' root-sourced scenarios');

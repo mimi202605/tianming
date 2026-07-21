@@ -214,6 +214,50 @@ if (typeof window !== 'undefined') {
   window._applyRigidHistoryDeath = _applyRigidHistoryDeath;
 }
 
+// ============================================================
+//  史实锚点·分歧账(V1)——「强制剧情死」(rigidHistoryEvents 注定死)从官方剧本删除后·
+//  史实知识转存 GM.histAnchors(认知背景数据)。本函数把「史载已故而本局仍在世」的分歧喂给
+//  AI 时空约束(_buildTemporalConstraint·tm-ai-infra.js 运行时按 window 全局调用)。读锚点·不杀人。
+//  跨朝代通用：引擎只认通用字段(kind/histTurn/histDate/fate/name)·朝代专名全落剧本数据。
+//  (安家于史实域文件·避免 tm-ai-infra.js 巨石破 3000 行阈——动巨石按 alias+内联范式往外搬。)
+// ============================================================
+/** 把本局与史实的已知分歧(V1)追加进时空约束 lines。
+ *  凡 kind=death 且已到史实原线之回合(GM.turn>=histTurn) 且当事人本局仍在世 → 记一条(史载已故·本局仍活·一切以本局为准)。
+ *  查无此人/已按别法了结→不出条目(V1 从简)。cap 8。文案中立·不指责玩家·不剧透 fate 外细节。
+ *  clauseOnly=true(省 token·防大名单干扰结构化 JSON)只压成一句总纲·不列名单；false 逐条列出。
+ *  工坊老剧本无 histAnchors→静默零条目零报错。 */
+function _tcAppendDivergence(lines, clauseOnly) {
+  var anchors = (typeof GM !== 'undefined' && Array.isArray(GM.histAnchors)) ? GM.histAnchors : [];
+  if (!anchors.length) return;
+  var turn = (typeof GM !== 'undefined' && GM.turn) || 1;
+  var rows = [];
+  for (var i = 0; i < anchors.length && rows.length < 8; i++) {
+    var a = anchors[i];
+    if (!a || a.kind !== 'death' || !a.name) continue;
+    if (typeof a.histTurn === 'number' && turn < a.histTurn) continue; // 未到史实原线之时·尚不构成分歧
+    var c = null;
+    if (typeof findCharByName === 'function') { try { c = findCharByName(a.name); } catch (_) {} }
+    if (!c && typeof _rigidFindChar === 'function') c = _rigidFindChar(a.name);
+    if (!c && typeof GM !== 'undefined') c = (GM.chars || []).filter(function (x) { return x && x.name === a.name; })[0] || null;
+    if (!c) continue;                          // 查无此人·不臆断·不出条目
+    if (c.alive === false || c.dead) continue; // 本局已按别法了结(与史实同向)·V1 不出条目
+    rows.push(a);
+  }
+  if (!rows.length) return;
+  if (clauseOnly) {
+    // 计数中立(不列名单·省 token·防干扰结构化 JSON)·「N 名…」对单/复数皆自洽·避免「多名」在单条时失真。
+    lines.push('★ 本局已偏离史实原线：有 ' + rows.length + ' 名史载此前已故之人于本局仍在世；人物存殁一律以本局 GM 游戏态为准，不得据史书卒年补其死亡。');
+    return;
+  }
+  lines.push('【本局与史实的已知分歧（史实锚点·仅背景素养，一切以本局为准）】');
+  rows.forEach(function (a) {
+    var when = a.histDate || ('第' + a.histTurn + '回合前后');
+    var fate = a.fate || '身故';
+    lines.push('· ' + a.name + '：史实原线于' + when + fate + '；本局现实仍在世——以本局为准');
+  });
+}
+if (typeof window !== 'undefined') { window._tcAppendDivergence = _tcAppendDivergence; }
+
 /**
  * v0.2·史实事件收编御案时政:rigidHistoryEvent → currentIssues 的 issue
  * branch{name,description,impact} → choice{text,desc,effect,aiHint}·effect=impact(固定·_chooseIssueOption 兜底)·开关开则 AI 据局面裁

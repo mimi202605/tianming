@@ -99,16 +99,15 @@ console.log('— §b · 达成里程碑·通关哑弹已拆 —');
 /* ── §c 官方剧本目标可评估 ────────────────────────────────────── */
 console.log('— §c · 官方剧本目标 —');
 (function () {
-  var ss = read('scenarios/shaosong-jianyan-1127.js');
-  var gi = ss.indexOf('"goals": [');
-  var gseg = ss.slice(gi, ss.indexOf('"imperialEdicts"', gi));
-  ok((gseg.match(/"conditions"/g) || []).length === 5, '绍宋五目标全配 conditions(不再是纯装饰文本)');
-  ok(gseg.indexOf('苗刘伏笔压力') >= 0 && gseg.indexOf('宗泽') >= 0, '条件用剧本真变量/真人物(苗刘伏笔压力/宗泽)');
-  ok((gseg.match(/"type": "milestone"/g) || []).length === 5, '绍宋五目标全标 milestone');
-  var tq = read('scenarios/tianqi7-1627.js');
-  var ti = tq.indexOf('"goals": [');
-  var tseg = tq.slice(ti, ti + 4000);
-  ok(tseg.indexOf('"turn_before"') >= 0, '天启目标 turn_before 原样保留(引擎已认)');
+  // 官方根 JSON 是唯一真源；web/scenarios/*.js 只是紧凑生成物，不能再靠其格式/空格切片。
+  var ss = JSON.parse(read('../scenarios/绍宋·建炎元年八月（官方）.json'));
+  var ssGoals = Array.isArray(ss.goals) ? ss.goals : [];
+  ok(ssGoals.length === 5 && ssGoals.every(function(g) { return Array.isArray(g.conditions) && g.conditions.length > 0; }), '绍宋五目标全配 conditions(不再是纯装饰文本)');
+  var ssConditions = JSON.stringify(ssGoals.map(function(g) { return g.conditions; }));
+  ok(ssConditions.indexOf('苗刘伏笔压力') >= 0 && ssConditions.indexOf('宗泽') >= 0, '条件用剧本真变量/真人物(苗刘伏笔压力/宗泽)');
+  ok(ssGoals.every(function(g) { return g.type === 'milestone'; }), '绍宋五目标全标 milestone');
+  var tq = JSON.parse(read('../scenarios/天启七年·九月（官方）.json'));
+  ok((tq.goals || []).some(function(g) { return (g.conditions || []).some(function(c) { return c.type === 'turn_before'; }); }), '天启目标 turn_before 原样保留(引擎已认)');
   // 绍宋阈值须高于开局值(防第1回合白送)：民心35→55·皇权35→50·御营纪律35→60
   var h = mk(1, { '民心': { value: 35 }, '皇权': { value: 35 } }, [
     { name: '稳东南', type: 'milestone', conditions: [

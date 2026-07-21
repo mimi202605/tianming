@@ -403,6 +403,8 @@ async function _keyiStreamRound() {
       '\u8BF7\u5C31\u300C' + _topicLabel + '\u300D\u7ACB\u573A\u53D1\u8868 80-160 \u5B57\u534A\u6587\u8A00\u5EAD\u8BAE\u3002\n' +
       '\u683C\u5F0F\uFF1A\u7B2C\u4E00\u884C\u4EC5\u8F93\u51FA\u7ACB\u573A\u6807\u8BB0 support\u3001oppose \u6216 abstain \u4E09\u8BCD\u4E4B\u4E00\u3002\u4ECE\u7B2C\u4E8C\u884C\u8D77\u8F93\u51FA\u53D1\u8A00\u6B63\u6587\u3002';
 
+    // 时空约束·扫描议题+已发言涉议人物·廷议大臣发言(自由文·full·发言人=当事人ch)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMKeyi = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((ctxBase || '') + ' ' + (prev || ''), (s && s.name ? [s.name] : []), 10) : (s && s.name ? [s.name] : []); prompt += _buildTemporalConstraint(ch || null, { mentionedNames: _tcMKeyi }); } catch (_tcE) {} }
     var tokens = 800;
     var bubble = _$(streamId); var txt = bubble ? bubble.querySelector('.keyi-bubble-text') : null;
     var full = '';
@@ -598,6 +600,8 @@ async function _keyiGenAllStances() {
     try {
       var _tokBudget = (P.conf && P.conf.maxOutputTokens) || (P.conf && P.conf._detectedMaxOutput) || 4000;
       var _keyiVoteTier = (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined;
+      // 时空约束·扫描议程发言涉议人物·廷议表决精修(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { var _tcMVote = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((ctx || ''), [], 10) : []; prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMVote }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, _tokBudget, { maxRetries: 1, tier: _keyiVoteTier });
       var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
       if (!parsed) { var m = raw.match(/\[[\s\S]*\]/); if (m) try { parsed = JSON.parse(m[0]); } catch(_){} }
@@ -1103,6 +1107,8 @@ async function viewAnswer(index) {
       '4. 展现治国理政见解\n\n' +
       '直接输出答卷内容，不要JSON格式。';
 
+    // 时空约束·扫描殿试题面+考生涉议人物·考生答卷(改clauseOnly·虚构考生未入GM·防塞全朝无关活人名成正向姓名诱导)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMView = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.playerQuestion) || ''), (candidate && candidate.name ? [candidate.name] : []), 10) : (candidate && candidate.name ? [candidate.name] : []); prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMView }); } catch (_tcE) {} }
     var answer = await callAISmart(prompt, 1500, {minLength: 300, maxRetries: 2});
     candidate.fullAnswer = answer;
     hideLoading();
@@ -1719,6 +1725,8 @@ async function _aiGenerateFullCharacter(candidate, rankKey) {
     (candidate._timeAnomaly ? '  "timeAnomaly": true\n' : '') +
     '}\n\u53EA\u8F93\u51FA JSON\u3002';
 
+  // 时空约束·考生本人涉议人物·进士人物卡(JSON含familyMembers.living·clauseOnly防书卒)（typeof守卫·防加载序）
+  if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: (candidate && candidate.name ? [candidate.name] : []) }); } catch (_tcE) {} }
   var attempt = 0;
   while (attempt < 3) {
     attempt++;

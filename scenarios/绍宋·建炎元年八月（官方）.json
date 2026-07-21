@@ -6,6 +6,9 @@
  "emperor": "宋高宗赵构",
  "startYear": 1127,
  "startMonth": 8,
+ "historicalFallYear": 1279,
+ "historicalFallMonth": 3,
+ "historicalFallNote": "崖山海战·宋祚终",
  "startLocation": "亳州·明道宫",
  "dynastyPhaseHint": "renewal-fragile",
  "role": "宋高宗·赵构",
@@ -32,7 +35,7 @@
   ],
   "note": "本剧本为绍宋同人·历史人物身份按正史·风格描写按绍宋·虚构人物明示 isFictional: true。"
  },
- "active": false,
+ "active": true,
  "aiAutoEnrich": false,
  "isFullyDetailed": false,
  "_buildStatus": {
@@ -112922,7 +112925,8 @@
      0,
      100
     ],
-    "desc": "宗翰宗弼系压力指数·≥85 触发 evt_jianyan1_08 大南侵·≥95 引擎 escalate"
+    "linkedFaction": "fac_jin",
+    "desc": "宗翰宗弼系压力指数·所系势力=大金（开启「外患威胁·联动战和」后随金军实力与战和态势缓漂·边境风险按其调制）"
    },
    {
     "id": "var_party_morale_zhanghan",
@@ -167223,28 +167227,99 @@
  "goals": [
   {
    "name": "稳东南·立朝廷",
+   "type": "milestone",
    "desc": "稳定杭州/江南·朝廷立·避建炎二年扬州之溃",
-   "winCondition": "建炎二年底前定都临安"
+   "winCondition": "建炎二年底前定都临安",
+   "conditions": [
+    {
+     "type": "variable_gte",
+     "variable": "民心",
+     "value": 55
+    },
+    {
+     "type": "variable_gte",
+     "variable": "皇权",
+     "value": 50
+    },
+    {
+     "type": "turn_before",
+     "value": 18
+    }
+   ]
   },
   {
    "name": "保北疆·宗泽不孤",
+   "type": "milestone",
    "desc": "援宗泽东京·张所河北·阻金军南侵",
-   "winCondition": "宗泽不卒于建炎二年七月"
+   "winCondition": "宗泽不卒于建炎二年七月",
+   "conditions": [
+    {
+     "type": "character_alive",
+     "character": "宗泽"
+    },
+    {
+     "type": "turn_reached",
+     "value": 12
+    }
+   ]
   },
   {
    "name": "整军·御营有威",
+   "type": "milestone",
    "desc": "整顿御营·平苗刘之变·建立直属军权",
-   "winCondition": "平苗刘 + 御营整制"
+   "winCondition": "平苗刘 + 御营整制",
+   "conditions": [
+    {
+     "type": "variable_gte",
+     "variable": "御营纪律",
+     "value": 60
+    },
+    {
+     "type": "variable_lte",
+     "variable": "苗刘伏笔压力",
+     "value": 15
+    }
+   ]
   },
   {
    "name": "阻北狩·复二帝",
+   "type": "milestone",
    "desc": "救赎徽钦·与金议和或战·复北狩 7 人",
-   "winCondition": "北狩归朝 (绍兴 12 年绍宋小说改写)"
+   "winCondition": "北狩归朝 (绍兴 12 年绍宋小说改写)",
+   "conditions": [
+    {
+     "type": "variable_lte",
+     "variable": "金军威胁等级",
+     "value": 40
+    },
+    {
+     "type": "variable_gte",
+     "variable": "皇威",
+     "value": 65
+    }
+   ]
   },
   {
    "name": "北复中原",
+   "type": "milestone",
    "desc": "阻金军南下 + 收河北河南若干路",
-   "winCondition": "郾城朱仙镇 (绍兴 10 年)"
+   "winCondition": "郾城朱仙镇 (绍兴 10 年)",
+   "conditions": [
+    {
+     "type": "variable_lte",
+     "variable": "金军威胁等级",
+     "value": 25
+    },
+    {
+     "type": "variable_gte",
+     "variable": "主战派士气",
+     "value": 70
+    },
+    {
+     "type": "survive",
+     "turns": 30
+    }
+   ]
   }
  ],
  "imperialEdicts": [

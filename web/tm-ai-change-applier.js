@@ -40,6 +40,9 @@
   var _applyPathDelta           = _PathUtils && _PathUtils.applyPathDelta;
   var _applyPathSet             = _PathUtils && _PathUtils.applyPathSet;
   var _applyPathPush            = _PathUtils && _PathUtils.applyPathPush;
+  var _applyPathMerge           = _PathUtils && _PathUtils.applyPathMerge;
+  var _applyDeclaredPathChanges = _PathUtils && _PathUtils.applyDeclaredPathChanges;
+  var _isPlainObject            = _PathUtils && _PathUtils.isPlainObject;
   var _isPathBlocked            = _PathUtils && _PathUtils.isPathBlocked;
   // ── 拆自 Slice 2·army 模块·绑回原名以保留 §4-§35 callsite ──
   var _Army = (global.TM && global.TM.AIChange && global.TM.AIChange.Army) || null;
@@ -61,6 +64,10 @@
   var _applyNarrativeArmyFieldFallback   = _Narrative && _Narrative.applyNarrativeArmyFieldFallback;
   var _applyNarrativeRegionFieldFallback = _Narrative && _Narrative.applyNarrativeRegionFieldFallback;
   var _applyNarrativeFactionFieldFallback= _Narrative && _Narrative.applyNarrativeFactionFieldFallback;
+  var _setFactionLeader                   = _Narrative && _Narrative.setFactionLeader;
+  var _resolveNarrativeAliveChar          = _Narrative && _Narrative.resolveAliveChar;
+  var _safeOwnCopy                      = _Narrative && _Narrative.safeOwnCopy;
+  var _applyStructuredPartyUpdate       = _Narrative && _Narrative.applyStructuredPartyUpdate;
 
   // ═══════════════════════════════════════════════════════════════════
   //  辅助：按名字找实体（跨 chars/facs/parties/classes/armies/items/regions）
@@ -505,12 +512,12 @@
     return _TM_IMPRISON_RE.test(s) && !_TM_IMPRISON_NEG_RE.test(s);
   }
 
-  function onDismissal(charName, reason) {
+  function onDismissal(charName, reason, aiOutput) {
     var G = global.GM;
     var ch = _findChar(charName);
     if (!ch) return { ok: false, reason: '未找到 ' + charName };
     // 重复抄家(reason 含抄/查抄且此人已被抄)·跳过移交/追亏·免二次进账(与下方抄家三标记守卫一致)
-    var _repeatConfisc = /抄|籍没|没官|查抄/.test(String(reason || '')) && (ch._confiscated || ch.confiscated || ch._confiscatedTurn != null);
+    var _wgD = global.TM && global.TM.__acaParts; if (_wgD && _wgD._gateDeathRoutingSource && _wgD._gateDeathRoutingSource(G, ch, String(reason || ''), aiOutput)) return { ok: false, reason: 'no-source-bare-death(write-gate·返工issue4·死亡管线收口)' };     var _repeatConfisc = /抄|籍没|没官|查抄/.test(String(reason || '')) && (ch._confiscated || ch.confiscated || ch._confiscatedTurn != null);
     var binding = ch.resources && ch.resources.publicTreasury && ch.resources.publicTreasury.binding;
     if (binding && !_repeatConfisc) {
       var entity = _resolveBinding(binding);
@@ -550,8 +557,7 @@
       //   (军队摘帅/丁忧/势力首领继承/头衔/governor/后宫)——结构化 personnel_changes(change='赐死'类·
       //   经本文件 1601 行映射 reason='execute')及 appointments/office_assignments 的死因 reason 都经此·
       //   会静默置死玩家角色而既不路由继统、也不触终局(尸政/无嗣不终局)。改为合成 character_deaths 同构条目
-      //   投喂既有死亡管线 applyOneDeath(缺位回落 applyCharacterDeaths·两者都缺才保留原直写·极端沙箱兜底
-      //   不丢「死者必落库」)——与批一刀①校验器(validators.js:_routeDeathToPipeline)同款优先级、同一 sink。
+      //   投喂既有死亡管线 applyOneDeath(缺位回落 applyCharacterDeaths；两者都缺则失败留痕，绝不裸写)。
       //   幂等：applyOneDeath 无「已死早退」·对已死者重投会重跑全级联(重复 addEB/家族声望-2/摘帅-15)造双落账·
       //   故此处前置已死闸(alive===false 即不重投)。本分支后续(抄家/officeTree 清理/addEB)属非死亡通用段·零改动。
       var _routedDeath = false;
@@ -560,19 +566,17 @@
       } else {
         var _deathCd = { name: ch.name, reason: _reasonStr };
         try {
-          if (typeof global.applyOneDeath === 'function') { global.applyOneDeath(_deathCd); _routedDeath = true; }
-          else if (typeof global.applyCharacterDeaths === 'function') { global.applyCharacterDeaths({ character_deaths: [_deathCd] }); _routedDeath = true; }
+          if (typeof global.applyOneDeath === 'function') { global.applyOneDeath(_deathCd); _routedDeath = ch.alive === false || ch.dead === true; }
+          else if (typeof global.applyCharacterDeaths === 'function') { global.applyCharacterDeaths({ character_deaths: [_deathCd] }); _routedDeath = ch.alive === false || ch.dead === true; }
         } catch (_odDeathE) {
           try { window.TM && TM.errors && TM.errors.captureSilent && TM.errors.captureSilent(_odDeathE, 'onDismissal-death-route'); } catch (__) {}
         }
       }
       if (!_routedDeath) {
-        // 极端沙箱(死亡管线缺位)·保留原直写·不丢「死者必落库」兜底
-        ch.alive = false;
-        ch._deathCause = _reasonStr;
-        ch._deathTurn = G.turn || 0;
-        // 预存殁前官衔(供墓志铭 positionAtDeath / 图志「原任X」)·随后统一清 officialTitle
-        if (ch.officialTitle && !ch.positionAtDeath) ch.positionAtDeath = ch.officialTitle;
+        var _unappliedSink = global.TM && global.TM.Endturn && global.TM.Endturn.AI && global.TM.Endturn.AI.apply && global.TM.Endturn.AI.apply.recordUnappliedChange;
+        if (typeof _unappliedSink === 'function') _unappliedSink({ character_death:ch.name, reason:'death pipeline unavailable' }, 'onDismissal');
+        try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_gate', { label:'character_deaths', reason:'death pipeline unavailable', item:_deathCd }); } catch (_) {}
+        return { ok:false, reason:'death pipeline unavailable' };
       }
     } else if (/释放|开释|赦免|大赦|无罪|平反|昭雪|宽释|保释|出狱|赦出/.test(_reasonStr)) {
       // ★ 释放 / 赦免·清入狱状态
@@ -1095,6 +1099,11 @@
     if (!G) return { ok: false };
     if (!aiOutput || typeof aiOutput !== 'object') return { ok: false };
 
+    // 先把 char_updates.alive/dead 规范化；end-turn dispatcher 会预先在原 p1 上做同一步并延后
+    // 给既有 applyCharacterDeaths。直接调用本 applier 时，下面只消费本次新合成的 death 条目。
+    var _deathNormalization = (typeof global.normalizeAIWriteBackDeaths === 'function')
+      ? global.normalizeAIWriteBackDeaths(aiOutput, { source: 'applyAITurnChanges' })
+      : { added: [], routed: [], failed: [], normalized: 0 };
     // 确保 _turnReport 存在
     if (typeof preflightAIWriteBack === 'function') preflightAIWriteBack(aiOutput, { source: 'applyAITurnChanges' });
     if (!G._turnReport) G._turnReport = [];
@@ -1112,6 +1121,9 @@
       _omensBefore: Array.isArray(G.omens) ? G.omens.length : ((G.events||[]).filter(function(e){return e&&(e.type==='omen'||e.category==='omen');}).length),
       _religionsBefore: Array.isArray(G.religions) ? G.religions.length : 0
     };
+    if (typeof global.applyNormalizedAIWriteBackDeaths === 'function') {
+      global.applyNormalizedAIWriteBackDeaths(G, _deathNormalization, applied);
+    }
 
     // 叙事
     if (aiOutput.narrative) {
@@ -1135,35 +1147,12 @@
       } catch (e) { applied.failed.push({ taxReform: tr, reason: (e && e.message) || 'exception' }); }
     });
 
-    // 1. 数据变化
-    (aiOutput.changes || []).forEach(function(ch) {
-      if (_isPathBlocked(ch.path)) {
-        applied.failed.push({ path: ch.path, reason: 'blocked' });
-        return;
-      }
-      var result;
-      if (ch.op === 'push') {
-        result = _applyPathPush(G, ch.path, ch.value);
-      } else if (ch.op === 'set' || ch.value !== undefined) {
-        result = _applyPathSet(G, ch.path, ch.value, ch.reason);
-      } else {
-        result = _applyPathDelta(G, ch.path, ch.delta, ch.reason);
-      }
-      if (result.ok) {
-        applied.changes++;
-        G._turnReport.push({
-          type: 'change',
-          path: result.path || ch.path,
-          old: result.old,
-          new: result.new,
-          delta: ch.delta,
-          reason: ch.reason,
-          turn: G.turn||0
-        });
-      } else {
-        applied.failed.push({ path: ch.path, reason: result.reason });
-      }
-    });
+    // 1. 数据变化（强类型 path dispatcher 位于 PathUtils 分片）
+    if (typeof _applyDeclaredPathChanges === 'function') {
+      applied.changes += _applyDeclaredPathChanges(G, aiOutput.changes, G._turnReport, applied.failed);
+    } else if (Array.isArray(aiOutput.changes) && aiOutput.changes.length) {
+      applied.failed.push({ field: 'changes', reason: 'path dispatcher unavailable' });
+    }
 
     // 1.5 改换门庭（推演驱动·叛降/归附/反正/俘获/拥立）：显式列表 [{character,newFaction,reason,type}]。
     //     兼容多种字段名；解析失败入 failed 可见。narrative 动词检测在叙事扫描段补漏（见下）。
@@ -1172,7 +1161,7 @@
       var charRef = a.character || a.char || a.name || a.who || a.subject;
       var newFac = a.newFaction || a.toFaction || a.to_faction || a.faction || a.to || a.newAllegiance;
       if (!charRef || !newFac) return;
-      var r = applyAllegianceChange(G, charRef, newFac, { reason: a.reason || a.cause || '', type: a.type || a.kind || a.mode || '' });
+      var _wgAl = global.TM && global.TM.__acaParts; var r = (_wgAl && _wgAl._gateAllegianceSource && _wgAl._gateAllegianceSource(G, aiOutput, charRef, newFac, a.reason || a.cause || '', applied)) ? { ok: false, reason: 'no-source-faction(write-gate)' } : applyAllegianceChange(G, charRef, newFac, { reason: a.reason || a.cause || '', type: a.type || a.kind || a.mode || '' });   // 刀C·返工issue5·改换门庭判源
       if (r.ok) { applied.changes++; }
       else applied.failed.push({ field: 'allegiance_changes', text: charRef + ' → ' + newFac, reason: r.reason });
     });
@@ -1181,7 +1170,7 @@
     (aiOutput.appointments || []).forEach(function(a) {
       var r;
       if (a.action === 'appoint') r = onAppointment(a.charName, a.position, a.binding);
-      else if (a.action === 'dismiss') r = onDismissal(a.charName, a.reason);
+      else if (a.action === 'dismiss') r = onDismissal(a.charName, a.reason, aiOutput);
       else if (a.action === 'transfer') r = onTransfer(a.charName, a.fromPosition, a.toPosition, a.binding);
       if (r && r.ok) {
         applied.appointments++;
@@ -1344,6 +1333,7 @@
 
     // 5. 事件（风闻）
     (aiOutput.events || []).forEach(function(e) {
+      var _c4b = global.TM && global.TM.__acaParts; if (_c4b && _c4b._gateEventTimepoint && _c4b._gateEventTimepoint(G, e, applied)) return;   // 刀C·C4·events 时点闸(逻辑在 validators·未来年份硬拒/未到期史实软提示)
       // v0.2·来源涌现：AI 标记 critical 的决策型事件(带 choices)+ 开关开 → 收编进御案时政 currentIssues
       //   (玩家在御案时政「陛下决断」·_chooseIssueOption 开关开走 AI 据局面裁后果)。寻常事件保持播报/走 playerChoices 软 surface(寄生为主·抉择 C)。
       if (e && e.critical && Array.isArray(e.choices) && e.choices.length
@@ -1397,10 +1387,10 @@
     // 旧逻辑只展示这些字段，不会在 GM.armies 缺项时创建新军，导致军队 UI 看不到新部队。
     var militaryChangeCount = 0;
     if (Array.isArray(aiOutput.military_changes)) {
-      militaryChangeCount += _applyAIArmyChangeList(aiOutput.military_changes, 'military_changes');
+      militaryChangeCount += _applyAIArmyChangeList(aiOutput.military_changes, 'military_changes', { failed: applied.failed });
     }
     if (Array.isArray(aiOutput.army_changes)) {
-      militaryChangeCount += _applyAIArmyChangeList(aiOutput.army_changes, 'army_changes');
+      militaryChangeCount += _applyAIArmyChangeList(aiOutput.army_changes, 'army_changes', { failed: applied.failed });
     }
     if (militaryChangeCount > 0) applied.semantic.military_changes = militaryChangeCount;
     // 7.6. 采买：银→军备(治理·应急外购·尤火器外购/茶马市马·渠道由AI核定·玩家国库扣银)
@@ -1439,7 +1429,7 @@
       var ch = _findEntity(G, 'char', cu.name);
       if (!ch) { applied.failed.push({char_update: cu, reason: 'char not found'}); return; }
       // updates：任意字段
-      if (cu.updates) charUpdCount += _mergeUpdatesToEntity(ch, cu.updates, 'char_update', ch.name, cu.reason || '');
+      if (cu.updates) charUpdCount += _mergeUpdatesToEntity(ch, cu.updates, 'char_update', ch.name, cu.reason || '', applied.failed, aiOutput);   // 刀C·C3·透传 aiOutput 供敏感字段来源判据(结构化互证)
       // careerEvent：仕途条目追加
       if (cu.careerEvent) {
         if (!Array.isArray(ch.careerHistory)) ch.careerHistory = [];
@@ -1572,7 +1562,7 @@
         posList.forEach(function(singlePost, idx) {
           var rr;
           if (action === 'appoint') rr = onAppointment(oa.name, singlePost, { dept: oa.dept, concurrent: isConcurrentOffice, reason: oa.reason || '' });
-          else if (action === 'dismiss') rr = onDismissal(oa.name, oa.reason);
+          else if (action === 'dismiss') rr = onDismissal(oa.name, oa.reason, aiOutput);
           else if (action === 'transfer') rr = onTransfer(oa.name, oa.fromPost, singlePost, { dept: oa.dept });
           if (rr && rr.ok) {
             if (idx === 0) r = rr;
@@ -1638,9 +1628,10 @@
         if (post) action = 'appoint';
       }
       if (!action) return;
+      if (action === 'dismiss') { var _c2b = global.TM && global.TM.__acaParts; if (_c2b && _c2b._gateJudicialPersonnelChange && _c2b._gateJudicialPersonnelChange(G, aiOutput, pc, changeText, applied)) return; }   // 刀C·C2·司法类人事无源判据(逻辑在 validators·alias 内联·免堆巨石)
       var r = null;
       if (action === 'appoint' && post) r = onAppointment(pc.name, post, { concurrent: isConcurrentPersonnel, reason: reason });
-      else if (action === 'dismiss') r = onDismissal(pc.name, reason);
+      else if (action === 'dismiss') r = onDismissal(pc.name, reason, aiOutput);
       if (r && r.ok) {
         personnelFromPcCount++;
         handledNames[pc.name] = true;
@@ -2013,7 +2004,46 @@
       if (!fu || !fu.name) return;
       var fac = _findEntity(G, 'faction', fu.name);
       if (!fac) { applied.failed.push({faction_update: fu, reason: 'faction not found'}); return; }
-      if (fu.updates) facCount += _mergeUpdatesToEntity(fac, fu.updates, 'faction_update', fac.name, fu.reason || '');
+      if (fu.updates && typeof _isPlainObject === 'function' && _isPlainObject(fu.updates)) {
+        var cleanUpdates = _safeOwnCopy(fu.updates);
+        var leaderCandidates = [];
+        function takeLeader(obj, key) {
+          if (obj && Object.prototype.hasOwnProperty.call(obj, key)) leaderCandidates.push(String(obj[key] == null ? '' : obj[key]).trim());
+          if (obj) delete obj[key];
+        }
+        takeLeader(cleanUpdates, 'leader'); takeLeader(cleanUpdates, 'ruler'); takeLeader(cleanUpdates, 'newLeader'); takeLeader(cleanUpdates, 'leaderName'); takeLeader(cleanUpdates, 'leader_name');
+        if (Object.prototype.hasOwnProperty.call(cleanUpdates, 'leadership')) {
+          var leadershipUpdate = cleanUpdates.leadership; delete cleanUpdates.leadership;
+          if (typeof _isPlainObject === 'function' && _isPlainObject(leadershipUpdate)) {
+            leadershipUpdate = _safeOwnCopy(leadershipUpdate); takeLeader(leadershipUpdate, 'ruler'); takeLeader(leadershipUpdate, 'leader'); takeLeader(leadershipUpdate, 'newLeader');
+            if (Object.keys(leadershipUpdate).length) cleanUpdates.leadership = leadershipUpdate;
+          } else applied.failed.push({ faction_update: fu.name, updateKey: 'leadership', reason: 'leadership must be a plain object' });
+        }
+        if (Object.prototype.hasOwnProperty.call(cleanUpdates, 'leaderInfo')) {
+          var leaderInfoUpdate = cleanUpdates.leaderInfo; delete cleanUpdates.leaderInfo;
+          if (typeof _isPlainObject === 'function' && _isPlainObject(leaderInfoUpdate)) {
+            leaderInfoUpdate = _safeOwnCopy(leaderInfoUpdate); takeLeader(leaderInfoUpdate, 'name');
+            if (Object.keys(leaderInfoUpdate).length) cleanUpdates.leaderInfo = leaderInfoUpdate;
+          } else applied.failed.push({ faction_update: fu.name, updateKey: 'leaderInfo', reason: 'leaderInfo must be a plain object' });
+        }
+        if (leaderCandidates.length) {
+          var uniqueLeaders = leaderCandidates.filter(function(v, i, arr) { return arr.indexOf(v) === i; });
+          if (uniqueLeaders.length > 1) {
+            applied.failed.push({ faction_update: fu.name, reason: 'conflicting faction leader mirrors' });
+          } else {
+            var leader = uniqueLeaders[0];
+            var livingLeader = leader && typeof _resolveNarrativeAliveChar === 'function' ? _resolveNarrativeAliveChar(G, leader) : null;
+            if (leader && !livingLeader) {
+              applied.failed.push({ faction_update: fu.name, reason: 'faction leader must be an existing living character: ' + leader });
+            } else if (typeof _setFactionLeader !== 'function') {
+              applied.failed.push({ faction_update: fu.name, reason: 'faction leader sink unavailable' });
+            } else if (_setFactionLeader(fac, livingLeader ? livingLeader.name : '', G, fu.reason || 'AI势力首领变更')) {
+              facCount++;
+            }
+          }
+        }
+        facCount += _mergeUpdatesToEntity(fac, cleanUpdates, 'faction_update', fac.name, fu.reason || '', applied.failed);
+      } else if (fu.updates != null) applied.failed.push({ faction_update: fu.name, reason: 'updates must be a plain JSON object' });
     });
     if (facCount > 0) applied.semantic.faction_updates = facCount;
     var factionFieldFallbackCount = _applyNarrativeFactionFieldFallback(G, aiOutput);
@@ -2025,7 +2055,8 @@
       if (!pu || !pu.name) return;
       var party = _findEntity(G, 'party', pu.name);
       if (!party) { applied.failed.push({party_update: pu, reason: 'party not found'}); return; }
-      if (pu.updates) partyCount += _mergeUpdatesToEntity(party, pu.updates, 'party_update', party.name, pu.reason || '');
+      if (typeof _applyStructuredPartyUpdate === 'function') partyCount += _applyStructuredPartyUpdate(G, party, pu, applied.failed);
+      else applied.failed.push({ party_update:pu.name, reason:'party update sink unavailable' });
     });
     if (partyCount > 0) applied.semantic.party_updates = partyCount;
 
@@ -2035,7 +2066,7 @@
       if (!cu || !cu.name) return;
       var cls = _findEntity(G, 'class', cu.name);
       if (!cls) { applied.failed.push({class_update: cu, reason: 'class not found'}); return; }
-      if (cu.updates) classCount += _mergeUpdatesToEntity(cls, cu.updates, 'class_update', cls.name, cu.reason || '');
+      if (cu.updates) classCount += _mergeUpdatesToEntity(cls, cu.updates, 'class_update', cls.name, cu.reason || '', applied.failed);
     });
     if (classCount > 0) applied.semantic.class_updates = classCount;
 
@@ -2047,7 +2078,7 @@
       if (!identifier) return;
       var div = _findDivisionByNameOrId(G, identifier);
       if (!div) { applied.failed.push({region_update: ru, reason: 'region not found'}); return; }
-      if (ru.updates) regionCount += _mergeUpdatesToEntity(div, ru.updates, 'region_update', div.name || div.id, ru.reason || '');
+      if (ru.updates) regionCount += _mergeUpdatesToEntity(div, ru.updates, 'region_update', div.name || div.id, ru.reason || '', applied.failed);
     });
     if (regionCount > 0) applied.semantic.region_updates = regionCount;
     var regionFieldFallbackCount = _applyNarrativeRegionFieldFallback(G, aiOutput);
@@ -2100,21 +2131,32 @@
         return;
       }
       var result;
-      if (apc.op === 'push') result = _applyPathPush(G, apc.path, apc.value);
-      else if (apc.op === 'delta') result = _applyPathDelta(G, apc.path, parseFloat(apc.value)||0, apc.reason);
-      else if (apc.op === 'delete') {
+      var anyOp = apc.op == null || apc.op === '' ? 'set' : String(apc.op).toLowerCase();
+      if (anyOp === 'push') {
+        if (!Object.prototype.hasOwnProperty.call(apc, 'value')) result = { ok:false, reason:'push requires value' };
+        else result = _applyPathPush(G, apc.path, apc.value);
+      } else if (anyOp === 'delta') {
+        var anyDelta = Object.prototype.hasOwnProperty.call(apc, 'delta') ? apc.delta : apc.value;
+        if (typeof anyDelta !== 'number' || !isFinite(anyDelta)) result = { ok:false, reason:'delta must be a finite number' };
+        else result = _applyPathDelta(G, apc.path, anyDelta, apc.reason);
+      } else if (anyOp === 'merge') {
+        result = typeof _applyPathMerge === 'function' ? _applyPathMerge(G, apc.path, apc.value, apc.reason) : { ok:false, reason:'merge unavailable' };
+      } else if (anyOp === 'delete') {
         try {
-          var parts = apc.path.split('.');
-          var parent = G;
-          for (var i=0; i<parts.length-1; i++) parent = parent && parent[parts[i]];
-          if (parent && parts.length) {
-            var last = parts[parts.length-1];
-            delete parent[last];
-            result = { ok: true, old: null, new: undefined };
+          var resolvedDelete = _resolvePath(G, _normalizeCoreVarPath(apc.path));
+          if (!resolvedDelete.parent || !resolvedDelete.exists) result = { ok:false, reason:'delete target not found' };
+          else {
+            var oldDelete = resolvedDelete.value;
+            if (Array.isArray(resolvedDelete.parent) && /^\d+$/.test(String(resolvedDelete.key))) resolvedDelete.parent.splice(Number(resolvedDelete.key), 1);
+            else delete resolvedDelete.parent[resolvedDelete.key];
+            result = { ok: true, path:_normalizeCoreVarPath(apc.path), old: oldDelete, new: undefined };
           }
         } catch(e) { result = { ok:false, reason:'delete failed' }; }
+      } else if (anyOp === 'set') {
+        if (!Object.prototype.hasOwnProperty.call(apc, 'value')) result = { ok:false, reason:'set requires value' };
+        else result = _applyPathSet(G, apc.path, apc.value, apc.reason);
       } else {
-        result = _applyPathSet(G, apc.path, apc.value, apc.reason);
+        result = { ok:false, reason:'unsupported op: ' + anyOp };
       }
       if (result && result.ok) {
         anyPathCount++;

@@ -133,6 +133,8 @@ async function initKejuSystem(scenario) {
       '- \u9699\u4EE5\u524D\uFF1Aenabled=false\uFF0C\u586B\u5199alternativeSystem\n' +
       '\u53EA\u8F93\u51FAJSON\u3002';
 
+    // 时空约束·科举体系初始化配置(JSON·clauseOnly)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
     var result = await callAISmart(prompt, 800, {maxRetries: 2});
     var data = JSON.parse(result.replace(/```json|```/g, '').trim());
 
@@ -292,6 +294,8 @@ async function checkKejuTrigger() {
       '返回JSON：{"shouldTrigger":true/false,"reason":"原因"}\n\n' +
       '只输出JSON。';
 
+    // 时空约束·开科到期判定(JSON·clauseOnly·防把史实停科当既成)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
     var result = await callAISmart(prompt, 300, {
       maxRetries: 1,
       priority: 'background',   // 【降本2026-06-19】开科判定非阻塞玩家操作(结果异步 spawn 头条)·无需 high 抢队列
@@ -735,6 +739,8 @@ async function runPreliminaryExams() {
       '"partyBreakdown":{"":0.4},' +
       '"narrative":"\u5730\u65B9\u9009\u62D4\u6982\u51B5\u63CF\u8FF0100\u5B57"}\n\u53EA\u8F93\u51FAJSON\u3002';
 
+    // 时空约束·地方选拔模拟(JSON统计·clauseOnly)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
     var result = await callAISmart(prompt, 1000, {maxRetries: 2});
     var data = JSON.parse(result.replace(/```json|```/g, '').trim());
     exam.preliminaryStats = data;
@@ -926,6 +932,8 @@ async function examinerProposeTopic() {
       if (ch.personality) prompt += '\u6027\u683C\uFF1A' + ch.personality + '\n';
     }
     prompt += '\n\u8BF7\u62DF\u4E00\u9053\u4F1A\u8BD5\u8BD5\u9898\uFF0C150-250\u5B57\uFF0C\u4EFF\u53E4\u6587\u7B56\u95EE\u4F53\u3002\u53CD\u6620\u4F60\u5BF9\u65F6\u5C40\u7684\u770B\u6CD5\u548C\u653F\u6CBB\u7ACB\u573A\u3002\n\u76F4\u63A5\u8F93\u51FA\u9898\u76EE\u3002';
+    // 时空约束·扫描主考+旧题涉议人物·会试策问出题(自由文·full·主考=当事人)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMPropose = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.huishiTopic) || ''), (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []), 10) : (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []); prompt += _buildTemporalConstraint(ch || null, { mentionedNames: _tcMPropose }); } catch (_tcE) {} }
     var topic = await callAISmart(prompt, 800, {minLength: 100, maxRetries: 2});
     topic = topic.replace(/```[\s\S]*?```/g, '').trim();
     var el = document.getElementById('huishi-topic');
@@ -1005,6 +1013,8 @@ async function generateHuishiResults() {
       '8. note: \u8003\u5B98\u8BC4\u8BED\uFF0840\u5B57\uFF09\n\n' +
       '\u8FD4\u56DEJSON\u3002\u53EA\u8F93\u51FAJSON\u3002';
 
+    // 时空约束·扫描会试题面涉议人物·批卷统计(JSON·clauseOnly)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMHuishi = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((_huishiTopic || ''), (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []), 10) : (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []); prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMHuishi }); } catch (_tcE) {} }
     var result = await callAISmart(prompt, 800, {maxRetries: 2});
     var data = JSON.parse(result.replace(/```json|```/g, '').trim());
 
@@ -1197,6 +1207,8 @@ async function generateDianshiQuestion() {
       '5. \u7ED3\u5C3E\u4EE5\u201C\u5B50\u5176\u8BD5\u4E3A\u8054\u5BF9\u4E4B\u201D\u6216\u201C\u4F55\u4EE5\u6559\u8054\u201D\u53E5\u5F0F\u53D1\u95EE\n\n' +
       '\u76F4\u63A5\u8F93\u51FA\u9898\u76EE\uFF0C\u4E0D\u8981JSON\u683C\u5F0F\u3002';
 
+    // 时空约束·扫描近期事件涉议人物·殿试策问(JSON外自由文但改clauseOnly·天子亲策·防塞全朝无关活人名成正向姓名诱导)（typeof守卫·防加载序）
+    if (typeof _buildTemporalConstraint === 'function') { try { var _tcMDianQ = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames((_recentEvents || ''), [], 10) : []; prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMDianQ }); } catch (_tcE) {} }
     var question = await callAISmart(prompt, 500, {minLength: 80, maxRetries: 2});
     var _dqEl = document.getElementById('dianshi-question');
     if (_dqEl) _dqEl.value = question; // 弹窗未开时无此元素·裸赋值曾抛错被吞→playerQuestion 永不落→整场殿试空产(2026-07-04 审查定罪)
@@ -1395,6 +1407,8 @@ async function generateDianshiResults() {
     + '3. \u59D3\u540D\u7C4D\u8D2F\u9700\u7B26\u5408\u8BE5\u671D\u4EE3\u7279\u5F81\u3002\n\n'
     + '\u8FD4\u56DE JSON \u6570\u7EC4\uFF0C\u6309 rank 1..' + _topCount + ' \u6392\u5E8F\uFF0C\u53EA\u8F93\u51FA JSON\u3002';
   var _metaTok = (P.conf && P.conf.maxOutputTokens > 0) ? P.conf.maxOutputTokens : 6000;
+  // 时空约束·扫描殿试题面涉议人物·考生档案(JSON档案·clauseOnly)（typeof守卫·防加载序）
+  if (typeof _buildTemporalConstraint === 'function') { try { var _tcMMeta = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.playerQuestion) || ''), (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []), 10) : []; metaPrompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMMeta }); } catch (_tcE) {} }
   var metaRaw = await callAISmart(metaPrompt, Math.min(_metaTok, 6000), { maxRetries: 2 });
   var candidates = _parseJsonArr(metaRaw);
   if (!Array.isArray(candidates) || candidates.length < 3) {
@@ -1449,6 +1463,8 @@ async function generateDianshiResults() {
     var _batchTok = (P.conf && P.conf.maxOutputTokens > 0) ? P.conf.maxOutputTokens : 16000;
     _batchTok = Math.min(_batchTok, 16000);
     try {
+      // 时空约束·扫描殿试题面涉议人物·答卷essay(JSON数组·clauseOnly·防答卷引后世史实为既成)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { var _tcMBatch = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.playerQuestion) || ''), [], 10) : []; batchPrompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMBatch }); } catch (_tcE) {} }
       var batchRaw = await callAISmart(batchPrompt, _batchTok, { maxRetries: 2 });
       var batchArr = _parseJsonArr(batchRaw);
       if (Array.isArray(batchArr)) {
@@ -1530,6 +1546,8 @@ async function _kejuGenChiefExaminerComments(exam, candidates) {
     + '\u8FD4\u56DE JSON\uFF1A[{"rank":1,"name":"...","chiefExaminerComment":"..."}, ...]\u00B7\u53EA\u8F93\u51FA JSON\u3002';
   var _tokC = (P.conf && P.conf.maxOutputTokens > 0) ? P.conf.maxOutputTokens : 8000;
   _tokC = Math.min(_tokC, 8000);
+  // 时空约束·扫描殿试题面涉议人物·主考逐卷批语(JSON·clauseOnly)（typeof守卫·防加载序）
+  if (typeof _buildTemporalConstraint === 'function') { try { var _tcMComments = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.playerQuestion) || ''), (exam && exam.chiefExaminer ? [exam.chiefExaminer] : []), 10) : []; prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMComments }); } catch (_tcE) {} }
   var rawC = await callAISmart(prompt, _tokC, { maxRetries: 2 });
   var arr = _parseJsonArr(rawC);
   if (!Array.isArray(arr)) return;
@@ -1587,6 +1605,8 @@ async function _kejuGenExaminerSuggestions(exam) {
       '\u8BF7\u7ED9\u51FA\u4F60\u5BF9\u524D 20 \u540D\u7684\u6392\u5E8F\u5EFA\u8BAE\uFF08\u53D7\u81EA\u8EAB\u515A\u6D3E/\u7ACB\u573A/\u80FD\u529B\u504F\u5FC3\u5F71\u54CD\uFF0C\u4E0D\u4E00\u5B9A\u4F9D\u7EFC\u5408\u5206\uFF09\u3002\n' +
       '\u8FD4\u56DE JSON\uFF1A[{"name":"\u59D3\u540D","reason":"\u63A8\u8350\u7406\u7531 30-50 \u5B57"}, ...] \u00B7 \u5171 20 \u9879 \u00B7 \u53EA\u8F93\u51FA JSON\u3002';
     try {
+      // 时空约束·扫描殿试题面涉议人物·考官排序建议(JSON·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { var _tcMSug = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(((exam && exam.playerQuestion) || ''), (ex && ex.name ? [ex.name] : []), 10) : []; prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _tcMSug }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 3000, { maxRetries: 1 });
       var parsed = (typeof extractJSON === 'function') ? extractJSON(raw) : null;
       if (!parsed) { var m = raw.match(/\[[\s\S]*\]/); if (m) try { parsed = JSON.parse(m[0]); } catch(_){} }

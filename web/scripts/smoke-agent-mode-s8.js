@@ -62,9 +62,11 @@ function makeGM() { return { turn: 7, guoku: { balance: 1000000, money: 1000000,
 
   // ── dismiss_official 走 onDismissal ──
   var dmCalls = [];
-  globalThis.onDismissal = function (name, reason) { dmCalls.push({ name: name, reason: reason }); return { ok: true }; };
+  // 刀C·返工二轮issue1：onDismissal 契约 3 参(name,reason,aiOutput)·agent 语义写传显式标记令死亡收口闸判源经 GM 而非 fail-open。
+  globalThis.onDismissal = function (name, reason, aiOutput) { dmCalls.push({ name: name, reason: reason, aiOutput: aiOutput }); return { ok: true }; };
   r = await WT.handle('dismiss_official', { name: '王五', reason: '渎职' }, ctx);
   assert(r.ok && dmCalls[0].name === '王五' && dmCalls[0].reason === '渎职', 'dismiss_official 走 onDismissal(name,reason)');
+  assert(dmCalls[0].aiOutput && dmCalls[0].aiOutput._agentWrite === true, 'dismiss_official 传第3参 aiOutput 标记(死亡收口闸判源不 fail-open)');
   assert(gm._turnReport.some(function (e) { return e._op === 'dismiss'; }), 'dismiss 报账条目');
 
   // ── remove_field 删数组项(推演后果·部队覆灭/党派清洗)+ 玩家保护 ──

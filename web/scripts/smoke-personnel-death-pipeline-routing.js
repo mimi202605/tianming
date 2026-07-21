@@ -34,7 +34,7 @@ function makeCtx() {
   vm.createContext(ctx);
   ['tm-ai-change-pathutils.js', 'tm-ai-change-army.js', 'tm-ai-change-narrative.js',
    'tm-ai-change-applier.js', 'tm-ai-change-applier-validators.js', 'tm-ai-change-applier-reconcile.js',
-   'tm-ai-apply-deaths.js']
+   'tm-ai-apply-deaths.js', 'tm-endturn-apply-stages.js']
     .forEach(f => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f }));
   // 玩家之死裁决器·faithful 记录 stub（真件在 tm-endturn-helpers.js·含顶层副作用不便单独装载·
   //   本刀未改它·此 stub 复刻其继统/终局契约并记录「死亡管线确经此路由」）
@@ -170,10 +170,12 @@ console.log('===== G·非致死类直写 + 留痕通道 =====');
 console.log('===== H·结构化赐死(personnel_changes)经 onDismissal→死亡管线 =====');
 (function () {
   const ctx = makeCtx();
+  // 刀C·C2(2026-07-19)后：司法类(斩/赐死)personnel_changes 无源会被拦(见 smoke-write-gate-expansion)。本例校验的是死亡分支
+  //   路由/级联机制(与 sourcing 正交)·故给玩家诏令点名胡廷晏(有源)令 C2 放行·机制照测。
   ctx.GM = baseGM(
     [{ name: '孙传庭', isPlayer: true, alive: true, faction: '明朝廷', resources: {} },
      { name: '胡廷晏', officialTitle: '巡抚', position: '巡抚', alive: true, faction: '明朝廷', resources: {} }],
-    { armies: [{ name: '秦军', commander: '胡廷晏', morale: 80 }] });
+    { armies: [{ name: '秦军', commander: '胡廷晏', morale: 80 }], _playerDirectives: [{ id: 'd1', content: '胡廷晏通敌事发，着即赐死正法' }] });
   ctx.P = { playerInfo: { characterName: '孙传庭' }, adminHierarchy: {} };
   const res = ctx.applyAITurnChanges({ personnel_changes: [{ name: '胡廷晏', change: '赐死', reason: '通敌' }] });
   const hu = ctx.GM.chars.find(c => c.name === '胡廷晏');
@@ -209,8 +211,8 @@ console.log('===== J·已死者不重投死亡管线(防双落账) =====');
   assert(r && r.ok === true, 'J2 返回契约不变({ok:true})');
 })();
 
-// ── K·极端沙箱(死亡管线缺位)·onDismissal 死亡分支回落原直写·不丢「死者必落库」 ──
-console.log('===== K·沙箱回落直写(管线缺位) =====');
+// ── K·极端沙箱(死亡管线缺位)·拒绝裸写并留下可观测失败 ──
+console.log('===== K·死亡管线缺位·拒绝裸写 =====');
 (function () {
   const ctx = makeCtx();
   ctx.GM = baseGM([{ name: '胡廷晏', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }]);
@@ -220,13 +222,13 @@ console.log('===== K·沙箱回落直写(管线缺位) =====');
   ctx.applyOneDeath = undefined; ctx.applyCharacterDeaths = undefined;
   const r = ctx.onDismissal('胡廷晏', '处决');
   const hu = ctx.GM.chars.find(c => c.name === '胡廷晏');
-  assert(hu.alive === false, 'K1 管线缺位→回落原直写·死者仍落库(alive=false)');
-  assert(hu._deathCause === '处决', 'K2 回落直写保 _deathCause');
-  assert(r && r.ok === true, 'K3 返回契约不变({ok:true})');
+  assert(hu.alive === true && hu.dead !== true, 'K1 管线缺位→保持存活·绝不裸写死亡字段');
+  assert(!hu._deathCause && (ctx.GM._unappliedChanges || []).some(x => x.character_death === '胡廷晏' && /pipeline unavailable/.test(x.reason || '')), 'K2 管线缺位须写 _unappliedChanges 留痕');
+  assert(r && r.ok === false && /pipeline unavailable/.test(r.reason || ''), 'K3 调用方收到明确失败契约');
 })();
 
-// ── L·validator 沙箱回落调 onDismissal·无递归/无双落账(applyOneDeath+applyCharacterDeaths 双缺→直写兜底) ──
-console.log('===== L·validator 沙箱回落 onDismissal·无递归无双落账 =====');
+// ── L·validator 沙箱回落调 onDismissal·无递归/无裸写且 skipped 留痕 ──
+console.log('===== L·validator 沙箱回落·拒绝裸写并留痕 =====');
 (function () {
   const ctx = makeCtx();
   ctx.GM = baseGM([{ name: '胡廷晏', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }]);
@@ -236,19 +238,21 @@ console.log('===== L·validator 沙箱回落 onDismissal·无递归无双落账 
   ctx.applyOneDeath = undefined; ctx.applyCharacterDeaths = undefined;
   ctx.applyAITurnChanges({ shizhengji: '帝震怒，赐死胡廷晏。' });   // 能返回=不死循环(无递归)
   const hu = ctx.GM.chars.find(c => c.name === '胡廷晏');
-  assert(hu.alive === false, 'L1 沙箱下 validator→onDismissal 回落·死者仍落库(能返回即证无递归死循环)');
-  assert(ctx._deathCalls.length === 0, 'L2 沙箱下无 applyOneDeath 调用(双缺·全走直写)');
+  assert(hu.alive === true && hu.dead !== true, 'L1 沙箱下 validator→onDismissal 不裸写死亡(能返回即证无递归死循环)');
+  assert(ctx._deathCalls.length === 0, 'L2 沙箱下无 applyOneDeath 调用且无死亡落账');
   const log = ctx.GM._personnelValidatorLog || [];
   const last = log[log.length - 1] || {};
-  assert(last.patched === 1, 'L3 ★补录恰一次(无双落账·validator 经 onDismissal 回落 patched=1)');
+  assert(last.patched === 0 && Array.isArray(last.skipped) && last.skipped.some(x => /pipeline unavailable/.test(x.reason || '')), 'L3 validator 不虚报 patched·在 skipped 留明确失败');
 })();
 
 // ── M·结构化赐死 + 叙事复述同一人·死亡管线只跑一次(validator handled 拦截·无双落账) ──
 console.log('===== M·结构化+叙事双提同一死者·管线只跑一次 =====');
 (function () {
   const ctx = makeCtx();
+  // 刀C·C2(2026-07-19)：给玩家诏令点名胡廷晏(有源)令司法类 personnel_changes 放行·此例校验双提去重机制(与 sourcing 正交)。
   ctx.GM = baseGM([{ name: '孙传庭', isPlayer: true, alive: true, faction: '明朝廷', resources: {} },
-                   { name: '胡廷晏', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }]);
+                   { name: '胡廷晏', officialTitle: '巡抚', alive: true, faction: '明朝廷', resources: {} }],
+                  { _playerDirectives: [{ id: 'd1', content: '胡廷晏通敌事发，着即赐死正法' }] });
   ctx.P = { playerInfo: { characterName: '孙传庭' }, adminHierarchy: {} };
   ctx.applyAITurnChanges({ personnel_changes: [{ name: '胡廷晏', change: '赐死', reason: '通敌' }], shizhengji: '帝赐死胡廷晏。' });
   const calls = ctx._deathCalls.filter(n => n === '胡廷晏');

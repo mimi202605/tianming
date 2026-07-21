@@ -123,12 +123,56 @@ function jishiPair(name, turn) {
     await sb._wd_extractCommitments('查无此人');
     assert(!sb.GM._npcCommitments['查无此人'], 'B7 查无此人→不落账(实体存在性既有 return 保证)');
   }
+  // await 晚到：跨回合 / 换档 / 目标死亡均必须拒绝，不得把旧会话结果写入新世界。
+  {
+    const sb = makeWenduiCtx('');
+    sb.P = { ai: { key: 'k' }, playerInfo: { characterName: '天子' } };
+    sb.GM = { sid: 's1', turn: 7, chars: [{ name: '毕自严', alive: true, loyalty: 60 }], jishiRecords: jishiPair('毕自严', 7), _npcCommitments: {} };
+    let release;
+    sb.callAI = () => new Promise(resolve => { release = resolve; });
+    const pending = sb._wd_extractCommitments('毕自严');
+    await Promise.resolve();
+    sb.GM.turn = 8;
+    release(JSON.stringify({ commitments: [{ task: '晚到旧旨', willingness: 1 }], relays: [] }));
+    await pending;
+    assert(!sb.GM._npcCommitments['毕自严'], 'B8 ★跨回合晚到承诺拒绝落账');
+    assert(sb._warns.some(a => String(a[0]).indexOf('晚到结果已拒绝') >= 0), 'B9 跨回合拒绝留痕');
+  }
+  {
+    const sb = makeWenduiCtx('');
+    sb.P = { ai: { key: 'k' }, playerInfo: { characterName: '天子' } };
+    const oldGM = { sid: 's1', turn: 7, chars: [{ name: '毕自严', alive: true }], jishiRecords: jishiPair('毕自严', 7), _npcCommitments: {} };
+    sb.GM = oldGM;
+    let release;
+    sb.callAI = () => new Promise(resolve => { release = resolve; });
+    const pending = sb._wd_extractCommitments('毕自严');
+    await Promise.resolve();
+    sb.GM = { sid: 's2', turn: 7, chars: [{ name: '毕自严', alive: true }], jishiRecords: [], _npcCommitments: {} };
+    release(JSON.stringify({ commitments: [{ task: '跨档旧旨', willingness: 1 }], relays: [] }));
+    await pending;
+    assert(!oldGM._npcCommitments['毕自严'] && !sb.GM._npcCommitments['毕自严'], 'B10 ★跨档晚到承诺不写旧 GM 也不污染新 GM');
+  }
+  {
+    const sb = makeWenduiCtx('');
+    sb.P = { ai: { key: 'k' }, playerInfo: { characterName: '天子' } };
+    const target = { name: '毕自严', alive: true };
+    sb.GM = { sid: 's1', turn: 7, chars: [target], jishiRecords: jishiPair('毕自严', 7), _npcCommitments: {} };
+    let release;
+    sb.callAI = () => new Promise(resolve => { release = resolve; });
+    const pending = sb._wd_extractCommitments('毕自严');
+    await Promise.resolve();
+    target.alive = false; target.dead = true;
+    release(JSON.stringify({ commitments: [{ task: '死后晚到旨', willingness: 1 }], relays: [] }));
+    await pending;
+    assert(!sb.GM._npcCommitments['毕自严'], 'B11 ★目标 await 期间死亡则晚到结果拒绝');
+  }
 
   // ═════════════════════════════════════════════════════════════════════
   //  ③  sendWendui·死人闸源契约(async DOM 大函数·验守卫接线)
   // ═════════════════════════════════════════════════════════════════════
   console.log('===== ③·sendWendui 死人闸源契约 =====');
   const wsrc = fs.readFileSync(path.join(ROOT, 'tm-wendui.js'), 'utf8');
+  assert(/_wdSessionEpoch/.test(wsrc) && /_wdTargetEpoch/.test(wsrc) && /GM === _wdGuard\.gm/.test(wsrc), 'C0 承诺写回捕获 GM/session/turn/target epoch 并 await 后复验');
   assert(/var _wdTargetDead = !!\(ch && \(ch\.alive === false \|\| ch\.dead\)\)/.test(wsrc), 'C1 sendWendui 计算 _wdTargetDead');
   assert(/if \(loyaltyDelta !== 0 && !_wdTargetDead\)/.test(wsrc), 'C2 忠诚增量门控死人闸');
   assert(/if \(_stressDelta !== 0 && ch && !_wdTargetDead\)/.test(wsrc), 'C3 压力增量门控死人闸');

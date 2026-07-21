@@ -317,7 +317,7 @@ _wtResolveRenliHardChange(parts) → {target, field, store}
 
 ## 十、持久化与快照（两条路·别只发一处）
 
-- **种子层**（`region.data.renliSeed`）：改 scenario `.js` **不生效**——须走 `scenarios/*.js → 官方 JSON → build-tianqi-runtime-snapshot.js → 运行时快照`，并 **bump `SNAP_QS`**（index.html:828）+ 同步八制品（参 class-party-overhaul 文）。
+- **种子层**（`region.data.renliSeed`）：只改仓根 `scenarios/*（官方）.json`，再运行 `node web/scripts/sync-official-scenarios.js`。旧 runtime snapshot / `SNAP_QS` 已于 2026-07-18 退役；`web/scenarios/*.js` 与各 bundle 均为单向派生物。
 - **活态层**（`GM.renli`·系统所有）：在 `tm-save-lifecycle.js` `_prepareGMForSave` 加 `if(GM.renli) GM._savedRenli = _safeClone(GM.renli)`，`_restoreSavedFields` 配对还原；`_ensureGMDefaults` 补 `GM.renli` 默认。
 - 写既有 population 叶子（hiddenCount/fugitives）随 chars/divisions 全对象序列化，自动持久。
 

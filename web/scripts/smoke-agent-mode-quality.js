@@ -24,7 +24,7 @@ assert(AM.agentQualityGateOn({ conf: {} }) === false, '默认关(无 agentQualit
     if (/审读官/.test(sys)) return JSON.stringify({ pass: true, issues: [] });
     return '{}';
   };
-  const gm1 = { turn: 3, _agentChronicle: { shizhengji: longSzj, shilu: '实录原文' }, _turnReport: [], chars: [] };
+  const gm1 = { turn: 3, _agentChronicle: { shizhengji: longSzj, shiluText: '实录原文' }, _turnReport: [], chars: [] };
   const r1 = await AM.qualityGate({ GM: gm1 }, gm1, {}, longSzj);
   assert(r1 && r1.pass === true && r1.narrative === longSzj, '审查通过→不修补·原文不变');
   assert(gm1._agentQualityReport && gm1._agentQualityReport.pass === true && !gm1._agentQualityReport.repaired, '_agentQualityReport pass=true·未修补');
@@ -38,12 +38,13 @@ assert(AM.agentQualityGateOn({ conf: {} }) === false, '默认关(无 agentQualit
     if (/据审读意见修订/.test(sys)) { fixCalls++; return JSON.stringify({ shizhengji: '修订后:改由孙承宗上奏。', shilu: '修订实录', zhengwen: '修订政文' }); }
     return '{}';
   };
-  const gm2 = { turn: 5, _agentChronicle: { shizhengji: longSzj, shilu: '原实录' }, _turnReport: [{ type: 'change', path: 'chars/王化贞', reason: '上奏' }], chars: [{ name: '王化贞', alive: false, deathTurn: 4 }] };
+  const gm2 = { turn: 5, _agentChronicle: { shizhengji: longSzj, shiluText: '原实录' }, _turnReport: [{ type: 'narrative', text: longSzj }, { type: 'change', path: 'chars/王化贞', reason: '上奏' }], chars: [{ name: '王化贞', alive: false, deathTurn: 4 }] };
   const r2 = await AM.qualityGate({ GM: gm2 }, gm2, {}, longSzj);
   assert(reviewCalls === 1 && fixCalls === 1, '不过→审查1次+修补1次(各单发·防循环)');
   assert(r2 && r2.repaired === true && /改由孙承宗/.test(r2.narrative), '修补后 narrative=修订史记');
   assert(/改由孙承宗/.test(gm2._agentChronicle.shizhengji), '_agentChronicle.shizhengji 更新为修订版');
-  assert(gm2._agentChronicle.shilu === '修订实录', '_agentChronicle.shilu 一并更新');
+  assert(gm2._agentChronicle.shiluText === '修订实录', '_agentChronicle.shiluText 一并更新并进入正式结果契约');
+  assert(/改由孙承宗/.test(gm2._turnReport[0].text), '修订后的时政记同步回 _turnReport 叙事焊缝');
   assert(gm2._agentQualityReport.repaired === true && gm2._agentQualityReport.issues.length === 1, '_agentQualityReport 记 repaired+issues(观测)');
 
   // ③ 内容太短 → 跳过(不审·不调 AI)

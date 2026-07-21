@@ -143,6 +143,16 @@
     if (hasPromptInjection(body)) reasons.push(reason('prompt_injection', 'candidate text looks like prompt injection'));
     if (type === 'hard_state' && !trusted) reasons.push(reason('unauthorized_hard_state', 'AI/external source cannot directly write hard_state'));
     if (!Array.isArray(env.sourceRefs) || env.sourceRefs.length === 0) reasons.push(reason('missing_source_refs', 'candidate has no sourceRefs'));
+    // P0-3·记忆管家生死对账（刀B）：AI 自撰记忆若与本局 GM 生死态冲突（如「张三深信魏忠贤已伏诛」而本局魏在世）→
+    //   隔离(quarantined·不自动接受)+落弱提示账·防污染经 GM._memoryAccepted 被 envelope 再投影自强化。
+    //   检测器/记账安家 tm-mechanics-memory.js·此处 typeof 守卫（运行时用全局 GM 对账·非唯一 sink 详见其头注）。
+    if (typeof _tmDetectVitalConflict === 'function') {
+      var _vc = _tmDetectVitalConflict(body) || _tmDetectVitalConflict(clean(env.safeBody));   // 双字段分别检测：下游 compiler 注入 safeBody||body 权威相反·任一冲突即隔离
+      if (_vc) {
+        reasons.push(reason('memory_hist_conflict', 'claim conflicts with GM life/death state: ' + (_vc.claimTarget || '')));
+        if (typeof _tmRecordVitalConflictHint === 'function') { try { _tmRecordVitalConflictHint(clean(candidate.actor || candidate.ownerScope || env.ownerScope || ''), _vc, body); } catch (_vh) {} }
+      }
+    }
 
     env.reasons = reasons;
     env.reviewStatus = trusted && reasons.length === 0 ? 'accepted' : 'pending_review';
@@ -597,6 +607,16 @@
     if (!GM) return null;
     ensureQueues(GM);
     var item = candidate && candidate.type && candidate.status && candidate.body ? enrichMemoryItem(candidate, candidate) : evaluateCandidate(candidate, opts);
+    // P1·写闸旁路封堵（Codex 二轮）：带 type+status+body 的候选直走 enrichMemoryItem 跳过 evaluateCandidate·
+    //   公开 API enqueue 能带 accepted 状态绕生死对账；此处对最终 item 再对账·两路径都过·不可绕。
+    if (typeof _tmDetectVitalConflict === 'function' && item && item.status !== 'quarantined') {
+      var _evc = _tmDetectVitalConflict(clean(item.body)) || _tmDetectVitalConflict(clean(item.safeBody));   // 双字段分别检测（干净 body + 毒 safeBody 亦拦）
+      if (_evc) {
+        item.status = 'quarantined'; item.reviewStatus = 'quarantined';
+        item.reasons = (Array.isArray(item.reasons) ? item.reasons : []).concat([reason('memory_hist_conflict', 'claim conflicts with GM life/death state: ' + (_evc.claimTarget || ''))]);
+        if (typeof _tmRecordVitalConflictHint === 'function') { try { _tmRecordVitalConflictHint(clean(candidate.actor || candidate.ownerScope || item.ownerScope || ''), _evc, item.body); } catch (_ve) {} }
+      }
+    }
     item.id = item.id || nowId('mem-write');
     item.enqueuedAtTurn = Number((GM && GM.turn) || item.turn || 0);
     GM._memoryWriteQueue.push(item);

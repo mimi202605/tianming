@@ -480,8 +480,58 @@
       } catch (_) {}
       _origAi = null;
     }
+    function freezeTimedOutState(root) {
+      // 超时后专用：冻结这扇正式沙盒窗口的世界对象，使已经捕获 GM/子对象引用的晚到任务也无法继续落账。
+      if (!root || typeof root !== 'object') return;
+      var seen = typeof WeakSet !== 'undefined' ? new WeakSet() : [];
+      var stack = [root];
+      while (stack.length) {
+        var cur = stack.pop();
+        if (!cur || typeof cur !== 'object') continue;
+        if (seen instanceof Array) {
+          if (seen.indexOf(cur) >= 0) continue;
+          seen.push(cur);
+        } else {
+          if (seen.has(cur)) continue;
+          seen.add(cur);
+        }
+        try {
+          Object.keys(cur).forEach(function(k) {
+            var child;
+            try { child = cur[k]; } catch (_) { child = null; }
+            if (child && typeof child === 'object') stack.push(child);
+          });
+          Object.freeze(cur);
+        } catch (_) {}
+      }
+    }
+    function quarantineTimedOutRun() {
+      report._teardownRequired = true;
+      freezeTimedOutState(global.GM);
+      // 绝不在晚到 _endTurnInternal 仍存活时恢复主 key。关闭失败的降级态也只保留空凭据。
+      try {
+        if (global.P && global.P.ai) {
+          global.P.ai.key = '';
+          global.P.ai.url = '';
+          global.P.ai.model = '';
+          if (global.P.ai.secondary) {
+            global.P.ai.secondary.key = '';
+            global.P.ai.secondary.url = '';
+            global.P.ai.secondary.model = '';
+          }
+        }
+      } catch (_) {}
+      freezeTimedOutState(global.P);
+      _origAi = null;
+    }
+    function teardownTimedOutSandbox() {
+      report.teardown = 'window-close';
+      try { if (typeof global.stop === 'function') global.stop(); } catch (_) {}
+      try { if (typeof global.close === 'function') global.close(); } catch (_) {}
+    }
     function finish(phaseNote) {
-      restoreAiTier();
+      if (!report._teardownRequired) restoreAiTier();
+      else report.teardown = 'window-close';
       if (phaseNote) report.note = report.note ? (report.note + '；' + phaseNote) : phaseNote;
       if (global.removeEventListener) { global.removeEventListener('error', onWinErr); global.removeEventListener('unhandledrejection', onWinErr); }
       report.verdict = quickTestVerdict(report);
@@ -493,6 +543,7 @@
             global.toast(ok ? ('快测报告已写回工坊[' + badge + ']：' + (v.summary || '')) : '快测报告写回失败(IndexedDB 不可用)');
           }
         } catch (_) {}
+        if (report._teardownRequired) teardownTimedOutSandbox();
       });
     }
     // 单回合真跑：捕获同步/异步抛错(记录后不中断后续)·超时中止后续(防异步争抢)·跑完做四类体检。
@@ -517,7 +568,11 @@
       var racedP = turnP.then(function () { return '__ok__'; }).catch(function (eT) { rec.threw = true; rec.error = '回合异常: ' + ((eT && eT.message) || eT); errCap('回合 ' + n + ' ' + rec.error); return '__err__'; });
       return Promise.race([racedP, timeoutP]).then(function (outcome) {
         rec.ms = Date.now() - t1;
-        if (outcome === '__timeout__') { rec.threw = true; rec.error = '回合超时(' + perTurnTimeoutMs + 'ms)'; errCap('回合 ' + n + ' 超时'); report._aborted = true; report._abortReason = '回合 ' + n + ' 超时·中止后续'; }
+        if (outcome === '__timeout__') {
+          rec.threw = true; rec.error = '回合超时(' + perTurnTimeoutMs + 'ms)'; errCap('回合 ' + n + ' 超时');
+          report._aborted = true; report._abortReason = '回合 ' + n + ' 超时·冻结状态并销毁沙盒';
+          quarantineTimedOutRun();
+        }
         rec.stats = gmStats();
         rec.ok = !rec.threw && (rec.stats.turn > prevTurn);
         rec.health = quickTestHealthChecks({ fiscal: fBase, narrative: pBase });

@@ -177,7 +177,7 @@ context.TMPhase8FormalBridge = {
 };
 context.GM = {
   turn: 7,
-  chars: [],
+  chars: [{ name: '新将', alive: true }],
   facs: [],
   armies: [{
     id: 'army_liaodong',

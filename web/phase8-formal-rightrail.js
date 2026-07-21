@@ -55,9 +55,11 @@
   var RIGHT_ARMY_INITIAL_ROWS = 36;
   var RIGHT_ADMIN_INITIAL_ROWS = 24;
   var RIGHT_OFFICE_INITIAL_NODES = 8;
+  var RIGHT_WENDUI_INITIAL_ROWS = 24;
   var _rightArmyRenderSeq = 0;
   var _rightAdminRenderSeq = 0;
   var _rightOfficeRenderSeq = 0;
+  var _rightWenduiRenderSeq = 0;
 
   // ── late-bound wrappers for orchestration calls (bridge.X / window.X) ─
   function openPanel(slot){ return bridge.openPanel(slot); }
@@ -417,6 +419,17 @@
   function rightWenduiIsSeeker(p){
     if (!p || !rightIssueAtCourt(p)) return false;
     if (p._mourning || p._lastMetTurn === ((window.GM && GM.turn) || 1)) return false;
+    // 单一真源：走 tm-wendui 的 _wdDeriveAudienceAgenda(与旧 UI【有臣求见】筛选、与本文件 rightWenduiSeekReason 同源)。
+    // agenda 依赖 _npcCommitments/_wdRewardPunish/loyalty/stress 等真实处境，只挂在真身上→照 :409 取真身。
+    var realCh = (typeof findCharByName === 'function' && findCharByName(p.name)) || p;
+    if (typeof window !== 'undefined' && typeof window._wdDeriveAudienceAgenda === 'function') {
+      var agenda = null;
+      try { agenda = window._wdDeriveAudienceAgenda(realCh); } catch (_) {}
+      // agenda 已内置防洪(routine/未逾期/浅离心 seek=false)，不再叠加过滤把集合改窄；未回信亲至是 agenda 之外的独立 or 条件(与旧 UI :192-194 一致)。
+      return !!(agenda && agenda.seek)
+        || rightWenduiHasUnansweredLetter(p.name || personKey(p));
+    }
+    // 回退：真源缺席(加载序未就绪/单元环境)时用旧启发式，防渲染崩。
     var stress = rightIssueNum(p, ['stress','pressure'], 0);
     var loyalty = rightIssueNum(p, ['loyalty','loyal'], 50);
     var ambition = rightIssueNum(p, ['ambition'], 50);
@@ -475,11 +488,11 @@
     }
     var face = person ? rightIssuePortrait(person) : '<span class="tmrp-avatar">' + esc(initial) + '</span>';
     return '<article class="tmrp-wd-request envoy">' +
-      '<button type="button" class="tmrp-wd-request-main" data-right-action="wendui-queue" data-index="' + attr(idx) + '">' +
+      '<button type="button" class="tmrp-wd-request-main" data-right-action="wendui-queue" data-qid="' + attr(q._qid || '') + '">' +
       face +
       '<span><b>' + esc(name) + (q.isEnvoy ? '<i>使节</i>' : '') + '</b><small>' + esc(compactText(q.reason || q.fromFaction || '等待陛下决断', 72)) + '</small></span>' +
       '</button>' +
-      '<button type="button" class="tmrp-wd-mini" data-right-action="wendui-dismiss" data-index="' + attr(idx) + '">暂却</button>' +
+      '<button type="button" class="tmrp-wd-mini" data-right-action="wendui-dismiss" data-qid="' + attr(q._qid || '') + '">暂却</button>' +
       '</article>';
   }
 
@@ -489,11 +502,37 @@
       '</section>';
   }
 
+  // 问对名单渐进水合(2026-07-19·求见刀复审返工·防洪)：高压局求见/在京/远方名单可达数百人，
+  //   一次性全渲则 DOM 线性膨胀致卡顿(极端局千人≈8000+元素)。与军队/政区名册同范式——先渲一批
+  //   (RIGHT_WENDUI_INITIAL_ROWS)，余量经 setTimeout 水合补全；完整人数由分组标题 count + 「余 N 人」
+  //   提示保留，绝不静默截断(区别于旧 slice(0,N) 丢人)。求见/在京/远方卡片均以稳定 data-id(personKey)标识，
+  //   不涉 index，故水合安全。
+  function rightScheduleWenduiHydration(token, fullHtml){
+    setTimeout(function(){
+      var mount = document.querySelector('[data-wd-list-token="' + token + '"]');
+      if (!mount || String(mount.getAttribute('data-wd-list-token') || '') !== String(token)) return;
+      mount.innerHTML = fullHtml;
+    }, 0);
+  }
+  function rightWenduiHydratedList(cls, items, renderItem){
+    var arr = Array.isArray(items) ? items : [];
+    var token = 'wd-' + (++_rightWenduiRenderSeq);
+    var deferred = arr.length > RIGHT_WENDUI_INITIAL_ROWS;
+    var syncArr = deferred ? arr.slice(0, RIGHT_WENDUI_INITIAL_ROWS) : arr;
+    if (deferred) rightScheduleWenduiHydration(token, arr.map(renderItem).join(''));
+    return '<div class="' + cls + '" data-wd-list-token="' + attr(token) + '">' +
+      syncArr.map(renderItem).join('') +
+      (deferred ? '<div class="tmrp-meta">余 ' + (arr.length - RIGHT_WENDUI_INITIAL_ROWS) + ' 人载入中...</div>' : '') +
+      '</div>';
+  }
+
   function renderRightWenduiPanel(){
     var people = rightIssuePeople();
     var gm = window.GM || {};
     var rawPendingAudiences = Array.isArray(gm._pendingAudiences) ? gm._pendingAudiences : [];
-    var pendingAudiences = rawPendingAudiences.filter(function(q){
+    // 清洗谓词(保留使节/剧本预置/后妃/本朝在场者·滤除混入的明确异势力求见者)。写口统一走 tm-wendui 的唯一
+    // 清洗 mutator(按谓词·非 index)，与旧 UI/各删除点同口，杜绝两套 UI 各持 render-time index 删错人。
+    var _wdKeep = function(q){
       if (!q || !q.name) return false;
       if (!q.isConsort) {
         // 阵营闸(2026-07-04)：滤除旧版混入的明确异势力求见者(外邦君主)·使节/剧本预置/空 faction 者放行·与 tm-wendui 渲染清洗同款
@@ -510,22 +549,29 @@
         try { p = window.findCharByName(q.name); } catch(_) {}
       }
       return !!(p && rightIssueIsPlayerConsort(p));
-    });
-    if (pendingAudiences.length !== rawPendingAudiences.length) gm._pendingAudiences = pendingAudiences;
+    };
+    var pendingAudiences;
+    if (typeof window._wdCleansePendingAudiences === 'function') {
+      window._wdCleansePendingAudiences(_wdKeep);   // 唯一写口·仅在真有剔除时写回
+      pendingAudiences = Array.isArray(gm._pendingAudiences) ? gm._pendingAudiences : [];
+    } else {
+      pendingAudiences = rawPendingAudiences.filter(_wdKeep);   // 兜底：mutator 未载入时不写回·仅供本次渲染
+    }
+    if (typeof window._wdEnsurePendingQids === 'function') window._wdEnsurePendingQids();   // 渲染前补 _qid(队列按钮按 _qid 定位·非 index)
     var atCourt = people.filter(rightIssueAtCourt);
     var seekers = atCourt.filter(rightWenduiIsSeeker);
     var waiting = atCourt.filter(function(p){ return seekers.indexOf(p) < 0; });
     var away = people.filter(function(p){ return !rightIssueAtCourt(p); });
-    var waitingBody = waiting.length ? '<div class="tmrp-wd-grid">' + waiting.slice(0, 24).map(function(p){
+    var waitingBody = waiting.length ? rightWenduiHydratedList('tmrp-wd-grid', waiting, function(p){
       return rightWenduiPersonCard(p, 'wendui-pick', '');
-    }).join('') + '</div>' : '';
-    var awayBody = away.length ? '<div class="tmrp-wd-away">' + away.slice(0, 24).map(function(p){
+    }) : '';
+    var awayBody = away.length ? rightWenduiHydratedList('tmrp-wd-away', away, function(p){
       var loc = p.location || p.status || '远方';
       var travel = p._travelTo ? ' → ' + p._travelTo : '';
       return rightWenduiPersonCard(p, 'wendui-letter', compactText(loc + travel, 12));
-    }).join('') + '</div>' : '';
+    }) : '';
     var queueBody = pendingAudiences.length ? '<div class="tmrp-wd-list">' + pendingAudiences.map(rightWenduiQueueItem).join('') + '</div>' : '';
-    var seekerBody = seekers.length ? '<div class="tmrp-wd-list">' + seekers.slice(0, 12).map(rightWenduiRequestItem).join('') + '</div>' : '';
+    var seekerBody = seekers.length ? rightWenduiHydratedList('tmrp-wd-list', seekers, rightWenduiRequestItem) : '';
     return '<div class="tmrp-issue-shell tmrp-wendui">' +
       '<div class="tmrp-summary cols4">' +
         '<div class="tmrp-stat"><b>' + esc(pendingAudiences.length) + '</b><span>候见</span></div>' +
@@ -587,6 +633,30 @@
   function rightArmyPercent(a, keys, fallback){
     var n = rightArmyNumRaw(a, keys, fallback == null ? 50 : fallback);
     return Math.max(0, Math.min(100, n));
+  }
+
+  // 军心缺省值对齐真源(2026-07-19)：tm-military.js MILITARY_DEFAULT_MORALE=60 + _armyMorale(morale!=null?Number:60)
+  //   是单一真相源(战力/战斗/编制统一读)。右栏原用默认 50，与真源分裂(0 士气军按 50 显、缺省 50≠60)。改走
+  //   window._armyMorale(typeof 守卫)；真源缺席时兜底 60(非 50)且保留 moraleValue 兼容键。morale=0 正确读作 0。
+  function rightArmyMoraleValue(a){
+    var v;
+    if (typeof window !== 'undefined' && typeof window._armyMorale === 'function') {
+      try { v = window._armyMorale(a); } catch (_) { v = null; }
+    }
+    if (v == null) v = (a && a.morale != null) ? a.morale : (a && a.moraleValue != null ? a.moraleValue : 60);
+    var n = Number(v);
+    if (!isFinite(n)) n = 60;
+    return Math.max(0, Math.min(100, n));
+  }
+
+  // 补给对齐真源战力口径(2026-07-19)：calculateArmyStrength 中 supplyRatio(0-1·补给/行军系统填) 优先于
+  //   supply(0-100·日常/UI)。右栏原只读 supply/supplies，行军补给态被无视。改：有 supplyRatio 时换算(×100)优先。
+  function rightArmySupplyValue(a){
+    if (a && a.supplyRatio !== undefined && a.supplyRatio !== null) {
+      var r = Number(a.supplyRatio);
+      if (isFinite(r)) return Math.max(0, Math.min(100, r * 100));
+    }
+    return rightArmyPercent(a, ['supply','supplies'], 70);
   }
 
   function rightArmySoldiers(a){
@@ -833,11 +903,11 @@
     if (!a) return '';
     var armyKey = rightArmyKey(a, idx == null ? 0 : idx);
     var soldiers = rightArmySoldiers(a);
-    var morale = rightArmyPercent(a, ['morale','moraleValue'], 50);
+    var morale = rightArmyMoraleValue(a);
     var training = rightArmyPercent(a, ['training','trainingValue'], 50);
     var loyalty = rightArmyPercent(a, ['loyalty','cohesion'], 50);
     var control = rightArmyPercent(a, ['control','discipline','commandControl'], 50);
-    var supply = rightArmyPercent(a, ['supply','supplies'], 70);
+    var supply = rightArmySupplyValue(a);
     var mutiny = rightArmyPercent(a, ['mutinyRisk','rebellionRisk'], 0);
     var hot = morale < 45 || supply < 35 || mutiny >= 55;
     var commander = rightArmyFirst(a, ['commander','commanderName','commanderDisplayName','commander_name','general','generalName','leader','leaderName','commandingOfficer','chiefCommander','chiefGeneral','mainGeneral'], '未置统帅');
@@ -969,7 +1039,7 @@
     var armies = rightArmyList();
     var rows = rightArmyRowsForRender(armies);
     var total = rows.reduce(function(s, row){ return s + row.soldiers; }, 0);
-    var avgMorale = rows.length ? Math.round(rows.reduce(function(s, row){ return s + rightArmyPercent(row.army, ['morale'], 50); }, 0) / rows.length) : 0;
+    var avgMorale = rows.length ? Math.round(rows.reduce(function(s, row){ return s + rightArmyMoraleValue(row.army); }, 0) / rows.length) : 0;
     var avgTraining = rows.length ? Math.round(rows.reduce(function(s, row){ return s + rightArmyPercent(row.army, ['training'], 50); }, 0) / rows.length) : 0;
     var selectedRow = rightFindArmyRow(rows, state.selectedArmy) || rows[0] || null;
     if (selectedRow) state.selectedArmy = selectedRow.key;
@@ -982,8 +1052,8 @@
     if (deferredList && armyTab === 'roster') rightScheduleArmyListHydration(listToken, groups, selectedKey);
     var armyAlerts = rows.map(function(row){
       var a = row.army;
-      var morale = rightArmyPercent(a, ['morale','moraleValue'], 50);
-      var supply = rightArmyPercent(a, ['supply','supplies'], 70);
+      var morale = rightArmyMoraleValue(a);
+      var supply = rightArmySupplyValue(a);
       var mutiny = rightArmyPercent(a, ['mutinyRisk','rebellionRisk'], 0);
       var loyalty = rightArmyPercent(a, ['loyalty','cohesion'], 50);
       var reasons = [];
@@ -1071,6 +1141,30 @@
     return map[raw.toLowerCase()] || raw;
   }
 
+  // ★主官取值走真源(2026-07-19)：原先直读 d.governor||d.chief||… 是剧本静态死字段(任免/死亡不更新)，
+  //   绕过了 regionBundle 的活官职绑定。此处照 liveRegionGovernor(治理官职→GM.chars 在世持有人·随任免/死亡而变)
+  //   同源解析——活绑定命中优先显在世持有人；否则校静态主官是否在世，已殁/无人→返 ''(显示层落「空缺·待补」)。
+  //   liveRegionGovernor 由 phase8-formal-map(origin)导出至 bridge.__p8MapParts；未载入时兜回静态值(退化不崩)。
+  function rightAdminLiveGovernor(d){
+    d = d || {};
+    var officePos = d.officialPosition || d.office || d.position || '';
+    var staticGov = d.governor || d.chief || d.holder || d.official || '';
+    try {
+      var mp = (bridge && bridge.__p8MapParts) || null;
+      var lrg = mp && mp.liveRegionGovernor;
+      if (officePos && typeof lrg === 'function') {
+        var live = lrg(officePos);
+        if (live && live.name) return live.name;   // 活官职持有人(权威)
+      }
+    } catch (_) {}
+    if (staticGov) {
+      var sc = (typeof window.findCharByName === 'function') ? window.findCharByName(staticGov) : null;
+      if (sc && (sc.alive === false || sc.dead === true)) return '';   // 静态主官已殁→出缺(死字段曾显死人)
+      return staticGov;
+    }
+    return '';   // 无人
+  }
+
   function rightAdminFromDivision(d, faction){
     d = d || {};
     var popObj = (d.population && typeof d.population === 'object') ? d.population : null;
@@ -1079,7 +1173,7 @@
       name: d.name || d.title || d.officialName || d.id || '未名区划',
       level: rightAdminLevelLabel(d.level || d.adminLevel || d.regionType || d.type || ''),
       faction: rightFactionDisplay(faction || d.dejureOwner || d.owner || d.factionName || d.faction || ''),
-      governor: d.governor || d.chief || d.holder || d.official || '',
+      governor: rightAdminLiveGovernor(d),
       position: d.officialPosition || d.office || d.position || '',
       pop: (popObj && (popObj.mouths || popObj.population)) || d.population || detail.mouths || d.pop || 0,
       households: (popObj && popObj.households) || d.households || detail.households || 0,
@@ -1133,7 +1227,7 @@
       var hot = rightAdminNum(x.minxin, 60) < 45 || rightAdminNum(x.corruption, 0) > 55;
       return '<section class="tmrp-card tmrp-admin-card ' + (hot ? 'hot' : '') + '" style="--admin-c:' + ['#c9a84c','#70b097','#8e6aa8','#c95340','#5e8fb3'][i % 5] + '">' +
         '<div class="tmrp-admin-title"><b>' + esc(x.name) + '</b><small>' + esc(x.level) + '<br>' + esc(x.faction || '未录') + '</small></div>' +
-        '<div class="tmrp-mini-grid"><div><span>主官</span><b>' + esc(x.governor || '未置') + '</b></div><div><span>官职</span><b>' + esc(x.position || '未录') + '</b></div><div><span>人口</span><b>' + esc(rightAdminWan(x.pop)) + '</b></div><div><span>户数</span><b>' + esc(rightAdminWan(x.households)) + '</b></div></div>' +
+        '<div class="tmrp-mini-grid"><div><span>主官</span><b>' + esc(x.governor || '空缺·待补') + '</b></div><div><span>官职</span><b>' + esc(x.position || '未录') + '</b></div><div><span>人口</span><b>' + esc(rightAdminWan(x.pop)) + '</b></div><div><span>户数</span><b>' + esc(rightAdminWan(x.households)) + '</b></div></div>' +
         rightArmyBar('民心', rightAdminNum(x.minxin, 50)) + rightArmyBar('繁荣', rightAdminNum(x.prosperity, 50)) + rightArmyBar('腐败', rightAdminNum(x.corruption, 0)) +
         rightArmyRows([['地形', x.terrain], ['特产', x.resources], ['税负', x.tax], ['下辖', Array.isArray(x.children) ? x.children.length + ' 处' : '未录']]) +
         '<div class="tmrp-action-row"><button type="button" class="tmrp-btn" data-right-action="admin-edict" data-kind="安民" data-name="' + attr(x.name) + '">安民</button><button type="button" class="tmrp-btn" data-right-action="admin-edict" data-kind="巡按" data-name="' + attr(x.name) + '">巡按</button><button type="button" class="tmrp-btn" data-right-action="admin-edict" data-kind="调粮" data-name="' + attr(x.name) + '">调粮</button><button type="button" class="tmrp-btn primary" data-right-action="admin-edict" data-kind="拟诏" data-name="' + attr(x.name) + '">拟诏</button></div>' +
@@ -1163,7 +1257,7 @@
       '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(items.length) + '</b><span>行政区</span></div><div class="tmrp-stat"><b>' + esc(rightAdminWan(totalPop)) + '</b><span>总人口</span></div><div class="tmrp-stat"><b>' + esc(crisis.length) + '</b><span>危机</span></div></div>' +
       '<section class="tmrp-card"><div class="tmrp-card-title"><span>各方据地</span><small>据有州县的诸方</small></div>' +
       (factions.length ? '<div class="tmrp-chip-list">' + factions.slice(0, 8).map(function(f){ return '<span class="tmrp-pill">' + esc(f) + '</span>'; }).join('') + (factions.length > 8 ? '<span class="tmrp-pill">…</span>' : '') + '</div>' : '<div class="tmrp-meta">疆域归属未录。</div>') + '</section>' +
-      (crisis.length ? '<section class="tmrp-card hot"><div class="tmrp-card-title"><span>区划预警</span><small>民心低 / 腐败高</small></div>' + crisis.slice(0, 4).map(function(x){ return '<div class="tmrp-step"><b>' + esc(x.name) + '</b> 民心 ' + esc(Math.round(rightAdminNum(x.minxin, 0))) + ' · 腐败 ' + esc(Math.round(rightAdminNum(x.corruption, 0))) + ' · ' + esc(x.governor || '主官未录') + '</div>'; }).join('') + '</section>' : '') +
+      (crisis.length ? '<section class="tmrp-card hot"><div class="tmrp-card-title"><span>区划预警</span><small>民心低 / 腐败高</small></div>' + crisis.slice(0, 4).map(function(x){ return '<div class="tmrp-step"><b>' + esc(x.name) + '</b> 民心 ' + esc(Math.round(rightAdminNum(x.minxin, 0))) + ' · 腐败 ' + esc(Math.round(rightAdminNum(x.corruption, 0))) + ' · ' + esc(x.governor || '空缺·待补') + '</div>'; }).join('') + '</section>' : '') +
       (items.length ? '<div class="tmrp-scroll tall" data-admin-list-token="' + attr(listToken) + '">' + rightAdminCardsHtml(syncItems) + (deferredList ? '<div class="tmrp-meta">余下政区正在载入...</div>' : '') + '</div>' : '<section class="tmrp-card empty"><div class="tmrp-empty">天下州县尚未录入舆图。</div></section>') +
       '</div>';
   }
@@ -1216,6 +1310,66 @@
     return out;
   }
 
+  // 岁入/岁出分项走 cascade 结算真源(2026-07-19)：读 GM.guoku.ledgers.{money,grain,cloth}.{sources,sinks}
+  //   (本回合按税种/支类结算·与帑廪 panel 岁入岁出分项同源)。原 rightFinanceCollect 读 incomeItems/taxes 静态配置
+  //   数组，与真源结算对不上；cascade 无数据时上层回落静态数组并标「(概算)」。
+  //   税种/支类中文名镜像 tm-guoku-panel 的 _tagNameMap/_expLabels(跨朝代通用财政科目)。
+  function rightFinanceTagNames(){
+    return {
+      tianfu:'田赋', tianfu_silver:'田赋折银', dingshui:'丁税', yongBu:'庸役折布', shangShui:'商税',
+      yanlizhuan:'盐铁专卖', caoliang:'漕粮', shipaiShui:'市舶', quanShui:'榷税', juanNa:'捐纳',
+      qita:'其他', mining:'矿冶', fishingTax:'渔课', liaoxiang:'辽饷加派', chama:'茶马司',
+      chaoguan:'钞关税', guanshui:'关税(月港)', junhu:'军户屯田',
+      fenglu:'俸禄', junxiang:'军饷', zhenzi:'赈济', gongcheng:'工程', jisi:'祭祀',
+      shangci:'赏赐', neiting:'内廷转运'
+    };
+  }
+  // tag→中文：静态科目表优先 → 自定义税 stats.name → 剧本 fiscalConfig.customTaxes 名(镜像 tm-guoku-panel.js
+  // _resolveTagName 的剧本回落·★同步义务：panel 那段改了这里也要跟着改) → 原始 tag。
+  function rightFinanceResolveTagName(tag, customStats){
+    var names = rightFinanceTagNames();
+    if (names[tag]) return names[tag];
+    if (customStats && customStats[tag] && customStats[tag].name) return customStats[tag].name;
+    try {
+      var sc = (typeof findScenarioById === 'function' && window.GM && GM.sid) ? findScenarioById(GM.sid) : null;
+      var cts = (sc && sc.fiscalConfig && sc.fiscalConfig.customTaxes) || [];
+      for (var i = 0; i < cts.length; i++) { if (cts[i] && (cts[i].id === tag || cts[i].sourceTag === tag)) return cts[i].name || tag; }
+    } catch (_) {}
+    return tag;
+  }
+  function rightFinanceCascadeItems(kind){
+    var gm = window.GM || {};
+    var g = gm.guoku || (window.P && P.guoku) || {};
+    var ledgers = g.ledgers || {};
+    var customStats = g._customTaxStats || {};
+    var mapKey = kind === 'expense' ? 'sinks' : 'sources';
+    var units = [['money','钱'], ['grain','粮'], ['cloth','布']];
+    var out = [];
+    var seen = {};   // 已从 ledger 枚举出的 tag(去重·防自定义税重复列)
+    units.forEach(function(u){
+      var led = ledgers[u[0]]; if (!led) return;
+      var m = led[mapKey] || {};
+      Object.keys(m).forEach(function(tag){
+        var v = m[tag]; if (!v) return;
+        seen[tag] = true;
+        out.push({ name: rightFinanceResolveTagName(tag, customStats) + '·' + u[1], amount: v, note: '本回合结算' });
+      });
+    });
+    // 自定义税：仅补 ledger 未枚举到的(去重)·且统一本回合口径(turnAmount·非年化 amount)——
+    //   producer 已把自定义税本回合值写进 ledger.sources[sourceTag]，若无条件追加 _customTaxStats.amount 会
+    //   同一税列两行且口径混用(本回合 vs 年化)。realized 税已在 seen 里跳过；未 realized 者 turnAmount=0 略过。
+    if (kind !== 'expense') {
+      Object.keys(customStats).forEach(function(k){
+        if (seen[k]) return;
+        var c = customStats[k]; if (!c) return;
+        var tv = (c.turnAmount != null) ? c.turnAmount : 0;
+        if (!tv) return;
+        out.push({ name: (c.name || k) + '·钱', amount: tv, note: '自定义税种' });
+      });
+    }
+    return out;
+  }
+
   function rightFinanceItemList(items, empty){
     if (!items.length) return '<div class="tmrp-empty">' + esc(empty || '暂无明细') + '</div>';
     return items.slice(0, 8).map(function(x){
@@ -1242,8 +1396,12 @@
     var income = rightFiscalReported('fiscal.turnIncome', rightFinanceFirst(g, ['turnIncome','monthlyIncome','income','lastIncome'], rightFinanceFirst(f, ['turnIncome','monthlyIncome','income'], 0)), 'good').shown;
     var expense = rightFiscalReported('fiscal.turnExpense', rightFinanceFirst(g, ['turnExpense','monthlyExpense','expense','lastExpense'], rightFinanceFirst(f, ['turnExpense','monthlyExpense','expense'], 0)), 'bad').shown;
     var net = rightAdminNum(income, 0) - rightAdminNum(expense, 0);
-    var incomeItems = rightFinanceCollect(['incomeItems','incomes','longTermIncome','recurringIncome','customTaxes','taxes']);
-    var expenseItems = rightFinanceCollect(['expenseItems','expenses','longTermExpense','recurringExpense','fixedExpenses','spendingItems']);
+    var _casIncome = rightFinanceCascadeItems('income');
+    var _casExpense = rightFinanceCascadeItems('expense');
+    var incomeFromCascade = _casIncome.length > 0;
+    var expenseFromCascade = _casExpense.length > 0;
+    var incomeItems = incomeFromCascade ? _casIncome : rightFinanceCollect(['incomeItems','incomes','longTermIncome','recurringIncome','customTaxes','taxes']);
+    var expenseItems = expenseFromCascade ? _casExpense : rightFinanceCollect(['expenseItems','expenses','longTermExpense','recurringExpense','fixedExpenses','spendingItems']);
     var _rvBadge = (_rvM.distorted && window.TM && TM.ReportedView) ? TM.ReportedView.badge(_rvM) : '';
     return '<div class="tmrp-finance-shell">' +
       '<div class="tmrp-summary"><div class="tmrp-stat"><b>' + esc(rightFinanceMoney(money)) + '</b><span>太仓银</span></div><div class="tmrp-stat"><b>' + esc(rightFinanceMoney(grain)) + '</b><span>太仓粮</span></div><div class="tmrp-stat"><b>' + esc(rightFinanceMoney(net)) + '</b><span>本期结余</span></div></div>' +
@@ -1252,8 +1410,8 @@
       '<section class="tmrp-card ' + (net < 0 ? 'hot' : '') + '"><div class="tmrp-card-title"><span>本期收支</span><small>' + esc(getTurnText(window.GM && GM.turn)) + '</small></div>' +
       rightArmyRows([['本期收入', rightFinanceMoney(income)], ['本期支出', rightFinanceMoney(expense)], ['军饷', rightFinanceMoney(rightFinanceFirst(g, ['armyExpense','militaryExpense'], '待核'))], ['宗禄', rightFinanceMoney(rightFinanceFirst(g, ['royalExpense','clanExpense'], '待核'))]]) +
       '<div class="tmrp-action-row"><button type="button" class="tmrp-btn primary" data-right-action="finance-module">帑廪详情</button><button type="button" class="tmrp-btn" data-right-action="finance-old" data-method="extraTax">加派</button><button type="button" class="tmrp-btn" data-right-action="finance-old" data-method="openGranary">开仓</button><button type="button" class="tmrp-btn" data-right-action="finance-old" data-method="loan">借贷</button><button type="button" class="tmrp-btn" data-right-action="finance-old" data-method="advisor">户部参议</button><button type="button" class="tmrp-btn" data-right-action="finance-edict" data-kind="拨内帑">拨内帑</button><button type="button" class="tmrp-btn" data-right-action="finance-edict" data-kind="核饷">核饷</button><button type="button" class="tmrp-btn" data-right-action="finance-edict" data-kind="清查税粮">清查税粮</button></div></section>' +
-      '<section class="tmrp-card"><div class="tmrp-card-title"><span>常年岁入</span><small>' + (incomeItems.length ? esc(incomeItems.length) + ' 项 · 盐课关税田赋等' : '盐课、关税、田赋等') + '</small></div>' + rightFinanceItemList(incomeItems, '暂无常年岁入。') + '</section>' +
-      '<section class="tmrp-card"><div class="tmrp-card-title"><span>常年支出</span><small>' + (expenseItems.length ? esc(expenseItems.length) + ' 项 · 军饷宗禄工程赈济' : '军饷、宗禄、工程、赈济等') + '</small></div>' + rightFinanceItemList(expenseItems, '暂无常年支出。') + '</section>' +
+      '<section class="tmrp-card"><div class="tmrp-card-title"><span>岁入分项</span><small>' + (incomeItems.length ? esc(incomeItems.length) + ' 项 · ' + (incomeFromCascade ? '本回合级联结算' : '盐课关税田赋等 · (概算)') : '盐课、关税、田赋等') + '</small></div>' + rightFinanceItemList(incomeItems, '暂无岁入分项。') + '</section>' +
+      '<section class="tmrp-card"><div class="tmrp-card-title"><span>岁出分项</span><small>' + (expenseItems.length ? esc(expenseItems.length) + ' 项 · ' + (expenseFromCascade ? '本回合级联结算' : '军饷宗禄工程赈济 · (概算)') : '军饷、宗禄、工程、赈济等') + '</small></div>' + rightFinanceItemList(expenseItems, '暂无岁出分项。') + '</section>' +
       '</div>';
   }
 
@@ -1358,7 +1516,7 @@
           rightArmyRows([['创作背景', w.narrativeContext || w.background], ['政治暗线', w.politicalImplication || w.implication]]) +
           '<div class="tmrp-action-row"><button type="button" class="tmrp-btn" data-right-action="work-detail" data-index="' + attr(i) + '">详情</button><button type="button" class="tmrp-btn" data-right-action="work-action" data-index="' + attr(i) + '" data-work-action="appreciate">赏析</button><button type="button" class="tmrp-btn" data-right-action="work-action" data-index="' + attr(i) + '" data-work-action="inscribe">题序</button><button type="button" class="tmrp-btn" data-right-action="work-action" data-index="' + attr(i) + '" data-work-action="echo">追和</button><button type="button" class="tmrp-btn" data-right-action="work-action" data-index="' + attr(i) + '" data-work-action="circulate">传抄</button>' + (w.isForbidden ? '<button type="button" class="tmrp-btn primary" data-right-action="work-action" data-index="' + attr(i) + '" data-work-action="unban">解禁</button>' : '<button type="button" class="tmrp-btn ' + (hot ? 'primary' : '') + '" data-right-action="work-action" data-index="' + attr(i) + '" data-work-action="ban">查禁</button>') + '</div>' +
           '</div></section>';
-      }).join('') + '</div>')) +
+      }).join('') + (filteredWorks.length > 24 ? '<div class="tmrp-meta">余 ' + (filteredWorks.length - 24) + ' 件未列。</div>' : '') + '</div>')) +
       '</div>';
   }
 
@@ -1424,7 +1582,7 @@
       var tag = '<i class="tmrp-loy-tag ' + loyClass + '">' + (loy < 45 ? '险' : (loy >= 75 ? '忠' : '稳')) + '</i>';
       return '<section class="tmrp-card tmrp-minister-card"><div class="tmrp-minister-face">' + rightIssuePortrait(p) + '</div><div class="tmrp-minister-main">' +
         '<div class="tmrp-card-title"><span>' + esc(p.name) + '</span><small>' + tag + ' · 忠 ' + esc(loy) + '</small></div>' +
-        '<div class="tmrp-mini-grid"><div><span>职</span><b>' + esc(p.title || p.office || p.role || '在朝') + '</b></div><div><span>派</span><b>' + esc(p.faction || '—') + '</b></div></div></div></section>';
+        '<div class="tmrp-mini-grid"><div><span>职</span><b>' + esc(rightIssuePersonTitle(p)) + '</b></div><div><span>派</span><b>' + esc(rightFactionDisplay(p.faction) || '—') + '</b></div></div></div></section>';
     }).join('');
     return '<div class="tmrp-ghost-label">— 钉选后这里将呈现 · 示例 —</div><div class="tmrp-ghost">' + cards + '</div>';
   }
@@ -1446,7 +1604,7 @@
         var loyClass = loy < 45 ? 'lo' : (loy >= 75 ? 'hi' : 'mid');
         var loyTag = loy < 45 ? '险' : (loy >= 75 ? '忠' : '稳');
         return '<section class="tmrp-card tmrp-minister-card' + (loy < 45 ? ' hot' : '') + '"><div class="tmrp-minister-face">' + rightIssuePortrait(p) + '</div><div class="tmrp-minister-main">' +
-          '<div class="tmrp-card-title"><span>' + esc(p.name || key) + '</span><small><i class="tmrp-loy-tag ' + loyClass + '">' + loyTag + '</i> · ' + esc(p.title || p.office || p.role || p.faction || '未仕') + '</small></div>' +
+          '<div class="tmrp-card-title"><span>' + esc(p.name || key) + '</span><small><i class="tmrp-loy-tag ' + loyClass + '">' + loyTag + '</i> · ' + esc(rightIssuePersonTitle(p)) + (rightFactionDisplay(p.faction) ? ' · ' + esc(rightFactionDisplay(p.faction)) : '') + '</small></div>' +
           '<div class="tmrp-mini-grid"><div><span>忠</span><b>' + esc(p.loyalty || p.loyal || '未录') + '</b></div><div><span>智</span><b>' + esc(p.intelligence || p.wisdom || '未录') + '</b></div><div><span>政</span><b>' + esc(p.administration || p.politics || '未录') + '</b></div><div><span>军</span><b>' + esc(p.military || '未录') + '</b></div></div>' +
           '<div class="tmrp-action-row"><button type="button" class="tmrp-btn primary" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'detail\')">详阅</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'wendui\')">问对</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'letter\')">传书</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.personAction(\'' + attr(key) + '\',\'office\')">官制</button><button type="button" class="tmrp-btn" onclick="TMPhase8FormalBridge.unpin(\'' + attr(key) + '\')">移除</button></div>' +
           '</div></section>';
@@ -1849,15 +2007,15 @@
   }
 
   function rightOpenWenduiQueue(data){
-    var idx = Number(data && data.index);
-    if (!Number.isFinite(idx)) return;
+    var qid = (data && data.qid) || '';   // 稳定 _qid(非 render-time index)
+    if (!qid) return;
     closeDeskOverlay();
     closeModule();
     closeRightDrawer();
     if (typeof window._wdOpenAudienceQueue === 'function') {
-      window._wdOpenAudienceQueue(idx);
+      window._wdOpenAudienceQueue(qid);
     } else if (typeof _wdOpenAudienceQueue === 'function') {
-      _wdOpenAudienceQueue(idx);
+      _wdOpenAudienceQueue(qid);
     } else {
       toast('待见流程未加载');
     }
@@ -1865,14 +2023,14 @@
   }
 
   function rightDismissWenduiQueue(data){
-    var idx = Number(data && data.index);
-    if (!Number.isFinite(idx) || !window.GM) return;
+    var qid = (data && data.qid) || '';   // 稳定 _qid(非 render-time index)
+    if (!qid || !window.GM) return;
     if (typeof window._wdDismissPending === 'function') {
-      window._wdDismissPending(idx);
+      window._wdDismissPending(qid);
     } else if (typeof _wdDismissPending === 'function') {
-      _wdDismissPending(idx);
-    } else if (Array.isArray(GM._pendingAudiences) && GM._pendingAudiences[idx]) {
-      GM._pendingAudiences.splice(idx, 1);
+      _wdDismissPending(qid);
+    } else if (typeof window._wdRemovePendingAudience === 'function') {
+      window._wdRemovePendingAudience(qid);   // 按 _qid 主键删·非 idx splice
       toast('已暂却待见');
     }
     openPanel('issue');

@@ -851,6 +851,24 @@
     return state.modules.find(function(module) { return module.id === id; }) || state.modules[0] || { id: 'scenarioOpening', title: '剧本总览', topLevelKeys: Object.keys(state.scenario || {}) };
   }
 
+  // 模块默认焦点须与国师可写边界一致：内部字段可浏览，但不能成为“当前字段”的默认指代。
+  function isAgentEditableFieldKey(field) {
+    var key = String(field == null ? '' : field);
+    return !!key && key !== 'id' && key.charAt(0) !== '_' && !/^(ai|conf|meta)$/i.test(key);
+  }
+  function firstAgentEditableField(fields, fallback) {
+    var list = (Array.isArray(fields) ? fields.slice() : []).concat(fallback ? [fallback] : [], Object.keys(state.scenario || {}));
+    for (var pass = 0; pass < 2; pass++) {
+      for (var i = 0; i < list.length; i++) {
+        var field = list[i];
+        if (!isAgentEditableFieldKey(field)) continue;
+        if (pass === 0 && !Object.prototype.hasOwnProperty.call(state.scenario || {}, field)) continue;
+        return field;
+      }
+    }
+    return 'name';
+  }
+
   /* 重做W4 · 换章翻页动效：给 #module-detail 重触发一次入场动画（CSS 类 je-page-turn·reduced-motion 由全局规则豁免） */
   function jePageTurn() {
     var det = document.getElementById('module-detail');
@@ -971,7 +989,7 @@
     var mod = findModule(moduleId);
     if (!mod) return false;
     state.selectedModuleId = moduleId;
-    state.selectedField = (mod.topLevelKeys && mod.topLevelKeys[0]) || state.selectedField;
+    state.selectedField = firstAgentEditableField(mod.topLevelKeys, state.selectedField);
     renderAll();
     setTimeout(function () {
       try {
@@ -1276,6 +1294,16 @@
   // 'error' surfaces a cinnabar pill that lingers until next save.
   var saveIndicatorState = { mode: 'idle', at: null, message: '' };
 
+  function workspaceTruth() {
+    var changes = [];
+    try { changes = buildScenarioDiff(); } catch (_) {}
+    return {
+      topLevelCount: Object.keys(state.scenario || {}).length,
+      changedFields: changes.length,
+      dirty: changes.length > 0
+    };
+  }
+
   function setSaveIndicator(mode, savedAt, message) {
     saveIndicatorState.mode = mode;
     saveIndicatorState.at = savedAt || saveIndicatorState.at;
@@ -1310,7 +1338,9 @@
       label = '保存失败';
       detail = saveIndicatorState.message || '';
     } else {
-      label = '尚未编辑';
+      var truth = workspaceTruth();
+      label = truth.dirty ? '有未保存改动' : '官方快照';
+      detail = truth.dirty ? ('改动 ' + truth.changedFields + ' 字段') : '';
     }
     pill.dataset.saveState = mode;
     pill.innerHTML = '<span class="save-indicator-dot" aria-hidden="true"></span>' +
@@ -1838,6 +1868,13 @@
     renderWorkspaceMeta();
     renderEditHistory();
     renderReleaseNotes();
+  }
+
+  // 页内适配器（如国师世界类型）对 live scenario 的直接编辑也统一走历史/脏态/自动保存。
+  function recordExternalEdit(type, detail) {
+    recordHistory(type || '外部编辑', detail || 'scenario');
+    renderAll();
+    return clone(state.scenario || {});
   }
 
   function buildEntityTemplate(field) {
@@ -2394,7 +2431,7 @@
     }
     absorbOrphanScenarioKeys();
     state.selectedModuleId = state.selectedModuleId || state.modules[0].id;
-    state.selectedField = state.selectedField || ((findModule(state.selectedModuleId).topLevelKeys || [])[0]) || Object.keys(state.scenario || {})[0];
+    state.selectedField = isAgentEditableFieldKey(state.selectedField) ? state.selectedField : firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys);
     resetEditTimeline();
     renderAll();
     setStatus(state.dirty ? '本地草稿已载入' : '官方剧本已载入', state.dirty ? 'warn' : 'good');
@@ -10474,7 +10511,7 @@
       }
       delete state.scenario[field];
       recordHistory('剧本对照·删除字段', field + '（来源 ' + sourceId + ' 没有此字段）');
-      state.selectedField = (findModule(state.selectedModuleId).topLevelKeys || Object.keys(state.scenario || {}))[0];
+      state.selectedField = firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys);
       renderAll();
       setStatus('已根据 ' + sourceId + ' 移除字段：' + field, 'good');
       return null;
@@ -10492,7 +10529,7 @@
     if (!field) return;
     if (Object.prototype.hasOwnProperty.call(state.original || {}, field)) state.scenario[field] = clone(state.original[field]);
     else delete state.scenario[field];
-    state.selectedField = Object.prototype.hasOwnProperty.call(state.scenario || {}, field) ? field : ((findModule(state.selectedModuleId).topLevelKeys || Object.keys(state.scenario || {}))[0]);
+    state.selectedField = Object.prototype.hasOwnProperty.call(state.scenario || {}, field) ? field : firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys);
     state.selectedEntityIndex = 0;
     recordHistory('撤回字段', field);
     renderAll();
@@ -10504,7 +10541,7 @@
     state.historyCheckpoint = clone(state.scenario || {});
     state.selectedField = entry.selectedField && Object.prototype.hasOwnProperty.call(state.scenario || {}, entry.selectedField)
       ? entry.selectedField
-      : ((findModule(entry.selectedModuleId || state.selectedModuleId).topLevelKeys || Object.keys(state.scenario || {}))[0]);
+      : firstAgentEditableField(findModule(entry.selectedModuleId || state.selectedModuleId).topLevelKeys);
     state.selectedModuleId = inferModuleForField(state.selectedField);
     var selectedValue = state.scenario[state.selectedField];
     state.selectedEntityIndex = Array.isArray(selectedValue) ? Math.max(0, Math.min(Number(entry.selectedEntityIndex) || 0, selectedValue.length - 1)) : 0;
@@ -10580,14 +10617,10 @@
         });
       });
     }
-    validateRefs(sc.events, '事件', 'linkedChars', charNames, '人物');
-    validateRefs(sc.events, '事件', 'linkedFactions', factionNames, '势力');
-    validateRefs(sc.rigidHistoryEvents, '硬历史事件', 'linkedChars', charNames, '人物');
-    validateRefs(sc.rigidHistoryEvents, '硬历史事件', 'linkedFactions', factionNames, '势力');
+    // 事件/时间线的 linked* 在运行时同时承载人物、机构、阵营标签与未出场史实角色，
+    // 不是严格外键。它们仍参与重命名/删除传播，但不能据此制造占位实体或阻断发布。
     validateRefs(sc.factionRelations, '势力关系', 'from', factionNames, '势力');
     validateRefs(sc.factionRelations, '势力关系', 'to', factionNames, '势力');
-    validateRefs(sc.relations, '人物关系', 'from', charNames, '人物');
-    validateRefs(sc.relations, '人物关系', 'to', charNames, '人物');
     state.modules.forEach(function(module) {
       (module.topLevelKeys || []).forEach(function(key) {
         if (!(key in sc)) issues.push({ level: 'warn', text: moduleTitle(module) + ' 缺少字段：' + key });
@@ -10642,8 +10675,9 @@
       if (!target) missing.push(row);
     }
     if (current && typeof current === 'object') {
-      ['faction', 'leader', 'founder', 'owner', 'linkedChars', 'linkedFactions', 'members'].forEach(function(key) {
-        splitList(current[key]).forEach(function(ref) { pushOutgoing(ref, key, 'out:' + key); });
+      var currentField = field || state.selectedField;
+      ENTITY_REF_FIELDS.filter(function(rf) { return rf.field === currentField && rf.validate !== false; }).forEach(function(rf) {
+        splitList(current[rf.key]).forEach(function(ref) { pushOutgoing(ref, rf.key, 'out:' + rf.key); });
       });
     }
     ['characters', 'factions', 'families', 'events', 'rigidHistoryEvents', 'timeline', 'factionRelations', 'relations', 'parties', 'classes', 'items'].forEach(function(sourceField) {
@@ -10665,22 +10699,26 @@
   // 权威引用字段表：哪些集合的哪些字段引用实体(character/faction)。断裂扫描/删除清理/重命名传播三处共用——单一真源，杜绝盲区。
   var ENTITY_REF_FIELDS = [
     { field: 'characters', key: 'faction', kind: 'faction', shape: 'scalar' },
-    { field: 'factions', key: 'leader', kind: 'character', shape: 'scalar' },
-    { field: 'families', key: 'founder', kind: 'character', shape: 'scalar' },
-    { field: 'families', key: 'members', kind: 'character', shape: 'list' },
-    { field: 'parties', key: 'leader', kind: 'character', shape: 'scalar' },
-    { field: 'classes', key: 'leader', kind: 'character', shape: 'scalar' },
-    { field: 'events', key: 'linkedChars', kind: 'character', shape: 'list' },
-    { field: 'events', key: 'linkedFactions', kind: 'faction', shape: 'list' },
-    { field: 'rigidHistoryEvents', key: 'linkedChars', kind: 'character', shape: 'list' },
-    { field: 'rigidHistoryEvents', key: 'linkedFactions', kind: 'faction', shape: 'list' },
-    { field: 'timeline', key: 'linkedChars', kind: 'character', shape: 'list' },
-    { field: 'timeline', key: 'linkedFactions', kind: 'faction', shape: 'list' },
-    { field: 'items', key: 'owner', kind: 'character', shape: 'scalar' },
+    // 下列字段允许“人物名+注释”、集体称谓或未实体化的世界观角色；仅做重命名/删除传播，不报断裂。
+    { field: 'factions', key: 'leader', kind: 'character', shape: 'scalar', validate: false },
+    { field: 'families', key: 'founder', kind: 'character', shape: 'scalar', validate: false },
+    { field: 'families', key: 'members', kind: 'character', shape: 'list', validate: false },
+    { field: 'parties', key: 'leader', kind: 'character', shape: 'scalar', validate: false },
+    { field: 'classes', key: 'leader', kind: 'character', shape: 'scalar', validate: false },
+    { field: 'events', key: 'linkedChars', kind: 'character', shape: 'list', validate: false },
+    { field: 'events', key: 'linkedFactions', kind: 'faction', shape: 'list', validate: false },
+    { field: 'rigidHistoryEvents', key: 'linkedChars', kind: 'character', shape: 'list', validate: false },
+    { field: 'rigidHistoryEvents', key: 'linkedFactions', kind: 'faction', shape: 'list', validate: false },
+    { field: 'timeline', key: 'linkedChars', kind: 'character', shape: 'list', validate: false },
+    { field: 'timeline', key: 'linkedFactions', kind: 'faction', shape: 'list', validate: false },
+    // owner 可为人物、机构、地点或职官（如“大钟寺”“兵部/将领”），不是严格人物外键。
+    { field: 'items', key: 'owner', kind: 'character', shape: 'scalar', validate: false },
     { field: 'factionRelations', key: 'from', kind: 'faction', shape: 'relation' },
     { field: 'factionRelations', key: 'to', kind: 'faction', shape: 'relation' },
-    { field: 'relations', key: 'from', kind: 'character', shape: 'relation' },
-    { field: 'relations', key: 'to', kind: 'character', shape: 'relation' }
+    // 顶层 relations 是开放关系图：官方剧本会把党派、阶层、已故/未出场人物作为合法节点。
+    // 仍保留人物改名/删除时的精确传播，但不把未进 characters 的节点误判成悬空人物。
+    { field: 'relations', key: 'from', kind: 'character', shape: 'relation', validate: false },
+    { field: 'relations', key: 'to', kind: 'character', shape: 'relation', validate: false }
   ];
 
   // 修悬空引用：删 character/faction 后清理别处对它的引用。关系行(factionRelations/relations)from/to 指向被删者→删整行；
@@ -10783,7 +10821,10 @@
       });
     }
     var _refByField = {};
-    ENTITY_REF_FIELDS.forEach(function (rf) { (_refByField[rf.field] = _refByField[rf.field] || {})[rf.key] = rf.kind; });
+    ENTITY_REF_FIELDS.forEach(function (rf) {
+      if (rf.validate === false) return;
+      (_refByField[rf.field] = _refByField[rf.field] || {})[rf.key] = rf.kind;
+    });
     Object.keys(_refByField).forEach(function (f) { scan(f, _refByField[f]); });
     return rows.sort(function(a, b) {
       return b.sourceCount - a.sourceCount || a.kind.localeCompare(b.kind) || a.ref.localeCompare(b.ref);
@@ -11392,7 +11433,7 @@
     if (/mapData|map|地图|行政/.test(text)) return isObject(state.scenario.map) ? 'map' : 'mapData';
     if (/officeTree|官制|官职/.test(text)) return 'officeTree';
     if (/variables|变量/.test(text)) return 'variables';
-    return state.selectedField || ((findModule(state.selectedModuleId).topLevelKeys || [])[0]) || 'name';
+    return isAgentEditableFieldKey(state.selectedField) ? state.selectedField : firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys);
   }
 
   function pushAiFixIssue(groups, field, text, priority) {
@@ -11615,7 +11656,7 @@
 
   function buildAiTaskPackage(field, options) {
     var opts = options || {};
-    var targetField = field || state.selectedField || (findModule(state.selectedModuleId).topLevelKeys || [])[0] || 'name';
+    var targetField = field || (isAgentEditableFieldKey(state.selectedField) ? state.selectedField : firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys));
     var value = Object.prototype.hasOwnProperty.call(state.scenario || {}, targetField) ? state.scenario[targetField] : inferMissingFieldTemplate(targetField);
     var module = findModule(inferModuleForField(targetField));
     var entity = Array.isArray(value) ? value[state.selectedEntityIndex] : (isObject(value) ? value : null);
@@ -12102,7 +12143,7 @@
     var action = triggerAction || triggerDataset.aiAction || 'generate';
     if (action === 'validate') validateScenario();
     var module = findModule(state.selectedModuleId);
-    var field = triggerDataset.fieldAi || state.selectedField || (module.topLevelKeys || [])[0];
+    var field = triggerDataset.fieldAi || (isAgentEditableFieldKey(state.selectedField) ? state.selectedField : firstAgentEditableField(module.topLevelKeys));
     var draft = { id: 'draft_' + Date.now().toString(36), action: action, field: field, value: buildDraftValue(field, action), createdAt: new Date().toISOString(), status: 'review-required' };
     state.drafts.unshift(draft);
     state.drafts = state.drafts.slice(0, 40);
@@ -12967,12 +13008,51 @@
     return { created: created, scenario: clone(state.scenario) };
   }
 
-  function openDrawerForApp() {
+  var aiDrawerReturnFocus = null;
+
+  function drawerFocusAnchor(trigger) {
+    if (!trigger) return null;
+    if (typeof trigger.closest === 'function') {
+      return trigger.closest('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') || trigger;
+    }
+    return trigger;
+  }
+
+  function openDrawerForApp(trigger) {
     var drawer = document.getElementById('ai-drawer');
     var backdrop = document.getElementById('ai-drawer-backdrop');
-    if (drawer) drawer.classList.add('open');
+    aiDrawerReturnFocus = drawerFocusAnchor(trigger);
+    if (drawer) {
+      drawer.removeAttribute('inert');
+      drawer.inert = false;
+      drawer.setAttribute('aria-hidden', 'false');
+      drawer.classList.add('open');
+      var closeButton = document.getElementById('ai-drawer-close');
+      if (closeButton) requestAnimationFrame(function() { closeButton.focus(); });
+    }
     if (backdrop) backdrop.classList.add('open');
   }
+
+  function closeDrawerForApp() {
+    var drawer = document.getElementById('ai-drawer');
+    var backdrop = document.getElementById('ai-drawer-backdrop');
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+      drawer.setAttribute('inert', '');
+      drawer.inert = true;
+    }
+    if (backdrop) backdrop.classList.remove('open');
+    var returnFocus = aiDrawerReturnFocus && aiDrawerReturnFocus.isConnected
+      ? aiDrawerReturnFocus
+      : document.querySelector('.module-tile.active') || document.getElementById('scenario-pill');
+    aiDrawerReturnFocus = null;
+    if (returnFocus && typeof returnFocus.focus === 'function') {
+      requestAnimationFrame(function() { returnFocus.focus(); });
+    }
+  }
+
+  global.TM_SCENARIO_EDITOR_DRAWER = { open: openDrawerForApp, close: closeDrawerForApp };
 
   function renderScenarioDashboard() {
     var sc = state.scenario || {};
@@ -13147,11 +13227,19 @@
       setStatus('未找到制作面板：' + key, 'warn');
       return null;
     }
+    // 顶栏预检/制作捷径来自全局控制台外部；定位前必须先把 overlay 真正打开，并展开目标所属大面板。
+    if (document.body && !document.body.classList.contains('je-deck-open')) {
+      var deckToggle = document.querySelector('.je-deck-toggle');
+      if (deckToggle && typeof deckToggle.click === 'function') deckToggle.click();
+      else document.body.classList.add('je-deck-open');
+    }
+    var hostPanel = target.closest ? target.closest('.panel[data-panel]') : null;
+    if (hostPanel && hostPanel.dataset.panelCollapsed === 'true') togglePanelCollapse(hostPanel.dataset.panel);
     document.querySelectorAll('[data-runtime-focus="true"]').forEach(function(node) {
       node.removeAttribute('data-runtime-focus');
     });
     target.setAttribute('data-runtime-focus', 'true');
-    if (target.scrollIntoView) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    setTimeout(function() { if (target.scrollIntoView) target.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30);
     setTimeout(function() { target.removeAttribute('data-runtime-focus'); }, 1800);
     setStatus('已定位制作面板：' + key, 'good');
     return key;
@@ -13366,7 +13454,6 @@
   }
 
   function renderAllInner() {
-    renderWorkspaceMeta();
     renderScenarioDashboard();
     renderCreatorWorkflow();
     renderProductionDashboard();
@@ -13394,6 +13481,9 @@
     renderWatchList();
     renderHistoryLogPanel();
     renderScenarioWizard();
+    // 某些旧 renderer/适配器仍会做规范化写入；顶部最后读取一次 live truth，避免脏态与字段数错帧。
+    renderWorkspaceMeta();
+    renderSaveIndicator();
   }
 
   function renderWorkspaceMeta() {
@@ -13401,18 +13491,21 @@
     var titleNode = document.getElementById('scenario-pill-title');
     var detailNode = document.getElementById('scenario-pill-detail');
     var name = state.scenario.name || DATA.summary && DATA.summary.name || '未命名剧本';
-    var topLevelCount = Object.keys(state.scenario || {}).length;
+    var truth = workspaceTruth();
+    state.dirty = truth.dirty;
+    var topLevelCount = truth.topLevelCount;
     var expected = blueprintKeys();
     var covered = expected.filter(function(key) { return key in (state.scenario || {}); }).length;
     var metaBits = [
       state.dirty ? '本地草稿' : '官方快照',
       topLevelCount + ' 顶层字段',
+      state.dirty ? ('改动 ' + truth.changedFields + ' 字段') : '',
       '蓝图 ' + covered + '/' + expected.length,
       countCollection(state.scenario.characters) + ' 人物',
       countCollection(state.scenario.factions) + ' 势力'
     ];
     if (titleNode) titleNode.textContent = name;
-    if (detailNode) detailNode.textContent = metaBits.join(' · ');
+    if (detailNode) detailNode.textContent = metaBits.filter(Boolean).join(' · ');
     if (pill) pill.dataset.source = state.dirty ? 'draft' : 'official';
     var railCount = document.querySelector('.rail-head span');
     if (railCount) railCount.textContent = covered + ' / ' + expected.length;
@@ -15224,7 +15317,7 @@
     if (!detail) return;
     var module = findModule(state.selectedModuleId);
     var fields = moduleFieldsForDetail(module);
-    if (!state.selectedField || fields.indexOf(state.selectedField) < 0) state.selectedField = fields[0] || Object.keys(state.scenario || {})[0];
+    if (!state.selectedField || fields.indexOf(state.selectedField) < 0) state.selectedField = firstAgentEditableField(fields);
     var value = state.scenario[state.selectedField];
     // Slice 26 · field cloud filters.
     if (!state.fieldCloudFilter) state.fieldCloudFilter = { provenance: 'all', presence: 'all', text: '' };
@@ -20679,7 +20772,7 @@
     state.validationRan = false;
     ensureModulesPopulated();
     state.selectedModuleId = state.modules[0].id;
-    state.selectedField = (state.modules[0].topLevelKeys || Object.keys(state.scenario))[0];
+    state.selectedField = firstAgentEditableField(state.modules[0].topLevelKeys);
     state.selectedEntityIndex = 0;
     resetEditTimeline();
     writeStoredDraft();
@@ -20824,10 +20917,10 @@
       var jumpField = changed.filter(function (k) { return k !== '_version' && k !== 'sid' && k !== 'id'; })[0];
       var targetMod = jumpField ? moduleHomeForField(jumpField) : prevMod;
       state.selectedModuleId = (targetMod && findModule(targetMod) && findModule(targetMod).id === targetMod) ? targetMod : (prevMod || state.modules[0].id);
-      state.selectedField = jumpField || prevField || (findModule(state.selectedModuleId).topLevelKeys || Object.keys(parsed))[0];
+      state.selectedField = jumpField || (isAgentEditableFieldKey(prevField) ? prevField : firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys));
     } else {
       state.selectedModuleId = state.modules[0].id;
-      state.selectedField = (state.modules[0].topLevelKeys || Object.keys(parsed))[0];
+      state.selectedField = firstAgentEditableField(state.modules[0].topLevelKeys);
     }
     state.selectedEntityIndex = 0;
     state.validationRan = false;
@@ -20908,12 +21001,20 @@
   // panel root. CSS hides everything except the section-head when the
   // attribute is set, so the body collapses cleanly. Panels without a
   // [data-panel] attribute fall through (not collapsible).
-  var PANEL_COLLAPSE_KEY = 'tm.scenarioEditorReset.panelCollapse.v1';
+  var PANEL_COLLAPSE_KEY = 'tm.scenarioEditorReset.panelCollapse.v2';
+  var DEFAULT_PANEL_COLLAPSE = {
+    'ai-desk': true,
+    'freedom-lab': true,
+    'flow-panel': true,
+    'generation-queue': true,
+    'creator-shortcuts': true,
+    'ai-coverage-matrix': true
+  };
 
   function readPanelCollapse() {
     try {
       var raw = global.localStorage && global.localStorage.getItem(PANEL_COLLAPSE_KEY);
-      if (!raw) return {};
+      if (raw == null) return Object.assign({}, DEFAULT_PANEL_COLLAPSE);
       var parsed = JSON.parse(raw);
       return parsed && typeof parsed === 'object' ? parsed : {};
     } catch (_) { return {}; }
@@ -20922,8 +21023,7 @@
   function writePanelCollapse(map) {
     try {
       if (!global.localStorage) return;
-      if (map && Object.keys(map).length) global.localStorage.setItem(PANEL_COLLAPSE_KEY, JSON.stringify(map));
-      else global.localStorage.removeItem(PANEL_COLLAPSE_KEY);
+      global.localStorage.setItem(PANEL_COLLAPSE_KEY, JSON.stringify(map || {}));
     } catch (_) {}
   }
 
@@ -21915,7 +22015,7 @@
       if (target && target.dataset.moduleId !== state.selectedModuleId) {
         event.preventDefault();
         state.selectedModuleId = target.dataset.moduleId;
-        state.selectedField = (findModule(state.selectedModuleId).topLevelKeys || [])[0];
+        state.selectedField = firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys);
         state.selectedEntityIndex = 0;
         state.search = '';
         setStatus('已跳转到第 ' + n + ' 章：' + (findModule(state.selectedModuleId).label || state.selectedModuleId), 'neutral');
@@ -21959,6 +22059,14 @@
 
   function wireEvents() {
     document.addEventListener('keydown', handleKeydown);
+    var drawerClose = document.getElementById('ai-drawer-close');
+    var drawerBackdrop = document.getElementById('ai-drawer-backdrop');
+    if (drawerClose) drawerClose.addEventListener('click', closeDrawerForApp);
+    if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawerForApp);
+    document.addEventListener('keydown', function(event) {
+      var drawer = document.getElementById('ai-drawer');
+      if (event.key === 'Escape' && drawer && drawer.classList.contains('open')) closeDrawerForApp();
+    });
     document.addEventListener('click', function(event) {
       var railBtn = event.target.closest('#rail-collapse-btn');
       if (railBtn) {
@@ -22017,7 +22125,7 @@
         var cj = String(crossJump.dataset.crossJump || '').split('::');
         if (cj[0] && cj[0] !== state.selectedModuleId) {
           state.selectedModuleId = cj[0];
-          state.selectedField = cj[1] || (findModule(cj[0]).topLevelKeys || [])[0];
+          state.selectedField = cj[1] || firstAgentEditableField(findModule(cj[0]).topLevelKeys);
           state.selectedEntityIndex = 0;
           jePageTurn();
           renderAll();
@@ -22029,7 +22137,7 @@
         event.preventDefault();
         var jeSwitched = state.selectedModuleId !== moduleTile.dataset.moduleId;
         state.selectedModuleId = moduleTile.dataset.moduleId;
-        state.selectedField = (findModule(state.selectedModuleId).topLevelKeys || [])[0];
+        state.selectedField = firstAgentEditableField(findModule(state.selectedModuleId).topLevelKeys);
         state.selectedEntityIndex = 0;
         state.search = '';
         if (jeSwitched) jePageTurn();   /* 重做W4 · 换章翻页动效（重选同章不闪） */
@@ -22191,7 +22299,7 @@
       else if (action === 'compare-diff') compareDraft();
       else if (action === 'cite-source') citeDraft();
       else if (action === 'regenerate' || action === 'generate' || action === 'polish' || action === 'derive' || action === 'fill-field' || action === 'batch' || action === 'seed-from-map' || action === 'seed-from-old-ui' || action === 'validate') simulateAiDraft(trigger);
-      openDrawerForApp();
+      openDrawerForApp(trigger);
     }, true);
     var input = document.getElementById('scenario-import-input');
     if (input) input.addEventListener('change', function() {
@@ -22683,6 +22791,7 @@
     importProjectPackage: importProjectPackage,
     undoEdit: undoEdit,
     redoEdit: redoEdit,
+    recordExternalEdit: recordExternalEdit,
     revertField: revertField,
     resetToOfficial: resetToOfficial
   };

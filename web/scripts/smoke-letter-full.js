@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { materializeScenarioRows } = require('./lib/official-scenario-fixture.js');
 
 const ROOT = path.resolve(__dirname, '..');
 let ASSERTS = 0;
@@ -97,6 +98,7 @@ while ((m = scriptRe.exec(indexHtml)) !== null) scripts.push(m[1].split('?')[0])
 
 let loaded = 0, failed = 0;
 for (const s of scripts) {
+  if (s === 'tm-official-scenario-loader.js') continue; // covered by dedicated lazy-loader smoke
   const fp = path.join(ROOT, s);
   if (!fs.existsSync(fp)) continue;
   try { vm.runInContext(fs.readFileSync(fp, 'utf8'), sandbox, { filename: s }); loaded++; }
@@ -107,11 +109,10 @@ console.log(`[smoke] loaded ${loaded}/${scripts.length} (${failed} failed)`);
 try {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'scenarios/tianqi7-1627.js'), 'utf8'), sandbox);
 } catch (e) { console.error('scenario load fail:', e.message); }
-// 官方剧本重建为「壳+快照」后，可玩花名册由 7MB 运行时快照平铺到 P.characters(sid 标记)；
-// index.html 用动态 <script> 注入它(非静态 src·上面正则扫不到)，故这里显式加载，复刻真游戏的快照应用。
+// 按需加载完整官方剧本后，startGame 会把剧本内数组物化到 P；测试适配器复刻该步骤。
 try {
-  vm.runInContext(fs.readFileSync(path.join(ROOT, 'data/scenario-supplements/tianqi7-official-runtime-snapshot.js'), 'utf8'), sandbox);
-} catch (e) { console.error('snapshot load fail:', e.message); }
+  materializeScenarioRows(sandbox.P, 'sc-tianqi7-1627');
+} catch (e) { console.error('scenario materialization fail:', e.message); }
 
 setTimeout(() => {
   try {

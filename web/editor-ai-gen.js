@@ -1222,47 +1222,47 @@
           renderItems();
         } else if (target === 'military') {
           if (!scriptData.military) scriptData.military = {troops:[],facilities:[],organization:[],campaigns:[],initialTroops:[],militarySystem:[]};
-          // Try to parse as object with initialTroops/militarySystem
-          var parsed = (typeof arr === 'object' && !Array.isArray(arr)) ? arr : null;
-          if (parsed && parsed.initialTroops) {
-            parsed.initialTroops.forEach(function(a) {
-              if (!scriptData.military.initialTroops) scriptData.military.initialTroops = [];
-              // Ensure equipment is array
-              if (!a.equipment || typeof a.equipment === 'string') a.equipment = [];
-              scriptData.military.initialTroops.push(a);
-            });
-          }
-          if (parsed && parsed.militarySystem) {
-            parsed.militarySystem.forEach(function(a) {
-              if (!scriptData.military.militarySystem) scriptData.military.militarySystem = [];
-              scriptData.military.militarySystem.push(a);
-            });
-          }
-          // 合并AI生成的battleConfig（兵种定义、地形修正）
-          if (parsed && parsed.battleConfig) {
-            if (!scriptData.battleConfig) scriptData.battleConfig = {enabled:true};
-            if (parsed.battleConfig.unitTypes && Array.isArray(parsed.battleConfig.unitTypes)) {
-              scriptData.battleConfig.unitTypes = parsed.battleConfig.unitTypes;
+          if (!scriptData.military.initialTroops) scriptData.military.initialTroops = [];
+          if (!scriptData.military.militarySystem) scriptData.military.militarySystem = [];
+          // 部队条目规范化：equipment 成数组 + 旧 type→armyType 值域映射（与 schema-adapter 一致）
+          var _normInitTroop = function(a){
+            if (!a.equipment || typeof a.equipment === 'string') a.equipment = [];
+            if (a.armyType === undefined && a.type !== undefined &&
+                typeof SchemaAdapter !== 'undefined' && SchemaAdapter.ARMY_TYPE_MAP) {
+              a.armyType = Object.prototype.hasOwnProperty.call(SchemaAdapter.ARMY_TYPE_MAP, a.type)
+                ? SchemaAdapter.ARMY_TYPE_MAP[a.type] : a.type;
             }
-            if (parsed.battleConfig.terrainModifiers) {
-              scriptData.battleConfig.terrainModifiers = parsed.battleConfig.terrainModifiers;
+            return a;
+          };
+          // 新格式对象 {initialTroops, militarySystem, battleConfig}：用 _rawParsed 处理整个对象，
+          // 各键按语义落位。此前只取「首个数组=initialTroops」赋 arr（见上 robustParseJSON 分支），
+          // militarySystem/battleConfig 被丢弃——修一个既有缺陷。
+          var parsedObj = (_rawParsed && typeof _rawParsed === 'object' && !Array.isArray(_rawParsed)) ? _rawParsed : null;
+          var handledAsObject = false;
+          if (parsedObj && (Array.isArray(parsedObj.initialTroops) || Array.isArray(parsedObj.militarySystem) || parsedObj.battleConfig)) {
+            handledAsObject = true;
+            if (Array.isArray(parsedObj.initialTroops)) {
+              parsedObj.initialTroops.forEach(function(a){ scriptData.military.initialTroops.push(_normInitTroop(a)); });
+            }
+            if (Array.isArray(parsedObj.militarySystem)) {
+              parsedObj.militarySystem.forEach(function(a){ scriptData.military.militarySystem.push(a); });
+            }
+            if (parsedObj.battleConfig) {
+              if (!scriptData.battleConfig) scriptData.battleConfig = {enabled:true};
+              if (Array.isArray(parsedObj.battleConfig.unitTypes)) scriptData.battleConfig.unitTypes = parsedObj.battleConfig.unitTypes;
+              if (parsedObj.battleConfig.terrainModifiers) scriptData.battleConfig.terrainModifiers = parsedObj.battleConfig.terrainModifiers;
             }
           }
-          // Fallback: if arr is array, treat as legacy format
-          if (Array.isArray(arr)) {
+          // Fallback：AI 返回扁平数组、或对象里无上述新键（未识别键走原逻辑）→ 直接落新字段，
+          // 从源头断掉旧桶（troops/facilities/organization/campaigns）新增——军务面板只渲染新字段，
+          // 旧桶新增即等于「生成了看不见的内容」。军制/兵制/编制类 → militarySystem，其余 → initialTroops。
+          if (!handledAsObject && Array.isArray(arr)) {
             arr.forEach(function(a){
               var milCat = (a.category || a.type || '').toLowerCase();
-              var milKey = 'troops';
-              if (milCat.indexOf('facilit') >= 0 || milCat === '设施' || milCat === '军事设施') milKey = 'facilities';
-              else if (milCat.indexOf('org') >= 0 || milCat === '编制' || milCat === '军制' || milCat === '组织') milKey = 'organization';
-              else if (milCat.indexOf('campaign') >= 0 || milCat === '战役' || milCat === '战争' || milCat === '军事行动') milKey = 'campaigns';
-              else if (milCat === 'initialtroops' || milCat === '初始兵力' || milCat === '部队') {
-                if (!a.equipment || typeof a.equipment === 'string') a.equipment = [];
-                scriptData.military.initialTroops.push(a); return;
-              } else if (milCat === 'militarysystem' || milCat === '兵制' || milCat === '军事制度') {
-                scriptData.military.militarySystem.push(a); return;
-              }
-              scriptData.military[milKey].push(a);
+              var isSystem = milCat === 'militarysystem' || milCat === '兵制' || milCat === '军事制度' ||
+                milCat === '军制' || milCat === '编制' || milCat === '组织' || milCat.indexOf('org') >= 0;
+              if (isSystem) scriptData.military.militarySystem.push(a);
+              else scriptData.military.initialTroops.push(_normInitTroop(a));
             });
           }
           renderMilitaryNew();

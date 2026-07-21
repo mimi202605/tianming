@@ -165,6 +165,8 @@
     var prompt = _buildPrompt(mode);
     try {
       var tokBudget = (P.conf && P.conf.maxOutputTokens) || 1500;
+      // 时空约束·开科/改革5档评估(JSON含邸报体narrative·clauseOnly)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, Math.min(tokBudget, 1500), { maxRetries: 2 });
       var data = (typeof extractJSON === 'function') ? extractJSON(raw) : JSON.parse(String(raw).replace(/```json|```/g, '').trim());
       if (typeof hideLoading === 'function') hideLoading();

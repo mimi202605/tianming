@@ -1514,8 +1514,18 @@
   function renderFinanceModule(){
     var g = (window.GM && GM.guoku) || {};
     var n = (window.GM && GM.neitang) || {};
+    // 失真层保卫·库藏取据奏口径(与顶栏 _VAR_RENDERERS.guoku()/neitang() 同源)·不再裸读 stockMoney||money 等模糊回退
+    var _VR = (typeof window !== 'undefined' && window._VAR_RENDERERS) || null;
+    var _gv = null, _nv = null;
+    try { if (_VR && typeof _VR.guoku === 'function') _gv = _VR.guoku(); } catch(_e1){}
+    try { if (_VR && typeof _VR.neitang === 'function') _nv = _VR.neitang(); } catch(_e2){}
+    function _stockView(view, idx, obj, kind){
+      if (view && Array.isArray(view.subItems) && view.subItems[idx]) return view.subItems[idx].v;
+      if (typeof window._barAccountStock === 'function' && typeof window._barFmtNum === 'function') return window._barFmtNum(window._barAccountStock(obj, kind));
+      return obj[kind];
+    }
     return moduleShell('finance', '户部财计', '正式页内国库、内帑、收入支出与风险；完整账册沿用旧国库面板',
-      '<h3>库藏</h3>' + miniRows([['太仓银', g.stockMoney || g.money],['太仓粮', g.stockGrain || g.grain],['内帑银', n.money || n.balance],['本回合', getTurnText(window.GM && GM.turn)]]),
+      '<h3>库藏</h3>' + miniRows([['太仓银', _stockView(_gv, 0, g, 'money')],['太仓粮', _stockView(_gv, 1, g, 'grain')],['内帑银', _stockView(_nv, 0, n, 'money')],['本回合', getTurnText(window.GM && GM.turn)]]),
       '<h3>收支</h3>' + miniRows([['本期收入', g.turnIncome || g.monthlyIncome],['本期支出', g.turnExpense || g.monthlyExpense],['军饷', g.armyExpense || '待核'],['宗禄', g.royalExpense || '待核'],['风险', g.risk || '待核'],['可支月数', g.months || '待估']]),
       '<h3>动作</h3><div class="tmf-module-stack"><button data-module-action="finance-full">打开完整帑廪</button><button data-module-action="finance-old" data-method="extraTax">加派钱粮</button><button data-module-action="finance-old" data-method="openGranary">开仓赈济</button><button data-module-action="finance-old" data-method="loan">借贷筹款</button><button data-module-action="toast" data-text="已记录拨内帑">拨内帑</button><button data-module-action="toast" data-text="已记录核饷">核饷</button><button data-module-action="toast" data-text="已转御案时政">转御案时政</button></div>'
     );

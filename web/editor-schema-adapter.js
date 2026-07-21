@@ -64,6 +64,78 @@
 
   function clone(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 
+  // 旧格式军事数据迁移·值域映射表
+  // 旧 military.troops[].type 值域（取自官方剧本与历史数据）→ 军务面板部队编辑表单的 armyType 七枚举。
+  // 表单枚举：禁军 / 边军 / 藩镇军 / 地方守备 / 水师 / 乡勇/民兵 / 自定义。
+  // 映射不到的未知值不在此表——迁移时保留原字符串（表单侧补动态选项显示，不静默改值）。
+  var ARMY_TYPE_MAP = {
+    '中央军': '禁军',        // 京营等中央/京畿军 → 禁军
+    '边军': '边军',
+    '海岛边军': '边军',      // 海岛驻防的边军（如东江/皮岛）仍属边军
+    '地方军': '地方守备',
+    '特殊兵': '自定义',      // 无对应枚举
+    '后勤': '自定义'         // 辎重/后勤·无对应枚举
+  };
+  var ARMY_TYPE_ENUMS = ['禁军', '边军', '藩镇军', '地方守备', '水师', '乡勇/民兵', '自定义'];
+
+  // troops → initialTroops：深克隆(隔离 equipment/composition 等嵌套数组引用)，补 armyType。
+  function migrateLegacyTroop(t) {
+    var o = clone(t);
+    if (!o || typeof o !== 'object') return { name: String(t == null ? '' : t) };
+    if (o.description === undefined && o.desc !== undefined) o.description = o.desc;
+    if (o.armyType === undefined && o.type !== undefined) {
+      o.armyType = Object.prototype.hasOwnProperty.call(ARMY_TYPE_MAP, o.type) ? ARMY_TYPE_MAP[o.type] : o.type;
+    }
+    return o;
+  }
+
+  // organization → militarySystem：深克隆。militarySystem 表单 type 是自由文本，值域无需映射。
+  function migrateLegacySystem(o) {
+    var out = clone(o);
+    if (!out || typeof out !== 'object') return { name: String(o == null ? '' : o) };
+    if (out.description === undefined && out.desc !== undefined) out.description = out.desc;
+    return out;
+  }
+
+  // 军务面板运行时渲染器只读 initialTroops / militarySystem。旧剧本/旧 AI 生成把内容落进
+  // troops / organization，导致面板显示为空。此处在数据入口层做一次性基线迁移（会话前的
+  // schema 变换·与本文件 events/variables/relations 各节同范式，无需 EditHistory）。
+  // 守卫：_legacyMigratedV1 标记 + 目标新字段为空双守卫（官方剧本新字段已有数据→零触发）。
+  // 非破坏：保留旧桶原样（troops/organization/facilities/campaigns 均不删）——runtime 的
+  //   游戏内军务 UI（tm-military-ui.js）仍读 P.military.troops/organization，且官方剧本本就
+  //   新旧字段并存；删键会让迁移后的剧本与官方结构不一致、并可能回归游戏内军务显示。深克隆隔离嵌套引用。
+  // 复活环封堵：标记「仅在确有迁移时」落且随导出持久化（exportScenario 不剥离）——玩家删光
+  //   initialTroops 后导出再导入，标记在→migrateMilitary 早退→不重迁→已删内容不复活。
+  //   官方剧本无迁移→不落标记→export(import(raw)).military 与原 military byte 等价。
+  function needsMilitaryMigration(sd) {
+    var mil = sd && sd.military;
+    if (!mil || typeof mil !== 'object' || mil._legacyMigratedV1) return false;
+    var troopsPending = (!Array.isArray(mil.initialTroops) || mil.initialTroops.length === 0) &&
+      Array.isArray(mil.troops) && mil.troops.length > 0;
+    var orgPending = (!Array.isArray(mil.militarySystem) || mil.militarySystem.length === 0) &&
+      Array.isArray(mil.organization) && mil.organization.length > 0;
+    return troopsPending || orgPending;
+  }
+
+  function migrateMilitary(sd, warnings) {
+    var mil = sd && sd.military;
+    if (!mil || typeof mil !== 'object' || mil._legacyMigratedV1) return;
+    var migrated = false;
+    if ((!Array.isArray(mil.initialTroops) || mil.initialTroops.length === 0) &&
+        Array.isArray(mil.troops) && mil.troops.length) {
+      mil.initialTroops = mil.troops.map(migrateLegacyTroop);
+      migrated = true;
+      if (warnings) warnings.push('military: 旧 troops(' + mil.troops.length + ') 迁入 initialTroops');
+    }
+    if ((!Array.isArray(mil.militarySystem) || mil.militarySystem.length === 0) &&
+        Array.isArray(mil.organization) && mil.organization.length) {
+      mil.militarySystem = mil.organization.map(migrateLegacySystem);
+      migrated = true;
+      if (warnings) warnings.push('military: 旧 organization(' + mil.organization.length + ') 迁入 militarySystem');
+    }
+    if (migrated) mil._legacyMigratedV1 = true; // 仅确有迁移时落·官方剧本不落→byte 等价
+  }
+
   function classifyVariable(v) {
     // 显式·剧本作者标 v.kind / v.category·强制归类·跳过启发式
     if (v.kind === 'base' || v.category === 'base') {
@@ -186,6 +258,8 @@
       sd.characters = sd.characters.map(function(c) { return adaptCharAlias(c, 'import'); });
     }
 
+    migrateMilitary(sd, warnings);
+
     return { scriptData: sd, warnings: warnings };
   }
 
@@ -224,6 +298,8 @@
     delete sc.presetRelations;
     delete sc._eventsWasArray;
     delete sc._variablesWasArray;
+    // 注意：military._legacyMigratedV1 故意「不剥离」随导出持久化——它是断「删光→导出→导入
+    // 复活环」的关键（见 migrateMilitary 注释）。仅在确有迁移时才存在，官方剧本无此键。
 
     if (Array.isArray(sc.characters)) {
       sc.characters = sc.characters.map(function(c) { return adaptCharAlias(c, 'export'); });
@@ -296,6 +372,10 @@
     deepDiff: deepDiff,
     classifyVariable: classifyVariable,
     classifyEventBucket: classifyEventBucket,
+    migrateMilitary: migrateMilitary,
+    needsMilitaryMigration: needsMilitaryMigration,
+    ARMY_TYPE_MAP: ARMY_TYPE_MAP,
+    ARMY_TYPE_ENUMS: ARMY_TYPE_ENUMS,
     EVENT_BUCKETS: EVENT_BUCKETS,
     EVENT_TYPE_MAP: EVENT_TYPE_MAP
   };

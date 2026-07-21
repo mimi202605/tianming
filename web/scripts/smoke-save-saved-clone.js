@@ -45,8 +45,9 @@ ok(!('fn' in out), '⑤ 函数排除');
 ok(out.turn === 5, '⑤ primitive 透传');
 ok(ctx.cloneCount === 1, '★ 只深拷 1 次(普通 mutable)·_saved* 镜像零二次克隆(原会多拷 2 个)');
 
-// ⑥ desktopDoSave 复用快照(源契约·避免裸 deepClone(GM))
-ok(/saveData\.gameState=_autoSaveSnapshotGM\(\);/.test(save), '⑥ desktopDoSave 复用 _autoSaveSnapshotGM(不再裸 deepClone(GM))');
+// ⑥ desktopDoSave 复用统一 builder(源契约·避免裸 deepClone(GM))
+ok(/function _buildSaveState\(/.test(save), '⑥ 统一 _buildSaveState 构造器存在');
+ok(/var saveData=_buildSaveState\(\{format:'project',prepare:false\}\)/.test(save), '⑥ desktopDoSave 复用 _buildSaveState(project)');
 ok(save.indexOf('saveData.gameState=deepClone(GM);') < 0, '⑥ 手动档裸 deepClone(GM) 已清(saveData 路径)');
 
 console.log('\n结果: '+A+' 通过 / 0 失败');

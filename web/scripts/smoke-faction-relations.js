@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { materializeScenarioRows } = require('./lib/official-scenario-fixture.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const SID = 'sc-tianqi7-1627';
@@ -37,10 +38,7 @@ function loadDesktopOfficialScenario() {
 
 function loadBuiltinScenario() {
   const abs = path.join(ROOT, 'scenarios', 'tianqi7-1627.js');
-  // 官方剧本重建为「壳+快照」:壳(tianqi7-1627.js)以 window 探测注册 scenario 对象进 P.scenarios;
-  // 可玩花名册由运行时快照平铺到 P.characters/factions(sid 标记)。node 下须 shim window 让壳注册、
-  // shim addEventListener 供快照注册 tm:p-restored。两者都 require 进来才得到完整 sc + 平铺名册。
-  const snap = path.join(ROOT, 'data', 'scenario-supplements', 'tianqi7-official-runtime-snapshot.js');
+  // 完整官方剧本脚本注册进 P.scenarios；测试适配器复刻 startGame 的数组物化。
   const oldP = global.P;
   const oldDocument = global.document;
   const oldWindow = global.window;
@@ -68,8 +66,7 @@ function loadBuiltinScenario() {
     console.log = function () {};
     delete require.cache[require.resolve(abs)];
     require(abs);
-    delete require.cache[require.resolve(snap)];
-    require(snap);
+    materializeScenarioRows(global.P, SID);
     const sc = global.P.scenarios.find((s) => s && s.id === SID);
     assert(sc, 'built-in official scenario missing');
     sc.characters = global.P.characters.filter((x) => x && x.sid === SID);

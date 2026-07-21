@@ -137,6 +137,16 @@ function generateMemorials(){
 }
 
 async function genMemorialsAI(count){
+  var _memSession = {
+    gmRef: GM,
+    sid: GM && GM.sid,
+    turn: GM && GM.turn,
+    startEpoch: (typeof window !== 'undefined') ? window._tmStartPrewarmEpoch : undefined
+  };
+  function _memSessionCurrent(){
+    return typeof GM !== 'undefined' && GM === _memSession.gmRef && GM.sid === _memSession.sid && GM.turn === _memSession.turn
+      && (_memSession.startEpoch == null || typeof window === 'undefined' || window._tmStartPrewarmEpoch === _memSession.startEpoch);
+  }
   try{
     // 构建极丰富上下文prompt
     var prompt = getTSText(GM.turn) + '第' + GM.turn + '回合。\n';
@@ -336,7 +346,7 @@ async function genMemorialsAI(count){
       // 完善·近期记忆(直接列 3 条·补 NpcMemorySystem 心绪)
       var _memList = '';
       if (Array.isArray(ch._memory) && ch._memory.length > 0) {
-        var _ms = ch._memory.slice(-3).map(function(m){
+        var _ms = ((typeof _tmFilterMemories === 'function') ? _tmFilterMemories(ch._memory, GM) : ch._memory).slice(-3).map(function(m){
           return (m.event || m.text || '').slice(0, 24);
         }).filter(Boolean);
         if (_ms.length > 0) _memList = ' 忆:[' + _ms.join('；') + ']';
@@ -565,6 +575,17 @@ async function genMemorialsAI(count){
       var minReq = (subt === '密折' || subt === '密揭' || subt === '密报' || subt === '表' || subt === '笺') ? Math.round(_secretRange[0] * 0.85) : Math.round(_normalRange[0] * 0.85);
       return m.content.length >= minReq;
     }
+    // ★ 平行历史时空约束·扫描奏疏主题上下文（矛盾/近事/候选事件·非呈奏候选人列表）中涉及人物·逐人标生死
+    if (typeof _buildTemporalConstraint === 'function') {
+      try {
+        var _memTopicText = '';
+        if (P.playerInfo && Array.isArray(P.playerInfo.coreContradictions)) _memTopicText += P.playerInfo.coreContradictions.map(function(x){ return (x && (x.title || '')) + ' ' + (x && (x.parties || '')); }).join(' ');
+        if (Array.isArray(GM.evtLog)) _memTopicText += ' ' + GM.evtLog.slice(-6).map(function(e){ return (e && e.text) || ''; }).join(' ');
+        if (Array.isArray(GM._candidateEvents)) _memTopicText += ' ' + GM._candidateEvents.slice(0, 12).map(function(e){ return (e && (e.title || '')) + ' ' + (e && (e.payload || '')); }).join(' ');
+        var _memMentioned = (typeof _tcScanMentionedNames === 'function') ? _tcScanMentionedNames(_memTopicText, [], 10) : [];
+        prompt += _buildTemporalConstraint(null, { mentionedNames: _memMentioned });
+      } catch (_tcMemE) {}
+    }
     var c = await callAISmart(prompt, _dynamicMaxTok, {
       minLength: count * _strictMin,
       maxRetries: 2,
@@ -577,6 +598,7 @@ async function genMemorialsAI(count){
         return true;  // 字数偏短不在此整批废·留给「部分接受」逐篇筛+补缺
       }
     });
+    if (!_memSessionCurrent()) { console.warn('[genMemorialsAI] 丢弃过期结果'); return; }
     var _memRaw = extractJSON(c) || [];
     var _good = [], _shortN = 0;
     _memRaw.forEach(function(m) { if (m && !_memIsIllegalPresenterName(m.from)) { if (_memPassesLength(m)) _good.push(m); else _shortN++; } });
@@ -589,6 +611,7 @@ async function genMemorialsAI(count){
           maxRetries: 1,
           validator: function(content) { var p = extractJSON(content); return Array.isArray(p) && p.length >= 1; }
         });
+        if (!_memSessionCurrent()) { console.warn('[genMemorialsAI] 丢弃过期补写结果'); return; }
         (extractJSON(_c2) || []).forEach(function(m) { if (_good.length < count && m && !_memIsIllegalPresenterName(m.from) && _memPassesLength(m)) _good.push(m); });
       } catch (_topupE) { try { console.warn('[memorials·部分接受·补写失败]', _topupE); } catch (_) {} }
     }
@@ -675,8 +698,8 @@ async function genMemorialsAI(count){
         }
       } catch(_l5PostE) { try { console.warn('[memorials·L5 post-spawn]', _l5PostE); } catch(_){} }
     }
-  } catch(e) { console.warn('[genMemorialsAI]', e.message || e); }
-  renderMemorials();
+  } catch(e) { if (_memSessionCurrent()) console.warn('[genMemorialsAI]', e.message || e); }
+  if (_memSessionCurrent()) renderMemorials();
 }
 function renderMemorials(force){
   var el=_$("zouyi-list");if(!el)return;
@@ -1049,6 +1072,87 @@ function _holdMemorial(idx) {
   m._commitApplied = false;
   renderMemorials();
   toast('\u7559\u4E2D\u4E0D\u53D1\uFF08\u672A\u63D0\u4EA4\uFF09');
+}
+
+// 穿越模式·君主 AI 批奏（Task 9）
+//   入参: m=memorial 对象, d={decision:'approved|rejected|hold|debate|referred', ruling, loyaltyDelta, reason}
+//   5 选 1 状态映射 + 复用 _stageMemorialDecision 走标准批答路径
+//   NPC 忠诚度经 adjustCharacterLoyalty 闸门（缺席则钳制直写）
+//   玩家上奏以「奉旨」卡片反馈到 P.playerInfo._sovereignAINotices
+function _sovereignAIReplyMemorial(m, d) {
+  if (!m || !d) return { ok: false, reason: 'empty args' };
+  if (_memMarkIllegalPresenter(m, 'sovereign-ai')) return { ok: false, reason: 'illegal presenter' };
+  var decision = String(d.decision || '').toLowerCase();
+  var actionMap = {
+    approved: 'approved', rejected: 'rejected', hold: 'pending_review',
+    debate: 'court_debate', referred: 'referred'
+  };
+  var action = actionMap[decision];
+  if (!action) return { ok: false, reason: 'unknown decision: ' + decision };
+  var ruling = String(d.ruling || '').slice(0, 240);
+  var loyaltyDelta = (typeof d.loyaltyDelta === 'number' && isFinite(d.loyaltyDelta))
+                     ? Math.max(-10, Math.min(10, d.loyaltyDelta)) : 0;
+
+  if (decision === 'hold') {
+    m.status = 'pending_review';
+    m.reply = ruling || '留中再议';
+    m._commitApplied = false;
+  } else if (decision === 'debate') {
+    _stageMemorialDecision(m, 'court_debate', ruling || '着廷议');
+    try {
+      if (!Array.isArray(GM._pendingTinyiTopics)) GM._pendingTinyiTopics = []; // arch-ok
+      var _qid = 'sov_ai_' + (m.id || m.from || '') + '_' + (GM.turn || 0);
+      if (!GM._pendingTinyiTopics.some(function (x) { return x && x._memTinyiId === _qid; })) {
+        GM._pendingTinyiTopics.unshift({ // arch-ok
+          topic: '君主 AI 发廷议·' + (m.from || '臣工') + '：' + String(m.content || m.text || m.title || '').slice(0, 120),
+          from: '君主 AI 发廷议', sourceType: 'sovereign-ai', turn: GM.turn || 1, status: 'pending', priority: 70,
+          reason: ruling || '着廷议', delegateCharacter: m.from || '',
+          linkedCharacters: m.from ? [m.from] : [], _memTinyiId: _qid, _memId: m.id || ''
+        });
+        if (GM._pendingTinyiTopics.length > 80) GM._pendingTinyiTopics = GM._pendingTinyiTopics.slice(0, 80); // arch-ok
+      }
+    } catch (_debE) {}
+  } else if (decision === 'referred') {
+    _stageMemorialDecision(m, 'referred', ruling || '着有司议处');
+  } else {
+    _stageMemorialDecision(m, action, ruling);
+  }
+
+  try {
+    if (m.from && loyaltyDelta !== 0) {
+      var ch = (typeof findCharByName === 'function') ? findCharByName(m.from) : null;
+      if (ch && ch.alive !== false && !ch.isPlayer) {
+        if (typeof adjustCharacterLoyalty === 'function') {
+          adjustCharacterLoyalty(ch, loyaltyDelta, '君主 AI ' + (ruling || decision), { source: 'sovereign-ai-memorial' });
+        } else {
+          ch.loyalty = Math.max(0, Math.min(100, (Number(ch.loyalty) || 50) + loyaltyDelta));
+        }
+      }
+    }
+  } catch (_loyE) {}
+
+  try {
+    if (m._playerSubmitted === true && typeof P !== 'undefined' && P && P.playerInfo) {
+      if (!Array.isArray(P.playerInfo._sovereignAINotices)) P.playerInfo._sovereignAINotices = []; // arch-ok
+      var _actionLbl = decision === 'approved' ? '所奏准奏'
+                    : decision === 'rejected' ? '所奏驳回'
+                    : decision === 'hold' ? '留中再议'
+                    : decision === 'debate' ? '已发交廷议'
+                    : '着有司议处';
+      P.playerInfo._sovereignAINotices.push({ // arch-ok
+        turn: (typeof GM !== 'undefined' && GM && GM.turn) || 0,
+        memorialId: m.id || '',
+        from: m.from || '',
+        decision: decision,
+        ruling: ruling,
+        loyaltyDelta: loyaltyDelta,
+        reason: String(d.reason || '').slice(0, 120),
+        msg: '【奉旨】' + _actionLbl + (ruling ? '·朱批：' + ruling : '')
+      });
+    }
+  } catch (_ntfE) {}
+
+  return { ok: true, action: action, reply: ruling, loyaltyDelta: loyaltyDelta };
 }
 
 /**

@@ -14,7 +14,7 @@
 //   S1 骨架  S2 只读工具集  S3 守护写工具+校验闸  S4 agent 循环+覆盖脊柱
 //   S5(本刀) **甲案 engine-first + 安全闭环**:
 //     · 快照(回合前 deep-clone)→ **引擎先算硬核基线**(提前调 _endTurn_updateSystems·置 _systemsRan 让 systems 步幂等跳)
-//       → agent 看真数再覆写 → 状态自检 → 过则提交·崩则回滚+回落 LLM。
+  //       → agent 看真数再覆写 → 状态自检 → 过则提交·崩则在 Agent 链内回滚并终止（不跨入 LLM）。
 //     · 引擎让步:agent 在引擎之后写·天然盖过(systems 步幂等不再 tick)·_agentOverrides 标为下游重算保险。
 //   S6 设置 toggle + a/b 对拍验证
 // ============================================================
@@ -23,11 +23,75 @@
   'use strict';
   var TM = root.TM || (root.TM = {});
   TM.Endturn = TM.Endturn || {};
+  // Node smoke 常直接 require 本模块；浏览器则由 index.html 显式按序加载。
+  if (!TM.Endturn.AgentIntentPlan && typeof module !== 'undefined' && module.exports && typeof require === 'function') {
+    try { require('./tm-endturn-agent-intent-plan.js'); } catch (_) {}
+  }
 
   function _GM(ctx) { return (ctx && ctx.GM) || root.GM || null; }
   function _brief(v, n) { try { var s = typeof v === 'string' ? v : JSON.stringify(v); n = n || 200; return s && s.length > n ? s.slice(0, n) + '…' : String(s); } catch (e) { return String(v); } }
   // 报拍(驱动电影化加载层 agent 拍表·标签须匹配 AGENT_BEATS 前缀)·缺 showLoading 静默
   function _show(msg, pct) { try { if (typeof root.showLoading === 'function') root.showLoading(msg, pct); } catch (e) {} }
+  function _agentRuntime(ctx) { return ctx && ctx.meta && ctx.meta.agentRuntime; }
+  function _agentSignal(ctx) { var r = _agentRuntime(ctx); return r && r.signal ? r.signal : null; }
+  function _claimAI(ctx, label, maxTok, essential, calls) {
+    var r = _agentRuntime(ctx);
+    if (!r || !r.budget || typeof r.budget.claim !== 'function') return { ok: true };
+    return r.budget.claim(label, { calls: Math.max(1, Number(calls) || 1), tokens: Math.max(0, Number(maxTok) || 0) }, { essential: !!essential });
+  }
+  function _trace(ctx, type, data) {
+    var r = _agentRuntime(ctx);
+    try { if (r && r.trace && typeof r.trace.add === 'function') r.trace.add(type, data || {}); } catch (_) {}
+  }
+  function _settleDepthResult(name, ctx, state, spec, raw, intent) {
+    var IP = TM.Endturn.AgentIntentPlan;
+    var receipt = TM.AgentKernel && TM.AgentKernel.makeReceipt
+      ? TM.AgentKernel.makeReceipt(spec, raw, { changed: !!(raw && raw.changed), verified: !!(raw && raw.verified), provenance: 'agent-specialist-commit' })
+      : { tool: name, attempted: true, ok: !!(raw && raw.ok), changed: !!(raw && raw.changed), verified: raw && raw.verified !== false };
+    if (IP && intent) IP.settle(intent, receipt);
+    state.toolReceipts = state.toolReceipts || [];
+    state.toolReceipts.push(receipt);
+    _trace(ctx, 'tool_receipt', receipt);
+    if (raw && raw.ok && raw.verified !== false) state.depthTools[name] = (state.depthTools[name] || 0) + 1;
+    else if (state.depthFailed.indexOf(name) < 0) state.depthFailed.push(name);
+    if (raw && typeof raw === 'object') raw.receipt = receipt;
+    return raw;
+  }
+  async function _runDepthProposal(name, input, ctx, state, DT, claimBudget, opts) {
+    opts = opts || {};
+    var spec = DT && DT.registry && DT.registry.get ? DT.registry.get(name) : { name: name, effect: 'runtime-write', risk: 'medium', version: '1', estimatedTokens: 2000 };
+    if (claimBudget) {
+      var calls = name === 'deepen_narrative' ? 3 : 1;
+      var claim = _claimAI(ctx, 'depth-' + name, (spec && spec.estimatedTokens) || 2000, name === 'deepen_narrative', calls);
+      if (!claim.ok) return { ok: false, changed: false, verified: false, skipped: 'budget', reason: claim.reason, name: name, text: '(深化预算不足:' + claim.reason + ')' };
+    }
+    var IP = TM.Endturn.AgentIntentPlan;
+    var intent = IP && state.intentPlan ? IP.add(state.intentPlan, name, input || {}, { evidence: ['深化专家提案'], uncertainty: (input && input.uncertainty) || '' }) : null;
+    var raw;
+    try {
+      if (opts.proposalOnly && IP && typeof IP.proposeSpecialist === 'function') raw = await IP.proposeSpecialist(name, input || {}, ctx, DT.handle.bind(DT));
+      else raw = IP && typeof IP.runSpecialist === 'function' ? await IP.runSpecialist(name, input || {}, ctx, DT.handle.bind(DT)) : await DT.handle(name, input || {}, ctx);
+    } catch (e) {
+      raw = { ok: false, changed: false, verified: false, name: name, reason: String((e && e.message) || e), text: '(深化专家异常:' + String((e && e.message) || e) + ')' };
+    }
+    if (opts.proposalOnly) {
+      if (raw && typeof raw === 'object') raw._agentIntent = intent;
+      _trace(ctx, 'specialist_proposed', { tool: name, ok: !!(raw && raw.ok), changed: !!(raw && raw.changed), patchCount: raw && raw.proposal && raw.proposal.patches ? raw.proposal.patches.length : 0 });
+      return raw;
+    }
+    return _settleDepthResult(name, ctx, state, spec, raw, intent);
+  }
+  function _commitPreparedDepth(name, prepared, ctx, state, DT) {
+    if (!prepared) return null;
+    var IP = TM.Endturn.AgentIntentPlan;
+    var gm = _GM(ctx);
+    var intent = prepared._agentIntent || null;
+    var spec = DT && DT.registry && DT.registry.get ? DT.registry.get(name) : { name: name, effect: 'runtime-write', risk: 'medium', version: '1' };
+    var committed = IP && typeof IP.commitSpecialistProposal === 'function'
+      ? IP.commitSpecialistProposal(gm, prepared)
+      : { ok: false, changed: false, verified: false, reason: '唯一提交器不支持 proposal commit' };
+    return _settleDepthResult(name, ctx, state, spec, committed, intent);
+  }
 
   // ── 本回合时间上下文:明确告诉 agent 当前纪元年月 + 本回合历时(天/月)+ 时间相关后果如何据此推演 ──
   //   命门:agent 推演"十日内具册/赴任行程/换季农时/粮饷转输/战事推进"等时间相关后果·须知当前日期与本回合跨度·否则脱离时间凭空推。
@@ -79,6 +143,41 @@
     } catch (e) { return 0; }
   }
 
+  // 正式 Agent 的确定性玩家输入必须先落地，再跑 engine-first、再让模型观察真状态。
+  // 这些不是 LLM 推演能力，而是两模式共享的规则动作；Agent 在本链内取得所有权，
+  // pipeline 的 post-ai-edict 只按标记幂等跳过，避免自检之后再出现未审计写入。
+  function _applyAgentDeterministicInputs(ctx, gm) {
+    ctx = ctx || {}; ctx.input = ctx.input || {}; ctx.results = ctx.results || {};
+    var out = { edictActions: 0, keywordActions: 0, tyrantActivities: 0 };
+    var ea = ctx.input.edictActions;
+    var hasEA = !!(ea && ((ea.appointments && ea.appointments.length) || (ea.dismissals && ea.dismissals.length) || (ea.deaths && ea.deaths.length) || (ea.armyBuilds && ea.armyBuilds.length) || (ea.rewards && ea.rewards.length) || (ea.payArrears && ea.payArrears.length)));
+    if (hasEA) {
+      if (typeof root.applyEdictActions !== 'function') throw new Error('applyEdictActions 未加载');
+      root.applyEdictActions(ea); out.edictActions = 1;
+    }
+    ctx.input._agentEdictActionsApplied = true;
+
+    var edicts = ctx.input.edicts || [];
+    function applyScanned(scanName, applyName) {
+      var scan = root[scanName], apply = root[applyName];
+      if (typeof scan !== 'function' || typeof apply !== 'function' || !edicts.length) return;
+      var actions = scan(edicts) || [];
+      for (var i = 0; i < actions.length; i++) { apply(actions[i]); out.keywordActions++; }
+    }
+    applyScanned('_kjG2ScanCtxInputEdictsForEnke', '_kjG2OnEnkeApprovedViaEdict');
+    applyScanned('_kjG3ScanCtxInputEdictsForWuju', '_kjG3OnWujuApprovedViaEdict');
+    applyScanned('_kjG5ScanCtxInputEdictsForTongzi', '_kjG5OnTongziApprovedViaEdict');
+    ctx.input._agentEdictKeywordActionsApplied = true;
+
+    var ta = ctx.input.tyrantActivities || (gm && gm._turnTyrantActivities) || [];
+    if (ta.length) {
+      if (!(root.TyrantActivitySystem && typeof root.TyrantActivitySystem.applyEffects === 'function')) throw new Error('TyrantActivitySystem.applyEffects 未加载');
+      ctx.results.tyrantResult = root.TyrantActivitySystem.applyEffects(ta); out.tyrantActivities = ta.length;
+    }
+    ctx.input._agentTyrantActivitiesApplied = true;
+    return out;
+  }
+
   // ── 切片3·跨回合一致·诏令督查:把在办活诏令(跨回合·带进度/状态·复用 TM.EdictOversight.activeEdicts)+ 近期既定事实(已故)注入 basis ──
   //   命门:推演接续上回合而非失忆——颁布≠见效·须推演活诏令本回合真实推进/被架空;勿令已故者行动/复活。开关关/无活诏令则空。
   function _activeEdictsDossier(gm) {
@@ -119,13 +218,16 @@
     } catch (_fe) {}
     var changes = (Array.isArray(gm._turnReport) ? gm._turnReport : []).filter(function (e) { return e && e.type === 'change'; }).slice(0, 16).map(function (e) { return (e.path || '') + (e.reason ? '(' + _brief(e.reason, 24) + ')' : ''); });
     var sys = '你是史官兼审读官·审查本回合推演成文的质量。三审:① 因果合理(后果是否从玩家举措+局势自然推出·有无无源突变) ② 信史(有无时代错乱/杜撰人名/反历史常识) ③ 既定事实一致(有无让已故者行动、无视已发生之事)。严格但不吹毛求疵·仅返回 JSON。';
+    // 时空约束·史记质量审读·clauseOnly(防审读官据真实史实误判本局在世者为「反历史」而触发错误修订)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var u = '【本回合史记·时政记】\n' + String(szj).slice(0, 1400) + '\n'
-      + (ch.shilu ? ('【实录】\n' + String(ch.shilu).slice(0, 600) + '\n') : '')
+      + ((ch.shiluText || ch.shilu) ? ('【实录】\n' + String(ch.shiluText || ch.shilu).slice(0, 600) + '\n') : '')
       + '\n【本回合关键改动】' + (changes.join('；') || '(无)') + '\n'
       + '【既定事实·近期已故】' + (facts.join('、') || '(无)') + '\n\n'
       + '返回 JSON:{"pass":true/false,"issues":[{"dim":"因果|信史|一致","problem":"具体问题(≤40字)","fix":"如何改(≤40字)"}]}·无问题 pass:true issues:[]·问题须具体可改·勿无病呻吟。';
     var raw;
-    try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: u }], 1200, null, 'primary', { priority: 'background', timeoutMs: 45000, maxRetries: 1, id: 'agent_quality_review' }); }
+    if (!_claimAI(ctx, 'quality-review', 1200, true).ok) return { narrative: narrative, skipped: 'budget' };
+    try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: u }], 1200, _agentSignal(ctx), 'primary', { priority: 'background', timeoutMs: 45000, maxRetries: 1, id: 'agent_quality_review' }); }
     catch (e) { return { narrative: narrative, skipped: 'reviewFail' }; }
     var rev = _safeJSON(raw);
     var issues = (rev && Array.isArray(rev.issues)) ? rev.issues.filter(function (i) { return i && i.problem; }) : [];
@@ -133,9 +235,12 @@
     if (!issues.length) return { narrative: narrative, pass: true };
     // 一轮定向修补:据 issues 重写史记(只改成文·不动状态/数值)
     var fixSys = '你是史官。据审读意见修订本回合史记·只修正被指出的问题(因果/信史/一致)·保持原有信息与文风·勿大改、勿新增杜撰。仅返回 JSON。';
+    // 时空约束·据审读修订史记正文·clauseOnly(改写玩家可见史记·防「修订」把本局在世者拉回史实卒/引后事)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { fixSys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var fixU = '【原时政记】\n' + String(szj).slice(0, 1600) + '\n\n【审读意见(逐条修正)】\n' + issues.slice(0, 6).map(function (i) { return '· [' + (i.dim || '') + '] ' + i.problem + ' → ' + (i.fix || '修正'); }).join('\n') + '\n\n返回 JSON:{"shizhengji":"修订后时政记","shilu":"修订后实录(无改动则照原)","zhengwen":"修订后政文(无改动则照原)"}';
     var fixRaw;
-    try { _show('⟨执政⟩据审读修订史记…', 88); fixRaw = await root.callAIMessages([{ role: 'system', content: fixSys }, { role: 'user', content: fixU }], 2000, null, 'primary', { priority: 'background', timeoutMs: 45000, maxRetries: 1, id: 'agent_quality_fix' }); }
+    if (!_claimAI(ctx, 'quality-fix', 2000, true).ok) return { narrative: narrative, pass: false, issues: issues, skipped: 'budget' };
+    try { _show('⟨执政⟩据审读修订史记…', 88); fixRaw = await root.callAIMessages([{ role: 'system', content: fixSys }, { role: 'user', content: fixU }], 2000, _agentSignal(ctx), 'primary', { priority: 'background', timeoutMs: 45000, maxRetries: 1, id: 'agent_quality_fix' }); }
     catch (e) { return { narrative: narrative, pass: false, issues: issues }; }
     var fixed = _safeJSON(fixRaw);
     var _fixedSzj = (fixed && fixed.shizhengji) ? fixed.shizhengji : '';
@@ -150,8 +255,9 @@
     if (_fixedSzj) {
       gm._agentChronicle = gm._agentChronicle || {};
       gm._agentChronicle.shizhengji = _fixedSzj;
-      if (fixed && fixed.shilu) gm._agentChronicle.shilu = fixed.shilu;
+      if (fixed && fixed.shilu) gm._agentChronicle.shiluText = fixed.shilu;
       if (fixed && fixed.zhengwen) gm._agentChronicle.zhengwen = fixed.zhengwen;
+      (Array.isArray(gm._turnReport) ? gm._turnReport : []).forEach(function (e) { if (e && e.type === 'narrative') e.text = _fixedSzj; });
       gm._agentQualityReport.repaired = true;
       return { narrative: _fixedSzj, pass: false, repaired: true, issues: issues };
     }
@@ -174,7 +280,8 @@
     var sys = '你是史识判官。判断君上本回合举措是否「非常规」——突破常规施政惯例、创造性、或历史上罕见之举(相对寻常的任免/赏罚/常规诏令而言)。只返回 JSON。';
     var u = '【君上本回合举措】\n' + acts.map(function (a) { return '· ' + a; }).join('\n') + '\n\n返回 JSON:{"unusual":true/false,"aspect":"非常规之处(≤30字·寻常则空)","precedentQuery":"可深查的史例检索词(≤20字·如『权臣夺兵权』『迁都』『裁撤冗官』)"}·寻常举措 unusual:false。';
     var raw;
-    try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: u }], 600, null, 'secondary', { priority: 'normal', timeoutMs: 30000, maxRetries: 1, id: 'agent_anomaly_scan' }); }   /* T2(审计②) · 二分类=机械活下 secondary(未配自动回落 primary) */
+    if (!_claimAI(ctx, 'anomaly-scan', 600, false).ok) return null;
+    try { raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: u }], 600, _agentSignal(ctx), 'secondary', { priority: 'normal', timeoutMs: 30000, maxRetries: 1, id: 'agent_anomaly_scan' }); }   /* T2(审计②) · 二分类=机械活下 secondary(未配自动回落 primary) */
     catch (e) { return null; }
     var p = _safeJSON(raw);
     if (!p || !p.unusual) return null;
@@ -285,7 +392,7 @@
 
   // ── prompts ──
   function _buildSystemPrompt() {
-    return [
+    var _sysP = [
       '你是天命·回合推演的「局内执政-史官」agent(实验·agent 模式)。',
       '【你的职责 = 推演后果·不是替玩家做操作】玩家(君上)本回合的决定——任免官员、颁诏、批奏疏、问对、朝会、书信——**已由玩家做出**(见下方依据·过回合前已定)。',
       '你的任务:**推演这些决定引发的后果 + 这一回合天下自走的一切**·并用守护写工具把推演出的后果落到存档。',
@@ -309,6 +416,9 @@
       '· 收尾:深度达标后调 finalize_turn·给史记(narrative·建议先 deepen_narrative 打磨)与摘要(summary)·须忠实反映你**实际改了什么**。',
       _spineText()
     ].join('\n');
+    // 时空约束·agent执政-史官主transcript(整条agent线总口·自组装system不吃主sysP·Codex实证agentTranscriptHasSentinel=false)·clauseOnly（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { _sysP += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
+    return _sysP;
   }
 
   function _buildTurnPrompt(ctx, gm) {
@@ -425,7 +535,7 @@
       var wh = gm && gm.wenduiHistory;
       if (wh && typeof wh === 'object') {
         var dlg = [];
-        Object.keys(wh).forEach(function (nm) { var arr = wh[nm]; if (Array.isArray(arr)) arr.filter(function (e) { return e && _isThisTurn(e.turn); }).slice(-4).forEach(function (e) { dlg.push('   · 与' + nm + ':' + (e.role === 'player' || e.role === 'user' ? '君曰「' : (nm + '曰「')) + _brief(e.content || e.text || '', 70) + '」'); }); });
+        Object.keys(wh).forEach(function (nm) { var arr = wh[nm]; if (Array.isArray(arr)) (typeof _tmFilterWenduiEntries === 'function' ? _tmFilterWenduiEntries(arr, gm) : arr).filter(function (e) { return e && _isThisTurn(e.turn); }).slice(-4).forEach(function (e) { dlg.push('   · 与' + nm + ':' + (e.role === 'player' || e.role === 'user' ? '君曰「' : (nm + '曰「')) + _brief(e.content || e.text || '', 70) + '」'); }); });
         if (dlg.length) { L.push('▸ 人物问对(君上召对):'); dlg.slice(0, 10).forEach(function (d) { L.push(d); }); }
       }
     } catch (e) {}
@@ -472,6 +582,8 @@
     // 系统提示用局势原料(非 agentic 的"勿输出 JSON"包装·此处恰要 JSON)
     //   ⚠ 命门职责分离:玩家做决定(任免/诏令/朱批·过回合前已定·见依据)·agent 只推演后果·绝不替玩家做新决定。
     var sys = '你是当朝宰相级的回合「推演」AI——只推演后果·不替玩家做决定。引擎已结算本回合基础局势(下方依据含真实数字)。玩家本回合的操作(任免/诏令/朱批/朝议/书信)已由玩家做出·见依据。你的任务:推演这些操作引发的**后果**与世界自走的连锁变化·按 JSON 落地为状态变更。\n\n' + situation;
+    // 时空约束·弱模型动作脚手架(单发裁断落地诏令后果)·clauseOnly·无条件注入(不倚赖ctx.prompt.sysP是否含约束·Codex实证scaffoldSystemHasSentinel=false)（typeof守卫防加载序）
+    if (typeof root._buildTemporalConstraint === 'function') { try { sys += '\n' + root._buildTemporalConstraint(null, { clauseOnly: true }); } catch (_) {} }
     var user = [
       '请推演本回合的**后果与连锁反应**(玩家的任免/诏令已定·你不重做·只推演其引发的变化 + 各方应对 + 世界自走):',
       '· 财政增减(诏令耗费 / 查抄所得 / 赏赉) · 民心民生 · 关键变量(党争烈度 / 军务等) · 官员境遇(因事问责擢黜·非玩家的任命) · 势力态度。',
@@ -485,9 +597,10 @@
       '要求:动作 3-8 个·**都是本回合的后果**(不是玩家的新决定)·人名 / path 用上方依据中真实出现的·改国库只用 adjust_treasury。'
     ].join('\n');
     var raw;
+    if (!_claimAI(ctx, 'action-scaffold', 2800, false).ok) return 0;
     try {
       _show('⟨执政⟩单发裁断·落地诏令…', 70);
-      raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: user }], 2800, null, 'secondary');   /* T2(审计②) · 动作清单抽取=机械活下 secondary(未配自动回落 primary) */
+      raw = await root.callAIMessages([{ role: 'system', content: sys }, { role: 'user', content: user }], 2800, _agentSignal(ctx), 'secondary');   /* T2(审计②) · 动作清单抽取=机械活下 secondary(未配自动回落 primary) */
     } catch (e) { try { console.warn('[agent-mode] 动作脚手架调用失败', e); } catch (_) {} return 0; }
     var parsed = _safeJSON(raw);
     var acts = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
@@ -495,7 +608,7 @@
     for (var i = 0; i < acts.length && i < 8; i++) {
       var a = acts[i] || {};
       if (!a.tool || typeof a.tool !== 'string' || !WT_NAMES[a.tool]) continue;  // 仅放行写工具(不让脚手架碰 finalize/深化·那是 loop 驱动)
-      try { await _dispatch(a.tool, a, ctx, state); done++; } catch (_d) {}        // 复用 _dispatch:同验证闸 + _turnReport 记账
+      try { var _sr = await _dispatch(a.tool, a, ctx, state); if (_sr && _sr.ok && _sr.changed === true) done++; } catch (_d) {}        // 只数真实落地；失败/成功但 no-op 都不冒充脚手架动作
     }
     state.scaffoldActions = (state.scaffoldActions || 0) + done;
     state.scaffolded = true;
@@ -638,17 +751,33 @@
       return { ok: true, name: name, text: '(已收尾)' + (gate.ok ? '' : '·注:深度未尽(' + gate.reason + ')') };
     }
     if (RT && RT.isToolName(name)) return await RT.handle(name, input, ctx);
-    if (WT && WT.isToolName(name)) { state.writeAttempts++; var r = await WT.handle(name, input, ctx); if (r && r.ok) state.writeOk++; return r; }
+    if (WT && WT.isToolName(name)) {
+      state.writeAttempts++;
+      var _IP = TM.Endturn.AgentIntentPlan;
+      var _intent = _IP && state.intentPlan ? _IP.add(state.intentPlan, name, input, { evidence: input.evidence || (input.reason ? [input.reason] : []), uncertainty: input.uncertainty || '' }) : null;
+      var _wb = gm && Array.isArray(gm._agentWriteLog) ? gm._agentWriteLog.length : 0;
+      var r;
+      try { r = await WT.handle(name, input, ctx); }
+      catch (_we) { r = { ok: false, changed: false, verified: false, name: name, reason: String((_we && _we.message) || _we), text: '(写工具异常:' + String((_we && _we.message) || _we) + ')' }; }
+      var _wa = gm && Array.isArray(gm._agentWriteLog) ? gm._agentWriteLog.length : 0;
+      var spec = WT.registry && WT.registry.get ? WT.registry.get(name) : { name: name, effect: 'runtime-write', risk: 'medium', version: '1' };
+      var receipt = TM.AgentKernel && TM.AgentKernel.makeReceipt
+        ? TM.AgentKernel.makeReceipt(spec, r, { reportDelta: _wa - _wb, changed: !!(r && r.changed), verified: !!(r && r.verified), provenance: 'agent-mode' })
+        : { tool: name, attempted: true, ok: !!(r && r.ok), changed: !!(r && r.changed), verified: !!(r && r.verified) };
+      state.toolReceipts = state.toolReceipts || [];
+      state.toolReceipts.push(receipt);
+      if (_IP && _intent) _IP.settle(_intent, receipt);
+      _trace(ctx, 'tool_receipt', receipt);
+      if (r && r.ok) {
+        state.writeSucceeded = (state.writeSucceeded || 0) + 1;
+        if (receipt.changed && receipt.verified) state.writeOk++;
+        else state.writeNoop = (state.writeNoop || 0) + 1;
+      } else state.writeFailed = (state.writeFailed || 0) + 1;
+      if (r && typeof r === 'object') r.receipt = receipt;
+      return r;
+    }
     if (DT && DT.isToolName(name)) {
-      var d = await DT.handle(name, input, ctx);
-      if (d && d.ok) {
-        if (!state.depthTools) state.depthTools = {};
-        state.depthTools[name] = (state.depthTools[name] || 0) + 1;
-      } else {
-        if (!state.depthFailed) state.depthFailed = [];
-        if (state.depthFailed.indexOf(name) < 0) state.depthFailed.push(name);
-      }
-      return d;
+      return await _runDepthProposal(name, input, ctx, state, DT, true);
     }  // 深化成功只记深度覆盖·不冒充守护写落地
     // T3·未知工具→列可用工具引导纠正(弱模型常拼错名)
     var _avail = []; try { if (RT) _avail = _avail.concat(RT.defs().map(function (t) { return t.name; })); if (WT) _avail = _avail.concat(WT.defs().map(function (t) { return t.name; })); _avail.push('finalize_turn'); } catch (e) {}
@@ -671,7 +800,7 @@
   }
   // ── S8 结算可重入·补全回滚:引擎结算除改 GM 外·还累加两个「活在 GM 之外的 module 级单例」——
   //   AccountingSystem.ledger(收支账本 push+=)与 StateCouplingSystem.previousValues(耦合基线)。
-  //   deepClone(GM) 的快照/回滚盖不到它们·bail 后 LLM 模式重跑结算会二次累加(账本双记/耦合基线污染悄悄漂进已提交回合)。
+  //   deepClone(GM) 的快照/回滚盖不到它们·bail 后玩家重试当前模式会二次累加(账本双记/耦合基线污染悄悄漂进下一次尝试)。
   //   → 随 GM 快照一并快照这两个单例·回滚时一并还原·让「engine-first→rollback→LLM 重跑」真正干净。
   function _acctMod() { try { if (root && root.AccountingSystem) return root.AccountingSystem; } catch (_) {} try { if (typeof AccountingSystem !== 'undefined') return AccountingSystem; } catch (_) {} return null; }
   function _coupMod() { try { if (root && root.StateCouplingSystem) return root.StateCouplingSystem; } catch (_) {} try { if (typeof StateCouplingSystem !== 'undefined') return StateCouplingSystem; } catch (_) {} return null; }
@@ -686,7 +815,7 @@
     try { var A = _acctMod(); if (ext.acct && A && typeof A.restoreLedger === 'function') A.restoreLedger(ext.acct); } catch (_) {}
     try { var S = _coupMod(); if (ext.coupling && S && typeof S.restorePreviousValues === 'function') S.restorePreviousValues(ext.coupling); } catch (_) {}
   }
-  // 原地还原(保 gm 引用不变·ctx.GM/root.GM 仍有效)·并清 _systemsRan 让 mode a 的 systems 步重新跑引擎·
+  // 原地还原(保 gm 引用不变·ctx.GM/root.GM 仍有效)·并清 _systemsRan 让玩家重试时重新跑引擎·
   // 并还原 GM 外的 module 单例(extSnap·可选·旧 3 参调用向后兼容=不动单例)。
   function _rollback(gm, snapshot, ctx, extSnap) {
     if (!gm || !snapshot) return false;
@@ -731,22 +860,55 @@
   async function run(ctx) {
     var gm = _GM(ctx);
     var cawt = root.callAIWithTools;
-    // 前置(快照前):能力缺失 → 回落 LLM(无须回滚)
-    if (!gm) return { ok: false, fallback: true, reason: '无存档' };
-    if (typeof cawt !== 'function') return { ok: false, fallback: true, reason: 'callAIWithTools 未加载·回落 LLM' };
-    if (!TM.Endturn.AgentReadTools || !TM.Endturn.AgentWriteTools) return { ok: false, fallback: true, reason: '读/写工具未加载·回落 LLM' };
-
     var P = root.P || {};
+    var _conf = P.conf || {};
+    // Agent 与 LLM 是平行模式：Agent 被选中后，缺依赖/失败只能在本链回滚并报错，绝不静默穿越到 LLM 主流程。
+    function fail(reason, extra) {
+      var out = { ok: false, fallback: false, mode: 'agent', reason: reason || 'Agent 模式失败' };
+      Object.keys(extra || {}).forEach(function (k) { out[k] = extra[k]; });
+      return out;
+    }
+    if (!gm) return fail('无存档');
+    if (typeof cawt !== 'function') return fail('callAIWithTools 未加载');
+    if (!TM.Endturn.AgentReadTools || !TM.Endturn.AgentWriteTools) return fail('Agent 读/写工具未加载');
+    if (!TM.Endturn.AgentIntentPlan) return fail('Agent 唯一提交器未加载');
+    ctx = ctx || {};
+    ctx.meta = ctx.meta || {};
+    ctx.meta.enforceSemanticWrites = true;
+    if (TM.AgentKernel && typeof TM.AgentKernel.createRun === 'function') {
+      ctx.meta.agentRuntime = TM.AgentKernel.createRun({
+        meta: { mode: 'agent', turn: gm.turn || 0 },
+        budget: {
+          maxCalls: _conf.agentModeMaxCalls || 24,
+          maxTokens: _conf.agentModeTokenBudget || 52000,
+          reserveCalls: _conf.agentModeReserveCalls != null ? _conf.agentModeReserveCalls : 4,
+          deadlineMs: _conf.agentModeDeadlineMs || 420000
+        }
+      });
+    }
     var resolutionTurn = gm.turn || 0;
+    var _intentPlan = TM.Endturn.AgentIntentPlan.create({ mode: 'agent', turn: resolutionTurn });
+    ctx.meta.agentIntentPlan = _intentPlan;
 
     // ── S5 甲案:快照 → 引擎先算硬核基线 ──
     var snapshot = _snapshot(gm);
+    if (!snapshot) return fail('无法建立 Agent 回合快照；为避免半回合写入已拒绝启动');
     var _extSnap = _snapshotExternals();   // S8·结算前一并快照 GM 外的 module 单例(账本/耦合基线)·供回滚补全
     var engineRan = false;
     var engineDims = {};
     var _turnAfterEngine = null;   // 刀E2 · engine-first 后的实测回合数(而非假设引擎必turn++·stub/异种引擎语义都稳)
-    // 回落兜底:engineRan 时先回滚再回落(让 mode a 在干净态重跑)
-    function bail(reason) { if (engineRan && snapshot) _rollback(gm, snapshot, ctx, _extSnap); return { ok: false, fallback: true, reason: reason }; }
+    // 失败兜底：恢复 Agent 开工快照并把失败交给共同入口；不得转跑 LLM 模式。
+    function bail(reason) {
+      if (_intentPlan) _intentPlan.status = 'rolled-back';
+      var rolledBack = snapshot ? _rollback(gm, snapshot, ctx, _extSnap) : false;
+      return fail(reason, { rolledBack: rolledBack, intentPlan: TM.Endturn.AgentIntentPlan.summarize(_intentPlan) });
+    }
+
+    try {
+      ctx.meta.agentDeterministicInputs = _applyAgentDeterministicInputs(ctx, gm);
+    } catch (_inputE) {
+      return bail('玩家确定性动作落地失败:' + ((_inputE && _inputE.message) || _inputE));
+    }
 
     if (snapshot && typeof root._endTurn_updateSystems === 'function') {
       try {
@@ -761,11 +923,9 @@
       } catch (engErr) {
         // 引擎在 await 中抛错:engineRan 尚未置 true·但引擎可能已部分 mutate(turn++ + 账本/耦合单例累加)→显式回滚(含单例)
         if (snapshot) _rollback(gm, snapshot, ctx, _extSnap);
-        return { ok: false, fallback: true, reason: '引擎基线(engine-first)失败·回滚回落 LLM:' + (engErr && engErr.message) };
+        return fail('引擎基线(engine-first)失败·已回滚:' + (engErr && engErr.message), { rolledBack: true });
       }
     }
-    // (snapshot 失败 → 不跑 engine-first·退回 agent 在当前态推演·不致命·systems 步仍会正常跑引擎)
-
     // 玩家移动令确定性兜底(跨模式复用 LLM 同一 reconcile)·治"人事调动诏书人物原地不动"顽疾:
     //   prep 已 extractEdictMovements → GM._turnMoveCommands(确定性捕获"令X赴/移动到Y"·含 instant 标);
     //   agent 模式不走 applier(不调此 reconcile)→ 这里显式调一次·应用玩家移动令(即时令当回合即抵·否则补启行程)·不靠 agent 自觉调 move_character。
@@ -799,7 +959,7 @@
       return _bParts.sys + (_bParts.bias ? '\n' + _bParts.bias : '') + (_bParts.time ? '\n' + _bParts.time : '') + '\n\n' + (_bParts.ops ? _bParts.ops + '\n\n' : '') + (_bParts.anomaly ? _bParts.anomaly + '\n\n' : '') + (_bParts.mem ? _bParts.mem + '\n\n' : '') + (_bParts.edicts ? _bParts.edicts + '\n\n' : '') + _bParts.basis;
     }
     var baseTranscript = _assembleBase();
-    var state = { finalized: false, summary: '', narrative: '', writeAttempts: 0, writeOk: 0, rounds: 0, depthTools: {}, depthFailed: [], finalizeRejects: 0, engineDims: engineDims, t0: Date.now() };
+    var state = { finalized: false, summary: '', narrative: '', writeAttempts: 0, writeSucceeded: 0, writeFailed: 0, writeNoop: 0, writeOk: 0, toolReceipts: [], intentPlan: _intentPlan, rounds: 0, depthTools: {}, depthFailed: [], finalizeRejects: 0, engineDims: engineDims, t0: Date.now() };
     gm._agentJsonReasks = 0;   // T4/T6 · 本回合 JSON 重问计数(深化工具累加·meta 收口)
     // T1(审计①·Codex/CC 上下文预算对照) · 基线预算护栏:basis(全量依据)+记忆卷宗(~15K字)此前零核算·
     //   大存档+小窗口模型静默超窗(服务端截尾→产出劣化/失败)。按 getPromptBudget 收敛:超预算先砍
@@ -860,15 +1020,23 @@
         _show('⟨执政⟩亲裁·第' + round + '轮·' + (round === 1 ? '察看朝局' : (state.writeOk < 1 ? '落地诏令后果' : '深化推演')) + '…', 54 + Math.min(round / maxRounds, 0.97) * 30);
         var resp;
         try {
+          var _roundMaxTok = Math.min(9600, _mtBase * Math.pow(2, _tokBump));
+          var _budgetClaim = _claimAI(ctx, 'agent-round-' + round, _roundMaxTok, round === 1);
+          if (!_budgetClaim.ok) {
+            if (round === 1) return bail('Agent 调用预算不足，首轮未启动');
+            state.budgetStop = _budgetClaim.reason || 'budget';
+            break;
+          }
           resp = await cawt(callTranscript, tools, {
-            maxTok: Math.min(9600, _mtBase * Math.pow(2, _tokBump)),   // 刀H2 · 截断后已提升的上限
-            tier: 'primary', priority: 'normal', timeoutMs: 180000, maxRetries: 1, id: 'agent_turn:r' + round
+            maxTok: _roundMaxTok,   // 刀H2 · 截断后已提升的上限
+            tier: 'primary', priority: 'normal', timeoutMs: 180000, maxRetries: 1, id: 'agent_turn:r' + round,
+            signal: _agentSignal(ctx)
           });
         } catch (e) {
-          if (round === 1) return bail('agent 调用失败(首轮)·回落 LLM:' + (e && e.message));
+          if (round === 1) return bail('Agent 调用失败(首轮):' + (e && e.message));
           break;
         }
-        if (!resp) { if (round === 1) return bail('agent 无响应(首轮)·回落 LLM'); break; }
+        if (!resp) { if (round === 1) return bail('Agent 无响应(首轮)'); break; }
         // 刀H2(CC max_tokens 动态调整对照) · 输出截断自愈:被输出上限腰斩且没调成任何工具 → 上限×2
         //   重试本轮(≤2次·infra 纯增量 truncated 字段)·置于 narrative 赋值前(截断的叙事不污染产出)
         if (resp.truncated && !(Array.isArray(resp.toolCalls) && resp.toolCalls.length) && _tokBump < 2) {
@@ -879,7 +1047,7 @@
         if (resp.text && !state.narrative) state.narrative = resp.text;
         var calls = Array.isArray(resp.toolCalls) ? resp.toolCalls.slice(0, perRoundCap) : [];
         if (!calls.length) break;
-        var _wB = state.writeAttempts, _dB = Object.keys(state.depthTools || {}).length;
+        var _wB = state.writeOk, _dB = Object.keys(state.depthTools || {}).length;
         var resultLines = [];
         for (var i = 0; i < calls.length; i++) {
           var c = calls[i] || {};
@@ -891,13 +1059,13 @@
         roundLog.push({ round: round, text: resultLines.join('\n') });  // 滚动日志(瘦身用·下轮只带最近 N)
         if (state.finalized) break;
         // 防空转:本轮有无实质动作(写/深化)·轮≥2 连续无动作 → 累加 _stall(达 2 上方降读工具逼落地)
-        var _acted = (state.writeAttempts > _wB) || (Object.keys(state.depthTools || {}).length > _dB);
+        var _acted = (state.writeOk > _wB) || (Object.keys(state.depthTools || {}).length > _dB);
         if (round >= 2 && !_acted) _stall++; else _stall = 0;
         // 早退动作循环省钱:连续 3 轮停摆(无写无深化·_acted 会重置 _stall·有进展则不触发)→ 退出·转脚手架 + 自动收尾·不白烧 maxRounds(弱模型常态)
         if (_stall >= 3) break;
       }
     } catch (loopErr) {
-      if (state.writeOk === 0 && Object.keys(state.depthTools || {}).length === 0) return bail('agent 循环异常且无实质落地·回落 LLM:' + (loopErr && loopErr.message));
+      if (state.writeOk === 0 && Object.keys(state.depthTools || {}).length === 0) return bail('Agent 循环异常且无实质落地:' + (loopErr && loopErr.message));
       // 刀E1(2026-07-02) · 已有实质落地→继续降级完成(auto-suite 补齐+收尾自检把关提交)·但异常必须留痕——
       //   此前静默吞掉·脏回合成因无从追查。留痕进 _agentTurnMeta.loopError 供诊断/UI。
       state.loopError = String((loopErr && loopErr.message) || loopErr).slice(0, 200);
@@ -914,9 +1082,40 @@
       try { await _scaffoldAction(ctx, gm, basis, state); } catch (_sfE) { try { console.warn('[agent-mode] 动作脚手架失败(不阻断)', _sfE); } catch (_) {} }
     }
 
+    // ── Agent 模式专属当前回合任务：本分支唯一所有者，且必须在深化叙事/最终自检之前完成 ──
+    // 不与 LLM 管线的 edict audit / render-finalize dispatcher 混跑；不并行写 GM。
+    ctx.meta.agentTaskOwnership = Object.assign({}, ctx.meta.agentTaskOwnership || {}, { edict: 'agent', liveWorld: 'agent', reflection: 'agent', deterministicInputs: 'agent-before-engine' });
+    if (_agentEdictOversightOn(P) && TM.EdictOversight && typeof TM.EdictOversight.run === 'function') {
+      var _eoClaim = _claimAI(ctx, 'edict-oversight', 2400, false);
+      if (_eoClaim.ok) {
+        try {
+          _show('⟨执政⟩督查在办诏令…', 81);
+          await TM.EdictOversight.run(gm, { evidence: state.narrative || _synthNarrative(gm), tier: 'primary', maxTok: 2400, timeoutMs: 60000, signal: _agentSignal(ctx) });
+          ctx.meta.agentTaskOwnership.edictRan = true;
+        } catch (_eoRunE) { ctx.meta.agentTaskOwnership.edictError = String((_eoRunE && _eoRunE.message) || _eoRunE).slice(0, 160); }
+      } else ctx.meta.agentTaskOwnership.edictSkipped = 'budget';
+    } else ctx.meta.agentTaskOwnership.edictSkipped = 'disabled';
+
+    if (_agentLiveWorldOn(P) && TM.FactionNpcInTurnDriver && typeof TM.FactionNpcInTurnDriver._runOneInTurn === 'function') {
+      var _lwMax = (P.conf && P.conf.agentLiveWorldMaxRuns) || 5;
+      var _lwRan = 0;
+      _show('⟨执政⟩势力自主推演…', 83);
+      for (var _lw = 0; _lw < _lwMax; _lw++) {
+        var _lwClaim = _claimAI(ctx, 'liveworld-' + _lw, 1800, false);
+        if (!_lwClaim.ok) { ctx.meta.agentTaskOwnership.liveWorldSkipped = 'budget'; break; }
+        try {
+          var _lwR = await TM.FactionNpcInTurnDriver._runOneInTurn(gm.turn || 0, 'agent-lw-' + _lw);
+          if (!_lwR || _lwR.skipped) break;
+          if (_lwR.applied) _lwRan++;
+        } catch (_lwE) { ctx.meta.agentTaskOwnership.liveWorldError = String((_lwE && _lwE.message) || _lwE).slice(0, 160); break; }
+      }
+      gm._agentLiveWorldRan = _lwRan;
+      ctx.meta.agentTaskOwnership.liveWorldRan = _lwRan;
+    } else ctx.meta.agentTaskOwnership.liveWorldSkipped = 'disabled';
+
     // ── 自动覆盖收尾·model-agnostic(2026-06·让弱模型也能正常用·非回落)──
     //   思路:loop 当编排者·模型只当内容生成器。弱模型弱在 agentic 多步编排(自决何时 deepen/finalize)·
-    //   强在单发生成(像 LLM 管线每个 sc)。故只要 engine-first 跑过(世界已推进·下游 post-ai-edict 已落玩家诏令)·
+    //   强在单发生成(像 LLM 管线每个 sc)。故只要玩家确定性动作与 engine-first 跑过(世界已推进)·
     //   loop 就自动补齐深化套件(史记/记忆/势力/经济/军事/NPC·各一次单发·弱模型胜任)再收尾·保证完整富回合。
     //   模型已自调的不重复;agentic 强模型多走的额外动作是 bonus。
     var _depthN = Object.keys(state.depthTools || {}).length;
@@ -936,17 +1135,24 @@
         state.deepenSkipped = [];
         // 工具调用优化(2026-06):auto-suite 三相——recall 先(记忆/状态盘供叙事)→ 中段独立维度深析**并行**(墙钟大降·AI 队列自限真并发)→ 史记后(综合 _turnReport 成文)。
         //   各深析写不同 gm 字段(_turnReport 为 append·JS 单线程·各 resolve 回调不交错→无竞态);每工具自带跳过+try/catch·一败不累及全批。只有 ok=true 才记 depthTools 覆盖，失败进 deepenFailed。
-        function _runOneDeepen(_tn) {
+        function _runOneDeepen(_tn, _proposalOnly) {
           if (state.depthTools[_tn]) return Promise.resolve();
           if (_adaptiveDeepen && _gateDim[_tn] && !(_activeD && _activeD[_gateDim[_tn]])) {
             state.deepenSkipped.push(_tn);
             _show('⟨执政⟩' + (_WF_SKIP[_tn] || (_tn + '·略过')) + '…', 85);   // 可观测保留:加载层显示跳过文案(本回合该维度无动静)·并行化不丢工作流轨迹
             return Promise.resolve();
           }
-          return Promise.resolve().then(function () { return _DTac.handle(_tn, {}, ctx); })
+          var _ds = _DTac.registry && _DTac.registry.get ? _DTac.registry.get(_tn) : null;
+          var _dcalls = _tn === 'deepen_narrative' ? 3 : 1;
+          var _dclaim = _claimAI(ctx, 'depth-' + _tn, (_ds && _ds.estimatedTokens) || 2000, _tn === 'deepen_narrative', _dcalls);
+          if (!_dclaim.ok) {
+            state.deepenSkipped.push(_tn + ':budget');
+            return Promise.resolve();
+          }
+          return Promise.resolve().then(function () { return _runDepthProposal(_tn, {}, ctx, state, _DTac, false, { proposalOnly: !!_proposalOnly }); })
             .then(function (_dr) {
-              if (_dr && _dr.ok) state.depthTools[_tn] = (state.depthTools[_tn] || 0) + 1;
-              else if (state.depthFailed.indexOf(_tn) < 0) state.depthFailed.push(_tn);
+              // _runDepthProposal 已统一记覆盖、失败、回执和 intent。
+              return _dr;
             })
             .catch(function (_e1) {
               try { console.warn('[agent-mode] 自动深化失败(不阻断):' + _tn, _e1); } catch (_) {}
@@ -958,7 +1164,20 @@
         await _runOneDeepen('recall_consolidate');                               // 相一:记忆固化(状态盘供叙事·必须先于史记)
         var _parDo = _midParallel.filter(function (_tn) { return !state.depthTools[_tn] && !(_adaptiveDeepen && _gateDim[_tn] && !(_activeD && _activeD[_gateDim[_tn]])); });
         if (_parDo.length) _show('⟨执政⟩并行深析·' + _parDo.map(function (_tn) { return (_WF_LABEL[_tn] || _tn); }).join(' / ') + '…', 86);
-        await Promise.all(_midParallel.map(_runOneDeepen));                      // 相二:中段独立维度并行(势力/经济/军事/群臣/关系/书信/朝务/天下)
+        // 普通专家在各自克隆态并行分析；Promise.all 只收 proposal，不碰真实 GM。
+        // 仍依赖全局 GM 的 canonical 专家由 AgentIntentPlan 标注，放在并行批次之后逐个独占 root.GM 沙箱。
+        var _IPac = TM.Endturn.AgentIntentPlan;
+        var _parallelNames = _midParallel.filter(function (_tn) { return !(_IPac && _IPac.isRootBound && _IPac.isRootBound(_tn)); });
+        var _rootBoundNames = _midParallel.filter(function (_tn) { return _IPac && _IPac.isRootBound && _IPac.isRootBound(_tn); });
+        var _prepared = await Promise.all(_parallelNames.map(function (_tn) { return _runOneDeepen(_tn, true); }));
+        state.parallelSpecialists = [];
+        for (var _mpi = 0; _mpi < _parallelNames.length; _mpi++) {
+          if (_prepared[_mpi]) {
+            state.parallelSpecialists.push(_parallelNames[_mpi]);
+            _commitPreparedDepth(_parallelNames[_mpi], _prepared[_mpi], ctx, state, _DTac);
+          }
+        }
+        for (var _rbi = 0; _rbi < _rootBoundNames.length; _rbi++) await _runOneDeepen(_rootBoundNames[_rbi]);
         _show('⟨执政⟩史官落笔成章…', 92);
         await _runOneDeepen('deepen_narrative');                                 // 相三:史记综合成文(读全 _turnReport·必须最后)
       }
@@ -971,9 +1190,9 @@
       _depthN = Object.keys(state.depthTools || {}).length;
     }
 
-    // 退化保护:连引擎都没跑(engine-first 失败)+ 模型零产出 → 无可叙述 → 回落 LLM(极少数·非弱模型常态)
+    // 退化保护:连引擎都没跑+模型零产出 → Agent 链内失败并回滚；不跨模式。
     if (!state.finalized && state.writeOk === 0 && _depthN === 0) {
-      return bail('agent 无实质产出且引擎未跑·无可叙述·回落 LLM');
+      return bail('Agent 无实质产出且引擎未跑·无可叙述');
     }
 
     _show('⟨执政⟩撰史定章…', 86);                       // 加载层:agent-narrate 拍
@@ -989,7 +1208,18 @@
       try { var _qg = await _qualityGate(ctx, gm, state, narrative); if (_qg && _qg.narrative) narrative = _qg.narrative; } catch (_qgE) { try { console.warn('[agent-mode] 质量闸失败(不阻断·降级提交原文)', _qgE); } catch (_) {} }
     }
 
-    // ── S5 状态自检 → 过则提交·崩则回滚回落 LLM ──
+    // 反思会写跨回合偏差画像，也必须在最终自检前完成；失败只留诊断，不改变模式。
+    if (_agentSelfReflectOn(P) && TM.ReflectionAgent && typeof TM.ReflectionAgent.run === 'function') {
+      var _reflClaim = _claimAI(ctx, 'reflection', 1600, false);
+      if (_reflClaim.ok) {
+        try {
+          await TM.ReflectionAgent.run(gm, { thinking: (narrative || '') + (state.summary ? ('\n摘要:' + state.summary) : ''), tier: 'primary', maxTok: 1600, timeoutMs: 45000, signal: _agentSignal(ctx) });
+          ctx.meta.agentTaskOwnership.reflectionRan = true;
+        } catch (_reflE) { ctx.meta.agentTaskOwnership.reflectionError = String((_reflE && _reflE.message) || _reflE).slice(0, 160); }
+      } else ctx.meta.agentTaskOwnership.reflectionSkipped = 'budget';
+    } else ctx.meta.agentTaskOwnership.reflectionSkipped = 'disabled';
+
+    // ── S5 状态自检 → 过则提交·崩则在 Agent 链内回滚并中止 ──
     // 刀E2 · 传语义契约:engine-first 之后任何人不得再动 gm.turn(用引擎跑完的实测值·不假设引擎必turn++);
     //   快照时有玩家角色则收尾必须还在
     var chk = _selfCheck(gm, {
@@ -997,8 +1227,11 @@
       hadPlayer: snapshot ? (Array.isArray(snapshot.chars) && snapshot.chars.some(function (c) { return c && c.isPlayer; })) : null
     });
     if (!chk.ok) {
-      return bail('状态自检未过·回滚回落 LLM:' + chk.problems.join('；'));
+      return bail('状态自检未过:' + chk.problems.join('；'));
     }
+
+    _intentPlan.status = 'committed';
+    gm._agentIntentPlan = TM.Endturn.AgentIntentPlan.summarize(_intentPlan);
 
     // DA2·把守护写的 _turnReport 确定性映射进 GM.turnChanges → Delta 面板(人物/势力/变量变动)可见·与 LLM 同口径·失败不阻断
     try { _mapReportToTurnChanges(gm); } catch (e) { try { console.warn('[agent-mode] turnChanges 映射失败(不影响提交)', e); } catch (_) {} }
@@ -1007,7 +1240,11 @@
     var gaps = _detectSpineGaps(gm, state);
     gm._agentSpineGaps = gaps;
     gm._agentResolutionTurn = resolutionTurn;
-    gm._agentTurnMeta = { rounds: state.rounds, writeOk: state.writeOk, writeAttempts: state.writeAttempts, finalized: state.finalized, autoClosed: !!state.autoClosed, scaffolded: !!state.scaffolded, scaffoldActions: state.scaffoldActions || 0, engineFirst: engineRan, resolutionTurn: resolutionTurn, spineGaps: gaps, turn: gm.turn || 0, finalizeRejects: state.finalizeRejects || 0, depthTools: state.depthTools || {}, deepenSkipped: state.deepenSkipped || [], deepenFailed: state.depthFailed || [], engineDims: state.engineDims || {}, depthOk: !!state.depthOk, depthIncomplete: state.depthIncomplete || null, loopError: state.loopError || null, promptTrim: state.promptTrim || null, jsonReasks: gm._agentJsonReasks || 0, durMs: state.t0 ? (Date.now() - state.t0) : null };   /* T6 · 观测补口:T1 收敛痕/T4 重问数/整回合耗时 */
+    gm._agentToolReceipts = state.toolReceipts.slice(-80);
+    var _runtime = _agentRuntime(ctx);
+    var _budgetMeta = _runtime && _runtime.budget ? _runtime.budget.snapshot() : null;
+    var _traceMeta = _runtime && _runtime.trace ? _runtime.trace.snapshot() : null;
+    gm._agentTurnMeta = { rounds: state.rounds, writeOk: state.writeOk, writeAttempts: state.writeAttempts, writeSucceeded: state.writeSucceeded || 0, writeFailed: state.writeFailed || 0, writeNoop: state.writeNoop || 0, finalized: state.finalized, autoClosed: !!state.autoClosed, scaffolded: !!state.scaffolded, scaffoldActions: state.scaffoldActions || 0, engineFirst: engineRan, resolutionTurn: resolutionTurn, spineGaps: gaps, turn: gm.turn || 0, finalizeRejects: state.finalizeRejects || 0, depthTools: state.depthTools || {}, parallelSpecialists: state.parallelSpecialists || [], deepenSkipped: state.deepenSkipped || [], deepenFailed: state.depthFailed || [], engineDims: state.engineDims || {}, depthOk: !!state.depthOk, depthIncomplete: state.depthIncomplete || null, loopError: state.loopError || null, promptTrim: state.promptTrim || null, budget: _budgetMeta, trace: _traceMeta, intentCounts: gm._agentIntentPlan.counts, budgetStop: state.budgetStop || null, jsonReasks: gm._agentJsonReasks || 0, durMs: state.t0 ? (Date.now() - state.t0) : null };   /* T6 · 观测补口:T1 收敛痕/T4 重问数/整回合耗时 */
     try { console.log('[agent-mode] 回合 ' + resolutionTurn + '→' + (gm.turn || 0) + ' 完成 · 引擎先=' + engineRan + ' · 轮' + state.rounds + ' · 落地' + state.writeOk + '/' + state.writeAttempts + ' · 脊柱缺口[' + gaps.join('、') + ']'); } catch (_) {}
 
     // ── D7 产出焊缝:把 agent 产出映射成史记弹窗渲染器(_endTurn_render)期望的富结构 ──
@@ -1031,39 +1268,9 @@
       suggestions: _ch.suggestions || [],
       summary: state.summary, narrative: narrative, writeOk: state.writeOk, rounds: state.rounds, engineFirst: engineRan, spineGaps: gaps
     };
+    if (TM.Endturn.ModeContract && typeof TM.Endturn.ModeContract.normalizeResult === 'function') aiResult = TM.Endturn.ModeContract.normalizeResult(aiResult, 'agent');
 
-    // ── 切片1+3·回合末后台 agent **并行**(自我反思 + 诏令督查·互不依赖·写不同 gm 字段·并发省墙钟·均后台优先·失败不阻断提交·开关默认关)──
-    //   反思:跨回合比对"上回合推演 vs 本回合实际(_turnReport)"→更新偏差画像供下回合 basis。督查:复用 TM.EdictOversight 跨回合真评估活诏令(无活诏令内部跳过不耗调用)。
-    var _postJobs = [];
-    if (_agentSelfReflectOn(P) && TM.ReflectionAgent && typeof TM.ReflectionAgent.run === 'function') {
-      var _reflThinking = (narrative || '') + (state.summary ? ('\n摘要:' + state.summary) : '');   // 本回合推演叙事+摘要作"预测"基线;实际由 _actualStructured 回落读 _turnReport
-      _postJobs.push(Promise.resolve().then(function () { return TM.ReflectionAgent.run(gm, { thinking: _reflThinking, tier: 'primary', maxTok: 1600, timeoutMs: 45000 }); }).catch(function (_reflE) { try { console.warn('[agent-mode] 自我反思失败(不阻断提交)', _reflE); } catch (_) {} }));
-    }
-    if (_agentEdictOversightOn(P) && TM.EdictOversight && typeof TM.EdictOversight.run === 'function') {
-      var _eoEvidence = (_ch && _ch.shizhengji) || narrative || '';
-      _postJobs.push(Promise.resolve().then(function () { return TM.EdictOversight.run(gm, { evidence: _eoEvidence, tier: 'primary', maxTok: 2400, timeoutMs: 60000 }); }).catch(function (_eoRunE) { try { console.warn('[agent-mode] 诏令督查失败(不阻断提交)', _eoRunE); } catch (_) {} }));
-    }
-    // ── 活世界(agent 模式专属·绕过 LLM 升级互斥)·势力③ 自主 agent 决策(后台·命门「活世界」) ──
-    //   agent 模式下势力本不决策(endturn-systems 不跑 NPC·factionAgentEnabled 被互斥关)→世界静止。
-    //   此处复用已验证的 _runOneInTurn(选派+decideFor+落地+鸿雁快报)·循环至预算尽/无派可跑(内置 inTurnMaxPerTurn=8 budget·driver _isEnabled 已认 agentLiveWorld)·开关默认关·失败不阻断提交。
-    var _liveWorldQueued = false;
-    if (_agentLiveWorldOn(P) && TM.FactionNpcInTurnDriver && typeof TM.FactionNpcInTurnDriver._runOneInTurn === 'function') {
-      _liveWorldQueued = true;
-      _postJobs.push(Promise.resolve().then(async function () {
-        var _lwMax = (P.conf && P.conf.agentLiveWorldMaxRuns) || 5;
-        var _lwRan = 0;
-        for (var _lw = 0; _lw < _lwMax; _lw++) {
-          var _lwR = await TM.FactionNpcInTurnDriver._runOneInTurn(gm.turn || 0, 'agent-lw-' + _lw);
-          if (!_lwR || _lwR.skipped) break;            // 无派可跑 / 预算尽 / 未启用 → 停
-          if (_lwR.applied) _lwRan++;
-        }
-        gm._agentLiveWorldRan = _lwRan;
-        try { console.log('[agent-mode] 活世界·势力自主决策落地 ' + _lwRan + '/' + _lwMax); } catch (_) {}
-      }).catch(function (_lwE) { try { console.warn('[agent-mode] 活世界失败(不阻断提交)', _lwE); } catch (_) {} }));
-    }
-    if (_postJobs.length) { _show('⟨执政⟩' + (_liveWorldQueued ? '势力推演 + ' : '') + '自省督查…', 93); await Promise.all(_postJobs); }
-
-    return { ok: true, fallback: false, aiResult: aiResult };
+    return { ok: true, fallback: false, mode: 'agent', aiResult: aiResult };
   }
 
   TM.Endturn.AgentMode = {
@@ -1074,11 +1281,13 @@
     depthGate: _depthGate,
     buildSystemPrompt: _buildSystemPrompt,
     buildTurnPrompt: _buildTurnPrompt,
+    scaffoldAction: _scaffoldAction,   // 弱模型动作脚手架(测试用·时空约束运行态断言)
     _basisDossier: _basisDossier,
     memoryDossier: _memoryDossier,   // DA-Q3·跨回合记忆地板(parity)
     agentSelfReflectOn: _agentSelfReflectOn,   // 切片1·自我反思开关(测试用)
     timeContext: _timeContext,   // 本回合时间上下文(测试用)
     registerPlayerEdicts: _registerPlayerEdicts,   // 诏令登记兜底(测试用)
+    applyDeterministicInputs: _applyAgentDeterministicInputs,   // 玩家规则动作前置(测试用)
     agentEdictOversightOn: _agentEdictOversightOn,   // 切片3·诏令督查开关(测试用)
     activeEdictsDossier: _activeEdictsDossier,   // 切片3·在办诏令档(测试用)
     agentQualityGateOn: _agentQualityGateOn,   // 切片2·质量闸开关(测试用)

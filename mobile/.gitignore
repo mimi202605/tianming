@@ -1,5 +1,8 @@
 # Capacitor 壳 · 移动端构建产物（不入库）
 node_modules/
+www/
+capgo-dist/
+_deploy/
 android/
 ios/
 .gradle/

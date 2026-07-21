@@ -2,12 +2,17 @@
   "name": "tianming-mobile",
   "version": "1.3.0",
   "private": true,
-  "description": "天命 Android/平板 Capacitor 壳 — webDir 指向 ../web，与桌面端共享同一套前端源（移植宪法①一套代码库）",
+  "description": "天命 Android/平板 Capacitor 壳 — web/ 是源码真源，www/ 是带哈希清单的派生 staging",
   "scripts": {
-    "sync": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap sync android",
-    "open": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap open android",
-    "run": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap run android",
-    "add:android": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1 && cap add android",
+    "stage": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-web-for-cap.ps1",
+    "verify:staging": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-staged-web.ps1",
+    "verify:native": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-staged-web.ps1 -TargetDir android/app/src/main/assets/public",
+    "dryrun": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-staging-dryrun.ps1",
+    "sync": "npm run stage && cap sync android && npm run verify:native",
+    "copy": "npm run stage && cap copy android && npm run verify:native",
+    "open": "npm run sync && cap open android",
+    "run": "npm run sync && cap run android",
+    "add:android": "npm run stage && cap add android && cap sync android && npm run verify:native",
     "doctor": "cap doctor"
   },
   "dependencies": {

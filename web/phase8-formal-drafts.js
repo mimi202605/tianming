@@ -741,12 +741,9 @@
     } else if (typeof window._stageMemorialDecision === 'function') {
       window._stageMemorialDecision(m, decision, reply);
     } else {
-      m.status = decision;
-      m.reply = reply;
-      m._commitApplied = false;
-      var approved = deskArray(gm, '_approvedMemorials');
-      approved.push({ from: m.from, type: m.type, content: m.content || m.text || '', turn: gm.turn || 1, reply: reply, action: decision });
-      if (approved.length > 30) approved.shift();
+      // 批红通道未就绪(缺 _stageMemorialDecision mutator)·不裸写 m.status——旧直写丢皇权/EB/回传副作用·反致假批复
+      toast('批红通道未就绪，暂无法批红');
+      return;
     }
     // 发廷议·真接入廷议待议队列（旧行为：只设 status+toast，奏疏从不真付公议——此处补接，复用 _pendingTinyiTopics）
     try {

@@ -2,7 +2,7 @@
 // ============================================================
 // smoke-agent-mode-s4.js — 「模式 b · agent 模式」S4 循环 + 覆盖脊柱守卫
 //   验:多轮 tool-calling 循环(感知→裁断+守护写→收尾) + 真 mutate + 叙述焊死 + 脊柱检测
-//       + 每条失败路径回落 LLM(无能力/抛错/退化空回合) + maxRounds 封顶
+//       + 每条失败路径留在 Agent 支路(无能力/抛错/退化空回合) + maxRounds 封顶
 // ============================================================
 
 const path = require('path');
@@ -110,25 +110,25 @@ function makeGM() {
   assert(gm._agentTurnMeta && gm._agentTurnMeta.rounds === 2 && gm._agentTurnMeta.writeOk === 2 && gm._agentTurnMeta.finalized === true, '场景1:_agentTurnMeta(轮2/落地2/已收尾)');
   assert(res.aiResult && res.aiResult.agentMode === true && res.aiResult.summary === '赈灾安民', '场景1:aiResult 携 agentMode/summary');
 
-  // ── 场景2:退化(模型啥也不干)→ 回落 LLM ──
+  // ── 场景2:退化(模型啥也不干)→ Agent 失败并回滚 ──
   gm = makeGM(); ctx = { GM: gm, input: {} };
   setScript([{ toolCalls: [], text: '' }]);
   res = await AM.run(ctx);
-  assert(res.fallback === true && res.ok === false, '场景2:零落地零叙事零收尾 → 回落 LLM(不提交空回合)');
+  assert(res.fallback === false && res.ok === false && res.mode === 'agent', '场景2:零落地零叙事零收尾 → Agent 失败(不提交空回合)');
 
-  // ── 场景3:无 callAIWithTools → 回落 ──
+  // ── 场景3:无 callAIWithTools → Agent 失败 ──
   gm = makeGM(); ctx = { GM: gm, input: {} };
   const savedCawt = globalThis.callAIWithTools;
   delete globalThis.callAIWithTools;
   res = await AM.run(ctx);
-  assert(res.fallback === true && /callAIWithTools/.test(res.reason || ''), '场景3:无 callAIWithTools → 回落');
+  assert(res.fallback === false && /callAIWithTools/.test(res.reason || ''), '场景3:无 callAIWithTools → Agent 失败');
   globalThis.callAIWithTools = savedCawt;
 
-  // ── 场景4:首轮抛错 → 回落 ──
+  // ── 场景4:首轮抛错 → Agent 失败 ──
   gm = makeGM(); ctx = { GM: gm, input: {} };
   globalThis.callAIWithTools = async function () { throw new Error('网络炸了'); };
   res = await AM.run(ctx);
-  assert(res.fallback === true && /首轮/.test(res.reason || ''), '场景4:首轮抛错 → 回落 LLM');
+  assert(res.fallback === false && /首轮/.test(res.reason || ''), '场景4:首轮抛错 → Agent 失败且不穿越 LLM');
 
   // ── 场景5:模型永不 finalize → maxRounds 封顶·有落地→自动收尾(loop 补 deepen+finalize)·不出残缺回合 ──
   //   (2026-06 弱模型兜底:真机逮 deepseek-v4-flash 落地却从不 deepen/finalize·改为 loop 自动补史记+记忆收尾)

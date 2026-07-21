@@ -28,7 +28,7 @@
   var LRU_MAX = 30;
 
   // RAA·D1·真 per-session·module-local closure cache·**非 GM 字段** (GM 被 deepClone 入 save)
-  // saveToSlot 调 deepClone(GM)·任何 GM._kjp* 都持久化·跟 doc Q1 矛盾·改 module 内
+  // saveToSlot 统一快照仍会持久化未列入 SKIP 的 GM._kjp*·跟 doc Q1 矛盾·改 module 内
   var _BIO_CACHE = {};        // { name: { text, faction, birthYear, deathYear, generatedAt, generatedYear } }
   var _BIO_INFLIGHT = {};     // RAA·B6·name → promise (dedup 并发 call)
 
@@ -107,13 +107,22 @@
       '\n返 JSON·{text: "300 字古文", birthYear: number/null, deathYear: number/null, faction: "改革派/守旧派/中立"}';
 
     try {
+      // 时空约束·改革者本人涉议人物·改革者小传(JSON含deathYear·clauseOnly防按史书给在世改革者书卒)（typeof守卫·防加载序）
+      if (typeof _buildTemporalConstraint === 'function') { try { prompt += _buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: (name ? [name] : []) }); } catch (_tcE) {} }
       var raw = await callAISmart(prompt, 1000, { maxRetries: 1, priority: 'low', timeoutMs: 25000 });
       var parsed = _parseJson(raw);
       if (!parsed || !parsed.text) return fallback;
+      // 条2·确定性闸·传主本局在世(或系玩家君主)则禁书卒——不依赖模型服从·清 deathYear + 剔正文书卒句
+      var _bioText = String(parsed.text).slice(0, 600);
+      var _bioDeath = parsed.deathYear || null;
+      if (_kjpL12SubjectAliveInGame(name, isPlayerEmperor)) {
+        if (_bioDeath != null) { try { console.warn('[L12·bio·闸] 传主本局在世·强清模型 deathYear=' + _bioDeath + '·' + name); } catch(_){} _bioDeath = null; }
+        _bioText = _kjpL12ScrubDeathClaims(_bioText, name);
+      }
       return {
-        text: String(parsed.text).slice(0, 600),
+        text: _bioText,
         birthYear: parsed.birthYear || null,
-        deathYear: parsed.deathYear || null,
+        deathYear: _bioDeath,
         faction: parsed.faction || '中立'
       };
     } catch (e) {
@@ -132,6 +141,62 @@
             '等' + reforms.length + '事·后世评待补)',
       birthYear: null, deathYear: null, faction: '中立'
     };
+  }
+
+  // 条2·确定性生死闸辅助·传主本局在世判定（玩家君主=当朝在世；GM 人物册 alive!==false && !dead）
+  function _kjpL12SubjectAliveInGame(name, isPlayerEmperor) {
+    if (isPlayerEmperor) return true;
+    if (!name || typeof findCharByName !== 'function') return false;
+    var c = null; try { c = findCharByName(name); } catch (_) { c = null; }
+    return !!(c && c.alive !== false && !c.dead);
+  }
+
+  // 条2/条3·剔除正文中"对传主"的书卒宣称句·子句级(，；、)主语判定·不误删他人卒句
+  // 条1④·启发式权衡(勿复活优先)：仅作单句/子句局部主语判断·跨句代词(如"其/之"回指上一句主语)在此不可解析·故取"宁误删传主家世细节·也不放过传主书卒"·亲属师承/否定转折/他人名紧邻死亡词 三类救回子句·余者视为传主死亡删除
+  var _KJP_L12_DEATH_RE = /(卒于|卒年|卒后|[已先亦旋寻遽病暴竟骤]卒|薨|殁|病逝|病故|逝世|去世|死于|身故|身死|溘逝|寿终|享年|殉难|遇害|捐馆|见背|弃世|谢世)/;
+  // 条3·亲属/师承称谓·命中该子句则死亡主语非传主
+  var _KJP_L12_KIN_RE = /(先父|先母|先考|先妣|亡父|亡母|亡兄|亡弟|亡妻|亡子|先兄|先祖|先师|恩师|其父|其母|其兄|其师|祖父|祖母|外祖|父卒|母卒|尊翁|太夫人|之父|之母|之兄|之师)/;
+  // 条1③·显式否定/转折/传闻·命中则死亡宣称被否定或存疑·保留(实则健在/并未卒/传言…)
+  var _KJP_L12_NEG_RE = /(实则|其实|并未|未尝|不曾|未曾|健在|尚在|仍在|犹在|无恙|传闻|传言|或云|世传|讹传|谬传|流言|佯|诈称)/;
+  // 条3·死亡词前紧邻 2-4 汉字的人名候选
+  var _KJP_L12_NAME_BEFORE_RE = /([一-龥]{2,4})(?:卒于|卒年|卒后|[已先亦旋寻遽病暴竟骤]卒|薨|殁|病逝|病故|逝世|去世|死于|身故|身死|溘逝|寿终|殉难|遇害|捐馆|见背|弃世|谢世)/g;
+  // 条3·死亡词前的虚词/时间词·非人名主语
+  var _KJP_L12_STOP_RE = /(后|又|遂|乃|亦|竟|终|以|而|其|故|因|时|旋|寻|未|已|将|复|遽|甫|即|随|皆|俱|并|岁|年间|之后|不幸|晚年|暮年|次年|翌年|骤)/;
+  function _kjpL12OtherNameBeforeDeath(clause, name) {
+    var re = new RegExp(_KJP_L12_NAME_BEFORE_RE.source, 'g'), m;
+    while ((m = re.exec(clause)) !== null) {
+      var pre = m[1];
+      if (_KJP_L12_STOP_RE.test(pre)) continue;                                    // 前接虚词·非人名主语
+      if (_KJP_L12_KIN_RE.test(pre)) continue;                                      // 条4·亲属词非人名(亲属救回只走 KIN 分支·勿被通用人名兜住)
+      if (name && (pre.indexOf(name) >= 0 || name.indexOf(pre) >= 0)) continue;     // 是传主名·非他人
+      return true;                                                                 // 他人名紧邻死亡词→他人之死
+    }
+    return false;
+  }
+  // 子句主语"非传主"(该保留)：亲属师承 / 否定转折传闻 / 他人名紧邻死亡词
+  function _kjpL12ClauseNotSubjectDeath(clause, name) {
+    return _KJP_L12_KIN_RE.test(clause) || _KJP_L12_NEG_RE.test(clause) || _kjpL12OtherNameBeforeDeath(clause, name);
+  }
+  function _kjpL12ScrubDeathClaims(text, name) {
+    var t = String(text == null ? '' : text);
+    if (!_KJP_L12_DEATH_RE.test(t)) return t;
+    var removed = 0, sentences = t.split('。'), keptSentences = [];
+    for (var i = 0; i < sentences.length; i++) {
+      var S = sentences[i];
+      if (!S) continue;
+      if (!_KJP_L12_DEATH_RE.test(S)) { keptSentences.push(S); continue; }
+      var clauses = S.split(/([，；、])/), rebuilt = '';   // 保留分隔符·偶=子句 奇=分隔符
+      for (var j = 0; j < clauses.length; j += 2) {
+        var C = clauses[j], sep = clauses[j + 1] || '';
+        if (C && _KJP_L12_DEATH_RE.test(C) && !_kjpL12ClauseNotSubjectDeath(C, name)) { removed++; continue; }   // 传主死亡子句·删(连同其后分隔符)
+        if (C) rebuilt += C + sep;
+      }
+      rebuilt = rebuilt.replace(/[，；、]+$/, '');   // 去悬空分隔符
+      if (rebuilt) keptSentences.push(rebuilt);
+    }
+    if (removed > 0) { try { console.warn('[L12·bio·闸] 传主本局在世·剔除传主书卒子句 ' + removed + ' 处·' + name); } catch (_) {} }
+    var out = keptSentences.join('。').trim();
+    return out || ('（' + String(name || '') + '·本局在世·后世评未定）');
   }
 
   // ════════════════════════════════════════════════════════════════
@@ -570,6 +635,8 @@
     window._kjpL12RenderBioPanel               = _kjpL12RenderBioPanel;
     window._kjpL12EvictLRU                     = _kjpL12EvictLRU;
     window._kjpL12BioFallback                  = _kjpL12BioFallback;
+    window._kjpL12SubjectAliveInGame           = _kjpL12SubjectAliveInGame;   // 条2·smoke 用
+    window._kjpL12ScrubDeathClaims             = _kjpL12ScrubDeathClaims;      // 条2·smoke 用
     window._kjpL12GetBioCache                  = _kjpL12GetBioCache;
     window._kjpL12ClearBioCache                = _kjpL12ClearBioCache;
   }

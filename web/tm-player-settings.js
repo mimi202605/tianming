@@ -279,7 +279,6 @@ function _saveSecondaryAPI() {
   }
   try { localStorage.setItem('tm_api', JSON.stringify(P.ai)); } catch(_) {}
   if (typeof saveP === 'function') saveP();
-  if (window.tianming && window.tianming.isDesktop) { try { window.tianming.autoSave(_tmStripAiKeyView(P)).catch(function(){}); } catch(_){} }
   if (sk && su) toast('\u2705 \u6B21\u8981 API \u5DF2\u4FDD\u5B58\u00B7\u95EE\u5BF9/\u671D\u8BAE\u5C06\u8D70\u6B64\u914D\u7F6E');
   else toast('\u2705 \u5DF2\u6E05\u7A7A\u6B21\u8981 API\u00B7\u6240\u6709\u8C03\u7528\u56DE\u9000\u4E3B API');
   // 重新打开设置以刷新状态徽标和探测面板
@@ -325,7 +324,8 @@ function _togglePConf(confKey, on) {
     worldReactorBattleEnabled: { on: '已启用兵败牵动天下·战败方确定性折损实力', off: '已关闭·战败只走 AI 裁量·不自动折损实力' },
     populationBottomUpEnabled: { on: '已启用人口自下而上·按叶级政区分别核算', off: '已关闭·走全局粗粒度人口增长' },
     cognitionFeedbackEnabled: { on: '已启用认知反馈·知遇/贬谪落到忠诚数值', off: '已关闭·忠诚不因升降迁谪自动漂移' },
-    useNewKejuScandal: { on: '已启用科场弊案·科举可能爆舞弊/科场案', off: '已关闭科场弊案链' }
+    useNewKejuScandal: { on: '已启用科场弊案·科举可能爆舞弊/科场案', off: '已关闭科场弊案链' },
+    rigidHistEventsOff: { on: '已关闭注定史实事件·演义模式下史实人物的注定命运（如史实死亡）不再自动触发', off: '已恢复注定史实事件·演义模式下史实注定命运照常触发（轻度/严格史实模式一向照旧）' }
   };
   var l = labels[confKey] || { on: '已启用 ' + confKey, off: '已关闭 ' + confKey };
   if (typeof toast === 'function') toast('✅ ' + (on ? l.on : l.off));
@@ -490,4 +490,3 @@ try {
     window.addEventListener('load', function () { setTimeout(function () { try { tmApplyInsecureTlsConfig(); } catch (e) {} }, 1200); });
   }
 } catch (e) {}
-

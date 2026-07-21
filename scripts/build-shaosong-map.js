@@ -2,7 +2,7 @@
 // build-shaosong-map.js — 给绍宋(建炎元年八月·1127)建真实地图。
 // 方案:复用天启官方剧本的真实中国地理几何(coords/polygon/path 是真中国轮廓),
 // 逐区重标为南宋路名 + 按 1127 疆界设宋/金/西夏/大理/高丽/吐蕃/草原/西域/日本/大越归属。
-// 外科手术式注入绍宋条目,绝不动天启:① 源 JSON ② 编辑器 bundle ③ 游戏 seeder bundle ④ godot 副本。
+// 只注入唯一真源，再由统一生成器重建运行时/编辑器/发布制品。
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -11,8 +11,6 @@ const ROOT = path.resolve(__dirname, '..');
 const SCEN_DIR = path.join(ROOT, 'scenarios');
 const TQ_SRC = path.join(SCEN_DIR, '天启七年·九月（官方）.json');
 const SS_SRC = path.join(SCEN_DIR, '绍宋·建炎元年八月（官方）.json');
-const EDITOR_BUNDLE = path.join(ROOT, 'web', 'preview', 'official-scenarios-bundle.js');
-const GAME_BUNDLE = path.join(ROOT, 'web', 'tm-official-scenario-bundle.js');
 const GODOT_SS = path.join(ROOT, 'web', 'godot', 'data', 'scenarios', '绍宋·建炎元年八月（官方）.json');
 const SS_ID = 'sc-jianyan1-1127-shaosong';
 
@@ -149,28 +147,6 @@ function injectIntoSourceJson(file, ssMap, label) {
   return true;
 }
 
-function injectIntoBundle(file, globalName, isArray, ssMap, label) {
-  const src = fs.readFileSync(file, 'utf8');
-  const vm = require('vm');
-  const ctx = { console }; ctx.global = ctx; ctx.window = ctx; ctx.globalThis = ctx;
-  vm.runInNewContext(src, ctx, { filename: 'b.js' });
-  const obj = ctx[globalName];
-  let ss;
-  if (isArray) ss = obj.find((e) => e && e.data && e.data.id === SS_ID) && obj.find((e) => e && e.data && e.data.id === SS_ID).data;
-  else ss = obj.shaosong;
-  if (!ss) { console.warn('  ! ' + label + ' 未找到绍宋条目·跳过'); return false; }
-  ss.map = clone(ssMap);
-  ss.mapData = clone(ssMap);
-  ss.mapRuntimeContract = clone(ssMap.runtimeContract);
-  // 重新序列化:用真实 header(到 `global.<name> =`)+ 真实 tail(最后一个 `})(...)` 到结尾),只换中间 JSON
-  const head = src.slice(0, src.indexOf('global.' + globalName)) + 'global.' + globalName + ' = ';
-  const tail = src.slice(src.lastIndexOf('})('));
-  const js = head + JSON.stringify(obj) + ';\n' + tail;
-  fs.writeFileSync(file, js, 'utf8');
-  console.log('  ✓ ' + label + ' 注入完成');
-  return true;
-}
-
 function main() {
   console.log('[build-shaosong-map] 读天启地理几何...');
   const tq = JSON.parse(fs.readFileSync(TQ_SRC, 'utf8'));
@@ -184,12 +160,11 @@ function main() {
   ssMap.regions.forEach((r) => { byFac[r.ownerName] = (byFac[r.ownerName] || 0) + 1; });
   console.log('  归属分布: ' + Object.keys(byFac).map((k) => k + '×' + byFac[k]).join(' · '));
 
-  console.log('[build-shaosong-map] 注入 4 制品...');
+  console.log('[build-shaosong-map] 注入唯一真源...');
   injectIntoSourceJson(SS_SRC, ssMap, '源 JSON');
-  injectIntoBundle(EDITOR_BUNDLE, 'TM_OFFICIAL_SCENARIOS', false, ssMap, '编辑器 bundle');
-  injectIntoBundle(GAME_BUNDLE, 'TMOfficialScenarioBundle', true, ssMap, '游戏 seeder bundle');
   if (fs.existsSync(GODOT_SS)) injectIntoSourceJson(GODOT_SS, ssMap, 'godot 副本');
   else console.log('  - godot 副本不存在·跳过');
+  require('../web/scripts/sync-official-scenarios.js').sync({ check: false });
 
   console.log('[build-shaosong-map] 完成。');
 }

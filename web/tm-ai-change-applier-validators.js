@@ -22,9 +22,332 @@
   //  解决: AI narrative 提『某某下狱/赐死/抄家/流放』但不写 personnel_changes·数据不变
   //  做法: 扫所有 narrative 字段·用动词关键字 + 人名 regex 抓·与结构化数据对比·直接补调 onDismissal
   // ═══════════════════════════════════════════════════════════════════
+
+  // ── 刀9·无源史实幻觉死亡反向闸·源头判据(2026-07-19) ───────────────────────────
+  //  背景(owner 亲报平行历史存档污染)：裸自戕/裸伏诛/纯自然死是 AI「按真实历史幻觉」的高发形态——
+  //  本局玩家没杀魏忠贤·AI 却按史实在自由叙事写「魏忠贤伏诛/薨逝」·旧兜底把幻觉当真落库成永久死亡。
+  //  判据：narrative 死亡是否有「本回合可追溯的源头」。★宽判(宁可判据宽少拦·别把合法处决拦了)：任一信号即有源。
+  //    有源 → 照旧补录(现行为零变化)；无任何源头 → 疑幻觉·不落库·转弱自查纸条留痕。
+  //  仅对 deathKind==='bare'(裸自戕 reI / 纯自然死 reN-plain)生效；主动致死/暴力殉难(deathKind==='active')不经此判据。
+  // 最长实体匹配：text 是否「真提及」nm——先按在册全名长度降序占位消解·nm 命中区间若被更长在册名覆盖则不算·
+  //   防人名裸子串误命中(如玩家诏令「起复王安石」不该算作对「王安」的处决意图)。
+  function _textMentionsName(text, nm, allNames) {
+    if (!nm) return false;
+    var s = String(text == null ? '' : text);
+    if (s.indexOf(nm) < 0) return false;
+    // 只需消解「比 nm 更长且含 nm 为子串」的在册名(其余名不影响判定)·长者优先
+    var longer = (allNames || []).filter(function(n){ return n && n.length > nm.length && n.indexOf(nm) >= 0; })
+                                 .sort(function(a, b){ return b.length - a.length; });
+    for (var i = 0; i < longer.length; i++) {
+      var L = longer[i], idx;
+      while ((idx = s.indexOf(L)) >= 0) { s = s.slice(0, idx) + ' '.repeat(L.length) + s.slice(idx + L.length); }
+    }
+    return s.indexOf(nm) >= 0;
+  }
+
+  function _narrativeDeathSourced(G, aiOutput, ch, opts) {
+    if (!ch || !ch.name) return true;   // 无实体信息·不拦(实体存在性另由下游闸把)
+    var nm = ch.name;
+    // ① 玩家角色：死亡恒经玩家之死裁决器(合法继统/终局门自处理)·绝不拦(如城破崇祯自缢)
+    if (ch.isPlayer === true) return true;
+    // ② 已在司法/危难态(下狱/流放/在逃/抄家)：死亡有明确前置·有源
+    if (ch._imprisoned || ch._exiled || ch._fled || ch._confiscated) return true;
+    if (!aiOutput) aiOutput = {};
+    // ③ AI 本回合在任一结构化字段点名操纵该人(死亡意图/人事/任免/NPC 行动)：非凭空叙事·有源。
+    //    character_deaths：主链 SC1 stage 现已随主叙事同传标准键(见 tm-endturn-apply-stages)·主链结构化死者进 handled/识源正常。
+    function _named(arr, keys) {
+      if (!Array.isArray(arr)) return false;
+      for (var i = 0; i < arr.length; i++) {
+        var x = arr[i]; if (!x) continue;
+        for (var k = 0; k < keys.length; k++) { if (x[keys[k]] === nm) return true; }
+      }
+      return false;
+    }
+    // 刀C·扩面复用(2026-07-19)：opts.excludeStructuredKey 排除「本键自证」——校验某结构化键自身合法性时不得拿该键自证
+    //   (C1 死条查 character_deaths 不算自身自证 / C2 司法查 personnel_changes 不算自身自证)。未传则全键计入(刀9 原行为·零变)。
+    // ★返工issue4(2026-07-19)：excludeStructuredKey 支持单键(字符串·向后兼容)或 excludeStructuredKeys 多键(数组)。死亡经
+    //   office_assignments/personnel 通道路由时·该通道键本身不得自证(否则『office dismiss 病故』自己给自己当源→漏杀)。
+    var _exSet = {};
+    if (opts && opts.excludeStructuredKey) _exSet[opts.excludeStructuredKey] = true;
+    if (opts && Array.isArray(opts.excludeStructuredKeys)) opts.excludeStructuredKeys.forEach(function(k){ _exSet[k] = true; });
+    if (!_exSet['character_deaths'] && _named(aiOutput.character_deaths, ['name'])) return true;
+    if (!_exSet['personnel_changes'] && _named(aiOutput.personnel_changes, ['name'])) return true;
+    if (!_exSet['char_updates'] && _named(aiOutput.char_updates, ['name'])) return true;
+    if (!_exSet['office_assignments'] && _named(aiOutput.office_assignments, ['name'])) return true;
+    if (_named(aiOutput.npc_actions, ['name', 'actor', 'target'])) return true;
+    // ④ 玩家诏令/裁决提及该人：玩家意志有源(最长实体匹配·防「起复王安石」误命中「王安」)
+    var allNames = (G && Array.isArray(G.chars)) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
+    function _dirHit(text) { return _textMentionsName(text, nm, allNames); }
+    // 问天持久规则库(rule/correction·content)
+    var dirs = (G && Array.isArray(G._playerDirectives)) ? G._playerDirectives : [];
+    for (var d = 0; d < dirs.length; d++) { if (dirs[d] && _dirHit(dirs[d].content)) return true; }
+    // 本回合已执行并移除的一次性纠正指令：闸前被 _applyDirectiveCompliance 删除·其文本快照存于此暂存(见 reconcile 侧)
+    var appliedDirs = (G && Array.isArray(G._directivesAppliedThisTurn)) ? G._directivesAppliedThisTurn : [];
+    for (var a = 0; a < appliedDirs.length; a++) { if (appliedDirs[a] && _dirHit(appliedDirs[a].content)) return true; }
+    // 近回合诏书/行止(agent 模式·真实 schema={turn,edicts:[字符串..],xinglu}·兼容 content/text/note)
+    var recent = (G && Array.isArray(G._agentRecentDirectives)) ? G._agentRecentDirectives : [];
+    for (var r = 0; r < recent.length; r++) {
+      var rd = recent[r]; if (!rd) continue;
+      if (Array.isArray(rd.edicts)) { for (var e = 0; e < rd.edicts.length; e++) { if (_dirHit(rd.edicts[e])) return true; } }
+      if (_dirHit(rd.xinglu) || _dirHit(rd.content) || _dirHit(rd.text) || _dirHit(rd.note)) return true;
+    }
+    return false;
+  }
+
+  // ── 刀C·C1(2026-07-19)·结构化 character_deaths 死因语义分类(bare/active)·镜像刀9 _scanExecutions 词表语义 ──
+  //   active=主动致死/暴力殉难/含本局具体事由(被斩/赐死/处决/战殁/阵亡/殉国/遇害/城破/奉旨/明正典刑…)——有本回合致因·照常落库；
+  //   bare=裸自戕/裸伏诛/纯自然死(伏诛/弃市/自尽/自缢/病故/薨逝/寿终/暴卒/无疾而终…)——无本回合致因·AI 史实幻觉高发·须外部源头。
+  //   ★宁漏勿误杀：先判强 active(本回合外部事件/玩家意志) → 再判 bare(裸词) → 再判处决动词 active → 无法归类一律 active(放行)。
+  //   顺序要害：强 active/bare 先于「斩/诛」处决动词·免「伏诛」被裸「诛」误升 active 漏杀了本该 gate 的裸伏诛(owner 亲报病灶)。
+  function _classifyStructuredDeathKind(reason) {
+    var s = String(reason == null ? '' : reason);
+    if (!s) return 'active';   // 无死因·不判幻觉·放行
+    // ① 强 active：本回合外部致死事件 / 玩家意志明标(战殁/殉难/城破/遇害/兵败/民变/奉旨/明正典刑/被斩…)·优先
+    if (/战殁|战死|阵亡|阵殁|阵前|殉国|殉难|殉城|殉职|捐躯|城破|城陷|遇害|遇难|遭难|罹难|殒命|毙命|兵败|兵变|民变|乱兵|流寇|奉旨|奉诏|明正典刑|就地正法|被斩|被诛|被杀|被害|被处死/.test(s)) return 'active';
+    // ② bare：裸伏诛/裸自戕/纯自然死(无本回合致因·AI 史实幻觉高发)·镜像刀9 KILL_INTRANS + KILL_NATURAL_PLAIN
+    if (/伏诛|伏法|弃市|就戮|授首|自尽|自缢|自刎|自裁|自杀|溘然长逝|病故|病逝|病殁|病卒|病亡|病笃|寝疾|亡故|暴毙|暴卒|暴亡|猝死|物故|身故|薨逝|薨|溘逝|寿终|谢世|辞世|弃世|长逝|无疾而终/.test(s)) return 'bare';
+    // ③ 主动处决动词(斩/诛/赐死/处决/凌迟…·有施死主体)·active
+    if (/斩|诛|赐死|赐自尽|处决|处斩|处死|正法|凌迟|腰斩|枭首|枭示|问斩|绞|戮|磔/.test(s)) return 'active';
+    return 'active';   // 无法归类·宁漏勿误杀·放行
+  }
+
+  // ── 刀C·C2/C3(2026-07-19)·写端动作来源判据(结构化人事/敏感字段共用) ──
+  //   复用刀9四路(isPlayer/司法危难态/结构化互证[opts.excludeStructuredKey 排自证键]/玩家诏令三源)·
+  //   再扩「本回合游戏态输入面」(opts.scanInputs=true)：弹劾奏疏(GM.memorials)/朝议要务(GM.currentIssues)点名此人→有源。
+  //   ★宁漏勿误杀：任一路命中即放行·输入面扫描只加源不减源。
+  // ── 刀C·返工二轮(2026-07-19·Codex复审)·来源扫描面按回合记忆化(perf)+朝议裁决回合边界(镜像 tm-endturn-prompt._getCurrentChangchaoDecisions) ──
+  //   allNames(花名册)与朝议拼接文本每回合只重建一次(turn 变 / court 记录数变才失效)·避免每动作重构在真实剧本(数百角色+长转录)下拖垮 endturn。
+  // 读档代际(镜像 npc-decision:483/mechanics-memory:466)·并入缓存键→读同 turn 旧档不串用(全 _wg*Cache 亦入存档 SKIP·派生不落档)。
+  function _wgLoadGen(G) { return (typeof global !== 'undefined' && global._tmLoadGen) || (G && G._tmLoadGen) || 0; }
+  function _wgFp(x, n) { return String(x == null ? '' : x).slice(0, n || 10); }
+  // ★返工三轮issue1(2026-07-19)·allNames 缓存签名=turn|loadGen|len|首名|末名——同回合 addChar(push·len 变·tm-indices:1197)/
+  //   整组替换(首末名变)/首末改名均自然失效·治『王安建缓存后加王安石·最长实体消歧失效致对王安无源写误放』。
+  function _wgAllNamesSig(G) {
+    var chars = (G && Array.isArray(G.chars)) ? G.chars : [];
+    var n = chars.length;
+    return ((G && G.turn) || 0) + '|' + _wgLoadGen(G) + '|' + n + '|' + _wgFp(n ? (chars[0] && chars[0].name) : '', 12) + '|' + _wgFp(n ? (chars[n - 1] && chars[n - 1].name) : '', 12);
+  }
+  function _wgCachedAllNames(G) {
+    if (!G) return [];
+    var sig = _wgAllNamesSig(G);
+    if (G._wgAllNamesCache && G._wgAllNamesSigVal === sig) return G._wgAllNamesCache;
+    var names = Array.isArray(G.chars) ? G.chars.map(function(c){ return c && c.name; }).filter(Boolean) : [];
+    G._wgAllNamesCache = names; G._wgAllNamesSigVal = sig;   // arch-ok(派生记忆化缓存·入档 SKIP·非游戏态)
+    return names;
+  }
+  // 常朝『上回合圣意』的目标回合(镜像 prompt:44·Meta.targetTurn 优先·_lastChangchaoDecisionsTargetTurn 兜底)
+  function _wgLccTargetTurn(G) {
+    var meta = G && G._lastChangchaoDecisionMeta;
+    if (meta && meta.targetTurn != null && meta.targetTurn !== '') return Number(meta.targetTurn);
+    if (G && G._lastChangchaoDecisionsTargetTurn != null && G._lastChangchaoDecisionsTargetTurn !== '') return Number(G._lastChangchaoDecisionsTargetTurn);
+    return null;
+  }
+  function _wgStringifyDecision(d) {
+    if (d == null) return '';
+    if (typeof d !== 'object') return ' ' + String(d);
+    var s = '';
+    ['direction', 'custom', 'text', 'line', 'mode', 'action', 'title', 'detail', 'content'].forEach(function(k){ if (d[k] != null && typeof d[k] !== 'object') s += ' ' + d[k]; });
+    return s;
+  }
+  // 本回合朝议裁决拼接文本(记忆化·turn+记录数为键)：★回合边界(issue2·镜像 prompt:38)=targetTurn 为准·turn 仅无 targetTurn 时兜底·
+  //   两者不做 OR(避 targetTurn 过期旧裁决永久自证 / post-turn 裁决提前放行)。★形状(issue3)=覆盖常朝 decisions[]/transcript[]
+  //   与廷议/御前单数 topic+decision(tm-chaoyi-tinyi:1155 / yuqian:461)两种真实落点。
+  // ★返工三轮issue2(2026-07-19)·court 缓存签名=turn|loadGen + 记录/裁决数组的(len+首末条廉价指纹)——真实生产者封顶8条 push+shift
+  //   (changchao-flows:273/tinyi:1155/yuqian:461)净 len 恒8·整组替换 _lastChangchaoDecisions 可能 len 不变·旧 len-only 键刷不进新裁决→误拦。
+  //   指纹让『push+shift 末条变 / 整组替换首末变 / 增长 len 变』三真实路径全失效。
+  function _wgRecFp(rec) { return rec ? ((rec.turn == null ? '' : rec.turn) + '_' + (rec.targetTurn == null ? '' : rec.targetTurn) + '_' + _wgFp(rec.topic || (rec.decision && rec.decision.direction) || (Array.isArray(rec.decisions) && rec.decisions[0] && rec.decisions[0].title) || '', 10)) : ''; }
+  function _wgDecFp(dd) { return dd ? _wgFp((dd.title || '') + '/' + (dd.extra || ''), 14) : ''; }
+  function _wgCourtTextSig(G) {
+    var crs = (G && Array.isArray(G._courtRecords)) ? G._courtRecords : [];
+    var lcc = (G && Array.isArray(G._lastChangchaoDecisions)) ? G._lastChangchaoDecisions : [];
+    var cn = crs.length, ln = lcc.length;
+    return ((G && G.turn) || 0) + '|' + _wgLoadGen(G) + '|c' + cn + ':' + _wgRecFp(cn ? crs[0] : null) + ':' + _wgRecFp(cn ? crs[cn - 1] : null) +
+           '|l' + ln + ':' + _wgDecFp(ln ? lcc[0] : null) + ':' + _wgDecFp(ln ? lcc[ln - 1] : null) +
+           '|lt:' + ((G && G._lastChangchaoDecisionsTargetTurn) == null ? '' : G._lastChangchaoDecisionsTargetTurn) + ':' + ((G && G._lastChangchaoDecisionMeta && G._lastChangchaoDecisionMeta.targetTurn) == null ? '' : G._lastChangchaoDecisionMeta.targetTurn);
+  }
+  function _wgCachedCourtText(G) {
+    if (!G) return '';
+    var t = G.turn || 0;
+    var crs = Array.isArray(G._courtRecords) ? G._courtRecords : [];
+    var sig = _wgCourtTextSig(G);
+    if (G._wgCourtTextCache != null && G._wgCourtTextSigVal === sig) return G._wgCourtTextCache;
+    var txt = '';
+    if (_wgLccTargetTurn(G) === t && Array.isArray(G._lastChangchaoDecisions)) {
+      G._lastChangchaoDecisions.forEach(function(dd){ if (dd) txt += ' ' + (dd.title || '') + ' ' + (dd.extra || '') + ' ' + (dd.dept || ''); });
+    }
+    for (var c = 0; c < crs.length; c++) {
+      var rec = crs[c]; if (!rec) continue;
+      var rt = Number((rec.targetTurn != null && rec.targetTurn !== '') ? rec.targetTurn : rec.turn);
+      if (!isFinite(rt) || rt !== t) continue;
+      txt += ' ' + (rec.topic || '') + _wgStringifyDecision(rec.decision);
+      var decs = Array.isArray(rec.decisions) ? rec.decisions : [];
+      for (var di = 0; di < decs.length; di++) { var de = decs[di]; if (de) txt += ' ' + (de.title || '') + ' ' + (de.detail || '') + ' ' + (de.content || '') + ' ' + (de.presenter || '') + ' ' + (de.dept || ''); }
+      var tr = Array.isArray(rec.transcript) ? rec.transcript : [];
+      for (var ti = 0; ti < tr.length; ti++) { var te = tr[ti]; if (te) txt += ' ' + (te.text || '') + ' ' + (te.speaker || ''); }
+    }
+    G._wgCourtTextCache = txt; G._wgCourtTextSigVal = sig;   // arch-ok(派生记忆化缓存·入档 SKIP)
+    return txt;
+  }
+
+  function _writeActionSourced(G, aiOutput, ch, opts) {
+    opts = opts || {};
+    if (_narrativeDeathSourced(G, aiOutput, ch, opts)) return true;
+    if (opts.scanInputs && ch && ch.name) {
+      var nm = ch.name;
+      var allNames = _wgCachedAllNames(G);   // 记忆化·按回合(issue5)
+      var _hit = function(t) { return _textMentionsName(t, nm, allNames); };
+      var mems = (G && Array.isArray(G.memorials)) ? G.memorials : [];
+      for (var i = 0; i < mems.length; i++) {
+        var m = mems[i]; if (!m) continue;
+        if (_hit(m.title) || _hit(m.text) || _hit(m.content) || _hit(m.from) || _hit(m.target) || _hit(m.subject) || _hit(m.about)) return true;
+      }
+      var iss = (G && Array.isArray(G.currentIssues)) ? G.currentIssues : [];
+      for (var j = 0; j < iss.length; j++) {
+        var q = iss[j]; if (!q) continue;
+        if (_hit(q.title) || _hit(q.description) || _hit(q.desc)) return true;
+      }
+      // 朝议/常朝/廷议/御前裁决面(记忆化拼接文本·回合边界 issue2 + 两种真实形状 issue3·详见 _wgCachedCourtText)：本回合裁决点名此人→有源。
+      var _courtTxt = _wgCachedCourtText(G);
+      if (_courtTxt && _hit(_courtTxt)) return true;
+    }
+    return false;
+  }
+
+  // ── 刀C·C2(2026-07-19)·司法类人事动作来源判据(applier.personnel_changes 兜底段调用) ──
+  //   司法类(下狱/抄家/流放/斩/杖/拿问/夺职拿问)落库前过同款判据(_writeActionSourced：玩家诏令/司法态/结构化互证[排 personnel_changes
+  //   自证]/本回合弹劾朝议输入)。无源→不执行·拒写降级=弱自查纸条+console 留痕+入 failed 可见。普通任免(升/调/致仕/罢黜)不入闸。
+  //   返回 true=已拦(调用方应 return 跳过该条)·false=有源或非司法·照常落。★宁漏勿误杀。
+  function _gateJudicialPersonnelChange(G, aiOutput, pc, changeText, applied) {
+    if (!G || !pc || !pc.name) return false;
+    // ★返工issue4(2026-07-19)：并入裸/自然死词表(暴毙/病故/薨/自尽/伏诛/卒…)——personnel 解析器(applier:1614)把这些映射进死亡管线·
+    //   C2 旧司法词表漏之→personnel『魏忠贤暴毙』零提示落死。与 onDismissal:554 死亡面对齐·统一过同款来源判据。
+    var judicial = /下狱|入狱|系狱|收押|收监|关押|囚禁|捉拿|逮捕|抓捕|缉拿|锁拿|拿问|逮治|械系|下诏狱|抄家|抄没|籍没|查抄|没官|流放|发配|戍边|充军|斩|诛|处决|处斩|处死|正法|凌迟|枭首|问斩|赐死|杖毙|廷杖|杖责|夺职拿问|暴毙|暴卒|暴亡|猝死|病故|病逝|病殁|病卒|病亡|亡故|物故|身故|溘逝|薨逝|薨|寿终|自尽|自缢|自刎|自裁|服毒|伏诛|伏法|弃市|殒命|毙命/.test(String(changeText || ''));
+    if (!judicial) return false;
+    var ch = (typeof _findEntity === 'function') ? _findEntity(G, 'char', pc.name) : (Array.isArray(G.chars) ? G.chars.filter(function(c){ return c && c.name === pc.name; })[0] : null);
+    if (!ch) return false;   // 查无此人·实体存在性另由既有 onDismissal 兜底·此闸只管来源
+    if (_writeActionSourced(G, aiOutput, ch, { excludeStructuredKey: 'personnel_changes', scanInputs: true })) return false;
+    console.warn('[personnel/C2] 无源司法类人事动作·不执行(疑 AI 史实幻觉·转弱自查纸条留痕): ' + pc.name + ' ← 「' + String(changeText || '') + '」');
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源司法人事', reason: '司法类人事动作本回合无任一源头(玩家诏令/司法态/结构化互证/弹劾朝议输入)·疑史实幻觉·摘要「' + String(changeText || '').slice(0, 20) + '」', itemName: pc.name, source: 'personnel-c2-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源司法人事', itemName: pc.name, raw: String(changeText || '') }); } catch(_c2e) {}
+    if (applied && Array.isArray(applied.failed)) applied.failed.push({ personnel_change: { name: pc.name, change: pc.change }, reason: '无源司法类人事动作·未落库(疑史实幻觉·转弱自查纸条)' });
+    return true;
+  }
+
+  // ── 刀C·C3(2026-07-19)·char_update 敏感字段来源判据(narrative._mergeUpdatesToEntity 调用) ──
+  //   过 _writeActionSourced 同款判据·有源返 true(调用方照常落该字段)；无源返 false 并就地留痕(弱自查纸条·此文件已是 _aiWeakWriteHints
+  //   既有 arch-ok 写手·集中在此免 narrative 闯入子树)+console.warn+诊断。★宁漏勿误杀。
+  function _sensitiveCharFieldSourced(G, aiOutput, entity, realKey, entityName) {
+    if (!G || !entity) return true;
+    if (_writeActionSourced(G, aiOutput, entity, { excludeStructuredKey: 'char_updates', scanInputs: true })) return true;
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源敏感字段', reason: 'char.' + realKey + ' 更新本回合无任一源头(玩家诏令/司法态/结构化互证/弹劾朝议输入)·疑 AI 史实幻觉失势向量', itemName: entityName || entity.name || entity.id, source: 'char-update-c3-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { console.warn('[char_update/C3] 无源敏感字段·跳过·不落库(转弱自查纸条): ' + (entityName || '') + '.' + realKey); } catch(_c3w){}
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源敏感字段', itemName: entityName || '', field: realKey }); } catch(_c3d){}
+    return false;
+  }
+
+  // ── 刀C·C4(2026-07-19)·events 键时点闸(applier events 段调用) ──
+  //   AI 可把「己巳之变/甲申国难」等未来史实当既成事件播报污染。确定性时点闸(保守·宁漏勿误杀)：
+  //   ① 硬闸·event 带明确年份/日期字段且晚于当前游戏年→拒(未来事件当既发)+弱提示；
+  //   ② 软闸·GM.rigidHistoryEvents 里未到 triggerTurn 的既定史实名在 event 文本出现→只弱提示不硬拒(防同名议论误杀)。
+  //   返 true=硬拦(调用方 return 跳过)·false=放行(软提示已就地留痕)。
+  function _extractEventYear(e) {
+    var cands = [e.year, e.eventYear, e.triggerYear, e.happenedYear, e.gYear, e.date, e.time];
+    for (var i = 0; i < cands.length; i++) {
+      var v = cands[i]; if (v == null) continue;
+      if (typeof v === 'number' && isFinite(v) && v > 0) return Math.floor(v);
+      var m = String(v).match(/(?:^|[^0-9])((?:1[0-9]|20)[0-9]{2})(?:\s*年|[^0-9]|$)/);   // 仅认公元四位年(1000-2099)·避免误解干支/年号/斩获数字
+      if (m) return parseInt(m[1], 10);
+    }
+    return 0;
+  }
+  function _gateEventTimepoint(G, e, applied) {
+    if (!G || !e || typeof e !== 'object') return false;
+    function _pushHint(label, reason) {
+      if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+      G._aiWeakWriteHints.push({ label: label, reason: reason, itemName: e.title || e.name || e.category || '', source: 'events-c4-timepoint', active: null, turn: G.turn || 0 });   // arch-ok
+      if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+      try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: label, itemName: e.title || e.name || '' }); } catch(_ge){}
+    }
+    // 当前游戏年·权威=calcDateFromTurn(tm-ai-infra·读 P.time.year 真开局年·手工历法·无 new Date(1,..)→1901 两位年毒值)；
+    //   ★返工(2026-07-19)：旧用 TimeUtils.turnToDate 读 P.time.startYear(缺→1→new Date→1901毒值)误判时点。回落 G.year/currentYear。
+    //   ★异常年值(非公元 1000-2099·如 0/1901毒值/公元前朝代)一律视为『无从确定』→curYear=0→不硬拦(宁漏勿误杀)。
+    var curYear = 0;
+    try { if (typeof global.calcDateFromTurn === 'function' && G.turn != null) { var _cd = global.calcDateFromTurn(G.turn); curYear = Number(_cd && _cd.adYear) || 0; } } catch(_te){}
+    if (!(curYear >= 1000 && curYear <= 2099)) curYear = Number(G.year) || Number(G.currentYear) || 0;
+    if (!(curYear >= 1000 && curYear <= 2099)) curYear = 0;   // 仍异常→无从确定·不拦
+    // ① 硬闸：明确未来年份
+    var evYear = _extractEventYear(e);
+    if (curYear && evYear && evYear > curYear) {
+      try { console.warn('[events/C4] 未来时点事件·拒(当既成播报未来史实): 「' + String(e.title || e.text || e.name || '').slice(0, 30) + '」·事件年 ' + evYear + ' > 当前 ' + curYear); } catch(_cw){}
+      _pushHint('未来时点事件', '事件标注年份 ' + evYear + ' 晚于当前游戏年 ' + curYear + '·疑把未来史实当既成事件播报·拒落库');
+      if (applied && Array.isArray(applied.failed)) applied.failed.push({ event: e.title || e.name || '', reason: 'future-timepoint: ' + evYear + ' > ' + curYear });
+      return true;
+    }
+    // ② 软闸：未到 triggerTurn 的既定史实名出现在 event 文本→弱提示(不硬拒·防同名议论误杀)
+    var rig = (Array.isArray(G.rigidHistoryEvents) && G.rigidHistoryEvents) ||
+              (global.P && Array.isArray(global.P.rigidHistoryEvents) && global.P.rigidHistoryEvents) || null;
+    if (rig && rig.length) {
+      var txt = String((e.text || '') + ' ' + (e.title || '') + ' ' + (e.desc || '') + ' ' + (e.name || '') + ' ' + (e.category || ''));
+      for (var r = 0; r < rig.length; r++) {
+        var rev = rig[r]; if (!rev || !rev.name) continue;
+        var tt = Number(rev.triggerTurn);
+        if (isFinite(tt) && tt > (G.turn || 0) && String(rev.name).length >= 2 && txt.indexOf(String(rev.name)) >= 0) {
+          try { console.warn('[events/C4] 未到期既定史实名现于事件文本·软提示(不拒): 「' + rev.name + '」 triggerTurn=' + tt + ' > 当前回合 ' + (G.turn || 0)); } catch(_cw2){}
+          _pushHint('未到期史实事件', '事件文本提及未到 triggerTurn(' + tt + ') 的既定史实「' + rev.name + '」·疑既成播报未来·软提示(不硬拒)');
+          break;
+        }
+      }
+    }
+    return false;
+  }
+
+  // ── 刀C·返工issue5(2026-07-19)·allegiance_changes 改 canonical faction 补来源判据(applier 叛降段调用) ──
+  //   叛降/归附本是带因事件：reason 含具体军政诱因(战败/围城/策反/反正/归降/俘/胁迫/拥立)或经 _writeActionSourced
+  //   (玩家诏令/朝议裁决/结构化互证)有源→放行；纯凭史实幻觉的裸改换门庭(无诱因无来源)→拒+弱提示。返 true=已拦。★宁漏勿误杀。
+  function _gateAllegianceSource(G, aiOutput, charRef, newName, reason, applied) {
+    if (!G || !charRef) return false;
+    var ch = (typeof _findEntity === 'function') ? _findEntity(G, 'char', charRef) : (Array.isArray(G.chars) ? G.chars.filter(function(c){ return c && (c.name === charRef || c.id === charRef); })[0] : null);
+    if (!ch) return false;   // 查无此人·另由 applyAllegianceChange 兜底
+    if (/战败|兵败|大败|溃败|败绩|围城|城破|城陷|陷城|破城|策反|反正|反水|归降|归附|来降|来附|投诚|投降|纳降|请降|乞降|招抚|招降|抚定|胁迫|挟持|俘获|被俘|就擒|拥立|劫盟|叛降|叛附|献城|献关|举城|哗变|倒戈/.test(String(reason || ''))) return false;
+    if (_writeActionSourced(G, aiOutput, ch, { scanInputs: true })) return false;
+    console.warn('[allegiance/返工] 无源改换门庭·不执行(疑史实幻觉·转弱自查纸条留痕): ' + (ch.name || charRef) + ' → ' + newName);
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源改换门庭', reason: '改换门庭本回合无军政诱因(战败/围城/策反)亦无玩家诏令/朝议来源·疑史实幻觉·目标势力「' + String(newName || '').slice(0, 20) + '」', itemName: ch.name || charRef, source: 'allegiance-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源改换门庭', itemName: ch.name || charRef }); } catch(_ae) {}
+    if (applied && Array.isArray(applied.failed)) applied.failed.push({ field: 'allegiance_changes', text: (ch.name || charRef) + ' → ' + newName, reason: '无源改换门庭·未落库(疑史实幻觉)' });
+    return true;
+  }
+
+  // ── 刀C·返工issue4(2026-07-19)·死亡动词经人事通道(appointments/office_assignments dismiss+reason)入死亡管线的收口闸 ──
+  //   收口点=onDismissal 死亡分支前(单一位置)。凡 reason 映射进死亡管线(与 onDismissal:554 词表对齐)·且是 bare 裸死(病故/薨/暴毙/
+  //   自尽/伏诛)·且本回合无源→拒路由死亡+弱提示。主动致死/暴力殉难/含本局事由=active→照常落。★只在 AI-apply 通道(aiOutput 传入)生效·
+  //   玩家/迁移直调 onDismissal(无 aiOutput)不拦。玩家角色恒经裁决器·绝不拦。返 true=已拦(onDismissal 应返失败·不路由死亡)。
+  function _gateDeathRoutingSource(G, ch, reasonText, aiOutput) {
+    if (!G || !ch || !ch.name || !aiOutput) return false;
+    if (ch.isPlayer === true) return false;
+    var rs = String(reasonText || '');
+    if (!/处决|处斩|处死|斩首|斩决|斩杀|戮杀|正法|明正典刑|诛杀|诛戮|诛九族|凌迟|腰斩|弃市|枭首|枭示|问斩|赐死|赐自尽|绞刑|绞死|伏诛|伏法|就戮|授首|自尽|自缢|自刎|自裁|自杀|服毒自尽|畏罪自尽|磔|死刑|身故|病故|病逝|病殁|病卒|病亡|亡故|暴毙|暴卒|暴亡|猝死|物故|殒命|毙命|殉国|殉难|殉城|殉职|罹难|遇害|遇难|遭难|薨逝|溘逝|寿终|城破身死/.test(rs)) return false;
+    if (_classifyStructuredDeathKind(rs) !== 'bare') return false;
+    if (_writeActionSourced(G, aiOutput, ch, { excludeStructuredKeys: ['character_deaths', 'office_assignments', 'personnel_changes'], scanInputs: true })) return false;
+    console.warn('[death-route/返工] 无源裸死亡经人事通道入死亡管线·拦(疑史实幻觉·转弱自查纸条留痕): ' + ch.name + ' ← 「' + rs.slice(0, 30) + '」');
+    if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok
+    G._aiWeakWriteHints.push({ label: '无源人事死亡', reason: '裸死亡经 personnel/appointments/office→onDismissal 死亡管线·本回合无任一源头·疑史实幻觉·死因「' + rs.slice(0, 20) + '」', itemName: ch.name, source: 'death-routing-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+    if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+    try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源人事死亡', itemName: ch.name }); } catch(_de) {}
+    return true;
+  }
+
   function _validatePersonnelConsistency(G, aiOutput, applied) {
     if (!G || !aiOutput) return;
     var narrativeText = '';
+    // ★主叙事字段：SC1 主链 stage 把主时政叙事传在 narrative 键(见 tm-endturn-apply-stages:84)·与其他 validator 用的
+    //   _getNarrativeText 对齐(它已扫 narrative)·此前人事 validator 漏扫 narrative→主链裸死亡扫不到(Codex探针:narrative键→0/0)。
+    if (aiOutput.narrative) narrativeText += String(aiOutput.narrative) + '\n';
     if (aiOutput.shilu_text) narrativeText += String(aiOutput.shilu_text) + '\n';
     if (aiOutput.shizhengji) narrativeText += String(aiOutput.shizhengji) + '\n';
     // zhengwen(邸报/政闻)也是真实 AI 叙事输出字段·此前漏扫→AI 只在 zhengwen 里写"某巡抚被杀"
@@ -103,12 +426,14 @@
                           '就戮','授首','自尽','自缢','自刎','自裁','自杀','磔'];
       // 自然/含糊死亡词·名前即受事(非处决非自戕)·治巡抚死于民变常被叙作"遇害/病故/城破身死"
       //   而非处决词→旧扫描器全漏(玩家报"死人下月还在任")。只收多字不歧义词·避开单字 卒/死/薨/殁。
-      var KILL_NATURAL = ['溘然长逝','城破身死','城陷而死','以身殉国','为国捐躯',
-                          '病故','病逝','病殁','病卒','病亡','亡故','暴毙','暴卒','暴亡','猝死','物故','身故',
-                          '殒命','毙命','殉国','殉难','殉城','殉职','罹难','遇害','遇难','遭难',
-                          '薨逝','溘逝','寿终','谢世','辞世','弃世','长逝'];
+      // ★刀9(2026-07-19)按「是否隐含本回合致死事件」二分(并集=原表·零漏词)：
+      //   VIOLENT=暴力/殉难/城破——文义自带本回合外部致死事件(战乱/民变/城陷)·视为有源·照旧补录；
+      //   PLAIN=纯病老/暴卒/薨逝——无本回合致因·是 AI「按真实历史幻觉」的高发形态(如「魏忠贤薨逝」)·须外部源头才落库。
+      var KILL_NATURAL_VIOLENT = ['城破身死','城陷而死','以身殉国','为国捐躯','殉国','殉难','殉城','殉职','罹难','遇害','遇难','遭难','殒命','毙命'];
+      var KILL_NATURAL_PLAIN  = ['溘然长逝','病故','病逝','病殁','病卒','病亡','亡故','暴毙','暴卒','暴亡','猝死','物故','身故','薨逝','溘逝','寿终','谢世','辞世','弃世','长逝'];
+      var KILL_NATURAL = KILL_NATURAL_VIOLENT.concat(KILL_NATURAL_PLAIN);   // 并集=原自然死表(供他处沿用·此处不再整体用)
       function alt(list){ return list.slice().sort(function(a,b){return b.length-a.length;}).join('|'); }
-      var transAlt = alt(KILL_TRANS), intransAlt = alt(KILL_INTRANS), natAlt = alt(KILL_NATURAL);
+      var transAlt = alt(KILL_TRANS), intransAlt = alt(KILL_INTRANS), natViolentAlt = alt(KILL_NATURAL_VIOLENT), natPlainAlt = alt(KILL_NATURAL_PLAIN);
       // 名与死亡词之间夹关系词→死的是亲属非本人(如"胡廷晏之子病故")·跳过防误杀
       var _relRe = /之|其|亲|眷|属|族|子|女|父|母|妻|夫|弟|兄|孙|侄|甥|婿|妾|嗣|叔|伯|舅|姑|姊|妹/;
       var NP = '[^。！？；;.!?，,、\\n]{0,6}';  // 同句内窗口·不跨标点
@@ -131,20 +456,23 @@
         var reV = new RegExp('(?:' + transAlt + ')(?:了|之|讫|于[^。！？；，、\\n]{0,4})?' + _victimRole + '\\s*' + e);
         // 自戕/受事名前: X自尽 / X伏诛
         var reI = new RegExp(e + '[^。！？；;，,、\\n]{0,4}(?:' + intransAlt + ')');
-        // 自然/含糊死亡·名前即受事(病故/薨逝/遇害/城破身死…)·捕窗口·夹关系词则跳过
-        var reN = new RegExp(e + '([^。！？；;，,、\\n]{0,4})(?:' + natAlt + ')');
-        var _vpref = '处决';
+        // 自然/含糊死亡·名前即受事(病故/薨逝/遇害/城破身死…)·捕窗口·夹关系词则跳过·拆暴力/纯自然两条
+        var reNv = new RegExp(e + '([^。！？；;，,、\\n]{0,4})(?:' + natViolentAlt + ')');
+        var reNp = new RegExp(e + '([^。！？；;，,、\\n]{0,4})(?:' + natPlainAlt + ')');
+        // deathKind: 'active'=主动致死/暴力殉难(隐含本回合致死事件·有源·照旧补录) · 'bare'=裸自戕/裸伏诛/纯自然死(疑史实幻觉·须刀9源头判据)
+        var _vpref = '处决', _deathKind = 'active';
         if ((m = reP.exec(narrativeText))) hit = m[0];
         else if ((m = reW.exec(narrativeText))) hit = m[0];
         else if ((m = reB.exec(narrativeText))) hit = m[0];
         else if ((m = reV.exec(narrativeText))) hit = m[0];
-        else if ((m = reI.exec(narrativeText))) hit = m[0];
-        else if ((m = reN.exec(narrativeText)) && !_relRe.test(m[1] || '')) { hit = m[0]; _vpref = '身故'; }
+        else if ((m = reI.exec(narrativeText))) { hit = m[0]; _deathKind = 'bare'; }   // 裸自戕/裸伏诛(伏诛/弃市/自缢/自尽)·历史命运回忆高发·刀9 须外部源
+        else if ((m = reNv.exec(narrativeText)) && !_relRe.test(m[1] || '')) { hit = m[0]; _vpref = '身故'; }   // 暴力殉难(遇害/殉城/城破身死)·隐含本回合致死事件·视为有源
+        else if ((m = reNp.exec(narrativeText)) && !_relRe.test(m[1] || '')) { hit = m[0]; _vpref = '身故'; _deathKind = 'bare'; }   // 纯自然死(病故/薨逝/寿终)·无本回合致因·刀9 须外部源
         if (!hit) return;
         var key = nm + '_execute';
         if (mentioned.find(function(x){return x.key===key;})) return;
-        // reason 带『处决』(处决/自戕)或『身故』(自然死)令 onDismissal 置 alive=false·原文附死因便追溯
-        mentioned.push({ key: key, name: nm, action: 'execute', verb: _vpref + '·据叙事「' + hit + '」', raw: hit });
+        // reason 带『处决』(处决/自戕)或『身故』(自然死)令 onDismissal 置 alive=false·原文附死因便追溯·deathKind 供刀9 源头判据
+        mentioned.push({ key: key, name: nm, action: 'execute', verb: _vpref + '·据叙事「' + hit + '」', raw: hit, deathKind: _deathKind });
       });
     })();
 
@@ -166,7 +494,8 @@
             u._retired !== undefined || u._fled !== undefined || u._confiscated !== undefined) handled[cu.name] = true;
       }
     });
-    // AI 已正经填结构化死亡的·由 applyCharacterDeaths 落地·此处不再从叙事重复补录
+    // AI 已正经填结构化死亡的·由 applyCharacterDeaths 落地·此处不再从叙事重复补录。
+    //   主链 SC1 stage 现已随主叙事同传标准 character_deaths 键·主链结构化死者进 handled 直接跳过·免错记无源+吐垃圾弱提示。
     (aiOutput.character_deaths || []).forEach(function(cd) {
       if (cd && cd.name) handled[cd.name] = true;
     });
@@ -208,6 +537,20 @@
       if (m.action !== 'execute' && ch.alive === false) { skipped.push({ name: ch.name, action: m.action, reason: 'already-dead', raw: m.raw }); return; }
       try {
         if (m.action === 'execute') {
+          // ── 刀9·无源史实幻觉死亡反向闸(2026-07-19) ─────────────────────────────
+          //  裸自戕/裸伏诛(reI)与纯自然死(reN-plain·病故/薨逝/寿终)是 AI「按真实历史幻觉」的高发形态。
+          //  若本回合无任何源头(玩家角色/司法态/结构化死亡意图/玩家诏令) → 判为孤立叙事幻觉·★不落库★·
+          //  改投既有弱自查纸条 GM._aiWeakWriteHints(下回合轻喂 AI·可忽略)+console 留痕·避免污染存档。
+          //  主动致死(被斩/把X砍/斩X/赐死X)与暴力殉难(遇害/殉城/城破身死)属 deathKind==='active'·不入本闸·零改动。
+          if (m.deathKind === 'bare' && !_narrativeDeathSourced(G, aiOutput, ch)) {
+            if (!G._aiWeakWriteHints) G._aiWeakWriteHints = [];   // arch-ok·弱自查纸条 sink·与 reconcile 侧 _tmPushAIWeakHint 同构
+            G._aiWeakWriteHints.push({ label: '无源叙事死亡', reason: '孤立叙事死亡·本回合无死亡意图/玩家诏令/司法前置·疑 AI 史实幻觉', itemName: ch.name, source: 'personnel-validator-no-source', active: null, turn: G.turn || 0 });   // arch-ok
+            if (G._aiWeakWriteHints.length > 20) G._aiWeakWriteHints = G._aiWeakWriteHints.slice(-20);   // arch-ok
+            try { if (typeof global.recordAIDiagnostic === 'function') global.recordAIDiagnostic('write_hint', { label: '无源叙事死亡', itemName: ch.name, raw: m.raw }); } catch(_rhE) {}
+            skipped.push({ name: ch.name, action: m.action, reason: 'no-source-isolated-death', raw: m.raw });
+            console.warn('[PersonnelValidator] 无源孤立叙事死亡·不落库(转弱自查纸条留痕): ' + ch.name + ' ← 「' + m.raw + '」');
+            return;
+          }
           if (_routeDeathToPipeline(ch, m.verb)) {
             patched++;
             if (global.addEB) global.addEB('校验补录', '人事校验器·' + ch.name + '『' + m.verb + '』经死亡管线补录入库(原文: ' + m.raw + ')');
@@ -1216,4 +1559,6 @@
   __acaP._validateRevoltConsistency = _validateRevoltConsistency; __acaP._validateDisasterConsistency = _validateDisasterConsistency; __acaP._validateDiplomacyConsistency = _validateDiplomacyConsistency; __acaP._validateKejuConsistency = _validateKejuConsistency; __acaP._validatePartyConsistency = _validatePartyConsistency; __acaP._validateEdictEffectConsistency = _validateEdictEffectConsistency;
   __acaP._validateCourtCeremonyConsistency = _validateCourtCeremonyConsistency; __acaP._validateConstructionConsistency = _validateConstructionConsistency; __acaP._validateMarriageBirthConsistency = _validateMarriageBirthConsistency; __acaP._validateConspiracyConsistency = _validateConspiracyConsistency; __acaP._validateCurrencyConsistency = _validateCurrencyConsistency; __acaP._validateReligionConsistency = _validateReligionConsistency;
   __acaP._validateOmenConsistency = _validateOmenConsistency; __acaP._validateFiscalConsistency = _validateFiscalConsistency; __acaP._maybeReconcileWithAI = _maybeReconcileWithAI;
+  // 刀C·扩面共享判据(2026-07-19)：死亡/写端来源判据与死因分类器导出 bucket·供 reconcile(C1 preflight)/applier(C2/C3) 复用同款判据。
+  __acaP._narrativeDeathSourced = _narrativeDeathSourced; __acaP._textMentionsName = _textMentionsName; __acaP._classifyStructuredDeathKind = _classifyStructuredDeathKind; __acaP._writeActionSourced = _writeActionSourced; __acaP._gateJudicialPersonnelChange = _gateJudicialPersonnelChange; __acaP._sensitiveCharFieldSourced = _sensitiveCharFieldSourced; __acaP._gateEventTimepoint = _gateEventTimepoint; __acaP._gateAllegianceSource = _gateAllegianceSource; __acaP._gateDeathRoutingSource = _gateDeathRoutingSource; __acaP._wgCachedAllNames = _wgCachedAllNames; __acaP._wgCachedCourtText = _wgCachedCourtText;
 })(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));

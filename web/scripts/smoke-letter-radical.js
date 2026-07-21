@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { materializeScenarioRows } = require('./lib/official-scenario-fixture.js');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -13,7 +14,9 @@ function fakeEl() {
     appendChild(c){return c},removeChild(c){return c},setAttribute(){},getAttribute(){return null},
     addEventListener(){},removeEventListener(){},
     querySelector(){return fakeEl()},querySelectorAll(){return[]},
-    children:[],childNodes:[],innerHTML:'',textContent:'',value:'',dataset:{}
+    getBoundingClientRect(){return{top:0,left:0,right:0,bottom:0,width:0,height:0}},
+    children:[],childNodes:[],innerHTML:'',textContent:'',value:'',dataset:{},
+    offsetWidth:0,offsetHeight:0,offsetParent:null,parentElement:null
   };
 }
 const sandbox = {
@@ -36,11 +39,13 @@ const html = fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
 const re = /<script[^>]+src="([^"]+\.js)/g;
 let m;
 while ((m = re.exec(html))) {
+  if (m[1].split('?')[0] === 'tm-official-scenario-loader.js') continue; // dedicated loader smoke owns this async contract
   const fp = path.join(ROOT, m[1].split('?')[0]);
   if (!fs.existsSync(fp)) continue;
   try { vm.runInContext(fs.readFileSync(fp,'utf8'), sandbox, { filename: m[1] }); } catch(e) {}
 }
 try { vm.runInContext(fs.readFileSync(path.join(ROOT,'scenarios/tianqi7-1627.js'),'utf8'), sandbox); } catch(e) {}
+try { materializeScenarioRows(sandbox.P, 'sc-tianqi7-1627'); } catch(e) { console.error('scenario materialization fail:', e.message); }
 
 setTimeout(() => {
   try {

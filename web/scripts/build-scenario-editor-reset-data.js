@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const {
   buildScenarioEditorResetInventory,
   loadOfficialScenario,
@@ -67,14 +68,20 @@ function widenBlueprint(blueprint, keyUniverse) {
   });
 }
 
-function buildPayload() {
+function buildPayload(options) {
   const loaded = loadOfficialScenario(ROOT);
   const inventory = buildScenarioEditorResetInventory({ root: ROOT });
   const scenario = stableClone(loaded.scenario);
   const keyUniverse = collectScenarioKeyUniverse(scenario);
   const blueprint = widenBlueprint(inventory.blueprint, keyUniverse);
+  const sourceRaw = fs.readFileSync(loaded.source);
+  const sourceSha256 = options && options.sourceSha256
+    ? String(options.sourceSha256)
+    : crypto.createHash('sha256').update(sourceRaw).digest('hex');
   return {
-    builtAt: new Date().toISOString(),
+    // Deterministic provenance: wall-clock timestamps made an unchanged source
+    // dirty on every build and could not prove which source produced the file.
+    sourceSha256,
     source: path.relative(path.resolve(ROOT, '..'), loaded.source).replace(/\\/g, '/'),
     summary: inventory.officialScenario,
     blueprint,
@@ -83,22 +90,8 @@ function buildPayload() {
 }
 
 function main() {
-  const payload = buildPayload();
-  const js = [
-    '/* GENERATED FILE. Run `node web/scripts/build-scenario-editor-reset-data.js` after updating the official scenario. */',
-    '(function(global){',
-    '  global.TM_SCENARIO_EDITOR_RESET_DATA = ' + JSON.stringify(payload, null, 2) + ';',
-    '})(typeof window !== "undefined" ? window : globalThis);',
-    ''
-  ].join('\n');
-  fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  fs.writeFileSync(OUT, js, 'utf8');
-  console.log('[build-scenario-editor-reset-data] wrote ' + path.relative(ROOT, OUT));
-  console.log('[build-scenario-editor-reset-data] scenario=' + payload.summary.name +
-    ' keys=' + payload.summary.topLevelKeys +
-    ' blueprint-covers=' + payload.blueprint.assignedTopLevelKeys.length +
-    ' chars=' + payload.summary.counts.characters +
-    ' factions=' + payload.summary.counts.factions);
+  // Compatibility CLI: never refresh just one generated consumer.
+  require('./sync-official-scenarios.js').sync({ check: false });
 }
 
 if (require.main === module) main();

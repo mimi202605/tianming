@@ -279,12 +279,61 @@
       writes: ['GM._prevGuoku', 'GM._prevNeitang', 'GM._prevPopulation', 'GM._edictTracker', 'GM._chronicle', 'GM.officeTree', 'GM.facs', 'GM.partyState', 'GM.armies', 'ctx.input.*', 'ctx.snapshots.*', 'ctx.input._completedPrepPhases']
     },
     {
+      name: 'sovereign-ai',
+      // Phase 6·Task 30·穿越模式君主 AI 自动决策
+      // 位置：prep 之后、plan-prefetch 之前·玩家上奏收集之后、派系 NPC 决策之前
+      // 仅在穿越模式 + 玩家非君主时触发·调用 TM.SovereignAI.runTurn 把君主本回合的
+      //   下旨/朝议/批奏/任免决策落账（_edictTracker source='sovereign-ai'）
+      // 失败不阻断主管道（onError: continue）·玩家上奏仍走下游 ai step
+      fn: async function(ctx) {
+        var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+        var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+        if (!_isTrans) return ctx;
+        if (typeof TM === 'undefined' || !TM.SovereignAI || typeof TM.SovereignAI.runTurn !== 'function') return ctx;
+        try {
+          var _sovereignRes = await TM.SovereignAI.runTurn(GM, {
+            turn: (GM && GM.turn) || 0,
+            playerMemorials: (ctx.input && ctx.input.edicts) || {},
+            maxTokens: 3000,
+            maxAttempts: 2
+          });
+          ctx.results.sovereignAiResult = _sovereignRes;
+          try {
+            if (typeof window !== 'undefined' && window.TM && TM.Endturn && TM.Endturn.Timing && typeof TM.Endturn.Timing.mark === 'function') {
+              TM.Endturn.Timing.mark(ctx, 'foreground', { id: 'sovereign-ai', phase: 'done', turn: (GM && GM.turn) || 0, ok: !!(_sovereignRes && _sovereignRes.ok), source: (_sovereignRes && _sovereignRes.source) || '' });
+            }
+          } catch (_) {}
+        } catch (e) {
+          try { console.warn('[pipeline.sovereign-ai] runTurn failed', e); } catch (_) {}
+          ctx.results.sovereignAiResult = { ok: false, error: String(e && (e.message || e) || '') };
+        }
+        return ctx;
+      },
+      onError: 'continue',
+      reads: ['P.playerInfo.transmigrationMode', 'P.playerInfo.playerRole', 'GM.turn', 'GM._edictTracker', 'GM.memorials', 'GM.officeTree', 'GM.facs', 'ctx.input.edicts'],
+      writes: ['ctx.results.sovereignAiResult', 'GM._edictTracker', 'GM.memorials', 'GM.officeTree']
+    },
+    {
       name: 'plan-prefetch',
       // slice 2.6·2026-05-07·迁 scThreeSystemsAI(1.75) + aiDigestLongTermActions(1.8) 两个 prefetch promise 启动
       // before-hooks 暂不动·留 slice 2.7 (audit 障碍 #6·_origPrompt* 命名约定 paradigm 重构)
       // 启动后立刻返回·promise 在后台跑·legacy 通过 ctx.subcalls.preXxxP 拿到这两个 promise·Phase 2 时 await
       // 跟 prep 一样·flag _planPrefetchKickedOff=true 让 legacy 跳过双 kickoff·防 token 双烧
       fn: async function(ctx) {
+        // 正式 Agent 与 LLM 是入口互斥的平行模式。两个 prefetch 都是 LLM 支路的
+        // 提示词缓存，Agent 只复用确定性 prompt builder 的局势依据，不应暗中启动
+        // 另一模式的模型调用。标成 kicked-off 是为了阻止任何 legacy 路径补启动。
+        var _mc = TM.Endturn && TM.Endturn.ModeContract;
+        var _selectedMode = (_mc && typeof _mc.selectedMode === 'function')
+          ? _mc.selectedMode(typeof P !== 'undefined' ? P : null)
+          : ((typeof agentModeOn === 'function' && agentModeOn()) ? 'agent' : 'llm');
+        if (_selectedMode === 'agent') {
+          ctx.meta = ctx.meta || {};
+          ctx.meta.aiMode = 'agent';
+          ctx.input._agentPlanPrefetchSkipped = true;
+          ctx.input._planPrefetchKickedOff = true;
+          return ctx;
+        }
         ctx.subcalls = ctx.subcalls || {};
         try {
           if (typeof scThreeSystemsAI === 'function') {
@@ -325,27 +374,39 @@
       // slice 3a·2026-05-07·先调现存的 _endTurn_aiInfer 整体捕获到 ctx.results.aiResult
       // _endTurn_aiInfer 内部已经在用 ctx (ai-infer.js L43)·slice 3b/3c 再把内部 ctx 跟管道 ctx 合一·消除 _turnAiResults GM 中介
       // 同时 await plan-prefetch 启动的两个 promise·确保 AI 推演前数据齐全
-      // failure 抛出·executor 按 onError='abort' 处理·legacy 兜底重跑(2x token·rare)
+      // failure 抛出·executor 按 onError='abort' 处理；已选模式本回合终止，不跨模式兜底重跑。
       fn: async function(ctx) {
-        // 【模式 b · agent 模式 · S1 骨架 · 2026-06-20】分叉点(详设 docs/agent-mode-design.md)
-        //   开关 agentModeEnabled 开 → 走 agent 循环(局内 Claude Code · 主动改存档+UI · 平行引擎)。
-        //   S1:AgentMode.run 仅占位·返回 {fallback:true} → 此处继续走下方原 sc0-sc28·保回合完整。
-        //   S4+ run 接管时返回 {ok:true,fallback:false} → 提前 return ctx·不走原管线。
-        //   关(默认):整段 if 跳过 → 与原管线**字节级等同**(零回归)。
-        if (typeof agentModeOn === 'function' && agentModeOn()
-            && TM.Endturn && TM.Endturn.AgentMode && typeof TM.Endturn.AgentMode.run === 'function') {
-          try {
-            var _agentRes = await TM.Endturn.AgentMode.run(ctx);
-            if (_agentRes && _agentRes.ok && !_agentRes.fallback) {
-              if (_agentRes.aiResult !== undefined) ctx.results.aiResult = _agentRes.aiResult;
-              ctx.input._aiInferRan = true;
-              ctx.input._agentModeRan = true;
-              return ctx;  // agent 模式接管本回合·不走原 LLM 管线
-            }
-            // fallback:true → 落到下方原管线(S1 恒如此)
-          } catch (_agentErr) {
-            try { console.warn('[pipeline.ai] agent-mode 异常·回落 LLM 管线', _agentErr); } catch (_) {}
+        // 正式 LLM/Agent 是入口互斥的平行模式：选中 Agent 后，本回合绝不静默穿越到 LLM 主流程。
+        // 两条支路只在共同 aiResult 契约处汇合；Agent 失败由其快照回滚后向外抛，本回合中止并让玩家重试/切模式。
+        var _mc = TM.Endturn && TM.Endturn.ModeContract;
+        var _selectedMode = (_mc && typeof _mc.selectedMode === 'function')
+          ? _mc.selectedMode(typeof P !== 'undefined' ? P : null)
+          : ((typeof agentModeOn === 'function' && agentModeOn()) ? 'agent' : 'llm');
+        ctx.meta = ctx.meta || {};
+        ctx.meta.aiMode = _selectedMode;
+        if (_selectedMode === 'agent') {
+          ctx.input._agentModeSelected = true;
+          if (!(TM.Endturn && TM.Endturn.AgentMode && typeof TM.Endturn.AgentMode.run === 'function')) {
+            if (_mc && _mc.ModeExecutionError) throw new _mc.ModeExecutionError('agent', 'agent-module-missing', 'Agent 模式模块未加载');
+            throw new Error('Agent 模式模块未加载');
           }
+          var _agentRes = await TM.Endturn.AgentMode.run(ctx);
+          if (!_agentRes || !_agentRes.ok || _agentRes.fallback) {
+            var _agentReason = (_agentRes && _agentRes.reason) || 'Agent 模式未形成可提交结果';
+            if (_mc && _mc.ModeExecutionError) throw new _mc.ModeExecutionError('agent', 'agent-run-failed', _agentReason, _agentRes || {});
+            throw new Error(_agentReason);
+          }
+          var _agentResult = _agentRes.aiResult;
+          if (_mc && typeof _mc.normalizeResult === 'function') _agentResult = _mc.normalizeResult(_agentResult, 'agent');
+          if (_mc && typeof _mc.validateResult === 'function') {
+            var _agentContract = _mc.validateResult(_agentResult, 'agent');
+            ctx.meta.aiModeContract = _agentContract;
+            if (!_agentContract.ok) throw new _mc.ModeExecutionError('agent', 'agent-result-invalid', _agentContract.problems.join('；'), _agentContract);
+          }
+          ctx.results.aiResult = _agentResult;
+          ctx.input._aiInferRan = true;
+          ctx.input._agentModeRan = true;
+          return ctx;
         }
         if (typeof _endTurn_aiInfer !== 'function') return ctx;
         // await plan-prefetch 启动的 promise·legacy Phase 2 同样 await·此处仅确保 ai 调用前数据齐
@@ -361,7 +422,9 @@
           ctx.input.oldVars,
           ctx
         );
+        if (_mc && typeof _mc.normalizeResult === 'function') aiResult = _mc.normalizeResult(aiResult, 'llm');
         ctx.results.aiResult = aiResult;
+        if (_mc && typeof _mc.validateResult === 'function') ctx.meta.aiModeContract = _mc.validateResult(aiResult, 'llm');
         if (TM.Endturn && TM.Endturn.Validity && typeof TM.Endturn.Validity.validateBeforeCommit === 'function') {
           var validity = TM.Endturn.Validity.validateBeforeCommit(ctx);
           ctx.meta.endturnValidity = validity;
@@ -396,7 +459,7 @@
             await window.TMBattleTurn.runPending(typeof GM !== 'undefined' ? GM : null);
           }
         } catch (e) { try { console.warn('[pipeline.post-ai-edict·yujia-qinzheng]', e); } catch(_){} }
-        if (typeof applyEdictActions === 'function') {
+        if (!ctx.input._agentEdictActionsApplied && typeof applyEdictActions === 'function') {
           try {
             var ea = ctx.input.edictActions;
             if (ea && ((ea.appointments && ea.appointments.length) || (ea.dismissals && ea.dismissals.length) || (ea.deaths && ea.deaths.length) || (ea.armyBuilds && ea.armyBuilds.length) || (ea.rewards && ea.rewards.length) || (ea.payArrears && ea.payArrears.length))) {
@@ -406,6 +469,7 @@
         }
         // G2·step 0a·Path C·扫 ctx.input.edicts 文本·识别 enke keyword → 路由到 _kjG2OnEnkeApproved (或 pending queue)
         try {
+          if (!ctx.input._agentEdictKeywordActionsApplied) {
           if (typeof _kjG2ScanCtxInputEdictsForEnke === 'function' && ctx.input && ctx.input.edicts) {
             var enkeActions = _kjG2ScanCtxInputEdictsForEnke(ctx.input.edicts);
             if (enkeActions && enkeActions.length && typeof _kjG2OnEnkeApprovedViaEdict === 'function') {
@@ -414,9 +478,11 @@
               }
             }
           }
+          }
         } catch(e) { try { console.warn('[pipeline.post-ai-edict] G2 enke scan', e); } catch(_){} }
         // G3·RAA·C1·扫 ctx.input.edicts 识别 wuju keyword (跟 G2 同 paradigm)
         try {
+          if (!ctx.input._agentEdictKeywordActionsApplied) {
           if (typeof _kjG3ScanCtxInputEdictsForWuju === 'function' && ctx.input && ctx.input.edicts) {
             var wujuActions = _kjG3ScanCtxInputEdictsForWuju(ctx.input.edicts);
             if (wujuActions && wujuActions.length && typeof _kjG3OnWujuApprovedViaEdict === 'function') {
@@ -425,9 +491,11 @@
               }
             }
           }
+          }
         } catch(e) { try { console.warn('[pipeline.post-ai-edict] G3 wuju scan', e); } catch(_){} }
         // G5·扫 tongzi keyword
         try {
+          if (!ctx.input._agentEdictKeywordActionsApplied) {
           if (typeof _kjG5ScanCtxInputEdictsForTongzi === 'function' && ctx.input && ctx.input.edicts) {
             var tongziActions = _kjG5ScanCtxInputEdictsForTongzi(ctx.input.edicts);
             if (tongziActions && tongziActions.length && typeof _kjG5OnTongziApprovedViaEdict === 'function') {
@@ -436,12 +504,13 @@
               }
             }
           }
+          }
         } catch(e) { try { console.warn('[pipeline.post-ai-edict] G5 tongzi scan', e); } catch(_){} }
         // F6·扫时政记 (AI 推演输出)·覆盖"诏书未明写但 AI 在叙事中体现开恩科"的情况
         // 复用 3 个 ScanCtxInputEdictsForX·passing string (parser 已加 negative gate 防"罢/未/搁置"误识别)
         try {
           var _ar = ctx.results && ctx.results.aiResult;
-          if (_ar) {
+          if (_ar && !ctx.input._agentModeRan) {
             var _shizhengTxt = [_ar.shizhengji || '', _ar.zhengwen || '', _ar.shilu || ''].join('\n');
             if (_shizhengTxt.trim()) {
               if (typeof _kjG2ScanCtxInputEdictsForEnke === 'function' && typeof _kjG2OnEnkeApprovedViaEdict === 'function') {
@@ -468,7 +537,7 @@
             }
           }
         } catch(e) { try { console.warn('[pipeline.post-ai-edict] G2/G3/G5 shizhengji scan', e); } catch(_){} }
-        if (typeof TyrantActivitySystem !== 'undefined' && TyrantActivitySystem && TyrantActivitySystem.applyEffects) {
+        if (!ctx.input._agentTyrantActivitiesApplied && typeof TyrantActivitySystem !== 'undefined' && TyrantActivitySystem && TyrantActivitySystem.applyEffects) {
           try {
             var ta = ctx.input.tyrantActivities || (typeof GM !== 'undefined' ? GM._turnTyrantActivities : null) || [];
             if (ta.length > 0) {
@@ -499,7 +568,8 @@
         }
         // Phase 3.5·御批回听 enqueue 后台 job·依赖 aiResult+edicts·两者都已在 ctx
         try {
-          if (typeof aiEdictEfficacyAudit === 'function' && typeof P !== 'undefined' && P.ai && P.ai.key) {
+          // Agent 模式拥有自己的诏令监察；平行模式不得再混入 LLM 的 efficacy audit。
+          if (!ctx.input._agentModeRan && typeof aiEdictEfficacyAudit === 'function' && typeof P !== 'undefined' && P.ai && P.ai.key) {
             // 【诏令执行督查 agent·S2】开关开且未回落时·督查 agent 接管(追所有活诏令跨回合生命周期)·此写死审计跳；默认关/连失回落 → aiEdictEfficacyAudit 原样跑零回归
             var _gmEO = (typeof GM !== 'undefined') ? GM : (typeof window !== 'undefined' ? window.GM : null);
             var _runEdictAudit = function(){
@@ -934,7 +1004,8 @@
         // 2026-05-10·Phase G·NPC LLM 决策接管·若开关 on + eager mode·后台并发跑
         // 模板已先跑·LLM 决策会"覆盖"产出新 trajectory·不破坏 fallback
         try {
-          if (typeof window !== 'undefined' && window.TM && TM.FactionNpcDispatchQueue && TM.FactionNpcDispatchQueue.scheduleTurnRuns) {
+          // Agent 模式的 liveworld 已在最终叙事/自检前按统一预算执行；公共 LLM dispatcher 不得重复排队。
+          if (!ctx.input._agentModeRan && typeof window !== 'undefined' && window.TM && TM.FactionNpcDispatchQueue && TM.FactionNpcDispatchQueue.scheduleTurnRuns) {
             TM.FactionNpcDispatchQueue.scheduleTurnRuns({ source: 'render-finalize' });
           }
         } catch(_npcdE) { try { console.warn('[pipeline.render-finalize] NPC LLM dispatch 调度失败', _npcdE); } catch(_){} }

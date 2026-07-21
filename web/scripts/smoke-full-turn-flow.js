@@ -446,10 +446,14 @@ async function main() {
   vm.runInContext(`_postTurnCourtChoose(true);`, sandbox, { timeout: 10000 });
   simulatePostTurnCourtDecision(sandbox, startTurn);
 
+  // deferred AI payload 由 setTimeout 排程后异步落位·payload 恒会到达(隔离约 10s)·非逻辑门。
+  // ci-smokes 走 run-smokes --no-retry·最多 8 路并行(单脚本硬杀 120s)·CPU 争抢下本段墙钟被拉长
+  //   (实测隔离 10-11s → 8 路并行 22.7s)·原 20s 软死线正卡在争抢边缘·重负载偶超 → 假红
+  //   "timeout waiting for deferred AI payload"。放宽到 60s(远低于 120s 硬杀)吸收并行争抢·不改断言/逻辑。
   await waitFor('deferred AI payload', () => {
     const p = sandbox.GM && sandbox.GM._pendingShijiModal;
     return p && p.aiReady && p.payload;
-  }, 20000);
+  }, 60000);
 
   assert(sandbox.GM.turn === startTurn + 1, 'end-turn systems should advance exactly one turn');
   const logBeforeCourtEnd = sandbox.TM.Endturn.Pipeline.lastRun();

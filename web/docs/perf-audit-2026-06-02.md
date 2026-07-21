@@ -25,7 +25,7 @@ TM.perf.downloadJSON()            // 导出
 
 ### A. 启动加载 —— 首屏同步解析 21.4 MB JS（最大单点）
 - index.html 同步加载 **288 个本地脚本 ≈ 21.4 MB / 27.5 万行**，仅 10 个 `defer`、**0 个 async / 0 个懒加载**。
-- **单文件元凶**：`data/scenario-supplements/tianqi7-official-runtime-snapshot.js` = **7.09 MB（占总量 32%）**，72 行一个巨型字面量；+ `scenarios/tianqi7-1627.js` 904 KB。**两者合计 ~8 MB ≈ 37% 首屏负载，且无论玩家选哪个剧本都被同步加载+解析**。
+- **单文件元凶（当时状态）**：`data/scenario-supplements/tianqi7-official-runtime-snapshot.js` = **7.09 MB（占总量 32%）**，72 行一个巨型字面量；+ `scenarios/tianqi7-1627.js` 904 KB。**两者合计 ~8 MB ≈ 37% 首屏负载，且无论玩家选哪个剧本都被同步加载+解析**。该 snapshot 已于 2026-07-18 退役，官方完整剧本改为选中后按需加载。
 - 科举 36 文件 1.25 MB / 2.6 万行、廷议 tm-tinyi-v3.js 333 KB、编辑器 7 文件 240 KB、tm-test* 82 KB（生产仍加载）。
 
 ### B. 地图 hover —— 每次 mousemove 全量扫描+重建（已修 ✅）

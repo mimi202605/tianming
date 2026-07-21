@@ -169,15 +169,21 @@
         var c = G.corruption || {};
         var t = typeof c.trueIndex === 'number' ? c.trueIndex : (typeof c.overall === 'number' ? c.overall : 0);
         var p = c.perceivedIndex !== undefined ? c.perceivedIndex : t;
-        var lab = t < 25 ? '清明' : t < 50 ? '尚可' : t < 70 ? '渐弊' : t < 85 ? '颓靡' : '积重';
+        // 失真层保卫·未揭真时条 fill 用据奏(perc)·真浊度从顶栏消失(与旧 _renderLizhi shownIdx 严格一致)·未开失真=直通真值
+        var _lzFlip = (typeof window._barFlipToPerceived === 'function') && window._barFlipToPerceived('corruption', 'index');
+        var lzShown = _lzFlip ? p : t;
+        var lab = lzShown < 25 ? '清明' : lzShown < 50 ? '尚可' : lzShown < 70 ? '渐弊' : lzShown < 85 ? '颓靡' : '积重';
         // 浊度→清明度(100-浊)，使与民/权/威同向(越高越好)
-        return { ch:'吏', label:lab, trueV:Math.round(100 - t), seenV:Math.round(100 - p), tone:'purple' };
+        return { ch:'吏', label:lab, trueV:Math.round(100 - lzShown), seenV:Math.round(100 - p), tone:'purple' };
       }
       if (key === 'minxin') {
         var m = G.minxin || {};
         var mt = typeof m.trueIndex === 'number' ? m.trueIndex : (typeof m.index === 'number' ? m.index : (typeof m.value === 'number' ? m.value : 0));
         var mp = m.perceivedIndex !== undefined ? m.perceivedIndex : mt;
-        return { ch:'民', label:String(Math.round(mt)), trueV:Math.round(mt), seenV:Math.round(mp), tone:(mt < 40 ? 'red' : mt < 55 ? 'amber' : '') };
+        // 失真层保卫·未揭真时 label/fill 用据奏(mp)·真民心从顶栏消失(与旧 _renderMinxin shownIdx 严格一致)·未开失真=直通真值
+        var _mxFlip = (typeof window._barFlipToPerceived === 'function') && window._barFlipToPerceived('minxin', 'index');
+        var mxShown = _mxFlip ? mp : mt;
+        return { ch:'民', label:String(Math.round(mxShown)), trueV:Math.round(mxShown), seenV:Math.round(mp), tone:(mxShown < 40 ? 'red' : mxShown < 55 ? 'amber' : '') };
       }
       if (key === 'huangquan') {
         var h = G.huangquan || {};
@@ -200,7 +206,9 @@
     try {
       var p = (window.GM && GM.population && GM.population.national) || {};
       if (typeof p.ding === 'number' && p.ding > 0) {
-        var f = (typeof window._barFmtNum === 'function') ? window._barFmtNum(p.ding) : String(p.ding);
+        // 据奏口径·丁数经失真层 _barReported('national.ding',…,'renli')(与 _renderHukou 同源)·未开失真=真值直通
+        var dingShown = (typeof window._barReported === 'function') ? window._barReported('national.ding', p.ding, 'bad', 'renli').shown : p.ding;
+        var f = (typeof window._barFmtNum === 'function') ? window._barFmtNum(dingShown) : String(dingShown);
         return '<div class="tb-vding"><span class="k">丁</span>' + esc(f) + '</div>';
       }
     } catch(_e) {}

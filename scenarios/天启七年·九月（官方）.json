@@ -5,6 +5,9 @@
   "dynasty": "明",
   "emperor": "崇祯帝 朱由检",
   "startYear": 1627,
+  "historicalFallYear": 1644,
+  "historicalFallMonth": 3,
+  "historicalFallNote": "甲申之变·京师陷",
   "dynastyPhaseHint": "declining",
   "role": "明思宗·朱由检",
   "tags": [
@@ -19,6 +22,17 @@
   "active": true,
   "aiAutoEnrich": false,
   "isFullyDetailed": true,
+  "renliPilot": [
+    {
+      "region": "陕西布政使司",
+      "seed": {
+        "soilBase": 65,
+        "waterworks": 45,
+        "doubleCropping": 1,
+        "laborMarketDepth": 0.2
+      }
+    }
+  ],
   "chaoyi": {
     "enabled": true,
     "audienceHall": "奉天门",
@@ -64533,25 +64547,10 @@
       }
     ]
   },
-  "rigidHistoryEvents": [
-    {
-      "id": "rh_weiSuicide",
-      "triggerTurn": 3,
-      "name": "魏忠贤自缢阜城",
-      "trigger": "阉党权势值 < 50 且 皇威 > 50",
-      "historical": true,
-      "narrative": "去凤阳路上，闻钱嘉徵劾章传下，夜宿阜城，闻\"歌小曲骂九千岁\"，遂自缢。",
-      "sid": "sc-tianqi7-1627"
-    },
-    {
-      "id": "rh_keshiDie",
-      "triggerTurn": 4,
-      "name": "客氏杖毙",
-      "trigger": "魏忠贤已死",
-      "historical": true,
-      "narrative": "杖毙于浣衣局，尸被分。",
-      "sid": "sc-tianqi7-1627"
-    }
+  "rigidHistoryEvents": [],
+  "histAnchors": [
+    {"id": "ha_weizhongxian", "name": "魏忠贤", "histTurn": 3, "histDate": "天启七年十一月", "fate": "崇祯即位后被清算，自缢于阜城", "kind": "death"},
+    {"id": "ha_keshi", "name": "客氏", "histTurn": 4, "histDate": "天启七年十一月", "fate": "被逐出宫，笞杀于浣衣局", "kind": "death"}
   ],
   "military": {
     "systemDesc": "明代军制以卫所为骨架，中叶募兵补之。九边（辽东/蓟州/宣府/大同/山西/延绥/宁夏/固原/甘肃）常备兵约 80 万，实额不及半。京营三大营（五军/三千/神机）荒废日久，万历末改\"京营十二团\"。嘉靖以降倚家丁精锐，将帅私兵化。",
@@ -73751,44 +73750,6 @@
       "category": "story",
       "sid": "sc-tianqi7-1627",
       "id": "evt_mp9rsc3kr3des",
-      "triggered": false
-    },
-    {
-      "name": "阉党覆灭·第一环·罢魏",
-      "type": "chain",
-      "importance": "关键",
-      "trigger": "阉党权势值 < 70 且 皇威 > 55",
-      "effect": "罢魏凤阳·启动覆灭链",
-      "description": "罢魏忠贤凤阳祖陵司香。此为崇祯除阉第一步。",
-      "chainNext": "阉党覆灭·第二环·自缢阜城",
-      "linkedChars": [
-        "魏忠贤"
-      ],
-      "linkedFactions": [
-        "明朝廷"
-      ],
-      "category": "chain",
-      "sid": "sc-tianqi7-1627",
-      "id": "evt_mp9rsc3kfx6uu",
-      "triggered": false
-    },
-    {
-      "name": "阉党覆灭·第二环·自缢阜城",
-      "type": "chain",
-      "importance": "关键",
-      "trigger": "罢魏已下 且 皇威 > 60",
-      "effect": "魏忠贤自缢·阉党溃散",
-      "description": "魏忠贤赴凤阳途中闻钱嘉徵奏被下锦衣卫校尉追拿，夜宿阜城，闻童谣\"歌小曲骂九千岁\"，遂自缢。",
-      "chainNext": "阉党覆灭·第三环·清算逆案",
-      "linkedChars": [
-        "魏忠贤"
-      ],
-      "linkedFactions": [
-        "明朝廷"
-      ],
-      "category": "chain",
-      "sid": "sc-tianqi7-1627",
-      "id": "evt_mp9rsc3kpmtyx",
       "triggered": false
     },
     {

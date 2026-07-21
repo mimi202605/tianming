@@ -109,6 +109,14 @@
       + '"confidence_calibration":-1.0到1.0(负=过于自信需降调),'
       + '"systematic_biases":[{"domain":"势力忠诚|危机时点|经济财政|军事|民心|党争|外交(通用域·非朝代专名)","direction":"高估|低估|偏早|偏晚|忽视","evidence":"依据(近数回合·30字)","correction":"本回合预测时如何修正(40字)"}]'
       + '}·systematic_biases ≤5 项·只留确有证据的·把已纠正的移除。';
+    // 时空约束·clauseOnly(反思产的偏差画像经 formatBiasForSc0 反哺 sc0 主推演·JSON 输出防大名单干扰结构)·扫描源=上回合预测 lastPred + 本回合结构化结果 actual 中的人名·防按史书卒年误判在世 NPC 状态污染画像(typeof 守卫防加载序)
+    if (typeof global._buildTemporalConstraint === 'function') {
+      try {
+        var _raScan = String(lastPred || '') + ' ' + String(actual || '');
+        var _raMentioned = (typeof global._tcScanMentionedNames === 'function') ? global._tcScanMentionedNames(_raScan, [], 10) : [];
+        sys += global._buildTemporalConstraint(null, { clauseOnly: true, mentionedNames: _raMentioned });
+      } catch (_raTcE) {}
+    }
     return { system: sys, user: u, turn: turn };
   }
 
