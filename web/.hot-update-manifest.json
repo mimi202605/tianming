@@ -3991,8 +3991,8 @@
     },
     {
       "path": "tm-endturn-ai.js",
-      "sha256": "c8903190c308a11592c216674374caec8f8bde2ed8c69021ddf49611d28421d5",
-      "size": 396162
+      "sha256": "468a1638937cf526d41ec6dbe83c70c793be93a81ed082464e75e92f35c7619f",
+      "size": 396866
     },
     {
       "path": "tm-endturn-apply-stages.js",
@@ -4001,8 +4001,8 @@
     },
     {
       "path": "tm-endturn-apply.js",
-      "sha256": "96a6fa61500bda47c74388e4806f0b8a00db2937726695ddca428825bd1315fd",
-      "size": 363971
+      "sha256": "c749205e9a6f4380d8768eb63c5d1ed926fd77fa5a88fdbaf0bb081778fd71b2",
+      "size": 366415
     },
     {
       "path": "tm-endturn-core.js",
@@ -5021,8 +5021,8 @@
     },
     {
       "path": "tm-patches.js",
-      "sha256": "ba6bec9ec4322135ee8396ac2c0f92839ee4aef578ca8f6d95203859f2b90112",
-      "size": 186048
+      "sha256": "252399509b71451d2534f25db5bf60a9273555d60194cb8af672f7b9dee0d96c",
+      "size": 187022
     },
     {
       "path": "tm-pause-fab.js",
@@ -5056,8 +5056,8 @@
     },
     {
       "path": "tm-player-settings.js",
-      "sha256": "4478128e8e707070886041344675267caf996011539f7994e1ea147e6eefe7d0",
-      "size": 33203
+      "sha256": "b57ef0a603924cf90bbdd4eb1f6a29b9806332701d585883563acda08138b6f8",
+      "size": 33396
     },
     {
       "path": "tm-player-tools.js",

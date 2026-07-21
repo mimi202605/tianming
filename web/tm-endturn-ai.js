@@ -2814,6 +2814,10 @@
             if (r._needTransform) tp1 += '    ⚠已达建政阈值，本回合必须 revolt_transform type=toFaction 升级为独立势力\n';
             if (r.phase === 'stalemate' && elapsed > _turnsForMonthsLocal(5)) tp1 += '    ⚠相持过久，考虑招安(revolt_amnesty)或加强剿灭(revolt_suppress)\n';
             if (r.supplyStatus < 20) tp1 += '    ⚠粮草枯竭，可能自行 decline 或内讧\n';
+            // 拒抚接线（2026-07-22·玩家立案「拒抚后叛军蒸发」）：拒抚是变强信号·引导 AI 真备战/进逼·怎么打交 AI 演绎
+            if (r._warPrep && r._amnestyRejectedTurn != null && (GM.turn - r._amnestyRejectedTurn) < 3) {
+              tp1 += '    ⚠【拒抚·第' + r._amnestyRejectedTurn + '回合】朝廷条件已遭其拒·义军愈炽备战中——本回合 revolt_update 须体现真进逼(扩地/增兵/攻掠·由你演绎打哪)·不得 decline/dissolved(拒抚方炽·未经真镇压不得自散)' + (r._rejectedLeaders && r._rejectedLeaders.length ? '·拒抚首领:' + r._rejectedLeaders.slice(0,3).join('、') : '') + '\n';
+            }
           });
         }
       }

@@ -2205,6 +2205,17 @@
           });
         }
 
+        // 拒抚反消失闸（2026-07-22·玩家立案「谈和被拒→叛军蒸发」）：刚拒抚的义军 3 回合内、
+        // 期间无一场真镇压（history 无「镇压:」条目）时，禁被 dissolved/decline 静默收走——
+        // 拒抚是变强信号·须先经真战斗才能消亡。P.conf.revoltRejectionEscalation===false 整体关闭。
+        function _revoltAmnestyShield(r) {
+          if (!r || r._amnestyRejectedTurn == null) return false;
+          if (P.conf && P.conf.revoltRejectionEscalation === false) return false;
+          if ((GM.turn - r._amnestyRejectedTurn) >= 3) return false;
+          var fought = (r.history || []).some(function(h) { return h && h.turn >= r._amnestyRejectedTurn && /^镇压:/.test(String(h.event || '')); });
+          return !fought;
+        }
+
         // ── 起义进展更新 ──
         if (p1.revolt_update && Array.isArray(p1.revolt_update) && GM._activeRevolts) {
           p1.revolt_update.forEach(function(ru) {
@@ -2212,10 +2223,16 @@
             var r = GM._activeRevolts.find(function(x){return x.id === ru.revoltId;});
             if (!r || r.outcome) return;
             var oldPhase = r.phase;
-            if (ru.newPhase) r.phase = ru.newPhase;
+            if (ru.newPhase) {
+              if ((ru.newPhase === 'decline' || ru.newPhase === 'ending') && _revoltAmnestyShield(r)) {
+                addEB('起义', '【' + r.leaderName + '】拒抚方炽·其势未衰（未经真镇压不得自衰）');
+              } else {
+                r.phase = ru.newPhase;
+              }
+            }
             if (Array.isArray(ru.territoryGained)) ru.territoryGained.forEach(function(t){ if(t && r.territoryControl.indexOf(t)<0) r.territoryControl.push(t); });
             if (Array.isArray(ru.territoryLost)) ru.territoryLost.forEach(function(t){ r.territoryControl = r.territoryControl.filter(function(tt){return tt !== t;}); });
-            if (ru.strength_delta) r.militaryStrength = Math.max(0, (r.militaryStrength||0) + (parseInt(ru.strength_delta, 10) || 0)); // ||0·AI给非数字曾写NaN入档(2026-07-04 审查定罪)
+            if (ru.strength_delta) { var _rsd = parseInt(ru.strength_delta, 10) || 0; if (_rsd < 0 && _revoltAmnestyShield(r)) _rsd = 0; r.militaryStrength = Math.max(0, (r.militaryStrength||0) + _rsd); } // ||0·AI给非数字曾写NaN入档(2026-07-04 审查定罪)·拒抚闸内负增量归零(兵力衰减须经真镇压)
             if (ru.supplyStatus_delta) r.supplyStatus = Math.max(0, Math.min(100, (r.supplyStatus||50) + (parseInt(ru.supplyStatus_delta, 10) || 0)));
             if (Array.isArray(ru.absorbedForces)) ru.absorbedForces.forEach(function(f){ if (r.absorbedForces.indexOf(f) < 0) r.absorbedForces.push(f); });
             if (Array.isArray(ru.externalSupport)) ru.externalSupport.forEach(function(s){ if (r.externalSupport.indexOf(s) < 0) r.externalSupport.push(s); });
@@ -2336,6 +2353,15 @@
               }
               r.militaryStrength = Math.floor((r.militaryStrength||0) * 0.5);
               r.phase = 'decline';
+            } else if (am.outcome === 'rejected') {
+              // 拒抚接线（2026-07-22·玩家立案）：旧版此分支缺失=纯 no-op·回合 prompt 又催 AI 收束
+              // →下回合义军被 dissolved/decline 静默收档·玩家看「叛军蒸发」。现打标+反消失闸+prompt 引导·
+              // 升级演绎(打哪/进逼何城)交 AI。P.conf.revoltRejectionEscalation===false 恢复旧行为(设置有开关)。
+              if (!(P.conf && P.conf.revoltRejectionEscalation === false)) {
+                r._amnestyRejectedTurn = GM.turn;
+                r._warPrep = true;
+                if (Array.isArray(am.rejectedLeaders) && am.rejectedLeaders.length) r._rejectedLeaders = am.rejectedLeaders.slice(0, 8);
+              }
             }
             r.history.push({ turn: GM.turn, phase: r.phase, event: '招安:' + (am.envoy||'') + '-' + (am.outcome||'') });
             addEB('\u62DB\u5B89', '【' + (am.envoy||'?') + '】招安' + r.leaderName + '：' + (am.outcome||'?') + (am.terms?'；条件：' + am.terms.slice(0,60):''));
@@ -2411,6 +2437,11 @@
               r.phase = 'ending';
               if (Array.isArray(GM.activeWars)) GM.activeWars = GM.activeWars.filter(function(w){return w.revoltId !== r.id;});
             } else if (tr.transformType === 'dissolved') {
+              if (_revoltAmnestyShield(r)) {
+                // 拒抚方炽·未经真镇压不得自散（反消失闸·2026-07-22 玩家立案）
+                addEB('起义', '【' + r.leaderName + '】拒抚未几岂能自散——其众仍聚·战守待决');
+                return;
+              }
               r.outcome = 'dissolved';
               r.phase = 'ending';
               if (Array.isArray(GM.activeWars)) GM.activeWars = GM.activeWars.filter(function(w){return w.revoltId !== r.id;});

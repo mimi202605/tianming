@@ -745,6 +745,13 @@ openSettings=function(){
                 '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">边患·真实入侵（默认关闭·实验）</div>' +
                 '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">边境风险持续高压（边军空虚+强敌在侧连续三回合）时·敌对势力<b>真的出兵</b>：一支入侵军出现在最危急的州府·军事系统照常接战；风险回落或击破则退兵（六回合内不再犯）。关闭时边患仅停留在数值与文案。</div>' +
               '</div>' +
+            '</label>' +
+            '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
+              '<input type="checkbox" id="s-revolt-rejection" ' + (!(P.conf && P.conf.revoltRejectionEscalation === false)?'checked ':'') + 'onchange="_togglePConf(\'revoltRejectionEscalation\',this.checked)" style="margin-top:0.15rem;flex-shrink:0;">' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.82rem;color:var(--gold);font-weight:600;">义军拒抚·真备战（默认启用）</div>' +
+                '<div style="font-size:0.7rem;color:var(--txt-d);line-height:1.55;margin-top:0.15rem;">义军拒绝招安条件后·<b>真的备战进逼</b>（怎么打由 AI 演绎）·三回合内未经真镇压不得「自行消散/衰落」——修复「拒抚说要备战·下回合叛军却蒸发」。关闭时回到旧行为。</div>' +
+              '</div>' +
             '</label>';
           })() +
         '<label style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.4rem 0;border-bottom:1px dotted var(--bdr);cursor:pointer;">' +
