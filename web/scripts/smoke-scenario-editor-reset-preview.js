@@ -2528,6 +2528,13 @@ assert(adaptersJs.includes('data-ws-act="mine-newver"') && adaptersJs.includes('
   'my-uploads cards should offer re-publish and lineage actions');
 assert(adaptersJs.includes('function maybeAutoMine'),
   'my uploads should auto-load once when logged in (ledger reconcile + update dropdown need it)');
+// 三稿批三：社区信号（精选位/收藏/即点评分——服务器现成接口·长评圈子仍归游戏内工坊）
+assert(adaptersJs.includes('c.featured()') && adaptersJs.includes('本周精选'),
+  'storefront should surface the featured shelf via workshop/featured');
+assert(adaptersJs.includes('data-ws-act="fav"') && adaptersJs.includes('favoritesList'),
+  'cards should offer favorite toggle backed by workshop/favorites');
+assert(adaptersJs.includes('data-ws-act="rate"') && adaptersJs.includes('ratePack'),
+  'card detail should offer one-tap star rating via workshop/rate');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');

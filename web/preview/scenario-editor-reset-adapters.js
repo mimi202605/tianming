@@ -1333,6 +1333,7 @@
   var S = { clientLoading: false, clientFail: '', busy: false, msg: '', msgTone: '', msgZone: '',
             mine: null, mineLoading: false, mineAutoTried: false, mineX: {}, mineLin: '',
             cat: null, catLoading: false, catQuery: '', catSort: 'new', catOpenOnly: false, catAutoTried: false,
+            feat: null, favs: null, favAutoTried: false,
             expanded: '', detail: {}, forkFrom: null,
             pubMode: 'new', pubBase: null, pub: null, pf: null, pfAt: 0 };
   function app() { return window.TM_SCENARIO_EDITOR_RESET_APP || null; }
@@ -1484,6 +1485,11 @@
     if (S.catSort === 'hot') list.sort(function (a, b) { return (b.downloads || 0) - (a.downloads || 0); });
     else if (S.catSort === 'rating') list.sort(function (a, b) { return (Number(b.rating) || 0) - (Number(a.rating) || 0) || (b.ratingCount || 0) - (a.ratingCount || 0); });
     else list.sort(function (a, b) { return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0); });
+    // 精选置顶（排序内序不乱）
+    if (S.feat) {
+      var fed = list.filter(function (p) { return S.feat[p.id]; });
+      if (fed.length) list = fed.concat(list.filter(function (p) { return !S.feat[p.id]; }));
+    }
     return list;
   }
   function sortChip(key, label) {
@@ -1492,12 +1498,16 @@
   function renderCard(p) {
     var open = isOpenable(p);
     var badge = open ? '<span class="ws-badge" data-kind="open">可直接改编</span>' : '<span class="ws-badge" data-kind="pack">须游戏内安装</span>';
+    if (S.feat && S.feat[p.id]) badge = '<span class="ws-badge" data-kind="feat">本周精选</span>' + badge;
+    badge = '<span class="ws-badges">' + badge + '</span>';
+    var faved = !!(S.favs && S.favs[p.id]);
     var tags = Array.isArray(p.tags) && p.tags.length
       ? '<div class="ws-tags">' + p.tags.slice(0, 6).map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>' : '';
     var acts = '<div class="ws-act-row">' +
       (open ? '<button type="button" class="mini-ai" data-ws-act="cat-open" data-ws-pack="' + esc(p.id || '') + '">开进编辑器改编</button>'
             : '<a class="ws-golink" href="../index.html?tmOpenWorkshop=1">去游戏内安装 →</a>') +
       '<button type="button" class="mini-ai" data-ws-act="cat-detail" data-ws-pack="' + esc(p.id || '') + '">' + (S.expanded === p.id ? '收起详情' : '详情 / 世界线') + '</button>' +
+      '<button type="button" class="mini-ai" data-ws-act="fav" data-ws-pack="' + esc(p.id || '') + '">' + (faved ? '★ 已藏' : '☆ 收藏') + '</button>' +
       '</div>';
     var detail = '';
     if (S.expanded === p.id) {
@@ -1514,6 +1524,9 @@
           (p.description ? '<p class="ws-desc-full">' + esc(p.description) + '</p>' : '') +
           '<div class="ws-detail-h">世界线谱系</div>' + lineageHtml(p, d) +
           '<div class="ws-detail-h">评论（前 3 条 · 长评去游戏内工坊）</div>' + cms +
+          '<div class="ws-rate">我来打分：' + [1, 2, 3, 4, 5].map(function (n) {
+            return '<button type="button" class="ws-rate-star" data-ws-act="rate" data-ws-pack="' + esc(p.id || '') + '" data-ws-score="' + n + '" aria-label="' + n + ' 星">★</button>';
+          }).join('') + '<span class="ws-dim">即点即评（登录后）</span></div>' +
           '</div>';
       }
     }
@@ -1653,7 +1666,7 @@
     box.innerHTML = html;
   }
 
-  function render() { renderBrowse(); renderDesk(); maybeAutoCat(); maybeAutoMine(); }
+  function render() { renderBrowse(); renderDesk(); maybeAutoCat(); maybeAutoMine(); maybeAutoFavs(); }
 
   // ── 动作 ──────────────────────────────────────────────────────────────
   function doLogin(isRegister) {
@@ -1757,6 +1770,12 @@
   function doCatRefresh() {
     var c = client(); if (!c) return;
     S.catLoading = true; renderBrowse();
+    // 精选位：与目录并行取(失败静默·纯加分项)
+    c.featured().then(function (fr) {
+      var ids = {};
+      ((fr && fr.packs) || []).forEach(function (p) { if (p && p.id) ids[p.id] = 1; });
+      S.feat = ids; renderBrowse();
+    }).catch(function () {});
     c.catalog().then(function (cat) {
       S.catLoading = false;
       // 橱窗只列剧本类(纯文本可开进编辑器·打包件亮牌后引去游戏装)·立绘/音乐/地图类归游戏内工坊
@@ -1769,6 +1788,41 @@
     S.expanded = packId;
     fetchDetail(packId);
     render();
+  }
+  // ── 社区信号：收藏/打分（批三·长评/圈子仍归游戏内工坊正门） ───────────────────
+  function maybeAutoFavs() {
+    if (S.favAutoTried || S.favs) return;
+    if (!client() || !sessionUser()) return;
+    S.favAutoTried = true;
+    refreshFavs();
+  }
+  function refreshFavs() {
+    var c = client(); if (!c || !sessionUser()) return;
+    c.favoritesList().then(function (res) {
+      var ids = {};
+      var arr = (res && (res.favorites || res.packs)) || [];
+      arr.forEach(function (it) { var id = typeof it === 'string' ? it : (it && it.id); if (id) ids[id] = 1; });
+      S.favs = ids; renderBrowse();
+    }).catch(function () {});
+  }
+  function doFav(packId) {
+    var c = client(); if (!c) return;
+    if (!sessionUser()) { setMsg('先登录（出品幕案台可登录·与游戏账号互通）再收藏。', 'warn', 'browse'); return; }
+    c.favorite(packId).then(function (res) {
+      if (res && res.success === false && res.error) { setMsg('收藏失败：' + res.error, 'error', 'browse'); return; }
+      if (!S.favs) S.favs = {};
+      if (S.favs[packId]) delete S.favs[packId]; else S.favs[packId] = 1;   // 乐观翻面
+      renderBrowse();
+      refreshFavs();   // 以服务器为准回对一次
+    }).catch(function (e) { setMsg('收藏失败（网络）：' + ((e && e.message) || e), 'error', 'browse'); });
+  }
+  function doRate(packId, score) {
+    var c = client(); if (!c || !(score >= 1 && score <= 5)) return;
+    if (!sessionUser()) { setMsg('先登录（出品幕案台可登录）再打分。', 'warn', 'browse'); return; }
+    c.ratePack(packId, score).then(function (res) {
+      if (res && res.success) { setMsg('已评 ' + score + ' 星——多谢！评分聚合随目录刷新。', 'good', 'browse'); doCatRefresh(); }
+      else setMsg('打分失败：' + ((res && res.error) || '未知错误'), 'error', 'browse');
+    }).catch(function (e) { setMsg('打分失败（网络）：' + ((e && e.message) || e), 'error', 'browse'); });
   }
   function doCatOpen(packId) {
     var a = app(); var c = client();
@@ -1810,6 +1864,8 @@
     else if (act === 'cat-detail') doCatDetail(t.getAttribute('data-ws-pack'));
     else if (act === 'cat-sort') { S.catSort = t.getAttribute('data-ws-sort') || 'new'; renderBrowse(); }
     else if (act === 'cat-openonly') { S.catOpenOnly = !S.catOpenOnly; renderBrowse(); }
+    else if (act === 'fav') doFav(t.getAttribute('data-ws-pack'));
+    else if (act === 'rate') doRate(t.getAttribute('data-ws-pack'), parseInt(t.getAttribute('data-ws-score'), 10) || 0);
     else if (act === 'fork-clear') { S.forkFrom = null; render(); }
     else if (act === 'pub-mode') {
       var mode = t.getAttribute('data-ws-mode') || 'new';
@@ -1934,9 +1990,14 @@
         '.ws-card-hd b{font-size:.95rem;font-weight:400;color:var(--je-tx-hi,#f0e9d8);}' +
         '.ws-v{font-size:.72rem;color:var(--je-tx-dim,#7b7264);font-variant-numeric:tabular-nums;}' +
         '.ws-au{font-size:.74rem;color:var(--je-gold-400,#b89a53);}' +
-        '.ws-badge{font-size:.64rem;letter-spacing:.1em;border-radius:3px;padding:.05rem .5rem;margin-left:auto;white-space:nowrap;}' +
+        '.ws-badges{margin-left:auto;display:flex;gap:.3rem;flex-wrap:wrap;}' +
+        '.ws-badge{font-size:.64rem;letter-spacing:.1em;border-radius:3px;padding:.05rem .5rem;white-space:nowrap;}' +
         '.ws-badge[data-kind="open"]{color:var(--je-celadon-300,#a3d4c7);border:1px solid rgba(126,184,167,.45);background:rgba(126,184,167,.12);}' +
         '.ws-badge[data-kind="pack"]{color:var(--je-tx-mid,#a89f8d);border:1px solid var(--je-hairline-2,rgba(245,240,232,.16));background:rgba(245,240,232,.04);}' +
+        '.ws-badge[data-kind="feat"]{color:var(--je-gold-300,#d4be7a);border:1px solid rgba(184,154,83,.5);background:rgba(184,154,83,.1);}' +
+        '.ws-rate{display:flex;align-items:center;gap:.15rem;font-size:.74rem;color:var(--je-tx-mid,#a89f8d);flex-wrap:wrap;}' +
+        '.ws-rate-star{background:none;border:none;color:var(--je-gold-400,#b89a53);cursor:pointer;font-size:.95rem;padding:0 .1rem;}' +
+        '.ws-rate-star:hover{color:var(--je-gold-300,#d4be7a);}' +
         '.ws-desc{font-size:.76rem;color:var(--je-tx-mid,#a89f8d);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
         '.ws-desc-full{font-size:.76rem;color:var(--je-tx-mid,#a89f8d);margin:.2rem 0;}' +
         '.ws-tags{display:flex;flex-wrap:wrap;gap:.3rem;}' +
