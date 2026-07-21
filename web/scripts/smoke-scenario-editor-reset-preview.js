@@ -2498,6 +2498,21 @@ assert(adaptersJs.includes('打包资源'),
   'non-JSON packed assets must be rejected with a readable hint');
 assert(adaptersJs.includes('与原作同 ID'),
   'remix with unchanged id must be blocked (would clash with the original entry)');
+// 三稿批一：淘剧本橱窗（起本幕全宽·自动取目录·卡片+排序筛选+可开性亮牌+详情展开）
+assert(adaptersJs.includes("'data-panel', 'workshop-browse'") && adaptersJs.includes('workshop-browse-body'),
+  'adapters should inject the workshop browse storefront panel (起本幕)');
+assert(adaptersJs.includes('function maybeAutoCat'),
+  'storefront should auto-fetch the catalog once the client lands (no manual refresh needed)');
+assert(adaptersJs.includes('function isOpenable') && adaptersJs.includes('tm-pack'),
+  'storefront must classify openable text scenarios vs packed .tm-pack bundles');
+assert(adaptersJs.includes('可直接改编') && adaptersJs.includes('须游戏内安装'),
+  'openability must be badged on the card up front (not discovered via failure)');
+assert(adaptersJs.includes('data-ws-act="cat-sort"') && adaptersJs.includes('data-ws-act="cat-openonly"'),
+  'storefront should offer sort chips and an openable-only filter');
+assert(adaptersJs.includes('data-ws-act="cat-detail"') && adaptersJs.includes('c.lineage(') && adaptersJs.includes('c.comments('),
+  'card detail should expand with lineage 世界线 and read-only comment preview');
+assert(adaptersJs.includes('即输即滤'),
+  'storefront search should filter as you type');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');
