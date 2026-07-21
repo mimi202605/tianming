@@ -1579,7 +1579,8 @@
     box.innerHTML = html;
   }
 
-  // ── 案台渲染（出品幕·批五书肆化：左=发布正案·右=账号印徽+台账·下=我的书架） ──
+  // ── 案台渲染（出品幕·批六两层制·owner拍板：登录/注册一层·发布一层）──
+  //    未登录=关防层(居中登录门卡·淘剧本无需登录)·登录后=发布案台层(账号条+正案+账房+书架)
   function renderDesk() {
     var box = document.getElementById('workshop-desk-body');
     if (!box) return;
@@ -1590,24 +1591,29 @@
       return;
     }
     var u = sessionUser();
-    pubInit();
-    // ── 账号卡 ──
-    var acctSec = '<div class="ws-desk-sec">';
-    if (u) {
-      var label = userLabel(u);
-      acctSec += '<div class="ws-acct"><div class="ws-seal">' + esc(label.charAt(0)) + '</div>' +
-        '<div class="ws-who"><b>' + esc(label) + '</b><div class="ws-dim">已登录 · 与游戏内工坊同一账号互通</div></div>' +
-        '<button type="button" class="mini-ai ws-right" data-ws-act="logout">登出</button></div>';
-    } else {
-      acctSec += '<div class="ws-desk-h">账号</div>' +
-        '<div class="ws-desk-row">未登录——游戏里登过号会自动带入；也可在此直接登录。</div>' +
-        '<div class="ws-desk-row"><input id="ws-login-user" class="ws-desk-input ws-grow" placeholder="用户名" autocomplete="username"></div>' +
-        '<div class="ws-desk-row"><input id="ws-login-pass" class="ws-desk-input ws-grow" type="password" placeholder="密码" autocomplete="current-password"></div>' +
-        '<div class="ws-desk-row"><button type="button" class="mini-ai" data-ws-act="login">登录</button>' +
-        '<button type="button" class="mini-ai" data-ws-act="register">注册新号</button></div>';
+    var foot = '<div class="ws-desk-foot"><a href="../index.html?tmOpenWorkshop=1">去游戏内工坊（评分 / 评论 / 圈子）→</a></div>';
+    var msg = (S.msg && S.msgZone !== 'browse') ? '<div class="ws-desk-msg" data-tone="' + esc(S.msgTone) + '">' + esc(S.msg) + '</div>' : '';
+    // ── 第一层·关防 ──
+    if (!u) {
+      box.innerHTML = '<div class="ws-gatehouse"><div class="ws-gatecard">' +
+        '<div class="ws-gseal">坊</div>' +
+        '<div class="ws-gtitle">登录创意工坊</div>' +
+        '<p class="ws-gnote">发布剧本、经营书架需要账号；<b>淘剧本与改编无需登录</b>，去起本幕就能逛。</p>' +
+        '<input id="ws-login-user" class="ws-desk-input" placeholder="用户名" autocomplete="username">' +
+        '<input id="ws-login-pass" class="ws-desk-input" type="password" placeholder="密码" autocomplete="current-password">' +
+        '<div class="ws-gbtns"><button type="button" class="mini-ai primary" data-ws-act="login"' + (S.busy ? ' disabled' : '') + '>登录</button>' +
+        '<button type="button" class="mini-ai" data-ws-act="register"' + (S.busy ? ' disabled' : '') + '>注册新号</button></div>' +
+        '<p class="ws-gnote ws-dim">与游戏内工坊同一账号互通——游戏里登过号，这里自动带入。</p>' +
+        msg +
+        '</div></div>' + foot;
+      return;
     }
-    acctSec += '</div>';
-    // ── 发布正案 ──
+    pubInit();
+    // ── 第二层·发布案台 ──
+    var label = userLabel(u);
+    var acctBar = '<div class="ws-desk-sec ws-acct-bar"><div class="ws-acct"><div class="ws-seal">' + esc(label.charAt(0)) + '</div>' +
+      '<div class="ws-who"><b>' + esc(label) + '</b><div class="ws-dim">已登录 · 与游戏内工坊同一账号互通</div></div>' +
+      '<button type="button" class="mini-ai ws-right" data-ws-act="logout">登出</button></div></div>';
     var canUpdate = !!(S.mine && S.mine.length);
     var pubSec = '<div class="ws-desk-sec" id="ws-pub-sec"><div class="ws-desk-h">发布</div>' +
       '<div class="ws-track">' +
@@ -1630,20 +1636,17 @@
     }
     pubSec += '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input ws-grow" rows="3">' + esc(S.pub.desc) + '</textarea></div>' +
       '<div class="ws-desk-row"><label>标签</label><input id="ws-pub-tags" class="ws-desk-input ws-grow" value="' + esc(S.pub.tags) + '" placeholder="以逗号分隔"></div>';
-    var pf = u ? preflightGate() : null;
+    var pf = preflightGate();
     var pfBlock = !!(pf && !pf.canExport);
-    if (u) {
-      if (!pf) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="dim"><i></i>预检未跑——提交前会自动跑一遍守门。</span></div>';
-      else if (pf.canExport) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="good"><i></i>发布预检通过 · ' + (pf.errors || 0) + ' 错 ' + (pf.warnings || 0) + ' 提醒</span></div>';
-      else pubSec += '<div class="ws-desk-row"><button type="button" class="ws-gate" data-tone="bad" data-editor-command="focus-runtime-panel" data-runtime-panel="preflight-gate"><i></i>预检 ' + (pf.errors || '?') + ' 项错误——点此直达「发布预检」清账</button></div>';
-    }
-    pubSec += '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (u && !S.busy && !pfBlock ? '' : ' disabled') + '>' +
-      (S.busy ? '正在提交…' : (u ? (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布 v' + esc(S.pub.version) + '（过审后上架）') : '登录后可发布')) + '</button></div>' +
+    if (!pf) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="dim"><i></i>预检未跑——提交前会自动跑一遍守门。</span></div>';
+    else if (pf.canExport) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="good"><i></i>发布预检通过 · ' + (pf.errors || 0) + ' 错 ' + (pf.warnings || 0) + ' 提醒</span></div>';
+    else pubSec += '<div class="ws-desk-row"><button type="button" class="ws-gate" data-tone="bad" data-editor-command="focus-runtime-panel" data-runtime-panel="preflight-gate"><i></i>预检 ' + (pf.errors || '?') + ' 项错误——点此直达「发布预检」清账</button></div>';
+    pubSec += '<div class="ws-desk-row"><button type="button" class="mini-ai primary" data-ws-act="publish"' + (!S.busy && !pfBlock ? '' : ' disabled') + '>' +
+      (S.busy ? '正在提交…' : (S.pubMode === 'update' ? '提交更新 v' + esc(S.pub.version) : '提交发布 v' + esc(S.pub.version) + '（过审后上架）')) + '</button></div>' +
       '</div>';
-    // ── 提交台账 ──
     var led = reconcileLedger();
     var ledSec = '';
-    if (u && led.length) {
+    if (led.length) {
       ledSec = '<div class="ws-desk-sec"><div class="ws-desk-h">提交台账（审核中不再失踪）</div>' +
         '<table class="ws-ledger"><tr><th>时间</th><th>条目</th><th>版本</th><th>状态</th></tr>' +
         led.slice(0, 8).map(function (en) {
@@ -1653,10 +1656,8 @@
           return '<tr><td>' + esc(fmtStamp(en.t)) + '</td><td>' + esc(en.title || en.id) + '</td><td>v' + esc(en.version || '?') + '</td><td>' + st + '</td></tr>';
         }).join('') + '</table></div>';
     }
-    // ── 我的书架 ──
-    var mineSec = '<div class="ws-desk-sec"><div class="ws-desk-h">我的发布 <button type="button" class="mini-ai" data-ws-act="refresh-mine"' + (u ? '' : ' disabled') + '>刷新</button></div>';
-    if (!u) mineSec += '<div class="ws-desk-row ws-dim">登录后可见。</div>';
-    else if (S.mineLoading) mineSec += '<div class="ws-desk-row ws-dim">正在取回…</div>';
+    var mineSec = '<div class="ws-desk-sec"><div class="ws-desk-h">我的发布 <button type="button" class="mini-ai" data-ws-act="refresh-mine">刷新</button></div>';
+    if (S.mineLoading) mineSec += '<div class="ws-desk-row ws-dim">正在取回…</div>';
     else if (!S.mine || !S.mine.length) mineSec += '<div class="ws-desk-row ws-dim">尚无已上架作品（审核中的看提交台账·过审后出现在这里）。</div>';
     else {
       mineSec += '<div class="ws-mine-grid">' + S.mine.map(function (p) {
@@ -1681,12 +1682,11 @@
       }).join('') + '</div>';
     }
     mineSec += '</div>';
-    // ── 组装：左正案·右账房·下书架 ──
-    var html = '<div class="ws-desk-cols"><div class="ws-desk-main">' + pubSec + '</div>' +
-      '<div class="ws-desk-side">' + acctSec + ledSec + '</div></div>' + mineSec;
-    if (S.msg && S.msgZone !== 'browse') html += '<div class="ws-desk-msg" data-tone="' + esc(S.msgTone) + '">' + esc(S.msg) + '</div>';
-    html += '<div class="ws-desk-foot"><a href="../index.html?tmOpenWorkshop=1">去游戏内工坊（评分 / 评论 / 圈子）→</a></div>';
-    box.innerHTML = html;
+    // ── 组装：账号条通栏·正案+账房双栏(无台账则正案通栏)·书架·尾注 ──
+    var mid = ledSec
+      ? '<div class="ws-desk-cols"><div class="ws-desk-main">' + pubSec + '</div><div class="ws-desk-side">' + ledSec + '</div></div>'
+      : pubSec;
+    box.innerHTML = acctBar + mid + mineSec + msg + foot;
   }
   function render() { renderBrowse(); renderDesk(); maybeAutoCat(); maybeAutoMine(); maybeAutoFavs(); }
 
@@ -1985,6 +1985,18 @@
         '.ws-desk-msg[data-tone="good"]{background:rgba(95,157,140,.16);color:#bde6d9;}' +
         '.ws-desk-msg[data-tone="warn"]{background:rgba(184,154,83,.18);}' +
         '.ws-desk-foot{margin-top:.6rem;font-size:.78rem;}.ws-desk-foot a{color:var(--je-gold-400,#b89a53);}' +
+        // 关防层(批六两层制)
+        '.ws-gatehouse{display:grid;place-items:center;padding:1.6rem 0 1.2rem;}' +
+        '.ws-gatecard{width:min(440px,96%);background:var(--je-chrome-1,#1b1917);border:1px solid var(--je-hairline-2,rgba(245,240,232,.16));border-radius:11px;padding:1.3rem 1.5rem 1.1rem;display:grid;gap:.6rem;justify-items:center;box-shadow:0 10px 34px rgba(0,0,0,.32);}' +
+        '.ws-gseal{width:52px;height:52px;border-radius:11px;display:grid;place-items:center;font-size:1.5rem;color:#2a2014;background:linear-gradient(180deg,#d4be7a,#b89a53);box-shadow:inset 0 1px rgba(255,255,255,.35);}' +
+        '.ws-gtitle{font-family:var(--je-font-display,inherit);font-size:1.15rem;letter-spacing:.14em;color:var(--je-tx-hi,#f0e9d8);}' +
+        '.ws-gnote{font-size:.8rem;line-height:1.65;color:var(--je-tx-mid,#a89f8d);margin:0;text-align:center;}' +
+        '.ws-gnote b{color:var(--je-gold-300,#d4be7a);font-weight:400;}' +
+        '.ws-gatecard .ws-desk-input{width:100%;box-sizing:border-box;}' +
+        '.ws-gbtns{display:flex;gap:.6rem;width:100%;margin-top:.2rem;}' +
+        '.ws-gbtns .mini-ai{flex:1;min-height:34px;font-size:.88rem;}' +
+        '.ws-gatecard .ws-desk-msg{width:100%;box-sizing:border-box;text-align:center;}' +
+        '.ws-acct-bar{padding:.6rem 1rem;}' +
         // 典籍封面
         '.ws-cover{position:relative;flex:0 0 96px;height:128px;border-radius:6px;overflow:hidden;border:1px solid rgba(184,154,83,.35);background:linear-gradient(160deg,#272218,#161310);box-shadow:inset 0 1px rgba(255,255,255,.05),0 2px 8px rgba(0,0,0,.3);}' +
         '.ws-cover::before{content:"";position:absolute;inset:5px;border:1px solid rgba(212,190,122,.22);border-radius:3px;pointer-events:none;}' +

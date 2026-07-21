@@ -2535,6 +2535,9 @@ assert(adaptersJs.includes('data-ws-act="fav"') && adaptersJs.includes('favorite
   'cards should offer favorite toggle backed by workshop/favorites');
 assert(adaptersJs.includes('data-ws-act="rate"') && adaptersJs.includes('ratePack'),
   'card detail should offer one-tap star rating via workshop/rate');
+// 三稿批六：案台两层制（owner 拍板：登录/注册一层·发布一层）
+assert(adaptersJs.includes('ws-gatehouse') && adaptersJs.includes('淘剧本与改编无需登录'),
+  'logged-out desk must show only the login gatehouse layer (and say browsing needs no account)');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');
