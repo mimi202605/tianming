@@ -931,7 +931,9 @@ function _findPositionByCharName(charName) {
  *         'militaryCommand'(调兵) | 'supervise'(监察) | 'yinBu'(荫补)
  * 皇帝/势力领袖/未在职者特例处理
  */
-function canPerformAction(charName, action) {
+function canPerformAction(charName, action, playerRole) {
+  // 默认 emperor 模式（向后兼容：未传 playerRole 时读 P.playerInfo）
+  var role = playerRole || (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.playerRole) || 'emperor';
   // 皇帝绝对权
   var ch = (GM.chars || []).find(function(c) { return c.name === charName; });
   if (!ch) return { can: false, reason: '人不存' };
@@ -939,31 +941,70 @@ function canPerformAction(charName, action) {
       (ch.title && /明思宗|崇祯帝|庄烈帝|皇帝/.test(ch.title))) {
     return { can: true, reason: '帝王至尊' };
   }
-  // 势力领袖在自境内有权
-  var facs = (GM && GM.facs) || [];
-  for (var i = 0; i < facs.length; i++) {
-    var f = facs[i]; if (!f) continue;
-    if (f.leader === charName || (f.leadership && f.leadership.ruler === charName)) {
-      return { can: true, reason: '势力领袖' };
+  // 皇帝模式：保留原有判定逻辑（势力领袖 + 职位 powers + 辅臣/御史特例）
+  if (role === 'emperor') {
+    // 势力领袖在自境内有权
+    var facs = (GM && GM.facs) || [];
+    for (var i = 0; i < facs.length; i++) {
+      var f = facs[i]; if (!f) continue;
+      if (f.leader === charName || (f.leadership && f.leadership.ruler === charName)) {
+        return { can: true, reason: '势力领袖' };
+      }
     }
+    // 普通官员·查 officeTree 找其在职位置
+    var hit = _findPositionByCharName(charName);
+    if (!hit) return { can: false, reason: charName + ' 未在职' };
+    var p = hit.pos;
+    var powers = p.powers || {};
+    if (powers[action] === true) {
+      return { can: true, reason: hit.dept + '·' + p.name + ' 有 ' + action + ' 之权' };
+    }
+    // 内阁辅臣特例：首辅次辅有 appointment/impeach/supervise
+    if (/首辅|次辅|大学士|阁臣/.test(p.name) && /appointment|impeach|supervise/.test(action)) {
+      return { can: true, reason: '阁臣辅政' };
+    }
+    // 都察院特例：御史有 impeach/supervise
+    if (/御史|都察|按察/.test(p.name) && /impeach|supervise/.test(action)) {
+      return { can: true, reason: hit.dept + '·风宪之臣' };
+    }
+    return { can: false, reason: hit.dept + '·' + p.name + ' 无 ' + action + ' 之权' };
   }
-  // 普通官员·查 officeTree 找其在职位置
-  var hit = _findPositionByCharName(charName);
-  if (!hit) return { can: false, reason: charName + ' 未在职' };
-  var p = hit.pos;
-  var powers = p.powers || {};
-  if (powers[action] === true) {
-    return { can: true, reason: hit.dept + '·' + p.name + ' 有 ' + action + ' 之权' };
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+  // 穿越模式：按 playerRole 分支权限判定
+  var rank = (typeof ch.rankLevel === 'number') ? ch.rankLevel : 0;
+  var hit2 = _findPositionByCharName(charName);
+  var pos = hit2 && hit2.pos;
+  var powers2 = (pos && pos.powers) || {};
+  if (role === 'regent') {
+    // 摄政：代诏全权 + 弹劾/监察 + 三品以下任免
+    if (action === 'proxyEdict') return { can: true, reason: '摄政代诏' };
+    if (action === 'impeach' || action === 'supervise') return { can: true, reason: '摄政权臣' };
+    if (action === 'appointment' && rank >= 3) return { can: true, reason: '摄政任免三品以下' };
+    if (powers2[action] === true) return { can: true, reason: '本职之权' };
+    return { can: false, reason: '摄政限于三品以下·此事无权' };
   }
-  // 内阁辅臣特例：首辅次辅有 appointment/impeach/supervise
-  if (/首辅|次辅|大学士|阁臣/.test(p.name) && /appointment|impeach|supervise/.test(action)) {
-    return { can: true, reason: '阁臣辅政' };
+  if (role === 'minister') {
+    // 朝臣：本职下属任免 + 廷推/荐举
+    if (action === 'tingtui' || action === 'recommend') return { can: true, reason: '廷推荐举' };
+    if (powers2[action] === true) return { can: true, reason: '本职之权' };
+    if (action === 'appointment' || action === 'impeach') return { can: true, reason: '本职下属' };
+    return { can: false, reason: '朝臣限于本职下属·此事无权' };
   }
-  // 都察院特例：御史有 impeach/supervise
-  if (/御史|都察|按察/.test(p.name) && /impeach|supervise/.test(action)) {
-    return { can: true, reason: hit.dept + '·风宪之臣' };
+  if (role === 'general') {
+    // 将领：本部军官节制 + 调兵
+    if (action === 'militaryCommand') return { can: true, reason: '本部军官' };
+    if (powers2['militaryCommand'] === true && (action === 'appointment' || action === 'impeach')) {
+      return { can: true, reason: '本部军官节制' };
+    }
+    return { can: false, reason: '将领限于本部军官·此事无权' };
   }
-  return { can: false, reason: hit.dept + '·' + p.name + ' 无 ' + action + ' 之权' };
+  if (role === 'prince') {
+    // 宗室：封国官属任免
+    if (action === 'appointment' || action === 'impeach') return { can: true, reason: '封国官属' };
+    return { can: false, reason: '宗室限于封国官属·此事无权' };
+  }
+  // 其他角色（merchant/eunuch/maid/commoner/bandit/infant/retired_official/monk/artisan/actor）无任免权
+  return { can: false, reason: '玩家角色无 ' + action + ' 之权' };
 }
 
 // ============================================================

@@ -18,6 +18,14 @@
 // ============================================================
 
 function openChaoyi(){
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式拦截
+  // 穿越模式：玩家非君主 → 不能主动开朝议（朝议由君主发起）
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  if (_isTrans) {
+    try { if (typeof toast === 'function') toast('朝议由君主发起·臣子不得擅开'); } catch(_) {}
+    return;
+  }
   // 频率计数初始化；具体限制在 _cy_pickMode 按模式判断，御前会议不限。
   if (!GM._chaoyiCount) GM._chaoyiCount = {};
   if (!GM._chaoyiCount[GM.turn]) GM._chaoyiCount[GM.turn] = 0;
@@ -191,10 +199,12 @@ function _cy_jishiAdd(kind, topic, speaker, line, meta) {
     var lineStr = String(line == null ? '' : line);
 
     if (!Array.isArray(GM.jishiRecords)) GM.jishiRecords = [];
-    var isEmperor = speaker === '皇帝';
+    // 2026-07-22 upstream sync 后从 fork 恢复：穿越模式下 char 用 sovereignName 动态化（非字面量"皇帝"）
+    var _sovName = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.sovereignName) || '皇帝';
+    var isEmperor = speaker === '皇帝' || speaker === _sovName;
     GM.jishiRecords.push({
       turn: turn,
-      char: isEmperor ? '皇帝' : (speaker || ''),
+      char: isEmperor ? _sovName : (speaker || ''),
       playerSaid: isEmperor ? lineStr : ('【' + modeLbl + '】' + topicStr),
       npcSaid: isEmperor ? '' : lineStr,
       mode: kind || '',

@@ -54,7 +54,64 @@ function _renderEdictArchiveBody() {
   _bodyEl.innerHTML = _h;
 }
 
+// 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+// ── 双轨渲染分派（Phase A · Task A1）─────────────────────────
+// 皇帝模式走 renderEmperorState（原 renderGameState 主体改名·零改动）
+// 穿越模式走 renderPlayerState（调 TM.PlayerUI.* 系列）
 function renderGameState(){
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  if (_isTrans) return renderPlayerState();
+  return renderEmperorState();
+}
+
+// 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+// 穿越模式渲染入口·TM.PlayerUI 系列缺席时降级到皇帝模式
+function renderPlayerState(){
+  if (typeof window === 'undefined' || !window.TM || !TM.PlayerUI) {
+    return renderEmperorState();  // 降级·避免 UI 黑屏
+  }
+  try {
+    document.body.classList.add('transmigration-mode');
+    document.body.classList.add('player-role-' + (P.playerInfo.playerRole || 'commoner'));
+    // 穿越模式接管 #gc·须让 phase8 御案 shell 不激活·否则 CSS 规则
+    // `body.tm-phase8-formal:not(.tm-phase8-legacy) .gc > :not(#tm-phase8-main-shell){display:none!important}`
+    // 会隐藏 TM.PlayerUI.render 写入 #gc 的玩家 UI·显示历史遗留/被 refresh() 重建的 #tm-phase8-main-shell(皇帝御案)。
+    // 调 enterLegacyMode 切 tm-phase8-legacy body class + 清 #tm-phase8-main-shell·覆盖游戏启动+存档加载两条路径。
+    // (2026-07-20 根治「穿越模式进入后还是皇帝界面」·历史根因: doActualStart L1863 _tmStartRefreshFormalShell
+    //  → TMPhase8FormalBridge.refresh → ensureMainShell 在 #gc 创建 #tm-phase8-main-shell·覆盖玩家 UI)
+    try {
+      if (window.TMPhase8FormalBridge && typeof window.TMPhase8FormalBridge.enterLegacyMode === 'function') {
+        window.TMPhase8FormalBridge.enterLegacyMode();
+      } else if (document.body) {
+        // 降级·TMPhase8FormalBridge 缺席时直接加 body class(同步 state 由 syncFormalShellVisibility 后续兜底)
+        document.body.classList.add('tm-phase8-legacy');
+      }
+    } catch(_){}
+    TM.PlayerUI.renderTopBar();
+    TM.PlayerUI.renderLeftTabs();
+    TM.PlayerUI.render('home');
+    TM.PlayerUI.renderRightPanel();
+  } catch(_e) {
+    try { console.error('[renderPlayerState]', _e); } catch(_){}
+    // 铁律（tm-player-shell.js 顶部）：穿越模式绝不降级到皇帝御案 UI。
+    // 历史代码此处调 renderEmperorState()·会把皇帝御案 shell 渲染出来·违反穿越铁律·
+    // 让用户在穿越模式看到皇帝界面（真事故 2026-07-21）。
+    // 改为渲染「穿越模式 UI 异常」全屏占位·提示用户刷新或重试。
+    try {
+      var gc = (typeof _$ === 'function') ? _$('gc') : null;
+      if (gc) {
+        gc.innerHTML = '<div style="padding:32px;text-align:center;color:#c0392b;font-size:14px;line-height:1.8;">' +
+          '<div style="font-size:16px;font-weight:600;margin-bottom:12px;">穿越模式 UI 异常</div>' +
+          '<div style="color:#666;margin-bottom:16px;">渲染失败：' + (_e && _e.message ? String(_e.message) : '未知错误') + '</div>' +
+          '<div style="color:#888;font-size:12px;">请刷新页面或重新加载存档重试·已记录错误日志。</div>' +
+          '</div>';
+      }
+    } catch(_){}
+  }
+}
+
+function renderEmperorState(){
   // ★ 财政三字段同步守卫·防 money/balance/ledgers.stock 跑偏导致顶栏与面板数值不一致
   try { if (typeof _syncFiscalScalars === 'function' && typeof GM !== 'undefined') _syncFiscalScalars(GM); } catch(_syE) { try { window.TM && TM.errors && TM.errors.captureSilent && TM.errors.captureSilent(_syE, 'renderGameState/sync'); } catch(__){} }
   // 旧 UI
@@ -144,14 +201,59 @@ function renderGameState(){
     else if(_r) _edictRole=_r;
   }
   var _ei = typeof tmIcon === 'function' ? tmIcon : function(){return '';};
-  // 诏令5类·含圆形字符徽章+宋体提示词
-  var _edictCats = [
-    {id:'edict-pol', label:'政 令', badge:'政', cls:'ed-c-pol', hint:'改革官制·任免官员·降旨安抚',  placeholder:'诏谕天下，如：改革官制、降旨安抚、任免官员……'},
-    {id:'edict-mil', label:'军 令', badge:'军', cls:'ed-c-mil', hint:'调兵遣将·加强边防·讨伐叛贼',  placeholder:'调兵遣将，如：调动军队、加强边防、讨伐叛贼……'},
-    {id:'edict-dip', label:'外 交', badge:'外', cls:'ed-c-dip', hint:'遣使和亲·结盟讨伐·册封藩属',  placeholder:'纵横捭阖，如：遣使和亲、结盟讨伐、册封藩属……'},
-    {id:'edict-eco', label:'经 济', badge:'经', cls:'ed-c-eco', hint:'减税轻赋·开仓放粮·兴修水利',  placeholder:'经纶民生，如：减税轻赋、开仓放粮、兴修水利……'},
-    {id:'edict-oth', label:'其 他', badge:'他', cls:'ed-c-oth', hint:'大赦·科举·建造·礼仪',          placeholder:'其他旨意，如：大赦天下、科举取士、建造宫殿……'}
-  ];
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+  // 穿越模式：玩家非君主 → 渲染"上奏"面板而非"御笔诏书"
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  var _playerRole = _isTrans ? _pi.playerRole : 'emperor';
+  var _characterName = (_pi && _pi.characterName) || '臣';
+  var _sovereignName = (_pi && _pi.sovereignName) || '皇帝';
+  function _edictCatsForRole(role){
+    if(role==='emperor'){
+      return [
+        {id:'edict-pol', label:'政 令', badge:'政', cls:'ed-c-pol', hint:'改革官制·任免官员·降旨安抚',  placeholder:'诏谕天下，如：改革官制、降旨安抚、任免官员……'},
+        {id:'edict-mil', label:'军 令', badge:'军', cls:'ed-c-mil', hint:'调兵遣将·加强边防·讨伐叛贼',  placeholder:'调兵遣将，如：调动军队、加强边防、讨伐叛贼……'},
+        {id:'edict-dip', label:'外 交', badge:'外', cls:'ed-c-dip', hint:'遣使和亲·结盟讨伐·册封藩属',  placeholder:'纵横捭阖，如：遣使和亲、结盟讨伐、册封藩属……'},
+        {id:'edict-eco', label:'经 济', badge:'经', cls:'ed-c-eco', hint:'减税轻赋·开仓放粮·兴修水利',  placeholder:'经纶民生，如：减税轻赋、开仓放粮、兴修水利……'},
+        {id:'edict-oth', label:'其 他', badge:'他', cls:'ed-c-oth', hint:'大赦·科举·建造·礼仪',          placeholder:'其他旨意，如：大赦天下、科举取士、建造宫殿……'}
+      ];
+    }
+    return [
+      {id:'edict-pol', label:'奏 疏', badge:'奏', cls:'ed-c-pol', hint:'陈情述事·条列利害·乞请圣裁',  placeholder:'臣冒死上奏……'},
+      {id:'edict-mil', label:'建 议', badge:'议', cls:'ed-c-mil', hint:'参议政事·献替可否·补阙拾遗',  placeholder:'臣愚以为……'},
+      {id:'edict-oth', label:'其 他', badge:'他', cls:'ed-c-oth', hint:'陈乞·谢恩·辞免·控诉',          placeholder:'其他奏请……'}
+    ];
+  }
+  function _roleActionButtons(role){
+    switch(role){
+      case 'minister':
+        return [
+          { label:'廷推', onclick:"TM.Transmigration.roleAction('tingtui')", icon:'gavel' },
+          { label:'荐举', onclick:"TM.Transmigration.roleAction('recommend')", icon:'scroll' }
+        ];
+      case 'general':
+        return [
+          { label:'请旨出征', onclick:"TM.Transmigration.roleAction('requestExpedition')", icon:'sword' }
+        ];
+      case 'prince':
+        return [
+          { label:'朝贡', onclick:"TM.Transmigration.roleAction('tribute')", icon:'gift' },
+          { label:'上表', onclick:"TM.Transmigration.roleAction('submitMemorial')", icon:'scroll' }
+        ];
+      case 'regent':
+        return [
+          { label:'代诏', onclick:"TM.Transmigration.runRegentAction('proxyEdict', {})", icon:'seal' }
+        ];
+      case 'custom':
+        return [
+          { label:'枕边风', onclick:"TM.Transmigration.roleAction('pillowTalk')", icon:'feather' }
+        ];
+      default:
+        return [];
+    }
+  }
+  // 诏令5类·含圆形字符徽章+宋体提示词（穿越模式缩为3类奏疏）
+  var _edictCats = _edictCatsForRole(_playerRole);
   var edictHTML = '<div class="ed-panel-wrap" style="padding:var(--space-4) var(--space-5);">';
 
   // ═══ 左右并排布局 ═══
@@ -166,11 +268,18 @@ function renderGameState(){
   // ── 右侧：诏书编辑区 ──
   edictHTML += '<div style="flex:1;min-width:0;">';
 
-  // 御笔标题 + 朱砂印章
+  // 御笔标题 + 朱砂印章（穿越模式改为"上奏 · 臣{characterName}谨奏"）
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
   edictHTML += '<div class="ed-yubi-title">';
-  edictHTML += '<div class="seal">'+escHtml(_edictRole)+'</div>';
-  edictHTML += '<div class="main">' + escHtml(_edictRole) + ' \u5FA1 \u7B14</div>';
-  edictHTML += '<div class="sub">\u5949\u5929\u627F\u8FD0\u7687\u5E1D\u3000\u3000\u8BCF\u66F0</div>';
+  if (_isTrans) {
+    edictHTML += '<div class="seal">'+escHtml('奏')+'</div>';
+    edictHTML += '<div class="main">臣 ' + escHtml(_characterName) + ' 谨 奏</div>';
+    edictHTML += '<div class="sub">上 奏 · 依 礼 拜 诏\u3000\u3000仰 感 天 恩</div>';
+  } else {
+    edictHTML += '<div class="seal">'+escHtml(_edictRole)+'</div>';
+    edictHTML += '<div class="main">' + escHtml(_edictRole) + ' \u5FA1 \u7B14</div>';
+    edictHTML += '<div class="sub">\u5949\u5929\u627F\u8FD0\u7687\u5E1D\u3000\u3000\u8BCF\u66F0</div>';
+  }
   edictHTML += '</div>';
 
   // 5 类诏令卡片
@@ -206,6 +315,18 @@ function renderGameState(){
   // 润色结果区
   edictHTML += '<div id="edict-polished" style="display:none;margin-top:var(--space-3);"></div>';
 
+  // 专属动作（按 playerRole 增减）——穿越模式才有
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+  var _roleActs = _isTrans ? _roleActionButtons(_playerRole) : [];
+  if (_roleActs.length > 0) {
+    edictHTML += '<div class="ed-section-divider"><span class="label">专 属 动 作</span></div>';
+    edictHTML += '<div class="ed-role-actions" style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-3);">';
+    _roleActs.forEach(function(act) {
+      edictHTML += '<button class="bt bs" onclick="'+act.onclick+'" style="padding:var(--space-2) var(--space-4);font-size:var(--text-sm);">'+_ei(act.icon||'scroll',12)+' '+act.label+'</button>';
+    });
+    edictHTML += '</div>';
+  }
+
   // 主角行止
   edictHTML += '<div class="ed-section-divider"><span class="label">\u4E3B \u89D2 \u884C \u6B62</span></div>';
   edictHTML += '<div class="ed-xinglu-card">';
@@ -230,26 +351,32 @@ function renderGameState(){
   }
   edictHTML += '</div>'; // ed-xinglu-card
 
-  // 帝王私行
-  edictHTML += '<div class="ed-tyrant-block">';
-  edictHTML += '<div class="ed-tyrant-toggle" onclick="var p=_$(\'tyrant-panel\');if(p){p.style.display=p.style.display===\'none\'?\'block\':\'none\';this.classList.toggle(\'open\');if(p.style.display!==\'none\'&&typeof TyrantActivitySystem!==\'undefined\')TyrantActivitySystem.renderPanel();}">';
-  edictHTML += '\u5E1D \u738B \u79C1 \u884C';
-  edictHTML += '<span class="sub">\u2014\u2014 \u70B9\u51FB\u5C55\u5F00\uFF08\u540E\u5983\u00B7\u6E38\u730E\u00B7\u4E39\u836F\u00B7\u5BC6\u8BBF\uFF09</span>';
-  edictHTML += '</div>';
-  edictHTML += '<div id="tyrant-panel" style="display:none;max-height:300px;overflow-y:auto;padding:var(--space-2);margin-top:var(--space-2);"></div>';
-  edictHTML += '</div>';
+  // 帝王私行（仅皇帝模式·穿越模式非君主无后宫私行）
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+  if (!_isTrans) {
+    edictHTML += '<div class="ed-tyrant-block">';
+    edictHTML += '<div class="ed-tyrant-toggle" onclick="var p=_$(\'tyrant-panel\');if(p){p.style.display=p.style.display===\'none\'?\'block\':\'none\';this.classList.toggle(\'open\');if(p.style.display!==\'none\'&&typeof TyrantActivitySystem!==\'undefined\')TyrantActivitySystem.renderPanel();}">';
+    edictHTML += '\u5E1D \u738B \u79C1 \u884C';
+    edictHTML += '<span class="sub">\u2014\u2014 \u70B9\u51FB\u5C55\u5F00\uFF08\u540E\u5983\u00B7\u6E38\u730E\u00B7\u4E39\u836F\u00B7\u5BC6\u8BBF\uFF09</span>';
+    edictHTML += '</div>';
+    edictHTML += '<div id="tyrant-panel" style="display:none;max-height:300px;overflow-y:auto;padding:var(--space-2);margin-top:var(--space-2);"></div>';
+    edictHTML += '</div>';
+  }
   // 往期诏令档案·性能 2026-06-10:档案体随回合无界增长(全量 _edictTracker 循环×每条再嵌 letters.find)·
   // 而 <details> 默认折叠 99% 时间无人看——改为展开时才构建(每次展开重建·保持新鲜)
   var _edArchCount = (GM._edictTracker || []).filter(function(e) { return e.turn < GM.turn; }).length;
   if (_edArchCount > 0) {
     edictHTML += '<details class="ed-archive" ontoggle="if(this.open&&typeof _renderEdictArchiveBody===\'function\')_renderEdictArchiveBody();">';
-    edictHTML += '<summary>\u5F80 \u671F \u8BCF \u4EE4 \u6863 \u6848 \u00B7 ' + _edArchCount + ' \u6761</summary>';
+    edictHTML += '<summary>' + (_isTrans ? '往 期 奏 疏 档 案' : '\u5F80 \u671F \u8BCF \u4EE4 \u6863 \u6848') + ' \u00B7 ' + _edArchCount + ' \u6761</summary>';
     edictHTML += '<div style="margin-top:var(--space-2);max-height:400px;overflow-y:auto;" id="ed-archive-body"></div>';
     edictHTML += '</details>';
   }
   // 结束回合按钮
   edictHTML += '<div class="ed-action-bar">';
-  edictHTML += '<button class="bt bp" id="btn-end" onclick="confirmEndTurn()" style="padding:var(--space-3) var(--space-8);font-size:var(--text-md);letter-spacing:0.15em;border:2px solid var(--gold-400);box-shadow:0 2px 12px rgba(184,154,83,0.2);">'+_ei('end-turn',16)+' 诏付有司</button>';
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+  // 结束回合按钮（穿越模式改为"上奏呈进"）
+  var _endBtnLabel = _isTrans ? '上 奏 呈 进' : '诏付有司';
+  edictHTML += '<button class="bt bp" id="btn-end" onclick="confirmEndTurn()" style="padding:var(--space-3) var(--space-8);font-size:var(--text-md);letter-spacing:0.15em;border:2px solid var(--gold-400);box-shadow:0 2px 12px rgba(184,154,83,0.2);">'+_ei('end-turn',16)+' '+_endBtnLabel+'</button>';
   edictHTML += '<button class="bt" title="地形图·山川城池分布（决策辅助）·与【军事·地图总览】数据源不同" onclick="TM.Map.open(\'terrain\')" style="padding:var(--space-3) var(--space-6);font-size:var(--text-md);">'+_ei('map',16)+' 查看地图</button>';
   edictHTML += '</div>';
   edictHTML += '</div>'; // 关闭右侧诏书编辑区

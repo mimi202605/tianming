@@ -1076,6 +1076,88 @@ function _holdMemorial(idx) {
   toast('\u7559\u4E2D\u4E0D\u53D1\uFF08\u672A\u63D0\u4EA4\uFF09');
 }
 
+// 2026-07-22 upstream sync 后从 fork 恢复（upstream 无穿越模式·此函数缺失）
+// 穿越模式·君主 AI 批奏（Task 9）
+//   入参: m=memorial 对象, d={decision:'approved|rejected|hold|debate|referred', ruling, loyaltyDelta, reason}
+//   5 选 1 状态映射 + 复用 _stageMemorialDecision 走标准批答路径
+//   NPC 忠诚度经 adjustCharacterLoyalty 闸门（缺席则钳制直写）
+//   玩家上奏以「奉旨」卡片反馈到 P.playerInfo._sovereignAINotices
+function _sovereignAIReplyMemorial(m, d) {
+  if (!m || !d) return { ok: false, reason: 'empty args' };
+  if (_memMarkIllegalPresenter(m, 'sovereign-ai')) return { ok: false, reason: 'illegal presenter' };
+  var decision = String(d.decision || '').toLowerCase();
+  var actionMap = {
+    approved: 'approved', rejected: 'rejected', hold: 'pending_review',
+    debate: 'court_debate', referred: 'referred'
+  };
+  var action = actionMap[decision];
+  if (!action) return { ok: false, reason: 'unknown decision: ' + decision };
+  var ruling = String(d.ruling || '').slice(0, 240);
+  var loyaltyDelta = (typeof d.loyaltyDelta === 'number' && isFinite(d.loyaltyDelta))
+                     ? Math.max(-10, Math.min(10, d.loyaltyDelta)) : 0;
+
+  if (decision === 'hold') {
+    m.status = 'pending_review';
+    m.reply = ruling || '留中再议';
+    m._commitApplied = false;
+  } else if (decision === 'debate') {
+    _stageMemorialDecision(m, 'court_debate', ruling || '着廷议');
+    try {
+      if (!Array.isArray(GM._pendingTinyiTopics)) GM._pendingTinyiTopics = []; // arch-ok
+      var _qid = 'sov_ai_' + (m.id || m.from || '') + '_' + (GM.turn || 0);
+      if (!GM._pendingTinyiTopics.some(function (x) { return x && x._memTinyiId === _qid; })) {
+        GM._pendingTinyiTopics.unshift({ // arch-ok
+          topic: '君主 AI 发廷议·' + (m.from || '臣工') + '：' + String(m.content || m.text || m.title || '').slice(0, 120),
+          from: '君主 AI 发廷议', sourceType: 'sovereign-ai', turn: GM.turn || 1, status: 'pending', priority: 70,
+          reason: ruling || '着廷议', delegateCharacter: m.from || '',
+          linkedCharacters: m.from ? [m.from] : [], _memTinyiId: _qid, _memId: m.id || ''
+        });
+        if (GM._pendingTinyiTopics.length > 80) GM._pendingTinyiTopics = GM._pendingTinyiTopics.slice(0, 80); // arch-ok
+      }
+    } catch (_debE) {}
+  } else if (decision === 'referred') {
+    _stageMemorialDecision(m, 'referred', ruling || '着有司议处');
+  } else {
+    _stageMemorialDecision(m, action, ruling);
+  }
+
+  try {
+    if (m.from && loyaltyDelta !== 0) {
+      var ch = (typeof findCharByName === 'function') ? findCharByName(m.from) : null;
+      if (ch && ch.alive !== false && !ch.isPlayer) {
+        if (typeof adjustCharacterLoyalty === 'function') {
+          adjustCharacterLoyalty(ch, loyaltyDelta, '君主 AI ' + (ruling || decision), { source: 'sovereign-ai-memorial' });
+        } else {
+          ch.loyalty = Math.max(0, Math.min(100, (Number(ch.loyalty) || 50) + loyaltyDelta));
+        }
+      }
+    }
+  } catch (_loyE) {}
+
+  try {
+    if (m._playerSubmitted === true && typeof P !== 'undefined' && P && P.playerInfo) {
+      if (!Array.isArray(P.playerInfo._sovereignAINotices)) P.playerInfo._sovereignAINotices = []; // arch-ok
+      var _actionLbl = decision === 'approved' ? '所奏准奏'
+                    : decision === 'rejected' ? '所奏驳回'
+                    : decision === 'hold' ? '留中再议'
+                    : decision === 'debate' ? '已发交廷议'
+                    : '着有司议处';
+      P.playerInfo._sovereignAINotices.push({ // arch-ok
+        turn: (typeof GM !== 'undefined' && GM && GM.turn) || 0,
+        memorialId: m.id || '',
+        from: m.from || '',
+        decision: decision,
+        ruling: ruling,
+        loyaltyDelta: loyaltyDelta,
+        reason: String(d.reason || '').slice(0, 120),
+        msg: '【奉旨】' + _actionLbl + (ruling ? '·朱批：' + ruling : '')
+      });
+    }
+  } catch (_ntfE) {}
+
+  return { ok: true, action: action, reply: ruling, loyaltyDelta: loyaltyDelta };
+}
+
 /**
  * 末回合前 commit 所有本回合奏疏决定的副作用（NPC 记忆+回传朱批）
  * 被 endTurn 在 AI 推演前调用一次

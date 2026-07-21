@@ -61,6 +61,7 @@
 </script>
 <link id="tm-main-css" rel="stylesheet" href="styles.css?v=20260710-fontscale" data-css-base="styles.css?v=20260710-fontscale" data-css-fallback="https://cdn.jsdelivr.net/gh/misfit-user/tianming@main/web/styles.css?v=20260710-fontscale" onload="window.TM_CSS_LOADED&&window.TM_CSS_LOADED(this)" onerror="window.TM_CSS_RETRY&&window.TM_CSS_RETRY(this)">
 <link rel="stylesheet" href="tm-keju-paradigm-panel.css?v=20260524-L2">
+<link rel="stylesheet" href="tm-transmigration-ui.css?v=20260722-upstream-sync">
 <script src="map-converter.js?v=20260709"></script>
 <script src="map-integration.js?v=20260709"></script>
 <script src="map-display.js?v=2026042816"></script>
@@ -580,7 +581,17 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-gongming.js?v=20260613-gongming-sys"></script>
 <script src="tm-launch.js?v=20260711-scnimport"></script>
 <script src="tm-player-settings.js?v=20260622-wfswitches"></script>
-<script src="tm-player-core.js?v=2026062003-custombuild"></script>
+<script src="tm-player-core.js?v=20260722-upstream-sync"></script>
+<!-- ═══ 穿越模式 shell 层（2026-07-22 从 fork 恢复·upstream sync 后补全）═══ -->
+<script src="tm-transmigration.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-systems-adapter.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-ai-bridge.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-map.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-shell.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-rail.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-ui-render.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-systems-ui.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-ui-edict-card.js?v=20260722-upstream-sync"></script>
 <script src="tm-hongyan-office.js?v=20260706-splitsync"></script>
 <script src="tm-game-ui-shell.js?v=20260706-splitsync"></script>
 <script src="tm-hongyan-edict-ui.js?v=20260706-splitsync"></script>
@@ -685,8 +696,27 @@ console.log('天命游戏脚本开始加载...');
 <script src="tm-endturn-progress.js?v=20260620-agentbeats"></script>
 <script src="tm-endturn-loading.js?v=20260620-agentbeats"></script>
 <script src="tm-theme-font.js?v=20260520-theme-font-scopes"></script>
-<script src="tm-patches.js?v=20260719-histanchors"></script>
-<script src="tm-patches-start.js?v=20260719-histanchors"></script><!-- 立项拆分：剧本启动链(_tmStart*/开场仪典/startGame/doActualStart)·紧挨 patches 之后保序·勿动位置 -->
+<script src="tm-patches.js?v=20260722-upstream-sync"></script>
+<script src="tm-patches-start.js?v=20260722-upstream-sync"></script><!-- 立项拆分：剧本启动链(_tmStart*/开场仪典/startGame/doActualStart)·紧挨 patches 之后保序·勿动位置 -->
+<!-- ═══ 穿越模式系统层（2026-07-22 从 fork 恢复·upstream sync 后补全）═══ -->
+<!-- sovereign-ai 必须在 player 系统之前（runTurn 依赖 GM 已就绪） -->
+<script src="tm-sovereign-ai.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-interaction.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-economy.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-movement.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-trade.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-tech.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-marriage.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-family.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-memorial.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-private-army.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-industry.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-reclaim.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-keju.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-annual-review.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-rebel.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-skill.js?v=20260722-upstream-sync"></script>
+<script src="tm-player-special-identity.js?v=20260722-upstream-sync"></script>
 <!-- R17-R22: 从 tm-patches.js 抽离的子模块（加载在 patches 之后覆盖原版） -->
 <script src="tm-military-ui.js?v=2026042714"></script>
 <script src="tm-world-view.js?v=2026042714"></script>

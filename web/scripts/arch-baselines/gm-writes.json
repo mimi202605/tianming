@@ -13,9 +13,9 @@
     ],
     "pFactories": []
   },
-  "updatedAt": "2026-07-11T09:27:28.737Z",
+  "updatedAt": "2026-07-21T19:12:16.425Z",
   "totals": {
-    "gm": 4496,
+    "gm": 4490,
     "p": 733
   },
   "files": {
@@ -210,10 +210,10 @@
       "gm": 10,
       "p": 0,
       "roots": {
+        "gm:_aiWeakWriteHints": 3,
         "gm:_charInteractionCount": 4,
         "gm:_charInteractionCountTurn": 1,
-        "gm:_memoryArchiveFull": 2,
-        "gm:_aiWeakWriteHints": 3
+        "gm:_memoryArchiveFull": 2
       }
     },
     "tm-mechanics-world.js": {
@@ -333,10 +333,9 @@
       }
     },
     "tm-wendui.js": {
-      "gm": 89,
+      "gm": 83,
       "p": 0,
       "roots": {
-        "gm:_pendingAudiences": 8,
         "gm:_pendingLetterTo": 1,
         "gm:wenduiTarget": 2,
         "gm:wenduiHistory": 18,
@@ -347,6 +346,7 @@
         "gm:_wdAudienceMode": 4,
         "gm:jishiRecords": 4,
         "gm:_edictSuggestions": 6,
+        "gm:_pendingAudiences": 2,
         "gm:_pendingOvernightReq": 3,
         "gm:_wdRefusedCounsel": 3,
         "gm:chars": 2,
@@ -1307,6 +1307,13 @@
         "p:supplySystem": 2
       }
     },
+    "tm-player-tech.js": {
+      "gm": 1,
+      "p": 0,
+      "roots": {
+        "gm:_playerTech": 1
+      }
+    },
     "tm-military-ui.js": {
       "gm": 0,
       "p": 14,
@@ -1882,7 +1889,7 @@
       }
     },
     "tm-save-lifecycle.js": {
-      "gm": 382,
+      "gm": 383,
       "p": 77,
       "roots": {
         "gm:shijiHistory": 1,
@@ -1929,6 +1936,7 @@
         "gm:_factionHistory": 2,
         "gm:_factionUndercurrents": 2,
         "gm:_factionUndercurrentsHistory": 2,
+        "gm:_factionLivingWorld": 1,
         "gm:_courtRecords": 2,
         "gm:_lastSc28Snapshot": 1,
         "gm:_costHistory": 1,
@@ -2850,10 +2858,10 @@
       }
     },
     "tm-ai-change-applier.js": {
-      "gm": 56,
+      "gm": 52,
       "p": 0,
       "roots": {
-        "gm:dynamicInstitutions": 5,
+        "gm:dynamicInstitutions": 1,
         "gm:_aiStructuredPolicyActions": 3,
         "gm:_turnReport": 26,
         "gm:guoku": 4,
@@ -2940,10 +2948,9 @@
       }
     },
     "phase8-formal-rightrail.js": {
-      "gm": 23,
+      "gm": 21,
       "p": 0,
       "roots": {
-        "gm:_pendingAudiences": 2,
         "gm:wenduiHistory": 4,
         "gm:_edictSuggestions": 2,
         "gm:wenduiTarget": 3,

@@ -20,6 +20,8 @@ const CHECKS = [
   { name: 'lint-split-contracts', file: 'lint-split-contracts.js' },
   { name: 'lint-split-stamps', file: 'lint-split-stamps.js' },
   { name: 'lint-smoke-family-order', file: 'lint-smoke-family-order.js' },
+  { name: 'lint-transmigration-isolation', file: 'lint-transmigration-isolation.js' },
+  { name: 'lint-ai-bridge-wrap', file: 'lint-ai-bridge-wrap.js' },
   { name: 'ref-check', file: 'ref-check.js' }
 ];
 

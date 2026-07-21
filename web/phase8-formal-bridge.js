@@ -175,6 +175,16 @@
   }
 
   function syncFormalShellVisibility(){
+    // 2026-07-22 upstream sync 后从 fork 恢复穿越模式守卫
+    // 穿越模式时切 legacy view + return false·让 phase8 御案 shell 不激活
+    try {
+      if (typeof P !== 'undefined' && P && P.playerInfo &&
+          P.playerInfo.transmigrationMode === true &&
+          P.playerInfo.playerRole && P.playerInfo.playerRole !== 'emperor') {
+        if (!state.legacyView) setLegacyView(true);
+        return false;
+      }
+    } catch(_){}
     return setFormalGameActive(isGameVisible());
   }
 
@@ -182,6 +192,20 @@
   function setLegacyView(v){
     state.legacyView = !!v;
     if (document.body) document.body.classList.toggle('tm-phase8-legacy', !!v);
+  }
+
+  // 2026-07-22 upstream sync 后从 fork 恢复（upstream 无穿越模式·此函数缺失）
+  // 穿越模式接管 #gc 时调用·切 legacy view 让 phase8 御案 shell 不再激活
+  // (CSS `body.tm-phase8-formal:not(.tm-phase8-legacy) .gc > :not(#tm-phase8-main-shell){display:none!important}` 不再适用)
+  // 并清出 #tm-phase8-main-shell·让 TM.PlayerUI.render 写入的玩家 UI 显形。
+  // 调用方:renderPlayerState(tm-game-ui-shell.js)·覆盖游戏启动 + 存档加载两条路径。
+  function enterLegacyMode(){
+    setLegacyView(true);
+    try {
+      var gc = document.getElementById('gc');
+      var shell = gc && document.getElementById('tm-phase8-main-shell');
+      if (shell && gc) shell.remove();
+    } catch(_){}
   }
 
   function leaveFormalRuntime(){
@@ -2458,6 +2482,8 @@
     leaveRuntime: leaveFormalRuntime,
     backToLaunch: leaveFormalRuntime,
     resetOutgame: leaveFormalRuntime,
+    // 穿越模式接管 UI 时调用·切 legacy view 让 phase8 御案 shell 不再激活(根治穿越模式显示皇帝界面)
+    enterLegacyMode: enterLegacyMode,
     openModule: openModule,
     openPanel: openPanel,
     topbar: topbarApi(),

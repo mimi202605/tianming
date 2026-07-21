@@ -279,6 +279,42 @@
       writes: ['GM._prevGuoku', 'GM._prevNeitang', 'GM._prevPopulation', 'GM._edictTracker', 'GM._chronicle', 'GM.officeTree', 'GM.facs', 'GM.partyState', 'GM.armies', 'ctx.input.*', 'ctx.snapshots.*', 'ctx.input._completedPrepPhases']
     },
     {
+      name: 'sovereign-ai',
+      // Phase 6·Task 30·穿越模式君主 AI 自动决策
+      // 位置：prep 之后、plan-prefetch 之前·玩家上奏收集之后、派系 NPC 决策之前
+      // 仅在穿越模式 + 玩家非君主时触发·调用 TM.SovereignAI.runTurn 把君主本回合的
+      //   下旨/朝议/批奏/任免决策落账（_edictTracker source='sovereign-ai'）
+      // 失败不阻断主管道（onError: continue）·玩家上奏仍走下游 ai step
+      // 2026-07-22 upstream sync 后从 fork 恢复此 step（upstream 无穿越模式·此 step 缺失）
+      fn: async function(ctx) {
+        var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+        var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+        if (!_isTrans) return ctx;
+        if (typeof TM === 'undefined' || !TM.SovereignAI || typeof TM.SovereignAI.runTurn !== 'function') return ctx;
+        try {
+          var _sovereignRes = await TM.SovereignAI.runTurn(GM, {
+            turn: (GM && GM.turn) || 0,
+            playerMemorials: (ctx.input && ctx.input.edicts) || {},
+            maxTokens: 3000,
+            maxAttempts: 2
+          });
+          ctx.results.sovereignAiResult = _sovereignRes;
+          try {
+            if (typeof window !== 'undefined' && window.TM && TM.Endturn && TM.Endturn.Timing && typeof TM.Endturn.Timing.mark === 'function') {
+              TM.Endturn.Timing.mark(ctx, 'foreground', { id: 'sovereign-ai', phase: 'done', turn: (GM && GM.turn) || 0, ok: !!(_sovereignRes && _sovereignRes.ok), source: (_sovereignRes && _sovereignRes.source) || '' });
+            }
+          } catch (_) {}
+        } catch (e) {
+          try { console.warn('[pipeline.sovereign-ai] runTurn failed', e); } catch (_) {}
+          ctx.results.sovereignAiResult = { ok: false, error: String(e && (e.message || e) || '') };
+        }
+        return ctx;
+      },
+      onError: 'continue',
+      reads: ['P.playerInfo.transmigrationMode', 'P.playerInfo.playerRole', 'GM.turn', 'GM._edictTracker', 'GM.memorials', 'GM.officeTree', 'GM.facs', 'ctx.input.edicts'],
+      writes: ['ctx.results.sovereignAiResult', 'GM._edictTracker', 'GM.memorials', 'GM.officeTree']
+    },
+    {
       name: 'plan-prefetch',
       // slice 2.6·2026-05-07·迁 scThreeSystemsAI(1.75) + aiDigestLongTermActions(1.8) 两个 prefetch promise 启动
       // before-hooks 暂不动·留 slice 2.7 (audit 障碍 #6·_origPrompt* 命名约定 paradigm 重构)

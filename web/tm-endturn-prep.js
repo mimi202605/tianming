@@ -344,6 +344,11 @@ function _endTurn_collectInput() {
     else if (typeof window.syncPhase8FormalEdictDrafts === 'function') window.syncPhase8FormalEdictDrafts();
   } catch(_) {}
   var edicts={political:(_$("edict-pol")?_$("edict-pol").value:"").trim(),military:(_$("edict-mil")?_$("edict-mil").value:"").trim(),diplomatic:(_$("edict-dip")?_$("edict-dip").value:"").trim(),economic:(_$("edict-eco")?_$("edict-eco").value:"").trim(),other:(_$("edict-oth")?_$("edict-oth").value:"").trim()};
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+  // 穿越模式：玩家非君主 → 收集"上奏"而非"诏令"·source 标记为 player-memorial
+  var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+  var _isTrans = _pi && _pi.transmigrationMode === true && _pi.playerRole && _pi.playerRole !== 'emperor';
+  var _src = _isTrans ? 'player-memorial' : 'sovereign-player';
   // 记录玩家决策
   if (edicts.political) recordPlayerDecision('edict', '政令:' + edicts.political.substring(0, 80));
   if (edicts.military) recordPlayerDecision('edict', '军令:' + edicts.military.substring(0, 80));
@@ -351,7 +356,10 @@ function _endTurn_collectInput() {
   if (edicts.economic) recordPlayerDecision('edict', '经济:' + edicts.economic.substring(0, 80));
   // 1.1: 诏令执行追踪——记录本回合所有诏令·同 content 未完成诏令去重
   if (!GM._edictTracker) GM._edictTracker = [];
-  var _edictCats = [{key:'political',label:'政令'},{key:'military',label:'军令'},{key:'diplomatic',label:'外交'},{key:'economic',label:'经济'},{key:'other',label:'其他'}];
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支
+  var _edictCats = _isTrans
+    ? [{key:'political',label:'奏疏'},{key:'military',label:'建议'},{key:'other',label:'其他'}]
+    : [{key:'political',label:'政令'},{key:'military',label:'军令'},{key:'diplomatic',label:'外交'},{key:'economic',label:'经济'},{key:'other',label:'其他'}];
   _edictCats.forEach(function(cat) {
     if (!edicts[cat.key]) return;
     var _content = edicts[cat.key];
@@ -360,7 +368,8 @@ function _endTurn_collectInput() {
       return t.status === 'pending' || t.status === 'executing' || t.status === 'partial' || t.status === 'obstructed' || t.status === 'pending_delivery';
     });
     if (!_dup) {
-      GM._edictTracker.push({ id: uid(), content: _content, category: cat.label, turn: GM.turn, status: 'pending', assignee: '', feedback: '', progressPercent: 0 });
+      // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支（source: _src）
+      GM._edictTracker.push({ id: uid(), content: _content, category: cat.label, turn: GM.turn, status: 'pending', assignee: '', feedback: '', progressPercent: 0, source: _src });
     }
   });
   // ★ 候选事件池消费(2026-06-02·bug C)：玩家本回合诏令已处理的候选事件标 _fired·
@@ -509,7 +518,8 @@ function _endTurn_collectInput() {
       if (typeof recordPlayerDecision === 'function') recordPlayerDecision('edict', '颁行诏书:' + _decreeText.substring(0, 80));
     }
   }
-  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({turn:GM.turn,time:getTSText(GM.turn),edicts:edicts,xinglu:xinglu,memorials:memRes,edictsSource:_edictsSource});
+  // 2026-07-22 upstream sync 后从 fork 恢复穿越模式分支（Task 31·起居注标注决策来源：玩家上奏 player-memorial / 君主亲颁诏令 sovereign-player）
+  if (typeof TM !== 'undefined' && TM.Qiju) TM.Qiju.recordEntry({turn:GM.turn,time:getTSText(GM.turn),edicts:edicts,xinglu:xinglu,memorials:memRes,edictsSource:_edictsSource,source:_src});
   resetTurnChanges();
   // 注意：不在此处清空 _couplingReport/_edictExecutionReport/_buildingOutputReport/_npcIntents/_healthAlerts/_decisionAlerts
   // 这些字段由上一回合的 SettlementPipeline 设置，在本回合 AI prompt 中读取（"上回合发生了什么"）

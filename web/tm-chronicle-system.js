@@ -28,12 +28,37 @@ var ChronicleSystem = {
     var season = Math.min(seasonIdx, (t.seasons||[]).length - 1);
     var key = year + '-' + season;
 
+    // 2026-07-22 upstream sync 后从 fork 恢复穿越模式字段
+    // Task 31·SubTask 31.3: 月稿区分「君主自动决策」与「玩家行动」两段
+    //   - sovereignDecisions: 本回合 _edictTracker 中 source='sovereign-ai'/'fallback' 的条目
+    //   - playerActions: 本回合 _edictTracker 中 source='player-memorial'/'sovereign-player' 的条目
+    //   - 老存档无 source 字段时归类为 unknown（不进入两段，避免历史数据干扰）
+    var _sovDec = [], _plyAct = [];
+    try {
+      var _G = (typeof GM !== 'undefined') ? GM : null;
+      if (_G && Array.isArray(_G._edictTracker)) {
+        _G._edictTracker.forEach(function(et) {
+          if (!et || et.turn !== turn) return;
+          var _etSrc = et.source || '';
+          var _etContent = String(et.content || '').slice(0, 80);
+          if (!_etContent) return;
+          if (_etSrc === 'sovereign-ai' || _etSrc === 'fallback') {
+            _sovDec.push({ content: _etContent, category: et.category || '诏令' });
+          } else if (_etSrc === 'player-memorial' || _etSrc === 'sovereign-player' || _etSrc === 'player') {
+            _plyAct.push({ content: _etContent, category: et.category || '奏疏' });
+          }
+        });
+      }
+    } catch (_) {}
+
     ChronicleSystem.monthDrafts[key] = {
       turn: turn,
       year: year,
       season: season,
       summary: (shizhengji || '').substring(0, 300),
       narrative: (zhengwen || '').substring(0, 200),
+      sovereignDecisions: _sovDec,
+      playerActions: _plyAct,
       timestamp: Date.now()
     };
 
@@ -149,6 +174,32 @@ var ChronicleSystem = {
       var seasonName = (P.time.seasons || ['\u6625','\u590F','\u79CB','\u51AC'])[d.season] || '';
       prompt += '\u3010' + seasonName + '\u3011' + d.summary + '\n';
     });
+
+    // 2026-07-22 upstream sync 后从 fork 恢复：穿越模式专属段落
+    // Task 31·SubTask 31.4: 编年史 AI prompt 注入「君主自动决策」与「玩家行动」两段
+    //   - 聚合该年各月稿的 sovereignDecisions / playerActions
+    //   - 任一非空即提示 AI「穿越模式」语境，要求编年史以君臣二元视角叙述
+    var _yrSovDec = [], _yrPlyAct = [];
+    drafts.forEach(function(d) {
+      if (Array.isArray(d.sovereignDecisions)) _yrSovDec = _yrSovDec.concat(d.sovereignDecisions);
+      if (Array.isArray(d.playerActions)) _yrPlyAct = _yrPlyAct.concat(d.playerActions);
+    });
+    if (_yrSovDec.length > 0 || _yrPlyAct.length > 0) {
+      prompt += '\n\u3010\u7A7F\u8D8A\u6A21\u5F0F\u8BB0\u53D9\u63D0\u793A\u3011\u672C\u5E74\u4E3A\u7A7F\u8D8A\u6A21\u5F0F\u5C40\uFF0C\u73A9\u5BB6\u975E\u541B\u4E3B\uFF0C\u541B\u4E3B\u81EA\u52A8\u51B3\u7B56\u4E0E\u73A9\u5BB6\u884C\u52A8\u5E76\u5B58\u3002\u7F16\u5E74\u4E2D\u5E94\u4EE5\u541B\u81E3\u4E8C\u5143\u89C6\u89D2\u53D9\u8FF0\uFF0C\u65E2\u8BB0\u541B\u4E3B\u9881\u65E8\u4E0E\u51B3\u7B56\uFF0C\u4EA6\u8BB0\u73A9\u5BB6\u4E0A\u594F\u4E0E\u884C\u52A8\u3002\n';
+      if (_yrSovDec.length > 0) {
+        prompt += '\n\u3010\u541B\u4E3B\u81EA\u52A8\u51B3\u7B56\u3011\uFF08\u7A7F\u8D8A\u6A21\u5F0F\u4E0B\u7531 AI \u541B\u4E3B\u9881\u53D1\uFF0C\u7F16\u5E74\u4E2D\u5FC5\u8BB0\u5176\u9881\u5E03\u4E0E\u540E\u7EED\uFF09\uFF1A\n';
+        _yrSovDec.slice(0, 20).forEach(function(sd) {
+          prompt += '  \u00B7' + (sd.category || '\u8BCF\u4EE4') + '\uFF1A' + String(sd.content || '').slice(0, 80) + '\n';
+        });
+      }
+      if (_yrPlyAct.length > 0) {
+        prompt += '\n\u3010\u73A9\u5BB6\u884C\u52A8\u3011\uFF08\u7A7F\u8D8A\u6A21\u5F0F\u4E0B\u73A9\u5BB6\u4E0A\u594F/\u884C\u52A8\uFF0C\u7F16\u5E74\u4E2D\u5E94\u8BB0\u5176\u4E0E\u541B\u4E3B\u51B3\u7B56\u7684\u4E92\u52A8\uFF09\uFF1A\n';
+        _yrPlyAct.slice(0, 20).forEach(function(pa) {
+          prompt += '  \u00B7' + (pa.category || '\u594F\u758F') + '\uFF1A' + String(pa.content || '').slice(0, 80) + '\n';
+        });
+      }
+    }
+
     prompt += '\n请返回 JSON: {"chronicle":"正史正文' + _charRangeText('chronicle') + '","afterword":"史评/论赞' + _charRangeScaled('comment', 1.0) + '"}';
 
     // 时空约束·年度编年正史修史·full(带在世/已故名单·防给在世者书卒/越今引后事·本局事以GM为准)（typeof守卫防加载序）
