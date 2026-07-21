@@ -115,21 +115,45 @@
     return h;
   }
 
-  // 3) 时间：当前年/月/回合（从 GM.turn 取）
+  // 3) 时间：与皇帝模式完全一致（getTSText + calcDateFromTurn + 节气）
+  // 主串：getTSText(GM.turn) → 如「天启七年仲秋甲子日」
+  // 副串：公元 N 年（calcDateFromTurn.adYear）
+  // 节气：按 lunarMonth 推算孟春/仲春/季春/...
+  // 回合：第 N 回合
   function _renderBarTime() {
-    var year = '—', month = '—', turn = '—';
+    var turn = '—', main = '—', sub = '', jieqi = '', jieqiDesc = '';
     try {
       if (typeof GM !== 'undefined' && GM) {
         if (GM.turn != null) turn = GM.turn;
-        if (typeof GM.getEraYear === 'function') { try { year = GM.getEraYear(); } catch (_) {} }
-        else if (GM.year != null) year = GM.year;
-        if (GM.month != null) month = GM.month;
+        // 主串：年号+年+季+月+干支日（与皇帝 #bar-time-main 同源）
+        if (typeof global.getTSText === 'function') {
+          try { main = global.getTSText(GM.turn || 1); } catch (_) {}
+        }
+        // 副串：公元 N 年（与皇帝 #bar-time-sub 同源）
+        if (typeof global.calcDateFromTurn === 'function') {
+          try {
+            var di = global.calcDateFromTurn(GM.turn || 1);
+            if (di && typeof di.adYear !== 'undefined') {
+              var ay = di.adYear;
+              sub = (ay < 0) ? ('公元前 ' + Math.abs(ay) + ' 年') : ('公元 ' + ay + ' 年');
+              // 节气：按 lunarMonth 推算（与 tm-player-core.js:1687-1693 同逻辑）
+              var mon = (di.lunarMonth || di.solarMonth) || ((((GM.turn || 1) - 1) % 12) + 1);
+              if (mon >= 3 && mon <= 5) { jieqi = ['孟春', '仲春', '季春'][mon - 3]; jieqiDesc = ['立春·东风解冻', '春分·雷乃发声', '谷雨·萍始生'][mon - 3]; }
+              else if (mon >= 6 && mon <= 8) { jieqi = ['孟夏', '仲夏', '季夏'][mon - 6]; jieqiDesc = ['立夏·蝼蝈鸣', '夏至·蜩始鸣', '大暑·腐草为萤'][mon - 6]; }
+              else if (mon >= 9 && mon <= 11) { jieqi = ['孟秋', '仲秋', '季秋'][mon - 9]; jieqiDesc = ['立秋·凉风至', '秋分·鸿雁来', '霜降·草木黄落'][mon - 9]; }
+              else { var wi = (mon === 12 ? 0 : mon + 1); jieqi = ['孟冬', '仲冬', '季冬'][wi]; jieqiDesc = ['立冬·水始冰', '冬至·蚯蚓结', '大寒·鸡始乳'][wi]; }
+            }
+          } catch (_) {}
+        }
       }
     } catch (_) {}
     var h = '';
     h += '<div class="ps-bar-time">';
-    h += '<span class="ps-bar-year">' + _esc(year) + '年</span>';
-    h += '<span class="ps-bar-month">' + _esc(month) + '月</span>';
+    h += '<span class="ps-bar-time-main">' + _esc(main) + '</span>';
+    if (sub) h += '<span class="ps-bar-time-sub">' + _esc(sub) + '</span>';
+    if (jieqi) {
+      h += '<span class="ps-bar-time-jieqi" title="' + _esc(jieqiDesc) + '">' + _esc(jieqi) + '</span>';
+    }
     h += '<span class="ps-bar-turn">第' + _esc(turn) + '回合</span>';
     h += '</div>';
     return h;

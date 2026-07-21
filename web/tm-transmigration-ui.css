@@ -348,6 +348,36 @@ body.transmigration-mode .ps-bar-stats {
   font-size: 12px;
   color: #666;
 }
+/* 时间区·与皇帝顶栏同源（gold 主串 + ink 副串 + amber 节气） */
+body.transmigration-mode .ps-bar-time {
+  gap: 10px;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+}
+body.transmigration-mode .ps-bar-time-main {
+  font-size: 13px;
+  color: var(--gold-300, #d4be7a);
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+body.transmigration-mode .ps-bar-time-sub {
+  font-size: 11px;
+  color: var(--ink-300, #6b5d47);
+  font-style: italic;
+  letter-spacing: 0.08em;
+}
+body.transmigration-mode .ps-bar-time-jieqi {
+  font-size: 11px;
+  color: var(--amber-400, #c9a045);
+  letter-spacing: 0.15em;
+  cursor: help;
+  border-bottom: 1px dotted var(--amber-400, #c9a045);
+}
+body.transmigration-mode .ps-bar-turn {
+  font-size: 11px;
+  color: #888;
+  padding-left: 6px;
+  border-left: 1px solid #ddd;
+}
 body.transmigration-mode .ps-bar-aff-empty { color: #aaa; }
 body.transmigration-mode .ps-bar-faction {
   padding: 2px 6px;
@@ -714,4 +744,33 @@ body.transmigration-mode .ps-tab.ps-tab-locked::after {
   content: '🔒';
   font-size: 10px;
   margin-left: 2px;
+}
+
+/* ── §7.10 系统状态概要列表（adapter _renderStateAsHTML） ── */
+body.transmigration-mode .player-block-state-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+body.transmigration-mode .player-block-state-key {
+  color: #888;
+  font-weight: normal;
+}
+body.transmigration-mode .player-block-state-key::after {
+  content: '：';
+}
+body.transmigration-mode .player-block-state-val {
+  color: var(--player-text-strong, #1a5490);
+  font-weight: 600;
+  word-break: break-all;
+}
+body.transmigration-mode .player-block-state-more {
+  grid-column: 1 / -1;
+  color: #aaa;
+  font-style: italic;
+  font-size: 11px;
 }
