@@ -1086,6 +1086,15 @@ function _wtDoImportMemory() {
   _wtRenderHistory();
 }
 
+/** 清空对话记录·保留指令与注入记忆（玩家群 2026-07-21 点名：原先只有清除指令·想清记录必连指令陪葬） */
+function _wtClearChatLog() {
+  if (!confirm('确定清空问天对话记录？已注入的指令与记忆原样保留。')) return;
+  GM._wentianHistory = [];  // arch-ok 问天历史容器整体重置·与本文件 _wtClearDirectives 清指令同范式(只动对话不动 _playerDirectives/_importedMemories)
+  GM._wentianHistory.push({ role: 'system', content: '对话记录已清空——指令与注入记忆仍在生效。' });  // arch-ok 问天历史行·与本文件既有 _wentianHistory push 同容器同性质
+  _wtRenderHistory();
+  toast('对话已清空·指令保留');
+}
+
 /** 清除所有玩家指令 */
 function _wtClearDirectives() {
   if (!confirm('\u786E\u5B9A\u6E05\u9664\u6240\u6709\u7384\u5929\u6307\u4EE4\uFF1F')) return;

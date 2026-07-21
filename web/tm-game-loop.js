@@ -833,6 +833,7 @@ function openWentian() {
     + '<div style="display:flex;gap:var(--space-1);margin-bottom:var(--space-1);">'
     + '<button class="bt bsm" onclick="_wtImportDoc()" title="\u5BFC\u5165\u6587\u6863\u4F5C\u4E3A\u63A8\u6F14\u4E0A\u4E0B\u6587">\u5BFC\u5165\u6587\u6863</button>'
     + '<button class="bt bsm" onclick="_wtImportMemory()" title="\u5BFC\u5165\u5BF9\u8BDD\u8BB0\u5F55\u4F5C\u4E3ANPC\u8BB0\u5FC6">\u6CE8\u5165\u8BB0\u5FC6</button>'
+    + '<button class="bt bsm" onclick="_wtClearChatLog()" title="\u53EA\u6E05\u5BF9\u8BDD\u8BB0\u5F55\u00B7\u6307\u4EE4\u4E0E\u6CE8\u5165\u8BB0\u5FC6\u4FDD\u7559">\u6E05\u7A7A\u5BF9\u8BDD</button>'
     + '<button class="bt bsm" style="color:var(--vermillion-400);" onclick="_wtClearDirectives()" title="\u6E05\u9664\u6240\u6709\u73A9\u5BB6\u6307\u4EE4">\u6E05\u9664\u6307\u4EE4</button>'
     + '<span style="margin-left:auto;font-size:0.66rem;color:var(--ink-300);">\u6307\u4EE4' + GM._playerDirectives.length + ' \u8BB0\u5FC6' + GM._importedMemories.length + '</span>'
     + '</div>'
