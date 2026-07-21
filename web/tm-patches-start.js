@@ -712,7 +712,11 @@ function _tmShowOpeningCeremony(sc, sid, requestToken) {
   if (!_tmStartRequestCurrent(requestToken)) return;
   var _esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   // 玩家角色（容错去注解·跨剧本：绍宋 characterName 形如「赵构(穿越者赵玖)」）
-  var _pi = sc.playerInfo || {};
+  // 穿越模式：confirmCharacter 已写入 P.playerInfo·优先用穿越选择的角色·剧本默认 playerInfo（皇帝）退为底
+  // 2026-07-22 同步 upstream 后从 backup/main-before-reset 恢复此守卫（upstream e161da4 误删·本 fork 保留）。
+  var _scPi = sc.playerInfo || {};
+  var _livePi = (typeof P !== 'undefined' && P && P.playerInfo && P.playerInfo.transmigrationMode === true) ? P.playerInfo : null;
+  var _pi = _livePi ? _livePi : _scPi;
   var _pName = _pi.characterName || '';
   var _pClean = (_pName.replace(/[（(].*$/, '').trim()) || _pName;
   var _pChar = null;
@@ -939,7 +943,62 @@ function doActualStart(sid, requestToken){
   if (sc.offendGroups) P.offendGroups = deepClone(sc.offendGroups);
   if (sc.keju) P.keju = deepClone(sc.keju);
   else if (P.keju) { P.keju.currentExam = null; P.keju.currentEnke = null; } // arch-ok 换剧本清残局考试·旧局currentExam曾串新局继续推进/归档进新局history(2026-07-04 审查定罪)
-  if (sc.playerInfo) P.playerInfo = deepClone(sc.playerInfo);
+  // 穿越模式守卫：confirmCharacter 已写入 P.playerInfo{transmigrationMode,playerRole,characterName,...}·
+  // 此处若用 sc.playerInfo 整体覆盖会清掉穿越选择·导致 renderGameState 走皇帝分支并弹「临朝第一日」。
+  // 故穿越模式下以剧本 playerInfo 为底·穿越字段覆盖剧本字段（穿越选择优先）。
+  // 2026-07-22 同步 upstream 后从 backup/main-before-reset 恢复此守卫（upstream e161da4 误删·本 fork 保留）。
+  if (sc.playerInfo) {
+    var _transPi = (P.playerInfo && P.playerInfo.transmigrationMode === true) ? P.playerInfo : null;
+    P.playerInfo = deepClone(sc.playerInfo);
+    if (_transPi) { // arch-ok 穿越模式守卫·恢复 confirmCharacter 写入的穿越选择(被 sc.playerInfo 整体覆盖·11处 P直写经裁定)
+      P.playerInfo.transmigrationMode = true; // arch-ok
+      P.playerInfo.playerRole = _transPi.playerRole; // arch-ok
+      P.playerInfo.characterName = _transPi.characterName; // arch-ok
+      P.playerInfo.selectedCharId = _transPi.selectedCharId; // arch-ok
+      P.playerInfo.sovereignName = _transPi.sovereignName; // arch-ok
+      P.playerInfo.sovereignTitle = _transPi.sovereignTitle; // arch-ok
+      if (_transPi.characterTitle) P.playerInfo.characterTitle = _transPi.characterTitle; // arch-ok
+      if (_transPi.characterFaction) P.playerInfo.characterFaction = _transPi.characterFaction; // arch-ok
+      if (typeof _transPi.characterAge === 'number') P.playerInfo.characterAge = _transPi.characterAge; // arch-ok
+      if (_transPi.characterGender) P.playerInfo.characterGender = _transPi.characterGender; // arch-ok
+      if (_transPi.characterPersonality) P.playerInfo.characterPersonality = _transPi.characterPersonality; // arch-ok
+    }
+
+    // ═══ 穿越模式 GM._playerXxx 预初始化（2026-07-21 修·C9 根治）═══
+    // 历史根因：所有玩家系统状态懒初始化（首次访问 _getState() 才创建）·
+    //   初始化前 ui-render 读取 GM._playerEconomy.cash 等读到 undefined·顶栏变量显示「—」·
+    //   某些系统初始化路径上有边界条件风险（ui-render 比 doActualStart 早执行）。
+    // 修复：穿越模式下预初始化全部 GM._playerXxx 字段为默认空 state·
+    //   后续 _getState() 检测到已存在不会重建·保证状态连续性。
+    // 铁律：只在穿越模式（transmigrationMode=true && playerRole!=='emperor'）下预初始化·
+    //   皇帝模式不受影响（皇帝模式无 GM._playerXxx 玩家状态）。
+    // 2026-07-22 同步 upstream 后从 backup/main-before-reset 恢复此块（upstream e161da4 误删·本 fork 保留）。
+    if (P.playerInfo && P.playerInfo.transmigrationMode === true &&
+        P.playerInfo.playerRole && P.playerInfo.playerRole !== 'emperor') {
+      try {
+        if (typeof GM !== 'undefined' && GM) {
+          // 各系统默认空 state·字段名与各系统 _defaultState() 对齐
+          // arch-ok: C9 预初始化·穿越模式开局一次性写口·经裁定合法（懒初始化导致顶栏显示「—」）
+          if (!GM._playerFamily)       GM._playerFamily       = { members: [], events: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerMarriage)     GM._playerMarriage     = { status: '未婚', spouse: null, spouses: [], history: [], mourningPeriod: null, activeRites: null, disputes: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerEconomy)      GM._playerEconomy      = { cash: 0, properties: [], investments: [], grayIncome: [], corruption: 0, factionRelations: {}, confiscated: false, ledger: [] }; // arch-ok
+          if (!GM._playerIndustry)     GM._playerIndustry     = { industries: [], haoqiangLevel: 'none', haoqiangScore: 0, notoriety: 0, events: [], createdAt: 0 }; // arch-ok
+          if (!GM._playerInteraction)  GM._playerInteraction  = { relations: {}, interactions: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerMovement)     GM._playerMovement     = { currentLocation: '', traveling: false, route: [], arrivedAt: 0 }; // arch-ok
+          if (!GM._playerPrivateArmy)  GM._playerPrivateArmy  = { troops: [], totalSize: 0, readiness: 0, equipment: 0, updatedAt: 0 }; // arch-ok
+          if (!GM._playerSkill)        GM._playerSkill        = { skills: [], mastery: {}, updatedAt: 0 }; // arch-ok
+          if (!GM._playerTech)         GM._playerTech         = { researching: null, completed: [], log: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerRebel)        GM._playerRebel        = { readiness: 0, agents: [], contacts: [], events: [], createdAt: 0 }; // arch-ok
+          if (!GM._playerTrade)        GM._playerTrade        = { caravans: [], routes: [], networks: [], cashFlow: 0, updatedAt: 0 }; // arch-ok
+          if (!GM._playerKeju)         GM._playerKeju         = { status: 'idle', exams: [], currentExam: null, masters: [], history: [], updatedAt: 0 }; // arch-ok
+          if (!GM._playerAnnualReview) GM._playerAnnualReview = { indicators: {}, history: [], notifications: [], bribeRate: 1, updatedAt: 0 }; // arch-ok
+          if (!GM._playerSpecialIdentity) GM._playerSpecialIdentity = { currentPath: null, actions: [], stats: {}, events: [], updatedAt: 0 }; // arch-ok
+        }
+      } catch(_playerInitE) {
+        try { console.warn('[doActualStart·player-init]', _playerInitE); } catch(_){}
+      }
+    }
+  }
   if (sc.engineConstants) {
     GM.engineConstants = deepClone(sc.engineConstants);
     P.engineConstants = deepClone(sc.engineConstants);
@@ -1321,6 +1380,44 @@ function doActualStart(sid, requestToken){
       }
     });
     if (typeof _dbg === 'function') _dbg('[被俘态] 标记 _captured ' + n + ' 人');
+  })();
+  // ═══ 穿越模式·玩家私产种子（2026-07-22 修）═══
+  // 历史根因：穿越模式下 GM._playerEconomy.cash 预初始化为 0（见上方 C9 预初始化块）·
+  //   但剧本角色自带的 resources.privateWealth.money（如翰林学士 85000 两）从不迁移到玩家账本·
+  //   导致私产面板/顶栏恒显 0 两·玩家「所有人没有银两」。
+  // 修复：GM.chars 装载完毕后·找到玩家角色·把其 resources.privateWealth.money 种入 cash。
+  //   铁律：仅在穿越模式 + 玩家角色命中时执行·幂等（cash 仍为 0 时才种·避免覆盖运行中已变动余额）。
+  (function _seedPlayerEconomyFromChar(){
+    try {
+      if (typeof GM === 'undefined' || !GM || !Array.isArray(GM.chars)) return;
+      var _pi = (typeof P !== 'undefined' && P && P.playerInfo) ? P.playerInfo : null;
+      if (!_pi || _pi.transmigrationMode !== true || !_pi.playerRole || _pi.playerRole === 'emperor') return;
+      if (!GM._playerEconomy || typeof GM._playerEconomy.cash !== 'number') return;
+      // 仅在 cash 仍为初始 0 时种入·避免覆盖已运行的余额（如 collectSalary 后）
+      if (GM._playerEconomy.cash !== 0) return;
+      var _pName = _pi.characterName || _pi.selectedCharId;
+      if (!_pName) return;
+      var _pch = null;
+      for (var i = 0; i < GM.chars.length; i++) {
+        var c = GM.chars[i];
+        if (!c) continue;
+        if (c.isPlayer === true || (c.name && c.name === _pName)) { _pch = c; break; }
+      }
+      if (!_pch) return;
+      var _pw = _pch.resources && _pch.resources.privateWealth;
+      var _seed = 0;
+      if (_pw) {
+        _seed = Number(_pw.money != null ? _pw.money : _pw.cash) || 0;
+      }
+      // 兜底：角色无显式私产时按 playerRole 给起步银（朝臣/武将 500·商贾 5000·其余 200）
+      if (!_seed) {
+        var _roleSeed = { merchant: 5000, minister: 500, regent: 1000, general: 500,
+                          prince: 800, eunuch: 600, custom: 300 };
+        _seed = _roleSeed[_pi.playerRole] || 200;
+      }
+      GM._playerEconomy.cash = _seed; // arch-ok · 穿越模式开局一次性种子·经裁定合法
+      if (typeof _dbg === 'function') _dbg('[穿越·私产种子] ' + _pName + ' 起步银 ' + _seed + ' 两');
+    } catch(_seedE) { try { console.warn('[doActualStart·seedPlayerEconomy]', _seedE); } catch(_){} }
   })();
   GM.items=(P.items||[]).filter(function(t){return t.sid===sid;}).map(function(t){var c=deepClone(t);c.acquired=false;return c;});
   // 军队加载：优先 initialTroops（编辑器新 schema 完整部队表），armies 仅作兜底（旧字段通常只有少量代表部队）

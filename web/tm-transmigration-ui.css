@@ -1,0 +1,1241 @@
+/* ============================================================
+ * tm-transmigration-ui.css — 穿越模式 Phase A · Task A6 专属 CSS
+ * ------------------------------------------------------------
+ * 所有规则包在 body.transmigration-mode 下·皇帝模式零视觉回归
+ * 5 套身份主题色：civil(青) / royal(紫) / merchant(金) / martial(黑) / monastic(白)
+ * ============================================================ */
+
+/* ── §6.2 5 套身份主题色变量 ──────────────────────────────── */
+body.player-role-minister,
+body.player-role-regent,
+body.player-role-retired_official {
+  --player-accent: #4a90e2;
+  --player-accent-light: #7fb3d5;
+  --player-bg: #f4f8fb;
+  --player-text-strong: #1a5490;
+}
+
+body.player-role-prince,
+body.player-role-custom,
+body.player-role-eunuch,
+body.player-role-maid {
+  --player-accent: #9b59b6;
+  --player-accent-light: #bb8fce;
+  --player-bg: #faf4fb;
+  --player-text-strong: #6c3483;
+}
+
+body.player-role-merchant,
+body.player-role-artisan {
+  --player-accent: #d4a017;
+  --player-accent-light: #f1c40f;
+  --player-bg: #fdf8ed;
+  --player-text-strong: #9a7d0a;
+}
+
+body.player-role-general,
+body.player-role-bandit {
+  --player-accent: #2c3e50;
+  --player-accent-light: #e74c3c;
+  --player-bg: #f0f0f0;
+  --player-text-strong: #1c2833;
+}
+
+body.player-role-monk,
+body.player-role-infant,
+body.player-role-commoner,
+body.player-role-actor {
+  --player-accent: #7f8c8d;
+  --player-accent-light: #bdc3c7;
+  --player-bg: #ffffff;
+  --player-text-strong: #566573;
+}
+
+/* ── §1.5 / §6.5 皇帝模式隔离 ────────────────────────────── */
+.hidden-emperor { display: none !important; }
+
+/* ── §2.1 顶栏玩家身份条 ─────────────────────────────────── */
+body.transmigration-mode .bar-player-identity {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--player-bg, #f4f8fb);
+  border-bottom: 2px solid var(--player-accent, #4a90e2);
+  font-size: 13px;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .bar-player-identity .player-portrait {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--player-accent, #4a90e2);
+  color: #fff; border-radius: 4px;
+}
+body.transmigration-mode .bar-player-identity .player-name {
+  font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .bar-player-identity .player-role-chip {
+  padding: 1px 8px; border-radius: 4px;
+  background: var(--player-accent, #4a90e2); color: #fff;
+  font-size: 12px;
+}
+body.transmigration-mode .bar-player-identity .player-divider { color: #aaa; }
+body.transmigration-mode .bar-player-identity .player-location,
+body.transmigration-mode .bar-player-identity .player-clan,
+body.transmigration-mode .bar-player-identity .player-age,
+body.transmigration-mode .bar-player-identity .player-sovereign {
+  color: #555;
+}
+
+/* 顶栏变量 */
+body.transmigration-mode .bar-var-item {
+  display: inline-flex; gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--player-accent-light, #7fb3d5);
+  border-radius: 4px;
+  margin-right: 4px;
+  font-size: 12px;
+}
+body.transmigration-mode .bar-var-label { color: #888; }
+body.transmigration-mode .bar-var-value { color: var(--player-text-strong, #1a5490); font-weight: 600; }
+
+/* ── §3 左栏 7 场景 tab ───────────────────────────────────── */
+body.transmigration-mode .player-left-tabs {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px;
+}
+body.transmigration-mode .player-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #444;
+  transition: background 150ms ease;
+}
+body.transmigration-mode .player-tab:hover {
+  background: var(--player-bg, #f4f8fb);
+}
+body.transmigration-mode .player-tab.active {
+  background: var(--player-accent, #4a90e2);
+  color: #fff;
+}
+body.transmigration-mode .player-tab-icon { font-size: 14px; }
+body.transmigration-mode .player-tab-label { font-size: 13px; }
+body.transmigration-mode .player-tab-redot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #e74c3c;
+  margin-left: auto;
+  animation: player-tab-pulse 1s infinite alternate;
+}
+@keyframes player-tab-pulse {
+  from { opacity: 0.5; } to { opacity: 1; }
+}
+
+/* ── §4 主面板区块 ───────────────────────────────────────── */
+body.transmigration-mode .player-scene {
+  padding: 12px 16px;
+  animation: player-scene-fadein 150ms ease;
+}
+@keyframes player-scene-fadein {
+  from { opacity: 0; } to { opacity: 1; }
+}
+body.transmigration-mode .player-block {
+  margin-bottom: 16px;
+  border-left: 3px solid var(--player-accent, #4a90e2);
+  padding-left: 10px;
+}
+body.transmigration-mode .player-block-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+  margin-bottom: 6px;
+}
+body.transmigration-mode .player-block-empty,
+body.transmigration-mode .player-block-error {
+  font-size: 12px; color: #999; font-style: italic;
+}
+
+/* ── §5 奉旨卡片浮层 ─────────────────────────────────────── */
+body .edict-card-host {
+  position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none;
+}
+body .edict-card-toast {
+  pointer-events: auto;
+  min-width: 360px; max-width: 480px;
+  background: #fffdf5;
+  border: 2px solid var(--player-accent, #9b59b6);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 8px 12px;
+  animation: edict-toast-slide 200ms ease-out;
+}
+@keyframes edict-toast-slide {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+body .edict-card-toast-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4px;
+}
+body .edict-card-toast-title {
+  font-weight: 600; color: var(--player-royal, #9b59b6);
+}
+body .edict-card-toast-actions button {
+  background: none; border: none; cursor: pointer;
+  color: #888; padding: 0 4px; font-size: 12px;
+}
+body .edict-card-toast-body {
+  font-size: 13px; color: #333;
+}
+body .edict-card-toast-comment,
+body .edict-card-toast-grade {
+  font-size: 12px; color: #666; margin-top: 2px;
+}
+
+body .edict-card-modal {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+}
+body .edict-card-modal-inner {
+  background: #fff;
+  border-radius: 6px;
+  max-width: 640px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+}
+body .edict-card-modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  font-weight: 600; color: var(--player-royal, #9b59b6);
+}
+body .edict-card-modal-head button {
+  background: none; border: none; cursor: pointer; font-size: 18px; color: #888;
+}
+body .edict-card-modal-body { padding: 12px 16px; }
+body .edict-card-modal-row {
+  margin-bottom: 12px;
+}
+body .edict-card-modal-row label {
+  display: block; font-size: 12px; color: #888; margin-bottom: 4px;
+}
+body .edict-card-modal-row > div {
+  font-size: 13px; color: #333;
+}
+body .edict-card-modal-foot {
+  padding: 12px 16px; text-align: right;
+  border-top: 1px solid #eee;
+}
+body .edict-card-modal-ok {
+  background: var(--player-royal, #9b59b6); color: #fff;
+  border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer;
+}
+
+/* ── §5.5 src-* chip 样式 ────────────────────────────────── */
+.qiju-src-chip {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  font-size: 11px; margin-right: 6px;
+}
+.qiju-src-chip.src-player    { background: var(--player-civil, #4a90e2); color: #fff; }
+.qiju-src-chip.src-sovereign { background: var(--player-royal, #9b59b6); color: #fff; }
+.qiju-src-chip.src-npc       { background: #888; color: #fff; }
+
+/* ── §5.1 右栏玩家身份卡 ─────────────────────────────────── */
+body.transmigration-mode .player-right-panel {
+  padding: 8px;
+}
+body.transmigration-mode .player-id-card {
+  display: flex; gap: 10px;
+  padding: 10px;
+  background: var(--player-bg, #f4f8fb);
+  border: 1px solid var(--player-accent-light, #7fb3d5);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+body.transmigration-mode .player-id-portrait {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--player-accent, #4a90e2);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+body.transmigration-mode .player-id-info { flex: 1; }
+body.transmigration-mode .player-id-name {
+  font-size: 16px; font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .player-id-title {
+  font-size: 13px; color: #666; margin-top: 2px;
+}
+body.transmigration-mode .player-id-meta,
+body.transmigration-mode .player-id-loc,
+body.transmigration-mode .player-id-sov {
+  font-size: 12px; color: #888; margin-top: 2px;
+}
+
+/* ── §5.2 右栏近况 + 关系 TOP 5 ──────────────────────────── */
+body.transmigration-mode .player-id-section-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+  margin: 8px 0 4px;
+}
+body.transmigration-mode .player-recent-item,
+body.transmigration-mode .player-rel-item {
+  font-size: 12px; color: #555;
+  padding: 2px 0; border-bottom: 1px dashed #eee;
+  display: flex; gap: 6px;
+}
+body.transmigration-mode .player-rel-name { font-weight: 600; }
+body.transmigration-mode .player-rel-kind { color: #888; flex: 1; }
+body.transmigration-mode .player-rel-score { color: var(--player-accent, #4a90e2); }
+
+/* ============================================================
+ * §7 穿越模式 UI 重建（2026-07-20）— shell/rail/map/AI 样式
+ * ------------------------------------------------------------
+ * 新增：8 tab + 3×3 栅格 + drawer + 三态地图 + AI 渲染指示
+ * 所有规则仍包在 body.transmigration-mode 下·皇帝模式零视觉回归
+ * ============================================================ */
+
+/* ── §7.1 shell 主壳容器 ─────────────────────────────────── */
+body.transmigration-mode .player-shell-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  background: var(--player-bg, #f4f8fb);
+}
+body.transmigration-mode .player-shell-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: var(--player-bg, #f4f8fb);
+  border-bottom: 2px solid var(--player-accent, #4a90e2);
+  font-size: 13px;
+  color: var(--player-text-strong, #1a5490);
+  flex-wrap: wrap;
+}
+body.transmigration-mode .player-shell-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 顶栏四段式 */
+body.transmigration-mode .ps-bar-id {
+  display: flex; align-items: center; gap: 6px;
+}
+body.transmigration-mode .ps-bar-name {
+  font-weight: 700;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .ps-bar-chip {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--player-accent, #4a90e2);
+  color: #fff;
+  font-size: 12px;
+}
+body.transmigration-mode .ps-bar-aff,
+body.transmigration-mode .ps-bar-time,
+body.transmigration-mode .ps-bar-stats {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+  color: #666;
+}
+/* 时间区·与皇帝顶栏同源（gold 主串 + ink 副串 + amber 节气） */
+body.transmigration-mode .ps-bar-time {
+  gap: 10px;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+}
+body.transmigration-mode .ps-bar-time-main {
+  font-size: 13px;
+  color: var(--gold-300, #d4be7a);
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+body.transmigration-mode .ps-bar-time-sub {
+  font-size: 11px;
+  color: var(--ink-300, #6b5d47);
+  font-style: italic;
+  letter-spacing: 0.08em;
+}
+body.transmigration-mode .ps-bar-time-jieqi {
+  font-size: 11px;
+  color: var(--amber-400, #c9a045);
+  letter-spacing: 0.15em;
+  cursor: help;
+  border-bottom: 1px dotted var(--amber-400, #c9a045);
+}
+body.transmigration-mode .ps-bar-turn {
+  font-size: 11px;
+  color: #888;
+  padding-left: 6px;
+  border-left: 1px solid #ddd;
+}
+body.transmigration-mode .ps-bar-aff-empty { color: #aaa; }
+body.transmigration-mode .ps-bar-faction {
+  padding: 2px 6px;
+  border: 1px solid var(--player-accent-light, #7fb3d5);
+  border-radius: 3px;
+}
+body.transmigration-mode .ps-bar-stat em {
+  font-style: normal;
+  color: #888;
+  margin-right: 3px;
+}
+body.transmigration-mode .ps-bar-stat b {
+  color: var(--player-text-strong, #1a5490);
+  font-weight: 600;
+}
+/* 动作区·结束回合按钮（2026-07-22 修「无法推进时间」） */
+body.transmigration-mode .ps-bar-actions {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+  padding-left: 10px;
+}
+body.transmigration-mode .ps-bar-turn-hint {
+  font-size: 11px;
+  color: var(--ink-300, #6b5d47);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+body.transmigration-mode .ps-bar-end-turn {
+  padding: 6px 18px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  color: var(--gold-300, #d4be7a);
+  background: linear-gradient(180deg, rgba(184,154,83,0.22), rgba(184,154,83,0.10));
+  border: 1px solid var(--gold-400, #b89a53);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+body.transmigration-mode .ps-bar-end-turn:hover {
+  background: linear-gradient(180deg, rgba(184,154,83,0.38), rgba(184,154,83,0.20));
+  box-shadow: 0 2px 10px rgba(184,154,83,0.30);
+}
+body.transmigration-mode .ps-bar-end-turn:active {
+  transform: scale(0.97);
+}
+
+/* ── §7.2 左栏 8 tab ────────────────────────────────────── */
+body.transmigration-mode .player-left-tabs-shell {
+  width: 140px;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.03);
+  border-right: 1px solid rgba(0,0,0,0.08);
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body.transmigration-mode .ps-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #444;
+  font-size: 13px;
+  transition: background 150ms ease;
+  position: relative;
+}
+body.transmigration-mode .ps-tab:hover {
+  background: var(--player-bg, #f4f8fb);
+}
+body.transmigration-mode .ps-tab.active {
+  background: var(--player-accent, #4a90e2);
+  color: #fff;
+}
+body.transmigration-mode .ps-tab-icon { font-size: 14px; }
+body.transmigration-mode .ps-tab-label { flex: 1; }
+body.transmigration-mode .ps-tab-reddot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #e74c3c;
+  animation: ps-tab-pulse 1s infinite alternate;
+}
+@keyframes ps-tab-pulse {
+  from { opacity: 0.5; } to { opacity: 1; }
+}
+
+/* ── §7.3 主面板（地图 + 场景） ────────────────────────── */
+body.transmigration-mode .player-main-shell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* ── §7.4 三态地图 ──────────────────────────────────────── */
+body.transmigration-mode .player-map-section {
+  width: 100%;
+  background: linear-gradient(135deg, #fdf6e3 0%, #f4e8c8 100%);
+  border-bottom: 2px solid var(--player-accent, #4a90e2);
+  overflow: hidden;
+  transition: height 250ms ease;
+  position: relative;
+}
+body.transmigration-mode .player-map-section.pms-expanded  { height: 45vh; }
+body.transmigration-mode .player-map-section.pms-fullscreen { height: 90vh; }
+body.transmigration-mode .player-map-section.pms-collapsed { height: 24vh; }
+body.transmigration-mode .player-map-section .pms-empty {
+  padding: 16px;
+  text-align: center;
+  color: #888;
+  font-size: 12px;
+  font-style: italic;
+}
+body.transmigration-mode .player-map-section .pms-err {
+  padding: 8px;
+  color: #c0392b;
+  font-size: 12px;
+}
+body.transmigration-mode .player-map-section .pms-svg-wrap {
+  width: 100%; height: 100%;
+}
+body.transmigration-mode .player-map-section .pms-svg-wrap svg {
+  width: 100%; height: 100%;
+  display: block;
+}
+body.transmigration-mode .player-map-section .pms-region {
+  fill: rgba(212, 160, 23, 0.15);
+  stroke: #8b6914;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: fill 200ms ease;
+}
+body.transmigration-mode .player-map-section .pms-region:hover {
+  fill: rgba(212, 160, 23, 0.35);
+}
+body.transmigration-mode .player-map-section .pms-region.pms-region-active {
+  fill: rgba(74, 144, 226, 0.3);
+  stroke: var(--player-accent, #4a90e2);
+  stroke-width: 2;
+}
+body.transmigration-mode .player-map-section .pms-pulse-dot {
+  fill: var(--player-accent, #d4a017);
+  animation: pms-pulse 1.5s infinite alternate;
+}
+@keyframes pms-pulse {
+  from { opacity: 0.4; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+body.transmigration-mode .player-map-section .pms-controls {
+  position: absolute;
+  top: 8px; right: 8px;
+  display: flex; gap: 4px;
+}
+body.transmigration-mode .player-map-section .pms-ctrl-btn {
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--player-accent, #4a90e2);
+  color: var(--player-text-strong, #1a5490);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+body.transmigration-mode .player-map-section .pms-ctrl-btn:hover {
+  background: var(--player-accent, #4a90e2);
+  color: #fff;
+}
+
+/* ── §7.5 场景区 ────────────────────────────────────────── */
+body.transmigration-mode .player-scene-section {
+  flex: 1;
+  padding: 12px 16px;
+  animation: ps-scene-fadein 200ms ease;
+}
+@keyframes ps-scene-fadein {
+  from { opacity: 0; } to { opacity: 1; }
+}
+body.transmigration-mode .ps-scene-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--player-text-strong, #1a5490);
+  margin-bottom: 10px;
+  border-bottom: 1px dashed var(--player-accent-light, #7fb3d5);
+  padding-bottom: 4px;
+}
+body.transmigration-mode .ps-scene-blocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+body.transmigration-mode .ps-scene-block {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-left: 3px solid var(--player-accent, #4a90e2);
+  border-radius: 4px;
+  padding: 10px;
+}
+body.transmigration-mode .ps-scene-empty,
+body.transmigration-mode .ps-scene-err,
+body.transmigration-mode .ps-rail-placeholder,
+body.transmigration-mode .ps-map-placeholder,
+body.transmigration-mode .ps-map-err,
+body.transmigration-mode .ps-bar-err,
+body.transmigration-mode .ps-tabs-err,
+body.transmigration-mode .ps-rail-err {
+  padding: 8px;
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+}
+body.transmigration-mode .ps-scene-err,
+body.transmigration-mode .ps-map-err,
+body.transmigration-mode .ps-bar-err,
+body.transmigration-mode .ps-tabs-err,
+body.transmigration-mode .ps-rail-err {
+  color: #c0392b;
+}
+
+/* ── §7.6 右栏 3×3 图标栅格 ─────────────────────────────── */
+body.transmigration-mode .player-right-rail-shell {
+  width: 200px;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.03);
+  border-left: 1px solid rgba(0,0,0,0.08);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+body.transmigration-mode .ps-rail-card {
+  background: var(--player-bg, #f4f8fb);
+  border: 1px solid var(--player-accent-light, #7fb3d5);
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+}
+body.transmigration-mode .ps-rail-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+}
+body.transmigration-mode .ps-rail-card-role {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+body.transmigration-mode .ps-rail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6px;
+  flex: 1;
+}
+body.transmigration-mode .ps-rail-slot {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 6px;
+  padding: 8px 4px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 11px;
+  color: #555;
+  transition: all 150ms ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+body.transmigration-mode .ps-rail-slot:hover {
+  background: var(--player-bg, #f4f8fb);
+  border-color: var(--player-accent, #4a90e2);
+}
+body.transmigration-mode .ps-rail-slot.ps-rail-slot-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+body.transmigration-mode .ps-rail-slot.ps-rail-slot-special {
+  background: #fffbe6;
+  border-color: #d4a017;
+}
+body.transmigration-mode .ps-rail-slot-icon {
+  font-size: 18px;
+}
+body.transmigration-mode .ps-rail-slot-label {
+  font-size: 10px;
+  line-height: 1.2;
+}
+body.transmigration-mode .ps-rail-slot-badge {
+  position: absolute;
+  top: 2px; right: 2px;
+  background: #d4a017;
+  color: #fff;
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 9px;
+}
+body.transmigration-mode .ps-rail-reddot {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #e74c3c;
+  animation: ps-tab-pulse 1s infinite alternate;
+}
+
+/* ── §7.7 drawer 详情面板 ───────────────────────────────── */
+body.transmigration-mode .player-rail-drawer {
+  position: fixed;
+  top: 0; right: 0;
+  width: 360px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 12px rgba(0,0,0,0.15);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  animation: ps-drawer-slide 200ms ease-out;
+}
+@keyframes ps-drawer-slide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+body.transmigration-mode .player-rail-drawer-title {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--player-text-strong, #1a5490);
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+body.transmigration-mode .player-rail-drawer-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #888;
+}
+body.transmigration-mode .player-rail-drawer-body {
+  flex: 1;
+  padding: 12px 16px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: #333;
+}
+
+/* ── §7.8 AI 渲染指示器 ─────────────────────────────────── */
+body.transmigration-mode .ps-ai-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  background: rgba(155, 89, 182, 0.15);
+  color: #6c3483;
+}
+body.transmigration-mode .ps-ai-indicator[data-level="L1"] {
+  background: rgba(46, 204, 113, 0.15);
+  color: #1e8449;
+}
+body.transmigration-mode .ps-ai-indicator[data-level="L2"] {
+  background: rgba(52, 152, 219, 0.15);
+  color: #1f618d;
+}
+body.transmigration-mode .ps-ai-indicator[data-level="L3"] {
+  background: rgba(155, 89, 182, 0.15);
+  color: #6c3483;
+}
+body.transmigration-mode .ps-ai-indicator.ps-ai-pending::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #f39c12;
+  animation: ps-ai-blink 1s infinite alternate;
+}
+@keyframes ps-ai-blink {
+  from { opacity: 0.4; } to { opacity: 1; }
+}
+
+/* ── §7.9 残疾 tab 灰显（maid/infant 的 tech） ─────────── */
+body.transmigration-mode .ps-tab.ps-tab-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+body.transmigration-mode .ps-tab.ps-tab-locked:hover {
+  background: transparent;
+}
+body.transmigration-mode .ps-tab.ps-tab-locked::after {
+  content: '🔒';
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+/* ── §7.10 系统状态概要列表（adapter _renderStateAsHTML） ── */
+body.transmigration-mode .player-block-state-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+body.transmigration-mode .player-block-state-key {
+  color: #888;
+  font-weight: normal;
+}
+body.transmigration-mode .player-block-state-key::after {
+  content: '：';
+}
+body.transmigration-mode .player-block-state-val {
+  color: var(--player-text-strong, #1a5490);
+  font-weight: 600;
+  word-break: break-all;
+}
+body.transmigration-mode .player-block-state-more {
+  grid-column: 1 / -1;
+  color: #aaa;
+  font-style: italic;
+  font-size: 11px;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §7.1 友好占位（FRIENDLY_FALLBACK · PlayerFortune/Adversity/Memorial/Office）
+   替代冷冰冰的「XXX 待接入」·显示中文化筹备中提示
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .player-block-soon {
+  padding: 10px 12px;
+  margin: 6px 0;
+  background: linear-gradient(135deg, #fafafa 0%, #f0f4f8 100%);
+  border-left: 3px solid #d4a017;
+  border-radius: 4px;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.6;
+}
+body.transmigration-mode .player-block-soon-hint {
+  color: #666;
+  font-style: italic;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §7.2 PlayerInteraction 专用面板（人际名录 + 5 维关系 chip）
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .pi-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+}
+body.transmigration-mode .pi-section {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 8px 10px;
+  background: #fafafa;
+}
+body.transmigration-mode .pi-section-title {
+  font-weight: 600;
+  color: #1a5490;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+  font-size: 12px;
+}
+body.transmigration-mode .pi-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+body.transmigration-mode .pi-val {
+  color: #1a5490;
+  font-weight: 600;
+}
+body.transmigration-mode .pi-empty {
+  color: #aaa;
+  font-style: italic;
+  padding: 8px 0;
+  text-align: center;
+}
+body.transmigration-mode .pi-npc {
+  border-bottom: 1px dashed #e8e8e8;
+  padding: 6px 0;
+}
+body.transmigration-mode .pi-npc:last-child {
+  border-bottom: none;
+}
+body.transmigration-mode .pi-npc-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+body.transmigration-mode .pi-npc-name {
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+}
+body.transmigration-mode .pi-npc-title {
+  color: #1a5490;
+  font-size: 11px;
+  background: #e6f0fa;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+body.transmigration-mode .pi-npc-faction {
+  color: #d4a017;
+  font-size: 11px;
+  background: #fffbe6;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+body.transmigration-mode .pi-npc-mil {
+  color: #fff;
+  font-size: 10px;
+  background: #8b4513;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+body.transmigration-mode .pi-npc-dims {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+body.transmigration-mode .pi-dim {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  background: #888;
+}
+body.transmigration-mode .pi-dim-master    { background: #6a4c93; }  /* 师徒·紫 */
+body.transmigration-mode .pi-dim-friend   { background: #4a7c59; }  /* 亲友·绿 */
+body.transmigration-mode .pi-dim-rival    { background: #c0392b; }  /* 政敌·红 */
+body.transmigration-mode .pi-dim-colleague { background: #2980b9; } /* 同僚·蓝 */
+body.transmigration-mode .pi-dim-enmity   { background: #2c3e50; }  /* 仇雠·黑 */
+body.transmigration-mode .pi-dim-none {
+  background: transparent;
+  color: #aaa;
+  font-style: italic;
+}
+body.transmigration-mode .pi-more {
+  color: #aaa;
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 0;
+  font-style: italic;
+}
+
+/* ───────────────────────────────────────────────────────────
+   §7.3 PlayerRail 槽状态 class（enabled/disabled/restricted/special-*）
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .ps-rail-slot.state-enabled {
+  background: #fff;
+  border-color: #d9d9d9;
+  cursor: pointer;
+  transition: all 120ms ease-out;
+}
+body.transmigration-mode .ps-rail-slot.state-enabled:hover,
+body.transmigration-mode .ps-rail-slot.state-enabled.clickable:hover {
+  background: #e6f0fa;
+  border-color: #1a5490;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(26,84,144,0.15);
+}
+body.transmigration-mode .ps-rail-slot.state-disabled {
+  background: #f5f5f5;
+  border-color: #e8e8e8;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+body.transmigration-mode .ps-rail-slot.state-disabled .ps-rail-slot-icon,
+body.transmigration-mode .ps-rail-slot.state-disabled .ps-rail-slot-label {
+  filter: grayscale(1);
+}
+body.transmigration-mode .ps-rail-slot.state-restricted {
+  background: #fffbe6;
+  border-color: #d4a017;
+  border-style: dashed;
+  cursor: pointer;
+}
+body.transmigration-mode .ps-rail-slot.state-restricted:hover {
+  background: #fff5cc;
+}
+body.transmigration-mode .ps-rail-slot.state-special-caravan,
+body.transmigration-mode .ps-rail-slot.state-special-guardian,
+body.transmigration-mode .ps-rail-slot.state-special-advice {
+  background: linear-gradient(135deg, #fffbe6 0%, #ffe5b4 100%);
+  border-color: #d4a017;
+  cursor: pointer;
+}
+body.transmigration-mode .ps-rail-slot.state-special-caravan:hover,
+body.transmigration-mode .ps-rail-slot.state-special-guardian:hover,
+body.transmigration-mode .ps-rail-slot.state-special-advice:hover {
+  background: linear-gradient(135deg, #ffe5b4 0%, #ffd789 100%);
+}
+
+/* ───────────────────────────────────────────────────────────
+   §7.5 + §7.6 drawer（右栏抽屉·点 X 关闭）
+   历史根因（2026-07-21）：CSS 缺 .player-rail-drawer 默认隐藏 + .open 状态切换
+   → drawer 创建后始终可见→点 X 调 closeDrawer 移除 .open 但无 CSS 效果→用户无法关闭
+   ─────────────────────────────────────────────────────────── */
+body.transmigration-mode .player-rail-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease-out, visibility 200ms ease-out;
+}
+body.transmigration-mode .player-rail-drawer-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+body.transmigration-mode .player-rail-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(420px, 90vw);
+  height: 100vh;
+  z-index: 9999;
+  transform: translateX(100%);  /* 默认滑出视口外 */
+  transition: transform 220ms ease-out;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  pointer-events: none;  /* 滑出时不可点击 */
+}
+body.transmigration-mode .player-rail-drawer.open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+body.transmigration-mode .player-rail-drawer-panel {
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+body.transmigration-mode .player-rail-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #f5f7fa;
+  flex-shrink: 0;
+}
+body.transmigration-mode .player-rail-drawer-title {
+  font-weight: 600;
+  color: #1a5490;
+  letter-spacing: 2px;
+  font-size: 14px;
+}
+body.transmigration-mode .player-rail-drawer-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  color: #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 120ms;
+}
+body.transmigration-mode .player-rail-drawer-close:hover {
+  background: #f0f0f0;
+  color: #c0392b;
+}
+body.transmigration-mode .player-rail-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+body.transmigration-mode .ps-drawer-err {
+  color: #c0392b;
+  background: #fdecea;
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 3px solid #c0392b;
+  font-size: 12px;
+}
+body.transmigration-mode .ps-drawer-empty {
+  color: #888;
+  background: #fafafa;
+  padding: 10px;
+  border-radius: 4px;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* ============================================================
+ * §7.11 穿越大地图·独立 SVG 容器（2026-07-22 修「显示有问题·无法缩放」）
+ * ------------------------------------------------------------
+ * 历史根因：tm-player-map.js 用 .player-map-* 类名渲染·但 CSS 中只有
+ *   旧的 .pms-* 类名样式（phase8 formal bridge 残留）·新类名零样式→
+ *   toolbar 无布局·canvas 无尺寸→SVG 塌陷→"地图显示有问题"。
+ * 修复：补齐 .player-map-* 基础布局 + 缩放控件视觉·全部包在
+ *   body.transmigration-mode 下·皇帝模式零视觉回归。
+ * ============================================================ */
+body.transmigration-mode .player-map-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #1a1a2e;
+  border-bottom: 2px solid var(--player-accent, #4a90e2);
+  overflow: hidden;
+  position: relative;
+}
+body.transmigration-mode .player-map-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #e8e8e8;
+  font-size: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+body.transmigration-mode .player-map-title {
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--gold-300, #d4be7a);
+  margin-right: 6px;
+}
+body.transmigration-mode .player-map-modes {
+  display: inline-flex;
+  gap: 2px;
+}
+body.transmigration-mode .player-map-mode-btn {
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid rgba(212, 190, 122, 0.4);
+  color: #cfcfcf;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 120ms;
+}
+body.transmigration-mode .player-map-mode-btn:hover {
+  background: rgba(212, 190, 122, 0.15);
+  color: #fff;
+}
+body.transmigration-mode .player-map-mode-btn.active {
+  background: var(--gold-400, #b89a53);
+  color: #1a1a2e;
+  border-color: var(--gold-300, #d4be7a);
+  font-weight: 600;
+}
+body.transmigration-mode .player-map-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+body.transmigration-mode .player-map-zoom-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  line-height: 20px;
+  border: 1px solid rgba(212, 190, 122, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--gold-300, #d4be7a);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 120ms;
+}
+body.transmigration-mode .player-map-zoom-btn:hover {
+  background: var(--gold-400, #b89a53);
+  color: #1a1a2e;
+}
+body.transmigration-mode .player-map-zoom-level {
+  display: inline-block;
+  min-width: 38px;
+  text-align: center;
+  font-size: 11px;
+  color: #cfcfcf;
+  font-variant-numeric: tabular-nums;
+}
+body.transmigration-mode .player-map-toggle,
+body.transmigration-mode .player-map-collapse {
+  padding: 2px 8px;
+  background: transparent;
+  border: 1px solid rgba(212, 190, 122, 0.4);
+  color: #cfcfcf;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+body.transmigration-mode .player-map-toggle:hover,
+body.transmigration-mode .player-map-collapse:hover {
+  background: rgba(212, 190, 122, 0.15);
+  color: #fff;
+}
+body.transmigration-mode .player-map-canvas {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #1a1a2e;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.transmigration-mode .player-map-canvas:active {
+  cursor: grabbing;
+}
+body.transmigration-mode .player-map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+body.transmigration-mode .player-map-bg {
+  fill: #1a1a2e;
+}
+body.transmigration-mode .player-map-region {
+  fill: rgba(212, 160, 23, 0.18);
+  stroke: #8b6914;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: fill 150ms ease;
+}
+body.transmigration-mode .player-map-region:hover {
+  fill: rgba(212, 160, 23, 0.38);
+}
+body.transmigration-mode .player-map-region-highlight {
+  fill: rgba(231, 76, 60, 0.45) !important;
+  stroke: #c0392b;
+  stroke-width: 2;
+}
+body.transmigration-mode .player-map-region-flyto {
+  fill: rgba(74, 144, 226, 0.35) !important;
+  stroke: var(--player-accent, #4a90e2);
+  stroke-width: 2;
+}
+body.transmigration-mode .player-map-marker {
+  filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.8));
+  pointer-events: none;
+}
+body.transmigration-mode .player-map-error {
+  padding: 16px;
+  text-align: center;
+  color: #c0392b;
+  font-size: 12px;
+  background: #fff;
+}
+body.transmigration-mode .player-map-error a {
+  color: var(--player-accent, #4a90e2);
+  margin-left: 4px;
+}
