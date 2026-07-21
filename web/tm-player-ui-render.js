@@ -205,31 +205,46 @@
 
   // ── §4 主面板按场景渲染 ─────────────────────────────────────
   // 优先委托 TM.PlayerShell.render（Phase 5.1 重建·含地图+场景+右栏）
-  // PlayerShell 缺席时降级到本文件原有 gc 渲染
+  // PlayerShell 缺席/抛异常时降级到本文件原有 gc 渲染
+  // 铁律：PlayerShell 渲染成功后 #player-shell-container 在 #gc 内·
+  //       绝不能再 gc.innerHTML=html（会抹掉整个 8-tab shell·真事故 2026-07-21）
   function render(sceneKey) {
     if (!_isTrans()) return;
     if (sceneKey) _currentScene = sceneKey;
     // 主路径：PlayerShell 全量渲染（顶栏+左栏+地图+场景+右栏）
+    var shellRendered = false;
     if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.render === 'function') {
-      try { global.TM.PlayerShell.render(); } catch (_) {}
-    }
-    // 兼容路径：仍向 #gc 写场景 HTML·供旧 hook/旧 CSS 选择器使用
-    var gc = _$('gc');
-    if (!gc) return;
-    var role = _playerRole();
-    var html = '';
-    if (global.TM.PlayerSystemsUI && TM.PlayerSystemsUI.renderTab) {
-      try {
-        html = TM.PlayerSystemsUI.renderTab(_currentScene, role);
-      } catch (e) {
-        html = '<div class="player-render-error">场景渲染异常：' + _esc(String(e)) + '</div>';
+      try { global.TM.PlayerShell.render(); shellRendered = true; }
+      catch (e) {
+        try { console.error('[PlayerUI.render] PlayerShell.render failed, fallback to gc', e); } catch (_) {}
       }
-    } else {
-      html = '<div class="player-render-fallback">场景 ' + _esc(_currentScene) + ' 待加载</div>';
     }
-    gc.innerHTML = html;
-    if (global.TM.PlayerSystemsUI && TM.PlayerSystemsUI.bindEvents) {
-      try { TM.PlayerSystemsUI.bindEvents(_currentScene); } catch (_) {}
+    // 兼容路径：仅在 PlayerShell 缺席/失败时降级到 #gc 渲染
+    // （成功时 #player-shell-container 已在 #gc 内·renderScene 已写场景块到 #player-scene-section）
+    if (!shellRendered) {
+      var gc = _$('gc');
+      if (!gc) {
+        // gc 也没有·只跑 hook 后返回
+        if (typeof GameHooks !== 'undefined' && GameHooks.run) {
+          try { GameHooks.run('renderPlayerState:after', { sceneKey: _currentScene }); } catch (_) {}
+        }
+        return;
+      }
+      var role = _playerRole();
+      var html = '';
+      if (global.TM.PlayerSystemsUI && TM.PlayerSystemsUI.renderTab) {
+        try {
+          html = TM.PlayerSystemsUI.renderTab(_currentScene, role);
+        } catch (e) {
+          html = '<div class="player-render-error">场景渲染异常：' + _esc(String(e)) + '</div>';
+        }
+      } else {
+        html = '<div class="player-render-fallback">场景 ' + _esc(_currentScene) + ' 待加载</div>';
+      }
+      gc.innerHTML = html;
+      if (global.TM.PlayerSystemsUI && TM.PlayerSystemsUI.bindEvents) {
+        try { TM.PlayerSystemsUI.bindEvents(_currentScene); } catch (_) {}
+      }
     }
     if (typeof GameHooks !== 'undefined' && GameHooks.run) {
       try { GameHooks.run('renderPlayerState:after', { sceneKey: _currentScene }); } catch (_) {}
