@@ -40,13 +40,62 @@
       '</div>';
   }
 
-  /** 软依赖守卫调用器：仅当对应系统已挂载且提供 renderBlockHTML 时才调，否则返回 null */
+  /** 软依赖守卫调用器：按方法名优先级链尝试渲染 */
+  // 链：renderBlockHTML(role, title) → render<Short>Panel() → getState() → null
+  // 注：不吞异常——异常让 renderBlock 顶层 try/catch 捕获返回「渲染异常」
   function _callSystemRender(systemKey, role, title) {
-    if (global.TM && global.TM[systemKey] && typeof global.TM[systemKey].renderBlockHTML === 'function') {
-      return global.TM[systemKey].renderBlockHTML(role, title);
+    var sys = (global.TM && global.TM[systemKey]) ? global.TM[systemKey] : null;
+    if (!sys) return null;
+
+    // 1) 标准 renderBlockHTML(role, title)
+    if (typeof sys.renderBlockHTML === 'function') {
+      return sys.renderBlockHTML(role, title);
     }
+
+    // 2) 现有命名不统一的 render<Short>Panel()（无参数）
+    var panelMethod = PANEL_METHOD_MAP[systemKey];
+    if (panelMethod && typeof sys[panelMethod] === 'function') {
+      return sys[panelMethod]();
+    }
+
+    // 3) getState() 兜底·输出 JSON 概要
+    if (typeof sys.getState === 'function') {
+      var st = sys.getState() || {};
+      return _renderStateAsHTML(systemKey, st);
+    }
+
     return null;
   }
+
+  /** 将 getState 返回的对象渲染为可读 HTML 概要 */
+  function _renderStateAsHTML(systemKey, st) {
+    var keys = Object.keys(st);
+    if (!keys.length) {
+      return '<div class="player-block-empty">（' + _esc(systemKey) + ' 暂无状态）</div>';
+    }
+    var h = '<ul class="player-block-state-list">';
+    for (var i = 0; i < keys.length && i < 12; i++) {
+      var k = keys[i];
+      var v = st[k];
+      var vs = (v == null) ? '—' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+      if (vs.length > 80) vs = vs.slice(0, 80) + '…';
+      h += '<li><span class="player-block-state-key">' + _esc(k) + '</span>' +
+           '<span class="player-block-state-val">' + _esc(vs) + '</span></li>';
+    }
+    if (keys.length > 12) {
+      h += '<li class="player-block-state-more">… 共 ' + keys.length + ' 项</li>';
+    }
+    h += '</ul>';
+    return h;
+  }
+
+  /** systemKey → 现有 render<Short>Panel 方法名映射表 */
+  var PANEL_METHOD_MAP = {
+    PlayerFamily:    'renderFamilyPanel',
+    PlayerMarriage:  'renderMarriagePanel',
+    PlayerTech:      'renderTechPanel',
+    PlayerMovement:  'renderMovementPanel'
+  };
 
   /** fallback 模板生成器 */
   function _fallback(systemKey, title) {
