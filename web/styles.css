@@ -6271,3 +6271,14 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;o
 .tm-op-eye:hover{border-color:#cdab63;transform:translateX(2px);}
 #tm-opening ._ot-ch{transition:opacity .45s ease;}
 
+
+/* 问天浅主题可读性（玩家群 2026-07-22 实拍：素宣主题下确认卡金字浅底糊成一片）——
+   气泡/确认卡的行内样式用的是暗底调原色 token(ink-200/300·gold-300/400·celadon-400 等)不随主题翻转，
+   底色却吃语义 token 随主题变浅 → 浅字浅底。在 #wt-chat 作用域内把这几支原色按浅底重定标，
+   行内样式全体自动翻正；暗主题族零变化。 */
+[data-theme="light"] #wt-chat,[data-theme="paper"] #wt-chat{
+  --ink-200:var(--ink-600);--ink-300:var(--ink-500);
+  --gold-300:var(--gold-600);--gold-400:var(--gold-500);
+  --celadon-300:var(--celadon-500);--celadon-400:var(--celadon-500);
+  --amber-400:#7a5c12;--vermillion-300:var(--vermillion-500);
+}

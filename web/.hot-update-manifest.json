@@ -3436,8 +3436,8 @@
     },
     {
       "path": "styles.css",
-      "sha256": "9938da646dff4603bfa6a6df227daceafa3377b4ef6f6f5bc6bf0ed985d544c0",
-      "size": 675941
+      "sha256": "3db0c7d73b244509084521638a30e635a4688cfa39de732cee6f4cfd04203432",
+      "size": 676686
     },
     {
       "path": "tm-agent-flags.js",
