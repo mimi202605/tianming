@@ -1406,6 +1406,16 @@
     return h;
   }
   function coverHtml(p, small) {
+    // 真封面优先(服务器补丁后 catalog 带 coverUrl 即点亮)·无封面走典籍字封
+    var cu = p && (p.coverUrl || p.cover);
+    if (cu) {
+      var cuR = String(cu);
+      try { var c0 = client(); if (c0) cuR = new URL(cuR, c0.getApiUrl()).toString(); } catch (_eCu) {}
+      var seal0 = '';
+      if (S.feat && S.feat[p.id]) seal0 = '<span class="ws-cseal" data-k="feat">荐</span>';
+      else if ((p.author || '') === '天命官方') seal0 = '<span class="ws-cseal" data-k="off">官</span>';
+      return '<div class="ws-cover' + (small ? ' ws-cover--s' : '') + ' ws-cover--img" aria-hidden="true"><img src="' + esc(cuR) + '" alt="" loading="lazy">' + seal0 + '</div>';
+    }
     var t = String(p.title || p.id || '');
     var m = t.match(/[一-鿿]/);
     var glyph = m ? m[0] : (t.charAt(0) || '书');
@@ -1641,7 +1651,11 @@
       pubSec += '<div class="ws-desk-row"><label>版本</label><input id="ws-pub-version" class="ws-desk-input" value="' + esc(S.pub.version) + '" style="width:5.5em;"><span class="ws-dim">← 自动 +1 · 可改' + (S.pubBase ? '（线上 v' + esc(S.pubBase.version || '?') + '）' : '') + '</span></div>';
     }
     pubSec += '<div class="ws-desk-row"><label>简介</label><textarea id="ws-pub-desc" class="ws-desk-input ws-grow" rows="3">' + esc(S.pub.desc) + '</textarea></div>' +
-      '<div class="ws-desk-row"><label>标签</label><input id="ws-pub-tags" class="ws-desk-input ws-grow" value="' + esc(S.pub.tags) + '" placeholder="以逗号分隔"></div>';
+      '<div class="ws-desk-row"><label>标签</label><input id="ws-pub-tags" class="ws-desk-input ws-grow" value="' + esc(S.pub.tags) + '" placeholder="以逗号分隔"></div>' +
+      // 发布补齐：封面+版本说明(与游戏内工坊投稿同档·服务器补丁前先随包送达·不显示不误导)
+      '<div class="ws-desk-row"><label>封面</label><input type="file" id="ws-pub-cover" accept="image/*" class="ws-desk-input">' +
+      (S.pubCover ? '<span class="ws-dim">已选 ' + esc(S.pubCover.name) + '（' + Math.round((S.pubCover.size || 0) / 1024) + ' KB）</span><button type="button" class="mini-ai" data-ws-act="cover-clear">去掉</button>' : '<span class="ws-dim">可选·橱窗卡片展示用（无封面走典籍字封）</span>') + '</div>' +
+      '<div class="ws-desk-row"><label>版本说明</label><textarea id="ws-pub-notes" class="ws-desk-input ws-grow" rows="2" placeholder="本版改了什么（可选·随条目展示）">' + esc(S.pub.notes || '') + '</textarea></div>';
     var pf = preflightGate();
     var pfBlock = !!(pf && !pf.canExport);
     if (!pf) pubSec += '<div class="ws-desk-row"><span class="ws-gate" data-tone="dim"><i></i>预检未跑——提交前会自动跑一遍守门。</span></div>';
@@ -1766,7 +1780,9 @@
       version: S.pub.version || '1.0.0',
       description: S.pub.desc || '',
       tags: S.pub.tags || '',
-      type: 'scenario'
+      type: 'scenario',
+      releaseNotes: S.pub.notes || '',
+      coverImage: S.pubCover || null
     };
     if (!meta.title.trim()) { setMsg('标题不能为空。', 'warn'); return; }
     if (!meta.id.trim()) { setMsg('ID 不能为空。', 'warn'); return; }
@@ -1915,6 +1931,7 @@
     else if (act === 'fav') doFav(t.getAttribute('data-ws-pack'));
     else if (act === 'rate') doRate(t.getAttribute('data-ws-pack'), parseInt(t.getAttribute('data-ws-score'), 10) || 0);
     else if (act === 'fork-clear') { S.forkFrom = null; render(); }
+    else if (act === 'cover-clear') { S.pubCover = null; render(); }
     else if (act === 'pub-mode') {
       var mode = t.getAttribute('data-ws-mode') || 'new';
       if (mode === S.pubMode) return;
@@ -1955,12 +1972,27 @@
     else if (el.id === 'ws-pub-version') S.pub.version = el.value;
     else if (el.id === 'ws-pub-desc') S.pub.desc = el.value;
     else if (el.id === 'ws-pub-tags') S.pub.tags = el.value;
+    else if (el.id === 'ws-pub-notes') S.pub.notes = el.value;
   });
   document.addEventListener('change', function (e) {
     if (e.target && e.target.id === 'ws-pub-base') {
       var pid = e.target.value;
       var base = (S.mine || []).filter(function (p) { return p && p.id === pid; })[0];
       if (base) { S.pubBase = base; pubInit(true); render(); }
+      return;
+    }
+    // 封面选择：读成 {name,type,size,contentBase64}（与游戏内工坊投稿同形·≤2MB 守门）
+    if (e.target && e.target.id === 'ws-pub-cover') {
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      if (f.size > 2 * 1048576) { setMsg('封面请压到 2MB 以内（当前 ' + Math.round(f.size / 1048576 * 10) / 10 + ' MB）。', 'warn'); return; }
+      var rd = new FileReader();
+      rd.onload = function () {
+        var b64 = String(rd.result || '').split(',')[1] || '';
+        S.pubCover = { name: String(f.name || 'cover'), type: String(f.type || 'image/*'), size: f.size || 0, contentBase64: b64 };
+        render();
+      };
+      rd.readAsDataURL(f);
     }
   });
 
@@ -2042,6 +2074,7 @@
         '.ws-cover--s .ws-glyph{font-size:2rem;}' +
         '.ws-cover--s .ws-slip{font-size:.6rem;padding:.28rem .12rem;max-height:70px;top:5px;left:5px;}' +
         '.ws-cover--s .ws-cseal{width:17px;height:17px;font-size:.6rem;right:4px;bottom:4px;}' +
+        '.ws-cover--img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}' +
         // 账号印徽
         '.ws-acct{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;}' +
         '.ws-seal{width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font-size:1.15rem;color:#2a2014;background:linear-gradient(180deg,#d4be7a,#b89a53);box-shadow:inset 0 1px rgba(255,255,255,.35);}' +

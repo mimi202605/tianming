@@ -558,6 +558,10 @@
         filename: String(meta.filename || 'scenario.json'),
         contentBase64: utf8ToBase64(json)
       };
+      // 发布补齐2026-07-21·纯文本剧本路由透传展示字段(老服务器忽略未知键=零害·服务器补丁后点亮)
+      if (meta.releaseNotes) payload.releaseNotes = String(meta.releaseNotes).slice(0, 2000);
+      if (meta.coverImage && meta.coverImage.contentBase64) payload.coverImage = meta.coverImage;
+      if (Array.isArray(meta.galleryImages) && meta.galleryImages.length) payload.galleryImages = meta.galleryImages.slice(0, 6);
       var session = readSession();
       return request('POST', 'workshop/upload', { body: payload, apiUrl: apiUrl || session.apiUrl, token: session.token })
         .then(function (res) { return Object.assign({ success: false }, res || {}); });

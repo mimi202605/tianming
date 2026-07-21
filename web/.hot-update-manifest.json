@@ -3281,8 +3281,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-adapters.js",
-      "sha256": "70633a60834e66b43fb4b85a95137f4b1c28afac055e0d65fa1508ebc83f1bf1",
-      "size": 163878
+      "sha256": "4eb68fb6f348de51d05f93513a0acdb0f4258fd2d3c13dab1a935aa362a75405",
+      "size": 166476
     },
     {
       "path": "preview/scenario-editor-reset-app.js",
@@ -4971,8 +4971,8 @@
     },
     {
       "path": "tm-online-client.js",
-      "sha256": "6d8b1a03cbf02989203197f162de880f5bcdf06dba4c8c1cf0cebd82547cc9dd",
-      "size": 34429
+      "sha256": "4211701cac52ff3e805271cbba59f4dfb513cc73a0d1eb83d489e5652b9c1e20",
+      "size": 34886
     },
     {
       "path": "tm-online-mall.css",

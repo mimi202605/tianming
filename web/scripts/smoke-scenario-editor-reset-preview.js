@@ -2547,6 +2547,16 @@ assert(adaptersJs.includes("type: 'publish'") && adaptersJs.includes('postFeed')
   'successful publish should auto-post a feed entry like the in-game workshop');
 assert(adaptersJs.includes('版本号请用数字点分格式') && adaptersJs.includes('简介不能为空'),
   'publish must validate version format and require a description');
+// 三稿批八：发布补齐(封面/版本说明)——客户端全线接好·老服务器忽略未知键零害·服务器补丁后点亮
+assert(adaptersJs.includes('ws-pub-cover') && adaptersJs.includes('cover-clear'),
+  'desk publish should offer an optional cover picker with clear action');
+assert(adaptersJs.includes('ws-pub-notes') && adaptersJs.includes('releaseNotes'),
+  'desk publish should carry release notes through meta');
+assert(adaptersJs.includes('coverUrl') && adaptersJs.includes('ws-cover--img'),
+  'storefront cards should prefer a real coverUrl and fall back to the typographic cover');
+var onlineClientJs = fs.readFileSync(path.join(ROOT, 'tm-online-client.js'), 'utf8');
+assert(onlineClientJs.includes('payload.coverImage') && onlineClientJs.includes('payload.releaseNotes'),
+  'uploadScenario must pass cover/releaseNotes through (old server ignores unknown keys)');
 var contentManagerJs = fs.readFileSync(path.join(ROOT, 'tm-content-manager.js'), 'utf8');
 assert(contentManagerJs.includes('tmOpenWorkshop=1') && contentManagerJs.includes('TMContentManager.open()'),
   'game side should honor tmOpenWorkshop=1 by auto-opening the content manager workshop view');
