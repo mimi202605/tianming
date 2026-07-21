@@ -13379,7 +13379,7 @@
       title: 'AI / 校验',
       items: [
         { keys: '顶栏「验」', desc: '校验剧本冲突，写入运行态' },
-        { keys: '顶栏「预」', desc: '运行发布预检（导出守门）' },
+        { keys: '顶栏「⋯」→发布预检', desc: '运行发布预检（导出守门·「出」亦内含预检）' },
         { keys: '顶栏「补齐并运行」', desc: '一键 AI 补齐所有缺失字段' }
       ]
     },
@@ -21456,25 +21456,64 @@
     refreshAiPromptCostBadge();
   }
 
+  function closeTopMoreMenu() {
+    var menu = document.querySelector('.top-more-menu');
+    var btn = document.querySelector('[data-editor-command="toggle-more-menu"]');
+    if (menu) menu.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+  function toggleTopMoreMenu() {
+    var menu = document.querySelector('.top-more-menu');
+    var btn = document.querySelector('[data-editor-command="toggle-more-menu"]');
+    if (!menu) return;
+    menu.hidden = !menu.hidden;
+    if (btn) btn.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+  }
+
   function bootstrapChrome() {
     var actions = document.querySelector('.top-actions');
     if (actions) {
+      /* 顶栏收纳(2026-07-21·owner「太乱·冗杂重复」)：十三钮→六钮+「⋯」菜单。
+       * 直出=真高频且职责唯一：退/复(撤销重做)·验(校验)·出(预检并导出)·回(写回正式游戏)·👁(玩家视角·带 data-pv-launch=adapters 免重注)。
+       * 「预」不再直出(出已内含预检=重复)·新/入/链/帮/数值体检/重置(危险区·二次确认)全收「⋯」。
+       * ⚙ API 设置钮已退役(2026-07-03·主API配置移驻国师面板模型徽弹层·生图API在规则AI章面板) */
       actions.innerHTML = [
-        '<button type="button" class="icon-btn" data-editor-command="focus-runtime-panel" data-runtime-panel="new-scenario-starter" title="新建剧本" aria-label="新建剧本">新</button>',
         '<button type="button" class="icon-btn" data-editor-command="undo-edit" title="撤销 (Ctrl+Z)" aria-label="撤销上一步编辑">退</button>',
         '<button type="button" class="icon-btn" data-editor-command="redo-edit" title="重做 (Ctrl+Y)" aria-label="重做上一步撤销">复</button>',
-        '<button type="button" class="icon-btn" data-editor-command="run-preflight" title="发布预检" aria-label="运行发布预检">预</button>',
         '<button type="button" class="icon-btn" data-editor-command="validate" title="校验冲突" aria-label="校验剧本冲突">验</button>',
-        '<button type="button" class="icon-btn" data-editor-command="import" title="导入剧本" aria-label="导入剧本 JSON 文件">入</button>',
         '<button type="button" class="icon-btn" data-editor-command="preflight-export" title="预检并导出" aria-label="先预检再导出剧本">出</button>',
         '<button type="button" class="icon-btn" data-editor-command="return-to-formal-runtime" title="写回正式游戏" aria-label="把当前剧本写回正式游戏运行时">回</button>',
-        '<button type="button" class="icon-btn" data-editor-command="reset" title="重置编辑器" aria-label="重置编辑器到官方基线">归</button>',
-        '<button type="button" class="icon-btn" data-editor-command="copy-share-url" title="复制分享链接" aria-label="复制剧本分享链接到剪贴板">链</button>',
-        /* ⚙ API 设置钮已退役(2026-07-03·主API配置移驻国师面板模型徽弹层·生图API在规则AI章面板) */
-        '<button type="button" class="icon-btn" data-editor-command="open-shortcut-cheatsheet" title="键盘快捷键 (Shift+?)" aria-label="查看键盘快捷键参考" aria-keyshortcuts="Shift+?">帮</button>',
+        '<button type="button" class="icon-btn" data-pv-launch="preview" title="玩家视角预览" aria-label="玩家视角预览">👁</button>',
+        '<span class="top-more-wrap">',
+        '<button type="button" class="icon-btn" data-editor-command="toggle-more-menu" title="更多操作" aria-label="更多操作" aria-haspopup="true" aria-expanded="false">⋯</button>',
+        '<span class="top-more-menu" hidden>',
+        '<button type="button" class="top-more-item" data-editor-command="focus-runtime-panel" data-runtime-panel="new-scenario-starter">新建剧本</button>',
+        '<button type="button" class="top-more-item" data-editor-command="import">导入剧本</button>',
+        '<button type="button" class="top-more-item" data-editor-command="run-preflight">发布预检</button>',
+        '<button type="button" class="top-more-item" data-pv-launch="audit">数值体检</button>',
+        '<button type="button" class="top-more-item" data-editor-command="copy-share-url">复制分享链接</button>',
+        '<button type="button" class="top-more-item" data-editor-command="open-shortcut-cheatsheet" aria-keyshortcuts="Shift+?">键盘快捷键 (Shift+?)</button>',
+        '<span class="top-more-sep" role="separator"></span>',
+        '<button type="button" class="top-more-item top-more-danger" data-editor-command="reset">⚠ 重置到官方基线</button>',
+        '</span>',
+        '</span>',
         '<input id="scenario-import-input" type="file" accept=".json,application/json" hidden>',
         '<input id="project-package-import-input" type="file" accept=".json,application/json" hidden>'
       ].join('');
+      // 「⋯」菜单开合：点外面关·Escape 关·点菜单项(执行命令后)关。document 级委托只装一次。
+      if (!document.body.hasAttribute('data-topmore-wired')) {
+        document.body.setAttribute('data-topmore-wired', '1');
+        document.addEventListener('click', function (ev) {
+          var menu = document.querySelector('.top-more-menu');
+          if (!menu || menu.hidden) return;
+          if (ev.target.closest && ev.target.closest('[data-editor-command="toggle-more-menu"]')) return;   // 开关钮自己在 router 里翻
+          if (ev.target.closest && ev.target.closest('.top-more-item')) { closeTopMoreMenu(); return; }     // 选了菜单项→收
+          if (!(ev.target.closest && ev.target.closest('.top-more-wrap'))) closeTopMoreMenu();              // 点在外面→收
+        });
+        document.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Escape') closeTopMoreMenu();
+        });
+      }
     }
     var bottom = document.querySelector('.bottom-note');
     var runtimeAnchor = document.querySelector('.main-stack .hero-board') || bottom;
@@ -21890,7 +21929,13 @@
     }
     if (command === 'copy-release-notes') copyReleaseNotes();
     if (command === 'export') exportScenario();
-    if (command === 'reset') resetToOfficial();
+    if (command === 'toggle-more-menu') toggleTopMoreMenu();
+    // 重置=丢弃全部改动+清编辑历史·此前一点即毁无确认(地雷)·今必二次确认(仅按钮路径·API/工坊程序化重置不走此)
+    if (command === 'reset') {
+      var _rstOk = true;
+      try { if (typeof window !== 'undefined' && typeof window.confirm === 'function') _rstOk = window.confirm('重置将丢弃当前剧本的全部改动、清空编辑历史，回到官方基线。\n此操作不可撤销——确定重置？'); } catch (_eCf) {}
+      if (_rstOk) resetToOfficial();
+    }
     if (command === 'save-project-snapshot' || command === 'fork-project-snapshot') {
       var nameInput = document.getElementById('project-snapshot-name');
       var label = nameInput && nameInput.value ? nameInput.value : (state.scenario.name || '未命名案卷');

@@ -11419,22 +11419,22 @@
        creators can't tell which buttons belong together. Group them by
        function via thin gold-tinted vertical dividers inserted between
        logical bundles. Dividers are pure CSS (separator pseudo via
-       margin-left bumps after each group's last button). The order is:
-       navigation (新 退 复) | validation (预 验) | i/o (入 出 回 归 链) | help (帮). */
+       margin-left bumps after each group's last button). 2026-07-21 顶栏收纳后
+       the order is: edit (退 复) | validation (验) | 成品 (出 回) | 👁 | ⋯ menu. */
     .top-actions {
       gap: 6px;
     }
 
-    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="run-preflight"],
-    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="import"],
-    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="open-shortcut-cheatsheet"] {
+    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="validate"],
+    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="preflight-export"],
+    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-pv-launch="preview"] {
       margin-left: 10px;
       position: relative;
     }
 
-    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="run-preflight"]::before,
-    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="import"]::before,
-    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="open-shortcut-cheatsheet"]::before {
+    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="validate"]::before,
+    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-editor-command="preflight-export"]::before,
+    .top-actions .icon-btn:not(:last-of-type) + .icon-btn[data-pv-launch="preview"]::before {
       content: "";
       position: absolute;
       left: -5px;
@@ -11445,14 +11445,62 @@
       pointer-events: none;
     }
 
-    .top-actions .icon-btn[data-editor-command="open-shortcut-cheatsheet"] {
-      border-color: rgba(95,157,140,.5);
-      color: rgba(188,230,217,.92);
+    /* 「⋯」收纳菜单（新/入/预/数值体检/链/帮/重置） */
+    .top-more-wrap {
+      position: relative;
+      display: inline-flex;
     }
 
-    .top-actions .icon-btn[data-editor-command="open-shortcut-cheatsheet"]:hover {
-      border-color: rgba(188,230,217,.9);
-      background: rgba(95,157,140,.18);
+    .top-more-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      z-index: 60;
+      min-width: 178px;
+      display: flex;
+      flex-direction: column;
+      padding: 6px;
+      background: var(--je-ink-850, #17140f);
+      border: 1px solid rgba(202,162,76,.45);
+      border-radius: var(--je-radius, 6px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.5);
+    }
+
+    .top-more-item {
+      font-family: inherit;
+      font-size: 13px;
+      text-align: left;
+      padding: 7px 10px;
+      cursor: pointer;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--je-ink-200, #d4c9b0);
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .top-more-item:hover,
+    .top-more-item:focus-visible {
+      background: rgba(184,154,83,.16);
+      color: #f3df9d;
+    }
+
+    .top-more-sep {
+      display: block;
+      height: 1px;
+      margin: 5px 6px;
+      background: linear-gradient(90deg, transparent, rgba(202,162,76,.4), transparent);
+    }
+
+    .top-more-item.top-more-danger {
+      color: rgba(224,122,102,.92);
+    }
+
+    .top-more-item.top-more-danger:hover,
+    .top-more-item.top-more-danger:focus-visible {
+      background: rgba(169,79,63,.18);
+      color: #ef9a86;
     }
 
     .top-actions .icon-btn:active {

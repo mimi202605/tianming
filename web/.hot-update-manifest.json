@@ -3286,8 +3286,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-app.js",
-      "sha256": "c0e4ed2ec460d7aaefa5faf314246a3de601ae13ba7aa629b49bd6769ea913aa",
-      "size": 1381554
+      "sha256": "316b07b928d6c580506ab8da313376d46f1179bac941690c6c0e0af908b76e6c",
+      "size": 1384495
     },
     {
       "path": "preview/scenario-editor-reset-data.js",
@@ -3301,8 +3301,8 @@
     },
     {
       "path": "preview/scenario-editor-reset-style.css",
-      "sha256": "66b07f6a2d1b561083220c49cdad4b73c0dcdc8f45fcb038acfc01ee0cd77fab",
-      "size": 381679
+      "sha256": "16fe76c28d50db60419968791594fd109374e492745e21fe81eea0cd7ffec198",
+      "size": 382823
     },
     {
       "path": "preview/scenario-editor-sandbox-bridge.js",

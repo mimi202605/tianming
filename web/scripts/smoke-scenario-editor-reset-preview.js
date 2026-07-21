@@ -2468,8 +2468,8 @@ assert(appJs.includes('aria-label="重做上一步撤销"'),
   'redo icon-btn should expose an explicit aria-label');
 assert(appJs.includes('aria-label="校验剧本冲突"'),
   'validate icon-btn should expose an explicit aria-label');
-assert(appJs.includes('aria-label="复制剧本分享链接到剪贴板"'),
-  'share-url icon-btn should expose an explicit aria-label');
+assert(appJs.includes('data-editor-command="copy-share-url">复制分享链接'),
+  'share-url should live in the ⋯ more-menu with readable text (顶栏收纳 2026-07-21)');
 assert(appJs.includes('title="撤销 (Ctrl+Z)"'),
   'undo icon-btn title should surface the keyboard shortcut');
 assert(appJs.includes('title="重做 (Ctrl+Y)"'),
@@ -2699,12 +2699,25 @@ assert(appJs.includes('persistDraftToIdb') && appJs.includes('function putDraftB
 // Slice 74: top-action group dividers.
 assert(html.includes('Slice 74: Top-action group dividers'),
   'preview shell should mark Slice 74 polish block');
-assert(/\.top-actions \.icon-btn:not\(:last-of-type\) \+ \.icon-btn\[data-editor-command="run-preflight"\]/.test(html),
-  'preflight button should start the validation group with a divider');
-assert(/\.top-actions \.icon-btn:not\(:last-of-type\) \+ \.icon-btn\[data-editor-command="import"\]/.test(html),
-  'import button should start the i/o group with a divider');
-assert(/\.top-actions \.icon-btn\[data-editor-command="open-shortcut-cheatsheet"\]\s*\{[^}]*rgba\(95,157,140/.test(html),
-  '帮 icon-btn should pick up the jade accent');
+assert(/\.top-actions \.icon-btn:not\(:last-of-type\) \+ \.icon-btn\[data-editor-command="validate"\]/.test(html),
+  'validate button should start the check group with a divider (顶栏收纳后分组=退复|验|出回|👁|⋯)');
+assert(/\.top-actions \.icon-btn:not\(:last-of-type\) \+ \.icon-btn\[data-editor-command="preflight-export"\]/.test(html),
+  'preflight-export button should start the 成品 group with a divider');
+// 顶栏收纳(2026-07-21)：十三钮→六钮+「⋯」菜单·预(与出重复)不再直出·重置入危险区二次确认
+assert(html.includes('.top-more-menu') && html.includes('.top-more-danger'),
+  'style should carry the ⋯ more-menu with a danger zone');
+assert(appJs.includes('data-editor-command="toggle-more-menu"'),
+  'toolbar should expose the ⋯ more-menu toggle');
+assert(appJs.includes('class="top-more-item top-more-danger" data-editor-command="reset"'),
+  'reset should live in the more-menu danger zone, not as a bare top button');
+assert(appJs.includes('window.confirm') && appJs.includes('重置将丢弃当前剧本的全部改动'),
+  'reset command must be gated behind an explicit confirm (地雷修复)');
+assert(!/icon-btn" data-editor-command="run-preflight"/.test(appJs),
+  '预 must not be a bare top icon-btn anymore (出 already preflights — redundant)');
+assert(appJs.includes('data-pv-launch="preview"'),
+  'toolbar should carry 玩家视角 launcher inline so adapters skip double-injection');
+assert(appJs.includes('data-pv-launch="audit"'),
+  '数值体检 should live in the more-menu via data-pv-launch=audit');
 assert(/\.top-actions \.icon-btn:active\s*\{[^}]*transform:\s*scale\(0\.96\)/.test(html),
   'icon-btn press should scale down for tactile feedback');
 
