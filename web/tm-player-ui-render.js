@@ -101,8 +101,13 @@
   }
 
   // ── §2.1 顶栏玩家身份条 ─────────────────────────────────────
+  // 优先委托 TM.PlayerShell.renderTopBar（Phase 5.1 重建·四段式顶栏）
+  // PlayerShell 缺席时降级到本文件原有 bar-player-identity 渲染
   function renderTopBar() {
     if (!_isTrans()) return;
+    if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.renderTopBar === 'function') {
+      try { global.TM.PlayerShell.renderTopBar(); } catch (_) {}
+    }
     var bar = _$('bar-player-identity');
     if (!bar) return;
     bar.style.display = '';
@@ -141,9 +146,14 @@
     barVars.innerHTML = html;
   }
 
-  // ── §3 左栏 7 场景 tab 树 ───────────────────────────────────
+  // ── §3 左栏 8 场景 tab 树 ───────────────────────────────────
+  // 优先委托 TM.PlayerShell.renderLeftTabs（Phase 5.1 重建·8 tab 含 tech）
+  // PlayerShell 缺席时降级到本文件原有 7 tab 渲染
   function renderLeftTabs() {
     if (!_isTrans()) return;
+    if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.renderLeftTabs === 'function') {
+      try { global.TM.PlayerShell.renderLeftTabs(); } catch (_) {}
+    }
     var container = _$('player-left-tabs');
     if (!container) return;
     container.classList.remove('hidden-emperor');
@@ -153,13 +163,14 @@
     var role = _playerRole();
     var scenes = (global.TM.PlayerSystemsUI && TM.PlayerSystemsUI.scenesForRole)
       ? TM.PlayerSystemsUI.scenesForRole(role)
-      : ['home','office','social','cultivation','force','special','evolution'];
+      : ['home','office','social','cultivation','tech','force','special','evolution'];
 
     var SCENE_DEFS = {
       home:         { icon: '🏠', label: '私宅' },
       office:       { icon: '📜', label: '公务' },
       social:       { icon: '🤝', label: '交际' },
       cultivation:  { icon: '📚', label: '修行' },
+      tech:         { icon: '🔬', label: '格物' },
       force:        { icon: '⚔️', label: '势力' },
       special:      { icon: '🎭', label: '特殊' },
       evolution:    { icon: '👤', label: '身份演进' }
@@ -193,9 +204,16 @@
   }
 
   // ── §4 主面板按场景渲染 ─────────────────────────────────────
+  // 优先委托 TM.PlayerShell.render（Phase 5.1 重建·含地图+场景+右栏）
+  // PlayerShell 缺席时降级到本文件原有 gc 渲染
   function render(sceneKey) {
     if (!_isTrans()) return;
     if (sceneKey) _currentScene = sceneKey;
+    // 主路径：PlayerShell 全量渲染（顶栏+左栏+地图+场景+右栏）
+    if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.render === 'function') {
+      try { global.TM.PlayerShell.render(); } catch (_) {}
+    }
+    // 兼容路径：仍向 #gc 写场景 HTML·供旧 hook/旧 CSS 选择器使用
     var gc = _$('gc');
     if (!gc) return;
     var role = _playerRole();
@@ -219,8 +237,13 @@
   }
 
   // ── §5 右栏玩家身份卡 ──────────────────────────────────────
+  // 优先委托 TM.PlayerShell.renderRightRail（Phase 5.1 重建·3×3 图标栅格 + drawer）
+  // PlayerShell 缺席时降级到本文件原有 player-right-panel 渲染
   function renderRightPanel() {
     if (!_isTrans()) return;
+    if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.renderRightRail === 'function') {
+      try { global.TM.PlayerShell.renderRightRail(); } catch (_) {}
+    }
     var panel = _$('player-right-panel');
     if (!panel) return;
     panel.classList.remove('hidden-emperor');

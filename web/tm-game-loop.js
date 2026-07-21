@@ -437,9 +437,18 @@ function _tmRefreshFactionDerivedRuntime(source){
 
 // 时局概览面板（开局展示天下大势）
 function _showSituationOverview() {
+  // 穿越模式守卫：非皇帝角色不看「天下大势」+「开始治国」按钮·
+  // 改为「穿越者处境」+「开始穿越」按钮·避免穿越模式仍走皇帝御案叙事
+  var _isTrans = false;
+  try {
+    _isTrans = !!(P && P.playerInfo && P.playerInfo.transmigrationMode === true
+                  && P.playerInfo.playerRole && P.playerInfo.playerRole !== 'emperor');
+  } catch (_) { _isTrans = false; }
+  var _titleTrans = _isTrans ? '\u7A7F\u8D8A\u8005\u5904\u5883' : '\u5929\u4E0B\u5927\u52BF';
+  var _btnLabelTrans = _isTrans ? '\u5F00\u59CB\u7A7F\u8D8A' : '\u5F00\u59CB\u6CBB\u56FD';
   var h = '<div style="position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;" id="_situationModal" onclick="if(event.target===this)this.remove();">';
   h += '<div style="max-width:600px;width:90%;max-height:80vh;overflow-y:auto;background:var(--bg-2);border:2px solid var(--gold);border-radius:12px;padding:2rem;" onclick="event.stopPropagation();">';
-  h += '<div style="text-align:center;font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:0.15em;margin-bottom:1rem;">\u5929\u4E0B\u5927\u52BF</div>';
+  h += '<div style="text-align:center;font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:0.15em;margin-bottom:1rem;">' + _titleTrans + '</div>';
 
   // 势力格局
   if (GM.facs && GM.facs.length > 0) {
@@ -471,7 +480,7 @@ function _showSituationOverview() {
     h += '</div>';
   }
 
-  h += '<div style="text-align:center;"><button class="bt bp" onclick="document.getElementById(\'_situationModal\').remove();" style="padding:10px 40px;font-size:0.95rem;">\u5F00\u59CB\u6CBB\u56FD</button></div>';
+  h += '<div style="text-align:center;"><button class="bt bp" onclick="document.getElementById(\'_situationModal\').remove();" style="padding:10px 40px;font-size:0.95rem;">' + _btnLabelTrans + '</button></div>';
   h += '</div></div>';
   document.body.insertAdjacentHTML('beforeend', h);
 }

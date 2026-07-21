@@ -1116,6 +1116,98 @@ function e2eIntegrationAssertionTest() {
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// 24. 端到端：5 新模块（Shell/Rail/Map/Adapter/AIBridge）render/switchTab 联动
+//   Phase 5.1 重建的 5 个模块在统一 sandbox 中联动渲染·4 条断言
+// ─────────────────────────────────────────────────────────────
+function newModulesRenderE2ETest() {
+  var ctx = buildCtx();
+  ctx.TM = {};
+  ctx.P = { playerInfo: { transmigrationMode: true, playerRole: 'minister', characterName: '赵孟頫', characterTitle: '翰林学士' } };
+  ctx.GM = { turn: 5 };
+  // localStorage stub（Map 默认状态持久化用）
+  var _ls = {};
+  ctx.localStorage = {
+    getItem: function (k) { return Object.prototype.hasOwnProperty.call(_ls, k) ? _ls[k] : null; },
+    setItem: function (k, v) { _ls[k] = String(v); },
+    removeItem: function (k) { delete _ls[k]; }
+  };
+  // document stub：getElementById 返回带 innerHTML 的节点·body.appendChild 收集子节点
+  var _bodyChildren = [];
+  var _nodesById = {};
+  function _makeNode(id) {
+    return {
+      id: id, tagName: 'div', style: {},
+      classList: { add: function () {}, remove: function () {}, contains: function () { return false; } },
+      innerHTML: '', textContent: '',
+      setAttribute: function (k, v) { this._attr = this._attr || {}; this._attr[k] = v; },
+      addEventListener: function () {},
+      appendChild: function (c) { this._children = this._children || []; this._children.push(c); return c; },
+      querySelector: function () { return null; },
+      querySelectorAll: function () { return []; },
+      remove: function () {}
+    };
+  }
+  ctx.document = {
+    getElementById: function (id) {
+      // player-shell-container / gc / player-shell-gc 返回 null·让 Shell._ensureShell 走「创建新容器 + 挂 body」路径
+      // （否则 Shell 见到「已存在」容器即早返回·不会 appendChild 到 body·断言落空）
+      if (id === 'player-shell-container' || id === 'gc' || id === 'player-shell-gc') return null;
+      // Rail.render 首选 _$('.player-right-rail-shell')——这是 CSS 选择器误作 id（带点）·
+      // 真实 DOM getElementById 不可能命中·此处也返 null·让 Rail 走 #player-rail 兜底
+      if (typeof id === 'string' && id.charAt(0) === '.') return null;
+      if (!_nodesById[id]) _nodesById[id] = _makeNode(id);
+      return _nodesById[id];
+    },
+    querySelector: function () { return null; },
+    querySelectorAll: function () { return []; },
+    createElement: function (tag) { return _makeNode(tag); },
+    body: { appendChild: function (c) { _bodyChildren.push(c); return c; }, classList: { add: function () {}, remove: function () {} } }
+  };
+
+  // 加载 5 个新模块（顺序：adapter → ai-bridge → map → shell → rail）
+  vm.runInContext(readFile('tm-player-systems-adapter.js'), ctx, { filename: 'tm-player-systems-adapter.js' });
+  vm.runInContext(readFile('tm-player-ai-bridge.js'), ctx, { filename: 'tm-player-ai-bridge.js' });
+  vm.runInContext(readFile('tm-player-map.js'), ctx, { filename: 'tm-player-map.js' });
+  vm.runInContext(readFile('tm-player-shell.js'), ctx, { filename: 'tm-player-shell.js' });
+  vm.runInContext(readFile('tm-player-rail.js'), ctx, { filename: 'tm-player-rail.js' });
+
+  // 5 模块均注册（前置断言·不达则后续 render 无法测）
+  assert(ctx.TM.PlayerSystemsAdapter, 'e2e-new: PlayerSystemsAdapter 注册');
+  assert(ctx.TM.PlayerAIBridge, 'e2e-new: PlayerAIBridge 注册');
+  assert(ctx.TM.PlayerMap, 'e2e-new: PlayerMap 注册');
+  assert(ctx.TM.PlayerShell, 'e2e-new: PlayerShell 注册');
+  assert(ctx.TM.PlayerRail, 'e2e-new: PlayerRail 注册');
+
+  // 断言 1：Shell.render() 端到端创建 #player-shell-container 挂到 body
+  _bodyChildren.length = 0;
+  ctx.TM.PlayerShell.render();
+  var shellContainerFound = _bodyChildren.some(function (c) { return c && c.id === 'player-shell-container'; });
+  assert(shellContainerFound, 'e2e-new: Shell.render() 端到端创建 #player-shell-container 挂到 body');
+
+  // 断言 2：Shell.switchTab('court') 不抛异常且切到 court tab
+  var switchOk = true;
+  try { ctx.TM.PlayerShell.switchTab('court'); } catch (e) { switchOk = false; }
+  assert(switchOk, 'e2e-new: Shell.switchTab(court) 端到端不抛异常');
+
+  // 断言 3：Rail.render() 端到端写入栅格（含 ps-rail-slot）
+  // Rail.render 优先取 #player-right-rail-shell·其次 #player-rail·两 key 都指向同一节点确保捕获写入
+  var railNode = _makeNode('player-right-rail-shell');
+  _nodesById['player-right-rail-shell'] = railNode;
+  _nodesById['player-rail'] = railNode;
+  ctx.TM.PlayerRail.render();
+  assert(railNode.innerHTML.indexOf('ps-rail-slot') >= 0,
+    'e2e-new: Rail.render() 端到端写入栅格（含 ps-rail-slot）·实际 innerHTML len=' + railNode.innerHTML.length);
+
+  // 断言 4：Map.render() 端到端写入地图（含 player-map-wrap）
+  // Map.render 取 #player-map-section 容器
+  var mapNode = _nodesById['player-map-section'] || _makeNode('player-map-section');
+  _nodesById['player-map-section'] = mapNode;
+  ctx.TM.PlayerMap.render();
+  assert(mapNode.innerHTML.indexOf('player-map-wrap') >= 0,
+    'e2e-new: Map.render() 端到端写入地图（含 player-map-wrap）·实际 innerHTML len=' + mapNode.innerHTML.length);
+}
+
 // ── 入口 ────────────────────────────────────────────────────
 try {
   staticFlowTest();
@@ -1141,7 +1233,8 @@ try {
   playerSkillTest();
   playerSpecialIdentityTest();
   e2eIntegrationAssertionTest();
-  console.log('[smoke-transmigration-e2e] PASS · 23 sub-tests · 端到端穿越模式：入口→选角（含懒载）→AI决策→批答→起居注→14+玩家系统各1核心动作→反叛→整合断言');
+  newModulesRenderE2ETest();
+  console.log('[smoke-transmigration-e2e] PASS · 24 sub-tests · 端到端穿越模式：入口→选角（含懒载）→AI决策→批答→起居注→14+玩家系统各1核心动作→反叛→整合断言→5新模块render联动');
   process.exit(0);
 } catch (e) {
   console.error('[smoke-transmigration-e2e] FAIL:', e.message);
