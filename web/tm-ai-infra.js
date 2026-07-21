@@ -253,6 +253,7 @@ var _aiQueue = (function() {
   }
   function _adaptiveMaxConcurrent(base, p) {
     var raw = parseInt(p.adaptiveMaxConcurrent, 10);
+    if (isNaN(raw)) raw = 8;   // 速度批一2026-07-21·自适应并发默认开(健康时3→8·失败率>15%/429冷却自动回落base)·显式设0=关闭
     if (!raw || raw <= base) return base;
     var cap = Math.max(base, Math.min(raw, 8));
     var now = Date.now();

@@ -3491,8 +3491,8 @@
     },
     {
       "path": "tm-ai-infra.js",
-      "sha256": "397c720499c2cc119023c168576fb0479df2449d46a598127309dc9bc700f411",
-      "size": 159213
+      "sha256": "8d13e7c0ded383ea9f6cd755ba1c8386282022d418008c86de23e444a47248c2",
+      "size": 159539
     },
     {
       "path": "tm-ai-narrative-guards.js",
@@ -3991,8 +3991,8 @@
     },
     {
       "path": "tm-endturn-ai.js",
-      "sha256": "a0db0556812998cdaea9ef6d421298343ff07b4a53bed9880b03630519b6f1cc",
-      "size": 394622
+      "sha256": "416324d0c9c4dbb1e25ee44f60c10a07a7149baa2b65299dbbaceac2376cfbd9",
+      "size": 395645
     },
     {
       "path": "tm-endturn-apply-stages.js",
@@ -4691,8 +4691,8 @@
     },
     {
       "path": "tm-memorials.js",
-      "sha256": "cd2eafe27aee047102b596e17d6e9b916cd705f53a75c43458aebc86abc700b2",
-      "size": 78069
+      "sha256": "863a0ce80a260cfaa23355bbb673d3d7845da58c42e5b2f878d8699071cda2fd",
+      "size": 78274
     },
     {
       "path": "tm-memory-adapter.js",

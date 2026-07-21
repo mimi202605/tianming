@@ -372,6 +372,20 @@
       opts = _mergeCallPolicy(opts && opts.id, opts || {});
       var callUrl = opts.url || url;
       var key = opts.key || (P.ai && P.ai.key);
+      // 速度批一2026-07-21·机械/格式化子调用分流次要快模型(玩家配了才生效·未配零变化)：
+      // 实录sc1d/丰化sc19/快照sc28/审查sc27_review+sc27/记忆落写memwrite/收编consolidate/压缩×3——
+      // 高判断的 sc0/sc1/sc2_prose/sc15 一律不动仍走主模型
+      var _SEC_SUBCALLS = { sc1d: 1, sc19: 1, sc28: 1, sc27_review: 1, sc27: 1, sc_memwrite: 1, sc_consolidate: 1, compress_ai_memory: 1, compress_foreshadows: 1, compress_conversation: 1 };
+      if (!opts.url && opts.id && _SEC_SUBCALLS[opts.id] &&
+          typeof _useSecondaryTier === 'function' && _useSecondaryTier() &&
+          typeof _getAITier === 'function' && typeof _buildAIUrlForTier === 'function') {
+        var _secCfg = _getAITier('secondary');
+        if (_secCfg && _secCfg.tier === 'secondary') {
+          callUrl = _buildAIUrlForTier('secondary');
+          key = _secCfg.key;
+          if (body && body.model) body.model = _secCfg.model;
+        }
+      }
       var label = opts.label || 'endturn';
       var started = Date.now();
       var data = null;

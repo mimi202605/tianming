@@ -589,6 +589,8 @@ async function genMemorialsAI(count){
     var c = await callAISmart(prompt, _dynamicMaxTok, {
       minLength: count * _strictMin,
       maxRetries: 2,
+      tier: (typeof _useSecondaryTier === 'function' && _useSecondaryTier()) ? 'secondary' : undefined,  // 速度批一2026-07-21·奏疏=模板化文体·配了次要快模型就分流(未配零变化)
+
       validator: function(content) {
         var p = extractJSON(content);
         if (!Array.isArray(p) || p.length < Math.min(count, 2)) return { valid: false, reason: '奏疏数量不足' };
