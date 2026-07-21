@@ -66,6 +66,17 @@
     custom:           ['声望']
   };
 
+  // ── role 中文化标签（顶栏 chip / 右栏身份卡·避免显示英文枚举值）
+  var ROLE_LABELS = {
+    minister: '朝臣', regent: '权臣', general: '武将', prince: '宗室',
+    merchant: '商贾', eunuch: '内侍', maid: '宫人', commoner: '平民',
+    bandit: '豪强', monk: '方外', artisan: '匠户', infant: '稚子',
+    retired_official: '致仕', actor: '优伶', custom: '异人', emperor: '君主'
+  };
+  function _roleLabel(role) {
+    return ROLE_LABELS[role] || role || '—';
+  }
+
   // ── 辅助函数 ───────────────────────────────────────────────
   function _esc(s) {
     if (typeof escHtml === 'function') { try { return escHtml(s); } catch (_) {} }
@@ -91,9 +102,13 @@
 
   // ═══ 顶栏四段式 ═══════════════════════════════════════════
   // 1) 身份：角色名 + 头衔 chip
+  // 头衔缺失时用 ROLE_LABELS 中文化 role·避免显示英文枚举值（如 'commoner'）
   function _renderBarIdentity(pi, role) {
     var name = (pi && pi.characterName) || '玩家';
     var title = (pi && (pi.characterTitle || pi.playerRole)) || role;
+    // 若 title 是英文 role key（如 'commoner'）·翻译成中文
+    if (ROLE_LABELS[title]) title = ROLE_LABELS[title];
+    else if (!title || title === role) title = _roleLabel(role);
     var h = '';
     h += '<div class="ps-bar-id">';
     h += '<span class="ps-bar-name">' + _esc(name) + '</span>';
@@ -141,7 +156,7 @@
               if (mon >= 3 && mon <= 5) { jieqi = ['孟春', '仲春', '季春'][mon - 3]; jieqiDesc = ['立春·东风解冻', '春分·雷乃发声', '谷雨·萍始生'][mon - 3]; }
               else if (mon >= 6 && mon <= 8) { jieqi = ['孟夏', '仲夏', '季夏'][mon - 6]; jieqiDesc = ['立夏·蝼蝈鸣', '夏至·蜩始鸣', '大暑·腐草为萤'][mon - 6]; }
               else if (mon >= 9 && mon <= 11) { jieqi = ['孟秋', '仲秋', '季秋'][mon - 9]; jieqiDesc = ['立秋·凉风至', '秋分·鸿雁来', '霜降·草木黄落'][mon - 9]; }
-              else { var wi = (mon === 12 ? 0 : mon + 1); jieqi = ['孟冬', '仲冬', '季冬'][wi]; jieqiDesc = ['立冬·水始冰', '冬至·蚯蚓结', '大寒·鸡始乳'][wi]; }
+              else { var wi = (mon === 12 ? 0 : mon); jieqi = ['孟冬', '仲冬', '季冬'][wi]; jieqiDesc = ['立冬·水始冰', '冬至·蚯蚓结', '大寒·鸡始乳'][wi]; }
             }
           } catch (_) {}
         }
@@ -159,7 +174,7 @@
     return h;
   }
 
-  // 4) 状态：按 role 选 2-3 个字段（软依赖 pi.stats·缺席显示「—」）
+  // 4) 状态：按 role 选 2-3 个字段（软依赖 pi.stats·缺席/NaN 显示「—」）
   function _renderBarStats(pi, role) {
     var keys = ROLE_STATS[role] || ROLE_STATS.custom;
     var stats = (pi && pi.stats) || {};
@@ -168,7 +183,9 @@
     for (var i = 0; i < keys.length; i++) {
       var label = keys[i];
       var val = stats[label];
+      // 兜底：null/undefined/NaN/Infinity 均显示「—」（NaN 通常是上游除零·不泄漏到 UI）
       if (val == null) val = '—';
+      else if (typeof val === 'number' && !isFinite(val)) val = '—';
       h += '<span class="ps-bar-stat"><em>' + _esc(label) + '</em><b>' + _esc(val) + '</b></span>';
     }
     h += '</div>';

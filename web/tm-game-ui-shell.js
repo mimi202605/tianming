@@ -92,7 +92,20 @@ function renderPlayerState(){
     TM.PlayerUI.renderRightPanel();
   } catch(_e) {
     try { console.error('[renderPlayerState]', _e); } catch(_){}
-    return renderEmperorState();  // 异常降级
+    // 铁律（tm-player-shell.js 顶部）：穿越模式绝不降级到皇帝御案 UI。
+    // 历史代码此处调 renderEmperorState()·会把皇帝御案 shell 渲染出来·违反穿越铁律·
+    // 让用户在穿越模式看到皇帝界面（真事故 2026-07-21）。
+    // 改为渲染「穿越模式 UI 异常」全屏占位·提示用户刷新或重试。
+    try {
+      var gc = (typeof _$ === 'function') ? _$('gc') : null;
+      if (gc) {
+        gc.innerHTML = '<div style="padding:32px;text-align:center;color:#c0392b;font-size:14px;line-height:1.8;">' +
+          '<div style="font-size:16px;font-weight:600;margin-bottom:12px;">穿越模式 UI 异常</div>' +
+          '<div style="color:#666;margin-bottom:16px;">渲染失败：' + (_e && _e.message ? String(_e.message) : '未知错误') + '</div>' +
+          '<div style="color:#888;font-size:12px;">请刷新页面或重新加载存档重试·已记录错误日志。</div>' +
+          '</div>';
+      }
+    } catch(_){}
   }
 }
 

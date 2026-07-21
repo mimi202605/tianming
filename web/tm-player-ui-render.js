@@ -101,12 +101,14 @@
   }
 
   // ── §2.1 顶栏玩家身份条 ─────────────────────────────────────
-  // 优先委托 TM.PlayerShell.renderTopBar（Phase 5.1 重建·四段式顶栏）
-  // PlayerShell 缺席时降级到本文件原有 bar-player-identity 渲染
+  // 优先委托 TM.PlayerShell.renderTopBar（Phase 5.1 重建·四段式顶栏·写 #player-shell-topbar）
+  // PlayerShell 缺席/抛异常时降级到本文件原有 bar-player-identity 渲染
+  // 铁律：PlayerShell 成功后绝不继续写旧 #bar-player-identity（用户会看到两个顶栏重叠·真事故 2026-07-21）
   function renderTopBar() {
     if (!_isTrans()) return;
     if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.renderTopBar === 'function') {
-      try { global.TM.PlayerShell.renderTopBar(); } catch (_) {}
+      try { global.TM.PlayerShell.renderTopBar(); return; }
+      catch (_) {}
     }
     var bar = _$('bar-player-identity');
     if (!bar) return;
@@ -147,12 +149,14 @@
   }
 
   // ── §3 左栏 8 场景 tab 树 ───────────────────────────────────
-  // 优先委托 TM.PlayerShell.renderLeftTabs（Phase 5.1 重建·8 tab 含 tech）
-  // PlayerShell 缺席时降级到本文件原有 7 tab 渲染
+  // 优先委托 TM.PlayerShell.renderLeftTabs（Phase 5.1 重建·8 tab 含 tech·写 #player-left-tabs-shell）
+  // PlayerShell 缺席/抛异常时降级到本文件原有 7 tab 渲染（写 #player-left-tabs）
+  // 铁律：PlayerShell 成功后绝不继续写旧 #player-left-tabs（用户会看到两套 tab 重叠·真事故 2026-07-21）
   function renderLeftTabs() {
     if (!_isTrans()) return;
     if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.renderLeftTabs === 'function') {
-      try { global.TM.PlayerShell.renderLeftTabs(); } catch (_) {}
+      try { global.TM.PlayerShell.renderLeftTabs(); return; }
+      catch (_) {}
     }
     var container = _$('player-left-tabs');
     if (!container) return;
@@ -252,12 +256,14 @@
   }
 
   // ── §5 右栏玩家身份卡 ──────────────────────────────────────
-  // 优先委托 TM.PlayerShell.renderRightRail（Phase 5.1 重建·3×3 图标栅格 + drawer）
-  // PlayerShell 缺席时降级到本文件原有 player-right-panel 渲染
+  // 优先委托 TM.PlayerShell.renderRightRail（Phase 5.1 重建·3×3 图标栅格 + drawer·写 #player-right-rail-shell）
+  // PlayerShell 缺席/抛异常时降级到本文件原有 player-right-panel 渲染
+  // 铁律：PlayerShell 成功后绝不继续写旧 #player-right-panel（用户会看到两套右栏重叠·真事故 2026-07-21）
   function renderRightPanel() {
     if (!_isTrans()) return;
     if (global.TM && global.TM.PlayerShell && typeof global.TM.PlayerShell.renderRightRail === 'function') {
-      try { global.TM.PlayerShell.renderRightRail(); } catch (_) {}
+      try { global.TM.PlayerShell.renderRightRail(); return; }
+      catch (_) {}
     }
     var panel = _$('player-right-panel');
     if (!panel) return;

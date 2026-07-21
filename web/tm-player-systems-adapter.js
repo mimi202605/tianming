@@ -260,11 +260,15 @@
 
   /** systemKey → 现有 render<Short>Panel 方法名映射表 */
   var PANEL_METHOD_MAP = {
-    PlayerFamily:    'renderFamilyPanel',
-    PlayerMarriage:  'renderMarriagePanel',
-    PlayerTech:      'renderTechPanel',
-    PlayerMovement:  'renderMovementPanel',
-    PlayerRebel:     'renderPanel'  // 2026-07-21：戎机 tab 反叛账本面板（已有完整 HTML）
+    PlayerFamily:      'renderFamilyPanel',
+    PlayerMarriage:    'renderMarriagePanel',
+    PlayerTech:        'renderTechPanel',
+    PlayerMovement:    'renderMovementPanel',
+    PlayerRebel:       'renderPanel',      // 戎机 tab 反叛账本
+    PlayerSkill:       'renderPanel',      // 修习 tab 技能账本（2026-07-21 修：原漏登·退化到 getState JSON dump）
+    PlayerEconomy:     'renderPanel',      // 邸宅 tab 私产账本
+    PlayerIndustry:    'renderPanel',      // 邸宅 tab 产业账本
+    PlayerPrivateArmy: 'renderPanel'       // 戎机 tab 私军账本
   };
 
   /**
@@ -334,6 +338,7 @@
   /**
    * 未实现系统的友好占位（替代冷冰冰的「XXX 待接入」）
    * 显示中文化的「该系统将在后续版本接入」提示 + 该 tab 可暂且专注的他事引导
+   * 注：不输出标题·标题由外层 _wrapBlock 统一处理（避免与 player-block-title 重复·真事故 2026-07-21）
    */
   var FRIENDLY_FALLBACK = {
     PlayerFortune: {
@@ -343,6 +348,14 @@
     PlayerAdversity: {
       label: '变故',
       hint: '变故系统正在筹备中·当前版本可暂且专注日常事务。后续版本将接入天灾、人祸、家变、病厄等突发变故。'
+    },
+    PlayerMemorial: {
+      label: '上奏',
+      hint: '上奏系统正在筹备中·当前版本可通过「朝议」槽参与朝政。后续版本将接入本章上奏、密奏、请旨等。'
+    },
+    PlayerOffice: {
+      label: '官职',
+      hint: '官职系统正在筹备中·当前版本可暂且专注本职事务。后续版本将接入官职迁转、差遣、考课等。'
     }
   };
 
@@ -350,7 +363,7 @@
     var cfg = FRIENDLY_FALLBACK[systemKey];
     if (!cfg) return null;
     var h = '<div class="player-block-soon">';
-    h += '<div class="player-block-soon-title">' + _esc(title || cfg.label) + '</div>';
+    // 不再输出 player-block-soon-title·外层 _wrapBlock 已提供 player-block-title（避免标题重复）
     h += '<div class="player-block-soon-hint">' + _esc(cfg.hint) + '</div>';
     h += '</div>';
     return h;

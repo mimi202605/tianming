@@ -113,11 +113,19 @@
     if (!rail) return;
     var role = _playerRole();
     var pi = _pi() || {};
+    // 头衔缺失时用中文化 role·避免显示英文枚举（如 'commoner'）
+    var ROLE_LABELS = {
+      minister: '朝臣', regent: '权臣', general: '武将', prince: '宗室',
+      merchant: '商贾', eunuch: '内侍', maid: '宫人', commoner: '平民',
+      bandit: '豪强', monk: '方外', artisan: '匠户', infant: '稚子',
+      retired_official: '致仕', actor: '优伶', custom: '异人', emperor: '君主'
+    };
+    var roleText = pi.characterTitle || ROLE_LABELS[role] || role || '—';
     var h = '';
     // 身份卡
     h += '<div class="ps-rail-card">';
     h += '<div class="ps-rail-card-name">' + _esc(pi.characterName || '玩家') + '</div>';
-    h += '<div class="ps-rail-card-role">' + _esc(pi.characterTitle || role) + '</div>';
+    h += '<div class="ps-rail-card-role">' + _esc(roleText) + '</div>';
     h += '</div>';
     // 3×3 图标栅格
     h += '<div class="ps-rail-grid">';
@@ -133,7 +141,7 @@
       var onclick = clickable ? ' onclick="TM.PlayerRail.openDrawer(' + slot.idx + ')"' : '';
       var tabindex = clickable ? '0' : '-1';
       var dot = _reddots[slot.idx] ? '<span class="ps-rail-reddot"></span>' : '';
-      var badgeHtml = disp.badge ? '<span class="ps-rail-badge">' + _esc(disp.badge) + '</span>' : '';
+      var badgeHtml = disp.badge ? '<span class="ps-rail-slot-badge">' + _esc(disp.badge) + '</span>' : '';
       h += '<div class="' + cls + '"' + onclick + ' role="button" tabindex="' + tabindex + '" data-slot="' + slot.idx + '">';
       h += '<span class="ps-rail-slot-icon">' + disp.icon + '</span>';
       h += '<span class="ps-rail-slot-label">' + _esc(disp.label) + '</span>';

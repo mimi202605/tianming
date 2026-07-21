@@ -1687,7 +1687,7 @@ function renderLeftPanel(){
     if(_mon>=3&&_mon<=5){_s='春';_sTxt=['孟春','仲春','季春'][_mon-3];_sDesc=['立春·东风解冻','春分·雷乃发声','谷雨·萍始生'][_mon-3];}
     else if(_mon>=6&&_mon<=8){_s='夏';_sTxt=['孟夏','仲夏','季夏'][_mon-6];_sDesc=['立夏·蝼蝈鸣','夏至·蜩始鸣','大暑·腐草为萤'][_mon-6];}
     else if(_mon>=9&&_mon<=11){_s='秋';_sTxt=['孟秋','仲秋','季秋'][_mon-9];_sDesc=['立秋·凉风至','秋分·鸿雁来','霜降·草木黄落'][_mon-9];}
-    else {_s='冬';var _wi=(_mon===12?0:_mon+1);_sTxt=['孟冬','仲冬','季冬'][_wi];_sDesc=['立冬·水始冰','冬至·蚯蚓结','大寒·鸡始乳'][_wi];}
+    else {_s='冬';var _wi=(_mon===12?0:_mon);_sTxt=['孟冬','仲冬','季冬'][_wi];_sDesc=['立冬·水始冰','冬至·蚯蚓结','大寒·鸡始乳'][_wi];}
     _wSeal.textContent=_s;
     _wName.textContent=_sTxt;
     if(_wDesc)_wDesc.textContent=_sDesc;
