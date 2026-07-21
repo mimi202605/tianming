@@ -7,5 +7,6 @@ echo     天命 · AI历史模拟推演
 echo     正在启动，请稍候...
 echo   ================================
 echo.
+node scripts/dev-sync-latest.js
 npm start
 pause
